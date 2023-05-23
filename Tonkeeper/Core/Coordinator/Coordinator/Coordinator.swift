@@ -15,11 +15,11 @@ protocol CoordinatorProtocol: AnyObject {
 
 class Coordinator<Router: RouterProtocol>: CoordinatorProtocol {
   
-  let router: any RouterProtocol
+  let router: Router
   
   private var children = [CoordinatorProtocol]()
   
-  init(router: any RouterProtocol) {
+  init(router: Router) {
     self.router = router
   }
   
