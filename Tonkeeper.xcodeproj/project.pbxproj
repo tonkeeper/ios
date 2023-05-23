@@ -11,9 +11,20 @@
 		7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */; };
 		7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */; };
 		7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */; };
+		7D6836222A1CD1EC002DBBC7 /* Presentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836212A1CD1EC002DBBC7 /* Presentable.swift */; };
+		7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836232A1CD210002DBBC7 /* UIViewController+Presentable.swift */; };
+		7D6836272A1CD239002DBBC7 /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836262A1CD239002DBBC7 /* Router.swift */; };
+		7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836282A1CD2E9002DBBC7 /* RouteOptions.swift */; };
+		7D68362C2A1CE874002DBBC7 /* UINavigationController+Completion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68362B2A1CE874002DBBC7 /* UINavigationController+Completion.swift */; };
+		7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68362D2A1CE903002DBBC7 /* NavigationRouter.swift */; };
+		7D6836302A1CF471002DBBC7 /* UITabBarController+Completions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68362F2A1CF471002DBBC7 /* UITabBarController+Completions.swift */; };
+		7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836312A1CF58D002DBBC7 /* TabBarRouter.swift */; };
+		7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836342A1CFBFB002DBBC7 /* Coordinator.swift */; };
+		7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836362A1CFDB7002DBBC7 /* WindowRouter.swift */; };
+		7D68363B2A1CFF74002DBBC7 /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68363A2A1CFF74002DBBC7 /* AppCoordinator.swift */; };
+		7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
-		7DB8FB6A2A1BCC92005B4B11 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB692A1BCC92005B4B11 /* ViewController.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
 		7DB8FB722A1BCC92005B4B11 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */; };
 		7DB8FB7E2A1BEE00005B4B11 /* Montserrat-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB7B2A1BEE00005B4B11 /* Montserrat-Bold.ttf */; };
@@ -27,10 +38,21 @@
 		7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyle.swift; sourceTree = "<group>"; };
 		7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UILabel+TextStyle.swift"; sourceTree = "<group>"; };
 		7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+TextStyle.swift"; sourceTree = "<group>"; };
+		7D6836212A1CD1EC002DBBC7 /* Presentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Presentable.swift; sourceTree = "<group>"; };
+		7D6836232A1CD210002DBBC7 /* UIViewController+Presentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIViewController+Presentable.swift"; sourceTree = "<group>"; };
+		7D6836262A1CD239002DBBC7 /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
+		7D6836282A1CD2E9002DBBC7 /* RouteOptions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteOptions.swift; sourceTree = "<group>"; };
+		7D68362B2A1CE874002DBBC7 /* UINavigationController+Completion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UINavigationController+Completion.swift"; sourceTree = "<group>"; };
+		7D68362D2A1CE903002DBBC7 /* NavigationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationRouter.swift; sourceTree = "<group>"; };
+		7D68362F2A1CF471002DBBC7 /* UITabBarController+Completions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UITabBarController+Completions.swift"; sourceTree = "<group>"; };
+		7D6836312A1CF58D002DBBC7 /* TabBarRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarRouter.swift; sourceTree = "<group>"; };
+		7D6836342A1CFBFB002DBBC7 /* Coordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinator.swift; sourceTree = "<group>"; };
+		7D6836362A1CFDB7002DBBC7 /* WindowRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowRouter.swift; sourceTree = "<group>"; };
+		7D68363A2A1CFF74002DBBC7 /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
+		7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAssembly.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
-		7DB8FB692A1BCC92005B4B11 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
 		7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7DB8FB712A1BCC92005B4B11 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		7DB8FB732A1BCC92005B4B11 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -76,6 +98,80 @@
 			path = Foundation;
 			sourceTree = "<group>";
 		};
+		7D68361E2A1CD1B8002DBBC7 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				7D68361F2A1CD1C9002DBBC7 /* Coordinator */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		7D68361F2A1CD1C9002DBBC7 /* Coordinator */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836332A1CFBF3002DBBC7 /* Coordinator */,
+				7D6836252A1CD235002DBBC7 /* Router */,
+				7D6836202A1CD1E3002DBBC7 /* Presentable */,
+				7D68362A2A1CD36A002DBBC7 /* Extensions */,
+			);
+			path = Coordinator;
+			sourceTree = "<group>";
+		};
+		7D6836202A1CD1E3002DBBC7 /* Presentable */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836212A1CD1EC002DBBC7 /* Presentable.swift */,
+				7D6836232A1CD210002DBBC7 /* UIViewController+Presentable.swift */,
+			);
+			path = Presentable;
+			sourceTree = "<group>";
+		};
+		7D6836252A1CD235002DBBC7 /* Router */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836262A1CD239002DBBC7 /* Router.swift */,
+				7D6836282A1CD2E9002DBBC7 /* RouteOptions.swift */,
+				7D68362D2A1CE903002DBBC7 /* NavigationRouter.swift */,
+				7D6836312A1CF58D002DBBC7 /* TabBarRouter.swift */,
+				7D6836362A1CFDB7002DBBC7 /* WindowRouter.swift */,
+			);
+			path = Router;
+			sourceTree = "<group>";
+		};
+		7D68362A2A1CD36A002DBBC7 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				7D68362B2A1CE874002DBBC7 /* UINavigationController+Completion.swift */,
+				7D68362F2A1CF471002DBBC7 /* UITabBarController+Completions.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		7D6836332A1CFBF3002DBBC7 /* Coordinator */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836342A1CFBFB002DBBC7 /* Coordinator.swift */,
+			);
+			path = Coordinator;
+			sourceTree = "<group>";
+		};
+		7D6836382A1CFECF002DBBC7 /* Modules */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836392A1CFED6002DBBC7 /* App */,
+			);
+			path = Modules;
+			sourceTree = "<group>";
+		};
+		7D6836392A1CFED6002DBBC7 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				7D68363A2A1CFF74002DBBC7 /* AppCoordinator.swift */,
+				7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
@@ -97,7 +193,8 @@
 			children = (
 				7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */,
 				7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */,
-				7DB8FB692A1BCC92005B4B11 /* ViewController.swift */,
+				7D6836382A1CFECF002DBBC7 /* Modules */,
+				7D68361E2A1CD1B8002DBBC7 /* Core */,
 				7D6836152A1CAEAA002DBBC7 /* Library */,
 				7DB8FB792A1BCFCD005B4B11 /* Resources */,
 			);
@@ -217,14 +314,25 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
 				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
+				7D68362C2A1CE874002DBBC7 /* UINavigationController+Completion.swift in Sources */,
 				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
-				7DB8FB6A2A1BCC92005B4B11 /* ViewController.swift in Sources */,
 				7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
+				7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */,
+				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
+				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
+				7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */,
+				7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */,
+				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,
+				7D68363B2A1CFF74002DBBC7 /* AppCoordinator.swift in Sources */,
+				7D6836302A1CF471002DBBC7 /* UITabBarController+Completions.swift in Sources */,
+				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
+				7D6836222A1CD1EC002DBBC7 /* Presentable.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
