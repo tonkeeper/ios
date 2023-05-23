@@ -13,6 +13,10 @@ extension UIImage {
       static var wallet: UIImage? {
         .init(named: "Icons/28/ic-wallet-28")
       }
+      
+      static var activity: UIImage? {
+        .init(named: "Icons/28/ic-flash-28")
+      }
     }
   }
 }
