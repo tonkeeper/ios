@@ -31,6 +31,10 @@
 		7D68364E2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68364D2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift */; };
 		7D6836512A1D1EB1002DBBC7 /* ActivityCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836502A1D1EB1002DBBC7 /* ActivityCoordinator.swift */; };
 		7D6836532A1D1EB9002DBBC7 /* ActivityAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836522A1D1EB9002DBBC7 /* ActivityAssembly.swift */; };
+		7D6836562A1D5951002DBBC7 /* BrowserCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836552A1D5951002DBBC7 /* BrowserCoordinator.swift */; };
+		7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836572A1D595A002DBBC7 /* BrowserAssembly.swift */; };
+		7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68365A2A1D5AC3002DBBC7 /* SettingsCoordinator.swift */; };
+		7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68365C2A1D5AD8002DBBC7 /* SettingsAssembly.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -66,6 +70,10 @@
 		7D68364D2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UITabBarController+Appearance.swift"; sourceTree = "<group>"; };
 		7D6836502A1D1EB1002DBBC7 /* ActivityCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityCoordinator.swift; sourceTree = "<group>"; };
 		7D6836522A1D1EB9002DBBC7 /* ActivityAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityAssembly.swift; sourceTree = "<group>"; };
+		7D6836552A1D5951002DBBC7 /* BrowserCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCoordinator.swift; sourceTree = "<group>"; };
+		7D6836572A1D595A002DBBC7 /* BrowserAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAssembly.swift; sourceTree = "<group>"; };
+		7D68365A2A1D5AC3002DBBC7 /* SettingsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCoordinator.swift; sourceTree = "<group>"; };
+		7D68365C2A1D5AD8002DBBC7 /* SettingsAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAssembly.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -178,6 +186,8 @@
 				7D68363E2A1D0AB1002DBBC7 /* TabBar */,
 				7D6836462A1D0FD4002DBBC7 /* Wallet */,
 				7D68364F2A1D1EA7002DBBC7 /* Activity */,
+				7D6836542A1D5940002DBBC7 /* Browser */,
+				7D6836592A1D5AAF002DBBC7 /* Settings */,
 			);
 			path = Modules;
 			sourceTree = "<group>";
@@ -216,6 +226,24 @@
 				7D6836522A1D1EB9002DBBC7 /* ActivityAssembly.swift */,
 			);
 			path = Activity;
+			sourceTree = "<group>";
+		};
+		7D6836542A1D5940002DBBC7 /* Browser */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836552A1D5951002DBBC7 /* BrowserCoordinator.swift */,
+				7D6836572A1D595A002DBBC7 /* BrowserAssembly.swift */,
+			);
+			path = Browser;
+			sourceTree = "<group>";
+		};
+		7D6836592A1D5AAF002DBBC7 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				7D68365A2A1D5AC3002DBBC7 /* SettingsCoordinator.swift */,
+				7D68365C2A1D5AD8002DBBC7 /* SettingsAssembly.swift */,
+			);
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		7DB8FB592A1BCC92005B4B11 = {
@@ -366,9 +394,11 @@
 				7D6836422A1D0B5C002DBBC7 /* TabBarAssembly.swift in Sources */,
 				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
 				7D68362C2A1CE874002DBBC7 /* UINavigationController+Completion.swift in Sources */,
+				7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */,
 				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
 				7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */,
+				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D6836512A1D1EB1002DBBC7 /* ActivityCoordinator.swift in Sources */,
 				7D6836532A1D1EB9002DBBC7 /* ActivityAssembly.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
@@ -385,6 +415,8 @@
 				7D68363B2A1CFF74002DBBC7 /* AppCoordinator.swift in Sources */,
 				7D6836302A1CF471002DBBC7 /* UITabBarController+Completions.swift in Sources */,
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
+				7D6836562A1D5951002DBBC7 /* BrowserCoordinator.swift in Sources */,
+				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
 				7D6836222A1CD1EC002DBBC7 /* Presentable.swift in Sources */,
