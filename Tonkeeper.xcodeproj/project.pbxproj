@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
+		7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */; };
+		7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */; };
+		7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6A2A1BCC92005B4B11 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB692A1BCC92005B4B11 /* ViewController.swift */; };
@@ -21,6 +24,9 @@
 
 /* Begin PBXFileReference section */
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
+		7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyle.swift; sourceTree = "<group>"; };
+		7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UILabel+TextStyle.swift"; sourceTree = "<group>"; };
+		7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+TextStyle.swift"; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -45,6 +51,31 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7D6836152A1CAEAA002DBBC7 /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836162A1CAEB3002DBBC7 /* TextStyle */,
+				7DB8FB812A1BEF58005B4B11 /* Extensions */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
+		7D6836162A1CAEB3002DBBC7 /* TextStyle */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */,
+			);
+			path = TextStyle;
+			sourceTree = "<group>";
+		};
+		7D68361B2A1CB193002DBBC7 /* Foundation */ = {
+			isa = PBXGroup;
+			children = (
+				7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */,
+			);
+			path = Foundation;
+			sourceTree = "<group>";
+		};
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
@@ -67,7 +98,7 @@
 				7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */,
 				7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */,
 				7DB8FB692A1BCC92005B4B11 /* ViewController.swift */,
-				7DB8FB812A1BEF58005B4B11 /* Extensions */,
+				7D6836152A1CAEAA002DBBC7 /* Library */,
 				7DB8FB792A1BCFCD005B4B11 /* Resources */,
 			);
 			path = Tonkeeper;
@@ -97,6 +128,7 @@
 		7DB8FB812A1BEF58005B4B11 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				7D68361B2A1CB193002DBBC7 /* Foundation */,
 				7DB8FB822A1BEF64005B4B11 /* UIKit */,
 			);
 			path = Extensions;
@@ -107,6 +139,7 @@
 			children = (
 				7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */,
 				7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */,
+				7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */,
 			);
 			path = UIKit;
 			sourceTree = "<group>";
@@ -184,10 +217,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
+				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
 				7DB8FB6A2A1BCC92005B4B11 /* ViewController.swift in Sources */,
 				7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
+				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
