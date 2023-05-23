@@ -12,7 +12,7 @@ protocol RouterProtocol<RootViewController> {
   var rootViewController: RootViewController { get }
 }
 
-final class Router<RootViewController: UIViewController>: RouterProtocol {
+class Router<RootViewController: UIViewController>: NSObject, RouterProtocol {
   let rootViewController: RootViewController
   
   init(rootViewController: RootViewController) {
