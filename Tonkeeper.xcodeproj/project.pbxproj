@@ -19,6 +19,8 @@
 		7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68362D2A1CE903002DBBC7 /* NavigationRouter.swift */; };
 		7D6836302A1CF471002DBBC7 /* UITabBarController+Completions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68362F2A1CF471002DBBC7 /* UITabBarController+Completions.swift */; };
 		7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836312A1CF58D002DBBC7 /* TabBarRouter.swift */; };
+		7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836342A1CFBFB002DBBC7 /* Coordinator.swift */; };
+		7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836362A1CFDB7002DBBC7 /* WindowRouter.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6A2A1BCC92005B4B11 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB692A1BCC92005B4B11 /* ViewController.swift */; };
@@ -43,6 +45,8 @@
 		7D68362D2A1CE903002DBBC7 /* NavigationRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationRouter.swift; sourceTree = "<group>"; };
 		7D68362F2A1CF471002DBBC7 /* UITabBarController+Completions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UITabBarController+Completions.swift"; sourceTree = "<group>"; };
 		7D6836312A1CF58D002DBBC7 /* TabBarRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarRouter.swift; sourceTree = "<group>"; };
+		7D6836342A1CFBFB002DBBC7 /* Coordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinator.swift; sourceTree = "<group>"; };
+		7D6836362A1CFDB7002DBBC7 /* WindowRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowRouter.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -103,6 +107,7 @@
 		7D68361F2A1CD1C9002DBBC7 /* Coordinator */ = {
 			isa = PBXGroup;
 			children = (
+				7D6836332A1CFBF3002DBBC7 /* Coordinator */,
 				7D6836252A1CD235002DBBC7 /* Router */,
 				7D6836202A1CD1E3002DBBC7 /* Presentable */,
 				7D68362A2A1CD36A002DBBC7 /* Extensions */,
@@ -126,6 +131,7 @@
 				7D6836282A1CD2E9002DBBC7 /* RouteOptions.swift */,
 				7D68362D2A1CE903002DBBC7 /* NavigationRouter.swift */,
 				7D6836312A1CF58D002DBBC7 /* TabBarRouter.swift */,
+				7D6836362A1CFDB7002DBBC7 /* WindowRouter.swift */,
 			);
 			path = Router;
 			sourceTree = "<group>";
@@ -137,6 +143,14 @@
 				7D68362F2A1CF471002DBBC7 /* UITabBarController+Completions.swift */,
 			);
 			path = Extensions;
+			sourceTree = "<group>";
+		};
+		7D6836332A1CFBF3002DBBC7 /* Coordinator */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836342A1CFBFB002DBBC7 /* Coordinator.swift */,
+			);
+			path = Coordinator;
 			sourceTree = "<group>";
 		};
 		7DB8FB592A1BCC92005B4B11 = {
@@ -291,6 +305,8 @@
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */,
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
+				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
+				7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */,
 				7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,

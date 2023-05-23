@@ -7,10 +7,7 @@
 
 import UIKit
 
-protocol RouterProtocol<RootViewController> {
-  associatedtype RootViewController: UIViewController
-  var rootViewController: RootViewController { get }
-}
+protocol RouterProtocol {}
 
 class Router<RootViewController: UIViewController>: NSObject, RouterProtocol {
   let rootViewController: RootViewController
