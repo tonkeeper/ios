@@ -18,14 +18,15 @@ final class AppCoordinator: Coordinator<WindowRouter> {
   }
   
   override func start() {
-    openEmptyScreen()
+    openTabBar()
   }
 }
 
 private extension AppCoordinator {
-  func openEmptyScreen() {
-    let emptyViewController = UIViewController()
-    emptyViewController.view.backgroundColor = .Background.contentAttention
-    router.setRoot(presentable: emptyViewController)
+  func openTabBar() {
+    let coordinator = appAssembly.tabBarCoordinator()
+    router.setRoot(presentable: coordinator.router.rootViewController)
+    addChild(coordinator)
+    coordinator.start()
   }
 }
