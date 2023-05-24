@@ -29,6 +29,15 @@ private extension WalletCoordinator {
   }
 }
 
+// MARK: - WalletRootModuleOutput
+
 extension WalletCoordinator: WalletRootModuleOutput {
-  func openQRScanner() {}
+  func openQRScanner() {
+    let module = walletAssembly.qrScannerModule(output: self)
+    router.present(module.view)
+  }
 }
+
+// MARK: - QRScannerModuleOutput
+
+extension WalletCoordinator: QRScannerModuleOutput {}

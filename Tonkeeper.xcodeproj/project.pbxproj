@@ -42,6 +42,11 @@
 		7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68366B2A1D6EE2002DBBC7 /* WalletRootPresenter.swift */; };
 		7D68366E2A1D6F1E002DBBC7 /* WalletRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68366D2A1D6F1E002DBBC7 /* WalletRootView.swift */; };
 		7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68366F2A1E5B75002DBBC7 /* WalletRootProtocols.swift */; };
+		7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836732A1E6614002DBBC7 /* QRScannerViewController.swift */; };
+		7D6836762A1E6623002DBBC7 /* QRScannerPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836752A1E6623002DBBC7 /* QRScannerPresenter.swift */; };
+		7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836772A1E662E002DBBC7 /* QRScannerView.swift */; };
+		7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836792A1E6653002DBBC7 /* QRScannerAssembly.swift */; };
+		7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68367B2A1E666D002DBBC7 /* QRScannerProtocols.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -88,6 +93,11 @@
 		7D68366B2A1D6EE2002DBBC7 /* WalletRootPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletRootPresenter.swift; sourceTree = "<group>"; };
 		7D68366D2A1D6F1E002DBBC7 /* WalletRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletRootView.swift; sourceTree = "<group>"; };
 		7D68366F2A1E5B75002DBBC7 /* WalletRootProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletRootProtocols.swift; sourceTree = "<group>"; };
+		7D6836732A1E6614002DBBC7 /* QRScannerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerViewController.swift; sourceTree = "<group>"; };
+		7D6836752A1E6623002DBBC7 /* QRScannerPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerPresenter.swift; sourceTree = "<group>"; };
+		7D6836772A1E662E002DBBC7 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		7D6836792A1E6653002DBBC7 /* QRScannerAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerAssembly.swift; sourceTree = "<group>"; };
+		7D68367B2A1E666D002DBBC7 /* QRScannerProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerProtocols.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -198,6 +208,7 @@
 		7D6836382A1CFECF002DBBC7 /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				7D6836712A1E65ED002DBBC7 /* Common */,
 				7D6836392A1CFED6002DBBC7 /* App */,
 				7D68363E2A1D0AB1002DBBC7 /* TabBar */,
 				7D6836462A1D0FD4002DBBC7 /* Wallet */,
@@ -288,6 +299,26 @@
 				7D68366F2A1E5B75002DBBC7 /* WalletRootProtocols.swift */,
 			);
 			path = WalletRoot;
+			sourceTree = "<group>";
+		};
+		7D6836712A1E65ED002DBBC7 /* Common */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836722A1E65F7002DBBC7 /* QRScanner */,
+			);
+			path = Common;
+			sourceTree = "<group>";
+		};
+		7D6836722A1E65F7002DBBC7 /* QRScanner */ = {
+			isa = PBXGroup;
+			children = (
+				7D6836732A1E6614002DBBC7 /* QRScannerViewController.swift */,
+				7D6836752A1E6623002DBBC7 /* QRScannerPresenter.swift */,
+				7D6836772A1E662E002DBBC7 /* QRScannerView.swift */,
+				7D6836792A1E6653002DBBC7 /* QRScannerAssembly.swift */,
+				7D68367B2A1E666D002DBBC7 /* QRScannerProtocols.swift */,
+			);
+			path = QRScanner;
 			sourceTree = "<group>";
 		};
 		7DB8FB592A1BCC92005B4B11 = {
@@ -435,13 +466,16 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D6836762A1E6623002DBBC7 /* QRScannerPresenter.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
 				7D6836422A1D0B5C002DBBC7 /* TabBarAssembly.swift in Sources */,
+				7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */,
 				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
 				7D68362C2A1CE874002DBBC7 /* UINavigationController+Completion.swift in Sources */,
 				7D6836622A1D6A79002DBBC7 /* UINavigationController+Appearance.swift in Sources */,
 				7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */,
 				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,
+				7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */,
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
 				7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */,
 				7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */,
@@ -449,6 +483,7 @@
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D6836512A1D1EB1002DBBC7 /* ActivityCoordinator.swift in Sources */,
 				7D6836532A1D1EB9002DBBC7 /* ActivityAssembly.swift in Sources */,
+				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */,
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
@@ -457,6 +492,7 @@
 				7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */,
 				7D6836672A1D6E74002DBBC7 /* Module.swift in Sources */,
 				7D68366A2A1D6ED5002DBBC7 /* WalletRootViewController.swift in Sources */,
+				7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */,
 				7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */,
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
