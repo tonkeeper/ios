@@ -7,8 +7,12 @@
 
 import Foundation
 
-protocol WalletRootModuleOutput {}
+protocol WalletRootModuleOutput: AnyObject {
+  func openQRScanner()
+}
 
-protocol WalletRootPresenterInput {}
+protocol WalletRootPresenterInput {
+  func didTapScanQRButton()
+}
 
 protocol WalletRootViewInput: AnyObject {}

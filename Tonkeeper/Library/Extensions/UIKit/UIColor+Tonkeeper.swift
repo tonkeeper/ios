@@ -60,4 +60,7 @@ extension UIColor {
     static let secondary = UIColor(named: "Colors/Text/Secondary")
     static let tertiary = UIColor(named: "Colors/Text/Tertiary")
   }
+  enum Accent {
+    static let blue = UIColor(named: "Colors/Accent/Blue")
+  }
 }

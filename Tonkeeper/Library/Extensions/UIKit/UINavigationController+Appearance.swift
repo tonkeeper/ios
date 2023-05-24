@@ -16,7 +16,8 @@ extension UINavigationController {
                                                    .font: TextStyle.h3.font]
     navigationBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.Text.primary ?? .white,
                                                         .font: TextStyle.h3.font]
-    
+
+    navigationBar.tintColor = .Accent.blue
     navigationBar.standardAppearance = navigationBarAppearance
     navigationBar.scrollEdgeAppearance = navigationBarAppearance
     navigationBar.compactAppearance = navigationBarAppearance

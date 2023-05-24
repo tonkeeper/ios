@@ -42,6 +42,23 @@ extension WalletRootViewController: WalletRootViewInput {
 
 private extension WalletRootViewController {
   func setup() {
-      title = "Wallet"
+    title = "Wallet"
+    setupScanQRButton()
+  }
+  
+  func setupScanQRButton() {
+    navigationItem.rightBarButtonItem = .init(image: .Icons.Buttons.scanQR,
+                                              style: .plain,
+                                              target: self,
+                                              action: #selector(didTapScanQRButton))
+  }
+}
+
+// MARK: - Actions
+
+private extension WalletRootViewController {
+  @objc
+  func didTapScanQRButton() {
+    presenter.didTapScanQRButton()
   }
 }

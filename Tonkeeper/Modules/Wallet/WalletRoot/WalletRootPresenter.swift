@@ -12,10 +12,13 @@ final class WalletRootPresenter {
   // MARK: - Module
   
   weak var viewInput: WalletRootViewInput?
+  weak var output: WalletRootModuleOutput?
 }
 
 // MARK: - WalletRootPresenterInput
 
 extension WalletRootPresenter: WalletRootPresenterInput {
-  
+  func didTapScanQRButton() {
+    output?.openQRScanner()
+  }
 }

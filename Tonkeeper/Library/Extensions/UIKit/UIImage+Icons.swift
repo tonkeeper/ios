@@ -9,6 +9,12 @@ import UIKit
 
 extension UIImage {
   enum Icons {
+    enum Buttons {
+      static var scanQR: UIImage? {
+        .init(named: "Icons/28/ic-qr-viewfinder-28")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     enum TabBar {
       static var wallet: UIImage? {
         .init(named: "Icons/28/ic-wallet-28")?.withRenderingMode(.alwaysTemplate)

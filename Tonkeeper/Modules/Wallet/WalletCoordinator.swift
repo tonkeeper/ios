@@ -29,4 +29,6 @@ private extension WalletCoordinator {
   }
 }
 
-extension WalletCoordinator: WalletRootModuleOutput {}
+extension WalletCoordinator: WalletRootModuleOutput {
+  func openQRScanner() {}
+}
