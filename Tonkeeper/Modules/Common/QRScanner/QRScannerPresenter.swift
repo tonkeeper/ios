@@ -18,6 +18,11 @@ final class QRScannerPresenter: NSObject {
   // MARK: - State
   
   private let captureSession = AVCaptureSession()
+  private var captureDevice: AVCaptureDevice? {
+    AVCaptureDevice.default(.builtInDualCamera,
+                            for: .video,
+                            position: .back)
+  }
 }
 
 // MARK: - QRScannerPresenterInput
@@ -25,6 +30,17 @@ final class QRScannerPresenter: NSObject {
 extension QRScannerPresenter: QRScannerPresenterInput {
   func viewDidLoad() {
     checkCameraPermission()
+  }
+  
+  func didToggleFlashligt(isSelected: Bool) {
+    guard let captureDevice = captureDevice,
+              captureDevice.hasTorch
+    else { return }
+    
+    try? captureDevice.lockForConfiguration()
+    try? captureDevice.setTorchModeOn(level: 1)
+    captureDevice.torchMode = isSelected ? .on : .off
+    captureDevice.unlockForConfiguration()
   }
 }
 
@@ -63,9 +79,7 @@ private extension QRScannerPresenter {
   }
   
   func setupCamera() {
-    guard let captureDevice = AVCaptureDevice.default(.builtInDualCamera,
-                                                      for: .video,
-                                                      position: .back) else {
+    guard let captureDevice = captureDevice else {
       return
     }
     

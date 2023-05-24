@@ -11,6 +11,8 @@ final class QRScannerView: UIView {
   
   let videoContainerView = UIView()
   let overlayView = UIView()
+  let flashlightButton = ToggleButton()
+  let titleLabel = UILabel()
   
   private let maskLayer = CAShapeLayer()
   private let cornersLayer = CAShapeLayer()
@@ -36,6 +38,17 @@ final class QRScannerView: UIView {
     
     cornersLayer.frame = holeRect
     cornersLayer.path = cornersPath(holeRect: holeRect)
+    
+    let flashlightButtonFrame = CGRect(x: bounds.width/2 - .flashlightButtonSide/2,
+                                       y: holeRect.maxY + .flashlightButtonTopOffset,
+                                       width: .flashlightButtonSide,
+                                       height: .flashlightButtonSide)
+    flashlightButton.frame = flashlightButtonFrame
+    flashlightButton.layer.cornerRadius = flashlightButtonFrame.height / 2
+    
+    titleLabel.sizeToFit()
+    titleLabel.frame.origin.y = holeRect.minY - titleLabel.frame.size.height - .titleBottomOffset
+    titleLabel.center.x = bounds.width / 2
   }
   
   func setVideoPreviewLayer(_ layer: CALayer) {
@@ -47,6 +60,9 @@ private extension QRScannerView {
   func setup() {
     addSubview(videoContainerView)
     videoContainerView.addSubview(overlayView)
+    overlayView.addSubview(flashlightButton)
+    overlayView.addSubview(titleLabel)
+    
     layer.addSublayer(cornersLayer)
     
     overlayView.backgroundColor = .black.withAlphaComponent(0.72)
@@ -58,6 +74,36 @@ private extension QRScannerView {
     
     maskLayer.fillRule = .evenOdd
     overlayView.layer.mask = maskLayer
+    
+    setupFlashlightButton()
+    setupTitleLabel()
+  }
+  
+  func setupFlashlightButton() {
+    flashlightButton.setBackgroundColor(
+      .Background.overlayLight ?? .black,
+      for: .deselected
+    )
+    flashlightButton.setBackgroundColor(
+      .white,
+      for: .selected
+    )
+    flashlightButton.setTintColor(
+      .white,
+      for: .deselected
+    )
+    flashlightButton.setTintColor(
+      .Icon.primaryAlternate ?? .black,
+      for: .selected
+    )
+    flashlightButton.setImage(.Icons.Buttons.flashlight,
+                              for: .normal)
+  }
+  
+  func setupTitleLabel() {
+    titleLabel.applyTextStyleFont(.h2)
+    titleLabel.textAlignment = .center
+    titleLabel.textColor = .white
   }
   
   func calculateHoleRect(bounds: CGRect) -> CGRect {
@@ -113,4 +159,7 @@ private extension CGFloat {
   static let cornerRadius: CGFloat = 8
   static let cornerSide: CGFloat = 24
   static let cornerWidth: CGFloat = 3
+  static let flashlightButtonSide: CGFloat = 56
+  static let flashlightButtonTopOffset: CGFloat = 32
+  static let titleBottomOffset: CGFloat = 32
 }

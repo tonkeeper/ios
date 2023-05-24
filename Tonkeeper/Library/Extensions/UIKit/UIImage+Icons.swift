@@ -13,6 +13,10 @@ extension UIImage {
       static var scanQR: UIImage? {
         .init(named: "Icons/28/ic-qr-viewfinder-28")?.withRenderingMode(.alwaysTemplate)
       }
+      
+      static var flashlight: UIImage? {
+        .init(named: "Icons/56/ic-flashlight-off-56")?.withRenderingMode(.alwaysTemplate)
+      }
     }
     
     enum TabBar {

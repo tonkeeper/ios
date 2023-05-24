@@ -11,6 +11,7 @@ protocol QRScannerModuleOutput: AnyObject {}
 
 protocol QRScannerPresenterInput {
   func viewDidLoad()
+  func didToggleFlashligt(isSelected: Bool)
 }
 
 protocol QRScannerViewInput: AnyObject {

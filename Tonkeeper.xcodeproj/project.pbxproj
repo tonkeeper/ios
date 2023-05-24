@@ -47,6 +47,7 @@
 		7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836772A1E662E002DBBC7 /* QRScannerView.swift */; };
 		7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836792A1E6653002DBBC7 /* QRScannerAssembly.swift */; };
 		7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68367B2A1E666D002DBBC7 /* QRScannerProtocols.swift */; };
+		7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68369F2A1EB644002DBBC7 /* ToggleButton.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -98,6 +99,7 @@
 		7D6836772A1E662E002DBBC7 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
 		7D6836792A1E6653002DBBC7 /* QRScannerAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerAssembly.swift; sourceTree = "<group>"; };
 		7D68367B2A1E666D002DBBC7 /* QRScannerProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerProtocols.swift; sourceTree = "<group>"; };
+		7D68369F2A1EB644002DBBC7 /* ToggleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleButton.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -124,6 +126,7 @@
 		7D6836152A1CAEAA002DBBC7 /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				7D68369D2A1EB60E002DBBC7 /* UIKit */,
 				7D6836162A1CAEB3002DBBC7 /* TextStyle */,
 				7DB8FB812A1BEF58005B4B11 /* Extensions */,
 			);
@@ -321,6 +324,22 @@
 			path = QRScanner;
 			sourceTree = "<group>";
 		};
+		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
+			isa = PBXGroup;
+			children = (
+				7D68369E2A1EB624002DBBC7 /* Buttons */,
+			);
+			path = UIKit;
+			sourceTree = "<group>";
+		};
+		7D68369E2A1EB624002DBBC7 /* Buttons */ = {
+			isa = PBXGroup;
+			children = (
+				7D68369F2A1EB644002DBBC7 /* ToggleButton.swift */,
+			);
+			path = Buttons;
+			sourceTree = "<group>";
+		};
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
@@ -485,6 +504,7 @@
 				7D6836532A1D1EB9002DBBC7 /* ActivityAssembly.swift in Sources */,
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
+				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
 				7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */,
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
@@ -647,6 +667,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YS34WB4Z9W;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
@@ -662,7 +683,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.tonkeeper.Tonkeeper;
+				PRODUCT_BUNDLE_IDENTIFIER = grigory.tonkeeper;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -680,6 +701,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YS34WB4Z9W;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
@@ -695,7 +717,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.tonkeeper.Tonkeeper;
+				PRODUCT_BUNDLE_IDENTIFIER = grigory.tonkeeper;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;

@@ -45,5 +45,11 @@ extension QRScannerViewController: QRScannerViewInput {
 // MARK: - Private
 
 private extension QRScannerViewController {
-  func setup() {}
+  func setup() {
+    customView.flashlightButton.didToggle = { [weak self] in
+      self?.presenter.didToggleFlashligt(isSelected: $0)
+    }
+    
+    customView.titleLabel.text = "Scan QR code"
+  }
 }
