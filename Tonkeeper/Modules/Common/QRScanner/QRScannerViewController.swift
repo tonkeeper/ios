@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import AVFoundation
 
 final class QRScannerViewController: GenericViewController<QRScannerView> {
   
@@ -29,12 +30,17 @@ final class QRScannerViewController: GenericViewController<QRScannerView> {
   override func viewDidLoad() {
     super.viewDidLoad()
     setup()
+    presenter.viewDidLoad()
   }
 }
 
 // MARK: - QRScannerViewInput
 
-extension QRScannerViewController: QRScannerViewInput {}
+extension QRScannerViewController: QRScannerViewInput {
+  func showVideoLayer(_ layer: CALayer) {
+    customView.setVideoPreviewLayer(layer)
+  }
+}
 
 // MARK: - Private
 

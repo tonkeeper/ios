@@ -5,10 +5,14 @@
 //  Created by Grigory on 24.5.23..
 //
 
-import Foundation
+import QuartzCore.CALayer
 
 protocol QRScannerModuleOutput: AnyObject {}
 
-protocol QRScannerPresenterInput {}
+protocol QRScannerPresenterInput {
+  func viewDidLoad()
+}
 
-protocol QRScannerViewInput: AnyObject {}
+protocol QRScannerViewInput: AnyObject {
+  func showVideoLayer(_ layer: CALayer)
+}
