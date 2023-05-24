@@ -16,4 +16,17 @@ final class WalletCoordinator: Coordinator<NavigationRouter> {
     self.walletAssembly = walletAssembly
     super.init(router: router)
   }
+  
+  override func start() {
+    openWalletRoot()
+  }
 }
+
+private extension WalletCoordinator {
+  func openWalletRoot() {
+    let module = walletAssembly.walletRootModule(output: self)
+    router.setPresentables([(module.view, nil)])
+  }
+}
+
+extension WalletCoordinator: WalletRootModuleOutput {}
