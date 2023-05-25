@@ -65,6 +65,7 @@ private extension QRScannerView {
     
     layer.addSublayer(cornersLayer)
     
+    backgroundColor = .black
     overlayView.backgroundColor = .black.withAlphaComponent(0.72)
     
     cornersLayer.strokeColor = UIColor.white.cgColor
