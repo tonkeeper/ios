@@ -16,6 +16,8 @@
 		7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928522A1F6411006B0A8A /* ConfigurableView.swift */; };
 		7D5928552A1F6C71006B0A8A /* Button.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928542A1F6C71006B0A8A /* Button.swift */; };
 		7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928582A1F8092006B0A8A /* Button.Configuration+Plain.swift */; };
+		7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59285B2A1FA5FE006B0A8A /* IconButton.swift */; };
+		7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59285D2A1FA75A006B0A8A /* Button.Configuration+Icon.swift */; };
 		7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */; };
 		7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */; };
 		7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */; };
@@ -76,6 +78,8 @@
 		7D5928522A1F6411006B0A8A /* ConfigurableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurableView.swift; sourceTree = "<group>"; };
 		7D5928542A1F6C71006B0A8A /* Button.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Button.swift; sourceTree = "<group>"; };
 		7D5928582A1F8092006B0A8A /* Button.Configuration+Plain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button.Configuration+Plain.swift"; sourceTree = "<group>"; };
+		7D59285B2A1FA5FE006B0A8A /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
+		7D59285D2A1FA75A006B0A8A /* Button.Configuration+Icon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button.Configuration+Icon.swift"; sourceTree = "<group>"; };
 		7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyle.swift; sourceTree = "<group>"; };
 		7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UILabel+TextStyle.swift"; sourceTree = "<group>"; };
 		7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+TextStyle.swift"; sourceTree = "<group>"; };
@@ -384,6 +388,8 @@
 				7D68369F2A1EB644002DBBC7 /* ToggleButton.swift */,
 				7D5928542A1F6C71006B0A8A /* Button.swift */,
 				7D5928582A1F8092006B0A8A /* Button.Configuration+Plain.swift */,
+				7D59285D2A1FA75A006B0A8A /* Button.Configuration+Icon.swift */,
+				7D59285B2A1FA5FE006B0A8A /* IconButton.swift */,
 			);
 			path = Buttons;
 			sourceTree = "<group>";
@@ -547,6 +553,7 @@
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
 				7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */,
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
+				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
 				7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */,
 				7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */,
 				7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */,
@@ -555,6 +562,7 @@
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D6836512A1D1EB1002DBBC7 /* ActivityCoordinator.swift in Sources */,
 				7D6836532A1D1EB9002DBBC7 /* ActivityAssembly.swift in Sources */,
+				7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */,
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,

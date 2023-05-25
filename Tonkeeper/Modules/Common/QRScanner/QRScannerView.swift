@@ -81,7 +81,7 @@ private extension QRScannerView {
   
   func setupFlashlightButton() {
     flashlightButton.setBackgroundColor(
-      .Background.overlayLight ?? .black,
+      .Background.overlayLight,
       for: .deselected
     )
     flashlightButton.setBackgroundColor(
@@ -93,7 +93,7 @@ private extension QRScannerView {
       for: .deselected
     )
     flashlightButton.setTintColor(
-      .Icon.primaryAlternate ?? .black,
+      .Icon.primaryAlternate,
       for: .selected
     )
     flashlightButton.setImage(.Icons.Buttons.flashlight,

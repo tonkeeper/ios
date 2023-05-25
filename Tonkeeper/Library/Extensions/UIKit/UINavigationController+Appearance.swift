@@ -12,9 +12,9 @@ extension UINavigationController {
     let navigationBarAppearance = UINavigationBarAppearance()
     navigationBarAppearance.configureWithOpaqueBackground()
     navigationBarAppearance.backgroundColor = .Background.page
-    navigationBarAppearance.titleTextAttributes = [.foregroundColor: UIColor.Text.primary ?? .white,
+    navigationBarAppearance.titleTextAttributes = [.foregroundColor: UIColor.Text.primary,
                                                    .font: TextStyle.h3.font]
-    navigationBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.Text.primary ?? .white,
+    navigationBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.Text.primary,
                                                         .font: TextStyle.h3.font]
 
     navigationBar.tintColor = .Accent.blue
