@@ -18,4 +18,5 @@ protocol WalletHeaderPresenterInput {
 
 protocol WalletHeaderViewInput: AnyObject {
   func update(with model: WalletHeaderView.Model)
+  func updateButtons(with models: [WalletHeaderButtonModel])
 }

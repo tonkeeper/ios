@@ -22,6 +22,9 @@ extension WalletHeaderPresenter: WalletHeaderPresenterInput {
     let model = WalletHeaderView.Model(balance: "$24,374",
                                        address: "EQF2…G21Z")
     viewInput?.update(with: model)
+    
+    let buttonModels = createHeaderButtonModels()
+    viewInput?.updateButtons(with: buttonModels)
   }
   
   func didTapAddressButton() {}
@@ -30,3 +33,17 @@ extension WalletHeaderPresenter: WalletHeaderPresenterInput {
 // MARK: - WalletHeaderModuleInput
 
 extension WalletHeaderPresenter: WalletHeaderModuleInput {}
+
+// MARK: - WalletHeaderPresenter
+
+private extension WalletHeaderPresenter {
+  func createHeaderButtonModels() -> [WalletHeaderButtonModel] {
+    let types: [WalletHeaderButtonModel.ButtonType] = [.buy, .send, .receive, .sell]
+    return types.map {
+      let buttonModel = Button.Model(icon: $0.icon)
+      let iconButtonModel = IconButton.Model(buttonModel: buttonModel, title: $0.title)
+      let model = WalletHeaderButtonModel(viewModel: iconButtonModel) {}
+      return model
+    }
+  }
+}

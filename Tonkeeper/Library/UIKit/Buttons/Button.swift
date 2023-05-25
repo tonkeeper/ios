@@ -9,7 +9,7 @@ import UIKit
 
 extension UIControl.State: Hashable {}
 
-final class Button: UIControl {
+final class Button: UIControlClosure {
   
   enum `Type` {
     case primary
@@ -118,8 +118,8 @@ final class Button: UIControl {
   
   let titleLabel = UILabel()
   let iconImageView = UIImageView()
-  let contentStackView = UIStackView()
-
+  
+  private let contentStackView = UIStackView()
   private let maskLayer = CAShapeLayer()
   private var contentLeftConstraint: NSLayoutConstraint?
   private var contentRightConstraint: NSLayoutConstraint?

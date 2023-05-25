@@ -35,6 +35,8 @@ final class WalletHeaderView: UIView, ConfigurableView {
     verticalSpacing: .constant(.topSpacing)
   )
   
+  let buttonsView = WalletHeaderButtonsView()
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -67,13 +69,19 @@ private extension WalletHeaderView {
     stackView.addArrangedSubview(addressButton)
     
     addSubview(stackView)
+    addSubview(buttonsView)
     
     stackView.translatesAutoresizingMaskIntoConstraints = false
+    buttonsView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       stackView.topAnchor.constraint(equalTo: topAnchor, constant: .amountTopSpacing),
       stackView.leftAnchor.constraint(equalTo: leftAnchor),
-      stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      stackView.rightAnchor.constraint(equalTo: rightAnchor)
+      stackView.rightAnchor.constraint(equalTo: rightAnchor),
+      
+      buttonsView.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: .buttonsTopSpacing),
+      buttonsView.leftAnchor.constraint(equalTo: leftAnchor),
+      buttonsView.rightAnchor.constraint(equalTo: rightAnchor),
+      buttonsView.bottomAnchor.constraint(equalTo: bottomAnchor)
     ])
   }
 }
@@ -81,4 +89,5 @@ private extension WalletHeaderView {
 private extension CGFloat {
   static let amountTopSpacing: CGFloat = 48
   static let topSpacing: CGFloat = 8
+  static let buttonsTopSpacing: CGFloat = 16
 }

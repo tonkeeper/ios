@@ -17,6 +17,28 @@ extension UIImage {
       static var flashlight: UIImage? {
         .init(named: "Icons/56/ic-flashlight-off-56")?.withRenderingMode(.alwaysTemplate)
       }
+      
+      enum Wallet {
+        static var buy: UIImage? {
+          .init(named: "Icons/28/ic-plus-28")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var send: UIImage? {
+          .init(named: "Icons/28/ic-arrow-up-28")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var recieve: UIImage? {
+          .init(named: "Icons/28/ic-arrow-down-28")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var sell: UIImage? {
+          .init(named: "Icons/28/ic-minus-28")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var swap: UIImage? {
+          .init(named: "Icons/28/ic-swap-horizontal-28")?.withRenderingMode(.alwaysTemplate)
+        }
+      }
     }
     
     enum TabBar {

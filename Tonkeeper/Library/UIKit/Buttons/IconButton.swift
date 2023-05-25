@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class IconButton: UIControl {
+final class IconButton: UIControlClosure {
   
   let titleLabel: UILabel = {
     let label = UILabel()
@@ -56,12 +56,11 @@ private extension IconButton {
     
     NSLayoutConstraint.activate([
       button.topAnchor.constraint(equalTo: topAnchor, constant: .iconTopSpace),
-      button.leftAnchor.constraint(greaterThanOrEqualTo: leftAnchor, constant: .iconSideSpace),
-      button.rightAnchor.constraint(greaterThanOrEqualTo: rightAnchor, constant: -.iconSideSpace),
+      button.leftAnchor.constraint(equalTo: leftAnchor, constant: .iconSideSpace),
+      button.rightAnchor.constraint(equalTo: rightAnchor, constant: -.iconSideSpace),
       
       titleLabel.topAnchor.constraint(equalTo: button.bottomAnchor, constant: .titleTopSpace),
-      titleLabel.leftAnchor.constraint(equalTo: leftAnchor),
-      titleLabel.rightAnchor.constraint(equalTo: rightAnchor),
+      titleLabel.centerXAnchor.constraint(equalTo: centerXAnchor),
       titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -.titleBottomSpace)
     ])
   }

@@ -39,6 +39,18 @@ extension WalletHeaderViewController: WalletHeaderViewInput {
   func update(with model: WalletHeaderView.Model) {
     customView.configure(model: model)
   }
+  
+  func updateButtons(with models: [WalletHeaderButtonModel]) {
+    let buttons: [IconButton] = models.map { model in
+      let iconButton = IconButton()
+      iconButton.configure(model: model.viewModel)
+      iconButton.addAction(.init(handler: {
+        model.handler?()
+      }), for: .touchUpInside)
+      return iconButton
+    }
+    customView.buttonsView.buttons = buttons
+  }
 }
 
 // MARK: - Private
