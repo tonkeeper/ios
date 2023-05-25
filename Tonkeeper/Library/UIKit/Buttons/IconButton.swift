@@ -66,7 +66,9 @@ private extension IconButton {
     ])
   }
   
-  func updateTitleColor() {}
+  func updateTitleColor() {
+    titleLabel.textColor = state == .highlighted ? .Text.primary : .Text.secondary
+  }
 }
 
 private extension CGFloat {
