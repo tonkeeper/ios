@@ -13,10 +13,16 @@ final class WalletRootViewController: GenericViewController<WalletRootView> {
   
   private let presenter: WalletRootPresenterInput
   
+  // MARK: - Children
+  
+  private let headerViewController: UIViewController
+  
   // MARK: - Init
   
-  init(presenter: WalletRootPresenterInput) {
+  init(presenter: WalletRootPresenterInput,
+       headerViewController: UIViewController) {
     self.presenter = presenter
+    self.headerViewController = headerViewController
     super.init(nibName: nil, bundle: nil)
   }
   

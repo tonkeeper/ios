@@ -13,6 +13,7 @@ final class WalletRootPresenter {
   
   weak var viewInput: WalletRootViewInput?
   weak var output: WalletRootModuleOutput?
+  weak var headerInput: WalletHeaderModuleInput?
 }
 
 // MARK: - WalletRootPresenterInput
@@ -22,3 +23,7 @@ extension WalletRootPresenter: WalletRootPresenterInput {
     output?.openQRScanner()
   }
 }
+
+// MARK: - WalletHeaderModuleOutput
+
+extension WalletRootPresenter: WalletHeaderModuleOutput {}
