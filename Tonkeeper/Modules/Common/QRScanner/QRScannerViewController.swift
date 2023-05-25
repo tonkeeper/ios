@@ -51,5 +51,12 @@ private extension QRScannerViewController {
     }
     
     customView.titleLabel.text = "Scan QR code"
+    
+    let swipeButton = Button(configuration: .Header.button)
+    swipeButton.configure(model: .init(icon: .Icons.Buttons.Header.swipe))
+    swipeButton.addAction(.init(handler: { [weak self] in
+      self?.presenter.didTapSwipeButton()
+    }), for: .touchUpInside)
+    navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeButton)
   }
 }

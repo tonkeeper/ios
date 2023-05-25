@@ -23,6 +23,7 @@
 		7D5928672A1FBB56006B0A8A /* Button+ConfigurableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928662A1FBB56006B0A8A /* Button+ConfigurableView.swift */; };
 		7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928682A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift */; };
 		7D5928722A1FC981006B0A8A /* WalletHeaderButtonType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928712A1FC981006B0A8A /* WalletHeaderButtonType.swift */; };
+		7D5928742A2007C0006B0A8A /* Button.Configuration+Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928732A2007C0006B0A8A /* Button.Configuration+Header.swift */; };
 		7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */; };
 		7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */; };
 		7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */; };
@@ -90,6 +91,7 @@
 		7D5928662A1FBB56006B0A8A /* Button+ConfigurableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button+ConfigurableView.swift"; sourceTree = "<group>"; };
 		7D5928682A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IconButton+ConfigurableView.swift"; sourceTree = "<group>"; };
 		7D5928712A1FC981006B0A8A /* WalletHeaderButtonType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderButtonType.swift; sourceTree = "<group>"; };
+		7D5928732A2007C0006B0A8A /* Button.Configuration+Header.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button.Configuration+Header.swift"; sourceTree = "<group>"; };
 		7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyle.swift; sourceTree = "<group>"; };
 		7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UILabel+TextStyle.swift"; sourceTree = "<group>"; };
 		7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+TextStyle.swift"; sourceTree = "<group>"; };
@@ -427,6 +429,7 @@
 				7D5928662A1FBB56006B0A8A /* Button+ConfigurableView.swift */,
 				7D5928582A1F8092006B0A8A /* Button.Configuration+Plain.swift */,
 				7D59285D2A1FA75A006B0A8A /* Button.Configuration+Icon.swift */,
+				7D5928732A2007C0006B0A8A /* Button.Configuration+Header.swift */,
 				7D59285B2A1FA5FE006B0A8A /* IconButton.swift */,
 				7D5928682A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift */,
 			);
@@ -600,6 +603,7 @@
 				7D5928552A1F6C71006B0A8A /* Button.swift in Sources */,
 				7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
+				7D5928742A2007C0006B0A8A /* Button.Configuration+Header.swift in Sources */,
 				7D6836512A1D1EB1002DBBC7 /* ActivityCoordinator.swift in Sources */,
 				7D6836532A1D1EB9002DBBC7 /* ActivityAssembly.swift in Sources */,
 				7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */,

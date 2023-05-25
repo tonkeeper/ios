@@ -7,11 +7,14 @@
 
 import QuartzCore.CALayer
 
-protocol QRScannerModuleOutput: AnyObject {}
+protocol QRScannerModuleOutput: AnyObject {
+  func qrScannerModuleDidFinish()
+}
 
 protocol QRScannerPresenterInput {
   func viewDidLoad()
   func didToggleFlashligt(isSelected: Bool)
+  func didTapSwipeButton()
 }
 
 protocol QRScannerViewInput: AnyObject {

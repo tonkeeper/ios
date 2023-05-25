@@ -13,6 +13,12 @@ final class QRScannerAssembly {
     presenter.output = output
     let viewController = QRScannerViewController(presenter: presenter)
     presenter.viewInput = viewController
-    return Module(view: viewController, input: Void())
+    
+    let appearance = UINavigationBarAppearance()
+    appearance.configureWithTransparentBackground()
+    
+    let navigationController = UINavigationController(rootViewController: viewController)
+    navigationController.navigationBar.standardAppearance = appearance
+    return Module(view: navigationController, input: Void())
   }
 }

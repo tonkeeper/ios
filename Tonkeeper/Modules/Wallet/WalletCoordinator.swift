@@ -40,4 +40,8 @@ extension WalletCoordinator: WalletRootModuleOutput {
 
 // MARK: - QRScannerModuleOutput
 
-extension WalletCoordinator: QRScannerModuleOutput {}
+extension WalletCoordinator: QRScannerModuleOutput {
+  func qrScannerModuleDidFinish() {
+    router.dismiss()
+  }
+}

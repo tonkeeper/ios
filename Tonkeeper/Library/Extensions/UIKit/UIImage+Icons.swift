@@ -39,6 +39,12 @@ extension UIImage {
           .init(named: "Icons/28/ic-swap-horizontal-28")?.withRenderingMode(.alwaysTemplate)
         }
       }
+      
+      enum Header {
+        static var swipe: UIImage? {
+          .init(named: "Icons/16/ic-chevron-down-16")?.withRenderingMode(.alwaysTemplate)
+        }
+      }
     }
     
     enum TabBar {

@@ -42,6 +42,10 @@ extension QRScannerPresenter: QRScannerPresenterInput {
     captureDevice.torchMode = isSelected ? .on : .off
     captureDevice.unlockForConfiguration()
   }
+  
+  func didTapSwipeButton() {
+    output?.qrScannerModuleDidFinish()
+  }
 }
 
 // MARK: - Camera
