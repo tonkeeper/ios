@@ -12,6 +12,8 @@
 		7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */; };
 		7D59284B2A1F5797006B0A8A /* WalletHeaderPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */; };
 		7D59284D2A1F579E006B0A8A /* WalletHeaderProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59284C2A1F579E006B0A8A /* WalletHeaderProtocols.swift */; };
+		7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59284F2A1F614B006B0A8A /* SpacingView.swift */; };
+		7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928522A1F6411006B0A8A /* ConfigurableView.swift */; };
 		7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */; };
 		7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */; };
 		7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */; };
@@ -68,6 +70,8 @@
 		7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderView.swift; sourceTree = "<group>"; };
 		7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderPresenter.swift; sourceTree = "<group>"; };
 		7D59284C2A1F579E006B0A8A /* WalletHeaderProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderProtocols.swift; sourceTree = "<group>"; };
+		7D59284F2A1F614B006B0A8A /* SpacingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacingView.swift; sourceTree = "<group>"; };
+		7D5928522A1F6411006B0A8A /* ConfigurableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurableView.swift; sourceTree = "<group>"; };
 		7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyle.swift; sourceTree = "<group>"; };
 		7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UILabel+TextStyle.swift"; sourceTree = "<group>"; };
 		7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+TextStyle.swift"; sourceTree = "<group>"; };
@@ -142,9 +146,26 @@
 			path = WalletHeader;
 			sourceTree = "<group>";
 		};
+		7D59284E2A1F6144006B0A8A /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D59284F2A1F614B006B0A8A /* SpacingView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7D5928512A1F6404006B0A8A /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				7D5928522A1F6411006B0A8A /* ConfigurableView.swift */,
+			);
+			path = Protocols;
+			sourceTree = "<group>";
+		};
 		7D6836152A1CAEAA002DBBC7 /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				7D5928512A1F6404006B0A8A /* Protocols */,
 				7D68369D2A1EB60E002DBBC7 /* UIKit */,
 				7D6836162A1CAEB3002DBBC7 /* TextStyle */,
 				7DB8FB812A1BEF58005B4B11 /* Extensions */,
@@ -347,6 +368,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D59284E2A1F6144006B0A8A /* Views */,
 				7D68369E2A1EB624002DBBC7 /* Buttons */,
 			);
 			path = UIKit;
@@ -520,6 +542,7 @@
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
 				7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */,
 				7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */,
+				7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */,
 				7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D6836512A1D1EB1002DBBC7 /* ActivityCoordinator.swift in Sources */,
@@ -547,6 +570,7 @@
 				7D6836302A1CF471002DBBC7 /* UITabBarController+Completions.swift in Sources */,
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
 				7D6836562A1D5951002DBBC7 /* BrowserCoordinator.swift in Sources */,
+				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,

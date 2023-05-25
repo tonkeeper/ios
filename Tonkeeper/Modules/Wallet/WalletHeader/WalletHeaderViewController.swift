@@ -29,15 +29,35 @@ final class WalletHeaderViewController: GenericViewController<WalletHeaderView> 
   override func viewDidLoad() {
     super.viewDidLoad()
     setup()
+    presenter.viewDidLoad()
   }
 }
 
 // MARK: - WalletHeaderViewInput
 
-extension WalletHeaderViewController: WalletHeaderViewInput {}
+extension WalletHeaderViewController: WalletHeaderViewInput {
+  func update(with model: WalletHeaderView.Model) {
+    customView.configure(model: model)
+  }
+}
 
 // MARK: - Private
 
 private extension WalletHeaderViewController {
-  func setup() {}
+  func setup() {
+    customView.addressButton.addTarget(
+      self,
+      action: #selector(didTapAddressButton),
+      for: .touchUpInside
+    )
+  }
+}
+
+// MARK: - Actions
+
+private extension WalletHeaderViewController {
+  @objc
+  func didTapAddressButton() {
+    presenter.didTapAddressButton()
+  }
 }

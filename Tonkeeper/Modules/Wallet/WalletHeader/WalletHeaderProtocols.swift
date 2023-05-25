@@ -11,6 +11,11 @@ protocol WalletHeaderModuleOutput: AnyObject {}
 
 protocol WalletHeaderModuleInput: AnyObject {}
 
-protocol WalletHeaderPresenterInput {}
+protocol WalletHeaderPresenterInput {
+  func viewDidLoad()
+  func didTapAddressButton()
+}
 
-protocol WalletHeaderViewInput: AnyObject {}
+protocol WalletHeaderViewInput: AnyObject {
+  func update(with model: WalletHeaderView.Model)
+}

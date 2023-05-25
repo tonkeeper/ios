@@ -17,7 +17,15 @@ final class WalletHeaderPresenter {
 
 // MARK: - WalletHeaderPresenterIntput
 
-extension WalletHeaderPresenter: WalletHeaderPresenterInput {}
+extension WalletHeaderPresenter: WalletHeaderPresenterInput {
+  func viewDidLoad() {
+    let model = WalletHeaderView.Model(balance: "$24,374",
+                                       address: "EQF2…G21Z")
+    viewInput?.update(with: model)
+  }
+  
+  func didTapAddressButton() {}
+}
 
 // MARK: - WalletHeaderModuleInput
 
