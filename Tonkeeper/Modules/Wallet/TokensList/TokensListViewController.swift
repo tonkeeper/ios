@@ -13,6 +13,10 @@ class TokensListViewController: GenericViewController<TokensListView> {
   // MARK: - Module
 
   private let presenter: TokensListPresenterInput
+  
+  // MARK: - Collection
+  
+  private lazy var collectionController = TokensListCollectionController(collectionView: customView.collectionView)
 
   // MARK: - Init
 

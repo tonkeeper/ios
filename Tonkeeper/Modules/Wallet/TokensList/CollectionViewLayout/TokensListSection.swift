@@ -13,4 +13,7 @@ struct TokensListSection {
     case application
     case collectibles
   }
+  
+  let type: SectionType
+  let items: [AnyHashable]
 }
