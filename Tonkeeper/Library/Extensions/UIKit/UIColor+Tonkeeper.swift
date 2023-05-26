@@ -62,6 +62,8 @@ extension UIColor {
   }
   enum Accent {
     static let blue = UIColor.named("Colors/Accent/Blue")
+    static let green = UIColor.named("Colors/Accent/Green")
+    static let red = UIColor.named("Colors/Accent/Red")
   }
   
   private static func named(_ name: String) -> UIColor {
