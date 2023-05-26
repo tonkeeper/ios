@@ -50,6 +50,18 @@ private extension WalletRootViewController {
   func setup() {
     title = "Wallet"
     setupScanQRButton()
+    
+    
+    addChild(headerViewController)
+    view.addSubview(headerViewController.view)
+    headerViewController.didMove(toParent: self)
+    
+    headerViewController.view.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+      headerViewController.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+      headerViewController.view.leftAnchor.constraint(equalTo: view.leftAnchor),
+      headerViewController.view.rightAnchor.constraint(equalTo: view.rightAnchor),
+    ])
   }
   
   func setupScanQRButton() {
