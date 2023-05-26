@@ -25,6 +25,9 @@
 		7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928682A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift */; };
 		7D5928722A1FC981006B0A8A /* WalletHeaderButtonType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928712A1FC981006B0A8A /* WalletHeaderButtonType.swift */; };
 		7D5928742A2007C0006B0A8A /* Button.Configuration+Header.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928732A2007C0006B0A8A /* Button.Configuration+Header.swift */; };
+		7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928772A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift */; };
+		7D59287A2A20BF36006B0A8A /* TokensListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928792A20BF36006B0A8A /* TokensListSection.swift */; };
+		7D59287D2A20C92E006B0A8A /* TokensListTokensSectionBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59287C2A20C92D006B0A8A /* TokensListTokensSectionBackgroundView.swift */; };
 		7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */; };
 		7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */; };
 		7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */; };
@@ -97,6 +100,9 @@
 		7D5928682A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IconButton+ConfigurableView.swift"; sourceTree = "<group>"; };
 		7D5928712A1FC981006B0A8A /* WalletHeaderButtonType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderButtonType.swift; sourceTree = "<group>"; };
 		7D5928732A2007C0006B0A8A /* Button.Configuration+Header.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button.Configuration+Header.swift"; sourceTree = "<group>"; };
+		7D5928772A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListCollectionLayoutConfigurator.swift; sourceTree = "<group>"; };
+		7D5928792A20BF36006B0A8A /* TokensListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListSection.swift; sourceTree = "<group>"; };
+		7D59287C2A20C92D006B0A8A /* TokensListTokensSectionBackgroundView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListTokensSectionBackgroundView.swift; sourceTree = "<group>"; };
 		7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyle.swift; sourceTree = "<group>"; };
 		7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UILabel+TextStyle.swift"; sourceTree = "<group>"; };
 		7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+TextStyle.swift"; sourceTree = "<group>"; };
@@ -166,6 +172,8 @@
 		1E7B83161623A25AF6AC258B /* TokensList */ = {
 			isa = PBXGroup;
 			children = (
+				7D59287B2A20C916006B0A8A /* Views */,
+				7D5928762A20BDE2006B0A8A /* CollectionViewLayout */,
 				A3B82E8B681EE6CE930E250D /* TokensListViewController.swift */,
 				FA3EB126F410EC784A834E04 /* TokensListView.swift */,
 				747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */,
@@ -225,6 +233,23 @@
 				7D5928712A1FC981006B0A8A /* WalletHeaderButtonType.swift */,
 			);
 			path = Models;
+			sourceTree = "<group>";
+		};
+		7D5928762A20BDE2006B0A8A /* CollectionViewLayout */ = {
+			isa = PBXGroup;
+			children = (
+				7D5928772A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift */,
+				7D5928792A20BF36006B0A8A /* TokensListSection.swift */,
+			);
+			path = CollectionViewLayout;
+			sourceTree = "<group>";
+		};
+		7D59287B2A20C916006B0A8A /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D59287C2A20C92D006B0A8A /* TokensListTokensSectionBackgroundView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		7D6836152A1CAEAA002DBBC7 /* Library */ = {
@@ -619,9 +644,11 @@
 				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
 				7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */,
 				7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */,
+				7D59287D2A20C92E006B0A8A /* TokensListTokensSectionBackgroundView.swift in Sources */,
 				7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */,
 				7D5928552A1F6C71006B0A8A /* Button.swift in Sources */,
 				7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */,
+				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D5928742A2007C0006B0A8A /* Button.Configuration+Header.swift in Sources */,
 				7D6836512A1D1EB1002DBBC7 /* ActivityCoordinator.swift in Sources */,
@@ -647,6 +674,7 @@
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,
 				7D68366E2A1D6F1E002DBBC7 /* WalletRootView.swift in Sources */,
 				7D5928612A1FB62A006B0A8A /* WalletHeaderButtonsView.swift in Sources */,
+				7D59287A2A20BF36006B0A8A /* TokensListSection.swift in Sources */,
 				7D68364A2A1D1052002DBBC7 /* WalletAssembly.swift in Sources */,
 				7D68363B2A1CFF74002DBBC7 /* AppCoordinator.swift in Sources */,
 				7D6836302A1CF471002DBBC7 /* UITabBarController+Completions.swift in Sources */,
