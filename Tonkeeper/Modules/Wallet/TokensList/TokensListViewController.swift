@@ -40,7 +40,11 @@ class TokensListViewController: GenericViewController<TokensListView> {
 
 // MARK: - TokensListViewInput
 
-extension TokensListViewController: TokensListViewInput {}
+extension TokensListViewController: TokensListViewInput {
+  func presentSections(_ sections: [TokensListSection]) {
+    collectionController.sections = sections
+  }
+}
 
 // MARK: - Private
 

@@ -16,4 +16,6 @@ protocol TokensListPresenterInput {
   func viewDidLoad()
 }
 
-protocol TokensListViewInput: AnyObject {}
+protocol TokensListViewInput: AnyObject {
+  func presentSections(_ sections: [TokensListSection])
+}

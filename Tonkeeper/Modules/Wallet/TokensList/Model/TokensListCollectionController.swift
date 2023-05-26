@@ -21,6 +21,8 @@ final class TokensListCollectionController {
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
     dataSource = createDataSource(collectionView: collectionView)
+    collectionView.register(TokenListTokenCell.self,
+                            forCellWithReuseIdentifier: TokenListTokenCell.reuseIdentifier)
   }
 }
 

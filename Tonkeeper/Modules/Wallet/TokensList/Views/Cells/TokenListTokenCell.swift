@@ -8,8 +8,8 @@
 import UIKit
 
 final class TokenListTokenCell: UICollectionViewCell, Reusable, ConfigurableView {
-  struct Model {
-    static var cellType: Reusable.Type = TokenListTokenCell.self
+  struct Model: Hashable {
+    let id = UUID()
   }
   
   func configure(model: Model) {}

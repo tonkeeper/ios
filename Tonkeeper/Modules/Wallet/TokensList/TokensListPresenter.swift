@@ -19,7 +19,9 @@ final class TokensListPresenter {
 // MARK: - TokensListPresenterIntput
 
 extension TokensListPresenter: TokensListPresenterInput {
-  func viewDidLoad() {}
+  func viewDidLoad() {
+    loadFakeSections()
+  }
 }
 
 // MARK: - TokensListModuleInput
@@ -28,4 +30,15 @@ extension TokensListPresenter: TokensListModuleInput {}
 
 // MARK: - Private
 
-private extension TokensListPresenter {}
+private extension TokensListPresenter {
+  func loadFakeSections() {
+    
+    let tokenItems = (0...500).map { _ in
+      TokenListTokenCell.Model()
+    }
+    let tokensSection = TokensListSection(type: .token,
+                                          items: tokenItems)
+    
+    viewInput?.presentSections([tokensSection])
+  }
+}

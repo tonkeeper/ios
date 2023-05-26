@@ -14,7 +14,7 @@ struct TokensListCollectionLayoutConfigurator {
       let sectionType = section(sectionIndex)
       return self.createLayoutSection(type: sectionType, environment: environment)
     }
-    
+    layout.register(TokensListTokensSectionBackgroundView.self, forDecorationViewOfKind: .tokensSectionBackgroundElementKid)
     return layout
   }
 }
