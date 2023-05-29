@@ -75,6 +75,7 @@
 		7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292822A24BD58005B83DF /* PageViewController.swift */; };
 		7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */; };
 		7D9292882A24CCB8005B83DF /* PagingContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292872A24CCB8005B83DF /* PagingContentViewController.swift */; };
+		7D92928B2A24DB50005B83DF /* ScrollContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92928A2A24DB50005B83DF /* ScrollContainerViewController.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -157,6 +158,7 @@
 		7D9292822A24BD58005B83DF /* PageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewController.swift; sourceTree = "<group>"; };
 		7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewControllerCell.swift; sourceTree = "<group>"; };
 		7D9292872A24CCB8005B83DF /* PagingContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagingContentViewController.swift; sourceTree = "<group>"; };
+		7D92928A2A24DB50005B83DF /* ScrollContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollContainerViewController.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -446,6 +448,7 @@
 		7D68365E2A1D6998002DBBC7 /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
+				7D9292892A24DB3F005B83DF /* ScrollContainerViewController */,
 				7D9292862A24CC9B005B83DF /* PagingContentViewController */,
 				7D9292812A24BD3B005B83DF /* PageViewController */,
 				7D68365F2A1D69A3002DBBC7 /* GenericViewController.swift */,
@@ -532,6 +535,14 @@
 				7D9292872A24CCB8005B83DF /* PagingContentViewController.swift */,
 			);
 			path = PagingContentViewController;
+			sourceTree = "<group>";
+		};
+		7D9292892A24DB3F005B83DF /* ScrollContainerViewController */ = {
+			isa = PBXGroup;
+			children = (
+				7D92928A2A24DB50005B83DF /* ScrollContainerViewController.swift */,
+			);
+			path = ScrollContainerViewController;
 			sourceTree = "<group>";
 		};
 		7DB8FB592A1BCC92005B4B11 = {
@@ -687,6 +698,7 @@
 				7D5928672A1FBB56006B0A8A /* Button+ConfigurableView.swift in Sources */,
 				7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */,
 				7D68362C2A1CE874002DBBC7 /* UINavigationController+Completion.swift in Sources */,
+				7D92928B2A24DB50005B83DF /* ScrollContainerViewController.swift in Sources */,
 				7D6836622A1D6A79002DBBC7 /* UINavigationController+Appearance.swift in Sources */,
 				7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */,
 				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,

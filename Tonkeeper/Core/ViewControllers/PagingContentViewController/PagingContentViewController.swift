@@ -7,10 +7,17 @@
 
 import UIKit
 
+protocol PagingContentViewControllerDelegate: AnyObject {
+  func pagingContentViewController(_ pagingContentViewController: PagingContentViewController,
+                                didSelectPageAt index: Int)
+  func pagingContentViewController(_ pagingContentViewController: PagingContentViewController,
+                                didUpdateContentHeightAt index: Int)
+}
+
 protocol PagingContent: UIViewController {
   var itemTitle: String { get }
   var contentHeight: CGFloat { get }
-  var didChangeContentHeight: (() -> Void)? { get set  }
+  var didChangeContentHeight: ((CGFloat) -> Void)? { get set  }
 }
 
 protocol PagingScrollableContent: PagingContent {
@@ -18,6 +25,8 @@ protocol PagingScrollableContent: PagingContent {
 }
 
 final class PagingContentViewController: UIViewController {
+  weak var delegate: PagingContentViewControllerDelegate?
+  
   private let pageViewController = PageViewController()
   
   var contentViewControllers = [PagingContent]() {
@@ -44,6 +53,13 @@ private extension PagingContentViewController {
   func reconfigure() {
     guard isViewLoaded else { return }
     pageViewController.reload()
+    
+    guard !contentViewControllers.isEmpty else { return }
+    startObserveContentHeight(page: contentViewControllers[0])
+    delegate?.pagingContentViewController(
+      self,
+      didUpdateContentHeightAt: pageViewController.selectedIndex
+    )
   }
   
   func setupPageViewController() {
@@ -57,8 +73,12 @@ private extension PagingContentViewController {
   
   func startObserveContentHeight(page: PagingContent) {
     contentViewControllers.forEach { $0.didChangeContentHeight = nil }
-    page.didChangeContentHeight = {
-      
+    page.didChangeContentHeight = { [weak self] _ in
+      guard let self = self else { return }
+      self.delegate?.pagingContentViewController(
+        self,
+        didUpdateContentHeightAt: self.pageViewController.selectedIndex
+      )
     }
   }
 }
@@ -80,5 +100,9 @@ extension PagingContentViewController: PageViewControllerDelegate {
   
   func pageViewController(_ pageViewController: PageViewController, didSelectItemAt index: Int) {
     startObserveContentHeight(page: contentViewControllers[index])
+    delegate?.pagingContentViewController(
+      self,
+      didUpdateContentHeightAt: pageViewController.selectedIndex
+    )
   }
 }
