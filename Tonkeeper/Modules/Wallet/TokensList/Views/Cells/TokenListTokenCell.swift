@@ -6,7 +6,6 @@
 //
 
 import UIKit
-import SwiftUI
 
 final class TokenListTokenCell: UICollectionViewCell, Reusable, ConfigurableView {
   struct Model: Hashable {

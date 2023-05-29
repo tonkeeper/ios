@@ -75,12 +75,57 @@ private extension TokensListPresenter {
             fiatAmount: "$ 137.17")
     ]
     
+    let collectibleItems: [TokensListCollectibleCell.Model] = [
+      .init(title: "Cry Yui",
+            subtitle: "TON DNS"),
+      .init(title: "Unicorn Member #100",
+            subtitle: "Unicorn F2F Club",
+            isOnSale: true),
+      .init(title: "Cry Yui",
+            subtitle: "TON DNS"),
+      .init(title: "Unicorn Member #100",
+            subtitle: "Unicorn F2F Club"),
+      .init(title: "Cry Yui",
+            subtitle: "TON DNS"),
+      .init(title: "Unicorn Member #100",
+            subtitle: "Unicorn F2F Club"),
+      .init(title: "Cry Yui",
+            subtitle: "TON DNS",
+            isOnSale: true),
+      .init(title: "Unicorn Member #100",
+            subtitle: "Unicorn F2F Club"),
+      .init(title: "Cry Yui",
+            subtitle: "TON DNS"),
+      .init(title: "Unicorn Member #100",
+            subtitle: "Unicorn F2F Club"),
+      .init(title: "Cry Yui",
+            subtitle: "TON DNS"),
+      .init(title: "Unicorn Member #100",
+            subtitle: "Unicorn F2F Club"),
+      .init(title: "Cry Yui",
+            subtitle: "TON DNS"),
+      .init(title: "Unicorn Member #100",
+            subtitle: "Unicorn F2F Club"),
+      .init(title: "Cry Yui",
+            subtitle: "TON DNS"),
+      .init(title: "Unicorn Member #100",
+            subtitle: "Unicorn F2F Club"),
+      .init(title: "Cry Yui",
+            subtitle: "TON DNS"),
+      .init(title: "Unicorn Member #100",
+            subtitle: "Unicorn F2F Club"),
+      .init(title: "Cry Yui",
+            subtitle: "TON DNS"),
+    ]
+    
     let tokensSection = TokensListSection(type: .token,
                                           items: tokenItems)
     
     let applicationSection = TokensListSection(type: .application,
                                                items: applicationItems)
     
-    viewInput?.presentSections([tokensSection, applicationSection])
+    let collectiblesSection = TokensListSection(type: .collectibles, items: collectibleItems)
+    
+    viewInput?.presentSections([tokensSection, applicationSection, collectiblesSection])
   }
 }

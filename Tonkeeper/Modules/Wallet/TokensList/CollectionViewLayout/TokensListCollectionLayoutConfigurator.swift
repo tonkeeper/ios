@@ -80,8 +80,8 @@ private extension NSCollectionLayoutSize {
   }
   
   static var collectiblesSectionItemSize: NSCollectionLayoutSize {
-    .init(widthDimension: .fractionalWidth(1.0),
-          heightDimension: .estimated(0))
+    .init(widthDimension: .fractionalWidth(1/3),
+          heightDimension: .estimated(166))
   }
   
   static var collectiblesSectionGroupSize: NSCollectionLayoutSize {

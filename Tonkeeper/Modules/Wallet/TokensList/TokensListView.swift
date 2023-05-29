@@ -10,17 +10,8 @@ import UIKit
 
 final class TokensListView: UIView {
   
-  lazy var collectionView: UICollectionView = {
-    let layout = collectionLayoutConfigurator.getLayout { [weak self] sectionIndex in
-      guard let self = self else { return .token }
-      return .token
-    }
-    let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
-    return collectionView
-  }()
+  let collectionView = UICollectionView(frame: .zero, collectionViewLayout: .init())
   
-  private let collectionLayoutConfigurator = TokensListCollectionLayoutConfigurator()
-
   // MARK: - Init
 
   override init(frame: CGRect) {

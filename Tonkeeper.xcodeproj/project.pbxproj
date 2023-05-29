@@ -71,6 +71,7 @@
 		7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836792A1E6653002DBBC7 /* QRScannerAssembly.swift */; };
 		7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68367B2A1E666D002DBBC7 /* QRScannerProtocols.swift */; };
 		7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68369F2A1EB644002DBBC7 /* ToggleButton.swift */; };
+		7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -149,6 +150,7 @@
 		7D6836792A1E6653002DBBC7 /* QRScannerAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerAssembly.swift; sourceTree = "<group>"; };
 		7D68367B2A1E666D002DBBC7 /* QRScannerProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerProtocols.swift; sourceTree = "<group>"; };
 		7D68369F2A1EB644002DBBC7 /* ToggleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToggleButton.swift; sourceTree = "<group>"; };
+		7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListCollectibleCell.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -265,6 +267,7 @@
 			isa = PBXGroup;
 			children = (
 				7D59287F2A20CDCA006B0A8A /* TokenListTokenCell.swift */,
+				7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */,
 			);
 			path = Cells;
 			sourceTree = "<group>";
@@ -697,6 +700,7 @@
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
 				7D68364C2A1D1ABB002DBBC7 /* UIImage+Icons.swift in Sources */,
+				7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */,
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,
 				7D68366E2A1D6F1E002DBBC7 /* WalletRootView.swift in Sources */,
 				7D5928612A1FB62A006B0A8A /* WalletHeaderButtonsView.swift in Sources */,

@@ -9,6 +9,12 @@ import UIKit
 
 extension UIImage {
   enum Icons {
+    enum Collectible {
+      static var sale: UIImage? {
+        .init(named: "Icons/16/ic-sale-badge-16")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     enum Buttons {
       static var scanQR: UIImage? {
         .init(named: "Icons/28/ic-qr-viewfinder-28")?.withRenderingMode(.alwaysTemplate)
