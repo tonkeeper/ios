@@ -18,11 +18,24 @@ protocol PageViewControllerDelegate: AnyObject {
                           interactivelyScrollFrom fromPage: Int,
                           to toPage: Int,
                           progress: CGFloat)
+  func pageViewController(_ pageViewController: PageViewController,
+                          didSelectItemAt index: Int)
 }
 
 final class PageViewController: UIViewController {
   weak var dataSource: PageViewControllerDataSource?
   weak var delegate: PageViewControllerDelegate?
+  
+  var selectedIndex: Int {
+    get { currentPage }
+    set {
+      currentPage = newValue
+      let indexPath = IndexPath(item: newValue, section: 0)
+      collectionView.scrollToItem(at: indexPath,
+                                  at: .centeredHorizontally,
+                                  animated: true)
+    }
+  }
   
   private var viewControllers = [IndexPath: UIViewController]()
   private var pagesCount = 0
@@ -31,6 +44,8 @@ final class PageViewController: UIViewController {
   
   private lazy var layout = createLayout()
   private lazy var collectionView = UICollectionView(frame: .zero, collectionViewLayout: createLayout())
+  
+  // MARK: - View Life Cycle
   
   override func viewDidLoad() {
     super.viewDidLoad()
@@ -41,7 +56,20 @@ final class PageViewController: UIViewController {
     super.viewDidLayoutSubviews()
     collectionView.frame = view.bounds
   }
+  
+  // MARK: - Reload
+  
+  func reload() {
+    viewControllers = [:]
+    children.forEach {
+      $0.willMove(toParent: nil)
+      $0.removeFromParent()
+    }
+    collectionView.reloadData()
+  }
 }
+
+// MARK: - Private
 
 private extension PageViewController {
   func setup() {
@@ -79,6 +107,8 @@ private extension PageViewController {
   }
 }
 
+// MARK: - UICollectionViewDataSource
+
 extension PageViewController: UICollectionViewDataSource {
   func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
     guard let dataSource = dataSource else { return 0}
@@ -103,6 +133,8 @@ extension PageViewController: UICollectionViewDataSource {
   }
 }
 
+// MARK: - UICollectionViewDelegate
+
 extension PageViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView,
                       didEndDisplaying cell: UICollectionViewCell,
@@ -112,6 +144,8 @@ extension PageViewController: UICollectionViewDelegate {
     viewControllers[indexPath] = nil
   }
 }
+
+// MARK: - UIScrollViewDelegate
 
 extension PageViewController: UIScrollViewDelegate {
   func scrollViewDidScroll(_ scrollView: UIScrollView) {
@@ -129,5 +163,16 @@ extension PageViewController: UIScrollViewDelegate {
                                  interactivelyScrollFrom: currentPage,
                                  to: nextPage,
                                  progress: interPagesScrollProgress)
+  }
+  
+  func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
+    isScrollingWithPan = true
+  }
+  
+  func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+    isScrollingWithPan = false
+    let scrollPage = scrollView.contentOffset.x / view.bounds.width
+    currentPage = Int(scrollPage)
+    delegate?.pageViewController(self, didSelectItemAt: currentPage)
   }
 }
