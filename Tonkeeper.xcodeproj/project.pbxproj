@@ -78,6 +78,7 @@
 		7D9292882A24CCB8005B83DF /* PagingContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292872A24CCB8005B83DF /* PagingContentViewController.swift */; };
 		7D92928B2A24DB50005B83DF /* ScrollContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92928A2A24DB50005B83DF /* ScrollContainerViewController.swift */; };
 		7D92928D2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92928C2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift */; };
+		7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292912A24EF31005B83DF /* WalletContentPage.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -166,6 +167,7 @@
 		7D9292872A24CCB8005B83DF /* PagingContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagingContentViewController.swift; sourceTree = "<group>"; };
 		7D92928A2A24DB50005B83DF /* ScrollContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollContainerViewController.swift; sourceTree = "<group>"; };
 		7D92928C2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WalletHeaderViewController+ScrollContainerHeaderContent.swift"; sourceTree = "<group>"; };
+		7D9292912A24EF31005B83DF /* WalletContentPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletContentPage.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -212,6 +214,7 @@
 		7D13B24D3B53384824E51AA9 /* WalletContent */ = {
 			isa = PBXGroup;
 			children = (
+				7D9292902A24EF25005B83DF /* Model */,
 				CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */,
 				14F55B615D2FE6B7D027A93B /* WalletContentView.swift */,
 				CCBEC0954BE2099E54A78D14 /* WalletContentPresenter.swift */,
@@ -569,6 +572,14 @@
 			path = ScrollContainerViewController;
 			sourceTree = "<group>";
 		};
+		7D9292902A24EF25005B83DF /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				7D9292912A24EF31005B83DF /* WalletContentPage.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
@@ -751,6 +762,7 @@
 				7D92928D2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift in Sources */,
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
 				7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */,
+				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
 				7D5928652A1FB6C4006B0A8A /* UIControlClosure.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
 				7D68364E2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift in Sources */,

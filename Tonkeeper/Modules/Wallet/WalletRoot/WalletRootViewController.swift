@@ -15,14 +15,25 @@ final class WalletRootViewController: GenericViewController<WalletRootView> {
   
   // MARK: - Children
   
-  private let headerViewController: UIViewController
+  private let headerViewController: WalletHeaderViewController
+  private let contentViewController: WalletContentViewController
+  
+  // MARK: - ScrollContainer
+  
+  private let scrollContainerViewController: ScrollContainerViewController
   
   // MARK: - Init
   
   init(presenter: WalletRootPresenterInput,
-       headerViewController: UIViewController) {
+       headerViewController: WalletHeaderViewController,
+       contentViewController: WalletContentViewController) {
     self.presenter = presenter
     self.headerViewController = headerViewController
+    self.contentViewController = contentViewController
+    self.scrollContainerViewController = .init(
+      headerContent: headerViewController,
+      bodyContent: contentViewController
+    )
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -51,16 +62,16 @@ private extension WalletRootViewController {
     title = "Wallet"
     setupScanQRButton()
     
-    
-    addChild(headerViewController)
-    view.addSubview(headerViewController.view)
-    headerViewController.didMove(toParent: self)
-    
-    headerViewController.view.translatesAutoresizingMaskIntoConstraints = false
+    addChild(scrollContainerViewController)
+    view.addSubview(scrollContainerViewController.view)
+    scrollContainerViewController.didMove(toParent: self)
+
+    scrollContainerViewController.view.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-      headerViewController.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-      headerViewController.view.leftAnchor.constraint(equalTo: view.leftAnchor),
-      headerViewController.view.rightAnchor.constraint(equalTo: view.rightAnchor),
+      scrollContainerViewController.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+      scrollContainerViewController.view.leftAnchor.constraint(equalTo: view.leftAnchor),
+      scrollContainerViewController.view.rightAnchor.constraint(equalTo: view.rightAnchor),
+      scrollContainerViewController.view.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
     ])
   }
   

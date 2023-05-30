@@ -6,9 +6,11 @@
 //  Created by Grigory Serebryanyy on 29/05/2023.
 //
 
-import Foundation
+import UIKit
 
-protocol WalletContentModuleOutput: AnyObject {}
+protocol WalletContentModuleOutput: AnyObject {
+  func getPagingContent(page: WalletContentPage) -> PagingContent
+}
 
 protocol WalletContentModuleInput: AnyObject {}
 
@@ -16,4 +18,6 @@ protocol WalletContentPresenterInput {
   func viewDidLoad()
 }
 
-protocol WalletContentViewInput: AnyObject {}
+protocol WalletContentViewInput: AnyObject {
+  func updateContentPages(_ pages: [PagingContent])
+}

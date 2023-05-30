@@ -8,8 +8,8 @@
 
 import UIKit
 
-class TokensListViewController: GenericViewController<TokensListView> {
-
+class TokensListViewController: GenericViewController<TokensListView>, PagingScrollableContent {
+  
   // MARK: - Module
 
   private let presenter: TokensListPresenterInput
@@ -17,6 +17,23 @@ class TokensListViewController: GenericViewController<TokensListView> {
   // MARK: - Collection
   
   private lazy var collectionController = TokensListCollectionController(collectionView: customView.collectionView)
+  
+  // MARK: - State
+  
+  private var contentSizeObserveToken: NSKeyValueObservation?
+  
+  // MARK: - PagingContent
+  var scrollView: UIScrollView {
+    customView.collectionView
+  }
+  var itemTitle: String? { title }
+  var contentHeight: CGFloat {
+    let contentHeight = customView.collectionView.contentSize.height
+    let viewHeight = view.bounds.height
+    return max(contentHeight, viewHeight)
+  }
+  
+  var didChangeContentHeight: (() -> Void)?
 
   // MARK: - Init
 
@@ -36,6 +53,11 @@ class TokensListViewController: GenericViewController<TokensListView> {
     setup()
     presenter.viewDidLoad()
   }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    didChangeContentHeight?()
+  }
 }
 
 // MARK: - TokensListViewInput
@@ -49,5 +71,11 @@ extension TokensListViewController: TokensListViewInput {
 // MARK: - Private
 
 private extension TokensListViewController {
-  func setup() {}
+  func setup() {
+    contentSizeObserveToken = customView.collectionView
+      .observe(\.contentSize, changeHandler: { [weak self] _, _ in
+        guard let self else { return }
+        self.didChangeContentHeight?()
+      })
+  }
 }

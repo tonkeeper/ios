@@ -129,7 +129,7 @@ extension PageViewController: UICollectionViewDataSource {
     
     viewControllers[indexPath] = viewController
     
-    return UICollectionViewCell()
+    return cell
   }
 }
 

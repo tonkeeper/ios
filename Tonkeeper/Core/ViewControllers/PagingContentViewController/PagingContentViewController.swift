@@ -15,9 +15,9 @@ protocol PagingContentViewControllerDelegate: AnyObject {
 }
 
 protocol PagingContent: UIViewController {
-  var itemTitle: String { get }
+  var itemTitle: String? { get }
   var contentHeight: CGFloat { get }
-  var didChangeContentHeight: ((CGFloat) -> Void)? { get set  }
+  var didChangeContentHeight: (() -> Void)? { get set  }
 }
 
 protocol PagingScrollableContent: PagingContent {
@@ -29,10 +29,32 @@ final class PagingContentViewController: UIViewController {
   
   private let pageViewController = PageViewController()
   
+  var selectedIndex: Int {
+    pageViewController.selectedIndex
+  }
+  
+  var selectedContentViewController: PagingContent {
+    contentViewControllers[selectedIndex]
+  }
+  
+  
   var contentViewControllers = [PagingContent]() {
     didSet {
       reconfigure()
     }
+  }
+  
+  var scrollableContentViewControllers: [PagingScrollableContent] {
+    contentViewControllers.compactMap { $0 as? PagingScrollableContent }
+  }
+  
+  var selectedScrollableContentViewController: PagingScrollableContent? {
+    selectedContentViewController as? PagingScrollableContent
+  }
+  
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    setup()
   }
 }
 
@@ -55,6 +77,7 @@ private extension PagingContentViewController {
     pageViewController.reload()
     
     guard !contentViewControllers.isEmpty else { return }
+    contentViewControllers.forEach { ($0 as? PagingScrollableContent)?.scrollView.isScrollEnabled = false }
     startObserveContentHeight(page: contentViewControllers[0])
     delegate?.pagingContentViewController(
       self,
@@ -73,7 +96,7 @@ private extension PagingContentViewController {
   
   func startObserveContentHeight(page: PagingContent) {
     contentViewControllers.forEach { $0.didChangeContentHeight = nil }
-    page.didChangeContentHeight = { [weak self] _ in
+    page.didChangeContentHeight = { [weak self] in
       guard let self = self else { return }
       self.delegate?.pagingContentViewController(
         self,
@@ -94,11 +117,17 @@ extension PagingContentViewController: PageViewControllerDataSource {
 }
 
 extension PagingContentViewController: PageViewControllerDelegate {
-  func pageViewController(_ pageViewController: PageViewController, interactivelyScrollFrom fromPage: Int, to toPage: Int, progress: CGFloat) {
+  func pageViewController(_ pageViewController: PageViewController,
+                          interactivelyScrollFrom fromPage: Int,
+                          to toPage: Int,
+                          progress: CGFloat) {
     
   }
   
-  func pageViewController(_ pageViewController: PageViewController, didSelectItemAt index: Int) {
+  func pageViewController(_ pageViewController: PageViewController,
+                          didSelectItemAt index: Int) {
+    delegate?.pagingContentViewController(self,
+                                          didSelectPageAt: index)
     startObserveContentHeight(page: contentViewControllers[index])
     delegate?.pagingContentViewController(
       self,
