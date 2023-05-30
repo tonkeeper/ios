@@ -27,6 +27,7 @@ protocol PagingScrollableContent: PagingContent {
 final class PagingContentViewController: UIViewController {
   weak var delegate: PagingContentViewControllerDelegate?
   
+  private let headerView = PagingContentHeaderView()
   private let pageViewController = PageViewController()
   
   var selectedIndex: Int {
@@ -62,14 +63,26 @@ private extension PagingContentViewController {
   func setup() {
     setupPageViewController()
     
+    view.addSubview(headerView)
+    
     pageViewController.view.translatesAutoresizingMaskIntoConstraints = false
+    headerView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      pageViewController.view.topAnchor.constraint(equalTo: view.topAnchor),
+      headerView.topAnchor.constraint(equalTo: view.topAnchor),
+      headerView.leftAnchor.constraint(equalTo: view.leftAnchor),
+      headerView.rightAnchor.constraint(equalTo: view.rightAnchor),
+      
+      pageViewController.view.topAnchor.constraint(equalTo: headerView.bottomAnchor),
       pageViewController.view.leftAnchor.constraint(equalTo: view.leftAnchor),
       pageViewController.view.rightAnchor.constraint(equalTo: view.rightAnchor),
       pageViewController.view.bottomAnchor.constraint(equalTo: view.bottomAnchor)
     ])
+    
+    headerView.pageSegmentControl.didSelectTab = { [weak self] index in
+      self?.pageViewController.selectedIndex = index
+      self?.didSelectPageAt(index: index)
+    }
   }
   
   func reconfigure() {
@@ -83,6 +96,8 @@ private extension PagingContentViewController {
       self,
       didUpdateContentHeightAt: pageViewController.selectedIndex
     )
+    
+    headerView.pageSegmentControl.configure(model: .init(items: contentViewControllers.map { $0.title }))
   }
   
   func setupPageViewController() {
@@ -103,6 +118,16 @@ private extension PagingContentViewController {
         didUpdateContentHeightAt: self.pageViewController.selectedIndex
       )
     }
+  }
+  
+  func didSelectPageAt(index: Int) {
+    delegate?.pagingContentViewController(self,
+                                          didSelectPageAt: index)
+    startObserveContentHeight(page: contentViewControllers[index])
+    delegate?.pagingContentViewController(
+      self,
+      didUpdateContentHeightAt: pageViewController.selectedIndex
+    )
   }
 }
 
@@ -126,12 +151,6 @@ extension PagingContentViewController: PageViewControllerDelegate {
   
   func pageViewController(_ pageViewController: PageViewController,
                           didSelectItemAt index: Int) {
-    delegate?.pagingContentViewController(self,
-                                          didSelectPageAt: index)
-    startObserveContentHeight(page: contentViewControllers[index])
-    delegate?.pagingContentViewController(
-      self,
-      didUpdateContentHeightAt: pageViewController.selectedIndex
-    )
+    didSelectPageAt(index: index)
   }
 }

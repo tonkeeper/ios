@@ -132,7 +132,7 @@ private extension WalletContentPresenter {
     
     let pages: [WalletContentPage] = [
       .init(title: "Tokens", sections: [tokensSection, applicationSection, collectiblesSection]),
-      .init(title: "Applications", sections: [applicationSection]),
+      .init(title: "Apps", sections: [applicationSection]),
       .init(title: "Collectibles", sections: [collectiblesSection])
     ]
     

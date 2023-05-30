@@ -79,6 +79,10 @@
 		7D92928B2A24DB50005B83DF /* ScrollContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92928A2A24DB50005B83DF /* ScrollContainerViewController.swift */; };
 		7D92928D2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92928C2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift */; };
 		7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292912A24EF31005B83DF /* WalletContentPage.swift */; };
+		7D9292952A25EB09005B83DF /* PageSegmentControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292942A25EB09005B83DF /* PageSegmentControl.swift */; };
+		7D9292972A25EB16005B83DF /* PageSegmentControlTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292962A25EB16005B83DF /* PageSegmentControlTab.swift */; };
+		7D9292992A25EC70005B83DF /* PagingContentHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292982A25EC70005B83DF /* PagingContentHeaderView.swift */; };
+		7D92929B2A25F939005B83DF /* NSLayoutConstraint+Priority.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92929A2A25F939005B83DF /* NSLayoutConstraint+Priority.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -168,6 +172,10 @@
 		7D92928A2A24DB50005B83DF /* ScrollContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollContainerViewController.swift; sourceTree = "<group>"; };
 		7D92928C2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WalletHeaderViewController+ScrollContainerHeaderContent.swift"; sourceTree = "<group>"; };
 		7D9292912A24EF31005B83DF /* WalletContentPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletContentPage.swift; sourceTree = "<group>"; };
+		7D9292942A25EB09005B83DF /* PageSegmentControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageSegmentControl.swift; sourceTree = "<group>"; };
+		7D9292962A25EB16005B83DF /* PageSegmentControlTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageSegmentControlTab.swift; sourceTree = "<group>"; };
+		7D9292982A25EC70005B83DF /* PagingContentHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagingContentHeaderView.swift; sourceTree = "<group>"; };
+		7D92929A2A25F939005B83DF /* NSLayoutConstraint+Priority.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSLayoutConstraint+Priority.swift"; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -525,6 +533,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D9292932A25EAF8005B83DF /* PageSegmentedControl */,
 				7D5928632A1FB69E006B0A8A /* UIControlClosure */,
 				7D59284E2A1F6144006B0A8A /* Views */,
 				7D68369E2A1EB624002DBBC7 /* Buttons */,
@@ -560,6 +569,7 @@
 			isa = PBXGroup;
 			children = (
 				7D9292872A24CCB8005B83DF /* PagingContentViewController.swift */,
+				7D9292982A25EC70005B83DF /* PagingContentHeaderView.swift */,
 			);
 			path = PagingContentViewController;
 			sourceTree = "<group>";
@@ -578,6 +588,15 @@
 				7D9292912A24EF31005B83DF /* WalletContentPage.swift */,
 			);
 			path = Model;
+			sourceTree = "<group>";
+		};
+		7D9292932A25EAF8005B83DF /* PageSegmentedControl */ = {
+			isa = PBXGroup;
+			children = (
+				7D9292942A25EB09005B83DF /* PageSegmentControl.swift */,
+				7D9292962A25EB16005B83DF /* PageSegmentControlTab.swift */,
+			);
+			path = PageSegmentedControl;
 			sourceTree = "<group>";
 		};
 		7DB8FB592A1BCC92005B4B11 = {
@@ -648,6 +667,7 @@
 				7D68364B2A1D1ABB002DBBC7 /* UIImage+Icons.swift */,
 				7D68364D2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift */,
 				7D6836612A1D6A79002DBBC7 /* UINavigationController+Appearance.swift */,
+				7D92929A2A25F939005B83DF /* NSLayoutConstraint+Priority.swift */,
 			);
 			path = UIKit;
 			sourceTree = "<group>";
@@ -729,9 +749,12 @@
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
 				7D6836422A1D0B5C002DBBC7 /* TabBarAssembly.swift in Sources */,
 				7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */,
+				7D9292952A25EB09005B83DF /* PageSegmentControl.swift in Sources */,
 				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
 				7D5928672A1FBB56006B0A8A /* Button+ConfigurableView.swift in Sources */,
+				7D9292972A25EB16005B83DF /* PageSegmentControlTab.swift in Sources */,
 				7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */,
+				7D9292992A25EC70005B83DF /* PagingContentHeaderView.swift in Sources */,
 				7D68362C2A1CE874002DBBC7 /* UINavigationController+Completion.swift in Sources */,
 				7D92928B2A24DB50005B83DF /* ScrollContainerViewController.swift in Sources */,
 				7D6836622A1D6A79002DBBC7 /* UINavigationController+Appearance.swift in Sources */,
@@ -780,6 +803,7 @@
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,
 				7D68366E2A1D6F1E002DBBC7 /* WalletRootView.swift in Sources */,
 				7D5928612A1FB62A006B0A8A /* WalletHeaderButtonsView.swift in Sources */,
+				7D92929B2A25F939005B83DF /* NSLayoutConstraint+Priority.swift in Sources */,
 				7D5928852A20CE3C006B0A8A /* TokensListCollectionController.swift in Sources */,
 				7D59287A2A20BF36006B0A8A /* TokensListSection.swift in Sources */,
 				7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */,
