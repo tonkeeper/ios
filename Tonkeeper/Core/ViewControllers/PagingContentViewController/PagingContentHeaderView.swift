@@ -7,12 +7,20 @@
 
 import UIKit
 
-final class PagingContentHeaderView: UIControl {
+final class PagingContentHeaderView: UIControl, ConfigurableView {
+  struct Model {
+    let segmentControlModel: PageSegmentControl.Model?
+  }
   
   var pageSegmentControl = PageSegmentControl()
-  private let separatorView: UIView = {
+  
+  private var separatorTopViewConstraint: NSLayoutConstraint?
+  private var separatorTopSegmentControlConstraint: NSLayoutConstraint?
+  
+  let separatorView: UIView = {
     let view = UIView()
     view.backgroundColor = .Separator.common
+    view.isHidden = true
     return view
   }()
   
@@ -23,6 +31,19 @@ final class PagingContentHeaderView: UIControl {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  func configure(model: Model) {
+    if let segmentControlModel = model.segmentControlModel {
+      pageSegmentControl.configure(model: segmentControlModel)
+      pageSegmentControl.isHidden = false
+      separatorTopViewConstraint?.isActive = false
+      separatorTopSegmentControlConstraint?.isActive = true
+    } else {
+      pageSegmentControl.isHidden = true
+      separatorTopSegmentControlConstraint?.isActive = false
+      separatorTopViewConstraint?.isActive = true
+    }
   }
 }
 
@@ -36,20 +57,19 @@ private extension PagingContentHeaderView {
     pageSegmentControl.translatesAutoresizingMaskIntoConstraints = false
     separatorView.translatesAutoresizingMaskIntoConstraints = false
     
-    let separatorHeightConstraint = separatorView.heightAnchor.constraint(equalToConstant: .separaterHeight)
-    separatorHeightConstraint.priority = .defaultHigh
+    separatorTopViewConstraint = separatorView.topAnchor.constraint(equalTo: topAnchor)
+    separatorTopSegmentControlConstraint = separatorView.topAnchor.constraint(equalTo: pageSegmentControl.bottomAnchor)
     
     NSLayoutConstraint.activate([
       pageSegmentControl.topAnchor.constraint(equalTo: topAnchor),
       pageSegmentControl.leftAnchor.constraint(equalTo: leftAnchor),
-      pageSegmentControl.bottomAnchor.constraint(equalTo: bottomAnchor),
       pageSegmentControl.rightAnchor.constraint(equalTo: rightAnchor),
       
-      separatorView.topAnchor.constraint(equalTo: pageSegmentControl.bottomAnchor),
       separatorView.leftAnchor.constraint(equalTo: leftAnchor),
       separatorView.rightAnchor.constraint(equalTo: rightAnchor),
       separatorView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      separatorHeightConstraint
+      separatorView.heightAnchor.constraint(equalToConstant: .separaterHeight)
+        .withPriority(.defaultHigh)
     ])
   }
 }

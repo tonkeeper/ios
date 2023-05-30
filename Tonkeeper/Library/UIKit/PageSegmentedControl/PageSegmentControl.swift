@@ -16,6 +16,7 @@ final class PageSegmentControl: UIControl, ConfigurableView {
     get { _selectedIndex }
     set {
       _selectedIndex = newValue
+      selectTabAt(index: newValue, animated: true)
     }
   }
   
@@ -58,7 +59,7 @@ final class PageSegmentControl: UIControl, ConfigurableView {
   
   override var intrinsicContentSize: CGSize {
     .init(width: UIView.noIntrinsicMetric,
-          height: 64)
+          height: .height)
   }
   
   func configure(model: Model) {
@@ -73,6 +74,7 @@ final class PageSegmentControl: UIControl, ConfigurableView {
       return tab
     }
     tabs.forEach { tabsContainer.addArrangedSubview($0) }
+    guard !tabs.isEmpty else { return }
     selectTabAt(index: 0, animated: false)
   }
 }
@@ -126,6 +128,9 @@ private extension PageSegmentControl {
     _selectedIndex = index
     
     layoutIfNeeded()
+    tabs.enumerated().forEach {
+      $0.element.isSelected = index == $0.offset
+    }
     let frame = scrollView.convert(tabs[index].frame, from: tabsContainer)
     indicatorViewCenterXConstraint?.constant = frame.midX - .indicatorViewWidth/2
     if animated {
@@ -139,5 +144,6 @@ private extension PageSegmentControl {
 private extension CGFloat {
   static let indicatorViewWidth: CGFloat = 24
   static let indicatorViewHeight: CGFloat = 3
+  static let height: CGFloat = 64
 }
 

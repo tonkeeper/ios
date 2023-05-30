@@ -117,7 +117,5 @@ extension ScrollContainerViewController: UIScrollViewDelegate {
       self.scrollView.contentOffset.y = treshold
       bodyContent.updateYContentOffset(scrollView.contentOffset.y - self.scrollView.contentOffset.y)
     }
-//    let headerScrollProgress = max(0, min(1, self.scrollView.contentOffset.y / (headerTreshold - headerViewController.getMinimumHeight())))
-//    headerViewController.update(with: headerScrollProgress)
   }
 }

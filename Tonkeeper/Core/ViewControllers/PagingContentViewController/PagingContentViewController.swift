@@ -30,6 +30,8 @@ final class PagingContentViewController: UIViewController {
   private let headerView = PagingContentHeaderView()
   private let pageViewController = PageViewController()
   
+  private var contentOffsetObserveToken: NSKeyValueObservation?
+  
   var selectedIndex: Int {
     pageViewController.selectedIndex
   }
@@ -92,12 +94,17 @@ private extension PagingContentViewController {
     guard !contentViewControllers.isEmpty else { return }
     contentViewControllers.forEach { ($0 as? PagingScrollableContent)?.scrollView.isScrollEnabled = false }
     startObserveContentHeight(page: contentViewControllers[0])
+    startObserveContentOffset(page: contentViewControllers[0])
     delegate?.pagingContentViewController(
       self,
       didUpdateContentHeightAt: pageViewController.selectedIndex
     )
     
-    headerView.pageSegmentControl.configure(model: .init(items: contentViewControllers.map { $0.title }))
+    var segmentControlModel: PageSegmentControl.Model?
+    if contentViewControllers.count > 1 {
+      segmentControlModel = .init(items: contentViewControllers.map { $0.itemTitle })
+    }
+    headerView.configure(model: .init(segmentControlModel: segmentControlModel))
   }
   
   func setupPageViewController() {
@@ -120,10 +127,19 @@ private extension PagingContentViewController {
     }
   }
   
+  func startObserveContentOffset(page: PagingContent) {
+    guard let scrollablePage = page as? PagingScrollableContent else { return }
+    contentOffsetObserveToken = scrollablePage.scrollView.observe(\.contentOffset) { [weak self] scrollView, _ in
+      guard let self = self else { return }
+      self.headerView.separatorView.isHidden = scrollView.contentOffset.y <= 0
+    }
+  }
+  
   func didSelectPageAt(index: Int) {
     delegate?.pagingContentViewController(self,
                                           didSelectPageAt: index)
     startObserveContentHeight(page: contentViewControllers[index])
+    startObserveContentOffset(page: contentViewControllers[index])
     delegate?.pagingContentViewController(
       self,
       didUpdateContentHeightAt: pageViewController.selectedIndex
@@ -151,6 +167,7 @@ extension PagingContentViewController: PageViewControllerDelegate {
   
   func pageViewController(_ pageViewController: PageViewController,
                           didSelectItemAt index: Int) {
+    headerView.pageSegmentControl.selectedIndex = index
     didSelectPageAt(index: index)
   }
 }
