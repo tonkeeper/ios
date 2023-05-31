@@ -91,6 +91,9 @@
 		7D9292C42A274131005B83DF /* SendAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292C32A274131005B83DF /* SendAssembly.swift */; };
 		7D9292C72A275176005B83DF /* NavigationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292C62A275176005B83DF /* NavigationController.swift */; };
 		7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292C82A275303005B83DF /* UIViewController+NavigationItem.swift */; };
+		7D9292CC2A275725005B83DF /* TextFieldContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292CB2A275725005B83DF /* TextFieldContainer.swift */; };
+		7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292CE2A275A18005B83DF /* ContentInsets.swift */; };
+		7D9292D12A275B6D005B83DF /* TextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D02A275B6D005B83DF /* TextField.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -198,6 +201,9 @@
 		7D9292C32A274131005B83DF /* SendAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendAssembly.swift; sourceTree = "<group>"; };
 		7D9292C62A275176005B83DF /* NavigationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationController.swift; sourceTree = "<group>"; };
 		7D9292C82A275303005B83DF /* UIViewController+NavigationItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIViewController+NavigationItem.swift"; sourceTree = "<group>"; };
+		7D9292CB2A275725005B83DF /* TextFieldContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFieldContainer.swift; sourceTree = "<group>"; };
+		7D9292CE2A275A18005B83DF /* ContentInsets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentInsets.swift; sourceTree = "<group>"; };
+		7D9292D02A275B6D005B83DF /* TextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextField.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -574,6 +580,8 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D9292CD2A275A0F005B83DF /* Insets */,
+				7D9292CA2A2756C5005B83DF /* TextFields */,
 				7D9292932A25EAF8005B83DF /* PageSegmentedControl */,
 				7D5928632A1FB69E006B0A8A /* UIControlClosure */,
 				7D59284E2A1F6144006B0A8A /* Views */,
@@ -657,6 +665,23 @@
 				7D9292C62A275176005B83DF /* NavigationController.swift */,
 			);
 			path = NavigationController;
+			sourceTree = "<group>";
+		};
+		7D9292CA2A2756C5005B83DF /* TextFields */ = {
+			isa = PBXGroup;
+			children = (
+				7D9292CB2A275725005B83DF /* TextFieldContainer.swift */,
+				7D9292D02A275B6D005B83DF /* TextField.swift */,
+			);
+			path = TextFields;
+			sourceTree = "<group>";
+		};
+		7D9292CD2A275A0F005B83DF /* Insets */ = {
+			isa = PBXGroup;
+			children = (
+				7D9292CE2A275A18005B83DF /* ContentInsets.swift */,
+			);
+			path = Insets;
 			sourceTree = "<group>";
 		};
 		7DB8FB592A1BCC92005B4B11 = {
@@ -822,6 +847,7 @@
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
 				7D6836422A1D0B5C002DBBC7 /* TabBarAssembly.swift in Sources */,
+				7D9292CC2A275725005B83DF /* TextFieldContainer.swift in Sources */,
 				7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */,
 				7D9292952A25EB09005B83DF /* PageSegmentControl.swift in Sources */,
 				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
@@ -896,6 +922,7 @@
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
 				7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */,
 				7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */,
+				7D9292D12A275B6D005B83DF /* TextField.swift in Sources */,
 				7D5928722A1FC981006B0A8A /* WalletHeaderButtonType.swift in Sources */,
 				7D6836222A1CD1EC002DBBC7 /* Presentable.swift in Sources */,
 				7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */,
@@ -908,6 +935,7 @@
 				B2DC87224B8264B43A27920C /* WalletContentView.swift in Sources */,
 				8FD2051305C8DE79A1D70FBA /* WalletContentPresenter.swift in Sources */,
 				4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */,
+				7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */,
 				2563C4380C2E87759EDE57F5 /* SendRecipientViewController.swift in Sources */,
 				FDB848FFF686F24E960F6F16 /* SendRecipientView.swift in Sources */,
 				92A837809FFCE8B5B82B9491 /* SendRecipientPresenter.swift in Sources */,
