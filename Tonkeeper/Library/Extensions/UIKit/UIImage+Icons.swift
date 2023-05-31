@@ -50,6 +50,10 @@ extension UIImage {
         static var swipe: UIImage? {
           .init(named: "Icons/16/ic-chevron-down-16")?.withRenderingMode(.alwaysTemplate)
         }
+        
+        static var close: UIImage? {
+          .init(named: "Icons/16/ic-close-16")?.withRenderingMode(.alwaysTemplate)
+        }
       }
     }
     

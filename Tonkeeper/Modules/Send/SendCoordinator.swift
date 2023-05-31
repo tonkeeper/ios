@@ -27,8 +27,17 @@ private extension SendCoordinator {
     let module = assembly.sendRecipientModule(output: self)
     router.setPresentables([(module.view, nil)])
   }
+  
+  func openSendAmount() {
+    let module = assembly.sendAmountModule(output: self)
+    router.push(presentable: module.view)
+  }
 }
 
 // MARK: - SendRecipientModuleOutput
 
 extension SendCoordinator: SendRecipientModuleOutput {}
+
+// MARK: - SendAmountModuleOutput
+
+extension SendCoordinator: SendAmountModuleOutput {}

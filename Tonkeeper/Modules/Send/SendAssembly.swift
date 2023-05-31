@@ -22,6 +22,14 @@ struct SendAssembly {
     presenter.viewInput = viewController
     return Module(view: viewController, input: Void())
   }
+  
+  func sendAmountModule(output: SendAmountModuleOutput) -> Module<UIViewController, Void> {
+    let presenter = SendAmountPresenter()
+    presenter.output = output
+    let viewController = SendAmountViewController(presenter: presenter)
+    presenter.viewInput = viewController
+    return Module(view: viewController, input: Void())
+  }
 }
 
 private extension SendAssembly {

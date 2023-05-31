@@ -1,5 +1,5 @@
 //
-//  SendRecipientSendRecipientViewController.swift
+//  SendAmountSendAmountViewController.swift
 //  Tonkeeper
 
 //  Tonkeeper
@@ -8,15 +8,15 @@
 
 import UIKit
 
-class SendRecipientViewController: GenericViewController<SendRecipientView> {
+class SendAmountViewController: GenericViewController<SendAmountView> {
 
   // MARK: - Module
 
-  private let presenter: SendRecipientPresenterInput
+  private let presenter: SendAmountPresenterInput
 
   // MARK: - Init
 
-  init(presenter: SendRecipientPresenterInput) {
+  init(presenter: SendAmountPresenterInput) {
     self.presenter = presenter
     super.init(nibName: nil, bundle: nil)
   }
@@ -34,14 +34,14 @@ class SendRecipientViewController: GenericViewController<SendRecipientView> {
   }
 }
 
-// MARK: - SendRecipientViewInput
+// MARK: - SendAmountViewInput
 
-extension SendRecipientViewController: SendRecipientViewInput {}
+extension SendAmountViewController: SendAmountViewInput {}
 
 // MARK: - Private
 
-private extension SendRecipientViewController {
+private extension SendAmountViewController {
   func setup() {
-    title = "Recipient"
+    title = "Amount"
   }
 }
