@@ -16,4 +16,39 @@ final class WalletCoordinator: Coordinator<NavigationRouter> {
     self.walletAssembly = walletAssembly
     super.init(router: router)
   }
+  
+  override func start() {
+    openWalletRoot()
+  }
+}
+
+private extension WalletCoordinator {
+  func openWalletRoot() {
+    let module = walletAssembly.walletRootModule(output: self,
+                                                 tokensListModuleOutput: self)
+    router.setPresentables([(module.view, nil)])
+  }
+}
+
+// MARK: - WalletRootModuleOutput
+
+extension WalletCoordinator: WalletRootModuleOutput {
+  func openQRScanner() {
+    let module = walletAssembly.qrScannerModule(output: self)
+    router.present(module.view)
+  }
+}
+
+// MARK: - QRScannerModuleOutput
+
+extension WalletCoordinator: QRScannerModuleOutput {
+  func qrScannerModuleDidFinish() {
+    router.dismiss()
+  }
+}
+
+// MARK: - TokensListModuleOutput
+
+extension WalletCoordinator: TokensListModuleOutput {
+  
 }

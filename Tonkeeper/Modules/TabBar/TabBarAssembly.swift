@@ -9,13 +9,17 @@ import UIKit
 
 final class TabBarAssembly {
   
-  lazy var walletAssembly = WalletAssembly()
+  lazy var walletAssembly = WalletAssembly(
+    qrScannerAssembly: QRScannerAssembly()
+  )
   lazy var activityAssembly = ActivityAssembly()
   lazy var browserAssembly = BrowserAssembly()
   lazy var settingsAssembly = SettingsAssembly()
   
   func walletCoordinator() -> WalletCoordinator {
     let navigationController = UINavigationController()
+    navigationController.configureAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = WalletCoordinator(router: router,
                                         walletAssembly: walletAssembly)
@@ -24,6 +28,7 @@ final class TabBarAssembly {
   
   func activityCoordinator() -> ActivityCoordinator {
     let navigationController = UINavigationController()
+    navigationController.configureAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = ActivityCoordinator(router: router,
                                           assembly: activityAssembly)
@@ -32,6 +37,7 @@ final class TabBarAssembly {
   
   func browserCoordinator() -> BrowserCoordinator {
     let navigationController = UINavigationController()
+    navigationController.configureAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = BrowserCoordinator(router: router,
                                          assembly: browserAssembly)
@@ -40,6 +46,7 @@ final class TabBarAssembly {
   
   func settingsCoordinator() -> SettingsCoordinator {
     let navigationController = UINavigationController()
+    navigationController.configureAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = SettingsCoordinator(router: router,
                                           assembly: settingsAssembly)

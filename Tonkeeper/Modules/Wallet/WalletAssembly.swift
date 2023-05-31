@@ -5,6 +5,67 @@
 //  Created by Grigory on 23.5.23..
 //
 
-import Foundation
+import UIKit
 
-final class WalletAssembly {}
+struct WalletAssembly {
+  
+  private let qrScannerAssembly: QRScannerAssembly
+  
+  init(qrScannerAssembly: QRScannerAssembly) {
+    self.qrScannerAssembly = qrScannerAssembly
+  }
+  
+  func walletRootModule(output: WalletRootModuleOutput,
+                        tokensListModuleOutput: TokensListModuleOutput) -> Module<UIViewController, Void> {
+    let presenter = WalletRootPresenter(pagingContentFactory: { page in
+      let module = tokensListModule(page: page, output: tokensListModuleOutput)
+      return module.view
+    })
+    presenter.output = output
+    
+    let headerModule = walletHeaderModule(output: presenter)
+    presenter.headerInput = headerModule.input
+    
+    let contentModule = walletContentModule(output: presenter)
+    presenter.contentInput = contentModule.input
+    
+    let viewController = WalletRootViewController(
+      presenter: presenter,
+      headerViewController: headerModule.view,
+      contentViewController: contentModule.view
+    )
+    presenter.viewInput = viewController
+    
+    return Module(view: viewController, input: Void())
+  }
+  
+  func qrScannerModule(output: QRScannerModuleOutput) -> Module<UIViewController, Void> {
+    qrScannerAssembly.qrScannerModule(output: output)
+  }
+  
+  func tokensListModule(page: WalletContentPage, output: TokensListModuleOutput) -> Module<TokensListViewController, TokensListModuleInput> {
+    let presenter = TokensListPresenter(sections: page.sections)
+    let viewController = TokensListViewController(presenter: presenter)
+    viewController.title = page.title
+    presenter.viewInput = viewController
+    return Module(view: viewController, input: presenter)
+  }
+}
+
+private extension WalletAssembly {
+  func walletHeaderModule(output: WalletHeaderModuleOutput) -> Module<WalletHeaderViewController, WalletHeaderModuleInput> {
+    let presenter = WalletHeaderPresenter()
+    presenter.output = output
+    let viewController = WalletHeaderViewController(presenter: presenter)
+    presenter.viewInput = viewController
+    return Module(view: viewController, input: presenter)
+  }
+  
+  func walletContentModule(output: WalletContentModuleOutput) -> Module<WalletContentViewController, WalletContentModuleInput> {
+    let presenter = WalletContentPresenter()
+    presenter.output = output
+    let viewController = WalletContentViewController(presenter: presenter)
+    presenter.viewInput = viewController
+    return Module(view: viewController, input: presenter)
+  }
+}
