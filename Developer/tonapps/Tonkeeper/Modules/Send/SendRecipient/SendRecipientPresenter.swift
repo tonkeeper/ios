@@ -24,6 +24,10 @@ extension SendRecipientPresenter: SendRecipientPresenterInput {
   func didTapCloseButton() {
     output?.didTapCloseButton()
   }
+  
+  func didTapScanQRButton() {
+    output?.openQRScanner()
+  }
 }
 
 // MARK: - SendRecipientModuleInput

@@ -47,8 +47,19 @@ extension SendCoordinator: SendRecipientModuleOutput {
   func didTapCloseButton() {
     output?.sendCoordinatorDidClose(self)
   }
+  
+  func openQRScanner() {
+    let module = assembly.qrScannerAssembly.qrScannerModule(output: self)
+    router.present(module.view)
+  }
 }
 
 // MARK: - SendAmountModuleOutput
 
 extension SendCoordinator: SendAmountModuleOutput {}
+
+// MARK: - QRScannerModuleOutput
+
+extension SendCoordinator: QRScannerModuleOutput {
+  func qrScannerModuleDidFinish() {}
+}

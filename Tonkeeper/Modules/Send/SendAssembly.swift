@@ -9,7 +9,7 @@ import UIKit
 
 struct SendAssembly {
   
-  private let qrScannerAssembly: QRScannerAssembly
+  let qrScannerAssembly: QRScannerAssembly
   
   init(qrScannerAssembly: QRScannerAssembly) {
     self.qrScannerAssembly = qrScannerAssembly

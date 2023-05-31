@@ -90,7 +90,7 @@ final class TextField: UIControlClosure {
     return button
   }()
   
-  private let scanQRButton: UIButton = {
+  let scanQRButton: UIButton = {
     let button = UIButton(type: .system)
     button.tintColor = .Accent.blue
     button.setImage(.Icons.Buttons.scanQR, for: .normal)

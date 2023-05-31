@@ -46,5 +46,22 @@ private extension SendRecipientViewController {
     setupCloseButton { [weak self] in
       self?.presenter.didTapCloseButton()
     }
+    
+    customView.addressTextField.placeholder = "Address or name"
+    customView.commentTextField.placeholder = "Comment"
+    
+    customView.addressTextField.scanQRButton.addTarget(
+      self,
+      action: #selector(didTapScanQRButton),
+      for: .touchUpInside)
+  }
+}
+
+// MARK: - Actions
+
+private extension SendRecipientViewController {
+  @objc
+  func didTapScanQRButton() {
+    presenter.didTapScanQRButton()
   }
 }
