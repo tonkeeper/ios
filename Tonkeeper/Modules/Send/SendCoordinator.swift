@@ -61,5 +61,7 @@ extension SendCoordinator: SendAmountModuleOutput {}
 // MARK: - QRScannerModuleOutput
 
 extension SendCoordinator: QRScannerModuleOutput {
-  func qrScannerModuleDidFinish() {}
+  func qrScannerModuleDidFinish() {
+    router.dismiss()
+  }
 }

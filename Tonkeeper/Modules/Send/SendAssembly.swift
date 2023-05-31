@@ -16,7 +16,7 @@ struct SendAssembly {
   }
   
   func sendRecipientModule(output: SendRecipientModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = SendRecipientPresenter()
+    let presenter = SendRecipientPresenter(commentLengthValidator: DefaultSendRecipientCommentLengthValidator())
     presenter.output = output
     let viewController = SendRecipientViewController(presenter: presenter)
     presenter.viewInput = viewController

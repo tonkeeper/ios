@@ -94,6 +94,7 @@
 		7D9292CC2A275725005B83DF /* TextFieldContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292CB2A275725005B83DF /* TextFieldContainer.swift */; };
 		7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292CE2A275A18005B83DF /* ContentInsets.swift */; };
 		7D9292D12A275B6D005B83DF /* TextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D02A275B6D005B83DF /* TextField.swift */; };
+		7D9292D42A27DEC6005B83DF /* SendCommentLengthValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D32A27DEC6005B83DF /* SendCommentLengthValidator.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -204,6 +205,7 @@
 		7D9292CB2A275725005B83DF /* TextFieldContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFieldContainer.swift; sourceTree = "<group>"; };
 		7D9292CE2A275A18005B83DF /* ContentInsets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentInsets.swift; sourceTree = "<group>"; };
 		7D9292D02A275B6D005B83DF /* TextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextField.swift; sourceTree = "<group>"; };
+		7D9292D32A27DEC6005B83DF /* SendCommentLengthValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendCommentLengthValidator.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -254,6 +256,7 @@
 		50F19B744720177C47A0C650 /* SendRecipient */ = {
 			isa = PBXGroup;
 			children = (
+				7D9292D22A27DEB8005B83DF /* Validation */,
 				CE5054B4D5277A87E2532F12 /* SendRecipientViewController.swift */,
 				28C743370A3A19F84E551921 /* SendRecipientView.swift */,
 				738AFEAF1F726F1AF7E92297 /* SendRecipientPresenter.swift */,
@@ -684,6 +687,14 @@
 			path = Insets;
 			sourceTree = "<group>";
 		};
+		7D9292D22A27DEB8005B83DF /* Validation */ = {
+			isa = PBXGroup;
+			children = (
+				7D9292D32A27DEC6005B83DF /* SendCommentLengthValidator.swift */,
+			);
+			path = Validation;
+			sourceTree = "<group>";
+		};
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
@@ -901,6 +912,7 @@
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
 				7D68364C2A1D1ABB002DBBC7 /* UIImage+Icons.swift in Sources */,
+				7D9292D42A27DEC6005B83DF /* SendCommentLengthValidator.swift in Sources */,
 				7D9292C42A274131005B83DF /* SendAssembly.swift in Sources */,
 				7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */,
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,

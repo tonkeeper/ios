@@ -19,6 +19,10 @@ protocol SendRecipientPresenterInput {
   func viewDidLoad()
   func didTapCloseButton()
   func didTapScanQRButton()
+  func didChangeComment(text: String)
 }
 
-protocol SendRecipientViewInput: AnyObject {}
+protocol SendRecipientViewInput: AnyObject {
+  func showCommentLengthWarning(text: NSAttributedString)
+  func hideCommentLengthWarning()
+}

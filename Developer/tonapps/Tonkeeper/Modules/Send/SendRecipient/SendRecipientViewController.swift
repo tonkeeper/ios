@@ -36,7 +36,16 @@ class SendRecipientViewController: GenericViewController<SendRecipientView> {
 
 // MARK: - SendRecipientViewInput
 
-extension SendRecipientViewController: SendRecipientViewInput {}
+extension SendRecipientViewController: SendRecipientViewInput {
+  func showCommentLengthWarning(text: NSAttributedString) {
+    customView.commentLimitLabel.isHidden = false
+    customView.commentLimitLabel.attributedText = text
+  }
+  
+  func hideCommentLengthWarning() {
+    customView.commentLimitLabel.isHidden = true
+  }
+}
 
 // MARK: - Private
 
@@ -48,12 +57,43 @@ private extension SendRecipientViewController {
     }
     
     customView.addressTextField.placeholder = "Address or name"
+    customView.addressTextField.delegate = self
+    
     customView.commentTextField.placeholder = "Comment"
+    customView.commentTextField.delegate = self
     
     customView.addressTextField.scanQRButton.addTarget(
       self,
       action: #selector(didTapScanQRButton),
       for: .touchUpInside)
+  }
+  
+  func addressDidChange(_ textView: UITextView) {
+    
+  }
+  
+  func commentDidChange(_ textView: UITextView) {
+    customView.commentVisibilityLabel.isHidden = textView.text.isEmpty
+    presenter.didChangeComment(text: textView.text)
+  }
+}
+
+// MARK: - UITextViewDelegate
+
+extension SendRecipientViewController: UITextViewDelegate {
+  func textViewDidChange(_ textView: UITextView) {
+    if textView == customView.addressTextField.textView {
+      addressDidChange(textView)
+    }
+    if textView == customView.commentTextField.textView {
+      commentDidChange(textView)
+    }
+  }
+  
+  func textView(_ textView: UITextView,
+                shouldChangeTextIn range: NSRange,
+                replacementText text: String) -> Bool {
+    return true
   }
 }
 

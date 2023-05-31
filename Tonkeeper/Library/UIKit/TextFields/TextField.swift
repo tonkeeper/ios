@@ -19,6 +19,8 @@ final class TextField: UIControlClosure {
     case invalid
   }
   
+  weak var delegate: UITextViewDelegate?
+  
   var placeholder: String? {
     get { placeholderLabel.text }
     set { placeholderLabel.text = newValue }
@@ -49,7 +51,7 @@ final class TextField: UIControlClosure {
   }
   
   private let container = TextFieldContainer()
-  private let textView: UITextView = {
+  let textView: UITextView = {
     let textView = UITextView()
     textView.backgroundColor = .clear
     textView.font = TextStyle.body1.font
@@ -177,6 +179,7 @@ private extension TextField {
     
     textViewTopConstraint = textView.topAnchor.constraint(equalTo: topAnchor, constant: 0)
     textViewBottomConstraint = textView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: 0)
+//      .withPriority(.defaultHigh)
     textViewTopConstraint?.isActive = true
     textViewBottomConstraint?.isActive = true
     
@@ -187,17 +190,18 @@ private extension TextField {
     NSLayoutConstraint.activate([
       textView.leftAnchor.constraint(equalTo: leftAnchor, constant: .textViewLeftSpace),
       textView.rightAnchor.constraint(equalTo: rightAnchor, constant: -.textViewRightSpace),
+//        .withPriority(.defaultHigh),
       
       clearButton.widthAnchor.constraint(equalToConstant: .clearButtonSide),
       clearButton.heightAnchor.constraint(equalToConstant: .clearButtonSide),
       clearButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -.clearButtonRightSpace),
-      clearButton.topAnchor.constraint(equalTo: textView.topAnchor, constant: .clearButtonTopSpace),
-      
+      clearButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+
       container.topAnchor.constraint(equalTo: topAnchor),
       container.leftAnchor.constraint(equalTo: leftAnchor),
       container.rightAnchor.constraint(equalTo: rightAnchor),
       container.bottomAnchor.constraint(equalTo: bottomAnchor),
-      
+
       buttonsStackView.topAnchor.constraint(equalTo: topAnchor),
       buttonsStackView.rightAnchor.constraint(equalTo: rightAnchor, constant: -.buttonsStackRightSpace),
       buttonsStackView.centerYAnchor.constraint(equalTo: centerYAnchor)
@@ -279,6 +283,7 @@ private extension TextField {
   func clearButtonTapped() {
     textView.text = nil
     updateState(isFirstResponder: textView.isFirstResponder)
+    delegate?.textViewDidChange?(textView)
   }
   
   @objc
@@ -292,17 +297,27 @@ extension TextField: UITextViewDelegate {
   func textViewShouldBeginEditing(_ textView: UITextView) -> Bool {
     updateState(isFirstResponder: true)
     container.state = .active
-    return true
+    return delegate?.textViewShouldBeginEditing?(textView) ?? true
   }
   
   func textViewShouldEndEditing(_ textView: UITextView) -> Bool {
     updateState(isFirstResponder: false)
     container.state = .inactive
-    return true
+    return delegate?.textViewShouldEndEditing?(textView) ?? true
   }
   
   func textViewDidChange(_ textView: UITextView) {
     updateState(isFirstResponder: textView.isFirstResponder)
+    delegate?.textViewDidChange?(textView)
+  }
+  
+  func textView(_ textView: UITextView,
+                shouldChangeTextIn range: NSRange,
+                replacementText text: String) -> Bool {
+    return delegate?.textView?(
+      textView,
+      shouldChangeTextIn: range,
+      replacementText: text) ?? true
   }
 }
 
@@ -320,7 +335,6 @@ private extension CGFloat {
   
   static let clearButtonSide: CGFloat = 16
   static let clearButtonRightSpace: CGFloat = 16
-  static let clearButtonTopSpace: CGFloat = 4
   
   static let buttonsStackRightSpace: CGFloat = 17
   static let interButtonsSpace: CGFloat = 30

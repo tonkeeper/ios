@@ -64,6 +64,7 @@ extension UIColor {
     static let blue = UIColor.named("Colors/Accent/Blue")
     static let green = UIColor.named("Colors/Accent/Green")
     static let red = UIColor.named("Colors/Accent/Red")
+    static let orange = UIColor.named("Colors/Accent/Orange")
   }
   
   private static func named(_ name: String) -> UIColor {
