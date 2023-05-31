@@ -47,6 +47,12 @@ final class WalletRootViewController: GenericViewController<WalletRootView> {
     super.viewDidLoad()
     setup()
   }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    
+    children.forEach { $0.additionalSafeAreaInsets.top = customView.titleView.frame.height - view.safeAreaInsets.top }
+  }
 }
 
 // MARK: - WalletRootViewInput
@@ -60,26 +66,20 @@ extension WalletRootViewController: WalletRootViewInput {
 private extension WalletRootViewController {
   func setup() {
     title = "Wallet"
-    setupScanQRButton()
     
     addChild(scrollContainerViewController)
-    view.addSubview(scrollContainerViewController.view)
+    customView.addContent(contentView: scrollContainerViewController.view)
     scrollContainerViewController.didMove(toParent: self)
-
-    scrollContainerViewController.view.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-      scrollContainerViewController.view.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-      scrollContainerViewController.view.leftAnchor.constraint(equalTo: view.leftAnchor),
-      scrollContainerViewController.view.rightAnchor.constraint(equalTo: view.rightAnchor),
-      scrollContainerViewController.view.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor),
-    ])
-  }
-  
-  func setupScanQRButton() {
-    navigationItem.rightBarButtonItem = .init(image: .Icons.Buttons.scanQR,
-                                              style: .plain,
-                                              target: self,
-                                              action: #selector(didTapScanQRButton))
+    
+    scrollContainerViewController.didScrollBodyToSafeArea = { [weak self] yOffset in
+      self?.updateTitleView(with: yOffset)
+    }
+    
+    customView.titleView.scanQRButton.addTarget(
+      self,
+      action: #selector(didTapScanQRButton),
+      for: .touchUpInside
+    )
   }
 }
 
@@ -89,5 +89,11 @@ private extension WalletRootViewController {
   @objc
   func didTapScanQRButton() {
     presenter.didTapScanQRButton()
+  }
+  
+  func updateTitleView(with yOffset: CGFloat) {
+    let alpha = yOffset / (customView.titleView.frame.height / 2)
+    customView.titleView.alpha = 1 - alpha
+    customView.titleView.transform = CGAffineTransform(translationX: 0, y: -yOffset)
   }
 }

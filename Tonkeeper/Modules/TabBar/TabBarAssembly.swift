@@ -19,6 +19,7 @@ final class TabBarAssembly {
   func walletCoordinator() -> WalletCoordinator {
     let navigationController = UINavigationController()
     navigationController.configureAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = WalletCoordinator(router: router,
                                         walletAssembly: walletAssembly)

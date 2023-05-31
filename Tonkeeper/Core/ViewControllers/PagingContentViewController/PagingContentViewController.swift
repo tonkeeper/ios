@@ -40,7 +40,6 @@ final class PagingContentViewController: UIViewController {
     contentViewControllers[selectedIndex]
   }
   
-  
   var contentViewControllers = [PagingContent]() {
     didSet {
       reconfigure()
@@ -53,6 +52,11 @@ final class PagingContentViewController: UIViewController {
   
   var selectedScrollableContentViewController: PagingScrollableContent? {
     selectedContentViewController as? PagingScrollableContent
+  }
+  
+  var contentHeight: CGFloat {
+    let headerHeight = round(headerView.systemLayoutSizeFitting(.zero).height)
+    return selectedContentViewController.contentHeight + headerHeight
   }
   
   override func viewDidLoad() {

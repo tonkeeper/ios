@@ -90,7 +90,7 @@ extension WalletContentViewController: PagingContentViewControllerDelegate {
 
 extension WalletContentViewController: ScrollContainerBodyContent {
   var height: CGFloat {
-    pagingContentViewController.selectedContentViewController.contentHeight
+    pagingContentViewController.contentHeight
   }
 
   func resetOffset() {

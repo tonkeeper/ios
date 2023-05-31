@@ -83,6 +83,7 @@
 		7D9292972A25EB16005B83DF /* PageSegmentControlTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292962A25EB16005B83DF /* PageSegmentControlTab.swift */; };
 		7D9292992A25EC70005B83DF /* PagingContentHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292982A25EC70005B83DF /* PagingContentHeaderView.swift */; };
 		7D92929B2A25F939005B83DF /* NSLayoutConstraint+Priority.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92929A2A25F939005B83DF /* NSLayoutConstraint+Priority.swift */; };
+		7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92929C2A2608A0005B83DF /* WalletHeaderTitleView.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -176,6 +177,7 @@
 		7D9292962A25EB16005B83DF /* PageSegmentControlTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageSegmentControlTab.swift; sourceTree = "<group>"; };
 		7D9292982A25EC70005B83DF /* PagingContentHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PagingContentHeaderView.swift; sourceTree = "<group>"; };
 		7D92929A2A25F939005B83DF /* NSLayoutConstraint+Priority.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NSLayoutConstraint+Priority.swift"; sourceTree = "<group>"; };
+		7D92929C2A2608A0005B83DF /* WalletHeaderTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderTitleView.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -267,6 +269,7 @@
 			children = (
 				7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */,
 				7D5928602A1FB62A006B0A8A /* WalletHeaderButtonsView.swift */,
+				7D92929C2A2608A0005B83DF /* WalletHeaderTitleView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -762,6 +765,7 @@
 				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,
 				7D59284B2A1F5797006B0A8A /* WalletHeaderPresenter.swift in Sources */,
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
+				7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */,
 				7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */,
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
 				7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */,

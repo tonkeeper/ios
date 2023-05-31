@@ -71,29 +71,26 @@ private extension WalletHeaderView {
     addSubview(stackView)
     addSubview(buttonsView)
     
-    let stackViewRightConstraint = stackView.rightAnchor.constraint(equalTo: rightAnchor)
-    stackViewRightConstraint.priority = .defaultHigh
-    let buttonsBottomConstraint = buttonsView.bottomAnchor.constraint(equalTo: bottomAnchor)
-    buttonsBottomConstraint.priority = .defaultHigh
-    
     stackView.translatesAutoresizingMaskIntoConstraints = false
     buttonsView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       stackView.topAnchor.constraint(equalTo: topAnchor, constant: .amountTopSpacing),
       stackView.leftAnchor.constraint(equalTo: leftAnchor),
-      stackViewRightConstraint,
+      stackView.rightAnchor.constraint(equalTo: rightAnchor)
+        .withPriority(.defaultHigh),
       
       buttonsView.topAnchor.constraint(equalTo: stackView.bottomAnchor, constant: .buttonsTopSpacing),
       buttonsView.leftAnchor.constraint(equalTo: leftAnchor),
       buttonsView.rightAnchor.constraint(equalTo: rightAnchor),
       buttonsView.heightAnchor.constraint(equalToConstant: 82),
-      buttonsBottomConstraint
+      buttonsView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        .withPriority(.defaultHigh)
     ])
   }
 }
 
 private extension CGFloat {
-  static let amountTopSpacing: CGFloat = 48
+  static let amountTopSpacing: CGFloat = 28
   static let topSpacing: CGFloat = 8
   static let buttonsTopSpacing: CGFloat = 16
 }
