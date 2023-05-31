@@ -15,6 +15,12 @@ extension UIImage {
       }
     }
     
+    enum TextField {
+      static var clear: UIImage? {
+        .init(named: "Icons/16/ic-xmark-circle-16")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     enum Buttons {
       static var scanQR: UIImage? {
         .init(named: "Icons/28/ic-qr-viewfinder-28")?.withRenderingMode(.alwaysTemplate)

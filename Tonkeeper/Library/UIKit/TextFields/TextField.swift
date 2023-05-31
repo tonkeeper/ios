@@ -36,6 +36,18 @@ final class TextField: UIControlClosure {
     }
   }
   
+  var isPasteButtonAvailable = false {
+    didSet {
+      updatePasteButtonVisibility()
+    }
+  }
+  
+  var isScanQRCodeButtonAvailable = false {
+    didSet {
+      updateScanQRCodeButtonVisibility()
+    }
+  }
+  
   private let container = TextFieldContainer()
   private let textView: UITextView = {
     let textView = UITextView()
@@ -58,7 +70,37 @@ final class TextField: UIControlClosure {
     label.textColor = .Text.secondary
     label.textAlignment = .left
     label.numberOfLines = 1
+    label.layer.anchorPoint = .init(x: 0, y: 0.5)
     return label
+  }()
+  
+  private let clearButton: UIButton = {
+    let button = UIButton(type: .system)
+    button.setImage(.Icons.TextField.clear, for: .normal)
+    button.tintColor = .Icon.secondary
+    button.isHidden = true
+    return button
+  }()
+  
+  private let pasteButton: UIButton = {
+    let button = UIButton(type: .system)
+    button.titleLabel?.applyTextStyleFont(.label1)
+    button.setTitleColor(.Accent.blue, for: .normal)
+    button.setTitle("Paste", for: .normal)
+    return button
+  }()
+  
+  private let scanQRButton: UIButton = {
+    let button = UIButton(type: .system)
+    button.tintColor = .Accent.blue
+    button.setImage(.Icons.Buttons.scanQR, for: .normal)
+    return button
+  }()
+  
+  private let buttonsStackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .horizontal
+    return stackView
   }()
   
   private var textViewTopConstraint: NSLayoutConstraint?
@@ -79,14 +121,20 @@ final class TextField: UIControlClosure {
   
   override func becomeFirstResponder() -> Bool {
     let result = textView.becomeFirstResponder()
-    updatePlaceholder(isFirstResponder: result)
+    updateState(isFirstResponder: result)
     return result
   }
   
   override func resignFirstResponder() -> Bool {
     let result = textView.resignFirstResponder()
-    updatePlaceholder(isFirstResponder: !result)
+    updateState(isFirstResponder: result)
     return result
+  }
+  
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    placeholderLabel.layoutIfNeeded()
+    placeholderLabel.frame.origin.x = .placeholderLeftSpace
   }
 }
 
@@ -96,6 +144,9 @@ private extension TextField {
       self?.textView.becomeFirstResponder()
     }), for: .touchUpInside)
     
+    clearButton.addTarget(self, action: #selector(clearButtonTapped), for: .touchUpInside)
+    pasteButton.addTarget(self, action: #selector(pasteButtonTapped), for: .touchUpInside)
+    
     container.isUserInteractionEnabled = false
     
     textView.delegate = self
@@ -103,10 +154,26 @@ private extension TextField {
     addSubview(container)
     addSubview(textView)
     addSubview(placeholderLabel)
+    addSubview(clearButton)
+    addSubview(buttonsStackView)
     
+    buttonsStackView.addArrangedSubview(pasteButton)
+    buttonsStackView.setCustomSpacing(.interButtonsSpace, after: pasteButton)
+    buttonsStackView.addArrangedSubview(scanQRButton)
+    
+    setupConstraints()
+    
+    updatePlaceholderModeAppearance()
+    updateAppearance()
+    updateState(isFirstResponder: false)
+  }
+  
+  func setupConstraints() {
     container.translatesAutoresizingMaskIntoConstraints = false
     textView.translatesAutoresizingMaskIntoConstraints = false
     placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
+    clearButton.translatesAutoresizingMaskIntoConstraints = false
+    buttonsStackView.translatesAutoresizingMaskIntoConstraints = false
     
     textViewTopConstraint = textView.topAnchor.constraint(equalTo: topAnchor, constant: 0)
     textViewBottomConstraint = textView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: 0)
@@ -116,21 +183,25 @@ private extension TextField {
     placeholderTopConstraint = placeholderLabel.topAnchor.constraint(equalTo: topAnchor, constant: .placeholderTopActiveSpace)
     placeholderCenterYConstraint = placeholderLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
     placeholderCenterYConstraint?.isActive = true
-    placeholderLeftConstraint = placeholderLabel.leftAnchor.constraint(equalTo: leftAnchor, constant: .placeholderLeftInactiveSpace)
-    placeholderLeftConstraint?.isActive = true
     
     NSLayoutConstraint.activate([
-      textView.leftAnchor.constraint(equalTo: leftAnchor, constant: .textViewSideSpace),
-      textView.rightAnchor.constraint(equalTo: rightAnchor, constant: -.textViewSideSpace),
+      textView.leftAnchor.constraint(equalTo: leftAnchor, constant: .textViewLeftSpace),
+      textView.rightAnchor.constraint(equalTo: rightAnchor, constant: -.textViewRightSpace),
+      
+      clearButton.widthAnchor.constraint(equalToConstant: .clearButtonSide),
+      clearButton.heightAnchor.constraint(equalToConstant: .clearButtonSide),
+      clearButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -.clearButtonRightSpace),
+      clearButton.topAnchor.constraint(equalTo: textView.topAnchor, constant: .clearButtonTopSpace),
       
       container.topAnchor.constraint(equalTo: topAnchor),
       container.leftAnchor.constraint(equalTo: leftAnchor),
       container.rightAnchor.constraint(equalTo: rightAnchor),
-      container.bottomAnchor.constraint(equalTo: bottomAnchor)
+      container.bottomAnchor.constraint(equalTo: bottomAnchor),
+      
+      buttonsStackView.topAnchor.constraint(equalTo: topAnchor),
+      buttonsStackView.rightAnchor.constraint(equalTo: rightAnchor, constant: -.buttonsStackRightSpace),
+      buttonsStackView.centerYAnchor.constraint(equalTo: centerYAnchor)
     ])
-    
-    updatePlaceholderModeAppearance()
-    updateAppearance()
   }
   
   func updateAppearance() {
@@ -155,23 +226,34 @@ private extension TextField {
     }
   }
   
-  func updatePlaceholder(isFirstResponder: Bool) {
-    switch placeholderMode {
-    case .topStick:
-      if isFirstResponder {
-        movePlaceholderTop()
-      } else if textView.text.isEmpty {
-        movePlaceholderBottom()
-      }
-    case .noStick:
-      return
-    }
+  func updatePasteButtonVisibility() {
+    pasteButton.isHidden = !textView.text.isEmpty || !isPasteButtonAvailable
   }
   
+  func updateScanQRCodeButtonVisibility() {
+    scanQRButton.isHidden = !textView.text.isEmpty || !isScanQRCodeButtonAvailable
+  }
+  
+  func updateState(isFirstResponder: Bool) {
+    clearButton.isHidden = textView.text.isEmpty || !isFirstResponder
+    updatePasteButtonVisibility()
+    updateScanQRCodeButtonVisibility()
+  
+    switch placeholderMode {
+    case .noStick:
+      placeholderLabel.isHidden = !textView.text.isEmpty
+    case .topStick:
+      isFirstResponder || !textView.text.isEmpty
+      ? movePlaceholderTop()
+      : movePlaceholderBottom()
+    }
+  }
+
   func movePlaceholderTop() {
+    layoutIfNeeded()
+    
     placeholderCenterYConstraint?.isActive = false
     placeholderTopConstraint?.isActive = true
-    placeholderLeftConstraint?.constant = .placeholderLeftActiveSpace
     let transform = CGAffineTransform(scaleX: .placeholderScale, y: .placeholderScale)
     
     UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseInOut) {
@@ -181,9 +263,10 @@ private extension TextField {
   }
   
   func movePlaceholderBottom() {
+    layoutIfNeeded()
+    
     placeholderCenterYConstraint?.isActive = true
     placeholderTopConstraint?.isActive = false
-    placeholderLeftConstraint?.constant = .placeholderLeftInactiveSpace
     let transform = CGAffineTransform.identity
     
     UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseInOut) {
@@ -191,40 +274,54 @@ private extension TextField {
       self.layoutIfNeeded()
     }
   }
+  
+  @objc
+  func clearButtonTapped() {
+    textView.text = nil
+    updateState(isFirstResponder: textView.isFirstResponder)
+  }
+  
+  @objc
+  func pasteButtonTapped() {
+    textView.text = UIPasteboard.general.string
+    updateState(isFirstResponder: textView.isFirstResponder)
+  }
 }
 
 extension TextField: UITextViewDelegate {
   func textViewShouldBeginEditing(_ textView: UITextView) -> Bool {
-    updatePlaceholder(isFirstResponder: true)
+    updateState(isFirstResponder: true)
     container.state = .active
     return true
   }
   
   func textViewShouldEndEditing(_ textView: UITextView) -> Bool {
-    updatePlaceholder(isFirstResponder: false)
+    updateState(isFirstResponder: false)
     container.state = .inactive
     return true
   }
   
   func textViewDidChange(_ textView: UITextView) {
-    switch placeholderMode {
-    case .noStick:
-      placeholderLabel.isHidden = !textView.text.isEmpty
-    case .topStick:
-      return
-    }
+    updateState(isFirstResponder: textView.isFirstResponder)
   }
 }
 
 private extension CGFloat {
-  static let textViewSideSpace: CGFloat = 16
+  static let textViewLeftSpace: CGFloat = 16
+  static let textViewRightSpace: CGFloat = 40
   static let textViewPlaceholderTopSpace: CGFloat = 28
   static let textViewPlaceholderBottomSpace: CGFloat = 12
   static let textViewTopSpace: CGFloat = 16
   static let textViewBottomSpace: CGFloat = 16
   static let placeholderScale: CGFloat = 0.75
   
-  static let placeholderLeftInactiveSpace: CGFloat = 16
-  static let placeholderLeftActiveSpace: CGFloat = 10
+  static let placeholderLeftSpace: CGFloat = 16
   static let placeholderTopActiveSpace: CGFloat = 12
+  
+  static let clearButtonSide: CGFloat = 16
+  static let clearButtonRightSpace: CGFloat = 16
+  static let clearButtonTopSpace: CGFloat = 4
+  
+  static let buttonsStackRightSpace: CGFloat = 17
+  static let interButtonsSpace: CGFloat = 30
 }
