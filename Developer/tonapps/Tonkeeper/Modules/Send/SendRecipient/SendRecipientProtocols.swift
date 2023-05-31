@@ -8,12 +8,15 @@
 
 import Foundation
 
-protocol SendRecipientModuleOutput: AnyObject {}
+protocol SendRecipientModuleOutput: AnyObject {
+  func didTapCloseButton()
+}
 
 protocol SendRecipientModuleInput: AnyObject {}
 
 protocol SendRecipientPresenterInput {
   func viewDidLoad()
+  func didTapCloseButton()
 }
 
 protocol SendRecipientViewInput: AnyObject {}

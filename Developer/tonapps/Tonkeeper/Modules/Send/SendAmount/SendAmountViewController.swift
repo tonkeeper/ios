@@ -43,5 +43,8 @@ extension SendAmountViewController: SendAmountViewInput {}
 private extension SendAmountViewController {
   func setup() {
     title = "Amount"
+    setupCloseButton {
+      
+    }
   }
 }

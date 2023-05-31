@@ -54,6 +54,10 @@ extension UIImage {
         static var close: UIImage? {
           .init(named: "Icons/16/ic-close-16")?.withRenderingMode(.alwaysTemplate)
         }
+        
+        static var back: UIImage? {
+          .init(named: "Icons/16/ic-chevron-left-16")?.withRenderingMode(.alwaysTemplate)
+        }
       }
     }
     

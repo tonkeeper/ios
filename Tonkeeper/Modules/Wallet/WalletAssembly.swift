@@ -54,12 +54,13 @@ struct WalletAssembly {
     return Module(view: viewController, input: presenter)
   }
   
-  func sendCoordinator() -> SendCoordinator {
+  func sendCoordinator(output: SendCoordinatorOutput) -> SendCoordinator {
     let navigationController = NavigationController()
     navigationController.configureAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = SendCoordinator(router: router,
                                       assembly: sendAssembly)
+    coordinator.output = output
     return coordinator
   }
 }

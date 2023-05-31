@@ -43,5 +43,8 @@ extension SendRecipientViewController: SendRecipientViewInput {}
 private extension SendRecipientViewController {
   func setup() {
     title = "Recipient"
+    setupCloseButton { [weak self] in
+      self?.presenter.didTapCloseButton()
+    }
   }
 }

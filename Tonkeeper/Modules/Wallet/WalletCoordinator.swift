@@ -39,7 +39,7 @@ extension WalletCoordinator: WalletRootModuleOutput {
   }
   
   func openSend() {
-    let coordinator = walletAssembly.sendCoordinator()
+    let coordinator = walletAssembly.sendCoordinator(output: self)
     addChild(coordinator)
     coordinator.start()
     router.present(coordinator.router.rootViewController)
@@ -58,4 +58,10 @@ extension WalletCoordinator: QRScannerModuleOutput {
 
 extension WalletCoordinator: TokensListModuleOutput {
   
+}
+
+extension WalletCoordinator: SendCoordinatorOutput {
+  func sendCoordinatorDidClose(_ coordinator: SendCoordinator) {
+    router.dismiss()
+  }
 }

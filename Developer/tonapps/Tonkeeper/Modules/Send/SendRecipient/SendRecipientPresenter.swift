@@ -20,6 +20,10 @@ final class SendRecipientPresenter {
 
 extension SendRecipientPresenter: SendRecipientPresenterInput {
   func viewDidLoad() {}
+  
+  func didTapCloseButton() {
+    output?.didTapCloseButton()
+  }
 }
 
 // MARK: - SendRecipientModuleInput

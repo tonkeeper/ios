@@ -7,7 +7,13 @@
 
 import UIKit
 
+protocol SendCoordinatorOutput: AnyObject {
+  func sendCoordinatorDidClose(_ coordinator: SendCoordinator)
+}
+
 final class SendCoordinator: Coordinator<NavigationRouter> {
+  
+  weak var output: SendCoordinatorOutput?
   
   private let assembly: SendAssembly
   
@@ -30,13 +36,18 @@ private extension SendCoordinator {
   
   func openSendAmount() {
     let module = assembly.sendAmountModule(output: self)
+    module.view.setupBackButton()
     router.push(presentable: module.view)
   }
 }
 
 // MARK: - SendRecipientModuleOutput
 
-extension SendCoordinator: SendRecipientModuleOutput {}
+extension SendCoordinator: SendRecipientModuleOutput {
+  func didTapCloseButton() {
+    output?.sendCoordinatorDidClose(self)
+  }
+}
 
 // MARK: - SendAmountModuleOutput
 
