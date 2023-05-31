@@ -10,7 +10,8 @@ import UIKit
 final class TabBarAssembly {
   
   lazy var walletAssembly = WalletAssembly(
-    qrScannerAssembly: QRScannerAssembly()
+    qrScannerAssembly: QRScannerAssembly(),
+    sendAssembly: SendAssembly(qrScannerAssembly: QRScannerAssembly())
   )
   lazy var activityAssembly = ActivityAssembly()
   lazy var browserAssembly = BrowserAssembly()

@@ -33,7 +33,11 @@ extension WalletRootPresenter: WalletRootPresenterInput {
 
 // MARK: - WalletHeaderModuleOutput
 
-extension WalletRootPresenter: WalletHeaderModuleOutput {}
+extension WalletRootPresenter: WalletHeaderModuleOutput {
+  func didTapSendButton() {
+    output?.openSend()
+  }
+}
 
 // MARK: - WalletContentModuleOutput
 

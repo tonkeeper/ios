@@ -37,6 +37,13 @@ extension WalletCoordinator: WalletRootModuleOutput {
     let module = walletAssembly.qrScannerModule(output: self)
     router.present(module.view)
   }
+  
+  func openSend() {
+    let coordinator = walletAssembly.sendCoordinator()
+    addChild(coordinator)
+    coordinator.start()
+    router.present(coordinator.router.rootViewController)
+  }
 }
 
 // MARK: - QRScannerModuleOutput

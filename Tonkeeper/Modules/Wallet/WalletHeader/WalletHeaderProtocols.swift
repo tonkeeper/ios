@@ -7,7 +7,9 @@
 
 import Foundation
 
-protocol WalletHeaderModuleOutput: AnyObject {}
+protocol WalletHeaderModuleOutput: AnyObject {
+  func didTapSendButton()
+}
 
 protocol WalletHeaderModuleInput: AnyObject {}
 

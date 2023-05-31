@@ -39,11 +39,22 @@ extension WalletHeaderPresenter: WalletHeaderModuleInput {}
 private extension WalletHeaderPresenter {
   func createHeaderButtonModels() -> [WalletHeaderButtonModel] {
     let types: [WalletHeaderButtonModel.ButtonType] = [.buy, .send, .receive, .sell]
-    return types.map {
-      let buttonModel = Button.Model(icon: $0.icon)
-      let iconButtonModel = IconButton.Model(buttonModel: buttonModel, title: $0.title)
-      let model = WalletHeaderButtonModel(viewModel: iconButtonModel) {}
+    return types.map { type in
+      let buttonModel = Button.Model(icon: type.icon)
+      let iconButtonModel = IconButton.Model(buttonModel: buttonModel, title: type.title)
+      let model = WalletHeaderButtonModel(viewModel: iconButtonModel) { [weak self] in
+        self?.handleHeaderButtonAction(type: type)
+      }
       return model
+    }
+  }
+  
+  func handleHeaderButtonAction(type: WalletHeaderButtonModel.ButtonType) {
+    switch type {
+    case .send:
+      output?.didTapSendButton()
+    default:
+      break
     }
   }
 }
