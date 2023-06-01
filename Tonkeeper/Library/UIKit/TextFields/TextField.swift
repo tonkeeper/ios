@@ -151,6 +151,7 @@ private extension TextField {
     
     container.isUserInteractionEnabled = false
     
+    textView.keyboardAppearance = .dark
     textView.delegate = self
     
     addSubview(container)
@@ -179,7 +180,6 @@ private extension TextField {
     
     textViewTopConstraint = textView.topAnchor.constraint(equalTo: topAnchor, constant: 0)
     textViewBottomConstraint = textView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: 0)
-//      .withPriority(.defaultHigh)
     textViewTopConstraint?.isActive = true
     textViewBottomConstraint?.isActive = true
     
@@ -190,7 +190,6 @@ private extension TextField {
     NSLayoutConstraint.activate([
       textView.leftAnchor.constraint(equalTo: leftAnchor, constant: .textViewLeftSpace),
       textView.rightAnchor.constraint(equalTo: rightAnchor, constant: -.textViewRightSpace),
-//        .withPriority(.defaultHigh),
       
       clearButton.widthAnchor.constraint(equalToConstant: .clearButtonSide),
       clearButton.heightAnchor.constraint(equalToConstant: .clearButtonSide),

@@ -9,9 +9,6 @@
 import UIKit
 
 final class SendRecipientView: UIView {
-  
-  
-  
   private let scrollView = UIScrollView()
   private let contentView = UIView()
   private let stackView: UIStackView = {

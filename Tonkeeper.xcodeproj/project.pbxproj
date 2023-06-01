@@ -98,6 +98,8 @@
 		7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D52A287FF9005B83DF /* UIViewController+Keyboard.swift */; };
 		7D9292D82A288013005B83DF /* Notificiation+Keyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D72A288013005B83DF /* Notificiation+Keyboard.swift */; };
 		7D9292DB2A2890D6005B83DF /* SendAmountTitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292DA2A2890D6005B83DF /* SendAmountTitleView.swift */; };
+		7D9292DE2A28A1DF005B83DF /* EnterAmountViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292DD2A28A1DF005B83DF /* EnterAmountViewController.swift */; };
+		7D9292E12A28A1F5005B83DF /* EnterAmountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292E02A28A1F5005B83DF /* EnterAmountView.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -212,6 +214,8 @@
 		7D9292D52A287FF9005B83DF /* UIViewController+Keyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIViewController+Keyboard.swift"; sourceTree = "<group>"; };
 		7D9292D72A288013005B83DF /* Notificiation+Keyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Notificiation+Keyboard.swift"; sourceTree = "<group>"; };
 		7D9292DA2A2890D6005B83DF /* SendAmountTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendAmountTitleView.swift; sourceTree = "<group>"; };
+		7D9292DD2A28A1DF005B83DF /* EnterAmountViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnterAmountViewController.swift; sourceTree = "<group>"; };
+		7D9292E02A28A1F5005B83DF /* EnterAmountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnterAmountView.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -590,6 +594,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D9292DC2A28A1D2005B83DF /* ViewController */,
 				7D9292CD2A275A0F005B83DF /* Insets */,
 				7D9292CA2A2756C5005B83DF /* TextFields */,
 				7D9292932A25EAF8005B83DF /* PageSegmentedControl */,
@@ -708,6 +713,23 @@
 				7D9292DA2A2890D6005B83DF /* SendAmountTitleView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7D9292DC2A28A1D2005B83DF /* ViewController */ = {
+			isa = PBXGroup;
+			children = (
+				7D9292DF2A28A1EB005B83DF /* EnterAmountViewController */,
+			);
+			path = ViewController;
+			sourceTree = "<group>";
+		};
+		7D9292DF2A28A1EB005B83DF /* EnterAmountViewController */ = {
+			isa = PBXGroup;
+			children = (
+				7D9292DD2A28A1DF005B83DF /* EnterAmountViewController.swift */,
+				7D9292E02A28A1F5005B83DF /* EnterAmountView.swift */,
+			);
+			path = EnterAmountViewController;
 			sourceTree = "<group>";
 		};
 		7DB8FB592A1BCC92005B4B11 = {
@@ -937,6 +959,7 @@
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,
 				7D68366E2A1D6F1E002DBBC7 /* WalletRootView.swift in Sources */,
 				7D5928612A1FB62A006B0A8A /* WalletHeaderButtonsView.swift in Sources */,
+				7D9292E12A28A1F5005B83DF /* EnterAmountView.swift in Sources */,
 				7D92929B2A25F939005B83DF /* NSLayoutConstraint+Priority.swift in Sources */,
 				7D5928852A20CE3C006B0A8A /* TokensListCollectionController.swift in Sources */,
 				7D59287A2A20BF36006B0A8A /* TokensListSection.swift in Sources */,
@@ -962,6 +985,7 @@
 				FD5AC7C6F094091CB911C3D8 /* TokensListViewController.swift in Sources */,
 				0C1DF00128AE8BA90E30FCB1 /* TokensListView.swift in Sources */,
 				C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */,
+				7D9292DE2A28A1DF005B83DF /* EnterAmountViewController.swift in Sources */,
 				FC58CA56982D098FE4E85989 /* TokensListProtocols.swift in Sources */,
 				D97B981CF3DBE823EDA9A091 /* WalletContentViewController.swift in Sources */,
 				B2DC87224B8264B43A27920C /* WalletContentView.swift in Sources */,

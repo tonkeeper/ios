@@ -57,6 +57,7 @@ struct WalletAssembly {
   func sendCoordinator(output: SendCoordinatorOutput) -> SendCoordinator {
     let navigationController = NavigationController()
     navigationController.configureAppearance()
+    navigationController.isModalInPresentation = true
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = SendCoordinator(router: router,
                                       assembly: sendAssembly)

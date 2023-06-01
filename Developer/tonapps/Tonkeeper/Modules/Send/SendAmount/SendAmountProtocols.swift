@@ -17,8 +17,12 @@ protocol SendAmountModuleInput: AnyObject {}
 protocol SendAmountPresenterInput {
   func viewDidLoad()
   func didTapCloseButton()
+  func didTapMaxButton()
 }
 
 protocol SendAmountViewInput: AnyObject {
   func updateTitleView(model: SendAmountTitleView.Model)
+  func updateRemainingLabel(string: String?)
+  func selectMaxButton()
+  func deselectMaxButton()
 }
