@@ -60,7 +60,11 @@ extension SendCoordinator: SendRecipientModuleOutput {
 
 // MARK: - SendAmountModuleOutput
 
-extension SendCoordinator: SendAmountModuleOutput {}
+extension SendCoordinator: SendAmountModuleOutput {
+  func sendAmountModuleDidTapCloseButton() {
+    output?.sendCoordinatorDidClose(self)
+  }
+}
 
 // MARK: - QRScannerModuleOutput
 

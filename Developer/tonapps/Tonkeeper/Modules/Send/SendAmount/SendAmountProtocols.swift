@@ -8,12 +8,17 @@
 
 import Foundation
 
-protocol SendAmountModuleOutput: AnyObject {}
+protocol SendAmountModuleOutput: AnyObject {
+  func sendAmountModuleDidTapCloseButton()
+}
 
 protocol SendAmountModuleInput: AnyObject {}
 
 protocol SendAmountPresenterInput {
   func viewDidLoad()
+  func didTapCloseButton()
 }
 
-protocol SendAmountViewInput: AnyObject {}
+protocol SendAmountViewInput: AnyObject {
+  func updateTitleView(model: SendAmountTitleView.Model)
+}

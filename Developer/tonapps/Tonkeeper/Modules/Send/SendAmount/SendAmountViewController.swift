@@ -13,6 +13,8 @@ class SendAmountViewController: GenericViewController<SendAmountView> {
   // MARK: - Module
 
   private let presenter: SendAmountPresenterInput
+  
+  private let titleView = SendAmountTitleView()
 
   // MARK: - Init
 
@@ -36,15 +38,20 @@ class SendAmountViewController: GenericViewController<SendAmountView> {
 
 // MARK: - SendAmountViewInput
 
-extension SendAmountViewController: SendAmountViewInput {}
+extension SendAmountViewController: SendAmountViewInput {
+  func updateTitleView(model: SendAmountTitleView.Model) {
+    titleView.configure(model: model)
+  }
+}
 
 // MARK: - Private
 
 private extension SendAmountViewController {
   func setup() {
-    title = "Amount"
-    setupCloseButton {
-      
+    navigationItem.titleView = titleView
+  
+    setupCloseButton { [weak self] in
+      self?.presenter.didTapCloseButton()
     }
   }
 }

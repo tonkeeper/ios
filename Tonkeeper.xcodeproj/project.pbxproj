@@ -97,6 +97,7 @@
 		7D9292D42A27DEC6005B83DF /* SendCommentLengthValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D32A27DEC6005B83DF /* SendCommentLengthValidator.swift */; };
 		7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D52A287FF9005B83DF /* UIViewController+Keyboard.swift */; };
 		7D9292D82A288013005B83DF /* Notificiation+Keyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D72A288013005B83DF /* Notificiation+Keyboard.swift */; };
+		7D9292DB2A2890D6005B83DF /* SendAmountTitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292DA2A2890D6005B83DF /* SendAmountTitleView.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -210,6 +211,7 @@
 		7D9292D32A27DEC6005B83DF /* SendCommentLengthValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendCommentLengthValidator.swift; sourceTree = "<group>"; };
 		7D9292D52A287FF9005B83DF /* UIViewController+Keyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIViewController+Keyboard.swift"; sourceTree = "<group>"; };
 		7D9292D72A288013005B83DF /* Notificiation+Keyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Notificiation+Keyboard.swift"; sourceTree = "<group>"; };
+		7D9292DA2A2890D6005B83DF /* SendAmountTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendAmountTitleView.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -700,6 +702,14 @@
 			path = Validation;
 			sourceTree = "<group>";
 		};
+		7D9292D92A2890CE005B83DF /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D9292DA2A2890D6005B83DF /* SendAmountTitleView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
@@ -778,6 +788,7 @@
 		C578A9A5581A5533C612CF1A /* SendAmount */ = {
 			isa = PBXGroup;
 			children = (
+				7D9292D92A2890CE005B83DF /* Views */,
 				EF4DC21BC9FF0F782BA6425E /* SendAmountViewController.swift */,
 				A9A6F3238884A5CED38CAC7D /* SendAmountView.swift */,
 				0CFDA7B718D758279C496E3F /* SendAmountPresenter.swift */,
@@ -907,6 +918,7 @@
 				7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */,
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
 				7D5928652A1FB6C4006B0A8A /* UIControlClosure.swift in Sources */,
+				7D9292DB2A2890D6005B83DF /* SendAmountTitleView.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
 				7D68364E2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift in Sources */,
 				7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */,

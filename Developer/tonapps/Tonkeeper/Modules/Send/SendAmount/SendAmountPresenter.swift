@@ -19,7 +19,13 @@ final class SendAmountPresenter {
 // MARK: - SendAmountPresenterIntput
 
 extension SendAmountPresenter: SendAmountPresenterInput {
-  func viewDidLoad() {}
+  func viewDidLoad() {
+    updateTitle()
+  }
+  
+  func didTapCloseButton() {
+    output?.sendAmountModuleDidTapCloseButton()
+  }
 }
 
 // MARK: - SendAmountModuleInput
@@ -28,4 +34,10 @@ extension SendAmountPresenter: SendAmountModuleInput {}
 
 // MARK: - Private
 
-private extension SendAmountPresenter {}
+private extension SendAmountPresenter {
+  func updateTitle() {
+    let model = SendAmountTitleView.Model(title: "Amount",
+                                          subtitle: "To: EQCc…9ZLD")
+    viewInput?.updateTitleView(model: model)
+  }
+}
