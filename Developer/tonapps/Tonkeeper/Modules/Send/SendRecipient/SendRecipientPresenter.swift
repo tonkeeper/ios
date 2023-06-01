@@ -32,11 +32,15 @@ extension SendRecipientPresenter: SendRecipientPresenterInput {
   func viewDidLoad() {}
   
   func didTapCloseButton() {
-    output?.didTapCloseButton()
+    output?.sendRecipientModuleDidTapCloseButton()
   }
   
   func didTapScanQRButton() {
-    output?.openQRScanner()
+    output?.sendRecipientModuleOpenQRScanner()
+  }
+  
+  func didTapContinueButton() {
+    output?.sendRecipientModuleDidTapContinueButton()
   }
   
   func didChangeComment(text: String) {

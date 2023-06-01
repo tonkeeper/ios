@@ -44,13 +44,17 @@ private extension SendCoordinator {
 // MARK: - SendRecipientModuleOutput
 
 extension SendCoordinator: SendRecipientModuleOutput {
-  func didTapCloseButton() {
+  func sendRecipientModuleOpenQRScanner() {
+    let module = assembly.qrScannerAssembly.qrScannerModule(output: self)
+    router.present(module.view)
+  }
+  
+  func sendRecipientModuleDidTapCloseButton() {
     output?.sendCoordinatorDidClose(self)
   }
   
-  func openQRScanner() {
-    let module = assembly.qrScannerAssembly.qrScannerModule(output: self)
-    router.present(module.view)
+  func sendRecipientModuleDidTapContinueButton() {
+    openSendAmount()
   }
 }
 

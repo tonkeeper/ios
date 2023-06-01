@@ -26,5 +26,6 @@ final class SendAmountView: UIView {
 
 private extension SendAmountView {
   func setup() {
+    backgroundColor = .Background.page
   }
 }

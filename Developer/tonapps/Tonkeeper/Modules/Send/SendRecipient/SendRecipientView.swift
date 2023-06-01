@@ -95,7 +95,11 @@ private extension SendRecipientView {
     stackView.setCustomSpacing(.textFieldSpace, after: addressTextField)
     stackView.setCustomSpacing(.commentaryVisibilityLabelTopSpace, after: commentTextField)
     stackView.setCustomSpacing(.commentaryVisibilityLabelTopSpace, after: commentVisibilityLabel)
-
+    
+    setupConstraints()
+  }
+  
+  func setupConstraints() {
     scrollView.translatesAutoresizingMaskIntoConstraints = false
     contentView.translatesAutoresizingMaskIntoConstraints = false
     stackView.translatesAutoresizingMaskIntoConstraints = false

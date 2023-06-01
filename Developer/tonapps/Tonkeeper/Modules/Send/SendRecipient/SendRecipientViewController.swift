@@ -36,6 +36,15 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     registerForKeyboardEvents()
+  }
+  
+  override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    unregisterFromKeyboardEvents()
+  }
+  
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
     _ = customView.addressTextField.becomeFirstResponder()
   }
   
@@ -100,6 +109,10 @@ private extension SendRecipientViewController {
       self,
       action: #selector(didTapScanQRButton),
       for: .touchUpInside)
+    
+    customView.continueButton.addAction(.init(handler: { [weak self] in
+      self?.presenter.didTapContinueButton()
+    }), for: .touchUpInside)
   }
   
   func addressDidChange(_ textView: UITextView) {

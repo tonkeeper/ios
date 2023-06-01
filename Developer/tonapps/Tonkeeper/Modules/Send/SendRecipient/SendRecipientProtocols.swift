@@ -9,8 +9,9 @@
 import Foundation
 
 protocol SendRecipientModuleOutput: AnyObject {
-  func didTapCloseButton()
-  func openQRScanner()
+  func sendRecipientModuleDidTapCloseButton()
+  func sendRecipientModuleOpenQRScanner()
+  func sendRecipientModuleDidTapContinueButton()
 }
 
 protocol SendRecipientModuleInput: AnyObject {}
@@ -20,6 +21,7 @@ protocol SendRecipientPresenterInput {
   func didTapCloseButton()
   func didTapScanQRButton()
   func didChangeComment(text: String)
+  func didTapContinueButton()
 }
 
 protocol SendRecipientViewInput: AnyObject {
