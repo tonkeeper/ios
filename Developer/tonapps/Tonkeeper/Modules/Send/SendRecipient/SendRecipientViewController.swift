@@ -8,7 +8,7 @@
 
 import UIKit
 
-class SendRecipientViewController: GenericViewController<SendRecipientView> {
+class SendRecipientViewController: GenericViewController<SendRecipientView>, KeyboardObserving {
 
   // MARK: - Module
 
@@ -31,6 +31,40 @@ class SendRecipientViewController: GenericViewController<SendRecipientView> {
     super.viewDidLoad()
     setup()
     presenter.viewDidLoad()
+  }
+  
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    registerForKeyboardEvents()
+    _ = customView.addressTextField.becomeFirstResponder()
+  }
+  
+  // MARK: - Keyboard
+  
+  func keyboardWillShow(_ notification: Notification) {
+    guard let keyboardSize = notification.keyboardSize,
+    let duration = notification.keyboardAnimationDuration,
+    let curve = notification.keyboardAnimationCurve else { return }
+    customView.updateKeyboardHeight(keyboardSize.height,
+                                    duration: duration,
+                                    curve: curve)
+  }
+  
+  func keyboardWillHide(_ notification: Notification) {
+    guard let duration = notification.keyboardAnimationDuration,
+    let curve = notification.keyboardAnimationCurve else { return }
+    customView.updateKeyboardHeight(0,
+                                    duration: duration,
+                                    curve: curve)
+  }
+  
+  func keyboardWillChangeFrame(_ notification: Notification) {
+    guard let keyboardSize = notification.keyboardSize,
+    let duration = notification.keyboardAnimationDuration,
+    let curve = notification.keyboardAnimationCurve else { return }
+    customView.updateKeyboardHeight(keyboardSize.height,
+                                    duration: duration,
+                                    curve: curve)
   }
 }
 

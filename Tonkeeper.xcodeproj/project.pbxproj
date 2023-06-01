@@ -95,6 +95,8 @@
 		7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292CE2A275A18005B83DF /* ContentInsets.swift */; };
 		7D9292D12A275B6D005B83DF /* TextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D02A275B6D005B83DF /* TextField.swift */; };
 		7D9292D42A27DEC6005B83DF /* SendCommentLengthValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D32A27DEC6005B83DF /* SendCommentLengthValidator.swift */; };
+		7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D52A287FF9005B83DF /* UIViewController+Keyboard.swift */; };
+		7D9292D82A288013005B83DF /* Notificiation+Keyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292D72A288013005B83DF /* Notificiation+Keyboard.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -206,6 +208,8 @@
 		7D9292CE2A275A18005B83DF /* ContentInsets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentInsets.swift; sourceTree = "<group>"; };
 		7D9292D02A275B6D005B83DF /* TextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextField.swift; sourceTree = "<group>"; };
 		7D9292D32A27DEC6005B83DF /* SendCommentLengthValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendCommentLengthValidator.swift; sourceTree = "<group>"; };
+		7D9292D52A287FF9005B83DF /* UIViewController+Keyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIViewController+Keyboard.swift"; sourceTree = "<group>"; };
+		7D9292D72A288013005B83DF /* Notificiation+Keyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Notificiation+Keyboard.swift"; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -393,6 +397,7 @@
 			isa = PBXGroup;
 			children = (
 				7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */,
+				7D9292D72A288013005B83DF /* Notificiation+Keyboard.swift */,
 			);
 			path = Foundation;
 			sourceTree = "<group>";
@@ -765,6 +770,7 @@
 				7D6836612A1D6A79002DBBC7 /* UINavigationController+Appearance.swift */,
 				7D92929A2A25F939005B83DF /* NSLayoutConstraint+Priority.swift */,
 				7D9292C82A275303005B83DF /* UIViewController+NavigationItem.swift */,
+				7D9292D52A287FF9005B83DF /* UIViewController+Keyboard.swift */,
 			);
 			path = UIKit;
 			sourceTree = "<group>";
@@ -857,6 +863,7 @@
 				7D6836762A1E6623002DBBC7 /* QRScannerPresenter.swift in Sources */,
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
+				7D9292D82A288013005B83DF /* Notificiation+Keyboard.swift in Sources */,
 				7D6836422A1D0B5C002DBBC7 /* TabBarAssembly.swift in Sources */,
 				7D9292CC2A275725005B83DF /* TextFieldContainer.swift in Sources */,
 				7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */,
@@ -929,6 +936,7 @@
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
 				7D6836562A1D5951002DBBC7 /* BrowserCoordinator.swift in Sources */,
 				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
+				7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,

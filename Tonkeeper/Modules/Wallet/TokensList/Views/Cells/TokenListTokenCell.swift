@@ -70,8 +70,10 @@ private extension TokenListTokenCell {
     
     NSLayoutConstraint.activate([
       textContainerView.topAnchor.constraint(equalTo: topAnchor, constant: UIEdgeInsets.contentInsets.top),
-      textContainerView.rightAnchor.constraint(equalTo: rightAnchor, constant: -UIEdgeInsets.contentInsets.right),
-      textContainerView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -UIEdgeInsets.contentInsets.bottom),
+      textContainerView.rightAnchor.constraint(equalTo: rightAnchor, constant: -UIEdgeInsets.contentInsets.right)
+      .withPriority(.defaultHigh),
+      textContainerView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -UIEdgeInsets.contentInsets.bottom)
+      .withPriority(.defaultHigh),
       textContainerView.leftAnchor.constraint(equalTo: iconImageView.rightAnchor, constant: .spaceBetweenTextAndIcon),
       
       iconImageView.leftAnchor.constraint(equalTo: leftAnchor, constant: UIEdgeInsets.contentInsets.left),

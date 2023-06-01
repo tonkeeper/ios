@@ -10,6 +10,8 @@ import UIKit
 
 final class SendRecipientView: UIView {
   
+  
+  
   private let scrollView = UIScrollView()
   private let contentView = UIView()
   private let stackView: UIStackView = {
@@ -36,6 +38,15 @@ final class SendRecipientView: UIView {
     label.isHidden = true
     return label
   }()
+  
+  let continueButton: Button = {
+    let button = Button(configuration: .primaryLarge)
+    button.titleLabel.text = "Continue"
+    return button
+  }()
+  
+  private var keyboardHeight: CGFloat = 0
+  private var continueButtonBottomConstraint: NSLayoutConstraint?
 
   // MARK: - Init
 
@@ -47,6 +58,17 @@ final class SendRecipientView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  func updateKeyboardHeight(_ height: CGFloat,
+                            duration: TimeInterval,
+                            curve: UIView.AnimationCurve) {
+    keyboardHeight = height
+    continueButtonBottomConstraint?.constant = -keyboardHeight
+    UIViewPropertyAnimator(duration: duration, curve: curve) {
+      self.layoutIfNeeded()
+    }
+    .startAnimation()
+  }
 }
 
 // MARK: - Private
@@ -57,8 +79,12 @@ private extension SendRecipientView {
     
     addressTextField.isPasteButtonAvailable = true
     addressTextField.isScanQRCodeButtonAvailable = true
+    addressTextField.textView.autocapitalizationType = .none
+    addressTextField.textView.autocorrectionType = .no
+    addressTextField.textView.keyboardType = .alphabet
     
     addSubview(scrollView)
+    addSubview(continueButton)
     scrollView.addSubview(stackView)
 
     stackView.addArrangedSubview(addressTextField)
@@ -73,6 +99,12 @@ private extension SendRecipientView {
     scrollView.translatesAutoresizingMaskIntoConstraints = false
     contentView.translatesAutoresizingMaskIntoConstraints = false
     stackView.translatesAutoresizingMaskIntoConstraints = false
+    continueButton.translatesAutoresizingMaskIntoConstraints = false
+    
+    continueButtonBottomConstraint = continueButton.bottomAnchor.constraint(
+      equalTo: safeAreaLayoutGuide.bottomAnchor,
+      constant: -keyboardHeight)
+    continueButtonBottomConstraint?.isActive = true
     
     NSLayoutConstraint.activate([
       scrollView.topAnchor.constraint(equalTo: topAnchor),
@@ -85,7 +117,14 @@ private extension SendRecipientView {
       stackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor),
       stackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
       stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+      
+      continueButton.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
+      continueButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),
     ])
+  }
+  
+  func didUpdateKeyboardHeight() {
+    continueButtonBottomConstraint?.constant = -keyboardHeight
   }
 }
 

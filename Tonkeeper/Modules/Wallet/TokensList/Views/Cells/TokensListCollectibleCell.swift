@@ -103,13 +103,16 @@ private extension TokensListCollectibleCell {
     NSLayoutConstraint.activate([
       imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
       imageView.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      imageView.rightAnchor.constraint(equalTo: contentView.rightAnchor),
+      imageView.rightAnchor.constraint(equalTo: contentView.rightAnchor)
+      .withPriority(.defaultHigh),
       imageView.heightAnchor.constraint(equalTo: imageView.heightAnchor),
       
       labelContainer.topAnchor.constraint(equalTo: imageView.bottomAnchor),
       labelContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      labelContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor),
-      labelContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+      labelContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor)
+        .withPriority(.defaultHigh),
+      labelContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        .withPriority(.defaultHigh),
       
       
       titleLabel.topAnchor.constraint(equalTo: labelContainer.topAnchor,

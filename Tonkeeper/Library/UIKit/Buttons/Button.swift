@@ -217,25 +217,16 @@ private extension Button {
     contentStackView.translatesAutoresizingMaskIntoConstraints = false
     
     let contentInsets = configuration.contentInsets
-    let leftConstraint = contentStackView.leftAnchor.constraint(equalTo: leftAnchor, constant: contentInsets.left)
-    let rightConstraint = contentStackView.rightAnchor.constraint(equalTo: rightAnchor, constant: -contentInsets.right)
     let topConstraint = contentStackView.topAnchor.constraint(equalTo: topAnchor, constant: contentInsets.top)
     let bottomConstraint = contentStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -contentInsets.bottom)
     
     self.contentTopConstraint = topConstraint
     self.contentBottomConstraint = bottomConstraint
-    self.contentRightConstraint = rightConstraint
-    self.contentLeftConstraint = leftConstraint
-    
-    leftConstraint.priority = .defaultLow
-    rightConstraint.priority = .defaultLow
-    
+
     NSLayoutConstraint.activate([
       contentStackView.centerXAnchor.constraint(equalTo: centerXAnchor),
       topConstraint,
-      bottomConstraint,
-      leftConstraint,
-      rightConstraint
+      bottomConstraint
     ])
   }
   
@@ -266,8 +257,6 @@ private extension Button {
   
   func updateContentInsets() {
     let contentInsets = configuration.contentInsets
-    contentLeftConstraint?.constant = contentInsets.left
-    contentRightConstraint?.constant = -contentInsets.right
     contentTopConstraint?.constant = contentInsets.top
     contentBottomConstraint?.constant = -contentInsets.bottom
   }
