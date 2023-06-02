@@ -99,6 +99,10 @@ extension SendAmountViewController: SendAmountViewInput {
   func deselectMaxButton() {
     enterAmountViewController.customView.maxButton.configuration = .secondarySmall
   }
+  
+  func updateInputCurrencyCode(_ code: String) {
+    enterAmountViewController.customView.currencyLabel.text = code
+  }
 }
 
 // MARK: - Private
@@ -111,16 +115,22 @@ private extension SendAmountViewController {
       self?.presenter.didTapCloseButton()
     }
     
-    enterAmountViewController.customView.maxButton.addAction(.init(handler: { [weak self] in
-      self?.presenter.didTapMaxButton()
-    }), for: .touchUpInside)
-    
     setupEnterAmount()
   }
   
   func setupEnterAmount() {
+    enterAmountViewController.formatController = presenter.textFieldFormatController
+    enterAmountViewController.customView.maxButton.addAction(.init(handler: { [weak self] in
+      self?.presenter.didTapMaxButton()
+    }), for: .touchUpInside)
+    
     addChild(enterAmountViewController)
     customView.embedEnterAmountView(enterAmountViewController.view)
     enterAmountViewController.didMove(toParent: self)
+    
+    enterAmountViewController.didChangeText = { [weak self] text in
+      guard let self = self else { return }
+      self.presenter.didChangeAmountText(text: text)
+    }
   }
 }

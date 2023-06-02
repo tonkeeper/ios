@@ -9,6 +9,18 @@ import UIKit
 
 final class EnterAmountViewController: GenericViewController<EnterAmountView> {
   
+  var didChangeText: ((String?) -> Void)?
+  
+  var text: String? {
+    customView.amountTextField.text
+  }
+
+  var formatController: TextFieldFormatController? {
+    didSet {
+      customView.amountTextField.delegate = formatController
+    }
+  }
+  
   override func viewDidLoad() {
     super.viewDidLoad()
     setup()
@@ -32,6 +44,11 @@ private extension EnterAmountViewController {
   
   @objc
   func textDidChange(textField: UITextField) {
+    updateFontsToFit()
+    didChangeText?(textField.text)
+  }
+  
+  func updateFontsToFit() {
     let amountString = customView.amountTextField.text ?? ""
     let currencyCodeString = customView.currencyLabel.text ?? ""
     let amountWidth = amountString.width(font: EnterAmountView.amountTextStyle.font)
@@ -75,3 +92,5 @@ extension String {
     return ceil(boundingBox.width)
   }
 }
+
+

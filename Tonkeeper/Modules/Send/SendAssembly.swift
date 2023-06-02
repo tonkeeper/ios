@@ -24,7 +24,7 @@ struct SendAssembly {
   }
   
   func sendAmountModule(output: SendAmountModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = SendAmountPresenter()
+    let presenter = SendAmountPresenter(currencyFormatter: .currencyFormatter)
     presenter.output = output
     let viewController = SendAmountViewController(presenter: presenter)
     presenter.viewInput = viewController

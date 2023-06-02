@@ -21,14 +21,17 @@ final class SendAmountPresenter {
   private var remainingAmount: Decimal = 666.666666
   
   // MARK: - Dependencies
+
+  private let currencyFormatter: NumberFormatter
   
-  private var numberFormatter: NumberFormatter = {
-    let formatter = NumberFormatter()
-    formatter.numberStyle = .currency
-    formatter.currencyCode = "TON"
-    formatter.maximumFractionDigits = 10
-    return formatter
-  }()
+  let textFieldFormatController: TextFieldFormatController
+  
+  // MARK: - Init
+  
+  init(currencyFormatter: NumberFormatter) {
+    self.currencyFormatter = currencyFormatter
+    self.textFieldFormatController = .init(numberFormatter: currencyFormatter)
+  }
 }
 
 // MARK: - SendAmountPresenterIntput
@@ -50,6 +53,10 @@ extension SendAmountPresenter: SendAmountPresenterInput {
     : viewInput?.deselectMaxButton()
     updateRemainingAmount()
   }
+  
+  func didChangeAmountText(text: String?) {
+    let amount = textFieldFormatController.getUnformattedNumber(text) ?? NSNumber(value: 0)
+  }
 }
 
 // MARK: - SendAmountModuleInput
@@ -67,8 +74,8 @@ private extension SendAmountPresenter {
   
   func updateRemainingAmount() {
     let amount: Decimal = isMaxToggled ? 0 : remainingAmount
-    let formattedRemainingAmount = numberFormatter.string(from: NSDecimalNumber(decimal: amount))
-    let string = "Remaining: \(formattedRemainingAmount ?? "0 TON")"
+    let formattedRemainingAmount = currencyFormatter.string(from: NSDecimalNumber(decimal: amount))
+    let string = "Remaining: \(formattedRemainingAmount ?? "0") TON"
     viewInput?.updateRemainingLabel(string: string)
   }
 }

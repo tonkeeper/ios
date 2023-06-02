@@ -28,9 +28,10 @@ final class EnterAmountView: UIView {
     let textField = UITextField()
     textField.font = EnterAmountView.amountTextStyle.font
     textField.textColor = .Text.primary
-    textField.text = "0"
+    textField.textAlignment = .right
     textField.keyboardAppearance = .dark
     textField.keyboardType = .decimalPad
+    textField.tintColor = .Accent.blue
     return textField
   }()
   
@@ -39,7 +40,6 @@ final class EnterAmountView: UIView {
     label.applyTextStyleFont(EnterAmountView.currencyCodeTextStyle)
     label.textColor = .Text.secondary
     label.textAlignment = .center
-    label.text = "TON"
     label.setContentCompressionResistancePriority(.required, for: .horizontal)
     return label
   }()
