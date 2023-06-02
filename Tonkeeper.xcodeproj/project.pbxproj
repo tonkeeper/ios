@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0C1DF00128AE8BA90E30FCB1 /* TokensListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3EB126F410EC784A834E04 /* TokensListView.swift */; };
+		33FCEDBDA2CD72BEEB61461C /* Pods_Tonkeeper.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */; };
 		4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9993DE66C3DC18C7C5EF729 /* WalletContentProtocols.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
 		7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */; };
@@ -123,6 +124,7 @@
 
 /* Begin PBXFileReference section */
 		14F55B615D2FE6B7D027A93B /* WalletContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentView.swift; sourceTree = "<group>"; };
+		67AE621196A7AF226EB43ED1 /* Pods-Tonkeeper.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.debug.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.debug.xcconfig"; sourceTree = "<group>"; };
 		747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListPresenter.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
@@ -231,6 +233,8 @@
 		7DB8FB7D2A1BEE00005B4B11 /* Montserrat-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Montserrat-Medium.ttf"; sourceTree = "<group>"; };
 		7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIFont+Montserrat.swift"; sourceTree = "<group>"; };
 		8CE60ABD534A41016103CB95 /* TokensListProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListProtocols.swift; sourceTree = "<group>"; };
+		91212C1153B7799536A9E7B6 /* Pods-Tonkeeper.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.release.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.release.xcconfig"; sourceTree = "<group>"; };
+		95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Tonkeeper.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		A3B82E8B681EE6CE930E250D /* TokensListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListViewController.swift; sourceTree = "<group>"; };
 		A9993DE66C3DC18C7C5EF729 /* WalletContentProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentProtocols.swift; sourceTree = "<group>"; };
 		CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentViewController.swift; sourceTree = "<group>"; };
@@ -243,12 +247,23 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				33FCEDBDA2CD72BEEB61461C /* Pods_Tonkeeper.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		009CFD2A245B9EAF956AA5C6 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				67AE621196A7AF226EB43ED1 /* Pods-Tonkeeper.debug.xcconfig */,
+				91212C1153B7799536A9E7B6 /* Pods-Tonkeeper.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		1E7B83161623A25AF6AC258B /* TokensList */ = {
 			isa = PBXGroup;
 			children = (
@@ -607,6 +622,14 @@
 			path = Buttons;
 			sourceTree = "<group>";
 		};
+		7D7D2C722CB651B1A7238030 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		7D9292812A24BD3B005B83DF /* PageViewController */ = {
 			isa = PBXGroup;
 			children = (
@@ -748,6 +771,8 @@
 			children = (
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7DB8FB632A1BCC92005B4B11 /* Products */,
+				009CFD2A245B9EAF956AA5C6 /* Pods */,
+				7D7D2C722CB651B1A7238030 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -825,9 +850,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7DB8FB762A1BCC92005B4B11 /* Build configuration list for PBXNativeTarget "Tonkeeper" */;
 			buildPhases = (
+				19B9129B99A8F46CB1CDA719 /* [CP] Check Pods Manifest.lock */,
 				7DB8FB5E2A1BCC92005B4B11 /* Sources */,
 				7DB8FB5F2A1BCC92005B4B11 /* Frameworks */,
 				7DB8FB602A1BCC92005B4B11 /* Resources */,
+				67F8589B2E344FABD88A1164 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -885,6 +912,48 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		19B9129B99A8F46CB1CDA719 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Tonkeeper-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		67F8589B2E344FABD88A1164 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		7DB8FB5E2A1BCC92005B4B11 /* Sources */ = {
@@ -1131,6 +1200,7 @@
 		};
 		7DB8FB772A1BCC92005B4B11 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 67AE621196A7AF226EB43ED1 /* Pods-Tonkeeper.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1165,6 +1235,7 @@
 		};
 		7DB8FB782A1BCC92005B4B11 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 91212C1153B7799536A9E7B6 /* Pods-Tonkeeper.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
