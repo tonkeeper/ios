@@ -39,6 +39,12 @@ private extension SendCoordinator {
     module.view.setupBackButton()
     router.push(presentable: module.view)
   }
+  
+  func openConfirmation() {
+    let module = assembly.sendConfirmationModule(output: self)
+    module.view.setupBackButton()
+    router.push(presentable: module.view)
+  }
 }
 
 // MARK: - SendRecipientModuleOutput
@@ -66,6 +72,15 @@ extension SendCoordinator: SendAmountModuleOutput {
   }
   
   func sendAmountModuleDidTapContinueButton() {
+    openConfirmation()
+  }
+}
+
+// MARK: - SendConfirmationModuleOutput
+
+extension SendCoordinator: SendConfirmationModuleOutput {
+  func sendConfirmationModuleDidTapCloseButton() {
+    output?.sendCoordinatorDidClose(self)
   }
 }
 

@@ -32,6 +32,14 @@ struct SendAssembly {
     presenter.viewInput = viewController
     return Module(view: viewController, input: Void())
   }
+  
+  func sendConfirmationModule(output: SendConfirmationModuleOutput) -> Module<UIViewController, Void> {
+    let presenter = SendConfirmationPresenter()
+    presenter.output = output
+    let viewController = SendConfirmationViewController(presenter: presenter)
+    presenter.viewInput = viewController
+    return Module(view: viewController, input: Void())
+  }
 }
 
 private extension SendAssembly {

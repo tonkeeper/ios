@@ -20,12 +20,11 @@ final class ModalContentViewController: UIViewController {
   
   private var actionBarBottomConstraint: NSLayoutConstraint?
   
-  private var configuration: Configuration {
+  var configuration: Configuration? {
     didSet { configure() }
   }
   
-  init(configuration: Configuration) {
-    self.configuration = configuration
+  init() {
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -94,6 +93,7 @@ private extension ModalContentViewController {
   }
   
   func configure() {
+    guard let configuration = configuration else { return }
     headerView.configure(model: configuration.header)
     listView.configure(model: configuration.listItems)
     actionBarView.configure(model: configuration.actionBar)
