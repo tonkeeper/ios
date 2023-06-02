@@ -88,8 +88,8 @@ extension SendAmountViewController: SendAmountViewInput {
     titleView.configure(model: model)
   }
   
-  func updateRemainingLabel(string: String?) {
-    enterAmountViewController.customView.remainingLabel.text = string
+  func updateRemainingLabel(attributedString: NSAttributedString?) {
+    enterAmountViewController.customView.remainingLabel.attributedText = attributedString
   }
   
   func selectMaxButton() {
@@ -100,8 +100,12 @@ extension SendAmountViewController: SendAmountViewInput {
     enterAmountViewController.customView.maxButton.configuration = .secondarySmall
   }
   
-  func updateInputCurrencyCode(_ code: String) {
+  func updateInputCurrencyCode(_ code: String?) {
     enterAmountViewController.customView.currencyLabel.text = code
+  }
+  
+  func updateInputValue(_ value: String?) {
+    enterAmountViewController.customView.amountTextField.text = value
   }
 }
 

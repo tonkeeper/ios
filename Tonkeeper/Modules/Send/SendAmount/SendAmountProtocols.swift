@@ -25,8 +25,9 @@ protocol SendAmountPresenterInput {
 
 protocol SendAmountViewInput: AnyObject {
   func updateTitleView(model: SendAmountTitleView.Model)
-  func updateRemainingLabel(string: String?)
+  func updateRemainingLabel(attributedString: NSAttributedString?)
   func selectMaxButton()
   func deselectMaxButton()
-  func updateInputCurrencyCode(_ code: String)
+  func updateInputCurrencyCode(_ code: String?)
+  func updateInputValue(_ value: String?)
 }

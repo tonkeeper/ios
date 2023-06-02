@@ -47,13 +47,12 @@ extension TextFieldFormatController: UITextFieldDelegate {
                  replacementString string: String) -> Bool {
     let currentText = textField.text ?? ""
     let onlyDigitsCurrentText = stringWithoutDecimalSeparator(string: currentText)
-    print(onlyDigitsCurrentText)
-    
+
     guard onlyDigitsCurrentText.count < .amountLimitLength || string.isEmpty else { return false }
     guard string != currencyFormatter.decimalSeparator || !currentText.isEmpty else { return false }
     
     let result = currencyFormatter.formatInput(
-      currentText: currentText ?? "",
+      currentText: currentText,
       range: range,
       replacementString: string
     )
