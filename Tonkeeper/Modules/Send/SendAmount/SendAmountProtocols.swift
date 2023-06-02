@@ -19,6 +19,7 @@ protocol SendAmountPresenterInput {
   
   func viewDidLoad()
   func didTapCloseButton()
+  func didTapSwapButton()
   func didTapMaxButton()
   func didChangeAmountText(text: String?)
 }
@@ -28,6 +29,6 @@ protocol SendAmountViewInput: AnyObject {
   func updateRemainingLabel(attributedString: NSAttributedString?)
   func selectMaxButton()
   func deselectMaxButton()
-  func updateInputCurrencyCode(_ code: String?)
-  func updateInputValue(_ value: String?)
+  func updatePrimaryCurrency(_ value: String?, currencyCode: String?)
+  func updateSecondaryCurrency(_ string: String?)
 }

@@ -8,7 +8,7 @@
 import Foundation
 
 extension NumberFormatter {
-  static var currencyFormatter: NumberFormatter = {
+  static var currencyFormatter: NumberFormatter {
     let numberFormatter = NumberFormatter()
     numberFormatter.groupingSeparator = " "
     numberFormatter.groupingSize = 3
@@ -17,5 +17,5 @@ extension NumberFormatter {
     numberFormatter.maximumFractionDigits = 9
     numberFormatter.maximumIntegerDigits = 20
     return numberFormatter
-  }()
+  }
 }

@@ -100,12 +100,13 @@ extension SendAmountViewController: SendAmountViewInput {
     enterAmountViewController.customView.maxButton.configuration = .secondarySmall
   }
   
-  func updateInputCurrencyCode(_ code: String?) {
-    enterAmountViewController.customView.currencyLabel.text = code
+  func updatePrimaryCurrency(_ value: String?, currencyCode: String?) {
+    enterAmountViewController.updatePrimaryCurrencyValue(value,
+                                                         currencyCode: currencyCode)
   }
   
-  func updateInputValue(_ value: String?) {
-    enterAmountViewController.customView.amountTextField.text = value
+  func updateSecondaryCurrency(_ string: String?) {
+    enterAmountViewController.updateSecondaryCurrencyButtonTitle(string)
   }
 }
 
@@ -123,18 +124,26 @@ private extension SendAmountViewController {
   }
   
   func setupEnterAmount() {
+    addChild(enterAmountViewController)
+    customView.embedEnterAmountView(enterAmountViewController.view)
+    enterAmountViewController.didMove(toParent: self)
+    
     enterAmountViewController.formatController = presenter.textFieldFormatController
     enterAmountViewController.customView.maxButton.addAction(.init(handler: { [weak self] in
       self?.presenter.didTapMaxButton()
     }), for: .touchUpInside)
-    
-    addChild(enterAmountViewController)
-    customView.embedEnterAmountView(enterAmountViewController.view)
-    enterAmountViewController.didMove(toParent: self)
+    enterAmountViewController.customView.secondaryCurrencyButton.addTarget(self,
+                                                                           action: #selector(didTapSwapCurrency),
+                                                                           for: .touchUpInside)
     
     enterAmountViewController.didChangeText = { [weak self] text in
       guard let self = self else { return }
       self.presenter.didChangeAmountText(text: text)
     }
+  }
+  
+  @objc
+  func didTapSwapCurrency() {
+    presenter.didTapSwapButton()
   }
 }

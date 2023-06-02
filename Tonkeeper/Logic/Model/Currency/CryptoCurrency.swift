@@ -15,4 +15,8 @@ enum CryptoCurrency: Currency {
     case .ton: return "TON"
     }
   }
+  
+  var maximumFractionDigits: Int {
+    9
+  }
 }

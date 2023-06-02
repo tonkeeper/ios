@@ -219,6 +219,7 @@ private extension Button {
     let contentInsets = configuration.contentInsets
     let topConstraint = contentStackView.topAnchor.constraint(equalTo: topAnchor, constant: contentInsets.top)
     let bottomConstraint = contentStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -contentInsets.bottom)
+      .withPriority(.defaultHigh)
     
     self.contentTopConstraint = topConstraint
     self.contentBottomConstraint = bottomConstraint

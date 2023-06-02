@@ -59,6 +59,17 @@ final class EnterAmountView: UIView {
     return label
   }()
   
+  let secondaryCurrencyButton: UIButton = {
+    let button = UIButton(type: .system)
+    button.titleLabel?.applyTextStyleFont(.body1)
+    button.setTitleColor(.Text.secondary, for: .normal)
+    button.layer.masksToBounds = true
+    button.layer.borderWidth = .secondaryCurrencyButtonBorderWidth
+    button.layer.borderColor = UIColor.Text.secondary.cgColor
+    button.contentEdgeInsets = .buttonContentInsets
+    return button
+  }()
+  
   var amountWidthLimit: CGFloat {
     bounds.width - .inputContainerSideSpacing * 2
   }
@@ -71,6 +82,12 @@ final class EnterAmountView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    secondaryCurrencyButton.layoutIfNeeded()
+    secondaryCurrencyButton.layer.cornerRadius = secondaryCurrencyButton.frame.height/2
+  }
 }
 
 private extension EnterAmountView {
@@ -79,6 +96,7 @@ private extension EnterAmountView {
     addSubview(bottomContainer)
     
     centerContainer.addSubview(inputContainer)
+    centerContainer.addSubview(secondaryCurrencyButton)
     inputContainer.addSubview(amountTextField)
     inputContainer.addSubview(currencyLabel)
     bottomContainer.addSubview(maxButton)
@@ -95,18 +113,23 @@ private extension EnterAmountView {
     bottomContainer.translatesAutoresizingMaskIntoConstraints = false
     maxButton.translatesAutoresizingMaskIntoConstraints = false
     remainingLabel.translatesAutoresizingMaskIntoConstraints = false
+    secondaryCurrencyButton.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       centerContainer.topAnchor.constraint(equalTo: topAnchor),
       centerContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      centerContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      centerContainer.rightAnchor.constraint(equalTo: rightAnchor)
+        .withPriority(.defaultHigh),
       
       inputContainer.centerYAnchor.constraint(equalTo: centerContainer.centerYAnchor),
       inputContainer.centerXAnchor.constraint(equalTo: centerContainer.centerXAnchor),
       inputContainer.leftAnchor.constraint(greaterThanOrEqualTo: centerContainer.leftAnchor, constant: .inputContainerSideSpacing),
       inputContainer.rightAnchor.constraint(lessThanOrEqualTo: centerContainer.rightAnchor, constant: .inputContainerSideSpacing),
+      inputContainer.heightAnchor.constraint(equalToConstant: 50),
       
-      amountTextField.topAnchor.constraint(equalTo: inputContainer.topAnchor),
+      secondaryCurrencyButton.topAnchor.constraint(equalTo: inputContainer.bottomAnchor, constant: .secondaryCurrencyButtonTopSpace),
+      secondaryCurrencyButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+      
       amountTextField.leftAnchor.constraint(equalTo: inputContainer.leftAnchor),
       amountTextField.bottomAnchor.constraint(equalTo: inputContainer.bottomAnchor),
       
@@ -121,7 +144,8 @@ private extension EnterAmountView {
       
       maxButton.topAnchor.constraint(equalTo: bottomContainer.topAnchor),
       maxButton.leftAnchor.constraint(equalTo: leftAnchor),
-      maxButton.bottomAnchor.constraint(equalTo: bottomContainer.bottomAnchor),
+      maxButton.bottomAnchor.constraint(equalTo: bottomContainer.bottomAnchor)
+        .withPriority(.defaultHigh),
       
       remainingLabel.centerYAnchor.constraint(equalTo: maxButton.centerYAnchor),
       remainingLabel.rightAnchor.constraint(equalTo: bottomContainer.rightAnchor),
@@ -134,4 +158,10 @@ private extension CGFloat {
   static let inputContainerSideSpacing: CGFloat = 40
   static let bottomContainerTopSpace: CGFloat = 16
   static let bottomContainerBottomSpace: CGFloat = 40
+  static let secondaryCurrencyButtonTopSpace: CGFloat = 10
+  static let secondaryCurrencyButtonBorderWidth: CGFloat = 1.5
+}
+
+private extension UIEdgeInsets {
+  static let buttonContentInsets: UIEdgeInsets = .init(top: 8, left: 16, bottom: 8, right: 16)
 }

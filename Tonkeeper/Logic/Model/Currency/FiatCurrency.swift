@@ -15,4 +15,8 @@ enum FiatCurrency: Currency {
     case .usd: return "USD"
     }
   }
+  
+  var maximumFractionDigits: Int {
+    2
+  }
 }

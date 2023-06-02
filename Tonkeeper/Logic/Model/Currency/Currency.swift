@@ -9,4 +9,5 @@ import Foundation
 
 protocol Currency {
   var code: String { get }
+  var maximumFractionDigits: Int { get }
 }

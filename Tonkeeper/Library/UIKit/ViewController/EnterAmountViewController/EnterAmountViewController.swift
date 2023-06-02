@@ -31,6 +31,20 @@ final class EnterAmountViewController: GenericViewController<EnterAmountView> {
     super.becomeFirstResponder()
     return customView.amountTextField.becomeFirstResponder()
   }
+  
+  func updatePrimaryCurrencyValue(_ value: String?,
+                                  currencyCode: String?) {
+    customView.amountTextField.text = value
+    customView.currencyLabel.text = currencyCode
+    updateFontsToFit()
+  }
+  
+  func updateSecondaryCurrencyButtonTitle(_ title: String?) {
+    UIView.performWithoutAnimation {
+      self.customView.secondaryCurrencyButton.setTitle(title, for: .normal)
+      self.customView.secondaryCurrencyButton.layoutIfNeeded()
+    }
+  }
 }
 
 private extension EnterAmountViewController {
@@ -49,6 +63,7 @@ private extension EnterAmountViewController {
   }
   
   func updateFontsToFit() {
+    guard customView.amountWidthLimit > 0 else { return }
     let amountString = customView.amountTextField.text ?? ""
     let currencyCodeString = customView.currencyLabel.text ?? ""
     let amountWidth = amountString.width(font: EnterAmountView.amountTextStyle.font)

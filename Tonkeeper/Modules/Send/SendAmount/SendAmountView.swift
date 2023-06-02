@@ -49,8 +49,10 @@ final class SendAmountView: UIView {
     NSLayoutConstraint.activate([
       enterAmountView.topAnchor.constraint(equalTo: enterAmountContainer.topAnchor),
       enterAmountView.leftAnchor.constraint(equalTo: enterAmountContainer.leftAnchor),
-      enterAmountView.rightAnchor.constraint(equalTo: enterAmountContainer.rightAnchor),
+      enterAmountView.rightAnchor.constraint(equalTo: enterAmountContainer.rightAnchor)
+        .withPriority(.defaultHigh),
       enterAmountView.bottomAnchor.constraint(equalTo: enterAmountContainer.bottomAnchor)
+        .withPriority(.defaultHigh)
     ])
   }
   
@@ -61,6 +63,7 @@ final class SendAmountView: UIView {
                             curve: UIView.AnimationCurve) {
     keyboardHeight = height
     updateContentViewBottomConstraint()
+    layoutIfNeeded()
     UIViewPropertyAnimator(duration: duration, curve: curve) {
       self.layoutIfNeeded()
     }
@@ -94,11 +97,13 @@ private extension SendAmountView {
     NSLayoutConstraint.activate([
       contentView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
       contentView.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
-      contentView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),
+      contentView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace)
+        .withPriority(.defaultHigh),
       
       enterAmountContainer.topAnchor.constraint(equalTo: contentView.topAnchor),
       enterAmountContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      enterAmountContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor),
+      enterAmountContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor)
+        .withPriority(.defaultHigh),
       
       continueButton.topAnchor.constraint(equalTo: enterAmountContainer.bottomAnchor),
       continueButton.leftAnchor.constraint(equalTo: contentView.leftAnchor),

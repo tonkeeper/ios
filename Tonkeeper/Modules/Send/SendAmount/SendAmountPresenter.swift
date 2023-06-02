@@ -10,73 +10,72 @@ import Foundation
 
 final class SendAmountPresenter {
   
-  struct State {
-    enum Mode {
-      case crypto
-      case fiat
+  struct CurrencyPair {
+    struct CurrencyAmount {
+      let currency: Currency
+      var amount: Decimal?
     }
     
-    let wallet: CurrencyWallet
-    let mode: Mode
-    let isMax: Bool
-    let cryptoValue: Decimal?
-    let exchangeRate: Decimal
-    
-    var fiatAmount: Decimal? {
-      guard let cryptoValue = cryptoValue else { return nil }
-      return cryptoValue * exchangeRate
+    enum Primary {
+      case first
+      case second
     }
     
-    init(wallet: CurrencyWallet,
-         mode: Mode,
-         isMax: Bool,
-         cryptoValue: Decimal?,
-         exchangeRate: Decimal) {
-      self.wallet = wallet
-      self.mode = mode
-      self.isMax = isMax
-      self.cryptoValue = cryptoValue
-      self.exchangeRate = exchangeRate
+    var firstCurrency: CurrencyAmount
+    var secondCurrency: CurrencyAmount
+    var exchangeRate: Decimal
+    var primary: Primary
+    
+    mutating func updateFirstCurrencyAmount(_ amount: Decimal?) {
+      firstCurrency.amount = amount
+      if let amount = amount {
+        secondCurrency.amount = amount * exchangeRate
+      }
     }
     
-    func update(withInput input: Decimal?) -> State {
-      let cryptoValue: Decimal?
-      switch mode {
-      case .crypto:
-        cryptoValue = input
-      case .fiat:
-        if let input = input {
-          cryptoValue = input * exchangeRate
-        } else {
-          cryptoValue = nil
+    mutating func updateAmount(_ amount: Decimal?) {
+      switch primary {
+      case .first:
+        firstCurrency.amount = amount
+        if let amount = amount {
+          secondCurrency.amount = amount * exchangeRate
+        }
+      case .second:
+        secondCurrency.amount = amount
+        if let amount = amount {
+          firstCurrency.amount = amount / exchangeRate
         }
       }
-      return .init(wallet: wallet,
-                   mode: mode,
-                   isMax: isMax,
-                   cryptoValue: cryptoValue,
-                   exchangeRate: exchangeRate)
     }
     
-    func toggleMax() -> State {
-      let newIsMax = !isMax
-      let value = newIsMax ? wallet.balance : 0
-      return .init(wallet: wallet,
-                   mode: mode,
-                   isMax: newIsMax,
-                   cryptoValue: value,
-                   exchangeRate: exchangeRate)
+    mutating func toggleActive() {
+      switch primary {
+      case .first:
+        self.primary = .second
+      case .second:
+        self.primary = .first
+      }
     }
     
-    func updateWalletBalance(_ balance: Decimal) -> State {
-      .init(wallet: .init(currency: wallet.currency, balance: balance),
-            mode: mode,
-            isMax: isMax,
-            cryptoValue: cryptoValue,
-            exchangeRate: exchangeRate)
+    var activeCurrency: CurrencyAmount {
+      switch primary {
+      case .first:
+        return firstCurrency
+      case .second:
+        return secondCurrency
+      }
+    }
+    
+    var inactiveCurrency: CurrencyAmount {
+      switch primary {
+      case .first:
+        return secondCurrency
+      case .second:
+        return firstCurrency
+      }
     }
   }
-  
+
   // MARK: - Module
   
   weak var viewInput: SendAmountViewInput?
@@ -84,27 +83,30 @@ final class SendAmountPresenter {
   
   // MARK: - State
   
-  private var state = State(wallet: .init(currency: CryptoCurrency.ton, balance: 0),
-                            mode: .crypto,
-                            isMax: false,
-                            cryptoValue: nil,
-                            exchangeRate: 2) {
-    didSet { updateState() }
-  }
-  
-  private var inputAmount: Decimal?
+  private var currencyPair = CurrencyPair(firstCurrency: .init(currency: CryptoCurrency.ton, amount: nil),
+                                          secondCurrency: .init(currency: FiatCurrency.usd, amount: nil),
+                                          exchangeRate: 1.74,
+                                          primary: .first)
+  private var wallet = CurrencyWallet(currency: CryptoCurrency.ton, balance: 0)
+  private var isMax = false
   
   // MARK: - Dependencies
 
-  private let currencyFormatter: NumberFormatter
+  private let primaryCurrencyFormatter: NumberFormatter
+  private let secondaryCurrencyFormatter: NumberFormatter
+  private let inputCurrencyFormatter: NumberFormatter
   
   let textFieldFormatController: TextFieldFormatController
   
   // MARK: - Init
   
-  init(currencyFormatter: NumberFormatter) {
-    self.currencyFormatter = currencyFormatter
-    self.textFieldFormatController = .init(numberFormatter: currencyFormatter)
+  init(primaryCurrencyFormatter: NumberFormatter,
+       secondaryCurrencyFormatter: NumberFormatter,
+       inputCurrencyFormatter: NumberFormatter) {
+    self.primaryCurrencyFormatter = primaryCurrencyFormatter
+    self.secondaryCurrencyFormatter = secondaryCurrencyFormatter
+    self.inputCurrencyFormatter = inputCurrencyFormatter
+    self.textFieldFormatController = .init(numberFormatter: inputCurrencyFormatter)
   }
 }
 
@@ -112,9 +114,11 @@ final class SendAmountPresenter {
 
 extension SendAmountPresenter: SendAmountPresenterInput {
   func viewDidLoad() {
-    updateWalletBalance()
+    setup()
     updateTitle()
-    updateState()
+    updateWalletBalance()
+    updateAllCurrencyValues()
+    updateRemaining()
   }
   
   func didTapCloseButton() {
@@ -122,12 +126,25 @@ extension SendAmountPresenter: SendAmountPresenterInput {
   }
   
   func didTapMaxButton() {
-    state = state.toggleMax()
+    isMax.toggle()
+    updateMaxButton()
+    updateAllCurrencyValues()
+    updateRemaining()
   }
   
   func didChangeAmountText(text: String?) {
-    let amount = textFieldFormatController.getUnformattedNumber(text)?.decimalValue
-    self.state = state.update(withInput: amount)
+    let amount = primaryCurrencyFormatter.number(from: text ?? "0")
+    currencyPair.updateAmount(amount?.decimalValue ?? 0)
+    updateInactiveCurrencyValue()
+    updateRemaining()
+  }
+  
+  func didTapSwapButton() {
+    currencyPair.toggleActive()
+    primaryCurrencyFormatter.maximumFractionDigits = currencyPair.activeCurrency.currency.maximumFractionDigits
+    inputCurrencyFormatter.maximumFractionDigits = currencyPair.activeCurrency.currency.maximumFractionDigits
+    updateAllCurrencyValues()
+    updateRemaining()
   }
 }
 
@@ -138,62 +155,60 @@ extension SendAmountPresenter: SendAmountModuleInput {}
 // MARK: - Private
 
 private extension SendAmountPresenter {
+  func setup() {
+    secondaryCurrencyFormatter.maximumFractionDigits = 2
+    secondaryCurrencyFormatter.roundingMode = .down
+    inputCurrencyFormatter.roundingMode = .down
+  }
+  
   func updateTitle() {
     let model = SendAmountTitleView.Model(title: "Amount",
                                           subtitle: "To: EQCc…9ZLD")
     viewInput?.updateTitleView(model: model)
   }
   
-  func updateState() {
-    updateDisplayValues()
-    updateRemainingAmount()
-    updateMaxButtonState()
+  func updateAllCurrencyValues() {
+    updateActiveCurrencyValue()
+    updateInactiveCurrencyValue()
   }
   
-  func updateDisplayValues() {
-    let topAmount: String?
-    let topCurrencyCode: String?
-    let bottomAmount: String?
-    let bottomCurrencyCode: String?
+  func updateInactiveCurrencyValue() {
+    let inactiveCurrency = currencyPair.inactiveCurrency
+    let inactiveAmountString = secondaryCurrencyFormatter.string(from: NSDecimalNumber(decimal: inactiveCurrency.amount ?? 0)) ?? ""
+    let inactiveCurrencyCodeString = inactiveCurrency.currency.code
     
-    switch state.mode {
-    case .crypto:
-      if let cryptoValue = state.cryptoValue {
-        topAmount = currencyFormatter.string(from: NSDecimalNumber(decimal: cryptoValue))
-      } else {
-        topAmount = nil
-      }
-      topCurrencyCode = state.wallet.currency.code
-      
-      bottomAmount = currencyFormatter.string(from: NSDecimalNumber(decimal: state.fiatAmount ?? 0))
-      bottomCurrencyCode = FiatCurrency.usd.code
-    case .fiat:
-      if let fiatAmount = state.fiatAmount {
-        topAmount = currencyFormatter.string(from: NSDecimalNumber(decimal: fiatAmount))
-      } else {
-        topAmount = nil
-      }
-      topCurrencyCode = FiatCurrency.usd.code
-      
-      bottomAmount = currencyFormatter.string(from: NSDecimalNumber(decimal: state.cryptoValue ?? 0))
-      bottomCurrencyCode = state.wallet.currency.code
+    viewInput?.updateSecondaryCurrency("\(inactiveAmountString) \(inactiveCurrencyCodeString)")
+  }
+  
+  func updateActiveCurrencyValue() {
+    let activeCurrency = currencyPair.activeCurrency
+    let activeAmountString = primaryCurrencyFormatter.string(from: NSDecimalNumber(decimal: activeCurrency.amount ?? 0))
+    let activeCurrencyCodeString = activeCurrency.currency.code
+    
+    viewInput?.updatePrimaryCurrency(activeAmountString, currencyCode: activeCurrencyCodeString)
+  }
+  
+  func updateMaxButton() {
+    if isMax {
+      currencyPair.updateFirstCurrencyAmount(wallet.balance)
+      viewInput?.selectMaxButton()
+    } else {
+      currencyPair.updateFirstCurrencyAmount(0)
+      viewInput?.deselectMaxButton()
     }
-    
-    viewInput?.updateInputValue(topAmount)
-    viewInput?.updateInputCurrencyCode(topCurrencyCode)
   }
   
-  func updateRemainingAmount() {
-    let amount =  state.wallet.balance - (state.cryptoValue ?? 0)
+  func updateRemaining() {
+    let remainAmount = wallet.balance - (currencyPair.firstCurrency.amount ?? 0)
     let resultString: NSAttributedString
-    if amount.isLess(than: 0) {
+    if remainAmount.isLess(than: 0) {
       resultString = "Insufficient balance"
         .attributed(with: .body2,
                     alignment: .right,
                     color: .Accent.red)
     } else {
-      let amountString = currencyFormatter.string(from: NSDecimalNumber(decimal: amount))
-      resultString = "Remaining: \(amountString ?? "0") \(state.wallet.currency.code)"
+      let amountString = secondaryCurrencyFormatter.string(from: NSDecimalNumber(decimal: remainAmount))
+      resultString = "Remaining: \(amountString ?? "0") \(currencyPair.firstCurrency.currency.code)"
         .attributed(with: .body2,
                     alignment: .right,
                     color: .Text.secondary)
@@ -202,16 +217,7 @@ private extension SendAmountPresenter {
     viewInput?.updateRemainingLabel(attributedString: resultString)
   }
   
-  func updateMaxButtonState() {
-    switch state.isMax {
-    case true:
-      viewInput?.selectMaxButton()
-    case false:
-      viewInput?.deselectMaxButton()
-    }
-  }
-  
   func updateWalletBalance() {
-    state = state.updateWalletBalance(666.6666)
+    wallet = .init(currency: currencyPair.firstCurrency.currency, balance: 666.6)
   }
 }
