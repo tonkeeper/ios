@@ -10,6 +10,7 @@ import Foundation
 
 protocol SendAmountModuleOutput: AnyObject {
   func sendAmountModuleDidTapCloseButton()
+  func sendAmountModuleDidTapContinueButton()
 }
 
 protocol SendAmountModuleInput: AnyObject {}
@@ -22,6 +23,7 @@ protocol SendAmountPresenterInput {
   func didTapSwapButton()
   func didTapMaxButton()
   func didChangeAmountText(text: String?)
+  func didTapContinueButton()
 }
 
 protocol SendAmountViewInput: AnyObject {

@@ -64,6 +64,9 @@ extension SendCoordinator: SendAmountModuleOutput {
   func sendAmountModuleDidTapCloseButton() {
     output?.sendCoordinatorDidClose(self)
   }
+  
+  func sendAmountModuleDidTapContinueButton() {
+  }
 }
 
 // MARK: - QRScannerModuleOutput

@@ -44,8 +44,8 @@ final class EnterAmountView: UIView {
     return label
   }()
   
-  let maxButton: Button = {
-    let button = Button(configuration: .secondarySmall)
+  let maxButton: TKButton = {
+    let button = TKButton(configuration: .secondarySmall)
     button.titleLabel.text = "Max"
     button.setContentHuggingPriority(.required, for: .horizontal)
     return button

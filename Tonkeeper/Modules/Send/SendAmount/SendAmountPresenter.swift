@@ -146,6 +146,10 @@ extension SendAmountPresenter: SendAmountPresenterInput {
     updateAllCurrencyValues()
     updateRemaining()
   }
+  
+  func didTapContinueButton() {
+    output?.sendAmountModuleDidTapContinueButton()
+  }
 }
 
 // MARK: - SendAmountModuleInput

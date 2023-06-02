@@ -10,8 +10,8 @@ import UIKit
 
 final class SendAmountView: UIView {
   
-  let continueButton: Button = {
-    let button = Button(configuration: .primaryLarge)
+  let continueButton: TKButton = {
+    let button = TKButton(configuration: .primaryLarge)
     button.titleLabel.text = "Continue"
     return button
   }()

@@ -18,7 +18,7 @@ final class IconButton: UIControlClosure {
     return label
   }()
   
-  let button = Button(configuration: .icon)
+  let button = TKButton(configuration: .icon)
 
   override var isHighlighted: Bool {
     didSet {

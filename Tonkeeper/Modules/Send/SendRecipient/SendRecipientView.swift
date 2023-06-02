@@ -36,8 +36,8 @@ final class SendRecipientView: UIView {
     return label
   }()
   
-  let continueButton: Button = {
-    let button = Button(configuration: .primaryLarge)
+  let continueButton: TKButton = {
+    let button = TKButton(configuration: .primaryLarge)
     button.titleLabel.text = "Continue"
     return button
   }()

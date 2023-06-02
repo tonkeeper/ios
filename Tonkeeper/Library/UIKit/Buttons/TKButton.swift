@@ -1,5 +1,5 @@
 //
-//  Button.swift
+//  TKButton.swift
 //  Tonkeeper
 //
 //  Created by Grigory on 25.5.23..
@@ -9,7 +9,7 @@ import UIKit
 
 extension UIControl.State: Hashable {}
 
-final class Button: UIControlClosure {
+final class TKButton: UIControlClosure {
   
   enum `Type` {
     case primary
@@ -194,7 +194,7 @@ final class Button: UIControlClosure {
   }
 }
 
-private extension Button {
+private extension TKButton {
   func setup() {
     maskLayer.shouldRasterize = true
     

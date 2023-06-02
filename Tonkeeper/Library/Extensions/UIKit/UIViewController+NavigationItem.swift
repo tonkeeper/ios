@@ -9,7 +9,7 @@ import UIKit
 
 extension UIViewController {
   func setupCloseButton(closure: @escaping () -> Void) {
-    let swipeButton = Button(configuration: .Header.button)
+    let swipeButton = TKButton(configuration: .Header.button)
     swipeButton.configure(model: .init(icon: .Icons.Buttons.Header.close))
     swipeButton.addAction(.init(handler: {
       closure()
@@ -18,7 +18,7 @@ extension UIViewController {
   }
   
   func setupBackButton() {
-    let swipeButton = Button(configuration: .Header.button)
+    let swipeButton = TKButton(configuration: .Header.button)
     swipeButton.configure(model: .init(icon: .Icons.Buttons.Header.back))
     swipeButton.addAction(.init(handler: { [weak self] in
       self?.navigationController?.popViewController(animated: true)

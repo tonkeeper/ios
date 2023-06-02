@@ -120,6 +120,10 @@ private extension SendAmountViewController {
       self?.presenter.didTapCloseButton()
     }
     
+    customView.continueButton.addAction(.init(handler: { [weak self] in
+      self?.presenter.didTapContinueButton()
+    }), for: .touchUpInside)
+    
     setupEnterAmount()
   }
   

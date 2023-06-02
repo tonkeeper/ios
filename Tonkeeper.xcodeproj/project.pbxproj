@@ -11,13 +11,19 @@
 		33FCEDBDA2CD72BEEB61461C /* Pods_Tonkeeper.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */; };
 		4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9993DE66C3DC18C7C5EF729 /* WalletContentProtocols.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
+		7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */; };
+		7D527BC02A2A913400A2D29A /* ModalContentViewController+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBF2A2A913400A2D29A /* ModalContentViewController+Configuration.swift */; };
+		7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC12A2A955700A2D29A /* ModalContentHeaderView.swift */; };
+		7D527BC42A2A96CC00A2D29A /* ModalContentListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC32A2A96CC00A2D29A /* ModalContentListView.swift */; };
+		7D527BC62A2A972A00A2D29A /* ModalContentListItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC52A2A972A00A2D29A /* ModalContentListItemView.swift */; };
+		7D527BC82A2A9E5D00A2D29A /* ModalContentActionBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC72A2A9E5D00A2D29A /* ModalContentActionBarView.swift */; };
 		7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */; };
 		7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */; };
 		7D59284B2A1F5797006B0A8A /* WalletHeaderPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */; };
 		7D59284D2A1F579E006B0A8A /* WalletHeaderProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59284C2A1F579E006B0A8A /* WalletHeaderProtocols.swift */; };
 		7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59284F2A1F614B006B0A8A /* SpacingView.swift */; };
 		7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928522A1F6411006B0A8A /* ConfigurableView.swift */; };
-		7D5928552A1F6C71006B0A8A /* Button.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928542A1F6C71006B0A8A /* Button.swift */; };
+		7D5928552A1F6C71006B0A8A /* TKButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928542A1F6C71006B0A8A /* TKButton.swift */; };
 		7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928582A1F8092006B0A8A /* Button.Configuration+Plain.swift */; };
 		7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59285B2A1FA5FE006B0A8A /* IconButton.swift */; };
 		7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59285D2A1FA75A006B0A8A /* Button.Configuration+Icon.swift */; };
@@ -133,13 +139,19 @@
 		67AE621196A7AF226EB43ED1 /* Pods-Tonkeeper.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.debug.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.debug.xcconfig"; sourceTree = "<group>"; };
 		747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListPresenter.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
+		7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentViewController.swift; sourceTree = "<group>"; };
+		7D527BBF2A2A913400A2D29A /* ModalContentViewController+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalContentViewController+Configuration.swift"; sourceTree = "<group>"; };
+		7D527BC12A2A955700A2D29A /* ModalContentHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentHeaderView.swift; sourceTree = "<group>"; };
+		7D527BC32A2A96CC00A2D29A /* ModalContentListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentListView.swift; sourceTree = "<group>"; };
+		7D527BC52A2A972A00A2D29A /* ModalContentListItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentListItemView.swift; sourceTree = "<group>"; };
+		7D527BC72A2A9E5D00A2D29A /* ModalContentActionBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentActionBarView.swift; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
 		7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderView.swift; sourceTree = "<group>"; };
 		7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderPresenter.swift; sourceTree = "<group>"; };
 		7D59284C2A1F579E006B0A8A /* WalletHeaderProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderProtocols.swift; sourceTree = "<group>"; };
 		7D59284F2A1F614B006B0A8A /* SpacingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpacingView.swift; sourceTree = "<group>"; };
 		7D5928522A1F6411006B0A8A /* ConfigurableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurableView.swift; sourceTree = "<group>"; };
-		7D5928542A1F6C71006B0A8A /* Button.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Button.swift; sourceTree = "<group>"; };
+		7D5928542A1F6C71006B0A8A /* TKButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKButton.swift; sourceTree = "<group>"; };
 		7D5928582A1F8092006B0A8A /* Button.Configuration+Plain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button.Configuration+Plain.swift"; sourceTree = "<group>"; };
 		7D59285B2A1FA5FE006B0A8A /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
 		7D59285D2A1FA75A006B0A8A /* Button.Configuration+Icon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button.Configuration+Icon.swift"; sourceTree = "<group>"; };
@@ -301,6 +313,19 @@
 			name = WalletContent;
 			path = Tonkeeper/Modules/TabBar/WalletContent;
 			sourceTree = SOURCE_ROOT;
+		};
+		7D527BBC2A2A90F400A2D29A /* ModalContentViewController */ = {
+			isa = PBXGroup;
+			children = (
+				7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */,
+				7D527BBF2A2A913400A2D29A /* ModalContentViewController+Configuration.swift */,
+				7D527BC12A2A955700A2D29A /* ModalContentHeaderView.swift */,
+				7D527BC32A2A96CC00A2D29A /* ModalContentListView.swift */,
+				7D527BC52A2A972A00A2D29A /* ModalContentListItemView.swift */,
+				7D527BC72A2A9E5D00A2D29A /* ModalContentActionBarView.swift */,
+			);
+			path = ModalContentViewController;
+			sourceTree = "<group>";
 		};
 		7D5928452A1F5776006B0A8A /* WalletHeader */ = {
 			isa = PBXGroup;
@@ -623,7 +648,7 @@
 			isa = PBXGroup;
 			children = (
 				7D68369F2A1EB644002DBBC7 /* ToggleButton.swift */,
-				7D5928542A1F6C71006B0A8A /* Button.swift */,
+				7D5928542A1F6C71006B0A8A /* TKButton.swift */,
 				7D5928662A1FBB56006B0A8A /* Button+ConfigurableView.swift */,
 				7D5928582A1F8092006B0A8A /* Button.Configuration+Plain.swift */,
 				7D59285D2A1FA75A006B0A8A /* Button.Configuration+Icon.swift */,
@@ -759,6 +784,7 @@
 		7D9292DC2A28A1D2005B83DF /* ViewController */ = {
 			isa = PBXGroup;
 			children = (
+				7D527BBC2A2A90F400A2D29A /* ModalContentViewController */,
 				7D9292DF2A28A1EB005B83DF /* EnterAmountViewController */,
 			);
 			path = ViewController;
@@ -1030,6 +1056,7 @@
 				7D9292952A25EB09005B83DF /* PageSegmentControl.swift in Sources */,
 				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
 				7D5928672A1FBB56006B0A8A /* Button+ConfigurableView.swift in Sources */,
+				7D527BC02A2A913400A2D29A /* ModalContentViewController+Configuration.swift in Sources */,
 				7D9292972A25EB16005B83DF /* PageSegmentControlTab.swift in Sources */,
 				7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */,
 				7D9292992A25EC70005B83DF /* PagingContentHeaderView.swift in Sources */,
@@ -1051,7 +1078,7 @@
 				7D59287D2A20C92E006B0A8A /* TokensListTokensSectionBackgroundView.swift in Sources */,
 				7D9293042A29EE3F005B83DF /* TextFieldFormatController.swift in Sources */,
 				7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */,
-				7D5928552A1F6C71006B0A8A /* Button.swift in Sources */,
+				7D5928552A1F6C71006B0A8A /* TKButton.swift in Sources */,
 				7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */,
 				7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */,
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
@@ -1063,6 +1090,8 @@
 				7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */,
 				7D9292FE2A29DCDA005B83DF /* SendRecipientProtocols.swift in Sources */,
 				7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */,
+				7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */,
+				7D527BC82A2A9E5D00A2D29A /* ModalContentActionBarView.swift in Sources */,
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
@@ -1074,6 +1103,7 @@
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
 				7D5928652A1FB6C4006B0A8A /* UIControlClosure.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
+				7D527BC42A2A96CC00A2D29A /* ModalContentListView.swift in Sources */,
 				7D68364E2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift in Sources */,
 				7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */,
 				7D6836672A1D6E74002DBBC7 /* Module.swift in Sources */,
@@ -1105,6 +1135,7 @@
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
 				7D6836562A1D5951002DBBC7 /* BrowserCoordinator.swift in Sources */,
 				7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */,
+				7D527BC62A2A972A00A2D29A /* ModalContentListItemView.swift in Sources */,
 				7D70D3C02A2A03350096E1A2 /* Currency.swift in Sources */,
 				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
 				7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */,
@@ -1127,6 +1158,7 @@
 				D97B981CF3DBE823EDA9A091 /* WalletContentViewController.swift in Sources */,
 				B2DC87224B8264B43A27920C /* WalletContentView.swift in Sources */,
 				8FD2051305C8DE79A1D70FBA /* WalletContentPresenter.swift in Sources */,
+				7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */,
 				4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */,
 				7D9292F82A29DCDA005B83DF /* SendAmountView.swift in Sources */,
 				7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */,
