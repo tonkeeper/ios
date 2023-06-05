@@ -1,5 +1,5 @@
 //
-//  Button+ConfigurableView.swift
+//  TKButton+ConfigurableView.swift
 //  Tonkeeper
 //
 //  Created by Grigory on 25.5.23..
@@ -7,7 +7,7 @@
 
 import UIKit
 
-extension Button: ConfigurableView {
+extension TKButton: ConfigurableView {
   struct Model {
     let title: String?
     let icon: UIImage?

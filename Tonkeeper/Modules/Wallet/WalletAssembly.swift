@@ -10,9 +10,12 @@ import UIKit
 struct WalletAssembly {
   
   private let qrScannerAssembly: QRScannerAssembly
+  private let sendAssembly: SendAssembly
   
-  init(qrScannerAssembly: QRScannerAssembly) {
+  init(qrScannerAssembly: QRScannerAssembly,
+       sendAssembly: SendAssembly) {
     self.qrScannerAssembly = qrScannerAssembly
+    self.sendAssembly = sendAssembly
   }
   
   func walletRootModule(output: WalletRootModuleOutput,
@@ -49,6 +52,17 @@ struct WalletAssembly {
     viewController.title = page.title
     presenter.viewInput = viewController
     return Module(view: viewController, input: presenter)
+  }
+  
+  func sendCoordinator(output: SendCoordinatorOutput) -> SendCoordinator {
+    let navigationController = NavigationController()
+    navigationController.configureAppearance()
+    navigationController.isModalInPresentation = true
+    let router = NavigationRouter(rootViewController: navigationController)
+    let coordinator = SendCoordinator(router: router,
+                                      assembly: sendAssembly)
+    coordinator.output = output
+    return coordinator
   }
 }
 

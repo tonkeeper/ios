@@ -9,7 +9,7 @@ import UIKit
 
 extension IconButton: ConfigurableView {
   struct Model {
-    let buttonModel: Button.Model
+    let buttonModel: TKButton.Model
     let title: String
   }
   

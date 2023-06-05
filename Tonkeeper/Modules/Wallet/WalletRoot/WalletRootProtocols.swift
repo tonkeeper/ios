@@ -9,6 +9,7 @@ import Foundation
 
 protocol WalletRootModuleOutput: AnyObject {
   func openQRScanner()
+  func openSend()
 }
 
 protocol WalletRootPresenterInput {

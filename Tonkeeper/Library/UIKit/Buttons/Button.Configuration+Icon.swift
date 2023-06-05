@@ -7,8 +7,8 @@
 
 import Foundation
 
-extension Button.Configuration {
-  static var icon: Button.Configuration {
+extension TKButton.Configuration {
+  static var icon: TKButton.Configuration {
     .init(type: .tertiary,
           size: .welter,
           shape: .circle,

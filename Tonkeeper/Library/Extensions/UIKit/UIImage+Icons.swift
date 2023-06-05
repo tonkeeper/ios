@@ -15,6 +15,22 @@ extension UIImage {
       }
     }
     
+    enum TextField {
+      static var clear: UIImage? {
+        .init(named: "Icons/16/ic-xmark-circle-16")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
+    enum State {
+      static var success: UIImage? {
+        .init(named: "Icons/32/ic-checkmark-circle-32")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var fail: UIImage? {
+        .init(named: "Icons/32/ic-exclamationmark-circle-32")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     enum Buttons {
       static var scanQR: UIImage? {
         .init(named: "Icons/28/ic-qr-viewfinder-28")?.withRenderingMode(.alwaysTemplate)
@@ -49,6 +65,14 @@ extension UIImage {
       enum Header {
         static var swipe: UIImage? {
           .init(named: "Icons/16/ic-chevron-down-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var close: UIImage? {
+          .init(named: "Icons/16/ic-close-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var back: UIImage? {
+          .init(named: "Icons/16/ic-chevron-left-16")?.withRenderingMode(.alwaysTemplate)
         }
       }
     }
