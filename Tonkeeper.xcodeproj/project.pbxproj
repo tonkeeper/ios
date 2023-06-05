@@ -19,6 +19,7 @@
 		7D527BC42A2A96CC00A2D29A /* ModalContentListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC32A2A96CC00A2D29A /* ModalContentListView.swift */; };
 		7D527BC62A2A972A00A2D29A /* ModalContentListItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC52A2A972A00A2D29A /* ModalContentListItemView.swift */; };
 		7D527BC82A2A9E5D00A2D29A /* ModalContentActionBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC72A2A9E5D00A2D29A /* ModalContentActionBarView.swift */; };
+		7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BEB2A2DE93300A2D29A /* LoadingView.swift */; };
 		7D5823397229401915615466 /* SendConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */; };
 		7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */; };
 		7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */; };
@@ -151,6 +152,7 @@
 		7D527BC32A2A96CC00A2D29A /* ModalContentListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentListView.swift; sourceTree = "<group>"; };
 		7D527BC52A2A972A00A2D29A /* ModalContentListItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentListItemView.swift; sourceTree = "<group>"; };
 		7D527BC72A2A9E5D00A2D29A /* ModalContentActionBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentActionBarView.swift; sourceTree = "<group>"; };
+		7D527BEB2A2DE93300A2D29A /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
 		7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderView.swift; sourceTree = "<group>"; };
 		7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderPresenter.swift; sourceTree = "<group>"; };
@@ -363,6 +365,7 @@
 			isa = PBXGroup;
 			children = (
 				7D59284F2A1F614B006B0A8A /* SpacingView.swift */,
+				7D527BEB2A2DE93300A2D29A /* LoadingView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1092,6 +1095,7 @@
 				7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */,
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
 				7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */,
+				7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */,
 				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
 				7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */,
 				7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */,
