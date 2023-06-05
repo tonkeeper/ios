@@ -21,6 +21,16 @@ extension UIImage {
       }
     }
     
+    enum State {
+      static var success: UIImage? {
+        .init(named: "Icons/32/ic-checkmark-circle-32")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var fail: UIImage? {
+        .init(named: "Icons/32/ic-exclamationmark-circle-32")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     enum Buttons {
       static var scanQR: UIImage? {
         .init(named: "Icons/28/ic-qr-viewfinder-28")?.withRenderingMode(.alwaysTemplate)

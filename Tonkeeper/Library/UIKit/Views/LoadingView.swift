@@ -67,7 +67,11 @@ final class LoaderView: UIView {
   override func layoutSubviews() {
     super.layoutSubviews()
     
-    let path = UIBezierPath(ovalIn: bounds)
+    let pathBounds = CGRect(x: bounds.width/2 - size.side/2,
+                            y: bounds.height/2 - size.side/2,
+                            width: size.side,
+                            height: size.side)
+    let path = UIBezierPath(ovalIn: pathBounds)
     
     CATransaction.begin()
     CATransaction.setValue(true, forKey: kCATransactionDisableActions)

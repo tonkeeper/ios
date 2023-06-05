@@ -20,6 +20,7 @@
 		7D527BC62A2A972A00A2D29A /* ModalContentListItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC52A2A972A00A2D29A /* ModalContentListItemView.swift */; };
 		7D527BC82A2A9E5D00A2D29A /* ModalContentActionBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC72A2A9E5D00A2D29A /* ModalContentActionBarView.swift */; };
 		7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BEB2A2DE93300A2D29A /* LoadingView.swift */; };
+		7D527BEE2A2DEA2C00A2D29A /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BED2A2DEA2C00A2D29A /* ResultView.swift */; };
 		7D5823397229401915615466 /* SendConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */; };
 		7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */; };
 		7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */; };
@@ -153,6 +154,7 @@
 		7D527BC52A2A972A00A2D29A /* ModalContentListItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentListItemView.swift; sourceTree = "<group>"; };
 		7D527BC72A2A9E5D00A2D29A /* ModalContentActionBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentActionBarView.swift; sourceTree = "<group>"; };
 		7D527BEB2A2DE93300A2D29A /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
+		7D527BED2A2DEA2C00A2D29A /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
 		7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderView.swift; sourceTree = "<group>"; };
 		7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderPresenter.swift; sourceTree = "<group>"; };
@@ -366,6 +368,7 @@
 			children = (
 				7D59284F2A1F614B006B0A8A /* SpacingView.swift */,
 				7D527BEB2A2DE93300A2D29A /* LoadingView.swift */,
+				7D527BED2A2DEA2C00A2D29A /* ResultView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1103,6 +1106,7 @@
 				7D9293042A29EE3F005B83DF /* TextFieldFormatController.swift in Sources */,
 				7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */,
 				7D5928552A1F6C71006B0A8A /* TKButton.swift in Sources */,
+				7D527BEE2A2DEA2C00A2D29A /* ResultView.swift in Sources */,
 				7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */,
 				7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */,
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
