@@ -36,10 +36,21 @@ class ReceiveViewController: GenericViewController<ReceiveView> {
 
 // MARK: - ReceiveViewInput
 
-extension ReceiveViewController: ReceiveViewInput {}
+extension ReceiveViewController: ReceiveViewInput {
+  func updateView(model: ReceiveView.Model) {
+    customView.configure(model: model)
+  }
+}
 
 // MARK: - Private
 
 private extension ReceiveViewController {
-  func setup() {}
+  func setup() {
+    let swipeButton = TKButton(configuration: .Header.button)
+    swipeButton.configure(model: .init(icon: .Icons.Buttons.Header.swipe))
+    swipeButton.addAction(.init(handler: { [weak self] in
+      self?.presenter.didTapSwipeButton()
+    }), for: .touchUpInside)
+    navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeButton)
+  }
 }

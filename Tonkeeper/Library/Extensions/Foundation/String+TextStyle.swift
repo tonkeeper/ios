@@ -14,7 +14,7 @@ extension String {
                   lineBreakMode: NSLineBreakMode = .byWordWrapping,
                   color: UIColor = .black) -> NSAttributedString {
     let paragraphStyle = NSMutableParagraphStyle()
-    paragraphStyle.lineSpacing = textStyle.lineSpacing
+    paragraphStyle.minimumLineHeight = textStyle.lineHeight
     paragraphStyle.alignment = alignment
     paragraphStyle.lineBreakMode = lineBreakMode
     

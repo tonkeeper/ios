@@ -40,6 +40,16 @@ extension UIImage {
         .init(named: "Icons/56/ic-flashlight-off-56")?.withRenderingMode(.alwaysTemplate)
       }
       
+      enum Receive {
+        static var copy: UIImage? {
+          .init(named: "Icons/16/ic-copy-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var share: UIImage? {
+          .init(named: "Icons/16/ic-share-16")?.withRenderingMode(.alwaysTemplate)
+        }
+      }
+      
       enum Wallet {
         static var buy: UIImage? {
           .init(named: "Icons/28/ic-plus-28")?.withRenderingMode(.alwaysTemplate)

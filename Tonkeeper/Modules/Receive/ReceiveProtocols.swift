@@ -16,6 +16,9 @@ protocol ReceiveModuleInput: AnyObject {}
 
 protocol ReceivePresenterInput {
   func viewDidLoad()
+  func didTapSwipeButton()
 }
 
-protocol ReceiveViewInput: AnyObject {}
+protocol ReceiveViewInput: AnyObject {
+  func updateView(model: ReceiveView.Model)
+}
