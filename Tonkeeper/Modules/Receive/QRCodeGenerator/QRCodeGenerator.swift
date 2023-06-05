@@ -8,11 +8,11 @@
 import UIKit
 
 protocol QRCodeGenerator {
-  func generate(string: String) -> UIImage?
+  func generate(string: String) async -> UIImage?
 }
 
 struct DefaultQRCodeGenerator: QRCodeGenerator {
-  func generate(string: String) -> UIImage? {
+  func generate(string: String) async -> UIImage? {
     let data = string.data(using: .ascii)
     guard let filter = CIFilter(name: "CIQRCodeGenerator") else { return nil }
     filter.setValue(data, forKey: "inputMessage")

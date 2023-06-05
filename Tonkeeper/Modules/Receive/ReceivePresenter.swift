@@ -70,7 +70,11 @@ private extension ReceivePresenter {
   }
   
   func updateQRCode() {
-    let qrCodeImage = qrCodeGenerator.generate(string: "EQAkeGnRj2WulA2S283bGDdr_tl8MbpXHt_JTu43sWez36W")
-    viewInput?.updateQRCode(image: qrCodeImage)
+    Task {
+      let qrCodeImage = await qrCodeGenerator.generate(string: "EQAkeGnRj2WulA2S283bGDdr_tl8MbpXHt_JTu43sWez36W")
+      await MainActor.run {
+        viewInput?.updateQRCode(image: qrCodeImage)
+      }
+    }
   }
 }
