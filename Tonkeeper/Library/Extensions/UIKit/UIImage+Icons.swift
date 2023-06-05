@@ -104,5 +104,9 @@ extension UIImage {
         .init(named: "Icons/28/ic-gear-28")?.withRenderingMode(.alwaysTemplate)
       }
     }
+    
+    static var tonIcon: UIImage? {
+      .init(named: "Icons/28/ic-ton-28")?.withRenderingMode(.alwaysTemplate)
+    }
   }
 }

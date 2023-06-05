@@ -21,8 +21,8 @@ final class ReceiveView: UIView, ConfigurableView {
   
   let logoImageView: UIImageView = {
     let imageView = UIImageView()
-    imageView.backgroundColor = .Constant.tonBlue
-    imageView.layer.masksToBounds = true
+    imageView.tintColor = .white
+    imageView.image = .Icons.tonIcon
     return imageView
   }()
   
@@ -82,6 +82,12 @@ final class ReceiveView: UIView, ConfigurableView {
     return view
   }()
   
+  private let logoContainer: UIView = {
+    let view = UIView()
+    view.backgroundColor = .Constant.tonBlue
+    return view
+  }()
+  
   private let qrCodeContainer: UIView = {
     let view = UIView()
     view.backgroundColor = .white
@@ -128,8 +134,8 @@ final class ReceiveView: UIView, ConfigurableView {
   override func layoutSubviews() {
     super.layoutSubviews()
     
-    logoImageView.layoutIfNeeded()
-    logoImageView.layer.cornerRadius = logoImageView.bounds.height / 2
+    logoContainer.layoutIfNeeded()
+    logoContainer.layer.cornerRadius = logoContainer.bounds.height / 2
   }
   
   // MARK: - Configurable View
@@ -154,10 +160,12 @@ private extension ReceiveView {
     
     addSubview(scrollView)
     scrollView.addSubview(scrollViewContentView)
-    scrollViewContentView.addSubview(logoImageView)
+    scrollViewContentView.addSubview(logoContainer)
     scrollViewContentView.addSubview(titleLabel)
     scrollViewContentView.addSubview(qrCodeSectionBackground)
     scrollViewContentView.addSubview(addressSectionBackground)
+    
+    logoContainer.addSubview(logoImageView)
     
     qrCodeSectionBackground.addSubview(qrTitleLabel)
     qrCodeSectionBackground.addSubview(qrCodeContainer)
@@ -180,7 +188,7 @@ private extension ReceiveView {
   func setupConstraints() {
     scrollView.translatesAutoresizingMaskIntoConstraints = false
     scrollViewContentView.translatesAutoresizingMaskIntoConstraints = false
-    logoImageView.translatesAutoresizingMaskIntoConstraints = false
+    logoContainer.translatesAutoresizingMaskIntoConstraints = false
     titleLabel.translatesAutoresizingMaskIntoConstraints = false
     qrCodeSectionBackground.translatesAutoresizingMaskIntoConstraints = false
     qrTitleLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -191,6 +199,7 @@ private extension ReceiveView {
     buttonsStackView.translatesAutoresizingMaskIntoConstraints = false
     separatorView.translatesAutoresizingMaskIntoConstraints = false
     qrCodeContainer.translatesAutoresizingMaskIntoConstraints = false
+    logoImageView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       scrollView.topAnchor.constraint(equalTo: topAnchor),
@@ -204,12 +213,17 @@ private extension ReceiveView {
       scrollViewContentView.rightAnchor.constraint(equalTo: scrollView.rightAnchor).withPriority(.defaultHigh),
       scrollViewContentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor).withPriority(.defaultHigh),
       
-      logoImageView.topAnchor.constraint(equalTo: scrollViewContentView.topAnchor, constant: .imageTopSpace),
-      logoImageView.widthAnchor.constraint(equalToConstant: .logoSide),
-      logoImageView.heightAnchor.constraint(equalToConstant: .logoSide),
-      logoImageView.centerXAnchor.constraint(equalTo: scrollViewContentView.centerXAnchor),
+      logoContainer.topAnchor.constraint(equalTo: scrollViewContentView.topAnchor, constant: .imageTopSpace),
+      logoContainer.widthAnchor.constraint(equalToConstant: .logoSide),
+      logoContainer.heightAnchor.constraint(equalToConstant: .logoSide),
+      logoContainer.centerXAnchor.constraint(equalTo: scrollViewContentView.centerXAnchor),
       
-      titleLabel.topAnchor.constraint(equalTo: logoImageView.bottomAnchor, constant: .titleTopSpace),
+      logoImageView.centerXAnchor.constraint(equalTo: logoContainer.centerXAnchor),
+      logoImageView.centerYAnchor.constraint(equalTo: logoContainer.centerYAnchor),
+      logoImageView.widthAnchor.constraint(equalToConstant: .logoImageSide),
+      logoImageView.heightAnchor.constraint(equalToConstant: .logoImageSide),
+      
+      titleLabel.topAnchor.constraint(equalTo: logoContainer.bottomAnchor, constant: .titleTopSpace),
       titleLabel.centerXAnchor.constraint(equalTo: scrollViewContentView.centerXAnchor),
       
       qrCodeSectionBackground.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: .qrTopSpace),
@@ -257,6 +271,7 @@ private extension CGFloat {
   static let cornerRadius: CGFloat = 16
   static let imageTopSpace: CGFloat = 32
   static let logoSide: CGFloat = 72
+  static let logoImageSide: CGFloat = 45
   static let titleTopSpace: CGFloat = 12
   static let contentSideSpace: CGFloat = 48
   static let qrTopSpace: CGFloat = 24
