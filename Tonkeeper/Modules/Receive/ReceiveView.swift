@@ -41,8 +41,7 @@ final class ReceiveView: UIView, ConfigurableView {
   let qrImageView: UIImageView = {
     let imageView = UIImageView()
     imageView.layer.masksToBounds = true
-    imageView.backgroundColor = .gray
-    imageView.layer.cornerRadius = .cornerRadius
+    imageView.backgroundColor = .white
     return imageView
   }()
   
@@ -80,6 +79,13 @@ final class ReceiveView: UIView, ConfigurableView {
   private let separatorView: UIView = {
     let view = UIView()
     view.backgroundColor = .Separator.common
+    return view
+  }()
+  
+  private let qrCodeContainer: UIView = {
+    let view = UIView()
+    view.backgroundColor = .white
+    view.layer.cornerRadius = .cornerRadius
     return view
   }()
   
@@ -154,7 +160,8 @@ private extension ReceiveView {
     scrollViewContentView.addSubview(addressSectionBackground)
     
     qrCodeSectionBackground.addSubview(qrTitleLabel)
-    qrCodeSectionBackground.addSubview(qrImageView)
+    qrCodeSectionBackground.addSubview(qrCodeContainer)
+    qrCodeContainer.addSubview(qrImageView)
     
     addressSectionBackground.addSubview(addressTitleLabel)
     addressSectionBackground.addSubview(addressButton)
@@ -183,6 +190,7 @@ private extension ReceiveView {
     addressButton.translatesAutoresizingMaskIntoConstraints = false
     buttonsStackView.translatesAutoresizingMaskIntoConstraints = false
     separatorView.translatesAutoresizingMaskIntoConstraints = false
+    qrCodeContainer.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       scrollView.topAnchor.constraint(equalTo: topAnchor),
@@ -216,11 +224,15 @@ private extension ReceiveView {
       qrTitleLabel.topAnchor.constraint(equalTo: qrCodeSectionBackground.topAnchor, constant: ContentInsets.sideSpace),
       qrTitleLabel.leftAnchor.constraint(equalTo: qrCodeSectionBackground.leftAnchor, constant: ContentInsets.sideSpace),
       qrTitleLabel.rightAnchor.constraint(equalTo: qrCodeSectionBackground.rightAnchor, constant: -ContentInsets.sideSpace),
-      qrImageView.topAnchor.constraint(equalTo: qrTitleLabel.bottomAnchor, constant: ContentInsets.sideSpace),
-      qrImageView.leftAnchor.constraint(equalTo: qrCodeSectionBackground.leftAnchor, constant: ContentInsets.sideSpace),
-      qrImageView.rightAnchor.constraint(equalTo: qrCodeSectionBackground.rightAnchor, constant: -ContentInsets.sideSpace),
-      qrImageView.bottomAnchor.constraint(equalTo: qrCodeSectionBackground.bottomAnchor, constant: -ContentInsets.sideSpace),
-      qrImageView.heightAnchor.constraint(equalTo: qrImageView.widthAnchor),
+      qrCodeContainer.topAnchor.constraint(equalTo: qrTitleLabel.bottomAnchor, constant: ContentInsets.sideSpace),
+      qrCodeContainer.leftAnchor.constraint(equalTo: qrCodeSectionBackground.leftAnchor, constant: ContentInsets.sideSpace),
+      qrCodeContainer.rightAnchor.constraint(equalTo: qrCodeSectionBackground.rightAnchor, constant: -ContentInsets.sideSpace),
+      qrCodeContainer.bottomAnchor.constraint(equalTo: qrCodeSectionBackground.bottomAnchor, constant: -ContentInsets.sideSpace),
+      qrCodeContainer.heightAnchor.constraint(equalTo: qrCodeContainer.widthAnchor),
+      qrImageView.topAnchor.constraint(equalTo: qrCodeContainer.topAnchor, constant: 24),
+      qrImageView.leftAnchor.constraint(equalTo: qrCodeContainer.leftAnchor, constant: 24),
+      qrImageView.bottomAnchor.constraint(equalTo: qrCodeContainer.bottomAnchor, constant: -24),
+      qrImageView.rightAnchor.constraint(equalTo: qrCodeContainer.rightAnchor, constant: -24),
       
       addressTitleLabel.topAnchor.constraint(equalTo: addressSectionBackground.topAnchor, constant: ContentInsets.sideSpace),
       addressTitleLabel.leftAnchor.constraint(equalTo: addressSectionBackground.leftAnchor, constant: ContentInsets.sideSpace),

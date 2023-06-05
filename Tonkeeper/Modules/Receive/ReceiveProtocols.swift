@@ -6,7 +6,7 @@
 //  Created by Grigory Serebryanyy on 05/06/2023.
 //
 
-import Foundation
+import UIKit
 
 protocol ReceiveModuleOutput: AnyObject {
   func receieveModuleDidTapCloseButton()
@@ -21,4 +21,5 @@ protocol ReceivePresenterInput {
 
 protocol ReceiveViewInput: AnyObject {
   func updateView(model: ReceiveView.Model)
+  func updateQRCode(image: UIImage?)
 }

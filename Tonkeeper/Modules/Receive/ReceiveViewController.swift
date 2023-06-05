@@ -40,6 +40,10 @@ extension ReceiveViewController: ReceiveViewInput {
   func updateView(model: ReceiveView.Model) {
     customView.configure(model: model)
   }
+  
+  func updateQRCode(image: UIImage?) {
+    customView.qrImageView.image = image
+  }
 }
 
 // MARK: - Private

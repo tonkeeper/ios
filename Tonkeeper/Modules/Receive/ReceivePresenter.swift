@@ -14,6 +14,14 @@ final class ReceivePresenter {
   
   weak var viewInput: ReceiveViewInput?
   weak var output: ReceiveModuleOutput?
+  
+  // MARK: - Dependecies
+  
+  private let qrCodeGenerator: QRCodeGenerator
+  
+  init(qrCodeGenerator: QRCodeGenerator) {
+    self.qrCodeGenerator = qrCodeGenerator
+  }
 }
 
 // MARK: - ReceivePresenterIntput
@@ -21,6 +29,7 @@ final class ReceivePresenter {
 extension ReceivePresenter: ReceivePresenterInput {
   func viewDidLoad() {
     updateView()
+    updateQRCode()
   }
   
   func didTapSwipeButton() {
@@ -58,5 +67,10 @@ private extension ReceivePresenter {
                                        address: address,
                                        copyButtonTitle: "Copy",
                                        shareButtonTitle: "Share"))
+  }
+  
+  func updateQRCode() {
+    let qrCodeImage = qrCodeGenerator.generate(string: "EQAkeGnRj2WulA2S283bGDdr_tl8MbpXHt_JTu43sWez36W")
+    viewInput?.updateQRCode(image: qrCodeImage)
   }
 }
