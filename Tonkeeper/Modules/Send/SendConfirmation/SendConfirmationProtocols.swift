@@ -10,6 +10,7 @@ import Foundation
 
 protocol SendConfirmationModuleOutput: AnyObject {
   func sendConfirmationModuleDidTapCloseButton()
+  func sendRecipientModuleDidFinish()
 }
 
 protocol SendConfirmationModuleInput: AnyObject {}

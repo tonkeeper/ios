@@ -19,7 +19,21 @@ extension ModalContentViewController {
       struct Button {
         let title: String
         let configuration: TKButton.Configuration
-        let tapAction: (() -> Void)?
+        let tapAction: (( @escaping (Bool) -> Void) -> Void)?
+        let showActivityClosure: (() -> Bool)?
+        let completion: (() -> Void)?
+        
+        init(title: String,
+             configuration: TKButton.Configuration,
+             tapAction: (( @escaping (Bool) -> Void) -> Void)? = nil,
+             showActivityClosure: (() -> Bool)? = nil,
+             completion: (() -> Void)? = nil) {
+          self.title = title
+          self.configuration = configuration
+          self.tapAction = tapAction
+          self.showActivityClosure = showActivityClosure
+          self.completion = completion
+        }
       }
       
       enum Item {

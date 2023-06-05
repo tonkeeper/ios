@@ -21,6 +21,7 @@
 		7D527BC82A2A9E5D00A2D29A /* ModalContentActionBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC72A2A9E5D00A2D29A /* ModalContentActionBarView.swift */; };
 		7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BEB2A2DE93300A2D29A /* LoadingView.swift */; };
 		7D527BEE2A2DEA2C00A2D29A /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BED2A2DEA2C00A2D29A /* ResultView.swift */; };
+		7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BF02A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift */; };
 		7D5823397229401915615466 /* SendConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */; };
 		7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */; };
 		7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */; };
@@ -155,6 +156,7 @@
 		7D527BC72A2A9E5D00A2D29A /* ModalContentActionBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentActionBarView.swift; sourceTree = "<group>"; };
 		7D527BEB2A2DE93300A2D29A /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		7D527BED2A2DEA2C00A2D29A /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
+		7D527BF02A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendConfirmationModalConfigurationBuilder.swift; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
 		7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderView.swift; sourceTree = "<group>"; };
 		7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderPresenter.swift; sourceTree = "<group>"; };
@@ -302,6 +304,7 @@
 		112BDFA05B26CEB474E08BB1 /* SendConfirmation */ = {
 			isa = PBXGroup;
 			children = (
+				7D527BEF2A2DF61200A2D29A /* Builder */,
 				5315989FA9BDEABD3FA2E275 /* SendConfirmationViewController.swift */,
 				8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */,
 				3DC3714222F64C921781E7A8 /* SendConfirmationPresenter.swift */,
@@ -348,6 +351,14 @@
 				7D527BC72A2A9E5D00A2D29A /* ModalContentActionBarView.swift */,
 			);
 			path = ModalContentViewController;
+			sourceTree = "<group>";
+		};
+		7D527BEF2A2DF61200A2D29A /* Builder */ = {
+			isa = PBXGroup;
+			children = (
+				7D527BF02A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift */,
+			);
+			path = Builder;
 			sourceTree = "<group>";
 		};
 		7D5928452A1F5776006B0A8A /* WalletHeader */ = {
@@ -1128,6 +1139,7 @@
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
 				7D9292FC2A29DCDA005B83DF /* SendAmountTitleView.swift in Sources */,
 				7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */,
+				7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */,
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
 				7D5928652A1FB6C4006B0A8A /* UIControlClosure.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,

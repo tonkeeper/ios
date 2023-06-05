@@ -82,6 +82,10 @@ extension SendCoordinator: SendConfirmationModuleOutput {
   func sendConfirmationModuleDidTapCloseButton() {
     output?.sendCoordinatorDidClose(self)
   }
+  
+  func sendRecipientModuleDidFinish() {
+    output?.sendCoordinatorDidClose(self)
+  }
 }
 
 // MARK: - QRScannerModuleOutput
