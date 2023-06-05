@@ -37,6 +37,10 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
   func didTapSendButton() {
     output?.openSend()
   }
+  
+  func didTapReceiveButton() {
+    output?.openReceive()
+  }
 }
 
 // MARK: - WalletContentModuleOutput

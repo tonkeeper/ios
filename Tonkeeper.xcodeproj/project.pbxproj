@@ -10,6 +10,7 @@
 		0A919C70A2EDEAA0AB313C6C /* SendConfirmationPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DC3714222F64C921781E7A8 /* SendConfirmationPresenter.swift */; };
 		0C1DF00128AE8BA90E30FCB1 /* TokensListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3EB126F410EC784A834E04 /* TokensListView.swift */; };
 		33FCEDBDA2CD72BEEB61461C /* Pods_Tonkeeper.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */; };
+		3C01D6946E22BFB97B2E82A6 /* ReceiveViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EEBA5EBAC6F6BE4F5EBF4E /* ReceiveViewController.swift */; };
 		4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9993DE66C3DC18C7C5EF729 /* WalletContentProtocols.swift */; };
 		795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC1F118C75E99C32396A981 /* SendConfirmationProtocols.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
@@ -23,6 +24,8 @@
 		7D527BEE2A2DEA2C00A2D29A /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BED2A2DEA2C00A2D29A /* ResultView.swift */; };
 		7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BF02A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift */; };
 		7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BF32A2DFDA600A2D29A /* NotDelayScrollView.swift */; };
+		7D527BFF2A2E1A0500A2D29A /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BFD2A2E1A0500A2D29A /* ReceiveAssembly.swift */; };
+		7D527C002A2E1A0500A2D29A /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BFE2A2E1A0500A2D29A /* ReceiveCoordinator.swift */; };
 		7D5823397229401915615466 /* SendConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */; };
 		7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */; };
 		7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */; };
@@ -133,8 +136,11 @@
 		7DB8FB7F2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB7C2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf */; };
 		7DB8FB802A1BEE00005B4B11 /* Montserrat-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB7D2A1BEE00005B4B11 /* Montserrat-Medium.ttf */; };
 		7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */; };
+		86DEB0A35D88DABB3EAEFDD3 /* ReceiveProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A2DFA2B5AD43B54E2E131F /* ReceiveProtocols.swift */; };
 		8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5315989FA9BDEABD3FA2E275 /* SendConfirmationViewController.swift */; };
 		8FD2051305C8DE79A1D70FBA /* WalletContentPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCBEC0954BE2099E54A78D14 /* WalletContentPresenter.swift */; };
+		987FA16FC8F9D0CBA2353D9D /* ReceiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2140E2CC50DF4789E6DDE35 /* ReceiveView.swift */; };
+		9EB19BBDABB92B4B6A28684B /* ReceivePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD0D83F8AC9D08173560A142 /* ReceivePresenter.swift */; };
 		B2DC87224B8264B43A27920C /* WalletContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14F55B615D2FE6B7D027A93B /* WalletContentView.swift */; };
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
 		D97B981CF3DBE823EDA9A091 /* WalletContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */; };
@@ -144,8 +150,10 @@
 
 /* Begin PBXFileReference section */
 		14F55B615D2FE6B7D027A93B /* WalletContentView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentView.swift; sourceTree = "<group>"; };
+		27A2DFA2B5AD43B54E2E131F /* ReceiveProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReceiveProtocols.swift; sourceTree = "<group>"; };
 		3DC3714222F64C921781E7A8 /* SendConfirmationPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationPresenter.swift; sourceTree = "<group>"; };
 		5315989FA9BDEABD3FA2E275 /* SendConfirmationViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationViewController.swift; sourceTree = "<group>"; };
+		62EEBA5EBAC6F6BE4F5EBF4E /* ReceiveViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReceiveViewController.swift; sourceTree = "<group>"; };
 		67AE621196A7AF226EB43ED1 /* Pods-Tonkeeper.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.debug.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.debug.xcconfig"; sourceTree = "<group>"; };
 		747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListPresenter.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
@@ -159,6 +167,8 @@
 		7D527BED2A2DEA2C00A2D29A /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
 		7D527BF02A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendConfirmationModalConfigurationBuilder.swift; sourceTree = "<group>"; };
 		7D527BF32A2DFDA600A2D29A /* NotDelayScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotDelayScrollView.swift; sourceTree = "<group>"; };
+		7D527BFD2A2E1A0500A2D29A /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ReceiveAssembly.swift; path = ../../../../../../Desktop/ReceiveAssembly.swift; sourceTree = "<group>"; };
+		7D527BFE2A2E1A0500A2D29A /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ReceiveCoordinator.swift; path = ../../../../../../Desktop/ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
 		7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderView.swift; sourceTree = "<group>"; };
 		7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderPresenter.swift; sourceTree = "<group>"; };
@@ -275,10 +285,12 @@
 		91212C1153B7799536A9E7B6 /* Pods-Tonkeeper.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.release.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.release.xcconfig"; sourceTree = "<group>"; };
 		95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Tonkeeper.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9FC1F118C75E99C32396A981 /* SendConfirmationProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationProtocols.swift; sourceTree = "<group>"; };
+		A2140E2CC50DF4789E6DDE35 /* ReceiveView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReceiveView.swift; sourceTree = "<group>"; };
 		A3B82E8B681EE6CE930E250D /* TokensListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListViewController.swift; sourceTree = "<group>"; };
 		A9993DE66C3DC18C7C5EF729 /* WalletContentProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentProtocols.swift; sourceTree = "<group>"; };
 		CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentViewController.swift; sourceTree = "<group>"; };
 		CCBEC0954BE2099E54A78D14 /* WalletContentPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentPresenter.swift; sourceTree = "<group>"; };
+		CD0D83F8AC9D08173560A142 /* ReceivePresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReceivePresenter.swift; sourceTree = "<group>"; };
 		FA3EB126F410EC784A834E04 /* TokensListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -369,6 +381,19 @@
 				7D527BF32A2DFDA600A2D29A /* NotDelayScrollView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7D527BF82A2E194D00A2D29A /* Receive */ = {
+			isa = PBXGroup;
+			children = (
+				7D527BFD2A2E1A0500A2D29A /* ReceiveAssembly.swift */,
+				7D527BFE2A2E1A0500A2D29A /* ReceiveCoordinator.swift */,
+				62EEBA5EBAC6F6BE4F5EBF4E /* ReceiveViewController.swift */,
+				A2140E2CC50DF4789E6DDE35 /* ReceiveView.swift */,
+				CD0D83F8AC9D08173560A142 /* ReceivePresenter.swift */,
+				27A2DFA2B5AD43B54E2E131F /* ReceiveProtocols.swift */,
+			);
+			path = Receive;
 			sourceTree = "<group>";
 		};
 		7D5928452A1F5776006B0A8A /* WalletHeader */ = {
@@ -556,6 +581,7 @@
 		7D6836382A1CFECF002DBBC7 /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				7D527BF82A2E194D00A2D29A /* Receive */,
 				7D6836712A1E65ED002DBBC7 /* Common */,
 				7D6836392A1CFED6002DBBC7 /* App */,
 				7D68363E2A1D0AB1002DBBC7 /* TabBar */,
@@ -1134,6 +1160,7 @@
 				7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */,
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
+				7D527BFF2A2E1A0500A2D29A /* ReceiveAssembly.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D5928742A2007C0006B0A8A /* Button.Configuration+Header.swift in Sources */,
 				7D6836512A1D1EB1002DBBC7 /* ActivityCoordinator.swift in Sources */,
@@ -1147,6 +1174,7 @@
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
 				7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */,
+				7D527C002A2E1A0500A2D29A /* ReceiveCoordinator.swift in Sources */,
 				7D92928D2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift in Sources */,
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
 				7D9292FC2A29DCDA005B83DF /* SendAmountTitleView.swift in Sources */,
@@ -1218,6 +1246,10 @@
 				7D5823397229401915615466 /* SendConfirmationView.swift in Sources */,
 				0A919C70A2EDEAA0AB313C6C /* SendConfirmationPresenter.swift in Sources */,
 				795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */,
+				3C01D6946E22BFB97B2E82A6 /* ReceiveViewController.swift in Sources */,
+				987FA16FC8F9D0CBA2353D9D /* ReceiveView.swift in Sources */,
+				9EB19BBDABB92B4B6A28684B /* ReceivePresenter.swift in Sources */,
+				86DEB0A35D88DABB3EAEFDD3 /* ReceiveProtocols.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

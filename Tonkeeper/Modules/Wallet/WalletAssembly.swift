@@ -11,11 +11,14 @@ struct WalletAssembly {
   
   private let qrScannerAssembly: QRScannerAssembly
   private let sendAssembly: SendAssembly
+  private let receiveAssembly: ReceiveAssembly
   
   init(qrScannerAssembly: QRScannerAssembly,
-       sendAssembly: SendAssembly) {
+       sendAssembly: SendAssembly,
+       receiveAssembly: ReceiveAssembly) {
     self.qrScannerAssembly = qrScannerAssembly
     self.sendAssembly = sendAssembly
+    self.receiveAssembly = receiveAssembly
   }
   
   func walletRootModule(output: WalletRootModuleOutput,
@@ -56,11 +59,21 @@ struct WalletAssembly {
   
   func sendCoordinator(output: SendCoordinatorOutput) -> SendCoordinator {
     let navigationController = NavigationController()
-    navigationController.configureAppearance()
+    navigationController.configureDefaultAppearance()
     navigationController.isModalInPresentation = true
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = SendCoordinator(router: router,
                                       assembly: sendAssembly)
+    coordinator.output = output
+    return coordinator
+  }
+  
+  func receieveCoordinator(output: ReceiveCoordinatorOutput) -> ReceiveCoordinator {
+    let navigationController = NavigationController()
+    navigationController.configureTransparentAppearance()
+    let router = NavigationRouter(rootViewController: navigationController)
+    let coordinator = ReceiveCoordinator(router: router,
+                                         assembly: receiveAssembly)
     coordinator.output = output
     return coordinator
   }

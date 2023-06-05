@@ -53,6 +53,8 @@ private extension WalletHeaderPresenter {
     switch type {
     case .send:
       output?.didTapSendButton()
+    case .receive:
+      output?.didTapReceiveButton()
     default:
       break
     }

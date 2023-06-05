@@ -8,7 +8,7 @@
 import UIKit
 
 extension UINavigationController {
-  func configureAppearance() {
+  func configureDefaultAppearance() {
     let navigationBarAppearance = UINavigationBarAppearance()
     navigationBarAppearance.configureWithOpaqueBackground()
     navigationBarAppearance.backgroundColor = .Background.page
@@ -18,6 +18,18 @@ extension UINavigationController {
                                                         .font: TextStyle.h3.font]
 
     navigationBar.tintColor = .Accent.blue
+    navigationBar.standardAppearance = navigationBarAppearance
+    navigationBar.scrollEdgeAppearance = navigationBarAppearance
+    navigationBar.compactAppearance = navigationBarAppearance
+    if #available(iOS 15.0, *) {
+      navigationBar.compactScrollEdgeAppearance = navigationBarAppearance
+    }
+  }
+  
+  func configureTransparentAppearance() {
+    let navigationBarAppearance = UINavigationBarAppearance()
+    navigationBarAppearance.configureWithTransparentBackground()
+    
     navigationBar.standardAppearance = navigationBarAppearance
     navigationBar.scrollEdgeAppearance = navigationBarAppearance
     navigationBar.compactAppearance = navigationBarAppearance
