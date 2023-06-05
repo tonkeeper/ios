@@ -22,6 +22,7 @@
 		7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BEB2A2DE93300A2D29A /* LoadingView.swift */; };
 		7D527BEE2A2DEA2C00A2D29A /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BED2A2DEA2C00A2D29A /* ResultView.swift */; };
 		7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BF02A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift */; };
+		7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BF32A2DFDA600A2D29A /* NotDelayScrollView.swift */; };
 		7D5823397229401915615466 /* SendConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */; };
 		7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */; };
 		7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */; };
@@ -157,6 +158,7 @@
 		7D527BEB2A2DE93300A2D29A /* LoadingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoadingView.swift; sourceTree = "<group>"; };
 		7D527BED2A2DEA2C00A2D29A /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
 		7D527BF02A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendConfirmationModalConfigurationBuilder.swift; sourceTree = "<group>"; };
+		7D527BF32A2DFDA600A2D29A /* NotDelayScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotDelayScrollView.swift; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
 		7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderView.swift; sourceTree = "<group>"; };
 		7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderPresenter.swift; sourceTree = "<group>"; };
@@ -361,6 +363,14 @@
 			path = Builder;
 			sourceTree = "<group>";
 		};
+		7D527BF22A2DFD9C00A2D29A /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D527BF32A2DFDA600A2D29A /* NotDelayScrollView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		7D5928452A1F5776006B0A8A /* WalletHeader */ = {
 			isa = PBXGroup;
 			children = (
@@ -486,6 +496,7 @@
 		7D68361E2A1CD1B8002DBBC7 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				7D527BF22A2DFD9C00A2D29A /* Views */,
 				7D6836652A1D6E6B002DBBC7 /* Module */,
 				7D68365E2A1D6998002DBBC7 /* ViewControllers */,
 				7D68361F2A1CD1C9002DBBC7 /* Coordinator */,
@@ -1103,6 +1114,7 @@
 				7D6836622A1D6A79002DBBC7 /* UINavigationController+Appearance.swift in Sources */,
 				7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */,
 				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,
+				7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */,
 				7D59284B2A1F5797006B0A8A /* WalletHeaderPresenter.swift in Sources */,
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
 				7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */,

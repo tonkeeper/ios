@@ -17,7 +17,7 @@ struct WalletHeaderButtonModel {
     
     var title: String {
       switch self {
-      case .buy: return "Buy"
+      case .buy: return "Buy TON"
       case .receive: return "Receive"
       case .sell: return "Sell"
       case .send: return "Send"

@@ -27,8 +27,8 @@ final class ScrollContainerViewController: UIViewController {
   private let headerContent: ScrollContainerHeaderContent
   private let bodyContent: ScrollContainerBodyContent
   
-  private let scrollView = UIScrollView()
-  private let panGestureScrollView = UIScrollView()
+  private let scrollView = NotDelayScrollView()
+  private let panGestureScrollView = NotDelayScrollView()
   
   init(headerContent: ScrollContainerHeaderContent,
        bodyContent: ScrollContainerBodyContent) {
