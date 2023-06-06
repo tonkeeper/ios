@@ -32,6 +32,13 @@ class ReceiveViewController: GenericViewController<ReceiveView> {
     setup()
     presenter.viewDidLoad()
   }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    
+    customView.qrImageView.layoutIfNeeded()
+    presenter.generateQRCode(size: customView.qrImageView.frame.size)
+  }
 }
 
 // MARK: - ReceiveViewInput

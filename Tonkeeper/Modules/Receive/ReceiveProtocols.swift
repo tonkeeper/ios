@@ -17,6 +17,7 @@ protocol ReceiveModuleInput: AnyObject {}
 protocol ReceivePresenterInput {
   func viewDidLoad()
   func didTapSwipeButton()
+  func generateQRCode(size: CGSize)
 }
 
 protocol ReceiveViewInput: AnyObject {

@@ -29,7 +29,10 @@ final class ReceivePresenter {
 extension ReceivePresenter: ReceivePresenterInput {
   func viewDidLoad() {
     updateView()
-    updateQRCode()
+  }
+  
+  func generateQRCode(size: CGSize) {
+    updateQRCode(size: size)
   }
   
   func didTapSwipeButton() {
@@ -69,9 +72,9 @@ private extension ReceivePresenter {
                                        shareButtonTitle: "Share"))
   }
   
-  func updateQRCode() {
+  func updateQRCode(size: CGSize) {
     Task {
-      let qrCodeImage = await qrCodeGenerator.generate(string: "EQAkeGnRj2WulA2S283bGDdr_tl8MbpXHt_JTu43sWez36W")
+      let qrCodeImage = await qrCodeGenerator.generate(string: "EQAkeGnRj2WulA2S283bGDdr_tl8MbpXHt_JTu43sWez36W", size: size)
       await MainActor.run {
         viewInput?.updateQRCode(image: qrCodeImage)
       }
