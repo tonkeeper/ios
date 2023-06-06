@@ -44,6 +44,15 @@ extension WalletCoordinator: WalletRootModuleOutput {
     coordinator.start()
     router.present(coordinator.router.rootViewController)
   }
+  
+  func openReceive() {
+    let coordinator = walletAssembly.receieveCoordinator(output: self)
+    addChild(coordinator)
+    coordinator.start()
+    router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
+      self?.removeChild(coordinator!)
+    })
+  }
 }
 
 // MARK: - QRScannerModuleOutput
@@ -63,5 +72,13 @@ extension WalletCoordinator: TokensListModuleOutput {
 extension WalletCoordinator: SendCoordinatorOutput {
   func sendCoordinatorDidClose(_ coordinator: SendCoordinator) {
     router.dismiss()
+    removeChild(coordinator)
+  }
+}
+
+extension WalletCoordinator: ReceiveCoordinatorOutput {
+  func receiveCoordinatorDidClose(_ coordinator: ReceiveCoordinator) {
+    router.dismiss()
+    removeChild(coordinator)
   }
 }

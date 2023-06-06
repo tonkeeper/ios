@@ -66,6 +66,9 @@ extension UIColor {
     static let red = UIColor.named("Colors/Accent/Red")
     static let orange = UIColor.named("Colors/Accent/Orange")
   }
+  enum Constant {
+    static let tonBlue = UIColor.named("Colors/Constant&System/TON Blue")
+  }
   
   private static func named(_ name: String) -> UIColor {
     let color = UIColor(named: name)

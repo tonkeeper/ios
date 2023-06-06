@@ -87,6 +87,7 @@ final class TKButton: UIControlClosure {
   
   enum Shape {
     case circle
+    case roundedRect
     case rect
   }
   
@@ -160,8 +161,10 @@ final class TKButton: UIControlClosure {
     switch configuration.shape {
     case .circle:
       path = .init(ovalIn: bounds)
-    case .rect:
+    case .roundedRect:
       path = .init(roundedRect: bounds, cornerRadius: configuration.size.cornerRadius)
+    case .rect:
+      path = .init(rect: bounds)
     }
     maskLayer.path = path.cgPath
     layer.mask = maskLayer
@@ -171,7 +174,7 @@ final class TKButton: UIControlClosure {
     let height = configuration.size.height
     let width: CGFloat
     switch configuration.shape {
-    case .rect:
+    case .roundedRect, .rect:
       width = round(contentStackView.systemLayoutSizeFitting(.zero).width)
     case .circle:
       width = height
@@ -201,6 +204,7 @@ private extension TKButton {
     contentStackView.axis = .horizontal
     contentStackView.alignment = .center
     contentStackView.isUserInteractionEnabled = false
+    contentStackView.spacing = 9
     
     contentStackView.addArrangedSubview(iconImageView)
     contentStackView.addArrangedSubview(titleLabel)

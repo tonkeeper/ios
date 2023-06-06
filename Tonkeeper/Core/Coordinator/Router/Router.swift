@@ -9,7 +9,9 @@ import UIKit
 
 protocol RouterProtocol {}
 
-class Router<RootViewController: UIViewController>: NSObject, RouterProtocol {
+class Router<RootViewController: UIViewController>: NSObject, RouterProtocol, UIAdaptivePresentationControllerDelegate {
+  private var dismissClosure: (() -> Void)?
+  
   let rootViewController: RootViewController
   
   init(rootViewController: RootViewController) {
@@ -18,7 +20,10 @@ class Router<RootViewController: UIViewController>: NSObject, RouterProtocol {
   
   func present(_ presentable: Presentable,
                options: RouteOptions = .default,
-               completion: (() -> Void)? = nil) {
+               completion: (() -> Void)? = nil,
+               dismiss: (() -> Void)? = nil) {
+    dismissClosure = dismiss
+    presentable.viewController.presentationController?.delegate = self
     rootViewController.present(presentable.viewController,
                                animated: options.isAnimated,
                                completion: completion)
@@ -28,5 +33,9 @@ class Router<RootViewController: UIViewController>: NSObject, RouterProtocol {
                completion: (() -> Void)? = nil) {
     rootViewController.dismiss(animated: options.isAnimated,
                                completion: completion)
+  }
+  
+  func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+    dismissClosure?()
   }
 }
