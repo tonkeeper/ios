@@ -62,6 +62,12 @@ private extension WalletHeaderViewController {
       action: #selector(didTapAddressButton),
       for: .touchUpInside
     )
+    
+    customView.titleView.scanQRButton.addTarget(
+      self,
+      action: #selector(didTapScanQRButton),
+      for: .touchUpInside
+    )
   }
 }
 
@@ -71,5 +77,10 @@ private extension WalletHeaderViewController {
   @objc
   func didTapAddressButton() {
     presenter.didTapAddressButton()
+  }
+  
+  @objc
+  func didTapScanQRButton() {
+    presenter.didTapScanQRButton()
   }
 }

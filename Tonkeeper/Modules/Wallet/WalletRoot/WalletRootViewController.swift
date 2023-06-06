@@ -47,12 +47,6 @@ final class WalletRootViewController: GenericViewController<WalletRootView> {
     super.viewDidLoad()
     setup()
   }
-  
-  override func viewDidLayoutSubviews() {
-    super.viewDidLayoutSubviews()
-    
-    children.forEach { $0.additionalSafeAreaInsets.top = customView.titleView.frame.height - view.safeAreaInsets.top }
-  }
 }
 
 // MARK: - WalletRootViewInput
@@ -70,30 +64,5 @@ private extension WalletRootViewController {
     addChild(scrollContainerViewController)
     customView.addContent(contentView: scrollContainerViewController.view)
     scrollContainerViewController.didMove(toParent: self)
-    
-    scrollContainerViewController.didScrollBodyToSafeArea = { [weak self] yOffset in
-      self?.updateTitleView(with: yOffset)
-    }
-    
-    customView.titleView.scanQRButton.addTarget(
-      self,
-      action: #selector(didTapScanQRButton),
-      for: .touchUpInside
-    )
-  }
-}
-
-// MARK: - Actions
-
-private extension WalletRootViewController {
-  @objc
-  func didTapScanQRButton() {
-    presenter.didTapScanQRButton()
-  }
-  
-  func updateTitleView(with yOffset: CGFloat) {
-    let alpha = yOffset / (customView.titleView.frame.height / 2)
-    customView.titleView.alpha = 1 - alpha
-    customView.titleView.transform = CGAffineTransform(translationX: 0, y: -yOffset)
   }
 }

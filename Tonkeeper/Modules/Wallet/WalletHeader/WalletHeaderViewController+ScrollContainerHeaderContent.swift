@@ -9,13 +9,21 @@ import UIKit
 
 extension WalletHeaderViewController: ScrollContainerHeaderContent {
   var height: CGFloat {
-    round(view.systemLayoutSizeFitting(.zero).height)
+    view.systemLayoutSizeFitting(.zero).height
+  }
+  
+  var minimumHeight: CGFloat {
+    customView.titleView.systemLayoutSizeFitting(.zero).height
   }
   
   func update(with headerScrollProgress: CGFloat) {
-    view.alpha = 1 - headerScrollProgress
-//    amountTitle.alpha = 1 - headerScrollProgress
-//    amountSubtitle.alpha = 1 - headerScrollProgress
-//    buttonsView.alpha = 1 - headerScrollProgress
+    let alpha = 1 - headerScrollProgress
+    customView.balanceLabel.alpha = alpha
+    customView.addressButton.alpha = alpha
+    customView.buttonsView.alpha = alpha
+    
+    let titleOffset = height - customView.titleView.systemLayoutSizeFitting(.zero).height
+    let transform = CGAffineTransform(translationX: 0, y: titleOffset * headerScrollProgress)
+    customView.titleView.transform = transform
   }
 }

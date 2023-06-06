@@ -9,7 +9,6 @@ import UIKit
 
 final class WalletRootView: UIView {
   
-  let titleView = WalletHeaderTitleView()
   private let contentContainer = UIView()
   
   override init(frame: CGRect) {
@@ -40,20 +39,14 @@ private extension WalletRootView {
     backgroundColor = .Background.page
     
     addSubview(contentContainer)
-    addSubview(titleView)
     
     contentContainer.translatesAutoresizingMaskIntoConstraints = false
-    titleView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      titleView.topAnchor.constraint(equalTo: topAnchor),
-      titleView.leftAnchor.constraint(equalTo: leftAnchor),
-      titleView.rightAnchor.constraint(equalTo: rightAnchor),
-      
-      contentContainer.topAnchor.constraint(equalTo: topAnchor),
+      contentContainer.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
       contentContainer.leftAnchor.constraint(equalTo: leftAnchor),
       contentContainer.rightAnchor.constraint(equalTo: rightAnchor),
-      contentContainer.bottomAnchor.constraint(equalTo: bottomAnchor)
+      contentContainer.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor)
     ])
   }
 }

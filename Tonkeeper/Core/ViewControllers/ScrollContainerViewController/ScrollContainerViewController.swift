@@ -9,6 +9,7 @@ import UIKit
 
 protocol ScrollContainerHeaderContent: UIViewController {
   var height: CGFloat { get }
+  var minimumHeight: CGFloat { get }
   func update(with headerScrollProgress: CGFloat)
 }
  
@@ -21,9 +22,7 @@ protocol ScrollContainerBodyContent: UIViewController {
 }
 
 final class ScrollContainerViewController: UIViewController {
-  
-  var didScrollBodyToSafeArea: ((_ yOffset: CGFloat) -> Void)?
-  
+
   private let headerContent: ScrollContainerHeaderContent
   private let bodyContent: ScrollContainerBodyContent
   
@@ -73,7 +72,10 @@ final class ScrollContainerViewController: UIViewController {
 private extension ScrollContainerViewController {
   func setup() {
     scrollView.scrollsToTop = false
+    scrollView.contentInsetAdjustmentBehavior = .never
+    
     panGestureScrollView.delegate = self
+    panGestureScrollView.contentInsetAdjustmentBehavior = .never
     
     view.addSubview(panGestureScrollView)
     view.addSubview(scrollView)
@@ -110,8 +112,7 @@ private extension ScrollContainerViewController {
 
 extension ScrollContainerViewController: UIScrollViewDelegate {
   func scrollViewDidScroll(_ scrollView: UIScrollView) {
-    let bodyScrollTreshold = bodyContent.view.frame.minY - view.safeAreaInsets.top + additionalSafeAreaInsets.top
-    let bodySafeAreaTreshold = bodyContent.view.frame.minY - view.safeAreaInsets.top
+    let bodyScrollTreshold = bodyContent.view.frame.minY
     
     if scrollView.contentOffset.y < bodyScrollTreshold {
       self.scrollView.contentOffset.y = scrollView.contentOffset.y
@@ -121,13 +122,7 @@ extension ScrollContainerViewController: UIScrollViewDelegate {
       bodyContent.updateYContentOffset(scrollView.contentOffset.y - self.scrollView.contentOffset.y)
     }
     
-    if scrollView.contentOffset.y > bodySafeAreaTreshold {
-      didScrollBodyToSafeArea?(scrollView.contentOffset.y - bodySafeAreaTreshold)
-    } else {
-      didScrollBodyToSafeArea?(0)
-    }
-    
-    let headerScrollProgress = max(min((self.scrollView.contentOffset.y + view.safeAreaInsets.top) / bodyScrollTreshold, 1), 0)
+    let headerScrollProgress = max(min((self.scrollView.contentOffset.y) / (bodyScrollTreshold - headerContent.minimumHeight), 1), 0)
     headerContent.update(with: headerScrollProgress)
   }
 }
