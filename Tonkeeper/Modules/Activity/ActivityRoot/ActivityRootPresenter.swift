@@ -16,6 +16,7 @@ final class ActivityRootPresenter {
   weak var output: ActivityRootModuleOutput?
   
   weak var emptyInput: ActivityEmptyModuleInput?
+  weak var listInput: ActivityListModuleInput?
 }
 
 // MARK: - ActivityRootPresenterIntput
@@ -35,6 +36,10 @@ extension ActivityRootPresenter: ActivityEmptyModuleOutput {
     output?.didTapReceiveButton()
   }
 }
+
+// MARK: - ActivityListModuleOutput
+
+extension ActivityRootPresenter: ActivityListModuleOutput {}
 
 // MARK: - Private
 

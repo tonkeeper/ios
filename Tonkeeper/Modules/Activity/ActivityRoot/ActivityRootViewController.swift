@@ -17,13 +17,16 @@ class ActivityRootViewController: GenericViewController<ActivityRootView> {
   // MARK: - Children
   
   private let emptyViewController: ActivityEmptyViewController
+  private let listViewController: ActivityListViewController
 
   // MARK: - Init
 
   init(presenter: ActivityRootPresenterInput,
-       emptyViewController: ActivityEmptyViewController) {
+       emptyViewController: ActivityEmptyViewController,
+       listViewController: ActivityListViewController) {
     self.presenter = presenter
     self.emptyViewController = emptyViewController
+    self.listViewController = listViewController
     super.init(nibName: nil, bundle: nil)
   }
 
@@ -53,11 +56,18 @@ extension ActivityRootViewController: ActivityRootViewInput {
 private extension ActivityRootViewController {
   func setup() {
     setupEmptyViewController()
+    setupListViewController()
   }
   
   func setupEmptyViewController() {
     addChild(emptyViewController)
     customView.addEmptyContentView(view: emptyViewController.view)
     emptyViewController.didMove(toParent: self)
+  }
+  
+  func setupListViewController() {
+    addChild(listViewController)
+    customView.addListContentView(view: listViewController.view)
+    listViewController.didMove(toParent: self)
   }
 }

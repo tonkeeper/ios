@@ -21,9 +21,13 @@ struct ActivityAssembly {
     let emptyModule = activityEmptyModule(output: presenter)
     presenter.emptyInput = emptyModule.input
     
+    let listModule = activityListModule(output: presenter)
+    presenter.listInput = listModule.input
+    
     let viewController = ActivityRootViewController(
       presenter: presenter,
-      emptyViewController: emptyModule.view
+      emptyViewController: emptyModule.view,
+      listViewController: listModule.view
     )
     presenter.viewInput = viewController
     
@@ -47,6 +51,16 @@ private extension ActivityAssembly {
     presenter.output = output
     
     let viewController = ActivityEmptyViewController(presenter: presenter)
+    presenter.viewInput = viewController
+    
+    return Module(view: viewController, input: presenter)
+  }
+  
+  func activityListModule(output: ActivityListModuleOutput) -> Module<ActivityListViewController, ActivityListModuleInput> {
+    let presenter = ActivityListPresenter()
+    presenter.output = output
+    
+    let viewController = ActivityListViewController(presenter: presenter)
     presenter.viewInput = viewController
     
     return Module(view: viewController, input: presenter)
