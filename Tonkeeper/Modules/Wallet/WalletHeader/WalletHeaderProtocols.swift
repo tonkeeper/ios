@@ -10,6 +10,7 @@ import Foundation
 protocol WalletHeaderModuleOutput: AnyObject {
   func didTapSendButton()
   func didTapReceiveButton()
+  func openQRScanner()
 }
 
 protocol WalletHeaderModuleInput: AnyObject {}
@@ -17,6 +18,7 @@ protocol WalletHeaderModuleInput: AnyObject {}
 protocol WalletHeaderPresenterInput {
   func viewDidLoad()
   func didTapAddressButton()
+  func didTapScanQRButton()
 }
 
 protocol WalletHeaderViewInput: AnyObject {

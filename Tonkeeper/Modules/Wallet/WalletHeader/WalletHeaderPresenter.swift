@@ -28,6 +28,10 @@ extension WalletHeaderPresenter: WalletHeaderPresenterInput {
   }
   
   func didTapAddressButton() {}
+  
+  func didTapScanQRButton() {
+    output?.openQRScanner()
+  }
 }
 
 // MARK: - WalletHeaderModuleInput

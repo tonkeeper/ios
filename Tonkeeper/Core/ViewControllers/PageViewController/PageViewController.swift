@@ -75,6 +75,7 @@ private extension PageViewController {
   func setup() {
     view.addSubview(collectionView)
     
+    collectionView.contentInsetAdjustmentBehavior = .never
     collectionView.dataSource = self
     collectionView.delegate = self
     collectionView.isPagingEnabled = true
@@ -87,21 +88,27 @@ private extension PageViewController {
   }
   
   func createLayout() -> UICollectionViewLayout {
-    let itemSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .fractionalHeight(1.0))
-    let item = NSCollectionLayoutItem(layoutSize: itemSize)
-    
-    let groupSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .fractionalHeight(1.0))
-    let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
-    
-    let section = NSCollectionLayoutSection(group: group)
-    
-    let config = UICollectionViewCompositionalLayoutConfiguration()
-    config.scrollDirection = .horizontal
-    let layout = UICollectionViewCompositionalLayout(section: section, configuration: config)
+    let layout = UICollectionViewCompositionalLayout { _, environment in
+      let contentSize = environment.container.contentSize
+      let itemSize = NSCollectionLayoutSize(
+        widthDimension: .absolute(contentSize.width),
+        heightDimension: .absolute(contentSize.height)
+      )
+      let item = NSCollectionLayoutItem(layoutSize: itemSize)
+      
+      let groupSize = NSCollectionLayoutSize(
+        widthDimension: .fractionalWidth(1.0),
+        heightDimension: .fractionalHeight(1.0)
+      )
+      let group = NSCollectionLayoutGroup.horizontal(layoutSize: groupSize, subitems: [item])
+      
+      let section = NSCollectionLayoutSection(group: group)
+      return section
+    }
+
+    let configuration = UICollectionViewCompositionalLayoutConfiguration()
+    configuration.scrollDirection = .horizontal
+    layout.configuration = configuration
     
     return layout
   }

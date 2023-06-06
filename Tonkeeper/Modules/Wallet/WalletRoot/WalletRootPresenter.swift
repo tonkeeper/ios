@@ -25,11 +25,7 @@ final class WalletRootPresenter {
 
 // MARK: - WalletRootPresenterInput
 
-extension WalletRootPresenter: WalletRootPresenterInput {
-  func didTapScanQRButton() {
-    output?.openQRScanner()
-  }
-}
+extension WalletRootPresenter: WalletRootPresenterInput {}
 
 // MARK: - WalletHeaderModuleOutput
 
@@ -40,6 +36,10 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
   
   func didTapReceiveButton() {
     output?.openReceive()
+  }
+  
+  func openQRScanner() {
+    output?.openQRScanner()
   }
 }
 

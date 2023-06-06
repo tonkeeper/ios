@@ -8,6 +8,9 @@
 import UIKit
 
 final class WalletHeaderView: UIView, ConfigurableView {
+  
+  let titleView = WalletHeaderTitleView()
+  
   let balanceLabel: UILabel = {
     let label = UILabel()
     label.textColor = .Text.primary
@@ -70,11 +73,18 @@ private extension WalletHeaderView {
     
     addSubview(stackView)
     addSubview(buttonsView)
+    addSubview(titleView)
     
     stackView.translatesAutoresizingMaskIntoConstraints = false
     buttonsView.translatesAutoresizingMaskIntoConstraints = false
+    titleView.translatesAutoresizingMaskIntoConstraints = false
+    
     NSLayoutConstraint.activate([
-      stackView.topAnchor.constraint(equalTo: topAnchor, constant: .amountTopSpacing),
+      titleView.topAnchor.constraint(equalTo: topAnchor),
+      titleView.leftAnchor.constraint(equalTo: leftAnchor),
+      titleView.rightAnchor.constraint(equalTo: rightAnchor),
+      
+      stackView.topAnchor.constraint(equalTo: titleView.bottomAnchor, constant: .amountTopSpacing),
       stackView.leftAnchor.constraint(equalTo: leftAnchor),
       stackView.rightAnchor.constraint(equalTo: rightAnchor)
         .withPriority(.defaultHigh),

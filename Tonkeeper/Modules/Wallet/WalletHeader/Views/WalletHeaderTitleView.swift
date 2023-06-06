@@ -99,7 +99,7 @@ private extension WalletHeaderTitleView {
 }
 
 private extension CGFloat {
-  static let scanQRButtonRightSpace: CGFloat = 6
+  static let scanQRButtonRightSpace: CGFloat = 18
   static let largeHeight: CGFloat = 84
   static let compactHeight: CGFloat = 64
 }

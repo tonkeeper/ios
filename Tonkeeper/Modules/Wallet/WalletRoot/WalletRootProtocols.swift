@@ -13,8 +13,6 @@ protocol WalletRootModuleOutput: AnyObject {
   func openReceive()
 }
 
-protocol WalletRootPresenterInput {
-  func didTapScanQRButton()
-}
+protocol WalletRootPresenterInput {}
 
 protocol WalletRootViewInput: AnyObject {}

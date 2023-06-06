@@ -53,6 +53,7 @@ final class QRScannerView: UIView {
   
   func setVideoPreviewLayer(_ layer: CALayer) {
     videoContainerView.layer.insertSublayer(layer, at: 0)
+    layer.frame = videoContainerView.layer.bounds
   }
 }
 
