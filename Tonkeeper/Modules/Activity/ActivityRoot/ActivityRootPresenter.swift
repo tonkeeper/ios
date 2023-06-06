@@ -14,6 +14,8 @@ final class ActivityRootPresenter {
   
   weak var viewInput: ActivityRootViewInput?
   weak var output: ActivityRootModuleOutput?
+  
+  weak var emptyInput: ActivityEmptyModuleInput?
 }
 
 // MARK: - ActivityRootPresenterIntput
@@ -25,6 +27,14 @@ extension ActivityRootPresenter: ActivityRootPresenterInput {
 // MARK: - ActivityRootModuleInput
 
 extension ActivityRootPresenter: ActivityRootModuleInput {}
+
+// MARK: - ActivityEmptyModuleOutput
+
+extension ActivityRootPresenter: ActivityEmptyModuleOutput {
+  func didTapReceiveButton() {
+    output?.didTapReceiveButton()
+  }
+}
 
 // MARK: - Private
 

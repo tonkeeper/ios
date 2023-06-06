@@ -13,11 +13,17 @@ class ActivityRootViewController: GenericViewController<ActivityRootView> {
   // MARK: - Module
 
   private let presenter: ActivityRootPresenterInput
+  
+  // MARK: - Children
+  
+  private let emptyViewController: ActivityEmptyViewController
 
   // MARK: - Init
 
-  init(presenter: ActivityRootPresenterInput) {
+  init(presenter: ActivityRootPresenterInput,
+       emptyViewController: ActivityEmptyViewController) {
     self.presenter = presenter
+    self.emptyViewController = emptyViewController
     super.init(nibName: nil, bundle: nil)
   }
 
@@ -36,10 +42,22 @@ class ActivityRootViewController: GenericViewController<ActivityRootView> {
 
 // MARK: - ActivityRootViewInput
 
-extension ActivityRootViewController: ActivityRootViewInput {}
+extension ActivityRootViewController: ActivityRootViewInput {
+  func showEmptyState() {
+    customView.showEmptyState()
+  }
+}
 
 // MARK: - Private
 
 private extension ActivityRootViewController {
-  func setup() {}
+  func setup() {
+    setupEmptyViewController()
+  }
+  
+  func setupEmptyViewController() {
+    addChild(emptyViewController)
+    customView.addEmptyContentView(view: emptyViewController.view)
+    emptyViewController.didMove(toParent: self)
+  }
 }

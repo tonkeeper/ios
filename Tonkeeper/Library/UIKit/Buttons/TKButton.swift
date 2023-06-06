@@ -117,6 +117,26 @@ final class TKButton: UIControlClosure {
     }
   }
   
+  var title: String? {
+    get {
+      titleLabel.text
+    }
+    set {
+      titleLabel.text = newValue
+      updateContentSpacing()
+    }
+  }
+  
+  var icon: UIImage? {
+    get {
+      iconImageView.image
+    }
+    set {
+      iconImageView.image = newValue
+      updateContentSpacing()
+    }
+  }
+  
   let titleLabel = UILabel()
   let iconImageView = UIImageView()
   
@@ -204,7 +224,6 @@ private extension TKButton {
     contentStackView.axis = .horizontal
     contentStackView.alignment = .center
     contentStackView.isUserInteractionEnabled = false
-    contentStackView.spacing = 9
     
     contentStackView.addArrangedSubview(iconImageView)
     contentStackView.addArrangedSubview(titleLabel)
@@ -215,6 +234,7 @@ private extension TKButton {
     updateConfiguration()
     updateBackground()
     updateIconPosition()
+    updateContentSpacing()
   }
   
   func setupConstraints() {
@@ -264,5 +284,11 @@ private extension TKButton {
     let contentInsets = configuration.contentInsets
     contentTopConstraint?.constant = contentInsets.top
     contentBottomConstraint?.constant = -contentInsets.bottom
+  }
+  
+  func updateContentSpacing() {
+    let hasTitle = title != nil && title?.isEmpty != true
+    let hasIcon = icon != nil
+    contentStackView.spacing = hasTitle && hasIcon ? 9 : 0
   }
 }

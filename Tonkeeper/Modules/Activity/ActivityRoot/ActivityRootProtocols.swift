@@ -8,7 +8,9 @@
 
 import Foundation
 
-protocol ActivityRootModuleOutput: AnyObject {}
+protocol ActivityRootModuleOutput: AnyObject {
+  func didTapReceiveButton()
+}
 
 protocol ActivityRootModuleInput: AnyObject {}
 
@@ -16,4 +18,6 @@ protocol ActivityRootPresenterInput {
   func viewDidLoad()
 }
 
-protocol ActivityRootViewInput: AnyObject {}
+protocol ActivityRootViewInput: AnyObject {
+  func showEmptyState()
+}

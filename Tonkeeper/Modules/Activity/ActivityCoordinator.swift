@@ -32,5 +32,21 @@ private extension ActivityCoordinator {
 // MARK: - ActivityRootModuleOutput
 
 extension ActivityCoordinator: ActivityRootModuleOutput {
-  
+  func didTapReceiveButton() {
+    let coordinator = assembly.receieveCoordinator(output: self)
+    addChild(coordinator)
+    coordinator.start()
+    router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
+      self?.removeChild(coordinator!)
+    })
+  }
+}
+
+// MARK: - ReceiveCoordinatorOutput
+
+extension ActivityCoordinator: ReceiveCoordinatorOutput {
+  func receiveCoordinatorDidClose(_ coordinator: ReceiveCoordinator) {
+    router.dismiss()
+    removeChild(coordinator)
+  }
 }

@@ -14,7 +14,7 @@ final class TabBarAssembly {
     sendAssembly: SendAssembly(qrScannerAssembly: QRScannerAssembly()),
     receiveAssembly: ReceiveAssembly()
   )
-  lazy var activityAssembly = ActivityAssembly()
+  lazy var activityAssembly = ActivityAssembly(receiveAssembly: ReceiveAssembly())
   lazy var browserAssembly = BrowserAssembly()
   lazy var settingsAssembly = SettingsAssembly()
   
