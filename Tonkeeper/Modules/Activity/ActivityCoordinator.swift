@@ -16,4 +16,21 @@ final class ActivityCoordinator: Coordinator<NavigationRouter> {
     self.assembly = assembly
     super.init(router: router)
   }
+  
+  override func start() {
+    openActivityRoot()
+  }
+}
+
+private extension ActivityCoordinator {
+  func openActivityRoot() {
+    let module = assembly.activityRootModule(output: self)
+    router.setPresentables([(module.view, nil)])
+  }
+}
+
+// MARK: - ActivityRootModuleOutput
+
+extension ActivityCoordinator: ActivityRootModuleOutput {
+  
 }
