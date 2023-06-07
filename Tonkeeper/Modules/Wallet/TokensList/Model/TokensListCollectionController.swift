@@ -74,6 +74,8 @@ private extension TokensListCollectionController {
       return UICollectionViewCell()
     }
     cell.configure(model: model)
+    cell.isFirstCell = indexPath.item == 0
+    cell.isLastCell = indexPath.item == sections[indexPath.section].items.count - 1
     return cell
   }
   
