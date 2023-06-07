@@ -157,6 +157,9 @@
 		7DE27E5F2A30C61E00842FA8 /* ActivityListDateCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */; };
 		7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E612A30CDEE00842FA8 /* TransactionType.swift */; };
 		7DE27E652A30D2D400842FA8 /* ActivityListTransactionBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E642A30D2D400842FA8 /* ActivityListTransactionBuilder.swift */; };
+		7DE27E682A30D94100842FA8 /* TransactionCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E672A30D94100842FA8 /* TransactionCellContentView.swift */; };
+		7DE27E6A2A30D9CE00842FA8 /* TransactionCellStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E692A30D9CE00842FA8 /* TransactionCellStatusView.swift */; };
+		7DE27E6C2A30DA3A00842FA8 /* TransactionCellCommentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */; };
 		83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 245658CD5491F94DE1923BE9 /* ActivityEmptyViewController.swift */; };
 		86DEB0A35D88DABB3EAEFDD3 /* ReceiveProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A2DFA2B5AD43B54E2E131F /* ReceiveProtocols.swift */; };
 		8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5315989FA9BDEABD3FA2E275 /* SendConfirmationViewController.swift */; };
@@ -324,6 +327,9 @@
 		7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListDateCell.swift; sourceTree = "<group>"; };
 		7DE27E612A30CDEE00842FA8 /* TransactionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionType.swift; sourceTree = "<group>"; };
 		7DE27E642A30D2D400842FA8 /* ActivityListTransactionBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListTransactionBuilder.swift; sourceTree = "<group>"; };
+		7DE27E672A30D94100842FA8 /* TransactionCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellContentView.swift; sourceTree = "<group>"; };
+		7DE27E692A30D9CE00842FA8 /* TransactionCellStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellStatusView.swift; sourceTree = "<group>"; };
+		7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellCommentView.swift; sourceTree = "<group>"; };
 		8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationView.swift; sourceTree = "<group>"; };
 		8CE60ABD534A41016103CB95 /* TokensListProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListProtocols.swift; sourceTree = "<group>"; };
 		91212C1153B7799536A9E7B6 /* Pods-Tonkeeper.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.release.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.release.xcconfig"; sourceTree = "<group>"; };
@@ -598,6 +604,7 @@
 		7D5D05CC2A307161009F42FF /* Cell */ = {
 			isa = PBXGroup;
 			children = (
+				7DE27E662A30D93100842FA8 /* Transaction */,
 				7D5D05D12A3090B2009F42FF /* DefaultCell */,
 				7D5D05D42A309674009F42FF /* ContainerCollectionViewCell.swift */,
 			);
@@ -1163,6 +1170,16 @@
 			path = Builder;
 			sourceTree = "<group>";
 		};
+		7DE27E662A30D93100842FA8 /* Transaction */ = {
+			isa = PBXGroup;
+			children = (
+				7DE27E672A30D94100842FA8 /* TransactionCellContentView.swift */,
+				7DE27E692A30D9CE00842FA8 /* TransactionCellStatusView.swift */,
+				7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */,
+			);
+			path = Transaction;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1318,6 +1335,7 @@
 				7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */,
 				7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */,
 				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
+				7DE27E682A30D94100842FA8 /* TransactionCellContentView.swift in Sources */,
 				7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */,
 				7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */,
 				7D59287D2A20C92E006B0A8A /* TokensListTokensSectionBackgroundView.swift in Sources */,
@@ -1357,6 +1375,7 @@
 				7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */,
 				7D6836672A1D6E74002DBBC7 /* Module.swift in Sources */,
 				7D68366A2A1D6ED5002DBBC7 /* WalletRootViewController.swift in Sources */,
+				7DE27E6C2A30DA3A00842FA8 /* TransactionCellCommentView.swift in Sources */,
 				7D59284D2A1F579E006B0A8A /* WalletHeaderProtocols.swift in Sources */,
 				7D9292882A24CCB8005B83DF /* PagingContentViewController.swift in Sources */,
 				7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */,
@@ -1376,6 +1395,7 @@
 				7D5928852A20CE3C006B0A8A /* TokensListCollectionController.swift in Sources */,
 				7D59287A2A20BF36006B0A8A /* TokensListSection.swift in Sources */,
 				7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */,
+				7DE27E6A2A30D9CE00842FA8 /* TransactionCellStatusView.swift in Sources */,
 				7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */,
 				7D9292C22A27412A005B83DF /* SendCoordinator.swift in Sources */,
 				7D68364A2A1D1052002DBBC7 /* WalletAssembly.swift in Sources */,

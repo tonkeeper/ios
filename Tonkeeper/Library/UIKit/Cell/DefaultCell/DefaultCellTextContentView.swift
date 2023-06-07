@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class DefaultCellTextContentView: UIView, ConfigurableView {
+final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerCollectionViewCellContent {
 
   let topLeftHorizontalStack = TopLeftHorizontalStack()
   let topRightLabel: UILabel = {
@@ -140,6 +140,24 @@ final class DefaultCellTextContentView: UIView, ConfigurableView {
     middleRightLabel.attributedText = model.rightMiddleTitle
     
     bottomRightLabel.attributedText = model.rightBottomTitle
+    
+    setNeedsLayout()
+  }
+  
+  func prepareForReuse() {
+    topLeftHorizontalStack.leftLabel.attributedText = nil
+    topLeftHorizontalStack.rightLabel.attributedText = nil
+    
+    middleLeftHorizontalStack.leftLabel.attributedText = nil
+    middleLeftHorizontalStack.rightLabel.attributedText = nil
+    
+    bottomLeftLabel.attributedText = nil
+    
+    topRightLabel.attributedText = nil
+    
+    middleRightLabel.attributedText = nil
+    
+    bottomRightLabel.attributedText = nil
   }
 }
 

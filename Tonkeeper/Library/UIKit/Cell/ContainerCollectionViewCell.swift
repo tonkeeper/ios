@@ -7,7 +7,11 @@
 
 import UIKit
 
-class ContainerCollectionViewCell<CellContentView: ConfigurableView>: UICollectionViewCell, ConfigurableView {
+protocol ContainerCollectionViewCellContent: ConfigurableView {
+  func prepareForReuse()
+}
+
+class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellContent>: UICollectionViewCell, ConfigurableView {
   
   let cellContentView = CellContentView()
   
@@ -26,14 +30,23 @@ class ContainerCollectionViewCell<CellContentView: ConfigurableView>: UICollecti
   
   override func preferredLayoutAttributesFitting(_ layoutAttributes: UICollectionViewLayoutAttributes) -> UICollectionViewLayoutAttributes {
     let targetSize = CGSize(width: layoutAttributes.frame.width, height: 0)
+    let cellContentViewSize = cellContentView.sizeThatFits(.init(width: targetSize.width, height: 0))
     let modifiedAttributes = super.preferredLayoutAttributesFitting(layoutAttributes)
-    modifiedAttributes.frame.size = cellContentView.sizeThatFits(.init(width: targetSize.width, height: 0))
+    modifiedAttributes.frame.size = CGSize(
+      width: cellContentViewSize.width + ContentInsets.sideSpace * 2,
+      height: cellContentViewSize.height + ContentInsets.sideSpace * 2
+    )
     return modifiedAttributes
   }
   
   override func layoutSubviews() {
     super.layoutSubviews()
-    cellContentView.frame = contentView.bounds
+    cellContentView.frame = contentView.bounds.insetBy(dx: ContentInsets.sideSpace, dy: ContentInsets.sideSpace)
+  }
+  
+  override func prepareForReuse() {
+    super.prepareForReuse()
+    cellContentView.prepareForReuse()
   }
 }
 

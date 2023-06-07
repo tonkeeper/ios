@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class ActivityListTransactionCell: ContainerCollectionViewCell<DefaultCellContentView>, Reusable {
+final class ActivityListTransactionCell: ContainerCollectionViewCell<TransactionCellContentView>, Reusable {
   
   struct Model: Hashable {
     let id = UUID()
@@ -16,6 +16,8 @@ final class ActivityListTransactionCell: ContainerCollectionViewCell<DefaultCell
     let subtitle: String
     let amount: NSAttributedString
     let time: String
+    let isFailed: Bool
+    let comment: String?
   }
   
   var isFirstCell = false {
@@ -81,7 +83,22 @@ final class ActivityListTransactionCell: ContainerCollectionViewCell<DefaultCell
       textContentModel: textContentModel,
       image: model.icon
     )
-    cellContentView.configure(model: contentModel)
+    var statusModel: TransactionCellContentView.TransactionCellStatusView.Model?
+    if model.isFailed {
+      statusModel = .init(status: "Failed".attributed(with: .body2, color: .Accent.orange))
+    }
+    
+    var commentModel: TransactionCellContentView.TransactionCellCommentView.Model?
+    if let comment = model.comment {
+      commentModel = .init(comment: comment.attributed(with: .body2, color: .Text.primary))
+    }
+    
+    let transactionCellModel = TransactionCellContentView.Model(
+      defaultContentModel: contentModel,
+      statusModel: statusModel,
+      commentModel: commentModel)
+    
+    cellContentView.configure(model: transactionCellModel)
   }
 }
 
@@ -89,8 +106,8 @@ private extension ActivityListTransactionCell {
   func setup() {
     contentView.addSubview(separatorView)
     layer.masksToBounds = true
-    cellContentView.imageView.backgroundColor = .Background.contentTint
-    cellContentView.imageView.tintColor = .Icon.secondary
+    cellContentView.defaultCellContentView.imageView.backgroundColor = .Background.contentTint
+    cellContentView.defaultCellContentView.imageView.tintColor = .Icon.secondary
   }
   
   func didUpdateCellOrder() {

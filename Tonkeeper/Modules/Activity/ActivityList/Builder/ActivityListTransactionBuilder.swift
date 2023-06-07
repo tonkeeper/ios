@@ -11,11 +11,15 @@ struct ActivityListTransactionBuilder {
   func buildTransactionModel(type: TransactionType,
                              subtitle: String,
                              amount: String,
-                             time: String) -> ActivityListTransactionCell.Model {
+                             time: String,
+                             isFailed: Bool = false,
+                             comment: String? = nil) -> ActivityListTransactionCell.Model {
     .init(icon: type.icon,
           name: type.title,
           subtitle: "EQAK…MALX",
           amount: amount.attributed(with: .label1, alignment: .left, color: type.amountColor),
-          time: time)
+          time: time,
+          isFailed: isFailed,
+          comment: comment)
   }
 }
