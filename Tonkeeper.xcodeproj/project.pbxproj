@@ -154,6 +154,7 @@
 		7DB8FB802A1BEE00005B4B11 /* Montserrat-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB7D2A1BEE00005B4B11 /* Montserrat-Medium.ttf */; };
 		7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */; };
 		7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */; };
+		7DE27E5F2A30C61E00842FA8 /* ActivityListDateCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */; };
 		83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 245658CD5491F94DE1923BE9 /* ActivityEmptyViewController.swift */; };
 		86DEB0A35D88DABB3EAEFDD3 /* ReceiveProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A2DFA2B5AD43B54E2E131F /* ReceiveProtocols.swift */; };
 		8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5315989FA9BDEABD3FA2E275 /* SendConfirmationViewController.swift */; };
@@ -318,6 +319,7 @@
 		7DB8FB7D2A1BEE00005B4B11 /* Montserrat-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Montserrat-Medium.ttf"; sourceTree = "<group>"; };
 		7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIFont+Montserrat.swift"; sourceTree = "<group>"; };
 		7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListTransactionCell.swift; sourceTree = "<group>"; };
+		7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListDateCell.swift; sourceTree = "<group>"; };
 		8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationView.swift; sourceTree = "<group>"; };
 		8CE60ABD534A41016103CB95 /* TokensListProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListProtocols.swift; sourceTree = "<group>"; };
 		91212C1153B7799536A9E7B6 /* Pods-Tonkeeper.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.release.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.release.xcconfig"; sourceTree = "<group>"; };
@@ -1134,6 +1136,7 @@
 			isa = PBXGroup;
 			children = (
 				7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */,
+				7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */,
 			);
 			path = Cells;
 			sourceTree = "<group>";
@@ -1363,6 +1366,7 @@
 				7D70D3C02A2A03350096E1A2 /* Currency.swift in Sources */,
 				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
 				7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */,
+				7DE27E5F2A30C61E00842FA8 /* ActivityListDateCell.swift in Sources */,
 				7D5D05CE2A30716A009F42FF /* DefaultCellTextContentView.swift in Sources */,
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,

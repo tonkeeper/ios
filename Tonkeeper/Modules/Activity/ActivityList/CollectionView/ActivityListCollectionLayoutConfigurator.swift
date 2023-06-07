@@ -8,9 +8,10 @@
 import UIKit
 
 struct ActivityListCollectionLayoutConfigurator {
-  func getLayout() -> UICollectionViewLayout {
+  func getLayout(section: @escaping (_ sectionIndex: Int) -> ActivityListSection.SectionType) -> UICollectionViewLayout {
     let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
-      return self.createLayoutSection()
+      let sectionType = section(sectionIndex)
+      return self.createLayoutSection(type: sectionType)
     }
     layout.register(TokensListTokensSectionBackgroundView.self,
                     forDecorationViewOfKind: .transactionSectionBackgroundElementKid)
@@ -19,8 +20,13 @@ struct ActivityListCollectionLayoutConfigurator {
 }
 
 private extension ActivityListCollectionLayoutConfigurator {
-  func createLayoutSection() -> NSCollectionLayoutSection {
-    createTransactionSection()
+  func createLayoutSection(type: ActivityListSection.SectionType) -> NSCollectionLayoutSection {
+    switch type {
+    case .transaction:
+      return createTransactionSection()
+    case .date:
+      return createDateSection()
+    }
   }
   
   func createTransactionSection() -> NSCollectionLayoutSection {
@@ -36,6 +42,15 @@ private extension ActivityListCollectionLayoutConfigurator {
     section.contentInsets = .transactionSectionContentInsets
     return section
   }
+  
+  func createDateSection() -> NSCollectionLayoutSection {
+    let item = NSCollectionLayoutItem(layoutSize: .dateSectionItemSize)
+    let group = NSCollectionLayoutGroup.vertical(layoutSize: .dateSectionGroupSize,
+                                                 subitems: [item])
+    let section = NSCollectionLayoutSection(group: group)
+    section.contentInsets = .dateSectionContentInsets
+    return section
+  }
 }
 
 private extension NSCollectionLayoutSize {
@@ -48,6 +63,16 @@ private extension NSCollectionLayoutSize {
     .init(widthDimension: .fractionalWidth(1.0),
           heightDimension: .estimated(76))
   }
+  
+  static var dateSectionItemSize: NSCollectionLayoutSize {
+    .init(widthDimension: .fractionalWidth(1.0),
+          heightDimension: .absolute(28))
+  }
+  
+  static var dateSectionGroupSize: NSCollectionLayoutSize {
+    .init(widthDimension: .fractionalWidth(1.0),
+          heightDimension: .absolute(28))
+  }
 }
 
 private extension String {
@@ -59,7 +84,7 @@ private extension NSDirectionalEdgeInsets {
     .init(top: 0, leading: ContentInsets.sideSpace, bottom: 10, trailing: ContentInsets.sideSpace)
   }
   
-  static var collectiblesSectionContentInsets: NSDirectionalEdgeInsets {
-    .init(top: 0, leading: ContentInsets.sideSpace, bottom: 10, trailing: ContentInsets.sideSpace)
+  static var dateSectionContentInsets: NSDirectionalEdgeInsets {
+    .init(top: 14, leading: ContentInsets.sideSpace, bottom: 14, trailing: ContentInsets.sideSpace)
   }
 }

@@ -22,10 +22,16 @@ final class ActivityListCollectionController {
   
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
-    let layout = collectionLayoutConfigurator.getLayout()
+    let layout = collectionLayoutConfigurator.getLayout { [weak self] sectionIndex in
+      guard let self = self else { return .date }
+      return self.sections[sectionIndex].type
+    }
+    
     collectionView.setCollectionViewLayout(layout, animated: false)
     collectionView.register(ActivityListTransactionCell.self,
                              forCellWithReuseIdentifier: ActivityListTransactionCell.reuseIdentifier)
+    collectionView.register(ActivityListDateCell.self,
+                            forCellWithReuseIdentifier: ActivityListDateCell.reuseIdentifier)
     dataSource = createDataSource(collectionView: collectionView)
   }
 }
@@ -48,6 +54,10 @@ private extension ActivityListCollectionController {
         return self.getTransactionCell(collectionView: collectionView,
                                        indexPath: indexPath,
                                        model: model)
+      case let model as ActivityListDateCell.Model:
+        return self.getDateCell(collectionView: collectionView,
+                                indexPath: indexPath,
+                                model: model)
       default:
         return UICollectionViewCell()
       }
@@ -66,6 +76,20 @@ private extension ActivityListCollectionController {
     cell.configure(model: model)
     cell.isFirstCell = indexPath.item == 0
     cell.isLastCell = indexPath.item == sections[indexPath.section].items.count - 1
+    cell.isInGroup = sections[indexPath.section].items.count > 1
+    return cell
+  }
+  
+  func getDateCell(collectionView: UICollectionView,
+                          indexPath: IndexPath,
+                          model: ActivityListDateCell.Model) -> UICollectionViewCell {
+    guard let cell = collectionView.dequeueReusableCell(
+      withReuseIdentifier: ActivityListDateCell.reuseIdentifier,
+      for: indexPath) as? ActivityListDateCell else {
+      return UICollectionViewCell()
+    }
+    
+    cell.configure(model: model)
     return cell
   }
 }

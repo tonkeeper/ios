@@ -30,6 +30,12 @@ final class ActivityListTransactionCell: ContainerCollectionViewCell<DefaultCell
     }
   }
   
+  var isInGroup = false {
+    didSet {
+      didUpdateIsInGroup()
+    }
+  }
+  
   private let separatorView: UIView = {
     let view = UIView()
     view.backgroundColor = .Separator.common
@@ -49,6 +55,7 @@ final class ActivityListTransactionCell: ContainerCollectionViewCell<DefaultCell
     super.prepareForReuse()
     isFirstCell = false
     isLastCell = false
+    separatorView.isHidden = true
   }
   
   override func layoutSubviews() {
@@ -80,7 +87,7 @@ final class ActivityListTransactionCell: ContainerCollectionViewCell<DefaultCell
 
 private extension ActivityListTransactionCell {
   func setup() {
-    addSubview(separatorView)
+    contentView.addSubview(separatorView)
     layer.masksToBounds = true
   }
   
@@ -101,6 +108,10 @@ private extension ActivityListTransactionCell {
     }
     
     separatorView.isHidden = isLastCell
+  }
+  
+  func didUpdateIsInGroup() {
+    separatorView.isHidden = isLastCell || !isInGroup
   }
 }
 

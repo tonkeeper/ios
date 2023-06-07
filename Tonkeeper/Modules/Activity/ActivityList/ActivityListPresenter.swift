@@ -69,10 +69,31 @@ private extension ActivityListPresenter {
             time: "17:32")
     ]
     
+    let items4: [ActivityListTransactionCell.Model] = [
+      .init(icon: nil,
+            name: "Sent",
+            subtitle: "EQAK…MALX",
+            amount: "− 400.00 TON".attributed(with: .label1,
+                                              alignment: .right,
+                                              color: .Text.primary),
+            time: "17:32"),
+      .init(icon: nil,
+            name: "Received",
+            subtitle: "EQAK…MALX",
+            amount: "+ 400.00 SNT".attributed(with: .label1,
+                                              alignment: .right,
+                                              color: .Accent.green),
+            time: "17:32")
+    ]
+    
     let sections: [ActivityListSection] = [
+      .init(type: .date, items: [ActivityListDateCell.Model(date: "5 June")]),
       .init(type: .transaction, items: items1),
+      .init(type: .date, items: [ActivityListDateCell.Model(date: "2 June")]),
       .init(type: .transaction, items: items2),
-      .init(type: .transaction, items: items3)
+      .init(type: .date, items: [ActivityListDateCell.Model(date: "May")]),
+      .init(type: .transaction, items: items3),
+      .init(type: .transaction, items: items4)
     ]
     
     viewInput?.updateSections(sections)
