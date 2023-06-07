@@ -43,11 +43,19 @@ extension TransactionCellContentView {
     func prepareForReuse() {
       label.attributedText = nil
     }
+    
+    func setHighlighted(isHighlighted: Bool) {
+      let color: UIColor = isHighlighted ? .clear : .Background.content
+      backgroundColor = color
+      label.backgroundColor = color 
+    }
   }
 }
 
 private extension TransactionCellContentView.TransactionCellStatusView {
   func setup() {
+    backgroundColor = .Background.content
+    label.backgroundColor = .Background.content
     addSubview(label)
   }
 }

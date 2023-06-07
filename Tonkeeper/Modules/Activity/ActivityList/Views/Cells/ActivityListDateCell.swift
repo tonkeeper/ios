@@ -47,6 +47,9 @@ final class ActivityListDateCell: UICollectionViewCell, Reusable, ConfigurableVi
 private extension ActivityListDateCell {
   func setup() {
     contentView.addSubview(dateLabel)
+    contentView.backgroundColor = .Background.page
+    
+    dateLabel.backgroundColor = .Background.page
     
     dateLabel.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([

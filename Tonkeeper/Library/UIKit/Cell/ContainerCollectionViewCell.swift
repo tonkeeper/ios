@@ -9,9 +9,18 @@ import UIKit
 
 protocol ContainerCollectionViewCellContent: ConfigurableView {
   func prepareForReuse()
+  func setHighlighted(isHighlighted: Bool)
 }
 
 class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellContent>: UICollectionViewCell, ConfigurableView {
+  
+  override var isHighlighted: Bool {
+    didSet {
+      guard isHighlighted != oldValue else { return }
+      cellContentView.setHighlighted(isHighlighted: isHighlighted)
+      contentView.backgroundColor = isHighlighted ? .Background.highlighted : .Background.content
+    }
+  }
   
   let cellContentView = CellContentView()
   
@@ -52,6 +61,7 @@ class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellCo
 
 private extension ContainerCollectionViewCell {
   func setup() {
+    contentView.backgroundColor = .Background.content
     contentView.addSubview(cellContentView)
   }
 }

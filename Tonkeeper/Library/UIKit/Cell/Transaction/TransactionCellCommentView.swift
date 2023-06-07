@@ -20,6 +20,7 @@ extension TransactionCellContentView {
     
     let textLabel: UILabel = {
       let label = UILabel()
+      label.backgroundColor = .Background.contentTint
       label.numberOfLines = 0
       return label
     }()
@@ -70,11 +71,17 @@ extension TransactionCellContentView {
     func prepareForReuse() {
       textLabel.attributedText = nil
     }
+    
+    func setHighlighted(isHighlighted: Bool) {
+      backgroundColor = isHighlighted ? .clear : .Background.content
+    }
   }
 }
 
 private extension TransactionCellContentView.TransactionCellCommentView {
   func setup() {
+    backgroundColor = .Background.content
+  
     addSubview(textBackground)
     textBackground.addSubview(textLabel)
   }

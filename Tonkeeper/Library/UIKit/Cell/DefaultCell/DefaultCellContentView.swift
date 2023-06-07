@@ -59,6 +59,11 @@ final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectio
     imageView.image = nil
     textContentView.prepareForReuse()
   }
+  
+  func setHighlighted(isHighlighted: Bool) {
+    backgroundColor = isHighlighted ? .clear : .Background.content
+    textContentView.setHighlighted(isHighlighted: isHighlighted)
+  }
 }
 
 private extension DefaultCellContentView {

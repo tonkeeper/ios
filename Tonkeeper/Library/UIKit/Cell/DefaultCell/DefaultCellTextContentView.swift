@@ -159,6 +159,21 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
     
     bottomRightLabel.attributedText = nil
   }
+  
+  func setHighlighted(isHighlighted: Bool) {
+    let color: UIColor = isHighlighted ? .clear : .Background.content
+    backgroundColor = color
+    topLeftHorizontalStack.backgroundColor = color
+    topLeftHorizontalStack.rightLabel.backgroundColor = color
+    topLeftHorizontalStack.leftLabel.backgroundColor = color
+    middleLeftHorizontalStack.backgroundColor = color
+    middleLeftHorizontalStack.rightLabel.backgroundColor = color
+    middleLeftHorizontalStack.leftLabel.backgroundColor = color
+    bottomLeftLabel.backgroundColor = color
+    topRightLabel.backgroundColor = color
+    middleRightLabel.backgroundColor = color
+    bottomRightLabel.backgroundColor = color
+  }
 }
 
 private extension DefaultCellTextContentView {
