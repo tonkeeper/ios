@@ -10,7 +10,7 @@ import UIKit
 final class DefaultCellContentView: UIView, ConfigurableView {
   
   let textContentView = DefaultCellTextContentView()
-  private let imageView = UIImageView()
+  let imageView = UIImageView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -41,6 +41,8 @@ final class DefaultCellContentView: UIView, ConfigurableView {
     imageView.frame.size = .init(width: .imageViewSide, height: .imageViewSide)
     imageView.frame.origin.x = contentFrame.minX
     imageView.center.y = textContentView.center.y
+    
+    imageView.layer.cornerRadius = .imageViewSide/2
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
@@ -59,6 +61,8 @@ final class DefaultCellContentView: UIView, ConfigurableView {
 private extension DefaultCellContentView {
   func setup() {
     backgroundColor = .Background.content
+    
+    imageView.contentMode = .center
     
     addSubview(imageView)
     addSubview(textContentView)

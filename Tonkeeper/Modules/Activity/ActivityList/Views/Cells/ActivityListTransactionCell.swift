@@ -89,6 +89,8 @@ private extension ActivityListTransactionCell {
   func setup() {
     contentView.addSubview(separatorView)
     layer.masksToBounds = true
+    cellContentView.imageView.backgroundColor = .Background.contentTint
+    cellContentView.imageView.tintColor = .Icon.secondary
   }
   
   func didUpdateCellOrder() {

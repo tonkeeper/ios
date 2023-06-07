@@ -57,7 +57,7 @@ private extension ActivityAssembly {
   }
   
   func activityListModule(output: ActivityListModuleOutput) -> Module<ActivityListViewController, ActivityListModuleInput> {
-    let presenter = ActivityListPresenter()
+    let presenter = ActivityListPresenter(transactionBuilder: ActivityListTransactionBuilder())
     presenter.output = output
     
     let viewController = ActivityListViewController(presenter: presenter)
