@@ -40,10 +40,10 @@ private extension WalletContentPresenter {
     let tokenItems: [TokenListTokenCell.Model] = [
       .init(title: "Toncoin",
             shortTitle: nil,
-            price: "$ 1.84",
-            priceDiff: "+ 7.32 %".attributed(with: .body2, alignment: .left, color: .Accent.green),
+            price: "The one and only super best cool",
+            priceDiff: nil,
             amount: "14,787.32",
-            fiatAmount: "$ 24,374.27"),
+            fiatAmount: nil),
       .init(title: "Santa Coin",
             shortTitle: "SNT",
             price: "$ 4.87",

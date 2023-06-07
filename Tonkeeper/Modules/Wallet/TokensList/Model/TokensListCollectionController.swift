@@ -20,7 +20,6 @@ final class TokensListCollectionController {
   
   private let collectionLayoutConfigurator = TokensListCollectionLayoutConfigurator()
 
-  
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
     let layout = collectionLayoutConfigurator.getLayout { [weak self] sectionIndex in

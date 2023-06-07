@@ -16,4 +16,6 @@ protocol ActivityListPresenterInput {
   func viewDidLoad()
 }
 
-protocol ActivityListViewInput: AnyObject {}
+protocol ActivityListViewInput: AnyObject {
+  func updateSections(_ sections: [ActivityListSection])
+}

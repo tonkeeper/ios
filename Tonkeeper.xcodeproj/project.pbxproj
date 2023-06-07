@@ -59,6 +59,9 @@
 		7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59287F2A20CDCA006B0A8A /* TokenListTokenCell.swift */; };
 		7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928812A20CDEC006B0A8A /* Reusable.swift */; };
 		7D5928852A20CE3C006B0A8A /* TokensListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928842A20CE3C006B0A8A /* TokensListCollectionController.swift */; };
+		7D5D05A72A2F83ED009F42FF /* ActivityListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05A62A2F83ED009F42FF /* ActivityListCollectionController.swift */; };
+		7D5D05A92A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05A82A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift */; };
+		7D5D05AB2A306739009F42FF /* ActivityListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05AA2A306739009F42FF /* ActivityListSection.swift */; };
 		7D5D05CE2A30716A009F42FF /* DefaultCellTextContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05CD2A30716A009F42FF /* DefaultCellTextContentView.swift */; };
 		7D5D05D02A308C4C009F42FF /* DefaultCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05CF2A308C4C009F42FF /* DefaultCellContentView.swift */; };
 		7D5D05D32A309322009F42FF /* DefaultCellContentView+Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05D22A309322009F42FF /* DefaultCellContentView+Model.swift */; };
@@ -150,6 +153,7 @@
 		7DB8FB7F2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB7C2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf */; };
 		7DB8FB802A1BEE00005B4B11 /* Montserrat-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB7D2A1BEE00005B4B11 /* Montserrat-Medium.ttf */; };
 		7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */; };
+		7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */; };
 		83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 245658CD5491F94DE1923BE9 /* ActivityEmptyViewController.swift */; };
 		86DEB0A35D88DABB3EAEFDD3 /* ReceiveProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A2DFA2B5AD43B54E2E131F /* ReceiveProtocols.swift */; };
 		8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5315989FA9BDEABD3FA2E275 /* SendConfirmationViewController.swift */; };
@@ -217,6 +221,9 @@
 		7D59287F2A20CDCA006B0A8A /* TokenListTokenCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenListTokenCell.swift; sourceTree = "<group>"; };
 		7D5928812A20CDEC006B0A8A /* Reusable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reusable.swift; sourceTree = "<group>"; };
 		7D5928842A20CE3C006B0A8A /* TokensListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListCollectionController.swift; sourceTree = "<group>"; };
+		7D5D05A62A2F83ED009F42FF /* ActivityListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListCollectionController.swift; sourceTree = "<group>"; };
+		7D5D05A82A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListCollectionLayoutConfigurator.swift; sourceTree = "<group>"; };
+		7D5D05AA2A306739009F42FF /* ActivityListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListSection.swift; sourceTree = "<group>"; };
 		7D5D05CD2A30716A009F42FF /* DefaultCellTextContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultCellTextContentView.swift; sourceTree = "<group>"; };
 		7D5D05CF2A308C4C009F42FF /* DefaultCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultCellContentView.swift; sourceTree = "<group>"; };
 		7D5D05D22A309322009F42FF /* DefaultCellContentView+Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DefaultCellContentView+Model.swift"; sourceTree = "<group>"; };
@@ -310,6 +317,7 @@
 		7DB8FB7C2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Montserrat-SemiBold.ttf"; sourceTree = "<group>"; };
 		7DB8FB7D2A1BEE00005B4B11 /* Montserrat-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Montserrat-Medium.ttf"; sourceTree = "<group>"; };
 		7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIFont+Montserrat.swift"; sourceTree = "<group>"; };
+		7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListTransactionCell.swift; sourceTree = "<group>"; };
 		8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationView.swift; sourceTree = "<group>"; };
 		8CE60ABD534A41016103CB95 /* TokensListProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListProtocols.swift; sourceTree = "<group>"; };
 		91212C1153B7799536A9E7B6 /* Pods-Tonkeeper.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.release.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.release.xcconfig"; sourceTree = "<group>"; };
@@ -391,6 +399,7 @@
 		2F44A99FB95A2D04B551F3AF /* ActivityList */ = {
 			isa = PBXGroup;
 			children = (
+				7DE27E592A30BB0600842FA8 /* Views */,
 				7D5D05A52A2F8399009F42FF /* CollectionView */,
 				DEB090D8454B651425F5F1A3 /* ActivityListViewController.swift */,
 				B2439F2E5E6211F9C396FAF2 /* ActivityListView.swift */,
@@ -1113,6 +1122,22 @@
 			path = UIKit;
 			sourceTree = "<group>";
 		};
+		7DE27E592A30BB0600842FA8 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7DE27E5A2A30BB0A00842FA8 /* Cells */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7DE27E5A2A30BB0A00842FA8 /* Cells */ = {
+			isa = PBXGroup;
+			children = (
+				7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */,
+			);
+			path = Cells;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1261,6 +1286,7 @@
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
 				7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */,
 				7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */,
+				7D5D05A92A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift in Sources */,
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
 				7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */,
 				7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */,
@@ -1328,6 +1354,7 @@
 				7D9292C22A27412A005B83DF /* SendCoordinator.swift in Sources */,
 				7D68364A2A1D1052002DBBC7 /* WalletAssembly.swift in Sources */,
 				7D68363B2A1CFF74002DBBC7 /* AppCoordinator.swift in Sources */,
+				7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */,
 				7D6836302A1CF471002DBBC7 /* UITabBarController+Completions.swift in Sources */,
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
 				7D6836562A1D5951002DBBC7 /* BrowserCoordinator.swift in Sources */,
@@ -1360,6 +1387,7 @@
 				7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */,
 				4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */,
 				7D9292F82A29DCDA005B83DF /* SendAmountView.swift in Sources */,
+				7D5D05A72A2F83ED009F42FF /* ActivityListCollectionController.swift in Sources */,
 				7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */,
 				8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */,
 				7D5823397229401915615466 /* SendConfirmationView.swift in Sources */,
@@ -1374,6 +1402,7 @@
 				708F4E78995F7F1DD8EE8648 /* ActivityRootPresenter.swift in Sources */,
 				2D8B9585056DA7795FC4C912 /* ActivityRootProtocols.swift in Sources */,
 				83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */,
+				7D5D05AB2A306739009F42FF /* ActivityListSection.swift in Sources */,
 				920F2D1C164D714EF8B77CB8 /* ActivityEmptyView.swift in Sources */,
 				44FC2415321AB434412B8523 /* ActivityEmptyPresenter.swift in Sources */,
 				48DB3E42B318C80B7090AFD0 /* ActivityEmptyProtocols.swift in Sources */,

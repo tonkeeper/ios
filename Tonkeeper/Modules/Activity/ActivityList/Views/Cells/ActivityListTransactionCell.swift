@@ -1,22 +1,21 @@
 //
-//  TokenListTokenCell.swift
+//  ActivityListTransactionCell.swift
 //  Tonkeeper
 //
-//  Created by Grigory on 26.5.23..
+//  Created by Grigory on 7.6.23..
 //
 
 import UIKit
 
-final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentView>, Reusable {
+final class ActivityListTransactionCell: ContainerCollectionViewCell<DefaultCellContentView>, Reusable {
   
   struct Model: Hashable {
     let id = UUID()
-    let title: String
-    let shortTitle: String?
-    let price: String?
-    let priceDiff: NSAttributedString?
-    let amount: String
-    let fiatAmount: String?
+    let icon: UIImage?
+    let name: String
+    let subtitle: String
+    let amount: NSAttributedString
+    let time: String
   }
   
   var isFirstCell = false {
@@ -46,24 +45,6 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
     fatalError("init(coder:) has not been implemented")
   }
   
-  func configure(model: Model) {
-    let textContentModel = DefaultCellTextContentView.Model(
-      leftTopTitle: model.title,
-      leftTopRightTitle: model.shortTitle,
-      rightTopTitle: model.amount.attributed(with: .label1, alignment: .right, color: .Text.primary),
-      leftMiddleTitle: model.price,
-      leftMiddleRightTitle: model.priceDiff,
-      rightMiddleTitle: model.fiatAmount,
-      leftBottomTitle: nil,
-      rightBottomTitle: nil
-    )
-    let contentModel = DefaultCellContentView.Model(
-      textContentModel: textContentModel,
-      image: nil
-    )
-    cellContentView.configure(model: contentModel)
-  }
-  
   override func prepareForReuse() {
     super.prepareForReuse()
     isFirstCell = false
@@ -77,9 +58,27 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
                                 width: bounds.width - ContentInsets.sideSpace,
                                 height: .separatorWidth)
   }
+  
+  func configure(model: Model) {
+    let textContentModel = DefaultCellTextContentView.Model(
+      leftTopTitle: model.name,
+      leftTopRightTitle: nil,
+      rightTopTitle: model.amount,
+      leftMiddleTitle: model.subtitle,
+      leftMiddleRightTitle: nil,
+      rightMiddleTitle: model.time,
+      leftBottomTitle: nil,
+      rightBottomTitle: nil
+    )
+    let contentModel = DefaultCellContentView.Model(
+      textContentModel: textContentModel,
+      image: model.icon
+    )
+    cellContentView.configure(model: contentModel)
+  }
 }
 
-private extension TokenListTokenCell {
+private extension ActivityListTransactionCell {
   func setup() {
     addSubview(separatorView)
     layer.masksToBounds = true

@@ -9,6 +9,8 @@
 import UIKit
 
 final class ActivityListView: UIView {
+  
+  let collectionView = UICollectionView(frame: .zero, collectionViewLayout: .init())
 
   // MARK: - Init
 
@@ -20,10 +22,21 @@ final class ActivityListView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  // MARK: - Layout
+  
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    collectionView.frame = bounds
+  }
 }
 
 // MARK: - Private
 
 private extension ActivityListView {
-  func setup() {}
+  func setup() {
+    collectionView.backgroundColor = .Background.page
+    
+    addSubview(collectionView)
+  }
 }

@@ -13,6 +13,12 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
   // MARK: - Module
 
   private let presenter: ActivityListPresenterInput
+  
+  // MARK: - Collection
+  
+  private lazy var collectionController = ActivityListCollectionController(
+    collectionView: customView.collectionView
+  )
 
   // MARK: - Init
 
@@ -36,7 +42,11 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
 
 // MARK: - ActivityListViewInput
 
-extension ActivityListViewController: ActivityListViewInput {}
+extension ActivityListViewController: ActivityListViewInput {
+  func updateSections(_ sections: [ActivityListSection]) {
+    collectionController.sections = sections
+  }
+}
 
 // MARK: - Private
 
