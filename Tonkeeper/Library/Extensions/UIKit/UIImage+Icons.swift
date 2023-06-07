@@ -15,6 +15,68 @@ extension UIImage {
       }
     }
     
+    enum Transaction {
+      static var receieved: UIImage? {
+        .init(named: "Icons/28/ic-tray-arrow-down-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var sent: UIImage? {
+        .init(named: "Icons/28/ic-tray-arrow-up-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var spam: UIImage? {
+        .init(named: "Icons/28/ic-tray-arrow-down-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var bounced: UIImage? {
+        .init(named: "Icons/28/ic-return-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var subscribed: UIImage? {
+        .init(named: "Icons/28/ic-bell-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var unsubscribed: UIImage? {
+        .init(named: "Icons/28/ic-xmark-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var walletInitialized: UIImage? {
+        .init(named: "Icons/28/ic-donemark-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var nftCollectionCreation: UIImage? {
+        .init(named: "Icons/28/ic-gear-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var nftCreation: UIImage? {
+        .init(named: "Icons/28/ic-gear-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var removalFromSale: UIImage? {
+        .init(named: "Icons/28/ic-xmark-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var nftPurchase: UIImage? {
+        .init(named: "Icons/28/ic-shopping-bag-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var bid: UIImage? {
+        .init(named: "Icons/28/ic-tray-arrow-up-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var putUpForAuction: UIImage? {
+        .init(named: "Icons/28/ic-tray-arrow-up-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var endOfAuction: UIImage? {
+        .init(named: "Icons/28/ic-xmark-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var putUpForSale: UIImage? {
+        .init(named: "Icons/28/ic-sale-badge-28")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     enum TextField {
       static var clear: UIImage? {
         .init(named: "Icons/16/ic-xmark-circle-16")?.withRenderingMode(.alwaysTemplate)
