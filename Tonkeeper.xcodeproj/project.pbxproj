@@ -59,6 +59,9 @@
 		7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59287F2A20CDCA006B0A8A /* TokenListTokenCell.swift */; };
 		7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928812A20CDEC006B0A8A /* Reusable.swift */; };
 		7D5928852A20CE3C006B0A8A /* TokensListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928842A20CE3C006B0A8A /* TokensListCollectionController.swift */; };
+		7D5D05CE2A30716A009F42FF /* DefaultCellTextContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05CD2A30716A009F42FF /* DefaultCellTextContentView.swift */; };
+		7D5D05D02A308C4C009F42FF /* DefaultCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05CF2A308C4C009F42FF /* DefaultCellContentView.swift */; };
+		7D5D05D32A309322009F42FF /* DefaultCellContentView+Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05D22A309322009F42FF /* DefaultCellContentView+Model.swift */; };
 		7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */; };
 		7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */; };
 		7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */; };
@@ -213,6 +216,9 @@
 		7D59287F2A20CDCA006B0A8A /* TokenListTokenCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenListTokenCell.swift; sourceTree = "<group>"; };
 		7D5928812A20CDEC006B0A8A /* Reusable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reusable.swift; sourceTree = "<group>"; };
 		7D5928842A20CE3C006B0A8A /* TokensListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListCollectionController.swift; sourceTree = "<group>"; };
+		7D5D05CD2A30716A009F42FF /* DefaultCellTextContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultCellTextContentView.swift; sourceTree = "<group>"; };
+		7D5D05CF2A308C4C009F42FF /* DefaultCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultCellContentView.swift; sourceTree = "<group>"; };
+		7D5D05D22A309322009F42FF /* DefaultCellContentView+Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DefaultCellContentView+Model.swift"; sourceTree = "<group>"; };
 		7D6836172A1CAEC1002DBBC7 /* TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextStyle.swift; sourceTree = "<group>"; };
 		7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UILabel+TextStyle.swift"; sourceTree = "<group>"; };
 		7D68361C2A1CB1CB002DBBC7 /* String+TextStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+TextStyle.swift"; sourceTree = "<group>"; };
@@ -560,6 +566,24 @@
 			path = Model;
 			sourceTree = "<group>";
 		};
+		7D5D05CC2A307161009F42FF /* Cell */ = {
+			isa = PBXGroup;
+			children = (
+				7D5D05D12A3090B2009F42FF /* DefaultCell */,
+			);
+			path = Cell;
+			sourceTree = "<group>";
+		};
+		7D5D05D12A3090B2009F42FF /* DefaultCell */ = {
+			isa = PBXGroup;
+			children = (
+				7D5D05CF2A308C4C009F42FF /* DefaultCellContentView.swift */,
+				7D5D05CD2A30716A009F42FF /* DefaultCellTextContentView.swift */,
+				7D5D05D22A309322009F42FF /* DefaultCellContentView+Model.swift */,
+			);
+			path = DefaultCell;
+			sourceTree = "<group>";
+		};
 		7D6836152A1CAEAA002DBBC7 /* Library */ = {
 			isa = PBXGroup;
 			children = (
@@ -780,6 +804,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D5D05CC2A307161009F42FF /* Cell */,
 				7D9292DC2A28A1D2005B83DF /* ViewController */,
 				7D9292CD2A275A0F005B83DF /* Insets */,
 				7D9292CA2A2756C5005B83DF /* TextFields */,
@@ -1193,6 +1218,7 @@
 			files = (
 				7D6836762A1E6623002DBBC7 /* QRScannerPresenter.swift in Sources */,
 				7D9292F92A29DCDA005B83DF /* SendAmountProtocols.swift in Sources */,
+				7D5D05D02A308C4C009F42FF /* DefaultCellContentView.swift in Sources */,
 				7D9292FD2A29DCDA005B83DF /* SendRecipientViewController.swift in Sources */,
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
@@ -1295,12 +1321,14 @@
 				7D70D3C02A2A03350096E1A2 /* Currency.swift in Sources */,
 				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
 				7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */,
+				7D5D05CE2A30716A009F42FF /* DefaultCellTextContentView.swift in Sources */,
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
 				7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */,
 				7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */,
+				7D5D05D32A309322009F42FF /* DefaultCellContentView+Model.swift in Sources */,
 				7D9292D12A275B6D005B83DF /* TextField.swift in Sources */,
 				7D5928722A1FC981006B0A8A /* WalletHeaderButtonType.swift in Sources */,
 				7D6836222A1CD1EC002DBBC7 /* Presentable.swift in Sources */,
