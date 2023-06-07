@@ -139,7 +139,7 @@ final class DefaultCellTextContentView: UIView, ConfigurableView {
     
     middleRightLabel.attributedText = model.rightMiddleTitle
     
-    bottomLeftLabel.attributedText = model.rightBottomTitle
+    bottomRightLabel.attributedText = model.rightBottomTitle
   }
 }
 

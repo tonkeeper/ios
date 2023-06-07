@@ -52,6 +52,7 @@ final class DefaultCellContentView: UIView, ConfigurableView {
   func configure(model: Model) {
     textContentView.configure(model: model.textContentModel)
     imageView.image = model.image
+    setNeedsLayout()
   }
 }
 
