@@ -60,9 +60,9 @@ final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectio
     textContentView.prepareForReuse()
   }
   
-  func setHighlighted(isHighlighted: Bool) {
-    backgroundColor = isHighlighted ? .clear : .Background.content
-    textContentView.setHighlighted(isHighlighted: isHighlighted)
+  func updateBackgroundColor(_ color: UIColor) {
+    backgroundColor = color
+    textContentView.updateBackgroundColor(color)
   }
 }
 

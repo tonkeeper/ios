@@ -44,10 +44,9 @@ extension TransactionCellContentView {
       label.attributedText = nil
     }
     
-    func setHighlighted(isHighlighted: Bool) {
-      let color: UIColor = isHighlighted ? .clear : .Background.content
+    func updateBackgroundColor(_ color: UIColor) {
       backgroundColor = color
-      label.backgroundColor = color 
+      label.backgroundColor = color
     }
   }
 }

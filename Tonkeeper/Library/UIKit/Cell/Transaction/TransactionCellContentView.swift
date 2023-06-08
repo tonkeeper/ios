@@ -86,11 +86,11 @@ final class TransactionCellContentView: UIView, ContainerCollectionViewCellConte
     commentView.prepareForReuse()
   }
   
-  func setHighlighted(isHighlighted: Bool) {
-    backgroundColor = isHighlighted ? .clear : .Background.content
-    defaultCellContentView.setHighlighted(isHighlighted: isHighlighted)
-    statusView.setHighlighted(isHighlighted: isHighlighted)
-    commentView.setHighlighted(isHighlighted: isHighlighted)
+  func updateBackgroundColor(_ color: UIColor) {
+    backgroundColor = color
+    defaultCellContentView.updateBackgroundColor(color)
+    statusView.updateBackgroundColor(color)
+    commentView.updateBackgroundColor(color)
   }
 }
 

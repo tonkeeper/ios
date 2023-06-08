@@ -36,7 +36,6 @@ final class ActivityListView: UIView {
 private extension ActivityListView {
   func setup() {
     collectionView.backgroundColor = .Background.page
-    
     addSubview(collectionView)
   }
 }

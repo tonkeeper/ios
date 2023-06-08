@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class ActivityListCollectionController {
+final class ActivityListCollectionController: NSObject {
   
   var sections = [ActivityListSection]() {
     didSet {
@@ -22,11 +22,12 @@ final class ActivityListCollectionController {
   
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
+    super.init()
     let layout = collectionLayoutConfigurator.getLayout { [weak self] sectionIndex in
       guard let self = self else { return .date }
       return self.sections[sectionIndex].type
     }
-    
+    collectionView.delegate = self
     collectionView.setCollectionViewLayout(layout, animated: false)
     collectionView.register(ActivityListTransactionCell.self,
                              forCellWithReuseIdentifier: ActivityListTransactionCell.reuseIdentifier)
@@ -91,5 +92,16 @@ private extension ActivityListCollectionController {
     
     cell.configure(model: model)
     return cell
+  }
+}
+
+extension ActivityListCollectionController: UICollectionViewDelegate {
+  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    (collectionView.cellForItem(at: indexPath) as? Selectable)?.select()
+    collectionView.deselectItem(at: indexPath, animated: true)
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
+    (collectionView.cellForItem(at: indexPath) as? Selectable)?.deselect()
   }
 }

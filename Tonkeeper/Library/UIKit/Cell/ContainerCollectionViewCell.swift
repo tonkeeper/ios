@@ -9,18 +9,10 @@ import UIKit
 
 protocol ContainerCollectionViewCellContent: ConfigurableView {
   func prepareForReuse()
-  func setHighlighted(isHighlighted: Bool)
+  func updateBackgroundColor(_ color: UIColor)
 }
 
-class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellContent>: UICollectionViewCell, ConfigurableView {
-  
-  override var isHighlighted: Bool {
-    didSet {
-      guard isHighlighted != oldValue else { return }
-      cellContentView.setHighlighted(isHighlighted: isHighlighted)
-      contentView.backgroundColor = isHighlighted ? .Background.highlighted : .Background.content
-    }
-  }
+class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellContent>: UICollectionViewCell, ConfigurableView, Selectable {
   
   let cellContentView = CellContentView()
   
@@ -56,6 +48,19 @@ class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellCo
   override func prepareForReuse() {
     super.prepareForReuse()
     cellContentView.prepareForReuse()
+    deselect()
+  }
+  
+  func select() {
+    let color = UIColor.clear
+    cellContentView.updateBackgroundColor(color)
+    contentView.backgroundColor = color
+  }
+  
+  func deselect() {
+    let color = UIColor.Background.content
+    cellContentView.updateBackgroundColor(color)
+    contentView.backgroundColor = color
   }
 }
 
@@ -63,5 +68,9 @@ private extension ContainerCollectionViewCell {
   func setup() {
     contentView.backgroundColor = .Background.content
     contentView.addSubview(cellContentView)
+    
+    let selectedView = UIView()
+    selectedView.backgroundColor = .Background.highlighted
+    selectedBackgroundView = selectedView
   }
 }

@@ -160,8 +160,7 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
     bottomRightLabel.attributedText = nil
   }
   
-  func setHighlighted(isHighlighted: Bool) {
-    let color: UIColor = isHighlighted ? .clear : .Background.content
+  func updateBackgroundColor(_ color: UIColor) {
     backgroundColor = color
     topLeftHorizontalStack.backgroundColor = color
     topLeftHorizontalStack.rightLabel.backgroundColor = color

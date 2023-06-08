@@ -110,6 +110,7 @@
 		7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */; };
 		7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */; };
 		7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */; };
+		7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144232A31EF7600B0FD17 /* Selectable.swift */; };
 		7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */; };
 		7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292822A24BD58005B83DF /* PageViewController.swift */; };
 		7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */; };
@@ -278,6 +279,7 @@
 		7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyWallet.swift; sourceTree = "<group>"; };
 		7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveAssembly.swift; sourceTree = "<group>"; };
 		7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveCoordinator.swift; sourceTree = "<group>"; };
+		7D9144232A31EF7600B0FD17 /* Selectable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectable.swift; sourceTree = "<group>"; };
 		7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListCollectibleCell.swift; sourceTree = "<group>"; };
 		7D9292822A24BD58005B83DF /* PageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewController.swift; sourceTree = "<group>"; };
 		7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewControllerCell.swift; sourceTree = "<group>"; };
@@ -607,6 +609,7 @@
 				7DE27E662A30D93100842FA8 /* Transaction */,
 				7D5D05D12A3090B2009F42FF /* DefaultCell */,
 				7D5D05D42A309674009F42FF /* ContainerCollectionViewCell.swift */,
+				7D9144232A31EF7600B0FD17 /* Selectable.swift */,
 			);
 			path = Cell;
 			sourceTree = "<group>";
@@ -1436,6 +1439,7 @@
 				4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */,
 				7D9292F82A29DCDA005B83DF /* SendAmountView.swift in Sources */,
 				7D5D05A72A2F83ED009F42FF /* ActivityListCollectionController.swift in Sources */,
+				7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */,
 				7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */,
 				8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */,
 				7D5823397229401915615466 /* SendConfirmationView.swift in Sources */,
