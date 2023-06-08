@@ -41,6 +41,11 @@ class ActivityRootViewController: GenericViewController<ActivityRootView> {
     setup()
     presenter.viewDidLoad()
   }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    listViewController.additionalSafeAreaInsets.top = customView.titleView.size.height
+  }
 }
 
 // MARK: - ActivityRootViewInput
@@ -48,6 +53,10 @@ class ActivityRootViewController: GenericViewController<ActivityRootView> {
 extension ActivityRootViewController: ActivityRootViewInput {
   func showEmptyState() {
     customView.showEmptyState()
+  }
+  
+  func updateTitle(_ title: String) {
+    customView.titleView.title = title
   }
 }
 
@@ -57,6 +66,8 @@ private extension ActivityRootViewController {
   func setup() {
     setupEmptyViewController()
     setupListViewController()
+    
+    customView.titleView.scrollView = listViewController.scrollView
   }
   
   func setupEmptyViewController() {

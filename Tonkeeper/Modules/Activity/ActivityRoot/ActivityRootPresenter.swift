@@ -22,7 +22,9 @@ final class ActivityRootPresenter {
 // MARK: - ActivityRootPresenterIntput
 
 extension ActivityRootPresenter: ActivityRootPresenterInput {
-  func viewDidLoad() {}
+  func viewDidLoad() {
+    viewInput?.updateTitle("Activity")
+  }
 }
 
 // MARK: - ActivityRootModuleInput

@@ -46,21 +46,18 @@ final class WalletRootViewController: GenericViewController<WalletRootView> {
   override func viewDidLoad() {
     super.viewDidLoad()
     setup()
+    presenter.viewDidLoad()
   }
 }
 
 // MARK: - WalletRootViewInput
 
-extension WalletRootViewController: WalletRootViewInput {
-  
-}
+extension WalletRootViewController: WalletRootViewInput {}
 
 // MARK: - Private
 
 private extension WalletRootViewController {
   func setup() {
-    title = "Wallet"
-    
     addChild(scrollContainerViewController)
     customView.addContent(contentView: scrollContainerViewController.view)
     scrollContainerViewController.didMove(toParent: self)

@@ -32,8 +32,6 @@
 		7D527BEE2A2DEA2C00A2D29A /* ResultView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BED2A2DEA2C00A2D29A /* ResultView.swift */; };
 		7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BF02A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift */; };
 		7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BF32A2DFDA600A2D29A /* NotDelayScrollView.swift */; };
-		7D527BFF2A2E1A0500A2D29A /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BFD2A2E1A0500A2D29A /* ReceiveAssembly.swift */; };
-		7D527C002A2E1A0500A2D29A /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BFE2A2E1A0500A2D29A /* ReceiveCoordinator.swift */; };
 		7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527C012A2E3FC400A2D29A /* MultilineUIButton.swift */; };
 		7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527C052A2E469900A2D29A /* QRCodeGenerator.swift */; };
 		7D5823397229401915615466 /* SendConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */; };
@@ -110,6 +108,8 @@
 		7D70D3C42A2A03770096E1A2 /* FiatCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C32A2A03770096E1A2 /* FiatCurrency.swift */; };
 		7D70D3C62A2A037F0096E1A2 /* CryptoCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */; };
 		7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */; };
+		7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */; };
+		7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */; };
 		7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */; };
 		7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292822A24BD58005B83DF /* PageViewController.swift */; };
 		7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */; };
@@ -201,8 +201,6 @@
 		7D527BED2A2DEA2C00A2D29A /* ResultView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultView.swift; sourceTree = "<group>"; };
 		7D527BF02A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendConfirmationModalConfigurationBuilder.swift; sourceTree = "<group>"; };
 		7D527BF32A2DFDA600A2D29A /* NotDelayScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotDelayScrollView.swift; sourceTree = "<group>"; };
-		7D527BFD2A2E1A0500A2D29A /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ReceiveAssembly.swift; path = ../../../../../../Desktop/ReceiveAssembly.swift; sourceTree = "<group>"; };
-		7D527BFE2A2E1A0500A2D29A /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; name = ReceiveCoordinator.swift; path = ../../../../../../Desktop/ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D527C012A2E3FC400A2D29A /* MultilineUIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultilineUIButton.swift; sourceTree = "<group>"; };
 		7D527C052A2E469900A2D29A /* QRCodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeGenerator.swift; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
@@ -278,6 +276,8 @@
 		7D70D3C32A2A03770096E1A2 /* FiatCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiatCurrency.swift; sourceTree = "<group>"; };
 		7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoCurrency.swift; sourceTree = "<group>"; };
 		7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyWallet.swift; sourceTree = "<group>"; };
+		7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveAssembly.swift; sourceTree = "<group>"; };
+		7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListCollectibleCell.swift; sourceTree = "<group>"; };
 		7D9292822A24BD58005B83DF /* PageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewController.swift; sourceTree = "<group>"; };
 		7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewControllerCell.swift; sourceTree = "<group>"; };
@@ -480,8 +480,8 @@
 			isa = PBXGroup;
 			children = (
 				7D527C042A2E468F00A2D29A /* QRCodeGenerator */,
-				7D527BFD2A2E1A0500A2D29A /* ReceiveAssembly.swift */,
-				7D527BFE2A2E1A0500A2D29A /* ReceiveCoordinator.swift */,
+				7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */,
+				7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */,
 				62EEBA5EBAC6F6BE4F5EBF4E /* ReceiveViewController.swift */,
 				A2140E2CC50DF4789E6DDE35 /* ReceiveView.swift */,
 				CD0D83F8AC9D08173560A142 /* ReceivePresenter.swift */,
@@ -1305,6 +1305,7 @@
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
 				7D9292D82A288013005B83DF /* Notificiation+Keyboard.swift in Sources */,
 				7D6836422A1D0B5C002DBBC7 /* TabBarAssembly.swift in Sources */,
+				7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */,
 				7D9292FA2A29DCDA005B83DF /* SendAmountViewController.swift in Sources */,
 				7D9292CC2A275725005B83DF /* TextFieldContainer.swift in Sources */,
 				7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */,
@@ -1347,7 +1348,6 @@
 				7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */,
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
-				7D527BFF2A2E1A0500A2D29A /* ReceiveAssembly.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D5928742A2007C0006B0A8A /* Button.Configuration+Header.swift in Sources */,
 				7D6836512A1D1EB1002DBBC7 /* ActivityCoordinator.swift in Sources */,
@@ -1361,7 +1361,6 @@
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
 				7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */,
-				7D527C002A2E1A0500A2D29A /* ReceiveCoordinator.swift in Sources */,
 				7D92928D2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift in Sources */,
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
 				7D9292FC2A29DCDA005B83DF /* SendAmountTitleView.swift in Sources */,
@@ -1414,6 +1413,7 @@
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
+				7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
 				7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */,
 				7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */,

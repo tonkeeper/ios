@@ -13,7 +13,9 @@ protocol WalletHeaderModuleOutput: AnyObject {
   func openQRScanner()
 }
 
-protocol WalletHeaderModuleInput: AnyObject {}
+protocol WalletHeaderModuleInput: AnyObject {
+  func updateTitle(_ title: String)
+}
 
 protocol WalletHeaderPresenterInput {
   func viewDidLoad()
@@ -24,4 +26,5 @@ protocol WalletHeaderPresenterInput {
 protocol WalletHeaderViewInput: AnyObject {
   func update(with model: WalletHeaderView.Model)
   func updateButtons(with models: [WalletHeaderButtonModel])
+  func updateTitle(_ title: String?)
 }

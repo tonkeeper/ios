@@ -9,7 +9,7 @@ import UIKit
 
 final class WalletHeaderTitleView: UIView {
 
-  private enum Size {
+  enum Size {
     case compact
     case large
     
@@ -21,26 +21,54 @@ final class WalletHeaderTitleView: UIView {
     }
   }
   
-  private var size: Size = .compact {
+  var title: String? {
     didSet {
-      guard size != oldValue else { return }
-      invalidateIntrinsicContentSize()
+      titleLabel.text = title
+      bigTitleLabel.text = title
     }
   }
+  
+  weak var scrollView: UIScrollView? {
+    didSet {
+      didSetScrollView()
+    }
+  }
+  
+  var size: Size = .compact {
+    didSet {
+      guard size != oldValue else { return }
+      didUpdateSize()
+    }
+  }
+  
+  var rightButtons = [UIView]() {
+    didSet {
+      rightButtonsStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+      rightButtons.forEach { rightButtonsStackView.addArrangedSubview($0) }
+    }
+  }
+
+  private var scrollViewContentOffsetObserveToken: NSKeyValueObservation?
 
   private let titleLabel: UILabel = {
     let label = UILabel()
     label.applyTextStyleFont(.h3)
     label.textColor = .Text.primary
-    label.text = "Wallet"
     return label
   }()
   
-  let scanQRButton: UIButton = {
-    let button = UIButton(type: .system)
-    button.setImage(.Icons.Buttons.scanQR, for: .normal)
-    button.tintColor = .Accent.blue
-    return button
+  private let bigTitleLabel: UILabel = {
+    let label = UILabel()
+    label.applyTextStyleFont(.h1)
+    label.textColor = .Text.primary
+    label.isHidden = true
+    return label
+  }()
+  
+  private let rightButtonsStackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .horizontal
+    return stackView
   }()
   
   private let safeAreaView = UIView()
@@ -48,23 +76,31 @@ final class WalletHeaderTitleView: UIView {
   
   private var contentViewHeightConstraint: NSLayoutConstraint?
   
-  override init(frame: CGRect) {
-    super.init(frame: frame)
+  init(size: Size) {
+    self.size = size
+    super.init(frame: .zero)
     setup()
   }
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
   override var intrinsicContentSize: CGSize {
-    let height = size.height + safeAreaInsets.top
+    let height = safeAreaInsets.top + size.height
     return .init(width: UIView.noIntrinsicMetric,
                  height: height)
   }
   
   override func safeAreaInsetsDidChange() {
     super.safeAreaInsetsDidChange()
-    invalidateIntrinsicContentSize()
+    if #available(iOS 16.0, *) {
+      DispatchQueue.main.async {
+        super.invalidateIntrinsicContentSize()
+      }
+    } else {
+      super.invalidateIntrinsicContentSize()
+    }
   }
 }
 
@@ -74,14 +110,21 @@ private extension WalletHeaderTitleView {
     
     addSubview(contentView)
     contentView.addSubview(titleLabel)
-    contentView.addSubview(scanQRButton)
+    contentView.addSubview(bigTitleLabel)
+    contentView.addSubview(rightButtonsStackView)
     
+    setupConstraints()
+    didUpdateSize()
+  }
+  
+  func setupConstraints() {
     contentView.translatesAutoresizingMaskIntoConstraints = false
     titleLabel.translatesAutoresizingMaskIntoConstraints = false
-    scanQRButton.translatesAutoresizingMaskIntoConstraints = false
+    bigTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+    rightButtonsStackView.translatesAutoresizingMaskIntoConstraints = false
     safeAreaView.translatesAutoresizingMaskIntoConstraints = false
     
-    contentViewHeightConstraint = contentView.heightAnchor.constraint(equalToConstant: size.height)
+    contentViewHeightConstraint = contentView.heightAnchor.constraint(equalToConstant: .compactHeight)
     contentViewHeightConstraint?.isActive = true
     
     NSLayoutConstraint.activate([
@@ -90,11 +133,51 @@ private extension WalletHeaderTitleView {
       contentView.bottomAnchor.constraint(equalTo: bottomAnchor),
       
       titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-      titleLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+      titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -.smallTitleBottomSpace),
+      
+      bigTitleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -.bigTitleBottomSpace),
+      bigTitleLabel.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: ContentInsets.sideSpace),
 
-      scanQRButton.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
-      scanQRButton.rightAnchor.constraint(equalTo: contentView.rightAnchor, constant: -.scanQRButtonRightSpace),
+      rightButtonsStackView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
+      rightButtonsStackView.rightAnchor.constraint(equalTo: contentView.rightAnchor, constant: -.scanQRButtonRightSpace),
     ])
+  }
+  
+  func didSetScrollView() {
+    scrollViewContentOffsetObserveToken = scrollView?
+      .observe(\.contentOffset, changeHandler: { [weak self] scrollView, _ in
+        guard let self = self else { return }
+        self.handleScrollViewScroll(scrollView: scrollView)
+      })
+  }
+  
+  func handleScrollViewScroll(scrollView: UIScrollView) {
+    let offsetY = scrollView.contentOffset.y + scrollView.adjustedContentInset.top
+    let tresholdPercentage = min(offsetY / .scrollTreshold, 1)
+    self.updateTitle(with: tresholdPercentage)
+  }
+  
+  func updateTitle(with progress: CGFloat) {
+    bigTitleLabel.alpha = 1 - progress * 2.5
+    titleLabel.alpha = progress * 2
+
+    let translationY = (.largeHeight - .compactHeight) * progress
+    transform = CGAffineTransformMakeTranslation(0, -translationY)
+  }
+  
+  func didUpdateSize() {
+    invalidateIntrinsicContentSize()
+    switch size {
+    case .compact:
+      bigTitleLabel.isHidden = true
+    case .large:
+      bigTitleLabel.isHidden = false
+      if let scrollView = scrollView {
+        handleScrollViewScroll(scrollView: scrollView)
+      } else {
+        updateTitle(with: 0)
+      }
+    }
   }
 }
 
@@ -102,5 +185,7 @@ private extension CGFloat {
   static let scanQRButtonRightSpace: CGFloat = 18
   static let largeHeight: CGFloat = 84
   static let compactHeight: CGFloat = 64
+  static let scrollTreshold: CGFloat = 50
+  static let smallTitleBottomSpace: CGFloat = 18
+  static let bigTitleBottomSpace: CGFloat = 12
 }
-

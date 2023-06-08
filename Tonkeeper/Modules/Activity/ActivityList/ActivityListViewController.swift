@@ -10,6 +10,10 @@ import UIKit
 
 class ActivityListViewController: GenericViewController<ActivityListView> {
 
+  var scrollView: UIScrollView {
+    customView.collectionView
+  }
+  
   // MARK: - Module
 
   private let presenter: ActivityListPresenterInput

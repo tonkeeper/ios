@@ -31,6 +31,7 @@ final class TabBarAssembly {
   func activityCoordinator() -> ActivityCoordinator {
     let navigationController = UINavigationController()
     navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = ActivityCoordinator(router: router,
                                           assembly: activityAssembly)
