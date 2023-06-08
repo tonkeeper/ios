@@ -20,9 +20,11 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
   
   // MARK: - Collection
   
-  private lazy var collectionController = ActivityListCollectionController(
-    collectionView: customView.collectionView
-  )
+  private lazy var collectionController: ActivityListCollectionController = {
+    let controller = ActivityListCollectionController(collectionView: customView.collectionView)
+    controller.delegate = self
+    return controller
+  }()
 
   // MARK: - Init
 
@@ -49,6 +51,15 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
 extension ActivityListViewController: ActivityListViewInput {
   func updateSections(_ sections: [ActivityListSection]) {
     collectionController.sections = sections
+  }
+}
+
+// MARK: - ActivityListCollectionControllerDelegate
+
+extension ActivityListViewController: ActivityListCollectionControllerDelegate {
+  func activityListCollectionController(_ collectionController: ActivityListCollectionController,
+                                        didSelectTransactionAt indexPath: IndexPath) {
+    presenter.didSelectTransactionAt(indexPath: indexPath)
   }
 }
 

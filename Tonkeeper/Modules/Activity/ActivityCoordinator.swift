@@ -40,6 +40,9 @@ extension ActivityCoordinator: ActivityRootModuleOutput {
       self?.removeChild(coordinator!)
     })
   }
+  
+  func didSelectTransaction() {
+  }
 }
 
 // MARK: - ReceiveCoordinatorOutput

@@ -30,6 +30,10 @@ extension ActivityListPresenter: ActivityListPresenterInput {
   func viewDidLoad() {
     loadFakeTransactions()
   }
+  
+  func didSelectTransactionAt(indexPath: IndexPath) {
+    output?.didSelectTransaction(in: indexPath.section, at: indexPath.item)
+  }
 }
 
 // MARK: - ActivityListModuleInput
