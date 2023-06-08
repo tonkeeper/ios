@@ -11,7 +11,7 @@ import UIKit.NSParagraphStyle
 extension String {
   func attributed(with textStyle: TextStyle,
                   alignment: NSTextAlignment = .left,
-                  lineBreakMode: NSLineBreakMode = .byWordWrapping,
+                  lineBreakMode: NSLineBreakMode = .byTruncatingTail,
                   color: UIColor = .black) -> NSAttributedString {
     let paragraphStyle = NSMutableParagraphStyle()
     paragraphStyle.minimumLineHeight = textStyle.lineHeight

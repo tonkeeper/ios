@@ -145,8 +145,8 @@ final class ReceiveView: UIView, ConfigurableView {
     qrTitleLabel.attributedText = model.qrTitle
     addressTitleLabel.attributedText = model.addressTitle
     addressButton.setAttributedTitle(model.address, for: .normal)
-    copyButton.titleLabel.text = model.copyButtonTitle
-    shareButton.titleLabel.text = model.shareButtonTitle
+    copyButton.title = model.copyButtonTitle
+    shareButton.title = model.shareButtonTitle
   }
 }
 

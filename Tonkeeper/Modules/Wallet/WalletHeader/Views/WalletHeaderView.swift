@@ -9,7 +9,7 @@ import UIKit
 
 final class WalletHeaderView: UIView, ConfigurableView {
   
-  let titleView = WalletHeaderTitleView()
+  let titleView = WalletHeaderTitleView(size: .compact)
   
   let balanceLabel: UILabel = {
     let label = UILabel()

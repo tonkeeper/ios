@@ -16,7 +16,9 @@ class TokensListViewController: GenericViewController<TokensListView>, PagingScr
   
   // MARK: - Collection
   
-  private lazy var collectionController = TokensListCollectionController(collectionView: customView.collectionView)
+  private lazy var collectionController = TokensListCollectionController(
+    collectionView: customView.collectionView
+  )
   
   // MARK: - State
   

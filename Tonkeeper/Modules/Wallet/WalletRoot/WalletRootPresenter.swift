@@ -25,7 +25,11 @@ final class WalletRootPresenter {
 
 // MARK: - WalletRootPresenterInput
 
-extension WalletRootPresenter: WalletRootPresenterInput {}
+extension WalletRootPresenter: WalletRootPresenterInput {
+  func viewDidLoad() {
+    updateTitle()
+  }
+}
 
 // MARK: - WalletHeaderModuleOutput
 
@@ -48,5 +52,9 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
 extension WalletRootPresenter: WalletContentModuleOutput {
   func getPagingContent(page: WalletContentPage) -> PagingContent {
     return pagingContentFactory(page)
+  }
+  
+  func updateTitle() {
+    headerInput?.updateTitle("Wallet")
   }
 }

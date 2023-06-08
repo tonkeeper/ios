@@ -14,7 +14,7 @@ final class TabBarAssembly {
     sendAssembly: SendAssembly(qrScannerAssembly: QRScannerAssembly()),
     receiveAssembly: ReceiveAssembly()
   )
-  lazy var activityAssembly = ActivityAssembly()
+  lazy var activityAssembly = ActivityAssembly(receiveAssembly: ReceiveAssembly())
   lazy var browserAssembly = BrowserAssembly()
   lazy var settingsAssembly = SettingsAssembly()
   
@@ -31,6 +31,7 @@ final class TabBarAssembly {
   func activityCoordinator() -> ActivityCoordinator {
     let navigationController = UINavigationController()
     navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = ActivityCoordinator(router: router,
                                           assembly: activityAssembly)

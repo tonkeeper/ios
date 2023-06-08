@@ -51,6 +51,10 @@ extension WalletHeaderViewController: WalletHeaderViewInput {
     }
     customView.buttonsView.buttons = buttons
   }
+  
+  func updateTitle(_ title: String?) {
+    customView.titleView.title = title
+  }
 }
 
 // MARK: - Private
@@ -63,11 +67,14 @@ private extension WalletHeaderViewController {
       for: .touchUpInside
     )
     
-    customView.titleView.scanQRButton.addTarget(
-      self,
-      action: #selector(didTapScanQRButton),
-      for: .touchUpInside
-    )
+    let scanQRButton = UIButton(type: .system)
+    scanQRButton.setImage(.Icons.Buttons.scanQR, for: .normal)
+    scanQRButton.tintColor = .Accent.blue
+    scanQRButton.addTarget(self,
+                           action: #selector(didTapScanQRButton),
+                           for: .touchUpInside)
+    
+    customView.titleView.rightButtons = [scanQRButton]
   }
 }
 

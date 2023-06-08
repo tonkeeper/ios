@@ -36,7 +36,11 @@ extension WalletHeaderPresenter: WalletHeaderPresenterInput {
 
 // MARK: - WalletHeaderModuleInput
 
-extension WalletHeaderPresenter: WalletHeaderModuleInput {}
+extension WalletHeaderPresenter: WalletHeaderModuleInput {
+  func updateTitle(_ title: String) {
+    viewInput?.updateTitle(title)
+  }
+}
 
 // MARK: - WalletHeaderPresenter
 

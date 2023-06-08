@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class TokensListCollectionController {
+final class TokensListCollectionController: NSObject {
   
   var sections = [TokensListSection]() {
     didSet {
@@ -20,14 +20,15 @@ final class TokensListCollectionController {
   
   private let collectionLayoutConfigurator = TokensListCollectionLayoutConfigurator()
 
-  
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
+    super.init()
     let layout = collectionLayoutConfigurator.getLayout { [weak self] sectionIndex in
       guard let self = self else { return .token }
       return self.sections[sectionIndex].type
     }
     
+    collectionView.delegate = self
     collectionView.setCollectionViewLayout(layout, animated: false)
     dataSource = createDataSource(collectionView: collectionView)
     collectionView.register(TokenListTokenCell.self,
@@ -74,6 +75,8 @@ private extension TokensListCollectionController {
       return UICollectionViewCell()
     }
     cell.configure(model: model)
+    cell.isFirstCell = indexPath.item == 0
+    cell.isLastCell = indexPath.item == sections[indexPath.section].items.count - 1
     return cell
   }
   
@@ -87,5 +90,16 @@ private extension TokensListCollectionController {
     }
     cell.configure(model: model)
     return cell
+  }
+}
+
+extension TokensListCollectionController: UICollectionViewDelegate {
+  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    (collectionView.cellForItem(at: indexPath) as? Selectable)?.select()
+    collectionView.deselectItem(at: indexPath, animated: true)
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
+    (collectionView.cellForItem(at: indexPath) as? Selectable)?.deselect()
   }
 }
