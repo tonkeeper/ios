@@ -111,6 +111,12 @@
 		7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */; };
 		7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */; };
 		7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144232A31EF7600B0FD17 /* Selectable.swift */; };
+		7D9144272A31F5DE00B0FD17 /* ModalCardContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144262A31F5DE00B0FD17 /* ModalCardContainerViewController.swift */; };
+		7D9144292A31F5E900B0FD17 /* DimmingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144282A31F5E900B0FD17 /* DimmingView.swift */; };
+		7D91442B2A31F5F700B0FD17 /* DimmingPresentationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91442A2A31F5F700B0FD17 /* DimmingPresentationController.swift */; };
+		7D91442D2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91442C2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift */; };
+		7D91442F2A31FC0100B0FD17 /* PassthroughView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91442E2A31FC0100B0FD17 /* PassthroughView.swift */; };
+		7D9144312A320F1500B0FD17 /* ModalCardContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144302A320F1500B0FD17 /* ModalCardContainerView.swift */; };
 		7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */; };
 		7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292822A24BD58005B83DF /* PageViewController.swift */; };
 		7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */; };
@@ -280,6 +286,12 @@
 		7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveAssembly.swift; sourceTree = "<group>"; };
 		7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D9144232A31EF7600B0FD17 /* Selectable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectable.swift; sourceTree = "<group>"; };
+		7D9144262A31F5DE00B0FD17 /* ModalCardContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerViewController.swift; sourceTree = "<group>"; };
+		7D9144282A31F5E900B0FD17 /* DimmingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DimmingView.swift; sourceTree = "<group>"; };
+		7D91442A2A31F5F700B0FD17 /* DimmingPresentationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DimmingPresentationController.swift; sourceTree = "<group>"; };
+		7D91442C2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DimmingTransitioningDelegate.swift; sourceTree = "<group>"; };
+		7D91442E2A31FC0100B0FD17 /* PassthroughView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassthroughView.swift; sourceTree = "<group>"; };
+		7D9144302A320F1500B0FD17 /* ModalCardContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerView.swift; sourceTree = "<group>"; };
 		7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListCollectibleCell.swift; sourceTree = "<group>"; };
 		7D9292822A24BD58005B83DF /* PageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewController.swift; sourceTree = "<group>"; };
 		7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewControllerCell.swift; sourceTree = "<group>"; };
@@ -519,6 +531,7 @@
 				7D59284F2A1F614B006B0A8A /* SpacingView.swift */,
 				7D527BEB2A2DE93300A2D29A /* LoadingView.swift */,
 				7D527BED2A2DEA2C00A2D29A /* ResultView.swift */,
+				7D91442E2A31FC0100B0FD17 /* PassthroughView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -844,6 +857,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D9144252A31F59500B0FD17 /* ModalCard */,
 				7D5D05CC2A307161009F42FF /* Cell */,
 				7D9292DC2A28A1D2005B83DF /* ViewController */,
 				7D9292CD2A275A0F005B83DF /* Insets */,
@@ -913,6 +927,18 @@
 				95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		7D9144252A31F59500B0FD17 /* ModalCard */ = {
+			isa = PBXGroup;
+			children = (
+				7D9144262A31F5DE00B0FD17 /* ModalCardContainerViewController.swift */,
+				7D9144302A320F1500B0FD17 /* ModalCardContainerView.swift */,
+				7D9144282A31F5E900B0FD17 /* DimmingView.swift */,
+				7D91442A2A31F5F700B0FD17 /* DimmingPresentationController.swift */,
+				7D91442C2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift */,
+			);
+			path = ModalCard;
 			sourceTree = "<group>";
 		};
 		7D9292812A24BD3B005B83DF /* PageViewController */ = {
@@ -1087,8 +1113,8 @@
 				7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */,
 				7D70D3BE2A2A03280096E1A2 /* Logic */,
 				7D6836382A1CFECF002DBBC7 /* Modules */,
-				7D68361E2A1CD1B8002DBBC7 /* Core */,
 				7D6836152A1CAEAA002DBBC7 /* Library */,
+				7D68361E2A1CD1B8002DBBC7 /* Core */,
 				7DB8FB792A1BCFCD005B4B11 /* Resources */,
 			);
 			path = Tonkeeper;
@@ -1328,6 +1354,7 @@
 				7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */,
 				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,
 				7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */,
+				7D9144312A320F1500B0FD17 /* ModalCardContainerView.swift in Sources */,
 				7D59284B2A1F5797006B0A8A /* WalletHeaderPresenter.swift in Sources */,
 				7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */,
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
@@ -1382,6 +1409,7 @@
 				7D9292882A24CCB8005B83DF /* PagingContentViewController.swift in Sources */,
 				7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */,
 				7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */,
+				7D91442D2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift in Sources */,
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
 				7D68364C2A1D1ABB002DBBC7 /* UIImage+Icons.swift in Sources */,
@@ -1399,6 +1427,7 @@
 				7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */,
 				7DE27E6A2A30D9CE00842FA8 /* TransactionCellStatusView.swift in Sources */,
 				7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */,
+				7D9144272A31F5DE00B0FD17 /* ModalCardContainerViewController.swift in Sources */,
 				7D9292C22A27412A005B83DF /* SendCoordinator.swift in Sources */,
 				7D68364A2A1D1052002DBBC7 /* WalletAssembly.swift in Sources */,
 				7D68363B2A1CFF74002DBBC7 /* AppCoordinator.swift in Sources */,
@@ -1415,6 +1444,7 @@
 				7D5D05CE2A30716A009F42FF /* DefaultCellTextContentView.swift in Sources */,
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
+				7D91442B2A31F5F700B0FD17 /* DimmingPresentationController.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
@@ -1439,6 +1469,8 @@
 				4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */,
 				7D9292F82A29DCDA005B83DF /* SendAmountView.swift in Sources */,
 				7D5D05A72A2F83ED009F42FF /* ActivityListCollectionController.swift in Sources */,
+				7D91442F2A31FC0100B0FD17 /* PassthroughView.swift in Sources */,
+				7D9144292A31F5E900B0FD17 /* DimmingView.swift in Sources */,
 				7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */,
 				7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */,
 				8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */,
