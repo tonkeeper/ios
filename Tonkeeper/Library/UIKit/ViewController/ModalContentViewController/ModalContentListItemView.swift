@@ -16,30 +16,11 @@ final class ModalContentListItemView: UIControl, ConfigurableView {
     }
   }
   
-  let leftLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.body1)
-    label.textColor = .Text.secondary
-    label.textAlignment = .left
-    return label
-  }()
+  let leftLabel = UILabel()
   
-  let rightTopLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.label1)
-    label.textColor = .Text.primary
-    label.textAlignment = .right
-    label.numberOfLines = 0
-    return label
-  }()
+  let rightTopLabel = UILabel()
   
-  let rightBottomLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.body2)
-    label.textColor = .Text.secondary
-    label.textAlignment = .right
-    return label
-  }()
+  let rightBottomLabel = UILabel()
   
   let separatorView: UIView = {
     let view = UIView()
@@ -57,9 +38,12 @@ final class ModalContentListItemView: UIControl, ConfigurableView {
   }
   
   func configure(model: ModalContentViewController.Configuration.ListItem) {
-    leftLabel.text = model.left
-    rightTopLabel.text = model.rightTop
-    rightBottomLabel.text = model.rightBottom
+    leftLabel.attributedText = model.left
+      .attributed(with: .body1, alignment: .left, color: .Text.secondary)
+    rightTopLabel.attributedText = model.rightTop
+      .attributed(with: .label1, alignment: .right, color: .Text.primary)
+    rightBottomLabel.attributedText = model.rightBottom?
+      .attributed(with: .body2, alignment: .right, color: .Text.secondary)
   }
 }
 

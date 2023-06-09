@@ -16,37 +16,13 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
     return imageView
   }()
   
-  let titleLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.h3)
-    label.textColor = .Text.primary
-    label.textAlignment = .center
-    return label
-  }()
+  let titleLabel = UILabel()
   
-  let topDescriptionLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.body1)
-    label.textColor = .Text.secondary
-    label.textAlignment = .center
-    return label
-  }()
+  let topDescriptionLabel = UILabel()
   
-  let bottomDescriptionLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.body1)
-    label.textColor = .Text.secondary
-    label.textAlignment = .center
-    return label
-  }()
+  let bottomDescriptionLabel = UILabel()
   
-  let fixBottomDescriptionLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.body1)
-    label.textColor = .Text.secondary
-    label.textAlignment = .center
-    return label
-  }()
+  let fixBottomDescriptionLabel = UILabel()
   
   private let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -91,11 +67,15 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
     
     topDescriptionLabel.isHidden = model.topDescription == nil
     topDescriptionSpacing.isHidden = model.topDescription == nil
-    topDescriptionLabel.text = model.topDescription
+    topDescriptionLabel.attributedText = model.topDescription?
+      .attributed(with: .body2, alignment: .center, color: .Text.secondary)
     
-    titleLabel.text = model.title
-    bottomDescriptionLabel.text = model.bottomDescription
-    fixBottomDescriptionLabel.text = model.fixBottomDescription
+    titleLabel.attributedText = model.title?
+      .attributed(with: .h2, alignment: .center, color: .Text.primary)
+    bottomDescriptionLabel.attributedText = model.bottomDescription?
+      .attributed(with: .body2, alignment: .center, color: .Text.secondary)
+    fixBottomDescriptionLabel.attributedText = model.fixBottomDescription?
+      .attributed(with: .body2, alignment: .center, color: .Text.secondary)
   }
 }
 
