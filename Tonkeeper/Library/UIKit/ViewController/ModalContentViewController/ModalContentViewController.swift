@@ -7,8 +7,18 @@
 
 import UIKit
 
-final class ModalContentViewController: UIViewController {
-  private let scrollView = UIScrollView()
+final class ModalContentViewController: UIViewController, ScrollableModalCardContainerContent {
+  
+  var isRespectSafeArea: Bool = true {
+    didSet {
+      actionBarView.isRespectSafeArea = isRespectSafeArea
+      didUpdateRespectSafeArea()
+    }
+  }
+  
+  let scrollView: UIScrollView = {
+    return NotDelayScrollView()
+  }()
   private let contentStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
@@ -19,6 +29,8 @@ final class ModalContentViewController: UIViewController {
   private let actionBarView = ModalContentActionBarView()
   
   private var actionBarBottomConstraint: NSLayoutConstraint?
+  
+  private var contentSizeObserveToken: NSKeyValueObservation?
   
   var configuration: Configuration? {
     didSet { configure() }
@@ -39,13 +51,22 @@ final class ModalContentViewController: UIViewController {
   
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
-    scrollView.contentInset.bottom = actionBarView.frame.height + .buttonVerticalSpace * 2
+    updateActionBarBottomConstraint()
   }
   
   override func viewSafeAreaInsetsDidChange() {
     super.viewSafeAreaInsetsDidChange()
     updateActionBarBottomConstraint()
   }
+  
+  // MARK: - ScrollableModalCardContainerContent
+  
+  var height: CGFloat {
+    let height = scrollView.contentSize.height + scrollView.contentInset.top + scrollView.contentInset.bottom
+    return height
+  }
+  
+  var didUpdateHeight: (() -> Void)?
 }
 
 // MARK: - Private
@@ -65,6 +86,12 @@ private extension ModalContentViewController {
     
     setupConstraints()
     configure()
+    
+    contentSizeObserveToken = scrollView
+      .observe(\.contentSize, changeHandler: { [weak self] _, _ in
+        guard let self else { return }
+        self.didUpdateHeight?()
+      })
   }
   
   func setupConstraints() {
@@ -83,7 +110,7 @@ private extension ModalContentViewController {
       
       contentStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
       contentStackView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),
-      contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+      contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: -.listItemsBottomSpace),
       contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor),
       contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
       
@@ -93,6 +120,7 @@ private extension ModalContentViewController {
   }
   
   func configure() {
+    guard isViewLoaded else { return }
     guard let configuration = configuration else { return }
     headerView.configure(model: configuration.header)
     listView.configure(model: configuration.listItems)
@@ -100,12 +128,19 @@ private extension ModalContentViewController {
   }
 
   func updateActionBarBottomConstraint() {
-    scrollView.contentInset.bottom = view.safeAreaInsets.bottom + .buttonVerticalSpace
+    let scrollViewBottomContentInset = actionBarView.bounds.height
+    scrollView.contentInset.bottom = scrollViewBottomContentInset
+    
     actionBarBottomConstraint?.constant = 0
+  }
+  
+  func didUpdateRespectSafeArea() {
+    updateActionBarBottomConstraint()
   }
 }
 
 private extension CGFloat {
   static let headerBottomSpace: CGFloat = 32
   static let buttonVerticalSpace: CGFloat = 16
+  static let listItemsBottomSpace: CGFloat = 16
 }

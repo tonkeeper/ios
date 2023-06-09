@@ -21,8 +21,8 @@ final class SpacingView: UIView {
     didSet { invalidateIntrinsicContentSize() }
   }
   
-  init(horizontalSpacing: Spacing,
-       verticalSpacing: Spacing) {
+  init(horizontalSpacing: Spacing = .none,
+       verticalSpacing: Spacing = .none) {
     self.horizontalSpacing = horizontalSpacing
     self.verticalSpacing = verticalSpacing
     super.init(frame: .zero)

@@ -7,6 +7,11 @@
 
 import UIKit
 
+protocol ActivityListCollectionControllerDelegate: AnyObject {
+  func activityListCollectionController(_ collectionController: ActivityListCollectionController,
+                                        didSelectTransactionAt indexPath: IndexPath)
+}
+
 final class ActivityListCollectionController: NSObject {
   
   var sections = [ActivityListSection]() {
@@ -14,6 +19,8 @@ final class ActivityListCollectionController: NSObject {
       didUpdateSections()
     }
   }
+  
+  weak var delegate: ActivityListCollectionControllerDelegate?
   
   private weak var collectionView: UICollectionView?
   private var dataSource: UICollectionViewDiffableDataSource<ActivityListSection, AnyHashable>?
@@ -99,6 +106,8 @@ extension ActivityListCollectionController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
     (collectionView.cellForItem(at: indexPath) as? Selectable)?.select()
     collectionView.deselectItem(at: indexPath, animated: true)
+    delegate?.activityListCollectionController(self,
+                                               didSelectTransactionAt: indexPath)
   }
   
   func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {

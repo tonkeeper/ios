@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0A919C70A2EDEAA0AB313C6C /* SendConfirmationPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DC3714222F64C921781E7A8 /* SendConfirmationPresenter.swift */; };
 		0C1DF00128AE8BA90E30FCB1 /* TokensListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3EB126F410EC784A834E04 /* TokensListView.swift */; };
+		0D6D9286FE3AD2FE83868D1B /* ActivityTransactionDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3471921C88E65DE3DA36AB1 /* ActivityTransactionDetailsViewController.swift */; };
 		14250E44D164B234E513925F /* ActivityListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96736B6F002EC3A83832DB82 /* ActivityListPresenter.swift */; };
 		27E0B9B4BE1065171C3AFD76 /* ActivityListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2439F2E5E6211F9C396FAF2 /* ActivityListView.swift */; };
 		2D8B9585056DA7795FC4C912 /* ActivityRootProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AD5CD51542108C56210A491 /* ActivityRootProtocols.swift */; };
@@ -19,6 +20,8 @@
 		48DB3E42B318C80B7090AFD0 /* ActivityEmptyProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AF708B934DDF1ED4B726CE /* ActivityEmptyProtocols.swift */; };
 		4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9993DE66C3DC18C7C5EF729 /* WalletContentProtocols.swift */; };
 		4F9520B5A7862EFB04753658 /* ActivityRootViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E6BC7B180E3DEA75C23C108 /* ActivityRootViewController.swift */; };
+		63468D514D5142929F969B22 /* ActivityTransactionDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97572A827415CAEE71C004FB /* ActivityTransactionDetailsView.swift */; };
+		65C380B2FDF23EC99083A8C4 /* ActivityTransactionDetailsProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70F1208828A7CBF2A9DAF79F /* ActivityTransactionDetailsProtocols.swift */; };
 		708F4E78995F7F1DD8EE8648 /* ActivityRootPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E1882B1276DA0C0A8DE642E /* ActivityRootPresenter.swift */; };
 		795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC1F118C75E99C32396A981 /* SendConfirmationProtocols.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
@@ -111,6 +114,15 @@
 		7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */; };
 		7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */; };
 		7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144232A31EF7600B0FD17 /* Selectable.swift */; };
+		7D9144272A31F5DE00B0FD17 /* ModalCardContainerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144262A31F5DE00B0FD17 /* ModalCardContainerViewController.swift */; };
+		7D9144292A31F5E900B0FD17 /* DimmingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144282A31F5E900B0FD17 /* DimmingView.swift */; };
+		7D91442B2A31F5F700B0FD17 /* DimmingPresentationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91442A2A31F5F700B0FD17 /* DimmingPresentationController.swift */; };
+		7D91442D2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91442C2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift */; };
+		7D91442F2A31FC0100B0FD17 /* PassthroughView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91442E2A31FC0100B0FD17 /* PassthroughView.swift */; };
+		7D9144312A320F1500B0FD17 /* ModalCardContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144302A320F1500B0FD17 /* ModalCardContainerView.swift */; };
+		7D9144332A32130500B0FD17 /* ModalCardContainerContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144322A32130500B0FD17 /* ModalCardContainerContent.swift */; };
+		7D9144352A32230C00B0FD17 /* ModalCardHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144342A32230C00B0FD17 /* ModalCardHeaderView.swift */; };
+		7D9144372A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144362A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift */; };
 		7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */; };
 		7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292822A24BD58005B83DF /* PageViewController.swift */; };
 		7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */; };
@@ -165,6 +177,7 @@
 		86DEB0A35D88DABB3EAEFDD3 /* ReceiveProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A2DFA2B5AD43B54E2E131F /* ReceiveProtocols.swift */; };
 		8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5315989FA9BDEABD3FA2E275 /* SendConfirmationViewController.swift */; };
 		8FD2051305C8DE79A1D70FBA /* WalletContentPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCBEC0954BE2099E54A78D14 /* WalletContentPresenter.swift */; };
+		9182307863BB72BE320AE516 /* ActivityTransactionDetailsPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A32CB81EB01916EFF95251D8 /* ActivityTransactionDetailsPresenter.swift */; };
 		920F2D1C164D714EF8B77CB8 /* ActivityEmptyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9503E8076CB7AA331E07685E /* ActivityEmptyView.swift */; };
 		987FA16FC8F9D0CBA2353D9D /* ReceiveView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2140E2CC50DF4789E6DDE35 /* ReceiveView.swift */; };
 		9EB19BBDABB92B4B6A28684B /* ReceivePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD0D83F8AC9D08173560A142 /* ReceivePresenter.swift */; };
@@ -189,6 +202,7 @@
 		62EEBA5EBAC6F6BE4F5EBF4E /* ReceiveViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReceiveViewController.swift; sourceTree = "<group>"; };
 		67AE621196A7AF226EB43ED1 /* Pods-Tonkeeper.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.debug.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.debug.xcconfig"; sourceTree = "<group>"; };
 		694D413982BB2BB1B3808455 /* ActivityEmptyPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityEmptyPresenter.swift; sourceTree = "<group>"; };
+		70F1208828A7CBF2A9DAF79F /* ActivityTransactionDetailsProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsProtocols.swift; sourceTree = "<group>"; };
 		747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListPresenter.swift; sourceTree = "<group>"; };
 		7AD5CD51542108C56210A491 /* ActivityRootProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityRootProtocols.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
@@ -280,6 +294,15 @@
 		7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveAssembly.swift; sourceTree = "<group>"; };
 		7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D9144232A31EF7600B0FD17 /* Selectable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectable.swift; sourceTree = "<group>"; };
+		7D9144262A31F5DE00B0FD17 /* ModalCardContainerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerViewController.swift; sourceTree = "<group>"; };
+		7D9144282A31F5E900B0FD17 /* DimmingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DimmingView.swift; sourceTree = "<group>"; };
+		7D91442A2A31F5F700B0FD17 /* DimmingPresentationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DimmingPresentationController.swift; sourceTree = "<group>"; };
+		7D91442C2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DimmingTransitioningDelegate.swift; sourceTree = "<group>"; };
+		7D91442E2A31FC0100B0FD17 /* PassthroughView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassthroughView.swift; sourceTree = "<group>"; };
+		7D9144302A320F1500B0FD17 /* ModalCardContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerView.swift; sourceTree = "<group>"; };
+		7D9144322A32130500B0FD17 /* ModalCardContainerContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerContent.swift; sourceTree = "<group>"; };
+		7D9144342A32230C00B0FD17 /* ModalCardHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardHeaderView.swift; sourceTree = "<group>"; };
+		7D9144362A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsBuilder.swift; sourceTree = "<group>"; };
 		7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListCollectibleCell.swift; sourceTree = "<group>"; };
 		7D9292822A24BD58005B83DF /* PageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewController.swift; sourceTree = "<group>"; };
 		7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewControllerCell.swift; sourceTree = "<group>"; };
@@ -338,8 +361,11 @@
 		9503E8076CB7AA331E07685E /* ActivityEmptyView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityEmptyView.swift; sourceTree = "<group>"; };
 		95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Tonkeeper.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		96736B6F002EC3A83832DB82 /* ActivityListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityListPresenter.swift; sourceTree = "<group>"; };
+		97572A827415CAEE71C004FB /* ActivityTransactionDetailsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsView.swift; sourceTree = "<group>"; };
 		9FC1F118C75E99C32396A981 /* SendConfirmationProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationProtocols.swift; sourceTree = "<group>"; };
 		A2140E2CC50DF4789E6DDE35 /* ReceiveView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReceiveView.swift; sourceTree = "<group>"; };
+		A32CB81EB01916EFF95251D8 /* ActivityTransactionDetailsPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsPresenter.swift; sourceTree = "<group>"; };
+		A3471921C88E65DE3DA36AB1 /* ActivityTransactionDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsViewController.swift; sourceTree = "<group>"; };
 		A3B82E8B681EE6CE930E250D /* TokensListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListViewController.swift; sourceTree = "<group>"; };
 		A9993DE66C3DC18C7C5EF729 /* WalletContentProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentProtocols.swift; sourceTree = "<group>"; };
 		B2439F2E5E6211F9C396FAF2 /* ActivityListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityListView.swift; sourceTree = "<group>"; };
@@ -519,6 +545,7 @@
 				7D59284F2A1F614B006B0A8A /* SpacingView.swift */,
 				7D527BEB2A2DE93300A2D29A /* LoadingView.swift */,
 				7D527BED2A2DEA2C00A2D29A /* ResultView.swift */,
+				7D91442E2A31FC0100B0FD17 /* PassthroughView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -766,6 +793,7 @@
 				1A880AFE584A8AA26C44014C /* ActivityRoot */,
 				416E3483274C9E57BA1959F6 /* ActivityEmpty */,
 				2F44A99FB95A2D04B551F3AF /* ActivityList */,
+				8B0C0767FD46C94FB4520D2B /* ActivityTransactionDetails */,
 				7D6836502A1D1EB1002DBBC7 /* ActivityCoordinator.swift */,
 				7D6836522A1D1EB9002DBBC7 /* ActivityAssembly.swift */,
 			);
@@ -844,6 +872,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D9144252A31F59500B0FD17 /* ModalCard */,
 				7D5D05CC2A307161009F42FF /* Cell */,
 				7D9292DC2A28A1D2005B83DF /* ViewController */,
 				7D9292CD2A275A0F005B83DF /* Insets */,
@@ -913,6 +942,20 @@
 				95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		7D9144252A31F59500B0FD17 /* ModalCard */ = {
+			isa = PBXGroup;
+			children = (
+				7D9144322A32130500B0FD17 /* ModalCardContainerContent.swift */,
+				7D9144262A31F5DE00B0FD17 /* ModalCardContainerViewController.swift */,
+				7D9144302A320F1500B0FD17 /* ModalCardContainerView.swift */,
+				7D9144342A32230C00B0FD17 /* ModalCardHeaderView.swift */,
+				7D9144282A31F5E900B0FD17 /* DimmingView.swift */,
+				7D91442A2A31F5F700B0FD17 /* DimmingPresentationController.swift */,
+				7D91442C2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift */,
+			);
+			path = ModalCard;
 			sourceTree = "<group>";
 		};
 		7D9292812A24BD3B005B83DF /* PageViewController */ = {
@@ -1087,8 +1130,8 @@
 				7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */,
 				7D70D3BE2A2A03280096E1A2 /* Logic */,
 				7D6836382A1CFECF002DBBC7 /* Modules */,
-				7D68361E2A1CD1B8002DBBC7 /* Core */,
 				7D6836152A1CAEAA002DBBC7 /* Library */,
+				7D68361E2A1CD1B8002DBBC7 /* Core */,
 				7DB8FB792A1BCFCD005B4B11 /* Resources */,
 			);
 			path = Tonkeeper;
@@ -1169,6 +1212,7 @@
 			isa = PBXGroup;
 			children = (
 				7DE27E642A30D2D400842FA8 /* ActivityListTransactionBuilder.swift */,
+				7D9144362A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift */,
 			);
 			path = Builder;
 			sourceTree = "<group>";
@@ -1181,6 +1225,17 @@
 				7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */,
 			);
 			path = Transaction;
+			sourceTree = "<group>";
+		};
+		8B0C0767FD46C94FB4520D2B /* ActivityTransactionDetails */ = {
+			isa = PBXGroup;
+			children = (
+				A3471921C88E65DE3DA36AB1 /* ActivityTransactionDetailsViewController.swift */,
+				97572A827415CAEE71C004FB /* ActivityTransactionDetailsView.swift */,
+				A32CB81EB01916EFF95251D8 /* ActivityTransactionDetailsPresenter.swift */,
+				70F1208828A7CBF2A9DAF79F /* ActivityTransactionDetailsProtocols.swift */,
+			);
+			path = ActivityTransactionDetails;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -1314,6 +1369,7 @@
 				7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */,
 				7D9292952A25EB09005B83DF /* PageSegmentControl.swift in Sources */,
 				7D5D05D52A309674009F42FF /* ContainerCollectionViewCell.swift in Sources */,
+				7D9144372A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift in Sources */,
 				7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */,
 				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
 				7D5928672A1FBB56006B0A8A /* Button+ConfigurableView.swift in Sources */,
@@ -1328,6 +1384,7 @@
 				7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */,
 				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,
 				7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */,
+				7D9144312A320F1500B0FD17 /* ModalCardContainerView.swift in Sources */,
 				7D59284B2A1F5797006B0A8A /* WalletHeaderPresenter.swift in Sources */,
 				7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */,
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
@@ -1371,6 +1428,7 @@
 				7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */,
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
 				7D5928652A1FB6C4006B0A8A /* UIControlClosure.swift in Sources */,
+				7D9144332A32130500B0FD17 /* ModalCardContainerContent.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
 				7D527BC42A2A96CC00A2D29A /* ModalContentListView.swift in Sources */,
 				7D68364E2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift in Sources */,
@@ -1382,6 +1440,7 @@
 				7D9292882A24CCB8005B83DF /* PagingContentViewController.swift in Sources */,
 				7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */,
 				7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */,
+				7D91442D2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift in Sources */,
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
 				7D68364C2A1D1ABB002DBBC7 /* UIImage+Icons.swift in Sources */,
@@ -1399,6 +1458,7 @@
 				7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */,
 				7DE27E6A2A30D9CE00842FA8 /* TransactionCellStatusView.swift in Sources */,
 				7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */,
+				7D9144272A31F5DE00B0FD17 /* ModalCardContainerViewController.swift in Sources */,
 				7D9292C22A27412A005B83DF /* SendCoordinator.swift in Sources */,
 				7D68364A2A1D1052002DBBC7 /* WalletAssembly.swift in Sources */,
 				7D68363B2A1CFF74002DBBC7 /* AppCoordinator.swift in Sources */,
@@ -1415,6 +1475,7 @@
 				7D5D05CE2A30716A009F42FF /* DefaultCellTextContentView.swift in Sources */,
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
+				7D91442B2A31F5F700B0FD17 /* DimmingPresentationController.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
@@ -1439,6 +1500,8 @@
 				4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */,
 				7D9292F82A29DCDA005B83DF /* SendAmountView.swift in Sources */,
 				7D5D05A72A2F83ED009F42FF /* ActivityListCollectionController.swift in Sources */,
+				7D91442F2A31FC0100B0FD17 /* PassthroughView.swift in Sources */,
+				7D9144292A31F5E900B0FD17 /* DimmingView.swift in Sources */,
 				7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */,
 				7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */,
 				8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */,
@@ -1456,12 +1519,17 @@
 				83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */,
 				7D5D05AB2A306739009F42FF /* ActivityListSection.swift in Sources */,
 				920F2D1C164D714EF8B77CB8 /* ActivityEmptyView.swift in Sources */,
+				7D9144352A32230C00B0FD17 /* ModalCardHeaderView.swift in Sources */,
 				44FC2415321AB434412B8523 /* ActivityEmptyPresenter.swift in Sources */,
 				48DB3E42B318C80B7090AFD0 /* ActivityEmptyProtocols.swift in Sources */,
 				2E9AD80F15E6019A55846F61 /* ActivityListViewController.swift in Sources */,
 				27E0B9B4BE1065171C3AFD76 /* ActivityListView.swift in Sources */,
 				14250E44D164B234E513925F /* ActivityListPresenter.swift in Sources */,
 				F2E003198428DC1A9FA401BB /* ActivityListProtocols.swift in Sources */,
+				0D6D9286FE3AD2FE83868D1B /* ActivityTransactionDetailsViewController.swift in Sources */,
+				63468D514D5142929F969B22 /* ActivityTransactionDetailsView.swift in Sources */,
+				9182307863BB72BE320AE516 /* ActivityTransactionDetailsPresenter.swift in Sources */,
+				65C380B2FDF23EC99083A8C4 /* ActivityTransactionDetailsProtocols.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -21,8 +21,9 @@ struct SendConfirmationModalConfigurationBuilder {
                             completion: (() -> Void)? = nil
   ) -> ModalContentViewController.Configuration {
     let header = ModalContentViewController.Configuration.Header(
+      image: .init(image: nil, backgroundColor: .Accent.blue),
       title: title,
-      description: .description
+      topDescription: .description
     )
     
     var listItems: [ModalContentViewController.Configuration.ListItem] = [
@@ -37,7 +38,7 @@ struct SendConfirmationModalConfigurationBuilder {
     }
     
     let buttons = ModalContentViewController.Configuration.ActionBar.Button(
-      title: .amountTitle,
+      title: .buttonTitle,
       configuration: .primaryLarge,
       tapAction: tapAction,
       showActivityClosure: { showActivity },

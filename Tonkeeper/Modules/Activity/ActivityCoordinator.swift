@@ -40,6 +40,13 @@ extension ActivityCoordinator: ActivityRootModuleOutput {
       self?.removeChild(coordinator!)
     })
   }
+  
+  func didSelectTransaction() {
+    let module = assembly.activityTransactionDetails(output: self)
+    let modalCardContainerViewController = ModalCardContainerViewController(content: module.view)
+    
+    router.present(modalCardContainerViewController)
+  }
 }
 
 // MARK: - ReceiveCoordinatorOutput
@@ -49,4 +56,10 @@ extension ActivityCoordinator: ReceiveCoordinatorOutput {
     router.dismiss()
     removeChild(coordinator)
   }
+}
+
+// MARK: - ActivityTransactionDetailsModuleOutput
+
+extension ActivityCoordinator: ActivityTransactionDetailsModuleOutput {
+  func didTapViewInExplorer() {}
 }

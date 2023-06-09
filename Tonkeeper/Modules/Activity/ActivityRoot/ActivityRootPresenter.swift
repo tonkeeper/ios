@@ -41,7 +41,11 @@ extension ActivityRootPresenter: ActivityEmptyModuleOutput {
 
 // MARK: - ActivityListModuleOutput
 
-extension ActivityRootPresenter: ActivityListModuleOutput {}
+extension ActivityRootPresenter: ActivityListModuleOutput {
+  func didSelectTransaction(in section: Int, at index: Int) {
+    output?.didSelectTransaction()
+  }
+}
 
 // MARK: - Private
 

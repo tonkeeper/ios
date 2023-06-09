@@ -9,6 +9,12 @@ import UIKit
 
 final class ModalContentActionBarView: UIView, ConfigurableView {
   
+  var isRespectSafeArea: Bool = true {
+    didSet {
+      updateStackViewBottomConstraint()
+    }
+  }
+  
   private let itemsStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
@@ -43,7 +49,7 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
   
   override func safeAreaInsetsDidChange() {
     super.safeAreaInsetsDidChange()
-    stackViewBottomConstraint?.constant = -(safeAreaInsets.bottom + .contentSpacing)
+    updateStackViewBottomConstraint()
   }
   
   func configure(model: ModalContentViewController.Configuration.ActionBar) {
@@ -143,6 +149,11 @@ private extension ModalContentActionBarView {
   
   func hideResult() {
     resultView.isHidden = true
+  }
+  
+  func updateStackViewBottomConstraint() {
+    let additionalBottomSpace = isRespectSafeArea ? safeAreaInsets.bottom : 0
+    stackViewBottomConstraint?.constant = -(additionalBottomSpace + .contentSpacing)
   }
 }
 

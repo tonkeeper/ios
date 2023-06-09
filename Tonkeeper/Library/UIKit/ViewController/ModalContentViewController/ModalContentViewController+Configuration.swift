@@ -44,8 +44,28 @@ extension ModalContentViewController {
     }
     
     struct Header {
+      struct Image {
+        let image: UIImage?
+        let backgroundColor: UIColor
+      }
+      
+      let image: Image?
       let title: String?
-      let description: String?
+      let topDescription: String?
+      let bottomDescription: String?
+      let fixBottomDescription: String?
+      
+      init(image: Image?,
+           title: String?,
+           topDescription: String? = nil,
+           bottomDescription: String? = nil,
+           fixBottomDescription: String? = nil) {
+        self.image = image
+        self.title = title
+        self.topDescription = topDescription
+        self.bottomDescription = bottomDescription
+        self.fixBottomDescription = fixBottomDescription
+      }
     }
     
     let header: Header

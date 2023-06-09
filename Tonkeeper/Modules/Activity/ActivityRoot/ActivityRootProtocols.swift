@@ -10,6 +10,7 @@ import Foundation
 
 protocol ActivityRootModuleOutput: AnyObject {
   func didTapReceiveButton()
+  func didSelectTransaction()
 }
 
 protocol ActivityRootModuleInput: AnyObject {}

@@ -7,31 +7,25 @@
 
 import UIKit
 
-final class ModalContentListItemView: UIView, ConfigurableView {
+final class ModalContentListItemView: UIControl, ConfigurableView {
   
-  let leftLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.body1)
-    label.textColor = .Text.secondary
-    label.textAlignment = .left
-    return label
-  }()
+  override var isHighlighted: Bool {
+    didSet {
+      guard isHighlighted != oldValue else { return }
+      didUpdateIsHighlighted()
+    }
+  }
   
-  let rightTopLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.label1)
-    label.textColor = .Text.primary
-    label.textAlignment = .right
-    label.numberOfLines = 0
-    return label
-  }()
+  let leftLabel = UILabel()
   
-  let rightBottomLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.body2)
-    label.textColor = .Text.secondary
-    label.textAlignment = .right
-    return label
+  let rightTopLabel = UILabel()
+  
+  let rightBottomLabel = UILabel()
+  
+  let separatorView: UIView = {
+    let view = UIView()
+    view.backgroundColor = .Separator.common
+    return view
   }()
   
   override init(frame: CGRect) {
@@ -44,23 +38,30 @@ final class ModalContentListItemView: UIView, ConfigurableView {
   }
   
   func configure(model: ModalContentViewController.Configuration.ListItem) {
-    leftLabel.text = model.left
-    rightTopLabel.text = model.rightTop
-    rightBottomLabel.text = model.rightBottom
+    leftLabel.attributedText = model.left
+      .attributed(with: .body1, alignment: .left, color: .Text.secondary)
+    rightTopLabel.attributedText = model.rightTop
+      .attributed(with: .label1, alignment: .right, color: .Text.primary)
+    rightBottomLabel.attributedText = model.rightBottom?
+      .attributed(with: .body2, alignment: .right, color: .Text.secondary)
   }
 }
 
 private extension ModalContentListItemView {
   func setup() {
-    leftLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    didUpdateIsHighlighted()
     
     addSubview(leftLabel)
     addSubview(rightTopLabel)
     addSubview(rightBottomLabel)
+    addSubview(separatorView)
+    
+    leftLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
     
     leftLabel.translatesAutoresizingMaskIntoConstraints = false
     rightTopLabel.translatesAutoresizingMaskIntoConstraints = false
     rightBottomLabel.translatesAutoresizingMaskIntoConstraints = false
+    separatorView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       leftLabel.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
@@ -72,8 +73,17 @@ private extension ModalContentListItemView {
       
       rightBottomLabel.topAnchor.constraint(equalTo: rightTopLabel.bottomAnchor),
       rightBottomLabel.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),
-      rightBottomLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace)
+      rightBottomLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace),
+      
+      separatorView.leftAnchor.constraint(equalTo: leftLabel.leftAnchor),
+      separatorView.rightAnchor.constraint(equalTo: rightAnchor),
+      separatorView.bottomAnchor.constraint(equalTo: bottomAnchor),
+      separatorView.heightAnchor.constraint(equalToConstant: 0.5)
     ])
+  }
+  
+  func didUpdateIsHighlighted() {
+    backgroundColor = isHighlighted ? .Background.highlighted : .Background.content
   }
 }
 

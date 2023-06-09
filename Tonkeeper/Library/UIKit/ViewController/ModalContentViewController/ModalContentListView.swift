@@ -34,10 +34,13 @@ final class ModalContentListView: UIView, ConfigurableView {
   
   func configure(model: [ModalContentViewController.Configuration.ListItem]) {
     stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-    model.forEach {
+    model.enumerated().forEach { index, item in
       let listItemView = ModalContentListItemView()
-      listItemView.configure(model: $0)
+      listItemView.configure(model: item)
       stackView.addArrangedSubview(listItemView)
+      if (index == model.count - 1) {
+        listItemView.separatorView.isHidden = true
+      }
     }
   }
 }
@@ -45,7 +48,7 @@ final class ModalContentListView: UIView, ConfigurableView {
 private extension ModalContentListView {
   func setup() {
     addSubview(backgroundView)
-    addSubview(stackView)
+    backgroundView.addSubview(stackView)
     
     stackView.translatesAutoresizingMaskIntoConstraints = false
     backgroundView.translatesAutoresizingMaskIntoConstraints = false
