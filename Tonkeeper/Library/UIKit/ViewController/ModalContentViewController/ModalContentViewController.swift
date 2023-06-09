@@ -108,7 +108,7 @@ private extension ModalContentViewController {
       
       contentStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
       contentStackView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),
-      contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+      contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: -.listItemsBottomSpace),
       contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor),
       contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
       
@@ -140,4 +140,5 @@ private extension ModalContentViewController {
 private extension CGFloat {
   static let headerBottomSpace: CGFloat = 32
   static let buttonVerticalSpace: CGFloat = 16
+  static let listItemsBottomSpace: CGFloat = 16
 }

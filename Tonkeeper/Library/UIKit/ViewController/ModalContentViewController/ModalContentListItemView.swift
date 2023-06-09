@@ -34,6 +34,12 @@ final class ModalContentListItemView: UIView, ConfigurableView {
     return label
   }()
   
+  let separatorView: UIView = {
+    let view = UIView()
+    view.backgroundColor = .Separator.common
+    return view
+  }()
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -57,10 +63,12 @@ private extension ModalContentListItemView {
     addSubview(leftLabel)
     addSubview(rightTopLabel)
     addSubview(rightBottomLabel)
+    addSubview(separatorView)
     
     leftLabel.translatesAutoresizingMaskIntoConstraints = false
     rightTopLabel.translatesAutoresizingMaskIntoConstraints = false
     rightBottomLabel.translatesAutoresizingMaskIntoConstraints = false
+    separatorView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       leftLabel.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
@@ -72,7 +80,12 @@ private extension ModalContentListItemView {
       
       rightBottomLabel.topAnchor.constraint(equalTo: rightTopLabel.bottomAnchor),
       rightBottomLabel.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),
-      rightBottomLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace)
+      rightBottomLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace),
+      
+      separatorView.leftAnchor.constraint(equalTo: leftLabel.leftAnchor),
+      separatorView.rightAnchor.constraint(equalTo: rightAnchor),
+      separatorView.bottomAnchor.constraint(equalTo: bottomAnchor),
+      separatorView.heightAnchor.constraint(equalToConstant: 0.5)
     ])
   }
 }

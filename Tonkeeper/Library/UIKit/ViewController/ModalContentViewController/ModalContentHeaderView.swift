@@ -24,7 +24,23 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
     return label
   }()
   
-  let descriptionLabel: UILabel = {
+  let topDescriptionLabel: UILabel = {
+    let label = UILabel()
+    label.applyTextStyleFont(.body1)
+    label.textColor = .Text.secondary
+    label.textAlignment = .center
+    return label
+  }()
+  
+  let bottomDescriptionLabel: UILabel = {
+    let label = UILabel()
+    label.applyTextStyleFont(.body1)
+    label.textColor = .Text.secondary
+    label.textAlignment = .center
+    return label
+  }()
+  
+  let fixBottomDescriptionLabel: UILabel = {
     let label = UILabel()
     label.applyTextStyleFont(.body1)
     label.textColor = .Text.secondary
@@ -40,6 +56,9 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
   }()
   
   private let imageViewContainer = UIView()
+  
+  private let imageBottomSpacing = SpacingView(horizontalSpacing: .none, verticalSpacing: .constant(.imageBottomSpace))
+  private let topDescriptionSpacing = SpacingView(horizontalSpacing: .none, verticalSpacing: .constant(.descriptionSpace))
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -58,8 +77,25 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
   }
   
   func configure(model: ModalContentViewController.Configuration.Header) {
+    if let image = model.image {
+      imageViewContainer.isHidden = false
+      imageBottomSpacing.isHidden = false
+      imageView.backgroundColor = image.backgroundColor
+      imageView.image = image.image
+    } else {
+      imageViewContainer.isHidden = true
+      imageBottomSpacing.isHidden = true
+      imageView.backgroundColor = .clear
+      imageView.image = nil
+    }
+    
+    topDescriptionLabel.isHidden = model.topDescription == nil
+    topDescriptionSpacing.isHidden = model.topDescription == nil
+    topDescriptionLabel.text = model.topDescription
+    
     titleLabel.text = model.title
-    descriptionLabel.text = model.description
+    bottomDescriptionLabel.text = model.bottomDescription
+    fixBottomDescriptionLabel.text = model.fixBottomDescription
   }
 }
 
@@ -69,10 +105,14 @@ private extension ModalContentHeaderView {
     imageViewContainer.addSubview(imageView)
     
     stackView.addArrangedSubview(imageViewContainer)
-    stackView.addArrangedSubview(SpacingView(horizontalSpacing: .none, verticalSpacing: .constant(.imageBottomSpace)))
-    stackView.addArrangedSubview(descriptionLabel)
-    stackView.addArrangedSubview(SpacingView(horizontalSpacing: .none, verticalSpacing: .constant(.descriptionBottomSpace)))
+    stackView.addArrangedSubview(imageBottomSpacing)
+    stackView.addArrangedSubview(topDescriptionLabel)
+    stackView.addArrangedSubview(topDescriptionSpacing)
     stackView.addArrangedSubview(titleLabel)
+    stackView.addArrangedSubview(SpacingView(horizontalSpacing: .none, verticalSpacing: .constant(.descriptionSpace)))
+    stackView.addArrangedSubview(bottomDescriptionLabel)
+    stackView.addArrangedSubview(SpacingView(horizontalSpacing: .none, verticalSpacing: .constant(.descriptionSpace)))
+    stackView.addArrangedSubview(fixBottomDescriptionLabel)
     
     stackView.translatesAutoresizingMaskIntoConstraints = false
     imageView.translatesAutoresizingMaskIntoConstraints = false
@@ -94,5 +134,5 @@ private extension ModalContentHeaderView {
 private extension CGFloat {
   static let imageSide: CGFloat = 96
   static let imageBottomSpace: CGFloat = 20
-  static let descriptionBottomSpace: CGFloat = 4
+  static let descriptionSpace: CGFloat = 4
 }

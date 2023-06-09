@@ -39,13 +39,13 @@ private extension ModalCardHeaderView {
     closeButton.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      closeButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+      closeButton.bottomAnchor.constraint(equalTo: bottomAnchor),
       closeButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -.buttonRightSpace)
     ])
   }
 }
 
 private extension CGFloat {
-  static let height: CGFloat = 64
+  static let height: CGFloat = 48
   static let buttonRightSpace: CGFloat = 16
 }
