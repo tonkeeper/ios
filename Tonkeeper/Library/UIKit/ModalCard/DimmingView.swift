@@ -12,7 +12,7 @@ final class DimmingView: UIView {
   private let presentAlpha: CGFloat
   
   init(dismissAlpha: CGFloat = 0.0,
-       presentAlpha: CGFloat = 0.4) {
+       presentAlpha: CGFloat = 0.72) {
     self.dismissAlpha = dismissAlpha
     self.presentAlpha = presentAlpha
     super.init(frame: .zero)

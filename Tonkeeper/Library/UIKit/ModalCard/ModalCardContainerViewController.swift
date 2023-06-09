@@ -48,7 +48,9 @@ final class ModalCardContainerViewController: GenericViewController<ModalCardCon
     super.viewDidLayoutSubviews()
     guard cachedHeight != view.bounds.height else { return }
     cachedHeight = view.bounds.height
-    customView.layoutIfNeeded()
+    customView.headerView.layoutIfNeeded()
+    customView.mainView.layoutIfNeeded()
+    
     updateContentHeight()
   }
 }
@@ -73,7 +75,10 @@ private extension ModalCardContainerViewController {
   
   func updateContentHeight() {
     let contentHeight = content.height
-    customView.contentHeight = contentHeight
+    let maximumContentHeight = customView.maximumContentHeight
+    let finalContentHeight = min(contentHeight, maximumContentHeight)
+    customView.contentHeight = finalContentHeight
+    content.view.layoutIfNeeded()
     animateLayout()
   }
   
@@ -95,9 +100,9 @@ private extension ModalCardContainerViewController {
         delay: .zero,
         usingSpringWithDamping: 2,
         initialSpringVelocity: 0,
-        options: .curveEaseInOut,
-        animations: customView.layoutIfNeeded
-    )
+        options: .curveEaseInOut) {
+          self.customView.layoutIfNeeded()
+        }
   }
 }
 

@@ -8,7 +8,7 @@
 import UIKit
 
 final class ModalCardContainerView: PassthroughView {
-  
+
   var maximumContentHeight: CGFloat {
     bounds.height
     - safeAreaInsets.top - safeAreaInsets.bottom
@@ -17,38 +17,42 @@ final class ModalCardContainerView: PassthroughView {
   
   var contentHeight: CGFloat = 0 {
     didSet {
+      mainViewHeightConstraint?.constant = contentHeight
+      + headerView.intrinsicContentSize.height
+      + safeAreaInsets.bottom
       contentContainerHeightConstraint?.constant = contentHeight
-      mainViewHeightConstraint?.constant = contentHeight + 64
     }
   }
   
   var dragOffset: CGFloat = 0 {
     didSet {
-      mainViewHeightConstraint?.constant = contentHeight - dragOffset + 64
-      contentContainerHeightConstraint?.constant = contentHeight - dragOffset
+      mainViewHeightConstraint?.constant = contentHeight - dragOffset
+      + headerView.intrinsicContentSize.height
+      + safeAreaInsets.bottom
+      contentContainerHeightConstraint?.constant = contentHeight
     }
   }
   
   let contentContainer: UIView = {
     let view = UIView()
-    view.backgroundColor = .brown
+    view.backgroundColor = .Background.page
     return view
   }()
   
   let mainView: UIView = {
     let view = UIView()
-    view.backgroundColor = .red
+    view.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+    view.layer.cornerRadius = .cornerRadius
+    view.layer.masksToBounds = true
     return view
   }()
   
-  let headerView: UIView = {
-    let view = UIView()
-    view.backgroundColor = .green
-    return view
-  }()
+  let headerView = ModalCardHeaderView()
   
   var mainViewHeightConstraint: NSLayoutConstraint?
   var contentContainerHeightConstraint: NSLayoutConstraint?
+  var contentContainerTopHeaderViewConstraint: NSLayoutConstraint?
+  var contentContainerTopConstraint: NSLayoutConstraint?
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -77,6 +81,8 @@ private extension ModalCardContainerView {
     mainView.addSubview(headerView)
     mainView.addSubview(contentContainer)
     
+    mainView.backgroundColor = .Background.page
+    
     mainView.translatesAutoresizingMaskIntoConstraints = false
     headerView.translatesAutoresizingMaskIntoConstraints = false
     contentContainer.translatesAutoresizingMaskIntoConstraints = false
@@ -94,11 +100,14 @@ private extension ModalCardContainerView {
       headerView.topAnchor.constraint(equalTo: mainView.topAnchor),
       headerView.leftAnchor.constraint(equalTo: mainView.leftAnchor),
       headerView.rightAnchor.constraint(equalTo: mainView.rightAnchor),
-      headerView.heightAnchor.constraint(equalToConstant: 64),
-      
+  
       contentContainer.topAnchor.constraint(equalTo: headerView.bottomAnchor),
       contentContainer.leftAnchor.constraint(equalTo: mainView.leftAnchor),
       contentContainer.rightAnchor.constraint(equalTo: mainView.rightAnchor)
     ])
   }
+}
+
+private extension CGFloat {
+  static let cornerRadius: CGFloat = 16
 }
