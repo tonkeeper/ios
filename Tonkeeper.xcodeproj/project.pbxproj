@@ -119,6 +119,7 @@
 		7D9144312A320F1500B0FD17 /* ModalCardContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144302A320F1500B0FD17 /* ModalCardContainerView.swift */; };
 		7D9144332A32130500B0FD17 /* ModalCardContainerContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144322A32130500B0FD17 /* ModalCardContainerContent.swift */; };
 		7D9144352A32230C00B0FD17 /* ModalCardHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144342A32230C00B0FD17 /* ModalCardHeaderView.swift */; };
+		7D9144372A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144362A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift */; };
 		7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */; };
 		7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292822A24BD58005B83DF /* PageViewController.swift */; };
 		7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */; };
@@ -296,6 +297,7 @@
 		7D9144302A320F1500B0FD17 /* ModalCardContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerView.swift; sourceTree = "<group>"; };
 		7D9144322A32130500B0FD17 /* ModalCardContainerContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerContent.swift; sourceTree = "<group>"; };
 		7D9144342A32230C00B0FD17 /* ModalCardHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardHeaderView.swift; sourceTree = "<group>"; };
+		7D9144362A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsBuilder.swift; sourceTree = "<group>"; };
 		7D92927D2A24AA33005B83DF /* TokensListCollectibleCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListCollectibleCell.swift; sourceTree = "<group>"; };
 		7D9292822A24BD58005B83DF /* PageViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewController.swift; sourceTree = "<group>"; };
 		7D9292842A24BEF8005B83DF /* PageViewControllerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PageViewControllerCell.swift; sourceTree = "<group>"; };
@@ -1201,6 +1203,7 @@
 			isa = PBXGroup;
 			children = (
 				7DE27E642A30D2D400842FA8 /* ActivityListTransactionBuilder.swift */,
+				7D9144362A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift */,
 			);
 			path = Builder;
 			sourceTree = "<group>";
@@ -1346,6 +1349,7 @@
 				7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */,
 				7D9292952A25EB09005B83DF /* PageSegmentControl.swift in Sources */,
 				7D5D05D52A309674009F42FF /* ContainerCollectionViewCell.swift in Sources */,
+				7D9144372A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift in Sources */,
 				7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */,
 				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
 				7D5928672A1FBB56006B0A8A /* Button+ConfigurableView.swift in Sources */,
