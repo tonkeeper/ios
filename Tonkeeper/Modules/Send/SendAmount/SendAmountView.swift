@@ -69,12 +69,6 @@ final class SendAmountView: UIView {
     }
     .startAnimation()
   }
-  
-  func updateContentViewBottomConstraint() {
-    contentViewBottomConstraint?.constant = keyboardHeight == 0
-    ? -safeAreaInsets.bottom
-    : -(keyboardHeight + .contentViewBottomSpace)
-  }
 }
 
 // MARK: - Private
@@ -110,6 +104,12 @@ private extension SendAmountView {
       continueButton.rightAnchor.constraint(equalTo: contentView.rightAnchor),
       continueButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
     ])
+  }
+  
+  func updateContentViewBottomConstraint() {
+    contentViewBottomConstraint?.constant = keyboardHeight == 0
+    ? -safeAreaInsets.bottom
+    : -(keyboardHeight + .contentViewBottomSpace)
   }
 }
 

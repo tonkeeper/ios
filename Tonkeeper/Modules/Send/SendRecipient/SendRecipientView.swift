@@ -56,11 +56,20 @@ final class SendRecipientView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
+  // MARK: - Layout
+  
+  override func safeAreaInsetsDidChange() {
+    super.safeAreaInsetsDidChange()
+    updateContinueButtonBottomConstraint()
+  }
+  
+  // MARK: - Keyboard
+  
   func updateKeyboardHeight(_ height: CGFloat,
                             duration: TimeInterval,
                             curve: UIView.AnimationCurve) {
     keyboardHeight = height
-    continueButtonBottomConstraint?.constant = -keyboardHeight
+    updateContinueButtonBottomConstraint()
     UIViewPropertyAnimator(duration: duration, curve: curve) {
       self.layoutIfNeeded()
     }
@@ -94,6 +103,7 @@ private extension SendRecipientView {
     stackView.setCustomSpacing(.commentaryVisibilityLabelTopSpace, after: commentVisibilityLabel)
     
     setupConstraints()
+    updateContinueButtonBottomConstraint()
   }
   
   func setupConstraints() {
@@ -103,8 +113,7 @@ private extension SendRecipientView {
     continueButton.translatesAutoresizingMaskIntoConstraints = false
     
     continueButtonBottomConstraint = continueButton.bottomAnchor.constraint(
-      equalTo: safeAreaLayoutGuide.bottomAnchor,
-      constant: -keyboardHeight)
+      equalTo: bottomAnchor)
     continueButtonBottomConstraint?.isActive = true
     
     NSLayoutConstraint.activate([
@@ -124,12 +133,15 @@ private extension SendRecipientView {
     ])
   }
   
-  func didUpdateKeyboardHeight() {
-    continueButtonBottomConstraint?.constant = -keyboardHeight
+  func updateContinueButtonBottomConstraint() {
+    continueButtonBottomConstraint?.constant = keyboardHeight == 0
+    ? -safeAreaInsets.bottom
+    : -keyboardHeight - .continueButtonBottomSpace
   }
 }
 
 private extension CGFloat {
   static let textFieldSpace: CGFloat = 16
   static let commentaryVisibilityLabelTopSpace: CGFloat = 12
+  static let continueButtonBottomSpace: CGFloat = 16
 }
