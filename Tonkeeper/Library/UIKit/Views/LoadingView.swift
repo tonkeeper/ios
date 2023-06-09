@@ -47,6 +47,7 @@ final class LoaderView: UIView {
   
   private lazy var circleLayer: CAShapeLayer = {
     let layer = CAShapeLayer()
+    layer.fillColor = UIColor.clear.cgColor
     layer.strokeColor = color.cgColor
     layer.strokeEnd = 0.75
     return layer
