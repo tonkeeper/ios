@@ -73,6 +73,10 @@ final class ModalCardContainerView: PassthroughView {
       view.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor)
     ])
   }
+  
+  func removeContentView() {
+    contentContainer.subviews.forEach { $0.removeFromSuperview() }
+  }
 }
 
 private extension ModalCardContainerView {

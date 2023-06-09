@@ -18,8 +18,15 @@ final class ModalCardContainerViewController: GenericViewController<ModalCardCon
     set {}
   }
   
+  var content: ModalCardContainerContent? {
+    didSet {
+      guard isViewLoaded else { return }
+      cachedHeight = 0
+      setupContent()
+    }
+  }
+  
   private let dimmingTransitioningDelegate = DimmingTransitioningDelegate()
-  private let content: ModalCardContainerContent
   private let panGestureRecognizer = UIPanGestureRecognizer()
   
   // MARK: - State
@@ -27,6 +34,10 @@ final class ModalCardContainerViewController: GenericViewController<ModalCardCon
   private var cachedHeight: CGFloat = 0
   
   // MARK: - Init
+  
+  init() {
+    super.init(nibName: nil, bundle: nil)
+  }
   
   init(content: ModalCardContainerContent) {
     self.content = content
@@ -59,9 +70,20 @@ private extension ModalCardContainerViewController {
   func setup() {
     setupContent()
     setupGestures()
+    
+    customView.headerView.closeButton.addTarget(
+      self,
+      action: #selector(didTapCloseButton),
+      for: .touchUpInside
+    )
   }
   
   func setupContent() {
+    guard let content = content else { return }
+    content.willMove(toParent: nil)
+    customView.removeContentView()
+    content.removeFromParent()
+    
     addChild(content)
     customView.addContentView(content.view)
     content.didMove(toParent: self)
@@ -71,15 +93,10 @@ private extension ModalCardContainerViewController {
       self?.updateContentHeight()
       self?.panGestureRecognizer.isEnabled = true
     }
-    
-    customView.headerView.closeButton.addTarget(
-      self,
-      action: #selector(didTapCloseButton),
-      for: .touchUpInside
-    )
   }
   
   func updateContentHeight() {
+    guard let content = content else { return }
     let contentHeight = content.height
     let maximumContentHeight = customView.maximumContentHeight
     let finalContentHeight = min(contentHeight, maximumContentHeight)
