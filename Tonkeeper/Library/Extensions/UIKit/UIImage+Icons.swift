@@ -167,6 +167,12 @@ extension UIImage {
       }
     }
     
+    enum Mock {
+      static var tonCurrencyIcon: UIImage? {
+        .init(named: "Icons/44/ton_currency_icon")
+      }
+    }
+    
     static var tonIcon: UIImage? {
       .init(named: "Icons/28/ic-ton-28")?.withRenderingMode(.alwaysTemplate)
     }

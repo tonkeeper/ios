@@ -167,7 +167,11 @@ extension PagingContentViewController: PageViewControllerDelegate {
                           interactivelyScrollFrom fromPage: Int,
                           to toPage: Int,
                           progress: CGFloat) {
-    
+    headerView.pageSegmentControl.updateIndicator(
+      fromPage: fromPage,
+      toPage: toPage,
+      progress: progress
+    )
   }
   
   func pageViewController(_ pageViewController: PageViewController,

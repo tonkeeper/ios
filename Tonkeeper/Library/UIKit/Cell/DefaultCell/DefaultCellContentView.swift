@@ -69,13 +69,12 @@ final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectio
 private extension DefaultCellContentView {
   func setup() {
     backgroundColor = .Background.content
+    imageView.backgroundColor = .Background.content
     
     imageView.contentMode = .center
     
     addSubview(imageView)
     addSubview(textContentView)
-    
-    imageView.backgroundColor = .Accent.blue
   }
 }
 
