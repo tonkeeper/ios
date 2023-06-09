@@ -63,6 +63,8 @@ private extension WalletHeaderPresenter {
       output?.didTapSendButton()
     case .receive:
       output?.didTapReceiveButton()
+    case .buy:
+      output?.didTapBuyButton()
     default:
       break
     }

@@ -8,8 +8,8 @@
 
 import UIKit
 
-class BuyListViewController: GenericViewController<BuyListView> {
-
+class BuyListViewController: GenericViewController<BuyListView>, ModalCardContainerContent {
+  
   // MARK: - Module
 
   private let presenter: BuyListPresenterInput
@@ -32,6 +32,12 @@ class BuyListViewController: GenericViewController<BuyListView> {
     setup()
     presenter.viewDidLoad()
   }
+  
+  // MARK: - ModalCardContainerContent
+  
+  var height: CGFloat { return 200 }
+  
+  var didUpdateHeight: (() -> Void)?
 }
 
 // MARK: - BuyListViewInput

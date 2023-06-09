@@ -24,6 +24,11 @@ final class BuyCoordinator: Coordinator<Router<ModalCardContainerViewController>
 
 private extension BuyCoordinator {
   func showBuyList() {
-    
+    let module = assembly.buyListModule(output: self)
+    router.rootViewController.content = module.view
   }
 }
+
+// MARK: - BuyListModuleOutput
+
+extension BuyCoordinator: BuyListModuleOutput {}

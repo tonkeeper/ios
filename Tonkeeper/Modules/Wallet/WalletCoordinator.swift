@@ -53,6 +53,15 @@ extension WalletCoordinator: WalletRootModuleOutput {
       self?.removeChild(coordinator!)
     })
   }
+  
+  func openBuy() {
+    let coordinator = walletAssembly.buyCoordinator()
+    addChild(coordinator)
+    coordinator.start()
+    router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
+      self?.removeChild(coordinator!)
+    })
+  }
 }
 
 // MARK: - QRScannerModuleOutput

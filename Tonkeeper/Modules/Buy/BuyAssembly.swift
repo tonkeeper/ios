@@ -8,7 +8,7 @@
 import UIKit
 
 struct BuyAssembly {
-  func buyListModule(output: BuyListModuleOutput) -> Module<UIViewController, Void> {
+  func buyListModule(output: BuyListModuleOutput) -> Module<BuyListViewController, Void> {
     let presenter = BuyListPresenter()
     presenter.output = output
     let viewController = BuyListViewController(presenter: presenter)

@@ -10,6 +10,7 @@ import Foundation
 protocol WalletHeaderModuleOutput: AnyObject {
   func didTapSendButton()
   func didTapReceiveButton()
+  func didTapBuyButton()
   func openQRScanner()
 }
 
