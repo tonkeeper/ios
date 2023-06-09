@@ -1,5 +1,5 @@
 //
-//  BuyListBuyListView.swift
+//  BuyListView.swift
 //  Tonkeeper
 
 //  Tonkeeper
@@ -9,6 +9,8 @@
 import UIKit
 
 final class BuyListView: UIView {
+  
+  let collectionView = UICollectionView(frame: .zero, collectionViewLayout: .init())
 
   // MARK: - Init
 
@@ -20,10 +22,20 @@ final class BuyListView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  // MARK: - Layout
+  
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    collectionView.frame = bounds
+  }
 }
 
 // MARK: - Private
 
 private extension BuyListView {
-  func setup() {}
+  func setup() {
+    collectionView.backgroundColor = .Background.page
+    addSubview(collectionView)
+  }
 }

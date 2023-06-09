@@ -30,6 +30,9 @@
 		7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43792A33749F00C23A75 /* UIImage+Images.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
+		7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43832A3395CB00C23A75 /* BuyListSection.swift */; };
+		7D3E43862A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43852A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift */; };
+		7D3E43882A3397AF00C23A75 /* BuyListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43872A3397AF00C23A75 /* BuyListCollectionController.swift */; };
 		7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */; };
 		7D527BC02A2A913400A2D29A /* ModalContentViewController+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBF2A2A913400A2D29A /* ModalContentViewController+Configuration.swift */; };
 		7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC12A2A955700A2D29A /* ModalContentHeaderView.swift */; };
@@ -219,6 +222,9 @@
 		7D3E43792A33749F00C23A75 /* UIImage+Images.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Images.swift"; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
+		7D3E43832A3395CB00C23A75 /* BuyListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListSection.swift; sourceTree = "<group>"; };
+		7D3E43852A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListCollectionLayoutConfigurator.swift; sourceTree = "<group>"; };
+		7D3E43872A3397AF00C23A75 /* BuyListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListCollectionController.swift; sourceTree = "<group>"; };
 		7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentViewController.swift; sourceTree = "<group>"; };
 		7D527BBF2A2A913400A2D29A /* ModalContentViewController+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalContentViewController+Configuration.swift"; sourceTree = "<group>"; };
 		7D527BC12A2A955700A2D29A /* ModalContentHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentHeaderView.swift; sourceTree = "<group>"; };
@@ -416,6 +422,8 @@
 		04FF381D2F96AC549BAFBA3F /* BuyList */ = {
 			isa = PBXGroup;
 			children = (
+				7D3E43892A33985B00C23A75 /* Views */,
+				7D3E43822A3395A000C23A75 /* CollectionView */,
 				9B3A449395B3E637114337B2 /* BuyListViewController.swift */,
 				41EDD045CD5D2603FDDED394 /* BuyListView.swift */,
 				4FBBFAE16AF8CF5F10D04789 /* BuyListPresenter.swift */,
@@ -507,6 +515,31 @@
 				7D3E437E2A33835100C23A75 /* BuyAssembly.swift */,
 			);
 			path = Buy;
+			sourceTree = "<group>";
+		};
+		7D3E43822A3395A000C23A75 /* CollectionView */ = {
+			isa = PBXGroup;
+			children = (
+				7D3E43832A3395CB00C23A75 /* BuyListSection.swift */,
+				7D3E43852A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift */,
+				7D3E43872A3397AF00C23A75 /* BuyListCollectionController.swift */,
+			);
+			path = CollectionView;
+			sourceTree = "<group>";
+		};
+		7D3E43892A33985B00C23A75 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D3E438A2A33986200C23A75 /* Cells */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7D3E438A2A33986200C23A75 /* Cells */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Cells;
 			sourceTree = "<group>";
 		};
 		7D527BBC2A2A90F400A2D29A /* ModalContentViewController */ = {
@@ -1480,10 +1513,12 @@
 				7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */,
 				7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */,
 				7D91442D2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift in Sources */,
+				7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */,
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
 				7D68364C2A1D1ABB002DBBC7 /* UIImage+Icons.swift in Sources */,
 				7D70D3C42A2A03770096E1A2 /* FiatCurrency.swift in Sources */,
+				7D3E43862A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift in Sources */,
 				7D9292C42A274131005B83DF /* SendAssembly.swift in Sources */,
 				7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */,
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,
@@ -1557,6 +1592,7 @@
 				2D8B9585056DA7795FC4C912 /* ActivityRootProtocols.swift in Sources */,
 				83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */,
 				7D5D05AB2A306739009F42FF /* ActivityListSection.swift in Sources */,
+				7D3E43882A3397AF00C23A75 /* BuyListCollectionController.swift in Sources */,
 				920F2D1C164D714EF8B77CB8 /* ActivityEmptyView.swift in Sources */,
 				7D9144352A32230C00B0FD17 /* ModalCardHeaderView.swift in Sources */,
 				44FC2415321AB434412B8523 /* ActivityEmptyPresenter.swift in Sources */,
