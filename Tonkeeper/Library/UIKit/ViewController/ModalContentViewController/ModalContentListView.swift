@@ -48,7 +48,7 @@ final class ModalContentListView: UIView, ConfigurableView {
 private extension ModalContentListView {
   func setup() {
     addSubview(backgroundView)
-    addSubview(stackView)
+    backgroundView.addSubview(stackView)
     
     stackView.translatesAutoresizingMaskIntoConstraints = false
     backgroundView.translatesAutoresizingMaskIntoConstraints = false

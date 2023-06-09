@@ -43,6 +43,16 @@ struct ActivityAssembly {
     coordinator.output = output
     return coordinator
   }
+  
+  func activityTransactionDetails(output: ActivityTransactionDetailsModuleOutput) -> Module<ActivityTransactionDetailsViewController, Void> {
+    let presenter = ActivityTransactionDetailsPresenter()
+    presenter.output = output
+    
+    let viewController = ActivityTransactionDetailsViewController(presenter: presenter)
+    presenter.viewInput = viewController
+    
+    return Module(view: viewController, input: Void())
+  }
 }
 
 private extension ActivityAssembly {

@@ -71,6 +71,12 @@ private extension ModalCardContainerViewController {
       self?.updateContentHeight()
       self?.panGestureRecognizer.isEnabled = true
     }
+    
+    customView.headerView.closeButton.addTarget(
+      self,
+      action: #selector(didTapCloseButton),
+      for: .touchUpInside
+    )
   }
   
   func updateContentHeight() {
@@ -96,13 +102,13 @@ private extension ModalCardContainerViewController {
   
   func animateLayout() {
     UIView.animate(
-        withDuration: 0.4,
-        delay: .zero,
-        usingSpringWithDamping: 2,
-        initialSpringVelocity: 0,
-        options: .curveEaseInOut) {
-          self.customView.layoutIfNeeded()
-        }
+      withDuration: .animationDuration,
+      delay: .zero,
+      usingSpringWithDamping: .animationSpringDamping,
+      initialSpringVelocity: .animationSpringVelocity,
+      options: .curveEaseInOut) {
+        self.customView.layoutIfNeeded()
+      }
   }
 }
 
@@ -110,7 +116,7 @@ private extension ModalCardContainerViewController {
   @objc
   func panGestureHandler(_ recognizer: UIPanGestureRecognizer) {
     let yTranslation = recognizer.translation(in: recognizer.view).y
-    let dragOffset = max(-.maximumDragOffset, yTranslation * .dragOffsetCoefficient)
+    let dragOffset = max(-.maximumDragOffset, yTranslation * .dragOffsetRatio)
     switch recognizer.state {
     case .changed:
       didDrag(with: dragOffset)
@@ -138,11 +144,22 @@ private extension ModalCardContainerViewController {
       animateLayout()
     }
   }
+  
+  @objc
+  func didTapCloseButton() {
+    dismiss(animated: true)
+  }
 }
 
 private extension CGFloat {
   static let maximumDragOffset: CGFloat = 20
-  static let dragOffsetCoefficient: CGFloat = 1/2
+  static let dragOffsetRatio: CGFloat = 1/2
   static let dragTreshold: CGFloat = 1/3
   static let velocityTreshold: CGFloat = 1500
+  static let animationSpringDamping: CGFloat = 2
+  static let animationSpringVelocity: CGFloat = 0
+}
+
+private extension TimeInterval {
+  static let animationDuration: TimeInterval = 0.4
 }

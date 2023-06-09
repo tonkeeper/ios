@@ -54,9 +54,9 @@ private extension ActivityListDateCell {
     dateLabel.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       dateLabel.topAnchor.constraint(equalTo: contentView.topAnchor),
-      dateLabel.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: ContentInsets.sideSpace),
+      dateLabel.leftAnchor.constraint(equalTo: contentView.leftAnchor),
       dateLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-      dateLabel.rightAnchor.constraint(equalTo: contentView.rightAnchor, constant: -ContentInsets.sideSpace)
+      dateLabel.rightAnchor.constraint(equalTo: contentView.rightAnchor)
     ])
   }
 }

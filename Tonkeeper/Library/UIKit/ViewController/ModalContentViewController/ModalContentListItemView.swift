@@ -7,7 +7,14 @@
 
 import UIKit
 
-final class ModalContentListItemView: UIView, ConfigurableView {
+final class ModalContentListItemView: UIControl, ConfigurableView {
+  
+  override var isHighlighted: Bool {
+    didSet {
+      guard isHighlighted != oldValue else { return }
+      didUpdateIsHighlighted()
+    }
+  }
   
   let leftLabel: UILabel = {
     let label = UILabel()
@@ -58,12 +65,14 @@ final class ModalContentListItemView: UIView, ConfigurableView {
 
 private extension ModalContentListItemView {
   func setup() {
-    leftLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    didUpdateIsHighlighted()
     
     addSubview(leftLabel)
     addSubview(rightTopLabel)
     addSubview(rightBottomLabel)
     addSubview(separatorView)
+    
+    leftLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
     
     leftLabel.translatesAutoresizingMaskIntoConstraints = false
     rightTopLabel.translatesAutoresizingMaskIntoConstraints = false
@@ -87,6 +96,10 @@ private extension ModalContentListItemView {
       separatorView.bottomAnchor.constraint(equalTo: bottomAnchor),
       separatorView.heightAnchor.constraint(equalToConstant: 0.5)
     ])
+  }
+  
+  func didUpdateIsHighlighted() {
+    backgroundColor = isHighlighted ? .Background.highlighted : .Background.content
   }
 }
 

@@ -16,7 +16,9 @@ final class ModalContentViewController: UIViewController, ScrollableModalCardCon
     }
   }
   
-  let scrollView = UIScrollView()
+  let scrollView: UIScrollView = {
+    return NotDelayScrollView()
+  }()
   private let contentStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
