@@ -11,6 +11,7 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
   
   struct Model: Hashable {
     let id = UUID()
+    let image: UIImage?
     let title: String
     let shortTitle: String?
     let price: String?
@@ -59,7 +60,7 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
     )
     let contentModel = DefaultCellContentView.Model(
       textContentModel: textContentModel,
-      image: nil
+      image: model.image
     )
     cellContentView.configure(model: contentModel)
   }

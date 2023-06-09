@@ -10,13 +10,16 @@ import UIKit
 final class TokensListCollectibleCell: UICollectionViewCell, Reusable, ConfigurableView {
   struct Model: Hashable {
     let id = UUID()
+    let image: UIImage?
     let title: String
     let subtitle: String
     let isOnSale: Bool
     
-    init(title: String,
+    init(image: UIImage?,
+         title: String,
          subtitle: String,
          isOnSale: Bool = false) {
+      self.image = image
       self.title = title
       self.subtitle = subtitle
       self.isOnSale = isOnSale
@@ -67,6 +70,7 @@ final class TokensListCollectibleCell: UICollectionViewCell, Reusable, Configura
   }
   
   func configure(model: Model) {
+    imageView.image = model.image
     titleLabel.text = model.title
     subtitleLabel.text = model.subtitle
     saleImageView.isHidden = !model.isOnSale
@@ -104,8 +108,8 @@ private extension TokensListCollectibleCell {
       imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
       imageView.leftAnchor.constraint(equalTo: contentView.leftAnchor),
       imageView.rightAnchor.constraint(equalTo: contentView.rightAnchor)
-      .withPriority(.defaultHigh),
-      imageView.heightAnchor.constraint(equalTo: imageView.heightAnchor),
+        .withPriority(.defaultHigh),
+      imageView.heightAnchor.constraint(equalTo: imageView.widthAnchor),
       
       labelContainer.topAnchor.constraint(equalTo: imageView.bottomAnchor),
       labelContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
@@ -114,14 +118,13 @@ private extension TokensListCollectibleCell {
       labelContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         .withPriority(.defaultHigh),
       
-      
       titleLabel.topAnchor.constraint(equalTo: labelContainer.topAnchor,
                                       constant: UIEdgeInsets.labelContainerInsets.top),
       titleLabel.leftAnchor.constraint(equalTo: labelContainer.leftAnchor,
                                        constant: UIEdgeInsets.labelContainerInsets.left),
       titleLabel.rightAnchor.constraint(equalTo: labelContainer.rightAnchor,
                                         constant: -UIEdgeInsets.labelContainerInsets.right),
-
+      
       subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor),
       subtitleLabel.bottomAnchor.constraint(equalTo: labelContainer.bottomAnchor,
                                             constant: -UIEdgeInsets.labelContainerInsets.bottom),

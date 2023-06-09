@@ -77,6 +77,16 @@ final class PageSegmentControl: UIControl, ConfigurableView {
     guard !tabs.isEmpty else { return }
     selectTabAt(index: 0, animated: false)
   }
+  
+  func updateIndicator(fromPage: Int, toPage: Int, progress: CGFloat) {
+    let fromFrame = scrollView.convert(tabs[fromPage].frame, from: tabsContainer)
+    let toFrame = scrollView.convert(tabs[toPage].frame, from: tabsContainer)
+    
+    let fromX = fromFrame.midX - .indicatorViewWidth/2
+    let toX = toFrame.midX - .indicatorViewWidth/2
+    let resultX = fromX + (toX - fromX) * progress
+    indicatorViewCenterXConstraint?.constant = resultX
+  }
 }
 
 private extension PageSegmentControl {
