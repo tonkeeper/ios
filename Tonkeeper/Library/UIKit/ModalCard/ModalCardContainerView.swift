@@ -29,7 +29,6 @@ final class ModalCardContainerView: PassthroughView {
       mainViewHeightConstraint?.constant = contentHeight - dragOffset
       + headerView.intrinsicContentSize.height
       + safeAreaInsets.bottom
-      contentContainerHeightConstraint?.constant = contentHeight
     }
   }
   
@@ -103,7 +102,8 @@ private extension ModalCardContainerView {
       
       headerView.topAnchor.constraint(equalTo: mainView.topAnchor),
       headerView.leftAnchor.constraint(equalTo: mainView.leftAnchor),
-      headerView.rightAnchor.constraint(equalTo: mainView.rightAnchor),
+      headerView.rightAnchor.constraint(equalTo: mainView.rightAnchor)
+        .withPriority(.defaultHigh),
   
       contentContainer.topAnchor.constraint(equalTo: headerView.bottomAnchor),
       contentContainer.leftAnchor.constraint(equalTo: mainView.leftAnchor),

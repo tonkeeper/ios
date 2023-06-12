@@ -8,11 +8,23 @@
 
 import UIKit
 
-class BuyListViewController: GenericViewController<BuyListView>, ModalCardContainerContent {
+class BuyListViewController: GenericViewController<BuyListView>, ScrollableModalCardContainerContent {
   
   // MARK: - Module
 
   private let presenter: BuyListPresenterInput
+  
+  // MARK: - Collection
+  
+  private lazy var collectionController: BuyListCollectionController = {
+    let controller = BuyListCollectionController(collectionView: customView.collectionView)
+    return controller
+  }()
+  
+  // MARK: - State
+  
+  private var contentSizeObserveToken: NSKeyValueObservation?
+  private var cachedContentHeight: CGFloat = 0
 
   // MARK: - Init
 
@@ -33,19 +45,41 @@ class BuyListViewController: GenericViewController<BuyListView>, ModalCardContai
     presenter.viewDidLoad()
   }
   
-  // MARK: - ModalCardContainerContent
+  // MARK: - ScrollableModalCardContainerContent
   
-  var height: CGFloat { return 200 }
+  var scrollView: UIScrollView {
+    customView.collectionView
+  }
+  
+  var height: CGFloat {
+    let height = customView.collectionView.contentSize.height
+    + customView.collectionView.contentInset.top
+    + customView.collectionView.contentInset.bottom
+    return height
+  }
   
   var didUpdateHeight: (() -> Void)?
 }
 
 // MARK: - BuyListViewInput
 
-extension BuyListViewController: BuyListViewInput {}
+extension BuyListViewController: BuyListViewInput {
+  func updateSections(_ sections: [BuyListSection]) {
+    collectionController.sections = sections
+  }
+}
 
 // MARK: - Private
 
 private extension BuyListViewController {
-  func setup() {}
+  func setup() {
+    title = "Buy or sell"
+    contentSizeObserveToken = customView.collectionView
+      .observe(\.contentSize, changeHandler: { [weak self] _, _ in
+        guard let self,
+              self.customView.collectionView.contentSize.height != self.cachedContentHeight else { return }
+        self.cachedContentHeight = self.customView.collectionView.contentSize.height
+        self.didUpdateHeight?()
+      })
+  }
 }

@@ -14,6 +14,9 @@ protocol BuyListModuleInput: AnyObject {}
 
 protocol BuyListPresenterInput {
   func viewDidLoad()
+  func didSelectServiceAt(indexPath: IndexPath)
 }
 
-protocol BuyListViewInput: AnyObject {}
+protocol BuyListViewInput: AnyObject {
+  func updateSections(_ sections: [BuyListSection])
+}
