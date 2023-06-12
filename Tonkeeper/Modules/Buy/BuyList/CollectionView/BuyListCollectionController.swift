@@ -36,10 +36,8 @@ final class BuyListCollectionController: NSObject {
     }
     collectionView.delegate = self
     collectionView.setCollectionViewLayout(layout, animated: false)
-    collectionView.register(ActivityListTransactionCell.self,
-                             forCellWithReuseIdentifier: ActivityListTransactionCell.reuseIdentifier)
-    collectionView.register(ActivityListDateCell.self,
-                            forCellWithReuseIdentifier: ActivityListDateCell.reuseIdentifier)
+    collectionView.register(BuyListServiceCell.self,
+                             forCellWithReuseIdentifier: BuyListServiceCell.reuseIdentifier)
     dataSource = createDataSource(collectionView: collectionView)
   }
 }
@@ -58,6 +56,10 @@ private extension BuyListCollectionController {
     .init(collectionView: collectionView) { [weak self] collectionView, indexPath, itemIdentifier in
       guard let self = self else { return UICollectionViewCell() }
       switch itemIdentifier {
+      case let model as BuyListServiceCell.Model:
+        return self.getServiceCell(collectionView: collectionView,
+                                   indexPath: indexPath,
+                                   model: model)
       default:
         return UICollectionViewCell()
       }
@@ -65,8 +67,19 @@ private extension BuyListCollectionController {
   }
   
   func getServiceCell(collectionView: UICollectionView,
-                      indexPath: IndexPath) -> UICollectionViewCell {
-    return UICollectionViewCell()
+                      indexPath: IndexPath,
+                      model: BuyListServiceCell.Model) -> UICollectionViewCell {
+    guard let cell = collectionView.dequeueReusableCell(
+      withReuseIdentifier: BuyListServiceCell.reuseIdentifier,
+      for: indexPath) as? BuyListServiceCell else {
+      return UICollectionViewCell()
+    }
+    
+    cell.configure(model: model)
+    cell.isFirstCell = indexPath.item == 0
+    cell.isLastCell = indexPath.item == sections[indexPath.section].items.count - 1
+    cell.isInGroup = sections[indexPath.section].items.count > 1
+    return cell
   }
   
   func getButtonCell(collectionView: UICollectionView,

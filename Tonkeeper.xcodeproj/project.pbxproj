@@ -33,6 +33,9 @@
 		7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43832A3395CB00C23A75 /* BuyListSection.swift */; };
 		7D3E43862A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43852A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift */; };
 		7D3E43882A3397AF00C23A75 /* BuyListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43872A3397AF00C23A75 /* BuyListCollectionController.swift */; };
+		7D3E438D2A3399A500C23A75 /* ServiceCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E438C2A3399A500C23A75 /* ServiceCellContentView.swift */; };
+		7D3E438F2A339E2A00C23A75 /* BuyListServiceCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E438E2A339E2A00C23A75 /* BuyListServiceCell.swift */; };
+		7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */; };
 		7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */; };
 		7D527BC02A2A913400A2D29A /* ModalContentViewController+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBF2A2A913400A2D29A /* ModalContentViewController+Configuration.swift */; };
 		7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC12A2A955700A2D29A /* ModalContentHeaderView.swift */; };
@@ -225,6 +228,9 @@
 		7D3E43832A3395CB00C23A75 /* BuyListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListSection.swift; sourceTree = "<group>"; };
 		7D3E43852A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListCollectionLayoutConfigurator.swift; sourceTree = "<group>"; };
 		7D3E43872A3397AF00C23A75 /* BuyListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListCollectionController.swift; sourceTree = "<group>"; };
+		7D3E438C2A3399A500C23A75 /* ServiceCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServiceCellContentView.swift; sourceTree = "<group>"; };
+		7D3E438E2A339E2A00C23A75 /* BuyListServiceCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListServiceCell.swift; sourceTree = "<group>"; };
+		7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServiceCellContentView+Model.swift"; sourceTree = "<group>"; };
 		7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentViewController.swift; sourceTree = "<group>"; };
 		7D527BBF2A2A913400A2D29A /* ModalContentViewController+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalContentViewController+Configuration.swift"; sourceTree = "<group>"; };
 		7D527BC12A2A955700A2D29A /* ModalContentHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentHeaderView.swift; sourceTree = "<group>"; };
@@ -538,8 +544,18 @@
 		7D3E438A2A33986200C23A75 /* Cells */ = {
 			isa = PBXGroup;
 			children = (
+				7D3E438E2A339E2A00C23A75 /* BuyListServiceCell.swift */,
 			);
 			path = Cells;
+			sourceTree = "<group>";
+		};
+		7D3E438B2A33998700C23A75 /* ServiceCell */ = {
+			isa = PBXGroup;
+			children = (
+				7D3E438C2A3399A500C23A75 /* ServiceCellContentView.swift */,
+				7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */,
+			);
+			path = ServiceCell;
 			sourceTree = "<group>";
 		};
 		7D527BBC2A2A90F400A2D29A /* ModalContentViewController */ = {
@@ -701,7 +717,8 @@
 		7D5D05CC2A307161009F42FF /* Cell */ = {
 			isa = PBXGroup;
 			children = (
-				7DE27E662A30D93100842FA8 /* Transaction */,
+				7D3E438B2A33998700C23A75 /* ServiceCell */,
+				7DE27E662A30D93100842FA8 /* TransactionCell */,
 				7D5D05D12A3090B2009F42FF /* DefaultCell */,
 				7D5D05D42A309674009F42FF /* ContainerCollectionViewCell.swift */,
 				7D9144232A31EF7600B0FD17 /* Selectable.swift */,
@@ -1287,14 +1304,14 @@
 			path = Builder;
 			sourceTree = "<group>";
 		};
-		7DE27E662A30D93100842FA8 /* Transaction */ = {
+		7DE27E662A30D93100842FA8 /* TransactionCell */ = {
 			isa = PBXGroup;
 			children = (
 				7DE27E672A30D94100842FA8 /* TransactionCellContentView.swift */,
 				7DE27E692A30D9CE00842FA8 /* TransactionCellStatusView.swift */,
 				7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */,
 			);
-			path = Transaction;
+			path = TransactionCell;
 			sourceTree = "<group>";
 		};
 		8B0C0767FD46C94FB4520D2B /* ActivityTransactionDetails */ = {
@@ -1443,6 +1460,7 @@
 				7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */,
 				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
 				7D5928672A1FBB56006B0A8A /* Button+ConfigurableView.swift in Sources */,
+				7D3E438D2A3399A500C23A75 /* ServiceCellContentView.swift in Sources */,
 				7D527BC02A2A913400A2D29A /* ModalContentViewController+Configuration.swift in Sources */,
 				7D9292972A25EB16005B83DF /* PageSegmentControlTab.swift in Sources */,
 				7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */,
@@ -1478,6 +1496,7 @@
 				7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */,
 				7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */,
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
+				7D3E438F2A339E2A00C23A75 /* BuyListServiceCell.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */,
@@ -1487,6 +1506,7 @@
 				7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */,
 				7D9292FE2A29DCDA005B83DF /* SendRecipientProtocols.swift in Sources */,
 				7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */,
+				7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */,
 				7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */,
 				7D527BC82A2A9E5D00A2D29A /* ModalContentActionBarView.swift in Sources */,
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,

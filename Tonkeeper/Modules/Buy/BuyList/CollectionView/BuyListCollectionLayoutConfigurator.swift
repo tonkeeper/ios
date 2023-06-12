@@ -81,11 +81,11 @@ private extension String {
 
 private extension NSDirectionalEdgeInsets {
   static var servicesSectionContentInsets: NSDirectionalEdgeInsets {
-    .init(top: 0, leading: ContentInsets.sideSpace, bottom: ContentInsets.sideSpace, trailing: ContentInsets.sideSpace)
+    .init(top: ContentInsets.sideSpace, leading: ContentInsets.sideSpace, bottom: ContentInsets.sideSpace, trailing: ContentInsets.sideSpace)
   }
   
   static var buttonSectionContentInsets: NSDirectionalEdgeInsets {
-    .init(top: 0, leading: ContentInsets.sideSpace, bottom: 32, trailing: ContentInsets.sideSpace)
+    .init(top: ContentInsets.sideSpace, leading: ContentInsets.sideSpace, bottom: 32, trailing: ContentInsets.sideSpace)
   }
 }
 
