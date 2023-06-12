@@ -82,7 +82,9 @@ struct WalletAssembly {
   }
   
   func buyCoordinator() -> BuyCoordinator {
-    let router = Router(rootViewController: ModalCardContainerViewController())
+    let modalCardContainerViewController = ModalCardContainerViewController()
+    modalCardContainerViewController.headerSize = .big
+    let router = Router(rootViewController: modalCardContainerViewController)
     let coordinator = BuyCoordinator(router: router,
                                      assembly: buyAssembly)
     return coordinator

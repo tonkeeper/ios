@@ -9,6 +9,24 @@ import UIKit
 
 final class ModalCardHeaderView: UIView {
   
+  enum Size {
+    case small
+    case big
+    
+    var height: CGFloat {
+      switch self {
+      case .small: return 48
+      case .big: return 64
+      }
+    }
+  }
+  
+  var size: Size = .small {
+    didSet {
+      invalidateIntrinsicContentSize()
+    }
+  }
+  
   let titleLabel: UILabel = {
     let label = UILabel()
     label.applyTextStyleFont(.h3)
@@ -35,7 +53,7 @@ final class ModalCardHeaderView: UIView {
   }
   
   override var intrinsicContentSize: CGSize {
-    .init(width: UIView.noIntrinsicMetric, height: .height)
+    .init(width: UIView.noIntrinsicMetric, height: size.height)
   }
 }
 
@@ -54,13 +72,12 @@ private extension ModalCardHeaderView {
       titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
       titleLabel.rightAnchor.constraint(equalTo: closeButton.leftAnchor, constant: -ContentInsets.sideSpace),
       
-      closeButton.centerYAnchor.constraint(equalTo: centerYAnchor),
+      closeButton.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
       closeButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace)
     ])
   }
 }
 
 private extension CGFloat {
-  static let height: CGFloat = 64
   static let buttonRightSpace: CGFloat = 16
 }

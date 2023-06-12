@@ -18,6 +18,11 @@ final class ModalCardContainerViewController: GenericViewController<ModalCardCon
     set {}
   }
   
+  var headerSize: ModalCardHeaderView.Size {
+    get { customView.headerView.size }
+    set { customView.headerView.size = newValue }
+  }
+  
   var content: ModalCardContainerContent? {
     didSet {
       guard isViewLoaded else { return }
