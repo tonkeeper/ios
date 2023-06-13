@@ -106,6 +106,8 @@ private extension ModalCardContainerViewController {
     addChild(content)
     customView.addContentView(content.view)
     content.didMove(toParent: self)
+    
+    scrollController.scrollView = scrollableContent?.scrollView
   }
   
   func updateContentHeight() {

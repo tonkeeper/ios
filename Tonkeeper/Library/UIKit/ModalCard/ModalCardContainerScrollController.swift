@@ -16,7 +16,11 @@ extension ModalCardContainerViewController {
     
     // MARK: - Dependencies
     
-    weak var scrollView: UIScrollView?
+    weak var scrollView: UIScrollView? {
+      didSet {
+        setup()
+      }
+    }
     
     // MARK: - State
     
