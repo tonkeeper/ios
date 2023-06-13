@@ -13,6 +13,10 @@ extension UIImage {
       static var nftImage: UIImage? {
         .init(named: "Images/nft_image")
       }
+      
+      static var mercuryoLogo: UIImage? {
+        .init(named: "Images/mercuryo_logo")
+      }
     }
   }
 }

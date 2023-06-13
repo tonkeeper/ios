@@ -77,6 +77,12 @@ extension UIImage {
       }
     }
     
+    enum Service {
+      static var chevron: UIImage? {
+        .init(named: "Icons/16/ic-chevron-right-16")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     enum TextField {
       static var clear: UIImage? {
         .init(named: "Icons/16/ic-xmark-circle-16")?.withRenderingMode(.alwaysTemplate)

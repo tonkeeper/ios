@@ -42,6 +42,10 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
     output?.openReceive()
   }
   
+  func didTapBuyButton() {
+    output?.openBuy()
+  }
+  
   func openQRScanner() {
     output?.openQRScanner()
   }

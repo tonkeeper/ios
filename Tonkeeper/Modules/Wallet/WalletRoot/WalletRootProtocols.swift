@@ -11,6 +11,7 @@ protocol WalletRootModuleOutput: AnyObject {
   func openQRScanner()
   func openSend()
   func openReceive()
+  func openBuy()
 }
 
 protocol WalletRootPresenterInput {

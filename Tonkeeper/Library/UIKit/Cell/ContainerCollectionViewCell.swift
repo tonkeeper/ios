@@ -13,7 +13,7 @@ protocol ContainerCollectionViewCellContent: ConfigurableView {
 }
 
 class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellContent>: UICollectionViewCell, ConfigurableView, Selectable {
-  
+
   let cellContentView = CellContentView()
   
   override init(frame: CGRect) {

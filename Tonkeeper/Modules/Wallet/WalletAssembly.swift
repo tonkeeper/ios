@@ -12,13 +12,16 @@ struct WalletAssembly {
   private let qrScannerAssembly: QRScannerAssembly
   private let sendAssembly: SendAssembly
   private let receiveAssembly: ReceiveAssembly
+  private let buyAssembly: BuyAssembly
   
   init(qrScannerAssembly: QRScannerAssembly,
        sendAssembly: SendAssembly,
-       receiveAssembly: ReceiveAssembly) {
+       receiveAssembly: ReceiveAssembly,
+       buyAssembly: BuyAssembly) {
     self.qrScannerAssembly = qrScannerAssembly
     self.sendAssembly = sendAssembly
     self.receiveAssembly = receiveAssembly
+    self.buyAssembly = buyAssembly
   }
   
   func walletRootModule(output: WalletRootModuleOutput,
@@ -75,6 +78,15 @@ struct WalletAssembly {
     let coordinator = ReceiveCoordinator(router: router,
                                          assembly: receiveAssembly)
     coordinator.output = output
+    return coordinator
+  }
+  
+  func buyCoordinator() -> BuyCoordinator {
+    let modalCardContainerViewController = ModalCardContainerViewController()
+    modalCardContainerViewController.headerSize = .big
+    let router = Router(rootViewController: modalCardContainerViewController)
+    let coordinator = BuyCoordinator(router: router,
+                                     assembly: buyAssembly)
     return coordinator
   }
 }

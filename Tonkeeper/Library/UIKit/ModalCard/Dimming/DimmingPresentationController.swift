@@ -8,6 +8,7 @@
 import UIKit
 
 final class DimmingPresentationController: UIPresentationController {
+  
   private let dimmingView = DimmingView()
   
   override func presentationTransitionWillBegin() {
@@ -26,6 +27,11 @@ final class DimmingPresentationController: UIPresentationController {
     presentedViewController.transitionCoordinator?.animate(alongsideTransition: { [dimmingView] _ in
       dimmingView.performDismissalTransition()
     })
+  }
+  
+  override func dismissalTransitionDidEnd(_ completed: Bool) {
+    super.dismissalTransitionDidEnd(completed)
+    delegate?.presentationControllerDidDismiss?(self)
   }
   
   override func containerViewDidLayoutSubviews() {

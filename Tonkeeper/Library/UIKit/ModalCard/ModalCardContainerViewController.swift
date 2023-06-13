@@ -18,15 +18,36 @@ final class ModalCardContainerViewController: GenericViewController<ModalCardCon
     set {}
   }
   
+  var headerSize: ModalCardHeaderView.Size {
+    get { customView.headerView.size }
+    set { customView.headerView.size = newValue }
+  }
+  
+  var content: ModalCardContainerContent? {
+    didSet {
+      guard isViewLoaded else { return }
+      cachedHeight = 0
+      setupContent()
+    }
+  }
+  
+  var scrollableContent: ScrollableModalCardContainerContent? {
+    content as? ScrollableModalCardContainerContent
+  }
+  
   private let dimmingTransitioningDelegate = DimmingTransitioningDelegate()
-  private let content: ModalCardContainerContent
   private let panGestureRecognizer = UIPanGestureRecognizer()
+  private lazy var scrollController = ModalCardContainerScrollController(scrollView: scrollableContent?.scrollView)
   
   // MARK: - State
   
   private var cachedHeight: CGFloat = 0
   
   // MARK: - Init
+  
+  init() {
+    super.init(nibName: nil, bundle: nil)
+  }
   
   init(content: ModalCardContainerContent) {
     self.content = content
@@ -43,11 +64,12 @@ final class ModalCardContainerViewController: GenericViewController<ModalCardCon
     super.viewDidLoad()
     setup()
   }
-  
+
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
     guard cachedHeight != view.bounds.height else { return }
     cachedHeight = view.bounds.height
+    
     customView.headerView.layoutIfNeeded()
     customView.mainView.layoutIfNeeded()
     
@@ -59,19 +81,8 @@ private extension ModalCardContainerViewController {
   func setup() {
     setupContent()
     setupGestures()
-  }
-  
-  func setupContent() {
-    addChild(content)
-    customView.addContentView(content.view)
-    content.didMove(toParent: self)
     
-    content.didUpdateHeight = { [weak self] in
-      self?.panGestureRecognizer.isEnabled = false
-      self?.updateContentHeight()
-      self?.panGestureRecognizer.isEnabled = true
-    }
-    
+    customView.headerView.titleLabel.text = content?.title
     customView.headerView.closeButton.addTarget(
       self,
       action: #selector(didTapCloseButton),
@@ -79,17 +90,40 @@ private extension ModalCardContainerViewController {
     )
   }
   
+  func setupContent() {
+    guard let content = content else { return }
+    
+    content.didUpdateHeight = { [weak self] in
+      self?.panGestureRecognizer.isEnabled = false
+      self?.updateContentHeight()
+      self?.panGestureRecognizer.isEnabled = true
+    }
+    
+    content.willMove(toParent: nil)
+    customView.removeContentView()
+    content.removeFromParent()
+    
+    addChild(content)
+    customView.addContentView(content.view)
+    content.didMove(toParent: self)
+    
+    scrollController.scrollView = scrollableContent?.scrollView
+  }
+  
   func updateContentHeight() {
-    let contentHeight = content.height
+    guard let content = content else { return }
+    let contentHeight = content.height == 0 ? customView.maximumContentHeight : content.height
     let maximumContentHeight = customView.maximumContentHeight
     let finalContentHeight = min(contentHeight, maximumContentHeight)
+    scrollableContent?.scrollView.isScrollEnabled = contentHeight > maximumContentHeight
     customView.contentHeight = finalContentHeight
-    content.view.layoutIfNeeded()
+    customView.layoutIfNeeded()
     animateLayout()
   }
   
   func setupGestures() {
     setupPanGesture()
+    setupScrollGesture()
   }
   
   func setupPanGesture() {
@@ -100,13 +134,22 @@ private extension ModalCardContainerViewController {
     customView.addGestureRecognizer(panGestureRecognizer)
   }
   
+  func setupScrollGesture() {
+    scrollController.didDrag = { [weak self] offset in
+      self?.didDrag(with: max(-.maximumDragOffset, offset * .dragOffsetRatio))
+    }
+    
+    scrollController.didEndDragging = { [weak self] offset, velocity in
+      self?.didEndDragging(offset: offset, velocity: velocity)}
+  }
+  
   func animateLayout() {
     UIView.animate(
       withDuration: .animationDuration,
       delay: .zero,
       usingSpringWithDamping: .animationSpringDamping,
       initialSpringVelocity: .animationSpringVelocity,
-      options: .curveEaseInOut) {
+      options: [.curveEaseInOut, .allowUserInteraction]) {
         self.customView.layoutIfNeeded()
       }
   }

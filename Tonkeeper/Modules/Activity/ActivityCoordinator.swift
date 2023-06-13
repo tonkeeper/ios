@@ -44,6 +44,7 @@ extension ActivityCoordinator: ActivityRootModuleOutput {
   func didSelectTransaction() {
     let module = assembly.activityTransactionDetails(output: self)
     let modalCardContainerViewController = ModalCardContainerViewController(content: module.view)
+    modalCardContainerViewController.headerSize = .small
     
     router.present(modalCardContainerViewController)
   }

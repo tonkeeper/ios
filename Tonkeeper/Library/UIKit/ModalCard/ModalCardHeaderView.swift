@@ -9,6 +9,31 @@ import UIKit
 
 final class ModalCardHeaderView: UIView {
   
+  enum Size {
+    case small
+    case big
+    
+    var height: CGFloat {
+      switch self {
+      case .small: return 48
+      case .big: return 64
+      }
+    }
+  }
+  
+  var size: Size = .small {
+    didSet {
+      invalidateIntrinsicContentSize()
+    }
+  }
+  
+  let titleLabel: UILabel = {
+    let label = UILabel()
+    label.applyTextStyleFont(.h3)
+    label.textColor = .Text.primary
+    return label
+  }()
+  
   var closeButton: TKButton = {
     let button = TKButton(configuration: .init(type: .secondary,
                                                size: .xsmall,
@@ -28,24 +53,31 @@ final class ModalCardHeaderView: UIView {
   }
   
   override var intrinsicContentSize: CGSize {
-    .init(width: UIView.noIntrinsicMetric, height: .height)
+    .init(width: UIView.noIntrinsicMetric, height: size.height)
   }
 }
 
 private extension ModalCardHeaderView {
   func setup() {
     addSubview(closeButton)
+    addSubview(titleLabel)
     
+    closeButton.setContentHuggingPriority(.required, for: .horizontal)
+    
+    titleLabel.translatesAutoresizingMaskIntoConstraints = false
     closeButton.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      closeButton.bottomAnchor.constraint(equalTo: bottomAnchor),
-      closeButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -.buttonRightSpace)
+      titleLabel.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
+      titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor),
+      titleLabel.rightAnchor.constraint(equalTo: closeButton.leftAnchor, constant: -ContentInsets.sideSpace),
+      
+      closeButton.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
+      closeButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace)
     ])
   }
 }
 
 private extension CGFloat {
-  static let height: CGFloat = 48
   static let buttonRightSpace: CGFloat = 16
 }

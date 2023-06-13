@@ -8,6 +8,7 @@
 import UIKit
 
 protocol ModalCardContainerContent: UIViewController {
+  var title: String? { get }
   var height: CGFloat { get }
   var didUpdateHeight: (() -> Void)? { get set }
 }
