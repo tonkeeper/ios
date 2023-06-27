@@ -170,6 +170,8 @@
 		7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292F72A29DCDA005B83DF /* SendCommentLengthValidator.swift */; };
 		7D9293042A29EE3F005B83DF /* TextFieldFormatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9293032A29EE3F005B83DF /* TextFieldFormatController.swift */; };
 		7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */; };
+		7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F342A4B2F07007C6154 /* AnyFormatKit */; };
+		7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F3E2A4B3338007C6154 /* WalletCore */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -409,19 +411,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */,
+				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		009CFD2A245B9EAF956AA5C6 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Pods;
-			sourceTree = "<group>";
-		};
 		04FF381D2F96AC549BAFBA3F /* BuyList */ = {
 			isa = PBXGroup;
 			children = (
@@ -1203,7 +1200,6 @@
 			children = (
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7DB8FB632A1BCC92005B4B11 /* Products */,
-				009CFD2A245B9EAF956AA5C6 /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1347,6 +1343,10 @@
 			dependencies = (
 			);
 			name = Tonkeeper;
+			packageProductDependencies = (
+				7DB17F342A4B2F07007C6154 /* AnyFormatKit */,
+				7DB17F3E2A4B3338007C6154 /* WalletCore */,
+			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
 			productType = "com.apple.product-type.application";
@@ -1375,6 +1375,10 @@
 				Base,
 			);
 			mainGroup = 7DB8FB592A1BCC92005B4B11;
+			packageReferences = (
+				7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */,
+				7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */,
+			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1815,6 +1819,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/luximetr/AnyFormatKit";
+			requirement = {
+				kind = exactVersion;
+				version = 2.5.2;
+			};
+		};
+		7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tonkeeper/core-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7DB17F342A4B2F07007C6154 /* AnyFormatKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
+			productName = AnyFormatKit;
+		};
+		7DB17F3E2A4B3338007C6154 /* WalletCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */;
+			productName = WalletCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7DB8FB5A2A1BCC92005B4B11 /* Project object */;
 }
