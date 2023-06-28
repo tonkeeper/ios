@@ -9,6 +9,7 @@ import UIKit
 
 final class AppAssembly {
   
+  let coreAssembly = CoreAssembly()
   lazy var tabBarAssembly = TabBarAssembly()
   lazy var onboardingAssembly = OnboardingAssembly()
   

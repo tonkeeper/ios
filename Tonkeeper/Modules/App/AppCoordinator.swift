@@ -18,8 +18,12 @@ final class AppCoordinator: Coordinator<WindowRouter> {
   }
   
   override func start() {
-//    openTabBar()
-    openOnboarding()
+    let appSettings = appAssembly.coreAssembly.appSetting
+    if appSettings.didShowOnboarding {
+      openTabBar()
+    } else {
+      openOnboarding()
+    }
   }
 }
 
@@ -41,6 +45,8 @@ private extension AppCoordinator {
 
 extension AppCoordinator: OnboardingCoordinatorOutput {
   func onboardingCoordinatorDidFinish(_ coordinator: OnboardingCoordinator) {
+    let appSettings = appAssembly.coreAssembly.appSetting
+    appSettings.didShowOnboarding = true
     removeChild(coordinator)
     openTabBar()
   }
