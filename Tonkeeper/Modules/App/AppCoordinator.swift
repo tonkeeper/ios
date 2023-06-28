@@ -18,7 +18,12 @@ final class AppCoordinator: Coordinator<WindowRouter> {
   }
   
   override func start() {
-    openTabBar()
+    let appSettings = appAssembly.coreAssembly.appSetting
+    if appSettings.didShowOnboarding {
+      openTabBar()
+    } else {
+      openOnboarding()
+    }
   }
 }
 
@@ -28,5 +33,21 @@ private extension AppCoordinator {
     router.setRoot(presentable: coordinator.router.rootViewController)
     addChild(coordinator)
     coordinator.start()
+  }
+  
+  func openOnboarding() {
+    let coordinator = appAssembly.onboardingCoordinator(output: self)
+    router.setRoot(presentable: coordinator.router.rootViewController)
+    addChild(coordinator)
+    coordinator.start()
+  }
+}
+
+extension AppCoordinator: OnboardingCoordinatorOutput {
+  func onboardingCoordinatorDidFinish(_ coordinator: OnboardingCoordinator) {
+    let appSettings = appAssembly.coreAssembly.appSetting
+    appSettings.didShowOnboarding = true
+    removeChild(coordinator)
+    openTabBar()
   }
 }
