@@ -41,6 +41,7 @@
 		7D3BCFBE2A4C9E6500BE6AD9 /* RootCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFBD2A4C9E6500BE6AD9 /* RootCoordinator.swift */; };
 		7D3BCFC02A4C9E6B00BE6AD9 /* RootAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFBF2A4C9E6B00BE6AD9 /* RootAssembly.swift */; };
 		7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFC22A4CAB1300BE6AD9 /* TabBarController.swift */; };
+		7D3BCFC52A4CADB200BE6AD9 /* MnemonicTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFC42A4CADB200BE6AD9 /* MnemonicTextField.swift */; };
 		7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43792A33749F00C23A75 /* UIImage+Images.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
@@ -270,6 +271,7 @@
 		7D3BCFBD2A4C9E6500BE6AD9 /* RootCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootCoordinator.swift; sourceTree = "<group>"; };
 		7D3BCFBF2A4C9E6B00BE6AD9 /* RootAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFC22A4CAB1300BE6AD9 /* TabBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarController.swift; sourceTree = "<group>"; };
+		7D3BCFC42A4CADB200BE6AD9 /* MnemonicTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MnemonicTextField.swift; sourceTree = "<group>"; };
 		7D3E43792A33749F00C23A75 /* UIImage+Images.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Images.swift"; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
@@ -1271,6 +1273,7 @@
 			children = (
 				7D9292CB2A275725005B83DF /* TextFieldContainer.swift */,
 				7D9292D02A275B6D005B83DF /* TextField.swift */,
+				7D3BCFC42A4CADB200BE6AD9 /* MnemonicTextField.swift */,
 			);
 			path = TextFields;
 			sourceTree = "<group>";
@@ -1604,6 +1607,7 @@
 				7D92928B2A24DB50005B83DF /* ScrollContainerViewController.swift in Sources */,
 				7D6836622A1D6A79002DBBC7 /* UINavigationController+Appearance.swift in Sources */,
 				7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */,
+				7D3BCFC52A4CADB200BE6AD9 /* MnemonicTextField.swift in Sources */,
 				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,
 				7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */,
 				7D9144312A320F1500B0FD17 /* ModalCardContainerView.swift in Sources */,
