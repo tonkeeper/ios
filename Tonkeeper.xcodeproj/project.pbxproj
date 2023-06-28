@@ -31,6 +31,7 @@
 		7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */; };
 		7D3BCFAC2A4C598C00BE6AD9 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFAB2A4C598C00BE6AD9 /* AppSettings.swift */; };
 		7D3BCFAF2A4C5DC500BE6AD9 /* CoreAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFAE2A4C5DC500BE6AD9 /* CoreAssembly.swift */; };
+		7D3BCFB22A4C601F00BE6AD9 /* WalletCoreAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFB12A4C601F00BE6AD9 /* WalletCoreAssembly.swift */; };
 		7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43792A33749F00C23A75 /* UIImage+Images.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
@@ -241,6 +242,7 @@
 		7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonBottomContainer.swift; sourceTree = "<group>"; };
 		7D3BCFAB2A4C598C00BE6AD9 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
 		7D3BCFAE2A4C5DC500BE6AD9 /* CoreAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAssembly.swift; sourceTree = "<group>"; };
+		7D3BCFB12A4C601F00BE6AD9 /* WalletCoreAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCoreAssembly.swift; sourceTree = "<group>"; };
 		7D3E43792A33749F00C23A75 /* UIImage+Images.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Images.swift"; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
@@ -568,6 +570,7 @@
 			isa = PBXGroup;
 			children = (
 				7D3BCFAE2A4C5DC500BE6AD9 /* CoreAssembly.swift */,
+				7D3BCFB12A4C601F00BE6AD9 /* WalletCoreAssembly.swift */,
 			);
 			path = Assemblies;
 			sourceTree = "<group>";
@@ -1686,6 +1689,7 @@
 				6DDD78B4E9BC9191CF5EC900 /* BuyListProtocols.swift in Sources */,
 				A6E8CD628DD1CBC7A9D9ADA3 /* WelcomeViewController.swift in Sources */,
 				88B2EE1152873C3830AFF461 /* WelcomeView.swift in Sources */,
+				7D3BCFB22A4C601F00BE6AD9 /* WalletCoreAssembly.swift in Sources */,
 				C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */,
 				5B350CAE4F889BA8B86B8274 /* WelcomeProtocols.swift in Sources */,
 			);
@@ -1923,8 +1927,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.0.2;
+				branch = feature/public_container;
+				kind = branch;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */

@@ -52,7 +52,11 @@ final class WalletRootViewController: GenericViewController<WalletRootView> {
 
 // MARK: - WalletRootViewInput
 
-extension WalletRootViewController: WalletRootViewInput {}
+extension WalletRootViewController: WalletRootViewInput {
+  func update(with model: WalletRootView.Model) {
+    customView.configure(model: model)
+  }
+}
 
 // MARK: - Private
 
@@ -61,5 +65,14 @@ private extension WalletRootViewController {
     addChild(scrollContainerViewController)
     customView.addContent(contentView: scrollContainerViewController.view)
     scrollContainerViewController.didMove(toParent: self)
+    
+    customView.setupWalletButton.addTarget(self,
+                                           action: #selector(didTapSetupWalletButton),
+                                           for: .touchUpInside)
+  }
+  
+  @objc
+  func didTapSetupWalletButton() {
+    
   }
 }

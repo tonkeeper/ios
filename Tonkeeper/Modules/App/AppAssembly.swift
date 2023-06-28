@@ -10,7 +10,9 @@ import UIKit
 final class AppAssembly {
   
   let coreAssembly = CoreAssembly()
-  lazy var tabBarAssembly = TabBarAssembly()
+  lazy var walletCoreAssembly = WalletCoreAssembly(coreAssembly: coreAssembly)
+  lazy var tabBarAssembly = TabBarAssembly(coreAssembly: coreAssembly,
+                                           walletCoreAssembly: walletCoreAssembly)
   lazy var onboardingAssembly = OnboardingAssembly()
   
   func tabBarCoordinator() -> TabBarCoordinator {

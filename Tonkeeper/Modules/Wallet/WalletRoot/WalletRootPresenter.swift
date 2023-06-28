@@ -6,12 +6,16 @@
 //
 
 import UIKit
+import WalletCore
 
 final class WalletRootPresenter {
   
   private let pagingContentFactory: (WalletContentPage) -> PagingContent
+  private let keeperController: KeeperController
   
-  init(pagingContentFactory: @escaping (WalletContentPage) -> PagingContent) {
+  init(keeperController: KeeperController,
+       pagingContentFactory: @escaping (WalletContentPage) -> PagingContent) {
+    self.keeperController = keeperController
     self.pagingContentFactory = pagingContentFactory
   }
   
@@ -27,7 +31,20 @@ final class WalletRootPresenter {
 
 extension WalletRootPresenter: WalletRootPresenterInput {
   func viewDidLoad() {
+    updateRootView()
     updateTitle()
+  }
+  
+  func didTapSetupWalletButton() {
+    output?.openCreateImportWallet()
+  }
+  
+  func handleWalletRequiredAction(_ action: () -> Void) {
+    if keeperController.hasWallets {
+      action()
+    } else {
+      output?.openCreateImportWallet()
+    }
   }
 }
 
@@ -35,19 +52,27 @@ extension WalletRootPresenter: WalletRootPresenterInput {
 
 extension WalletRootPresenter: WalletHeaderModuleOutput {
   func didTapSendButton() {
-    output?.openSend()
+    handleWalletRequiredAction { [weak self] in
+      self?.output?.openSend()
+    }
   }
   
   func didTapReceiveButton() {
-    output?.openReceive()
+    handleWalletRequiredAction { [weak self] in
+      self?.output?.openReceive()
+    }
   }
   
   func didTapBuyButton() {
-    output?.openBuy()
+    handleWalletRequiredAction { [weak self] in
+      self?.output?.openBuy()
+    }
   }
   
   func openQRScanner() {
-    output?.openQRScanner()
+    handleWalletRequiredAction { [weak self] in
+      self?.output?.openQRScanner()
+    }
   }
 }
 
@@ -61,4 +86,14 @@ extension WalletRootPresenter: WalletContentModuleOutput {
   func updateTitle() {
     headerInput?.updateTitle("Wallet")
   }
+  
+  func updateRootView() {
+    let model = WalletRootView.Model(setupWalletButtonTitle: .setupWalletButtonTitle,
+                                     isSetupWalletButtonHidden: keeperController.hasWallets)
+    viewInput?.update(with: model)
+  }
+}
+
+private extension String {
+  static let setupWalletButtonTitle = "Set up wallet"
 }

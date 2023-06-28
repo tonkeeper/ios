@@ -62,6 +62,10 @@ extension WalletCoordinator: WalletRootModuleOutput {
       self?.removeChild(coordinator!)
     })
   }
+  
+  func openCreateImportWallet() {
+    
+  }
 }
 
 // MARK: - QRScannerModuleOutput
