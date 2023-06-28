@@ -40,6 +40,7 @@
 		7D3BCFBB2A4C99C900BE6AD9 /* EnterMnemonicAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFBA2A4C99C900BE6AD9 /* EnterMnemonicAssembly.swift */; };
 		7D3BCFBE2A4C9E6500BE6AD9 /* RootCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFBD2A4C9E6500BE6AD9 /* RootCoordinator.swift */; };
 		7D3BCFC02A4C9E6B00BE6AD9 /* RootAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFBF2A4C9E6B00BE6AD9 /* RootAssembly.swift */; };
+		7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFC22A4CAB1300BE6AD9 /* TabBarController.swift */; };
 		7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43792A33749F00C23A75 /* UIImage+Images.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
@@ -268,6 +269,7 @@
 		7D3BCFBA2A4C99C900BE6AD9 /* EnterMnemonicAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnterMnemonicAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFBD2A4C9E6500BE6AD9 /* RootCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootCoordinator.swift; sourceTree = "<group>"; };
 		7D3BCFBF2A4C9E6B00BE6AD9 /* RootAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootAssembly.swift; sourceTree = "<group>"; };
+		7D3BCFC22A4CAB1300BE6AD9 /* TabBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarController.swift; sourceTree = "<group>"; };
 		7D3E43792A33749F00C23A75 /* UIImage+Images.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Images.swift"; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
@@ -644,6 +646,14 @@
 				7D3BCFBF2A4C9E6B00BE6AD9 /* RootAssembly.swift */,
 			);
 			path = Root;
+			sourceTree = "<group>";
+		};
+		7D3BCFC12A4CAB0A00BE6AD9 /* TabBarController */ = {
+			isa = PBXGroup;
+			children = (
+				7D3BCFC22A4CAB1300BE6AD9 /* TabBarController.swift */,
+			);
+			path = TabBarController;
 			sourceTree = "<group>";
 		};
 		7D3E437B2A33830800C23A75 /* Buy */ = {
@@ -1062,6 +1072,7 @@
 		7D68365E2A1D6998002DBBC7 /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
+				7D3BCFC12A4CAB0A00BE6AD9 /* TabBarController */,
 				7D9292C52A27516C005B83DF /* NavigationController */,
 				7D9292892A24DB3F005B83DF /* ScrollContainerViewController */,
 				7D9292862A24CC9B005B83DF /* PagingContentViewController */,
@@ -1622,6 +1633,7 @@
 				7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */,
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
 				7D3E438F2A339E2A00C23A75 /* BuyListServiceCell.swift in Sources */,
+				7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
 				7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,

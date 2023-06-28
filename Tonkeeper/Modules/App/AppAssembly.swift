@@ -12,6 +12,7 @@ final class AppAssembly {
   
   func rootCoordinator() -> RootCoordinator {
     let navigationController = NavigationController()
+    navigationController.configureTransparentAppearance()
     navigationController.setNavigationBarHidden(true, animated: false)
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = RootCoordinator(router: router, assembly: rootAssembly)

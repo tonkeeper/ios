@@ -16,7 +16,7 @@ final class RootAssembly {
   lazy var importWalletAssembly = ImportWalletAssembly()
   
   func tabBarCoordinator() -> TabBarCoordinator {
-    let tabBarController = UITabBarController()
+    let tabBarController = TabBarController()
     tabBarController.configureAppearance()
     let router = TabBarRouter(rootViewController: tabBarController)
     let coordinator = TabBarCoordinator(router: router, assembly: tabBarAssembly)

@@ -41,5 +41,7 @@ extension EnterMnemonicViewController: EnterMnemonicViewInput {}
 // MARK: - Private
 
 private extension EnterMnemonicViewController {
-  func setup() {}
+  func setup() {
+    setupBackButton()
+  }
 }
