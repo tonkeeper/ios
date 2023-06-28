@@ -22,7 +22,7 @@ final class ReceiveView: UIView, ConfigurableView {
   let logoImageView: UIImageView = {
     let imageView = UIImageView()
     imageView.tintColor = .white
-    imageView.image = .Icons.tonIcon
+    imageView.image = .Icons.tonIcon28
     return imageView
   }()
   

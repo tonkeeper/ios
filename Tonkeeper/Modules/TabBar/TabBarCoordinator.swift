@@ -24,6 +24,7 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
     self.browserCoordinator = assembly.browserCoordinator()
     self.settingsCoordinator = assembly.settingsCoordinator()
     super.init(router: router)
+    walletCoordinator.output = self
   }
   
   override func start() {
@@ -42,6 +43,26 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
     router.set(presentables: presentables, options: .init(isAnimated: false))
   }
 }
+
+// MARK: - WalletCoordinatorOutput
+
+extension TabBarCoordinator: WalletCoordinatorOutput {
+  func walletCoordinatorOpenCreateImportWallet(_ coordinator: WalletCoordinator) {
+    let module = SetupWalletAssembly.create(output: self)
+    let modalCardContainerViewController = ModalCardContainerViewController(content: module.view)
+    modalCardContainerViewController.headerSize = .small
+    
+    router.present(modalCardContainerViewController)
+  }
+}
+
+// MARK: - SetupWalletModuleOutput
+
+extension TabBarCoordinator: SetupWalletModuleOutput {
+  
+}
+
+// MARK: - Private
 
 private extension TabBarCoordinator {
   func setupTabBarItems() {

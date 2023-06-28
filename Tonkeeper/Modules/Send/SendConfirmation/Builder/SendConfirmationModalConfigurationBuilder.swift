@@ -21,7 +21,7 @@ struct SendConfirmationModalConfigurationBuilder {
                             completion: (() -> Void)? = nil
   ) -> ModalContentViewController.Configuration {
     let header = ModalContentViewController.Configuration.Header(
-      image: .init(image: nil, backgroundColor: .Accent.blue),
+      image: .image(image: nil, tintColor: .Accent.blue, backgroundColor: .Accent.blue),
       title: title,
       topDescription: .description
     )

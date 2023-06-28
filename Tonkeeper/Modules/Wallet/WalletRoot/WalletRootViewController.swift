@@ -73,6 +73,6 @@ private extension WalletRootViewController {
   
   @objc
   func didTapSetupWalletButton() {
-    
+    presenter.didTapSetupWalletButton()
   }
 }

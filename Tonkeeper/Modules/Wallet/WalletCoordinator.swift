@@ -7,7 +7,13 @@
 
 import UIKit
 
+protocol WalletCoordinatorOutput: AnyObject {
+  func walletCoordinatorOpenCreateImportWallet(_ coordinator: WalletCoordinator)
+}
+
 final class WalletCoordinator: Coordinator<NavigationRouter> {
+  
+  weak var output: WalletCoordinatorOutput?
   
   private let walletAssembly: WalletAssembly
   
@@ -64,7 +70,7 @@ extension WalletCoordinator: WalletRootModuleOutput {
   }
   
   func openCreateImportWallet() {
-    
+    output?.walletCoordinatorOpenCreateImportWallet(self)
   }
 }
 
@@ -81,6 +87,8 @@ extension WalletCoordinator: QRScannerModuleOutput {
 extension WalletCoordinator: TokensListModuleOutput {
   
 }
+
+// MARK: - SendCoordinatorOutput
 
 extension WalletCoordinator: SendCoordinatorOutput {
   func sendCoordinatorDidClose(_ coordinator: SendCoordinator) {

@@ -28,6 +28,8 @@ final class ModalContentViewController: UIViewController, ScrollableModalCardCon
   private let listView = ModalContentListView()
   private let actionBarView = ModalContentActionBarView()
   
+  private let listTopSpacingView = SpacingView(verticalSpacing: .constant(.listTopSpace))
+  
   private var actionBarBottomConstraint: NSLayoutConstraint?
   
   private var contentSizeObserveToken: NSKeyValueObservation?
@@ -80,9 +82,8 @@ private extension ModalContentViewController {
     scrollView.addSubview(contentStackView)
     
     contentStackView.addArrangedSubview(headerView)
+    contentStackView.addArrangedSubview(listTopSpacingView)
     contentStackView.addArrangedSubview(listView)
-    
-    contentStackView.setCustomSpacing(.headerBottomSpace, after: headerView)
     
     setupConstraints()
     configure()
@@ -123,6 +124,7 @@ private extension ModalContentViewController {
     guard isViewLoaded else { return }
     guard let configuration = configuration else { return }
     headerView.configure(model: configuration.header)
+    listTopSpacingView.isHidden = configuration.listItems.isEmpty
     listView.configure(model: configuration.listItems)
     actionBarView.configure(model: configuration.actionBar)
   }
@@ -140,7 +142,7 @@ private extension ModalContentViewController {
 }
 
 private extension CGFloat {
-  static let headerBottomSpace: CGFloat = 32
+  static let listTopSpace: CGFloat = 32
   static let buttonVerticalSpace: CGFloat = 16
   static let listItemsBottomSpace: CGFloat = 16
 }
