@@ -18,13 +18,21 @@ final class AppCoordinator: Coordinator<WindowRouter> {
   }
   
   override func start() {
-    openTabBar()
+//    openTabBar()
+    openOnboarding()
   }
 }
 
 private extension AppCoordinator {
   func openTabBar() {
     let coordinator = appAssembly.tabBarCoordinator()
+    router.setRoot(presentable: coordinator.router.rootViewController)
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
+  func openOnboarding() {
+    let coordinator = appAssembly.onboardingCoordinator()
     router.setRoot(presentable: coordinator.router.rootViewController)
     addChild(coordinator)
     coordinator.start()
