@@ -15,7 +15,6 @@
 		27E0B9B4BE1065171C3AFD76 /* ActivityListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2439F2E5E6211F9C396FAF2 /* ActivityListView.swift */; };
 		2D8B9585056DA7795FC4C912 /* ActivityRootProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AD5CD51542108C56210A491 /* ActivityRootProtocols.swift */; };
 		2E9AD80F15E6019A55846F61 /* ActivityListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB090D8454B651425F5F1A3 /* ActivityListViewController.swift */; };
-		33FCEDBDA2CD72BEEB61461C /* Pods_Tonkeeper.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */; };
 		3C01D6946E22BFB97B2E82A6 /* ReceiveViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62EEBA5EBAC6F6BE4F5EBF4E /* ReceiveViewController.swift */; };
 		44FC2415321AB434412B8523 /* ActivityEmptyPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 694D413982BB2BB1B3808455 /* ActivityEmptyPresenter.swift */; };
 		48DB3E42B318C80B7090AFD0 /* ActivityEmptyProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38AF708B934DDF1ED4B726CE /* ActivityEmptyProtocols.swift */; };
@@ -171,6 +170,8 @@
 		7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292F72A29DCDA005B83DF /* SendCommentLengthValidator.swift */; };
 		7D9293042A29EE3F005B83DF /* TextFieldFormatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9293032A29EE3F005B83DF /* TextFieldFormatController.swift */; };
 		7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */; };
+		7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F342A4B2F07007C6154 /* AnyFormatKit */; };
+		7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F3E2A4B3338007C6154 /* WalletCore */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -218,7 +219,6 @@
 		4FBBFAE16AF8CF5F10D04789 /* BuyListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BuyListPresenter.swift; sourceTree = "<group>"; };
 		5315989FA9BDEABD3FA2E275 /* SendConfirmationViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationViewController.swift; sourceTree = "<group>"; };
 		62EEBA5EBAC6F6BE4F5EBF4E /* ReceiveViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReceiveViewController.swift; sourceTree = "<group>"; };
-		67AE621196A7AF226EB43ED1 /* Pods-Tonkeeper.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.debug.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.debug.xcconfig"; sourceTree = "<group>"; };
 		694D413982BB2BB1B3808455 /* ActivityEmptyPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityEmptyPresenter.swift; sourceTree = "<group>"; };
 		70F1208828A7CBF2A9DAF79F /* ActivityTransactionDetailsProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsProtocols.swift; sourceTree = "<group>"; };
 		747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListPresenter.swift; sourceTree = "<group>"; };
@@ -386,9 +386,7 @@
 		7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellCommentView.swift; sourceTree = "<group>"; };
 		8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationView.swift; sourceTree = "<group>"; };
 		8CE60ABD534A41016103CB95 /* TokensListProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListProtocols.swift; sourceTree = "<group>"; };
-		91212C1153B7799536A9E7B6 /* Pods-Tonkeeper.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Tonkeeper.release.xcconfig"; path = "Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper.release.xcconfig"; sourceTree = "<group>"; };
 		9503E8076CB7AA331E07685E /* ActivityEmptyView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityEmptyView.swift; sourceTree = "<group>"; };
-		95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Tonkeeper.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		96736B6F002EC3A83832DB82 /* ActivityListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityListPresenter.swift; sourceTree = "<group>"; };
 		97572A827415CAEE71C004FB /* ActivityTransactionDetailsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsView.swift; sourceTree = "<group>"; };
 		9B3A449395B3E637114337B2 /* BuyListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BuyListViewController.swift; sourceTree = "<group>"; };
@@ -413,22 +411,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				33FCEDBDA2CD72BEEB61461C /* Pods_Tonkeeper.framework in Frameworks */,
+				7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */,
+				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		009CFD2A245B9EAF956AA5C6 /* Pods */ = {
-			isa = PBXGroup;
-			children = (
-				67AE621196A7AF226EB43ED1 /* Pods-Tonkeeper.debug.xcconfig */,
-				91212C1153B7799536A9E7B6 /* Pods-Tonkeeper.release.xcconfig */,
-			);
-			path = Pods;
-			sourceTree = "<group>";
-		};
 		04FF381D2F96AC549BAFBA3F /* BuyList */ = {
 			isa = PBXGroup;
 			children = (
@@ -1045,14 +1035,6 @@
 			path = CurrencyWallet;
 			sourceTree = "<group>";
 		};
-		7D7D2C722CB651B1A7238030 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				95C6C1BEB7C6F73840FD34DD /* Pods_Tonkeeper.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		7D9144252A31F59500B0FD17 /* ModalCard */ = {
 			isa = PBXGroup;
 			children = (
@@ -1218,8 +1200,6 @@
 			children = (
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7DB8FB632A1BCC92005B4B11 /* Products */,
-				009CFD2A245B9EAF956AA5C6 /* Pods */,
-				7D7D2C722CB651B1A7238030 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1354,17 +1334,19 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7DB8FB762A1BCC92005B4B11 /* Build configuration list for PBXNativeTarget "Tonkeeper" */;
 			buildPhases = (
-				19B9129B99A8F46CB1CDA719 /* [CP] Check Pods Manifest.lock */,
 				7DB8FB5E2A1BCC92005B4B11 /* Sources */,
 				7DB8FB5F2A1BCC92005B4B11 /* Frameworks */,
 				7DB8FB602A1BCC92005B4B11 /* Resources */,
-				67F8589B2E344FABD88A1164 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			name = Tonkeeper;
+			packageProductDependencies = (
+				7DB17F342A4B2F07007C6154 /* AnyFormatKit */,
+				7DB17F3E2A4B3338007C6154 /* WalletCore */,
+			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
 			productType = "com.apple.product-type.application";
@@ -1393,6 +1375,10 @@
 				Base,
 			);
 			mainGroup = 7DB8FB592A1BCC92005B4B11;
+			packageReferences = (
+				7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */,
+				7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */,
+			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -1416,48 +1402,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		19B9129B99A8F46CB1CDA719 /* [CP] Check Pods Manifest.lock */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
-				"${PODS_ROOT}/Manifest.lock",
-			);
-			name = "[CP] Check Pods Manifest.lock";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-Tonkeeper-checkManifestLockResult.txt",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		67F8589B2E344FABD88A1164 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Tonkeeper/Pods-Tonkeeper-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		7DB8FB5E2A1BCC92005B4B11 /* Sources */ = {
@@ -1787,7 +1731,6 @@
 		};
 		7DB8FB772A1BCC92005B4B11 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 67AE621196A7AF226EB43ED1 /* Pods-Tonkeeper.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1822,7 +1765,6 @@
 		};
 		7DB8FB782A1BCC92005B4B11 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 91212C1153B7799536A9E7B6 /* Pods-Tonkeeper.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -1877,6 +1819,38 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/luximetr/AnyFormatKit";
+			requirement = {
+				kind = exactVersion;
+				version = 2.5.2;
+			};
+		};
+		7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tonkeeper/core-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.0.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		7DB17F342A4B2F07007C6154 /* AnyFormatKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
+			productName = AnyFormatKit;
+		};
+		7DB17F3E2A4B3338007C6154 /* WalletCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */;
+			productName = WalletCore;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 7DB8FB5A2A1BCC92005B4B11 /* Project object */;
 }
