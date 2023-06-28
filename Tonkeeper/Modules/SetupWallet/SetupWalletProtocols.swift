@@ -8,7 +8,10 @@
 
 import Foundation
 
-protocol SetupWalletModuleOutput: AnyObject {}
+protocol SetupWalletModuleOutput: AnyObject {
+  func didTapImportWallet()
+  func didTapCreateWallet()
+}
 
 protocol SetupWalletModuleInput: AnyObject {}
 

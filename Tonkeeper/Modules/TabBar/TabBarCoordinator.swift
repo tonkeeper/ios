@@ -7,7 +7,14 @@
 
 import UIKit
 
+protocol TabBarCoordinatorOutput: AnyObject {
+  func tabBarCoordinatorOpenImportWallet(_ coordinator: TabBarCoordinator)
+  func tabBarCoordinatorOpenCreateWallet(_ coordinator: TabBarCoordinator)
+}
+
 final class TabBarCoordinator: Coordinator<TabBarRouter> {
+  
+  weak var output: TabBarCoordinatorOutput?
   
   private let assembly: TabBarAssembly
   
@@ -59,7 +66,19 @@ extension TabBarCoordinator: WalletCoordinatorOutput {
 // MARK: - SetupWalletModuleOutput
 
 extension TabBarCoordinator: SetupWalletModuleOutput {
+  func didTapImportWallet() {
+    router.dismiss { [weak self] in
+      guard let self = self else { return }
+      self.output?.tabBarCoordinatorOpenImportWallet(self)
+    }
+  }
   
+  func didTapCreateWallet() {
+    router.dismiss { [weak self] in
+      guard let self = self else { return }
+      self.output?.tabBarCoordinatorOpenCreateWallet(self)
+    }
+  }
 }
 
 // MARK: - Private

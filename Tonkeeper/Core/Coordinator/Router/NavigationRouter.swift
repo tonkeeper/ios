@@ -19,7 +19,7 @@ final class NavigationRouter: Router<UINavigationController> {
             options: RouteOptions = .default,
             dismiss: (() -> Void)? = nil,
             completion: (() -> Void)? = nil) {
-    dismissClosures[presentable.viewController] = completion
+    dismissClosures[presentable.viewController] = dismiss
     rootViewController.pushViewController(presentable.viewController,
                                           options: options,
                                           completion: completion)

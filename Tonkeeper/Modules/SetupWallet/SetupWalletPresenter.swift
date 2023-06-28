@@ -34,12 +34,18 @@ private extension SetupWalletPresenter {
   func updateWithConfiguration() {
     let createButtons: [ModalContentViewController.Configuration.ActionBar.Button] = [
       .init(title: .createButtonTitle,
-            configuration: .primaryLarge),
+            configuration: .primaryLarge,
+            tapAction: { [weak self] _ in
+              self?.output?.didTapCreateWallet()
+            }),
     ]
     
     let importButtons: [ModalContentViewController.Configuration.ActionBar.Button] = [
       .init(title: .importButtonTitle,
-            configuration: .secondaryLarge),
+            configuration: .secondaryLarge,
+            tapAction: { [weak self] _ in
+              self?.output?.didTapImportWallet()
+            }),
     ]
     
     let actionBarItems: [ModalContentViewController.Configuration.ActionBar.Item] = [
@@ -49,7 +55,7 @@ private extension SetupWalletPresenter {
     
     let configuration = ModalContentViewController.Configuration(
       header: .init(image: .image(image: .Icons.tonIcon128, tintColor: .Accent.blue, backgroundColor: .clear),
-                    title: "Let’s set up your wallet",
+                    title: .title,
                     bottomDescription: .description),
       listItems: [],
       actionBar: .init(items: actionBarItems)
@@ -62,6 +68,7 @@ private extension SetupWalletPresenter {
 private extension String {
   static let createButtonTitle = "Create new wallet"
   static let importButtonTitle = "Import existing wallet"
+  static let title = "Let’s set up your wallet"
   static let description = """
   You need a connected wallet to use
   Tonkeeper. Either create a new wallet
