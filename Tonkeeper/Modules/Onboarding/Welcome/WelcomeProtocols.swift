@@ -8,12 +8,15 @@
 
 import Foundation
 
-protocol WelcomeModuleOutput: AnyObject {}
+protocol WelcomeModuleOutput: AnyObject {
+  func didTapContinueButton()
+}
 
 protocol WelcomeModuleInput: AnyObject {}
 
 protocol WelcomePresenterInput {
   func viewDidLoad()
+  func didTapContinueButton()
 }
 
 protocol WelcomeViewInput: AnyObject {

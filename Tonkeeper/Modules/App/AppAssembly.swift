@@ -20,11 +20,13 @@ final class AppAssembly {
     return coordinator
   }
   
-  func onboardingCoordinator() -> OnboardingCoordinator {
+  func onboardingCoordinator(output: OnboardingCoordinatorOutput) -> OnboardingCoordinator {
     let navigationController = UINavigationController()
+    navigationController.setNavigationBarHidden(true, animated: false)
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = OnboardingCoordinator(router: router,
                                             assembly: onboardingAssembly)
+    coordinator.output = output
     return coordinator
   }
 }

@@ -28,6 +28,7 @@
 		795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC1F118C75E99C32396A981 /* SendConfirmationProtocols.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
 		7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */; };
+		7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */; };
 		7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43792A33749F00C23A75 /* UIImage+Images.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
@@ -235,6 +236,7 @@
 		7AD5CD51542108C56210A491 /* ActivityRootProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityRootProtocols.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
 		7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeListItem.swift; sourceTree = "<group>"; };
+		7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonBottomContainer.swift; sourceTree = "<group>"; };
 		7D3E43792A33749F00C23A75 /* UIImage+Images.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Images.swift"; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
@@ -540,6 +542,14 @@
 				7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7D3BCFA62A4C3E1C00BE6AD9 /* Containers */ = {
+			isa = PBXGroup;
+			children = (
+				7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */,
+			);
+			path = Containers;
 			sourceTree = "<group>";
 		};
 		7D3E437B2A33830800C23A75 /* Buy */ = {
@@ -1006,6 +1016,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D3BCFA62A4C3E1C00BE6AD9 /* Containers */,
 				7D9144252A31F59500B0FD17 /* ModalCard */,
 				7D5D05CC2A307161009F42FF /* Cell */,
 				7D9292DC2A28A1D2005B83DF /* ViewController */,
@@ -1511,6 +1522,7 @@
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
 				7D3E438F2A339E2A00C23A75 /* BuyListServiceCell.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
+				7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */,
 				7D5928742A2007C0006B0A8A /* Button.Configuration+Header.swift in Sources */,

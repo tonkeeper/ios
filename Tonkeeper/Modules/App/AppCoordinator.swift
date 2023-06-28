@@ -32,9 +32,16 @@ private extension AppCoordinator {
   }
   
   func openOnboarding() {
-    let coordinator = appAssembly.onboardingCoordinator()
+    let coordinator = appAssembly.onboardingCoordinator(output: self)
     router.setRoot(presentable: coordinator.router.rootViewController)
     addChild(coordinator)
     coordinator.start()
+  }
+}
+
+extension AppCoordinator: OnboardingCoordinatorOutput {
+  func onboardingCoordinatorDidFinish(_ coordinator: OnboardingCoordinator) {
+    removeChild(coordinator)
+    openTabBar()
   }
 }

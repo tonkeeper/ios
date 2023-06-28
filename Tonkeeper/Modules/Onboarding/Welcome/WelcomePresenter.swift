@@ -22,6 +22,10 @@ extension WelcomePresenter: WelcomePresenterInput {
   func viewDidLoad() {
     updateContent()
   }
+  
+  func didTapContinueButton() {
+    output?.didTapContinueButton()
+  }
 }
 
 // MARK: - WelcomeModuleInput
@@ -32,7 +36,7 @@ extension WelcomePresenter: WelcomeModuleInput {}
 
 private extension WelcomePresenter {
   func updateContent() {
-    let model = WelcomeView.Model(title: createTitleString(), items: createItems())
+    let model = WelcomeView.Model(title: createTitleString(), items: createItems(), buttonTitle: "Get started")
     viewInput?.update(with: model)
   }
   
@@ -52,15 +56,17 @@ private extension WelcomePresenter {
       .attributed(with: .label1, alignment: .left, color: .Text.primary)
     let firstDescription = "TON is a network designed for speed and throughput. Fees are significantly lower than on other blockchains, and transactions are confirmed in a matter of seconds."
       .attributed(with: .body2, alignment: .left, color: .Text.secondary)
+    let firstIcon = UIImage.Icons.Welcome.speed
     
     let secondTitle = "End-to-end security"
       .attributed(with: .label1, alignment: .left, color: .Text.primary)
     let secondDescription = "Tonkeeper stores your cryptographic keys on your device without requiring documents, personal information, contact details, or KYC."
       .attributed(with: .body2, alignment: .left, color: .Text.secondary)
+    let secondIcon = UIImage.Icons.Welcome.security
     
     return [
-      .init(title: firstTitle, description: firstDescription, icon: nil),
-      .init(title: secondTitle, description: secondDescription, icon: nil)
+      .init(title: firstTitle, description: firstDescription, icon: firstIcon),
+      .init(title: secondTitle, description: secondDescription, icon: secondIcon)
     ]
   }
 }

@@ -173,6 +173,16 @@ extension UIImage {
       }
     }
     
+    enum Welcome {
+      static var speed: UIImage? {
+        .init(named: "Icons/28/ic-rocket-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var security: UIImage? {
+        .init(named: "Icons/28/ic-shield-28")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     enum Mock {
       static var tonCurrencyIcon: UIImage? {
         .init(named: "Icons/44/ton_currency_icon")

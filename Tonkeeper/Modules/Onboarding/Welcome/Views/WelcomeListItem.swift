@@ -12,6 +12,7 @@ final class WelcomeListItem: UIView, ConfigurableView {
   private let iconImageView: UIImageView = {
     let imageView = UIImageView()
     imageView.tintColor = .Accent.blue
+    imageView.contentMode = .center
     return imageView
   }()
   private let titleLabel: UILabel = {
@@ -75,7 +76,7 @@ private extension WelcomeListItem {
       iconImageView.leftAnchor.constraint(equalTo: leftAnchor),
       
       titleLabel.topAnchor.constraint(equalTo: topAnchor),
-      titleLabel.leftAnchor.constraint(equalTo: iconImageView.rightAnchor),
+      titleLabel.leftAnchor.constraint(equalTo: iconImageView.rightAnchor, constant: .iconRightSpace),
       titleLabel.rightAnchor.constraint(equalTo: rightAnchor),
       
       descriptionLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: .descriptionTopSpace),
@@ -89,4 +90,5 @@ private extension WelcomeListItem {
 private extension CGFloat {
   static let iconSide: CGFloat = 28
   static let descriptionTopSpace: CGFloat = 3
+  static let iconRightSpace: CGFloat = 16
 }

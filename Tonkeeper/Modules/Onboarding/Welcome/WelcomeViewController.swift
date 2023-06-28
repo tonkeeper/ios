@@ -45,5 +45,14 @@ extension WelcomeViewController: WelcomeViewInput {
 // MARK: - Private
 
 private extension WelcomeViewController {
-  func setup() {}
+  func setup() {
+    customView.button.addTarget(self,
+                                action: #selector(didTapButton),
+                                for: .touchUpInside)
+  }
+  
+  @objc
+  func didTapButton() {
+    presenter.didTapContinueButton()
+  }
 }

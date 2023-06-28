@@ -7,7 +7,13 @@
 
 import UIKit
 
+protocol OnboardingCoordinatorOutput: AnyObject {
+  func onboardingCoordinatorDidFinish(_ coordinator: OnboardingCoordinator)
+}
+
 final class OnboardingCoordinator: Coordinator<NavigationRouter> {
+  
+  weak var output: OnboardingCoordinatorOutput?
   
   private let assembly: OnboardingAssembly
   
@@ -31,4 +37,8 @@ private extension OnboardingCoordinator {
 
 // MARK: - WelcomeModuleOutput
 
-extension OnboardingCoordinator: WelcomeModuleOutput {}
+extension OnboardingCoordinator: WelcomeModuleOutput {
+  func didTapContinueButton() {
+    output?.onboardingCoordinatorDidFinish(self)
+  }
+}
