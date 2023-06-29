@@ -8,7 +8,6 @@
 import Foundation
 
 protocol WalletRootModuleOutput: AnyObject {
-  func openCreateImportWallet()
   func openQRScanner()
   func openSend()
   func openReceive()
@@ -17,9 +16,6 @@ protocol WalletRootModuleOutput: AnyObject {
 
 protocol WalletRootPresenterInput {
   func viewDidLoad()
-  func didTapSetupWalletButton()
 }
 
-protocol WalletRootViewInput: AnyObject {
-  func update(with model: WalletRootView.Model)
-}
+protocol WalletRootViewInput: AnyObject {}

@@ -669,6 +669,13 @@
 			path = Validation;
 			sourceTree = "<group>";
 		};
+		7D3BCFC92A4D7BEE00BE6AD9 /* Success */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Success;
+			sourceTree = "<group>";
+		};
 		7D3E437B2A33830800C23A75 /* Buy */ = {
 			isa = PBXGroup;
 			children = (
@@ -1117,6 +1124,7 @@
 		7D6836712A1E65ED002DBBC7 /* Common */ = {
 			isa = PBXGroup;
 			children = (
+				7D3BCFC92A4D7BEE00BE6AD9 /* Success */,
 				7D6836722A1E65F7002DBBC7 /* QRScanner */,
 			);
 			path = Common;

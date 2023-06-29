@@ -31,20 +31,7 @@ final class WalletRootPresenter {
 
 extension WalletRootPresenter: WalletRootPresenterInput {
   func viewDidLoad() {
-    updateRootView()
     updateTitle()
-  }
-  
-  func didTapSetupWalletButton() {
-    output?.openCreateImportWallet()
-  }
-  
-  func handleWalletRequiredAction(_ action: () -> Void) {
-    if keeperController.hasWallets {
-      action()
-    } else {
-      output?.openCreateImportWallet()
-    }
   }
 }
 
@@ -52,27 +39,19 @@ extension WalletRootPresenter: WalletRootPresenterInput {
 
 extension WalletRootPresenter: WalletHeaderModuleOutput {
   func didTapSendButton() {
-    handleWalletRequiredAction { [weak self] in
-      self?.output?.openSend()
-    }
+    output?.openSend()
   }
   
   func didTapReceiveButton() {
-    handleWalletRequiredAction { [weak self] in
-      self?.output?.openReceive()
-    }
+    output?.openReceive()
   }
   
   func didTapBuyButton() {
-    handleWalletRequiredAction { [weak self] in
-      self?.output?.openBuy()
-    }
+    output?.openBuy()
   }
   
   func openQRScanner() {
-    handleWalletRequiredAction { [weak self] in
-      self?.output?.openQRScanner()
-    }
+    output?.openQRScanner()
   }
 }
 
@@ -85,12 +64,6 @@ extension WalletRootPresenter: WalletContentModuleOutput {
   
   func updateTitle() {
     headerInput?.updateTitle("Wallet")
-  }
-  
-  func updateRootView() {
-    let model = WalletRootView.Model(setupWalletButtonTitle: .setupWalletButtonTitle,
-                                     isSetupWalletButtonHidden: keeperController.hasWallets)
-    viewInput?.update(with: model)
   }
 }
 

@@ -18,8 +18,7 @@ final class RootCoordinator: Coordinator<NavigationRouter> {
   }
   
   override func start() {
-    let appSettings = assembly.coreAssembly.appSetting
-    if appSettings.didShowOnboarding {
+    if assembly.walletCoreAssembly.keeperController.hasWallets {
       openTabBar()
     } else {
       openOnboarding()
@@ -30,7 +29,6 @@ final class RootCoordinator: Coordinator<NavigationRouter> {
 private extension RootCoordinator {
   func openTabBar() {
     let coordinator = assembly.tabBarCoordinator()
-    coordinator.output = self
     router.setPresentables([(coordinator.router.rootViewController, nil)])
     addChild(coordinator)
     coordinator.start()
@@ -43,30 +41,42 @@ private extension RootCoordinator {
     addChild(coordinator)
     coordinator.start()
   }
-}
-
-// MARK: - OnboardingCoordinatorOutput
-
-extension RootCoordinator: OnboardingCoordinatorOutput {
-  func onboardingCoordinatorDidFinish(_ coordinator: OnboardingCoordinator) {
-    let appSettings = assembly.coreAssembly.appSetting
-    appSettings.didShowOnboarding = true
-    removeChild(coordinator)
-    openTabBar()
+  
+  func openCreateImportWallet() {
+    let module = SetupWalletAssembly.create(output: self)
+    let modalCardContainerViewController = ModalCardContainerViewController(content: module.view)
+    modalCardContainerViewController.headerSize = .small
+    
+    router.present(modalCardContainerViewController)
   }
-}
-
-// MARK: - TabBarCoordinatorOutput
-
-extension RootCoordinator: TabBarCoordinatorOutput {
-  func tabBarCoordinatorOpenImportWallet(_ coordinator: TabBarCoordinator) {
+  
+  func openImportWallet() {
     let importWalletCoordinator = assembly.importWalletCoordinator(navigationRouter: router)
     addChild(importWalletCoordinator)
     importWalletCoordinator.start()
   }
+}
+
+// MARK: - SetupWalletModuleOutput
+
+extension RootCoordinator: SetupWalletModuleOutput {
+  func didTapImportWallet() {
+    router.dismiss { [weak self] in
+      self?.openImportWallet()
+    }
+  }
   
-  func tabBarCoordinatorOpenCreateWallet(_ coordinator: TabBarCoordinator) {
-    
+  func didTapCreateWallet() {
+    router.dismiss { }
+  }
+}
+
+
+// MARK: - OnboardingCoordinatorOutput
+
+extension RootCoordinator: OnboardingCoordinatorOutput {
+  func onboardingCoordinatorDidTapGetStarted(_ coordinator: OnboardingCoordinator) {
+    openCreateImportWallet()
   }
 }
 

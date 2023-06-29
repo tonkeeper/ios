@@ -7,13 +7,7 @@
 
 import UIKit
 
-protocol WalletCoordinatorOutput: AnyObject {
-  func walletCoordinatorOpenCreateImportWallet(_ coordinator: WalletCoordinator)
-}
-
 final class WalletCoordinator: Coordinator<NavigationRouter> {
-  
-  weak var output: WalletCoordinatorOutput?
   
   private let walletAssembly: WalletAssembly
   
@@ -67,10 +61,6 @@ extension WalletCoordinator: WalletRootModuleOutput {
     router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
       self?.removeChild(coordinator!)
     })
-  }
-  
-  func openCreateImportWallet() {
-    output?.walletCoordinatorOpenCreateImportWallet(self)
   }
 }
 

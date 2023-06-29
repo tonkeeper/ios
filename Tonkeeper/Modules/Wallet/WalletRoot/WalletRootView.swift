@@ -7,10 +7,9 @@
 
 import UIKit
 
-final class WalletRootView: UIView, ConfigurableView {
+final class WalletRootView: UIView{
   
   private let contentContainer = UIView()
-  let setupWalletButton = TKButton(configuration: .primaryLarge)
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -33,18 +32,6 @@ final class WalletRootView: UIView, ConfigurableView {
       contentView.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor)
     ])
   }
-  
-  // MARK: - ConfigurableView
-
-  struct Model {
-    let setupWalletButtonTitle: String
-    let isSetupWalletButtonHidden: Bool
-  }
-  
-  func configure(model: Model) {
-    setupWalletButton.title = model.setupWalletButtonTitle
-    setupWalletButton.isHidden = model.isSetupWalletButtonHidden
-  }
 }
 
 private extension WalletRootView {
@@ -52,20 +39,14 @@ private extension WalletRootView {
     backgroundColor = .Background.page
     
     addSubview(contentContainer)
-    addSubview(setupWalletButton)
     
     contentContainer.translatesAutoresizingMaskIntoConstraints = false
-    setupWalletButton.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       contentContainer.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
       contentContainer.leftAnchor.constraint(equalTo: leftAnchor),
       contentContainer.rightAnchor.constraint(equalTo: rightAnchor),
       contentContainer.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
-      
-      setupWalletButton.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
-      setupWalletButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),
-      setupWalletButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -.setupWalletButtonBottomSpace)
     ])
   }
 }
