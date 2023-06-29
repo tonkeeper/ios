@@ -9,6 +9,8 @@
 import UIKit
 
 final class PasscodeInputView: UIView {
+  
+  let keyboardView = PasscodeKeyboardView()
 
   // MARK: - Init
 
@@ -27,5 +29,19 @@ final class PasscodeInputView: UIView {
 private extension PasscodeInputView {
   func setup() {
     backgroundColor = .Background.page
+    
+    addSubview(keyboardView)
+    
+    setupConstraints()
+  }
+  
+  func setupConstraints() {
+    keyboardView.translatesAutoresizingMaskIntoConstraints = false
+    
+    NSLayoutConstraint.activate([
+      keyboardView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
+      keyboardView.leftAnchor.constraint(equalTo: leftAnchor),
+      keyboardView.rightAnchor.constraint(equalTo: rightAnchor)
+    ])
   }
 }
