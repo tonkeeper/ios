@@ -27,7 +27,7 @@ final class EnterMnemonicView: UIView, ConfigurableView {
   }()
   let descriptionLabel: UILabel = {
     let label = UILabel()
-    label.numberOfLines = 2
+    label.numberOfLines = 0
     return label
   }()
   let gradientLayer: CAGradientLayer = {
