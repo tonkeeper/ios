@@ -36,13 +36,28 @@ private extension ImportWalletCoordinator {
       self.output?.importWalletCoordinatorDidClose(self)
     })
   }
+  
+  func openCreatePasscode() {
+    let coordinator = assembly.createPasscodeCoordinator(router: router)
+    coordinator.output = self
+    coordinator.start()
+    addChild(coordinator)
+  }
 }
 
 // MARK: - EnterMnemonicModuleOutput
 
 extension ImportWalletCoordinator: EnterMnemonicModuleOutput {
   func didInputMnemonic() {
-    
+    openCreatePasscode()
+  }
+}
+
+// MARK: - CreatePasscodeCoordinatorOutput
+
+extension ImportWalletCoordinator: CreatePasscodeCoordinatorOutput {
+  func createPasscodeCoordinatorDidFinish(_ coordinator: CreatePasscodeCoordinator) {
+    removeChild(coordinator)
   }
 }
 
