@@ -40,5 +40,9 @@ private extension ImportWalletCoordinator {
 
 // MARK: - EnterMnemonicModuleOutput
 
-extension ImportWalletCoordinator: EnterMnemonicModuleOutput {}
+extension ImportWalletCoordinator: EnterMnemonicModuleOutput {
+  func didInputMnemonic() {
+    
+  }
+}
 

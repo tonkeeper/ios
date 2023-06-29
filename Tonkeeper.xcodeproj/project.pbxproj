@@ -42,6 +42,7 @@
 		7D3BCFC02A4C9E6B00BE6AD9 /* RootAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFBF2A4C9E6B00BE6AD9 /* RootAssembly.swift */; };
 		7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFC22A4CAB1300BE6AD9 /* TabBarController.swift */; };
 		7D3BCFC52A4CADB200BE6AD9 /* MnemonicTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFC42A4CADB200BE6AD9 /* MnemonicTextField.swift */; };
+		7D3BCFC82A4D637800BE6AD9 /* MnemonicValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFC72A4D637800BE6AD9 /* MnemonicValidator.swift */; };
 		7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43792A33749F00C23A75 /* UIImage+Images.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
@@ -272,6 +273,7 @@
 		7D3BCFBF2A4C9E6B00BE6AD9 /* RootAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFC22A4CAB1300BE6AD9 /* TabBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarController.swift; sourceTree = "<group>"; };
 		7D3BCFC42A4CADB200BE6AD9 /* MnemonicTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MnemonicTextField.swift; sourceTree = "<group>"; };
+		7D3BCFC72A4D637800BE6AD9 /* MnemonicValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MnemonicValidator.swift; sourceTree = "<group>"; };
 		7D3E43792A33749F00C23A75 /* UIImage+Images.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Images.swift"; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
@@ -565,6 +567,7 @@
 		40C4335A8B2D60391E5D32DB /* EnterMnemonic */ = {
 			isa = PBXGroup;
 			children = (
+				7D3BCFC62A4D636D00BE6AD9 /* Validation */,
 				AD94D10A44ED363D48C70552 /* EnterMnemonicViewController.swift */,
 				1A6AC52DF8E6970E81B415D8 /* EnterMnemonicView.swift */,
 				64C81CE487C82E845B444588 /* EnterMnemonicPresenter.swift */,
@@ -656,6 +659,14 @@
 				7D3BCFC22A4CAB1300BE6AD9 /* TabBarController.swift */,
 			);
 			path = TabBarController;
+			sourceTree = "<group>";
+		};
+		7D3BCFC62A4D636D00BE6AD9 /* Validation */ = {
+			isa = PBXGroup;
+			children = (
+				7D3BCFC72A4D637800BE6AD9 /* MnemonicValidator.swift */,
+			);
+			path = Validation;
 			sourceTree = "<group>";
 		};
 		7D3E437B2A33830800C23A75 /* Buy */ = {
@@ -1761,6 +1772,7 @@
 				CB34DBE367608982460FD5AA /* ActivityRootView.swift in Sources */,
 				708F4E78995F7F1DD8EE8648 /* ActivityRootPresenter.swift in Sources */,
 				2D8B9585056DA7795FC4C912 /* ActivityRootProtocols.swift in Sources */,
+				7D3BCFC82A4D637800BE6AD9 /* MnemonicValidator.swift in Sources */,
 				7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */,
 				83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */,
 				7D5D05AB2A306739009F42FF /* ActivityListSection.swift in Sources */,

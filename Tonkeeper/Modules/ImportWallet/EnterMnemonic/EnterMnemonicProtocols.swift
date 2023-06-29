@@ -8,12 +8,19 @@
 
 import Foundation
 
-protocol EnterMnemonicModuleOutput: AnyObject {}
+protocol EnterMnemonicModuleOutput: AnyObject {
+  func didInputMnemonic()
+}
 
 protocol EnterMnemonicModuleInput: AnyObject {}
 
 protocol EnterMnemonicPresenterInput {
   func viewDidLoad()
+  func validate(word: String) -> Bool
+  func didEnterMnemonic(_ mnemonic: [String])
 }
 
-protocol EnterMnemonicViewInput: AnyObject {}
+protocol EnterMnemonicViewInput: AnyObject {
+  func update(with model: EnterMnemonicView.Model)
+  func showMnemonicValidationError()
+}

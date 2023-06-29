@@ -7,7 +7,18 @@
 
 import UIKit
 
+protocol MnemonicTextFieldDelegate: AnyObject {
+  func didTapNextButton(textField: MnemonicTextField)
+}
+
 final class MnemonicTextField: UIControlClosure {
+  
+  weak var delegate: MnemonicTextFieldDelegate?
+  
+  enum ValidationState {
+    case valid
+    case invalid
+  }
   
   var text: String? {
     get { textField.text }
@@ -17,6 +28,12 @@ final class MnemonicTextField: UIControlClosure {
   var placeholder: String? {
     get { placeholderLabel.text }
     set { placeholderLabel.text = newValue }
+  }
+  
+  var validationState: ValidationState = .valid {
+    didSet {
+      updateAppearance()
+    }
   }
   
   private let container: TextFieldContainer = {
@@ -34,6 +51,7 @@ final class MnemonicTextField: UIControlClosure {
     textField.autocapitalizationType = .none
     textField.autocorrectionType = .no
     textField.keyboardAppearance = .dark
+    textField.returnKeyType = .next
     return textField
   }()
   let placeholderLabel: UILabel = {
@@ -54,11 +72,18 @@ final class MnemonicTextField: UIControlClosure {
     fatalError("init(coder:) has not been implemented")
   }
   
+  override var intrinsicContentSize: CGSize {
+    .init(width: UIView.noIntrinsicMetric,
+          height: .height)
+  }
+  
+  @discardableResult
   override func becomeFirstResponder() -> Bool {
     let result = textField.becomeFirstResponder()
     return result
   }
   
+  @discardableResult
   override func resignFirstResponder() -> Bool {
     let result = textField.resignFirstResponder()
     return result
@@ -78,6 +103,7 @@ private extension MnemonicTextField {
     textField.addTarget(self, action: #selector(didStartEditing), for: .editingDidBegin)
     textField.addTarget(self, action: #selector(didEndEditing), for: .editingDidEnd)
     textField.addTarget(self, action: #selector(didEdit), for: .editingChanged)
+    textField.delegate = self
     
     setupConstraints()
   }
@@ -104,19 +130,39 @@ private extension MnemonicTextField {
     ])
   }
   
+  func updateAppearance() {
+    switch validationState {
+    case .valid:
+      container.validationState = .valid
+      textField.tintColor = .Field.activeBorder
+    case .invalid:
+      container.validationState = .invalid
+      textField.tintColor = .Field.errorBorder
+    }
+  }
+  
   @objc
   func didStartEditing() {
     container.state = .active
+    sendActions(for: .editingDidBegin)
   }
   
   @objc
   func didEndEditing() {
     container.state = .inactive
+    sendActions(for: .editingDidEnd)
   }
   
   @objc
   func didEdit() {
     sendActions(for: .editingChanged)
+  }
+}
+
+extension MnemonicTextField: UITextFieldDelegate {
+  func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+    delegate?.didTapNextButton(textField: self)
+    return true
   }
 }
 
@@ -126,4 +172,5 @@ private extension CGFloat {
   static let textLeftSpacing: CGFloat = 12
   static let orderLabelWidth: CGFloat = 28
   static let orderLabelHeight: CGFloat = 24
+  static let height: CGFloat = 56
 }
