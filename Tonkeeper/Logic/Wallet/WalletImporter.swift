@@ -1,5 +1,5 @@
 //
-//  WalletCreator.swift
+//  WalletImporter.swift
 //  Tonkeeper
 //
 //  Created by Grigory on 30.6.23..
@@ -7,30 +7,31 @@
 
 import Foundation
 import WalletCore
-import TonSwift
 
-struct WalletCreator {
+struct WalletImporter {
   
   enum Error: Swift.Error {
-    case failedToCreateWallet
+    case failedToImportWallet(error: Swift.Error)
   }
   
   private let keeperController: KeeperController
   private let passcodeController: PasscodeController
+  private let mnemonic: [String]
   
   init(keeperController: KeeperController,
-       passcodeController: PasscodeController) {
+       passcodeController: PasscodeController,
+       mnemonic: [String]) {
     self.keeperController = keeperController
     self.passcodeController = passcodeController
+    self.mnemonic = mnemonic
   }
 
-  func create(with passcode: Passcode) throws {
-    let mnemonic = Mnemonic.mnemonicNew(wordsCount: 24)
+  func importWallet(with passcode: Passcode) throws {
     do {
       try keeperController.addWallet(with: mnemonic)
       try passcodeController.setPasscode(passcode)
     } catch {
-      throw Error.failedToCreateWallet
+      throw Error.failedToImportWallet(error: error)
     }
   }
 }

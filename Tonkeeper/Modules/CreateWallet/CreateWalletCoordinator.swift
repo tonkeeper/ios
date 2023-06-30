@@ -87,7 +87,6 @@ extension CreateWalletCoordinator: CreatePasscodeCoordinatorOutput {
         self.output?.createWalletCoordinatorDidCreateWallet(self)
       })
     } catch {
-      print(error)
       // TBD: handle wallet creation failed
     }
   }

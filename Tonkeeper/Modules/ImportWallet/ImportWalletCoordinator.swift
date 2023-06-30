@@ -19,6 +19,8 @@ final class ImportWalletCoordinator: Coordinator<NavigationRouter> {
     
   private let assembly: ImportWalletAssembly
   
+  private var importWalletClosure: ((Passcode) throws -> Void)?
+  
   init(router: NavigationRouter,
        assembly: ImportWalletAssembly) {
     self.assembly = assembly
@@ -43,7 +45,11 @@ private extension ImportWalletCoordinator {
     })
   }
   
-  func openCreatePasscode() {
+  func openCreatePasscode(walletImporter: WalletImporter) {
+    importWalletClosure = { passcode in
+      try walletImporter.importWallet(with: passcode)
+    }
+    
     let coordinator = assembly.createPasscodeCoordinator(router: router)
     coordinator.output = self
     coordinator.start()
@@ -62,7 +68,12 @@ private extension ImportWalletCoordinator {
 
 extension ImportWalletCoordinator: EnterMnemonicModuleOutput {
   func didInputMnemonic(_ mnemonic: [String]) {
-    openCreatePasscode()
+    let walletImporter = WalletImporter(
+      keeperController: assembly.walletCoreAssembly.keeperController,
+      passcodeController: assembly.walletCoreAssembly.passcodeController,
+      mnemonic: mnemonic
+    )
+    openCreatePasscode(walletImporter: walletImporter)
   }
 }
 
@@ -73,18 +84,28 @@ extension ImportWalletCoordinator: CreatePasscodeCoordinatorOutput {
     removeChild(coordinator)
   }
   
-  func createPasscodeCoordinatorDidCreatePasscode(_ coordinator: CreatePasscodeCoordinator, passcode: Passcode) {
-    removeChild(coordinator)
-    
-    let successViewController = SuccessViewController(configuration: .walletImport)
-    successViewController.didFinishAnimation = { [weak self] in
-      guard let self = self else { return }
-      self.output?.importWalletCoordinatorDidClose(self)
+  func createPasscodeCoordinatorDidCreatePasscode(
+    _ coordinator: CreatePasscodeCoordinator,
+    passcode: Passcode
+  ) {
+    do {
+      try importWalletClosure?(passcode)
+      
+      removeChild(coordinator)
+      
+      let successViewController = SuccessViewController(configuration: .walletImport)
+      successViewController.didFinishAnimation = { [weak self] in
+        guard let self = self else { return }
+        self.output?.importWalletCoordinatorDidClose(self)
+      }
+      router.push(presentable: successViewController, completion:  { [weak self] in
+        guard let self = self else { return }
+        self.output?.importWalletCoordinatorDidImportWallet(self)
+      })
+      
+    } catch {
+      // TBD: handle wallet import failed
     }
-    router.push(presentable: successViewController, completion:  { [weak self] in
-      guard let self = self else { return }
-      self.output?.importWalletCoordinatorDidImportWallet(self)
-    })
   }
 }
 

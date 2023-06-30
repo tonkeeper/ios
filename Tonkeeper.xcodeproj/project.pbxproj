@@ -35,6 +35,7 @@
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
 		7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D143C3C2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift */; };
+		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
 		7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */; };
 		7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */; };
@@ -285,6 +286,7 @@
 		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D143C3C2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SuccessViewController+Configuration.swift"; sourceTree = "<group>"; };
+		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
 		7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeListItem.swift; sourceTree = "<group>"; };
 		7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonBottomContainer.swift; sourceTree = "<group>"; };
@@ -1318,6 +1320,7 @@
 			isa = PBXGroup;
 			children = (
 				7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */,
+				7D1B1F382A4F46B000EC873F /* WalletImporter.swift */,
 			);
 			path = Wallet;
 			sourceTree = "<group>";
@@ -1880,6 +1883,7 @@
 				7D91442B2A31F5F700B0FD17 /* DimmingPresentationController.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */,
+				7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
 				7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */,
 				7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */,

@@ -119,8 +119,6 @@ private extension EnterMnemonicViewController {
       action: #selector(didTapContinueButton),
       for: .touchUpInside
     )
-    
-    customView.textFields.forEach { $0.text = "keen" }
   }
   
   func updateContinueButtonState() {
