@@ -36,10 +36,8 @@ private extension CreatePasscodeCoordinator {
       self?.openReenterPasscode(passcode: passcode)
     }
     let module = assembly.passcodeInputAssembly(output: self, configurator: configurator)
-    router.push(presentable: module.view, dismiss:  { [weak self] in
-      guard let self = self else { return }
-      self.output?.createPasscodeCoordinatorDidFinish(self)
-    })
+    
+    initialPresentable = module.view
   }
   
   func openReenterPasscode(passcode: String) {
@@ -53,6 +51,7 @@ private extension CreatePasscodeCoordinator {
       self?.router.pop()
     }
     let module = assembly.passcodeInputAssembly(output: self, configurator: configurator)
+    module.view.setupBackButton()
     router.push(presentable: module.view)
   }
 }

@@ -32,6 +32,10 @@ final class ImportWalletCoordinator: Coordinator<NavigationRouter> {
 private extension ImportWalletCoordinator {
   func openEnterMnemonic() {
     let module = assembly.enterMnemonic(output: self)
+    module.view.setupCloseButton { [weak self] in
+      guard let self = self else { return }
+      self.output?.importWalletCoordinatorDidClose(self)
+    }
     router.push(presentable: module.view, dismiss: { [weak self] in
       guard let self = self else { return }
       self.output?.importWalletCoordinatorDidClose(self)
@@ -43,6 +47,13 @@ private extension ImportWalletCoordinator {
     coordinator.output = self
     coordinator.start()
     addChild(coordinator)
+    
+    guard let initialPresentable = coordinator.initialPresentable else { return }
+    initialPresentable.setupBackButton()
+    router.push(presentable: initialPresentable, dismiss: { [weak self, weak coordinator] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+    })
   }
 }
 
@@ -65,18 +76,14 @@ extension ImportWalletCoordinator: CreatePasscodeCoordinatorOutput {
     removeChild(coordinator)
     
     let successViewController = SuccessViewController(configuration: .walletImport)
-    successViewController.modalPresentationStyle = .fullScreen
-    successViewController.modalTransitionStyle = .crossDissolve
     successViewController.didFinishAnimation = { [weak self] in
-      self?.router.dismiss(completion: { [weak self] in
-        guard let self = self else { return }
-        self.output?.importWalletCoordinatorDidClose(self)
-      })
+      guard let self = self else { return }
+      self.output?.importWalletCoordinatorDidClose(self)
     }
-    router.rootViewController.present(successViewController, animated: true) { [weak self] in
+    router.push(presentable: successViewController, completion:  { [weak self] in
       guard let self = self else { return }
       self.output?.importWalletCoordinatorDidImportWallet(self)
-    }
+    })
   }
 }
 

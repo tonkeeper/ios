@@ -8,12 +8,15 @@
 import Foundation
 
 protocol CoordinatorProtocol: AnyObject {
+  var initialPresentable: Presentable? { get }
   func addChild(_ child: CoordinatorProtocol)
   func removeChild(_ child: CoordinatorProtocol)
   func start()
 }
 
 class Coordinator<Router: RouterProtocol>: CoordinatorProtocol {
+  
+  var initialPresentable: Presentable?
   
   let router: Router
   

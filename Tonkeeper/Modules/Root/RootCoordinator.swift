@@ -51,10 +51,31 @@ private extension RootCoordinator {
   }
   
   func openImportWallet() {
-    let importWalletCoordinator = assembly.importWalletCoordinator(navigationRouter: router)
+    let navigationController = NavigationController()
+    navigationController.isModalInPresentation = true
+    navigationController.configureTransparentAppearance()
+    let navigationRouter = NavigationRouter(rootViewController: navigationController)
+    
+    let importWalletCoordinator = assembly.importWalletCoordinator(navigationRouter: navigationRouter)
     importWalletCoordinator.output = self
+    
     addChild(importWalletCoordinator)
     importWalletCoordinator.start()
+    router.present(importWalletCoordinator.router.rootViewController)
+  }
+  
+  func openCreateWallet() {
+    let navigationController = NavigationController()
+    navigationController.isModalInPresentation = true
+    navigationController.configureTransparentAppearance()
+    let navigationRouter = NavigationRouter(rootViewController: navigationController)
+    
+    let createWalletCoordinator = assembly.createWalletCoordinator(navigationRouter: navigationRouter)
+    createWalletCoordinator.output = self
+    
+    addChild(createWalletCoordinator)
+    createWalletCoordinator.start()
+    router.present(createWalletCoordinator.router.rootViewController)
   }
 }
 
@@ -68,7 +89,9 @@ extension RootCoordinator: SetupWalletModuleOutput {
   }
   
   func didTapCreateWallet() {
-    router.dismiss { }
+    router.dismiss { [weak self] in
+      self?.openCreateWallet()
+    }
   }
 }
 
@@ -84,10 +107,26 @@ extension RootCoordinator: OnboardingCoordinatorOutput {
 
 extension RootCoordinator: ImportWalletCoordinatorOutput {
   func importWalletCoordinatorDidClose(_ coordinator: ImportWalletCoordinator) {
-    removeChild(coordinator)
+    router.dismiss { [weak self] in
+      self?.removeChild(coordinator)
+    }
   }
   
   func importWalletCoordinatorDidImportWallet(_ coordinator: ImportWalletCoordinator) {
+    openTabBar()
+  }
+}
+
+// MARK: - CreateWalletCoordinatorOutput
+
+extension RootCoordinator: CreateWalletCoordinatorOutput {
+  func createWalletCoordinatorDidClose(_ coordinator: CreateWalletCoordinator) {
+    router.dismiss { [weak self] in
+      self?.removeChild(coordinator)
+    }
+  }
+  
+  func createWalletCoordinatorDidCreateWallet(_ coordinator: CreateWalletCoordinator) {
     openTabBar()
   }
 }

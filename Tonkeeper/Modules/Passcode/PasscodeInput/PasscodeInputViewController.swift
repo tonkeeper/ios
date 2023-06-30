@@ -82,8 +82,6 @@ extension PasscodeInputViewController: PasscodeInputViewInput {
 
 private extension PasscodeInputViewController {
   func setup() {
-    setupBackButton()
-    
     customView.keyboardView.didTapButton = { [weak self] in
       self?.handleButtonTap($0)
     }

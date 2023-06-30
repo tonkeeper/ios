@@ -102,8 +102,6 @@ extension EnterMnemonicViewController: MnemonicTextFieldDelegate {
 
 private extension EnterMnemonicViewController {
   func setup() {
-    setupBackButton()
-    
     customView.textFields.forEach {
       $0.addTarget(
         self,

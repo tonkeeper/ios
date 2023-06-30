@@ -14,6 +14,7 @@ final class RootAssembly {
                                            walletCoreAssembly: walletCoreAssembly)
   lazy var onboardingAssembly = OnboardingAssembly()
   lazy var importWalletAssembly = ImportWalletAssembly()
+  lazy var createWalletAssembly = CreateWalletAssembly()
   
   func tabBarCoordinator() -> TabBarCoordinator {
     let tabBarController = TabBarController()
@@ -33,6 +34,11 @@ final class RootAssembly {
   
   func importWalletCoordinator(navigationRouter: NavigationRouter) -> ImportWalletCoordinator {
     let coordinator = ImportWalletCoordinator(router: navigationRouter, assembly: importWalletAssembly)
+    return coordinator
+  }
+  
+  func createWalletCoordinator(navigationRouter: NavigationRouter) -> CreateWalletCoordinator {
+    let coordinator = CreateWalletCoordinator(router: navigationRouter, assembly: createWalletAssembly)
     return coordinator
   }
 }
