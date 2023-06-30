@@ -9,6 +9,7 @@ import UIKit
 
 protocol CreatePasscodeCoordinatorOutput: AnyObject {
   func createPasscodeCoordinatorDidFinish(_ coordinator: CreatePasscodeCoordinator)
+  func createPasscodeCoordinatorDidCreatePasscode(_ coordinator: CreatePasscodeCoordinator)
 }
 
 final class CreatePasscodeCoordinator: Coordinator<NavigationRouter> {
@@ -43,8 +44,10 @@ private extension CreatePasscodeCoordinator {
   
   func openReenterPasscode(passcode: String) {
     var configurator = ReenterPasscodeConfigurator(createdPasscode: passcode)
-    configurator.didFinish = { passcode in
+    configurator.didFinish = { [weak self] passcode in
+      guard let self = self else { return }
       print(passcode)
+      self.output?.createPasscodeCoordinatorDidCreatePasscode(self)
     }
     configurator.didFailed = { [weak self] in
       self?.router.pop()
