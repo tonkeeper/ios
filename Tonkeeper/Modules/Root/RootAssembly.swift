@@ -13,8 +13,8 @@ final class RootAssembly {
   lazy var tabBarAssembly = TabBarAssembly(coreAssembly: coreAssembly,
                                            walletCoreAssembly: walletCoreAssembly)
   lazy var onboardingAssembly = OnboardingAssembly()
-  lazy var importWalletAssembly = ImportWalletAssembly()
-  lazy var createWalletAssembly = CreateWalletAssembly()
+  lazy var importWalletAssembly = ImportWalletAssembly(walletCoreAssembly: walletCoreAssembly)
+  lazy var createWalletAssembly = CreateWalletAssembly(walletCoreAssembly: walletCoreAssembly)
   
   func tabBarCoordinator() -> TabBarCoordinator {
     let tabBarController = TabBarController()

@@ -35,7 +35,7 @@ extension EnterMnemonicPresenter: EnterMnemonicPresenterInput {
   func didEnterMnemonic(_ mnemonic: [String]) {
 //    let isValid = mnemonicValidator.validate(mnemonic: mnemonic)
 //    if isValid {
-      output?.didInputMnemonic()
+      output?.didInputMnemonic(mnemonic)
 //    } else {
 //      viewInput?.showMnemonicValidationError()
 //    }

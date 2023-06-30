@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import WalletCore
 
 protocol ImportWalletCoordinatorOutput: AnyObject {
   func importWalletCoordinatorDidClose(_ coordinator: ImportWalletCoordinator)
@@ -60,7 +61,7 @@ private extension ImportWalletCoordinator {
 // MARK: - EnterMnemonicModuleOutput
 
 extension ImportWalletCoordinator: EnterMnemonicModuleOutput {
-  func didInputMnemonic() {
+  func didInputMnemonic(_ mnemonic: [String]) {
     openCreatePasscode()
   }
 }
@@ -72,7 +73,7 @@ extension ImportWalletCoordinator: CreatePasscodeCoordinatorOutput {
     removeChild(coordinator)
   }
   
-  func createPasscodeCoordinatorDidCreatePasscode(_ coordinator: CreatePasscodeCoordinator) {
+  func createPasscodeCoordinatorDidCreatePasscode(_ coordinator: CreatePasscodeCoordinator, passcode: Passcode) {
     removeChild(coordinator)
     
     let successViewController = SuccessViewController(configuration: .walletImport)

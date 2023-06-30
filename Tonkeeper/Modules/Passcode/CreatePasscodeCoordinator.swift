@@ -6,10 +6,12 @@
 //
 
 import UIKit
+import WalletCore
 
 protocol CreatePasscodeCoordinatorOutput: AnyObject {
   func createPasscodeCoordinatorDidFinish(_ coordinator: CreatePasscodeCoordinator)
-  func createPasscodeCoordinatorDidCreatePasscode(_ coordinator: CreatePasscodeCoordinator)
+  func createPasscodeCoordinatorDidCreatePasscode(_ coordinator: CreatePasscodeCoordinator,
+                                                  passcode: Passcode)
 }
 
 final class CreatePasscodeCoordinator: Coordinator<NavigationRouter> {
@@ -33,19 +35,18 @@ private extension CreatePasscodeCoordinator {
   func openCreatePasscode() {
     var configurator = CreatePasscodeConfigurator()
     configurator.didFinish = { [weak self] passcode in
-      self?.openReenterPasscode(passcode: passcode)
+      self?.openReenterPasscode(enteredPasscode: passcode)
     }
     let module = assembly.passcodeInputAssembly(output: self, configurator: configurator)
     
     initialPresentable = module.view
   }
   
-  func openReenterPasscode(passcode: String) {
-    var configurator = ReenterPasscodeConfigurator(createdPasscode: passcode)
+  func openReenterPasscode(enteredPasscode: Passcode) {
+    var configurator = ReenterPasscodeConfigurator(createdPasscode: enteredPasscode)
     configurator.didFinish = { [weak self] passcode in
       guard let self = self else { return }
-      print(passcode)
-      self.output?.createPasscodeCoordinatorDidCreatePasscode(self)
+      self.output?.createPasscodeCoordinatorDidCreatePasscode(self, passcode: passcode)
     }
     configurator.didFailed = { [weak self] in
       self?.router.pop()

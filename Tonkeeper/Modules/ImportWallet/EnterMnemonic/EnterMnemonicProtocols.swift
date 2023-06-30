@@ -9,7 +9,7 @@
 import Foundation
 
 protocol EnterMnemonicModuleOutput: AnyObject {
-  func didInputMnemonic()
+  func didInputMnemonic(_ mnemonic: [String])
 }
 
 protocol EnterMnemonicModuleInput: AnyObject {}

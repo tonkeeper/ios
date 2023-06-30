@@ -6,12 +6,13 @@
 //
 
 import Foundation
+import WalletCore
 
 struct CreatePasscodeConfigurator: PasscodeInputPresenterConfigurator {
   let title: String = "Create new passcode"
   var isBiometryAvailable: Bool { false }
   
-  var didFinish: ((_ passcode: String) -> Void)?
+  var didFinish: ((_ passcode: Passcode) -> Void)?
   var didFailed: (() -> Void)?
   
   func validateInput(_ input: String) -> PasscodeInputPresenterValidation {

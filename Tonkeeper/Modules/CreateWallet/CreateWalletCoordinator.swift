@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import WalletCore
 
 protocol CreateWalletCoordinatorOutput: AnyObject {
   func createWalletCoordinatorDidClose(_ coordinator: CreateWalletCoordinator)
@@ -17,10 +18,15 @@ final class CreateWalletCoordinator: Coordinator<NavigationRouter> {
   weak var output: CreateWalletCoordinatorOutput?
     
   private let assembly: CreateWalletAssembly
+  private let walletCreator: WalletCreator
   
   init(router: NavigationRouter,
        assembly: CreateWalletAssembly) {
     self.assembly = assembly
+    self.walletCreator = WalletCreator(
+      keeperController: assembly.walletCoreAssembly.keeperController,
+      passcodeController: assembly.walletCoreAssembly.passcodeController
+    )
     super.init(router: router)
   }
   
@@ -33,7 +39,6 @@ final class CreateWalletCoordinator: Coordinator<NavigationRouter> {
 
 private extension CreateWalletCoordinator {
   func createWallet() {
-    let mnemonic = assembly.walletCreator.createWallet()
     let successViewController = SuccessViewController(configuration: .walletCreation)
     successViewController.modalPresentationStyle = .fullScreen
     successViewController.didFinishAnimation = { [weak self] in
@@ -60,21 +65,31 @@ extension CreateWalletCoordinator: CreatePasscodeCoordinatorOutput {
     removeChild(coordinator)
   }
   
-  func createPasscodeCoordinatorDidCreatePasscode(_ coordinator: CreatePasscodeCoordinator) {
-    removeChild(coordinator)
-    
-    let successViewController = SuccessViewController(configuration: .walletImport)
-    successViewController.didFinishAnimation = { [weak self] in
-      self?.router.dismiss(completion: { [weak self] in
+  func createPasscodeCoordinatorDidCreatePasscode(
+    _ coordinator: CreatePasscodeCoordinator,
+    passcode: Passcode
+  ) {
+    do {
+      try walletCreator.create(with: passcode)
+      
+      removeChild(coordinator)
+      
+      let successViewController = SuccessViewController(configuration: .walletImport)
+      successViewController.didFinishAnimation = { [weak self] in
+        self?.router.dismiss(completion: { [weak self] in
+          guard let self = self else { return }
+          self.output?.createWalletCoordinatorDidClose(self)
+        })
+      }
+      
+      router.push(presentable: successViewController, completion:  { [weak self] in
         guard let self = self else { return }
-        self.output?.createWalletCoordinatorDidClose(self)
+        self.output?.createWalletCoordinatorDidCreateWallet(self)
       })
+    } catch {
+      print(error)
+      // TBD: handle wallet creation failed
     }
-    
-    router.push(presentable: successViewController, completion:  { [weak self] in
-      guard let self = self else { return }
-      self.output?.createWalletCoordinatorDidCreateWallet(self)
-    })
   }
 }
 

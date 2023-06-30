@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import WalletCore
 
 enum PasscodeInputPresenterValidation {
   case success
@@ -16,7 +17,7 @@ enum PasscodeInputPresenterValidation {
 
 protocol PasscodeInputPresenterConfigurator {
   var title: String { get }
-  var didFinish: ((_ passcode: String) -> Void)? { get set }
+  var didFinish: ((_ passcode: Passcode) -> Void)? { get set }
   var didFailed: (() -> Void)? { get set }
   var isBiometryAvailable: Bool { get }
   func validateInput(_ input: String) -> PasscodeInputPresenterValidation
@@ -36,6 +37,7 @@ final class PasscodeInputPresenter {
   // MARK: - State
   
   private var input: String = ""
+  private var successHandler: (() -> Void)?
   
   init(configurator: PasscodeInputPresenterConfigurator) {
     self.configurator = configurator
@@ -75,7 +77,7 @@ extension PasscodeInputPresenter: PasscodeInputPresenterInput {
   }
   
   func didHandleInputSuccess() {
-    configurator.didFinish?(input)
+    successHandler?()
   }
 }
 
@@ -98,16 +100,20 @@ private extension PasscodeInputPresenter {
     var inputState: PasscodeDotRowView.InputState = .input(count: 0)
     var validationState: PasscodeDotRowView.ValidationState = .none
     switch input.count {
-    case 0..<Int.pinLength:
+    case 0..<Passcode.length:
       inputState = .input(count: input.count)
       validationState = .none
-    case Int.pinLength:
+    case Passcode.length:
+      let passcode = try! Passcode(value: input)
+      successHandler = { [weak self] in
+        self?.configurator.didFinish?(passcode)
+      }
       viewInput?.didEnterPin()
       inputState = .input(count: input.count)
       switch configurator.validateInput(input) {
       case .filled:
         validationState = .none
-        configurator.didFinish?(input)
+        successHandler?()
       case .success:
         validationState = .success
         viewInput?.handlePinInputSuccess()
@@ -130,8 +136,4 @@ private extension PasscodeInputPresenter {
     updateInputState()
     viewInput?.didResetPin()
   }
-}
-
-private extension Int {
-  static let pinLength = 4
 }

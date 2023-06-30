@@ -18,4 +18,6 @@ final class WalletCoreAssembly {
   }
   
   lazy var keeperController: KeeperController = walletCoreContainer.keeperController(url: coreAssembly.documentsURL)
+  
+  lazy var passcodeController: PasscodeController = walletCoreContainer.passcodeController()
 }

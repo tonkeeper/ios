@@ -159,7 +159,7 @@
 		7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */; };
 		7D8EB7202A4ED86B005BE1B0 /* CreateWalletCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */; };
 		7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */; };
-		7D8EB7252A4ED9D9005BE1B0 /* WalletCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB7242A4ED9D9005BE1B0 /* WalletCreator.swift */; };
+		7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */; };
 		7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */; };
 		7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */; };
 		7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144232A31EF7600B0FD17 /* Selectable.swift */; };
@@ -408,7 +408,7 @@
 		7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyWallet.swift; sourceTree = "<group>"; };
 		7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletCoordinator.swift; sourceTree = "<group>"; };
 		7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletAssembly.swift; sourceTree = "<group>"; };
-		7D8EB7242A4ED9D9005BE1B0 /* WalletCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCreator.swift; sourceTree = "<group>"; };
+		7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCreator.swift; sourceTree = "<group>"; };
 		7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveAssembly.swift; sourceTree = "<group>"; };
 		7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D9144232A31EF7600B0FD17 /* Selectable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectable.swift; sourceTree = "<group>"; };
@@ -1270,6 +1270,7 @@
 		7D70D3BE2A2A03280096E1A2 /* Logic */ = {
 			isa = PBXGroup;
 			children = (
+				7D8EB72E2A4F2227005BE1B0 /* Wallet */,
 				7D3BCFAA2A4C597900BE6AD9 /* Settings */,
 				7D70D3C12A2A03390096E1A2 /* Model */,
 			);
@@ -1307,19 +1308,18 @@
 		7D8EB71E2A4ED857005BE1B0 /* CreateWallet */ = {
 			isa = PBXGroup;
 			children = (
-				7D8EB7232A4ED9CA005BE1B0 /* WalletCreator */,
 				7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */,
 				7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */,
 			);
 			path = CreateWallet;
 			sourceTree = "<group>";
 		};
-		7D8EB7232A4ED9CA005BE1B0 /* WalletCreator */ = {
+		7D8EB72E2A4F2227005BE1B0 /* Wallet */ = {
 			isa = PBXGroup;
 			children = (
-				7D8EB7242A4ED9D9005BE1B0 /* WalletCreator.swift */,
+				7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */,
 			);
-			path = WalletCreator;
+			path = Wallet;
 			sourceTree = "<group>";
 		};
 		7D9144252A31F59500B0FD17 /* ModalCard */ = {
@@ -1899,7 +1899,7 @@
 				7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */,
 				D97B981CF3DBE823EDA9A091 /* WalletContentViewController.swift in Sources */,
 				B2DC87224B8264B43A27920C /* WalletContentView.swift in Sources */,
-				7D8EB7252A4ED9D9005BE1B0 /* WalletCreator.swift in Sources */,
+				7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */,
 				8FD2051305C8DE79A1D70FBA /* WalletContentPresenter.swift in Sources */,
 				7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */,
 				7D3E43B62A373B2200C23A75 /* ModalCardContainerScrollController.swift in Sources */,
@@ -2207,7 +2207,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				branch = feature/public_container;
+				branch = feature/passcode_controller;
 				kind = branch;
 			};
 		};

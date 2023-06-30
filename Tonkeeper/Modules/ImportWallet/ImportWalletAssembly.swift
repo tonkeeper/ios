@@ -10,6 +10,7 @@ import Foundation
 struct ImportWalletAssembly {
   
   let passcodeAssembly = PasscodeAssembly()
+  let walletCoreAssembly: WalletCoreAssembly
   
   func enterMnemonic(output: EnterMnemonicModuleOutput) -> Module<EnterMnemonicViewController, Void> {
     return EnterMnemonicAssembly.create(output: output)

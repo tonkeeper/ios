@@ -22,7 +22,6 @@ final class TabBarAssembly {
   lazy var activityAssembly = ActivityAssembly(receiveAssembly: ReceiveAssembly())
   lazy var browserAssembly = BrowserAssembly()
   lazy var settingsAssembly = SettingsAssembly()
-  lazy var importWalletAssembly = ImportWalletAssembly()
   
   init(coreAssembly: CoreAssembly,
        walletCoreAssembly: WalletCoreAssembly) {

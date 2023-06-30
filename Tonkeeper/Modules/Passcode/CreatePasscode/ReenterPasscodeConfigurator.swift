@@ -6,21 +6,27 @@
 //
 
 import Foundation
+import WalletCore
 
 struct ReenterPasscodeConfigurator: PasscodeInputPresenterConfigurator {
   let title: String = "Re-enter passcode"
   var isBiometryAvailable: Bool { false }
     
-  var didFinish: ((_ passcode: String) -> Void)?
+  var didFinish: ((_ passcode: Passcode) -> Void)?
   var didFailed: (() -> Void)?
   
-  private let createdPasscode: String
+  private let createdPasscode: Passcode
   
-  init(createdPasscode: String) {
+  init(createdPasscode: Passcode) {
     self.createdPasscode = createdPasscode
   }
   
   func validateInput(_ input: String) -> PasscodeInputPresenterValidation {
-    createdPasscode == input ? .success : .failed
+    do {
+      let passcode = try Passcode(value: input)
+      return createdPasscode == passcode ? .success : .failed
+    } catch {
+      return .failed
+    }
   }
 }
