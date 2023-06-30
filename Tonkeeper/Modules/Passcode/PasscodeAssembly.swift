@@ -10,8 +10,12 @@ import Foundation
 final class PasscodeAssembly {
 
   func passcodeInputAssembly(
-    output: PasscodeInputModuleOutput
+    output: PasscodeInputModuleOutput,
+    configurator: PasscodeInputPresenterConfigurator
   ) -> Module<PasscodeInputViewController, Void> {
-    return PasscodeInputAssembly.create(output: output)
+    return PasscodeInputAssembly.create(
+      output: output,
+      configurator: configurator
+    )
   }
 }

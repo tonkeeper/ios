@@ -8,8 +8,11 @@
 import Foundation
 
 struct PasscodeInputAssembly {
-  static func create(output: PasscodeInputModuleOutput) -> Module<PasscodeInputViewController, Void> {
-    let presenter = PasscodeInputPresenter()
+  static func create(
+    output: PasscodeInputModuleOutput,
+    configurator: PasscodeInputPresenterConfigurator
+  ) -> Module<PasscodeInputViewController, Void> {
+    let presenter = PasscodeInputPresenter(configurator: configurator)
     presenter.output = output
     
     let viewController = PasscodeInputViewController(presenter: presenter)

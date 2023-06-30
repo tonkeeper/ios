@@ -30,11 +30,27 @@ final class CreatePasscodeCoordinator: Coordinator<NavigationRouter> {
 
 private extension CreatePasscodeCoordinator {
   func openCreatePasscode() {
-    let module = assembly.passcodeInputAssembly(output: self)
+    var configurator = CreatePasscodeConfigurator()
+    configurator.didFinish = { [weak self] passcode in
+      self?.openReenterPasscode(passcode: passcode)
+    }
+    let module = assembly.passcodeInputAssembly(output: self, configurator: configurator)
     router.push(presentable: module.view, dismiss:  { [weak self] in
       guard let self = self else { return }
       self.output?.createPasscodeCoordinatorDidFinish(self)
     })
+  }
+  
+  func openReenterPasscode(passcode: String) {
+    var configurator = ReenterPasscodeConfigurator(createdPasscode: passcode)
+    configurator.didFinish = { passcode in
+      print(passcode)
+    }
+    configurator.didFailed = { [weak self] in
+      self?.router.pop()
+    }
+    let module = assembly.passcodeInputAssembly(output: self, configurator: configurator)
+    router.push(presentable: module.view)
   }
 }
 

@@ -51,6 +51,10 @@
 		7D3BCFD02A4D923400BE6AD9 /* PasscodeInputAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFCF2A4D923400BE6AD9 /* PasscodeInputAssembly.swift */; };
 		7D3BCFD32A4D98D300BE6AD9 /* PasscodeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD22A4D98D300BE6AD9 /* PasscodeButton.swift */; };
 		7D3BCFD52A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD42A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift */; };
+		7D3BCFD72A4DA4D300BE6AD9 /* PasscodeDotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD62A4DA4D300BE6AD9 /* PasscodeDotView.swift */; };
+		7D3BCFD92A4DA64500BE6AD9 /* PasscodeDotRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */; };
+		7D3BCFDC2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */; };
+		7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFDD2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift */; };
 		7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43792A33749F00C23A75 /* UIImage+Images.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
@@ -290,6 +294,10 @@
 		7D3BCFCF2A4D923400BE6AD9 /* PasscodeInputAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeInputAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFD22A4D98D300BE6AD9 /* PasscodeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeButton.swift; sourceTree = "<group>"; };
 		7D3BCFD42A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeKeyboardView.swift; sourceTree = "<group>"; };
+		7D3BCFD62A4DA4D300BE6AD9 /* PasscodeDotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeDotView.swift; sourceTree = "<group>"; };
+		7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeDotRowView.swift; sourceTree = "<group>"; };
+		7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeConfigurator.swift; sourceTree = "<group>"; };
+		7D3BCFDD2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReenterPasscodeConfigurator.swift; sourceTree = "<group>"; };
 		7D3E43792A33749F00C23A75 /* UIImage+Images.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Images.swift"; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
@@ -697,9 +705,10 @@
 		7D3BCFCA2A4D90C800BE6AD9 /* Passcode */ = {
 			isa = PBXGroup;
 			children = (
+				7D3BCFDA2A4DB1E700BE6AD9 /* CreatePasscode */,
 				A207C781017B143B4580D3FC /* PasscodeInput */,
-				7D3BCFCB2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift */,
 				7D3BCFCD2A4D90E200BE6AD9 /* PasscodeAssembly.swift */,
+				7D3BCFCB2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift */,
 			);
 			path = Passcode;
 			sourceTree = "<group>";
@@ -709,8 +718,19 @@
 			children = (
 				7D3BCFD22A4D98D300BE6AD9 /* PasscodeButton.swift */,
 				7D3BCFD42A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift */,
+				7D3BCFD62A4DA4D300BE6AD9 /* PasscodeDotView.swift */,
+				7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7D3BCFDA2A4DB1E700BE6AD9 /* CreatePasscode */ = {
+			isa = PBXGroup;
+			children = (
+				7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */,
+				7D3BCFDD2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift */,
+			);
+			path = CreatePasscode;
 			sourceTree = "<group>";
 		};
 		7D3E437B2A33830800C23A75 /* Buy */ = {
@@ -1660,11 +1680,13 @@
 				7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */,
 				7D9292FA2A29DCDA005B83DF /* SendAmountViewController.swift in Sources */,
 				7D9292CC2A275725005B83DF /* TextFieldContainer.swift in Sources */,
+				7D3BCFD92A4DA64500BE6AD9 /* PasscodeDotRowView.swift in Sources */,
 				7D68367A2A1E6653002DBBC7 /* QRScannerAssembly.swift in Sources */,
 				7D9292952A25EB09005B83DF /* PageSegmentControl.swift in Sources */,
 				7D5D05D52A309674009F42FF /* ContainerCollectionViewCell.swift in Sources */,
 				7D9144372A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift in Sources */,
 				7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */,
+				7D3BCFD72A4DA4D300BE6AD9 /* PasscodeDotView.swift in Sources */,
 				7D68361A2A1CB113002DBBC7 /* UILabel+TextStyle.swift in Sources */,
 				7D5928672A1FBB56006B0A8A /* Button+ConfigurableView.swift in Sources */,
 				7D3E438D2A3399A500C23A75 /* ServiceCellContentView.swift in Sources */,
@@ -1684,6 +1706,7 @@
 				7D59284B2A1F5797006B0A8A /* WalletHeaderPresenter.swift in Sources */,
 				7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */,
 				7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */,
+				7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */,
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
 				7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */,
 				7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */,
@@ -1771,6 +1794,7 @@
 				7D59287A2A20BF36006B0A8A /* TokensListSection.swift in Sources */,
 				7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */,
 				7DE27E6A2A30D9CE00842FA8 /* TransactionCellStatusView.swift in Sources */,
+				7D3BCFDC2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift in Sources */,
 				7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */,
 				7D9144272A31F5DE00B0FD17 /* ModalCardContainerViewController.swift in Sources */,
 				7D9292C22A27412A005B83DF /* SendCoordinator.swift in Sources */,

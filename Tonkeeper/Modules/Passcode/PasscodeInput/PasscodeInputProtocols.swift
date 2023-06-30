@@ -14,6 +14,21 @@ protocol PasscodeInputModuleInput: AnyObject {}
 
 protocol PasscodeInputPresenterInput {
   func viewDidLoad()
+  func viewDidDisappear()
+  func didTapDigitButton(digit: Int)
+  func didTapBiometryButton()
+  func didTapBackspaceButton()
+  func didHandleInputFailed()
+  func didHandleInputSuccess()
 }
 
-protocol PasscodeInputViewInput: AnyObject {}
+protocol PasscodeInputViewInput: AnyObject {
+  func updateDotRow(with inputState: PasscodeDotRowView.InputState,
+                    validationState: PasscodeDotRowView.ValidationState)
+  func updateTitle(_ title: String)
+  func handlePinInputFailed()
+  func handlePinInputSuccess()
+  func handleDigitInput(at index: Int)
+  func didEnterPin()
+  func didResetPin()
+}

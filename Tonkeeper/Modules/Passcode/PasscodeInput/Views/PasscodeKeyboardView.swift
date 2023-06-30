@@ -9,6 +9,8 @@ import UIKit
 
 final class PasscodeKeyboardView: UIView {
   
+  var didTapButton: ((PasscodeButton) -> Void)?
+  
   let button0 = PasscodeButton(type: .digit(0))
   let button1 = PasscodeButton(type: .digit(1))
   let button2 = PasscodeButton(type: .digit(2))
@@ -21,6 +23,11 @@ final class PasscodeKeyboardView: UIView {
   let button9 = PasscodeButton(type: .digit(9))
   let biometryButton = PasscodeButton(type: .biometry)
   let backspaceButton = PasscodeButton(type: .backspace)
+  
+  private lazy var buttons: [PasscodeButton] = {
+    [button0, button1, button2, button3, button4, button5, button6,
+     button7, button8, button9, biometryButton, backspaceButton]
+  }()
   
   private lazy var stackView: UIStackView = {
     let stackView = UIStackView()
@@ -85,6 +92,14 @@ private extension PasscodeKeyboardView {
   func setup() {
     addSubview(stackView)
     
+    buttons.forEach {
+      $0.addTarget(
+        self,
+        action: #selector(didTapButton(button:)),
+        for: .touchUpInside
+      )
+    }
+    
     setupConstraints()
   }
   
@@ -97,5 +112,10 @@ private extension PasscodeKeyboardView {
       stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
       stackView.rightAnchor.constraint(equalTo: rightAnchor)
     ])
+  }
+  
+  @objc
+  func didTapButton(button: PasscodeButton) {
+    didTapButton?(button)
   }
 }

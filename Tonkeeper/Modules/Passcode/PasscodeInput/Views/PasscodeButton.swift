@@ -14,23 +14,21 @@ final class PasscodeButton: UIControlClosure {
     case biometry
   }
   
-  private let type: ButtonType
+  let type: ButtonType
   
   private let button = UIButton(type: .custom)
   private let hightlightView: UIView = {
     let view = UIView()
     view.backgroundColor = .Button.secondaryBackground
     view.alpha = 0
-    view.transform = CGAffineTransform(scaleX: 0.8, y: 0.8)
+    view.transform = CGAffineTransform(
+      scaleX: .notHighlightedScale,
+      y: .notHighlightedScale
+    )
     return view
   }()
   
-  override var isHighlighted: Bool {
-    didSet {
-      guard isHighlighted != oldValue else { return }
-      didUpdateIsHighlighted()
-    }
-  }
+  private var buttonIsHighlightedObservation: NSKeyValueObservation?
   
   init(type: ButtonType) {
     self.type = type
@@ -61,7 +59,11 @@ private extension PasscodeButton {
     button.titleLabel?.textColor = .Text.primary
     button.titleLabel?.textAlignment = .center
     button.tintColor = .Icon.primary
-    button.isUserInteractionEnabled = false
+    button.addTarget(
+      self,
+      action: #selector(didTapButton),
+      for: .touchUpInside
+    )
     
     addSubview(hightlightView)
     addSubview(button)
@@ -75,11 +77,15 @@ private extension PasscodeButton {
       button.setImage(.Icons.PasscodeButton.biometry, for: .normal)
     }
     
+    buttonIsHighlightedObservation = button.observe(\.isHighlighted, changeHandler: { [weak self] button, _ in
+      self?.didUpdateIsHighlighted(button.isHighlighted)
+    })
+    
     setupConstraints()
   }
   
-  func didUpdateIsHighlighted() {
-    let scale: CGFloat = isHighlighted ? 1 : 0.8
+  func didUpdateIsHighlighted(_ isHighlighted: Bool) {
+    let scale: CGFloat = isHighlighted ? 1 : .notHighlightedScale
     let alpha: CGFloat = isHighlighted ? 1 : 0
     let animation = {
       self.hightlightView.alpha = alpha
@@ -106,10 +112,16 @@ private extension PasscodeButton {
       hightlightView.centerYAnchor.constraint(equalTo: centerYAnchor)
     ])
   }
+  
+  @objc
+  func didTapButton() {
+    sendActions(for: .touchUpInside)
+  }
 }
 
 private extension CGFloat {
   static let buttonHeight: CGFloat = 72
+  static let notHighlightedScale: CGFloat = 0.8
 }
 
 private extension TimeInterval {
