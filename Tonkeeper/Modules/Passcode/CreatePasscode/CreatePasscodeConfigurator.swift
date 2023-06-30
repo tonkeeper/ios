@@ -9,6 +9,7 @@ import Foundation
 
 struct CreatePasscodeConfigurator: PasscodeInputPresenterConfigurator {
   let title: String = "Create new passcode"
+  var isBiometryAvailable: Bool { false }
   
   var didFinish: ((_ passcode: String) -> Void)?
   var didFailed: (() -> Void)?

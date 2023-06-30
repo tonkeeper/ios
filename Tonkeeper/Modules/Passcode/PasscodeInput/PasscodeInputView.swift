@@ -32,6 +32,16 @@ final class PasscodeInputView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  // MARK: - Biometry
+  
+  func hideBiometryButton() {
+    keyboardView.biometryButton.alpha = 0
+  }
+  
+  func showBiometryButton() {
+    keyboardView.biometryButton.alpha = 1
+  }
 }
 
 // MARK: - Private

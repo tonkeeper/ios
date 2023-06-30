@@ -9,6 +9,7 @@ import Foundation
 
 struct ReenterPasscodeConfigurator: PasscodeInputPresenterConfigurator {
   let title: String = "Re-enter passcode"
+  var isBiometryAvailable: Bool { false }
     
   var didFinish: ((_ passcode: String) -> Void)?
   var didFailed: (() -> Void)?

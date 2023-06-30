@@ -18,6 +18,7 @@ protocol PasscodeInputPresenterConfigurator {
   var title: String { get }
   var didFinish: ((_ passcode: String) -> Void)? { get set }
   var didFailed: (() -> Void)? { get set }
+  var isBiometryAvailable: Bool { get }
   func validateInput(_ input: String) -> PasscodeInputPresenterValidation
 }
 
@@ -46,6 +47,7 @@ final class PasscodeInputPresenter {
 extension PasscodeInputPresenter: PasscodeInputPresenterInput {
   func viewDidLoad() {
     updateTitle()
+    updateBiometryAvailability()
   }
   
   func viewDidDisappear() {
@@ -86,6 +88,10 @@ extension PasscodeInputPresenter: PasscodeInputModuleInput {}
 private extension PasscodeInputPresenter {
   func updateTitle() {
     viewInput?.updateTitle(configurator.title)
+  }
+  
+  func updateBiometryAvailability() {
+    viewInput?.updateBiometryAvailability(configurator.isBiometryAvailable)
   }
   
   func updateInputState() {

@@ -26,6 +26,7 @@ protocol PasscodeInputViewInput: AnyObject {
   func updateDotRow(with inputState: PasscodeDotRowView.InputState,
                     validationState: PasscodeDotRowView.ValidationState)
   func updateTitle(_ title: String)
+  func updateBiometryAvailability(_ isAvailable: Bool)
   func handlePinInputFailed()
   func handlePinInputSuccess()
   func handleDigitInput(at index: Int)
