@@ -9,6 +9,7 @@ import UIKit
 
 protocol ImportWalletCoordinatorOutput: AnyObject {
   func importWalletCoordinatorDidClose(_ coordinator: ImportWalletCoordinator)
+  func importWalletCoordinatorDidImportWallet(_ coordinator: ImportWalletCoordinator)
 }
 
 final class ImportWalletCoordinator: Coordinator<NavigationRouter> {
@@ -62,6 +63,20 @@ extension ImportWalletCoordinator: CreatePasscodeCoordinatorOutput {
   
   func createPasscodeCoordinatorDidCreatePasscode(_ coordinator: CreatePasscodeCoordinator) {
     removeChild(coordinator)
+    
+    let successViewController = SuccessViewController(configuration: .walletImport)
+    successViewController.modalPresentationStyle = .fullScreen
+    successViewController.modalTransitionStyle = .crossDissolve
+    successViewController.didFinishAnimation = { [weak self] in
+      self?.router.dismiss(completion: { [weak self] in
+        guard let self = self else { return }
+        self.output?.importWalletCoordinatorDidClose(self)
+      })
+    }
+    router.rootViewController.present(successViewController, animated: true) { [weak self] in
+      guard let self = self else { return }
+      self.output?.importWalletCoordinatorDidImportWallet(self)
+    }
   }
 }
 

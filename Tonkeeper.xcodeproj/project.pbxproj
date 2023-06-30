@@ -31,6 +31,10 @@
 		6DDD78B4E9BC9191CF5EC900 /* BuyListProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0320D77CB84A1DB3ADC49C5F /* BuyListProtocols.swift */; };
 		708F4E78995F7F1DD8EE8648 /* ActivityRootPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E1882B1276DA0C0A8DE642E /* ActivityRootPresenter.swift */; };
 		795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC1F118C75E99C32396A981 /* SendConfirmationProtocols.swift */; };
+		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
+		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
+		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
+		7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D143C3C2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
 		7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */; };
 		7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */; };
@@ -55,6 +59,7 @@
 		7D3BCFD92A4DA64500BE6AD9 /* PasscodeDotRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */; };
 		7D3BCFDC2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */; };
 		7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFDD2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift */; };
+		7D3BCFE12A4EBE7E00BE6AD9 /* SuccessViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFE02A4EBE7E00BE6AD9 /* SuccessViewController.swift */; };
 		7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43792A33749F00C23A75 /* UIImage+Images.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
@@ -274,6 +279,9 @@
 		747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListPresenter.swift; sourceTree = "<group>"; };
 		76CC01E09098A23F4C78514F /* SetupWalletView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SetupWalletView.swift; sourceTree = "<group>"; };
 		7AD5CD51542108C56210A491 /* ActivityRootProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityRootProtocols.swift; sourceTree = "<group>"; };
+		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
+		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
+		7D143C3C2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SuccessViewController+Configuration.swift"; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
 		7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeListItem.swift; sourceTree = "<group>"; };
 		7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonBottomContainer.swift; sourceTree = "<group>"; };
@@ -298,6 +306,7 @@
 		7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeDotRowView.swift; sourceTree = "<group>"; };
 		7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeConfigurator.swift; sourceTree = "<group>"; };
 		7D3BCFDD2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReenterPasscodeConfigurator.swift; sourceTree = "<group>"; };
+		7D3BCFE02A4EBE7E00BE6AD9 /* SuccessViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuccessViewController.swift; sourceTree = "<group>"; };
 		7D3E43792A33749F00C23A75 /* UIImage+Images.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Images.swift"; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
@@ -495,6 +504,7 @@
 			files = (
 				7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
+				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -627,6 +637,15 @@
 			path = Tonkeeper/Modules/TabBar/WalletContent;
 			sourceTree = SOURCE_ROOT;
 		};
+		7D143C372A4EC0DC00B5FCC0 /* Animations */ = {
+			isa = PBXGroup;
+			children = (
+				7D143C382A4EC0E800B5FCC0 /* check480.json */,
+				7D143C392A4EC0E800B5FCC0 /* confetti.json */,
+			);
+			path = Animations;
+			sourceTree = "<group>";
+		};
 		7D3BCFA32A4C347A00BE6AD9 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -731,6 +750,15 @@
 				7D3BCFDD2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift */,
 			);
 			path = CreatePasscode;
+			sourceTree = "<group>";
+		};
+		7D3BCFDF2A4EBE7200BE6AD9 /* SuccessViewController */ = {
+			isa = PBXGroup;
+			children = (
+				7D3BCFE02A4EBE7E00BE6AD9 /* SuccessViewController.swift */,
+				7D143C3C2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift */,
+			);
+			path = SuccessViewController;
 			sourceTree = "<group>";
 		};
 		7D3E437B2A33830800C23A75 /* Buy */ = {
@@ -1366,6 +1394,7 @@
 		7D9292DC2A28A1D2005B83DF /* ViewController */ = {
 			isa = PBXGroup;
 			children = (
+				7D3BCFDF2A4EBE7200BE6AD9 /* SuccessViewController */,
 				7D527BBC2A2A90F400A2D29A /* ModalContentViewController */,
 				7D9292DF2A28A1EB005B83DF /* EnterAmountViewController */,
 			);
@@ -1476,6 +1505,7 @@
 		7DB8FB792A1BCFCD005B4B11 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				7D143C372A4EC0DC00B5FCC0 /* Animations */,
 				7DB8FB7A2A1BEDBF005B4B11 /* Fonts */,
 				7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */,
 				7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */,
@@ -1607,6 +1637,7 @@
 			packageProductDependencies = (
 				7DB17F342A4B2F07007C6154 /* AnyFormatKit */,
 				7DB17F3E2A4B3338007C6154 /* WalletCore */,
+				7D143C352A4EC0D300B5FCC0 /* Lottie */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -1639,6 +1670,7 @@
 			packageReferences = (
 				7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */,
 				7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */,
+				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -1655,7 +1687,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				7DB8FB722A1BCC92005B4B11 /* LaunchScreen.storyboard in Resources */,
+				7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */,
 				7DB8FB802A1BEE00005B4B11 /* Montserrat-Medium.ttf in Resources */,
+				7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */,
 				7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */,
 				7DB8FB7F2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf in Resources */,
 				7DB8FB7E2A1BEE00005B4B11 /* Montserrat-Bold.ttf in Resources */,
@@ -1815,6 +1849,7 @@
 				7DE27E5F2A30C61E00842FA8 /* ActivityListDateCell.swift in Sources */,
 				7D5D05CE2A30716A009F42FF /* DefaultCellTextContentView.swift in Sources */,
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
+				7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
 				7D91442B2A31F5F700B0FD17 /* DimmingPresentationController.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
@@ -1867,6 +1902,7 @@
 				920F2D1C164D714EF8B77CB8 /* ActivityEmptyView.swift in Sources */,
 				7D9144352A32230C00B0FD17 /* ModalCardHeaderView.swift in Sources */,
 				44FC2415321AB434412B8523 /* ActivityEmptyPresenter.swift in Sources */,
+				7D3BCFE12A4EBE7E00BE6AD9 /* SuccessViewController.swift in Sources */,
 				48DB3E42B318C80B7090AFD0 /* ActivityEmptyProtocols.swift in Sources */,
 				2E9AD80F15E6019A55846F61 /* ActivityListViewController.swift in Sources */,
 				27E0B9B4BE1065171C3AFD76 /* ActivityListView.swift in Sources */,
@@ -2123,6 +2159,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/airbnb/lottie-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 4.2.0;
+			};
+		};
 		7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/luximetr/AnyFormatKit";
@@ -2142,6 +2186,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		7D143C352A4EC0D300B5FCC0 /* Lottie */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */;
+			productName = Lottie;
+		};
 		7DB17F342A4B2F07007C6154 /* AnyFormatKit */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;

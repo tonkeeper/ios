@@ -52,6 +52,7 @@ private extension RootCoordinator {
   
   func openImportWallet() {
     let importWalletCoordinator = assembly.importWalletCoordinator(navigationRouter: router)
+    importWalletCoordinator.output = self
     addChild(importWalletCoordinator)
     importWalletCoordinator.start()
   }
@@ -71,12 +72,23 @@ extension RootCoordinator: SetupWalletModuleOutput {
   }
 }
 
-
 // MARK: - OnboardingCoordinatorOutput
 
 extension RootCoordinator: OnboardingCoordinatorOutput {
   func onboardingCoordinatorDidTapGetStarted(_ coordinator: OnboardingCoordinator) {
     openCreateImportWallet()
+  }
+}
+
+// MARK: - ImportWalletCoordinatorOutput
+
+extension RootCoordinator: ImportWalletCoordinatorOutput {
+  func importWalletCoordinatorDidClose(_ coordinator: ImportWalletCoordinator) {
+    removeChild(coordinator)
+  }
+  
+  func importWalletCoordinatorDidImportWallet(_ coordinator: ImportWalletCoordinator) {
+    openTabBar()
   }
 }
 
