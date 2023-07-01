@@ -9,7 +9,11 @@ import UIKit
 
 final class TabBarAssembly {
   
+  let coreAssembly: CoreAssembly
+  let walletCoreAssembly: WalletCoreAssembly
+  
   lazy var walletAssembly = WalletAssembly(
+    walletCoreAssembly: walletCoreAssembly,
     qrScannerAssembly: QRScannerAssembly(),
     sendAssembly: SendAssembly(qrScannerAssembly: QRScannerAssembly()),
     receiveAssembly: ReceiveAssembly(),
@@ -18,6 +22,12 @@ final class TabBarAssembly {
   lazy var activityAssembly = ActivityAssembly(receiveAssembly: ReceiveAssembly())
   lazy var browserAssembly = BrowserAssembly()
   lazy var settingsAssembly = SettingsAssembly()
+  
+  init(coreAssembly: CoreAssembly,
+       walletCoreAssembly: WalletCoreAssembly) {
+    self.coreAssembly = coreAssembly
+    self.walletCoreAssembly = walletCoreAssembly
+  }
   
   func walletCoordinator() -> WalletCoordinator {
     let navigationController = UINavigationController()

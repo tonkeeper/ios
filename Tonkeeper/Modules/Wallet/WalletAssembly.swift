@@ -9,15 +9,19 @@ import UIKit
 
 struct WalletAssembly {
   
+  let walletCoreAssembly: WalletCoreAssembly
+  
   private let qrScannerAssembly: QRScannerAssembly
   private let sendAssembly: SendAssembly
   private let receiveAssembly: ReceiveAssembly
   private let buyAssembly: BuyAssembly
   
-  init(qrScannerAssembly: QRScannerAssembly,
+  init(walletCoreAssembly: WalletCoreAssembly,
+       qrScannerAssembly: QRScannerAssembly,
        sendAssembly: SendAssembly,
        receiveAssembly: ReceiveAssembly,
        buyAssembly: BuyAssembly) {
+    self.walletCoreAssembly = walletCoreAssembly
     self.qrScannerAssembly = qrScannerAssembly
     self.sendAssembly = sendAssembly
     self.receiveAssembly = receiveAssembly
@@ -26,10 +30,10 @@ struct WalletAssembly {
   
   func walletRootModule(output: WalletRootModuleOutput,
                         tokensListModuleOutput: TokensListModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = WalletRootPresenter(pagingContentFactory: { page in
+    let presenter = WalletRootPresenter(keeperController: walletCoreAssembly.keeperController) { page in
       let module = tokensListModule(page: page, output: tokensListModuleOutput)
       return module.view
-    })
+    }
     presenter.output = output
     
     let headerModule = walletHeaderModule(output: presenter)

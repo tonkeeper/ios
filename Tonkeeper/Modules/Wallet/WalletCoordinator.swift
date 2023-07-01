@@ -78,6 +78,8 @@ extension WalletCoordinator: TokensListModuleOutput {
   
 }
 
+// MARK: - SendCoordinatorOutput
+
 extension WalletCoordinator: SendCoordinatorOutput {
   func sendCoordinatorDidClose(_ coordinator: SendCoordinator) {
     router.dismiss()

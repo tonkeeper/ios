@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class WalletRootView: UIView {
+final class WalletRootView: UIView{
   
   private let contentContainer = UIView()
   
@@ -46,7 +46,11 @@ private extension WalletRootView {
       contentContainer.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
       contentContainer.leftAnchor.constraint(equalTo: leftAnchor),
       contentContainer.rightAnchor.constraint(equalTo: rightAnchor),
-      contentContainer.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor)
+      contentContainer.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
     ])
   }
+}
+
+private extension CGFloat {
+  static let setupWalletButtonBottomSpace: CGFloat = 16
 }

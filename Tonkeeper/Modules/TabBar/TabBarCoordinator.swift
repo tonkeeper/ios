@@ -43,6 +43,8 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
   }
 }
 
+// MARK: - Private
+
 private extension TabBarCoordinator {
   func setupTabBarItems() {
     let walletTabBarItem = UITabBarItem(title: "Wallet",

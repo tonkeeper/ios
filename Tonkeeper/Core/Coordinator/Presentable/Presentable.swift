@@ -7,6 +7,6 @@
 
 import UIKit
 
-protocol Presentable: AnyObject {
+protocol Presentable: UIViewController {
   var viewController: UIViewController { get }
 }

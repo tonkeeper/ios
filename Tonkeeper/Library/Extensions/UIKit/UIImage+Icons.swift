@@ -183,14 +183,28 @@ extension UIImage {
       }
     }
     
+    enum PasscodeButton {
+      static var biometry: UIImage? {
+        .init(named: "Icons/36/ic-faceid-36")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      static var backspace: UIImage? {
+        .init(named: "Icons/36/ic-delete-36")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     enum Mock {
       static var tonCurrencyIcon: UIImage? {
         .init(named: "Icons/44/ton_currency_icon")
       }
     }
     
-    static var tonIcon: UIImage? {
+    static var tonIcon28: UIImage? {
       .init(named: "Icons/28/ic-ton-28")?.withRenderingMode(.alwaysTemplate)
+    }
+    
+    static var tonIcon128: UIImage? {
+      .init(named: "Icons/128/ic-logo-128")?.withRenderingMode(.alwaysTemplate)
     }
   }
 }

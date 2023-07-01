@@ -7,8 +7,22 @@
 
 import Foundation
 
-final class CoreAssembly {
+struct CoreAssembly {
   var appSetting: AppSettings {
     AppSettings()
+  }
+  
+  var documentsURL: URL {
+    let documentsDirectory: URL
+    if #available(iOS 16.0, *) {
+      documentsDirectory = URL.documentsDirectory
+    } else {
+      documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
+    }
+    return documentsDirectory
+  }
+  
+  var fileManager: FileManager {
+    .default
   }
 }

@@ -6,12 +6,16 @@
 //
 
 import UIKit
+import WalletCore
 
 final class WalletRootPresenter {
   
   private let pagingContentFactory: (WalletContentPage) -> PagingContent
+  private let keeperController: KeeperController
   
-  init(pagingContentFactory: @escaping (WalletContentPage) -> PagingContent) {
+  init(keeperController: KeeperController,
+       pagingContentFactory: @escaping (WalletContentPage) -> PagingContent) {
+    self.keeperController = keeperController
     self.pagingContentFactory = pagingContentFactory
   }
   
@@ -61,4 +65,8 @@ extension WalletRootPresenter: WalletContentModuleOutput {
   func updateTitle() {
     headerInput?.updateTitle("Wallet")
   }
+}
+
+private extension String {
+  static let setupWalletButtonTitle = "Set up wallet"
 }

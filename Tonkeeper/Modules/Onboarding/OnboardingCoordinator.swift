@@ -8,7 +8,7 @@
 import UIKit
 
 protocol OnboardingCoordinatorOutput: AnyObject {
-  func onboardingCoordinatorDidFinish(_ coordinator: OnboardingCoordinator)
+  func onboardingCoordinatorDidTapGetStarted(_ coordinator: OnboardingCoordinator)
 }
 
 final class OnboardingCoordinator: Coordinator<NavigationRouter> {
@@ -39,6 +39,6 @@ private extension OnboardingCoordinator {
 
 extension OnboardingCoordinator: WelcomeModuleOutput {
   func didTapContinueButton() {
-    output?.onboardingCoordinatorDidFinish(self)
+    output?.onboardingCoordinatorDidTapGetStarted(self)
   }
 }

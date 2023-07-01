@@ -20,7 +20,11 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
   
   let topDescriptionLabel = UILabel()
   
-  let bottomDescriptionLabel = UILabel()
+  let bottomDescriptionLabel: UILabel = {
+    let label = UILabel()
+    label.numberOfLines = 0
+    return label
+  }()
   
   let fixBottomDescriptionLabel = UILabel()
   
@@ -35,6 +39,9 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
   
   private let imageBottomSpacing = SpacingView(horizontalSpacing: .none, verticalSpacing: .constant(.imageBottomSpace))
   private let topDescriptionSpacing = SpacingView(horizontalSpacing: .none, verticalSpacing: .constant(.descriptionSpace))
+  
+  private var imageViewWidthConstraint: NSLayoutConstraint?
+  private var imageViewHeigthConstraint: NSLayoutConstraint?
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -53,29 +60,38 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
   }
   
   func configure(model: ModalContentViewController.Configuration.Header) {
-    if let image = model.image {
-      imageViewContainer.isHidden = false
-      imageBottomSpacing.isHidden = false
-      imageView.backgroundColor = image.backgroundColor
-      imageView.image = image.image
-    } else {
+    switch model.image {
+    case .none:
       imageViewContainer.isHidden = true
       imageBottomSpacing.isHidden = true
       imageView.backgroundColor = .clear
       imageView.image = nil
+    case let .image(image, tintColor, backgroundColor):
+      imageViewContainer.isHidden = false
+      imageBottomSpacing.isHidden = false
+      imageView.backgroundColor = backgroundColor
+      imageView.image = image
+      imageView.tintColor = tintColor
+      if let image = image {
+        imageViewWidthConstraint?.constant = image.size.width
+        imageViewHeigthConstraint?.constant = image.size.height
+      } else {
+        imageViewWidthConstraint?.constant = .imageSide
+        imageViewHeigthConstraint?.constant = .imageSide
+      }
     }
     
     topDescriptionLabel.isHidden = model.topDescription == nil
     topDescriptionSpacing.isHidden = model.topDescription == nil
     topDescriptionLabel.attributedText = model.topDescription?
-      .attributed(with: .body2, alignment: .center, color: .Text.secondary)
+      .attributed(with: .body1, alignment: .center, color: .Text.secondary)
     
     titleLabel.attributedText = model.title?
       .attributed(with: .h2, alignment: .center, color: .Text.primary)
     bottomDescriptionLabel.attributedText = model.bottomDescription?
-      .attributed(with: .body2, alignment: .center, color: .Text.secondary)
+      .attributed(with: .body1, alignment: .center, color: .Text.secondary)
     fixBottomDescriptionLabel.attributedText = model.fixBottomDescription?
-      .attributed(with: .body2, alignment: .center, color: .Text.secondary)
+      .attributed(with: .body1, alignment: .center, color: .Text.secondary)
   }
 }
 
@@ -96,6 +112,11 @@ private extension ModalContentHeaderView {
     
     stackView.translatesAutoresizingMaskIntoConstraints = false
     imageView.translatesAutoresizingMaskIntoConstraints = false
+    
+    imageViewWidthConstraint = imageView.widthAnchor.constraint(equalToConstant: .imageSide)
+    imageViewWidthConstraint?.isActive = true
+    imageViewHeigthConstraint = imageView.heightAnchor.constraint(equalToConstant: .imageSide)
+    imageViewHeigthConstraint?.isActive = true
     NSLayoutConstraint.activate([
       stackView.topAnchor.constraint(equalTo: topAnchor),
       stackView.leftAnchor.constraint(equalTo: leftAnchor),
@@ -104,9 +125,7 @@ private extension ModalContentHeaderView {
       
       imageView.topAnchor.constraint(equalTo: imageViewContainer.topAnchor),
       imageView.bottomAnchor.constraint(equalTo: imageViewContainer.bottomAnchor),
-      imageView.centerXAnchor.constraint(equalTo: imageViewContainer.centerXAnchor),
-      imageView.widthAnchor.constraint(equalToConstant: .imageSide),
-      imageView.heightAnchor.constraint(equalToConstant: .imageSide),
+      imageView.centerXAnchor.constraint(equalTo: imageViewContainer.centerXAnchor)
     ])
   }
 }
