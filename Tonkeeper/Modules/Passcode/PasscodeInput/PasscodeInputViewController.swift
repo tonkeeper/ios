@@ -62,11 +62,9 @@ extension PasscodeInputViewController: PasscodeInputViewInput {
   }
   
   func handlePinInputSuccess() {
-    customView.dotRowView.dots
-      .enumerated()
-      .map { $0.offset }
-      .forEach { scaleDot(at: $0) }
-    presenter.didHandleInputSuccess()
+    scaleDots { [weak self] in
+      self?.presenter.didHandleInputSuccess()
+    }
   }
   
   func handleDigitInput(at index: Int) {
@@ -126,11 +124,27 @@ private extension PasscodeInputViewController {
   }
   
   func scaleDot(at index: Int) {
+    customView.dotRowView.dots[index].layer.add(scaleAnimation(), forKey: nil)
+  }
+  
+  func scaleDots(completion: @escaping () -> Void) {
+    CATransaction.begin()
+    CATransaction.setCompletionBlock {
+      completion()
+    }
+    customView.dotRowView.dots
+      .enumerated()
+      .map { $0.offset }
+      .forEach { scaleDot(at: $0) }
+    CATransaction.commit()
+  }
+  
+  func scaleAnimation() -> CABasicAnimation {
     let animation = CABasicAnimation(keyPath: "transform.scale")
     animation.fromValue = 1
     animation.toValue = 1.5
     animation.duration = 0.1
     animation.autoreverses = true
-    customView.dotRowView.dots[index].layer.add(animation, forKey: nil)
+    return animation
   }
 }
