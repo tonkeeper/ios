@@ -12,10 +12,13 @@ final class WalletRootPresenter {
   
   private let pagingContentFactory: (WalletContentPage) -> PagingContent
   private let keeperController: KeeperController
+  private let walletBalanceController: WalletBalanceController
   
   init(keeperController: KeeperController,
+       walletBalanceController: WalletBalanceController,
        pagingContentFactory: @escaping (WalletContentPage) -> PagingContent) {
     self.keeperController = keeperController
+    self.walletBalanceController = walletBalanceController
     self.pagingContentFactory = pagingContentFactory
   }
   
@@ -32,6 +35,41 @@ final class WalletRootPresenter {
 extension WalletRootPresenter: WalletRootPresenterInput {
   func viewDidLoad() {
     updateTitle()
+    getBalanceFromCache()
+    reloadBalance()
+  }
+  
+  func didPullToRefresh() {
+    reloadBalance()
+  }
+}
+
+// MARK: - Private
+
+private extension WalletRootPresenter {
+  func getBalanceFromCache() {
+    do {
+      let cachedWalletState = try walletBalanceController.getWalletBalance()
+      headerInput?.updateWith(walletHeader: cachedWalletState.header)
+      contentInput?.updateWith(walletPages: cachedWalletState.pages)
+    } catch {}
+  }
+  
+  func reloadBalance() {
+    Task {
+      do {
+        let walletState = try await walletBalanceController.reloadWalletBalance()
+        Task { @MainActor in
+          headerInput?.updateWith(walletHeader: walletState.header)
+          contentInput?.updateWith(walletPages: walletState.pages)
+        }
+      } catch {
+        // TBD: Handle load error
+      }
+      Task { @MainActor in
+        viewInput?.didFinishLoading()
+      }
+    }
   }
 }
 

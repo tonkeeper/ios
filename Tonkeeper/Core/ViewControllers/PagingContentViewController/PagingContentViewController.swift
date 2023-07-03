@@ -56,7 +56,8 @@ final class PagingContentViewController: UIViewController {
   
   var contentHeight: CGFloat {
     let headerHeight = headerView.systemLayoutSizeFitting(.zero).height
-    let contentHeight = max(selectedContentViewController.contentHeight, pageViewController.view.bounds.height)
+    let selectedContentHeight: CGFloat = contentViewControllers.isEmpty ? 0 : selectedContentViewController.contentHeight
+    let contentHeight = max(selectedContentHeight, pageViewController.view.bounds.height)
     return contentHeight + headerHeight
   }
   

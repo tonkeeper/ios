@@ -16,7 +16,7 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
     let shortTitle: String?
     let price: String?
     let priceDiff: NSAttributedString?
-    let amount: String
+    let amount: String?
     let fiatAmount: String?
   }
   
@@ -51,7 +51,7 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
     let textContentModel = DefaultCellTextContentView.Model(
       leftTopTitle: model.title,
       leftTopRightTitle: model.shortTitle,
-      rightTopTitle: model.amount.attributed(with: .label1, alignment: .right, color: .Text.primary),
+      rightTopTitle: model.amount?.attributed(with: .label1, alignment: .right, color: .Text.primary),
       leftMiddleTitle: model.price,
       leftMiddleRightTitle: model.priceDiff,
       rightMiddleTitle: model.fiatAmount,

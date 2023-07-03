@@ -16,6 +16,10 @@ struct WalletAssembly {
   private let receiveAssembly: ReceiveAssembly
   private let buyAssembly: BuyAssembly
   
+  private var walletBalanceModelMapper: WalletBalanceModelMapper {
+    WalletBalanceModelMapper()
+  }
+  
   init(walletCoreAssembly: WalletCoreAssembly,
        qrScannerAssembly: QRScannerAssembly,
        sendAssembly: SendAssembly,
@@ -30,7 +34,10 @@ struct WalletAssembly {
   
   func walletRootModule(output: WalletRootModuleOutput,
                         tokensListModuleOutput: TokensListModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = WalletRootPresenter(keeperController: walletCoreAssembly.keeperController) { page in
+    let presenter = WalletRootPresenter(
+      keeperController: walletCoreAssembly.keeperController,
+      walletBalanceController: walletCoreAssembly.balanceController
+    ) { page in
       let module = tokensListModule(page: page, output: tokensListModuleOutput)
       return module.view
     }
@@ -105,7 +112,7 @@ private extension WalletAssembly {
   }
   
   func walletContentModule(output: WalletContentModuleOutput) -> Module<WalletContentViewController, WalletContentModuleInput> {
-    let presenter = WalletContentPresenter()
+    let presenter = WalletContentPresenter(walletBalanceModelMapper: walletBalanceModelMapper)
     presenter.output = output
     let viewController = WalletContentViewController(presenter: presenter)
     presenter.viewInput = viewController

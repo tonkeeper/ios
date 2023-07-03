@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import WalletCore
 
 protocol WalletHeaderModuleOutput: AnyObject {
   func didTapSendButton()
@@ -16,6 +17,7 @@ protocol WalletHeaderModuleOutput: AnyObject {
 
 protocol WalletHeaderModuleInput: AnyObject {
   func updateTitle(_ title: String)
+  func updateWith(walletHeader: WalletBalanceModel.Header)
 }
 
 protocol WalletHeaderPresenterInput {

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import WalletCore
 
 final class WalletHeaderPresenter {
   
@@ -39,6 +40,11 @@ extension WalletHeaderPresenter: WalletHeaderPresenterInput {
 extension WalletHeaderPresenter: WalletHeaderModuleInput {
   func updateTitle(_ title: String) {
     viewInput?.updateTitle(title)
+  }
+  
+  func updateWith(walletHeader: WalletBalanceModel.Header) {
+    let headerModel = WalletHeaderView.Model(balance: walletHeader.amount, address: walletHeader.address)
+    viewInput?.update(with: headerModel)
   }
 }
 
