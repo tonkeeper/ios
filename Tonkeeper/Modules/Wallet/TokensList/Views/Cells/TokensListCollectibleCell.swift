@@ -11,13 +11,13 @@ final class TokensListCollectibleCell: UICollectionViewCell, Reusable, Configura
   struct Model: Hashable {
     let id = UUID()
     let image: UIImage?
-    let title: String
-    let subtitle: String
+    let title: String?
+    let subtitle: String?
     let isOnSale: Bool
     
     init(image: UIImage?,
-         title: String,
-         subtitle: String,
+         title: String?,
+         subtitle: String?,
          isOnSale: Bool = false) {
       self.image = image
       self.title = title
@@ -93,6 +93,9 @@ private extension TokensListCollectibleCell {
     
     contentView.backgroundColor = .Background.page
     
+    titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    
     labelContainer.addSubview(titleLabel)
     labelContainer.addSubview(subtitleLabel)
     contentView.addSubview(labelContainer)
@@ -113,17 +116,18 @@ private extension TokensListCollectibleCell {
       
       labelContainer.topAnchor.constraint(equalTo: imageView.bottomAnchor),
       labelContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      labelContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor)
-        .withPriority(.defaultHigh),
+      labelContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor),
       labelContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         .withPriority(.defaultHigh),
+//        .withPriority(.init(rawValue: UILayoutPriority.required.rawValue - 1)),
       
       titleLabel.topAnchor.constraint(equalTo: labelContainer.topAnchor,
                                       constant: UIEdgeInsets.labelContainerInsets.top),
       titleLabel.leftAnchor.constraint(equalTo: labelContainer.leftAnchor,
                                        constant: UIEdgeInsets.labelContainerInsets.left),
       titleLabel.rightAnchor.constraint(equalTo: labelContainer.rightAnchor,
-                                        constant: -UIEdgeInsets.labelContainerInsets.right),
+                                        constant: -UIEdgeInsets.labelContainerInsets.right)
+      .withPriority(.defaultHigh),
       
       subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor),
       subtitleLabel.bottomAnchor.constraint(equalTo: labelContainer.bottomAnchor,
@@ -131,7 +135,7 @@ private extension TokensListCollectibleCell {
       subtitleLabel.leftAnchor.constraint(equalTo: labelContainer.leftAnchor,
                                           constant: UIEdgeInsets.labelContainerInsets.left),
       subtitleLabel.rightAnchor.constraint(equalTo: labelContainer.rightAnchor, constant:
-                                            -UIEdgeInsets.labelContainerInsets.right),
+                                            -UIEdgeInsets.labelContainerInsets.right).withPriority(.defaultHigh),
     ])
   }
 }

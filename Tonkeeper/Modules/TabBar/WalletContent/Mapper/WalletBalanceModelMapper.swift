@@ -23,6 +23,9 @@ private extension WalletBalanceModelMapper {
     case let .token(tokens):
       let cellModels = tokens.map { map(token: $0) }
       return .init(type: .token, items: cellModels)
+    case let .collectibles(collectibles):
+      let cellModels = collectibles.map { map(collectible: $0) }
+      return .init(type: .collectibles, items: cellModels)
     }
   }
   
@@ -34,5 +37,11 @@ private extension WalletBalanceModelMapper {
           priceDiff: nil,
           amount: token.topAmount,
           fiatAmount: token.bottomAmount)
+  }
+  
+  func map(collectible: WalletBalanceModel.Collectible) -> TokensListCollectibleCell.Model {
+    .init(image: nil,
+          title: collectible.title,
+          subtitle: collectible.subtitle)
   }
 }
