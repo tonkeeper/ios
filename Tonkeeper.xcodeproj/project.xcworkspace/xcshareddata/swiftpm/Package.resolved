@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
-        "branch" : "feature/passcode_controller",
-        "revision" : "0c6df58e1eb2e8130365d2e4c582188ea1422966"
+        "branch" : "feature/wallet_balance",
+        "revision" : "0899c69de0fb31861713ece107361e4f126fcbd6"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "revision" : "cd4427536d6b7436faccc08b0d1cb1d026992716",
-        "version" : "0.0.1"
+        "revision" : "4baffd12e7f96e78a2fd72cd90a6014fe359ff61",
+        "version" : "0.0.2"
       }
     },
     {
