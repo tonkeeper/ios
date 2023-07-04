@@ -62,6 +62,8 @@ final class SuccessViewController: UIViewController {
       self?.didFinishAnimation?()
     }
     confettiView.play()
+    
+    TapticGenerator.generateSuccessFeedback()
   }
   
   override func viewWillAppear(_ animated: Bool) {

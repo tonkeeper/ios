@@ -83,6 +83,7 @@ private extension WalletHeaderViewController {
 private extension WalletHeaderViewController {
   @objc
   func didTapAddressButton() {
+    TapticGenerator.generateCopyFeedback()
     presenter.didTapAddressButton()
   }
   
