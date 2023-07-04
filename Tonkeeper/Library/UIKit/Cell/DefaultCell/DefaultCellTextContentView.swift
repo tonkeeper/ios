@@ -65,16 +65,16 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
     var bottomWidth = bounds.width
     
     topRightLabel.sizeToFit()
-    topWidth -= topRightLabel.frame.width + 4
+    topWidth -= topRightLabel.frame.width + 8
     
     middleRightLabel.sizeToFit()
-    middleWidth -= middleRightLabel.frame.width + 4
+    middleWidth -= middleRightLabel.frame.width + 8
     
     bottomRightLabel.sizeToFit()
-    bottomWidth -= bottomRightLabel.frame.width + 4
+    bottomWidth -= bottomRightLabel.frame.width + 8
     
     topLeftHorizontalStack.sizeToFit()
-    topLeftHorizontalStack.frame.size.width = topWidth
+    topLeftHorizontalStack.frame.size.width = min(topWidth, topLeftHorizontalStack.frame.width)
     topLeftHorizontalStack.frame.origin.x = 0
     topLeftHorizontalStack.frame.origin.y = 0
     
@@ -220,9 +220,15 @@ final class TopLeftHorizontalStack: UIView {
   
   override func layoutSubviews() {
     super.layoutSubviews()
+
+    var width: CGFloat = bounds.width
+    
+    rightLabel.sizeToFit()
+    width -= rightLabel.frame.width + 4
     
     leftLabel.sizeToFit()
-    rightLabel.sizeToFit()
+    leftLabel.frame.size.width = width
+    
     
     leftLabel.frame.origin.x = 0
     leftLabel.frame.origin.y = bounds.height / 2 - leftLabel.frame.height/2
