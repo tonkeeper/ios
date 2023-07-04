@@ -77,7 +77,7 @@ private extension WalletRootPresenter {
 
 extension WalletRootPresenter: WalletHeaderModuleOutput {
   func didTapSendButton() {
-    output?.openSend()
+    output?.openSend(address: nil)
   }
   
   func didTapReceiveButton() {

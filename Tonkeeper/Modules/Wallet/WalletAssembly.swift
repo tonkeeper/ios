@@ -73,13 +73,17 @@ struct WalletAssembly {
     return Module(view: viewController, input: presenter)
   }
   
-  func sendCoordinator(output: SendCoordinatorOutput) -> SendCoordinator {
+  func sendCoordinator(output: SendCoordinatorOutput,
+                       address: String?) -> SendCoordinator {
     let navigationController = NavigationController()
     navigationController.configureDefaultAppearance()
     navigationController.isModalInPresentation = true
     let router = NavigationRouter(rootViewController: navigationController)
-    let coordinator = SendCoordinator(router: router,
-                                      assembly: sendAssembly)
+    let coordinator = SendCoordinator(
+      router: router,
+      assembly: sendAssembly,
+      address: address
+    )
     coordinator.output = output
     return coordinator
   }

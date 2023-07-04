@@ -6,21 +6,29 @@
 //
 
 import UIKit
+import WalletCore
 
 struct SendAssembly {
   
   let qrScannerAssembly: QRScannerAssembly
+  let walletCoreAssembly: WalletCoreAssembly
   
-  init(qrScannerAssembly: QRScannerAssembly) {
+  init(qrScannerAssembly: QRScannerAssembly,
+       walletCoreAssembly: WalletCoreAssembly) {
     self.qrScannerAssembly = qrScannerAssembly
+    self.walletCoreAssembly = walletCoreAssembly
   }
   
-  func sendRecipientModule(output: SendRecipientModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = SendRecipientPresenter(commentLengthValidator: DefaultSendRecipientCommentLengthValidator())
+  func sendRecipientModule(output: SendRecipientModuleOutput,
+                           address: String?) -> Module<UIViewController, SendRecipientModuleInput> {
+    let presenter = SendRecipientPresenter(
+      commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
+      address: address
+    )
     presenter.output = output
     let viewController = SendRecipientViewController(presenter: presenter)
     presenter.viewInput = viewController
-    return Module(view: viewController, input: Void())
+    return Module(view: viewController, input: presenter)
   }
   
   func sendAmountModule(output: SendAmountModuleOutput) -> Module<UIViewController, Void> {
@@ -39,6 +47,10 @@ struct SendAssembly {
     let viewController = SendConfirmationViewController(presenter: presenter)
     presenter.viewInput = viewController
     return Module(view: viewController, input: Void())
+  }
+  
+  var deeplinkParser: DeeplinkParser {
+    walletCoreAssembly.deeplinkParser
   }
 }
 
