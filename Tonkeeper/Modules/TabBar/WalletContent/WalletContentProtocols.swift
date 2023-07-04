@@ -7,12 +7,15 @@
 //
 
 import UIKit
+import WalletCore
 
 protocol WalletContentModuleOutput: AnyObject {
   func getPagingContent(page: WalletContentPage) -> PagingContent
 }
 
-protocol WalletContentModuleInput: AnyObject {}
+protocol WalletContentModuleInput: AnyObject {
+  func updateWith(walletPages: [WalletBalanceModel.Page])
+}
 
 protocol WalletContentPresenterInput {
   func viewDidLoad()

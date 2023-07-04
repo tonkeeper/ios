@@ -45,7 +45,7 @@ private extension TokensListCollectionController {
       snapshot.appendSections([section.type])
       snapshot.appendItems(section.items,toSection: section.type)
     }
-    dataSource?.apply(snapshot)
+    dataSource?.apply(snapshot, animatingDifferences: false)
   }
   
   func createDataSource(collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<TokensListSection.SectionType, AnyHashable> {

@@ -19,7 +19,7 @@ extension DefaultCellTextContentView {
   struct Model {
     let leftTopTitle: NSAttributedString
     let leftTopRightTitle: NSAttributedString?
-    let rightTopTitle: NSAttributedString
+    let rightTopTitle: NSAttributedString?
     let leftMiddleTitle: NSAttributedString?
     let leftMiddleRightTitle: NSAttributedString?
     let rightMiddleTitle: NSAttributedString?
@@ -31,7 +31,7 @@ extension DefaultCellTextContentView {
 extension DefaultCellTextContentView.Model {
   init(leftTopTitle: String,
        leftTopRightTitle: String?,
-       rightTopTitle: NSAttributedString,
+       rightTopTitle: NSAttributedString?,
        leftMiddleTitle: String?,
        leftMiddleRightTitle: NSAttributedString?,
        rightMiddleTitle: String?,

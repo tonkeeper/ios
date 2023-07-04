@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import WalletCore
 
 final class WalletContentPresenter {
   
@@ -14,19 +15,37 @@ final class WalletContentPresenter {
   
   weak var viewInput: WalletContentViewInput?
   weak var output: WalletContentModuleOutput?
+  
+  // MARK: - Dependencies
+  
+  private let walletBalanceModelMapper: WalletBalanceModelMapper
+  
+  // MARK: - State
+  
+  private var pages = [WalletBalanceModel.Page]() {
+    didSet {
+      reloadData()
+    }
+  }
+  
+  init(walletBalanceModelMapper: WalletBalanceModelMapper) {
+    self.walletBalanceModelMapper = walletBalanceModelMapper
+  }
 }
 
 // MARK: - WalletContentPresenterIntput
 
 extension WalletContentPresenter: WalletContentPresenterInput {
-  func viewDidLoad() {
-    loadFakeSections()
-  }
+  func viewDidLoad() {}
 }
 
 // MARK: - WalletContentModuleInput
 
-extension WalletContentPresenter: WalletContentModuleInput {}
+extension WalletContentPresenter: WalletContentModuleInput {
+  func updateWith(walletPages: [WalletBalanceModel.Page]) {
+    self.pages = walletPages
+  }
+}
 
 // MARK: - TokensListModuleInput
 
@@ -35,138 +54,13 @@ extension WalletContentPresenter: TokensListModuleOutput {}
 // MARK: - Private
 
 private extension WalletContentPresenter {
-  func loadFakeSections() {
-    
-    let tokenItems: [TokenListTokenCell.Model] = [
-      .init(image: .Icons.Mock.tonCurrencyIcon,
-            title: "Toncoin",
-            shortTitle: nil,
-            price: "The one and only super best cool",
-            priceDiff: nil,
-            amount: "14,787.32",
-            fiatAmount: nil),
-      .init(image: .Icons.Mock.tonCurrencyIcon,
-            title: "Santa Coin",
-            shortTitle: "SNT",
-            price: "$ 4.87",
-            priceDiff: "– 4.17 %".attributed(with: .body2, alignment: .left, color: .Accent.red),
-            amount: "374.14",
-            fiatAmount: "$ 1,823.17"),
-      .init(image: .Icons.Mock.tonCurrencyIcon,
-            title: "Ambra",
-            shortTitle: "ABR",
-            price: nil,
-            priceDiff: nil,
-            amount: "114.74",
-            fiatAmount: nil),
-      .init(image: .Icons.Mock.tonCurrencyIcon,
-            title: "Kote Coin",
-            shortTitle: "KOTE",
-            price: nil,
-            priceDiff: nil,
-            amount: "114.74",
-            fiatAmount: nil)
-    ]
-    
-    let applicationItems: [TokenListTokenCell.Model] = [
-      .init(image: .Icons.Mock.tonCurrencyIcon,
-            title: "Whales Staking",
-            shortTitle: nil,
-            price: "Whales Team #1",
-            priceDiff: nil,
-            amount: "1,324.17",
-            fiatAmount: "$ 2,443.37"),
-      .init(image: .Icons.Mock.tonCurrencyIcon,
-            title: "TON Staking",
-            shortTitle: nil,
-            price: "CAT #1",
-            priceDiff: nil,
-            amount: "74.24",
-            fiatAmount: "$ 137.17")
-    ]
-    
-    let collectibleItems: [TokensListCollectibleCell.Model] = [
-      .init(image: .Images.Mock.nftImage,
-            title: "Cry Yui",
-            subtitle: "TON DNS"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Unicorn Member #100",
-            subtitle: "Unicorn F2F Club",
-            isOnSale: true),
-      .init(image: .Images.Mock.nftImage,
-            title: "Cry Yui",
-            subtitle: "TON DNS"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Unicorn Member #100",
-            subtitle: "Unicorn F2F Club"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Cry Yui",
-            subtitle: "TON DNS"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Unicorn Member #100",
-            subtitle: "Unicorn F2F Club"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Cry Yui",
-            subtitle: "TON DNS",
-            isOnSale: true),
-      .init(image: .Images.Mock.nftImage,
-            title: "Unicorn Member #100",
-            subtitle: "Unicorn F2F Club"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Cry Yui",
-            subtitle: "TON DNS"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Unicorn Member #100",
-            subtitle: "Unicorn F2F Club"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Cry Yui",
-            subtitle: "TON DNS"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Unicorn Member #100",
-            subtitle: "Unicorn F2F Club"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Cry Yui",
-            subtitle: "TON DNS"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Unicorn Member #100",
-            subtitle: "Unicorn F2F Club"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Cry Yui",
-            subtitle: "TON DNS"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Unicorn Member #100",
-            subtitle: "Unicorn F2F Club"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Cry Yui",
-            subtitle: "TON DNS"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Unicorn Member #100",
-            subtitle: "Unicorn F2F Club"),
-      .init(image: .Images.Mock.nftImage,
-            title: "Cry Yui",
-            subtitle: "TON DNS"),
-    ]
-    
-    let tokensSection = TokensListSection(type: .token,
-                                          items: tokenItems)
-    
-    let applicationSection = TokensListSection(type: .application,
-                                               items: applicationItems)
-    
-    let collectiblesSection = TokensListSection(type: .collectibles, items: collectibleItems)
-    
-    let pages: [WalletContentPage] = [
-      .init(title: "Tokens", sections: [tokensSection, applicationSection, collectiblesSection]),
-      .init(title: "Apps", sections: [applicationSection]),
-      .init(title: "Collectibles", sections: [collectiblesSection])
-    ]
+  func reloadData() {
+    let pages = walletBalanceModelMapper.map(pages: pages)
     
     let contentPages = pages.compactMap {
       output?.getPagingContent(page: $0)
     }
-    
-    
+  
     viewInput?.updateContentPages(contentPages)
   }
-
 }

@@ -22,12 +22,20 @@ protocol ScrollContainerBodyContent: UIViewController {
 }
 
 final class ScrollContainerViewController: UIViewController {
+  
+  var didPullToRefreshClosure: (() -> Void)?
 
   private let headerContent: ScrollContainerHeaderContent
   private let bodyContent: ScrollContainerBodyContent
   
   private let scrollView = NotDelayScrollView()
   private let panGestureScrollView = NotDelayScrollView()
+  
+  private let refreshControl: UIRefreshControl = {
+    let refreshControl = UIRefreshControl()
+    refreshControl.tintColor = .Icon.primary
+    return refreshControl
+  }()
   
   init(headerContent: ScrollContainerHeaderContent,
        bodyContent: ScrollContainerBodyContent) {
@@ -67,6 +75,10 @@ final class ScrollContainerViewController: UIViewController {
     recalculateScrollViewContentSize()
     recalculatePanGestureScrollViewContentSize()
   }
+  
+  func stopRefreshControl() {
+    refreshControl.endRefreshing()
+  }
 }
 
 private extension ScrollContainerViewController {
@@ -76,6 +88,7 @@ private extension ScrollContainerViewController {
     
     panGestureScrollView.delegate = self
     panGestureScrollView.contentInsetAdjustmentBehavior = .never
+    panGestureScrollView.refreshControl = refreshControl
     
     view.addSubview(panGestureScrollView)
     view.addSubview(scrollView)
@@ -108,6 +121,11 @@ private extension ScrollContainerViewController {
     let height = bodyContent.height + headerContent.height
     panGestureScrollView.contentSize = .init(width: panGestureScrollView.bounds.width, height: height)
   }
+  
+  @objc
+  func didPullToRefresh() {
+    refreshControl.beginRefreshing()
+  }
 }
 
 extension ScrollContainerViewController: UIScrollViewDelegate {
@@ -124,5 +142,11 @@ extension ScrollContainerViewController: UIScrollViewDelegate {
     
     let headerScrollProgress = max(min((self.scrollView.contentOffset.y) / (bodyScrollTreshold - headerContent.minimumHeight), 1), 0)
     headerContent.update(with: headerScrollProgress)
+  }
+  
+  func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+    if refreshControl.isRefreshing {
+      didPullToRefreshClosure?()
+    }
   }
 }

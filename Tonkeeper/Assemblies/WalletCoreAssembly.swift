@@ -11,13 +11,15 @@ import WalletCore
 final class WalletCoreAssembly {
   
   let coreAssembly: CoreAssembly
-  let walletCoreContainer = WalletCoreContainer()
+  lazy var walletCoreContainer = WalletCoreContainer(cacheURL: coreAssembly.documentsURL)
   
   init(coreAssembly: CoreAssembly) {
     self.coreAssembly = coreAssembly
   }
   
-  lazy var keeperController: KeeperController = walletCoreContainer.keeperController(url: coreAssembly.documentsURL)
+  lazy var keeperController: KeeperController = walletCoreContainer.keeperController()
   
   lazy var passcodeController: PasscodeController = walletCoreContainer.passcodeController()
+  
+  lazy var balanceController: WalletBalanceController = walletCoreContainer.walletBalanceController()
 }

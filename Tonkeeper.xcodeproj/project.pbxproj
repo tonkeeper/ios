@@ -36,6 +36,7 @@
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
 		7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D143C3C2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift */; };
 		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
+		7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
 		7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */; };
 		7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */; };
@@ -287,6 +288,7 @@
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D143C3C2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SuccessViewController+Configuration.swift"; sourceTree = "<group>"; };
 		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
+		7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletBalanceModelMapper.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
 		7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeListItem.swift; sourceTree = "<group>"; };
 		7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonBottomContainer.swift; sourceTree = "<group>"; };
@@ -635,6 +637,7 @@
 		7D13B24D3B53384824E51AA9 /* WalletContent */ = {
 			isa = PBXGroup;
 			children = (
+				7D27E5992A515AEE00156D0C /* Mapper */,
 				7D9292902A24EF25005B83DF /* Model */,
 				CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */,
 				14F55B615D2FE6B7D027A93B /* WalletContentView.swift */,
@@ -652,6 +655,14 @@
 				7D143C392A4EC0E800B5FCC0 /* confetti.json */,
 			);
 			path = Animations;
+			sourceTree = "<group>";
+		};
+		7D27E5992A515AEE00156D0C /* Mapper */ = {
+			isa = PBXGroup;
+			children = (
+				7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */,
+			);
+			path = Mapper;
 			sourceTree = "<group>";
 		};
 		7D3BCFA32A4C347A00BE6AD9 /* Views */ = {
@@ -1761,6 +1772,7 @@
 				7D9292C72A275176005B83DF /* NavigationController.swift in Sources */,
 				7D92928B2A24DB50005B83DF /* ScrollContainerViewController.swift in Sources */,
 				7D6836622A1D6A79002DBBC7 /* UINavigationController+Appearance.swift in Sources */,
+				7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */,
 				7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */,
 				7D3BCFC52A4CADB200BE6AD9 /* MnemonicTextField.swift in Sources */,
 				7D6836182A1CAEC1002DBBC7 /* TextStyle.swift in Sources */,
@@ -2211,7 +2223,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				branch = feature/passcode_controller;
+				branch = feature/wallet_balance;
 				kind = branch;
 			};
 		};
