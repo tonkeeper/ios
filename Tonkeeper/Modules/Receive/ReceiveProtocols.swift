@@ -19,6 +19,7 @@ protocol ReceivePresenterInput {
   func didTapSwipeButton()
   func generateQRCode(size: CGSize)
   func copyAddress()
+  func getAddress() -> String
 }
 
 protocol ReceiveViewInput: AnyObject {

@@ -50,6 +50,10 @@ extension ReceivePresenter: ReceivePresenterInput {
   func copyAddress() {
     UIPasteboard.general.string = address
   }
+  
+  func getAddress() -> String {
+    return address
+  }
 }
 
 // MARK: - ReceiveModuleInput

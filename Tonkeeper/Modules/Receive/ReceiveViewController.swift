@@ -64,12 +64,29 @@ private extension ReceiveViewController {
     }), for: .touchUpInside)
     navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeButton)
     
-    customView.copyButton.addTarget(self, action: #selector(copyAddress), for: .touchUpInside)
+    customView.copyButton.addTarget(
+      self,
+      action: #selector(didTapCopyAddress),
+      for: .touchUpInside
+    )
+    customView.shareButton.addTarget(
+      self,
+      action: #selector(didTapShare),
+      for: .touchUpInside
+    )
   }
   
   @objc
-  func copyAddress() {
+  func didTapCopyAddress() {
     TapticGenerator.generateCopyFeedback()
     presenter.copyAddress()
+  }
+  
+  @objc
+  func didTapShare() {
+    let address = presenter.getAddress()
+    let activityViewController = UIActivityViewController(activityItems: [address], applicationActivities: nil)
+    activityViewController.overrideUserInterfaceStyle = .dark
+    present(activityViewController, animated: true)
   }
 }
