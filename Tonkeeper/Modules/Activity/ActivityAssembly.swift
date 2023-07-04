@@ -34,12 +34,14 @@ struct ActivityAssembly {
     return Module(view: viewController, input: Void())
   }
   
-  func receieveCoordinator(output: ReceiveCoordinatorOutput) -> ReceiveCoordinator {
+  func receieveCoordinator(output: ReceiveCoordinatorOutput,
+                           address: String) -> ReceiveCoordinator {
     let navigationController = NavigationController()
     navigationController.configureTransparentAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = ReceiveCoordinator(router: router,
-                                         assembly: receiveAssembly)
+                                         assembly: receiveAssembly,
+                                         address: address)
     coordinator.output = output
     return coordinator
   }

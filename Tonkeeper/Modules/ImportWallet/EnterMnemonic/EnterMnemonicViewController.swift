@@ -41,6 +41,7 @@ class EnterMnemonicViewController: GenericViewController<EnterMnemonicView>, Key
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
     registerForKeyboardEvents()
+    customView.textFields.first?.becomeFirstResponder()
   }
   
   // MARK: - Keyboard

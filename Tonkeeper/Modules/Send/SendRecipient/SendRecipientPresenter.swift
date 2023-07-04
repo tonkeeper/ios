@@ -18,18 +18,23 @@ final class SendRecipientPresenter {
   // MARK: - Dependencies
   
   private let commentLengthValidator: SendRecipientCommentLengthValidator
+  private var address: String?
   
   // MARK: - Init
   
-  init(commentLengthValidator: SendRecipientCommentLengthValidator) {
+  init(commentLengthValidator: SendRecipientCommentLengthValidator,
+       address: String?) {
     self.commentLengthValidator = commentLengthValidator
+    self.address = address
   }
 }
 
 // MARK: - SendRecipientPresenterIntput
 
 extension SendRecipientPresenter: SendRecipientPresenterInput {
-  func viewDidLoad() {}
+  func viewDidLoad() {
+    updateRecipient()
+  }
   
   func didTapCloseButton() {
     output?.sendRecipientModuleDidTapCloseButton()
@@ -62,8 +67,20 @@ extension SendRecipientPresenter: SendRecipientPresenterInput {
 
 // MARK: - SendRecipientModuleInput
 
-extension SendRecipientPresenter: SendRecipientModuleInput {}
+extension SendRecipientPresenter: SendRecipientModuleInput {
+  func setAddress(_ address: String) {
+    self.address = address
+    updateRecipient()
+  }
+}
 
 // MARK: - Private
 
-private extension SendRecipientPresenter {}
+private extension SendRecipientPresenter {
+  func updateRecipient() {
+    guard let address = address else {
+      return
+    }
+    viewInput?.updateRecipientAddress(address)
+  }
+}

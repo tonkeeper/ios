@@ -34,7 +34,7 @@ final class TextField: UIControlClosure {
   
   var placeholderMode: PlaceholderMode = .topStick {
     didSet {
-      updatePlaceholderModeAppearance()
+      updateState(isFirstResponder: false)
     }
   }
   
@@ -47,6 +47,13 @@ final class TextField: UIControlClosure {
   var isScanQRCodeButtonAvailable = false {
     didSet {
       updateScanQRCodeButtonVisibility()
+    }
+  }
+  
+  var text: String? {
+    didSet {
+      textView.text = text
+      textViewDidChange(textView)
     }
   }
   

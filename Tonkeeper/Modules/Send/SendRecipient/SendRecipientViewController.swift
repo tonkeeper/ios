@@ -32,20 +32,18 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
     setup()
     presenter.viewDidLoad()
   }
-  
-  override func viewWillAppear(_ animated: Bool) {
-    super.viewWillAppear(animated)
-    registerForKeyboardEvents()
-  }
-  
-  override func viewWillDisappear(_ animated: Bool) {
-    super.viewWillDisappear(animated)
-    unregisterFromKeyboardEvents()
-  }
-  
+
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
-    _ = customView.addressTextField.becomeFirstResponder()
+    registerForKeyboardEvents()
+    if customView.addressTextField.textView.text.isEmpty {
+      _ = customView.addressTextField.becomeFirstResponder()
+    }
+  }
+  
+  override func viewDidDisappear(_ animated: Bool) {
+    super.viewDidDisappear(animated)
+    unregisterFromKeyboardEvents()
   }
   
   // MARK: - Keyboard
@@ -80,6 +78,10 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
 // MARK: - SendRecipientViewInput
 
 extension SendRecipientViewController: SendRecipientViewInput {
+  func updateRecipientAddress(_ address: String) {
+    customView.addressTextField.text = address
+  }
+  
   func showCommentLengthWarning(text: NSAttributedString) {
     customView.commentLimitLabel.isHidden = false
     customView.commentLimitLabel.attributedText = text

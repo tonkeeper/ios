@@ -63,5 +63,12 @@ private extension ReceiveViewController {
       self?.presenter.didTapSwipeButton()
     }), for: .touchUpInside)
     navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeButton)
+    
+    customView.copyButton.addTarget(self, action: #selector(copyAddress), for: .touchUpInside)
+  }
+  
+  @objc
+  func copyAddress() {
+    presenter.copyAddress()
   }
 }

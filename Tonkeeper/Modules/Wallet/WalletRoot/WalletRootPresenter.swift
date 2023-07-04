@@ -77,11 +77,14 @@ private extension WalletRootPresenter {
 
 extension WalletRootPresenter: WalletHeaderModuleOutput {
   func didTapSendButton() {
-    output?.openSend()
+    output?.openSend(address: nil)
   }
   
   func didTapReceiveButton() {
-    output?.openReceive()
+    guard let walletAddress = try? walletBalanceController.getWalletBalance().header.fullAddress else {
+      return
+    }
+    output?.openReceive(address: walletAddress)
   }
   
   func didTapBuyButton() {

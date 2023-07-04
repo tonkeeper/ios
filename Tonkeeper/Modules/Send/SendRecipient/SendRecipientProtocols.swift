@@ -14,7 +14,9 @@ protocol SendRecipientModuleOutput: AnyObject {
   func sendRecipientModuleDidTapContinueButton()
 }
 
-protocol SendRecipientModuleInput: AnyObject {}
+protocol SendRecipientModuleInput: AnyObject {
+  func setAddress(_ address: String)
+}
 
 protocol SendRecipientPresenterInput {
   func viewDidLoad()
@@ -25,6 +27,7 @@ protocol SendRecipientPresenterInput {
 }
 
 protocol SendRecipientViewInput: AnyObject {
+  func updateRecipientAddress(_ address: String)
   func showCommentLengthWarning(text: NSAttributedString)
   func hideCommentLengthWarning()
 }

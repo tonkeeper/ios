@@ -6,15 +6,28 @@
 //
 
 import UIKit
+import WalletCore
 
 struct ReceiveAssembly {
-  func receieveModule(output: ReceiveModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = ReceivePresenter(qrCodeGenerator: DefaultQRCodeGenerator())
+  
+  let walletCoreAssembly: WalletCoreAssembly
+  
+  func receieveModule(output: ReceiveModuleOutput,
+                      address: String) -> Module<UIViewController, Void> {
+    let presenter = ReceivePresenter(qrCodeGenerator: qrCodeGenerator,
+                                     deeplinkGenerator: walletCoreAssembly.deeplinkGenerator,
+                                     address: address)
     presenter.output = output
     let viewController = ReceiveViewController(presenter: presenter)
     presenter.viewInput = viewController
     
     return Module(view: viewController, input: Void())
+  }
+}
+
+private extension ReceiveAssembly {
+  var qrCodeGenerator: QRCodeGenerator {
+    DefaultQRCodeGenerator()
   }
 }
 

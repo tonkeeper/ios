@@ -22,4 +22,12 @@ final class WalletCoreAssembly {
   lazy var passcodeController: PasscodeController = walletCoreContainer.passcodeController()
   
   lazy var balanceController: WalletBalanceController = walletCoreContainer.walletBalanceController()
+  
+  var deeplinkParser: DeeplinkParser {
+    walletCoreContainer.deeplinkParser()
+  }
+  
+  var deeplinkGenerator: DeeplinkGenerator {
+    walletCoreContainer.deeplinkGenerator()
+  }
 }

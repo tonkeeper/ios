@@ -16,10 +16,13 @@ final class ReceiveCoordinator: Coordinator<NavigationRouter> {
   weak var output: ReceiveCoordinatorOutput?
   
   private let assembly: ReceiveAssembly
+  private let address: String
   
   init(router: NavigationRouter,
-       assembly: ReceiveAssembly) {
+       assembly: ReceiveAssembly,
+       address: String) {
     self.assembly = assembly
+    self.address = address
     super.init(router: router)
   }
   
@@ -30,7 +33,7 @@ final class ReceiveCoordinator: Coordinator<NavigationRouter> {
 
 private extension ReceiveCoordinator {
   func openRootReceive() {
-    let module = assembly.receieveModule(output: self)
+    let module = assembly.receieveModule(output: self, address: address)
     router.setPresentables([(module.view, nil)])
   }
 }

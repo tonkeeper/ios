@@ -16,21 +16,34 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
   weak var output: SendCoordinatorOutput?
   
   private let assembly: SendAssembly
+  private var address: String?
+  
+  private weak var sendRecipientInput: SendRecipientModuleInput?
   
   init(router: NavigationRouter,
-       assembly: SendAssembly) {
+       assembly: SendAssembly,
+       address: String?) {
     self.assembly = assembly
+    self.address = address
     super.init(router: router)
   }
   
   override func start() {
-    openSendRecipient()
+    if let address = address {
+      openWith(address: address)
+    } else {
+      openSendRecipient()
+    }
   }
 }
 
 private extension SendCoordinator {
   func openSendRecipient() {
-    let module = assembly.sendRecipientModule(output: self)
+    let module = assembly.sendRecipientModule(
+      output: self,
+      address: address
+    )
+    sendRecipientInput = module.input
     router.setPresentables([(module.view, nil)])
   }
   
@@ -44,6 +57,19 @@ private extension SendCoordinator {
     let module = assembly.sendConfirmationModule(output: self)
     module.view.setupBackButton()
     router.push(presentable: module.view)
+  }
+  
+  func openWith(address: String) {
+    let recipientModule = assembly.sendRecipientModule(
+      output: self,
+      address: address
+    )
+    sendRecipientInput = recipientModule.input
+    
+    let amountModule = assembly.sendAmountModule(output: self)
+    amountModule.view.setupBackButton()
+
+    router.setPresentables([(recipientModule.view, nil), (amountModule.view, nil)])
   }
 }
 
@@ -93,5 +119,20 @@ extension SendCoordinator: SendConfirmationModuleOutput {
 extension SendCoordinator: QRScannerModuleOutput {
   func qrScannerModuleDidFinish() {
     router.dismiss()
+  }
+  
+  func didScanQrCode(with string: String) {
+    router.dismiss()
+    guard let deeplink = try? assembly.deeplinkParser.parse(string: string) else {
+      return
+    }
+    
+    switch deeplink {
+    case let .ton(tonDeeplink):
+      switch tonDeeplink {
+      case let .transfer(address):
+        sendRecipientInput?.setAddress(address)
+      }
+    }
   }
 }

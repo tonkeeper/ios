@@ -33,7 +33,7 @@ private extension ActivityCoordinator {
 
 extension ActivityCoordinator: ActivityRootModuleOutput {
   func didTapReceiveButton() {
-    let coordinator = assembly.receieveCoordinator(output: self)
+    let coordinator = assembly.receieveCoordinator(output: self, address: "")
     addChild(coordinator)
     coordinator.start()
     router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in

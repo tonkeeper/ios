@@ -7,6 +7,7 @@
 
 import Foundation
 import AVFoundation
+import WalletCore
 
 final class QRScannerPresenter: NSObject {
   
@@ -14,7 +15,7 @@ final class QRScannerPresenter: NSObject {
   
   weak var viewInput: QRScannerViewInput?
   weak var output: QRScannerModuleOutput?
-  
+
   // MARK: - State
   
   private let captureSession = AVCaptureSession()
@@ -83,29 +84,33 @@ private extension QRScannerPresenter {
   }
   
   func setupCamera() {
-    guard let captureDevice = captureDevice else {
-      return
+    Task {
+      guard let captureDevice = captureDevice else {
+        return
+      }
+      
+      do {
+        let input = try AVCaptureDeviceInput(device: captureDevice)
+        captureSession.addInput(input)
+      } catch {
+        print(error)
+      }
+      
+      let captureMetadataOutput = AVCaptureMetadataOutput()
+      captureSession.addOutput(captureMetadataOutput)
+      
+      captureMetadataOutput.setMetadataObjectsDelegate(self, queue: .main)
+      captureMetadataOutput.metadataObjectTypes = [AVMetadataObject.ObjectType.qr]
+      
+      let videoLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+      videoLayer.videoGravity = .resizeAspectFill
+      
+      captureSession.startRunning()
+      
+      Task { @MainActor in
+        viewInput?.showVideoLayer(videoLayer)
+      }
     }
-    
-    do {
-      let input = try AVCaptureDeviceInput(device: captureDevice)
-      captureSession.addInput(input)
-    } catch {
-      print(error)
-    }
-    
-    let captureMetadataOutput = AVCaptureMetadataOutput()
-    captureSession.addOutput(captureMetadataOutput)
-    
-    captureMetadataOutput.setMetadataObjectsDelegate(self, queue: .main)
-    captureMetadataOutput.metadataObjectTypes = [AVMetadataObject.ObjectType.qr]
-    
-    let videoLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-    videoLayer.videoGravity = .resizeAspectFill
-    
-    captureSession.startRunning()
-    
-    viewInput?.showVideoLayer(videoLayer)
   }
   
   func handleCameraPermissionDenied() {
@@ -121,7 +126,10 @@ extension QRScannerPresenter: AVCaptureMetadataOutputObjectsDelegate {
                       from connection: AVCaptureConnection) {
     guard !metadataObjects.isEmpty,
           let metadataObject = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
-          metadataObject.type == .qr
+          metadataObject.type == .qr,
+          let stringValue = metadataObject.stringValue
     else { return }
+    captureSession.stopRunning()
+    self.output?.didScanQrCode(with: stringValue)
   }
 }

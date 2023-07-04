@@ -9,6 +9,7 @@ import QuartzCore.CALayer
 
 protocol QRScannerModuleOutput: AnyObject {
   func qrScannerModuleDidFinish()
+  func didScanQrCode(with string: String)
 }
 
 protocol QRScannerPresenterInput {
