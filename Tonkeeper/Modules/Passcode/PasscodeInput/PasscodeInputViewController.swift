@@ -62,6 +62,7 @@ extension PasscodeInputViewController: PasscodeInputViewInput {
   }
   
   func handlePinInputSuccess() {
+    TapticGenerator.generateSuccessFeedback()
     scaleDots { [weak self] in
       self?.presenter.didHandleInputSuccess()
     }
@@ -90,6 +91,7 @@ private extension PasscodeInputViewController {
   }
   
   func handleButtonTap(_ button: PasscodeButton) {
+    TapticGenerator.generateButtonTapMediumFeedback()
     switch button.type {
     case let .digit(digit):
       presenter.didTapDigitButton(digit: digit)

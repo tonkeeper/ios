@@ -130,6 +130,7 @@ extension QRScannerPresenter: AVCaptureMetadataOutputObjectsDelegate {
           let stringValue = metadataObject.stringValue
     else { return }
     captureSession.stopRunning()
+    TapticGenerator.generateSuccessFeedback()
     self.output?.didScanQrCode(with: stringValue)
   }
 }

@@ -69,6 +69,7 @@ private extension ReceiveViewController {
   
   @objc
   func copyAddress() {
+    TapticGenerator.generateCopyFeedback()
     presenter.copyAddress()
   }
 }

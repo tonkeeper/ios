@@ -110,6 +110,7 @@
 		7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59287F2A20CDCA006B0A8A /* TokenListTokenCell.swift */; };
 		7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928812A20CDEC006B0A8A /* Reusable.swift */; };
 		7D5928852A20CE3C006B0A8A /* TokensListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928842A20CE3C006B0A8A /* TokensListCollectionController.swift */; };
+		7D5943492A547D1700C89967 /* TapticGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5943482A547D1700C89967 /* TapticGenerator.swift */; };
 		7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 7D5A18112A5406CB00793769 /* Kingfisher */; };
 		7D5D05A72A2F83ED009F42FF /* ActivityListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05A62A2F83ED009F42FF /* ActivityListCollectionController.swift */; };
 		7D5D05A92A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05A82A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift */; };
@@ -364,6 +365,7 @@
 		7D59287F2A20CDCA006B0A8A /* TokenListTokenCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenListTokenCell.swift; sourceTree = "<group>"; };
 		7D5928812A20CDEC006B0A8A /* Reusable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Reusable.swift; sourceTree = "<group>"; };
 		7D5928842A20CE3C006B0A8A /* TokensListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokensListCollectionController.swift; sourceTree = "<group>"; };
+		7D5943482A547D1700C89967 /* TapticGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapticGenerator.swift; sourceTree = "<group>"; };
 		7D5D05A62A2F83ED009F42FF /* ActivityListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListCollectionController.swift; sourceTree = "<group>"; };
 		7D5D05A82A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListCollectionLayoutConfigurator.swift; sourceTree = "<group>"; };
 		7D5D05AA2A306739009F42FF /* ActivityListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListSection.swift; sourceTree = "<group>"; };
@@ -1011,6 +1013,14 @@
 			path = Model;
 			sourceTree = "<group>";
 		};
+		7D5943472A547D0C00C89967 /* Taptic */ = {
+			isa = PBXGroup;
+			children = (
+				7D5943482A547D1700C89967 /* TapticGenerator.swift */,
+			);
+			path = Taptic;
+			sourceTree = "<group>";
+		};
 		7D5D05A52A2F8399009F42FF /* CollectionView */ = {
 			isa = PBXGroup;
 			children = (
@@ -1046,6 +1056,7 @@
 		7D6836152A1CAEAA002DBBC7 /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				7D5943472A547D0C00C89967 /* Taptic */,
 				7D5141CC2A53453D00EC7F59 /* Images */,
 				7D9293022A29EE2F005B83DF /* Formatters */,
 				7D5928512A1F6404006B0A8A /* Protocols */,
@@ -1901,6 +1912,7 @@
 				7D9292C22A27412A005B83DF /* SendCoordinator.swift in Sources */,
 				7D68364A2A1D1052002DBBC7 /* WalletAssembly.swift in Sources */,
 				7D68363B2A1CFF74002DBBC7 /* AppCoordinator.swift in Sources */,
+				7D5943492A547D1700C89967 /* TapticGenerator.swift in Sources */,
 				7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */,
 				7D6836302A1CF471002DBBC7 /* UITabBarController+Completions.swift in Sources */,
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,

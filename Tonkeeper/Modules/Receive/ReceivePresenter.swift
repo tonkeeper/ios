@@ -75,6 +75,7 @@ private extension ReceivePresenter {
     let address = address
       .attributed(with: .label1,
                   alignment: .left,
+                  lineBreakMode: .byCharWrapping,
                   color: .Text.secondary)
     viewInput?.updateView(model: .init(title: title,
                                        qrTitle: qrTitle,
