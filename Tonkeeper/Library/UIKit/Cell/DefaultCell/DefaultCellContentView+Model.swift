@@ -11,7 +11,7 @@ extension DefaultCellContentView {
   
   struct Model {
     let textContentModel: DefaultCellTextContentView.Model
-    let image: UIImage?
+    let image: Image
   }
 }
 

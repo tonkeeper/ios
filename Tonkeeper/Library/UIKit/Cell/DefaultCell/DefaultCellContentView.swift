@@ -10,7 +10,14 @@ import UIKit
 final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectionViewCellContent {
   
   let textContentView = DefaultCellTextContentView()
-  let imageView = UIImageView()
+  let imageView: UIImageView = {
+    let imageView = UIImageView()
+    imageView.contentMode = .center
+    imageView.tintColor = .Icon.primary
+    return imageView
+  }()
+  
+  weak var imageLoader: ImageLoader?
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -41,6 +48,7 @@ final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectio
     imageView.center.y = textContentView.center.y
     
     imageView.layer.cornerRadius = .imageViewSide/2
+    imageView.layer.masksToBounds = true
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
@@ -51,12 +59,19 @@ final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectio
   
   func configure(model: Model) {
     textContentView.configure(model: model.textContentModel)
-    imageView.image = model.image
+    switch model.image {
+    case let .image(image, backgroundColor):
+      imageView.image = image
+      imageView.backgroundColor = backgroundColor
+    case let .url(url):
+      imageLoader?.loadImage(imageURL: url, imageView: imageView, size: .init(width: .imageViewSide, height: .imageViewSide))
+    }
     setNeedsLayout()
   }
   
   func prepareForReuse() {
     imageView.image = nil
+    imageView.backgroundColor = .Background.content
     textContentView.prepareForReuse()
   }
   
@@ -70,9 +85,7 @@ private extension DefaultCellContentView {
   func setup() {
     backgroundColor = .Background.content
     imageView.backgroundColor = .Background.content
-    
-    imageView.contentMode = .center
-    
+        
     addSubview(imageView)
     addSubview(textContentView)
   }

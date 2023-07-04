@@ -11,7 +11,7 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
   
   struct Model: Hashable {
     let id = UUID()
-    let image: UIImage?
+    let image: Image
     let title: String
     let shortTitle: String?
     let price: String?
@@ -37,6 +37,12 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
     view.backgroundColor = .Separator.common
     return view
   }()
+  
+  weak var imageLoader: ImageLoader? {
+    didSet {
+      cellContentView.imageLoader = imageLoader
+    }
+  }
   
   override init(frame: CGRect) {
     super.init(frame: frame)

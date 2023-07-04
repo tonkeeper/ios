@@ -10,12 +10,12 @@ import UIKit
 final class TokensListCollectibleCell: UICollectionViewCell, Reusable, ConfigurableView {
   struct Model: Hashable {
     let id = UUID()
-    let image: UIImage?
+    let image: Image
     let title: String?
     let subtitle: String?
     let isOnSale: Bool
     
-    init(image: UIImage?,
+    init(image: Image,
          title: String?,
          subtitle: String?,
          isOnSale: Bool = false) {
@@ -60,6 +60,8 @@ final class TokensListCollectibleCell: UICollectionViewCell, Reusable, Configura
     return label
   }()
   
+  weak var imageLoader: ImageLoader?
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -70,7 +72,13 @@ final class TokensListCollectibleCell: UICollectionViewCell, Reusable, Configura
   }
   
   func configure(model: Model) {
-    imageView.image = model.image
+    switch model.image {
+    case let .image(image, backgroundColor):
+      imageView.image = image
+      imageView.backgroundColor = backgroundColor
+    case let .url(url):
+      imageLoader?.loadImage(imageURL: url, imageView: imageView, size: nil)
+    }
     titleLabel.text = model.title
     subtitleLabel.text = model.subtitle
     saleImageView.isHidden = !model.isOnSale
@@ -95,6 +103,8 @@ private extension TokensListCollectibleCell {
     
     titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    imageView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+    imageView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     
     labelContainer.addSubview(titleLabel)
     labelContainer.addSubview(subtitleLabel)
@@ -119,7 +129,6 @@ private extension TokensListCollectibleCell {
       labelContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor),
       labelContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         .withPriority(.defaultHigh),
-//        .withPriority(.init(rawValue: UILayoutPriority.required.rawValue - 1)),
       
       titleLabel.topAnchor.constraint(equalTo: labelContainer.topAnchor,
                                       constant: UIEdgeInsets.labelContainerInsets.top),

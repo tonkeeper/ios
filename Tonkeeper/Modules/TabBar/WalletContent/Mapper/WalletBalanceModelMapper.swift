@@ -30,17 +30,24 @@ private extension WalletBalanceModelMapper {
   }
   
   func map(token: WalletBalanceModel.Token) -> TokenListTokenCell.Model {
-    .init(image: .Icons.Mock.tonCurrencyIcon,
-          title: token.title,
-          shortTitle: token.shortTitle,
-          price: token.price,
-          priceDiff: nil,
-          amount: token.topAmount,
-          fiatAmount: token.bottomAmount)
+    let image: Image
+    switch token.image {
+    case .ton: image = .image(.Icons.tonIcon28, backgroundColor: .Constant.tonBlue)
+    case .oldWallet: image = .image(.Icons.tonIcon28, backgroundColor: .Button.tertiaryBackground)
+    case let .url(url): image = .url(url)
+    }
+    
+    return .init(image: image,
+                 title: token.title,
+                 shortTitle: token.shortTitle,
+                 price: token.price,
+                 priceDiff: nil,
+                 amount: token.topAmount,
+                 fiatAmount: token.bottomAmount)
   }
   
   func map(collectible: WalletBalanceModel.Collectible) -> TokensListCollectibleCell.Model {
-    .init(image: nil,
+    .init(image: .url(collectible.imageURL),
           title: collectible.title,
           subtitle: collectible.subtitle)
   }
