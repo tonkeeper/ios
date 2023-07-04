@@ -65,7 +65,8 @@ struct WalletAssembly {
   
   func tokensListModule(page: WalletContentPage, output: TokensListModuleOutput) -> Module<TokensListViewController, TokensListModuleInput> {
     let presenter = TokensListPresenter(sections: page.sections)
-    let viewController = TokensListViewController(presenter: presenter)
+    let viewController = TokensListViewController(presenter: presenter,
+                                                  imageLoader: NukeImageLoader())
     viewController.title = page.title
     presenter.viewInput = viewController
     return Module(view: viewController, input: presenter)

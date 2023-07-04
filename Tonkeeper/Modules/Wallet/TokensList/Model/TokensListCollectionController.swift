@@ -19,9 +19,13 @@ final class TokensListCollectionController: NSObject {
   var dataSource: UICollectionViewDiffableDataSource<TokensListSection.SectionType, AnyHashable>?
   
   private let collectionLayoutConfigurator = TokensListCollectionLayoutConfigurator()
+  
+  private let imageLoader: ImageLoader
 
-  init(collectionView: UICollectionView) {
+  init(collectionView: UICollectionView,
+       imageLoader: ImageLoader) {
     self.collectionView = collectionView
+    self.imageLoader = imageLoader
     super.init()
     let layout = collectionLayoutConfigurator.getLayout { [weak self] sectionIndex in
       guard let self = self else { return .token }
@@ -29,6 +33,7 @@ final class TokensListCollectionController: NSObject {
     }
     
     collectionView.delegate = self
+    collectionView.prefetchDataSource = self
     collectionView.setCollectionViewLayout(layout, animated: false)
     dataSource = createDataSource(collectionView: collectionView)
     collectionView.register(TokenListTokenCell.self,
@@ -74,6 +79,7 @@ private extension TokensListCollectionController {
       for: indexPath) as? TokenListTokenCell else {
       return UICollectionViewCell()
     }
+    cell.imageLoader = self.imageLoader
     cell.configure(model: model)
     cell.isFirstCell = indexPath.item == 0
     cell.isLastCell = indexPath.item == sections[indexPath.section].items.count - 1
@@ -88,6 +94,7 @@ private extension TokensListCollectionController {
       for: indexPath) as? TokensListCollectibleCell else {
       return UICollectionViewCell()
     }
+    cell.imageLoader = self.imageLoader
     cell.configure(model: model)
     return cell
   }
@@ -101,5 +108,55 @@ extension TokensListCollectionController: UICollectionViewDelegate {
   
   func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
     (collectionView.cellForItem(at: indexPath) as? Selectable)?.deselect()
+  }
+}
+
+extension TokensListCollectionController: UICollectionViewDataSourcePrefetching {
+  func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+    let urls = indexPaths.compactMap { indexPath -> URL? in
+      guard let itemIdentifier = dataSource?.itemIdentifier(for: indexPath) else {
+        return nil
+      }
+      
+      switch itemIdentifier {
+      case let tokenModel as TokenListTokenCell.Model:
+        guard case let .url(url) = tokenModel.image else {
+          return nil
+        }
+        return url
+      case let collectibleModel as TokensListCollectibleCell.Model:
+        guard case let .url(url) = collectibleModel.image else {
+          return nil
+        }
+        return url
+      default:
+        return nil
+      }
+    }
+    imageLoader.prefetchImages(imageURLs: urls)
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
+    let urls = indexPaths.compactMap { indexPath -> URL? in
+      guard let itemIdentifier = dataSource?.itemIdentifier(for: indexPath) else {
+        return nil
+      }
+      
+      switch itemIdentifier {
+      case let tokenModel as TokenListTokenCell.Model:
+        guard case let .url(url) = tokenModel.image else {
+          return nil
+        }
+        return url
+      case let collectibleModel as TokensListCollectibleCell.Model:
+        guard case let .url(url) = collectibleModel.image else {
+          return nil
+        }
+        return url
+      default:
+        return nil
+      }
+    }
+    imageLoader.stopPrefetchImages(imageURLs: urls)
   }
 }

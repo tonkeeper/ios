@@ -73,6 +73,10 @@
 		7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */; };
 		7D3E43B42A3737E700C23A75 /* BuyListServiceBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43B32A3737E700C23A75 /* BuyListServiceBuilder.swift */; };
 		7D3E43B62A373B2200C23A75 /* ModalCardContainerScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */; };
+		7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CA2A53429200EC7F59 /* ImageLoader.swift */; };
+		7D5141CE2A53454400EC7F59 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CD2A53454400EC7F59 /* Image.swift */; };
+		7D5141D12A53465D00EC7F59 /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = 7D5141D02A53465D00EC7F59 /* Nuke */; };
+		7D5141D32A53465D00EC7F59 /* NukeExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 7D5141D22A53465D00EC7F59 /* NukeExtensions */; };
 		7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */; };
 		7D527BC02A2A913400A2D29A /* ModalContentViewController+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBF2A2A913400A2D29A /* ModalContentViewController+Configuration.swift */; };
 		7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC12A2A955700A2D29A /* ModalContentHeaderView.swift */; };
@@ -325,6 +329,8 @@
 		7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServiceCellContentView+Model.swift"; sourceTree = "<group>"; };
 		7D3E43B32A3737E700C23A75 /* BuyListServiceBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListServiceBuilder.swift; sourceTree = "<group>"; };
 		7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerScrollController.swift; sourceTree = "<group>"; };
+		7D5141CA2A53429200EC7F59 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
+		7D5141CD2A53454400EC7F59 /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
 		7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentViewController.swift; sourceTree = "<group>"; };
 		7D527BBF2A2A913400A2D29A /* ModalContentViewController+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalContentViewController+Configuration.swift"; sourceTree = "<group>"; };
 		7D527BC12A2A955700A2D29A /* ModalContentHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentHeaderView.swift; sourceTree = "<group>"; };
@@ -479,6 +485,7 @@
 		7DE27E672A30D94100842FA8 /* TransactionCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellContentView.swift; sourceTree = "<group>"; };
 		7DE27E692A30D9CE00842FA8 /* TransactionCellStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellStatusView.swift; sourceTree = "<group>"; };
 		7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellCommentView.swift; sourceTree = "<group>"; };
+		7DF2C1C92A53628500863BA3 /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "core-swift"; path = "../core-swift"; sourceTree = "<group>"; };
 		81E95098F2912B3982A6BAE5 /* SetupWalletProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SetupWalletProtocols.swift; sourceTree = "<group>"; };
 		8243DFDC12DB2AD7BBBBBE82 /* PasscodeInputProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputProtocols.swift; sourceTree = "<group>"; };
 		8AB768175241379D921DB521 /* WelcomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
@@ -515,6 +522,8 @@
 				7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
+				7D5141D12A53465D00EC7F59 /* Nuke in Frameworks */,
+				7D5141D32A53465D00EC7F59 /* NukeExtensions in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -843,6 +852,22 @@
 			path = Dimming;
 			sourceTree = "<group>";
 		};
+		7D5141C92A53428700EC7F59 /* ImageLoader */ = {
+			isa = PBXGroup;
+			children = (
+				7D5141CA2A53429200EC7F59 /* ImageLoader.swift */,
+			);
+			path = ImageLoader;
+			sourceTree = "<group>";
+		};
+		7D5141CC2A53453D00EC7F59 /* Images */ = {
+			isa = PBXGroup;
+			children = (
+				7D5141CD2A53454400EC7F59 /* Image.swift */,
+			);
+			path = Images;
+			sourceTree = "<group>";
+		};
 		7D527BBC2A2A90F400A2D29A /* ModalContentViewController */ = {
 			isa = PBXGroup;
 			children = (
@@ -1024,6 +1049,7 @@
 		7D6836152A1CAEAA002DBBC7 /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				7D5141CC2A53453D00EC7F59 /* Images */,
 				7D9293022A29EE2F005B83DF /* Formatters */,
 				7D5928512A1F6404006B0A8A /* Protocols */,
 				7D68369D2A1EB60E002DBBC7 /* UIKit */,
@@ -1283,6 +1309,7 @@
 		7D70D3BE2A2A03280096E1A2 /* Logic */ = {
 			isa = PBXGroup;
 			children = (
+				7D5141C92A53428700EC7F59 /* ImageLoader */,
 				7D8EB72E2A4F2227005BE1B0 /* Wallet */,
 				7D3BCFAA2A4C597900BE6AD9 /* Settings */,
 				7D70D3C12A2A03390096E1A2 /* Model */,
@@ -1511,6 +1538,7 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
+				7DF2C1C92A53628500863BA3 /* core-swift */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7DB8FB632A1BCC92005B4B11 /* Products */,
 			);
@@ -1677,6 +1705,8 @@
 				7DB17F342A4B2F07007C6154 /* AnyFormatKit */,
 				7DB17F3E2A4B3338007C6154 /* WalletCore */,
 				7D143C352A4EC0D300B5FCC0 /* Lottie */,
+				7D5141D02A53465D00EC7F59 /* Nuke */,
+				7D5141D22A53465D00EC7F59 /* NukeExtensions */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -1710,6 +1740,7 @@
 				7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */,
 				7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */,
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
+				7D5141CF2A53465D00EC7F59 /* XCRemoteSwiftPackageReference "Nuke" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -1911,6 +1942,7 @@
 				0C1DF00128AE8BA90E30FCB1 /* TokensListView.swift in Sources */,
 				C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */,
 				7D9292DE2A28A1DF005B83DF /* EnterAmountViewController.swift in Sources */,
+				7D5141CE2A53454400EC7F59 /* Image.swift in Sources */,
 				FC58CA56982D098FE4E85989 /* TokensListProtocols.swift in Sources */,
 				7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */,
 				D97B981CF3DBE823EDA9A091 /* WalletContentViewController.swift in Sources */,
@@ -1976,6 +2008,7 @@
 				BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */,
 				C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */,
 				9C2743C59B411E3CF174F747 /* EnterMnemonicProtocols.swift in Sources */,
+				7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */,
 				3A56A8E00A6AB82880329EAF /* PasscodeInputViewController.swift in Sources */,
 				96B2CB2B1E4ACD7BA8897D36 /* PasscodeInputView.swift in Sources */,
 				40B98115F358DDDBD1D6FAB1 /* PasscodeInputPresenter.swift in Sources */,
@@ -2211,6 +2244,14 @@
 				minimumVersion = 4.2.0;
 			};
 		};
+		7D5141CF2A53465D00EC7F59 /* XCRemoteSwiftPackageReference "Nuke" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kean/Nuke";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.1.2;
+			};
+		};
 		7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/luximetr/AnyFormatKit";
@@ -2234,6 +2275,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */;
 			productName = Lottie;
+		};
+		7D5141D02A53465D00EC7F59 /* Nuke */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D5141CF2A53465D00EC7F59 /* XCRemoteSwiftPackageReference "Nuke" */;
+			productName = Nuke;
+		};
+		7D5141D22A53465D00EC7F59 /* NukeExtensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D5141CF2A53465D00EC7F59 /* XCRemoteSwiftPackageReference "Nuke" */;
+			productName = NukeExtensions;
 		};
 		7DB17F342A4B2F07007C6154 /* AnyFormatKit */ = {
 			isa = XCSwiftPackageProductDependency;

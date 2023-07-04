@@ -13,11 +13,13 @@ class TokensListViewController: GenericViewController<TokensListView>, PagingScr
   // MARK: - Module
 
   private let presenter: TokensListPresenterInput
+  private let imageLoader: ImageLoader
   
   // MARK: - Collection
   
   private lazy var collectionController = TokensListCollectionController(
-    collectionView: customView.collectionView
+    collectionView: customView.collectionView,
+    imageLoader: imageLoader
   )
   
   // MARK: - State
@@ -39,8 +41,10 @@ class TokensListViewController: GenericViewController<TokensListView>, PagingScr
 
   // MARK: - Init
 
-  init(presenter: TokensListPresenterInput) {
+  init(presenter: TokensListPresenterInput,
+       imageLoader: ImageLoader) {
     self.presenter = presenter
+    self.imageLoader = imageLoader
     super.init(nibName: nil, bundle: nil)
   }
 
