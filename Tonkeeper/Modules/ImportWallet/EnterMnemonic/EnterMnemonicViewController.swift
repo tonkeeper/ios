@@ -111,6 +111,10 @@ private extension EnterMnemonicViewController {
         self,
         action: #selector(didEdit(textField:)),
         for: .editingChanged)
+      $0.addTarget(
+        self,
+        action: #selector(didBeginEditing(textField:)),
+        for: .editingDidBegin)
       $0.delegate = self
     }
     
@@ -134,6 +138,17 @@ private extension EnterMnemonicViewController {
   }
   
   @objc
+  func didBeginEditing(textField: MnemonicTextField) {
+    let scrollViewMaxOrigin = customView.scrollView.contentSize.height
+    - customView.scrollView.frame.height
+    + customView.scrollView.contentInset.bottom
+    let originY = min(textField.frame.origin.y, scrollViewMaxOrigin)
+    UIView.animate(withDuration: .textFieldChangeScrollDuration) {
+      self.customView.scrollView.contentOffset = .init(x: 0, y: originY)
+    }
+  }
+  
+  @objc
   func didEndEditing(textField: MnemonicTextField) {
     defer {
       updateContinueButtonState()
@@ -143,8 +158,10 @@ private extension EnterMnemonicViewController {
       textField.validationState = .valid
       return
     }
-    let isValid = presenter.validate(word: word)
+    let trimmedWord = word.trimmingCharacters(in: .whitespacesAndNewlines)
+    let isValid = presenter.validate(word: trimmedWord)
     textField.validationState = isValid ? .valid : .invalid
+    textField.text = trimmedWord
   }
   
   @objc
@@ -160,7 +177,13 @@ private extension EnterMnemonicViewController {
   
   @objc
   func didTapContinueButton() {
-    let mnemonic = customView.textFields.map { $0.text ?? "" }
+    let mnemonic = customView.textFields.map {
+      $0.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    }
     presenter.didEnterMnemonic(mnemonic)
   }
+}
+
+private extension TimeInterval {
+  static let textFieldChangeScrollDuration: TimeInterval = 0.35
 }

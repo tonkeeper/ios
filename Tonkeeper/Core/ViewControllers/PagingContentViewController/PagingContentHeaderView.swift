@@ -57,7 +57,7 @@ private extension PagingContentHeaderView {
     pageSegmentControl.translatesAutoresizingMaskIntoConstraints = false
     separatorView.translatesAutoresizingMaskIntoConstraints = false
     
-    separatorTopViewConstraint = separatorView.topAnchor.constraint(equalTo: topAnchor)
+    separatorTopViewConstraint = separatorView.topAnchor.constraint(equalTo: topAnchor, constant: 20)
     separatorTopSegmentControlConstraint = separatorView.topAnchor.constraint(equalTo: pageSegmentControl.bottomAnchor)
     
     NSLayoutConstraint.activate([
@@ -67,9 +67,10 @@ private extension PagingContentHeaderView {
       
       separatorView.leftAnchor.constraint(equalTo: leftAnchor),
       separatorView.rightAnchor.constraint(equalTo: rightAnchor),
-      separatorView.bottomAnchor.constraint(equalTo: bottomAnchor),
+      separatorView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        .withPriority(.defaultHigh),
       separatorView.heightAnchor.constraint(equalToConstant: .separaterHeight)
-        .withPriority(.defaultHigh)
+//        .withPriority(.defaultHigh)
     ])
   }
 }

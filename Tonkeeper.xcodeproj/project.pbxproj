@@ -75,8 +75,6 @@
 		7D3E43B62A373B2200C23A75 /* ModalCardContainerScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */; };
 		7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CA2A53429200EC7F59 /* ImageLoader.swift */; };
 		7D5141CE2A53454400EC7F59 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CD2A53454400EC7F59 /* Image.swift */; };
-		7D5141D12A53465D00EC7F59 /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = 7D5141D02A53465D00EC7F59 /* Nuke */; };
-		7D5141D32A53465D00EC7F59 /* NukeExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = 7D5141D22A53465D00EC7F59 /* NukeExtensions */; };
 		7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */; };
 		7D527BC02A2A913400A2D29A /* ModalContentViewController+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBF2A2A913400A2D29A /* ModalContentViewController+Configuration.swift */; };
 		7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BC12A2A955700A2D29A /* ModalContentHeaderView.swift */; };
@@ -112,6 +110,7 @@
 		7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59287F2A20CDCA006B0A8A /* TokenListTokenCell.swift */; };
 		7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928812A20CDEC006B0A8A /* Reusable.swift */; };
 		7D5928852A20CE3C006B0A8A /* TokensListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928842A20CE3C006B0A8A /* TokensListCollectionController.swift */; };
+		7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 7D5A18112A5406CB00793769 /* Kingfisher */; };
 		7D5D05A72A2F83ED009F42FF /* ActivityListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05A62A2F83ED009F42FF /* ActivityListCollectionController.swift */; };
 		7D5D05A92A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05A82A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift */; };
 		7D5D05AB2A306739009F42FF /* ActivityListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05AA2A306739009F42FF /* ActivityListSection.swift */; };
@@ -519,11 +518,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
-				7D5141D12A53465D00EC7F59 /* Nuke in Frameworks */,
-				7D5141D32A53465D00EC7F59 /* NukeExtensions in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1705,8 +1703,7 @@
 				7DB17F342A4B2F07007C6154 /* AnyFormatKit */,
 				7DB17F3E2A4B3338007C6154 /* WalletCore */,
 				7D143C352A4EC0D300B5FCC0 /* Lottie */,
-				7D5141D02A53465D00EC7F59 /* Nuke */,
-				7D5141D22A53465D00EC7F59 /* NukeExtensions */,
+				7D5A18112A5406CB00793769 /* Kingfisher */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -1740,7 +1737,7 @@
 				7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */,
 				7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */,
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
-				7D5141CF2A53465D00EC7F59 /* XCRemoteSwiftPackageReference "Nuke" */,
+				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -2244,12 +2241,12 @@
 				minimumVersion = 4.2.0;
 			};
 		};
-		7D5141CF2A53465D00EC7F59 /* XCRemoteSwiftPackageReference "Nuke" */ = {
+		7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/kean/Nuke";
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 12.1.2;
+				minimumVersion = 7.8.1;
 			};
 		};
 		7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */ = {
@@ -2276,15 +2273,10 @@
 			package = 7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */;
 			productName = Lottie;
 		};
-		7D5141D02A53465D00EC7F59 /* Nuke */ = {
+		7D5A18112A5406CB00793769 /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 7D5141CF2A53465D00EC7F59 /* XCRemoteSwiftPackageReference "Nuke" */;
-			productName = Nuke;
-		};
-		7D5141D22A53465D00EC7F59 /* NukeExtensions */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7D5141CF2A53465D00EC7F59 /* XCRemoteSwiftPackageReference "Nuke" */;
-			productName = NukeExtensions;
+			package = 7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */;
+			productName = Kingfisher;
 		};
 		7DB17F342A4B2F07007C6154 /* AnyFormatKit */ = {
 			isa = XCSwiftPackageProductDependency;
