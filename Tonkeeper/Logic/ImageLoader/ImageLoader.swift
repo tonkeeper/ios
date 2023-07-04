@@ -7,8 +7,7 @@
 
 import Foundation
 import UIKit
-import Nuke
-import NukeExtensions
+import Kingfisher
 
 protocol ImageLoader: AnyObject {
   func loadImage(imageURL: URL?, imageView: UIImageView, size: CGSize?)
@@ -17,29 +16,23 @@ protocol ImageLoader: AnyObject {
 }
 
 final class NukeImageLoader: ImageLoader {
-  let prefetcher = ImagePrefetcher()
-  
   func loadImage(imageURL: URL?,
                  imageView: UIImageView,
                  size: CGSize?) {
-    
-    var processors = [any ImageProcessing]()
+
+    var options = KingfisherOptionsInfo()
     if let size = size {
-      processors.append(ImageProcessors.Resize(size: size, upscale: true))
+      options.append(.processor(DownsamplingImageProcessor(size: size)))
+      options.append(.scaleFactor(UIScreen.main.scale))
     }
     
-    let request = ImageRequest(url: imageURL,
-                               processors: processors, userInfo: [.scaleKey: UIScreen.main.scale])
-    Task {
-      await NukeExtensions.loadImage(with: request, into: imageView)
-    }
+    imageView.kf.setImage(with: imageURL, options: options)
   }
   
   func prefetchImages(imageURLs: [URL]) {
-    prefetcher.startPrefetching(with: imageURLs)
+    let prefetcher = ImagePrefetcher(urls: imageURLs)
+    prefetcher.start()
   }
   
-  func stopPrefetchImages(imageURLs: [URL]) {
-    prefetcher.stopPrefetching(with: imageURLs)
-  }
+  func stopPrefetchImages(imageURLs: [URL]) {}
 }
