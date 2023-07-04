@@ -52,7 +52,9 @@ private extension WalletRootPresenter {
       let cachedWalletState = try walletBalanceController.getWalletBalance()
       headerInput?.updateWith(walletHeader: cachedWalletState.header)
       contentInput?.updateWith(walletPages: cachedWalletState.pages)
-    } catch {}
+    } catch {
+      showEmptyState()
+    }
   }
   
   func reloadBalance() {
@@ -64,11 +66,18 @@ private extension WalletRootPresenter {
           contentInput?.updateWith(walletPages: walletState.pages)
         }
       } catch {
-        // TBD: Handle load error
+        showEmptyState()
       }
       Task { @MainActor in
         viewInput?.didFinishLoading()
       }
+    }
+  }
+  
+  func showEmptyState() {
+    if let emptyBalanceState = try? walletBalanceController.emptyWalletBalance() {
+      headerInput?.updateWith(walletHeader: emptyBalanceState.header)
+      contentInput?.updateWith(walletPages: emptyBalanceState.pages)
     }
   }
 }
