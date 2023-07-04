@@ -81,7 +81,10 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
   }
   
   func didTapReceiveButton() {
-    output?.openReceive()
+    guard let walletAddress = try? walletBalanceController.getWalletBalance().header.fullAddress else {
+      return
+    }
+    output?.openReceive(address: walletAddress)
   }
   
   func didTapBuyButton() {

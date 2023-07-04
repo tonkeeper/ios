@@ -43,7 +43,7 @@ extension WalletHeaderPresenter: WalletHeaderModuleInput {
   }
   
   func updateWith(walletHeader: WalletBalanceModel.Header) {
-    let headerModel = WalletHeaderView.Model(balance: walletHeader.amount, address: walletHeader.address)
+    let headerModel = WalletHeaderView.Model(balance: walletHeader.amount, address: walletHeader.shortAddress)
     viewInput?.update(with: headerModel)
   }
 }

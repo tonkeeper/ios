@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import WalletCore
 
 struct WalletAssembly {
   
@@ -83,12 +84,14 @@ struct WalletAssembly {
     return coordinator
   }
   
-  func receieveCoordinator(output: ReceiveCoordinatorOutput) -> ReceiveCoordinator {
+  func receieveCoordinator(output: ReceiveCoordinatorOutput,
+                           address: String) -> ReceiveCoordinator {
     let navigationController = NavigationController()
     navigationController.configureTransparentAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = ReceiveCoordinator(router: router,
-                                         assembly: receiveAssembly)
+                                         assembly: receiveAssembly,
+                                         address: address)
     coordinator.output = output
     return coordinator
   }
@@ -100,6 +103,10 @@ struct WalletAssembly {
     let coordinator = BuyCoordinator(router: router,
                                      assembly: buyAssembly)
     return coordinator
+  }
+  
+  var deeplinkParser: DeeplinkParser {
+    walletCoreAssembly.deeplinkParser
   }
 }
 

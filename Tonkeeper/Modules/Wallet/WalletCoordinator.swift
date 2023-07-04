@@ -45,8 +45,8 @@ extension WalletCoordinator: WalletRootModuleOutput {
     router.present(coordinator.router.rootViewController)
   }
   
-  func openReceive() {
-    let coordinator = walletAssembly.receieveCoordinator(output: self)
+  func openReceive(address: String) {
+    let coordinator = walletAssembly.receieveCoordinator(output: self, address: address)
     addChild(coordinator)
     coordinator.start()
     router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
@@ -69,6 +69,19 @@ extension WalletCoordinator: WalletRootModuleOutput {
 extension WalletCoordinator: QRScannerModuleOutput {
   func qrScannerModuleDidFinish() {
     router.dismiss()
+  }
+  
+  func didScanQrCode(with string: String) {
+    let deeplinkParser = walletAssembly.deeplinkParser
+    guard let deeplink = try? deeplinkParser.parse(string: string) else { return }
+    
+    switch deeplink {
+    case let .ton(tonDeeplink):
+      switch tonDeeplink {
+      case let .transfer(address):
+        openSend()
+      }
+    }
   }
 }
 

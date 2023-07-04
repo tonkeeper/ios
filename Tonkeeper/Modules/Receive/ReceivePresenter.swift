@@ -7,6 +7,8 @@
 //
 
 import Foundation
+import UIKit
+import WalletCore
 
 final class ReceivePresenter {
   
@@ -18,9 +20,15 @@ final class ReceivePresenter {
   // MARK: - Dependecies
   
   private let qrCodeGenerator: QRCodeGenerator
+  private let deeplinkGenerator: DeeplinkGenerator
+  private let address: String
   
-  init(qrCodeGenerator: QRCodeGenerator) {
+  init(qrCodeGenerator: QRCodeGenerator,
+       deeplinkGenerator: DeeplinkGenerator,
+       address: String) {
     self.qrCodeGenerator = qrCodeGenerator
+    self.deeplinkGenerator = deeplinkGenerator
+    self.address = address
   }
 }
 
@@ -37,6 +45,10 @@ extension ReceivePresenter: ReceivePresenterInput {
   
   func didTapSwipeButton() {
     output?.receieveModuleDidTapCloseButton()
+  }
+  
+  func copyAddress() {
+    UIPasteboard.general.string = address
   }
 }
 
@@ -60,8 +72,8 @@ private extension ReceivePresenter {
       .attributed(with: .label1,
                   alignment: .left,
                   color: .Text.primary)
-    let address = "EQAkeGnRj2WulA2S283bGDdr_tl8MbpXHt_JTu43sWez36W"
-      .attributed(with: .body1,
+    let address = address
+      .attributed(with: .label1,
                   alignment: .left,
                   color: .Text.secondary)
     viewInput?.updateView(model: .init(title: title,
@@ -74,7 +86,8 @@ private extension ReceivePresenter {
   
   func updateQRCode(size: CGSize) {
     Task {
-      let qrCodeImage = await qrCodeGenerator.generate(string: "EQAkeGnRj2WulA2S283bGDdr_tl8MbpXHt_JTu43sWez36W", size: size)
+      let deeplinkString = deeplinkGenerator.generateTransferDeeplink(with: address).path
+      let qrCodeImage = await qrCodeGenerator.generate(string: deeplinkString, size: size)
       await MainActor.run {
         viewInput?.updateQRCode(image: qrCodeImage)
       }

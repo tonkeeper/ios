@@ -91,7 +91,7 @@ final class ReceiveView: UIView, ConfigurableView {
   private let qrCodeContainer: UIView = {
     let view = UIView()
     view.backgroundColor = .white
-    view.layer.cornerRadius = .cornerRadius
+    view.layer.cornerRadius = .innerCornerRadius
     return view
   }()
   
@@ -99,7 +99,7 @@ final class ReceiveView: UIView, ConfigurableView {
     let view = UIView()
     view.backgroundColor = .Background.content
     view.layer.masksToBounds = true
-    view.layer.cornerRadius = .cornerRadius
+    view.layer.cornerRadius = .outterCornerRadius
     return view
   }()
   
@@ -107,7 +107,7 @@ final class ReceiveView: UIView, ConfigurableView {
     let view = UIView()
     view.backgroundColor = .Background.content
     view.layer.masksToBounds = true
-    view.layer.cornerRadius = .cornerRadius
+    view.layer.cornerRadius = .outterCornerRadius
     return view
   }()
   
@@ -243,10 +243,10 @@ private extension ReceiveView {
       qrCodeContainer.rightAnchor.constraint(equalTo: qrCodeSectionBackground.rightAnchor, constant: -ContentInsets.sideSpace),
       qrCodeContainer.bottomAnchor.constraint(equalTo: qrCodeSectionBackground.bottomAnchor, constant: -ContentInsets.sideSpace),
       qrCodeContainer.heightAnchor.constraint(equalTo: qrCodeContainer.widthAnchor),
-      qrImageView.topAnchor.constraint(equalTo: qrCodeContainer.topAnchor, constant: 24),
-      qrImageView.leftAnchor.constraint(equalTo: qrCodeContainer.leftAnchor, constant: 24),
-      qrImageView.bottomAnchor.constraint(equalTo: qrCodeContainer.bottomAnchor, constant: -24),
-      qrImageView.rightAnchor.constraint(equalTo: qrCodeContainer.rightAnchor, constant: -24),
+      qrImageView.topAnchor.constraint(equalTo: qrCodeContainer.topAnchor, constant: .qrCodeSideSpace),
+      qrImageView.leftAnchor.constraint(equalTo: qrCodeContainer.leftAnchor, constant: .qrCodeSideSpace),
+      qrImageView.bottomAnchor.constraint(equalTo: qrCodeContainer.bottomAnchor, constant: -.qrCodeSideSpace),
+      qrImageView.rightAnchor.constraint(equalTo: qrCodeContainer.rightAnchor, constant: -.qrCodeSideSpace),
       
       addressTitleLabel.topAnchor.constraint(equalTo: addressSectionBackground.topAnchor, constant: ContentInsets.sideSpace),
       addressTitleLabel.leftAnchor.constraint(equalTo: addressSectionBackground.leftAnchor, constant: ContentInsets.sideSpace),
@@ -268,7 +268,8 @@ private extension ReceiveView {
 }
 
 private extension CGFloat {
-  static let cornerRadius: CGFloat = 16
+  static let outterCornerRadius: CGFloat = 16
+  static let innerCornerRadius: CGFloat = 8
   static let imageTopSpace: CGFloat = 32
   static let logoSide: CGFloat = 72
   static let logoImageSide: CGFloat = 45
@@ -280,6 +281,7 @@ private extension CGFloat {
   static let separatorWidth: CGFloat = 0.5
   static let buttonsTopSpace: CGFloat = 15.5
   static let buttonsHeight: CGFloat = 48
+  static let qrCodeSideSpace: CGFloat = 12
 }
 
 private extension TKButton.Configuration {

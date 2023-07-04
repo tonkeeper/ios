@@ -12,16 +12,18 @@ final class TabBarAssembly {
   let coreAssembly: CoreAssembly
   let walletCoreAssembly: WalletCoreAssembly
   
+  
   lazy var walletAssembly = WalletAssembly(
     walletCoreAssembly: walletCoreAssembly,
     qrScannerAssembly: QRScannerAssembly(),
     sendAssembly: SendAssembly(qrScannerAssembly: QRScannerAssembly()),
-    receiveAssembly: ReceiveAssembly(),
+    receiveAssembly: receiveAssembly,
     buyAssembly: BuyAssembly()
   )
-  lazy var activityAssembly = ActivityAssembly(receiveAssembly: ReceiveAssembly())
+  lazy var activityAssembly = ActivityAssembly(receiveAssembly: receiveAssembly)
   lazy var browserAssembly = BrowserAssembly()
   lazy var settingsAssembly = SettingsAssembly()
+  lazy var receiveAssembly = ReceiveAssembly(walletCoreAssembly: walletCoreAssembly)
   
   init(coreAssembly: CoreAssembly,
        walletCoreAssembly: WalletCoreAssembly) {

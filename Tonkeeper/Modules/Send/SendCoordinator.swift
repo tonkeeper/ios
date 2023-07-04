@@ -94,4 +94,8 @@ extension SendCoordinator: QRScannerModuleOutput {
   func qrScannerModuleDidFinish() {
     router.dismiss()
   }
+  
+  func didScanQrCode(with string: String) {
+    // TBD: 
+  }
 }

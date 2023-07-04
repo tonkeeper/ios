@@ -7,6 +7,7 @@
 
 import Foundation
 import AVFoundation
+import WalletCore
 
 final class QRScannerPresenter: NSObject {
   
@@ -14,7 +15,7 @@ final class QRScannerPresenter: NSObject {
   
   weak var viewInput: QRScannerViewInput?
   weak var output: QRScannerModuleOutput?
-  
+
   // MARK: - State
   
   private let captureSession = AVCaptureSession()
@@ -121,7 +122,10 @@ extension QRScannerPresenter: AVCaptureMetadataOutputObjectsDelegate {
                       from connection: AVCaptureConnection) {
     guard !metadataObjects.isEmpty,
           let metadataObject = metadataObjects.first as? AVMetadataMachineReadableCodeObject,
-          metadataObject.type == .qr
+          metadataObject.type == .qr,
+          let stringValue = metadataObject.stringValue
     else { return }
+    self.output?.didScanQrCode(with: stringValue)
+    self.output?.qrScannerModuleDidFinish()
   }
 }
