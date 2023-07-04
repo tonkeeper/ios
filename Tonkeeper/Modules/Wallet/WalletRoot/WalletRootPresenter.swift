@@ -66,7 +66,9 @@ private extension WalletRootPresenter {
           contentInput?.updateWith(walletPages: walletState.pages)
         }
       } catch {
-        showEmptyState()
+        Task { @MainActor in
+          showEmptyState()
+        }
       }
       Task { @MainActor in
         viewInput?.didFinishLoading()
