@@ -42,7 +42,7 @@ final class PagingContentViewController: UIViewController {
   
   var contentViewControllers = [PagingContent]() {
     didSet {
-      reconfigure()
+      reconfigure(previousCount: oldValue.count)
     }
   }
   
@@ -93,17 +93,21 @@ private extension PagingContentViewController {
     }
   }
   
-  func reconfigure() {
+  func reconfigure(previousCount: Int) {
     guard isViewLoaded else { return }
+    let selectedIndex = previousCount == contentViewControllers.count ? pageViewController.selectedIndex : 0
+    
     pageViewController.reload()
     
     guard !contentViewControllers.isEmpty else { return }
+    
     contentViewControllers.forEach { ($0 as? PagingScrollableContent)?.scrollView.isScrollEnabled = false }
-    startObserveContentHeight(page: contentViewControllers[0])
-    startObserveContentOffset(page: contentViewControllers[0])
+    
+    startObserveContentHeight(page: contentViewControllers[selectedIndex])
+    startObserveContentOffset(page: contentViewControllers[selectedIndex])
     delegate?.pagingContentViewController(
       self,
-      didUpdateContentHeightAt: pageViewController.selectedIndex
+      didUpdateContentHeightAt: selectedIndex
     )
     
     var segmentControlModel: PageSegmentControl.Model?
@@ -111,6 +115,8 @@ private extension PagingContentViewController {
       segmentControlModel = .init(items: contentViewControllers.map { $0.itemTitle })
     }
     headerView.configure(model: .init(segmentControlModel: segmentControlModel))
+    
+    pageViewController.selectedIndex = selectedIndex
   }
   
   func setupPageViewController() {

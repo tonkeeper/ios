@@ -40,6 +40,7 @@ final class PagingContentHeaderView: UIControl, ConfigurableView {
       separatorTopViewConstraint?.isActive = false
       separatorTopSegmentControlConstraint?.isActive = true
     } else {
+      pageSegmentControl.configure(model: .init(items: []))
       pageSegmentControl.isHidden = true
       separatorTopSegmentControlConstraint?.isActive = false
       separatorTopViewConstraint?.isActive = true

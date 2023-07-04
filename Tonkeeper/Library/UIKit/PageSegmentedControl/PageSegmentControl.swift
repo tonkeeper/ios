@@ -63,6 +63,7 @@ final class PageSegmentControl: UIControl, ConfigurableView {
   }
   
   func configure(model: Model) {
+    let selectedIndex: Int = model.items.count == tabs.count ? _selectedIndex : 0
     tabsContainer.arrangedSubviews.forEach { $0.removeFromSuperview() }
     tabs = model.items.enumerated().map { index, model in
       let tab = PageSegmentControlTab()
@@ -75,7 +76,7 @@ final class PageSegmentControl: UIControl, ConfigurableView {
     }
     tabs.forEach { tabsContainer.addArrangedSubview($0) }
     guard !tabs.isEmpty else { return }
-    selectTabAt(index: 0, animated: false)
+    selectTabAt(index: selectedIndex, animated: false)
   }
   
   func updateIndicator(fromPage: Int, toPage: Int, progress: CGFloat) {

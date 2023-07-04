@@ -66,6 +66,7 @@ final class PageViewController: UIViewController {
       $0.removeFromParent()
     }
     collectionView.reloadData()
+    currentPage = 0
   }
 }
 

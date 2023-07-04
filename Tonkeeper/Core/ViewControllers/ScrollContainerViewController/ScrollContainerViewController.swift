@@ -85,10 +85,12 @@ private extension ScrollContainerViewController {
   func setup() {
     scrollView.scrollsToTop = false
     scrollView.contentInsetAdjustmentBehavior = .never
+    scrollView.showsVerticalScrollIndicator = false
     
     panGestureScrollView.delegate = self
     panGestureScrollView.contentInsetAdjustmentBehavior = .never
     panGestureScrollView.refreshControl = refreshControl
+    panGestureScrollView.showsVerticalScrollIndicator = false
     
     view.addSubview(panGestureScrollView)
     view.addSubview(scrollView)
