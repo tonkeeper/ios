@@ -30,11 +30,6 @@ final class EnterMnemonicView: UIView, ConfigurableView {
     label.numberOfLines = 0
     return label
   }()
-  let gradientLayer: CAGradientLayer = {
-    let layer = CAGradientLayer()
-    layer.colors = [UIColor.Background.page.cgColor, UIColor.clear.cgColor]
-    return layer
-  }()
   let continueButton = TKButton(configuration: .primaryLarge)
   private lazy var buttonContainer = ButtonBottomContainer(button: continueButton)
   
@@ -65,12 +60,6 @@ final class EnterMnemonicView: UIView, ConfigurableView {
     titleLabel.attributedText = model.title
     descriptionLabel.attributedText = model.description
     continueButton.title = model.continueButtonTitle
-  }
-  
-  // MARK: - Layout
-  
-  override func safeAreaInsetsDidChange() {
-    gradientLayer.frame = .init(x: 0, y: 0, width: bounds.width, height: safeAreaInsets.top)
   }
   
   // MARK: - Keyboard
@@ -110,8 +99,6 @@ private extension EnterMnemonicView {
       contentStackView.setCustomSpacing(.interTextFieldSpace, after: textField)
       textFields.append(textField)
     }
-    
-    layer.addSublayer(gradientLayer)
     
     setupConstraints()
   }
