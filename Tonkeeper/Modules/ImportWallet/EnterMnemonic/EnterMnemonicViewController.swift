@@ -97,6 +97,29 @@ extension EnterMnemonicViewController: MnemonicTextFieldDelegate {
     }
     customView.textFields[nextIndex].becomeFirstResponder()
   }
+  
+  func didPaste(text: String, textField: MnemonicTextField) {
+    guard let index = customView.textFields.firstIndex(of: textField),
+    index == 0 else { return }
+    let mnemonic = extractMnemonic(from: text)
+    
+    var lastFilledIndex = customView.textFields.count - 1
+    for (index, textField) in customView.textFields.enumerated() {
+      guard index < mnemonic.count else {
+        textField.validationState = .valid
+        textField.text = nil
+        lastFilledIndex = lastFilledIndex == customView.textFields.count - 1 ? index : lastFilledIndex
+        continue
+      }
+  
+      let isValid = presenter.validate(word: mnemonic[index])
+      textField.validationState = isValid ? .valid : .invalid
+      textField.text = mnemonic[index]
+    }
+    
+    textField.resignFirstResponder()
+    scrollToTextField(customView.textFields[lastFilledIndex])
+  }
 }
 
 // MARK: - Private
@@ -140,13 +163,7 @@ private extension EnterMnemonicViewController {
   
   @objc
   func didBeginEditing(textField: MnemonicTextField) {
-    let scrollViewMaxOrigin = customView.scrollView.contentSize.height
-    - customView.scrollView.frame.height
-    + customView.scrollView.contentInset.bottom
-    let originY = min(textField.frame.origin.y - 64, scrollViewMaxOrigin)
-    UIView.animate(withDuration: .textFieldChangeScrollDuration) {
-      self.customView.scrollView.contentOffset = .init(x: 0, y: originY)
-    }
+    scrollToTextField(textField)
   }
   
   @objc
@@ -182,6 +199,22 @@ private extension EnterMnemonicViewController {
       $0.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     }
     presenter.didEnterMnemonic(mnemonic)
+  }
+  
+  func scrollToTextField(_ textField: MnemonicTextField) {
+    let scrollViewMaxOrigin = customView.scrollView.contentSize.height
+    - customView.scrollView.frame.height
+    + customView.scrollView.contentInset.bottom
+    let originY = min(textField.frame.origin.y - 64, scrollViewMaxOrigin)
+    UIView.animate(withDuration: .textFieldChangeScrollDuration) {
+      self.customView.scrollView.contentOffset = .init(x: 0, y: originY)
+    }
+  }
+  
+  func extractMnemonic(from string: String) -> [String] {
+    string
+      .components(separatedBy: CharacterSet([" ", ","]))
+      .filter { !$0.isEmpty }
   }
 }
 

@@ -9,6 +9,7 @@ import UIKit
 
 protocol MnemonicTextFieldDelegate: AnyObject {
   func didTapNextButton(textField: MnemonicTextField)
+  func didPaste(text: String, textField: MnemonicTextField)
 }
 
 final class MnemonicTextField: UIControlClosure {
@@ -90,6 +91,8 @@ final class MnemonicTextField: UIControlClosure {
   }
 }
 
+// MARK: - Private
+
 private extension MnemonicTextField {
   func setup() {
     addSubview(container)
@@ -162,6 +165,18 @@ private extension MnemonicTextField {
 extension MnemonicTextField: UITextFieldDelegate {
   func textFieldShouldReturn(_ textField: UITextField) -> Bool {
     delegate?.didTapNextButton(textField: self)
+    return true
+  }
+  
+  func textField(_ textField: UITextField,
+                 shouldChangeCharactersIn range: NSRange,
+                 replacementString string: String) -> Bool {
+    if UIPasteboard.general.hasStrings,
+       let pasteString = UIPasteboard.general.string?.replacingOccurrences(of: "\n", with: " "),
+       string == pasteString {
+      delegate?.didPaste(text: pasteString, textField: self)
+      return false
+    }
     return true
   }
 }
