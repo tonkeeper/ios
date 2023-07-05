@@ -15,7 +15,7 @@ final class EnterAmountViewController: GenericViewController<EnterAmountView> {
     customView.amountTextField.text
   }
 
-  var formatController: TextFieldFormatController? {
+  var formatController: AmountInputFormatController? {
     didSet {
       customView.amountTextField.delegate = formatController
     }

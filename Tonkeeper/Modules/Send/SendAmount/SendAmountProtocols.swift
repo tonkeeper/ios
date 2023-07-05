@@ -16,7 +16,7 @@ protocol SendAmountModuleOutput: AnyObject {
 protocol SendAmountModuleInput: AnyObject {}
 
 protocol SendAmountPresenterInput {
-  var textFieldFormatController: TextFieldFormatController { get }
+  var amountInputFormatController: AmountInputFormatController { get }
   
   func viewDidLoad()
   func didTapCloseButton()
@@ -33,4 +33,5 @@ protocol SendAmountViewInput: AnyObject {
   func deselectMaxButton()
   func updatePrimaryCurrency(_ value: String?, currencyCode: String?)
   func updateSecondaryCurrency(_ string: String?)
+  func updateContinueButtonAvailability(_ isAvailable: Bool)
 }

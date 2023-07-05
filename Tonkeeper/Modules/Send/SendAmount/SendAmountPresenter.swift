@@ -7,75 +7,11 @@
 //
 
 import Foundation
+import UIKit
+import WalletCore
 
 final class SendAmountPresenter {
   
-  struct CurrencyPair {
-    struct CurrencyAmount {
-      let currency: Currency
-      var amount: Decimal?
-    }
-    
-    enum Primary {
-      case first
-      case second
-    }
-    
-    var firstCurrency: CurrencyAmount
-    var secondCurrency: CurrencyAmount
-    var exchangeRate: Decimal
-    var primary: Primary
-    
-    mutating func updateFirstCurrencyAmount(_ amount: Decimal?) {
-      firstCurrency.amount = amount
-      if let amount = amount {
-        secondCurrency.amount = amount * exchangeRate
-      }
-    }
-    
-    mutating func updateAmount(_ amount: Decimal?) {
-      switch primary {
-      case .first:
-        firstCurrency.amount = amount
-        if let amount = amount {
-          secondCurrency.amount = amount * exchangeRate
-        }
-      case .second:
-        secondCurrency.amount = amount
-        if let amount = amount {
-          firstCurrency.amount = amount / exchangeRate
-        }
-      }
-    }
-    
-    mutating func toggleActive() {
-      switch primary {
-      case .first:
-        self.primary = .second
-      case .second:
-        self.primary = .first
-      }
-    }
-    
-    var activeCurrency: CurrencyAmount {
-      switch primary {
-      case .first:
-        return firstCurrency
-      case .second:
-        return secondCurrency
-      }
-    }
-    
-    var inactiveCurrency: CurrencyAmount {
-      switch primary {
-      case .first:
-        return secondCurrency
-      case .second:
-        return firstCurrency
-      }
-    }
-  }
-
   // MARK: - Module
   
   weak var viewInput: SendAmountViewInput?
@@ -83,30 +19,22 @@ final class SendAmountPresenter {
   
   // MARK: - State
   
-  private var currencyPair = CurrencyPair(firstCurrency: .init(currency: CryptoCurrency.ton, amount: nil),
-                                          secondCurrency: .init(currency: FiatCurrency.usd, amount: nil),
-                                          exchangeRate: 1.74,
-                                          primary: .first)
-  private var wallet = CurrencyWallet(currency: CryptoCurrency.ton, balance: 0)
   private var isMax = false
   
   // MARK: - Dependencies
 
-  private let primaryCurrencyFormatter: NumberFormatter
-  private let secondaryCurrencyFormatter: NumberFormatter
   private let inputCurrencyFormatter: NumberFormatter
   
-  let textFieldFormatController: TextFieldFormatController
+  let amountInputFormatController: AmountInputFormatController
+  let sendInputController: SendInputController
   
   // MARK: - Init
   
-  init(primaryCurrencyFormatter: NumberFormatter,
-       secondaryCurrencyFormatter: NumberFormatter,
-       inputCurrencyFormatter: NumberFormatter) {
-    self.primaryCurrencyFormatter = primaryCurrencyFormatter
-    self.secondaryCurrencyFormatter = secondaryCurrencyFormatter
+  init(inputCurrencyFormatter: NumberFormatter,
+       sendInputController: SendInputController) {
     self.inputCurrencyFormatter = inputCurrencyFormatter
-    self.textFieldFormatController = .init(numberFormatter: inputCurrencyFormatter)
+    self.amountInputFormatController = AmountInputFormatController(currencyFormatter: inputCurrencyFormatter)
+    self.sendInputController = sendInputController
   }
 }
 
@@ -116,9 +44,7 @@ extension SendAmountPresenter: SendAmountPresenterInput {
   func viewDidLoad() {
     setup()
     updateTitle()
-    updateWalletBalance()
-    updateAllCurrencyValues()
-    updateRemaining()
+    sendInputController.setInitialState()
   }
   
   func didTapCloseButton() {
@@ -128,23 +54,14 @@ extension SendAmountPresenter: SendAmountPresenterInput {
   func didTapMaxButton() {
     isMax.toggle()
     updateMaxButton()
-    updateAllCurrencyValues()
-    updateRemaining()
   }
   
   func didChangeAmountText(text: String?) {
-    let amount = primaryCurrencyFormatter.number(from: text ?? "0")
-    currencyPair.updateAmount(amount?.decimalValue ?? 0)
-    updateInactiveCurrencyValue()
-    updateRemaining()
+    sendInputController.didChangeInput(string: amountInputFormatController.getUnformattedString(text))
   }
   
   func didTapSwapButton() {
-    currencyPair.toggleActive()
-    primaryCurrencyFormatter.maximumFractionDigits = currencyPair.activeCurrency.currency.maximumFractionDigits
-    inputCurrencyFormatter.maximumFractionDigits = currencyPair.activeCurrency.currency.maximumFractionDigits
-    updateAllCurrencyValues()
-    updateRemaining()
+    sendInputController.toggleActive()
   }
   
   func didTapContinueButton() {
@@ -160,9 +77,32 @@ extension SendAmountPresenter: SendAmountModuleInput {}
 
 private extension SendAmountPresenter {
   func setup() {
-    secondaryCurrencyFormatter.maximumFractionDigits = 2
-    secondaryCurrencyFormatter.roundingMode = .down
+    inputCurrencyFormatter.maximumFractionDigits = 9
     inputCurrencyFormatter.roundingMode = .down
+    
+    sendInputController.didUpdateInactiveAmount = { [weak self] value in
+      self?.viewInput?.updateSecondaryCurrency(value)
+    }
+    
+    sendInputController.didUpdateActiveAmount = { [weak self] value, code in
+      self?.viewInput?.updatePrimaryCurrency(value, currencyCode: code)
+    }
+    
+    sendInputController.didChangeInputMaximumFractionLength = { [weak self] length in
+      self?.inputCurrencyFormatter.maximumFractionDigits = length
+    }
+    
+    sendInputController.didUpdateAvailableBalance = { [weak self] value, isInsufficient in
+      let color: UIColor = isInsufficient ? .Accent.red : .Text.secondary
+      let string = value.attributed(with: .body2,
+                                    alignment: .right,
+                                    color: color)
+      self?.viewInput?.updateRemainingLabel(attributedString: string)
+    }
+    
+    sendInputController.didUpdateContinueButtonAvailability = { [weak self] isAvailable in
+      self?.viewInput?.updateContinueButtonAvailability(isAvailable)
+    }
   }
   
   func updateTitle() {
@@ -171,57 +111,12 @@ private extension SendAmountPresenter {
     viewInput?.updateTitleView(model: model)
   }
   
-  func updateAllCurrencyValues() {
-    updateActiveCurrencyValue()
-    updateInactiveCurrencyValue()
-  }
-  
-  func updateInactiveCurrencyValue() {
-    let inactiveCurrency = currencyPair.inactiveCurrency
-    let inactiveAmountString = secondaryCurrencyFormatter.string(from: NSDecimalNumber(decimal: inactiveCurrency.amount ?? 0)) ?? ""
-    let inactiveCurrencyCodeString = inactiveCurrency.currency.code
-    
-    viewInput?.updateSecondaryCurrency("\(inactiveAmountString) \(inactiveCurrencyCodeString)")
-  }
-  
-  func updateActiveCurrencyValue() {
-    let activeCurrency = currencyPair.activeCurrency
-    let activeAmountString = primaryCurrencyFormatter.string(from: NSDecimalNumber(decimal: activeCurrency.amount ?? 0))
-    let activeCurrencyCodeString = activeCurrency.currency.code
-    
-    viewInput?.updatePrimaryCurrency(activeAmountString, currencyCode: activeCurrencyCodeString)
-  }
-  
   func updateMaxButton() {
-    if isMax {
-      currencyPair.updateFirstCurrencyAmount(wallet.balance)
+    try? sendInputController.toggleMax()
+    if sendInputController.isMax {
       viewInput?.selectMaxButton()
     } else {
-      currencyPair.updateFirstCurrencyAmount(0)
       viewInput?.deselectMaxButton()
     }
-  }
-  
-  func updateRemaining() {
-    let remainAmount = wallet.balance - (currencyPair.firstCurrency.amount ?? 0)
-    let resultString: NSAttributedString
-    if remainAmount.isLess(than: 0) {
-      resultString = "Insufficient balance"
-        .attributed(with: .body2,
-                    alignment: .right,
-                    color: .Accent.red)
-    } else {
-      let amountString = secondaryCurrencyFormatter.string(from: NSDecimalNumber(decimal: remainAmount))
-      resultString = "Remaining: \(amountString ?? "0") \(currencyPair.firstCurrency.currency.code)"
-        .attributed(with: .body2,
-                    alignment: .right,
-                    color: .Text.secondary)
-    }
-    
-    viewInput?.updateRemainingLabel(attributedString: resultString)
-  }
-  
-  func updateWalletBalance() {
-    wallet = .init(currency: currencyPair.firstCurrency.currency, balance: 666.6)
   }
 }

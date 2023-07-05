@@ -108,6 +108,10 @@ extension SendAmountViewController: SendAmountViewInput {
   func updateSecondaryCurrency(_ string: String?) {
     enterAmountViewController.updateSecondaryCurrencyButtonTitle(string)
   }
+  
+  func updateContinueButtonAvailability(_ isAvailable: Bool) {
+    customView.continueButton.isEnabled = isAvailable
+  }
 }
 
 // MARK: - Private
@@ -132,7 +136,7 @@ private extension SendAmountViewController {
     customView.embedEnterAmountView(enterAmountViewController.view)
     enterAmountViewController.didMove(toParent: self)
     
-    enterAmountViewController.formatController = presenter.textFieldFormatController
+    enterAmountViewController.formatController = presenter.amountInputFormatController
     enterAmountViewController.customView.maxButton.addAction(.init(handler: { [weak self] in
       self?.presenter.didTapMaxButton()
     }), for: .touchUpInside)

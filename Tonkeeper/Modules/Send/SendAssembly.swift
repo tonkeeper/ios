@@ -32,9 +32,10 @@ struct SendAssembly {
   }
   
   func sendAmountModule(output: SendAmountModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = SendAmountPresenter(primaryCurrencyFormatter: .currencyFormatter,
-                                        secondaryCurrencyFormatter: .currencyFormatter,
-                                        inputCurrencyFormatter: .currencyFormatter)
+    let presenter = SendAmountPresenter(
+      inputCurrencyFormatter: .inputCurrencyFormatter,
+      sendInputController: walletCoreAssembly.sendInputController
+    )
     presenter.output = output
     let viewController = SendAmountViewController(presenter: presenter)
     presenter.viewInput = viewController
