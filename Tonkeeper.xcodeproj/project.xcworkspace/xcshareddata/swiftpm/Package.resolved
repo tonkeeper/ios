@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
-        "branch" : "feature/send",
-        "revision" : "03e4c769404ebfec18a1889648ac0be6c0ab5be7"
+        "branch" : "develop",
+        "revision" : "f3f653d29e7db9ac877385132378e787f3079606"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "branch" : "feature/send_message",
-        "revision" : "caf488a586580f25b01ebe8501285e5dcb604da3"
+        "revision" : "1537965b0474e62a43f60bc3313d8653b9a6067a",
+        "version" : "0.0.3"
       }
     },
     {
@@ -60,7 +60,7 @@
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
         "branch" : "feature/wallet_transfer_signing",
-        "revision" : "ee0d143c0355e3a9cc8b8f62169b3b963b02960f"
+        "revision" : "c5179f32c122a4033522e71dc794ff48fef45569"
       }
     },
     {
