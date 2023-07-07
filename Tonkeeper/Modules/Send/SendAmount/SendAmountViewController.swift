@@ -112,6 +112,14 @@ extension SendAmountViewController: SendAmountViewInput {
   func updateContinueButtonAvailability(_ isAvailable: Bool) {
     customView.continueButton.isEnabled = isAvailable
   }
+  
+  func showActivity() {
+    customView.continueButtonActivityContainer.showActivity()
+  }
+  
+  func hideActivity() {
+    customView.continueButtonActivityContainer.hideActivity()
+  }
 }
 
 // MARK: - Private

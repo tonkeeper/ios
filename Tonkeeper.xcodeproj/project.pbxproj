@@ -232,6 +232,7 @@
 		7DE27E682A30D94100842FA8 /* TransactionCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E672A30D94100842FA8 /* TransactionCellContentView.swift */; };
 		7DE27E6A2A30D9CE00842FA8 /* TransactionCellStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E692A30D9CE00842FA8 /* TransactionCellStatusView.swift */; };
 		7DE27E6C2A30DA3A00842FA8 /* TransactionCellCommentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */; };
+		7DEE8E1D2A57982A004D42B7 /* ActivityViewContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DEE8E1C2A57982A004D42B7 /* ActivityViewContainer.swift */; };
 		83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 245658CD5491F94DE1923BE9 /* ActivityEmptyViewController.swift */; };
 		86DEB0A35D88DABB3EAEFDD3 /* ReceiveProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A2DFA2B5AD43B54E2E131F /* ReceiveProtocols.swift */; };
 		88B2EE1152873C3830AFF461 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB768175241379D921DB521 /* WelcomeView.swift */; };
@@ -486,6 +487,7 @@
 		7DE27E672A30D94100842FA8 /* TransactionCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellContentView.swift; sourceTree = "<group>"; };
 		7DE27E692A30D9CE00842FA8 /* TransactionCellStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellStatusView.swift; sourceTree = "<group>"; };
 		7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellCommentView.swift; sourceTree = "<group>"; };
+		7DEE8E1C2A57982A004D42B7 /* ActivityViewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityViewContainer.swift; sourceTree = "<group>"; };
 		81E95098F2912B3982A6BAE5 /* SetupWalletProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SetupWalletProtocols.swift; sourceTree = "<group>"; };
 		8243DFDC12DB2AD7BBBBBE82 /* PasscodeInputProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputProtocols.swift; sourceTree = "<group>"; };
 		8AB768175241379D921DB521 /* WelcomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
@@ -1285,6 +1287,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7DEE8E1B2A579808004D42B7 /* ActivityViewContainer */,
 				7D3BCFA62A4C3E1C00BE6AD9 /* Containers */,
 				7D9144252A31F59500B0FD17 /* ModalCard */,
 				7D5D05CC2A307161009F42FF /* Cell */,
@@ -1668,6 +1671,14 @@
 			path = TransactionCell;
 			sourceTree = "<group>";
 		};
+		7DEE8E1B2A579808004D42B7 /* ActivityViewContainer */ = {
+			isa = PBXGroup;
+			children = (
+				7DEE8E1C2A57982A004D42B7 /* ActivityViewContainer.swift */,
+			);
+			path = ActivityViewContainer;
+			sourceTree = "<group>";
+		};
 		8B0C0767FD46C94FB4520D2B /* ActivityTransactionDetails */ = {
 			isa = PBXGroup;
 			children = (
@@ -1930,6 +1941,7 @@
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
+				7DEE8E1D2A57982A004D42B7 /* ActivityViewContainer.swift in Sources */,
 				7D91442B2A31F5F700B0FD17 /* DimmingPresentationController.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */,

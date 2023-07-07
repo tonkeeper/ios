@@ -35,4 +35,6 @@ protocol SendAmountViewInput: AnyObject {
   func updatePrimaryCurrency(_ value: String?, currencyCode: String?)
   func updateSecondaryCurrency(_ string: String?)
   func updateContinueButtonAvailability(_ isAvailable: Bool)
+  func showActivity()
+  func hideActivity()
 }

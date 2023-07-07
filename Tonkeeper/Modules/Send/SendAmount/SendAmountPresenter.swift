@@ -75,15 +75,23 @@ extension SendAmountPresenter: SendAmountPresenterInput {
   }
   
   func didTapContinueButton() {
+    viewInput?.showActivity()
     Task {
-      let transactionBoc = try await sendController.prepareTransaction(
-        value: sendInputController.tokenAmount,
-        address: address,
-        comment: comment
-      )
-      let transactionModel = try await sendController.loadTransactionInformation(transactionBoc: transactionBoc)
-      Task { @MainActor in
-        output?.sendAmountModuleDidPrepareTransaction(transactionModel)
+      do {
+        let transactionBoc = try await sendController.prepareTransaction(
+          value: sendInputController.tokenAmount,
+          address: address,
+          comment: comment
+        )
+        let transactionModel = try await sendController.loadTransactionInformation(transactionBoc: transactionBoc)
+        Task { @MainActor in
+          viewInput?.hideActivity()
+          output?.sendAmountModuleDidPrepareTransaction(transactionModel)
+        }
+      } catch {
+        Task { @MainActor in
+          viewInput?.hideActivity()
+        }
       }
     }
   }
