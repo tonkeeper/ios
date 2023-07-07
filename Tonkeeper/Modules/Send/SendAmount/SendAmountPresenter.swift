@@ -9,6 +9,7 @@
 import Foundation
 import UIKit
 import WalletCore
+import TonSwift
 import BigInt
 
 final class SendAmountPresenter {
@@ -134,8 +135,9 @@ private extension SendAmountPresenter {
   }
   
   func updateTitle() {
+    let shortAddress = (try? Address.parse(address).shortString) ?? ""
     let model = SendAmountTitleView.Model(title: "Amount",
-                                          subtitle: "To: EQCc…9ZLD")
+                                          subtitle: "To: \(shortAddress)")
     viewInput?.updateTitleView(model: model)
   }
   
