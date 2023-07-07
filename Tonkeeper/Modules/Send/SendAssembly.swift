@@ -8,10 +8,12 @@
 import UIKit
 import WalletCore
 
-struct SendAssembly {
+final class SendAssembly {
   
   let qrScannerAssembly: QRScannerAssembly
   let walletCoreAssembly: WalletCoreAssembly
+  
+  private var _sendController: SendController?
   
   init(qrScannerAssembly: QRScannerAssembly,
        walletCoreAssembly: WalletCoreAssembly) {
@@ -23,6 +25,7 @@ struct SendAssembly {
                            address: String?) -> Module<UIViewController, SendRecipientModuleInput> {
     let presenter = SendRecipientPresenter(
       commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
+      addressValidator: walletCoreAssembly.addressValidator,
       address: address
     )
     presenter.output = output
@@ -31,18 +34,28 @@ struct SendAssembly {
     return Module(view: viewController, input: presenter)
   }
   
-  func sendAmountModule(output: SendAmountModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = SendAmountPresenter(primaryCurrencyFormatter: .currencyFormatter,
-                                        secondaryCurrencyFormatter: .currencyFormatter,
-                                        inputCurrencyFormatter: .currencyFormatter)
+  func sendAmountModule(output: SendAmountModuleOutput,
+                        address: String,
+                        comment: String?) -> Module<UIViewController, Void> {
+    let presenter = SendAmountPresenter(
+      inputCurrencyFormatter: .inputCurrencyFormatter,
+      sendInputController: walletCoreAssembly.sendInputController,
+      sendController: sendController(),
+      address: address,
+      comment: comment
+    )
     presenter.output = output
     let viewController = SendAmountViewController(presenter: presenter)
     presenter.viewInput = viewController
     return Module(view: viewController, input: Void())
   }
   
-  func sendConfirmationModule(output: SendConfirmationModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = SendConfirmationPresenter()
+  func sendConfirmationModule(output: SendConfirmationModuleOutput,
+                              transactionModel: SendTransactionModel) -> Module<UIViewController, Void> {
+    let presenter = SendConfirmationPresenter(
+      sendController: sendController(),
+      transactionModel: transactionModel
+    )
     presenter.output = output
     let viewController = SendConfirmationViewController(presenter: presenter)
     presenter.viewInput = viewController
@@ -55,6 +68,13 @@ struct SendAssembly {
 }
 
 private extension SendAssembly {
-  
+  func sendController() -> SendController {
+    guard let sendController = _sendController else {
+      let sendController = walletCoreAssembly.sendController()
+      _sendController = sendController
+      return sendController
+    }
+    return sendController
+  }
 }
 

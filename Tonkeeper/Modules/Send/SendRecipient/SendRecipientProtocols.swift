@@ -11,7 +11,7 @@ import Foundation
 protocol SendRecipientModuleOutput: AnyObject {
   func sendRecipientModuleDidTapCloseButton()
   func sendRecipientModuleOpenQRScanner()
-  func sendRecipientModuleDidTapContinueButton()
+  func sendRecipientModuleDidTapContinueButton(address: String, comment: String?)
 }
 
 protocol SendRecipientModuleInput: AnyObject {
@@ -23,6 +23,7 @@ protocol SendRecipientPresenterInput {
   func didTapCloseButton()
   func didTapScanQRButton()
   func didChangeComment(text: String)
+  func didChangeAddress(address: String)
   func didTapContinueButton()
 }
 
@@ -30,4 +31,6 @@ protocol SendRecipientViewInput: AnyObject {
   func updateRecipientAddress(_ address: String)
   func showCommentLengthWarning(text: NSAttributedString)
   func hideCommentLengthWarning()
+  func updateAddressValidationState(isValid: Bool)
+  func updateContinueButtonIsAvailable(isAvailable: Bool)
 }

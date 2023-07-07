@@ -296,6 +296,7 @@ private extension TextField {
   func pasteButtonTapped() {
     textView.text = UIPasteboard.general.string
     updateState(isFirstResponder: textView.isFirstResponder)
+    delegate?.textViewDidChange?(textView)
   }
 }
 

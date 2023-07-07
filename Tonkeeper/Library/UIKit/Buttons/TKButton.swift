@@ -292,3 +292,19 @@ private extension TKButton {
     contentStackView.spacing = hasTitle && hasIcon ? 9 : 0
   }
 }
+
+extension TKButton: ActivityViewContainerView {
+  var loaderViewColor: UIColor {
+    .white
+  }
+  
+  func showActivity() {
+    titleLabel.isHidden = true
+    iconImageView.isHidden = true
+  }
+  
+  func hideActivity() {
+    titleLabel.isHidden = false
+    iconImageView.isHidden = true
+  }
+}

@@ -21,13 +21,13 @@ extension ModalContentViewController {
         let configuration: TKButton.Configuration
         let tapAction: (( @escaping (Bool) -> Void) -> Void)?
         let showActivityClosure: (() -> Bool)?
-        let completion: (() -> Void)?
+        let completion: ((Bool) -> Void)?
         
         init(title: String,
              configuration: TKButton.Configuration,
              tapAction: (( @escaping (Bool) -> Void) -> Void)? = nil,
              showActivityClosure: (() -> Bool)? = nil,
-             completion: (() -> Void)? = nil) {
+             completion: ((Bool) -> Void)? = nil) {
           self.title = title
           self.configuration = configuration
           self.tapAction = tapAction

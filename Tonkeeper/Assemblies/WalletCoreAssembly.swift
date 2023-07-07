@@ -23,11 +23,23 @@ final class WalletCoreAssembly {
   
   lazy var balanceController: WalletBalanceController = walletCoreContainer.walletBalanceController()
   
+  var sendInputController: SendInputController {
+    walletCoreContainer.sendInputController()
+  }
+  
+  func sendController() -> SendController {
+    walletCoreContainer.sendController()
+  }
+  
   var deeplinkParser: DeeplinkParser {
     walletCoreContainer.deeplinkParser()
   }
   
   var deeplinkGenerator: DeeplinkGenerator {
     walletCoreContainer.deeplinkGenerator()
+  }
+  
+  var addressValidator: AddressValidator {
+    walletCoreContainer.addressValidator()
   }
 }

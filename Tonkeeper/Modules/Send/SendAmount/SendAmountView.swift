@@ -15,6 +15,10 @@ final class SendAmountView: UIView {
     button.titleLabel.text = "Continue"
     return button
   }()
+  
+  lazy var continueButtonActivityContainer: ActivityViewContainer = {
+    .init(view: continueButton)
+  }()
 
   private let contentView = UIView()
   private let enterAmountContainer = UIView()
@@ -79,11 +83,11 @@ private extension SendAmountView {
     
     addSubview(contentView)
     contentView.addSubview(enterAmountContainer)
-    contentView.addSubview(continueButton)
+    contentView.addSubview(continueButtonActivityContainer)
     
     contentView.translatesAutoresizingMaskIntoConstraints = false
     enterAmountContainer.translatesAutoresizingMaskIntoConstraints = false
-    continueButton.translatesAutoresizingMaskIntoConstraints = false
+    continueButtonActivityContainer.translatesAutoresizingMaskIntoConstraints = false
     
     contentViewBottomConstraint = contentView.bottomAnchor.constraint(equalTo: bottomAnchor)
     contentViewBottomConstraint?.isActive = true
@@ -99,10 +103,10 @@ private extension SendAmountView {
       enterAmountContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor)
         .withPriority(.defaultHigh),
       
-      continueButton.topAnchor.constraint(equalTo: enterAmountContainer.bottomAnchor),
-      continueButton.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      continueButton.rightAnchor.constraint(equalTo: contentView.rightAnchor),
-      continueButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+      continueButtonActivityContainer.topAnchor.constraint(equalTo: enterAmountContainer.bottomAnchor),
+      continueButtonActivityContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
+      continueButtonActivityContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor),
+      continueButtonActivityContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
     ])
   }
   

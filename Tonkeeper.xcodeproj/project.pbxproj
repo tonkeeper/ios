@@ -211,7 +211,6 @@
 		7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292F42A29DCDA005B83DF /* SendRecipientPresenter.swift */; };
 		7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292F52A29DCDA005B83DF /* SendRecipientView.swift */; };
 		7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292F72A29DCDA005B83DF /* SendCommentLengthValidator.swift */; };
-		7D9293042A29EE3F005B83DF /* TextFieldFormatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9293032A29EE3F005B83DF /* TextFieldFormatController.swift */; };
 		7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */; };
 		7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F342A4B2F07007C6154 /* AnyFormatKit */; };
 		7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F3E2A4B3338007C6154 /* WalletCore */; };
@@ -225,6 +224,7 @@
 		7DB8FB7F2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB7C2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf */; };
 		7DB8FB802A1BEE00005B4B11 /* Montserrat-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB7D2A1BEE00005B4B11 /* Montserrat-Medium.ttf */; };
 		7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */; };
+		7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC1D96B2A55903300D61C96 /* AmountInputFormatController.swift */; };
 		7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */; };
 		7DE27E5F2A30C61E00842FA8 /* ActivityListDateCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */; };
 		7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E612A30CDEE00842FA8 /* TransactionType.swift */; };
@@ -232,6 +232,7 @@
 		7DE27E682A30D94100842FA8 /* TransactionCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E672A30D94100842FA8 /* TransactionCellContentView.swift */; };
 		7DE27E6A2A30D9CE00842FA8 /* TransactionCellStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E692A30D9CE00842FA8 /* TransactionCellStatusView.swift */; };
 		7DE27E6C2A30DA3A00842FA8 /* TransactionCellCommentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */; };
+		7DEE8E1D2A57982A004D42B7 /* ActivityViewContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DEE8E1C2A57982A004D42B7 /* ActivityViewContainer.swift */; };
 		83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 245658CD5491F94DE1923BE9 /* ActivityEmptyViewController.swift */; };
 		86DEB0A35D88DABB3EAEFDD3 /* ReceiveProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27A2DFA2B5AD43B54E2E131F /* ReceiveProtocols.swift */; };
 		88B2EE1152873C3830AFF461 /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB768175241379D921DB521 /* WelcomeView.swift */; };
@@ -465,7 +466,6 @@
 		7D9292F42A29DCDA005B83DF /* SendRecipientPresenter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SendRecipientPresenter.swift; sourceTree = "<group>"; };
 		7D9292F52A29DCDA005B83DF /* SendRecipientView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SendRecipientView.swift; sourceTree = "<group>"; };
 		7D9292F72A29DCDA005B83DF /* SendCommentLengthValidator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SendCommentLengthValidator.swift; sourceTree = "<group>"; };
-		7D9293032A29EE3F005B83DF /* TextFieldFormatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextFieldFormatController.swift; sourceTree = "<group>"; };
 		7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NumberProvider+Formatters.swift"; sourceTree = "<group>"; };
 		7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		7DB17F462A4C2D9B007C6154 /* OnboardingAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAssembly.swift; sourceTree = "<group>"; };
@@ -479,6 +479,7 @@
 		7DB8FB7C2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Montserrat-SemiBold.ttf"; sourceTree = "<group>"; };
 		7DB8FB7D2A1BEE00005B4B11 /* Montserrat-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Montserrat-Medium.ttf"; sourceTree = "<group>"; };
 		7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIFont+Montserrat.swift"; sourceTree = "<group>"; };
+		7DC1D96B2A55903300D61C96 /* AmountInputFormatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountInputFormatController.swift; sourceTree = "<group>"; };
 		7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListTransactionCell.swift; sourceTree = "<group>"; };
 		7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListDateCell.swift; sourceTree = "<group>"; };
 		7DE27E612A30CDEE00842FA8 /* TransactionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionType.swift; sourceTree = "<group>"; };
@@ -486,6 +487,7 @@
 		7DE27E672A30D94100842FA8 /* TransactionCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellContentView.swift; sourceTree = "<group>"; };
 		7DE27E692A30D9CE00842FA8 /* TransactionCellStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellStatusView.swift; sourceTree = "<group>"; };
 		7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellCommentView.swift; sourceTree = "<group>"; };
+		7DEE8E1C2A57982A004D42B7 /* ActivityViewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityViewContainer.swift; sourceTree = "<group>"; };
 		81E95098F2912B3982A6BAE5 /* SetupWalletProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SetupWalletProtocols.swift; sourceTree = "<group>"; };
 		8243DFDC12DB2AD7BBBBBE82 /* PasscodeInputProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputProtocols.swift; sourceTree = "<group>"; };
 		8AB768175241379D921DB521 /* WelcomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
@@ -1285,6 +1287,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7DEE8E1B2A579808004D42B7 /* ActivityViewContainer */,
 				7D3BCFA62A4C3E1C00BE6AD9 /* Containers */,
 				7D9144252A31F59500B0FD17 /* ModalCard */,
 				7D5D05CC2A307161009F42FF /* Cell */,
@@ -1527,8 +1530,8 @@
 		7D9293022A29EE2F005B83DF /* Formatters */ = {
 			isa = PBXGroup;
 			children = (
-				7D9293032A29EE3F005B83DF /* TextFieldFormatController.swift */,
 				7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */,
+				7DC1D96B2A55903300D61C96 /* AmountInputFormatController.swift */,
 			);
 			path = Formatters;
 			sourceTree = "<group>";
@@ -1666,6 +1669,14 @@
 				7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */,
 			);
 			path = TransactionCell;
+			sourceTree = "<group>";
+		};
+		7DEE8E1B2A579808004D42B7 /* ActivityViewContainer */ = {
+			isa = PBXGroup;
+			children = (
+				7DEE8E1C2A57982A004D42B7 /* ActivityViewContainer.swift */,
+			);
+			path = ActivityViewContainer;
 			sourceTree = "<group>";
 		};
 		8B0C0767FD46C94FB4520D2B /* ActivityTransactionDetails */ = {
@@ -1835,7 +1846,6 @@
 				7D59287D2A20C92E006B0A8A /* TokensListTokensSectionBackgroundView.swift in Sources */,
 				7D3BCFB42A4C83BE00BE6AD9 /* SetupWalletAssembly.swift in Sources */,
 				7D3BCFD02A4D923400BE6AD9 /* PasscodeInputAssembly.swift in Sources */,
-				7D9293042A29EE3F005B83DF /* TextFieldFormatController.swift in Sources */,
 				7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */,
 				7D5928552A1F6C71006B0A8A /* TKButton.swift in Sources */,
 				7D527BEE2A2DEA2C00A2D29A /* ResultView.swift in Sources */,
@@ -1860,6 +1870,7 @@
 				7D3BCFB92A4C99A300BE6AD9 /* ImportWalletAssembly.swift in Sources */,
 				7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */,
 				7D527BC82A2A9E5D00A2D29A /* ModalContentActionBarView.swift in Sources */,
+				7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */,
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
@@ -1930,6 +1941,7 @@
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
+				7DEE8E1D2A57982A004D42B7 /* ActivityViewContainer.swift in Sources */,
 				7D91442B2A31F5F700B0FD17 /* DimmingPresentationController.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */,

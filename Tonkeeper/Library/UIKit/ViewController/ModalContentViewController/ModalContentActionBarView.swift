@@ -67,7 +67,9 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
               self?.hideActions()
               self?.showResult(isSuccess: isSuccess)
               DispatchQueue.main.asyncAfter(deadline: .now() + .completionDelay) {
-                buttonModel.completion?()
+                buttonModel.completion?(isSuccess)
+                self?.showActions()
+                self?.hideResult()
               }
             }
             buttonModel.tapAction?(completionClosure)
@@ -130,6 +132,10 @@ private extension ModalContentActionBarView {
 
   func hideActions() {
     itemsStackView.isHidden = true
+  }
+  
+  func showActions() {
+    itemsStackView.isHidden = false
   }
   
   func showLoader() {
