@@ -13,6 +13,7 @@ protocol WalletHeaderModuleOutput: AnyObject {
   func didTapReceiveButton()
   func didTapBuyButton()
   func openQRScanner()
+  func didTapAddress()
 }
 
 protocol WalletHeaderModuleInput: AnyObject {
