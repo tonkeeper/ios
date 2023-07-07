@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import UIKit
 import WalletCore
 
 final class WalletHeaderPresenter {
@@ -20,15 +21,13 @@ final class WalletHeaderPresenter {
 
 extension WalletHeaderPresenter: WalletHeaderPresenterInput {
   func viewDidLoad() {
-    let model = WalletHeaderView.Model(balance: "$24,374",
-                                       address: "EQF2…G21Z")
-    viewInput?.update(with: model)
-    
     let buttonModels = createHeaderButtonModels()
     viewInput?.updateButtons(with: buttonModels)
   }
   
-  func didTapAddressButton() {}
+  func didTapAddressButton() {
+    output?.didTapAddress()
+  }
   
   func didTapScanQRButton() {
     output?.openQRScanner()

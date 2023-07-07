@@ -105,6 +105,13 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
   func openQRScanner() {
     output?.openQRScanner()
   }
+  
+  func didTapAddress() {
+    guard let walletAddress = try? walletBalanceController.getWalletBalance().header.fullAddress else {
+      return
+    }
+    UIPasteboard.general.string = walletAddress
+  }
 }
 
 // MARK: - WalletContentModuleOutput
