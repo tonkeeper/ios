@@ -7,10 +7,11 @@
 //
 
 import Foundation
+import WalletCore
 
 protocol SendAmountModuleOutput: AnyObject {
   func sendAmountModuleDidTapCloseButton()
-  func sendAmountModuleDidTapContinueButton()
+  func sendAmountModuleDidPrepareTransaction(_ sendTransactionModel: SendTransactionModel)
 }
 
 protocol SendAmountModuleInput: AnyObject {}

@@ -90,6 +90,14 @@ extension SendRecipientViewController: SendRecipientViewInput {
   func hideCommentLengthWarning() {
     customView.commentLimitLabel.isHidden = true
   }
+  
+  func updateAddressValidationState(isValid: Bool) {
+    customView.addressTextField.validationState = isValid ? .valid : .invalid
+  }
+  
+  func updateContinueButtonIsAvailable(isAvailable: Bool) {
+    customView.continueButton.isEnabled = isAvailable
+  }
 }
 
 // MARK: - Private
@@ -118,7 +126,7 @@ private extension SendRecipientViewController {
   }
   
   func addressDidChange(_ textView: UITextView) {
-    
+    presenter.didChangeAddress(address: textView.text)
   }
   
   func commentDidChange(_ textView: UITextView) {

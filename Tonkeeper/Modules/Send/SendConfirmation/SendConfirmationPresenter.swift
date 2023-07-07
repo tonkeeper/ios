@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import WalletCore
 
 final class SendConfirmationPresenter {
   
@@ -14,6 +15,17 @@ final class SendConfirmationPresenter {
   
   weak var viewInput: SendConfirmationViewInput?
   weak var output: SendConfirmationModuleOutput?
+  
+  // MARK: - Dependencies
+  
+  private let sendController: SendController
+  private let transactionModel: SendTransactionModel
+
+  init(sendController: SendController,
+       transactionModel: SendTransactionModel) {
+    self.sendController = sendController
+    self.transactionModel = transactionModel
+  }
 }
 
 // MARK: - SendConfirmationPresenterIntput
@@ -36,16 +48,15 @@ extension SendConfirmationPresenter: SendConfirmationModuleInput {}
 
 private extension SendConfirmationPresenter {
   func update() {
-    
     let configuration = SendConfirmationModalConfigurationBuilder.configuration(
-      title: "TON transfer",
-      recipient: "kachemirova.ton",
-      recipientAddress: "EQCc…9ZLD",
-      amount: "5,754.32 TON",
-      fiatAmount: "$ 6,328.81",
-      fee: "≈ 0.007 TON",
-      fiatFee: "≈ $ 0.03",
-      comment: "Thank you very much!",
+      title: transactionModel.title,
+      recipient: nil,
+      recipientAddress: transactionModel.address,
+      amount: transactionModel.amountToken,
+      fiatAmount: transactionModel.amountFiat,
+      fee: transactionModel.feeTon,
+      fiatFee: transactionModel.feeFiat,
+      comment: nil,
       tapAction: { closure in
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
           closure(true)

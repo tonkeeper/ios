@@ -9,6 +9,7 @@
 import Foundation
 import UIKit
 import WalletCore
+import BigInt
 
 final class SendAmountPresenter {
   
@@ -24,17 +25,26 @@ final class SendAmountPresenter {
   // MARK: - Dependencies
 
   private let inputCurrencyFormatter: NumberFormatter
+  private let address: String
+  private let comment: String?
   
   let amountInputFormatController: AmountInputFormatController
   let sendInputController: SendInputController
+  let sendController: SendController
   
   // MARK: - Init
   
   init(inputCurrencyFormatter: NumberFormatter,
-       sendInputController: SendInputController) {
+       sendInputController: SendInputController,
+       sendController: SendController,
+       address: String,
+       comment: String?) {
     self.inputCurrencyFormatter = inputCurrencyFormatter
     self.amountInputFormatController = AmountInputFormatController(currencyFormatter: inputCurrencyFormatter)
     self.sendInputController = sendInputController
+    self.sendController = sendController
+    self.address = address
+    self.comment = comment
   }
 }
 
@@ -65,7 +75,17 @@ extension SendAmountPresenter: SendAmountPresenterInput {
   }
   
   func didTapContinueButton() {
-    output?.sendAmountModuleDidTapContinueButton()
+    Task {
+      let transactionBoc = try await sendController.prepareTransaction(
+        value: sendInputController.tokenAmount,
+        address: address,
+        comment: comment
+      )
+      let transactionModel = try await sendController.loadTransactionInformation(transactionBoc: transactionBoc)
+      Task { @MainActor in
+        output?.sendAmountModuleDidPrepareTransaction(transactionModel)
+      }
+    }
   }
 }
 

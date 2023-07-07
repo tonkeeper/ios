@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import WalletCore
 
 protocol SendCoordinatorOutput: AnyObject {
   func sendCoordinatorDidClose(_ coordinator: SendCoordinator)
@@ -47,14 +48,17 @@ private extension SendCoordinator {
     router.setPresentables([(module.view, nil)])
   }
   
-  func openSendAmount() {
-    let module = assembly.sendAmountModule(output: self)
+  func openSendAmount(address: String,
+                      comment: String?) {
+    let module = assembly.sendAmountModule(output: self,
+                                           address: address,
+                                           comment: comment)
     module.view.setupBackButton()
     router.push(presentable: module.view)
   }
   
-  func openConfirmation() {
-    let module = assembly.sendConfirmationModule(output: self)
+  func openConfirmation(transactionModel: SendTransactionModel) {
+    let module = assembly.sendConfirmationModule(output: self, transactionModel: transactionModel)
     module.view.setupBackButton()
     router.push(presentable: module.view)
   }
@@ -66,7 +70,7 @@ private extension SendCoordinator {
     )
     sendRecipientInput = recipientModule.input
     
-    let amountModule = assembly.sendAmountModule(output: self)
+    let amountModule = assembly.sendAmountModule(output: self, address: address, comment: nil)
     amountModule.view.setupBackButton()
 
     router.setPresentables([(recipientModule.view, nil), (amountModule.view, nil)])
@@ -85,8 +89,11 @@ extension SendCoordinator: SendRecipientModuleOutput {
     output?.sendCoordinatorDidClose(self)
   }
   
-  func sendRecipientModuleDidTapContinueButton() {
-    openSendAmount()
+  func sendRecipientModuleDidTapContinueButton(
+    address: String,
+    comment: String?
+  ) {
+    openSendAmount(address: address, comment: comment)
   }
 }
 
@@ -97,8 +104,8 @@ extension SendCoordinator: SendAmountModuleOutput {
     output?.sendCoordinatorDidClose(self)
   }
   
-  func sendAmountModuleDidTapContinueButton() {
-    openConfirmation()
+  func sendAmountModuleDidPrepareTransaction(_ sendTransactionModel: SendTransactionModel) {
+    openConfirmation(transactionModel: sendTransactionModel)
   }
 }
 

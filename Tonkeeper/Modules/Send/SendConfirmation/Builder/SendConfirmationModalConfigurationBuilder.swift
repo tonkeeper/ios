@@ -9,12 +9,12 @@ import Foundation
 
 struct SendConfirmationModalConfigurationBuilder {
   static func configuration(title: String,
-                            recipient: String,
+                            recipient: String? = nil,
                             recipientAddress: String,
                             amount: String,
-                            fiatAmount: String,
+                            fiatAmount: String?,
                             fee: String,
-                            fiatFee: String,
+                            fiatFee: String?,
                             comment: String? = nil,
                             showActivity: Bool = true,
                             tapAction: (( @escaping (Bool) -> Void ) -> Void)? = nil,
@@ -27,11 +27,14 @@ struct SendConfirmationModalConfigurationBuilder {
     )
     
     var listItems: [ModalContentViewController.Configuration.ListItem] = [
-      .init(left: .recipientTitle, rightTop: recipient, rightBottom: nil),
       .init(left: .recipientAddressTitle, rightTop: recipientAddress, rightBottom: nil),
       .init(left: .amountTitle, rightTop: amount, rightBottom: fiatAmount),
       .init(left: .feeTitle, rightTop: fee, rightBottom: fiatFee)
     ]
+    
+    if let recipient = recipient {
+      listItems.insert(.init(left: .recipientTitle, rightTop: recipient, rightBottom: nil), at: 0)
+    }
     
     if let comment = comment {
       listItems.append(.init(left: .commentTitle, rightTop: comment, rightBottom: nil))
