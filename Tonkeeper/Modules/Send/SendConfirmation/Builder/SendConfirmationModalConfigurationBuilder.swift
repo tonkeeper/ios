@@ -18,7 +18,7 @@ struct SendConfirmationModalConfigurationBuilder {
                             comment: String? = nil,
                             showActivity: Bool = true,
                             tapAction: (( @escaping (Bool) -> Void ) -> Void)? = nil,
-                            completion: (() -> Void)? = nil
+                            completion: ((Bool) -> Void)? = nil
   ) -> ModalContentViewController.Configuration {
     let header = ModalContentViewController.Configuration.Header(
       image: .image(image: nil, tintColor: .Accent.blue, backgroundColor: .Accent.blue),

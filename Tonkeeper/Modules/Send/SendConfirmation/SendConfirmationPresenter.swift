@@ -57,13 +57,25 @@ private extension SendConfirmationPresenter {
       fee: transactionModel.feeTon,
       fiatFee: transactionModel.feeFiat,
       comment: nil,
-      tapAction: { closure in
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-          closure(true)
+      tapAction: { [weak self] closure in
+        guard let self = self else { return }
+        Task {
+          do {
+            try await self.sendController.sendTransaction(boc: self.transactionModel.boc)
+            Task { @MainActor in
+              closure(true)
+            }
+          } catch {
+            Task { @MainActor in
+              closure(false)
+            }
+          }
         }
       },
-      completion: { [weak self] in
-        self?.output?.sendRecipientModuleDidFinish()
+      completion: { [weak self] isSuccess in
+        if isSuccess {
+          self?.output?.sendRecipientModuleDidFinish()
+        }
       }
     )
     viewInput?.update(with: configuration)

@@ -24,7 +24,7 @@
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
         "branch" : "feature/send",
-        "revision" : "fdb4c77597392b334ff3fa363db64a67e120689c"
+        "revision" : "03e4c769404ebfec18a1889648ac0be6c0ab5be7"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "revision" : "4baffd12e7f96e78a2fd72cd90a6014fe359ff61",
-        "version" : "0.0.2"
+        "branch" : "feature/send_message",
+        "revision" : "caf488a586580f25b01ebe8501285e5dcb604da3"
       }
     },
     {
