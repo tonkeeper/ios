@@ -8,7 +8,7 @@
 import UIKit
 
 final class WindowRouter: RouterProtocol {
-  private let window: UIWindow
+  let window: UIWindow
   
   init(window: UIWindow) {
     self.window = window

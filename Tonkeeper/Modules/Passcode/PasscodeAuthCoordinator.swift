@@ -31,7 +31,7 @@ final class PasscodeAuthCoordinator: Coordinator<NavigationRouter> {
 
 private extension PasscodeAuthCoordinator {
   func openPasscodeAuth(){
-    var configurator = assembly.passcodeAuthConfigurator()
+    let configurator = assembly.passcodeAuthConfigurator()
     configurator.didFinish = { [weak self] _ in
       guard let self = self else { return }
       self.output?.createPasscodeCoordinatorDidAuth(self)

@@ -75,6 +75,7 @@
 		7D3E43B62A373B2200C23A75 /* ModalCardContainerScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */; };
 		7D4934672A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */; };
 		7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */; };
+		7D49346E2A5C7A6A00F4BCA2 /* BlurViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D49346D2A5C7A6A00F4BCA2 /* BlurViewController.swift */; };
 		7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CA2A53429200EC7F59 /* ImageLoader.swift */; };
 		7D5141CE2A53454400EC7F59 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CD2A53454400EC7F59 /* Image.swift */; };
 		7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */; };
@@ -334,6 +335,7 @@
 		7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerScrollController.swift; sourceTree = "<group>"; };
 		7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthCoordinator.swift; sourceTree = "<group>"; };
 		7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthConfigurator.swift; sourceTree = "<group>"; };
+		7D49346D2A5C7A6A00F4BCA2 /* BlurViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlurViewController.swift; sourceTree = "<group>"; };
 		7D5141CA2A53429200EC7F59 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		7D5141CD2A53454400EC7F59 /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
 		7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentViewController.swift; sourceTree = "<group>"; };
@@ -865,6 +867,14 @@
 				7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */,
 			);
 			path = PasscodeAuth;
+			sourceTree = "<group>";
+		};
+		7D49346C2A5C7A4D00F4BCA2 /* BlurViewController */ = {
+			isa = PBXGroup;
+			children = (
+				7D49346D2A5C7A6A00F4BCA2 /* BlurViewController.swift */,
+			);
+			path = BlurViewController;
 			sourceTree = "<group>";
 		};
 		7D5141C92A53428700EC7F59 /* ImageLoader */ = {
@@ -1485,6 +1495,7 @@
 		7D9292DC2A28A1D2005B83DF /* ViewController */ = {
 			isa = PBXGroup;
 			children = (
+				7D49346C2A5C7A4D00F4BCA2 /* BlurViewController */,
 				7D3BCFDF2A4EBE7200BE6AD9 /* SuccessViewController */,
 				7D527BBC2A2A90F400A2D29A /* ModalContentViewController */,
 				7D9292DF2A28A1EB005B83DF /* EnterAmountViewController */,
@@ -2042,6 +2053,7 @@
 				7D4934672A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift in Sources */,
 				BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */,
 				C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */,
+				7D49346E2A5C7A6A00F4BCA2 /* BlurViewController.swift in Sources */,
 				9C2743C59B411E3CF174F747 /* EnterMnemonicProtocols.swift in Sources */,
 				7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */,
 				3A56A8E00A6AB82880329EAF /* PasscodeInputViewController.swift in Sources */,
