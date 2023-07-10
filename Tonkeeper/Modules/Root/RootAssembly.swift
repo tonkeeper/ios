@@ -13,8 +13,11 @@ final class RootAssembly {
   lazy var tabBarAssembly = TabBarAssembly(coreAssembly: coreAssembly,
                                            walletCoreAssembly: walletCoreAssembly)
   lazy var onboardingAssembly = OnboardingAssembly()
-  lazy var importWalletAssembly = ImportWalletAssembly(walletCoreAssembly: walletCoreAssembly)
-  lazy var createWalletAssembly = CreateWalletAssembly(walletCoreAssembly: walletCoreAssembly)
+  lazy var importWalletAssembly = ImportWalletAssembly(passcodeAssembly: passcodeAssembly,
+                                                       walletCoreAssembly: walletCoreAssembly)
+  lazy var createWalletAssembly = CreateWalletAssembly(passcodeAssembly: passcodeAssembly,
+                                                       walletCoreAssembly: walletCoreAssembly)
+  lazy var passcodeAssembly = PasscodeAssembly(walletCoreAssembly: walletCoreAssembly)
   
   func tabBarCoordinator() -> TabBarCoordinator {
     let tabBarController = TabBarController()
@@ -29,6 +32,12 @@ final class RootAssembly {
     let coordinator = OnboardingCoordinator(router: navigationRouter,
                                             assembly: onboardingAssembly)
     coordinator.output = output
+    return coordinator
+  }
+  
+  func authenticationCoordinator(navigationRouter: NavigationRouter) -> PasscodeAuthCoordinator {
+    let coordinator = PasscodeAuthCoordinator(router: navigationRouter,
+                                              assembly: passcodeAssembly)
     return coordinator
   }
   

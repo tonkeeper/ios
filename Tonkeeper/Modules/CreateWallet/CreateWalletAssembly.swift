@@ -9,7 +9,7 @@ import Foundation
 
 struct CreateWalletAssembly {
   
-  let passcodeAssembly = PasscodeAssembly()
+  let passcodeAssembly: PasscodeAssembly
   let walletCoreAssembly: WalletCoreAssembly
   
   func createPasscodeCoordinator(router: NavigationRouter) -> CreatePasscodeCoordinator {

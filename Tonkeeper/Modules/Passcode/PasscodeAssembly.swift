@@ -8,7 +8,13 @@
 import Foundation
 
 final class PasscodeAssembly {
-
+  
+  let walletCoreAssembly: WalletCoreAssembly
+  
+  init(walletCoreAssembly: WalletCoreAssembly) {
+    self.walletCoreAssembly = walletCoreAssembly
+  }
+  
   func passcodeInputAssembly(
     output: PasscodeInputModuleOutput,
     configurator: PasscodeInputPresenterConfigurator
@@ -17,5 +23,9 @@ final class PasscodeAssembly {
       output: output,
       configurator: configurator
     )
+  }
+  
+  func passcodeAuthConfigurator() -> PasscodeAuthConfigurator {
+    PasscodeAuthConfigurator(passcodeController: walletCoreAssembly.passcodeController)
   }
 }

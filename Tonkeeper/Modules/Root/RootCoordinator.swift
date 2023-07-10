@@ -19,7 +19,7 @@ final class RootCoordinator: Coordinator<NavigationRouter> {
   
   override func start() {
     if assembly.walletCoreAssembly.keeperController.hasWallets {
-      openTabBar()
+      openAuth()
     } else {
       openOnboarding()
     }
@@ -38,6 +38,13 @@ private extension RootCoordinator {
     let coordinator = assembly.onboardingCoordinator(
       output: self,
       navigationRouter: router)
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
+  func openAuth() {
+    let coordinator = assembly.authenticationCoordinator(navigationRouter: router)
+    coordinator.output = self
     addChild(coordinator)
     coordinator.start()
   }
@@ -131,3 +138,10 @@ extension RootCoordinator: CreateWalletCoordinatorOutput {
   }
 }
 
+// MARK: - PasscodeAuthCoordinatorOutput
+
+extension RootCoordinator: PasscodeAuthCoordinatorOutput {
+  func createPasscodeCoordinatorDidAuth(_ coordinator: PasscodeAuthCoordinator) {
+    openTabBar()
+  }
+}

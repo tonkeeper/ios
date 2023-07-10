@@ -73,6 +73,8 @@
 		7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */; };
 		7D3E43B42A3737E700C23A75 /* BuyListServiceBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43B32A3737E700C23A75 /* BuyListServiceBuilder.swift */; };
 		7D3E43B62A373B2200C23A75 /* ModalCardContainerScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */; };
+		7D4934672A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */; };
+		7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */; };
 		7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CA2A53429200EC7F59 /* ImageLoader.swift */; };
 		7D5141CE2A53454400EC7F59 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CD2A53454400EC7F59 /* Image.swift */; };
 		7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */; };
@@ -330,6 +332,8 @@
 		7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServiceCellContentView+Model.swift"; sourceTree = "<group>"; };
 		7D3E43B32A3737E700C23A75 /* BuyListServiceBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListServiceBuilder.swift; sourceTree = "<group>"; };
 		7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerScrollController.swift; sourceTree = "<group>"; };
+		7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthCoordinator.swift; sourceTree = "<group>"; };
+		7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthConfigurator.swift; sourceTree = "<group>"; };
 		7D5141CA2A53429200EC7F59 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		7D5141CD2A53454400EC7F59 /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
 		7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentViewController.swift; sourceTree = "<group>"; };
@@ -753,10 +757,12 @@
 		7D3BCFCA2A4D90C800BE6AD9 /* Passcode */ = {
 			isa = PBXGroup;
 			children = (
+				7D4934682A5C622C00F4BCA2 /* PasscodeAuth */,
 				7D3BCFDA2A4DB1E700BE6AD9 /* CreatePasscode */,
 				A207C781017B143B4580D3FC /* PasscodeInput */,
 				7D3BCFCD2A4D90E200BE6AD9 /* PasscodeAssembly.swift */,
 				7D3BCFCB2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift */,
+				7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */,
 			);
 			path = Passcode;
 			sourceTree = "<group>";
@@ -851,6 +857,14 @@
 				7D91442C2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift */,
 			);
 			path = Dimming;
+			sourceTree = "<group>";
+		};
+		7D4934682A5C622C00F4BCA2 /* PasscodeAuth */ = {
+			isa = PBXGroup;
+			children = (
+				7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */,
+			);
+			path = PasscodeAuth;
 			sourceTree = "<group>";
 		};
 		7D5141C92A53428700EC7F59 /* ImageLoader */ = {
@@ -1830,6 +1844,7 @@
 				7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */,
 				7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */,
 				7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */,
+				7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */,
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
 				7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */,
 				7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */,
@@ -2024,6 +2039,7 @@
 				C8C8146A655C693012C56BBB /* SetupWalletPresenter.swift in Sources */,
 				CA74A7FB85A60A6A7A11D37C /* SetupWalletProtocols.swift in Sources */,
 				49D41F7981620397A6533318 /* EnterMnemonicViewController.swift in Sources */,
+				7D4934672A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift in Sources */,
 				BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */,
 				C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */,
 				9C2743C59B411E3CF174F747 /* EnterMnemonicProtocols.swift in Sources */,
@@ -2203,9 +2219,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 3;
-				DEVELOPMENT_TEAM = YS34WB4Z9W;
 				CURRENT_PROJECT_VERSION = 4;
+				DEVELOPMENT_TEAM = YS34WB4Z9W;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";

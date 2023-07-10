@@ -23,6 +23,10 @@ protocol PasscodeInputPresenterConfigurator {
   func validateInput(_ input: String) -> PasscodeInputPresenterValidation
 }
 
+extension PasscodeInputPresenterConfigurator {
+  func configureInitialState() {}
+}
+
 final class PasscodeInputPresenter {
   
   // MARK: - Module
