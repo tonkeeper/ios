@@ -25,6 +25,8 @@ protocol SendAmountPresenterInput {
   func didTapMaxButton()
   func didChangeAmountText(text: String?)
   func didTapContinueButton()
+  func didTapSelectTokenButton()
+  func didSelectToken(at index: Int)
 }
 
 protocol SendAmountViewInput: AnyObject {
@@ -37,4 +39,7 @@ protocol SendAmountViewInput: AnyObject {
   func updateContinueButtonAvailability(_ isAvailable: Bool)
   func showActivity()
   func hideActivity()
+  func showMenu(items: [TKMenuItem])
+  func showTokenSelectionButton(_ code: String)
+  func hideTokenSelectionButton()
 }

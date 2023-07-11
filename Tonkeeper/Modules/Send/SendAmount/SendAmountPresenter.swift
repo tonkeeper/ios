@@ -75,6 +75,17 @@ extension SendAmountPresenter: SendAmountPresenterInput {
     sendInputController.toggleActive()
   }
   
+  func didTapSelectTokenButton() {
+    let listModel = sendInputController.tokenListModel()
+    let menuItems = listModel.tokens.enumerated().map {
+      TKMenuItem(icon: .image(nil, backgroundColor: nil),
+                 leftTitle: $0.element.code,
+                 rightTitle: $0.element.amount,
+                 isSelected: $0.offset == listModel.selectedIndex)
+    }
+    viewInput?.showMenu(items: menuItems)
+  }
+  
   func didTapContinueButton() {
     viewInput?.showActivity()
     Task {
@@ -95,6 +106,10 @@ extension SendAmountPresenter: SendAmountPresenterInput {
         }
       }
     }
+  }
+  
+  func didSelectToken(at index: Int) {
+    try? sendInputController.didSelectToken(at: index)
   }
 }
 
@@ -131,6 +146,14 @@ private extension SendAmountPresenter {
     
     sendInputController.didUpdateContinueButtonAvailability = { [weak self] isAvailable in
       self?.viewInput?.updateContinueButtonAvailability(isAvailable)
+    }
+    
+    sendInputController.didChangeToken = { [weak self] tokenCode in
+      if let tokenCode = tokenCode {
+        self?.viewInput?.showTokenSelectionButton(tokenCode)
+      } else {
+        self?.viewInput?.hideTokenSelectionButton()
+      }
     }
   }
   
