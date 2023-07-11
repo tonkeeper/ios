@@ -193,6 +193,12 @@ extension UIImage {
       }
     }
     
+    enum TKMenu {
+      static var tick: UIImage? {
+        .init(named: "Icons/16/ic-done-16")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     enum Mock {
       static var tonCurrencyIcon: UIImage? {
         .init(named: "Icons/44/ton_currency_icon")

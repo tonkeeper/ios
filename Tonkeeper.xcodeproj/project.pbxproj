@@ -76,6 +76,10 @@
 		7D4934672A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */; };
 		7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */; };
 		7D49346E2A5C7A6A00F4BCA2 /* BlurViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D49346D2A5C7A6A00F4BCA2 /* BlurViewController.swift */; };
+		7D4934712A5C9F8F00F4BCA2 /* TKMenuController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934702A5C9F8F00F4BCA2 /* TKMenuController.swift */; };
+		7D4934732A5CA1D900F4BCA2 /* TKMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934722A5CA1D900F4BCA2 /* TKMenuViewController.swift */; };
+		7D4934752A5CA44000F4BCA2 /* TKMenuItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934742A5CA44000F4BCA2 /* TKMenuItem.swift */; };
+		7D4934772A5D4A9E00F4BCA2 /* TKMenuCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934762A5D4A9E00F4BCA2 /* TKMenuCell.swift */; };
 		7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CA2A53429200EC7F59 /* ImageLoader.swift */; };
 		7D5141CE2A53454400EC7F59 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CD2A53454400EC7F59 /* Image.swift */; };
 		7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */; };
@@ -336,6 +340,10 @@
 		7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthCoordinator.swift; sourceTree = "<group>"; };
 		7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthConfigurator.swift; sourceTree = "<group>"; };
 		7D49346D2A5C7A6A00F4BCA2 /* BlurViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlurViewController.swift; sourceTree = "<group>"; };
+		7D4934702A5C9F8F00F4BCA2 /* TKMenuController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKMenuController.swift; sourceTree = "<group>"; };
+		7D4934722A5CA1D900F4BCA2 /* TKMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKMenuViewController.swift; sourceTree = "<group>"; };
+		7D4934742A5CA44000F4BCA2 /* TKMenuItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKMenuItem.swift; sourceTree = "<group>"; };
+		7D4934762A5D4A9E00F4BCA2 /* TKMenuCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKMenuCell.swift; sourceTree = "<group>"; };
 		7D5141CA2A53429200EC7F59 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		7D5141CD2A53454400EC7F59 /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
 		7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentViewController.swift; sourceTree = "<group>"; };
@@ -877,6 +885,17 @@
 			path = BlurViewController;
 			sourceTree = "<group>";
 		};
+		7D49346F2A5C9F7D00F4BCA2 /* TKMenu */ = {
+			isa = PBXGroup;
+			children = (
+				7D4934702A5C9F8F00F4BCA2 /* TKMenuController.swift */,
+				7D4934722A5CA1D900F4BCA2 /* TKMenuViewController.swift */,
+				7D4934742A5CA44000F4BCA2 /* TKMenuItem.swift */,
+				7D4934762A5D4A9E00F4BCA2 /* TKMenuCell.swift */,
+			);
+			path = TKMenu;
+			sourceTree = "<group>";
+		};
 		7D5141C92A53428700EC7F59 /* ImageLoader */ = {
 			isa = PBXGroup;
 			children = (
@@ -1311,6 +1330,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D49346F2A5C9F7D00F4BCA2 /* TKMenu */,
 				7DEE8E1B2A579808004D42B7 /* ActivityViewContainer */,
 				7D3BCFA62A4C3E1C00BE6AD9 /* Containers */,
 				7D9144252A31F59500B0FD17 /* ModalCard */,
@@ -1816,6 +1836,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				7D6836762A1E6623002DBBC7 /* QRScannerPresenter.swift in Sources */,
+				7D4934772A5D4A9E00F4BCA2 /* TKMenuCell.swift in Sources */,
 				7D9292F92A29DCDA005B83DF /* SendAmountProtocols.swift in Sources */,
 				7D5D05D02A308C4C009F42FF /* DefaultCellContentView.swift in Sources */,
 				7D8EB7202A4ED86B005BE1B0 /* CreateWalletCoordinator.swift in Sources */,
@@ -1894,6 +1915,7 @@
 				7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */,
 				7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */,
 				7D3BCFB92A4C99A300BE6AD9 /* ImportWalletAssembly.swift in Sources */,
+				7D4934732A5CA1D900F4BCA2 /* TKMenuViewController.swift in Sources */,
 				7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */,
 				7D527BC82A2A9E5D00A2D29A /* ModalContentActionBarView.swift in Sources */,
 				7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */,
@@ -1948,6 +1970,7 @@
 				7D9144272A31F5DE00B0FD17 /* ModalCardContainerViewController.swift in Sources */,
 				7D9292C22A27412A005B83DF /* SendCoordinator.swift in Sources */,
 				7D68364A2A1D1052002DBBC7 /* WalletAssembly.swift in Sources */,
+				7D4934712A5C9F8F00F4BCA2 /* TKMenuController.swift in Sources */,
 				7D68363B2A1CFF74002DBBC7 /* AppCoordinator.swift in Sources */,
 				7D5943492A547D1700C89967 /* TapticGenerator.swift in Sources */,
 				7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */,
@@ -2027,6 +2050,7 @@
 				48DB3E42B318C80B7090AFD0 /* ActivityEmptyProtocols.swift in Sources */,
 				2E9AD80F15E6019A55846F61 /* ActivityListViewController.swift in Sources */,
 				27E0B9B4BE1065171C3AFD76 /* ActivityListView.swift in Sources */,
+				7D4934752A5CA44000F4BCA2 /* TKMenuItem.swift in Sources */,
 				14250E44D164B234E513925F /* ActivityListPresenter.swift in Sources */,
 				F2E003198428DC1A9FA401BB /* ActivityListProtocols.swift in Sources */,
 				0D6D9286FE3AD2FE83868D1B /* ActivityTransactionDetailsViewController.swift in Sources */,
