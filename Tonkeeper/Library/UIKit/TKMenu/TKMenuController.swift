@@ -14,7 +14,8 @@ final class TKMenuController {
   private static weak var sourceView: UIView?
   
   static func show(sourceView: UIView,
-                   items: [TKMenuItem]) {
+                   items: [TKMenuItem],
+                   selectionClosure: @escaping (Int) -> Void) {
     self.sourceView = sourceView
     guard let sourceWindow = sourceView.window,
           let windowScene = sourceWindow.windowScene else { return }
@@ -30,12 +31,13 @@ final class TKMenuController {
     let menuViewController = TKMenuViewController(items: items,
                                                   origin: origin,
                                                   menuWidth: .menuWidth)
-    menuViewController.didSelectItem = { _ in
-      self.dismis()
+    menuViewController.didSelectItem = { index in
+      self.dismiss()
+      selectionClosure(index)
     }
     
     menuViewController.didTapToDismiss = {
-      self.dismis()
+      self.dismiss()
     }
     
     menuWindow.rootViewController = menuViewController
@@ -46,7 +48,7 @@ final class TKMenuController {
     self.menuViewController = menuViewController
   }
   
-  static func dismis() {
+  static func dismiss() {
     guard let sourceWindow = sourceView?.window else { return }
     menuViewController?.hideMenu(duration: .animationDuration, completion: {
       self.window = nil
