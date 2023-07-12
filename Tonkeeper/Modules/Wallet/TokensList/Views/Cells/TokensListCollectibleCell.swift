@@ -73,8 +73,9 @@ final class TokensListCollectibleCell: UICollectionViewCell, Reusable, Configura
   
   func configure(model: Model) {
     switch model.image {
-    case let .image(image, backgroundColor):
+    case let .image(image, tintColor, backgroundColor):
       imageView.image = image
+      imageView.tintColor = tintColor
       imageView.backgroundColor = backgroundColor
     case let .url(url):
       imageLoader?.loadImage(imageURL: url, imageView: imageView, size: nil)

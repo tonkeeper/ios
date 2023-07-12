@@ -17,14 +17,9 @@ final class TKMenuController {
                    items: [TKMenuItem],
                    selectionClosure: @escaping (Int) -> Void) {
     self.sourceView = sourceView
-    guard let sourceWindow = sourceView.window,
-          let windowScene = sourceWindow.windowScene else { return }
+    guard let sourceWindow = sourceView.window else { return }
     
-    let menuWindow = UIWindow(windowScene: windowScene)
-    menuWindow.backgroundColor = .clear
-    menuWindow.makeKeyAndVisible()
-    
-    let sourceViewConvertedFrame = menuWindow.convert(sourceView.frame, from: sourceView.superview)
+    let sourceViewConvertedFrame = sourceWindow.convert(sourceView.frame, from: sourceView.superview)
     let origin = CGPoint(x: sourceViewConvertedFrame.midX - .menuWidth/2,
                          y: sourceViewConvertedFrame.maxY + 10)
     
@@ -39,21 +34,19 @@ final class TKMenuController {
     menuViewController.didTapToDismiss = {
       self.dismiss()
     }
-    
-    menuWindow.rootViewController = menuViewController
+
+    sourceWindow.addSubview(menuViewController.view)
+    menuViewController.view.frame = sourceWindow.bounds
     
     menuViewController.showMenu(duration: .animationDuration)
     
-    self.window = menuWindow
     self.menuViewController = menuViewController
   }
   
   static func dismiss() {
-    guard let sourceWindow = sourceView?.window else { return }
     menuViewController?.hideMenu(duration: .animationDuration, completion: {
-      self.window = nil
+      menuViewController?.view.removeFromSuperview()
       self.menuViewController = nil
-      sourceWindow.makeKeyAndVisible()
     })
   }
 }
@@ -63,5 +56,5 @@ private extension CGFloat {
 }
 
 private extension TimeInterval {
-  static let animationDuration: TimeInterval = 0.5
+  static let animationDuration: TimeInterval = 0.4
 }

@@ -10,6 +10,13 @@ import UIKit
 final class EnterAmountViewController: GenericViewController<EnterAmountView> {
   
   var didChangeText: ((String?) -> Void)?
+  var didTapTokenButton: (() -> Void)?
+  
+  var tokenCode: String? {
+    didSet {
+      customView.tokenSelectionButton.title = tokenCode
+    }
+  }
   
   var text: String? {
     customView.amountTextField.text
@@ -54,6 +61,10 @@ private extension EnterAmountViewController {
       action: #selector(textDidChange(textField:)),
       for: .editingChanged
     )
+    
+    customView.tokenSelectionButton.addAction(.init(handler: { [weak self] in
+      self?.didTapTokenButton?()
+    }), for: .touchUpInside)
   }
   
   @objc

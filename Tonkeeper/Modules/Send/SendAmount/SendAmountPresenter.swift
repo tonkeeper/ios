@@ -75,15 +75,38 @@ extension SendAmountPresenter: SendAmountPresenterInput {
     sendInputController.toggleActive()
   }
   
+  func didTapSelectTokenButton() {
+    let listModel = sendInputController.tokenListModel()
+    let menuItems = listModel.tokens.enumerated().map {
+      TKMenuItem(icon: .with(image: $0.element.icon),
+                 leftTitle: $0.element.code,
+                 rightTitle: $0.element.amount,
+                 isSelected: $0.offset == listModel.selectedIndex)
+    }
+    viewInput?.showMenu(items: menuItems)
+  }
+  
   func didTapContinueButton() {
     viewInput?.showActivity()
     Task {
       do {
-        let transactionBoc = try await sendController.prepareTransaction(
-          value: sendInputController.tokenAmount,
-          address: address,
-          comment: comment
-        )
+        let transactionBoc: String
+        guard let tokenTransferData = sendInputController.tokenTransferData else { return }
+        switch tokenTransferData.token {
+        case .ton:
+          transactionBoc = try await sendController.prepareSendTonTransaction(
+            value: tokenTransferData.amount,
+            address: address,
+            comment: comment
+          )
+        case .token(let address):
+          transactionBoc = try await sendController.prepareSendTokenTransaction(
+            tokenAddress: address.toString(),
+            value: tokenTransferData.amount,
+            address: self.address,
+            comment: comment
+          )
+        }
         let transactionModel = try await sendController.loadTransactionInformation(transactionBoc: transactionBoc)
         Task { @MainActor in
           viewInput?.hideActivity()
@@ -95,6 +118,10 @@ extension SendAmountPresenter: SendAmountPresenterInput {
         }
       }
     }
+  }
+  
+  func didSelectToken(at index: Int) {
+    try? sendInputController.didSelectToken(at: index)
   }
 }
 
@@ -131,6 +158,14 @@ private extension SendAmountPresenter {
     
     sendInputController.didUpdateContinueButtonAvailability = { [weak self] isAvailable in
       self?.viewInput?.updateContinueButtonAvailability(isAvailable)
+    }
+    
+    sendInputController.didChangeToken = { [weak self] tokenCode in
+      if let tokenCode = tokenCode {
+        self?.viewInput?.showTokenSelectionButton(tokenCode)
+      } else {
+        self?.viewInput?.hideTokenSelectionButton()
+      }
     }
   }
   

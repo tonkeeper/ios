@@ -120,6 +120,23 @@ extension SendAmountViewController: SendAmountViewInput {
   func hideActivity() {
     customView.continueButtonActivityContainer.hideActivity()
   }
+  
+  func showTokenSelectionButton(_ code: String) {
+    enterAmountViewController.customView.tokenSelectionButton.isHidden = false
+    enterAmountViewController.customView.tokenSelectionButton.title = code
+  }
+  
+  func hideTokenSelectionButton() {
+    enterAmountViewController.customView.tokenSelectionButton.isHidden = true
+  }
+  
+  func showMenu(items: [TKMenuItem]) {
+    TKMenuController.show(sourceView: enterAmountViewController.customView.tokenSelectionButton,
+                          items: items) { [weak self] index in
+      self?.deselectMaxButton()
+      self?.presenter.didSelectToken(at: index)
+    }
+  }
 }
 
 // MARK: - Private
@@ -148,13 +165,21 @@ private extension SendAmountViewController {
     enterAmountViewController.customView.maxButton.addAction(.init(handler: { [weak self] in
       self?.presenter.didTapMaxButton()
     }), for: .touchUpInside)
-    enterAmountViewController.customView.secondaryCurrencyButton.addTarget(self,
-                                                                           action: #selector(didTapSwapCurrency),
-                                                                           for: .touchUpInside)
+    
+    enterAmountViewController.customView.secondaryCurrencyButton.addTarget(
+      self,
+      action: #selector(didTapSwapCurrency),
+      for: .touchUpInside
+    )
     
     enterAmountViewController.didChangeText = { [weak self] text in
       guard let self = self else { return }
+      self.deselectMaxButton()
       self.presenter.didChangeAmountText(text: text)
+    }
+    
+    enterAmountViewController.didTapTokenButton = { [weak self] in
+      self?.presenter.didTapSelectTokenButton()
     }
   }
   

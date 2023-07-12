@@ -48,15 +48,17 @@ extension SendConfirmationPresenter: SendConfirmationModuleInput {}
 
 private extension SendConfirmationPresenter {
   func update() {
+    let model = transactionModel.tokenModel
     let configuration = SendConfirmationModalConfigurationBuilder.configuration(
-      title: transactionModel.title,
+      title: model.title,
+      image: .with(image: model.image),
       recipient: nil,
-      recipientAddress: transactionModel.address,
-      amount: transactionModel.amountToken,
-      fiatAmount: transactionModel.amountFiat,
-      fee: transactionModel.feeTon,
-      fiatFee: transactionModel.feeFiat,
-      comment: nil,
+      recipientAddress: model.address,
+      amount: model.amountToken,
+      fiatAmount: model.amountFiat,
+      fee: model.feeTon,
+      fiatFee: model.feeFiat,
+      comment: model.comment,
       tapAction: { [weak self] closure in
         guard let self = self else { return }
         Task {

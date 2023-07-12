@@ -43,6 +43,8 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
   private var imageViewWidthConstraint: NSLayoutConstraint?
   private var imageViewHeigthConstraint: NSLayoutConstraint?
   
+  private let imageLoader = NukeImageLoader()
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -72,13 +74,8 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
       imageView.backgroundColor = backgroundColor
       imageView.image = image
       imageView.tintColor = tintColor
-      if let image = image {
-        imageViewWidthConstraint?.constant = image.size.width
-        imageViewHeigthConstraint?.constant = image.size.height
-      } else {
-        imageViewWidthConstraint?.constant = .imageSide
-        imageViewHeigthConstraint?.constant = .imageSide
-      }
+    case let .url(url):
+      imageLoader.loadImage(imageURL: url, imageView: imageView, size: .init(width: .imageSide, height: .imageSide))
     }
     
     topDescriptionLabel.isHidden = model.topDescription == nil

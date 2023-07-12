@@ -70,6 +70,14 @@ final class EnterAmountView: UIView {
     return button
   }()
   
+  let tokenSelectionButton: TKButton = {
+    let button = TKButton(configuration: .tertiarySmall)
+    button.icon = .Icons.Buttons.Header.swipe
+    button.iconPosition = .right
+    button.iconImageView.tintColor = .Icon.secondary
+    return button
+  }()
+  
   var amountWidthLimit: CGFloat {
     bounds.width - .inputContainerSideSpacing * 2
   }
@@ -94,6 +102,7 @@ private extension EnterAmountView {
   func setup() {
     addSubview(centerContainer)
     addSubview(bottomContainer)
+    addSubview(tokenSelectionButton)
     
     centerContainer.addSubview(inputContainer)
     centerContainer.addSubview(secondaryCurrencyButton)
@@ -114,8 +123,12 @@ private extension EnterAmountView {
     maxButton.translatesAutoresizingMaskIntoConstraints = false
     remainingLabel.translatesAutoresizingMaskIntoConstraints = false
     secondaryCurrencyButton.translatesAutoresizingMaskIntoConstraints = false
+    tokenSelectionButton.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
+      tokenSelectionButton.topAnchor.constraint(equalTo: topAnchor, constant: 16),
+      tokenSelectionButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+      
       centerContainer.topAnchor.constraint(equalTo: topAnchor),
       centerContainer.leftAnchor.constraint(equalTo: leftAnchor),
       centerContainer.rightAnchor.constraint(equalTo: rightAnchor)

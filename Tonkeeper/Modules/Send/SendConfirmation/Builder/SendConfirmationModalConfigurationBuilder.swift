@@ -9,6 +9,7 @@ import Foundation
 
 struct SendConfirmationModalConfigurationBuilder {
   static func configuration(title: String,
+                            image: Image,
                             recipient: String? = nil,
                             recipientAddress: String,
                             amount: String,
@@ -21,7 +22,7 @@ struct SendConfirmationModalConfigurationBuilder {
                             completion: ((Bool) -> Void)? = nil
   ) -> ModalContentViewController.Configuration {
     let header = ModalContentViewController.Configuration.Header(
-      image: .image(image: nil, tintColor: .Accent.blue, backgroundColor: .Accent.blue),
+      image: image,
       title: title,
       topDescription: .description
     )

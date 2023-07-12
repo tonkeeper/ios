@@ -44,18 +44,13 @@ extension ModalContentViewController {
     }
     
     struct Header {
-      enum Image {
-        case none
-        case image(image: UIImage?, tintColor: UIColor, backgroundColor: UIColor)
-      }
-      
-      let image: Image
+      let image: Image?
       let title: String?
       let topDescription: String?
       let bottomDescription: String?
       let fixBottomDescription: String?
       
-      init(image: Image,
+      init(image: Image?,
            title: String?,
            topDescription: String? = nil,
            bottomDescription: String? = nil,

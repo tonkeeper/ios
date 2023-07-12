@@ -9,6 +9,6 @@ import UIKit
 
 enum Image: Equatable, Hashable {
   case url(URL?)
-  case image(UIImage?, backgroundColor: UIColor?)
+  case image(UIImage?, tinColor: UIColor?, backgroundColor: UIColor?)
 }
 

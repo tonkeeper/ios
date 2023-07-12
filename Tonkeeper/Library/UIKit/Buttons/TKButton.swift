@@ -124,6 +124,7 @@ final class TKButton: UIControlClosure {
     set {
       titleLabel.text = newValue
       updateContentSpacing()
+      invalidateIntrinsicContentSize()
     }
   }
   
@@ -134,6 +135,7 @@ final class TKButton: UIControlClosure {
     set {
       iconImageView.image = newValue
       updateContentSpacing()
+      invalidateIntrinsicContentSize()
     }
   }
   
