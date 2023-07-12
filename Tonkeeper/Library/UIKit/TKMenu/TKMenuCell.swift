@@ -10,7 +10,13 @@ import SwiftUI
 
 final class TKMenuCell: UITableViewCell, ConfigurableView {
   
-  let iconImageView = UIImageView()
+  let iconImageView: UIImageView = {
+    let imageView = UIImageView()
+    imageView.contentMode = .scaleAspectFit
+    imageView.tintColor = .Icon.primary
+    imageView.layer.masksToBounds = true
+    return imageView
+  }()
   let leftLabel: UILabel = {
     let label = UILabel()
     label.applyTextStyleFont(.label1)
@@ -43,6 +49,10 @@ final class TKMenuCell: UITableViewCell, ConfigurableView {
     return stackView
   }()
   
+  private let iconContainer = UIView()
+  
+  weak var imageLoader: ImageLoader?
+  
   override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
     super.init(style: style, reuseIdentifier: reuseIdentifier)
     setup()
@@ -56,6 +66,20 @@ final class TKMenuCell: UITableViewCell, ConfigurableView {
     leftLabel.text = model.leftTitle
     rightLabel.text = model.rightTitle
     tickImageView.alpha = model.isSelected ? 1 : 0
+    switch model.icon {
+    case let .image(image, backgroundColor):
+      iconImageView.image = image
+      iconImageView.backgroundColor = backgroundColor
+    case let .url(url):
+      imageLoader?.loadImage(imageURL: url, imageView: iconImageView, size: .init(width: .iconSide, height: .iconSide))
+    }
+  }
+  
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    
+    iconImageView.layoutIfNeeded()
+    iconImageView.layer.cornerRadius = iconImageView.bounds.width/2
   }
 }
 
@@ -68,7 +92,8 @@ private extension TKMenuCell {
     self.selectedBackgroundView = selectedBackgroundView
     
     contentView.addSubview(stackView)
-    stackView.addArrangedSubview(iconImageView)
+    iconContainer.addSubview(iconImageView)
+    stackView.addArrangedSubview(iconContainer)
     stackView.addArrangedSubview(leftLabel)
     stackView.addArrangedSubview(rightLabel)
     stackView.addArrangedSubview(tickImageView)
@@ -79,7 +104,7 @@ private extension TKMenuCell {
   func setupConstraints() {
     leftLabel.setContentHuggingPriority(.required, for: .horizontal)
     leftLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
-    tickImageView.setContentHuggingPriority(.required, for: .horizontal)
+    iconContainer.setContentHuggingPriority(.required, for: .horizontal)
     
     stackView.translatesAutoresizingMaskIntoConstraints = false
     iconImageView.translatesAutoresizingMaskIntoConstraints = false
@@ -93,7 +118,13 @@ private extension TKMenuCell {
         .withPriority(.defaultHigh),
       
       iconImageView.widthAnchor.constraint(equalToConstant: .iconSide),
-      tickImageView.widthAnchor.constraint(equalToConstant: .tickSide)
+      iconImageView.heightAnchor.constraint(equalToConstant: .iconSide),
+      iconImageView.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
+      iconImageView.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
+      
+      tickImageView.widthAnchor.constraint(equalToConstant: .tickSide),
+      
+      iconContainer.widthAnchor.constraint(equalToConstant: .iconSide)
     ])
   }
 }

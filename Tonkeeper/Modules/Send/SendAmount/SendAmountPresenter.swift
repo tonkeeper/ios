@@ -78,7 +78,7 @@ extension SendAmountPresenter: SendAmountPresenterInput {
   func didTapSelectTokenButton() {
     let listModel = sendInputController.tokenListModel()
     let menuItems = listModel.tokens.enumerated().map {
-      TKMenuItem(icon: .image(nil, backgroundColor: nil),
+      TKMenuItem(icon: .with(image: $0.element.icon),
                  leftTitle: $0.element.code,
                  rightTitle: $0.element.amount,
                  isSelected: $0.offset == listModel.selectedIndex)

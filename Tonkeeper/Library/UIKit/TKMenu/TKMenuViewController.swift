@@ -15,6 +15,7 @@ final class TKMenuViewController: UIViewController {
   private let tableView = UITableView(frame: .zero, style: .plain)
   private let tableContainer = UIView()
   private let dismissView = UIView()
+  private let imageLoader = NukeImageLoader()
   
   private let items: [TKMenuItem]
   private let origin: CGPoint
@@ -79,7 +80,8 @@ final class TKMenuViewController: UIViewController {
     UIView.animate(withDuration: duration,
                    delay: 0,
                    usingSpringWithDamping: 2,
-                   initialSpringVelocity: 0.5) {
+                   initialSpringVelocity: 0.5,
+                   options: .curveEaseInOut) {
       self.tableContainer.frame = containerFinalFrame
       self.tableContainer.alpha = 1
     }
@@ -90,7 +92,8 @@ final class TKMenuViewController: UIViewController {
     UIView.animate(withDuration: duration,
                    delay: 0,
                    usingSpringWithDamping: 2,
-                   initialSpringVelocity: 0.5) {
+                   initialSpringVelocity: 0.5,
+                   options: .curveEaseInOut) {
       self.tableContainer.frame = finalFrame
       self.tableContainer.alpha = .hideAlpha
     } completion: { _ in
@@ -114,6 +117,7 @@ extension TKMenuViewController: UITableViewDataSource {
       return UITableViewCell()
     }
     
+    cell.imageLoader = imageLoader
     cell.configure(model: items[indexPath.row])
     return cell
   }
