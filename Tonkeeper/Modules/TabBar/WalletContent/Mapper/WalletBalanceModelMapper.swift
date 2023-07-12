@@ -51,8 +51,8 @@ private extension WalletBalanceModelMapper {
 extension Image {
   static func with(image: WalletCore.Image) -> Image {
     switch image {
-    case .ton: return .image(.Icons.tonIcon28, backgroundColor: .Constant.tonBlue)
-    case .oldWallet: return .image(.Icons.tonIcon28, backgroundColor: .Button.tertiaryBackground)
+    case .ton: return .image(.Icons.tonIcon, tinColor: .Icon.primary, backgroundColor: .Constant.tonBlue)
+    case .oldWallet: return .image(.Icons.tonIcon, tinColor: .Icon.primary, backgroundColor: .Button.tertiaryBackground)
     case let .url(url): return .url(url)
     }
   }

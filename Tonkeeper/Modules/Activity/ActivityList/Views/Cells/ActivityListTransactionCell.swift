@@ -81,7 +81,7 @@ final class ActivityListTransactionCell: ContainerCollectionViewCell<Transaction
     )
     let contentModel = DefaultCellContentView.Model(
       textContentModel: textContentModel,
-      image: .image(model.icon, backgroundColor: .Background.content)
+      image: .image(model.icon, tinColor: .Icon.secondary, backgroundColor: .Background.contentTint)
     )
     var statusModel: TransactionCellContentView.TransactionCellStatusView.Model?
     if model.isFailed {

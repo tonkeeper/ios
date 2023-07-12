@@ -19,7 +19,7 @@ struct ActivityTransactionDetailsBuilder {
                             tapAction: (( @escaping (Bool) -> Void ) -> Void)? = nil
   ) -> ModalContentViewController.Configuration {
     let header = ModalContentViewController.Configuration.Header(
-      image: .none,
+      image: nil,
       title: title,
       bottomDescription: description,
       fixBottomDescription: fixDescription

@@ -12,7 +12,7 @@ final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectio
   let textContentView = DefaultCellTextContentView()
   let imageView: UIImageView = {
     let imageView = UIImageView()
-    imageView.contentMode = .center
+    imageView.contentMode = .scaleAspectFit
     imageView.tintColor = .Icon.primary
     return imageView
   }()
@@ -60,8 +60,9 @@ final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectio
   func configure(model: Model) {
     textContentView.configure(model: model.textContentModel)
     switch model.image {
-    case let .image(image, backgroundColor):
+    case let .image(image, tinColor, backgroundColor):
       imageView.image = image
+      imageView.tintColor = tinColor
       imageView.backgroundColor = backgroundColor
     case let .url(url):
       imageLoader?.loadImage(imageURL: url, imageView: imageView, size: .init(width: .imageViewSide, height: .imageViewSide))

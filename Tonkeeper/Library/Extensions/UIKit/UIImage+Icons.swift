@@ -212,5 +212,9 @@ extension UIImage {
     static var tonIcon128: UIImage? {
       .init(named: "Icons/128/ic-logo-128")?.withRenderingMode(.alwaysTemplate)
     }
+    
+    static var tonIcon: UIImage? {
+      .init(named: "Icons/44/ic-ton-44")?.withRenderingMode(.alwaysTemplate)
+    }
   }
 }

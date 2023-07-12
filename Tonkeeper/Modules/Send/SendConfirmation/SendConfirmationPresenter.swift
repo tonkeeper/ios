@@ -51,6 +51,7 @@ private extension SendConfirmationPresenter {
     let model = transactionModel.tokenModel
     let configuration = SendConfirmationModalConfigurationBuilder.configuration(
       title: model.title,
+      image: .with(image: model.image),
       recipient: nil,
       recipientAddress: model.address,
       amount: model.amountToken,

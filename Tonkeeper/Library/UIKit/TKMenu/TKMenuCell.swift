@@ -67,9 +67,10 @@ final class TKMenuCell: UITableViewCell, ConfigurableView {
     rightLabel.text = model.rightTitle
     tickImageView.alpha = model.isSelected ? 1 : 0
     switch model.icon {
-    case let .image(image, backgroundColor):
+    case let .image(image, tintColor, backgroundColor):
       iconImageView.image = image
       iconImageView.backgroundColor = backgroundColor
+      iconImageView.tintColor = tintColor
     case let .url(url):
       imageLoader?.loadImage(imageURL: url, imageView: iconImageView, size: .init(width: .iconSide, height: .iconSide))
     }
