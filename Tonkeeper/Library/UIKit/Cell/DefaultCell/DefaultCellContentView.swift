@@ -12,7 +12,7 @@ final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectio
   let textContentView = DefaultCellTextContentView()
   let imageView: UIImageView = {
     let imageView = UIImageView()
-    imageView.contentMode = .scaleAspectFit
+    imageView.contentMode = .center
     imageView.tintColor = .Icon.primary
     return imageView
   }()
