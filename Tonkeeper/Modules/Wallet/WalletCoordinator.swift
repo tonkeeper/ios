@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import WalletCore
 
 final class WalletCoordinator: Coordinator<NavigationRouter> {
   
@@ -63,6 +64,10 @@ extension WalletCoordinator: WalletRootModuleOutput {
     router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
       self?.removeChild(coordinator!)
     })
+  }
+  
+  func didSelectToken(_ token: WalletBalanceModel.Token) {
+    
   }
 }
 

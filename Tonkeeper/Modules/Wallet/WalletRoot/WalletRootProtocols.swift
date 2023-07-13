@@ -6,12 +6,14 @@
 //
 
 import Foundation
+import WalletCore
 
 protocol WalletRootModuleOutput: AnyObject {
   func openQRScanner()
   func openSend(address: String?)
   func openReceive(address: String)
   func openBuy()
+  func didSelectToken(_ token: WalletBalanceModel.Token)
 }
 
 protocol WalletRootPresenterInput {

@@ -55,6 +55,10 @@ extension WalletRootPresenter: WalletRootPresenterInput {
 // MARK: - Private
 
 private extension WalletRootPresenter {
+  func updateTitle() {
+    headerInput?.updateTitle("Wallet")
+  }
+  
   func getBalanceFromCache() {
     do {
       let cachedWalletState = try walletBalanceController.getWalletBalance()
@@ -130,8 +134,8 @@ extension WalletRootPresenter: WalletContentModuleOutput {
     return pageContentProvider.factory(page, output)
   }
   
-  func updateTitle() {
-    headerInput?.updateTitle("Wallet")
+  func didSelectToken(token: WalletBalanceModel.Token) {
+    output?.didSelectToken(token)
   }
 }
 

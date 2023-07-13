@@ -54,7 +54,17 @@ extension WalletContentPresenter: WalletContentModuleInput {
 // MARK: - WalletContentPageOutputMediator
 
 extension WalletContentPresenter: WalletContentPageOutput {
-  func walletContentPageInput(_ input: WalletContentPageInput, didSelectItemAt indexPath: IndexPath) {}
+  func walletContentPageInput(_ input: WalletContentPageInput, didSelectItemAt indexPath: IndexPath) {
+    guard let pageIndex = pageInputs.firstIndex(where: { $0 === input }) else { return }
+    let section = pages[pageIndex].sections[indexPath.section]
+    switch section {
+    case .token(let tokens):
+      let token = tokens[indexPath.item]
+      output?.didSelectToken(token: token)
+    case .collectibles:
+      break
+    }
+  }
 }
 
 // MARK: - Private
