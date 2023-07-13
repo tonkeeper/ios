@@ -8,18 +8,26 @@
 import UIKit
 import WalletCore
 
+struct PageContentProvider {
+  let factory: (_ page: WalletContentPage, _ output: WalletContentPageOutputMediator) -> (PagingContentContainer, WalletContentPageInput)
+  
+  init(factory: @escaping (WalletContentPage, _ output: WalletContentPageOutputMediator) -> (PagingContentContainer, WalletContentPageInput)) {
+    self.factory = factory
+  }
+}
+
 final class WalletRootPresenter {
   
-  private let pagingContentFactory: (WalletContentPage) -> PagingContent
   private let keeperController: KeeperController
   private let walletBalanceController: WalletBalanceController
+  private let pageContentProvider: PageContentProvider
   
   init(keeperController: KeeperController,
        walletBalanceController: WalletBalanceController,
-       pagingContentFactory: @escaping (WalletContentPage) -> PagingContent) {
+       pageContentProvider: PageContentProvider) {
     self.keeperController = keeperController
     self.walletBalanceController = walletBalanceController
-    self.pagingContentFactory = pagingContentFactory
+    self.pageContentProvider = pageContentProvider
   }
   
   // MARK: - Module
@@ -117,8 +125,9 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
 // MARK: - WalletContentModuleOutput
 
 extension WalletRootPresenter: WalletContentModuleOutput {
-  func getPagingContent(page: WalletContentPage) -> PagingContent {
-    return pagingContentFactory(page)
+  
+  func getPageContent(page: WalletContentPage, output: WalletContentPageOutputMediator) -> (PagingContent, WalletContentPageInput) {
+    return pageContentProvider.factory(page, output)
   }
   
   func updateTitle() {

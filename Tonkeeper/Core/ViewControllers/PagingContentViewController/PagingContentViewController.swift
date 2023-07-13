@@ -14,10 +14,31 @@ protocol PagingContentViewControllerDelegate: AnyObject {
                                 didUpdateContentHeightAt index: Int)
 }
 
-protocol PagingContent: UIViewController {
+protocol PagingContent: AnyObject {
   var itemTitle: String? { get }
   var contentHeight: CGFloat { get }
   var didChangeContentHeight: (() -> Void)? { get set  }
+  var viewController: UIViewController & PagingContent { get }
+}
+
+extension PagingContent where Self: UIViewController {
+  var viewController: UIViewController & PagingContent { self }
+}
+
+final class PagingContentContainer: PagingContent {
+  let pageContentViewController: UIViewController & PagingContent
+  
+  init(pageContentViewController: UIViewController & PagingContent) {
+    self.pageContentViewController = pageContentViewController
+  }
+  
+  var itemTitle: String? { pageContentViewController.itemTitle }
+  var contentHeight: CGFloat { pageContentViewController.contentHeight }
+  var didChangeContentHeight: (() -> Void)? {
+    get { pageContentViewController.didChangeContentHeight }
+    set { pageContentViewController.didChangeContentHeight = newValue }
+  }
+  var viewController: UIViewController & PagingContent { pageContentViewController }
 }
 
 protocol PagingScrollableContent: PagingContent {
@@ -165,7 +186,7 @@ extension PagingContentViewController: PageViewControllerDataSource {
   }
   
   func pageViewController(_ pageViewController: PageViewController, viewControllerAt index: Int) -> UIViewController {
-    contentViewControllers[index]
+    contentViewControllers[index].viewController
   }
 }
 

@@ -8,12 +8,15 @@
 
 import Foundation
 
-protocol TokensListModuleOutput: AnyObject {}
+protocol TokensListModuleOutput: AnyObject {
+  func tokensListModuleInput(_ tokensList: TokensListModuleInput, didSelectItemAt indexPath: IndexPath)
+}
 
-protocol TokensListModuleInput: AnyObject {}
+protocol TokensListModuleInput: WalletContentPageInput {}
 
 protocol TokensListPresenterInput {
   func viewDidLoad()
+  func didSelectItemAt(indexPath: IndexPath)
 }
 
 protocol TokensListViewInput: AnyObject {

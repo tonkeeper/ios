@@ -15,6 +15,8 @@ final class WalletContentPresenter {
   
   weak var viewInput: WalletContentViewInput?
   weak var output: WalletContentModuleOutput?
+  private var pageOutputMediator = WalletContentPageOutputMediator()
+  private var pageInputs = [WalletContentPageInput]()
   
   // MARK: - Dependencies
   
@@ -36,7 +38,9 @@ final class WalletContentPresenter {
 // MARK: - WalletContentPresenterIntput
 
 extension WalletContentPresenter: WalletContentPresenterInput {
-  func viewDidLoad() {}
+  func viewDidLoad() {
+    pageOutputMediator.output = self
+  }
 }
 
 // MARK: - WalletContentModuleInput
@@ -47,20 +51,24 @@ extension WalletContentPresenter: WalletContentModuleInput {
   }
 }
 
-// MARK: - TokensListModuleInput
+// MARK: - WalletContentPageOutputMediator
 
-extension WalletContentPresenter: TokensListModuleOutput {}
+extension WalletContentPresenter: WalletContentPageOutput {
+  func walletContentPageInput(_ input: WalletContentPageInput, didSelectItemAt indexPath: IndexPath) {}
+}
 
 // MARK: - Private
 
 private extension WalletContentPresenter {
   func reloadData() {
     let pages = walletBalanceModelMapper.map(pages: pages)
+    pageInputs = []
     
-    let contentPages = pages.compactMap {
-      output?.getPagingContent(page: $0)
+    let contentPages = pages.compactMap { page -> PagingContent? in
+      guard let contentPage = output?.getPageContent(page: page, output: pageOutputMediator) else { return nil }
+      pageInputs.append(contentPage.1)
+      return contentPage.0
     }
-  
     viewInput?.updateContentPages(contentPages)
   }
 }

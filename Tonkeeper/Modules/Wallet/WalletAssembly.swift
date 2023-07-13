@@ -33,17 +33,17 @@ struct WalletAssembly {
     self.buyAssembly = buyAssembly
   }
   
-  func walletRootModule(output: WalletRootModuleOutput,
-                        tokensListModuleOutput: TokensListModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = WalletRootPresenter(
-      keeperController: walletCoreAssembly.keeperController,
-      walletBalanceController: walletCoreAssembly.balanceController
-    ) { page in
-      let module = tokensListModule(page: page, output: tokensListModuleOutput)
-      return module.view
-    }
+  func walletRootModule(output: WalletRootModuleOutput) -> Module<UIViewController, Void> {    
+    let presenter = WalletRootPresenter(keeperController: walletCoreAssembly.keeperController,
+                                        walletBalanceController: walletCoreAssembly.balanceController,
+                                        pageContentProvider: .init(factory: { page, output in
+      let module = tokensListModule(page: page, output: output)
+      return (PagingContentContainer(pageContentViewController: module.view),
+              module.input)
+    }))
+  
     presenter.output = output
-    
+        
     let headerModule = walletHeaderModule(output: presenter)
     presenter.headerInput = headerModule.input
     
@@ -70,6 +70,7 @@ struct WalletAssembly {
                                                   imageLoader: NukeImageLoader())
     viewController.title = page.title
     presenter.viewInput = viewController
+    presenter.output = output
     return Module(view: viewController, input: presenter)
   }
   

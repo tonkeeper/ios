@@ -24,8 +24,7 @@ final class WalletCoordinator: Coordinator<NavigationRouter> {
 
 private extension WalletCoordinator {
   func openWalletRoot() {
-    let module = walletAssembly.walletRootModule(output: self,
-                                                 tokensListModuleOutput: self)
+    let module = walletAssembly.walletRootModule(output: self)
     router.setPresentables([(module.view, nil)])
   }
 }
@@ -88,12 +87,6 @@ extension WalletCoordinator: QRScannerModuleOutput {
       }
     }
   }
-}
-
-// MARK: - TokensListModuleOutput
-
-extension WalletCoordinator: TokensListModuleOutput {
-  
 }
 
 // MARK: - SendCoordinatorOutput
