@@ -36,6 +36,7 @@
 		7D1162FD2A60379D00DF4F30 /* WalletTokenDetailsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1162FC2A60379D00DF4F30 /* WalletTokenDetailsCoordinator.swift */; };
 		7D1163002A60381300DF4F30 /* WalletTokenDetailsAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1162FF2A60381300DF4F30 /* WalletTokenDetailsAssembly.swift */; };
 		7D1163042A603B6A00DF4F30 /* TokenDetailsAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1163032A603B6A00DF4F30 /* TokenDetailsAssembly.swift */; };
+		7D1163122A616CC400DF4F30 /* TokenDetailsHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1163112A616CC400DF4F30 /* TokenDetailsHeaderView.swift */; };
 		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
@@ -308,6 +309,7 @@
 		7D1162FC2A60379D00DF4F30 /* WalletTokenDetailsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletTokenDetailsCoordinator.swift; sourceTree = "<group>"; };
 		7D1162FF2A60381300DF4F30 /* WalletTokenDetailsAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletTokenDetailsAssembly.swift; sourceTree = "<group>"; };
 		7D1163032A603B6A00DF4F30 /* TokenDetailsAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenDetailsAssembly.swift; sourceTree = "<group>"; };
+		7D1163112A616CC400DF4F30 /* TokenDetailsHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenDetailsHeaderView.swift; sourceTree = "<group>"; };
 		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D143C3C2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SuccessViewController+Configuration.swift"; sourceTree = "<group>"; };
@@ -690,6 +692,14 @@
 				7D1162FF2A60381300DF4F30 /* WalletTokenDetailsAssembly.swift */,
 			);
 			path = WalletTokenDetails;
+			sourceTree = "<group>";
+		};
+		7D1163102A616CA500DF4F30 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D1163112A616CC400DF4F30 /* TokenDetailsHeaderView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		7D13B24D3B53384824E51AA9 /* WalletContent */ = {
@@ -1787,6 +1797,7 @@
 		E15A4D816E375EC6F055D7F0 /* TokenDetails */ = {
 			isa = PBXGroup;
 			children = (
+				7D1163102A616CA500DF4F30 /* Views */,
 				C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */,
 				8BB3CFCBC7CE604AC87B3E7A /* TokenDetailsView.swift */,
 				A11E39BAB09CFAC56EA2F4E0 /* TokenDetailsPresenter.swift */,
@@ -1960,6 +1971,7 @@
 				7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */,
 				7D3BCFAC2A4C598C00BE6AD9 /* AppSettings.swift in Sources */,
 				7D9292FE2A29DCDA005B83DF /* SendRecipientProtocols.swift in Sources */,
+				7D1163122A616CC400DF4F30 /* TokenDetailsHeaderView.swift in Sources */,
 				7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */,
 				7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */,
 				7D3BCFB92A4C99A300BE6AD9 /* ImportWalletAssembly.swift in Sources */,
