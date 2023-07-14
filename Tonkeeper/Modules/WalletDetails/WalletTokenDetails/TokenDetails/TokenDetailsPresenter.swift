@@ -32,6 +32,7 @@ final class TokenDetailsPresenter {
 extension TokenDetailsPresenter: TokenDetailsPresenterInput {
   func viewDidLoad() {
     updateHeader()
+    refreshContent()
   }
   
   func didPullToRefresh() {
