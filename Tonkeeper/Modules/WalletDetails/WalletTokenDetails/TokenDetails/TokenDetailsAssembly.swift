@@ -6,13 +6,17 @@
 //
 
 import UIKit
+import WalletCore
 
 struct TokenDetailsAssembly {
-  static func module(output: TokenDetailsModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = TokenDetailsPresenter()
+  static func module(output: TokenDetailsModuleOutput,
+                     tokenDetailsController: WalletCore.TokenDetailsController,
+                     imageLoader: ImageLoader) -> Module<UIViewController, Void> {
+    let presenter = TokenDetailsPresenter(tokenDetailsController: tokenDetailsController)
     presenter.output = output
     
-    let viewController = TokenDetailsViewController(presenter: presenter)
+    let viewController = TokenDetailsViewController(presenter: presenter,
+                                                    imageLoader: imageLoader)
     presenter.viewInput = viewController
     
     return Module(view: viewController, input: Void())

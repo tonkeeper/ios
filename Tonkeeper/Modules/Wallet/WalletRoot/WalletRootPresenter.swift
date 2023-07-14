@@ -134,8 +134,8 @@ extension WalletRootPresenter: WalletContentModuleOutput {
     return pageContentProvider.factory(page, output)
   }
   
-  func didSelectToken(token: WalletBalanceModel.Token) {
-    output?.didSelectToken(token)
+  func didSelectItem(item: WalletItemViewModel) {
+    output?.didSelectItem(item)
   }
 }
 

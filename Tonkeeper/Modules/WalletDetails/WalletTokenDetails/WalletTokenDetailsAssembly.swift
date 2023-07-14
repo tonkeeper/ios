@@ -9,9 +9,16 @@ import Foundation
 import WalletCore
 
 final class WalletTokenDetailsAssembly {
-  func coordinator(token: WalletBalanceModel.Token,
+  let walletCoreAssembly: WalletCoreAssembly
+  
+  init(walletCoreAssembly: WalletCoreAssembly) {
+    self.walletCoreAssembly = walletCoreAssembly
+  }
+  
+  func coordinator(token: Token,
                    router: NavigationRouter) -> WalletTokenDetailsCoordinator {
     return WalletTokenDetailsCoordinator(token: token,
+                                         walletCoreAssembly: walletCoreAssembly,
                                          router: router)
   }
 }

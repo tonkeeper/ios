@@ -14,6 +14,11 @@ protocol TokenDetailsModuleInput: AnyObject {}
 
 protocol TokenDetailsPresenterInput {
   func viewDidLoad()
+  func didPullToRefresh()
 }
 
-protocol TokenDetailsViewInput: AnyObject {}
+protocol TokenDetailsViewInput: AnyObject {
+  func updateTitle(title: String)
+  func updateHeader(model: TokenDetailsHeaderView.Model)
+  func stopRefresh()
+}

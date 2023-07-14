@@ -13,7 +13,7 @@ protocol WalletRootModuleOutput: AnyObject {
   func openSend(address: String?)
   func openReceive(address: String)
   func openBuy()
-  func didSelectToken(_ token: WalletBalanceModel.Token)
+  func didSelectItem(_ item: WalletItemViewModel)
 }
 
 protocol WalletRootPresenterInput {

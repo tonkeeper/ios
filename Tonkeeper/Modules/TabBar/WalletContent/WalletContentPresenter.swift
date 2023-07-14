@@ -58,9 +58,9 @@ extension WalletContentPresenter: WalletContentPageOutput {
     guard let pageIndex = pageInputs.firstIndex(where: { $0 === input }) else { return }
     let section = pages[pageIndex].sections[indexPath.section]
     switch section {
-    case .token(let tokens):
-      let token = tokens[indexPath.item]
-      output?.didSelectToken(token: token)
+    case .token(let items):
+      let item = items[indexPath.item]
+      output?.didSelectItem(item: item)
     case .collectibles:
       break
     }

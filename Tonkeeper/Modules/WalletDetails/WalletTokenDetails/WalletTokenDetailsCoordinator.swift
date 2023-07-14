@@ -9,11 +9,16 @@ import UIKit
 import WalletCore
 
 final class WalletTokenDetailsCoordinator: Coordinator<NavigationRouter> {
-  let token: WalletBalanceModel.Token
   
-  init(token: WalletBalanceModel.Token,
+  private let walletCoreAssembly: WalletCoreAssembly
+  
+  let token: Token
+  
+  init(token: Token,
+       walletCoreAssembly: WalletCoreAssembly,
        router: NavigationRouter) {
     self.token = token
+    self.walletCoreAssembly = walletCoreAssembly
     super.init(router: router)
   }
   
@@ -24,7 +29,17 @@ final class WalletTokenDetailsCoordinator: Coordinator<NavigationRouter> {
 
 private extension WalletTokenDetailsCoordinator {
   func openTokenDetails() {
-    let module = TokenDetailsAssembly.module(output: self)
+    let tokenDetailsController: TokenDetailsController
+    switch token {
+    case .token(let tokenInfo):
+      tokenDetailsController = walletCoreAssembly.tokenDetailsTokenController(tokenInfo: tokenInfo)
+    case .ton:
+      tokenDetailsController = walletCoreAssembly.tokenDetailsTonController()
+    }
+    
+    let module = TokenDetailsAssembly.module(output: self,
+                                             tokenDetailsController: tokenDetailsController,
+                                             imageLoader: NukeImageLoader())
     module.view.setupBackButton()
     initialPresentable = module.view
   }

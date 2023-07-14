@@ -16,7 +16,7 @@ protocol WalletContentPageOutput: AnyObject {
 
 protocol WalletContentModuleOutput: AnyObject {
   func getPageContent(page: WalletContentPage, output: WalletContentPageOutputMediator) -> (PagingContent, WalletContentPageInput)
-  func didSelectToken(token: WalletBalanceModel.Token)
+  func didSelectItem(item: WalletItemViewModel)
 }
 
 protocol WalletContentModuleInput: AnyObject {

@@ -31,6 +31,14 @@ final class WalletCoreAssembly {
     walletCoreContainer.sendController()
   }
   
+  func tokenDetailsTonController() -> TokenDetailsController {
+    walletCoreContainer.tokenDetailsTonController()
+  }
+  
+  func tokenDetailsTokenController(tokenInfo: TokenInfo) -> TokenDetailsController {
+    walletCoreContainer.tokenDetailsTokenController(tokenInfo: tokenInfo)
+  }
+  
   var deeplinkParser: DeeplinkParser {
     walletCoreContainer.deeplinkParser()
   }

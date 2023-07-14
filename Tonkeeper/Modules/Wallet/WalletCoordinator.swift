@@ -28,6 +28,24 @@ private extension WalletCoordinator {
     let module = walletAssembly.walletRootModule(output: self)
     router.setPresentables([(module.view, nil)])
   }
+  
+  func openTokenDetails(token: Token) {
+    let coordinator = walletAssembly
+      .walletTokenDetailsAssembly
+      .coordinator(token: token, router: router)
+    addChild(coordinator)
+    coordinator.start()
+    
+    guard let initialPresentable = coordinator.initialPresentable else { return }
+    router.push(presentable: initialPresentable, dismiss: { [weak self, weak coordinator] in
+      guard let self = self, let coordinator = coordinator else { return }
+      self.removeChild(coordinator)
+    })
+  }
+  
+  func openOldWalletMigration() {
+    
+  }
 }
 
 // MARK: - WalletRootModuleOutput
@@ -66,18 +84,15 @@ extension WalletCoordinator: WalletRootModuleOutput {
     })
   }
   
-  func didSelectToken(_ token: WalletBalanceModel.Token) {
-    let coordinator = walletAssembly
-      .walletTokenDetailsAssembly
-      .coordinator(token: token, router: router)
-    addChild(coordinator)
-    coordinator.start()
-    
-    guard let initialPresentable = coordinator.initialPresentable else { return }
-    router.push(presentable: initialPresentable, dismiss: { [weak self, weak coordinator] in
-      guard let self = self, let coordinator = coordinator else { return }
-      self.removeChild(coordinator)
-    })
+  func didSelectItem(_ item: WalletItemViewModel) {
+    switch item.type {
+    case .old:
+      openOldWalletMigration()
+    case .token(let tokenInfo):
+      openTokenDetails(token: .token(tokenInfo))
+    case .ton:
+      openTokenDetails(token: .ton)
+    }
   }
 }
 

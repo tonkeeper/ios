@@ -12,11 +12,11 @@ struct WalletAssembly {
   
   let walletCoreAssembly: WalletCoreAssembly
   
-  private let qrScannerAssembly: QRScannerAssembly
-  private let sendAssembly: SendAssembly
-  private let receiveAssembly: ReceiveAssembly
-  private let buyAssembly: BuyAssembly
-  let walletTokenDetailsAssembly = WalletTokenDetailsAssembly()
+  let qrScannerAssembly: QRScannerAssembly
+  let sendAssembly: SendAssembly
+  let receiveAssembly: ReceiveAssembly
+  let buyAssembly: BuyAssembly
+  let walletTokenDetailsAssembly: WalletTokenDetailsAssembly
   
   private var walletBalanceModelMapper: WalletBalanceModelMapper {
     WalletBalanceModelMapper()
@@ -32,6 +32,7 @@ struct WalletAssembly {
     self.sendAssembly = sendAssembly
     self.receiveAssembly = receiveAssembly
     self.buyAssembly = buyAssembly
+    self.walletTokenDetailsAssembly = WalletTokenDetailsAssembly(walletCoreAssembly: walletCoreAssembly)
   }
   
   func walletRootModule(output: WalletRootModuleOutput) -> Module<UIViewController, Void> {    
