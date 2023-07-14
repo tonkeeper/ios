@@ -67,7 +67,17 @@ extension WalletCoordinator: WalletRootModuleOutput {
   }
   
   func didSelectToken(_ token: WalletBalanceModel.Token) {
+    let coordinator = walletAssembly
+      .walletTokenDetailsAssembly
+      .coordinator(token: token, router: router)
+    addChild(coordinator)
+    coordinator.start()
     
+    guard let initialPresentable = coordinator.initialPresentable else { return }
+    router.push(presentable: initialPresentable, dismiss: { [weak self, weak coordinator] in
+      guard let self = self, let coordinator = coordinator else { return }
+      self.removeChild(coordinator)
+    })
   }
 }
 

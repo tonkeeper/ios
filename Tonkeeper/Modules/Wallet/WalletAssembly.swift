@@ -16,6 +16,7 @@ struct WalletAssembly {
   private let sendAssembly: SendAssembly
   private let receiveAssembly: ReceiveAssembly
   private let buyAssembly: BuyAssembly
+  let walletTokenDetailsAssembly = WalletTokenDetailsAssembly()
   
   private var walletBalanceModelMapper: WalletBalanceModelMapper {
     WalletBalanceModelMapper()
