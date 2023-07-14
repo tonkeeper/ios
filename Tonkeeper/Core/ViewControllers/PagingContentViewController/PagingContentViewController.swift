@@ -25,6 +25,10 @@ extension PagingContent where Self: UIViewController {
   var viewController: UIViewController & PagingContent { self }
 }
 
+protocol PagingScrollableContent: PagingContent {
+  var scrollView: UIScrollView { get }
+}
+
 final class PagingContentContainer: PagingContent {
   let pageContentViewController: UIViewController & PagingContent
   
@@ -39,10 +43,7 @@ final class PagingContentContainer: PagingContent {
     set { pageContentViewController.didChangeContentHeight = newValue }
   }
   var viewController: UIViewController & PagingContent { pageContentViewController }
-}
-
-protocol PagingScrollableContent: PagingContent {
-  var scrollView: UIScrollView { get }
+  
 }
 
 final class PagingContentViewController: UIViewController {
@@ -68,11 +69,11 @@ final class PagingContentViewController: UIViewController {
   }
   
   var scrollableContentViewControllers: [PagingScrollableContent] {
-    contentViewControllers.compactMap { $0 as? PagingScrollableContent }
+    contentViewControllers.compactMap { $0.viewController as? PagingScrollableContent }
   }
   
   var selectedScrollableContentViewController: PagingScrollableContent? {
-    selectedContentViewController as? PagingScrollableContent
+    selectedContentViewController.viewController as? PagingScrollableContent
   }
   
   var contentHeight: CGFloat {
@@ -122,7 +123,7 @@ private extension PagingContentViewController {
     
     guard !contentViewControllers.isEmpty else { return }
     
-    contentViewControllers.forEach { ($0 as? PagingScrollableContent)?.scrollView.isScrollEnabled = false }
+    contentViewControllers.forEach { ($0.viewController as? PagingScrollableContent)?.scrollView.isScrollEnabled = false }
     
     startObserveContentHeight(page: contentViewControllers[selectedIndex])
     startObserveContentOffset(page: contentViewControllers[selectedIndex])
@@ -161,7 +162,7 @@ private extension PagingContentViewController {
   }
   
   func startObserveContentOffset(page: PagingContent) {
-    guard let scrollablePage = page as? PagingScrollableContent else { return }
+    guard let scrollablePage = page.viewController as? PagingScrollableContent else { return }
     contentOffsetObserveToken = scrollablePage.scrollView.observe(\.contentOffset) { [weak self] scrollView, _ in
       guard let self = self else { return }
       self.headerView.separatorView.isHidden = scrollView.contentOffset.y <= 0
