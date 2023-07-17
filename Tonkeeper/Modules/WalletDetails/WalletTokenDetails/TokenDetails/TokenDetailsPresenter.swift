@@ -48,18 +48,34 @@ extension TokenDetailsPresenter: TokenDetailsModuleInput {}
 
 private extension TokenDetailsPresenter {
   func updateHeader() {
-    do {
-      let header = try tokenDetailsController.getTokenHeader()
-      let tokenDetailsHeaderViewModel = TokenDetailsHeaderView.Model(
-        amount: header.amount,
-        fiatAmount: header.fiatAmount,
-        fiatPrice: header.price,
-        image: .with(image: header.image))
-      viewInput?.updateTitle(title: header.name)
-      viewInput?.updateHeader(model: tokenDetailsHeaderViewModel)
-    } catch {
+    guard let header = try? tokenDetailsController.getTokenHeader() else { return }
+
+    let buttonsRowButtons: [ButtonsRowView.Model.ButtonModel] = header.buttons.map {
+      let buttonRowButtonType: ButtonsRowView.Model.ButtonType
+      switch $0 {
+      case .buy:
+        buttonRowButtonType = .buy
+      case .send:
+        buttonRowButtonType = .send
+      case .receive:
+        buttonRowButtonType = .receive
+      case .swap:
+        buttonRowButtonType = .swap
+      }
       
+      return ButtonsRowView.Model.ButtonModel(type: buttonRowButtonType) { [weak self] in
+        self?.handleButtonsRowButtonAction(type: buttonRowButtonType)
+      }
     }
+    
+    let tokenDetailsHeaderViewModel = TokenDetailsHeaderView.Model(
+      amount: header.amount,
+      fiatAmount: header.fiatAmount,
+      fiatPrice: header.price,
+      image: .with(image: header.image),
+      buttonRowModel: .init(buttons: buttonsRowButtons))
+    viewInput?.updateTitle(title: header.name)
+    viewInput?.updateHeader(model: tokenDetailsHeaderViewModel)
   }
   
   func refreshContent() {
@@ -76,5 +92,9 @@ private extension TokenDetailsPresenter {
         }
       }
     }
+  }
+  
+  func handleButtonsRowButtonAction(type: ButtonsRowView.Model.ButtonType) {
+    
   }
 }

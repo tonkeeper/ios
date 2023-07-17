@@ -38,7 +38,7 @@ final class WalletHeaderView: UIView, ConfigurableView {
     verticalSpacing: .constant(.topSpacing)
   )
   
-  let buttonsView = WalletHeaderButtonsView()
+  let buttonsView = ButtonsRowView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)

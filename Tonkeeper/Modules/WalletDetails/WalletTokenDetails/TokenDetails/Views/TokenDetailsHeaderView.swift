@@ -14,6 +14,7 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
     let fiatAmount: String?
     let fiatPrice: String?
     let image: Image
+    let buttonRowModel: ButtonsRowView.Model
   }
   
   let amountLabel: UILabel = {
@@ -47,6 +48,14 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
   }()
   
   let separatorView: UIView = {
+    let view = UIView()
+    view.backgroundColor = .Separator.common
+    return view
+  }()
+  
+  let buttonsRowView = ButtonsRowView()
+  
+  let buttonsSeparatorView: UIView = {
     let view = UIView()
     view.backgroundColor = .Separator.common
     return view
@@ -104,6 +113,8 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
     case let .url(url):
       imageLoader?.loadImage(imageURL: url, imageView: imageView, size: .init(width: .imageViewSide, height: .imageViewSide))
     }
+    
+    buttonsRowView.configure(model: model.buttonRowModel)
   }
   
   // MARK: - Layout
@@ -119,6 +130,8 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
 private extension TokenDetailsHeaderView {
   func setup() {
     addSubview(topContainer)
+    addSubview(buttonsRowView)
+    addSubview(buttonsSeparatorView)
     
     topContainer.addSubview(priceStackView)
     topContainer.addSubview(imageView)
@@ -142,6 +155,8 @@ private extension TokenDetailsHeaderView {
     priceStackView.translatesAutoresizingMaskIntoConstraints = false
     imageView.translatesAutoresizingMaskIntoConstraints = false
     separatorView.translatesAutoresizingMaskIntoConstraints = false
+    buttonsRowView.translatesAutoresizingMaskIntoConstraints = false
+    buttonsSeparatorView.translatesAutoresizingMaskIntoConstraints = false
     
     priceStackViewBottomConstraint = priceStackView.bottomAnchor.constraint(equalTo: separatorView.topAnchor,
                                                                             constant: -.topContainerBottomSpacing)
@@ -153,7 +168,16 @@ private extension TokenDetailsHeaderView {
       topContainer.topAnchor.constraint(equalTo: topAnchor),
       topContainer.leftAnchor.constraint(equalTo: leftAnchor),
       topContainer.rightAnchor.constraint(equalTo: rightAnchor),
-      topContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
+      
+      buttonsRowView.topAnchor.constraint(equalTo: topContainer.bottomAnchor, constant: .buttonsRowVerticalSpacing),
+      buttonsRowView.leftAnchor.constraint(equalTo: leftAnchor),
+      buttonsRowView.rightAnchor.constraint(equalTo: rightAnchor),
+      buttonsRowView.bottomAnchor.constraint(equalTo: buttonsSeparatorView.topAnchor, constant: -.buttonsRowVerticalSpacing),
+      
+      buttonsSeparatorView.leftAnchor.constraint(equalTo: leftAnchor),
+      buttonsSeparatorView.rightAnchor.constraint(equalTo: rightAnchor),
+      buttonsSeparatorView.bottomAnchor.constraint(equalTo: bottomAnchor),
+      buttonsSeparatorView.heightAnchor.constraint(equalToConstant: .separatorHeight),
       
       priceStackView.topAnchor.constraint(equalTo: topContainer.topAnchor, constant: .topContainerTopSpacing),
       priceStackView.leftAnchor.constraint(equalTo: topContainer.leftAnchor, constant: .topContainerSideSpacing),
@@ -181,4 +205,5 @@ private extension CGFloat {
   static let imageViewSide: CGFloat = 64
   static let separatorHeight: CGFloat = 0.5
   static let amountBottomSpacing: CGFloat = 2
+  static let buttonsRowVerticalSpacing: CGFloat = 16
 }

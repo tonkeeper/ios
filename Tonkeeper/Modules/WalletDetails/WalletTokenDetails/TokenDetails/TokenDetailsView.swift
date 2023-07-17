@@ -10,7 +10,7 @@ import UIKit
 
 final class TokenDetailsView: UIView {
   
-  let scrollView = UIScrollView()
+  let scrollView = NotDelayScrollView()
   let headerView = TokenDetailsHeaderView()
   let refreshControl = UIRefreshControl()
 

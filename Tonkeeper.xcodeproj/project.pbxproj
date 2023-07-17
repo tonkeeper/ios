@@ -112,7 +112,7 @@
 		7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928582A1F8092006B0A8A /* Button.Configuration+Plain.swift */; };
 		7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59285B2A1FA5FE006B0A8A /* IconButton.swift */; };
 		7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D59285D2A1FA75A006B0A8A /* Button.Configuration+Icon.swift */; };
-		7D5928612A1FB62A006B0A8A /* WalletHeaderButtonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928602A1FB62A006B0A8A /* WalletHeaderButtonsView.swift */; };
+		7D5928612A1FB62A006B0A8A /* ButtonsRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928602A1FB62A006B0A8A /* ButtonsRowView.swift */; };
 		7D5928652A1FB6C4006B0A8A /* UIControlClosure.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928642A1FB6C4006B0A8A /* UIControlClosure.swift */; };
 		7D5928672A1FBB56006B0A8A /* Button+ConfigurableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928662A1FBB56006B0A8A /* Button+ConfigurableView.swift */; };
 		7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928682A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift */; };
@@ -384,7 +384,7 @@
 		7D5928582A1F8092006B0A8A /* Button.Configuration+Plain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button.Configuration+Plain.swift"; sourceTree = "<group>"; };
 		7D59285B2A1FA5FE006B0A8A /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
 		7D59285D2A1FA75A006B0A8A /* Button.Configuration+Icon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button.Configuration+Icon.swift"; sourceTree = "<group>"; };
-		7D5928602A1FB62A006B0A8A /* WalletHeaderButtonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderButtonsView.swift; sourceTree = "<group>"; };
+		7D5928602A1FB62A006B0A8A /* ButtonsRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonsRowView.swift; sourceTree = "<group>"; };
 		7D5928642A1FB6C4006B0A8A /* UIControlClosure.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIControlClosure.swift; sourceTree = "<group>"; };
 		7D5928662A1FBB56006B0A8A /* Button+ConfigurableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Button+ConfigurableView.swift"; sourceTree = "<group>"; };
 		7D5928682A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IconButton+ConfigurableView.swift"; sourceTree = "<group>"; };
@@ -1056,7 +1056,6 @@
 			isa = PBXGroup;
 			children = (
 				7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */,
-				7D5928602A1FB62A006B0A8A /* WalletHeaderButtonsView.swift */,
 				7D92929C2A2608A0005B83DF /* WalletHeaderTitleView.swift */,
 			);
 			path = Views;
@@ -1386,6 +1385,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D849C222A6556CB005787E9 /* ButtonsRowView */,
 				7D49346F2A5C9F7D00F4BCA2 /* TKMenu */,
 				7DEE8E1B2A579808004D42B7 /* ActivityViewContainer */,
 				7D3BCFA62A4C3E1C00BE6AD9 /* Containers */,
@@ -1455,6 +1455,14 @@
 				7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */,
 			);
 			path = CurrencyWallet;
+			sourceTree = "<group>";
+		};
+		7D849C222A6556CB005787E9 /* ButtonsRowView */ = {
+			isa = PBXGroup;
+			children = (
+				7D5928602A1FB62A006B0A8A /* ButtonsRowView.swift */,
+			);
+			path = ButtonsRowView;
 			sourceTree = "<group>";
 		};
 		7D8EB71E2A4ED857005BE1B0 /* CreateWallet */ = {
@@ -2030,7 +2038,7 @@
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,
 				7D68366E2A1D6F1E002DBBC7 /* WalletRootView.swift in Sources */,
 				7D70D3C62A2A037F0096E1A2 /* CryptoCurrency.swift in Sources */,
-				7D5928612A1FB62A006B0A8A /* WalletHeaderButtonsView.swift in Sources */,
+				7D5928612A1FB62A006B0A8A /* ButtonsRowView.swift in Sources */,
 				7D9292E12A28A1F5005B83DF /* EnterAmountView.swift in Sources */,
 				7D92929B2A25F939005B83DF /* NSLayoutConstraint+Priority.swift in Sources */,
 				7D5928852A20CE3C006B0A8A /* TokensListCollectionController.swift in Sources */,
@@ -2302,7 +2310,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
-				DEVELOPMENT_TEAM = PLLDWT87ZL;
+				DEVELOPMENT_TEAM = YS34WB4Z9W;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
@@ -2336,7 +2344,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
-				DEVELOPMENT_TEAM = PLLDWT87ZL;
+				DEVELOPMENT_TEAM = YS34WB4Z9W;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
