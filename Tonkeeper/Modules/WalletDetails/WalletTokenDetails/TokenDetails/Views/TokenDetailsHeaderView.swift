@@ -46,6 +46,12 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
     return imageView
   }()
   
+  let separatorView: UIView = {
+    let view = UIView()
+    view.backgroundColor = .Separator.common
+    return view
+  }()
+  
   weak var imageLoader: ImageLoader?
   
   private let priceStackView: UIStackView = {
@@ -116,11 +122,14 @@ private extension TokenDetailsHeaderView {
     
     topContainer.addSubview(priceStackView)
     topContainer.addSubview(imageView)
+    topContainer.addSubview(separatorView)
     
     priceStackView.addArrangedSubview(amountLabel)
     priceStackView.addArrangedSubview(fiatAmountLabel)
     priceStackView.addArrangedSubview(fiatPriceTopSpacingView)
     priceStackView.addArrangedSubview(fiatPriceLabel)
+    
+    priceStackView.setCustomSpacing(.amountBottomSpacing, after: amountLabel)
     
     setupConstraints()
   }
@@ -132,11 +141,12 @@ private extension TokenDetailsHeaderView {
     topContainer.translatesAutoresizingMaskIntoConstraints = false
     priceStackView.translatesAutoresizingMaskIntoConstraints = false
     imageView.translatesAutoresizingMaskIntoConstraints = false
+    separatorView.translatesAutoresizingMaskIntoConstraints = false
     
-    priceStackViewBottomConstraint = priceStackView.bottomAnchor.constraint(equalTo: topContainer.bottomAnchor,
+    priceStackViewBottomConstraint = priceStackView.bottomAnchor.constraint(equalTo: separatorView.topAnchor,
                                                                             constant: -.topContainerBottomSpacing)
     
-    imageBottomConstraint = imageView.bottomAnchor.constraint(equalTo: topContainer.bottomAnchor,
+    imageBottomConstraint = imageView.bottomAnchor.constraint(equalTo: separatorView.topAnchor,
                                                               constant: -.topContainerBottomSpacing)
     
     NSLayoutConstraint.activate([
@@ -152,7 +162,12 @@ private extension TokenDetailsHeaderView {
       imageView.heightAnchor.constraint(equalToConstant: .imageViewSide),
       imageView.topAnchor.constraint(equalTo: topContainer.topAnchor, constant: .topContainerTopSpacing),
       imageView.leftAnchor.constraint(equalTo: priceStackView.rightAnchor, constant: .imageViewLeftSpacing),
-      imageView.rightAnchor.constraint(equalTo: topContainer.rightAnchor, constant: -.topContainerSideSpacing)
+      imageView.rightAnchor.constraint(equalTo: topContainer.rightAnchor, constant: -.topContainerSideSpacing),
+      
+      separatorView.leftAnchor.constraint(equalTo: topContainer.leftAnchor),
+      separatorView.rightAnchor.constraint(equalTo: topContainer.rightAnchor),
+      separatorView.heightAnchor.constraint(equalToConstant: .separatorHeight),
+      separatorView.bottomAnchor.constraint(equalTo: topContainer.bottomAnchor)
     ])
   }
 }
@@ -164,4 +179,6 @@ private extension CGFloat {
   static let topContainerBottomSpacing: CGFloat = 28
   static let imageViewLeftSpacing: CGFloat = 16
   static let imageViewSide: CGFloat = 64
+  static let separatorHeight: CGFloat = 0.5
+  static let amountBottomSpacing: CGFloat = 2
 }
