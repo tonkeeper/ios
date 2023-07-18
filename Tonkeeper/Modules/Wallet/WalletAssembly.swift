@@ -84,7 +84,6 @@ struct WalletAssembly {
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = SendCoordinator(
       router: router,
-      assembly: sendAssembly,
       walletCoreAssembly: walletCoreAssembly,
       token: .ton,
       address: address

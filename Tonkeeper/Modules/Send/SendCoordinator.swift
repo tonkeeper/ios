@@ -16,7 +16,6 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
   
   weak var output: SendCoordinatorOutput?
 
-  private let assembly: SendAssembly
   private let walletCoreAssembly: WalletCoreAssembly
   private let token: Token
   private var address: String?
@@ -24,11 +23,9 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
   private weak var sendRecipientInput: SendRecipientModuleInput?
   
   init(router: NavigationRouter,
-       assembly: SendAssembly,
        walletCoreAssembly: WalletCoreAssembly,
        token: Token,
        address: String?) {
-    self.assembly = assembly
     self.walletCoreAssembly = walletCoreAssembly
     self.token = token
     self.address = address
@@ -101,8 +98,8 @@ private extension SendCoordinator {
 
 extension SendCoordinator: SendRecipientModuleOutput {
   func sendRecipientModuleOpenQRScanner() {
-    let module = assembly.qrScannerAssembly.qrScannerModule(output: self)
-    router.present(module.view)
+//    let module = assembly.qrScannerAssembly.qrScannerModule(output: self)
+//    router.present(module.view)
   }
   
   func sendRecipientModuleDidTapCloseButton() {
@@ -149,17 +146,17 @@ extension SendCoordinator: QRScannerModuleOutput {
   }
   
   func didScanQrCode(with string: String) {
-    router.dismiss()
-    guard let deeplink = try? assembly.deeplinkParser.parse(string: string) else {
-      return
-    }
-    
-    switch deeplink {
-    case let .ton(tonDeeplink):
-      switch tonDeeplink {
-      case let .transfer(address):
-        sendRecipientInput?.setAddress(address)
-      }
-    }
+//    router.dismiss()
+//    guard let deeplink = try? assembly.deeplinkParser.parse(string: string) else {
+//      return
+//    }
+//
+//    switch deeplink {
+//    case let .ton(tonDeeplink):
+//      switch tonDeeplink {
+//      case let .transfer(address):
+//        sendRecipientInput?.setAddress(address)
+//      }
+//    }
   }
 }
