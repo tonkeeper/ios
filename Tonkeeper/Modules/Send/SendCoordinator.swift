@@ -98,8 +98,8 @@ private extension SendCoordinator {
 
 extension SendCoordinator: SendRecipientModuleOutput {
   func sendRecipientModuleOpenQRScanner() {
-//    let module = assembly.qrScannerAssembly.qrScannerModule(output: self)
-//    router.present(module.view)
+    let module = QRScannerAssembly.qrScannerModule(output: self)
+    router.present(module.view)
   }
   
   func sendRecipientModuleDidTapCloseButton() {
@@ -146,17 +146,17 @@ extension SendCoordinator: QRScannerModuleOutput {
   }
   
   func didScanQrCode(with string: String) {
-//    router.dismiss()
-//    guard let deeplink = try? assembly.deeplinkParser.parse(string: string) else {
-//      return
-//    }
-//
-//    switch deeplink {
-//    case let .ton(tonDeeplink):
-//      switch tonDeeplink {
-//      case let .transfer(address):
-//        sendRecipientInput?.setAddress(address)
-//      }
-//    }
+    router.dismiss()
+    guard let deeplink = try? walletCoreAssembly.deeplinkParser.parse(string: string) else {
+      return
+    }
+
+    switch deeplink {
+    case let .ton(tonDeeplink):
+      switch tonDeeplink {
+      case let .transfer(address):
+        sendRecipientInput?.setAddress(address)
+      }
+    }
   }
 }

@@ -48,35 +48,35 @@ extension TokenDetailsPresenter: TokenDetailsModuleInput {}
 
 extension TokenDetailsPresenter {
   func handleTonRecieve() {
-    
+    output?.didTapTonReceive()
   }
   
   func handleTonSend() {
-      
+    output?.didTapTonSend()
   }
   
   func handleTonSwap() {
-    
+    output?.didTapTopSwap()
   }
   
   func handleTonBuy() {
-    
+    output?.didTapTonBuy()
   }
 }
 
 // MARK: - TokenDetailsTokenControllerOutput
 
 extension TokenDetailsPresenter {
-  func handleTokenRecieve(tokenInfo: WalletCore.TokenInfo) {
-    
+  func handleTokenRecieve(tokenInfo: TokenInfo) {
+    output?.didTapTokenReceive(tokenInfo: tokenInfo)
   }
   
-  func handleTokenSend(tokenInfo: WalletCore.TokenInfo) {
-      
+  func handleTokenSend(tokenInfo: TokenInfo) {
+    output?.didTapTokenSend(tokenInfo: tokenInfo)
   }
   
-  func handleTokenSwap(tokenInfo: WalletCore.TokenInfo) {
-    
+  func handleTokenSwap(tokenInfo: TokenInfo) {
+    output?.didTapTokenSwap(tokenInfo: tokenInfo)
   }
 }
   

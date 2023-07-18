@@ -14,7 +14,6 @@ final class TabBarAssembly {
   
   lazy var walletAssembly = WalletAssembly(
     walletCoreAssembly: walletCoreAssembly,
-    qrScannerAssembly: QRScannerAssembly(),
     sendAssembly: SendAssembly(walletCoreAssembly: walletCoreAssembly),
     receiveAssembly: receiveAssembly,
     buyAssembly: BuyAssembly()

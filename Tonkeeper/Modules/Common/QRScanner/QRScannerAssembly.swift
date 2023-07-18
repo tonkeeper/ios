@@ -7,8 +7,8 @@
 
 import UIKit
 
-final class QRScannerAssembly {
-  func qrScannerModule(output: QRScannerModuleOutput) -> Module<UIViewController, Void> {
+struct QRScannerAssembly {
+  static func qrScannerModule(output: QRScannerModuleOutput) -> Module<UIViewController, Void> {
     let presenter = QRScannerPresenter()
     presenter.output = output
     let viewController = QRScannerViewController(presenter: presenter)

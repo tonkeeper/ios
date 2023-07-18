@@ -10,15 +10,19 @@ import WalletCore
 
 final class WalletTokenDetailsAssembly {
   let walletCoreAssembly: WalletCoreAssembly
+  let sendAssembly: SendAssembly
   
-  init(walletCoreAssembly: WalletCoreAssembly) {
+  init(walletCoreAssembly: WalletCoreAssembly,
+       sendAssembly: SendAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
+    self.sendAssembly = sendAssembly
   }
-  
+    
   func coordinator(token: Token,
                    router: NavigationRouter) -> WalletTokenDetailsCoordinator {
     return WalletTokenDetailsCoordinator(token: token,
                                          walletCoreAssembly: walletCoreAssembly,
+                                         sendAssembly: sendAssembly,
                                          router: router)
   }
 }

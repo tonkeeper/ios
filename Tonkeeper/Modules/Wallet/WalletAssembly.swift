@@ -12,7 +12,6 @@ struct WalletAssembly {
   
   let walletCoreAssembly: WalletCoreAssembly
   
-  let qrScannerAssembly: QRScannerAssembly
   let sendAssembly: SendAssembly
   let receiveAssembly: ReceiveAssembly
   let buyAssembly: BuyAssembly
@@ -23,16 +22,15 @@ struct WalletAssembly {
   }
   
   init(walletCoreAssembly: WalletCoreAssembly,
-       qrScannerAssembly: QRScannerAssembly,
        sendAssembly: SendAssembly,
        receiveAssembly: ReceiveAssembly,
        buyAssembly: BuyAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
-    self.qrScannerAssembly = qrScannerAssembly
     self.sendAssembly = sendAssembly
     self.receiveAssembly = receiveAssembly
     self.buyAssembly = buyAssembly
-    self.walletTokenDetailsAssembly = WalletTokenDetailsAssembly(walletCoreAssembly: walletCoreAssembly)
+    self.walletTokenDetailsAssembly = WalletTokenDetailsAssembly(walletCoreAssembly: walletCoreAssembly,
+                                                                 sendAssembly: sendAssembly)
   }
   
   func walletRootModule(output: WalletRootModuleOutput) -> Module<UIViewController, Void> {    
@@ -63,7 +61,7 @@ struct WalletAssembly {
   }
   
   func qrScannerModule(output: QRScannerModuleOutput) -> Module<UIViewController, Void> {
-    qrScannerAssembly.qrScannerModule(output: output)
+    QRScannerAssembly.qrScannerModule(output: output)
   }
   
   func tokensListModule(page: WalletContentPage, output: TokensListModuleOutput) -> Module<TokensListViewController, TokensListModuleInput> {
@@ -82,9 +80,8 @@ struct WalletAssembly {
     navigationController.configureDefaultAppearance()
     navigationController.isModalInPresentation = true
     let router = NavigationRouter(rootViewController: navigationController)
-    let coordinator = SendCoordinator(
+    let coordinator = sendAssembly.coordinator(
       router: router,
-      walletCoreAssembly: walletCoreAssembly,
       token: .ton,
       address: address
     )

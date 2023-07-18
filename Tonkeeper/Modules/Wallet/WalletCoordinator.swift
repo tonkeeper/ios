@@ -128,6 +128,8 @@ extension WalletCoordinator: SendCoordinatorOutput {
   }
 }
 
+// MARK: - ReceiveCoordinatorOutput
+
 extension WalletCoordinator: ReceiveCoordinatorOutput {
   func receiveCoordinatorDidClose(_ coordinator: ReceiveCoordinator) {
     router.dismiss()
