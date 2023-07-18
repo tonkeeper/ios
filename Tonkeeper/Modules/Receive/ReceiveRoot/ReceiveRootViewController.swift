@@ -58,8 +58,8 @@ extension ReceiveRootViewController: ReceiveRootViewInput {
       imageLoader.loadImage(imageURL: url, imageView: customView.logoImageView, size: customView.imageSize)
     case let .image(image, tintColor, backgroundColor):
       customView.logoImageView.image = image
-      customView.tintColor = tintColor
-      customView.backgroundColor = backgroundColor
+      customView.logoImageView.tintColor = tintColor
+      customView.logoImageView.backgroundColor = backgroundColor
     }
   }
   

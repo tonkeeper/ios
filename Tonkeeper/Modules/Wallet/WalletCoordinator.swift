@@ -71,7 +71,8 @@ extension WalletCoordinator: WalletRootModuleOutput {
     addChild(coordinator)
     coordinator.start()
     router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
-      self?.removeChild(coordinator!)
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
     })
   }
   
@@ -80,7 +81,8 @@ extension WalletCoordinator: WalletRootModuleOutput {
     addChild(coordinator)
     coordinator.start()
     router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
-      self?.removeChild(coordinator!)
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
     })
   }
   

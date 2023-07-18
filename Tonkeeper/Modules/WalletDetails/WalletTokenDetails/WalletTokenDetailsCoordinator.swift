@@ -79,8 +79,10 @@ private extension WalletTokenDetailsCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+    
     self.router.present(router.rootViewController, dismiss: { [weak self, weak coordinator] in
-      self?.removeChild(coordinator!)
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
     })
   }
 }

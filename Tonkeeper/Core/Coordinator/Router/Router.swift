@@ -36,6 +36,11 @@ class Router<RootViewController: UIViewController>: NSObject, RouterProtocol, UI
   }
   
   func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+    presentationController.presentingViewController.view.isUserInteractionEnabled = true
     dismissClosure?()
+  }
+  
+  func presentationControllerWillDismiss(_ presentationController: UIPresentationController) {
+    presentationController.presentingViewController.view.isUserInteractionEnabled = false
   }
 }
