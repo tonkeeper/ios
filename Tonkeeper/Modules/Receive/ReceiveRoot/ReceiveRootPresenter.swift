@@ -10,31 +10,34 @@ import Foundation
 import UIKit
 import WalletCore
 
-final class ReceivePresenter {
+final class ReceiveRootPresenter {
   
   // MARK: - Module
   
-  weak var viewInput: ReceiveViewInput?
-  weak var output: ReceiveModuleOutput?
+  weak var viewInput: ReceiveRootViewInput?
+  weak var output: ReceiveRootModuleOutput?
   
   // MARK: - Dependecies
   
   private let qrCodeGenerator: QRCodeGenerator
   private let deeplinkGenerator: DeeplinkGenerator
-  private let address: String
+  private let receiveController: ReceiveController
+  private let provider: ReceiveRootPresenterProvider
   
   init(qrCodeGenerator: QRCodeGenerator,
        deeplinkGenerator: DeeplinkGenerator,
-       address: String) {
+       receiveController: ReceiveController,
+       provider: ReceiveRootPresenterProvider) {
     self.qrCodeGenerator = qrCodeGenerator
     self.deeplinkGenerator = deeplinkGenerator
-    self.address = address
+    self.receiveController = receiveController
+    self.provider = provider
   }
 }
 
 // MARK: - ReceivePresenterIntput
 
-extension ReceivePresenter: ReceivePresenterInput {
+extension ReceiveRootPresenter: ReceiveRootPresenterInput {
   func viewDidLoad() {
     updateView()
   }
@@ -48,23 +51,23 @@ extension ReceivePresenter: ReceivePresenterInput {
   }
   
   func copyAddress() {
-    UIPasteboard.general.string = address
+    UIPasteboard.general.string = try? receiveController.getWalletAddress()
   }
   
   func getAddress() -> String {
-    return address
+    return (try? receiveController.getWalletAddress()) ?? ""
   }
 }
 
-// MARK: - ReceiveModuleInput
+// MARK: - ReceiveRootModuleInput
 
-extension ReceivePresenter: ReceiveModuleInput {}
+extension ReceiveRootPresenter: ReceiveRootModuleInput {}
 
 // MARK: - Private
 
-private extension ReceivePresenter {
+private extension ReceiveRootPresenter {
   func updateView() {
-    let title = "Receive TON\nand other tokens"
+    let title = provider.title
       .attributed(with: .h3,
                   alignment: .center,
                   color: .Text.primary)
@@ -76,7 +79,7 @@ private extension ReceivePresenter {
       .attributed(with: .label1,
                   alignment: .left,
                   color: .Text.primary)
-    let address = address
+    let address = try? receiveController.getWalletAddress()
       .attributed(with: .label1,
                   alignment: .left,
                   lineBreakMode: .byCharWrapping,
@@ -87,9 +90,11 @@ private extension ReceivePresenter {
                                        address: address,
                                        copyButtonTitle: "Copy",
                                        shareButtonTitle: "Share"))
+    viewInput?.updateImage(provider.image)
   }
   
   func updateQRCode(size: CGSize) {
+    guard let address = try? receiveController.getWalletAddress() else { return }
     Task {
       let deeplinkString = deeplinkGenerator.generateTransferDeeplink(with: address).path
       let qrCodeImage = await qrCodeGenerator.generate(string: deeplinkString, size: size)

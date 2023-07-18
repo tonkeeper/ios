@@ -27,6 +27,7 @@ class TokensListViewController: GenericViewController<TokensListView>, PagingScr
   private var contentSizeObserveToken: NSKeyValueObservation?
   
   // MARK: - PagingContent
+  
   var scrollView: UIScrollView {
     customView.collectionView
   }
@@ -74,6 +75,15 @@ extension TokensListViewController: TokensListViewInput {
   }
 }
 
+// MARK: - TokensListCollectionControllerDelegate
+
+extension TokensListViewController: TokensListCollectionControllerDelegate {
+  func tokensListCollectionController(_ controller: TokensListCollectionController,
+                                      didSelectItemAt indexPath: IndexPath) {
+    presenter.didSelectItemAt(indexPath: indexPath)
+  }
+}
+
 // MARK: - Private
 
 private extension TokensListViewController {
@@ -83,5 +93,7 @@ private extension TokensListViewController {
         guard let self else { return }
         self.didChangeContentHeight?()
       })
+    
+    collectionController.delegate = self
   }
 }

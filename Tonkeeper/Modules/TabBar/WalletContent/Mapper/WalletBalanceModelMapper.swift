@@ -20,8 +20,8 @@ final class WalletBalanceModelMapper {
 private extension WalletBalanceModelMapper {
   func map(section: WalletBalanceModel.Section) -> TokensListSection {
     switch section {
-    case let .token(tokens):
-      let cellModels = tokens.map { map(token: $0) }
+    case let .token(items):
+      let cellModels = items.map { map(item: $0) }
       return .init(type: .token, items: cellModels)
     case let .collectibles(collectibles):
       let cellModels = collectibles.map { map(collectible: $0) }
@@ -29,19 +29,19 @@ private extension WalletBalanceModelMapper {
     }
   }
   
-  func map(token: WalletBalanceModel.Token) -> TokenListTokenCell.Model {
-    let image: Image = .with(image: token.image)
+  func map(item: WalletItemViewModel) -> TokenListTokenCell.Model {
+    let image: Image = .with(image: item.image)
     
     return .init(image: image,
-                 title: token.title,
-                 shortTitle: token.shortTitle,
-                 price: token.price,
+                 title: item.leftTitle,
+                 shortTitle: item.rightTitle,
+                 price: item.leftSubtitle,
                  priceDiff: nil,
-                 amount: token.topAmount,
-                 fiatAmount: token.bottomAmount)
+                 amount: item.rightValue,
+                 fiatAmount: item.rightSubvalue)
   }
   
-  func map(collectible: WalletBalanceModel.Collectible) -> TokensListCollectibleCell.Model {
+  func map(collectible: WalletCollectibleItemViewModel) -> TokensListCollectibleCell.Model {
     .init(image: .url(collectible.imageURL),
           title: collectible.title,
           subtitle: collectible.subtitle)

@@ -1,5 +1,5 @@
 //
-//  ReceiveReceiveProtocols.swift
+//  ReceiveRootProtocols.swift
 //  Tonkeeper
 
 //  Tonkeeper
@@ -8,13 +8,13 @@
 
 import UIKit
 
-protocol ReceiveModuleOutput: AnyObject {
+protocol ReceiveRootModuleOutput: AnyObject {
   func receieveModuleDidTapCloseButton()
 }
 
-protocol ReceiveModuleInput: AnyObject {}
+protocol ReceiveRootModuleInput: AnyObject {}
 
-protocol ReceivePresenterInput {
+protocol ReceiveRootPresenterInput {
   func viewDidLoad()
   func didTapSwipeButton()
   func generateQRCode(size: CGSize)
@@ -22,7 +22,8 @@ protocol ReceivePresenterInput {
   func getAddress() -> String
 }
 
-protocol ReceiveViewInput: AnyObject {
-  func updateView(model: ReceiveView.Model)
+protocol ReceiveRootViewInput: AnyObject {
+  func updateView(model: ReceiveRootView.Model)
+  func updateImage(_ image: Image)
   func updateQRCode(image: UIImage?)
 }

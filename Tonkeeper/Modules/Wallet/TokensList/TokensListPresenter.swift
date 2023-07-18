@@ -28,6 +28,10 @@ extension TokensListPresenter: TokensListPresenterInput {
   func viewDidLoad() {
     viewInput?.presentSections(sections)
   }
+  
+  func didSelectItemAt(indexPath: IndexPath) {
+    output?.tokensListModuleInput(self, didSelectItemAt: indexPath)
+  }
 }
 
 // MARK: - TokensListModuleInput

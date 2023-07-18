@@ -7,8 +7,15 @@
 
 import UIKit
 
+protocol TokensListCollectionControllerDelegate: AnyObject {
+  func tokensListCollectionController(_ controller: TokensListCollectionController,
+                                      didSelectItemAt indexPath: IndexPath)
+}
+
 final class TokensListCollectionController: NSObject {
   
+  weak var delegate: TokensListCollectionControllerDelegate?
+   
   var sections = [TokensListSection]() {
     didSet {
       didUpdateSections()
@@ -48,7 +55,7 @@ private extension TokensListCollectionController {
     var snapshot = NSDiffableDataSourceSnapshot<TokensListSection.SectionType, AnyHashable>()
     sections.forEach { section in
       snapshot.appendSections([section.type])
-      snapshot.appendItems(section.items,toSection: section.type)
+      snapshot.appendItems(section.items, toSection: section.type)
     }
     dataSource?.apply(snapshot, animatingDifferences: false)
   }
@@ -104,6 +111,7 @@ extension TokensListCollectionController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
     (collectionView.cellForItem(at: indexPath) as? Selectable)?.select()
     collectionView.deselectItem(at: indexPath, animated: true)
+    delegate?.tokensListCollectionController(self, didSelectItemAt: indexPath)
   }
   
   func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {

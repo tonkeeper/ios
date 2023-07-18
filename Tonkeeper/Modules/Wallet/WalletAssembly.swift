@@ -12,38 +12,41 @@ struct WalletAssembly {
   
   let walletCoreAssembly: WalletCoreAssembly
   
-  private let qrScannerAssembly: QRScannerAssembly
-  private let sendAssembly: SendAssembly
-  private let receiveAssembly: ReceiveAssembly
-  private let buyAssembly: BuyAssembly
+  let sendAssembly: SendAssembly
+  let receiveAssembly: ReceiveAssembly
+  let buyAssembly: BuyAssembly
+  let walletTokenDetailsAssembly: WalletTokenDetailsAssembly
   
   private var walletBalanceModelMapper: WalletBalanceModelMapper {
     WalletBalanceModelMapper()
   }
   
   init(walletCoreAssembly: WalletCoreAssembly,
-       qrScannerAssembly: QRScannerAssembly,
        sendAssembly: SendAssembly,
        receiveAssembly: ReceiveAssembly,
        buyAssembly: BuyAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
-    self.qrScannerAssembly = qrScannerAssembly
     self.sendAssembly = sendAssembly
     self.receiveAssembly = receiveAssembly
     self.buyAssembly = buyAssembly
+    self.walletTokenDetailsAssembly = WalletTokenDetailsAssembly(
+      walletCoreAssembly: walletCoreAssembly,
+      sendAssembly: sendAssembly,
+      receiveAssembly: receiveAssembly
+    )
   }
   
-  func walletRootModule(output: WalletRootModuleOutput,
-                        tokensListModuleOutput: TokensListModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = WalletRootPresenter(
-      keeperController: walletCoreAssembly.keeperController,
-      walletBalanceController: walletCoreAssembly.balanceController
-    ) { page in
-      let module = tokensListModule(page: page, output: tokensListModuleOutput)
-      return module.view
-    }
+  func walletRootModule(output: WalletRootModuleOutput) -> Module<UIViewController, Void> {    
+    let presenter = WalletRootPresenter(keeperController: walletCoreAssembly.keeperController,
+                                        walletBalanceController: walletCoreAssembly.balanceController,
+                                        pageContentProvider: .init(factory: { page, output in
+      let module = tokensListModule(page: page, output: output)
+      return (PagingContentContainer(pageContentViewController: module.view),
+              module.input)
+    }))
+  
     presenter.output = output
-    
+        
     let headerModule = walletHeaderModule(output: presenter)
     presenter.headerInput = headerModule.input
     
@@ -61,7 +64,7 @@ struct WalletAssembly {
   }
   
   func qrScannerModule(output: QRScannerModuleOutput) -> Module<UIViewController, Void> {
-    qrScannerAssembly.qrScannerModule(output: output)
+    QRScannerAssembly.qrScannerModule(output: output)
   }
   
   func tokensListModule(page: WalletContentPage, output: TokensListModuleOutput) -> Module<TokensListViewController, TokensListModuleInput> {
@@ -70,6 +73,7 @@ struct WalletAssembly {
                                                   imageLoader: NukeImageLoader())
     viewController.title = page.title
     presenter.viewInput = viewController
+    presenter.output = output
     return Module(view: viewController, input: presenter)
   }
   
@@ -79,9 +83,9 @@ struct WalletAssembly {
     navigationController.configureDefaultAppearance()
     navigationController.isModalInPresentation = true
     let router = NavigationRouter(rootViewController: navigationController)
-    let coordinator = SendCoordinator(
+    let coordinator = sendAssembly.coordinator(
       router: router,
-      assembly: sendAssembly,
+      token: .ton,
       address: address
     )
     coordinator.output = output
@@ -93,10 +97,12 @@ struct WalletAssembly {
     let navigationController = NavigationController()
     navigationController.configureTransparentAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
-    let coordinator = ReceiveCoordinator(router: router,
-                                         assembly: receiveAssembly,
-                                         address: address)
+    
+    let coordinator = receiveAssembly.coordinator(
+      router: router,
+      flow: .any)
     coordinator.output = output
+    
     return coordinator
   }
   

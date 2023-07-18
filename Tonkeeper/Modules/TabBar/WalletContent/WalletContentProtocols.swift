@@ -9,8 +9,14 @@
 import UIKit
 import WalletCore
 
+protocol WalletContentPageInput: AnyObject {}
+protocol WalletContentPageOutput: AnyObject {
+  func walletContentPageInput(_ input: WalletContentPageInput, didSelectItemAt indexPath: IndexPath)
+}
+
 protocol WalletContentModuleOutput: AnyObject {
-  func getPagingContent(page: WalletContentPage) -> PagingContent
+  func getPageContent(page: WalletContentPage, output: WalletContentPageOutputMediator) -> (PagingContent, WalletContentPageInput)
+  func didSelectItem(item: WalletItemViewModel)
 }
 
 protocol WalletContentModuleInput: AnyObject {

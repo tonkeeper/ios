@@ -8,7 +8,11 @@
 
 import UIKit
 
-final class ReceiveView: UIView, ConfigurableView {
+final class ReceiveRootView: UIView, ConfigurableView {
+  
+  var imageSize: CGSize {
+    .init(width: .logoSide, height: .logoSide)
+  }
   
   struct Model {
     let title: NSAttributedString?
@@ -22,7 +26,7 @@ final class ReceiveView: UIView, ConfigurableView {
   let logoImageView: UIImageView = {
     let imageView = UIImageView()
     imageView.tintColor = .white
-    imageView.image = .Icons.tonIcon28
+    imageView.layer.masksToBounds = true
     return imageView
   }()
   
@@ -84,7 +88,6 @@ final class ReceiveView: UIView, ConfigurableView {
   
   private let logoContainer: UIView = {
     let view = UIView()
-    view.backgroundColor = .Constant.tonBlue
     return view
   }()
   
@@ -117,9 +120,9 @@ final class ReceiveView: UIView, ConfigurableView {
     stackView.distribution = .fillProportionally
     return stackView
   }()
-
+  
   // MARK: - Init
-
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -134,8 +137,8 @@ final class ReceiveView: UIView, ConfigurableView {
   override func layoutSubviews() {
     super.layoutSubviews()
     
-    logoContainer.layoutIfNeeded()
-    logoContainer.layer.cornerRadius = logoContainer.bounds.height / 2
+    logoImageView.layoutIfNeeded()
+    logoImageView.layer.cornerRadius = logoImageView.bounds.height / 2
   }
   
   // MARK: - Configurable View
@@ -152,7 +155,7 @@ final class ReceiveView: UIView, ConfigurableView {
 
 // MARK: - Private
 
-private extension ReceiveView {
+private extension ReceiveRootView {
   func setup() {
     backgroundColor = .Background.page
     
@@ -175,13 +178,13 @@ private extension ReceiveView {
     addressSectionBackground.addSubview(addressButton)
     addressSectionBackground.addSubview(buttonsStackView)
     addressSectionBackground.addSubview(separatorView)
-  
+    
     let verticalSeparator = SpacingView(horizontalSpacing: .constant(.separatorWidth), verticalSpacing: .none)
     verticalSeparator.backgroundColor = .Separator.common
     buttonsStackView.addArrangedSubview(copyButton)
     buttonsStackView.addArrangedSubview(verticalSeparator)
     buttonsStackView.addArrangedSubview(shareButton)
-  
+    
     setupConstraints()
   }
   
@@ -220,8 +223,8 @@ private extension ReceiveView {
       
       logoImageView.centerXAnchor.constraint(equalTo: logoContainer.centerXAnchor),
       logoImageView.centerYAnchor.constraint(equalTo: logoContainer.centerYAnchor),
-      logoImageView.widthAnchor.constraint(equalToConstant: .logoImageSide),
-      logoImageView.heightAnchor.constraint(equalToConstant: .logoImageSide),
+      logoImageView.widthAnchor.constraint(equalToConstant: .logoSide),
+      logoImageView.heightAnchor.constraint(equalToConstant: .logoSide),
       
       titleLabel.topAnchor.constraint(equalTo: logoContainer.bottomAnchor, constant: .titleTopSpace),
       titleLabel.centerXAnchor.constraint(equalTo: scrollViewContentView.centerXAnchor),
@@ -272,7 +275,6 @@ private extension CGFloat {
   static let innerCornerRadius: CGFloat = 8
   static let imageTopSpace: CGFloat = 32
   static let logoSide: CGFloat = 72
-  static let logoImageSide: CGFloat = 45
   static let titleTopSpace: CGFloat = 12
   static let contentSideSpace: CGFloat = 48
   static let qrTopSpace: CGFloat = 24

@@ -15,16 +15,19 @@ protocol SendCoordinatorOutput: AnyObject {
 final class SendCoordinator: Coordinator<NavigationRouter> {
   
   weak var output: SendCoordinatorOutput?
-  
-  private let assembly: SendAssembly
+
+  private let walletCoreAssembly: WalletCoreAssembly
+  private let token: Token
   private var address: String?
   
   private weak var sendRecipientInput: SendRecipientModuleInput?
   
   init(router: NavigationRouter,
-       assembly: SendAssembly,
+       walletCoreAssembly: WalletCoreAssembly,
+       token: Token,
        address: String?) {
-    self.assembly = assembly
+    self.walletCoreAssembly = walletCoreAssembly
+    self.token = token
     self.address = address
     super.init(router: router)
   }
@@ -40,9 +43,11 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
 
 private extension SendCoordinator {
   func openSendRecipient() {
-    let module = assembly.sendRecipientModule(
-      output: self,
-      address: address
+    let module = SendRecipientAssembly.module(
+      commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
+      addressValidator: walletCoreAssembly.addressValidator,
+      address: address,
+      output: self
     )
     sendRecipientInput = module.input
     router.setPresentables([(module.view, nil)])
@@ -50,27 +55,39 @@ private extension SendCoordinator {
   
   func openSendAmount(address: String,
                       comment: String?) {
-    let module = assembly.sendAmountModule(output: self,
-                                           address: address,
-                                           comment: comment)
+    let module = SendAmountAssembly.module(address: address,
+                                           comment: comment,
+                                           inputCurrencyFormatter: .inputCurrencyFormatter,
+                                           sendInputController: walletCoreAssembly.sendInputController,
+                                           sendController: walletCoreAssembly.sendController(),
+                                           output: self)
     module.view.setupBackButton()
     router.push(presentable: module.view)
   }
   
   func openConfirmation(transactionModel: SendTransactionModel) {
-    let module = assembly.sendConfirmationModule(output: self, transactionModel: transactionModel)
+    let module = SendConfirmationAssembly.module(transactionModel: transactionModel,
+                                                 sendController: walletCoreAssembly.sendController(),
+                                                 output: self)
     module.view.setupBackButton()
     router.push(presentable: module.view)
   }
   
   func openWith(address: String) {
-    let recipientModule = assembly.sendRecipientModule(
-      output: self,
-      address: address
+    let recipientModule = SendRecipientAssembly.module(
+      commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
+      addressValidator: walletCoreAssembly.addressValidator,
+      address: address,
+      output: self
     )
     sendRecipientInput = recipientModule.input
     
-    let amountModule = assembly.sendAmountModule(output: self, address: address, comment: nil)
+    let amountModule = SendAmountAssembly.module(address: address,
+                                                 comment: nil,
+                                                 inputCurrencyFormatter: .inputCurrencyFormatter,
+                                                 sendInputController: walletCoreAssembly.sendInputController,
+                                                 sendController: walletCoreAssembly.sendController(),
+                                                 output: self)
     amountModule.view.setupBackButton()
 
     router.setPresentables([(recipientModule.view, nil), (amountModule.view, nil)])
@@ -81,7 +98,7 @@ private extension SendCoordinator {
 
 extension SendCoordinator: SendRecipientModuleOutput {
   func sendRecipientModuleOpenQRScanner() {
-    let module = assembly.qrScannerAssembly.qrScannerModule(output: self)
+    let module = QRScannerAssembly.qrScannerModule(output: self)
     router.present(module.view)
   }
   
@@ -130,10 +147,10 @@ extension SendCoordinator: QRScannerModuleOutput {
   
   func didScanQrCode(with string: String) {
     router.dismiss()
-    guard let deeplink = try? assembly.deeplinkParser.parse(string: string) else {
+    guard let deeplink = try? walletCoreAssembly.deeplinkParser.parse(string: string) else {
       return
     }
-    
+
     switch deeplink {
     case let .ton(tonDeeplink):
       switch tonDeeplink {

@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import WalletCore
 
 final class WalletCoordinator: Coordinator<NavigationRouter> {
   
@@ -24,9 +25,26 @@ final class WalletCoordinator: Coordinator<NavigationRouter> {
 
 private extension WalletCoordinator {
   func openWalletRoot() {
-    let module = walletAssembly.walletRootModule(output: self,
-                                                 tokensListModuleOutput: self)
+    let module = walletAssembly.walletRootModule(output: self)
     router.setPresentables([(module.view, nil)])
+  }
+  
+  func openTokenDetails(token: Token) {
+    let coordinator = walletAssembly
+      .walletTokenDetailsAssembly
+      .coordinator(token: token, router: router)
+    addChild(coordinator)
+    coordinator.start()
+    
+    guard let initialPresentable = coordinator.initialPresentable else { return }
+    router.push(presentable: initialPresentable, dismiss: { [weak self, weak coordinator] in
+      guard let self = self, let coordinator = coordinator else { return }
+      self.removeChild(coordinator)
+    })
+  }
+  
+  func openOldWalletMigration() {
+    
   }
 }
 
@@ -53,7 +71,8 @@ extension WalletCoordinator: WalletRootModuleOutput {
     addChild(coordinator)
     coordinator.start()
     router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
-      self?.removeChild(coordinator!)
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
     })
   }
   
@@ -62,8 +81,20 @@ extension WalletCoordinator: WalletRootModuleOutput {
     addChild(coordinator)
     coordinator.start()
     router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
-      self?.removeChild(coordinator!)
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
     })
+  }
+  
+  func didSelectItem(_ item: WalletItemViewModel) {
+    switch item.type {
+    case .old:
+      openOldWalletMigration()
+    case .token(let tokenInfo):
+      openTokenDetails(token: .token(tokenInfo))
+    case .ton:
+      openTokenDetails(token: .ton)
+    }
   }
 }
 
@@ -90,12 +121,6 @@ extension WalletCoordinator: QRScannerModuleOutput {
   }
 }
 
-// MARK: - TokensListModuleOutput
-
-extension WalletCoordinator: TokensListModuleOutput {
-  
-}
-
 // MARK: - SendCoordinatorOutput
 
 extension WalletCoordinator: SendCoordinatorOutput {
@@ -104,6 +129,8 @@ extension WalletCoordinator: SendCoordinatorOutput {
     removeChild(coordinator)
   }
 }
+
+// MARK: - ReceiveCoordinatorOutput
 
 extension WalletCoordinator: ReceiveCoordinatorOutput {
   func receiveCoordinatorDidClose(_ coordinator: ReceiveCoordinator) {
