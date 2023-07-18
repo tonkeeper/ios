@@ -69,7 +69,9 @@ private extension SendCoordinator {
   }
   
   func openConfirmation(transactionModel: SendTransactionModel) {
-    let module = assembly.sendConfirmationModule(output: self, transactionModel: transactionModel)
+    let module = SendConfirmationAssembly.module(transactionModel: transactionModel,
+                                                 sendController: walletCoreAssembly.sendController(),
+                                                 output: self)
     module.view.setupBackButton()
     router.push(presentable: module.view)
   }
@@ -83,7 +85,12 @@ private extension SendCoordinator {
     )
     sendRecipientInput = recipientModule.input
     
-    let amountModule = assembly.sendAmountModule(output: self, address: address, comment: nil)
+    let amountModule = SendAmountAssembly.module(address: address,
+                                                 comment: nil,
+                                                 inputCurrencyFormatter: .inputCurrencyFormatter,
+                                                 sendInputController: walletCoreAssembly.sendInputController,
+                                                 sendController: walletCoreAssembly.sendController(),
+                                                 output: self)
     amountModule.view.setupBackButton()
 
     router.setPresentables([(recipientModule.view, nil), (amountModule.view, nil)])

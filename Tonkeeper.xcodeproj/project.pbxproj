@@ -47,6 +47,7 @@
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
 		7D384A482A6695A200DE2A66 /* SendAmountAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */; };
 		7D384A4A2A66973D00DE2A66 /* SendRecipientAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A492A66973D00DE2A66 /* SendRecipientAssembly.swift */; };
+		7D384A4C2A66989100DE2A66 /* SendConfirmationAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A4B2A66989100DE2A66 /* SendConfirmationAssembly.swift */; };
 		7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */; };
 		7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */; };
 		7D3BCFAC2A4C598C00BE6AD9 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFAB2A4C598C00BE6AD9 /* AppSettings.swift */; };
@@ -322,6 +323,7 @@
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
 		7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendAmountAssembly.swift; sourceTree = "<group>"; };
 		7D384A492A66973D00DE2A66 /* SendRecipientAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendRecipientAssembly.swift; sourceTree = "<group>"; };
+		7D384A4B2A66989100DE2A66 /* SendConfirmationAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendConfirmationAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeListItem.swift; sourceTree = "<group>"; };
 		7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonBottomContainer.swift; sourceTree = "<group>"; };
 		7D3BCFAB2A4C598C00BE6AD9 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
@@ -598,11 +600,12 @@
 		112BDFA05B26CEB474E08BB1 /* SendConfirmation */ = {
 			isa = PBXGroup;
 			children = (
-				7D527BEF2A2DF61200A2D29A /* Builder */,
+				7D384A4B2A66989100DE2A66 /* SendConfirmationAssembly.swift */,
 				5315989FA9BDEABD3FA2E275 /* SendConfirmationViewController.swift */,
 				8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */,
 				3DC3714222F64C921781E7A8 /* SendConfirmationPresenter.swift */,
 				9FC1F118C75E99C32396A981 /* SendConfirmationProtocols.swift */,
+				7D527BEF2A2DF61200A2D29A /* Builder */,
 			);
 			path = SendConfirmation;
 			sourceTree = "<group>";
@@ -2097,6 +2100,7 @@
 				7DE27E652A30D2D400842FA8 /* ActivityListTransactionBuilder.swift in Sources */,
 				7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */,
 				7D6836482A1D1044002DBBC7 /* WalletCoordinator.swift in Sources */,
+				7D384A4C2A66989100DE2A66 /* SendConfirmationAssembly.swift in Sources */,
 				FD5AC7C6F094091CB911C3D8 /* TokensListViewController.swift in Sources */,
 				0C1DF00128AE8BA90E30FCB1 /* TokensListView.swift in Sources */,
 				C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */,
