@@ -71,15 +71,17 @@ private extension WalletTokenDetailsCoordinator {
   
   func openReceive(token: Token) {
     let navigationController = NavigationController()
-    navigationController.configureDefaultAppearance()
-    navigationController.isModalInPresentation = true
+    navigationController.configureTransparentAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     
     let coordinator = receiveAssembly.coordinator(router: router, flow: .token(token))
+    coordinator.output = self
     
     addChild(coordinator)
     coordinator.start()
-    self.router.present(router.rootViewController)
+    self.router.present(router.rootViewController, dismiss: { [weak self, weak coordinator] in
+      self?.removeChild(coordinator!)
+    })
   }
 }
 
@@ -91,7 +93,7 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
   }
   
   func didTapTonReceive() {
-    
+    openReceive(token: .ton)
   }
   
   func didTapTonBuy() {
@@ -107,7 +109,7 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
   }
   
   func didTapTokenReceive(tokenInfo: TokenInfo) {
-    
+    openReceive(token: .token(tokenInfo))
   }
   
   func didTapTokenSwap(tokenInfo: TokenInfo) {
@@ -119,6 +121,15 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
 
 extension WalletTokenDetailsCoordinator: SendCoordinatorOutput {
   func sendCoordinatorDidClose(_ coordinator: SendCoordinator) {
+    router.dismiss()
+    removeChild(coordinator)
+  }
+}
+
+// MARK: - ReceiveCoordinatorOutput
+
+extension WalletTokenDetailsCoordinator: ReceiveCoordinatorOutput {
+  func receiveCoordinatorDidClose(_ coordinator: ReceiveCoordinator) {
     router.dismiss()
     removeChild(coordinator)
   }
