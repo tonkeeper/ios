@@ -15,13 +15,21 @@ final class ReceiveCoordinator: Coordinator<NavigationRouter> {
   
   weak var output: ReceiveCoordinatorOutput?
   
+  enum RecieveFlow {
+    case token(Token)
+    case any
+  }
+  
   private let assembly: ReceiveAssembly
+  private let flow: RecieveFlow
   private let address: String
   
   init(router: NavigationRouter,
        assembly: ReceiveAssembly,
+       flow: RecieveFlow,
        address: String) {
     self.assembly = assembly
+    self.flow = flow
     self.address = address
     super.init(router: router)
   }

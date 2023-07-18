@@ -29,6 +29,7 @@ final class WalletTokenDetailsCoordinator: Coordinator<NavigationRouter> {
 
 private extension WalletTokenDetailsCoordinator {
   func openTokenDetails() {
+    
     let tokenDetailsController: TokenDetailsController
     switch token {
     case .token(let tokenInfo):
@@ -40,6 +41,8 @@ private extension WalletTokenDetailsCoordinator {
     let module = TokenDetailsAssembly.module(output: self,
                                              tokenDetailsController: tokenDetailsController,
                                              imageLoader: NukeImageLoader())
+    tokenDetailsController.output = module.input
+    
     module.view.setupBackButton()
     initialPresentable = module.view
   }

@@ -11,7 +11,7 @@ import WalletCore
 struct TokenDetailsAssembly {
   static func module(output: TokenDetailsModuleOutput,
                      tokenDetailsController: WalletCore.TokenDetailsController,
-                     imageLoader: ImageLoader) -> Module<UIViewController, Void> {
+                     imageLoader: ImageLoader) -> Module<UIViewController, TokenDetailsModuleInput> {
     let presenter = TokenDetailsPresenter(tokenDetailsController: tokenDetailsController)
     presenter.output = output
     
@@ -19,7 +19,7 @@ struct TokenDetailsAssembly {
                                                     imageLoader: imageLoader)
     presenter.viewInput = viewController
     
-    return Module(view: viewController, input: Void())
+    return Module(view: viewController, input: presenter)
   }
 }
 

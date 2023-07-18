@@ -15,16 +15,19 @@ protocol SendCoordinatorOutput: AnyObject {
 final class SendCoordinator: Coordinator<NavigationRouter> {
   
   weak var output: SendCoordinatorOutput?
-  
+
   private let assembly: SendAssembly
+  private let token: Token
   private var address: String?
   
   private weak var sendRecipientInput: SendRecipientModuleInput?
   
   init(router: NavigationRouter,
        assembly: SendAssembly,
+       token: Token,
        address: String?) {
     self.assembly = assembly
+    self.token = token
     self.address = address
     super.init(router: router)
   }

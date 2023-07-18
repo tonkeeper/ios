@@ -44,6 +44,43 @@ extension TokenDetailsPresenter: TokenDetailsPresenterInput {
 
 extension TokenDetailsPresenter: TokenDetailsModuleInput {}
 
+// MARK: - TokenDetailsTonControllerOutput
+
+extension TokenDetailsPresenter {
+  func handleTonRecieve() {
+    
+  }
+  
+  func handleTonSend() {
+      
+  }
+  
+  func handleTonSwap() {
+    
+  }
+  
+  func handleTonBuy() {
+    
+  }
+}
+
+// MARK: - TokenDetailsTokenControllerOutput
+
+extension TokenDetailsPresenter {
+  func handleTokenRecieve(tokenInfo: WalletCore.TokenInfo) {
+    
+  }
+  
+  func handleTokenSend(tokenInfo: WalletCore.TokenInfo) {
+      
+  }
+  
+  func handleTokenSwap(tokenInfo: WalletCore.TokenInfo) {
+    
+  }
+}
+  
+
 // MARK: - Private
 
 private extension TokenDetailsPresenter {
@@ -95,6 +132,17 @@ private extension TokenDetailsPresenter {
   }
   
   func handleButtonsRowButtonAction(type: ButtonsRowView.Model.ButtonType) {
-    
+    switch type {
+    case .receive:
+      tokenDetailsController.handleRecieve()
+    case .swap:
+      tokenDetailsController.handleSwap()
+    case .send:
+      tokenDetailsController.handleSend()
+    case .buy:
+      tokenDetailsController.handleBuy()
+    case .sell:
+      break
+    }
   }
 }

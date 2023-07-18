@@ -41,6 +41,7 @@ struct ActivityAssembly {
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = ReceiveCoordinator(router: router,
                                          assembly: receiveAssembly,
+                                         flow: .any,
                                          address: address)
     coordinator.output = output
     return coordinator

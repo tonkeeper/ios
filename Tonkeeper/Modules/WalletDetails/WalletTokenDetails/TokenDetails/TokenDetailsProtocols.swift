@@ -7,10 +7,11 @@
 //
 
 import Foundation
+import WalletCore
 
 protocol TokenDetailsModuleOutput: AnyObject {}
 
-protocol TokenDetailsModuleInput: AnyObject {}
+protocol TokenDetailsModuleInput: AnyObject, TokenDetailsControllerOutput {}
 
 protocol TokenDetailsPresenterInput {
   func viewDidLoad()
