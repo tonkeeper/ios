@@ -46,9 +46,11 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
 
 private extension SendCoordinator {
   func openSendRecipient() {
-    let module = assembly.sendRecipientModule(
-      output: self,
-      address: address
+    let module = SendRecipientAssembly.module(
+      commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
+      addressValidator: walletCoreAssembly.addressValidator,
+      address: address,
+      output: self
     )
     sendRecipientInput = module.input
     router.setPresentables([(module.view, nil)])
@@ -73,9 +75,11 @@ private extension SendCoordinator {
   }
   
   func openWith(address: String) {
-    let recipientModule = assembly.sendRecipientModule(
-      output: self,
-      address: address
+    let recipientModule = SendRecipientAssembly.module(
+      commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
+      addressValidator: walletCoreAssembly.addressValidator,
+      address: address,
+      output: self
     )
     sendRecipientInput = recipientModule.input
     
