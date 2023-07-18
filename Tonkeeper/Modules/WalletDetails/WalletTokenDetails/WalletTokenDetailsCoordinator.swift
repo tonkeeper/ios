@@ -51,5 +51,31 @@ private extension WalletTokenDetailsCoordinator {
 // MARK: - TokenDetailsModuleOutput
 
 extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
+  func didTapTonSend() {
+    
+  }
   
+  func didTapTonReceive() {
+    
+  }
+  
+  func didTapTonBuy() {
+    
+  }
+  
+  func didTapTopSwap() {
+    
+  }
+  
+  func didTapTokenSend(tokenInfo: WalletCore.TokenInfo) {
+    
+  }
+  
+  func didTapTokenReceive(tokenInfo: WalletCore.TokenInfo) {
+    
+  }
+  
+  func didTapTokenSwap(tokenInfo: WalletCore.TokenInfo) {
+    
+  }
 }

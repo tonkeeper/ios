@@ -9,7 +9,16 @@
 import Foundation
 import WalletCore
 
-protocol TokenDetailsModuleOutput: AnyObject {}
+protocol TokenDetailsModuleOutput: AnyObject {
+  func didTapTonSend()
+  func didTapTonReceive()
+  func didTapTonBuy()
+  func didTapTopSwap()
+  
+  func didTapTokenSend(tokenInfo: TokenInfo)
+  func didTapTokenReceive(tokenInfo: TokenInfo)
+  func didTapTokenSwap(tokenInfo: TokenInfo)
+}
 
 protocol TokenDetailsModuleInput: AnyObject, TokenDetailsControllerOutput {}
 
