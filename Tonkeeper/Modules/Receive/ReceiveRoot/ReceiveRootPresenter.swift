@@ -22,13 +22,16 @@ final class ReceiveRootPresenter {
   private let qrCodeGenerator: QRCodeGenerator
   private let deeplinkGenerator: DeeplinkGenerator
   private let receiveController: ReceiveController
+  private let provider: ReceiveRootPresenterProvider
   
   init(qrCodeGenerator: QRCodeGenerator,
        deeplinkGenerator: DeeplinkGenerator,
-       receiveController: ReceiveController) {
+       receiveController: ReceiveController,
+       provider: ReceiveRootPresenterProvider) {
     self.qrCodeGenerator = qrCodeGenerator
     self.deeplinkGenerator = deeplinkGenerator
     self.receiveController = receiveController
+    self.provider = provider
   }
 }
 
@@ -64,7 +67,7 @@ extension ReceiveRootPresenter: ReceiveRootModuleInput {}
 
 private extension ReceiveRootPresenter {
   func updateView() {
-    let title = "Receive TON\nand other tokens"
+    let title = provider.title
       .attributed(with: .h3,
                   alignment: .center,
                   color: .Text.primary)
@@ -87,6 +90,7 @@ private extension ReceiveRootPresenter {
                                        address: address,
                                        copyButtonTitle: "Copy",
                                        shareButtonTitle: "Share"))
+    viewInput?.updateImage(provider.image)
   }
   
   func updateQRCode(size: CGSize) {

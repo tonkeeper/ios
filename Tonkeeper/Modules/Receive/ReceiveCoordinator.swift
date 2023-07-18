@@ -38,9 +38,23 @@ final class ReceiveCoordinator: Coordinator<NavigationRouter> {
 
 private extension ReceiveCoordinator {
   func openRootReceive() {
+    let provider: ReceiveRootPresenterProvider
+    switch flow {
+    case .any:
+      provider = ReceiveRootPresenterAnyProvider()
+    case .token(let token):
+      switch token {
+      case .ton:
+        provider = ReceiveRootPresenterTonProvider()
+      case .token(let tokenInfo):
+        provider = ReceiveRootPresenterTokenProvider(tokenInfo: tokenInfo)
+      }
+    }
+  
     let module = ReceiveRootAssembly.module(qrCodeGenerator: DefaultQRCodeGenerator(),
                                             deeplinkGenerator: walletCoreAssembly.deeplinkGenerator,
                                             receiveController: walletCoreAssembly.receiveController(),
+                                            provider: provider,
                                             output: self)
     router.setPresentables([(module.view, nil)])
   }

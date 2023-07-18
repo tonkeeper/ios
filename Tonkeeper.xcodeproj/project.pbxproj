@@ -49,6 +49,10 @@
 		7D384A4A2A66973D00DE2A66 /* SendRecipientAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A492A66973D00DE2A66 /* SendRecipientAssembly.swift */; };
 		7D384A4C2A66989100DE2A66 /* SendConfirmationAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A4B2A66989100DE2A66 /* SendConfirmationAssembly.swift */; };
 		7D384A4F2A66A0E500DE2A66 /* ReceiveRootAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A4E2A66A0E500DE2A66 /* ReceiveRootAssembly.swift */; };
+		7D384A532A66AC7300DE2A66 /* ReceiveRootPresenterProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A522A66AC7300DE2A66 /* ReceiveRootPresenterProvider.swift */; };
+		7D384A552A66ACED00DE2A66 /* ReceiveRootPresenterAnyProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A542A66ACED00DE2A66 /* ReceiveRootPresenterAnyProvider.swift */; };
+		7D384A572A66ACF300DE2A66 /* ReceiveRootPresenterTonProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A562A66ACF300DE2A66 /* ReceiveRootPresenterTonProvider.swift */; };
+		7D384A592A66ACFA00DE2A66 /* ReceiveRootPresenterTokenProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A582A66ACFA00DE2A66 /* ReceiveRootPresenterTokenProvider.swift */; };
 		7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */; };
 		7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */; };
 		7D3BCFAC2A4C598C00BE6AD9 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFAB2A4C598C00BE6AD9 /* AppSettings.swift */; };
@@ -326,6 +330,10 @@
 		7D384A492A66973D00DE2A66 /* SendRecipientAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendRecipientAssembly.swift; sourceTree = "<group>"; };
 		7D384A4B2A66989100DE2A66 /* SendConfirmationAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendConfirmationAssembly.swift; sourceTree = "<group>"; };
 		7D384A4E2A66A0E500DE2A66 /* ReceiveRootAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiveRootAssembly.swift; sourceTree = "<group>"; };
+		7D384A522A66AC7300DE2A66 /* ReceiveRootPresenterProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiveRootPresenterProvider.swift; sourceTree = "<group>"; };
+		7D384A542A66ACED00DE2A66 /* ReceiveRootPresenterAnyProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiveRootPresenterAnyProvider.swift; sourceTree = "<group>"; };
+		7D384A562A66ACF300DE2A66 /* ReceiveRootPresenterTonProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiveRootPresenterTonProvider.swift; sourceTree = "<group>"; };
+		7D384A582A66ACFA00DE2A66 /* ReceiveRootPresenterTokenProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiveRootPresenterTokenProvider.swift; sourceTree = "<group>"; };
 		7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeListItem.swift; sourceTree = "<group>"; };
 		7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonBottomContainer.swift; sourceTree = "<group>"; };
 		7D3BCFAB2A4C598C00BE6AD9 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
@@ -756,6 +764,7 @@
 		7D384A4D2A66A01000DE2A66 /* ReceiveRoot */ = {
 			isa = PBXGroup;
 			children = (
+				7D384A512A66AC4C00DE2A66 /* ReceiveRootPresenterProvider */,
 				7D384A4E2A66A0E500DE2A66 /* ReceiveRootAssembly.swift */,
 				62EEBA5EBAC6F6BE4F5EBF4E /* ReceiveRootViewController.swift */,
 				A2140E2CC50DF4789E6DDE35 /* ReceiveRootView.swift */,
@@ -763,6 +772,17 @@
 				27A2DFA2B5AD43B54E2E131F /* ReceiveRootProtocols.swift */,
 			);
 			path = ReceiveRoot;
+			sourceTree = "<group>";
+		};
+		7D384A512A66AC4C00DE2A66 /* ReceiveRootPresenterProvider */ = {
+			isa = PBXGroup;
+			children = (
+				7D384A522A66AC7300DE2A66 /* ReceiveRootPresenterProvider.swift */,
+				7D384A542A66ACED00DE2A66 /* ReceiveRootPresenterAnyProvider.swift */,
+				7D384A562A66ACF300DE2A66 /* ReceiveRootPresenterTonProvider.swift */,
+				7D384A582A66ACFA00DE2A66 /* ReceiveRootPresenterTokenProvider.swift */,
+			);
+			path = ReceiveRootPresenterProvider;
 			sourceTree = "<group>";
 		};
 		7D3BCFA32A4C347A00BE6AD9 /* Views */ = {
@@ -1942,6 +1962,7 @@
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
 				7D9292D82A288013005B83DF /* Notificiation+Keyboard.swift in Sources */,
+				7D384A592A66ACFA00DE2A66 /* ReceiveRootPresenterTokenProvider.swift in Sources */,
 				7D6836422A1D0B5C002DBBC7 /* TabBarAssembly.swift in Sources */,
 				7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */,
 				7D9292FA2A29DCDA005B83DF /* SendAmountViewController.swift in Sources */,
@@ -2023,6 +2044,7 @@
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
+				7D384A552A66ACED00DE2A66 /* ReceiveRootPresenterAnyProvider.swift in Sources */,
 				7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */,
 				7D92928D2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift in Sources */,
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
@@ -2077,6 +2099,7 @@
 				7D5943492A547D1700C89967 /* TapticGenerator.swift in Sources */,
 				7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */,
 				7D6836302A1CF471002DBBC7 /* UITabBarController+Completions.swift in Sources */,
+				7D384A572A66ACF300DE2A66 /* ReceiveRootPresenterTonProvider.swift in Sources */,
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
 				7D3BCFB72A4C999B00BE6AD9 /* ImportWalletCoordinator.swift in Sources */,
 				7D3BCFBB2A4C99C900BE6AD9 /* EnterMnemonicAssembly.swift in Sources */,
@@ -2160,6 +2183,7 @@
 				7D4934752A5CA44000F4BCA2 /* TKMenuItem.swift in Sources */,
 				14250E44D164B234E513925F /* ActivityListPresenter.swift in Sources */,
 				F2E003198428DC1A9FA401BB /* ActivityListProtocols.swift in Sources */,
+				7D384A532A66AC7300DE2A66 /* ReceiveRootPresenterProvider.swift in Sources */,
 				0D6D9286FE3AD2FE83868D1B /* ActivityTransactionDetailsViewController.swift in Sources */,
 				63468D514D5142929F969B22 /* ActivityTransactionDetailsView.swift in Sources */,
 				9182307863BB72BE320AE516 /* ActivityTransactionDetailsPresenter.swift in Sources */,

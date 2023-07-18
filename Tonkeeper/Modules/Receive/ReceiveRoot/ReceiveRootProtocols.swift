@@ -24,5 +24,6 @@ protocol ReceiveRootPresenterInput {
 
 protocol ReceiveRootViewInput: AnyObject {
   func updateView(model: ReceiveRootView.Model)
+  func updateImage(_ image: Image)
   func updateQRCode(image: UIImage?)
 }

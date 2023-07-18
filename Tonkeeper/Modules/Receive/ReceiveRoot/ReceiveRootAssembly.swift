@@ -12,10 +12,12 @@ struct ReceiveRootAssembly {
   static func module(qrCodeGenerator: QRCodeGenerator,
                      deeplinkGenerator: DeeplinkGenerator,
                      receiveController: ReceiveController,
+                     provider: ReceiveRootPresenterProvider,
                      output: ReceiveRootModuleOutput?) -> Module<ReceiveRootViewController, ReceiveRootModuleInput> {
     let presenter = ReceiveRootPresenter(qrCodeGenerator: qrCodeGenerator,
                                          deeplinkGenerator: deeplinkGenerator,
-                                         receiveController: receiveController)
+                                         receiveController: receiveController,
+                                         provider: provider)
     presenter.output = output
     let viewController = ReceiveRootViewController(presenter: presenter)
     presenter.viewInput = viewController

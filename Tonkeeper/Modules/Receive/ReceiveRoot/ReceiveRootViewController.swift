@@ -14,6 +14,10 @@ class ReceiveRootViewController: GenericViewController<ReceiveRootView> {
   
   private let presenter: ReceiveRootPresenterInput
   
+  // MARK: - Dependencies
+  
+  private let imageLoader = NukeImageLoader()
+  
   // MARK: - Init
   
   init(presenter: ReceiveRootPresenterInput) {
@@ -46,6 +50,17 @@ class ReceiveRootViewController: GenericViewController<ReceiveRootView> {
 extension ReceiveRootViewController: ReceiveRootViewInput {
   func updateView(model: ReceiveRootView.Model) {
     customView.configure(model: model)
+  }
+  
+  func updateImage(_ image: Image) {
+    switch image {
+    case let .url(url):
+      imageLoader.loadImage(imageURL: url, imageView: customView.logoImageView, size: customView.imageSize)
+    case let .image(image, tintColor, backgroundColor):
+      customView.logoImageView.image = image
+      customView.tintColor = tintColor
+      customView.backgroundColor = backgroundColor
+    }
   }
   
   func updateQRCode(image: UIImage?) {
