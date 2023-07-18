@@ -39,10 +39,9 @@ struct ActivityAssembly {
     let navigationController = NavigationController()
     navigationController.configureTransparentAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
-    let coordinator = ReceiveCoordinator(router: router,
-                                         assembly: receiveAssembly,
-                                         flow: .any,
-                                         address: address)
+    let coordinator = receiveAssembly.coordinator(
+      router: router,
+      flow: .any)
     coordinator.output = output
     return coordinator
   }

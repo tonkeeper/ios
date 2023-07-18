@@ -8,7 +8,7 @@
 
 import UIKit
 
-final class ReceiveView: UIView, ConfigurableView {
+final class ReceiveRootView: UIView, ConfigurableView {
   
   struct Model {
     let title: NSAttributedString?
@@ -117,9 +117,9 @@ final class ReceiveView: UIView, ConfigurableView {
     stackView.distribution = .fillProportionally
     return stackView
   }()
-
+  
   // MARK: - Init
-
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -152,7 +152,7 @@ final class ReceiveView: UIView, ConfigurableView {
 
 // MARK: - Private
 
-private extension ReceiveView {
+private extension ReceiveRootView {
   func setup() {
     backgroundColor = .Background.page
     
@@ -175,13 +175,13 @@ private extension ReceiveView {
     addressSectionBackground.addSubview(addressButton)
     addressSectionBackground.addSubview(buttonsStackView)
     addressSectionBackground.addSubview(separatorView)
-  
+    
     let verticalSeparator = SpacingView(horizontalSpacing: .constant(.separatorWidth), verticalSpacing: .none)
     verticalSeparator.backgroundColor = .Separator.common
     buttonsStackView.addArrangedSubview(copyButton)
     buttonsStackView.addArrangedSubview(verticalSeparator)
     buttonsStackView.addArrangedSubview(shareButton)
-  
+    
     setupConstraints()
   }
   

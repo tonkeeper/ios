@@ -12,16 +12,19 @@ final class WalletTokenDetailsCoordinator: Coordinator<NavigationRouter> {
   
   private let walletCoreAssembly: WalletCoreAssembly
   private let sendAssembly: SendAssembly
+  private let receiveAssembly: ReceiveAssembly
   
   let token: Token
   
   init(token: Token,
        walletCoreAssembly: WalletCoreAssembly,
        sendAssembly: SendAssembly,
+       receiveAssembly: ReceiveAssembly,
        router: NavigationRouter) {
     self.token = token
     self.walletCoreAssembly = walletCoreAssembly
     self.sendAssembly = sendAssembly
+    self.receiveAssembly = receiveAssembly
     super.init(router: router)
   }
   
@@ -60,6 +63,19 @@ private extension WalletTokenDetailsCoordinator {
       token: token,
       address: nil)
     coordinator.output = self
+    
+    addChild(coordinator)
+    coordinator.start()
+    self.router.present(router.rootViewController)
+  }
+  
+  func openReceive(token: Token) {
+    let navigationController = NavigationController()
+    navigationController.configureDefaultAppearance()
+    navigationController.isModalInPresentation = true
+    let router = NavigationRouter(rootViewController: navigationController)
+    
+    let coordinator = receiveAssembly.coordinator(router: router, flow: .token(token))
     
     addChild(coordinator)
     coordinator.start()

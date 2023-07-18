@@ -29,8 +29,11 @@ struct WalletAssembly {
     self.sendAssembly = sendAssembly
     self.receiveAssembly = receiveAssembly
     self.buyAssembly = buyAssembly
-    self.walletTokenDetailsAssembly = WalletTokenDetailsAssembly(walletCoreAssembly: walletCoreAssembly,
-                                                                 sendAssembly: sendAssembly)
+    self.walletTokenDetailsAssembly = WalletTokenDetailsAssembly(
+      walletCoreAssembly: walletCoreAssembly,
+      sendAssembly: sendAssembly,
+      receiveAssembly: receiveAssembly
+    )
   }
   
   func walletRootModule(output: WalletRootModuleOutput) -> Module<UIViewController, Void> {    
@@ -94,11 +97,12 @@ struct WalletAssembly {
     let navigationController = NavigationController()
     navigationController.configureTransparentAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
-    let coordinator = ReceiveCoordinator(router: router,
-                                         assembly: receiveAssembly,
-                                         flow: .any,
-                                         address: address)
+    
+    let coordinator = receiveAssembly.coordinator(
+      router: router,
+      flow: .any)
     coordinator.output = output
+    
     return coordinator
   }
   

@@ -11,11 +11,14 @@ import WalletCore
 final class WalletTokenDetailsAssembly {
   let walletCoreAssembly: WalletCoreAssembly
   let sendAssembly: SendAssembly
+  let receiveAssembly: ReceiveAssembly
   
   init(walletCoreAssembly: WalletCoreAssembly,
-       sendAssembly: SendAssembly) {
+       sendAssembly: SendAssembly,
+       receiveAssembly: ReceiveAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
     self.sendAssembly = sendAssembly
+    self.receiveAssembly = receiveAssembly
   }
     
   func coordinator(token: Token,
@@ -23,6 +26,7 @@ final class WalletTokenDetailsAssembly {
     return WalletTokenDetailsCoordinator(token: token,
                                          walletCoreAssembly: walletCoreAssembly,
                                          sendAssembly: sendAssembly,
+                                         receiveAssembly: receiveAssembly,
                                          router: router)
   }
 }

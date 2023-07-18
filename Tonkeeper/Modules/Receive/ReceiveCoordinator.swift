@@ -20,17 +20,14 @@ final class ReceiveCoordinator: Coordinator<NavigationRouter> {
     case any
   }
   
-  private let assembly: ReceiveAssembly
+  private let walletCoreAssembly: WalletCoreAssembly
   private let flow: RecieveFlow
-  private let address: String
   
   init(router: NavigationRouter,
-       assembly: ReceiveAssembly,
-       flow: RecieveFlow,
-       address: String) {
-    self.assembly = assembly
+       walletCoreAssembly: WalletCoreAssembly,
+       flow: RecieveFlow) {
+    self.walletCoreAssembly = walletCoreAssembly
     self.flow = flow
-    self.address = address
     super.init(router: router)
   }
   
@@ -41,14 +38,17 @@ final class ReceiveCoordinator: Coordinator<NavigationRouter> {
 
 private extension ReceiveCoordinator {
   func openRootReceive() {
-    let module = assembly.receieveModule(output: self, address: address)
+    let module = ReceiveRootAssembly.module(qrCodeGenerator: DefaultQRCodeGenerator(),
+                                            deeplinkGenerator: walletCoreAssembly.deeplinkGenerator,
+                                            receiveController: walletCoreAssembly.receiveController(),
+                                            output: self)
     router.setPresentables([(module.view, nil)])
   }
 }
 
-// MARK: - ReceiveModuleOutput
+// MARK: - ReceiveRootModuleOutput
 
-extension ReceiveCoordinator: ReceiveModuleOutput {
+extension ReceiveCoordinator: ReceiveRootModuleOutput {
   func receieveModuleDidTapCloseButton() {
     output?.receiveCoordinatorDidClose(self)
   }

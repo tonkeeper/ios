@@ -8,25 +8,25 @@
 
 import UIKit
 
-class ReceiveViewController: GenericViewController<ReceiveView> {
-
+class ReceiveRootViewController: GenericViewController<ReceiveRootView> {
+  
   // MARK: - Module
-
-  private let presenter: ReceivePresenterInput
-
+  
+  private let presenter: ReceiveRootPresenterInput
+  
   // MARK: - Init
-
-  init(presenter: ReceivePresenterInput) {
+  
+  init(presenter: ReceiveRootPresenterInput) {
     self.presenter = presenter
     super.init(nibName: nil, bundle: nil)
   }
-
+  
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-
+  
   // MARK: - View Life cycle
-
+  
   override func viewDidLoad() {
     super.viewDidLoad()
     setup()
@@ -43,8 +43,8 @@ class ReceiveViewController: GenericViewController<ReceiveView> {
 
 // MARK: - ReceiveViewInput
 
-extension ReceiveViewController: ReceiveViewInput {
-  func updateView(model: ReceiveView.Model) {
+extension ReceiveRootViewController: ReceiveRootViewInput {
+  func updateView(model: ReceiveRootView.Model) {
     customView.configure(model: model)
   }
   
@@ -55,7 +55,7 @@ extension ReceiveViewController: ReceiveViewInput {
 
 // MARK: - Private
 
-private extension ReceiveViewController {
+private extension ReceiveRootViewController {
   func setup() {
     let swipeButton = TKButton(configuration: .Header.button)
     swipeButton.configure(model: .init(icon: .Icons.Buttons.Header.swipe))
