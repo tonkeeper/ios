@@ -17,6 +17,7 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
   weak var output: SendCoordinatorOutput?
 
   private let assembly: SendAssembly
+  private let walletCoreAssembly: WalletCoreAssembly
   private let token: Token
   private var address: String?
   
@@ -24,9 +25,11 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
   
   init(router: NavigationRouter,
        assembly: SendAssembly,
+       walletCoreAssembly: WalletCoreAssembly,
        token: Token,
        address: String?) {
     self.assembly = assembly
+    self.walletCoreAssembly = walletCoreAssembly
     self.token = token
     self.address = address
     super.init(router: router)
@@ -53,9 +56,12 @@ private extension SendCoordinator {
   
   func openSendAmount(address: String,
                       comment: String?) {
-    let module = assembly.sendAmountModule(output: self,
-                                           address: address,
-                                           comment: comment)
+    let module = SendAmountAssembly.module(address: address,
+                                           comment: comment,
+                                           inputCurrencyFormatter: .inputCurrencyFormatter,
+                                           sendInputController: walletCoreAssembly.sendInputController,
+                                           sendController: walletCoreAssembly.sendController(),
+                                           output: self)
     module.view.setupBackButton()
     router.push(presentable: module.view)
   }

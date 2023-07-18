@@ -45,6 +45,7 @@
 		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
 		7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
+		7D384A482A6695A200DE2A66 /* SendAmountAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */; };
 		7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */; };
 		7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */; };
 		7D3BCFAC2A4C598C00BE6AD9 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFAB2A4C598C00BE6AD9 /* AppSettings.swift */; };
@@ -318,6 +319,7 @@
 		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
 		7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletBalanceModelMapper.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
+		7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendAmountAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeListItem.swift; sourceTree = "<group>"; };
 		7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonBottomContainer.swift; sourceTree = "<group>"; };
 		7D3BCFAB2A4C598C00BE6AD9 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
@@ -1600,6 +1602,7 @@
 		7D9292EA2A29DCDA005B83DF /* SendAmount */ = {
 			isa = PBXGroup;
 			children = (
+				7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */,
 				7D9292EB2A29DCDA005B83DF /* SendAmountView.swift */,
 				7D9292EC2A29DCDA005B83DF /* SendAmountProtocols.swift */,
 				7D9292ED2A29DCDA005B83DF /* SendAmountViewController.swift */,
@@ -1962,6 +1965,7 @@
 				7D3BCFAF2A4C5DC500BE6AD9 /* CoreAssembly.swift in Sources */,
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
 				7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */,
+				7D384A482A6695A200DE2A66 /* SendAmountAssembly.swift in Sources */,
 				7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */,
 				7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */,
 				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
