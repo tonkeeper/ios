@@ -32,6 +32,16 @@ final class QRScannerViewController: GenericViewController<QRScannerView> {
     setup()
     presenter.viewDidLoad()
   }
+  
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    presenter.viewDidAppear()
+  }
+  
+  override func viewDidDisappear(_ animated: Bool) {
+    super.viewDidDisappear(animated)
+    presenter.viewDidDisappear()
+  }
 }
 
 // MARK: - QRScannerViewInput
@@ -52,11 +62,13 @@ private extension QRScannerViewController {
     
     customView.titleLabel.text = "Scan QR code"
     
-    let swipeButton = TKButton(configuration: .Header.button)
-    swipeButton.configure(model: .init(icon: .Icons.Buttons.Header.swipe))
-    swipeButton.addAction(.init(handler: { [weak self] in
-      self?.presenter.didTapSwipeButton()
-    }), for: .touchUpInside)
-    navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeButton)
+    let swipeDownButton = QRScannerSwipeDownButton()
+    swipeDownButton.addTarget(self, action: #selector(didTapSwipeDownButton), for: .touchUpInside)
+    navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeDownButton)
+  }
+  
+  @objc
+  func didTapSwipeDownButton() {
+    self.presenter.didTapSwipeButton()
   }
 }

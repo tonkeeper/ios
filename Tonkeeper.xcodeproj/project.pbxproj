@@ -185,6 +185,7 @@
 		7D70D3C42A2A03770096E1A2 /* FiatCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C32A2A03770096E1A2 /* FiatCurrency.swift */; };
 		7D70D3C62A2A037F0096E1A2 /* CryptoCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */; };
 		7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */; };
+		7D790EEB2A67E28200587C96 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */; };
 		7D8EB7202A4ED86B005BE1B0 /* CreateWalletCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */; };
 		7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */; };
 		7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */; };
@@ -464,6 +465,7 @@
 		7D70D3C32A2A03770096E1A2 /* FiatCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiatCurrency.swift; sourceTree = "<group>"; };
 		7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoCurrency.swift; sourceTree = "<group>"; };
 		7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyWallet.swift; sourceTree = "<group>"; };
+		7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
 		7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletCoordinator.swift; sourceTree = "<group>"; };
 		7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletAssembly.swift; sourceTree = "<group>"; };
 		7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCreator.swift; sourceTree = "<group>"; };
@@ -1411,6 +1413,7 @@
 		7D6836722A1E65F7002DBBC7 /* QRScanner */ = {
 			isa = PBXGroup;
 			children = (
+				7D790EE92A67E27300587C96 /* Views */,
 				7D6836732A1E6614002DBBC7 /* QRScannerViewController.swift */,
 				7D6836752A1E6623002DBBC7 /* QRScannerPresenter.swift */,
 				7D6836772A1E662E002DBBC7 /* QRScannerView.swift */,
@@ -1493,6 +1496,14 @@
 				7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */,
 			);
 			path = CurrencyWallet;
+			sourceTree = "<group>";
+		};
+		7D790EE92A67E27300587C96 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		7D849C222A6556CB005787E9 /* ButtonsRowView */ = {
@@ -2161,6 +2172,7 @@
 				0A919C70A2EDEAA0AB313C6C /* SendConfirmationPresenter.swift in Sources */,
 				795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */,
 				3C01D6946E22BFB97B2E82A6 /* ReceiveRootViewController.swift in Sources */,
+				7D790EEB2A67E28200587C96 /* QRScannerSwipeDownButton.swift in Sources */,
 				987FA16FC8F9D0CBA2353D9D /* ReceiveRootView.swift in Sources */,
 				9EB19BBDABB92B4B6A28684B /* ReceiveRootPresenter.swift in Sources */,
 				86DEB0A35D88DABB3EAEFDD3 /* ReceiveRootProtocols.swift in Sources */,
@@ -2358,7 +2370,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
-				DEVELOPMENT_TEAM = YS34WB4Z9W;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
@@ -2374,7 +2385,6 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = grigory.tonkeeper;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -2392,7 +2402,6 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 5;
-				DEVELOPMENT_TEAM = YS34WB4Z9W;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
@@ -2408,7 +2417,6 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = grigory.tonkeeper;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;

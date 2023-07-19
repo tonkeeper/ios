@@ -11,31 +11,46 @@ import WalletCore
 
 final class QRScannerPresenter: NSObject {
   
+  enum Error: Swift.Error {
+    case unauthorized(AVAuthorizationStatus)
+    case device(DeviceError)
+    
+    enum DeviceError: Swift.Error {
+      case videoUnavailable
+      case inputInvalid
+      case metadataOutputFailure
+    }
+  }
+  
   // MARK: - Module
   
   weak var viewInput: QRScannerViewInput?
   weak var output: QRScannerModuleOutput?
-
+  
   // MARK: - State
   
+  private let metadataOutputQueue = DispatchQueue(label: "metadata.capturesession.queue")
   private let captureSession = AVCaptureSession()
-  private var captureDevice: AVCaptureDevice? {
-    AVCaptureDevice.default(.builtInDualCamera,
-                            for: .video,
-                            position: .back)
-  }
 }
 
 // MARK: - QRScannerPresenterInput
 
 extension QRScannerPresenter: QRScannerPresenterInput {
   func viewDidLoad() {
-    checkCameraPermission()
+    setup()
+  }
+  
+  func viewDidAppear() {
+    startRunning()
+  }
+
+  func viewDidDisappear() {
+    stopRunning()
   }
   
   func didToggleFlashligt(isSelected: Bool) {
-    guard let captureDevice = captureDevice,
-              captureDevice.hasTorch
+    guard let captureDevice = AVCaptureDevice.default(for: .video),
+          captureDevice.hasTorch
     else { return }
     
     try? captureDevice.lockForConfiguration()
@@ -49,76 +64,93 @@ extension QRScannerPresenter: QRScannerPresenterInput {
   }
 }
 
-// MARK: - Camera
-
 private extension QRScannerPresenter {
-  func checkCameraPermission() {
-    let authorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
-    switch authorizationStatus {
-    case .notDetermined:
-      requestCameraPermission()
+  func setup() {
+    let status = AVCaptureDevice.authorizationStatus(for: .video)
+    switch status {
     case .authorized:
-      setupCamera()
-    case .restricted, .denied:
-      handleCameraPermissionDenied()
-    @unknown default:
-      return
+      setupScanner()
+    case .notDetermined:
+      requestPermission()
+    default:
+      handlePermissionDenied()
     }
   }
   
-  func requestCameraPermission() {
+  func setupScanner() {
+    Task {
+      do {
+        try setupSession()
+        await MainActor.run {
+          setupPreview()
+        }
+      } catch {
+        handlePermissionDenied()
+      }
+    }
+  }
+  
+  func requestPermission() {
     Task {
       let accessGranted = await AVCaptureDevice.requestAccess(for: .video)
       await MainActor.run {
-        handlePermissionRequestResult(accessGranted: accessGranted)
+        if accessGranted {
+          setupScanner()
+        } else {
+          handlePermissionDenied()
+        }
       }
     }
   }
   
-  func handlePermissionRequestResult(accessGranted: Bool) {
-    if accessGranted {
-      setupCamera()
-    } else {
-      handleCameraPermissionDenied()
-    }
-  }
+  func handlePermissionDenied() {}
   
-  func setupCamera() {
-    Task {
-      guard let captureDevice = captureDevice else {
-        return
-      }
-      
-      do {
-        let input = try AVCaptureDeviceInput(device: captureDevice)
-        captureSession.addInput(input)
-      } catch {
-        print(error)
-      }
-      
-      let captureMetadataOutput = AVCaptureMetadataOutput()
-      captureSession.addOutput(captureMetadataOutput)
-      
-      captureMetadataOutput.setMetadataObjectsDelegate(self, queue: .main)
-      captureMetadataOutput.metadataObjectTypes = [AVMetadataObject.ObjectType.qr]
-      
-      let videoLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-      videoLayer.videoGravity = .resizeAspectFill
-      
-      captureSession.startRunning()
-      
-      Task { @MainActor in
-        viewInput?.showVideoLayer(videoLayer)
-      }
+  func setupSession() throws {
+    guard let device = AVCaptureDevice.default(for: .video) else {
+      throw Error.device(.videoUnavailable)
     }
-  }
-  
-  func handleCameraPermissionDenied() {
     
+    guard let videoInput = try? AVCaptureDeviceInput(device: device),
+          self.captureSession.canAddInput(videoInput) else {
+      throw Error.device(.inputInvalid)
+    }
+    
+    let metadataOutput = AVCaptureMetadataOutput()
+    guard self.captureSession.canAddOutput(metadataOutput) else {
+      throw Error.device(.metadataOutputFailure)
+    }
+    
+    self.captureSession.beginConfiguration()
+    self.captureSession.addInput(videoInput)
+    self.captureSession.addOutput(metadataOutput)
+    metadataOutput.setMetadataObjectsDelegate(self, queue: metadataOutputQueue)
+    metadataOutput.metadataObjectTypes = [AVMetadataObject.ObjectType.qr]
+    self.captureSession.commitConfiguration()
+   
+    startRunning()
+  }
+  
+  func setupPreview() {
+    let previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+    previewLayer.videoGravity = .resizeAspectFill
+    viewInput?.showVideoLayer(previewLayer)
+  }
+  
+  func startRunning() {
+    guard !captureSession.isRunning,
+          AVCaptureDevice.authorizationStatus(for: .video) == .authorized else { return }
+    metadataOutputQueue.async { [weak self] in
+      self?.captureSession.startRunning()
+    }
+  }
+  
+  func stopRunning() {
+    guard captureSession.isRunning else { return }
+    metadataOutputQueue.async { [weak self] in
+      self?.captureSession.stopRunning()
+    }
   }
 }
-
-// MARK: - AVCaptureMetadataOutputObjectsDelegate
 
 extension QRScannerPresenter: AVCaptureMetadataOutputObjectsDelegate {
   func metadataOutput(_ output: AVCaptureMetadataOutput,
@@ -129,8 +161,11 @@ extension QRScannerPresenter: AVCaptureMetadataOutputObjectsDelegate {
           metadataObject.type == .qr,
           let stringValue = metadataObject.stringValue
     else { return }
-    captureSession.stopRunning()
+    self.captureSession.stopRunning()
     TapticGenerator.generateSuccessFeedback()
-    self.output?.didScanQrCode(with: stringValue)
+    
+    Task { @MainActor in
+      self.output?.didScanQrCode(with: stringValue)
+    }
   }
 }
