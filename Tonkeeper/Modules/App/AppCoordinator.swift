@@ -12,7 +12,7 @@ final class AppCoordinator: Coordinator<WindowRouter> {
   
   private let appAssembly: AppAssembly
   
-  var blurWindow: UIWindow?
+  private var blurViewController: BlurViewController?
  
   init(router: WindowRouter,
        appAssembly: AppAssembly) {
@@ -55,25 +55,24 @@ private extension AppCoordinator {
   }
   
   func showBlur() {
-    guard let windowScene = router.window.windowScene else { return }
-    let window = UIWindow(windowScene: windowScene)
-    window.windowLevel = UIWindow.Level.statusBar
-    window.backgroundColor = .clear
-    window.rootViewController = BlurViewController()
-    window.makeKeyAndVisible()
-    self.blurWindow = window
-    window.alpha = .showBlurInitialOpacity
+    let blurViewController = BlurViewController()
+    self.blurViewController = blurViewController
+    
+    router.window.addSubview(blurViewController.view)
+    blurViewController.view.frame = router.window.bounds
+    
+    blurViewController.view.alpha = .showBlurInitialOpacity
     UIView.animate(withDuration: .showBlurAnimationDuration) {
-      window.alpha = 1
+      blurViewController.view.alpha = 1
     }
   }
   
   func hideBlur() {
     UIView.animate(withDuration: .hideBlurAnimationDuration) {
-      self.blurWindow?.alpha = 0
+      self.blurViewController?.view.alpha = 0
     } completion: { _ in
-      self.blurWindow = nil
-      self.router.window.makeKeyAndVisible()
+      self.blurViewController?.view.removeFromSuperview()
+      self.blurViewController = nil
     }
   }
 }

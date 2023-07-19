@@ -32,9 +32,9 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
     setup()
     presenter.viewDidLoad()
   }
-
-  override func viewDidAppear(_ animated: Bool) {
-    super.viewDidAppear(animated)
+  
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
     registerForKeyboardEvents()
     if customView.addressTextField.textView.text.isEmpty {
       _ = customView.addressTextField.becomeFirstResponder()
@@ -61,15 +61,6 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
     guard let duration = notification.keyboardAnimationDuration,
     let curve = notification.keyboardAnimationCurve else { return }
     customView.updateKeyboardHeight(0,
-                                    duration: duration,
-                                    curve: curve)
-  }
-  
-  func keyboardWillChangeFrame(_ notification: Notification) {
-    guard let keyboardSize = notification.keyboardSize,
-    let duration = notification.keyboardAnimationDuration,
-    let curve = notification.keyboardAnimationCurve else { return }
-    customView.updateKeyboardHeight(keyboardSize.height,
                                     duration: duration,
                                     curve: curve)
   }
@@ -121,6 +112,8 @@ private extension SendRecipientViewController {
       for: .touchUpInside)
     
     customView.continueButton.addAction(.init(handler: { [weak self] in
+      self?.customView.addressTextField.resignFirstResponder()
+      self?.customView.commentTextField.resignFirstResponder()
       self?.presenter.didTapContinueButton()
     }), for: .touchUpInside)
   }

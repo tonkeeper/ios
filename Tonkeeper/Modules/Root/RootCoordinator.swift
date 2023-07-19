@@ -142,6 +142,7 @@ extension RootCoordinator: CreateWalletCoordinatorOutput {
 
 extension RootCoordinator: PasscodeAuthCoordinatorOutput {
   func createPasscodeCoordinatorDidAuth(_ coordinator: PasscodeAuthCoordinator) {
+    removeChild(coordinator)
     openTabBar()
   }
 }

@@ -128,15 +128,17 @@ final class TextField: UIControlClosure {
     fatalError("init(coder:) has not been implemented")
   }
   
+  @discardableResult
   override func becomeFirstResponder() -> Bool {
     let result = textView.becomeFirstResponder()
-    updateState(isFirstResponder: result)
+    updateState(isFirstResponder: textView.isFirstResponder)
     return result
   }
   
+  @discardableResult
   override func resignFirstResponder() -> Bool {
     let result = textView.resignFirstResponder()
-    updateState(isFirstResponder: result)
+    updateState(isFirstResponder: textView.isFirstResponder)
     return result
   }
   
