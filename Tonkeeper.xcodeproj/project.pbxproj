@@ -258,6 +258,8 @@
 		7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050D2A6953FF003E9F13 /* ActivityEmptyAssembly.swift */; };
 		7DDF05102A695467003E9F13 /* ActivityListAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050F2A695467003E9F13 /* ActivityListAssembly.swift */; };
 		7DDF05122A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF05112A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift */; };
+		7DDF05152A695F0A003E9F13 /* TokenDetailsListContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF05142A695F0A003E9F13 /* TokenDetailsListContentViewController.swift */; };
+		7DDF05172A6960A0003E9F13 /* ActivityListViewController+TokenDetailsListContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF05162A6960A0003E9F13 /* ActivityListViewController+TokenDetailsListContentViewController.swift */; };
 		7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */; };
 		7DE27E5F2A30C61E00842FA8 /* ActivityListDateCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */; };
 		7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E612A30CDEE00842FA8 /* TransactionType.swift */; };
@@ -548,6 +550,8 @@
 		7DDF050D2A6953FF003E9F13 /* ActivityEmptyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityEmptyAssembly.swift; sourceTree = "<group>"; };
 		7DDF050F2A695467003E9F13 /* ActivityListAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListAssembly.swift; sourceTree = "<group>"; };
 		7DDF05112A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsAssembly.swift; sourceTree = "<group>"; };
+		7DDF05142A695F0A003E9F13 /* TokenDetailsListContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenDetailsListContentViewController.swift; sourceTree = "<group>"; };
+		7DDF05162A6960A0003E9F13 /* ActivityListViewController+TokenDetailsListContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ActivityListViewController+TokenDetailsListContentViewController.swift"; sourceTree = "<group>"; };
 		7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListTransactionCell.swift; sourceTree = "<group>"; };
 		7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListDateCell.swift; sourceTree = "<group>"; };
 		7DE27E612A30CDEE00842FA8 /* TransactionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionType.swift; sourceTree = "<group>"; };
@@ -1929,6 +1933,7 @@
 		E15A4D816E375EC6F055D7F0 /* TokenDetails */ = {
 			isa = PBXGroup;
 			children = (
+				7DDF05132A695EF5003E9F13 /* ListContent */,
 				7D1163102A616CA500DF4F30 /* Views */,
 				C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */,
 				8BB3CFCBC7CE604AC87B3E7A /* TokenDetailsView.swift */,
@@ -2036,6 +2041,7 @@
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
 				7D9292D82A288013005B83DF /* Notificiation+Keyboard.swift in Sources */,
+				7DDF05152A695F0A003E9F13 /* TokenDetailsListContentViewController.swift in Sources */,
 				7D384A592A66ACFA00DE2A66 /* ReceiveRootPresenterTokenProvider.swift in Sources */,
 				7D6836422A1D0B5C002DBBC7 /* TabBarAssembly.swift in Sources */,
 				7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */,
@@ -2101,6 +2107,7 @@
 				7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
 				7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */,
+				7DDF05172A6960A0003E9F13 /* ActivityListViewController+TokenDetailsListContentViewController.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */,
 				7D5928742A2007C0006B0A8A /* Button.Configuration+Header.swift in Sources */,
