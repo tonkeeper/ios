@@ -109,13 +109,8 @@ private extension TokensListCollectionController {
 
 extension TokensListCollectionController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    (collectionView.cellForItem(at: indexPath) as? Selectable)?.select()
     collectionView.deselectItem(at: indexPath, animated: true)
     delegate?.tokensListCollectionController(self, didSelectItemAt: indexPath)
-  }
-  
-  func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
-    (collectionView.cellForItem(at: indexPath) as? Selectable)?.deselect()
   }
 }
 

@@ -84,6 +84,18 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
                                 width: bounds.width - ContentInsets.sideSpace,
                                 height: .separatorWidth)
   }
+  
+  override func select() {
+    super.select()
+    separatorView.isHidden = true
+//    separatorView.alpha = 0
+  }
+
+  override func deselect() {
+    super.deselect()
+    separatorView.isHidden = false
+//    separatorView.alpha = 1
+  }
 }
 
 private extension TokenListTokenCell {

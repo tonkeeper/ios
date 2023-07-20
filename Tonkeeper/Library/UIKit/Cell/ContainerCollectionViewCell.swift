@@ -16,6 +16,18 @@ class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellCo
 
   let cellContentView = CellContentView()
   
+  override var isHighlighted: Bool {
+    didSet {
+      updateHighlightApperance()
+    }
+  }
+  
+  override var isSelected: Bool {
+    didSet {
+      updateHighlightApperance()
+    }
+  }
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -49,6 +61,11 @@ class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellCo
     super.prepareForReuse()
     cellContentView.prepareForReuse()
     deselect()
+  }
+  
+  func updateHighlightApperance() {
+    let isHighlighted = isSelected || isHighlighted
+    isHighlighted ? select() : deselect()
   }
   
   func select() {
