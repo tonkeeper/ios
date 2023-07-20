@@ -56,5 +56,5 @@ private extension CGFloat {
 }
 
 private extension TimeInterval {
-  static let animationDuration: TimeInterval = 0.4
+  static let animationDuration: TimeInterval = 0.3
 }

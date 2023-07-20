@@ -13,7 +13,6 @@ final class TKMenuViewController: UIViewController {
   var didSelectItem: ((_ itemIndex: Int) -> Void)?
   
   private let tableView = UITableView(frame: .zero, style: .plain)
-  private let tableContainer = UIView()
   private let dismissView = UIView()
   private let imageLoader = NukeImageLoader()
   
@@ -42,12 +41,10 @@ final class TKMenuViewController: UIViewController {
     
     view.backgroundColor = .clear
     view.addSubview(dismissView)
-    view.addSubview(tableContainer)
-    tableContainer.addSubview(tableView)
+    view.addSubview(tableView)
     
-    tableContainer.layer.masksToBounds = true
-    tableContainer.layer.cornerRadius = .cornerRadius
-    
+    tableView.layer.masksToBounds = true
+    tableView.layer.cornerRadius = .cornerRadius
     tableView.register(TKMenuCell.self, forCellReuseIdentifier: "Cell")
     tableView.dataSource = self
     tableView.delegate = self
@@ -63,46 +60,37 @@ final class TKMenuViewController: UIViewController {
   }
   
   func showMenu(duration: TimeInterval) {
-    let menuStartHeight: CGFloat = .menuItemHeight
-    let menuFinalHeight: CGFloat = items.count > .maximumRows
+    let menuHeight: CGFloat = items.count > .maximumRows
     ? .heightCoeff * .menuItemHeight
     : CGFloat(items.count) * .menuItemHeight
+    let frame = CGRect(origin: origin, size: .init(width: menuWidth, height: menuHeight))
     
-    let startSize = CGSize(width: menuWidth,
-                           height: menuStartHeight)
-    let finalSize = CGSize(width: menuWidth,
-                           height: menuFinalHeight)
+    let initialTransformation = CGAffineTransform(scaleX: 0.9, y: 0.9)
+    let finalTransformation = CGAffineTransform(scaleX: 1, y: 1)
     
-    let tableFrame = CGRect(origin: .zero,
-                            size: finalSize)
+    tableView.frame = frame
+    tableView.alpha = .hideAlpha
+    tableView.transform = initialTransformation
     
-    let containerStartFrame = CGRect(origin: origin, size: startSize)
-    let containerFinalFrame = CGRect(origin: origin, size: finalSize)
-
-    tableView.frame = tableFrame
-    tableContainer.frame = containerStartFrame
-    tableContainer.alpha = .hideAlpha
-
     UIView.animate(withDuration: duration,
                    delay: 0,
                    usingSpringWithDamping: 2,
                    initialSpringVelocity: 0.5,
                    options: .curveEaseInOut) {
-      self.tableContainer.frame = containerFinalFrame
-      self.tableContainer.alpha = 1
+      self.tableView.transform = finalTransformation
+      self.tableView.alpha = 1
     }
   }
   
   func hideMenu(duration: TimeInterval, completion: @escaping () -> Void) {
-    let finalFrame = CGRect(origin: origin, size: .init(width: menuWidth,
-                                                        height: 0))
+    let finalTransform = CGAffineTransform(scaleX: 0.9, y: 0.9)
     UIView.animate(withDuration: duration,
                    delay: 0,
                    usingSpringWithDamping: 2,
                    initialSpringVelocity: 0.5,
                    options: .curveEaseInOut) {
-      self.tableContainer.frame = finalFrame
-      self.tableContainer.alpha = .hideAlpha
+      self.tableView.transform = finalTransform
+      self.tableView.alpha = 0
     } completion: { _ in
       completion()
     }
