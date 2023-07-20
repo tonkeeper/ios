@@ -254,6 +254,10 @@
 		7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */; };
 		7DB944C12A728E160008B512 /* ShimmerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB944C02A728E160008B512 /* ShimmerView.swift */; };
 		7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC1D96B2A55903300D61C96 /* AmountInputFormatController.swift */; };
+		7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050B2A6952E7003E9F13 /* ActivityRootAssembly.swift */; };
+		7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050D2A6953FF003E9F13 /* ActivityEmptyAssembly.swift */; };
+		7DDF05102A695467003E9F13 /* ActivityListAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050F2A695467003E9F13 /* ActivityListAssembly.swift */; };
+		7DDF05122A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF05112A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift */; };
 		7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */; };
 		7DE27E5F2A30C61E00842FA8 /* ActivityListDateCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */; };
 		7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E612A30CDEE00842FA8 /* TransactionType.swift */; };
@@ -540,6 +544,10 @@
 		7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIFont+Montserrat.swift"; sourceTree = "<group>"; };
 		7DB944C02A728E160008B512 /* ShimmerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShimmerView.swift; sourceTree = "<group>"; };
 		7DC1D96B2A55903300D61C96 /* AmountInputFormatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountInputFormatController.swift; sourceTree = "<group>"; };
+		7DDF050B2A6952E7003E9F13 /* ActivityRootAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityRootAssembly.swift; sourceTree = "<group>"; };
+		7DDF050D2A6953FF003E9F13 /* ActivityEmptyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityEmptyAssembly.swift; sourceTree = "<group>"; };
+		7DDF050F2A695467003E9F13 /* ActivityListAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListAssembly.swift; sourceTree = "<group>"; };
+		7DDF05112A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsAssembly.swift; sourceTree = "<group>"; };
 		7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListTransactionCell.swift; sourceTree = "<group>"; };
 		7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListDateCell.swift; sourceTree = "<group>"; };
 		7DE27E612A30CDEE00842FA8 /* TransactionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionType.swift; sourceTree = "<group>"; };
@@ -637,6 +645,7 @@
 		1A880AFE584A8AA26C44014C /* ActivityRoot */ = {
 			isa = PBXGroup;
 			children = (
+				7DDF050B2A6952E7003E9F13 /* ActivityRootAssembly.swift */,
 				4E6BC7B180E3DEA75C23C108 /* ActivityRootViewController.swift */,
 				F554AA9A5266FD7EDC2F6ECF /* ActivityRootView.swift */,
 				3E1882B1276DA0C0A8DE642E /* ActivityRootPresenter.swift */,
@@ -677,6 +686,7 @@
 				7DE27E632A30D2C100842FA8 /* Builder */,
 				7DE27E592A30BB0600842FA8 /* Views */,
 				7D5D05A52A2F8399009F42FF /* CollectionView */,
+				7DDF050F2A695467003E9F13 /* ActivityListAssembly.swift */,
 				DEB090D8454B651425F5F1A3 /* ActivityListViewController.swift */,
 				B2439F2E5E6211F9C396FAF2 /* ActivityListView.swift */,
 				96736B6F002EC3A83832DB82 /* ActivityListPresenter.swift */,
@@ -701,6 +711,7 @@
 		416E3483274C9E57BA1959F6 /* ActivityEmpty */ = {
 			isa = PBXGroup;
 			children = (
+				7DDF050D2A6953FF003E9F13 /* ActivityEmptyAssembly.swift */,
 				245658CD5491F94DE1923BE9 /* ActivityEmptyViewController.swift */,
 				9503E8076CB7AA331E07685E /* ActivityEmptyView.swift */,
 				694D413982BB2BB1B3808455 /* ActivityEmptyPresenter.swift */,
@@ -1893,6 +1904,7 @@
 		8B0C0767FD46C94FB4520D2B /* ActivityTransactionDetails */ = {
 			isa = PBXGroup;
 			children = (
+				7DDF05112A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift */,
 				A3471921C88E65DE3DA36AB1 /* ActivityTransactionDetailsViewController.swift */,
 				97572A827415CAEE71C004FB /* ActivityTransactionDetailsView.swift */,
 				A32CB81EB01916EFF95251D8 /* ActivityTransactionDetailsPresenter.swift */,
@@ -2043,6 +2055,7 @@
 				7D9292972A25EB16005B83DF /* PageSegmentControlTab.swift in Sources */,
 				7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */,
 				7D9292992A25EC70005B83DF /* PagingContentHeaderView.swift in Sources */,
+				7DDF05122A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift in Sources */,
 				7D68362C2A1CE874002DBBC7 /* UINavigationController+Completion.swift in Sources */,
 				7D9292C72A275176005B83DF /* NavigationController.swift in Sources */,
 				7D92928B2A24DB50005B83DF /* ScrollContainerViewController.swift in Sources */,
@@ -2083,7 +2096,9 @@
 				7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */,
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
 				7D3E438F2A339E2A00C23A75 /* BuyListServiceCell.swift in Sources */,
+				7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */,
 				7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */,
+				7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
 				7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
@@ -2132,6 +2147,7 @@
 				7D80C0D52A6AA5F4007054DD /* TKKeyboardButton.swift in Sources */,
 				7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */,
 				7D91442D2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift in Sources */,
+				7DDF05102A695467003E9F13 /* ActivityListAssembly.swift in Sources */,
 				7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */,
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,

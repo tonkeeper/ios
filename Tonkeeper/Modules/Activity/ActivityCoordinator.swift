@@ -9,11 +9,11 @@ import UIKit
 
 final class ActivityCoordinator: Coordinator<NavigationRouter> {
   
-  private let assembly: ActivityAssembly
+  private let recieveAssembly: ReceiveAssembly
   
   init(router: NavigationRouter,
-       assembly: ActivityAssembly) {
-    self.assembly = assembly
+       recieveAssembly: ReceiveAssembly) {
+    self.recieveAssembly = recieveAssembly
     super.init(router: router)
   }
   
@@ -24,7 +24,7 @@ final class ActivityCoordinator: Coordinator<NavigationRouter> {
 
 private extension ActivityCoordinator {
   func openActivityRoot() {
-    let module = assembly.activityRootModule(output: self)
+    let module = ActivityRootAssembly.module(output: self)
     router.setPresentables([(module.view, nil)])
   }
 }
@@ -33,7 +33,10 @@ private extension ActivityCoordinator {
 
 extension ActivityCoordinator: ActivityRootModuleOutput {
   func didTapReceiveButton() {
-    let coordinator = assembly.receieveCoordinator(output: self, address: "")
+    let navigationController = NavigationController()
+    navigationController.configureTransparentAppearance()
+    let router = NavigationRouter(rootViewController: navigationController)
+    let coordinator = recieveAssembly.coordinator(router: router, flow: .any)
     addChild(coordinator)
     coordinator.start()
     router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
@@ -43,7 +46,7 @@ extension ActivityCoordinator: ActivityRootModuleOutput {
   }
   
   func didSelectTransaction() {
-    let module = assembly.activityTransactionDetails(output: self)
+    let module = ActivityTransactionDetailsAssembly.module(output: self)
     let modalCardContainerViewController = ModalCardContainerViewController(content: module.view)
     modalCardContainerViewController.headerSize = .small
     
