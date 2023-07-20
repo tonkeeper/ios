@@ -63,18 +63,24 @@ final class TKMenuViewController: UIViewController {
   }
   
   func showMenu(duration: TimeInterval) {
-    let menuHeight: CGFloat = items.count > .maximumRows
+    let menuStartHeight: CGFloat = .menuItemHeight
+    let menuFinalHeight: CGFloat = items.count > .maximumRows
     ? .heightCoeff * .menuItemHeight
     : CGFloat(items.count) * .menuItemHeight
-
-    let finalSize = CGSize(width: menuWidth,
-                           height: menuHeight)
-    let tableFrame = CGRect(origin: .zero, size: finalSize)
-    let containerInitialFrame = CGRect(origin: origin, size: .zero)
-    let containerFinalFrame = CGRect(origin: origin, size: finalSize)
     
+    let startSize = CGSize(width: menuWidth,
+                           height: menuStartHeight)
+    let finalSize = CGSize(width: menuWidth,
+                           height: menuFinalHeight)
+    
+    let tableFrame = CGRect(origin: .zero,
+                            size: finalSize)
+    
+    let containerStartFrame = CGRect(origin: origin, size: startSize)
+    let containerFinalFrame = CGRect(origin: origin, size: finalSize)
+
     tableView.frame = tableFrame
-    tableContainer.frame = containerInitialFrame
+    tableContainer.frame = containerStartFrame
     tableContainer.alpha = .hideAlpha
 
     UIView.animate(withDuration: duration,
@@ -88,7 +94,8 @@ final class TKMenuViewController: UIViewController {
   }
   
   func hideMenu(duration: TimeInterval, completion: @escaping () -> Void) {
-    let finalFrame = CGRect(origin: origin, size: .zero)
+    let finalFrame = CGRect(origin: origin, size: .init(width: menuWidth,
+                                                        height: 0))
     UIView.animate(withDuration: duration,
                    delay: 0,
                    usingSpringWithDamping: 2,
