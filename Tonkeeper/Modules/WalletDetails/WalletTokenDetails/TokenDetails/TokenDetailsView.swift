@@ -10,12 +10,11 @@ import UIKit
 
 final class TokenDetailsView: UIView {
   
-  let scrollView = NotDelayScrollView()
-  let headerView = TokenDetailsHeaderView()
+  let listContainer = UIView()
   let refreshControl = UIRefreshControl()
-
+  
   // MARK: - Init
-
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -24,37 +23,38 @@ final class TokenDetailsView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  // MARK: - Embed
+  
+  func embedListView(_ listView: UIView) {
+    listContainer.addSubview(listView)
+    listView.translatesAutoresizingMaskIntoConstraints = false
+    
+    NSLayoutConstraint.activate([
+      listView.topAnchor.constraint(equalTo: listContainer.topAnchor),
+      listView.leftAnchor.constraint(equalTo: listContainer.leftAnchor),
+      listView.rightAnchor.constraint(equalTo: listContainer.rightAnchor),
+      listView.bottomAnchor.constraint(equalTo: listContainer.bottomAnchor)
+    ])
+  }
 }
 
 // MARK: - Private
 
 private extension TokenDetailsView {
   func setup() {
-    refreshControl.tintColor = .Icon.primary
-    
-    scrollView.alwaysBounceVertical = true
-    scrollView.refreshControl = refreshControl
-    
-    addSubview(scrollView)
-    scrollView.addSubview(headerView)
+    addSubview(listContainer)
     setupConstraints()
   }
   
   func setupConstraints() {
-    scrollView.translatesAutoresizingMaskIntoConstraints = false
-    headerView.translatesAutoresizingMaskIntoConstraints = false
+    listContainer.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      scrollView.topAnchor.constraint(equalTo: topAnchor),
-      scrollView.leftAnchor.constraint(equalTo: leftAnchor),
-      scrollView.rightAnchor.constraint(equalTo: rightAnchor),
-      scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      
-      headerView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-      headerView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),
-      headerView.rightAnchor.constraint(equalTo: scrollView.rightAnchor),
-      headerView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-      headerView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
+      listContainer.topAnchor.constraint(equalTo: topAnchor),
+      listContainer.leftAnchor.constraint(equalTo: leftAnchor),
+      listContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      listContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
     ])
   }
 }
