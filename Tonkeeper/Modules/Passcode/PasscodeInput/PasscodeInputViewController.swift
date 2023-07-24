@@ -81,39 +81,39 @@ extension PasscodeInputViewController: PasscodeInputViewInput {
   }
 }
 
+extension PasscodeInputViewController: TKKeyboardViewDelegate, TKKeyboardViewBiometryDelegate {
+  func keyboard(_ keyboard: TKKeyboardView, didTapDigit digit: Int) {
+    presenter.didTapDigitButton(digit: digit)
+  }
+  
+  func keyboardDidTapBackspace(_ keyboard: TKKeyboardView) {
+    presenter.didTapBackspaceButton()
+  }
+  
+  func keyboardDidTapBiometry(_ keyboard: TKKeyboardView) {
+    presenter.didTapBiometryButton()
+  }
+}
+
 // MARK: - Private
 
 private extension PasscodeInputViewController {
   func setup() {
-    customView.keyboardView.didTapButton = { [weak self] in
-      self?.handleButtonTap($0)
-    }
-  }
-  
-  func handleButtonTap(_ button: PasscodeButton) {
-    TapticGenerator.generateButtonTapMediumFeedback()
-    switch button.type {
-    case let .digit(digit):
-      presenter.didTapDigitButton(digit: digit)
-    case .biometry:
-      return
-    case .backspace:
-      presenter.didTapBackspaceButton()
-    }
+    customView.keyboardView.delegate = self
   }
   
   func shakeDotRow() {
     let animation = CABasicAnimation(keyPath: "position")
-    animation.duration = 0.07
-    animation.repeatCount = 3
+    animation.duration = .dotsShakeAnimationDuration
+    animation.repeatCount = .dotsShakeAnimationRepeatCount
     animation.autoreverses = true
-    animation.fromValue = NSValue(cgPoint: CGPoint(x: customView.dotRowView.center.x - 10, y: customView.dotRowView.center.y))
-    animation.toValue = NSValue(cgPoint: CGPoint(x: customView.dotRowView.center.x + 10, y: customView.dotRowView.center.y))
+    animation.fromValue = NSValue(cgPoint: CGPoint(x: customView.dotRowView.center.x - .dotsShakeAnimationPositionDiff, y: customView.dotRowView.center.y))
+    animation.toValue = NSValue(cgPoint: CGPoint(x: customView.dotRowView.center.x + .dotsShakeAnimationPositionDiff, y: customView.dotRowView.center.y))
     customView.dotRowView.layer.add(animation, forKey: "position")
   }
   
   func removeDotRowInput() {
-    var count = 4
+    var count = CGFloat.dotsCount
     Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] timer in
       self?.customView.dotRowView.inputState = .input(count: count)
       count -= 1
@@ -149,4 +149,17 @@ private extension PasscodeInputViewController {
     animation.autoreverses = true
     return animation
   }
+}
+
+private extension CGFloat {
+  static let dotsCount = 4
+  static let dotsShakeAnimationPositionDiff: CGFloat = 10
+}
+
+private extension TimeInterval {
+  static let dotsShakeAnimationDuration: TimeInterval = 0.07
+}
+
+private extension Float {
+  static let dotsShakeAnimationRepeatCount: Float = 3
 }

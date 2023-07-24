@@ -29,18 +29,25 @@ struct TKKeyboardDecimalAmountConfiguration: TKKeyboardConfiguration {
 }
 
 struct TKKeyboardPasscodeConfiguration: TKKeyboardConfiguration {
-  let buttons: [TKKeyboardButton] = [
-    .init(buttonType: .digit(1), style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .digit(2), style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .digit(3), style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .digit(4), style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .digit(5), style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .digit(6), style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .digit(7), style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .digit(8), style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .digit(9), style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .biometry, style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .digit(0), style: .init(backgroundShape: .round, backgroundColor: .clear)),
-    .init(buttonType: .backspace, style: .init(backgroundShape: .round, backgroundColor: .clear))
-  ]
+  
+  let biometryButton: TKKeyboardButton
+  let buttons: [TKKeyboardButton]
+  
+  init() {
+    self.biometryButton = .init(buttonType: .biometry, style: .init(backgroundShape: .round, backgroundColor: .clear))
+    self.buttons = [
+     .init(buttonType: .digit(1), style: .init(backgroundShape: .round, backgroundColor: .clear)),
+     .init(buttonType: .digit(2), style: .init(backgroundShape: .round, backgroundColor: .clear)),
+     .init(buttonType: .digit(3), style: .init(backgroundShape: .round, backgroundColor: .clear)),
+     .init(buttonType: .digit(4), style: .init(backgroundShape: .round, backgroundColor: .clear)),
+     .init(buttonType: .digit(5), style: .init(backgroundShape: .round, backgroundColor: .clear)),
+     .init(buttonType: .digit(6), style: .init(backgroundShape: .round, backgroundColor: .clear)),
+     .init(buttonType: .digit(7), style: .init(backgroundShape: .round, backgroundColor: .clear)),
+     .init(buttonType: .digit(8), style: .init(backgroundShape: .round, backgroundColor: .clear)),
+     .init(buttonType: .digit(9), style: .init(backgroundShape: .round, backgroundColor: .clear)),
+     biometryButton,
+     .init(buttonType: .digit(0), style: .init(backgroundShape: .round, backgroundColor: .clear)),
+     .init(buttonType: .backspace, style: .init(backgroundShape: .round, backgroundColor: .clear))
+   ]
+  }
 }

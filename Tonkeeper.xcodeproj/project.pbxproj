@@ -70,8 +70,6 @@
 		7D3BCFCC2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFCB2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift */; };
 		7D3BCFCE2A4D90E200BE6AD9 /* PasscodeAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFCD2A4D90E200BE6AD9 /* PasscodeAssembly.swift */; };
 		7D3BCFD02A4D923400BE6AD9 /* PasscodeInputAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFCF2A4D923400BE6AD9 /* PasscodeInputAssembly.swift */; };
-		7D3BCFD32A4D98D300BE6AD9 /* PasscodeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD22A4D98D300BE6AD9 /* PasscodeButton.swift */; };
-		7D3BCFD52A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD42A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift */; };
 		7D3BCFD72A4DA4D300BE6AD9 /* PasscodeDotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD62A4DA4D300BE6AD9 /* PasscodeDotView.swift */; };
 		7D3BCFD92A4DA64500BE6AD9 /* PasscodeDotRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */; };
 		7D3BCFDC2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */; };
@@ -355,8 +353,6 @@
 		7D3BCFCB2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeCoordinator.swift; sourceTree = "<group>"; };
 		7D3BCFCD2A4D90E200BE6AD9 /* PasscodeAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFCF2A4D923400BE6AD9 /* PasscodeInputAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeInputAssembly.swift; sourceTree = "<group>"; };
-		7D3BCFD22A4D98D300BE6AD9 /* PasscodeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeButton.swift; sourceTree = "<group>"; };
-		7D3BCFD42A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeKeyboardView.swift; sourceTree = "<group>"; };
 		7D3BCFD62A4DA4D300BE6AD9 /* PasscodeDotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeDotView.swift; sourceTree = "<group>"; };
 		7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeDotRowView.swift; sourceTree = "<group>"; };
 		7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeConfigurator.swift; sourceTree = "<group>"; };
@@ -884,8 +880,6 @@
 		7D3BCFD12A4D98CD00BE6AD9 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				7D3BCFD22A4D98D300BE6AD9 /* PasscodeButton.swift */,
-				7D3BCFD42A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift */,
 				7D3BCFD62A4DA4D300BE6AD9 /* PasscodeDotView.swift */,
 				7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */,
 			);
@@ -2084,7 +2078,6 @@
 				7D9144332A32130500B0FD17 /* ModalCardContainerContent.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
 				7D527BC42A2A96CC00A2D29A /* ModalContentListView.swift in Sources */,
-				7D3BCFD52A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift in Sources */,
 				7D68364E2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift in Sources */,
 				7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */,
 				7D6836672A1D6E74002DBBC7 /* Module.swift in Sources */,
@@ -2136,7 +2129,6 @@
 				7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */,
 				7D527BC62A2A972A00A2D29A /* ModalContentListItemView.swift in Sources */,
 				7D70D3C02A2A03350096E1A2 /* Currency.swift in Sources */,
-				7D3BCFD32A4D98D300BE6AD9 /* PasscodeButton.swift in Sources */,
 				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
 				7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */,
 				7DE27E5F2A30C61E00842FA8 /* ActivityListDateCell.swift in Sources */,
