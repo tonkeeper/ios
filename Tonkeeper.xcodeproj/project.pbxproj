@@ -70,8 +70,6 @@
 		7D3BCFCC2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFCB2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift */; };
 		7D3BCFCE2A4D90E200BE6AD9 /* PasscodeAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFCD2A4D90E200BE6AD9 /* PasscodeAssembly.swift */; };
 		7D3BCFD02A4D923400BE6AD9 /* PasscodeInputAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFCF2A4D923400BE6AD9 /* PasscodeInputAssembly.swift */; };
-		7D3BCFD32A4D98D300BE6AD9 /* PasscodeButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD22A4D98D300BE6AD9 /* PasscodeButton.swift */; };
-		7D3BCFD52A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD42A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift */; };
 		7D3BCFD72A4DA4D300BE6AD9 /* PasscodeDotView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD62A4DA4D300BE6AD9 /* PasscodeDotView.swift */; };
 		7D3BCFD92A4DA64500BE6AD9 /* PasscodeDotRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */; };
 		7D3BCFDC2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */; };
@@ -186,6 +184,9 @@
 		7D70D3C62A2A037F0096E1A2 /* CryptoCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */; };
 		7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */; };
 		7D790EEB2A67E28200587C96 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */; };
+		7D80C0D52A6AA5F4007054DD /* TKKeyboardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */; };
+		7D80C0F72A6AA941007054DD /* TKKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0F62A6AA941007054DD /* TKKeyboardView.swift */; };
+		7D80C0F92A6AAC8E007054DD /* TKKeyboardConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0F82A6AAC8E007054DD /* TKKeyboardConfiguration.swift */; };
 		7D8EB7202A4ED86B005BE1B0 /* CreateWalletCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */; };
 		7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */; };
 		7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */; };
@@ -352,8 +353,6 @@
 		7D3BCFCB2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeCoordinator.swift; sourceTree = "<group>"; };
 		7D3BCFCD2A4D90E200BE6AD9 /* PasscodeAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFCF2A4D923400BE6AD9 /* PasscodeInputAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeInputAssembly.swift; sourceTree = "<group>"; };
-		7D3BCFD22A4D98D300BE6AD9 /* PasscodeButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeButton.swift; sourceTree = "<group>"; };
-		7D3BCFD42A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeKeyboardView.swift; sourceTree = "<group>"; };
 		7D3BCFD62A4DA4D300BE6AD9 /* PasscodeDotView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeDotView.swift; sourceTree = "<group>"; };
 		7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeDotRowView.swift; sourceTree = "<group>"; };
 		7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeConfigurator.swift; sourceTree = "<group>"; };
@@ -466,6 +465,9 @@
 		7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoCurrency.swift; sourceTree = "<group>"; };
 		7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyWallet.swift; sourceTree = "<group>"; };
 		7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
+		7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardButton.swift; sourceTree = "<group>"; };
+		7D80C0F62A6AA941007054DD /* TKKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardView.swift; sourceTree = "<group>"; };
+		7D80C0F82A6AAC8E007054DD /* TKKeyboardConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardConfiguration.swift; sourceTree = "<group>"; };
 		7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletCoordinator.swift; sourceTree = "<group>"; };
 		7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletAssembly.swift; sourceTree = "<group>"; };
 		7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCreator.swift; sourceTree = "<group>"; };
@@ -878,8 +880,6 @@
 		7D3BCFD12A4D98CD00BE6AD9 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				7D3BCFD22A4D98D300BE6AD9 /* PasscodeButton.swift */,
-				7D3BCFD42A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift */,
 				7D3BCFD62A4DA4D300BE6AD9 /* PasscodeDotView.swift */,
 				7D3BCFD82A4DA64500BE6AD9 /* PasscodeDotRowView.swift */,
 			);
@@ -1426,6 +1426,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D80C0D32A6AA5E3007054DD /* TKKeyboard */,
 				7D849C222A6556CB005787E9 /* ButtonsRowView */,
 				7D49346F2A5C9F7D00F4BCA2 /* TKMenu */,
 				7DEE8E1B2A579808004D42B7 /* ActivityViewContainer */,
@@ -1504,6 +1505,16 @@
 				7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7D80C0D32A6AA5E3007054DD /* TKKeyboard */ = {
+			isa = PBXGroup;
+			children = (
+				7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */,
+				7D80C0F62A6AA941007054DD /* TKKeyboardView.swift */,
+				7D80C0F82A6AAC8E007054DD /* TKKeyboardConfiguration.swift */,
+			);
+			name = TKKeyboard;
 			sourceTree = "<group>";
 		};
 		7D849C222A6556CB005787E9 /* ButtonsRowView */ = {
@@ -2067,7 +2078,6 @@
 				7D9144332A32130500B0FD17 /* ModalCardContainerContent.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
 				7D527BC42A2A96CC00A2D29A /* ModalContentListView.swift in Sources */,
-				7D3BCFD52A4D9B1F00BE6AD9 /* PasscodeKeyboardView.swift in Sources */,
 				7D68364E2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift in Sources */,
 				7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */,
 				7D6836672A1D6E74002DBBC7 /* Module.swift in Sources */,
@@ -2078,6 +2088,7 @@
 				7D3BCFCE2A4D90E200BE6AD9 /* PasscodeAssembly.swift in Sources */,
 				7D9292882A24CCB8005B83DF /* PagingContentViewController.swift in Sources */,
 				7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */,
+				7D80C0D52A6AA5F4007054DD /* TKKeyboardButton.swift in Sources */,
 				7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */,
 				7D91442D2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift in Sources */,
 				7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */,
@@ -2118,7 +2129,6 @@
 				7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */,
 				7D527BC62A2A972A00A2D29A /* ModalContentListItemView.swift in Sources */,
 				7D70D3C02A2A03350096E1A2 /* Currency.swift in Sources */,
-				7D3BCFD32A4D98D300BE6AD9 /* PasscodeButton.swift in Sources */,
 				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
 				7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */,
 				7DE27E5F2A30C61E00842FA8 /* ActivityListDateCell.swift in Sources */,
@@ -2159,6 +2169,7 @@
 				7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */,
 				8FD2051305C8DE79A1D70FBA /* WalletContentPresenter.swift in Sources */,
 				7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */,
+				7D80C0F72A6AA941007054DD /* TKKeyboardView.swift in Sources */,
 				7D3E43B62A373B2200C23A75 /* ModalCardContainerScrollController.swift in Sources */,
 				4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */,
 				7D9292F82A29DCDA005B83DF /* SendAmountView.swift in Sources */,
@@ -2191,6 +2202,7 @@
 				7D3BCFE12A4EBE7E00BE6AD9 /* SuccessViewController.swift in Sources */,
 				48DB3E42B318C80B7090AFD0 /* ActivityEmptyProtocols.swift in Sources */,
 				2E9AD80F15E6019A55846F61 /* ActivityListViewController.swift in Sources */,
+				7D80C0F92A6AAC8E007054DD /* TKKeyboardConfiguration.swift in Sources */,
 				27E0B9B4BE1065171C3AFD76 /* ActivityListView.swift in Sources */,
 				7D4934752A5CA44000F4BCA2 /* TKMenuItem.swift in Sources */,
 				14250E44D164B234E513925F /* ActivityListPresenter.swift in Sources */,

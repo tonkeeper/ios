@@ -18,8 +18,16 @@ final class AmountInputFormatController: NSObject {
     self.inputFormatter.maximumIntegerCharacters = .maximumIntegerDigits
   }
   
-  func getUnformattedString(_ string: String?) -> String? {
+  var groupingSeparator: String? {
+    currencyFormatter.groupingSeparator
+  }
+  
+  func unformatString(_ string: String?) -> String? {
     inputFormatter.unformat(string)
+  }
+  
+  func formatString(_ string: String?) -> String? {
+    inputFormatter.format(string)
   }
 }
 
@@ -39,11 +47,12 @@ extension AmountInputFormatController: UITextFieldDelegate {
                  replacementString string: String) -> Bool {
     let currentText = textField.text ?? ""
     guard string != inputFormatter.decimalSeparator || !currentText.isEmpty else { return false }
+    guard Set(string).isSubset(of: .validCharactes) else { return false }
     
     let result = inputFormatter.formatInput(
       currentText: currentText,
       range: range,
-      replacementString: string
+      replacementString: inputFormatter.unformat(string) ?? ""
     )
     
     textField.text = result.formattedText
@@ -65,4 +74,8 @@ private extension UITextField {
       self.selectedTextRange = self.textRange(from: cursorLocation, to: cursorLocation)
     }
   }
+}
+
+private extension Set<Character> {
+  static let validCharactes: Set<Character> = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", ",", " "]
 }

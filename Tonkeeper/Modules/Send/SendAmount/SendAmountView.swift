@@ -23,9 +23,7 @@ final class SendAmountView: UIView {
   private let contentView = UIView()
   private let enterAmountContainer = UIView()
   
-  private var contentViewBottomConstraint: NSLayoutConstraint?
-  
-  private var keyboardHeight: CGFloat = 0
+  let keyboardView = TKKeyboardView(configuration: TKKeyboardDecimalAmountConfiguration())
   
   // MARK: - Init
 
@@ -36,13 +34,6 @@ final class SendAmountView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
-  }
-  
-  // MARK: - Layout
-  
-  override func safeAreaInsetsDidChange() {
-    super.safeAreaInsetsDidChange()
-    updateContentViewBottomConstraint()
   }
   
   // MARK: - Embed
@@ -59,20 +50,6 @@ final class SendAmountView: UIView {
         .withPriority(.defaultHigh)
     ])
   }
-  
-  // MARK: - Keyboard
-  
-  func updateKeyboardHeight(_ height: CGFloat,
-                            duration: TimeInterval,
-                            curve: UIView.AnimationCurve) {
-    keyboardHeight = height
-    updateContentViewBottomConstraint()
-    layoutIfNeeded()
-    UIViewPropertyAnimator(duration: duration, curve: curve) {
-      self.layoutIfNeeded()
-    }
-    .startAnimation()
-  }
 }
 
 // MARK: - Private
@@ -81,22 +58,24 @@ private extension SendAmountView {
   func setup() {
     backgroundColor = .Background.page
     
+    keyboardView.size = .small
+    
     addSubview(contentView)
     contentView.addSubview(enterAmountContainer)
     contentView.addSubview(continueButtonActivityContainer)
+    addSubview(keyboardView)
     
     contentView.translatesAutoresizingMaskIntoConstraints = false
     enterAmountContainer.translatesAutoresizingMaskIntoConstraints = false
     continueButtonActivityContainer.translatesAutoresizingMaskIntoConstraints = false
-    
-    contentViewBottomConstraint = contentView.bottomAnchor.constraint(equalTo: bottomAnchor)
-    contentViewBottomConstraint?.isActive = true
+    keyboardView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       contentView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
       contentView.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
       contentView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace)
         .withPriority(.defaultHigh),
+      contentView.bottomAnchor.constraint(equalTo: keyboardView.topAnchor, constant: -20),
       
       enterAmountContainer.topAnchor.constraint(equalTo: contentView.topAnchor),
       enterAmountContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
@@ -107,16 +86,10 @@ private extension SendAmountView {
       continueButtonActivityContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
       continueButtonActivityContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor),
       continueButtonActivityContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+      
+      keyboardView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
+      keyboardView.leftAnchor.constraint(equalTo: leftAnchor),
+      keyboardView.rightAnchor.constraint(equalTo: rightAnchor)
     ])
   }
-  
-  func updateContentViewBottomConstraint() {
-    contentViewBottomConstraint?.constant = keyboardHeight == 0
-    ? -safeAreaInsets.bottom
-    : -(keyboardHeight + .contentViewBottomSpace)
-  }
-}
-
-private extension CGFloat {
-  static let contentViewBottomSpace: CGFloat = 16
 }

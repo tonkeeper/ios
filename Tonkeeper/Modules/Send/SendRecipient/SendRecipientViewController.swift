@@ -41,9 +41,14 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
     }
   }
   
+  override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    unregisterFromKeyboardEvents()
+  }
+  
   override func viewDidDisappear(_ animated: Bool) {
     super.viewDidDisappear(animated)
-    unregisterFromKeyboardEvents()
+//    unregisterFromKeyboardEvents()
   }
   
   // MARK: - Keyboard
@@ -112,8 +117,8 @@ private extension SendRecipientViewController {
       for: .touchUpInside)
     
     customView.continueButton.addAction(.init(handler: { [weak self] in
-      self?.customView.addressTextField.resignFirstResponder()
-      self?.customView.commentTextField.resignFirstResponder()
+//      self?.customView.addressTextField.resignFirstResponder()
+//      self?.customView.commentTextField.resignFirstResponder()
       self?.presenter.didTapContinueButton()
     }), for: .touchUpInside)
   }

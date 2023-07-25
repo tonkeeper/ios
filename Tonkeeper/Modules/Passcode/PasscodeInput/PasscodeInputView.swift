@@ -10,7 +10,8 @@ import UIKit
 
 final class PasscodeInputView: UIView {
   
-  let keyboardView = PasscodeKeyboardView()
+  let keyboardConfiguration = TKKeyboardPasscodeConfiguration()
+  lazy var keyboardView = TKKeyboardView(configuration: keyboardConfiguration)
   let dotRowView = PasscodeDotRowView()
   let titleLabel: UILabel = {
     let label = UILabel()
@@ -36,11 +37,11 @@ final class PasscodeInputView: UIView {
   // MARK: - Biometry
   
   func hideBiometryButton() {
-    keyboardView.biometryButton.alpha = 0
+    keyboardConfiguration.biometryButton.alpha = 0
   }
   
   func showBiometryButton() {
-    keyboardView.biometryButton.alpha = 1
+    keyboardConfiguration.biometryButton.alpha = 1
   }
 }
 

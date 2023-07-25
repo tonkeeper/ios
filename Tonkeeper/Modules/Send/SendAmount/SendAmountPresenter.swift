@@ -68,7 +68,7 @@ extension SendAmountPresenter: SendAmountPresenterInput {
   }
   
   func didChangeAmountText(text: String?) {
-    sendInputController.didChangeInput(string: amountInputFormatController.getUnformattedString(text))
+    sendInputController.didChangeInput(string: amountInputFormatController.unformatString(text))
   }
   
   func didTapSwapButton() {
