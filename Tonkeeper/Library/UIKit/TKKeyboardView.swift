@@ -33,6 +33,11 @@ final class TKKeyboardView: UIView {
   private let configuration: TKKeyboardConfiguration
   private let stackView = UIStackView()
   
+  // MARK: - State
+  
+  private var timer: Timer?
+  private var touchedDownButton: TKKeyboardButton?
+  
   // MARK: - Init
   
   init(configuration: TKKeyboardConfiguration) {
@@ -62,8 +67,8 @@ private extension TKKeyboardView {
     NSLayoutConstraint.activate([
       stackView.topAnchor.constraint(equalTo: topAnchor),
       stackView.leftAnchor.constraint(equalTo: leftAnchor),
-      stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      stackView.rightAnchor.constraint(equalTo: rightAnchor)
+      stackView.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
+      stackView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh)
     ])
   }
   
@@ -83,7 +88,14 @@ private extension TKKeyboardView {
       
       for button in row {
         rowStackView.addArrangedSubview(button)
-        button.addTarget(self, action: #selector(didTapButton(button:)), for: .touchUpInside)
+        button.addTarget(self, action: #selector(didTouchUpButton(button:)), for: .touchUpInside)
+        button.addTarget(self, action: #selector(didTouchDown(button:)), for: .touchDown)
+        button.addTarget(self, action: #selector(didDragExitButton(button:)), for: .touchDragExit)
+        if case .backspace = button.buttonType {
+          let longTapGesture = UILongPressGestureRecognizer(target: self, action: #selector(didLongTap(gestureRecognizer:)))
+          longTapGesture.minimumPressDuration = 0.2
+          button.addGestureRecognizer(longTapGesture)
+        }
       }
       
       stackView.addArrangedSubview(rowStackView)
@@ -91,7 +103,17 @@ private extension TKKeyboardView {
   }
   
   @objc
-  func didTapButton(button: TKKeyboardButton) {
+  func didTouchDown(button: TKKeyboardButton) {
+    if let touchedDownButton = touchedDownButton {
+      touchedDownButton.cancelTracking(with: nil)
+      didTouchUpButton(button: touchedDownButton)
+    }
+    touchedDownButton = button
+  }
+  
+  @objc
+  func didTouchUpButton(button: TKKeyboardButton) {
+    touchedDownButton = nil
     switch button.buttonType {
     case .backspace:
       delegate?.keyboardDidTapBackspace(self)
@@ -101,6 +123,26 @@ private extension TKKeyboardView {
       (delegate as? TKKeyboardViewFractionalDelegate)?.keyboard(self, didTapDecimalSeparator: Locale.current.decimalSeparator ?? ".")
     case .digit(let digit):
       delegate?.keyboard(self, didTapDigit: digit)
+    }
+  }
+  
+  @objc
+  func didDragExitButton(button: TKKeyboardButton) {
+    touchedDownButton = nil
+  }
+  
+  @objc
+  func didLongTap(gestureRecognizer: UILongPressGestureRecognizer) {
+    switch gestureRecognizer.state {
+    case .began:
+      timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) {[weak self] timer in
+        guard let self = self else { return }
+        delegate?.keyboardDidTapBackspace(self)
+      }
+    case .ended, .cancelled, .failed:
+      timer?.invalidate()
+    default:
+      break
     }
   }
 }

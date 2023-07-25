@@ -61,20 +61,20 @@ final class TKKeyboardButton: UIControlClosure {
       case round
       case rect
       
-      var unhightlightScale: CGFloat {
+      var unhightlightTransform: CGAffineTransform {
         switch self {
         case .rect:
-          return .highlightScale
+          return .identity
         case .round:
-          return .notHighlightedScale
+          return .init(scaleX: .notHighlightedScale, y: .notHighlightedScale)
         }
       }
-      var highlightScale: CGFloat {
+      var highlightTransform: CGAffineTransform {
         switch self {
         case .rect:
-          return .highlightScale
+          return .identity
         case .round:
-          return .highlightScale
+          return .identity
         }
       }
     }
@@ -112,6 +112,7 @@ final class TKKeyboardButton: UIControlClosure {
   private lazy var tintView: UIView = {
     let view = UIView()
     view.backgroundColor = style.backgroundColor.tintViewBackgroundColor
+    view.transform = style.backgroundShape.unhightlightTransform
     view.isUserInteractionEnabled = false
     return view
   }()
@@ -120,6 +121,7 @@ final class TKKeyboardButton: UIControlClosure {
   
   override var isHighlighted: Bool {
     didSet {
+      guard isHighlighted != oldValue else { return }
       updateIsHighlightedState()
     }
   }
@@ -150,15 +152,12 @@ final class TKKeyboardButton: UIControlClosure {
   
   override func layoutSubviews() {
     super.layoutSubviews()
-    button.frame = bounds
     
     switch style.backgroundShape {
     case .round:
-      tintView.frame = .init(x: bounds.width/2 - bounds.height/2, y: 0, width: bounds.height, height: bounds.height)
       tintView.layer.cornerRadius = bounds.height / 2
     case .rect:
-      tintView.frame = bounds.insetBy(dx: 4, dy: 4)
-      tintView.layer.cornerRadius = 16
+      tintView.layer.cornerRadius = .tintCornerRadius
     }
   }
   
@@ -181,16 +180,46 @@ private extension TKKeyboardButton {
     
     button.setTitle(buttonType.title, for: .normal)
     button.setImage(buttonType.image, for: .normal)
+    
+    setupConstraints()
+  }
+  
+  func setupConstraints() {
+    button.translatesAutoresizingMaskIntoConstraints = false
+    tintView.translatesAutoresizingMaskIntoConstraints = false
+    
+    switch style.backgroundShape {
+    case .round:
+      NSLayoutConstraint.activate([
+        tintView.heightAnchor.constraint(equalTo: heightAnchor),
+        tintView.widthAnchor.constraint(equalTo: heightAnchor),
+        tintView.centerXAnchor.constraint(equalTo: centerXAnchor),
+        tintView.centerYAnchor.constraint(equalTo: centerYAnchor)
+      ])
+    case .rect:
+      NSLayoutConstraint.activate([
+        tintView.topAnchor.constraint(equalTo: topAnchor, constant: 4),
+        tintView.leftAnchor.constraint(equalTo: leftAnchor, constant: 4),
+        tintView.rightAnchor.constraint(equalTo: rightAnchor, constant: -4).withPriority(.defaultHigh),
+        tintView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4).withPriority(.defaultHigh)
+      ])
+    }
+    
+    NSLayoutConstraint.activate([
+      button.topAnchor.constraint(equalTo: topAnchor),
+      button.leftAnchor.constraint(equalTo: leftAnchor),
+      button.rightAnchor.constraint(equalTo: rightAnchor),
+      button.bottomAnchor.constraint(equalTo: bottomAnchor)
+    ])
   }
   
   func updateIsHighlightedState() {
-    let startScale = isHighlighted ? style.backgroundShape.highlightScale : style.backgroundShape.unhightlightScale
-    let finalScale = isHighlighted ? style.backgroundShape.unhightlightScale : style.backgroundShape.highlightScale
-    tintView.transform = CGAffineTransform(scaleX: startScale, y: startScale)
+    let transform = isHighlighted ? style.backgroundShape.highlightTransform : style.backgroundShape.unhightlightTransform
     let backgroundColor: UIColor = isHighlighted ? style.backgroundColor.highlighViewBackgroundColor : style.backgroundColor.tintViewBackgroundColor
+
     let animation = {
       self.tintView.backgroundColor = backgroundColor
-      self.tintView.transform = CGAffineTransform(scaleX: finalScale, y: finalScale)
+      self.tintView.transform = transform
     }
     UIView.animate(withDuration: .animationDuration, delay: 0, options: [.curveEaseInOut]) {
       animation()
@@ -203,6 +232,7 @@ private extension CGFloat {
   static let buttonSmallHeight: CGFloat = 60
   static let notHighlightedScale: CGFloat = 0.8
   static let highlightScale: CGFloat = 1
+  static let tintCornerRadius: CGFloat = 16
 }
 
 private extension TimeInterval {
