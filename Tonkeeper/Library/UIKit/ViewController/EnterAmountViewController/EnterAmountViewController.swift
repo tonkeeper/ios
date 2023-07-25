@@ -52,6 +52,73 @@ final class EnterAmountViewController: GenericViewController<EnterAmountView> {
       self.customView.secondaryCurrencyButton.layoutIfNeeded()
     }
   }
+  
+  func setInput(_ input: String) {
+    guard let selectedRange = customView.amountTextField.selectedTextRange else { return }
+    
+    let selectionStart = customView.amountTextField.offset(from: customView.amountTextField.beginningOfDocument, to: selectedRange.start)
+    let selectionEnd = customView.amountTextField.offset(from: customView.amountTextField.beginningOfDocument, to: selectedRange.end)
+    
+    let currentText = customView.amountTextField.text ?? ""
+    
+    let startIndex = currentText.startIndex
+    let selectionStartIndex = currentText.index(startIndex, offsetBy: selectionStart)
+    let selectionEndIndex = currentText.index(startIndex, offsetBy: selectionEnd)
+  
+    var result = currentText
+    result.replaceSubrange(selectionStartIndex..<selectionEndIndex, with: input)
+    result = formatController?.unformatString(result) ?? ""
+    result = formatController?.formatString(result) ?? ""
+    
+    customView.amountTextField.text = result
+    if let newPosition = customView.amountTextField.position(from: customView.amountTextField.beginningOfDocument, offset: selectionEnd + result.count - currentText.count) {
+      customView.amountTextField.selectedTextRange = customView.amountTextField.textRange(from: newPosition, to: newPosition)
+    }
+    
+    updateFontsToFit()
+    didChangeText?(customView.amountTextField.text)
+  }
+  
+  func deleteBackward() {
+    let textField = customView.amountTextField
+    let currentText = textField.text ?? ""
+    guard !currentText.isEmpty,
+          let selectedRange = textField.selectedTextRange else { return }
+    
+    let selectionStart = textField.offset(from: textField.beginningOfDocument, to: selectedRange.start)
+    let selectionEnd = textField.offset(from: textField.beginningOfDocument, to: selectedRange.end)
+    
+    guard selectionStart > 0 || (selectionEnd - selectionStart) > 0 else { return }
+    
+    var result = currentText
+    
+    let startIndex = currentText.startIndex
+    let selectionStartIndex = currentText.index(startIndex, offsetBy: selectionStart)
+    let selectionEndIndex = currentText.index(startIndex, offsetBy: selectionEnd)
+    
+    if selectionEnd - selectionStart > 0 {
+      result.replaceSubrange(selectionStartIndex..<selectionEndIndex, with: "")
+    } else {
+      var deleteCharIndex = currentText.index(before: selectionStartIndex)
+      let deleteChar = currentText[deleteCharIndex..<selectionStartIndex]
+      if deleteChar == (formatController?.groupingSeparator ?? " ") {
+        deleteCharIndex = currentText.index(before: deleteCharIndex)
+      }
+      result.replaceSubrange(deleteCharIndex..<selectionStartIndex, with: "")
+    }
+    
+    result = formatController?.unformatString(result) ?? ""
+    result = formatController?.formatString(result) ?? ""
+    
+    customView.amountTextField.text = result
+    let newCursorPositionOffset = selectionStart - (currentText.count - result.count)
+    if let newPosition = textField.position(from: textField.beginningOfDocument, offset: newCursorPositionOffset) {
+      textField.selectedTextRange = textField.textRange(from: newPosition, to: newPosition)
+    }
+
+    updateFontsToFit()
+    didChangeText?(result)
+  }
 }
 
 private extension EnterAmountViewController {
@@ -61,7 +128,8 @@ private extension EnterAmountViewController {
       action: #selector(textDidChange(textField:)),
       for: .editingChanged
     )
-    
+  
+    customView.amountTextField.inputView = UIView()
     customView.tokenSelectionButton.addAction(.init(handler: { [weak self] in
       self?.didTapTokenButton?()
     }), for: .touchUpInside)

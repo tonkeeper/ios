@@ -91,6 +91,7 @@ private extension TKKeyboardView {
         button.addTarget(self, action: #selector(didTouchUpButton(button:)), for: .touchUpInside)
         button.addTarget(self, action: #selector(didTouchDown(button:)), for: .touchDown)
         button.addTarget(self, action: #selector(didDragExitButton(button:)), for: .touchDragExit)
+        button.addTarget(self, action: #selector(didDragExitButton(button:)), for: .touchCancel)
         if case .backspace = button.buttonType {
           let longTapGesture = UILongPressGestureRecognizer(target: self, action: #selector(didLongTap(gestureRecognizer:)))
           longTapGesture.minimumPressDuration = 0.2

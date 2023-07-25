@@ -8,7 +8,7 @@
 
 import UIKit
 
-class SendAmountViewController: GenericViewController<SendAmountView>, KeyboardObserving {
+class SendAmountViewController: GenericViewController<SendAmountView> {
 
   // MARK: - Module
 
@@ -38,46 +38,7 @@ class SendAmountViewController: GenericViewController<SendAmountView>, KeyboardO
   
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
-    
-  }
-  
-  override func viewWillDisappear(_ animated: Bool) {
-    super.viewWillDisappear(animated)
-    unregisterFromKeyboardEvents()
-  }
-  
-  override func viewDidAppear(_ animated: Bool) {
-    super.viewDidAppear(animated)
-    registerForKeyboardEvents()
     enterAmountViewController.becomeFirstResponder()
-  }
-  
-  // MARK: - Keyboard
-  
-  func keyboardWillShow(_ notification: Notification) {
-    guard let keyboardSize = notification.keyboardSize,
-    let duration = notification.keyboardAnimationDuration,
-    let curve = notification.keyboardAnimationCurve else { return }
-    customView.updateKeyboardHeight(keyboardSize.height,
-                                    duration: duration,
-                                    curve: curve)
-  }
-  
-  func keyboardWillHide(_ notification: Notification) {
-    guard let duration = notification.keyboardAnimationDuration,
-    let curve = notification.keyboardAnimationCurve else { return }
-    customView.updateKeyboardHeight(0,
-                                    duration: duration,
-                                    curve: curve)
-  }
-  
-  func keyboardWillChangeFrame(_ notification: Notification) {
-    guard let keyboardSize = notification.keyboardSize,
-    let duration = notification.keyboardAnimationDuration,
-    let curve = notification.keyboardAnimationCurve else { return }
-    customView.updateKeyboardHeight(keyboardSize.height,
-                                    duration: duration,
-                                    curve: curve)
   }
 }
 
@@ -139,6 +100,20 @@ extension SendAmountViewController: SendAmountViewInput {
   }
 }
 
+extension SendAmountViewController: TKKeyboardViewDelegate, TKKeyboardViewFractionalDelegate {
+  func keyboard(_ keyboard: TKKeyboardView, didTapDigit digit: Int) {
+    enterAmountViewController.setInput("\(digit)")
+  }
+  
+  func keyboardDidTapBackspace(_ keyboard: TKKeyboardView) {
+    enterAmountViewController.deleteBackward()
+  }
+  
+  func keyboard(_ keyboard: TKKeyboardView, didTapDecimalSeparator separator: String) {
+    enterAmountViewController.setInput("\(separator)")
+  }
+}
+
 // MARK: - Private
 
 private extension SendAmountViewController {
@@ -152,6 +127,8 @@ private extension SendAmountViewController {
     customView.continueButton.addAction(.init(handler: { [weak self] in
       self?.presenter.didTapContinueButton()
     }), for: .touchUpInside)
+    
+    customView.keyboardView.delegate = self
     
     setupEnterAmount()
   }

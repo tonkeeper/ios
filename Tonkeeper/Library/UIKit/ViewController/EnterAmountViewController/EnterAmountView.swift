@@ -60,7 +60,7 @@ final class EnterAmountView: UIView {
   }()
   
   let secondaryCurrencyButton: UIButton = {
-    let button = UIButton(type: .system)
+    let button = UIButton(type: .custom)
     button.titleLabel?.applyTextStyleFont(.body1)
     button.setTitleColor(.Text.secondary, for: .normal)
     button.layer.masksToBounds = true
