@@ -53,6 +53,8 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
   }
   
   func configure(model: ModalContentViewController.Configuration.ActionBar) {
+    itemsStackView.subviews.forEach { $0.removeFromSuperview() }
+    
     model.items.forEach { item in
       switch item {
       case let .buttons(buttonModels):
@@ -61,6 +63,7 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
         stackView.spacing = .contentSpacing
         buttonModels.forEach { buttonModel in
           let button = TKButton(configuration: buttonModel.configuration)
+          let buttonActivityContainer = ActivityViewContainer(view: button)
           button.addAction(.init(handler: { [weak self] in
             let completionClosure: (Bool) -> Void = { [weak self] isSuccess in
               self?.hideLoader()
@@ -73,13 +76,16 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
               }
             }
             buttonModel.tapAction?(completionClosure)
-            if buttonModel.showActivityClosure?() == true {
+            if buttonModel.showActivityOnTap?() == true {
               self?.hideActions()
               self?.showLoader()
             }
           }), for: .touchUpInside)
+          if buttonModel.showActivity?() == true {
+            buttonActivityContainer.showActivity()
+          }
           button.titleLabel.text = buttonModel.title
-          stackView.addArrangedSubview(button)
+          stackView.addArrangedSubview(buttonActivityContainer)
         }
         itemsStackView.addArrangedSubview(stackView)
       }

@@ -27,25 +27,19 @@ final class SendAmountPresenter {
 
   private let inputCurrencyFormatter: NumberFormatter
   private let address: String
-  private let comment: String?
   
   let amountInputFormatController: AmountInputFormatController
   let sendInputController: SendInputController
-  let sendController: SendController
   
   // MARK: - Init
   
   init(inputCurrencyFormatter: NumberFormatter,
        sendInputController: SendInputController,
-       sendController: SendController,
-       address: String,
-       comment: String?) {
+       address: String) {
     self.inputCurrencyFormatter = inputCurrencyFormatter
     self.amountInputFormatController = AmountInputFormatController(currencyFormatter: inputCurrencyFormatter)
     self.sendInputController = sendInputController
-    self.sendController = sendController
     self.address = address
-    self.comment = comment
   }
 }
 
@@ -87,37 +81,8 @@ extension SendAmountPresenter: SendAmountPresenterInput {
   }
   
   func didTapContinueButton() {
-    viewInput?.showActivity()
-    Task {
-      do {
-        let transactionBoc: String
-        guard let tokenTransferData = sendInputController.tokenTransferData else { return }
-        switch tokenTransferData.token {
-        case .ton:
-          transactionBoc = try await sendController.prepareSendTonTransaction(
-            value: tokenTransferData.amount,
-            address: address,
-            comment: comment
-          )
-        case .token(let address):
-          transactionBoc = try await sendController.prepareSendTokenTransaction(
-            tokenAddress: address.toString(),
-            value: tokenTransferData.amount,
-            address: self.address,
-            comment: comment
-          )
-        }
-        let transactionModel = try await sendController.loadTransactionInformation(transactionBoc: transactionBoc)
-        Task { @MainActor in
-          viewInput?.hideActivity()
-          output?.sendAmountModuleDidPrepareTransaction(transactionModel)
-        }
-      } catch {
-        Task { @MainActor in
-          viewInput?.hideActivity()
-        }
-      }
-    }
+    guard let itemTransferModel = sendInputController.itemTransferModel else { return }
+    output?.sendAmountModuleDidEnterAmount(itemTransferModel: itemTransferModel)
   }
   
   func didSelectToken(at index: Int) {

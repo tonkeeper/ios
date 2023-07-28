@@ -44,6 +44,10 @@ extension SendConfirmationViewController: SendConfirmationViewInput {
   func update(with configuration: ModalContentViewController.Configuration) {
     contentViewController.configuration = configuration
   }
+  
+  func update(with actionBarConfiguration: ModalContentViewController.Configuration.ActionBar) {
+    contentViewController.actionBarModel = actionBarConfiguration
+  }
 }
 
 // MARK: - Private
