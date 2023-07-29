@@ -135,7 +135,7 @@ private extension SendRecipientView {
   
   func updateContinueButtonBottomConstraint() {
     continueButtonBottomConstraint?.constant = keyboardHeight == 0
-    ? -safeAreaInsets.bottom
+    ? -safeAreaInsets.bottom - .continueButtonBottomSpace
     : -keyboardHeight - .continueButtonBottomSpace
   }
 }

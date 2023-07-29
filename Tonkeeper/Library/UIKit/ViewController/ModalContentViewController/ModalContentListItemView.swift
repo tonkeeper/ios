@@ -93,6 +93,10 @@ private extension ModalContentListItemView {
   func setup() {
     didUpdateIsHighlighted()
     
+    rightStackView.isUserInteractionEnabled = false
+    
+    rightTopLabel.numberOfLines = 0
+    
     addSubview(leftLabel)
     addSubview(rightStackView)
     addSubview(separatorView)
@@ -105,6 +109,10 @@ private extension ModalContentListItemView {
     rightStackView.setCustomSpacing(4, after: rightTopShimmerView)
     
     leftLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    rightTopLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    rightTopShimmerView.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
+    rightBottomLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
+    rightBottomShimmerView.setContentCompressionResistancePriority(.defaultHigh, for: .horizontal)
     
     leftLabel.translatesAutoresizingMaskIntoConstraints = false
     rightTopShimmerView.translatesAutoresizingMaskIntoConstraints = false
@@ -112,8 +120,8 @@ private extension ModalContentListItemView {
     rightStackView.translatesAutoresizingMaskIntoConstraints = false
     separatorView.translatesAutoresizingMaskIntoConstraints = false
     
-    rightTopShimmerWidthConstraint = rightTopShimmerView.widthAnchor.constraint(equalToConstant: .shimmerWidth)
-    rightBottomShimmerWidthConstraint = rightBottomShimmerView.widthAnchor.constraint(equalToConstant: .shimmerWidth)
+    rightTopShimmerWidthConstraint = rightTopShimmerView.widthAnchor.constraint(equalToConstant: .shimmerWidth).withPriority(.defaultHigh)
+    rightBottomShimmerWidthConstraint = rightBottomShimmerView.widthAnchor.constraint(equalToConstant: .shimmerWidth).withPriority(.defaultHigh)
     
     NSLayoutConstraint.activate([
       leftLabel.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),

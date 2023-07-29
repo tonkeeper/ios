@@ -198,10 +198,10 @@ private extension TKKeyboardButton {
       ])
     case .rect:
       NSLayoutConstraint.activate([
-        tintView.topAnchor.constraint(equalTo: topAnchor, constant: 4),
-        tintView.leftAnchor.constraint(equalTo: leftAnchor, constant: 4),
-        tintView.rightAnchor.constraint(equalTo: rightAnchor, constant: -4).withPriority(.defaultHigh),
-        tintView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -4).withPriority(.defaultHigh)
+        tintView.topAnchor.constraint(equalTo: topAnchor),
+        tintView.leftAnchor.constraint(equalTo: leftAnchor),
+        tintView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
+        tintView.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh)
       ])
     }
     
@@ -229,7 +229,7 @@ private extension TKKeyboardButton {
 
 private extension CGFloat {
   static let buttonBigHeight: CGFloat = 72
-  static let buttonSmallHeight: CGFloat = 60
+  static let buttonSmallHeight: CGFloat = 52
   static let notHighlightedScale: CGFloat = 0.8
   static let highlightScale: CGFloat = 1
   static let tintCornerRadius: CGFloat = 16

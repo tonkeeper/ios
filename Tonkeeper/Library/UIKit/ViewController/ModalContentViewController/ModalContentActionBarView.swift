@@ -35,7 +35,7 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
   }()
   
   private let resultView = ResultView(state: .success)
-  
+  private lazy var stackViewContainer = ButtonBottomContainer(button: itemsStackView, insets: .init(top: 0, left: 0, bottom: 0, right: 0))
   private var stackViewBottomConstraint: NSLayoutConstraint?
   
   override init(frame: CGRect) {
@@ -60,7 +60,6 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
       case let .buttons(buttonModels):
         let stackView = UIStackView()
         stackView.axis = .horizontal
-        stackView.spacing = .contentSpacing
         buttonModels.forEach { buttonModel in
           let button = TKButton(configuration: buttonModel.configuration)
           let buttonActivityContainer = ActivityViewContainer(view: button)
@@ -96,7 +95,7 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
 private extension ModalContentActionBarView {
   func setup() {
     addSubview(backgroundView)
-    addSubview(itemsStackView)
+    addSubview(stackViewContainer)
     addSubview(loaderView)
     addSubview(resultView)
     
@@ -107,7 +106,7 @@ private extension ModalContentActionBarView {
   }
   
   func setupConstraints() {
-    itemsStackView.translatesAutoresizingMaskIntoConstraints = false
+    stackViewContainer.translatesAutoresizingMaskIntoConstraints = false
     backgroundView.translatesAutoresizingMaskIntoConstraints = false
     loaderView.translatesAutoresizingMaskIntoConstraints = false
     resultView.translatesAutoresizingMaskIntoConstraints = false
@@ -120,9 +119,9 @@ private extension ModalContentActionBarView {
       backgroundView.rightAnchor.constraint(equalTo: rightAnchor),
       backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
       
-      itemsStackView.topAnchor.constraint(equalTo: topAnchor, constant: .contentSpacing),
-      itemsStackView.leftAnchor.constraint(equalTo: leftAnchor, constant: .contentSpacing),
-      itemsStackView.rightAnchor.constraint(equalTo: rightAnchor, constant: -.contentSpacing),
+      stackViewContainer.topAnchor.constraint(equalTo: topAnchor, constant: .contentSpacing),
+      stackViewContainer.leftAnchor.constraint(equalTo: leftAnchor, constant: .contentSpacing),
+      stackViewContainer.rightAnchor.constraint(equalTo: rightAnchor, constant: -.contentSpacing),
       
       loaderView.topAnchor.constraint(equalTo: itemsStackView.topAnchor),
       loaderView.leftAnchor.constraint(equalTo: itemsStackView.leftAnchor),
