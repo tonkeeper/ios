@@ -29,6 +29,7 @@ extension ModalContentViewController {
       struct Button {
         let title: String
         let configuration: TKButton.Configuration
+        let isEnabled: Bool
         let tapAction: (( @escaping (Bool) -> Void) -> Void)?
         let showActivity: (() -> Bool)?
         let showActivityOnTap: (() -> Bool)?
@@ -36,12 +37,14 @@ extension ModalContentViewController {
         
         init(title: String,
              configuration: TKButton.Configuration,
+             isEnabled: Bool = true,
              tapAction: (( @escaping (Bool) -> Void) -> Void)? = nil,
              showActivity: (() -> Bool)? = nil,
              showActivityOnTap: (() -> Bool)? = nil,
              completion: ((Bool) -> Void)? = nil) {
           self.title = title
           self.configuration = configuration
+          self.isEnabled = isEnabled
           self.tapAction = tapAction
           self.showActivity = showActivity
           self.showActivityOnTap = showActivityOnTap

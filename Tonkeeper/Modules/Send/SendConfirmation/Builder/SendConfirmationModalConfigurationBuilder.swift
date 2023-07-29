@@ -18,6 +18,7 @@ struct SendConfirmationModalConfigurationBuilder {
                             fee: ModalContentViewController.Configuration.ListItem.RightItem<String>,
                             fiatFee: ModalContentViewController.Configuration.ListItem.RightItem<String?>,
                             comment: String? = nil,
+                            isButtonEnabled: Bool = true,
                             showActivity: Bool = true,
                             showActivityOnTap: Bool = true,
                             tapAction: (( @escaping (Bool) -> Void ) -> Void)? = nil,
@@ -49,6 +50,7 @@ struct SendConfirmationModalConfigurationBuilder {
     let buttons = ModalContentViewController.Configuration.ActionBar.Button(
       title: .buttonTitle,
       configuration: .primaryLarge,
+      isEnabled: isButtonEnabled,
       tapAction: tapAction,
       showActivity: { showActivity },
       showActivityOnTap: { showActivityOnTap },

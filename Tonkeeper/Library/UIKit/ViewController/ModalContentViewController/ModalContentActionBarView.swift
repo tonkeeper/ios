@@ -84,6 +84,7 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
             buttonActivityContainer.showActivity()
           }
           button.titleLabel.text = buttonModel.title
+          button.isEnabled = buttonModel.isEnabled
           stackView.addArrangedSubview(buttonActivityContainer)
         }
         itemsStackView.addArrangedSubview(stackView)

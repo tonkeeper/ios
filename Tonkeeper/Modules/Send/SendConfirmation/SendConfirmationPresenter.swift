@@ -43,14 +43,7 @@ extension SendConfirmationPresenter: SendConfirmationPresenterInput {
   func viewDidLoad() {
     updateInitialState()
     Task {
-      let transactionBoc = try await prepareTransaction()
-      await MainActor.run {
-        updateTransactionPreparedState()
-      }
-      let transactionInformation = try await sendController.loadTransactionInformation(itemTransferModel: itemTransferModel, boc: transactionBoc)
-      await MainActor.run {
-        updateTransaction(sendTransactionViewModel: transactionInformation)
-      }
+      await prepareTransaction()
     }
   }
   
@@ -116,6 +109,31 @@ private extension SendConfirmationPresenter {
   }
   
   func initialConfiguration(model: SendTransactionViewModel) -> ModalContentViewController.Configuration {
+    let fiatAmountItem: ModalContentViewController.Configuration.ListItem.RightItem<String?>
+    if let fiatAmount = model.amountFiat {
+      fiatAmountItem = .value(fiatAmount)
+    } else {
+      fiatAmountItem = .loading
+    }
+    
+    let configuration = SendConfirmationModalConfigurationBuilder
+      .configuration(
+        title: model.title,
+        image: .with(image: model.image),
+        recipientName: model.recipientName,
+        recipientAddress: model.recipientAddress,
+        amount: model.amountToken,
+        fiatAmount: fiatAmountItem,
+        fee: .loading,
+        fiatFee: .loading,
+        comment: model.comment,
+        showActivity: true,
+        showActivityOnTap: false)
+    
+    return configuration
+  }
+  
+  func failedPrepareTransactionConfiguration(model: SendTransactionViewModel) -> ModalContentViewController.Configuration {
     let configuration = SendConfirmationModalConfigurationBuilder
       .configuration(
         title: model.title,
@@ -127,17 +145,54 @@ private extension SendConfirmationPresenter {
         fee: .loading,
         fiatFee: .loading,
         comment: model.comment,
-        showActivity: true,
+        isButtonEnabled: false,
+        showActivity: false,
         showActivityOnTap: false)
     
     return configuration
   }
   
-  func prepareTransaction() async throws -> String {
-    return try await sendController.prepareSendTransaction(
-      itemTransferModel: itemTransferModel,
-      recipientAddress: address,
-      comment: comment)
+  func prepareTransaction() async {
+    let prepareTransactionResult = await sendController
+      .prepareSendTransaction(
+        itemTransferModel: itemTransferModel,
+        recipientAddress: address,
+        comment: comment
+      )
+    switch prepareTransactionResult {
+    case .success(let boc):
+      await MainActor.run {
+        updateTransactionPreparedState()
+      }
+      await loadTransactionInformation(boc: boc)
+    case .failure(let error):
+      handleError(error)
+    }
+  }
+  
+  func loadTransactionInformation(boc: String) async {
+    let loadTransactionInformationResult = await sendController
+      .loadTransactionInformation(
+        itemTransferModel: itemTransferModel,
+        boc: boc
+      )
+    switch loadTransactionInformationResult {
+    case .success(let transactionInformation):
+      await MainActor.run {
+        updateTransaction(sendTransactionViewModel: transactionInformation)
+      }
+    case .failure(let error):
+      handleError(error)
+    }
+  }
+  
+  func handleError(_ error: SendController.Error) {
+    switch error {
+    case .failedToPrepareTransaction:
+      break
+    case .failedToEmulateTransaction:
+      break
+    }
   }
   
   func tapAction(closure: @escaping (Bool) -> Void) {
