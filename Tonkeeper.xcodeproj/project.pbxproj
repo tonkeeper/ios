@@ -45,6 +45,7 @@
 		7D16E1642A75270A00A27AB0 /* ToastController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E1632A75270A00A27AB0 /* ToastController.swift */; };
 		7D16E1662A752BF900A27AB0 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E1652A752BF900A27AB0 /* ToastView.swift */; };
 		7D16E18A2A77C1FB00A27AB0 /* PassthroughWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E1892A77C1FB00A27AB0 /* PassthroughWindow.swift */; };
+		7D16E18F2A77DC6F00A27AB0 /* ToastConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */; };
 		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
 		7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
@@ -332,6 +333,7 @@
 		7D16E1632A75270A00A27AB0 /* ToastController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastController.swift; sourceTree = "<group>"; };
 		7D16E1652A752BF900A27AB0 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		7D16E1892A77C1FB00A27AB0 /* PassthroughWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassthroughWindow.swift; sourceTree = "<group>"; };
+		7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastConfiguration.swift; sourceTree = "<group>"; };
 		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
 		7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletBalanceModelMapper.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
@@ -770,6 +772,14 @@
 			children = (
 				7D16E1632A75270A00A27AB0 /* ToastController.swift */,
 				7D16E1652A752BF900A27AB0 /* ToastView.swift */,
+			);
+			path = Toasts;
+			sourceTree = "<group>";
+		};
+		7D16E18D2A77DC5E00A27AB0 /* Toasts */ = {
+			isa = PBXGroup;
+			children = (
+				7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */,
 			);
 			path = Toasts;
 			sourceTree = "<group>";
@@ -1213,6 +1223,7 @@
 		7D6836152A1CAEAA002DBBC7 /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				7D16E18D2A77DC5E00A27AB0 /* Toasts */,
 				7D5943472A547D0C00C89967 /* Taptic */,
 				7D5141CC2A53453D00EC7F59 /* Images */,
 				7D9293022A29EE2F005B83DF /* Formatters */,
@@ -2177,6 +2188,7 @@
 				7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
 				7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */,
+				7D16E18F2A77DC6F00A27AB0 /* ToastConfiguration.swift in Sources */,
 				7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */,
 				7D5D05D32A309322009F42FF /* DefaultCellContentView+Model.swift in Sources */,
 				7D3E43B42A3737E700C23A75 /* BuyListServiceBuilder.swift in Sources */,

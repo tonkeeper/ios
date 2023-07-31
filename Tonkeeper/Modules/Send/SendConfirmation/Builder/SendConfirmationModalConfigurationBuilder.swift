@@ -15,7 +15,7 @@ struct SendConfirmationModalConfigurationBuilder {
                             recipientAddress: String? = nil,
                             amount: String,
                             fiatAmount: ModalContentViewController.Configuration.ListItem.RightItem<String?>,
-                            fee: ModalContentViewController.Configuration.ListItem.RightItem<String>,
+                            fee: ModalContentViewController.Configuration.ListItem.RightItem<String?>,
                             fiatFee: ModalContentViewController.Configuration.ListItem.RightItem<String?>,
                             comment: String? = nil,
                             isButtonEnabled: Bool = true,
@@ -38,10 +38,16 @@ struct SendConfirmationModalConfigurationBuilder {
       listItems.append(.init(left: .recipientAddressTitle, rightTop: .value(recipientAddress), rightBottom: .value(nil)))
     }
     
-    listItems.append(contentsOf: [
-      .init(left: .amountTitle, rightTop: .value(amount), rightBottom: fiatAmount),
-      .init(left: .feeTitle, rightTop: fee, rightBottom: fiatFee)
-    ])
+    listItems.append(.init(left: .amountTitle, rightTop: .value(amount), rightBottom: fiatAmount))
+    
+    switch fee {
+    case .loading:
+      listItems.append(.init(left: .feeTitle, rightTop: .loading, rightBottom: fiatFee))
+    case .value(let value):
+      if let value = value {
+        listItems.append(.init(left: .feeTitle, rightTop: .value(value), rightBottom: fiatFee))
+      }
+    }
     
     if let comment = comment {
       listItems.append(.init(left: .commentTitle, rightTop: .value(comment), rightBottom: .value(nil)))

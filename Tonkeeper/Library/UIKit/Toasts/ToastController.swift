@@ -19,6 +19,16 @@ final class ToastController {
     let shape: ToastView.Model.Shape
     let isActivity: Bool
     let dismissRule: DismissRule
+    
+    init(title: String,
+         shape: ToastView.Model.Shape = .oval,
+         isActivity: Bool = false,
+         dismissRule: DismissRule = .duration(.defaultPresentationDuration)) {
+      self.title = title
+      self.shape = shape
+      self.isActivity = isActivity
+      self.dismissRule = dismissRule
+    }
   }
   
   private static var queue = [Configuration]()
@@ -153,4 +163,5 @@ private extension CGFloat {
 
 private extension TimeInterval {
   static let animationDuration: TimeInterval = 0.2
+  static let defaultPresentationDuration: TimeInterval = 2.0
 }

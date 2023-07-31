@@ -43,7 +43,7 @@ extension SendConfirmationPresenter: SendConfirmationPresenterInput {
   func viewDidLoad() {
     updateInitialState()
     Task {
-      await prepareTransaction()
+      await loadTransactionInformation()
     }
   }
   
@@ -65,57 +65,43 @@ private extension SendConfirmationPresenter {
       recipientAddress: address,
       comment: comment
     )
-    let configuration = initialConfiguration(model: model)
+    let configuration = mapToConfiguration(model: model, isInitial: true)
     viewInput?.update(with: configuration)
   }
   
-  func updateTransactionPreparedState() {
-    let actionBarConfiguration = SendConfirmationModalConfigurationBuilder
-      .actionBarConfiguration(
-        showActivity: false,
-        showActivityOnTap: true,
-        tapAction: { [weak self] closure in
-          self?.tapAction(closure: closure)
-        },
-        completion: { [weak self] isSuccess in
-          self?.completion(isSuccess: isSuccess)
-        })
-    
-    viewInput?.update(with: actionBarConfiguration)
+  func loadTransactionInformation() async {
+    do {
+      let model = try await sendController.loadTransactionInformation(
+        itemTransferModel: itemTransferModel,
+        recipientAddress: address,
+        comment: comment)
+      await MainActor.run {
+        let configuration = mapToConfiguration(model: model, isInitial: false)
+        viewInput?.update(with: configuration)
+      }
+    } catch {
+      await MainActor.run {
+        let model = sendController.initialSendTransactionModel(
+          itemTransferModel: itemTransferModel,
+          recipientAddress: address,
+          comment: comment
+        )
+        let configuration = mapToConfiguration(model: model, isInitial: false)
+        viewInput?.update(with: configuration)
+        viewInput?.showFailedToLoadFeeError(errorTitle: .failedToCalculateFeeErrorTitle)
+      }
+    }
   }
   
-  func updateTransaction(sendTransactionViewModel: SendTransactionViewModel) {
-    let configuration = SendConfirmationModalConfigurationBuilder
-      .configuration(
-        title: sendTransactionViewModel.title,
-        image: .with(image: sendTransactionViewModel.image),
-        recipientName: sendTransactionViewModel.recipientName,
-        recipientAddress: sendTransactionViewModel.recipientAddress,
-        amount: sendTransactionViewModel.amountToken,
-        fiatAmount: .value(sendTransactionViewModel.amountFiat),
-        fee: .value(sendTransactionViewModel.feeTon),
-        fiatFee: .value(sendTransactionViewModel.feeFiat),
-        comment: sendTransactionViewModel.comment,
-        showActivity: false,
-        showActivityOnTap: true,
-        tapAction: { [weak self] closure in
-          self?.tapAction(closure: closure)
-        },
-        completion: { [weak self] isSuccess in
-          self?.completion(isSuccess: isSuccess)
-        })
-    
-    viewInput?.update(with: configuration)
-  }
-  
-  func initialConfiguration(model: SendTransactionViewModel) -> ModalContentViewController.Configuration {
+  func mapToConfiguration(model: SendTransactionViewModel,
+                          isInitial: Bool) -> ModalContentViewController.Configuration {
     let fiatAmountItem: ModalContentViewController.Configuration.ListItem.RightItem<String?>
     if let fiatAmount = model.amountFiat {
       fiatAmountItem = .value(fiatAmount)
     } else {
-      fiatAmountItem = .loading
+      fiatAmountItem = isInitial ? .loading : .value(nil)
     }
-    
+
     let configuration = SendConfirmationModalConfigurationBuilder
       .configuration(
         title: model.title,
@@ -124,82 +110,44 @@ private extension SendConfirmationPresenter {
         recipientAddress: model.recipientAddress,
         amount: model.amountToken,
         fiatAmount: fiatAmountItem,
-        fee: .loading,
-        fiatFee: .loading,
+        fee: isInitial ? .loading : .value(model.feeTon ?? "?"),
+        fiatFee: isInitial ? .loading : .value(model.feeFiat),
         comment: model.comment,
-        showActivity: true,
-        showActivityOnTap: false)
-    
-    return configuration
-  }
-  
-  func failedPrepareTransactionConfiguration(model: SendTransactionViewModel) -> ModalContentViewController.Configuration {
-    let configuration = SendConfirmationModalConfigurationBuilder
-      .configuration(
-        title: model.title,
-        image: .with(image: model.image),
-        recipientName: model.recipientName,
-        recipientAddress: model.recipientAddress,
-        amount: model.amountToken,
-        fiatAmount: .loading,
-        fee: .loading,
-        fiatFee: .loading,
-        comment: model.comment,
-        isButtonEnabled: false,
         showActivity: false,
-        showActivityOnTap: false)
-    
+        showActivityOnTap: true,
+        tapAction: tapAction,
+        completion: completion)
+
     return configuration
   }
-  
-  func prepareTransaction() async {
-    let prepareTransactionResult = await sendController
-      .prepareSendTransaction(
-        itemTransferModel: itemTransferModel,
-        recipientAddress: address,
-        comment: comment
-      )
-    switch prepareTransactionResult {
-    case .success(let boc):
-      await MainActor.run {
-        updateTransactionPreparedState()
-      }
-      await loadTransactionInformation(boc: boc)
-    case .failure(let error):
-      handleError(error)
-    }
-  }
-  
-  func loadTransactionInformation(boc: String) async {
-    let loadTransactionInformationResult = await sendController
-      .loadTransactionInformation(
-        itemTransferModel: itemTransferModel,
-        boc: boc
-      )
-    switch loadTransactionInformationResult {
-    case .success(let transactionInformation):
-      await MainActor.run {
-        updateTransaction(sendTransactionViewModel: transactionInformation)
-      }
-    case .failure(let error):
-      handleError(error)
-    }
-  }
-  
-  func handleError(_ error: SendController.Error) {
-    switch error {
-    case .failedToPrepareTransaction:
-      break
-    case .failedToEmulateTransaction:
-      break
-    }
-  }
-  
+
   func tapAction(closure: @escaping (Bool) -> Void) {
-    
+    Task {
+      do {
+        try await self.sendController.sendTransaction(
+          itemTransferModel: itemTransferModel,
+          recipientAddress: address,
+          comment: comment
+        )
+        await MainActor.run {
+          closure(true)
+        }
+      } catch {
+        await MainActor.run {
+          closure(false)
+        }
+      }
+    }
   }
-  
+
   func completion(isSuccess: Bool) {
-    
+    guard isSuccess else { return }
+    output?.sendRecipientModuleDidFinish()
   }
 }
+
+
+private extension String {
+  static let failedToCalculateFeeErrorTitle = "Failed to calculate fee"
+}
+
