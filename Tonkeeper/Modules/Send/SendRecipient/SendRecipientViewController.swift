@@ -69,7 +69,7 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
 // MARK: - SendRecipientViewInput
 
 extension SendRecipientViewController: SendRecipientViewInput {
-  func updateRecipientAddress(_ address: String) {
+  func updateRecipientAddress(_ address: String, name: String?) {
     customView.addressTextField.text = address
   }
   

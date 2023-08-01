@@ -26,7 +26,7 @@ final class SendAmountPresenter {
   // MARK: - Dependencies
 
   private let inputCurrencyFormatter: NumberFormatter
-  private let address: String
+  private let recipient: Recipient
   
   let amountInputFormatController: AmountInputFormatController
   let sendInputController: SendInputController
@@ -35,11 +35,11 @@ final class SendAmountPresenter {
   
   init(inputCurrencyFormatter: NumberFormatter,
        sendInputController: SendInputController,
-       address: String) {
+       recipient: Recipient) {
     self.inputCurrencyFormatter = inputCurrencyFormatter
     self.amountInputFormatController = AmountInputFormatController(currencyFormatter: inputCurrencyFormatter)
     self.sendInputController = sendInputController
-    self.address = address
+    self.recipient = recipient
   }
 }
 
@@ -135,9 +135,8 @@ private extension SendAmountPresenter {
   }
   
   func updateTitle() {
-    let shortAddress = (try? Address.parse(address).shortString) ?? ""
     let model = SendAmountTitleView.Model(title: "Amount",
-                                          subtitle: "To: \(shortAddress)")
+                                          subtitle: "To: \(recipient.address.shortString)")
     viewInput?.updateTitleView(model: model)
   }
   

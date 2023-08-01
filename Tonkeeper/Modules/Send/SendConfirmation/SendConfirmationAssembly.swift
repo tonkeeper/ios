@@ -10,13 +10,13 @@ import WalletCore
 import BigInt
 
 struct SendConfirmationAssembly {
-  static func module(address: String,
+  static func module(recipient: Recipient,
                      itemTransferModel: ItemTransferModel,
                      comment: String?,
                      sendController: SendController,
                      output: SendConfirmationModuleOutput?) -> Module<SendConfirmationViewController, SendConfirmationModuleInput> {
     let presenter = SendConfirmationPresenter(
-      address: address,
+      recipient: recipient,
       itemTransferModel: itemTransferModel,
       comment: comment,
       sendController: sendController

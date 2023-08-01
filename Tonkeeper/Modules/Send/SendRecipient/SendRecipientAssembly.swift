@@ -11,11 +11,11 @@ import WalletCore
 struct SendRecipientAssembly {
   static func module(sendRecipientController: SendRecipientController,
                      commentLengthValidator: SendRecipientCommentLengthValidator,
-                     address: String?,
+                     recipient: Recipient?,
                      output: SendRecipientModuleOutput?) -> Module<SendRecipientViewController, SendRecipientModuleInput> {
     let presenter = SendRecipientPresenter(sendRecipientController: sendRecipientController,
                                            commentLengthValidator: commentLengthValidator,
-                                           address: address)
+                                           recipient: recipient)
     presenter.output = output
     
     let viewController = SendRecipientViewController(presenter: presenter)

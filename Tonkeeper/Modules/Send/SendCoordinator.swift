@@ -20,7 +20,7 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
   private let walletCoreAssembly: WalletCoreAssembly
   private let token: Token
   
-  private var address: String?
+  private var recipient: Recipient?
   private var itemTransferModel: ItemTransferModel?
   private var comment: String?
   
@@ -29,16 +29,16 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
   init(router: NavigationRouter,
        walletCoreAssembly: WalletCoreAssembly,
        token: Token,
-       address: String?) {
+       recipient: Recipient?) {
     self.walletCoreAssembly = walletCoreAssembly
     self.token = token
-    self.address = address
+    self.recipient = recipient
     super.init(router: router)
   }
   
   override func start() {
-    if let address = address {
-      openWith(address: address)
+    if let recipient = recipient {
+      openWith(recipient: recipient)
     } else {
       openSendRecipient()
     }
@@ -50,15 +50,15 @@ private extension SendCoordinator {
     let module = SendRecipientAssembly.module(
       sendRecipientController: walletCoreAssembly.sendRecipientController(),
       commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
-      address: address,
+      recipient: recipient,
       output: self
     )
     sendRecipientInput = module.input
     router.setPresentables([(module.view, nil)])
   }
   
-  func openSendAmount() {
-    let module = SendAmountAssembly.module(address: address ?? "",
+  func openSendAmount(recipient: Recipient) {
+    let module = SendAmountAssembly.module(recipient: recipient,
                                            inputCurrencyFormatter: .inputCurrencyFormatter,
                                            sendInputController: walletCoreAssembly.sendInputController,
                                            output: self)
@@ -68,12 +68,12 @@ private extension SendCoordinator {
   }
   
   func openConfirmation() {
-    guard let address = address,
+    guard let recipient = recipient,
           let itemTransferModel = itemTransferModel else { return }
     
     let module = SendConfirmationAssembly
       .module(
-        address: address,
+        recipient: recipient,
         itemTransferModel: itemTransferModel,
         comment: comment,
         sendController: walletCoreAssembly.sendController(),
@@ -82,16 +82,16 @@ private extension SendCoordinator {
     router.push(presentable: module.view)
   }
   
-  func openWith(address: String) {
+  func openWith(recipient: Recipient) {
     let recipientModule = SendRecipientAssembly.module(
       sendRecipientController: walletCoreAssembly.sendRecipientController(),
       commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
-      address: address,
+      recipient: recipient,
       output: self
     )
     sendRecipientInput = recipientModule.input
     
-    let amountModule = SendAmountAssembly.module(address: address,
+    let amountModule = SendAmountAssembly.module(recipient: recipient,
                                                  inputCurrencyFormatter: .inputCurrencyFormatter,
                                                  sendInputController: walletCoreAssembly.sendInputController,
                                                  output: self)
@@ -114,12 +114,11 @@ extension SendCoordinator: SendRecipientModuleOutput {
   }
   
   func sendRecipientModuleDidTapContinueButton(
-    address: String,
-    comment: String?
-  ) {
-    self.address = address
-    self.comment = comment
-    openSendAmount()
+    recipient: Recipient,
+    comment: String?) {
+      self.recipient = recipient
+      self.comment = comment
+      openSendAmount(recipient: recipient)
   }
 }
 
@@ -165,7 +164,7 @@ extension SendCoordinator: QRScannerModuleOutput {
     case let .ton(tonDeeplink):
       switch tonDeeplink {
       case let .transfer(address):
-        sendRecipientInput?.setAddress(address)
+        sendRecipientInput?.setRecipient(Recipient(address: address, domain: nil))
       }
     }
   }

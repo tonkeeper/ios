@@ -9,14 +9,14 @@ import Foundation
 import WalletCore
 
 struct SendAmountAssembly {
-  static func module(address: String,
+  static func module(recipient: Recipient,
                      inputCurrencyFormatter: NumberFormatter,
                      sendInputController: SendInputController,
                      output: SendAmountModuleOutput?) -> Module<SendAmountViewController, SendAmountModuleInput> {
     
     let presenter = SendAmountPresenter(inputCurrencyFormatter: inputCurrencyFormatter,
                                         sendInputController: sendInputController,
-                                        address: address)
+                                        recipient: recipient)
     presenter.output = output
     
     let viewController = SendAmountViewController(presenter: presenter)

@@ -17,10 +17,10 @@ final class SendAssembly {
   
   func coordinator(router: NavigationRouter,
                    token: Token,
-                   address: String?) -> SendCoordinator {
+                   recipient: Recipient?) -> SendCoordinator {
     SendCoordinator(router: router,
                     walletCoreAssembly: walletCoreAssembly,
                     token: token,
-                    address: address)
+                    recipient: recipient)
   }
 }

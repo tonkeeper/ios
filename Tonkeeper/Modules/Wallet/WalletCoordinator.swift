@@ -7,6 +7,7 @@
 
 import UIKit
 import WalletCore
+import TonSwift
 
 final class WalletCoordinator: Coordinator<NavigationRouter> {
   
@@ -56,10 +57,10 @@ extension WalletCoordinator: WalletRootModuleOutput {
     router.present(module.view)
   }
   
-  func openSend(address: String?) {
+  func openSend(recipient: Recipient?) {
     let coordinator = walletAssembly.sendCoordinator(
       output: self,
-      address: address
+      recipient: recipient
     )
     addChild(coordinator)
     coordinator.start()
@@ -114,7 +115,7 @@ extension WalletCoordinator: QRScannerModuleOutput {
       switch tonDeeplink {
       case let .transfer(address):
         router.dismiss { [weak self] in
-          self?.openSend(address: address)
+          self?.openSend(recipient: Recipient(address: address, domain: nil))
         }
       }
     }

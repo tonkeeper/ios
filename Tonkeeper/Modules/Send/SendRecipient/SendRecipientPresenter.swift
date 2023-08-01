@@ -21,7 +21,6 @@ final class SendRecipientPresenter {
   private let sendRecipientController: SendRecipientController
   private let commentLengthValidator: SendRecipientCommentLengthValidator
   private var recipient: Recipient?
-  private var address: String?
   private var comment: String?
   
   // MARK: - State
@@ -32,10 +31,10 @@ final class SendRecipientPresenter {
   
   init(sendRecipientController: SendRecipientController,
        commentLengthValidator: SendRecipientCommentLengthValidator,
-       address: String?) {
+       recipient: Recipient?) {
     self.sendRecipientController = sendRecipientController
     self.commentLengthValidator = commentLengthValidator
-    self.address = address
+    self.recipient = recipient
   }
 }
 
@@ -56,7 +55,8 @@ extension SendRecipientPresenter: SendRecipientPresenterInput {
   }
   
   func didTapContinueButton() {
-    output?.sendRecipientModuleDidTapContinueButton(address: address ?? "", comment: comment)
+    guard let recipient = recipient else { return }
+    output?.sendRecipientModuleDidTapContinueButton(recipient: recipient, comment: comment)
   }
   
   func didChangeComment(text: String) {
@@ -72,8 +72,8 @@ extension SendRecipientPresenter: SendRecipientPresenterInput {
 // MARK: - SendRecipientModuleInput
 
 extension SendRecipientPresenter: SendRecipientModuleInput {
-  func setAddress(_ address: String) {
-    self.address = address
+  func setRecipient(_ recipient: Recipient) {
+    self.recipient = recipient
     updateRecipient()
     validate()
   }
@@ -83,10 +83,10 @@ extension SendRecipientPresenter: SendRecipientModuleInput {
 
 private extension SendRecipientPresenter {
   func updateRecipient() {
-    guard let address = address else {
+    guard let recipient = recipient else {
       return
     }
-    viewInput?.updateRecipientAddress(address)
+    viewInput?.updateRecipientAddress(recipient.address.toString(), name: recipient.domain)
   }
   
   func handleAddressInput(address: String) {

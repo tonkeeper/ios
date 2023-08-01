@@ -20,20 +20,20 @@ final class SendConfirmationPresenter {
   // MARK: - Dependencies
   
   private let sendController: SendController
-  private let address: String
+  private let recipient: Recipient
   private let itemTransferModel: ItemTransferModel
   private let comment: String?
   
   // MARK: - State
 
-  init(address: String,
+  init(recipient: Recipient,
        itemTransferModel: ItemTransferModel,
        comment: String?,
        sendController: SendController) {
-    self.sendController = sendController
-    self.address = address
+    self.recipient = recipient
     self.itemTransferModel = itemTransferModel
     self.comment = comment
+    self.sendController = sendController
   }
 }
 
@@ -62,7 +62,7 @@ private extension SendConfirmationPresenter {
   func updateInitialState() {
     let model = sendController.initialSendTransactionModel(
       itemTransferModel: itemTransferModel,
-      recipientAddress: address,
+      recipient: recipient,
       comment: comment
     )
     let configuration = mapToConfiguration(model: model, isInitial: true)
@@ -73,7 +73,7 @@ private extension SendConfirmationPresenter {
     do {
       let model = try await sendController.loadTransactionInformation(
         itemTransferModel: itemTransferModel,
-        recipientAddress: address,
+        recipient: recipient,
         comment: comment)
       await MainActor.run {
         let configuration = mapToConfiguration(model: model, isInitial: false)
@@ -83,7 +83,7 @@ private extension SendConfirmationPresenter {
       await MainActor.run {
         let model = sendController.initialSendTransactionModel(
           itemTransferModel: itemTransferModel,
-          recipientAddress: address,
+          recipient: recipient,
           comment: comment
         )
         let configuration = mapToConfiguration(model: model, isInitial: false)
@@ -126,7 +126,7 @@ private extension SendConfirmationPresenter {
       do {
         try await self.sendController.sendTransaction(
           itemTransferModel: itemTransferModel,
-          recipientAddress: address,
+          recipient: recipient,
           comment: comment
         )
         await MainActor.run {
