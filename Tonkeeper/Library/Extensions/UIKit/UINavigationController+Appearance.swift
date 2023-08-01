@@ -19,7 +19,6 @@ extension UINavigationController {
 
     navigationBar.tintColor = .Accent.blue
     navigationBar.standardAppearance = navigationBarAppearance
-    navigationBar.scrollEdgeAppearance = navigationBarAppearance
     navigationBar.compactAppearance = navigationBarAppearance
     if #available(iOS 15.0, *) {
       navigationBar.compactScrollEdgeAppearance = navigationBarAppearance
@@ -31,7 +30,6 @@ extension UINavigationController {
     navigationBarAppearance.configureWithTransparentBackground()
     
     navigationBar.standardAppearance = navigationBarAppearance
-    navigationBar.scrollEdgeAppearance = navigationBarAppearance
     navigationBar.compactAppearance = navigationBarAppearance
     if #available(iOS 15.0, *) {
       navigationBar.compactScrollEdgeAppearance = navigationBarAppearance

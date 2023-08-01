@@ -49,7 +49,7 @@ struct SendConfirmationModalConfigurationBuilder {
       }
     }
     
-    if let comment = comment {
+    if let comment = comment, !comment.isEmpty {
       listItems.append(.init(left: .commentTitle, rightTop: .value(comment), rightBottom: .value(nil)))
     }
     
