@@ -74,7 +74,7 @@ final class ModalContentListItemView: UIControl, ConfigurableView {
     
     switch model.rightBottom {
     case .value(let value):
-      rightBottomLabel.attributedText = value?.attributed(with: .label2, alignment: .right, color: .Text.secondary)
+      rightBottomLabel.attributedText = value?.attributed(with: .body2, alignment: .right, color: .Text.secondary)
       rightBottomLabel.isHidden = false
       rightBottomShimmerView.isHidden = true
       rightBottomShimmerView.stopAnimation()
@@ -150,7 +150,7 @@ private extension ModalContentListItemView {
 private extension CGFloat {
   static let leftRightSpacing: CGFloat = 18
   static let rightTopShimmerHeight: CGFloat = 22
-  static let rightBottomShimmerheight: CGFloat = 20
+  static let rightBottomShimmerheight: CGFloat = 18
   static let shimmerWidth: CGFloat = 50
 }
 
