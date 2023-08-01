@@ -18,18 +18,23 @@ final class SendRecipientPresenter {
   
   // MARK: - Dependencies
   
+  private let sendRecipientController: SendRecipientController
   private let commentLengthValidator: SendRecipientCommentLengthValidator
-  private let addressValidator: AddressValidator
+  private var recipient: Recipient?
   private var address: String?
   private var comment: String?
   
+  // MARK: - State
+  
+  private var addressInputTimer: Timer?
+  
   // MARK: - Init
   
-  init(commentLengthValidator: SendRecipientCommentLengthValidator,
-       addressValidator: AddressValidator,
+  init(sendRecipientController: SendRecipientController,
+       commentLengthValidator: SendRecipientCommentLengthValidator,
        address: String?) {
+    self.sendRecipientController = sendRecipientController
     self.commentLengthValidator = commentLengthValidator
-    self.addressValidator = addressValidator
     self.address = address
   }
 }
@@ -60,8 +65,7 @@ extension SendRecipientPresenter: SendRecipientPresenterInput {
   }
   
   func didChangeAddress(address: String) {
-    self.address = address
-    validate()
+    handleAddressInput(address: address)
   }
 }
 
@@ -85,21 +89,42 @@ private extension SendRecipientPresenter {
     viewInput?.updateRecipientAddress(address)
   }
   
+  func handleAddressInput(address: String) {
+    addressInputTimer?.invalidate()
+    guard !address.isEmpty else {
+      recipient = nil
+      viewInput?.updateAddressValidationState(isValid: true)
+      validate()
+      return
+    }
+    
+    addressInputTimer = Timer.scheduledTimer(withTimeInterval: 0.75, repeats: false, block: { [weak self] timer in
+      timer.invalidate()
+      guard let self = self else { return }
+      Task {
+        let result: Bool
+        do {
+          self.recipient = try await self.sendRecipientController.handleInput(address)
+          result = true
+        } catch {
+          self.recipient = nil
+          result = false
+        }
+        await MainActor.run {
+          self.validate()
+          self.viewInput?.updateAddressValidationState(isValid: result)
+        }
+      }
+    })
+  }
+  
   func validate() {
-    let isValid = validateAddress() && validateComment()
+    let isValid = validateRecipient() && validateComment()
     viewInput?.updateContinueButtonIsAvailable(isAvailable: isValid)
   }
   
-  func validateAddress() -> Bool {
-    guard let address = address,
-          !address.isEmpty else {
-      viewInput?.updateAddressValidationState(isValid: true)
-      return false
-    }
-    
-    let isValid = addressValidator.validateAddress(address)
-    viewInput?.updateAddressValidationState(isValid: isValid)
-    return isValid
+  func validateRecipient() -> Bool {
+    recipient != nil
   }
   
   func validateComment() -> Bool {
