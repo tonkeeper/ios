@@ -2540,7 +2540,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				branch = feature/send_recipient_improve;
+				branch = develop;
 				kind = branch;
 			};
 		};

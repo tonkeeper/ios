@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
-        "branch" : "feature/send_recipient_improve",
-        "revision" : "ee5697faa03e40b6fb86c4458bb1463670b03969"
+        "branch" : "develop",
+        "revision" : "05257980435b33e8789afa3fa1395e04111f0dd7"
       }
     },
     {
