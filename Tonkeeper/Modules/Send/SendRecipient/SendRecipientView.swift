@@ -36,6 +36,7 @@ final class SendRecipientView: UIView {
     return label
   }()
   
+  lazy var continueButtonActivityContainer = ActivityViewContainer(view: continueButton)
   let continueButton: TKButton = {
     let button = TKButton(configuration: .primaryLarge)
     button.titleLabel.text = "Continue"
@@ -90,7 +91,7 @@ private extension SendRecipientView {
     addressTextField.textView.keyboardType = .alphabet
     
     addSubview(scrollView)
-    addSubview(continueButton)
+    addSubview(continueButtonActivityContainer)
     scrollView.addSubview(stackView)
 
     stackView.addArrangedSubview(addressTextField)
@@ -110,9 +111,9 @@ private extension SendRecipientView {
     scrollView.translatesAutoresizingMaskIntoConstraints = false
     contentView.translatesAutoresizingMaskIntoConstraints = false
     stackView.translatesAutoresizingMaskIntoConstraints = false
-    continueButton.translatesAutoresizingMaskIntoConstraints = false
+    continueButtonActivityContainer.translatesAutoresizingMaskIntoConstraints = false
     
-    continueButtonBottomConstraint = continueButton.bottomAnchor.constraint(
+    continueButtonBottomConstraint = continueButtonActivityContainer.bottomAnchor.constraint(
       equalTo: bottomAnchor)
     continueButtonBottomConstraint?.isActive = true
     
@@ -128,8 +129,8 @@ private extension SendRecipientView {
       stackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
       stackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
       
-      continueButton.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
-      continueButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),
+      continueButtonActivityContainer.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
+      continueButtonActivityContainer.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),
     ])
   }
   

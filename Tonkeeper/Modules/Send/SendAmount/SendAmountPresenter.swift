@@ -135,8 +135,21 @@ private extension SendAmountPresenter {
   }
   
   func updateTitle() {
+    let subtitle = NSMutableAttributedString(string: "", attributes: nil)
+    if let name = recipient.domain {
+      let nameString = "To: \(name)"
+        .attributed(with: .body2,  alignment: .center, lineBreakMode: .byWordWrapping, color: .Text.secondary)
+      let walletString = " \(recipient.address.shortString)"
+        .attributed(with: .body2,  alignment: .center, lineBreakMode: .byClipping, color: .Text.tertiary)
+      subtitle.append(nameString)
+      subtitle.append(walletString)
+    } else {
+      let walletString = "To: \(recipient.address.shortString)"
+        .attributed(with: .body2,  alignment: .center, lineBreakMode: .byClipping, color: .Text.secondary)
+      subtitle.append(walletString)
+    }
     let model = SendAmountTitleView.Model(title: "Amount",
-                                          subtitle: "To: \(recipient.address.shortString)")
+                                          subtitle: subtitle)
     viewInput?.updateTitleView(model: model)
   }
   

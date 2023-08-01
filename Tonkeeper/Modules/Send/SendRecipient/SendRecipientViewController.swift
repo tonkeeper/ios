@@ -89,6 +89,10 @@ extension SendRecipientViewController: SendRecipientViewInput {
   func updateContinueButtonIsAvailable(isAvailable: Bool) {
     customView.continueButton.isEnabled = isAvailable
   }
+  
+  func updateContinueButtonIsActivity(isActivity: Bool) {
+    isActivity ? customView.continueButtonActivityContainer.showActivity() : customView.continueButtonActivityContainer.hideActivity()
+  }
 }
 
 // MARK: - Private

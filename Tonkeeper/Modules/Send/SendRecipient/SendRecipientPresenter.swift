@@ -90,6 +90,7 @@ private extension SendRecipientPresenter {
   }
   
   func handleAddressInput(address: String) {
+    viewInput?.updateContinueButtonIsAvailable(isAvailable: false)
     addressInputTimer?.invalidate()
     guard !address.isEmpty else {
       recipient = nil
@@ -101,6 +102,7 @@ private extension SendRecipientPresenter {
     addressInputTimer = Timer.scheduledTimer(withTimeInterval: 0.75, repeats: false, block: { [weak self] timer in
       timer.invalidate()
       guard let self = self else { return }
+      self.viewInput?.updateContinueButtonIsActivity(isActivity: true)
       Task {
         let result: Bool
         do {
@@ -111,6 +113,7 @@ private extension SendRecipientPresenter {
           result = false
         }
         await MainActor.run {
+          self.viewInput?.updateContinueButtonIsActivity(isActivity: false)
           self.validate()
           self.viewInput?.updateAddressValidationState(isValid: result)
         }

@@ -34,4 +34,5 @@ protocol SendRecipientViewInput: AnyObject {
   func hideCommentLengthWarning()
   func updateAddressValidationState(isValid: Bool)
   func updateContinueButtonIsAvailable(isAvailable: Bool)
+  func updateContinueButtonIsActivity(isActivity: Bool)
 }

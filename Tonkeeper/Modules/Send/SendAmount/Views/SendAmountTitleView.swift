@@ -11,7 +11,7 @@ final class SendAmountTitleView: UIView, ConfigurableView {
   
   struct Model {
     let title: String
-    let subtitle: String
+    let subtitle: NSAttributedString
   }
   
   let titleLabel: UILabel = {
@@ -57,7 +57,7 @@ final class SendAmountTitleView: UIView, ConfigurableView {
   
   func configure(model: Model) {
     titleLabel.text = model.title
-    subtitleLabel.text = model.subtitle
+    subtitleLabel.attributedText = model.subtitle
   }
 }
 
