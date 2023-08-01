@@ -22,4 +22,5 @@ protocol SendConfirmationPresenterInput {
 
 protocol SendConfirmationViewInput: AnyObject {
   func update(with configuration: ModalContentViewController.Configuration)
+  func showFailedToLoadFeeError(errorTitle: String)
 }

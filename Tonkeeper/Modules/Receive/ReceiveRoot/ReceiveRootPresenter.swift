@@ -94,9 +94,9 @@ private extension ReceiveRootPresenter {
   }
   
   func updateQRCode(size: CGSize) {
-    guard let address = try? receiveController.getWalletAddress() else { return }
+    guard let address = try? receiveController.getWalletAddress(),
+          let deeplinkString = try? deeplinkGenerator.generateTransferDeeplink(with: address).path else { return }
     Task {
-      let deeplinkString = deeplinkGenerator.generateTransferDeeplink(with: address).path
       let qrCodeImage = await qrCodeGenerator.generate(string: deeplinkString, size: size)
       await MainActor.run {
         viewInput?.updateQRCode(image: qrCodeImage)

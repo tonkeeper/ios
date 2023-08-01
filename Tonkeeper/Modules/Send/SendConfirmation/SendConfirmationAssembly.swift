@@ -7,14 +7,19 @@
 
 import Foundation
 import WalletCore
+import BigInt
 
 struct SendConfirmationAssembly {
-  static func module(transactionModel: SendTransactionModel,
+  static func module(recipient: Recipient,
+                     itemTransferModel: ItemTransferModel,
+                     comment: String?,
                      sendController: SendController,
                      output: SendConfirmationModuleOutput?) -> Module<SendConfirmationViewController, SendConfirmationModuleInput> {
     let presenter = SendConfirmationPresenter(
-      sendController: sendController,
-      transactionModel: transactionModel
+      recipient: recipient,
+      itemTransferModel: itemTransferModel,
+      comment: comment,
+      sendController: sendController
     )
     let viewController = SendConfirmationViewController(presenter: presenter)
     

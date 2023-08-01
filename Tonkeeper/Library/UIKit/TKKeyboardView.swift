@@ -77,6 +77,7 @@ private extension TKKeyboardView {
     
     stackView.axis = .vertical
     stackView.distribution = .fillEqually
+    stackView.spacing = 8
     
     let buttonsRows = stride(from: 0, to: buttons.count, by: 3)
       .map { Array(buttons[$0 ..< min($0+3, buttons.count)]) }
@@ -85,6 +86,7 @@ private extension TKKeyboardView {
       let rowStackView = UIStackView()
       rowStackView.axis = .horizontal
       rowStackView.distribution = .fillEqually
+      rowStackView.spacing = 8
       
       for button in row {
         rowStackView.addArrangedSubview(button)

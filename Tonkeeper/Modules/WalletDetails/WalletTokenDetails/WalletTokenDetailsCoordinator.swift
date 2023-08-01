@@ -61,7 +61,7 @@ private extension WalletTokenDetailsCoordinator {
     let coordinator = sendAssembly.coordinator(
       router: router,
       token: token,
-      address: nil)
+      recipient: nil)
     coordinator.output = self
     
     addChild(coordinator)

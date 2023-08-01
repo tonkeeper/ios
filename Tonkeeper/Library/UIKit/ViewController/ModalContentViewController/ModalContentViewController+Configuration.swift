@@ -10,28 +10,44 @@ import UIKit
 extension ModalContentViewController {
   struct Configuration {
     struct ListItem {
+      enum RightItem<T> {
+        case loading
+        case value(T)
+        
+        var value: T? {
+          guard case let .value(value) = self else { return nil }
+          return value
+        }
+      }
+      
       let left: String
-      let rightTop: String
-      let rightBottom: String?
+      let rightTop: RightItem<String>
+      let rightBottom: RightItem<String?>
     }
     
     struct ActionBar {
       struct Button {
         let title: String
         let configuration: TKButton.Configuration
+        let isEnabled: Bool
         let tapAction: (( @escaping (Bool) -> Void) -> Void)?
-        let showActivityClosure: (() -> Bool)?
+        let showActivity: (() -> Bool)?
+        let showActivityOnTap: (() -> Bool)?
         let completion: ((Bool) -> Void)?
         
         init(title: String,
              configuration: TKButton.Configuration,
+             isEnabled: Bool = true,
              tapAction: (( @escaping (Bool) -> Void) -> Void)? = nil,
-             showActivityClosure: (() -> Bool)? = nil,
+             showActivity: (() -> Bool)? = nil,
+             showActivityOnTap: (() -> Bool)? = nil,
              completion: ((Bool) -> Void)? = nil) {
           self.title = title
           self.configuration = configuration
+          self.isEnabled = isEnabled
           self.tapAction = tapAction
-          self.showActivityClosure = showActivityClosure
+          self.showActivity = showActivity
+          self.showActivityOnTap = showActivityOnTap
           self.completion = completion
         }
       }
@@ -63,8 +79,8 @@ extension ModalContentViewController {
       }
     }
     
-    let header: Header
-    let listItems: [ListItem]
-    let actionBar: ActionBar
+    var header: Header?
+    var listItems: [ListItem]
+    var actionBar: ActionBar?
   }
 }

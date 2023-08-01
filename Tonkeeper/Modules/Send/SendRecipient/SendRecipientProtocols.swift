@@ -7,15 +7,16 @@
 //
 
 import Foundation
+import WalletCore
 
 protocol SendRecipientModuleOutput: AnyObject {
   func sendRecipientModuleDidTapCloseButton()
   func sendRecipientModuleOpenQRScanner()
-  func sendRecipientModuleDidTapContinueButton(address: String, comment: String?)
+  func sendRecipientModuleDidTapContinueButton(recipient: Recipient, comment: String?)
 }
 
 protocol SendRecipientModuleInput: AnyObject {
-  func setAddress(_ address: String)
+  func setRecipient(_ recipient: Recipient)
 }
 
 protocol SendRecipientPresenterInput {
@@ -28,9 +29,10 @@ protocol SendRecipientPresenterInput {
 }
 
 protocol SendRecipientViewInput: AnyObject {
-  func updateRecipientAddress(_ address: String)
+  func updateRecipientAddress(_ address: String, name: String?)
   func showCommentLengthWarning(text: NSAttributedString)
   func hideCommentLengthWarning()
   func updateAddressValidationState(isValid: Bool)
   func updateContinueButtonIsAvailable(isAvailable: Bool)
+  func updateContinueButtonIsActivity(isActivity: Bool)
 }

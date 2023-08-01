@@ -10,11 +10,20 @@ import UIKit
 final class ButtonBottomContainer: UIView {
   
   let button: UIView
+  var insets: UIEdgeInsets {
+    didSet { didUpdateInsets() }
+  }
+  
+  private var topConstraint: NSLayoutConstraint?
+  private var leftConstraint: NSLayoutConstraint?
+  private var bottomConstraint: NSLayoutConstraint?
+  private var rightConstraint: NSLayoutConstraint?
   
   // MARK: - Init
   
-  init(button: UIView) {
+  init(button: UIView, insets: UIEdgeInsets = .buttonInsets) {
     self.button = button
+    self.insets = insets
     super.init(frame: .zero)
     setup()
   }
@@ -32,12 +41,23 @@ private extension ButtonBottomContainer {
     addSubview(button)
     
     button.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-      button.topAnchor.constraint(equalTo: topAnchor, constant: UIEdgeInsets.buttonInsets.top),
-      button.leftAnchor.constraint(equalTo: leftAnchor, constant: UIEdgeInsets.buttonInsets.left),
-      button.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -UIEdgeInsets.buttonInsets.bottom),
-      button.rightAnchor.constraint(equalTo: rightAnchor, constant: -UIEdgeInsets.buttonInsets.right)
-    ])
+    
+    topConstraint = button.topAnchor.constraint(equalTo: topAnchor, constant: insets.top)
+    leftConstraint = button.leftAnchor.constraint(equalTo: leftAnchor, constant: insets.left)
+    bottomConstraint = button.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -insets.bottom)
+    rightConstraint = button.rightAnchor.constraint(equalTo: rightAnchor, constant: -insets.right)
+    
+    topConstraint?.isActive = true
+    leftConstraint?.isActive = true
+    bottomConstraint?.isActive = true
+    rightConstraint?.isActive = true
+  }
+  
+  func didUpdateInsets() {
+    topConstraint?.constant = insets.top
+    leftConstraint?.constant = insets.left
+    bottomConstraint?.constant = -insets.bottom
+    rightConstraint?.constant = -insets.right
   }
 }
 

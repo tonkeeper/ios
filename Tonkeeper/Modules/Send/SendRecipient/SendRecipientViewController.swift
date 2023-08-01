@@ -45,12 +45,7 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
     super.viewWillDisappear(animated)
     unregisterFromKeyboardEvents()
   }
-  
-  override func viewDidDisappear(_ animated: Bool) {
-    super.viewDidDisappear(animated)
-//    unregisterFromKeyboardEvents()
-  }
-  
+
   // MARK: - Keyboard
   
   func keyboardWillShow(_ notification: Notification) {
@@ -74,7 +69,7 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
 // MARK: - SendRecipientViewInput
 
 extension SendRecipientViewController: SendRecipientViewInput {
-  func updateRecipientAddress(_ address: String) {
+  func updateRecipientAddress(_ address: String, name: String?) {
     customView.addressTextField.text = address
   }
   
@@ -93,6 +88,10 @@ extension SendRecipientViewController: SendRecipientViewInput {
   
   func updateContinueButtonIsAvailable(isAvailable: Bool) {
     customView.continueButton.isEnabled = isAvailable
+  }
+  
+  func updateContinueButtonIsActivity(isActivity: Bool) {
+    isActivity ? customView.continueButtonActivityContainer.showActivity() : customView.continueButtonActivityContainer.hideActivity()
   }
 }
 
@@ -117,8 +116,6 @@ private extension SendRecipientViewController {
       for: .touchUpInside)
     
     customView.continueButton.addAction(.init(handler: { [weak self] in
-//      self?.customView.addressTextField.resignFirstResponder()
-//      self?.customView.commentTextField.resignFirstResponder()
       self?.presenter.didTapContinueButton()
     }), for: .touchUpInside)
   }

@@ -44,6 +44,10 @@ extension SendConfirmationViewController: SendConfirmationViewInput {
   func update(with configuration: ModalContentViewController.Configuration) {
     contentViewController.configuration = configuration
   }
+
+  func showFailedToLoadFeeError(errorTitle: String) {
+    ToastController.showToast(configuration: .init(title: errorTitle))
+  }
 }
 
 // MARK: - Private

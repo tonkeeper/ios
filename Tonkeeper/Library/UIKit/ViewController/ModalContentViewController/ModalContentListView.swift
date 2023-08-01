@@ -39,7 +39,7 @@ final class ModalContentListView: UIView, ConfigurableView {
       listItemView.configure(model: item)
       stackView.addArrangedSubview(listItemView)
       if (index == model.count - 1) {
-        listItemView.separatorView.isHidden = true
+        listItemView.isSeparatorHidden = true
       }
     }
   }

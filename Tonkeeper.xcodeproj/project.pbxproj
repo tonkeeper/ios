@@ -42,6 +42,10 @@
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
 		7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D143C3C2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift */; };
+		7D16E1642A75270A00A27AB0 /* ToastController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E1632A75270A00A27AB0 /* ToastController.swift */; };
+		7D16E1662A752BF900A27AB0 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E1652A752BF900A27AB0 /* ToastView.swift */; };
+		7D16E18A2A77C1FB00A27AB0 /* PassthroughWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E1892A77C1FB00A27AB0 /* PassthroughWindow.swift */; };
+		7D16E18F2A77DC6F00A27AB0 /* ToastConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */; };
 		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
 		7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
@@ -248,6 +252,7 @@
 		7DB8FB7F2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB7C2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf */; };
 		7DB8FB802A1BEE00005B4B11 /* Montserrat-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB7D2A1BEE00005B4B11 /* Montserrat-Medium.ttf */; };
 		7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */; };
+		7DB944C12A728E160008B512 /* ShimmerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB944C02A728E160008B512 /* ShimmerView.swift */; };
 		7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC1D96B2A55903300D61C96 /* AmountInputFormatController.swift */; };
 		7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */; };
 		7DE27E5F2A30C61E00842FA8 /* ActivityListDateCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */; };
@@ -325,6 +330,10 @@
 		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D143C3C2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SuccessViewController+Configuration.swift"; sourceTree = "<group>"; };
+		7D16E1632A75270A00A27AB0 /* ToastController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastController.swift; sourceTree = "<group>"; };
+		7D16E1652A752BF900A27AB0 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
+		7D16E1892A77C1FB00A27AB0 /* PassthroughWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassthroughWindow.swift; sourceTree = "<group>"; };
+		7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastConfiguration.swift; sourceTree = "<group>"; };
 		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
 		7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletBalanceModelMapper.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
@@ -529,6 +538,7 @@
 		7DB8FB7C2A1BEE00005B4B11 /* Montserrat-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Montserrat-SemiBold.ttf"; sourceTree = "<group>"; };
 		7DB8FB7D2A1BEE00005B4B11 /* Montserrat-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Montserrat-Medium.ttf"; sourceTree = "<group>"; };
 		7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIFont+Montserrat.swift"; sourceTree = "<group>"; };
+		7DB944C02A728E160008B512 /* ShimmerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShimmerView.swift; sourceTree = "<group>"; };
 		7DC1D96B2A55903300D61C96 /* AmountInputFormatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountInputFormatController.swift; sourceTree = "<group>"; };
 		7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListTransactionCell.swift; sourceTree = "<group>"; };
 		7DE27E5E2A30C61E00842FA8 /* ActivityListDateCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListDateCell.swift; sourceTree = "<group>"; };
@@ -755,6 +765,23 @@
 				7D143C392A4EC0E800B5FCC0 /* confetti.json */,
 			);
 			path = Animations;
+			sourceTree = "<group>";
+		};
+		7D16E1622A7526F300A27AB0 /* Toasts */ = {
+			isa = PBXGroup;
+			children = (
+				7D16E1632A75270A00A27AB0 /* ToastController.swift */,
+				7D16E1652A752BF900A27AB0 /* ToastView.swift */,
+			);
+			path = Toasts;
+			sourceTree = "<group>";
+		};
+		7D16E18D2A77DC5E00A27AB0 /* Toasts */ = {
+			isa = PBXGroup;
+			children = (
+				7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */,
+			);
+			path = Toasts;
 			sourceTree = "<group>";
 		};
 		7D27E5992A515AEE00156D0C /* Mapper */ = {
@@ -1079,6 +1106,7 @@
 				7D527BEB2A2DE93300A2D29A /* LoadingView.swift */,
 				7D527BED2A2DEA2C00A2D29A /* ResultView.swift */,
 				7D91442E2A31FC0100B0FD17 /* PassthroughView.swift */,
+				7D16E1892A77C1FB00A27AB0 /* PassthroughWindow.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1195,6 +1223,7 @@
 		7D6836152A1CAEAA002DBBC7 /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				7D16E18D2A77DC5E00A27AB0 /* Toasts */,
 				7D5943472A547D0C00C89967 /* Taptic */,
 				7D5141CC2A53453D00EC7F59 /* Images */,
 				7D9293022A29EE2F005B83DF /* Formatters */,
@@ -1426,6 +1455,8 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D16E1622A7526F300A27AB0 /* Toasts */,
+				7DB944BF2A728E0F0008B512 /* Shimmer */,
 				7D80C0D32A6AA5E3007054DD /* TKKeyboard */,
 				7D849C222A6556CB005787E9 /* ButtonsRowView */,
 				7D49346F2A5C9F7D00F4BCA2 /* TKMenu */,
@@ -1799,6 +1830,14 @@
 			path = UIKit;
 			sourceTree = "<group>";
 		};
+		7DB944BF2A728E0F0008B512 /* Shimmer */ = {
+			isa = PBXGroup;
+			children = (
+				7DB944C02A728E160008B512 /* ShimmerView.swift */,
+			);
+			path = Shimmer;
+			sourceTree = "<group>";
+		};
 		7DE27E592A30BB0600842FA8 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -1975,6 +2014,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D16E1662A752BF900A27AB0 /* ToastView.swift in Sources */,
 				7D6836762A1E6623002DBBC7 /* QRScannerPresenter.swift in Sources */,
 				7D4934772A5D4A9E00F4BCA2 /* TKMenuCell.swift in Sources */,
 				7D9292F92A29DCDA005B83DF /* SendAmountProtocols.swift in Sources */,
@@ -2066,6 +2106,7 @@
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
+				7D16E18A2A77C1FB00A27AB0 /* PassthroughWindow.swift in Sources */,
 				7D384A552A66ACED00DE2A66 /* ReceiveRootPresenterAnyProvider.swift in Sources */,
 				7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */,
 				7D92928D2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift in Sources */,
@@ -2107,6 +2148,7 @@
 				7D5928612A1FB62A006B0A8A /* ButtonsRowView.swift in Sources */,
 				7D9292E12A28A1F5005B83DF /* EnterAmountView.swift in Sources */,
 				7D92929B2A25F939005B83DF /* NSLayoutConstraint+Priority.swift in Sources */,
+				7DB944C12A728E160008B512 /* ShimmerView.swift in Sources */,
 				7D5928852A20CE3C006B0A8A /* TokensListCollectionController.swift in Sources */,
 				7D59287A2A20BF36006B0A8A /* TokensListSection.swift in Sources */,
 				7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */,
@@ -2146,6 +2188,7 @@
 				7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
 				7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */,
+				7D16E18F2A77DC6F00A27AB0 /* ToastConfiguration.swift in Sources */,
 				7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */,
 				7D5D05D32A309322009F42FF /* DefaultCellContentView+Model.swift in Sources */,
 				7D3E43B42A3737E700C23A75 /* BuyListServiceBuilder.swift in Sources */,
@@ -2205,6 +2248,7 @@
 				7D80C0F92A6AAC8E007054DD /* TKKeyboardConfiguration.swift in Sources */,
 				27E0B9B4BE1065171C3AFD76 /* ActivityListView.swift in Sources */,
 				7D4934752A5CA44000F4BCA2 /* TKMenuItem.swift in Sources */,
+				7D16E1642A75270A00A27AB0 /* ToastController.swift in Sources */,
 				14250E44D164B234E513925F /* ActivityListPresenter.swift in Sources */,
 				F2E003198428DC1A9FA401BB /* ActivityListProtocols.swift in Sources */,
 				7D384A532A66AC7300DE2A66 /* ReceiveRootPresenterProvider.swift in Sources */,

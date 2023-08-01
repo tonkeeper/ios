@@ -75,7 +75,7 @@ private extension SendAmountView {
       contentView.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
       contentView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace)
         .withPriority(.defaultHigh),
-      contentView.bottomAnchor.constraint(equalTo: keyboardView.topAnchor, constant: -20),
+      contentView.bottomAnchor.constraint(equalTo: keyboardView.topAnchor, constant: -.keyboardTopSpace),
       
       enterAmountContainer.topAnchor.constraint(equalTo: contentView.topAnchor),
       enterAmountContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
@@ -84,12 +84,21 @@ private extension SendAmountView {
       
       continueButtonActivityContainer.topAnchor.constraint(equalTo: enterAmountContainer.bottomAnchor),
       continueButtonActivityContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      continueButtonActivityContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor),
-      continueButtonActivityContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+      continueButtonActivityContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor)
+        .withPriority(.defaultHigh),
+      continueButtonActivityContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+        .withPriority(.defaultHigh),
       
-      keyboardView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
-      keyboardView.leftAnchor.constraint(equalTo: leftAnchor),
-      keyboardView.rightAnchor.constraint(equalTo: rightAnchor)
+      keyboardView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -.keyboardBottomSpace)
+        .withPriority(.defaultHigh),
+      keyboardView.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
+      keyboardView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace)
+        .withPriority(.defaultHigh)
     ])
   }
+}
+
+private extension CGFloat {
+  static let keyboardBottomSpace: CGFloat = 25
+  static let keyboardTopSpace: CGFloat = 20
 }

@@ -26,26 +26,20 @@ final class SendAmountPresenter {
   // MARK: - Dependencies
 
   private let inputCurrencyFormatter: NumberFormatter
-  private let address: String
-  private let comment: String?
+  private let recipient: Recipient
   
   let amountInputFormatController: AmountInputFormatController
   let sendInputController: SendInputController
-  let sendController: SendController
   
   // MARK: - Init
   
   init(inputCurrencyFormatter: NumberFormatter,
        sendInputController: SendInputController,
-       sendController: SendController,
-       address: String,
-       comment: String?) {
+       recipient: Recipient) {
     self.inputCurrencyFormatter = inputCurrencyFormatter
     self.amountInputFormatController = AmountInputFormatController(currencyFormatter: inputCurrencyFormatter)
     self.sendInputController = sendInputController
-    self.sendController = sendController
-    self.address = address
-    self.comment = comment
+    self.recipient = recipient
   }
 }
 
@@ -87,37 +81,8 @@ extension SendAmountPresenter: SendAmountPresenterInput {
   }
   
   func didTapContinueButton() {
-    viewInput?.showActivity()
-    Task {
-      do {
-        let transactionBoc: String
-        guard let tokenTransferData = sendInputController.tokenTransferData else { return }
-        switch tokenTransferData.token {
-        case .ton:
-          transactionBoc = try await sendController.prepareSendTonTransaction(
-            value: tokenTransferData.amount,
-            address: address,
-            comment: comment
-          )
-        case .token(let address):
-          transactionBoc = try await sendController.prepareSendTokenTransaction(
-            tokenAddress: address.toString(),
-            value: tokenTransferData.amount,
-            address: self.address,
-            comment: comment
-          )
-        }
-        let transactionModel = try await sendController.loadTransactionInformation(transactionBoc: transactionBoc)
-        Task { @MainActor in
-          viewInput?.hideActivity()
-          output?.sendAmountModuleDidPrepareTransaction(transactionModel)
-        }
-      } catch {
-        Task { @MainActor in
-          viewInput?.hideActivity()
-        }
-      }
-    }
+    guard let itemTransferModel = sendInputController.itemTransferModel else { return }
+    output?.sendAmountModuleDidEnterAmount(itemTransferModel: itemTransferModel)
   }
   
   func didSelectToken(at index: Int) {
@@ -170,9 +135,21 @@ private extension SendAmountPresenter {
   }
   
   func updateTitle() {
-    let shortAddress = (try? Address.parse(address).shortString) ?? ""
+    let subtitle = NSMutableAttributedString(string: "", attributes: nil)
+    if let name = recipient.domain {
+      let nameString = "To: \(name)"
+        .attributed(with: .body2,  alignment: .center, lineBreakMode: .byWordWrapping, color: .Text.secondary)
+      let walletString = " \(recipient.address.shortString)"
+        .attributed(with: .body2,  alignment: .center, lineBreakMode: .byClipping, color: .Text.tertiary)
+      subtitle.append(nameString)
+      subtitle.append(walletString)
+    } else {
+      let walletString = "To: \(recipient.address.shortString)"
+        .attributed(with: .body2,  alignment: .center, lineBreakMode: .byClipping, color: .Text.secondary)
+      subtitle.append(walletString)
+    }
     let model = SendAmountTitleView.Model(title: "Amount",
-                                          subtitle: "To: \(shortAddress)")
+                                          subtitle: subtitle)
     viewInput?.updateTitleView(model: model)
   }
   

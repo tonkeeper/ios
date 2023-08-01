@@ -34,8 +34,46 @@ final class ModalContentViewController: UIViewController, ScrollableModalCardCon
   
   private var contentSizeObserveToken: NSKeyValueObservation?
   
-  var configuration: Configuration? {
-    didSet { configure() }
+  private var _configuration = Configuration(header: nil, listItems: [], actionBar: nil)
+  
+  var configuration: Configuration {
+    get {
+      _configuration
+    }
+    set {
+      _configuration = newValue
+      configure()
+    }
+  }
+  
+  var headerModel: Configuration.Header? {
+    get {
+      _configuration.header
+    }
+    set {
+      _configuration.header = newValue
+      configureHeader(model: _configuration.header)
+    }
+  }
+  
+  var listItemsModel: [Configuration.ListItem] {
+    get {
+      _configuration.listItems
+    }
+    set {
+      _configuration.listItems = newValue
+      configureListItems(model: _configuration.listItems)
+    }
+  }
+  
+  var actionBarModel: Configuration.ActionBar? {
+    get {
+      _configuration.actionBar
+    }
+    set {
+      _configuration.actionBar = newValue
+      configureActionBar(model: _configuration.actionBar)
+    }
   }
   
   init() {
@@ -122,13 +160,41 @@ private extension ModalContentViewController {
   
   func configure() {
     guard isViewLoaded else { return }
-    guard let configuration = configuration else { return }
-    headerView.configure(model: configuration.header)
-    listTopSpacingView.isHidden = configuration.listItems.isEmpty
-    listView.configure(model: configuration.listItems)
-    actionBarView.configure(model: configuration.actionBar)
+    configureHeader(model: configuration.header)
+    configureListItems(model: configuration.listItems)
+    configureActionBar(model: configuration.actionBar)
   }
-
+  
+  func configureHeader(model: Configuration.Header?) {
+    guard isViewLoaded else { return }
+    if let model = model {
+      headerView.configure(model: model)
+      headerView.isHidden = false
+    } else {
+      headerView.isHidden = true
+    }
+  }
+  
+  func configureListItems(model: [Configuration.ListItem]) {
+    guard isViewLoaded else { return }
+    if model.isEmpty {
+      listView.isHidden = true
+    } else {
+      listView.configure(model: model)
+      listView.isHidden = false
+    }
+  }
+  
+  func configureActionBar(model: Configuration.ActionBar?) {
+    guard isViewLoaded else { return }
+    if let model = model {
+      actionBarView.isHidden = false
+      actionBarView.configure(model: model)
+    } else {
+      actionBarView.isHidden = true
+    }
+  }
+  
   func updateActionBarBottomConstraint() {
     let scrollViewBottomContentInset = actionBarView.bounds.height
     scrollView.contentInset.bottom = scrollViewBottomContentInset

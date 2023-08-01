@@ -9,13 +9,13 @@ import Foundation
 import WalletCore
 
 struct SendRecipientAssembly {
-  static func module(commentLengthValidator: SendRecipientCommentLengthValidator,
-                     addressValidator: AddressValidator,
-                     address: String?,
+  static func module(sendRecipientController: SendRecipientController,
+                     commentLengthValidator: SendRecipientCommentLengthValidator,
+                     recipient: Recipient?,
                      output: SendRecipientModuleOutput?) -> Module<SendRecipientViewController, SendRecipientModuleInput> {
-    let presenter = SendRecipientPresenter(commentLengthValidator: commentLengthValidator,
-                                           addressValidator: addressValidator,
-                                           address: address)
+    let presenter = SendRecipientPresenter(sendRecipientController: sendRecipientController,
+                                           commentLengthValidator: commentLengthValidator,
+                                           recipient: recipient)
     presenter.output = output
     
     let viewController = SendRecipientViewController(presenter: presenter)

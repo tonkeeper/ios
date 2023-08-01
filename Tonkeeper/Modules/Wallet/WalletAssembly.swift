@@ -78,7 +78,7 @@ struct WalletAssembly {
   }
   
   func sendCoordinator(output: SendCoordinatorOutput,
-                       address: String?) -> SendCoordinator {
+                       recipient: Recipient?) -> SendCoordinator {
     let navigationController = NavigationController()
     navigationController.configureDefaultAppearance()
     navigationController.isModalInPresentation = true
@@ -86,7 +86,7 @@ struct WalletAssembly {
     let coordinator = sendAssembly.coordinator(
       router: router,
       token: .ton,
-      address: address
+      recipient: recipient
     )
     coordinator.output = output
     return coordinator

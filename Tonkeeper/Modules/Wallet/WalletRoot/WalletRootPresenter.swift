@@ -100,7 +100,7 @@ private extension WalletRootPresenter {
 
 extension WalletRootPresenter: WalletHeaderModuleOutput {
   func didTapSendButton() {
-    output?.openSend(address: nil)
+    output?.openSend(recipient: nil)
   }
   
   func didTapReceiveButton() {
@@ -122,6 +122,8 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
     guard let walletAddress = try? walletBalanceController.getWalletBalance().header.fullAddress else {
       return
     }
+
+    ToastController.showToast(configuration: .copied)
     UIPasteboard.general.string = walletAddress
   }
 }

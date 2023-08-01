@@ -26,13 +26,13 @@ struct ActivityTransactionDetailsBuilder {
     )
     
     var listItems: [ModalContentViewController.Configuration.ListItem] = [
-      .init(left: .recipientAddressTitle, rightTop: recipientAddress, rightBottom: nil),
-      .init(left: .transactionTitle, rightTop: transaction, rightBottom: nil),
-      .init(left: .feeTitle, rightTop: fee, rightBottom: feeFiat),
+      .init(left: .recipientAddressTitle, rightTop: .value(recipientAddress), rightBottom: .value(nil)),
+      .init(left: .transactionTitle, rightTop: .value(transaction), rightBottom: .value(nil)),
+      .init(left: .feeTitle, rightTop: .value(fee), rightBottom: .value(feeFiat)),
     ]
     
     if let message = message {
-      listItems.append(.init(left: .messageTitle, rightTop: message, rightBottom: nil))
+      listItems.append(.init(left: .messageTitle, rightTop: .value(message), rightBottom: .value(nil)))
     }
     
     let buttons = ModalContentViewController.Configuration.ActionBar.Button(

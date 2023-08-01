@@ -8,16 +8,19 @@
 import Foundation
 
 struct SendConfirmationModalConfigurationBuilder {
+  
   static func configuration(title: String,
                             image: Image,
-                            recipient: String? = nil,
-                            recipientAddress: String,
+                            recipientName: String? = nil,
+                            recipientAddress: String? = nil,
                             amount: String,
-                            fiatAmount: String?,
-                            fee: String,
-                            fiatFee: String?,
+                            fiatAmount: ModalContentViewController.Configuration.ListItem.RightItem<String?>,
+                            fee: ModalContentViewController.Configuration.ListItem.RightItem<String?>,
+                            fiatFee: ModalContentViewController.Configuration.ListItem.RightItem<String?>,
                             comment: String? = nil,
+                            isButtonEnabled: Bool = true,
                             showActivity: Bool = true,
+                            showActivityOnTap: Bool = true,
                             tapAction: (( @escaping (Bool) -> Void ) -> Void)? = nil,
                             completion: ((Bool) -> Void)? = nil
   ) -> ModalContentViewController.Configuration {
@@ -27,25 +30,36 @@ struct SendConfirmationModalConfigurationBuilder {
       topDescription: .description
     )
     
-    var listItems: [ModalContentViewController.Configuration.ListItem] = [
-      .init(left: .recipientAddressTitle, rightTop: recipientAddress, rightBottom: nil),
-      .init(left: .amountTitle, rightTop: amount, rightBottom: fiatAmount),
-      .init(left: .feeTitle, rightTop: fee, rightBottom: fiatFee)
-    ]
+    var listItems = [ModalContentViewController.Configuration.ListItem]()
+    if let recipientName = recipientName {
+      listItems.append(.init(left: .recipientTitle, rightTop: .value(recipientName), rightBottom: .value(nil)))
+    }
+    if let recipientAddress = recipientAddress {
+      listItems.append(.init(left: .recipientAddressTitle, rightTop: .value(recipientAddress), rightBottom: .value(nil)))
+    }
     
-    if let recipient = recipient {
-      listItems.insert(.init(left: .recipientTitle, rightTop: recipient, rightBottom: nil), at: 0)
+    listItems.append(.init(left: .amountTitle, rightTop: .value(amount), rightBottom: fiatAmount))
+    
+    switch fee {
+    case .loading:
+      listItems.append(.init(left: .feeTitle, rightTop: .loading, rightBottom: fiatFee))
+    case .value(let value):
+      if let value = value {
+        listItems.append(.init(left: .feeTitle, rightTop: .value(value), rightBottom: fiatFee))
+      }
     }
     
     if let comment = comment {
-      listItems.append(.init(left: .commentTitle, rightTop: comment, rightBottom: nil))
+      listItems.append(.init(left: .commentTitle, rightTop: .value(comment), rightBottom: .value(nil)))
     }
     
     let buttons = ModalContentViewController.Configuration.ActionBar.Button(
       title: .buttonTitle,
       configuration: .primaryLarge,
+      isEnabled: isButtonEnabled,
       tapAction: tapAction,
-      showActivityClosure: { showActivity },
+      showActivity: { showActivity },
+      showActivityOnTap: { showActivityOnTap },
       completion: completion
     )
     
@@ -61,6 +75,33 @@ struct SendConfirmationModalConfigurationBuilder {
       actionBar: actionBar)
     
     return configuration
+  }
+  
+  static func actionBarConfiguration(showActivity: Bool = true,
+                                     showActivityOnTap: Bool = true,
+                                     tapAction: (( @escaping (Bool) -> Void ) -> Void)? = nil,
+                                     completion: ((Bool) -> Void)? = nil) -> ModalContentViewController.Configuration.ActionBar {
+    let buttons = ModalContentViewController.Configuration.ActionBar.Button(
+      title: .buttonTitle,
+      configuration: .primaryLarge,
+      tapAction: tapAction,
+      showActivity: {
+        showActivity
+        
+      },
+      showActivityOnTap: {
+        showActivityOnTap
+        
+      },
+      completion: completion
+    )
+    
+    let actionBarItems: [ModalContentViewController.Configuration.ActionBar.Item] = [
+      .buttons([buttons])
+    ]
+    
+    let actionBar = ModalContentViewController.Configuration.ActionBar(items: actionBarItems)
+    return actionBar
   }
 }
 

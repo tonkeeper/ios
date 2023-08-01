@@ -18,19 +18,23 @@ final class SendRecipientPresenter {
   
   // MARK: - Dependencies
   
+  private let sendRecipientController: SendRecipientController
   private let commentLengthValidator: SendRecipientCommentLengthValidator
-  private let addressValidator: AddressValidator
-  private var address: String?
+  private var recipient: Recipient?
   private var comment: String?
+  
+  // MARK: - State
+  
+  private var addressInputTimer: Timer?
   
   // MARK: - Init
   
-  init(commentLengthValidator: SendRecipientCommentLengthValidator,
-       addressValidator: AddressValidator,
-       address: String?) {
+  init(sendRecipientController: SendRecipientController,
+       commentLengthValidator: SendRecipientCommentLengthValidator,
+       recipient: Recipient?) {
+    self.sendRecipientController = sendRecipientController
     self.commentLengthValidator = commentLengthValidator
-    self.addressValidator = addressValidator
-    self.address = address
+    self.recipient = recipient
   }
 }
 
@@ -51,7 +55,8 @@ extension SendRecipientPresenter: SendRecipientPresenterInput {
   }
   
   func didTapContinueButton() {
-    output?.sendRecipientModuleDidTapContinueButton(address: address ?? "", comment: comment)
+    guard let recipient = recipient else { return }
+    output?.sendRecipientModuleDidTapContinueButton(recipient: recipient, comment: comment)
   }
   
   func didChangeComment(text: String) {
@@ -60,16 +65,15 @@ extension SendRecipientPresenter: SendRecipientPresenterInput {
   }
   
   func didChangeAddress(address: String) {
-    self.address = address
-    validate()
+    handleAddressInput(address: address)
   }
 }
 
 // MARK: - SendRecipientModuleInput
 
 extension SendRecipientPresenter: SendRecipientModuleInput {
-  func setAddress(_ address: String) {
-    self.address = address
+  func setRecipient(_ recipient: Recipient) {
+    self.recipient = recipient
     updateRecipient()
     validate()
   }
@@ -79,27 +83,51 @@ extension SendRecipientPresenter: SendRecipientModuleInput {
 
 private extension SendRecipientPresenter {
   func updateRecipient() {
-    guard let address = address else {
+    guard let recipient = recipient else {
       return
     }
-    viewInput?.updateRecipientAddress(address)
+    viewInput?.updateRecipientAddress(recipient.address.toString(), name: recipient.domain)
+  }
+  
+  func handleAddressInput(address: String) {
+    viewInput?.updateContinueButtonIsAvailable(isAvailable: false)
+    addressInputTimer?.invalidate()
+    guard !address.isEmpty else {
+      recipient = nil
+      viewInput?.updateAddressValidationState(isValid: true)
+      validate()
+      return
+    }
+    
+    addressInputTimer = Timer.scheduledTimer(withTimeInterval: 0.75, repeats: false, block: { [weak self] timer in
+      timer.invalidate()
+      guard let self = self else { return }
+      self.viewInput?.updateContinueButtonIsActivity(isActivity: true)
+      Task {
+        let result: Bool
+        do {
+          self.recipient = try await self.sendRecipientController.handleInput(address)
+          result = true
+        } catch {
+          self.recipient = nil
+          result = false
+        }
+        await MainActor.run {
+          self.viewInput?.updateContinueButtonIsActivity(isActivity: false)
+          self.validate()
+          self.viewInput?.updateAddressValidationState(isValid: result)
+        }
+      }
+    })
   }
   
   func validate() {
-    let isValid = validateAddress() && validateComment()
+    let isValid = validateRecipient() && validateComment()
     viewInput?.updateContinueButtonIsAvailable(isAvailable: isValid)
   }
   
-  func validateAddress() -> Bool {
-    guard let address = address,
-          !address.isEmpty else {
-      viewInput?.updateAddressValidationState(isValid: true)
-      return false
-    }
-    
-    let isValid = addressValidator.validateAddress(address)
-    viewInput?.updateAddressValidationState(isValid: isValid)
-    return isValid
+  func validateRecipient() -> Bool {
+    recipient != nil
   }
   
   func validateComment() -> Bool {
