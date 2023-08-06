@@ -1,17 +1,17 @@
 //
-//  ActivityListTransactionCell.swift
+//  ActivityListCompositionTransactionCell.swift
 //  Tonkeeper
 //
-//  Created by Grigory on 7.6.23..
+//  Created by Grigory on 6.8.23..
 //
 
 import UIKit
 
-final class ActivityListTransactionCell: ContainerCollectionViewCell<TransactionCellContentView>, Reusable {
+final class ActivityListCompositionTransactionCell: ContainerCollectionViewCell<CompositionTransactionCellContentView>, Reusable {
   
   struct Model: Hashable, Equatable {
     let id = UUID()
-    let transactionModel: TransactionCellContentView.Model
+    let childTransactionModels: [TransactionCellContentView.Model]
     
     static func == (lhs: Self, rhs: Self) -> Bool {
       return lhs.id == rhs.id
@@ -23,7 +23,8 @@ final class ActivityListTransactionCell: ContainerCollectionViewCell<Transaction
     
     func hash(into hasher: inout Hasher) {
       hasher.combine(id)
-    }  }
+    }
+  }
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -34,20 +35,14 @@ final class ActivityListTransactionCell: ContainerCollectionViewCell<Transaction
     fatalError("init(coder:) has not been implemented")
   }
   
-  override func layoutSubviews() {
-    super.layoutSubviews()
-  }
-  
   func configure(model: Model) {
-    cellContentView.configure(model: model.transactionModel)
+    cellContentView.configure(model: .init(transactionContentModels: model.childTransactionModels))
   }
 }
 
-private extension ActivityListTransactionCell {
+private extension ActivityListCompositionTransactionCell {
   func setup() {
-    cellContentView.defaultCellContentView.imageView.backgroundColor = .Background.contentTint
-    cellContentView.defaultCellContentView.imageView.tintColor = .Icon.secondary
-    cellContentView.isSeparatorVisible = false
+//    contentView.backgroundColor = .Background.highlighted
     layer.masksToBounds = true
     layer.cornerRadius = 16
   }
@@ -57,3 +52,4 @@ private extension CGFloat {
   static let cornerRadius: CGFloat = 16
   static let separatorWidth: CGFloat = 0.5
 }
+

@@ -10,7 +10,7 @@ import UIKit
 
 final class ActivityListView: UIView {
   
-  let collectionView = UICollectionView(frame: .zero, collectionViewLayout: .init())
+  let collectionView = NotDelayCollectionView(frame: .zero, collectionViewLayout: .init())
   private var headerView: UIView?
 
   // MARK: - Init

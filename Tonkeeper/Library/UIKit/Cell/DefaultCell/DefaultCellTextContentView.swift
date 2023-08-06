@@ -12,7 +12,6 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
   let topLeftHorizontalStack = TopLeftHorizontalStack()
   let topRightLabel: UILabel = {
     let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
     label.applyTextStyleFont(.label1)
     label.textColor = .Text.primary
     label.numberOfLines = 1
@@ -22,7 +21,6 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
   let middleLeftHorizontalStack = MiddleLeftHorizontalStack()
   let middleRightLabel: UILabel = {
     let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
     label.applyTextStyleFont(.body2)
     label.textColor = .Text.secondary
     label.numberOfLines = 1
@@ -31,7 +29,6 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
   }()
   let bottomLeftLabel: UILabel = {
     let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
     label.applyTextStyleFont(.body2)
     label.textColor = .Text.secondary
     label.numberOfLines = 1
@@ -40,7 +37,6 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
   }()
   let bottomRightLabel: UILabel = {
     let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
     label.applyTextStyleFont(.body2)
     label.textColor = .Text.secondary
     label.numberOfLines = 1
@@ -159,26 +155,10 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
     
     bottomRightLabel.attributedText = nil
   }
-  
-  func updateBackgroundColor(_ color: UIColor) {
-    backgroundColor = color
-    topLeftHorizontalStack.backgroundColor = color
-    topLeftHorizontalStack.rightLabel.layer.backgroundColor = color.cgColor
-    topLeftHorizontalStack.leftLabel.layer.backgroundColor = color.cgColor
-    middleLeftHorizontalStack.backgroundColor = color
-    middleLeftHorizontalStack.rightLabel.layer.backgroundColor = color.cgColor
-    middleLeftHorizontalStack.leftLabel.layer.backgroundColor = color.cgColor
-    bottomLeftLabel.layer.backgroundColor = color.cgColor
-    topRightLabel.layer.backgroundColor = color.cgColor
-    middleRightLabel.layer.backgroundColor = color.cgColor
-    bottomRightLabel.layer.backgroundColor = color.cgColor
-  }
 }
 
 private extension DefaultCellTextContentView {
   func setup() {
-    backgroundColor = .Background.content
-    
     addSubview(topRightLabel)
     addSubview(topLeftHorizontalStack)
     addSubview(middleLeftHorizontalStack)
@@ -191,7 +171,6 @@ private extension DefaultCellTextContentView {
 final class TopLeftHorizontalStack: UIView {
   let leftLabel: UILabel = {
     let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
     label.applyTextStyleFont(.label1)
     label.textColor = .Text.primary
     label.numberOfLines = 1
@@ -201,7 +180,6 @@ final class TopLeftHorizontalStack: UIView {
   
   let rightLabel: UILabel = {
     let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
     label.applyTextStyleFont(.label1)
     label.textColor = .Text.tertiary
     label.numberOfLines = 1
@@ -254,7 +232,6 @@ final class TopLeftHorizontalStack: UIView {
 final class MiddleLeftHorizontalStack: UIView {
   let leftLabel: UILabel = {
     let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
     label.applyTextStyleFont(.body2)
     label.textColor = .Text.secondary
     label.numberOfLines = 1
@@ -264,7 +241,6 @@ final class MiddleLeftHorizontalStack: UIView {
   
   let rightLabel: UILabel = {
     let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
     return label
   }()
   

@@ -28,7 +28,7 @@ final class ActivityListPresenter {
 
 extension ActivityListPresenter: ActivityListPresenterInput {
   func viewDidLoad() {
-    loadFakeTransactions()
+    loadInitialEvents()
   }
   
   func didSelectTransactionAt(indexPath: IndexPath) {
@@ -43,48 +43,48 @@ extension ActivityListPresenter: ActivityListModuleInput {}
 // MARK: - Private
 
 private extension ActivityListPresenter {
+  func loadInitialEvents() {
+    loadFakeTransactions()
+  }
+  
   func loadFakeTransactions() {
+    let item1 = transactionBuilder.buildTransactionModel(type: .sent,
+                                                         subtitle: "EQAK…MALX",
+                                                         amount: "− 400.00 TON",
+                                                         time: "17:32", comment: "Never gonna give you up. Never gonna let you down")
     
-    let items1: [ActivityListTransactionCell.Model] = [
-      transactionBuilder.buildTransactionModel(type: .sent,
-                                               subtitle: "EQAK…MALX",
-                                               amount: "− 400.00 TON",
-                                               time: "17:32", comment: "Never gonna give you up. Never gonna let you down"),
-      transactionBuilder.buildTransactionModel(type: .receieved,
-                                               subtitle: "EQAK…MALX",
-                                               amount: "+ 400.00 TON",
-                                               time: "17:32",
-                                               isFailed: true,
-                                               comment: "Short Message"),
-      transactionBuilder.buildTransactionModel(type: .walletInitialized,
-                                               subtitle: "EQAK…MALX",
-                                               amount: "-",
-                                               time: "17:32"),
+    let subs2 = [
+      transactionBuilder.buildTransactionModel(type: .receieved, subtitle: "EQAK…MALX", amount: "+ 300.00 TON", time: "17:10", comment: "Hui pizda djigurda"),
+      transactionBuilder.buildTransactionModel(type: .spam, subtitle: "EQAK…MALX", amount: "+ 300.00 TON", time: "17:10"),
+      transactionBuilder.buildTransactionModel(type: .walletInitialized, subtitle: "EQAK…MALX", amount: "+ 300.00 TON", time: "17:10"),
     ]
     
-    let items2: [ActivityListTransactionCell.Model] = [
-      transactionBuilder.buildTransactionModel(type: .receieved,
-                                               subtitle: "EQAK…MALX",
-                                               amount: "+ 400.00 TON",
-                                               time: "17:32")
+    let subs3 = [
+      transactionBuilder.buildTransactionModel(type: .sent, subtitle: "EQAK…MALX", amount: "+ 300.00 TON", time: "17:10", comment: "Hui pizda djigurda"),
+      transactionBuilder.buildTransactionModel(type: .endOfAuction, subtitle: "EQAK…MALX", amount: "+ 300.00 TON", time: "17:10"),
     ]
     
     let items3 = (0..<500).map { _ in
-      transactionBuilder.buildTransactionModel(type: .nftPurchase,
+      ActivityListCompositionTransactionCell.Model(childTransactionModels: [
+        transactionBuilder.buildTransactionModel(type: .nftPurchase,
                                                subtitle: "EQAK…MALX",
                                                amount: "+ 400.00 TON",
                                                time: "04:20",
-                                               comment: "Short Message")
+                                               comment: "Short Message"),
+        transactionBuilder.buildTransactionModel(type: .nftPurchase,
+                                               subtitle: "EQAK…MALX",
+                                               amount: "+ 400.00 TON",
+                                               time: "04:20",
+                                               comment: nil)
+        ])
     }
 
     let sections: [ActivityListSection] = [
-      .init(type: .date, items: [ActivityListDateCell.Model(date: "5 June")]),
-      .init(type: .transaction, items: items1),
-      .init(type: .transaction, items: items2),
-      .init(type: .date, items: [ActivityListDateCell.Model(date: "3 June")]),
-      .init(type: .transaction, items: items3)
+      .init(items: [ActivityListTransactionCell.Model(transactionModel: item1)]),
+      .init(items: [ActivityListCompositionTransactionCell.Model(childTransactionModels: subs2)]),
+      .init(items: [ActivityListCompositionTransactionCell.Model(childTransactionModels: subs3)]),
+      .init(items: items3)
     ]
-    
     viewInput?.updateSections(sections)
   }
 }

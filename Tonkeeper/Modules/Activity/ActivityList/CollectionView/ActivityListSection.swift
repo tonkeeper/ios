@@ -8,12 +8,6 @@
 import Foundation
 
 struct ActivityListSection: Hashable {
-  enum SectionType {
-    case transaction
-    case date
-  }
-  
   let id = UUID()
-  let type: SectionType
   let items: [AnyHashable]
 }
