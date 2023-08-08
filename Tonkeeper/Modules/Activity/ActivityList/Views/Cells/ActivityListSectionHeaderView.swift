@@ -1,5 +1,5 @@
 //
-//  ActivityListDateCell.swift
+//  ActivityListSectionHeaderView.swift
 //  Tonkeeper
 //
 //  Created by Grigory on 7.6.23..
@@ -7,11 +7,10 @@
 
 import UIKit
 
-final class ActivityListDateCell: UICollectionViewCell, Reusable, ConfigurableView {
+final class ActivityListSectionHeaderView: UICollectionReusableView, Reusable, ConfigurableView {
   
   struct Model: Hashable {
-    let id = UUID()
-    let date: String
+    let date: String?
   }
   
   private let dateLabel: UILabel = {
@@ -44,19 +43,19 @@ final class ActivityListDateCell: UICollectionViewCell, Reusable, ConfigurableVi
   }
 }
 
-private extension ActivityListDateCell {
+private extension ActivityListSectionHeaderView {
   func setup() {
-    contentView.addSubview(dateLabel)
-    contentView.backgroundColor = .Background.page
+    addSubview(dateLabel)
+    backgroundColor = .Background.page
     
     dateLabel.backgroundColor = .Background.page
     
     dateLabel.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-      dateLabel.topAnchor.constraint(equalTo: contentView.topAnchor),
-      dateLabel.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      dateLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-      dateLabel.rightAnchor.constraint(equalTo: contentView.rightAnchor)
+      dateLabel.topAnchor.constraint(equalTo: topAnchor),
+      dateLabel.leftAnchor.constraint(equalTo: leftAnchor),
+      dateLabel.bottomAnchor.constraint(equalTo: bottomAnchor),
+      dateLabel.rightAnchor.constraint(equalTo: rightAnchor)
     ])
   }
 }

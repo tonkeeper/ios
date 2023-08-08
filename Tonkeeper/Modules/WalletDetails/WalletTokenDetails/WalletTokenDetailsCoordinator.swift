@@ -44,7 +44,8 @@ private extension WalletTokenDetailsCoordinator {
       tokenDetailsController = walletCoreAssembly.tokenDetailsTonController()
     }
     
-    let activityListModule = ActivityListAssembly.module(transactionBuilder: ActivityListTransactionBuilder(),
+    let activityListModule = ActivityListAssembly.module(activityListController: walletCoreAssembly.activityListController(),
+                                                         transactionBuilder: ActivityListTransactionBuilder(),
                                                          output: self)
     
     let module = TokenDetailsAssembly.module(output: self,

@@ -113,6 +113,7 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
 
 private extension TransactionCellContentView {
   func setup() {
+    isExclusiveTouch = true
     contentView.isUserInteractionEnabled = false
     
     addSubview(contentView)

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import WalletCore
 
 final class ActivityListPresenter {
   
@@ -17,9 +18,14 @@ final class ActivityListPresenter {
   
   // MARK: - Dependencies
   
+  private let activityListController: ActivityListController
   private let transactionBuilder: ActivityListTransactionBuilder
   
-  init(transactionBuilder: ActivityListTransactionBuilder) {
+  private var cellsViewModels = [String: ActivityListCompositionTransactionCell.Model]()
+  
+  init(activityListController: ActivityListController,
+       transactionBuilder: ActivityListTransactionBuilder) {
+    self.activityListController = activityListController
     self.transactionBuilder = transactionBuilder
   }
 }
@@ -34,6 +40,22 @@ extension ActivityListPresenter: ActivityListPresenterInput {
   func didSelectTransactionAt(indexPath: IndexPath) {
     output?.didSelectTransaction(in: indexPath.section, at: indexPath.item)
   }
+  
+  func fetchNext() {
+    Task {
+      let hasMore = await activityListController.hasMore
+      let isLoading = await activityListController.isLoading
+      guard hasMore && !isLoading else {
+        return
+      }
+
+      loadInitialEvents()
+    }
+  }
+  
+  func viewModel(eventId: String) -> ActivityListCompositionTransactionCell.Model? {
+    return cellsViewModels[eventId]
+  }
 }
 
 // MARK: - ActivityListModuleInput
@@ -43,48 +65,32 @@ extension ActivityListPresenter: ActivityListModuleInput {}
 // MARK: - Private
 
 private extension ActivityListPresenter {
-  func loadInitialEvents() {
-    loadFakeTransactions()
-  }
   
-  func loadFakeTransactions() {
-    let item1 = transactionBuilder.buildTransactionModel(type: .sent,
-                                                         subtitle: "EQAK…MALX",
-                                                         amount: "− 400.00 TON",
-                                                         time: "17:32", comment: "Never gonna give you up. Never gonna let you down")
-    
-    let subs2 = [
-      transactionBuilder.buildTransactionModel(type: .receieved, subtitle: "EQAK…MALX", amount: "+ 300.00 TON", time: "17:10", comment: "Hui pizda djigurda"),
-      transactionBuilder.buildTransactionModel(type: .spam, subtitle: "EQAK…MALX", amount: "+ 300.00 TON", time: "17:10"),
-      transactionBuilder.buildTransactionModel(type: .walletInitialized, subtitle: "EQAK…MALX", amount: "+ 300.00 TON", time: "17:10"),
-    ]
-    
-    let subs3 = [
-      transactionBuilder.buildTransactionModel(type: .sent, subtitle: "EQAK…MALX", amount: "+ 300.00 TON", time: "17:10", comment: "Hui pizda djigurda"),
-      transactionBuilder.buildTransactionModel(type: .endOfAuction, subtitle: "EQAK…MALX", amount: "+ 300.00 TON", time: "17:10"),
-    ]
-    
-    let items3 = (0..<500).map { _ in
-      ActivityListCompositionTransactionCell.Model(childTransactionModels: [
-        transactionBuilder.buildTransactionModel(type: .nftPurchase,
-                                               subtitle: "EQAK…MALX",
-                                               amount: "+ 400.00 TON",
-                                               time: "04:20",
-                                               comment: "Short Message"),
-        transactionBuilder.buildTransactionModel(type: .nftPurchase,
-                                               subtitle: "EQAK…MALX",
-                                               amount: "+ 400.00 TON",
-                                               time: "04:20",
-                                               comment: nil)
-        ])
+  func loadInitialEvents() {
+    Task {
+      let viewModels = try await activityListController.loadNextEvents()
+      viewModels.forEach { key, value in
+        let actions = value.actions.map { action in
+          transactionBuilder.buildTransactionModel(
+            type: action.eventType,
+            subtitle: action.leftTopDescription,
+            amount: action.amount,
+            time: action.rightTopDesription,
+            status: action.status,
+            comment: action.comment
+            )
+        }
+        let cellViewModel = ActivityListCompositionTransactionCell.Model(childTransactionModels: actions)
+        cellsViewModels[key] = cellViewModel
+      }
+      
+      let sections = await activityListController.eventsSections.map { section in
+        ActivityListSection(date: section.date, title: section.title, items: section.eventsIds)
+      }
+      
+      await MainActor.run {
+        viewInput?.updateEvents(sections)
+      }
     }
-
-    let sections: [ActivityListSection] = [
-      .init(items: [ActivityListTransactionCell.Model(transactionModel: item1)]),
-      .init(items: [ActivityListCompositionTransactionCell.Model(childTransactionModels: subs2)]),
-      .init(items: [ActivityListCompositionTransactionCell.Model(childTransactionModels: subs3)]),
-      .init(items: items3)
-    ]
-    viewInput?.updateSections(sections)
   }
 }

@@ -8,6 +8,15 @@
 import Foundation
 
 struct ActivityListSection: Hashable {
-  let id = UUID()
-  let items: [AnyHashable]
+  let date: Date
+  let title: String?
+  let items: [String]
+  
+  static func == (lhs: Self, rhs: Self) -> Bool {
+    lhs.date == rhs.date
+  }
+  
+  func hash(into hasher: inout Hasher) {
+    hasher.combine(date)
+  }
 }

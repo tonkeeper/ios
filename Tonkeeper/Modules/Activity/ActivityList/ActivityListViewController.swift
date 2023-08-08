@@ -49,7 +49,7 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
 // MARK: - ActivityListViewInput
 
 extension ActivityListViewController: ActivityListViewInput {
-  func updateSections(_ sections: [ActivityListSection]) {
+  func updateEvents(_ sections: [ActivityListSection]) {
     collectionController.sections = sections
   }
 }
@@ -60,6 +60,14 @@ extension ActivityListViewController: ActivityListCollectionControllerDelegate {
   func activityListCollectionController(_ collectionController: ActivityListCollectionController,
                                         didSelectTransactionAt indexPath: IndexPath) {
     presenter.didSelectTransactionAt(indexPath: indexPath)
+  }
+  
+  func activityListCollectionControllerLoadNextPage(_ collectionController: ActivityListCollectionController) {
+    presenter.fetchNext()
+  }
+  
+  func activityListCollectionControllerEventViewModel(for eventId: String) -> ActivityListCompositionTransactionCell.Model? {
+    presenter.viewModel(eventId: eventId)
   }
 }
 

@@ -10,6 +10,8 @@ import UIKit
 protocol ActivityListCollectionControllerDelegate: AnyObject {
   func activityListCollectionController(_ collectionController: ActivityListCollectionController,
                                         didSelectTransactionAt indexPath: IndexPath)
+  func activityListCollectionControllerLoadNextPage(_ collectionController: ActivityListCollectionController)
+  func activityListCollectionControllerEventViewModel(for eventId: String) -> ActivityListCompositionTransactionCell.Model?
 }
 
 final class ActivityListCollectionController: NSObject {
@@ -23,7 +25,7 @@ final class ActivityListCollectionController: NSObject {
   weak var delegate: ActivityListCollectionControllerDelegate?
   
   private weak var collectionView: UICollectionView?
-  private var dataSource: UICollectionViewDiffableDataSource<ActivityListSection, AnyHashable>?
+  private var dataSource: UICollectionViewDiffableDataSource<ActivityListSection, String>?
   
   private let collectionLayoutConfigurator = ActivityListCollectionLayoutConfigurator()
   
@@ -31,62 +33,60 @@ final class ActivityListCollectionController: NSObject {
     self.collectionView = collectionView
     super.init()
     let layout = collectionLayoutConfigurator.getLayout { [weak self] sectionIndex in
-      guard let self = self else { return ActivityListSection(items: []) }
+      guard let self = self else { return ActivityListSection(date: Date(), title: nil, items: []) }
       return self.sections[sectionIndex]
     }
     collectionView.delegate = self
     collectionView.setCollectionViewLayout(layout, animated: false)
     collectionView.register(ActivityListTransactionCell.self,
-                             forCellWithReuseIdentifier: ActivityListTransactionCell.reuseIdentifier)
+                            forCellWithReuseIdentifier: ActivityListTransactionCell.reuseIdentifier)
     collectionView.register(ActivityListCompositionTransactionCell.self,
-                             forCellWithReuseIdentifier: ActivityListCompositionTransactionCell.reuseIdentifier)
-    collectionView.register(ActivityListDateCell.self,
-                            forCellWithReuseIdentifier: ActivityListDateCell.reuseIdentifier)
+                            forCellWithReuseIdentifier: ActivityListCompositionTransactionCell.reuseIdentifier)
+    collectionView.register(ActivityListSectionHeaderView.self,
+                            forSupplementaryViewOfKind: ActivityListSectionHeaderView.reuseIdentifier,
+                            withReuseIdentifier: ActivityListSectionHeaderView.reuseIdentifier)
     dataSource = createDataSource(collectionView: collectionView)
   }
 }
 
 private extension ActivityListCollectionController {
   func didUpdateSections() {
-    var snapshot = NSDiffableDataSourceSnapshot<ActivityListSection, AnyHashable>()
-    sections.forEach { section in
-      snapshot.appendSections([section])
-      snapshot.appendItems(section.items, toSection: section)
-    }
-    dataSource?.apply(snapshot)
-  }
-  
-  func createDataSource(collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<ActivityListSection, AnyHashable> {
-    .init(collectionView: collectionView) { [weak self] collectionView, indexPath, itemIdentifier in
-      guard let self = self else { return UICollectionViewCell() }
-      switch itemIdentifier {
-      case let model as ActivityListTransactionCell.Model:
-        return self.getTransactionCell(collectionView: collectionView,
-                                       indexPath: indexPath,
-                                       model: model)
-      case let model as ActivityListDateCell.Model:
-        return self.getDateCell(collectionView: collectionView,
-                                indexPath: indexPath,
-                                model: model)
-      case let model as ActivityListCompositionTransactionCell.Model:
-        return self.getCompositionTransactionCell(collectionView: collectionView, indexPath: indexPath, model: model)
-      default:
-        return UICollectionViewCell()
+    Task {
+      var snapshot = NSDiffableDataSourceSnapshot<ActivityListSection, String>()
+      sections.forEach { section in
+        snapshot.appendSections([section])
+        snapshot.appendItems(section.items, toSection: section)
       }
+      dataSource?.apply(snapshot, animatingDifferences: false)
     }
   }
   
-  func getTransactionCell(collectionView: UICollectionView,
-                          indexPath: IndexPath,
-                          model: ActivityListTransactionCell.Model) -> UICollectionViewCell {
-    guard let cell = collectionView.dequeueReusableCell(
-      withReuseIdentifier: ActivityListTransactionCell.reuseIdentifier,
-      for: indexPath) as? ActivityListTransactionCell else {
-      return UICollectionViewCell()
+  func createDataSource(collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<ActivityListSection, String> {
+    let dataSource = UICollectionViewDiffableDataSource<ActivityListSection, String>(collectionView: collectionView) { [weak self] collectionView, indexPath, itemIdentifier in
+      guard let self = self else { return UICollectionViewCell() }
+      self.fetchNextIfNeeded(collectionView: collectionView, indexPath: indexPath)
+      guard let model = delegate?.activityListCollectionControllerEventViewModel(for: itemIdentifier) else { return UICollectionViewCell() }
+      return self.getCompositionTransactionCell(collectionView: collectionView, indexPath: indexPath, model: model)
     }
     
-    cell.configure(model: model)
-    return cell
+    dataSource.supplementaryViewProvider = { collectionView, kind, indexPath in
+      switch kind {
+      case ActivityListSectionHeaderView.reuseIdentifier:
+        guard let headerView = collectionView
+          .dequeueReusableSupplementaryView(
+            ofKind: kind,
+            withReuseIdentifier: ActivityListSectionHeaderView.reuseIdentifier,
+            for: indexPath
+          ) as? ActivityListSectionHeaderView else { return nil }
+        let section = dataSource.snapshot().sectionIdentifiers[indexPath.section]
+        headerView.configure(model: .init(date: section.title))
+        return headerView
+      default:
+        return nil
+      }
+    }
+    
+    return dataSource
   }
   
   func getCompositionTransactionCell(collectionView: UICollectionView, indexPath: IndexPath, model: ActivityListCompositionTransactionCell.Model) -> UICollectionViewCell {
@@ -100,17 +100,10 @@ private extension ActivityListCollectionController {
     return cell
   }
   
-  func getDateCell(collectionView: UICollectionView,
-                          indexPath: IndexPath,
-                          model: ActivityListDateCell.Model) -> UICollectionViewCell {
-    guard let cell = collectionView.dequeueReusableCell(
-      withReuseIdentifier: ActivityListDateCell.reuseIdentifier,
-      for: indexPath) as? ActivityListDateCell else {
-      return UICollectionViewCell()
-    }
-    
-    cell.configure(model: model)
-    return cell
+  func fetchNextIfNeeded(collectionView: UICollectionView, indexPath: IndexPath) {
+    let numberOfSections = collectionView.numberOfSections
+    guard indexPath.section == numberOfSections - 1 else { return }
+    delegate?.activityListCollectionControllerLoadNextPage(self)
   }
 }
 

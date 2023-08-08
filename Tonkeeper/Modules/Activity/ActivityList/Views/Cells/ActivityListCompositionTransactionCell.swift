@@ -9,20 +9,11 @@ import UIKit
 
 final class ActivityListCompositionTransactionCell: ContainerCollectionViewCell<CompositionTransactionCellContentView>, Reusable {
   
-  struct Model: Hashable, Equatable {
-    let id = UUID()
-    let childTransactionModels: [TransactionCellContentView.Model]
+  struct Model {
+    var childTransactionModels: [TransactionCellContentView.Model]
     
-    static func == (lhs: Self, rhs: Self) -> Bool {
-      return lhs.id == rhs.id
-    }
-    
-    var hashValue: Int {
-      return id.hashValue
-    }
-    
-    func hash(into hasher: inout Hasher) {
-      hasher.combine(id)
+    init(childTransactionModels: [TransactionCellContentView.Model]) {
+      self.childTransactionModels = childTransactionModels
     }
   }
   
@@ -42,7 +33,6 @@ final class ActivityListCompositionTransactionCell: ContainerCollectionViewCell<
 
 private extension ActivityListCompositionTransactionCell {
   func setup() {
-//    contentView.backgroundColor = .Background.highlighted
     layer.masksToBounds = true
     layer.cornerRadius = 16
   }

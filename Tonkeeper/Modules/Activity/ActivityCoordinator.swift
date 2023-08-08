@@ -10,10 +10,13 @@ import UIKit
 final class ActivityCoordinator: Coordinator<NavigationRouter> {
   
   private let recieveAssembly: ReceiveAssembly
+  private let walletCoreAssembly: WalletCoreAssembly
   
   init(router: NavigationRouter,
-       recieveAssembly: ReceiveAssembly) {
+       recieveAssembly: ReceiveAssembly,
+       walletCoreAssembly: WalletCoreAssembly) {
     self.recieveAssembly = recieveAssembly
+    self.walletCoreAssembly = walletCoreAssembly
     super.init(router: router)
   }
   
@@ -24,7 +27,8 @@ final class ActivityCoordinator: Coordinator<NavigationRouter> {
 
 private extension ActivityCoordinator {
   func openActivityRoot() {
-    let module = ActivityRootAssembly.module(output: self)
+    let module = ActivityRootAssembly.module(output: self,
+                                             activityListController: walletCoreAssembly.activityListController())
     router.setPresentables([(module.view, nil)])
   }
 }

@@ -12,7 +12,6 @@ struct ActivityListCollectionLayoutConfigurator {
     let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
       return createTransactionSection()
     }
-    
     return layout
   }
 }
@@ -22,10 +21,20 @@ private extension ActivityListCollectionLayoutConfigurator {
     let item = NSCollectionLayoutItem(layoutSize: .transactionSectionItemSize)
     let group = NSCollectionLayoutGroup.vertical(layoutSize: .transactionSectionGroupItemSize,
                                                  subitems: [item])
+    group.contentInsets = .init(top: 0, leading: 0, bottom: 0, trailing: 0)
 
     let section = NSCollectionLayoutSection(group: group)
     section.interGroupSpacing = 8
     section.contentInsets = .transactionSectionContentInsets
+    
+    let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(28))
+    let header = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: headerSize,
+      elementKind: ActivityListSectionHeaderView.reuseIdentifier,
+      alignment: .top
+    )
+    section.boundarySupplementaryItems = [header]
+    
     return section
   }
 }
@@ -44,6 +53,6 @@ private extension NSCollectionLayoutSize {
 
 private extension NSDirectionalEdgeInsets {
   static var transactionSectionContentInsets: NSDirectionalEdgeInsets {
-    .init(top: 0, leading: ContentInsets.sideSpace, bottom: 10, trailing: ContentInsets.sideSpace)
+    .init(top: 14, leading: ContentInsets.sideSpace, bottom: 30, trailing: ContentInsets.sideSpace)
   }
 }

@@ -9,12 +9,15 @@ import UIKit
 
 struct ActivityAssembly {
   private let receiveAssembly: ReceiveAssembly
+  private let walletCoreAssembly: WalletCoreAssembly
   
-  init(receiveAssembly: ReceiveAssembly) {
+  init(receiveAssembly: ReceiveAssembly,
+       walletCoreAssembly: WalletCoreAssembly) {
     self.receiveAssembly = receiveAssembly
+    self.walletCoreAssembly = walletCoreAssembly
   }
  
   func coordinator(router: NavigationRouter) -> ActivityCoordinator {
-    ActivityCoordinator(router: router, recieveAssembly: receiveAssembly)
+    ActivityCoordinator(router: router, recieveAssembly: receiveAssembly, walletCoreAssembly: walletCoreAssembly)
   }
 }

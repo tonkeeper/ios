@@ -6,14 +6,17 @@
 //
 
 import Foundation
+import WalletCore
 
 struct ActivityRootAssembly {
-  static func module(output: ActivityRootModuleOutput?) -> Module<ActivityRootViewController, ActivityRootModuleInput> {
+  static func module(output: ActivityRootModuleOutput?,
+                     activityListController: ActivityListController) -> Module<ActivityRootViewController, ActivityRootModuleInput> {
     
     let presenter = ActivityRootPresenter()
     
     let emptyModule = ActivityEmptyAssembly.module(output: presenter)
     let listModule = ActivityListAssembly.module(
+      activityListController: activityListController,
       transactionBuilder: ActivityListTransactionBuilder(),
       output: presenter
     )
