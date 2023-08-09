@@ -10,7 +10,6 @@ import UIKit
 
 final class ActivityRootView: UIView {
   
-  let titleView = WalletHeaderTitleView(size: .large)
   private let emptyContainer = UIView()
   private let listContainer = UIView()
 
@@ -66,20 +65,12 @@ final class ActivityRootView: UIView {
 
 private extension ActivityRootView {
   func setup() {
-    titleView.size = .large
-    
-    addSubview(emptyContainer)
     addSubview(listContainer)
-    addSubview(titleView)
+    addSubview(emptyContainer)
     
-    titleView.translatesAutoresizingMaskIntoConstraints = false
     emptyContainer.translatesAutoresizingMaskIntoConstraints = false
     listContainer.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-      titleView.topAnchor.constraint(equalTo: topAnchor),
-      titleView.leftAnchor.constraint(equalTo: leftAnchor),
-      titleView.rightAnchor.constraint(equalTo: rightAnchor),
-      
       emptyContainer.topAnchor.constraint(equalTo: topAnchor),
       emptyContainer.leftAnchor.constraint(equalTo: leftAnchor),
       emptyContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
