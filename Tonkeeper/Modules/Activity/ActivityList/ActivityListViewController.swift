@@ -52,6 +52,14 @@ extension ActivityListViewController: ActivityListViewInput {
   func updateEvents(_ sections: [ActivityListSection]) {
     collectionController.sections = sections
   }
+  
+  func stopLoading() {
+    if customView.collectionView.refreshControl?.isRefreshing == true {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        self.customView.collectionView.refreshControl?.endRefreshing()
+      }
+    }
+  }
 }
 
 // MARK: - ActivityListCollectionControllerDelegate
@@ -69,10 +77,29 @@ extension ActivityListViewController: ActivityListCollectionControllerDelegate {
   func activityListCollectionControllerEventViewModel(for eventId: String) -> ActivityListCompositionTransactionCell.Model? {
     presenter.viewModel(eventId: eventId)
   }
+  
+  func activityListCollectionControllerDidPullToRefresh(_ collectionController: ActivityListCollectionController) {
+    presenter.reload()
+  }
 }
 
 // MARK: - Private
 
 private extension ActivityListViewController {
-  func setup() {}
+  func setup() {
+    let refreshControl = UIRefreshControl()
+    refreshControl.tintColor = .Icon.primary
+    refreshControl.addTarget(self,
+                             action: #selector(didPullToRefresh),
+                             for: .valueChanged)
+    customView.collectionView.refreshControl = refreshControl
+  }
+  
+  @objc
+  func didPullToRefresh() {
+    guard !customView.collectionView.isDragging else {
+      return
+    }
+    presenter.reload()
+  }
 }

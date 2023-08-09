@@ -43,6 +43,7 @@ final class ActivityListView: UIView {
       size: .init(width: bounds.width, height: headerViewSize.height)
     )
     collectionView.contentInset.top = headerViewSize.height
+    collectionView.refreshControl?.bounds.origin.y = headerViewSize.height
   }
   
   // MARK: - HeaderView

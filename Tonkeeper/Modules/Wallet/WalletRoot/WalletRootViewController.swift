@@ -56,6 +56,11 @@ final class WalletRootViewController: GenericViewController<WalletRootView> {
     setup()
     presenter.viewDidLoad()
   }
+  
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    navigationController?.setNavigationBarHidden(true, animated: true)
+  }
 }
 
 // MARK: - WalletRootViewInput

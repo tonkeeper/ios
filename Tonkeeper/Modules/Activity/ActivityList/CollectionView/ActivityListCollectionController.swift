@@ -12,6 +12,7 @@ protocol ActivityListCollectionControllerDelegate: AnyObject {
                                         didSelectTransactionAt indexPath: IndexPath)
   func activityListCollectionControllerLoadNextPage(_ collectionController: ActivityListCollectionController)
   func activityListCollectionControllerEventViewModel(for eventId: String) -> ActivityListCompositionTransactionCell.Model?
+  func activityListCollectionControllerDidPullToRefresh(_ collectionController: ActivityListCollectionController)
 }
 
 final class ActivityListCollectionController: NSObject {
@@ -118,5 +119,11 @@ extension ActivityListCollectionController: UICollectionViewDelegate {
   
   func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
     (collectionView.cellForItem(at: indexPath) as? Selectable)?.deselect()
+  }
+  
+  func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+    if scrollView.refreshControl?.isRefreshing == true {
+      delegate?.activityListCollectionControllerDidPullToRefresh(self)
+    }
   }
 }

@@ -42,6 +42,10 @@ extension ActivityListPresenter: ActivityListPresenterInput {
     output?.didSelectTransaction(in: indexPath.section, at: indexPath.item)
   }
   
+  func reload() {
+    loadInitialEvents()
+  }
+  
   func fetchNext() {
     Task {
       let hasMore = await activityListController.hasMore
@@ -50,7 +54,10 @@ extension ActivityListPresenter: ActivityListPresenterInput {
         return
       }
 
-      loadInitialEvents()
+      let sections = try await loadNextEvents()
+      await MainActor.run {
+        viewInput?.updateEvents(sections)
+      }
     }
   }
   
@@ -69,31 +76,39 @@ private extension ActivityListPresenter {
   
   func loadInitialEvents() {
     Task {
-      let viewModels = try await activityListController.loadNextEvents()
-      viewModels.forEach { key, value in
-        let actions = value.actions.map { action in
-          return transactionBuilder.buildTransactionModel(
-            type: action.eventType,
-            subtitle: action.leftTopDescription,
-            amount: action.amount,
-            time: action.rightTopDesription,
-            status: action.status,
-            comment: action.comment,
-            collectible: action.collectible
-            )
-        }
-        
-        let cellViewModel = ActivityListCompositionTransactionCell.Model(childTransactionModels: actions)
-        cellsViewModels[key] = cellViewModel
-      }
-      
-      let sections = await activityListController.eventsSections.map { section in
-        ActivityListSection(date: section.date, title: section.title, items: section.eventsIds)
-      }
+      await activityListController.reset()
+      let sections = try await loadNextEvents()
       
       await MainActor.run {
+        viewInput?.stopLoading()
         viewInput?.updateEvents(sections)
       }
     }
+  }
+  
+  func loadNextEvents() async throws -> [ActivityListSection] {
+    let viewModels = try await activityListController.loadNextEvents()
+    viewModels.forEach { key, value in
+      let actions = value.actions.map { action in
+        return transactionBuilder.buildTransactionModel(
+          type: action.eventType,
+          subtitle: action.leftTopDescription,
+          amount: action.amount,
+          time: action.rightTopDesription,
+          status: action.status,
+          comment: action.comment,
+          collectible: action.collectible
+        )
+      }
+      
+      let cellViewModel = ActivityListCompositionTransactionCell.Model(childTransactionModels: actions)
+      cellsViewModels[key] = cellViewModel
+    }
+    
+    let sections = await activityListController.eventsSections.map { section in
+      ActivityListSection(date: section.date, title: section.title, items: section.eventsIds)
+    }
+    
+    return sections
   }
 }

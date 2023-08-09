@@ -17,10 +17,12 @@ protocol ActivityListModuleInput: AnyObject {}
 protocol ActivityListPresenterInput {
   func viewDidLoad()
   func didSelectTransactionAt(indexPath: IndexPath)
+  func reload()
   func fetchNext()
   func viewModel(eventId: String) -> ActivityListCompositionTransactionCell.Model?
 }
 
 protocol ActivityListViewInput: AnyObject {
   func updateEvents(_ sections: [ActivityListSection])
+  func stopLoading()
 }

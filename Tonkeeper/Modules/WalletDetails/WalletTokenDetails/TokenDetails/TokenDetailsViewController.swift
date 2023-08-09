@@ -53,11 +53,6 @@ class TokenDetailsViewController: GenericViewController<TokenDetailsView> {
     super.viewWillAppear(animated)
     navigationController?.setNavigationBarHidden(false, animated: true)
   }
-  
-  override func viewWillDisappear(_ animated: Bool) {
-    super.viewWillDisappear(animated)
-    navigationController?.setNavigationBarHidden(true, animated: true)
-  }
 }
 
 // MARK: - TokenDetailsViewInput
