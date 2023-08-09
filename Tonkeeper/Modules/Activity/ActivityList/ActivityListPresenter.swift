@@ -8,6 +8,7 @@
 
 import Foundation
 import WalletCore
+import TonSwift
 
 final class ActivityListPresenter {
   
@@ -71,15 +72,17 @@ private extension ActivityListPresenter {
       let viewModels = try await activityListController.loadNextEvents()
       viewModels.forEach { key, value in
         let actions = value.actions.map { action in
-          transactionBuilder.buildTransactionModel(
+          return transactionBuilder.buildTransactionModel(
             type: action.eventType,
             subtitle: action.leftTopDescription,
             amount: action.amount,
             time: action.rightTopDesription,
             status: action.status,
-            comment: action.comment
+            comment: action.comment,
+            collectible: action.collectible
             )
         }
+        
         let cellViewModel = ActivityListCompositionTransactionCell.Model(childTransactionModels: actions)
         cellsViewModels[key] = cellViewModel
       }

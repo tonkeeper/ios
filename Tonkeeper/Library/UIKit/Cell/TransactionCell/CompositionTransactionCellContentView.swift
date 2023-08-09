@@ -14,6 +14,10 @@ final class CompositionTransactionCellContentView: UIView, ContainerCollectionVi
   
   var transactionContentViews = [TransactionCellContentView]()
   
+  weak var imageLoader: ImageLoader? {
+    didSet { transactionContentViews.forEach { $0.imageLoader = imageLoader } }
+  }
+  
   func prepareForReuse() {
     transactionContentViews.forEach { $0.prepareForReuse() }
   }
@@ -33,6 +37,7 @@ final class CompositionTransactionCellContentView: UIView, ContainerCollectionVi
         view = views[index]
       } else {
         view = TransactionCellContentView()
+        view.imageLoader = imageLoader
         views.append(view)
         addSubview(view)
       }

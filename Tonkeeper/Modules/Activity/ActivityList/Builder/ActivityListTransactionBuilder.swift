@@ -15,7 +15,8 @@ struct ActivityListTransactionBuilder {
                              amount: String?,
                              time: String?,
                              status: String?,
-                             comment: String? = nil) -> TransactionCellContentView.Model {
+                             comment: String? = nil,
+                             collectible: ActivityEventViewModel.ActionViewModel.CollectibleViewModel? = nil) -> TransactionCellContentView.Model {
     
     let textContentModel = DefaultCellTextContentView.Model(
       leftTopTitle: type.title,
@@ -41,10 +42,16 @@ struct ActivityListTransactionBuilder {
       commentModel = .init(comment: comment.attributed(with: .body2, color: .Text.primary))
     }
     
+    var nftModel: TransactionCellContentView.TransactionCellNFTView.Model?
+    if let collectible = collectible {
+      nftModel = .init(image: .with(image: collectible.image), name: collectible.name, collectionName: collectible.collectionName)
+    }
+    
     let transactionModel = TransactionCellContentView.Model(
       defaultContentModel: contentModel,
       statusModel: statusModel,
-      commentModel: commentModel)
+      commentModel: commentModel,
+      nftModel: nftModel)
     
     return transactionModel
   }
@@ -67,6 +74,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Icons.Transaction.unsubscribed
     case .walletInitialized:
       return .Icons.Transaction.walletInitialized
+    case .contractExec:
+      return .Icons.Transaction.smartContractExec
     case .nftCollectionCreation:
       return .Icons.Transaction.nftCollectionCreation
     case .nftCreation:
@@ -102,6 +111,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return "Unsubscribed"
     case .walletInitialized:
       return "Wallet initialized"
+    case .contractExec:
+      return "Call contract"
     case .nftCollectionCreation:
       return "NFT сollection creation"
     case .nftCreation:
@@ -133,6 +144,7 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
         .nftPurchase, .bid,
         .putUpForAuction,
         .endOfAuction,
+        .contractExec,
         .putUpForSale:
       return .Text.primary
     case .receieved, .bounced:

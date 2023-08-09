@@ -52,6 +52,10 @@ extension UIImage {
         .init(named: "Icons/28/ic-gear-28")?.withRenderingMode(.alwaysTemplate)
       }
       
+      static var smartContractExec: UIImage? {
+        .init(named: "Icons/28/ic-gear-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
       static var removalFromSale: UIImage? {
         .init(named: "Icons/28/ic-xmark-28")?.withRenderingMode(.alwaysTemplate)
       }

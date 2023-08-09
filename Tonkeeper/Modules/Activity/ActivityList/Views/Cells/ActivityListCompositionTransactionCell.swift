@@ -9,6 +9,12 @@ import UIKit
 
 final class ActivityListCompositionTransactionCell: ContainerCollectionViewCell<CompositionTransactionCellContentView>, Reusable {
   
+  weak var imageLoader: ImageLoader? {
+    didSet {
+      cellContentView.imageLoader = imageLoader
+    }
+  }
+  
   struct Model {
     var childTransactionModels: [TransactionCellContentView.Model]
     

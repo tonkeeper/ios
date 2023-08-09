@@ -93,6 +93,7 @@
 		7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */; };
 		7D3E43B42A3737E700C23A75 /* BuyListServiceBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43B32A3737E700C23A75 /* BuyListServiceBuilder.swift */; };
 		7D3E43B62A373B2200C23A75 /* ModalCardContainerScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */; };
+		7D45D31B2A82E73200733DFE /* TransactionCellNFTView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D45D31A2A82E73200733DFE /* TransactionCellNFTView.swift */; };
 		7D4934672A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */; };
 		7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */; };
 		7D49346E2A5C7A6A00F4BCA2 /* BlurViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D49346D2A5C7A6A00F4BCA2 /* BlurViewController.swift */; };
@@ -390,6 +391,7 @@
 		7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServiceCellContentView+Model.swift"; sourceTree = "<group>"; };
 		7D3E43B32A3737E700C23A75 /* BuyListServiceBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListServiceBuilder.swift; sourceTree = "<group>"; };
 		7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerScrollController.swift; sourceTree = "<group>"; };
+		7D45D31A2A82E73200733DFE /* TransactionCellNFTView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellNFTView.swift; sourceTree = "<group>"; };
 		7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthCoordinator.swift; sourceTree = "<group>"; };
 		7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthConfigurator.swift; sourceTree = "<group>"; };
 		7D49346D2A5C7A6A00F4BCA2 /* BlurViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlurViewController.swift; sourceTree = "<group>"; };
@@ -1910,6 +1912,7 @@
 				7DE27E672A30D94100842FA8 /* TransactionCellContentView.swift */,
 				7DE27E692A30D9CE00842FA8 /* TransactionCellStatusView.swift */,
 				7DE27E6B2A30DA3A00842FA8 /* TransactionCellCommentView.swift */,
+				7D45D31A2A82E73200733DFE /* TransactionCellNFTView.swift */,
 				7D02075F2A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift */,
 			);
 			path = TransactionCell;
@@ -2147,6 +2150,7 @@
 				7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
 				7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */,
+				7D45D31B2A82E73200733DFE /* TransactionCellNFTView.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
 				7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */,
 				7D5928742A2007C0006B0A8A /* Button.Configuration+Header.swift in Sources */,

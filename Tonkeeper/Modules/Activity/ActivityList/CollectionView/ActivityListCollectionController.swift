@@ -26,8 +26,8 @@ final class ActivityListCollectionController: NSObject {
   
   private weak var collectionView: UICollectionView?
   private var dataSource: UICollectionViewDiffableDataSource<ActivityListSection, String>?
-  
   private let collectionLayoutConfigurator = ActivityListCollectionLayoutConfigurator()
+  private let imageLoader = NukeImageLoader()
   
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
@@ -96,6 +96,7 @@ private extension ActivityListCollectionController {
       return UICollectionViewCell()
     }
     
+    cell.imageLoader = self.imageLoader
     cell.configure(model: model)
     return cell
   }
