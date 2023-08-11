@@ -48,15 +48,20 @@ extension ActivityListPresenter: ActivityListPresenterInput {
   }
   
   func fetchNext() {
+    
     Task {
       let hasMore = await activityListController.hasMore
       let isLoading = await activityListController.isLoading
       guard hasMore && !isLoading else {
         return
       }
+      await MainActor.run {
+        viewInput?.showLoadingIndicator()
+      }
 
       let sections = try await loadNextEvents()
       await MainActor.run {
+        viewInput?.hideLoadingIndicator()
         viewInput?.updateEvents(sections)
       }
     }
@@ -85,7 +90,7 @@ private extension ActivityListPresenter {
           output?.activityListNoEvents(self)
         }
         viewInput?.hideShimmer()
-        viewInput?.stopLoading()
+        viewInput?.hideRefreshControl()
         viewInput?.updateEvents(sections)
       }
     }

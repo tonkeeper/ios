@@ -25,7 +25,9 @@ protocol ActivityListPresenterInput {
 
 protocol ActivityListViewInput: AnyObject {
   func updateEvents(_ sections: [ActivityListSection])
-  func stopLoading()
+  func showLoadingIndicator()
+  func hideLoadingIndicator()
+  func hideRefreshControl()
   func showShimmer()
   func hideShimmer()
 }

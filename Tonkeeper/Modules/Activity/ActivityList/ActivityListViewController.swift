@@ -53,7 +53,7 @@ extension ActivityListViewController: ActivityListViewInput {
     collectionController.sections = sections
   }
   
-  func stopLoading() {
+  func hideRefreshControl() {
     if customView.collectionView.refreshControl?.isRefreshing == true {
       DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
         self.customView.collectionView.refreshControl?.endRefreshing()
@@ -61,12 +61,20 @@ extension ActivityListViewController: ActivityListViewInput {
     }
   }
   
-  func showShimmer() {
+  func showLoadingIndicator() {
     collectionController.isLoading = true
   }
   
-  func hideShimmer() {
+  func hideLoadingIndicator() {
     collectionController.isLoading = false
+  }
+  
+  func showShimmer() {
+    collectionController.isShimmering = true
+  }
+  
+  func hideShimmer() {
+    collectionController.isShimmering = false
   }
 }
 
