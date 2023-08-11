@@ -41,9 +41,10 @@ extension ActivityCoordinator: ActivityRootModuleOutput {
     navigationController.configureTransparentAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = recieveAssembly.coordinator(router: router, flow: .any)
+    coordinator.output = self
     addChild(coordinator)
     coordinator.start()
-    router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
+    self.router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
     })

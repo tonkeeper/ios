@@ -35,6 +35,7 @@ final class ActivityListPresenter {
 
 extension ActivityListPresenter: ActivityListPresenterInput {
   func viewDidLoad() {
+    viewInput?.showShimmer()
     loadInitialEvents()
   }
   
@@ -80,6 +81,10 @@ private extension ActivityListPresenter {
       let sections = try await loadNextEvents()
       
       await MainActor.run {
+        if sections.isEmpty {
+          output?.activityListNoEvents(self)
+        }
+        viewInput?.hideShimmer()
         viewInput?.stopLoading()
         viewInput?.updateEvents(sections)
       }

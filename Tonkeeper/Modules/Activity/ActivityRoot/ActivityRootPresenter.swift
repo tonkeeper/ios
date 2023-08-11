@@ -45,6 +45,10 @@ extension ActivityRootPresenter: ActivityListModuleOutput {
   func didSelectTransaction(in section: Int, at index: Int) {
     output?.didSelectTransaction()
   }
+  
+  func activityListNoEvents(_ activityList: ActivityListModuleInput) {
+    viewInput?.showEmptyState()
+  }
 }
 
 // MARK: - Private

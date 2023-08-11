@@ -60,6 +60,14 @@ extension ActivityListViewController: ActivityListViewInput {
       }
     }
   }
+  
+  func showShimmer() {
+    collectionController.isLoading = true
+  }
+  
+  func hideShimmer() {
+    collectionController.isLoading = false
+  }
 }
 
 // MARK: - ActivityListCollectionControllerDelegate

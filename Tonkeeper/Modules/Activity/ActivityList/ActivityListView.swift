@@ -29,6 +29,7 @@ final class ActivityListView: UIView {
   override func layoutSubviews() {
     super.layoutSubviews()
     collectionView.frame = bounds
+    collectionView.contentInset.top = .collectionTopSpacing
     layoutHeader()
   }
   
@@ -39,10 +40,10 @@ final class ActivityListView: UIView {
                               withHorizontalFittingPriority: .required, verticalFittingPriority: .defaultHigh)
     )
     headerView.frame = .init(
-      origin: .init(x: 0, y: -headerViewSize.height),
+      origin: .init(x: 0, y: -headerViewSize.height - .collectionTopSpacing),
       size: .init(width: bounds.width, height: headerViewSize.height)
     )
-    collectionView.contentInset.top = headerViewSize.height
+    collectionView.contentInset.top = headerViewSize.height + .collectionTopSpacing
     collectionView.refreshControl?.bounds.origin.y = headerViewSize.height
   }
   
@@ -62,4 +63,8 @@ private extension ActivityListView {
     collectionView.backgroundColor = .Background.page
     addSubview(collectionView)
   }
+}
+
+private extension CGFloat {
+  static let collectionTopSpacing: CGFloat = 14
 }

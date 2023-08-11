@@ -244,6 +244,8 @@
 		7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292F52A29DCDA005B83DF /* SendRecipientView.swift */; };
 		7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292F72A29DCDA005B83DF /* SendCommentLengthValidator.swift */; };
 		7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */; };
+		7DA0EFF12A8641560062C8BA /* ActivityListShimmerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */; };
+		7DA0EFF32A8644C60062C8BA /* ActivityListSectionShimmerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA0EFF22A8644C60062C8BA /* ActivityListSectionShimmerView.swift */; };
 		7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F342A4B2F07007C6154 /* AnyFormatKit */; };
 		7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F3E2A4B3338007C6154 /* WalletCore */; };
 		7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */; };
@@ -540,6 +542,8 @@
 		7D9292F52A29DCDA005B83DF /* SendRecipientView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SendRecipientView.swift; sourceTree = "<group>"; };
 		7D9292F72A29DCDA005B83DF /* SendCommentLengthValidator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SendCommentLengthValidator.swift; sourceTree = "<group>"; };
 		7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NumberProvider+Formatters.swift"; sourceTree = "<group>"; };
+		7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListShimmerCell.swift; sourceTree = "<group>"; };
+		7DA0EFF22A8644C60062C8BA /* ActivityListSectionShimmerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListSectionShimmerView.swift; sourceTree = "<group>"; };
 		7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		7DB17F462A4C2D9B007C6154 /* OnboardingAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAssembly.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1885,6 +1889,8 @@
 				7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */,
 				7DE27E5E2A30C61E00842FA8 /* ActivityListSectionHeaderView.swift */,
 				7D0207612A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift */,
+				7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */,
+				7DA0EFF22A8644C60062C8BA /* ActivityListSectionShimmerView.swift */,
 			);
 			path = Cells;
 			sourceTree = "<group>";
@@ -2121,6 +2127,7 @@
 				7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */,
 				7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */,
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
+				7DA0EFF32A8644C60062C8BA /* ActivityListSectionShimmerView.swift in Sources */,
 				7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */,
 				7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */,
 				7D5D05A92A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift in Sources */,
@@ -2225,6 +2232,7 @@
 				7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */,
 				7D9144272A31F5DE00B0FD17 /* ModalCardContainerViewController.swift in Sources */,
 				7D9292C22A27412A005B83DF /* SendCoordinator.swift in Sources */,
+				7DA0EFF12A8641560062C8BA /* ActivityListShimmerCell.swift in Sources */,
 				7D68364A2A1D1052002DBBC7 /* WalletAssembly.swift in Sources */,
 				7D4934712A5C9F8F00F4BCA2 /* TKMenuController.swift in Sources */,
 				7D68363B2A1CFF74002DBBC7 /* AppCoordinator.swift in Sources */,
@@ -2496,7 +2504,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
-				DEVELOPMENT_TEAM = YS34WB4Z9W;
+				DEVELOPMENT_TEAM = PLLDWT87ZL;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
@@ -2512,7 +2520,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx9;
+				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx99;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;

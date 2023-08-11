@@ -10,6 +10,7 @@ import Foundation
 
 protocol ActivityListModuleOutput: AnyObject {
   func didSelectTransaction(in section: Int, at index: Int)
+  func activityListNoEvents(_ activityList: ActivityListModuleInput)
 }
 
 protocol ActivityListModuleInput: AnyObject {}
@@ -25,4 +26,6 @@ protocol ActivityListPresenterInput {
 protocol ActivityListViewInput: AnyObject {
   func updateEvents(_ sections: [ActivityListSection])
   func stopLoading()
+  func showShimmer()
+  func hideShimmer()
 }
