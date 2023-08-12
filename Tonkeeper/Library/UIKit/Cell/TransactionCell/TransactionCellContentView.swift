@@ -55,7 +55,8 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
   
   override func layoutSubviews() {
     super.layoutSubviews()
-    let contentViewSize = CGSize(width: bounds.width - ContentInsets.sideSpace * 2, height: max(0, bounds.height - ContentInsets.sideSpace * 2))
+    let contentViewSize = CGSize(width: bounds.width - ContentInsets.sideSpace * 2,
+                                 height: max(0, bounds.height - ContentInsets.sideSpace * 2))
     let defaultCellContentSize = defaultCellContentView.sizeThatFits(.init(width: contentViewSize.width, height: 0))
     defaultCellContentView.frame.size = defaultCellContentSize
     defaultCellContentView.frame.origin = .zero
@@ -91,7 +92,8 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
-    let contentViewSize = CGSize(width: size.width - ContentInsets.sideSpace * 2, height: max(0, size.height - ContentInsets.sideSpace * 2))
+    let contentViewSize = CGSize(width: size.width - ContentInsets.sideSpace * 2,
+                                 height: max(0, size.height - ContentInsets.sideSpace * 2))
     let defaultCellContentHeight = defaultCellContentView.sizeThatFits(contentViewSize).height
     let statusHeight = statusView.sizeThatFits(contentViewSize).height
     let commentHeight = commentView.sizeThatFits(contentViewSize).height

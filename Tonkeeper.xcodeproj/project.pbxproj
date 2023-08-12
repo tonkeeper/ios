@@ -192,6 +192,7 @@
 		7D70D3C62A2A037F0096E1A2 /* CryptoCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */; };
 		7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */; };
 		7D790EEB2A67E28200587C96 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */; };
+		7D7CE3F92A879ADA002BA9EC /* BalanceCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7CE3F82A879ADA002BA9EC /* BalanceCellContentView.swift */; };
 		7D80C0D52A6AA5F4007054DD /* TKKeyboardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */; };
 		7D80C0F72A6AA941007054DD /* TKKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0F62A6AA941007054DD /* TKKeyboardView.swift */; };
 		7D80C0F92A6AAC8E007054DD /* TKKeyboardConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0F82A6AAC8E007054DD /* TKKeyboardConfiguration.swift */; };
@@ -490,6 +491,7 @@
 		7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoCurrency.swift; sourceTree = "<group>"; };
 		7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyWallet.swift; sourceTree = "<group>"; };
 		7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
+		7D7CE3F82A879ADA002BA9EC /* BalanceCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceCellContentView.swift; sourceTree = "<group>"; };
 		7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardButton.swift; sourceTree = "<group>"; };
 		7D80C0F62A6AA941007054DD /* TKKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardView.swift; sourceTree = "<group>"; };
 		7D80C0F82A6AAC8E007054DD /* TKKeyboardConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardConfiguration.swift; sourceTree = "<group>"; };
@@ -1229,6 +1231,7 @@
 		7D5D05CC2A307161009F42FF /* Cell */ = {
 			isa = PBXGroup;
 			children = (
+				7D7CE3F72A879AC2002BA9EC /* BalanceCellContent */,
 				7D3E438B2A33998700C23A75 /* ServiceCell */,
 				7DE27E662A30D93100842FA8 /* TransactionCell */,
 				7D5D05D12A3090B2009F42FF /* DefaultCell */,
@@ -1564,6 +1567,14 @@
 				7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7D7CE3F72A879AC2002BA9EC /* BalanceCellContent */ = {
+			isa = PBXGroup;
+			children = (
+				7D7CE3F82A879ADA002BA9EC /* BalanceCellContentView.swift */,
+			);
+			path = BalanceCellContent;
 			sourceTree = "<group>";
 		};
 		7D80C0D32A6AA5E3007054DD /* TKKeyboard */ = {
@@ -2143,6 +2154,7 @@
 				7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */,
 				7D59287D2A20C92E006B0A8A /* TokensListTokensSectionBackgroundView.swift in Sources */,
 				7D3BCFB42A4C83BE00BE6AD9 /* SetupWalletAssembly.swift in Sources */,
+				7D7CE3F92A879ADA002BA9EC /* BalanceCellContentView.swift in Sources */,
 				7D3BCFD02A4D923400BE6AD9 /* PasscodeInputAssembly.swift in Sources */,
 				7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */,
 				7D5928552A1F6C71006B0A8A /* TKButton.swift in Sources */,
@@ -2504,7 +2516,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
-				DEVELOPMENT_TEAM = PLLDWT87ZL;
+				DEVELOPMENT_TEAM = YS34WB4Z9W;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
@@ -2520,7 +2532,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx99;
+				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;

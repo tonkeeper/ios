@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentView>, Reusable {
+final class TokenListTokenCell: ContainerCollectionViewCell<BalanceCellContentView>, Reusable {
   
   struct Model: Hashable {
     let id = UUID()
@@ -68,7 +68,7 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
       textContentModel: textContentModel,
       image: model.image
     )
-    cellContentView.configure(model: contentModel)
+    cellContentView.configure(model: .init(defaultContentModel: contentModel))
   }
   
   override func prepareForReuse() {
@@ -88,13 +88,11 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
   override func select() {
     super.select()
     separatorView.isHidden = true
-//    separatorView.alpha = 0
   }
 
   override func deselect() {
     super.deselect()
     separatorView.isHidden = false
-//    separatorView.alpha = 1
   }
 }
 
