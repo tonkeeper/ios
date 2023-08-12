@@ -16,18 +16,7 @@ protocol ActivityListCollectionControllerDelegate: AnyObject {
 }
 
 final class ActivityListCollectionController: NSObject {
-  
-  var isShimmering = false {
-    didSet {
-      didChangeIsLoading()
-    }
-  }
-  
-  var isLoading = false {
-    didSet {
-      loaderFooterView?.isLoading = isLoading
-    }
-  }
+  var isShimmer = false
   
   var sections = [ActivityListSection]() {
     didSet {
@@ -41,8 +30,6 @@ final class ActivityListCollectionController: NSObject {
   private var dataSource: UICollectionViewDiffableDataSource<ActivityListSection, String>?
   private let collectionLayoutConfigurator = ActivityListCollectionLayoutConfigurator()
   private let imageLoader = NukeImageLoader()
-  
-  private var loaderFooterView: ActivityListLoaderFooterView?
   
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
@@ -62,9 +49,6 @@ final class ActivityListCollectionController: NSObject {
                             withReuseIdentifier: ActivityListSectionHeaderView.reuseIdentifier)
     collectionView.register(ActivityListShimmerCell.self,
                             forCellWithReuseIdentifier: ActivityListShimmerCell.reuseIdentifier)
-    collectionView.register(ActivityListLoaderFooterView.self,
-                            forSupplementaryViewOfKind: ActivityListLoaderFooterView.reuseIdentifier,
-                            withReuseIdentifier: ActivityListLoaderFooterView.reuseIdentifier)
     dataSource = createDataSource(collectionView: collectionView)
   }
 }
@@ -84,17 +68,16 @@ private extension ActivityListCollectionController {
   func createDataSource(collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<ActivityListSection, String> {
     let dataSource = UICollectionViewDiffableDataSource<ActivityListSection, String>(collectionView: collectionView) { [weak self] collectionView, indexPath, itemIdentifier in
       guard let self = self else { return UICollectionViewCell() }
-      guard !isShimmering else {
+      guard !isShimmer else {
         let shimmerCell = collectionView.dequeueReusableCell(withReuseIdentifier: ActivityListShimmerCell.reuseIdentifier, for: indexPath)
         (shimmerCell as? ActivityListShimmerCell)?.startAnimation()
         return shimmerCell
       }
-      self.fetchNextIfNeeded(collectionView: collectionView, indexPath: indexPath)
       guard let model = delegate?.activityListCollectionControllerEventViewModel(for: itemIdentifier) else { return UICollectionViewCell() }
       return self.getCompositionTransactionCell(collectionView: collectionView, indexPath: indexPath, model: model)
     }
     
-    dataSource.supplementaryViewProvider = { [weak self] collectionView, kind, indexPath in
+    dataSource.supplementaryViewProvider = { [weak self] collectionView, kind, indexPath -> UICollectionReusableView? in
       switch kind {
       case ActivityListSectionHeaderView.reuseIdentifier:
         guard let headerView = collectionView
@@ -104,17 +87,8 @@ private extension ActivityListCollectionController {
             for: indexPath
           ) as? ActivityListSectionHeaderView else { return nil }
         let section = dataSource.snapshot().sectionIdentifiers[indexPath.section]
-        headerView.configure(model: .init(date: section.title, isLoading: self?.isShimmering ?? false))
+        headerView.configure(model: .init(date: section.title, isLoading: self?.isShimmer ?? false))
         return headerView
-      case ActivityListLoaderFooterView.reuseIdentifier:
-        guard let footerView = collectionView.dequeueReusableSupplementaryView(
-          ofKind: ActivityListLoaderFooterView.reuseIdentifier,
-          withReuseIdentifier: ActivityListLoaderFooterView.reuseIdentifier,
-          for: indexPath
-        ) as? ActivityListLoaderFooterView else { return nil }
-        self?.loaderFooterView = footerView
-        self?.loaderFooterView?.isLoading = self?.isLoading ?? false
-        return footerView
       default:
         return nil
       }
@@ -123,7 +97,9 @@ private extension ActivityListCollectionController {
     return dataSource
   }
   
-  func getCompositionTransactionCell(collectionView: UICollectionView, indexPath: IndexPath, model: ActivityListCompositionTransactionCell.Model) -> UICollectionViewCell {
+  func getCompositionTransactionCell(collectionView: UICollectionView,
+                                     indexPath: IndexPath,
+                                     model: ActivityListCompositionTransactionCell.Model) -> UICollectionViewCell {
     guard let cell = collectionView.dequeueReusableCell(
       withReuseIdentifier: ActivityListCompositionTransactionCell.reuseIdentifier,
       for: indexPath) as? ActivityListCompositionTransactionCell else {
@@ -137,23 +113,9 @@ private extension ActivityListCollectionController {
   
   func fetchNextIfNeeded(collectionView: UICollectionView, indexPath: IndexPath) {
     let numberOfSections = collectionView.numberOfSections
-    guard indexPath.section == numberOfSections - 1 else { return }
+    let numberOfItems = collectionView.numberOfItems(inSection: numberOfSections - 1)
+    guard indexPath.item == numberOfItems - 1 else { return }
     delegate?.activityListCollectionControllerLoadNextPage(self)
-  }
-  
-  func didChangeIsLoading() {
-    Task {
-      var snapshot = NSDiffableDataSourceSnapshot<ActivityListSection, String>()
-      if isShimmering {
-        let items = (0..<4).map { _ in UUID().uuidString }
-        let section = ActivityListSection(date: Date(), title: nil, items: items)
-        snapshot.appendSections([section])
-        snapshot.appendItems(items, toSection: section)
-      } else {
-        snapshot.deleteAllItems()
-      }
-      dataSource?.apply(snapshot, animatingDifferences: true)
-    }
   }
 }
 
@@ -173,5 +135,11 @@ extension ActivityListCollectionController: UICollectionViewDelegate {
     if scrollView.refreshControl?.isRefreshing == true {
       delegate?.activityListCollectionControllerDidPullToRefresh(self)
     }
+  }
+  
+  func collectionView(_ collectionView: UICollectionView,
+                      willDisplay cell: UICollectionViewCell,
+                      forItemAt indexPath: IndexPath) {
+    fetchNextIfNeeded(collectionView: collectionView, indexPath: indexPath)
   }
 }

@@ -115,6 +115,7 @@ private extension LoaderView {
   
   func rotateAnimation() -> CAAnimation {
     let animation = CABasicAnimation(keyPath: .rotateAnimationKey)
+    animation.isRemovedOnCompletion = false
     animation.fromValue = 0.0
     animation.toValue = CGFloat(Double.pi * 2.0)
     animation.duration = 1.0

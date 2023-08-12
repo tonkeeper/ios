@@ -8,6 +8,13 @@
 
 import Foundation
 
+enum ActivityListViewState {
+  case shimmer(sections: [ActivityListSection])
+  case data(sections: [ActivityListSection])
+  case pagingLoading(sections: [ActivityListSection])
+  case pagingError(sections: [ActivityListSection], errorTitle: String?)
+}
+
 protocol ActivityListModuleOutput: AnyObject {
   func didSelectTransaction(in section: Int, at index: Int)
   func activityListNoEvents(_ activityList: ActivityListModuleInput)
@@ -24,10 +31,23 @@ protocol ActivityListPresenterInput {
 }
 
 protocol ActivityListViewInput: AnyObject {
-  func updateEvents(_ sections: [ActivityListSection])
-  func showLoadingIndicator()
-  func hideLoadingIndicator()
+//  func didUpdateState(state: ActivityListViewState)
+//  func updateEvents(_ sections: [ActivityListSection])
+//  func showLoadingIndicator()
+//  func hideLoadingIndicator()
   func hideRefreshControl()
+//  func showShimmer()
+//  func hideShimmer()
+//  func showPagingError(title: String?)
+  func updateSections(_ sections: [ActivityListSection])
+  
+  func showPagingLoader()
+  
+  func hidePagingLoader()
+  
+  func showPagingError(title: String?)
+  
   func showShimmer()
+  
   func hideShimmer()
 }

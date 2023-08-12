@@ -245,7 +245,7 @@
 		7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9292F72A29DCDA005B83DF /* SendCommentLengthValidator.swift */; };
 		7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */; };
 		7DA0EFF12A8641560062C8BA /* ActivityListShimmerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */; };
-		7DA0EFF82A866D2B0062C8BA /* ActivityListLoaderFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA0EFF72A866D2B0062C8BA /* ActivityListLoaderFooterView.swift */; };
+		7DA0EFF82A866D2B0062C8BA /* ActivityListFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA0EFF72A866D2B0062C8BA /* ActivityListFooterView.swift */; };
 		7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F342A4B2F07007C6154 /* AnyFormatKit */; };
 		7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F3E2A4B3338007C6154 /* WalletCore */; };
 		7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */; };
@@ -543,7 +543,7 @@
 		7D9292F72A29DCDA005B83DF /* SendCommentLengthValidator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SendCommentLengthValidator.swift; sourceTree = "<group>"; };
 		7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NumberProvider+Formatters.swift"; sourceTree = "<group>"; };
 		7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListShimmerCell.swift; sourceTree = "<group>"; };
-		7DA0EFF72A866D2B0062C8BA /* ActivityListLoaderFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListLoaderFooterView.swift; sourceTree = "<group>"; };
+		7DA0EFF72A866D2B0062C8BA /* ActivityListFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListFooterView.swift; sourceTree = "<group>"; };
 		7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		7DB17F462A4C2D9B007C6154 /* OnboardingAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAssembly.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1890,7 +1890,7 @@
 				7DE27E5E2A30C61E00842FA8 /* ActivityListSectionHeaderView.swift */,
 				7D0207612A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift */,
 				7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */,
-				7DA0EFF72A866D2B0062C8BA /* ActivityListLoaderFooterView.swift */,
+				7DA0EFF72A866D2B0062C8BA /* ActivityListFooterView.swift */,
 			);
 			path = Cells;
 			sourceTree = "<group>";
@@ -2259,7 +2259,7 @@
 				7D91442B2A31F5F700B0FD17 /* DimmingPresentationController.swift in Sources */,
 				7D1162FA2A60258F00DF4F30 /* WalletContentPageOutputMediator.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
-				7DA0EFF82A866D2B0062C8BA /* ActivityListLoaderFooterView.swift in Sources */,
+				7DA0EFF82A866D2B0062C8BA /* ActivityListFooterView.swift in Sources */,
 				7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */,
 				7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,

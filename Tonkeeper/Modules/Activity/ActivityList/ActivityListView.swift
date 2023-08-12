@@ -12,6 +12,9 @@ final class ActivityListView: UIView {
   
   let collectionView = NotDelayCollectionView(frame: .zero, collectionViewLayout: .init())
   private var headerView: UIView?
+  private var footerView: UIView?
+  
+  private var contentSizeObserveToken: NSKeyValueObservation?
 
   // MARK: - Init
 
@@ -31,6 +34,7 @@ final class ActivityListView: UIView {
     collectionView.frame = bounds
     collectionView.contentInset.top = .collectionTopSpacing
     layoutHeader()
+    layoutFooter()
   }
   
   private func layoutHeader() {
@@ -47,11 +51,33 @@ final class ActivityListView: UIView {
     collectionView.refreshControl?.bounds.origin.y = headerViewSize.height
   }
   
+  private func layoutFooter() {
+    guard let footerView = footerView else {
+      collectionView.contentInset.bottom = 0
+      return
+    }
+    let headerViewSize = footerView.intrinsicContentSize
+    collectionView.contentInset.bottom = headerViewSize.height
+    footerView.frame = .init(
+      origin: .init(x: 0, y: collectionView.contentSize.height),
+      size: .init(width: bounds.width, height: headerViewSize.height)
+    )
+  }
+  
   // MARK: - HeaderView
   
   func setHeaderView(_ headerView: UIView) {
     self.headerView = headerView
     self.collectionView.addSubview(headerView)
+    setNeedsLayout()
+  }
+  
+  func setFooterView(_ footerView: UIView?) {
+    self.footerView?.removeFromSuperview()
+    self.footerView = footerView
+    if let footerView = footerView {
+      self.collectionView.addSubview(footerView)
+    }
     setNeedsLayout()
   }
 }
@@ -62,6 +88,12 @@ private extension ActivityListView {
   func setup() {
     collectionView.backgroundColor = .Background.page
     addSubview(collectionView)
+    
+    contentSizeObserveToken = collectionView
+      .observe(\.contentSize, changeHandler: { [weak self] _, _ in
+        guard let self else { return }
+        self.layoutFooter()
+      })
   }
 }
 

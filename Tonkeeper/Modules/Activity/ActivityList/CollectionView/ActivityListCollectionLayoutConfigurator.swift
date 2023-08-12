@@ -12,18 +12,6 @@ struct ActivityListCollectionLayoutConfigurator {
     let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
       return createTransactionSection()
     }
-    
-    let footerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1), heightDimension: .estimated(0))
-    let footerItem = NSCollectionLayoutBoundarySupplementaryItem(
-      layoutSize: footerSize,
-      elementKind: ActivityListLoaderFooterView.reuseIdentifier,
-      alignment: .bottom
-    )
-    footerItem.pinToVisibleBounds = false
-    
-    let configuration = UICollectionViewCompositionalLayoutConfiguration()
-    configuration.boundarySupplementaryItems = [footerItem]
-    layout.configuration = configuration
     return layout
   }
 }

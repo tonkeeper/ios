@@ -18,6 +18,8 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
 
   private let presenter: ActivityListPresenterInput
   
+  private var footerView = ActivityListFooterView()
+  
   // MARK: - Collection
   
   private lazy var collectionController: ActivityListCollectionController = {
@@ -49,8 +51,31 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
 // MARK: - ActivityListViewInput
 
 extension ActivityListViewController: ActivityListViewInput {
-  func updateEvents(_ sections: [ActivityListSection]) {
+  func updateSections(_ sections: [ActivityListSection]) {
     collectionController.sections = sections
+  }
+  
+  func showPagingLoader() {
+    footerView.state = .loading
+    customView.setFooterView(footerView)
+  }
+  
+  func hidePagingLoader() {
+    footerView.state = .none
+    customView.setFooterView(nil)
+  }
+  
+  func showPagingError(title: String?) {
+    footerView.state = .error(title: title)
+    customView.setFooterView(footerView)
+  }
+  
+  func showShimmer() {
+    collectionController.isShimmer = true
+  }
+  
+  func hideShimmer() {
+    collectionController.isShimmer = false
   }
   
   func hideRefreshControl() {
@@ -59,22 +84,6 @@ extension ActivityListViewController: ActivityListViewInput {
         self.customView.collectionView.refreshControl?.endRefreshing()
       }
     }
-  }
-  
-  func showLoadingIndicator() {
-    collectionController.isLoading = true
-  }
-  
-  func hideLoadingIndicator() {
-    collectionController.isLoading = false
-  }
-  
-  func showShimmer() {
-    collectionController.isShimmering = true
-  }
-  
-  func hideShimmer() {
-    collectionController.isShimmering = false
   }
 }
 
@@ -109,6 +118,11 @@ private extension ActivityListViewController {
                              action: #selector(didPullToRefresh),
                              for: .valueChanged)
     customView.collectionView.refreshControl = refreshControl
+   
+    footerView.didTapRetryButton = { [weak self] in
+      self?.presenter.fetchNext()
+    }
+    customView.setFooterView(footerView)
   }
   
   @objc
