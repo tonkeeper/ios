@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class ActivityListFooterView: UIView {
+final class ActivityListFooterView: UICollectionReusableView, Reusable {
   enum State {
     case none
     case loading
@@ -33,11 +33,7 @@ final class ActivityListFooterView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-  
-  override var intrinsicContentSize: CGSize {
-    return CGSize(width: UIView.noIntrinsicMetric, height: 40)
-  }
-  
+
   override func layoutSubviews() {
     super.layoutSubviews()
     loaderView.frame = bounds

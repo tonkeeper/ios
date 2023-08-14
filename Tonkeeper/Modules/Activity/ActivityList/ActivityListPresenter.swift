@@ -36,10 +36,7 @@ final class ActivityListPresenter {
 
 extension ActivityListPresenter: ActivityListPresenterInput {
   func viewDidLoad() {
-    let items = (0..<4).map { _ in UUID().uuidString }
-    let section = ActivityListSection(date: Date(), title: nil, items: items)
-    viewInput?.showShimmer()
-    viewInput?.updateSections([section])
+    showShimmer()
     Task {
       do {
         let sections = try await loadNextEvents()
@@ -47,12 +44,10 @@ extension ActivityListPresenter: ActivityListPresenterInput {
           if sections.isEmpty {
             output?.activityListNoEvents(self)
           }
-          viewInput?.hideShimmer()
           viewInput?.updateSections(sections)
         }
       } catch {
         await MainActor.run {
-          viewInput?.hideShimmer()
           viewInput?.updateSections([])
           output?.activityListNoEvents(self)
         }
@@ -98,21 +93,18 @@ extension ActivityListPresenter: ActivityListPresenterInput {
       }
       
       await MainActor.run {
-        viewInput?.showPagingLoader()
+        viewInput?.showPagination(.loading)
       }
-      
       do {
         let sections = try await loadNextEvents()
-        let hasMore = await activityListController.hasMore
         await MainActor.run {
-          if !hasMore { viewInput?.hidePagingLoader() }
           isPagingLoading = false
           viewInput?.updateSections(sections)
         }
       } catch {
         await MainActor.run {
           isPagingLoading = false
-          viewInput?.showPagingError(title: "Failed to load")
+          viewInput?.showPagination(.error(title: "Failed to load"))
         }
       }
     }
@@ -150,9 +142,14 @@ private extension ActivityListPresenter {
     }
     
     let sections = await activityListController.eventsSections.map { section in
-      ActivityListSection(date: section.date, title: section.title, items: section.eventsIds)
+      ActivityListSection.events(.init(date: section.date, title: section.title, items: section.eventsIds))
     }
     
     return sections
+  }
+  
+  func showShimmer() {
+    let shimmers = (0..<5).map { _ in UUID().uuidString }
+    viewInput?.updateSections([.shimmer(shimmers: shimmers)])
   }
 }

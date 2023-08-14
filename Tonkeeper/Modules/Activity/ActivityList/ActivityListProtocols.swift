@@ -31,23 +31,8 @@ protocol ActivityListPresenterInput {
 }
 
 protocol ActivityListViewInput: AnyObject {
-//  func didUpdateState(state: ActivityListViewState)
-//  func updateEvents(_ sections: [ActivityListSection])
-//  func showLoadingIndicator()
-//  func hideLoadingIndicator()
-  func hideRefreshControl()
-//  func showShimmer()
-//  func hideShimmer()
-//  func showPagingError(title: String?)
   func updateSections(_ sections: [ActivityListSection])
-  
-  func showPagingLoader()
-  
-  func hidePagingLoader()
-  
-  func showPagingError(title: String?)
-  
-  func showShimmer()
-  
-  func hideShimmer()
+  func hideRefreshControl()
+  func showPagination(_ pagination: ActivityListSection.Pagination)
+  func hidePagination()
 }

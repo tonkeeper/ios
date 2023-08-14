@@ -8,15 +8,44 @@
 import UIKit
 
 struct ActivityListCollectionLayoutConfigurator {
-  func getLayout(section: @escaping (_ sectionIndex: Int) -> ActivityListSection) -> UICollectionViewLayout {
+  func getLayout(section: @escaping (_ sectionIndex: Int) -> ActivityListSection?) -> UICollectionViewLayout {
     let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
-      return createTransactionSection()
+      guard let sectionItem = section(sectionIndex) else { return nil }
+      return createSection(sectionItem)
     }
     return layout
   }
 }
 
 private extension ActivityListCollectionLayoutConfigurator {
+  func createSection(_ section: ActivityListSection) -> NSCollectionLayoutSection {
+    switch section {
+    case .events: return createTransactionSection()
+    case .shimmer: return createShimmerSection()
+    case .pagination: return createPaginationSection()
+    }
+  }
+  
+  func createPaginationSection() -> NSCollectionLayoutSection {
+    let item = NSCollectionLayoutItem(layoutSize: .init(widthDimension: .fractionalWidth(1.0),
+                                                        heightDimension: .absolute(10)))
+    let group = NSCollectionLayoutGroup.vertical(layoutSize: .init(widthDimension: .fractionalWidth(1.0),
+                                                                   heightDimension: .absolute(10)),
+                                                 subitems: [item])
+    group.contentInsets = .init(top: 0, leading: 0, bottom: 0, trailing: 0)
+    
+    let section = NSCollectionLayoutSection(group: group)
+    let footerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(40))
+    let footer = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: footerSize,
+      elementKind: ActivityListFooterView.reuseIdentifier,
+      alignment: .bottom
+    )
+    section.boundarySupplementaryItems = [footer]
+    
+    return section
+  }
+  
   func createTransactionSection() -> NSCollectionLayoutSection {
     let item = NSCollectionLayoutItem(layoutSize: .transactionSectionItemSize)
     let group = NSCollectionLayoutGroup.vertical(layoutSize: .transactionSectionGroupItemSize,
@@ -31,6 +60,27 @@ private extension ActivityListCollectionLayoutConfigurator {
     let header = NSCollectionLayoutBoundarySupplementaryItem(
       layoutSize: headerSize,
       elementKind: ActivityListSectionHeaderView.reuseIdentifier,
+      alignment: .top
+    )
+    section.boundarySupplementaryItems = [header]
+    
+    return section
+  }
+  
+  func createShimmerSection() -> NSCollectionLayoutSection {
+    let item = NSCollectionLayoutItem(layoutSize: .transactionSectionItemSize)
+    let group = NSCollectionLayoutGroup.vertical(layoutSize: .transactionSectionGroupItemSize,
+                                                 subitems: [item])
+    group.contentInsets = .init(top: 0, leading: 0, bottom: 0, trailing: 0)
+
+    let section = NSCollectionLayoutSection(group: group)
+    section.interGroupSpacing = 8
+    section.contentInsets = .transactionSectionContentInsets
+    
+    let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(28))
+    let header = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: headerSize,
+      elementKind: ActivityListShimmerSectionHeaderView.reuseIdentifier,
       alignment: .top
     )
     section.boundarySupplementaryItems = [header]

@@ -18,8 +18,6 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
 
   private let presenter: ActivityListPresenterInput
   
-  private var footerView = ActivityListFooterView()
-  
   // MARK: - Collection
   
   private lazy var collectionController: ActivityListCollectionController = {
@@ -52,30 +50,15 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
 
 extension ActivityListViewController: ActivityListViewInput {
   func updateSections(_ sections: [ActivityListSection]) {
-    collectionController.sections = sections
+    collectionController.setSections(sections)
   }
   
-  func showPagingLoader() {
-    footerView.state = .loading
-    customView.setFooterView(footerView)
+  func showPagination(_ pagination: ActivityListSection.Pagination) {
+    collectionController.showPagination(pagination)
   }
   
-  func hidePagingLoader() {
-    footerView.state = .none
-    customView.setFooterView(nil)
-  }
-  
-  func showPagingError(title: String?) {
-    footerView.state = .error(title: title)
-    customView.setFooterView(footerView)
-  }
-  
-  func showShimmer() {
-    collectionController.isShimmer = true
-  }
-  
-  func hideShimmer() {
-    collectionController.isShimmer = false
+  func hidePagination() {
+    collectionController.hidePagination()
   }
   
   func hideRefreshControl() {
@@ -118,11 +101,6 @@ private extension ActivityListViewController {
                              action: #selector(didPullToRefresh),
                              for: .valueChanged)
     customView.collectionView.refreshControl = refreshControl
-   
-    footerView.didTapRetryButton = { [weak self] in
-      self?.presenter.fetchNext()
-    }
-    customView.setFooterView(footerView)
   }
   
   @objc
