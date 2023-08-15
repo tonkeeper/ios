@@ -35,6 +35,8 @@
 		7D0207602A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D02075F2A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift */; };
 		7D0207622A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0207612A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift */; };
 		7D0207852A803C7100D63B4C /* NotDelayCollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0207842A803C7100D63B4C /* NotDelayCollectionView.swift */; };
+		7D048D4D2A8A2D2400DFC1A5 /* DefaultCellTextContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D048D4C2A8A2D2400DFC1A5 /* DefaultCellTextContentView.swift */; };
+		7D048D6F2A8B80D800DFC1A5 /* DefaultCellTextContentView+Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D048D6E2A8B80D800DFC1A5 /* DefaultCellTextContentView+Model.swift */; };
 		7D1162FA2A60258F00DF4F30 /* WalletContentPageOutputMediator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1162F92A60258F00DF4F30 /* WalletContentPageOutputMediator.swift */; };
 		7D1162FD2A60379D00DF4F30 /* WalletTokenDetailsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1162FC2A60379D00DF4F30 /* WalletTokenDetailsCoordinator.swift */; };
 		7D1163002A60381300DF4F30 /* WalletTokenDetailsAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1162FF2A60381300DF4F30 /* WalletTokenDetailsAssembly.swift */; };
@@ -143,7 +145,6 @@
 		7D5D05A72A2F83ED009F42FF /* ActivityListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05A62A2F83ED009F42FF /* ActivityListCollectionController.swift */; };
 		7D5D05A92A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05A82A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift */; };
 		7D5D05AB2A306739009F42FF /* ActivityListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05AA2A306739009F42FF /* ActivityListSection.swift */; };
-		7D5D05CE2A30716A009F42FF /* DefaultCellTextContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05CD2A30716A009F42FF /* DefaultCellTextContentView.swift */; };
 		7D5D05D02A308C4C009F42FF /* DefaultCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05CF2A308C4C009F42FF /* DefaultCellContentView.swift */; };
 		7D5D05D32A309322009F42FF /* DefaultCellContentView+Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05D22A309322009F42FF /* DefaultCellContentView+Model.swift */; };
 		7D5D05D52A309674009F42FF /* ContainerCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5D05D42A309674009F42FF /* ContainerCollectionViewCell.swift */; };
@@ -338,6 +339,8 @@
 		7D02075F2A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionTransactionCellContentView.swift; sourceTree = "<group>"; };
 		7D0207612A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListCompositionTransactionCell.swift; sourceTree = "<group>"; };
 		7D0207842A803C7100D63B4C /* NotDelayCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotDelayCollectionView.swift; sourceTree = "<group>"; };
+		7D048D4C2A8A2D2400DFC1A5 /* DefaultCellTextContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultCellTextContentView.swift; sourceTree = "<group>"; };
+		7D048D6E2A8B80D800DFC1A5 /* DefaultCellTextContentView+Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DefaultCellTextContentView+Model.swift"; sourceTree = "<group>"; };
 		7D1162F92A60258F00DF4F30 /* WalletContentPageOutputMediator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletContentPageOutputMediator.swift; sourceTree = "<group>"; };
 		7D1162FC2A60379D00DF4F30 /* WalletTokenDetailsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletTokenDetailsCoordinator.swift; sourceTree = "<group>"; };
 		7D1162FF2A60381300DF4F30 /* WalletTokenDetailsAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletTokenDetailsAssembly.swift; sourceTree = "<group>"; };
@@ -443,7 +446,6 @@
 		7D5D05A62A2F83ED009F42FF /* ActivityListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListCollectionController.swift; sourceTree = "<group>"; };
 		7D5D05A82A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListCollectionLayoutConfigurator.swift; sourceTree = "<group>"; };
 		7D5D05AA2A306739009F42FF /* ActivityListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListSection.swift; sourceTree = "<group>"; };
-		7D5D05CD2A30716A009F42FF /* DefaultCellTextContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultCellTextContentView.swift; sourceTree = "<group>"; };
 		7D5D05CF2A308C4C009F42FF /* DefaultCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DefaultCellContentView.swift; sourceTree = "<group>"; };
 		7D5D05D22A309322009F42FF /* DefaultCellContentView+Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DefaultCellContentView+Model.swift"; sourceTree = "<group>"; };
 		7D5D05D42A309674009F42FF /* ContainerCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerCollectionViewCell.swift; sourceTree = "<group>"; };
@@ -1247,8 +1249,9 @@
 			isa = PBXGroup;
 			children = (
 				7D5D05CF2A308C4C009F42FF /* DefaultCellContentView.swift */,
-				7D5D05CD2A30716A009F42FF /* DefaultCellTextContentView.swift */,
 				7D5D05D22A309322009F42FF /* DefaultCellContentView+Model.swift */,
+				7D048D4C2A8A2D2400DFC1A5 /* DefaultCellTextContentView.swift */,
+				7D048D6E2A8B80D800DFC1A5 /* DefaultCellTextContentView+Model.swift */,
 			);
 			path = DefaultCell;
 			sourceTree = "<group>";
@@ -2183,10 +2186,12 @@
 				7D9292FE2A29DCDA005B83DF /* SendRecipientProtocols.swift in Sources */,
 				7D1163122A616CC400DF4F30 /* TokenDetailsHeaderView.swift in Sources */,
 				7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */,
+				7D048D6F2A8B80D800DFC1A5 /* DefaultCellTextContentView+Model.swift in Sources */,
 				7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */,
 				7D3BCFB92A4C99A300BE6AD9 /* ImportWalletAssembly.swift in Sources */,
 				7D4934732A5CA1D900F4BCA2 /* TKMenuViewController.swift in Sources */,
 				7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */,
+				7D048D4D2A8A2D2400DFC1A5 /* DefaultCellTextContentView.swift in Sources */,
 				7D527BC82A2A9E5D00A2D29A /* ModalContentActionBarView.swift in Sources */,
 				7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */,
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
@@ -2265,7 +2270,6 @@
 				7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */,
 				7DE27E5F2A30C61E00842FA8 /* ActivityListSectionHeaderView.swift in Sources */,
 				7D1162FD2A60379D00DF4F30 /* WalletTokenDetailsCoordinator.swift in Sources */,
-				7D5D05CE2A30716A009F42FF /* DefaultCellTextContentView.swift in Sources */,
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,

@@ -50,7 +50,7 @@ extension TransactionCellContentView {
                                    height: textSize.height + .textTopSpacing + .textBottomSpacing)
       textLabel.frame = .init(x: .textHorizontalSpacing,
                               y: .textTopSpacing,
-                              width: textBackground.bounds.width - .textHorizontalSpacing,
+                              width: textBackground.bounds.width - .textHorizontalSpacing * 2,
                               height: textBackground.bounds.height - .textBottomSpacing - .textTopSpacing)
 
     }

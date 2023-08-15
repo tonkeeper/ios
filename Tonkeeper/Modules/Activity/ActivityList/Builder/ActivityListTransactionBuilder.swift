@@ -17,16 +17,13 @@ struct ActivityListTransactionBuilder {
                              status: String?,
                              comment: String? = nil,
                              collectible: ActivityEventViewModel.ActionViewModel.CollectibleViewModel? = nil) -> TransactionCellContentView.Model {
-    
     let textContentModel = DefaultCellTextContentView.Model(
-      leftTopTitle: type.title,
-      leftTopRightTitle: nil,
-      rightTopTitle: amount?.attributed(with: .label1, alignment: .left, color: type.amountColor),
-      leftMiddleTitle: subtitle,
-      leftMiddleRightTitle: nil,
-      rightMiddleTitle: time,
-      leftBottomTitle: nil,
-      rightBottomTitle: nil
+      title: type.title,
+      amount: amount?.attributed(with: .label1, alignment: .left, color: type.amountColor),
+      subamount: nil,
+      topLeftDescriptionValue: subtitle,
+      topLeftDescriptionSubvalue: nil,
+      topRightDescriptionValue: time
     )
     let contentModel = DefaultCellContentView.Model(
       textContentModel: textContentModel,

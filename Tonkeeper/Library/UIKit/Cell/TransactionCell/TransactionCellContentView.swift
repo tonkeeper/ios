@@ -72,10 +72,10 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
     
     bottomContentY = statusView.frame.maxY
     
-    let commentSize = commentView.sizeThatFits(.init(width: contentViewSize.width, height: 0))
+    let commentSize = commentView.sizeThatFits(.init(width: contentViewSize.width - .additionalContentLeftSpacing, height: 0))
     commentView.frame = CGRect(x: defaultCellContentView.textContentFrame.minX,
                                y: bottomContentY,
-                               width: defaultCellContentView.textContentFrame.width,
+                               width: commentSize.width,
                                height: commentSize.height)
     bottomContentY = commentView.frame.maxY
     
@@ -88,7 +88,11 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
     contentView.frame.size = contentViewSize
     contentView.frame.origin = CGPoint(x: ContentInsets.sideSpace, y: ContentInsets.sideSpace)
     
-    separatorView.frame = CGRect(x: ContentInsets.sideSpace, y: bounds.height - 0.5, width: bounds.width - ContentInsets.sideSpace, height: 0.5)
+    separatorView.frame = CGRect(
+      x: ContentInsets.sideSpace,
+      y: bounds.height - .separatorHeight, width
+      : bounds.width - ContentInsets.sideSpace,
+      height: .separatorHeight)
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
@@ -96,7 +100,7 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
                                  height: max(0, size.height - ContentInsets.sideSpace * 2))
     let defaultCellContentHeight = defaultCellContentView.sizeThatFits(contentViewSize).height
     let statusHeight = statusView.sizeThatFits(contentViewSize).height
-    let commentHeight = commentView.sizeThatFits(contentViewSize).height
+    let commentHeight = commentView.sizeThatFits(.init(width: contentViewSize.width - .additionalContentLeftSpacing, height: 0)).height
     let nftHeight = nftView.sizeThatFits(contentViewSize).height
     let height = defaultCellContentHeight + statusHeight + commentHeight + nftHeight + ContentInsets.sideSpace * 2
     return .init(width: size.width, height: height)
@@ -163,4 +167,9 @@ private extension TransactionCellContentView {
     let isVisible = !isHighlighted && isSeparatorVisible
     separatorView.isHidden = !isVisible
   }
+}
+
+private extension CGFloat {
+  static let additionalContentLeftSpacing: CGFloat = 60
+  static let separatorHeight: CGFloat = 0.5
 }

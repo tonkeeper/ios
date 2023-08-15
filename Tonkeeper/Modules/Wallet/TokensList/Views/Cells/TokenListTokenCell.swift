@@ -55,14 +55,12 @@ final class TokenListTokenCell: ContainerCollectionViewCell<BalanceCellContentVi
   
   func configure(model: Model) {
     let textContentModel = DefaultCellTextContentView.Model(
-      leftTopTitle: model.title,
-      leftTopRightTitle: model.shortTitle,
-      rightTopTitle: model.amount?.attributed(with: .label1, alignment: .right, color: .Text.primary),
-      leftMiddleTitle: model.price,
-      leftMiddleRightTitle: model.priceDiff,
-      rightMiddleTitle: model.fiatAmount,
-      leftBottomTitle: nil,
-      rightBottomTitle: nil
+      title: model.title,
+      amount: model.amount?.attributed(with: .label1, alignment: .right, color: .Text.primary),
+      subamount: nil,
+      topLeftDescriptionValue: model.price,
+      topLeftDescriptionSubvalue: model.priceDiff,
+      topRightDescriptionValue: model.fiatAmount
     )
     let contentModel = DefaultCellContentView.Model(
       textContentModel: textContentModel,
