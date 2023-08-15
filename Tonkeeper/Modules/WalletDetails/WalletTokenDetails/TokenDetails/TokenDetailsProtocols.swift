@@ -6,7 +6,7 @@
 //  Created by Grigory Serebryanyy on 13/07/2023.
 //
 
-import Foundation
+import UIKit
 import WalletCore
 
 protocol TokenDetailsModuleOutput: AnyObject {
@@ -18,6 +18,8 @@ protocol TokenDetailsModuleOutput: AnyObject {
   func didTapTokenSend(tokenInfo: TokenInfo)
   func didTapTokenReceive(tokenInfo: TokenInfo)
   func didTapTokenSwap(tokenInfo: TokenInfo)
+  
+  func tonChartModule() -> Module<TonChartViewController, TonChartModuleInput>
 }
 
 protocol TokenDetailsModuleInput: AnyObject, TokenDetailsControllerOutput {}
@@ -30,5 +32,6 @@ protocol TokenDetailsPresenterInput {
 protocol TokenDetailsViewInput: AnyObject {
   func updateTitle(title: String)
   func updateHeader(model: TokenDetailsHeaderView.Model)
+  func showChart(_ chartViewController: UIViewController)
   func stopRefresh()
 }

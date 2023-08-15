@@ -32,6 +32,7 @@ final class TokenDetailsPresenter {
 extension TokenDetailsPresenter: TokenDetailsPresenterInput {
   func viewDidLoad() {
     updateHeader()
+    updateChart()
     refreshContent()
   }
   
@@ -79,7 +80,6 @@ extension TokenDetailsPresenter {
     output?.didTapTokenSwap(tokenInfo: tokenInfo)
   }
 }
-  
 
 // MARK: - Private
 
@@ -113,6 +113,13 @@ private extension TokenDetailsPresenter {
       buttonRowModel: .init(buttons: buttonsRowButtons))
     viewInput?.updateTitle(title: header.name)
     viewInput?.updateHeader(model: tokenDetailsHeaderViewModel)
+  }
+  
+  func updateChart() {
+    guard tokenDetailsController.hasChart(),
+    let output = output else { return }
+    let module = output.tonChartModule()
+    viewInput?.showChart(module.view)
   }
   
   func refreshContent() {

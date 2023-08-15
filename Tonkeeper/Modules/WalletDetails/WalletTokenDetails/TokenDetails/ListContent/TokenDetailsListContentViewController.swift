@@ -10,4 +10,5 @@ import UIKit
 protocol TokenDetailsListContentViewController: UIViewController {
   var scrollView: UIScrollView { get }
   func setHeaderView(_ headerView: UIView?)
+  func setHeaderViewController(_ headerViewController: UIViewController?)
 }

@@ -70,6 +70,7 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
   }()
   
   private let topContainer = UIView()
+  private let chartContainer = UIView()
   
   private let fiatPriceTopSpacingView = SpacingView(verticalSpacing: .constant(.fiatPriceTopSpacing))
   
@@ -125,6 +126,19 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
     imageView.layoutIfNeeded()
     imageView.layer.cornerRadius = imageView.bounds.width/2
   }
+  
+  // MARK: - Chart
+  
+  func embedChartView(_ chartView: UIView) {
+    chartContainer.addSubview(chartView)
+    chartView.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+      chartView.topAnchor.constraint(equalTo: chartContainer.topAnchor),
+      chartView.leftAnchor.constraint(equalTo: chartContainer.leftAnchor),
+      chartView.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor),
+      chartView.rightAnchor.constraint(equalTo: chartContainer.rightAnchor)
+    ])
+  }
 }
 
 private extension TokenDetailsHeaderView {
@@ -132,6 +146,7 @@ private extension TokenDetailsHeaderView {
     addSubview(topContainer)
     addSubview(buttonsRowView)
     addSubview(buttonsSeparatorView)
+    addSubview(chartContainer)
     
     topContainer.addSubview(priceStackView)
     topContainer.addSubview(imageView)
@@ -152,6 +167,7 @@ private extension TokenDetailsHeaderView {
     imageView.setContentCompressionResistancePriority(.required, for: .horizontal)
     
     topContainer.translatesAutoresizingMaskIntoConstraints = false
+    chartContainer.translatesAutoresizingMaskIntoConstraints = false
     priceStackView.translatesAutoresizingMaskIntoConstraints = false
     imageView.translatesAutoresizingMaskIntoConstraints = false
     separatorView.translatesAutoresizingMaskIntoConstraints = false
@@ -176,7 +192,6 @@ private extension TokenDetailsHeaderView {
       
       buttonsSeparatorView.leftAnchor.constraint(equalTo: leftAnchor),
       buttonsSeparatorView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
-      buttonsSeparatorView.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
       buttonsSeparatorView.heightAnchor.constraint(equalToConstant: .separatorHeight),
       
       priceStackView.topAnchor.constraint(equalTo: topContainer.topAnchor, constant: .topContainerTopSpacing),
@@ -191,7 +206,12 @@ private extension TokenDetailsHeaderView {
       separatorView.leftAnchor.constraint(equalTo: topContainer.leftAnchor),
       separatorView.rightAnchor.constraint(equalTo: topContainer.rightAnchor).withPriority(.defaultHigh),
       separatorView.heightAnchor.constraint(equalToConstant: .separatorHeight),
-      separatorView.bottomAnchor.constraint(equalTo: topContainer.bottomAnchor).withPriority(.defaultHigh)
+      separatorView.bottomAnchor.constraint(equalTo: topContainer.bottomAnchor).withPriority(.defaultHigh),
+      
+      chartContainer.topAnchor.constraint(equalTo: buttonsSeparatorView.bottomAnchor),
+      chartContainer.leftAnchor.constraint(equalTo: leftAnchor),
+      chartContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      chartContainer.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
     ])
   }
 }

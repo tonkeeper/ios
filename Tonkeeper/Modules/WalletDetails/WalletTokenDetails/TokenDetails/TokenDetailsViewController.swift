@@ -18,13 +18,13 @@ class TokenDetailsViewController: GenericViewController<TokenDetailsView> {
   
   private let listContentViewController: TokenDetailsListContentViewController
   
+  // MARK: - Header
+  
+  private let headerViewController = TokenDetailsHeaderViewController()
+  
   // MARK: - Dependencies
   
   private let imageLoader: ImageLoader
-  
-  // MARK: - Header
-  
-  private let headerView = TokenDetailsHeaderView()
 
   // MARK: - Init
 
@@ -63,7 +63,11 @@ extension TokenDetailsViewController: TokenDetailsViewInput {
   }
   
   func updateHeader(model: TokenDetailsHeaderView.Model) {
-    headerView.configure(model: model)
+    headerViewController.update(model: model)
+  }
+  
+  func showChart(_ chartViewController: UIViewController) {
+    headerViewController.setChartViewController(chartViewController)
   }
   
   func stopRefresh() {
@@ -77,7 +81,7 @@ private extension TokenDetailsViewController {
   func setup() {
     view.backgroundColor = .Background.page
     
-    headerView.imageLoader = imageLoader
+    headerViewController.imageLoader = imageLoader
     
     setupListContent()
   }
@@ -87,7 +91,7 @@ private extension TokenDetailsViewController {
     customView.embedListView(listContentViewController.view)
     listContentViewController.didMove(toParent: self)
     
-    listContentViewController.setHeaderView(headerView)
+    listContentViewController.setHeaderViewController(headerViewController)
   }
   
   @objc
