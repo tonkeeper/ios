@@ -54,6 +54,7 @@
 		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
 		7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
+		7D32F8B22A8BA65B002C130C /* ActivityListHeaderContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */; };
 		7D384A482A6695A200DE2A66 /* SendAmountAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */; };
 		7D384A4A2A66973D00DE2A66 /* SendRecipientAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A492A66973D00DE2A66 /* SendRecipientAssembly.swift */; };
 		7D384A4C2A66989100DE2A66 /* SendConfirmationAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A4B2A66989100DE2A66 /* SendConfirmationAssembly.swift */; };
@@ -357,6 +358,7 @@
 		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
 		7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletBalanceModelMapper.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
+		7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListHeaderContainer.swift; sourceTree = "<group>"; };
 		7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendAmountAssembly.swift; sourceTree = "<group>"; };
 		7D384A492A66973D00DE2A66 /* SendRecipientAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendRecipientAssembly.swift; sourceTree = "<group>"; };
 		7D384A4B2A66989100DE2A66 /* SendConfirmationAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendConfirmationAssembly.swift; sourceTree = "<group>"; };
@@ -1908,6 +1910,7 @@
 				7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */,
 				7D7CE3FD2A89B3ED002BA9EC /* ActivityListShimmerSectionHeaderView.swift */,
 				7DA0EFF72A866D2B0062C8BA /* ActivityListFooterView.swift */,
+				7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */,
 			);
 			path = Cells;
 			sourceTree = "<group>";
@@ -2172,6 +2175,7 @@
 				7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */,
 				7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */,
 				7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */,
+				7D32F8B22A8BA65B002C130C /* ActivityListHeaderContainer.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
 				7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */,
 				7D45D31B2A82E73200733DFE /* TransactionCellNFTView.swift in Sources */,

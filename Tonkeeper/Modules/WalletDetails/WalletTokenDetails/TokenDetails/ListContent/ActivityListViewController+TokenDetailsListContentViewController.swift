@@ -7,8 +7,4 @@
 
 import UIKit
 
-extension ActivityListViewController: TokenDetailsListContentViewController { 
-  func setHeaderView(_ headerView: UIView) {
-    customView.setHeaderView(headerView)
-  }
-}
+extension ActivityListViewController: TokenDetailsListContentViewController {}

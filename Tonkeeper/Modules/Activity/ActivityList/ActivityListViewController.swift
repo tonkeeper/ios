@@ -44,6 +44,10 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
     setup()
     presenter.viewDidLoad()
   }
+  
+  func setHeaderView(_ headerView: UIView?) {
+    collectionController.headerView = headerView
+  }
 }
 
 // MARK: - ActivityListViewInput

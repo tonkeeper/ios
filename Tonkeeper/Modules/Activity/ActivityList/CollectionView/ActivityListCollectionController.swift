@@ -18,6 +18,12 @@ protocol ActivityListCollectionControllerDelegate: AnyObject {
 final class ActivityListCollectionController: NSObject {
   weak var delegate: ActivityListCollectionControllerDelegate?
   
+  var headerView: UIView? {
+    didSet {
+      collectionView?.reloadData()
+    }
+  }
+  
   private weak var collectionView: UICollectionView?
   private var dataSource: UICollectionViewDiffableDataSource<ActivityListSection, String>?
   private let collectionLayoutConfigurator = ActivityListCollectionLayoutConfigurator()
@@ -94,6 +100,11 @@ private extension ActivityListCollectionController {
       ActivityListShimmerSectionHeaderView.self,
       forSupplementaryViewOfKind: ActivityListShimmerSectionHeaderView.reuseIdentifier,
       withReuseIdentifier: ActivityListShimmerSectionHeaderView.reuseIdentifier)
+    collectionView.register(
+      ActivityListHeaderContainer.self,
+      forSupplementaryViewOfKind: ActivityListHeaderContainer.reuseIdentifier,
+      withReuseIdentifier: ActivityListHeaderContainer.reuseIdentifier
+    )
     dataSource = createDataSource(collectionView: collectionView)
   }
 
@@ -120,6 +131,9 @@ private extension ActivityListCollectionController {
   func dequeueSupplementaryView(collectionView: UICollectionView,
                                 kind: String,
                                 indexPath: IndexPath) -> UICollectionReusableView? {
+    if kind == ActivityListHeaderContainer.reuseIdentifier {
+      return createHeaderView(collectionView: collectionView, kind: kind, indexPath: indexPath)
+    }
     guard let snapshot = self.dataSource?.snapshot() else { return nil }
     let section = snapshot.sectionIdentifiers[indexPath.section]
     switch section {
@@ -199,6 +213,17 @@ private extension ActivityListCollectionController {
     )
     (cell as? ActivityListShimmerCell)?.startAnimation()
     return cell
+  }
+  
+  func createHeaderView(collectionView: UICollectionView, kind: String, indexPath: IndexPath) -> UICollectionReusableView {
+    let headerContainer = collectionView.dequeueReusableSupplementaryView(
+      ofKind: kind,
+      withReuseIdentifier: ActivityListHeaderContainer.reuseIdentifier,
+      for: indexPath)
+    if let headerContainer = headerContainer as? ActivityListHeaderContainer {
+      headerContainer.setContentView(headerView)
+    }
+    return headerContainer
   }
   
   func fetchNextIfNeeded(collectionView: UICollectionView, indexPath: IndexPath) {
