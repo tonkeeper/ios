@@ -10,8 +10,9 @@ import UIKit
 
 final class ActivityListView: UIView {
   
-  let collectionView = UICollectionView(frame: .zero, collectionViewLayout: .init())
-
+  let collectionView = NotDelayCollectionView(frame: .zero, collectionViewLayout: .init())
+  private var headerView: UIView?
+  
   // MARK: - Init
 
   override init(frame: CGRect) {
@@ -28,6 +29,30 @@ final class ActivityListView: UIView {
   override func layoutSubviews() {
     super.layoutSubviews()
     collectionView.frame = bounds
+    collectionView.contentInset.top = .collectionTopSpacing
+    layoutHeader()
+  }
+  
+  private func layoutHeader() {
+    guard let headerView = headerView else { return }
+    let headerViewSize = headerView.systemLayoutSizeFitting(
+      systemLayoutSizeFitting(.init(width: bounds.width, height: 0),
+                              withHorizontalFittingPriority: .required, verticalFittingPriority: .defaultHigh)
+    )
+    headerView.frame = .init(
+      origin: .init(x: 0, y: -headerViewSize.height - .collectionTopSpacing),
+      size: .init(width: bounds.width, height: headerViewSize.height)
+    )
+    collectionView.contentInset.top = headerViewSize.height + .collectionTopSpacing
+    collectionView.refreshControl?.bounds.origin.y = headerViewSize.height
+  }
+  
+  // MARK: - HeaderView
+  
+  func setHeaderView(_ headerView: UIView) {
+    self.headerView = headerView
+    self.collectionView.addSubview(headerView)
+    setNeedsLayout()
   }
 }
 
@@ -38,4 +63,8 @@ private extension ActivityListView {
     collectionView.backgroundColor = .Background.page
     addSubview(collectionView)
   }
+}
+
+private extension CGFloat {
+  static let collectionTopSpacing: CGFloat = 14
 }

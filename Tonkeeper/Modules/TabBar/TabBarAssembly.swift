@@ -18,7 +18,7 @@ final class TabBarAssembly {
     receiveAssembly: receiveAssembly,
     buyAssembly: BuyAssembly()
   )
-  lazy var activityAssembly = ActivityAssembly(receiveAssembly: receiveAssembly)
+  lazy var activityAssembly = ActivityAssembly(receiveAssembly: receiveAssembly, walletCoreAssembly: walletCoreAssembly)
   lazy var browserAssembly = BrowserAssembly()
   lazy var settingsAssembly = SettingsAssembly()
   lazy var receiveAssembly = ReceiveAssembly(walletCoreAssembly: walletCoreAssembly)
@@ -42,10 +42,9 @@ final class TabBarAssembly {
   func activityCoordinator() -> ActivityCoordinator {
     let navigationController = UINavigationController()
     navigationController.configureDefaultAppearance()
-    navigationController.setNavigationBarHidden(true, animated: false)
+    navigationController.navigationBar.prefersLargeTitles = true
     let router = NavigationRouter(rootViewController: navigationController)
-    let coordinator = ActivityCoordinator(router: router,
-                                          assembly: activityAssembly)
+    let coordinator = activityAssembly.coordinator(router: router)
     return coordinator
   }
   

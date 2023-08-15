@@ -167,16 +167,16 @@ private extension TokenDetailsHeaderView {
     NSLayoutConstraint.activate([
       topContainer.topAnchor.constraint(equalTo: topAnchor),
       topContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      topContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      topContainer.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
       
       buttonsRowView.topAnchor.constraint(equalTo: topContainer.bottomAnchor, constant: .buttonsRowVerticalSpacing),
       buttonsRowView.leftAnchor.constraint(equalTo: leftAnchor),
-      buttonsRowView.rightAnchor.constraint(equalTo: rightAnchor),
-      buttonsRowView.bottomAnchor.constraint(equalTo: buttonsSeparatorView.topAnchor, constant: -.buttonsRowVerticalSpacing),
+      buttonsRowView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
+      buttonsRowView.bottomAnchor.constraint(equalTo: buttonsSeparatorView.topAnchor, constant: -.buttonsRowVerticalSpacing).withPriority(.defaultHigh),
       
       buttonsSeparatorView.leftAnchor.constraint(equalTo: leftAnchor),
-      buttonsSeparatorView.rightAnchor.constraint(equalTo: rightAnchor),
-      buttonsSeparatorView.bottomAnchor.constraint(equalTo: bottomAnchor),
+      buttonsSeparatorView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
+      buttonsSeparatorView.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
       buttonsSeparatorView.heightAnchor.constraint(equalToConstant: .separatorHeight),
       
       priceStackView.topAnchor.constraint(equalTo: topContainer.topAnchor, constant: .topContainerTopSpacing),
@@ -185,13 +185,13 @@ private extension TokenDetailsHeaderView {
       imageView.widthAnchor.constraint(equalToConstant: .imageViewSide),
       imageView.heightAnchor.constraint(equalToConstant: .imageViewSide),
       imageView.topAnchor.constraint(equalTo: topContainer.topAnchor, constant: .topContainerTopSpacing),
-      imageView.leftAnchor.constraint(equalTo: priceStackView.rightAnchor, constant: .imageViewLeftSpacing),
+      imageView.leftAnchor.constraint(equalTo: priceStackView.rightAnchor, constant: .imageViewLeftSpacing).withPriority(.defaultHigh),
       imageView.rightAnchor.constraint(equalTo: topContainer.rightAnchor, constant: -.topContainerSideSpacing),
       
       separatorView.leftAnchor.constraint(equalTo: topContainer.leftAnchor),
-      separatorView.rightAnchor.constraint(equalTo: topContainer.rightAnchor),
+      separatorView.rightAnchor.constraint(equalTo: topContainer.rightAnchor).withPriority(.defaultHigh),
       separatorView.heightAnchor.constraint(equalToConstant: .separatorHeight),
-      separatorView.bottomAnchor.constraint(equalTo: topContainer.bottomAnchor)
+      separatorView.bottomAnchor.constraint(equalTo: topContainer.bottomAnchor).withPriority(.defaultHigh)
     ])
   }
 }

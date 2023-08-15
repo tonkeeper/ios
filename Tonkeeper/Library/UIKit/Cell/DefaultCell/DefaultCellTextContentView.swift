@@ -8,45 +8,11 @@
 import UIKit
 
 final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerCollectionViewCellContent {
-
-  let topLeftHorizontalStack = TopLeftHorizontalStack()
-  let topRightLabel: UILabel = {
-    let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
-    label.applyTextStyleFont(.label1)
-    label.textColor = .Text.primary
-    label.numberOfLines = 1
-    label.textAlignment = .right
-    return label
-  }()
-  let middleLeftHorizontalStack = MiddleLeftHorizontalStack()
-  let middleRightLabel: UILabel = {
-    let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
-    label.applyTextStyleFont(.body2)
-    label.textColor = .Text.secondary
-    label.numberOfLines = 1
-    label.textAlignment = .right
-    return label
-  }()
-  let bottomLeftLabel: UILabel = {
-    let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
-    label.applyTextStyleFont(.body2)
-    label.textColor = .Text.secondary
-    label.numberOfLines = 1
-    label.textAlignment = .left
-    return label
-  }()
-  let bottomRightLabel: UILabel = {
-    let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
-    label.applyTextStyleFont(.body2)
-    label.textColor = .Text.secondary
-    label.numberOfLines = 1
-    label.textAlignment = .right
-    return label
-  }()
+  
+  let amountView = AmountVerticalContainer()
+  let topLeftDescriptionView = TopLeftDescriptionHorizontalContainer()
+  let titleLabel = UILabel()
+  let topRightDescriptionLabel = UILabel()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -60,246 +26,191 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
   override func layoutSubviews() {
     super.layoutSubviews()
     
-    var topWidth = bounds.width
-    var middleWidth = bounds.width
-    var bottomWidth = bounds.width
+    let titleSizeThatFits = titleLabel.sizeThatFits(.zero)
+    let titleSize = CGSize(width: min(bounds.width, titleSizeThatFits.width),
+                           height: titleSizeThatFits.height)
+    let titleFrame = CGRect(origin: CGPoint(x: 0, y: 0),
+                            size: titleSize)
     
-    topRightLabel.sizeToFit()
-    topWidth -= topRightLabel.frame.width + 8
+    let amountSize = amountView.sizeThatFits(
+      CGSize(width: bounds.width - titleSize.width,
+             height: 0)
+    )
+    var amountFrame = CGRect(
+      origin: .init(x: bounds.width - amountSize.width, y: 0),
+      size: amountSize
+    )
     
-    middleRightLabel.sizeToFit()
-    middleWidth -= middleRightLabel.frame.width + 8
+    let topRightDescriptionSize = topRightDescriptionLabel.sizeThatFits(.zero)
+    let topRightDescriptionFrame = CGRect(
+      origin: .init(x: bounds.width - topRightDescriptionSize.width, y: amountFrame.maxY),
+      size: topRightDescriptionSize
+    )
     
-    bottomRightLabel.sizeToFit()
-    bottomWidth -= bottomRightLabel.frame.width + 8
+    let topLeftAvailableWidth: CGFloat
+    if amountFrame.maxY <= titleFrame.maxY {
+      topLeftAvailableWidth = bounds.width - topRightDescriptionFrame.width - 8
+    } else {
+      topLeftAvailableWidth = bounds.width - amountFrame.width - 8
+    }
     
-    topLeftHorizontalStack.sizeToFit()
-    topLeftHorizontalStack.frame.size.width = min(topWidth, topLeftHorizontalStack.frame.width)
-    topLeftHorizontalStack.frame.origin.x = 0
-    topLeftHorizontalStack.frame.origin.y = 0
+    let topLeftDescriptionSize = topLeftDescriptionView.sizeThatFits(
+      .init(width: topLeftAvailableWidth,
+            height: 0)
+    )
+    let topLeftDescriptionFrame = CGRect(
+      origin: .init(x: 0, y: titleFrame.maxY),
+      size: topLeftDescriptionSize
+    )
     
-    middleLeftHorizontalStack.sizeToFit()
-    middleLeftHorizontalStack.frame.size.width = min(middleWidth, middleLeftHorizontalStack.frame.size.width)
-    middleLeftHorizontalStack.frame.origin.x = 0
-    middleLeftHorizontalStack.frame.origin.y = topLeftHorizontalStack.frame.maxY
-    middleWidth -= middleLeftHorizontalStack.frame.width
-    
-    bottomLeftLabel.sizeToFit()
-    bottomLeftLabel.frame.size.width = min(bottomWidth, bottomLeftLabel.frame.size.width)
-    bottomLeftLabel.frame.origin.x = 0
-    bottomLeftLabel.frame.origin.y = middleLeftHorizontalStack.frame.height > 0 ? middleLeftHorizontalStack.frame.maxY : topLeftHorizontalStack.frame.maxY
-    bottomWidth -= bottomLeftLabel.frame.width
-    
-    middleRightLabel.frame.origin.x = bounds.width - middleRightLabel.frame.width
-    middleRightLabel.frame.origin.y = middleLeftHorizontalStack.frame.origin.y
-    
-    bottomRightLabel.frame.origin.x = bounds.width -  bottomRightLabel.frame.width
-    bottomRightLabel.frame.origin.y = bottomLeftLabel.frame.origin.y
-    
-    let topRightLabelHeight: CGFloat = {
-      var height = bounds.height
-      if bottomRightLabel.frame.height > 0 || bottomWidth < topRightLabel.frame.width {
-        height = bounds.height - (bounds.height - bottomRightLabel.frame.origin.y)
-      }
-      if middleRightLabel.frame.height > 0 || middleWidth < topRightLabel.frame.width {
-        height = bounds.height - (bounds.height - middleRightLabel.frame.origin.y)
-      }
-      return height
-    }()
-    
-    topRightLabel.frame.origin.x = bounds.width - topRightLabel.frame.width
-    topRightLabel.frame.origin.y = 0
-    topRightLabel.frame.size.height = topRightLabelHeight
+    if amountFrame.minX > topLeftDescriptionFrame.maxX, topRightDescriptionSize.height == 0 {
+      amountFrame.origin.y = bounds.height/2 - amountFrame.height/2
+    }
+
+    titleLabel.frame = titleFrame
+    amountView.frame = amountFrame
+    topRightDescriptionLabel.frame = topRightDescriptionFrame
+    topLeftDescriptionView.frame = topLeftDescriptionFrame
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
-    let leftHeight =
-    topLeftHorizontalStack.sizeThatFits(.zero).height +
-    middleLeftHorizontalStack.sizeThatFits(.zero).height +
-    bottomLeftLabel.sizeThatFits(.zero).height
+    let leftHeight = titleLabel.sizeThatFits(.zero).height
+    + topLeftDescriptionView.sizeThatFits(.zero).height
     
-    let rightHeight =
-    topRightLabel.sizeThatFits(.zero).height +
-    middleRightLabel.sizeThatFits(.zero).height +
-    bottomRightLabel.sizeThatFits(.zero).height
-    
-    return .init(width: size.width, height: max(leftHeight, rightHeight))
-  }
+    let rightHeight = amountView.sizeThatFits(.zero).height
+    + topRightDescriptionLabel.sizeThatFits(.zero).height
   
-  func configure(model: Model) {
-    topLeftHorizontalStack.leftLabel.attributedText = model.leftTopTitle
-    topLeftHorizontalStack.rightLabel.attributedText = model.leftTopRightTitle
-    
-    middleLeftHorizontalStack.leftLabel.attributedText = model.leftMiddleTitle
-    middleLeftHorizontalStack.rightLabel.attributedText = model.leftMiddleRightTitle
-    
-    bottomLeftLabel.attributedText = model.leftBottomTitle
-    
-    topRightLabel.attributedText = model.rightTopTitle
-    
-    middleRightLabel.attributedText = model.rightMiddleTitle
-    
-    bottomRightLabel.attributedText = model.rightBottomTitle
-    
-    setNeedsLayout()
+    return CGSize(width: size.width, height: max(leftHeight, rightHeight))
   }
   
   func prepareForReuse() {
-    topLeftHorizontalStack.leftLabel.attributedText = nil
-    topLeftHorizontalStack.rightLabel.attributedText = nil
-    
-    middleLeftHorizontalStack.leftLabel.attributedText = nil
-    middleLeftHorizontalStack.rightLabel.attributedText = nil
-    
-    bottomLeftLabel.attributedText = nil
-    
-    topRightLabel.attributedText = nil
-    
-    middleRightLabel.attributedText = nil
-    
-    bottomRightLabel.attributedText = nil
-  }
-  
-  func updateBackgroundColor(_ color: UIColor) {
-    backgroundColor = color
-    topLeftHorizontalStack.backgroundColor = color
-    topLeftHorizontalStack.rightLabel.layer.backgroundColor = color.cgColor
-    topLeftHorizontalStack.leftLabel.layer.backgroundColor = color.cgColor
-    middleLeftHorizontalStack.backgroundColor = color
-    middleLeftHorizontalStack.rightLabel.layer.backgroundColor = color.cgColor
-    middleLeftHorizontalStack.leftLabel.layer.backgroundColor = color.cgColor
-    bottomLeftLabel.layer.backgroundColor = color.cgColor
-    topRightLabel.layer.backgroundColor = color.cgColor
-    middleRightLabel.layer.backgroundColor = color.cgColor
-    bottomRightLabel.layer.backgroundColor = color.cgColor
+    titleLabel.text = nil
+    amountView.topLabel.text = nil
+    amountView.bottomLabel.text = nil
+    topLeftDescriptionView.leftLabel.text = nil
+    topLeftDescriptionView.rightLabel.text = nil
+    topRightDescriptionLabel.text = nil
   }
 }
 
 private extension DefaultCellTextContentView {
   func setup() {
-    backgroundColor = .Background.content
-    
-    addSubview(topRightLabel)
-    addSubview(topLeftHorizontalStack)
-    addSubview(middleLeftHorizontalStack)
-    addSubview(middleRightLabel)
-    addSubview(bottomLeftLabel)
-    addSubview(bottomRightLabel)
+    addSubview(titleLabel)
+    addSubview(amountView)
+    addSubview(topLeftDescriptionView)
+    addSubview(topRightDescriptionLabel)
   }
 }
 
-final class TopLeftHorizontalStack: UIView {
-  let leftLabel: UILabel = {
-    let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
-    label.applyTextStyleFont(.label1)
-    label.textColor = .Text.primary
-    label.numberOfLines = 1
-    label.textAlignment = .left
-    return label
-  }()
-  
-  let rightLabel: UILabel = {
-    let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
-    label.applyTextStyleFont(.label1)
-    label.textColor = .Text.tertiary
-    label.numberOfLines = 1
-    label.textAlignment = .left
-    return label
-  }()
-  
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  override func layoutSubviews() {
-    super.layoutSubviews()
-
-    var width: CGFloat = bounds.width
+extension DefaultCellTextContentView {
+  final class AmountVerticalContainer: UIView {
+    let topLabel = UILabel()
+    let bottomLabel = UILabel()
     
-    rightLabel.sizeToFit()
-    width -= rightLabel.frame.width + 4
+    override init(frame: CGRect) {
+      super.init(frame: frame)
+      setup()
+    }
     
-    leftLabel.sizeToFit()
-    leftLabel.frame.size.width = width
+    required init?(coder: NSCoder) {
+      fatalError("init(coder:) has not been implemented")
+    }
     
+    override func layoutSubviews() {
+      super.layoutSubviews()
+      let topLabelSize = topLabel.sizeThatFits(bounds.size)
+      let bottomLabelSize = bottomLabel.sizeThatFits(bounds.size)
+      let topLabelFrame = CGRect(
+        x: 0,
+        y: 0,
+        width: bounds.width,
+        height: topLabelSize.height
+      )
+      let bottomLabelFrame = CGRect(
+        x: 0,
+        y: topLabelFrame.maxY,
+        width: bounds.width,
+        height: bottomLabelSize.height
+      )
+      
+      topLabel.frame = topLabelFrame
+      bottomLabel.frame = bottomLabelFrame
+    }
     
-    leftLabel.frame.origin.x = 0
-    leftLabel.frame.origin.y = bounds.height / 2 - leftLabel.frame.height/2
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+      let topLabelSize = topLabel.sizeThatFits(.zero)
+      let bottomLabelSize = bottomLabel.sizeThatFits(.zero)
+      let width = max(topLabelSize.width, bottomLabelSize.width)
+      let height = topLabelSize.height + bottomLabelSize.height
+      return CGSize(width: min(size.width, width), height: height)
+    }
     
-    rightLabel.frame.origin.x = leftLabel.frame.maxX + 4
-    rightLabel.frame.origin.y = bounds.height / 2 - rightLabel.frame.height/2
-  }
-  
-  override func sizeThatFits(_ size: CGSize) -> CGSize {
-    leftLabel.sizeToFit()
-    rightLabel.sizeToFit()
-    let width = leftLabel.frame.width + rightLabel.frame.width + 4
-    let height = max(leftLabel.frame.height, rightLabel.frame.height)
-    return .init(width: width, height: height)
-  }
-  
-  private func setup() {
-    addSubview(leftLabel)
-    addSubview(rightLabel)
+    private func setup() {
+      addSubview(topLabel)
+      addSubview(bottomLabel)
+    }
   }
 }
 
-final class MiddleLeftHorizontalStack: UIView {
-  let leftLabel: UILabel = {
-    let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
-    label.applyTextStyleFont(.body2)
-    label.textColor = .Text.secondary
-    label.numberOfLines = 1
-    label.textAlignment = .left
-    return label
-  }()
-  
-  let rightLabel: UILabel = {
-    let label = UILabel()
-    label.layer.backgroundColor = UIColor.Background.content.cgColor
-    return label
-  }()
-  
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  override func layoutSubviews() {
-    super.layoutSubviews()
+extension DefaultCellTextContentView {
+  final class TopLeftDescriptionHorizontalContainer: UIView {
+    let leftLabel: UILabel = {
+      let label = UILabel()
+      label.applyTextStyleFont(.body2)
+      label.textColor = .Text.secondary
+      label.numberOfLines = 1
+      label.textAlignment = .left
+      return label
+    }()
     
-    leftLabel.sizeToFit()
-    rightLabel.sizeToFit()
+    let rightLabel: UILabel = {
+      let label = UILabel()
+      return label
+    }()
     
-    leftLabel.frame.origin.x = 0
-    leftLabel.frame.origin.y = bounds.height / 2 - leftLabel.frame.height/2
+    override init(frame: CGRect) {
+      super.init(frame: frame)
+      setup()
+    }
     
-    rightLabel.frame.origin.x = leftLabel.frame.maxX + 4
-    rightLabel.frame.origin.y = bounds.height / 2 - rightLabel.frame.height/2
-  }
-  
-  override func sizeThatFits(_ size: CGSize) -> CGSize {
-    leftLabel.sizeToFit()
-    rightLabel.sizeToFit()
-    let width = leftLabel.frame.width + rightLabel.frame.width + 4
-    let height = max(leftLabel.frame.height, rightLabel.frame.height)
-    return .init(width: width, height: height)
-  }
-  
-  private func setup() {
-    addSubview(leftLabel)
-    addSubview(rightLabel)
+    required init?(coder: NSCoder) {
+      fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func layoutSubviews() {
+      super.layoutSubviews()
+      
+      let leftLabelSize = leftLabel.sizeThatFits(.zero)
+      let rightLabelSize = rightLabel.sizeThatFits(.zero)
+      
+      let leftLabelFrame = CGRect(
+        x: 0,
+        y: bounds.height/2 - leftLabelSize.height/2,
+        width: min(leftLabelSize.width, bounds.width),
+        height: leftLabelSize.height
+      )
+      let rightLabelFrame = CGRect(
+        x: leftLabel.frame.maxX + 6,
+        y: bounds.height/2 - rightLabelSize.height/2,
+        width: max(0, bounds.width - leftLabel.frame.width - 6),
+        height: rightLabelSize.height
+      )
+      
+      leftLabel.frame = leftLabelFrame
+      rightLabel.frame = rightLabelFrame
+    }
+    
+    override func sizeThatFits(_ size: CGSize) -> CGSize {
+      let leftLabelSize = leftLabel.sizeThatFits(size)
+      let rightLabelSize = rightLabel.sizeThatFits(size)
+      let width = leftLabelSize.width + rightLabelSize.width + 6
+      let height = max(leftLabelSize.height, rightLabelSize.height)
+      return CGSize(width: min(width, size.width), height: height)
+    }
+    
+    private func setup() {
+      addSubview(leftLabel)
+      addSubview(rightLabel)
+    }
   }
 }

@@ -9,19 +9,20 @@ import UIKit
 
 extension UINavigationController {
   func configureDefaultAppearance() {
-    let navigationBarAppearance = UINavigationBarAppearance()
-    navigationBarAppearance.configureWithOpaqueBackground()
-    navigationBarAppearance.backgroundColor = .Background.page
-    navigationBarAppearance.titleTextAttributes = [.foregroundColor: UIColor.Text.primary,
-                                                   .font: TextStyle.h3.font]
-    navigationBarAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.Text.primary,
-                                                        .font: TextStyle.h3.font]
+    let standartAppearance = UINavigationBarAppearance()
+    standartAppearance.configureWithOpaqueBackground()
+    standartAppearance.backgroundColor = .Background.page
+    standartAppearance.shadowColor = .clear
+    standartAppearance.titleTextAttributes = [.foregroundColor: UIColor.Text.primary,
+                                              .font: TextStyle.h3.font]
+    standartAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.Text.primary,
+                                                   .font: TextStyle.h1.font]
 
-    navigationBar.tintColor = .Accent.blue
-    navigationBar.standardAppearance = navigationBarAppearance
-    navigationBar.compactAppearance = navigationBarAppearance
+    navigationBar.standardAppearance = standartAppearance
+    navigationBar.compactAppearance = standartAppearance
+    navigationBar.scrollEdgeAppearance = standartAppearance
     if #available(iOS 15.0, *) {
-      navigationBar.compactScrollEdgeAppearance = navigationBarAppearance
+      navigationBar.compactScrollEdgeAppearance = standartAppearance
     }
   }
   

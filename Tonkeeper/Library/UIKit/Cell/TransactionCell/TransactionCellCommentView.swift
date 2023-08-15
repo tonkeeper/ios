@@ -50,7 +50,7 @@ extension TransactionCellContentView {
                                    height: textSize.height + .textTopSpacing + .textBottomSpacing)
       textLabel.frame = .init(x: .textHorizontalSpacing,
                               y: .textTopSpacing,
-                              width: textBackground.bounds.width - .textHorizontalSpacing,
+                              width: textBackground.bounds.width - .textHorizontalSpacing * 2,
                               height: textBackground.bounds.height - .textBottomSpacing - .textTopSpacing)
 
     }
@@ -71,17 +71,11 @@ extension TransactionCellContentView {
     func prepareForReuse() {
       textLabel.attributedText = nil
     }
-    
-    func updateBackgroundColor(_ color: UIColor) {
-      backgroundColor = color
-    }
   }
 }
 
 private extension TransactionCellContentView.TransactionCellCommentView {
   func setup() {
-    backgroundColor = .Background.content
-  
     addSubview(textBackground)
     textBackground.addSubview(textLabel)
   }

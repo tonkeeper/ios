@@ -126,10 +126,6 @@ final class ServiceCellContentView: UIView, ContainerCollectionViewCellContent {
     descriptionLabel.attributedText = nil
     tokenLabel.attributedText = nil
   }
-  
-  func updateBackgroundColor(_ color: UIColor) {
-    backgroundColor = color
-  }
 }
 
 private extension ServiceCellContentView {

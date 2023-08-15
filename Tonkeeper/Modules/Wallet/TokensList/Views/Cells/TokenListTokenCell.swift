@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentView>, Reusable {
+final class TokenListTokenCell: ContainerCollectionViewCell<BalanceCellContentView>, Reusable {
   
   struct Model: Hashable {
     let id = UUID()
@@ -55,20 +55,18 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
   
   func configure(model: Model) {
     let textContentModel = DefaultCellTextContentView.Model(
-      leftTopTitle: model.title,
-      leftTopRightTitle: model.shortTitle,
-      rightTopTitle: model.amount?.attributed(with: .label1, alignment: .right, color: .Text.primary),
-      leftMiddleTitle: model.price,
-      leftMiddleRightTitle: model.priceDiff,
-      rightMiddleTitle: model.fiatAmount,
-      leftBottomTitle: nil,
-      rightBottomTitle: nil
+      title: model.title,
+      amount: model.amount?.attributed(with: .label1, alignment: .right, color: .Text.primary),
+      subamount: nil,
+      topLeftDescriptionValue: model.price,
+      topLeftDescriptionSubvalue: model.priceDiff,
+      topRightDescriptionValue: model.fiatAmount
     )
     let contentModel = DefaultCellContentView.Model(
       textContentModel: textContentModel,
       image: model.image
     )
-    cellContentView.configure(model: contentModel)
+    cellContentView.configure(model: .init(defaultContentModel: contentModel))
   }
   
   override func prepareForReuse() {
@@ -88,13 +86,11 @@ final class TokenListTokenCell: ContainerCollectionViewCell<DefaultCellContentVi
   override func select() {
     super.select()
     separatorView.isHidden = true
-//    separatorView.alpha = 0
   }
 
   override func deselect() {
     super.deselect()
     separatorView.isHidden = false
-//    separatorView.alpha = 1
   }
 }
 

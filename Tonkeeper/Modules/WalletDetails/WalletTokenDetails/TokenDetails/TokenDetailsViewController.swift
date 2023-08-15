@@ -14,15 +14,25 @@ class TokenDetailsViewController: GenericViewController<TokenDetailsView> {
 
   private let presenter: TokenDetailsPresenterInput
   
+  // MARK: - Children
+  
+  private let listContentViewController: TokenDetailsListContentViewController
+  
   // MARK: - Dependencies
   
   private let imageLoader: ImageLoader
+  
+  // MARK: - Header
+  
+  private let headerView = TokenDetailsHeaderView()
 
   // MARK: - Init
 
   init(presenter: TokenDetailsPresenterInput,
+       listContentViewController: TokenDetailsListContentViewController,
        imageLoader: ImageLoader) {
     self.presenter = presenter
+    self.listContentViewController = listContentViewController
     self.imageLoader = imageLoader
     super.init(nibName: nil, bundle: nil)
   }
@@ -43,11 +53,6 @@ class TokenDetailsViewController: GenericViewController<TokenDetailsView> {
     super.viewWillAppear(animated)
     navigationController?.setNavigationBarHidden(false, animated: true)
   }
-  
-  override func viewWillDisappear(_ animated: Bool) {
-    super.viewWillDisappear(animated)
-    navigationController?.setNavigationBarHidden(true, animated: true)
-  }
 }
 
 // MARK: - TokenDetailsViewInput
@@ -56,8 +61,9 @@ extension TokenDetailsViewController: TokenDetailsViewInput {
   func updateTitle(title: String) {
     self.title = title
   }
+  
   func updateHeader(model: TokenDetailsHeaderView.Model) {
-    customView.headerView.configure(model: model)
+    headerView.configure(model: model)
   }
   
   func stopRefresh() {
@@ -71,11 +77,17 @@ private extension TokenDetailsViewController {
   func setup() {
     view.backgroundColor = .Background.page
     
-    customView.headerView.imageLoader = imageLoader
+    headerView.imageLoader = imageLoader
     
-    customView.refreshControl.addTarget(self,
-                                        action: #selector(didPullToRefresh),
-                                        for: .valueChanged)
+    setupListContent()
+  }
+  
+  func setupListContent() {
+    addChild(listContentViewController)
+    customView.embedListView(listContentViewController.view)
+    listContentViewController.didMove(toParent: self)
+    
+    listContentViewController.setHeaderView(headerView)
   }
   
   @objc

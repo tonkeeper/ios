@@ -37,14 +37,22 @@ private extension WalletTokenDetailsCoordinator {
   func openTokenDetails() {
     
     let tokenDetailsController: TokenDetailsController
+    let activityListController: ActivityListController
     switch token {
     case .token(let tokenInfo):
       tokenDetailsController = walletCoreAssembly.tokenDetailsTokenController(tokenInfo: tokenInfo)
+      activityListController = walletCoreAssembly.activityListTokenEventsController(tokenInfo: tokenInfo)
     case .ton:
       tokenDetailsController = walletCoreAssembly.tokenDetailsTonController()
+      activityListController = walletCoreAssembly.activityListTonEventsController()
     }
     
+    let activityListModule = ActivityListAssembly.module(activityListController: activityListController,
+                                                         transactionBuilder: ActivityListTransactionBuilder(),
+                                                         output: self)
+    
     let module = TokenDetailsAssembly.module(output: self,
+                                             activityListModule: activityListModule,
                                              tokenDetailsController: tokenDetailsController,
                                              imageLoader: NukeImageLoader())
     tokenDetailsController.output = module.input
@@ -135,4 +143,11 @@ extension WalletTokenDetailsCoordinator: ReceiveCoordinatorOutput {
     router.dismiss()
     removeChild(coordinator)
   }
+}
+
+// MARK: - ActivityListModuleOutput
+
+extension WalletTokenDetailsCoordinator: ActivityListModuleOutput {
+  func didSelectTransaction(in section: Int, at index: Int) {}
+  func activityListNoEvents(_ activityList: ActivityListModuleInput) {}
 }

@@ -50,7 +50,23 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
 
 extension ActivityListViewController: ActivityListViewInput {
   func updateSections(_ sections: [ActivityListSection]) {
-    collectionController.sections = sections
+    collectionController.setSections(sections)
+  }
+  
+  func showPagination(_ pagination: ActivityListSection.Pagination) {
+    collectionController.showPagination(pagination)
+  }
+  
+  func hidePagination() {
+    collectionController.hidePagination()
+  }
+  
+  func hideRefreshControl() {
+    if customView.collectionView.refreshControl?.isRefreshing == true {
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        self.customView.collectionView.refreshControl?.endRefreshing()
+      }
+    }
   }
 }
 
@@ -61,10 +77,37 @@ extension ActivityListViewController: ActivityListCollectionControllerDelegate {
                                         didSelectTransactionAt indexPath: IndexPath) {
     presenter.didSelectTransactionAt(indexPath: indexPath)
   }
+  
+  func activityListCollectionControllerLoadNextPage(_ collectionController: ActivityListCollectionController) {
+    presenter.fetchNext()
+  }
+  
+  func activityListCollectionControllerEventViewModel(for eventId: String) -> ActivityListCompositionTransactionCell.Model? {
+    presenter.viewModel(eventId: eventId)
+  }
+  
+  func activityListCollectionControllerDidPullToRefresh(_ collectionController: ActivityListCollectionController) {
+    presenter.reload()
+  }
 }
 
 // MARK: - Private
 
 private extension ActivityListViewController {
-  func setup() {}
+  func setup() {
+    let refreshControl = UIRefreshControl()
+    refreshControl.tintColor = .Icon.primary
+    refreshControl.addTarget(self,
+                             action: #selector(didPullToRefresh),
+                             for: .valueChanged)
+    customView.collectionView.refreshControl = refreshControl
+  }
+  
+  @objc
+  func didPullToRefresh() {
+    guard !customView.collectionView.isDragging else {
+      return
+    }
+    presenter.reload()
+  }
 }

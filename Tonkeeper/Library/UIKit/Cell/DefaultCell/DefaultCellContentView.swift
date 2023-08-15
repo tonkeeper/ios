@@ -72,21 +72,13 @@ final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectio
   
   func prepareForReuse() {
     imageView.image = nil
-    imageView.backgroundColor = .Background.content
+    imageView.backgroundColor = nil
     textContentView.prepareForReuse()
-  }
-  
-  func updateBackgroundColor(_ color: UIColor) {
-    backgroundColor = color
-    textContentView.updateBackgroundColor(color)
   }
 }
 
 private extension DefaultCellContentView {
   func setup() {
-    backgroundColor = .Background.content
-    imageView.backgroundColor = .Background.content
-        
     addSubview(imageView)
     addSubview(textContentView)
   }

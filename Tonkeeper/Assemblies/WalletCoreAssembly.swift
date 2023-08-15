@@ -47,6 +47,18 @@ final class WalletCoreAssembly {
     walletCoreContainer.tokenDetailsTokenController(tokenInfo: tokenInfo)
   }
   
+  func activityListController() -> ActivityListController {
+    walletCoreContainer.activityListController()
+  }
+  
+  func activityListTonEventsController() -> ActivityListController {
+    walletCoreContainer.activityListTonEventsController()
+  }
+  
+  func activityListTokenEventsController(tokenInfo: TokenInfo) -> ActivityListController {
+    walletCoreContainer.activityListTokenEventsController(tokenInfo: tokenInfo)
+  }
+  
   var deeplinkParser: DeeplinkParser {
     walletCoreContainer.deeplinkParser()
   }

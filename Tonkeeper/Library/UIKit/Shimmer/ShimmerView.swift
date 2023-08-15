@@ -31,6 +31,7 @@ final class ShimmerView: UIView {
   
   func startAnimation() {
     let animation = CABasicAnimation(keyPath: .animationKeyPath)
+    animation.isRemovedOnCompletion = false
     animation.fromValue = [-1.0, -0.5, 0.0]
     animation.toValue = [1.0, 1.5, 2.0]
     animation.repeatCount = .infinity

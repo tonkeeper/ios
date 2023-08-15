@@ -7,13 +7,29 @@
 
 import Foundation
 
-struct ActivityListSection: Hashable {
-  enum SectionType {
-    case transaction
-    case date
+enum ActivityListSection: Hashable {
+  case events(EventsSectionData)
+  case pagination(Pagination)
+  case shimmer(shimmers: [String])
+  
+  enum Pagination: Hashable {
+    case loading
+    case error(title: String?)
+    
+    func hash(into hasher: inout Hasher) {}
   }
   
-  let id = UUID()
-  let type: SectionType
-  let items: [AnyHashable]
+  struct EventsSectionData: Hashable {
+    let date: Date
+    let title: String?
+    let items: [String]
+    
+    func hash(into hasher: inout Hasher) {
+      hasher.combine(date)
+    }
+    
+    static func == (lhs: Self, rhs: Self) -> Bool {
+      lhs.hashValue == rhs.hashValue
+    }
+  }
 }

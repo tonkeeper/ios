@@ -8,47 +8,83 @@
 import UIKit
 
 struct ActivityListCollectionLayoutConfigurator {
-  func getLayout(section: @escaping (_ sectionIndex: Int) -> ActivityListSection.SectionType) -> UICollectionViewLayout {
+  func getLayout(section: @escaping (_ sectionIndex: Int) -> ActivityListSection?) -> UICollectionViewLayout {
     let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
-      let sectionType = section(sectionIndex)
-      return self.createLayoutSection(type: sectionType)
+      guard let sectionItem = section(sectionIndex) else { return nil }
+      return createSection(sectionItem)
     }
-    layout.register(TokensListTokensSectionBackgroundView.self,
-                    forDecorationViewOfKind: .transactionSectionBackgroundElementKid)
     return layout
   }
 }
 
 private extension ActivityListCollectionLayoutConfigurator {
-  func createLayoutSection(type: ActivityListSection.SectionType) -> NSCollectionLayoutSection {
-    switch type {
-    case .transaction:
-      return createTransactionSection()
-    case .date:
-      return createDateSection()
+  func createSection(_ section: ActivityListSection) -> NSCollectionLayoutSection {
+    switch section {
+    case .events: return createTransactionSection()
+    case .shimmer: return createShimmerSection()
+    case .pagination: return createPaginationSection()
     }
+  }
+  
+  func createPaginationSection() -> NSCollectionLayoutSection {
+    let item = NSCollectionLayoutItem(layoutSize: .init(widthDimension: .fractionalWidth(1.0),
+                                                        heightDimension: .absolute(10)))
+    let group = NSCollectionLayoutGroup.vertical(layoutSize: .init(widthDimension: .fractionalWidth(1.0),
+                                                                   heightDimension: .absolute(10)),
+                                                 subitems: [item])
+    group.contentInsets = .init(top: 0, leading: 0, bottom: 0, trailing: 0)
+    
+    let section = NSCollectionLayoutSection(group: group)
+    let footerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(40))
+    let footer = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: footerSize,
+      elementKind: ActivityListFooterView.reuseIdentifier,
+      alignment: .bottom
+    )
+    section.boundarySupplementaryItems = [footer]
+    
+    return section
   }
   
   func createTransactionSection() -> NSCollectionLayoutSection {
     let item = NSCollectionLayoutItem(layoutSize: .transactionSectionItemSize)
     let group = NSCollectionLayoutGroup.vertical(layoutSize: .transactionSectionGroupItemSize,
                                                  subitems: [item])
+    group.contentInsets = .init(top: 0, leading: 0, bottom: 0, trailing: 0)
+
     let section = NSCollectionLayoutSection(group: group)
-    let background = NSCollectionLayoutDecorationItem.background(
-      elementKind: .transactionSectionBackgroundElementKid
-    )
-    background.contentInsets = .transactionSectionContentInsets
-    section.decorationItems = [background]
+    section.interGroupSpacing = 8
     section.contentInsets = .transactionSectionContentInsets
+    
+    let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(28))
+    let header = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: headerSize,
+      elementKind: ActivityListSectionHeaderView.reuseIdentifier,
+      alignment: .top
+    )
+    section.boundarySupplementaryItems = [header]
+    
     return section
   }
   
-  func createDateSection() -> NSCollectionLayoutSection {
-    let item = NSCollectionLayoutItem(layoutSize: .dateSectionItemSize)
-    let group = NSCollectionLayoutGroup.vertical(layoutSize: .dateSectionGroupSize,
+  func createShimmerSection() -> NSCollectionLayoutSection {
+    let item = NSCollectionLayoutItem(layoutSize: .transactionSectionItemSize)
+    let group = NSCollectionLayoutGroup.vertical(layoutSize: .transactionSectionGroupItemSize,
                                                  subitems: [item])
+    group.contentInsets = .init(top: 0, leading: 0, bottom: 0, trailing: 0)
+
     let section = NSCollectionLayoutSection(group: group)
-    section.contentInsets = .dateSectionContentInsets
+    section.interGroupSpacing = 8
+    section.contentInsets = .transactionSectionContentInsets
+    
+    let headerSize = NSCollectionLayoutSize(widthDimension: .fractionalWidth(1.0), heightDimension: .absolute(28))
+    let header = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: headerSize,
+      elementKind: ActivityListShimmerSectionHeaderView.reuseIdentifier,
+      alignment: .top
+    )
+    section.boundarySupplementaryItems = [header]
+    
     return section
   }
 }
@@ -63,28 +99,10 @@ private extension NSCollectionLayoutSize {
     .init(widthDimension: .fractionalWidth(1.0),
           heightDimension: .estimated(76))
   }
-  
-  static var dateSectionItemSize: NSCollectionLayoutSize {
-    .init(widthDimension: .fractionalWidth(1.0),
-          heightDimension: .absolute(28))
-  }
-  
-  static var dateSectionGroupSize: NSCollectionLayoutSize {
-    .init(widthDimension: .fractionalWidth(1.0),
-          heightDimension: .absolute(28))
-  }
-}
-
-private extension String {
-  static let transactionSectionBackgroundElementKid = "transactionSectionBackground"
 }
 
 private extension NSDirectionalEdgeInsets {
   static var transactionSectionContentInsets: NSDirectionalEdgeInsets {
-    .init(top: 0, leading: ContentInsets.sideSpace, bottom: 10, trailing: ContentInsets.sideSpace)
-  }
-  
-  static var dateSectionContentInsets: NSDirectionalEdgeInsets {
-    .init(top: 14, leading: ContentInsets.sideSpace, bottom: 14, trailing: ContentInsets.sideSpace)
+    .init(top: 14, leading: ContentInsets.sideSpace, bottom: 30, trailing: ContentInsets.sideSpace)
   }
 }

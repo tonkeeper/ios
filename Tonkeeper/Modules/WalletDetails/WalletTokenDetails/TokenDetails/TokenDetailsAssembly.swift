@@ -10,12 +10,14 @@ import WalletCore
 
 struct TokenDetailsAssembly {
   static func module(output: TokenDetailsModuleOutput,
+                     activityListModule: Module<ActivityListViewController, ActivityListModuleInput>,
                      tokenDetailsController: WalletCore.TokenDetailsController,
                      imageLoader: ImageLoader) -> Module<UIViewController, TokenDetailsModuleInput> {
     let presenter = TokenDetailsPresenter(tokenDetailsController: tokenDetailsController)
     presenter.output = output
     
     let viewController = TokenDetailsViewController(presenter: presenter,
+                                                    listContentViewController: activityListModule.view,
                                                     imageLoader: imageLoader)
     presenter.viewInput = viewController
     

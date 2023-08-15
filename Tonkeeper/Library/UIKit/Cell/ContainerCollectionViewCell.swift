@@ -9,7 +9,6 @@ import UIKit
 
 protocol ContainerCollectionViewCellContent: ConfigurableView {
   func prepareForReuse()
-  func updateBackgroundColor(_ color: UIColor)
 }
 
 class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellContent>: UICollectionViewCell, ConfigurableView, Selectable {
@@ -45,16 +44,13 @@ class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellCo
     let targetSize = CGSize(width: layoutAttributes.frame.width, height: 0)
     let cellContentViewSize = cellContentView.sizeThatFits(.init(width: targetSize.width, height: 0))
     let modifiedAttributes = super.preferredLayoutAttributesFitting(layoutAttributes)
-    modifiedAttributes.frame.size = CGSize(
-      width: cellContentViewSize.width + ContentInsets.sideSpace * 2,
-      height: cellContentViewSize.height + ContentInsets.sideSpace * 2
-    )
+    modifiedAttributes.frame.size = cellContentViewSize
     return modifiedAttributes
   }
   
   override func layoutSubviews() {
     super.layoutSubviews()
-    cellContentView.frame = contentView.bounds.insetBy(dx: ContentInsets.sideSpace, dy: ContentInsets.sideSpace)
+    cellContentView.frame = contentView.bounds
   }
   
   override func prepareForReuse() {
@@ -70,13 +66,11 @@ class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellCo
   
   func select() {
     let color = UIColor.clear
-    cellContentView.updateBackgroundColor(color)
     contentView.backgroundColor = color
   }
   
   func deselect() {
     let color = UIColor.Background.content
-    cellContentView.updateBackgroundColor(color)
     contentView.backgroundColor = color
   }
 }
