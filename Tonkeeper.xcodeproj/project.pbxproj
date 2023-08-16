@@ -205,6 +205,9 @@
 		7D8EB7202A4ED86B005BE1B0 /* CreateWalletCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */; };
 		7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */; };
 		7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */; };
+		7D8F64A22A8CCCCD0042AE74 /* DGCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8F64A12A8CCCCD0042AE74 /* DGCharts */; };
+		7D8F64A72A8D3BF40042AE74 /* Gradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64A62A8D3BF40042AE74 /* Gradient.swift */; };
+		7D8F64AA2A8D3DE80042AE74 /* TonChartMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */; };
 		7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */; };
 		7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */; };
 		7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144232A31EF7600B0FD17 /* Selectable.swift */; };
@@ -315,6 +318,19 @@
 		FC58CA56982D098FE4E85989 /* TokensListProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE60ABD534A41016103CB95 /* TokensListProtocols.swift */; };
 		FD5AC7C6F094091CB911C3D8 /* TokensListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B82E8B681EE6CE930E250D /* TokensListViewController.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7D32F8C02A8CCB58002C130C /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0320D77CB84A1DB3ADC49C5F /* BuyListProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BuyListProtocols.swift; sourceTree = "<group>"; };
@@ -512,6 +528,8 @@
 		7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletCoordinator.swift; sourceTree = "<group>"; };
 		7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletAssembly.swift; sourceTree = "<group>"; };
 		7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCreator.swift; sourceTree = "<group>"; };
+		7D8F64A62A8D3BF40042AE74 /* Gradient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gradient.swift; sourceTree = "<group>"; };
+		7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartMarker.swift; sourceTree = "<group>"; };
 		7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveAssembly.swift; sourceTree = "<group>"; };
 		7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D9144232A31EF7600B0FD17 /* Selectable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectable.swift; sourceTree = "<group>"; };
@@ -631,6 +649,7 @@
 			files = (
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */,
+				7D8F64A22A8CCCCD0042AE74 /* DGCharts in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
 			);
@@ -719,6 +738,7 @@
 		21E2D78094F5685866878D1B /* TonChart */ = {
 			isa = PBXGroup;
 			children = (
+				7D8F64A82A8D3DCB0042AE74 /* Marker */,
 				85BE88D8300B2CB885DB8F44 /* TonChartViewController.swift */,
 				DA90234EDC8FC9E16D62F310 /* TonChartView.swift */,
 				B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */,
@@ -1525,6 +1545,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D8F64A52A8D3BE60042AE74 /* Gradient */,
 				7D16E1622A7526F300A27AB0 /* Toasts */,
 				7DB944BF2A728E0F0008B512 /* Shimmer */,
 				7D80C0D32A6AA5E3007054DD /* TKKeyboard */,
@@ -1650,6 +1671,22 @@
 				7D1B1F382A4F46B000EC873F /* WalletImporter.swift */,
 			);
 			path = Wallet;
+			sourceTree = "<group>";
+		};
+		7D8F64A52A8D3BE60042AE74 /* Gradient */ = {
+			isa = PBXGroup;
+			children = (
+				7D8F64A62A8D3BF40042AE74 /* Gradient.swift */,
+			);
+			path = Gradient;
+			sourceTree = "<group>";
+		};
+		7D8F64A82A8D3DCB0042AE74 /* Marker */ = {
+			isa = PBXGroup;
+			children = (
+				7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */,
+			);
+			path = Marker;
 			sourceTree = "<group>";
 		};
 		7D9144252A31F59500B0FD17 /* ModalCard */ = {
@@ -2036,6 +2073,7 @@
 				7DB8FB5F2A1BCC92005B4B11 /* Frameworks */,
 				7DB8FB602A1BCC92005B4B11 /* Resources */,
 				7D0207632A80025B00D63B4C /* ShellScript */,
+				7D32F8C02A8CCB58002C130C /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -2047,6 +2085,7 @@
 				7DB17F3E2A4B3338007C6154 /* WalletCore */,
 				7D143C352A4EC0D300B5FCC0 /* Lottie */,
 				7D5A18112A5406CB00793769 /* Kingfisher */,
+				7D8F64A12A8CCCCD0042AE74 /* DGCharts */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -2081,6 +2120,7 @@
 				7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */,
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				7D8F64A02A8CCCCD0042AE74 /* XCRemoteSwiftPackageReference "Charts" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -2234,6 +2274,7 @@
 				7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */,
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
+				7D8F64AA2A8D3DE80042AE74 /* TonChartMarker.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
 				7D16E18A2A77C1FB00A27AB0 /* PassthroughWindow.swift in Sources */,
 				7D384A552A66ACED00DE2A66 /* ReceiveRootPresenterAnyProvider.swift in Sources */,
@@ -2241,6 +2282,7 @@
 				7D92928D2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift in Sources */,
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
 				7D9292FC2A29DCDA005B83DF /* SendAmountTitleView.swift in Sources */,
+				7D8F64A72A8D3BF40042AE74 /* Gradient.swift in Sources */,
 				7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */,
 				7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */,
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
@@ -2672,6 +2714,14 @@
 				minimumVersion = 7.8.1;
 			};
 		};
+		7D8F64A02A8CCCCD0042AE74 /* XCRemoteSwiftPackageReference "Charts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/danielgindi/Charts";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
 		7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/luximetr/AnyFormatKit";
@@ -2700,6 +2750,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
+		};
+		7D8F64A12A8CCCCD0042AE74 /* DGCharts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D8F64A02A8CCCCD0042AE74 /* XCRemoteSwiftPackageReference "Charts" */;
+			productName = DGCharts;
 		};
 		7DB17F342A4B2F07007C6154 /* AnyFormatKit */ = {
 			isa = XCSwiftPackageProductDependency;

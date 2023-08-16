@@ -127,7 +127,8 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
   }
   
   func tonChartModule() -> Module<TonChartViewController, TonChartModuleInput> {
-    let module = TonChartAssembly.module(output: self)
+    let module = TonChartAssembly.module(chartController: walletCoreAssembly.chartController(),
+                                         output: self)
     return module
   }
 }

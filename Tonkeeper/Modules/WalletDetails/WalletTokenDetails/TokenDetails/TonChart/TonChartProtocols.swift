@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import DGCharts
 
 protocol TonChartModuleOutput: AnyObject {}
 
@@ -16,4 +17,6 @@ protocol TonChartPresenterInput {
   func viewDidLoad()
 }
 
-protocol TonChartViewInput: AnyObject {}
+protocol TonChartViewInput: AnyObject {
+  func updateChart(with data: LineChartData)
+}

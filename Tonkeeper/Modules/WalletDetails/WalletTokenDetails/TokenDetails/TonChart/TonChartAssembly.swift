@@ -6,10 +6,12 @@
 //
 
 import UIKit
+import WalletCore
 
 struct TonChartAssembly {
-  static func module(output: TonChartModuleOutput) -> Module<TonChartViewController, TonChartModuleInput> {
-    let presenter = TonChartPresenter()
+  static func module(chartController: ChartController,
+                     output: TonChartModuleOutput) -> Module<TonChartViewController, TonChartModuleInput> {
+    let presenter = TonChartPresenter(chartController: chartController)
     presenter.output = output
     
     let viewController = TonChartViewController(presenter: presenter)

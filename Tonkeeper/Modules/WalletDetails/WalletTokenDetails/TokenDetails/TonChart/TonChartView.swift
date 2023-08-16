@@ -7,8 +7,11 @@
 //
 
 import UIKit
+import DGCharts
 
 final class TonChartView: UIView {
+  
+  let chartView = LineChartView()
 
   // MARK: - Init
 
@@ -31,5 +34,20 @@ final class TonChartView: UIView {
 // MARK: - Private
 
 private extension TonChartView {
-  func setup() {}
+  func setup() {
+    addSubview(chartView)
+    
+    setupConstraints()
+  }
+  
+  func setupConstraints() {
+    chartView.translatesAutoresizingMaskIntoConstraints = false
+    
+    NSLayoutConstraint.activate([
+      chartView.topAnchor.constraint(equalTo: topAnchor),
+      chartView.leftAnchor.constraint(equalTo: leftAnchor),
+      chartView.rightAnchor.constraint(equalTo: rightAnchor),
+      chartView.bottomAnchor.constraint(equalTo: bottomAnchor)
+    ])
+  }
 }
