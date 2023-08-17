@@ -211,7 +211,7 @@ private extension TokenDetailsHeaderView {
       chartContainer.topAnchor.constraint(equalTo: buttonsSeparatorView.bottomAnchor),
       chartContainer.leftAnchor.constraint(equalTo: leftAnchor),
       chartContainer.rightAnchor.constraint(equalTo: rightAnchor),
-      chartContainer.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
+      chartContainer.bottomAnchor.constraint(equalTo: bottomAnchor)
     ])
   }
 }

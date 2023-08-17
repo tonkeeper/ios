@@ -208,6 +208,7 @@
 		7D8F64A22A8CCCCD0042AE74 /* DGCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8F64A12A8CCCCD0042AE74 /* DGCharts */; };
 		7D8F64A72A8D3BF40042AE74 /* Gradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64A62A8D3BF40042AE74 /* Gradient.swift */; };
 		7D8F64AA2A8D3DE80042AE74 /* TonChartMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */; };
+		7D8F64AD2A8D48C30042AE74 /* TonChartButtonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */; };
 		7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */; };
 		7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */; };
 		7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144232A31EF7600B0FD17 /* Selectable.swift */; };
@@ -530,6 +531,7 @@
 		7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCreator.swift; sourceTree = "<group>"; };
 		7D8F64A62A8D3BF40042AE74 /* Gradient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gradient.swift; sourceTree = "<group>"; };
 		7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartMarker.swift; sourceTree = "<group>"; };
+		7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartButtonsView.swift; sourceTree = "<group>"; };
 		7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveAssembly.swift; sourceTree = "<group>"; };
 		7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D9144232A31EF7600B0FD17 /* Selectable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectable.swift; sourceTree = "<group>"; };
@@ -738,6 +740,7 @@
 		21E2D78094F5685866878D1B /* TonChart */ = {
 			isa = PBXGroup;
 			children = (
+				7D8F64AB2A8D48B70042AE74 /* Views */,
 				7D8F64A82A8D3DCB0042AE74 /* Marker */,
 				85BE88D8300B2CB885DB8F44 /* TonChartViewController.swift */,
 				DA90234EDC8FC9E16D62F310 /* TonChartView.swift */,
@@ -1689,6 +1692,14 @@
 			path = Marker;
 			sourceTree = "<group>";
 		};
+		7D8F64AB2A8D48B70042AE74 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		7D9144252A31F59500B0FD17 /* ModalCard */ = {
 			isa = PBXGroup;
 			children = (
@@ -2314,6 +2325,7 @@
 				7D3E43862A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift in Sources */,
 				7DB17F472A4C2D9B007C6154 /* OnboardingAssembly.swift in Sources */,
 				7D9292C42A274131005B83DF /* SendAssembly.swift in Sources */,
+				7D8F64AD2A8D48C30042AE74 /* TonChartButtonsView.swift in Sources */,
 				7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */,
 				7D0207852A803C7100D63B4C /* NotDelayCollectionView.swift in Sources */,
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,

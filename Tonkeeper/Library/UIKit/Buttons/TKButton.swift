@@ -15,6 +15,7 @@ final class TKButton: UIControlClosure {
     case primary
     case secondary
     case tertiary
+    case clear
     
     var backgroundColors: [UIControl.State: UIColor] {
       switch self {
@@ -30,6 +31,10 @@ final class TKButton: UIControlClosure {
         return [.normal: .Button.tertiaryBackground,
                 .highlighted: .Button.tertiaryBackgroundHighlighted,
                 .disabled: .Button.tertiaryBackgroundDisabled]
+      case .clear:
+        return [.normal: .clear,
+                .highlighted: .Button.secondaryBackgroundHighlighted,
+                .disabled: .clear]
       }
     }
     

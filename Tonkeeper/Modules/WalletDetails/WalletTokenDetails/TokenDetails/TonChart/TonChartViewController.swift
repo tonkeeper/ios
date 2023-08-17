@@ -38,6 +38,14 @@ class TonChartViewController: GenericViewController<TonChartView> {
 // MARK: - TonChartViewInput
 
 extension TonChartViewController: TonChartViewInput {
+  func updateButtons(with model: TonChartButtonsView.Model) {
+    customView.buttonsView.configure(model: model)
+  }
+  
+  func selectButton(at index: Int) {
+    customView.buttonsView.selectButton(at: index)
+  }
+  
   func updateChart(with data: LineChartData) {
     customView.chartView.data = data
   }
@@ -48,6 +56,10 @@ extension TonChartViewController: TonChartViewInput {
 private extension TonChartViewController {
   func setup() {
     setupChart()
+    
+    customView.buttonsView.didTapButton = { [weak self] index in
+      self?.presenter.didSelectButton(at: index)
+    }
   }
   
   func setupChart() {

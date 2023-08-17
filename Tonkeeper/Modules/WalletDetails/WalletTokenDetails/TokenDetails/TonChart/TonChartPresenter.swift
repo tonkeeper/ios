@@ -23,7 +23,11 @@ final class TonChartPresenter {
   
   // MARK: - State
   
-  private var selectedPeriod: ChartController.Period = .hour
+  private var selectedPeriod: ChartController.Period = .week {
+    didSet {
+      loadChartData()
+    }
+  }
   
   init(chartController: ChartController) {
     self.chartController = chartController
@@ -34,7 +38,13 @@ final class TonChartPresenter {
 
 extension TonChartPresenter: TonChartPresenterInput {
   func viewDidLoad() {
+    setupButtons()
     loadChartData()
+  }
+  
+  func didSelectButton(at index: Int) {
+    viewInput?.selectButton(at: index)
+    selectedPeriod = ChartController.Period.allCases[index]
   }
 }
 
@@ -45,6 +55,15 @@ extension TonChartPresenter: TonChartModuleInput {}
 // MARK: - Private
 
 private extension TonChartPresenter {
+  func setupButtons() {
+    let buttons = ChartController.Period.allCases.map {
+      TKButton.Model(title: $0.title)
+    }
+    let model = TonChartButtonsView.Model(buttons: buttons)
+    viewInput?.updateButtons(with: model)
+    viewInput?.selectButton(at: ChartController.Period.allCases.firstIndex(of: selectedPeriod) ?? 0)
+  }
+  
   func loadChartData() {
     Task {
       do {
