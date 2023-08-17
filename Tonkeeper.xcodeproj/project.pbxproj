@@ -14,6 +14,7 @@
 		0C1DF00128AE8BA90E30FCB1 /* TokensListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA3EB126F410EC784A834E04 /* TokensListView.swift */; };
 		0D6D9286FE3AD2FE83868D1B /* ActivityTransactionDetailsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3471921C88E65DE3DA36AB1 /* ActivityTransactionDetailsViewController.swift */; };
 		14250E44D164B234E513925F /* ActivityListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96736B6F002EC3A83832DB82 /* ActivityListPresenter.swift */; };
+		22C5887CCD3DB975055E331B /* TonChartProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B02959E0163FE881FD4CF2B /* TonChartProtocols.swift */; };
 		27E0B9B4BE1065171C3AFD76 /* ActivityListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2439F2E5E6211F9C396FAF2 /* ActivityListView.swift */; };
 		2D8B9585056DA7795FC4C912 /* ActivityRootProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AD5CD51542108C56210A491 /* ActivityRootProtocols.swift */; };
 		2E9AD80F15E6019A55846F61 /* ActivityListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB090D8454B651425F5F1A3 /* ActivityListViewController.swift */; };
@@ -54,6 +55,9 @@
 		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
 		7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */; };
 		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
+		7D32F8B22A8BA65B002C130C /* ActivityListHeaderContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */; };
+		7D32F8B62A8BD225002C130C /* TokenDetailsHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B52A8BD225002C130C /* TokenDetailsHeaderViewController.swift */; };
+		7D32F8B82A8BD298002C130C /* TonChartAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B72A8BD298002C130C /* TonChartAssembly.swift */; };
 		7D384A482A6695A200DE2A66 /* SendAmountAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */; };
 		7D384A4A2A66973D00DE2A66 /* SendRecipientAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A492A66973D00DE2A66 /* SendRecipientAssembly.swift */; };
 		7D384A4C2A66989100DE2A66 /* SendConfirmationAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A4B2A66989100DE2A66 /* SendConfirmationAssembly.swift */; };
@@ -201,6 +205,12 @@
 		7D8EB7202A4ED86B005BE1B0 /* CreateWalletCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */; };
 		7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */; };
 		7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */; };
+		7D8F64A22A8CCCCD0042AE74 /* DGCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8F64A12A8CCCCD0042AE74 /* DGCharts */; };
+		7D8F64A72A8D3BF40042AE74 /* Gradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64A62A8D3BF40042AE74 /* Gradient.swift */; };
+		7D8F64AA2A8D3DE80042AE74 /* TonChartMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */; };
+		7D8F64AD2A8D48C30042AE74 /* TonChartButtonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */; };
+		7D8F64B12A8E08010042AE74 /* TonChartHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64B02A8E08010042AE74 /* TonChartHeaderView.swift */; };
+		7D8F64B32A8E43F90042AE74 /* TonChartErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64B22A8E43F90042AE74 /* TonChartErrorView.swift */; };
 		7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */; };
 		7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */; };
 		7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144232A31EF7600B0FD17 /* Selectable.swift */; };
@@ -285,6 +295,7 @@
 		8FD2051305C8DE79A1D70FBA /* WalletContentPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCBEC0954BE2099E54A78D14 /* WalletContentPresenter.swift */; };
 		9182307863BB72BE320AE516 /* ActivityTransactionDetailsPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A32CB81EB01916EFF95251D8 /* ActivityTransactionDetailsPresenter.swift */; };
 		920F2D1C164D714EF8B77CB8 /* ActivityEmptyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9503E8076CB7AA331E07685E /* ActivityEmptyView.swift */; };
+		95F3E77FC6DBC86F8EB6745F /* TonChartViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85BE88D8300B2CB885DB8F44 /* TonChartViewController.swift */; };
 		96B2CB2B1E4ACD7BA8897D36 /* PasscodeInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18422F6DED64FB1B37C203BE /* PasscodeInputView.swift */; };
 		977233829BFB3A47453882FF /* TokenDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8BB3CFCBC7CE604AC87B3E7A /* TokenDetailsView.swift */; };
 		987FA16FC8F9D0CBA2353D9D /* ReceiveRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2140E2CC50DF4789E6DDE35 /* ReceiveRootView.swift */; };
@@ -293,6 +304,7 @@
 		9EB19BBDABB92B4B6A28684B /* ReceiveRootPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD0D83F8AC9D08173560A142 /* ReceiveRootPresenter.swift */; };
 		A6E8CD628DD1CBC7A9D9ADA3 /* WelcomeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 165892C7C11722B9EB12D569 /* WelcomeViewController.swift */; };
 		B2DC87224B8264B43A27920C /* WalletContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14F55B615D2FE6B7D027A93B /* WalletContentView.swift */; };
+		B91D795CFF06D6E93B856F37 /* TonChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA90234EDC8FC9E16D62F310 /* TonChartView.swift */; };
 		BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773774CBEA3D5DDBE5D6AFF /* TokenDetailsProtocols.swift */; };
 		BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6AC52DF8E6970E81B415D8 /* EnterMnemonicView.swift */; };
 		C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C81CE487C82E845B444588 /* EnterMnemonicPresenter.swift */; };
@@ -304,10 +316,24 @@
 		D1D4A0F33F327EA564739A5C /* BuyListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B3A449395B3E637114337B2 /* BuyListViewController.swift */; };
 		D97B981CF3DBE823EDA9A091 /* WalletContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */; };
 		DB9A1AA91502A6E162CD3BC3 /* BuyListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41EDD045CD5D2603FDDED394 /* BuyListView.swift */; };
+		E4178183A698EC6ABCAC4CC7 /* TonChartPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */; };
 		F2E003198428DC1A9FA401BB /* ActivityListProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3D92E8AB48D705E0B81E7AB /* ActivityListProtocols.swift */; };
 		FC58CA56982D098FE4E85989 /* TokensListProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE60ABD534A41016103CB95 /* TokensListProtocols.swift */; };
 		FD5AC7C6F094091CB911C3D8 /* TokensListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B82E8B681EE6CE930E250D /* TokensListViewController.swift */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		7D32F8C02A8CCB58002C130C /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		0320D77CB84A1DB3ADC49C5F /* BuyListProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BuyListProtocols.swift; sourceTree = "<group>"; };
@@ -357,6 +383,9 @@
 		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
 		7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletBalanceModelMapper.swift; sourceTree = "<group>"; };
 		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
+		7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListHeaderContainer.swift; sourceTree = "<group>"; };
+		7D32F8B52A8BD225002C130C /* TokenDetailsHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenDetailsHeaderViewController.swift; sourceTree = "<group>"; };
+		7D32F8B72A8BD298002C130C /* TonChartAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartAssembly.swift; sourceTree = "<group>"; };
 		7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendAmountAssembly.swift; sourceTree = "<group>"; };
 		7D384A492A66973D00DE2A66 /* SendRecipientAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendRecipientAssembly.swift; sourceTree = "<group>"; };
 		7D384A4B2A66989100DE2A66 /* SendConfirmationAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendConfirmationAssembly.swift; sourceTree = "<group>"; };
@@ -502,6 +531,12 @@
 		7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletCoordinator.swift; sourceTree = "<group>"; };
 		7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletAssembly.swift; sourceTree = "<group>"; };
 		7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCreator.swift; sourceTree = "<group>"; };
+		7D8F64A62A8D3BF40042AE74 /* Gradient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gradient.swift; sourceTree = "<group>"; };
+		7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartMarker.swift; sourceTree = "<group>"; };
+		7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartButtonsView.swift; sourceTree = "<group>"; };
+		7D8F64B02A8E08010042AE74 /* TonChartHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartHeaderView.swift; sourceTree = "<group>"; };
+		7D8F64B22A8E43F90042AE74 /* TonChartErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartErrorView.swift; sourceTree = "<group>"; };
+		7D8F64B52A8E586F0042AE74 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveAssembly.swift; sourceTree = "<group>"; };
 		7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D9144232A31EF7600B0FD17 /* Selectable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectable.swift; sourceTree = "<group>"; };
@@ -580,6 +615,7 @@
 		7DEE8E1C2A57982A004D42B7 /* ActivityViewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityViewContainer.swift; sourceTree = "<group>"; };
 		81E95098F2912B3982A6BAE5 /* SetupWalletProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SetupWalletProtocols.swift; sourceTree = "<group>"; };
 		8243DFDC12DB2AD7BBBBBE82 /* PasscodeInputProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputProtocols.swift; sourceTree = "<group>"; };
+		85BE88D8300B2CB885DB8F44 /* TonChartViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartViewController.swift; sourceTree = "<group>"; };
 		8AB768175241379D921DB521 /* WelcomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationView.swift; sourceTree = "<group>"; };
 		8BB3CFCBC7CE604AC87B3E7A /* TokenDetailsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsView.swift; sourceTree = "<group>"; };
@@ -587,6 +623,7 @@
 		9503E8076CB7AA331E07685E /* ActivityEmptyView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityEmptyView.swift; sourceTree = "<group>"; };
 		96736B6F002EC3A83832DB82 /* ActivityListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityListPresenter.swift; sourceTree = "<group>"; };
 		97572A827415CAEE71C004FB /* ActivityTransactionDetailsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsView.swift; sourceTree = "<group>"; };
+		9B02959E0163FE881FD4CF2B /* TonChartProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartProtocols.swift; sourceTree = "<group>"; };
 		9B3A449395B3E637114337B2 /* BuyListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BuyListViewController.swift; sourceTree = "<group>"; };
 		9FC1F118C75E99C32396A981 /* SendConfirmationProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SendConfirmationProtocols.swift; sourceTree = "<group>"; };
 		A11E39BAB09CFAC56EA2F4E0 /* TokenDetailsPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsPresenter.swift; sourceTree = "<group>"; };
@@ -598,11 +635,13 @@
 		AD94D10A44ED363D48C70552 /* EnterMnemonicViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnterMnemonicViewController.swift; sourceTree = "<group>"; };
 		B2439F2E5E6211F9C396FAF2 /* ActivityListView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityListView.swift; sourceTree = "<group>"; };
 		B305512CBFAF5DE77C5D0556 /* EnterMnemonicProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnterMnemonicProtocols.swift; sourceTree = "<group>"; };
+		B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartPresenter.swift; sourceTree = "<group>"; };
 		C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsViewController.swift; sourceTree = "<group>"; };
 		C94035FBBB4278C3B31B95C0 /* PasscodeInputPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputPresenter.swift; sourceTree = "<group>"; };
 		CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentViewController.swift; sourceTree = "<group>"; };
 		CCBEC0954BE2099E54A78D14 /* WalletContentPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentPresenter.swift; sourceTree = "<group>"; };
 		CD0D83F8AC9D08173560A142 /* ReceiveRootPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ReceiveRootPresenter.swift; sourceTree = "<group>"; };
+		DA90234EDC8FC9E16D62F310 /* TonChartView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartView.swift; sourceTree = "<group>"; };
 		DEB090D8454B651425F5F1A3 /* ActivityListViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityListViewController.swift; sourceTree = "<group>"; };
 		F3D92E8AB48D705E0B81E7AB /* ActivityListProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityListProtocols.swift; sourceTree = "<group>"; };
 		F554AA9A5266FD7EDC2F6ECF /* ActivityRootView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityRootView.swift; sourceTree = "<group>"; };
@@ -617,6 +656,7 @@
 			files = (
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */,
+				7D8F64A22A8CCCCD0042AE74 /* DGCharts in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
 			);
@@ -702,6 +742,20 @@
 			path = SetupWallet;
 			sourceTree = "<group>";
 		};
+		21E2D78094F5685866878D1B /* TonChart */ = {
+			isa = PBXGroup;
+			children = (
+				7D8F64AB2A8D48B70042AE74 /* Views */,
+				7D8F64A82A8D3DCB0042AE74 /* Marker */,
+				85BE88D8300B2CB885DB8F44 /* TonChartViewController.swift */,
+				DA90234EDC8FC9E16D62F310 /* TonChartView.swift */,
+				B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */,
+				9B02959E0163FE881FD4CF2B /* TonChartProtocols.swift */,
+				7D32F8B72A8BD298002C130C /* TonChartAssembly.swift */,
+			);
+			path = TonChart;
+			sourceTree = "<group>";
+		};
 		2F44A99FB95A2D04B551F3AF /* ActivityList */ = {
 			isa = PBXGroup;
 			children = (
@@ -771,7 +825,6 @@
 		7D1163102A616CA500DF4F30 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				7D1163112A616CC400DF4F30 /* TokenDetailsHeaderView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -823,6 +876,15 @@
 				7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */,
 			);
 			path = Mapper;
+			sourceTree = "<group>";
+		};
+		7D32F8B42A8BD08E002C130C /* Header */ = {
+			isa = PBXGroup;
+			children = (
+				7D32F8B52A8BD225002C130C /* TokenDetailsHeaderViewController.swift */,
+				7D1163112A616CC400DF4F30 /* TokenDetailsHeaderView.swift */,
+			);
+			path = Header;
 			sourceTree = "<group>";
 		};
 		7D384A4D2A66A01000DE2A66 /* ReceiveRoot */ = {
@@ -1291,6 +1353,7 @@
 		7D68361E2A1CD1B8002DBBC7 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				7D8F64B42A8E58690042AE74 /* Error */,
 				7D527BF22A2DFD9C00A2D29A /* Views */,
 				7D6836652A1D6E6B002DBBC7 /* Module */,
 				7D68365E2A1D6998002DBBC7 /* ViewControllers */,
@@ -1491,6 +1554,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D8F64A52A8D3BE60042AE74 /* Gradient */,
 				7D16E1622A7526F300A27AB0 /* Toasts */,
 				7DB944BF2A728E0F0008B512 /* Shimmer */,
 				7D80C0D32A6AA5E3007054DD /* TKKeyboard */,
@@ -1616,6 +1680,40 @@
 				7D1B1F382A4F46B000EC873F /* WalletImporter.swift */,
 			);
 			path = Wallet;
+			sourceTree = "<group>";
+		};
+		7D8F64A52A8D3BE60042AE74 /* Gradient */ = {
+			isa = PBXGroup;
+			children = (
+				7D8F64A62A8D3BF40042AE74 /* Gradient.swift */,
+			);
+			path = Gradient;
+			sourceTree = "<group>";
+		};
+		7D8F64A82A8D3DCB0042AE74 /* Marker */ = {
+			isa = PBXGroup;
+			children = (
+				7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */,
+			);
+			path = Marker;
+			sourceTree = "<group>";
+		};
+		7D8F64AB2A8D48B70042AE74 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */,
+				7D8F64B02A8E08010042AE74 /* TonChartHeaderView.swift */,
+				7D8F64B22A8E43F90042AE74 /* TonChartErrorView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7D8F64B42A8E58690042AE74 /* Error */ = {
+			isa = PBXGroup;
+			children = (
+				7D8F64B52A8E586F0042AE74 /* Error.swift */,
+			);
+			path = Error;
 			sourceTree = "<group>";
 		};
 		7D9144252A31F59500B0FD17 /* ModalCard */ = {
@@ -1908,6 +2006,7 @@
 				7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */,
 				7D7CE3FD2A89B3ED002BA9EC /* ActivityListShimmerSectionHeaderView.swift */,
 				7DA0EFF72A866D2B0062C8BA /* ActivityListFooterView.swift */,
+				7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */,
 			);
 			path = Cells;
 			sourceTree = "<group>";
@@ -1977,6 +2076,8 @@
 		E15A4D816E375EC6F055D7F0 /* TokenDetails */ = {
 			isa = PBXGroup;
 			children = (
+				21E2D78094F5685866878D1B /* TonChart */,
+				7D32F8B42A8BD08E002C130C /* Header */,
 				7DC8A3B32A7C172B00B8B219 /* ListContent */,
 				7D1163102A616CA500DF4F30 /* Views */,
 				C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */,
@@ -1999,6 +2100,7 @@
 				7DB8FB5F2A1BCC92005B4B11 /* Frameworks */,
 				7DB8FB602A1BCC92005B4B11 /* Resources */,
 				7D0207632A80025B00D63B4C /* ShellScript */,
+				7D32F8C02A8CCB58002C130C /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -2010,6 +2112,7 @@
 				7DB17F3E2A4B3338007C6154 /* WalletCore */,
 				7D143C352A4EC0D300B5FCC0 /* Lottie */,
 				7D5A18112A5406CB00793769 /* Kingfisher */,
+				7D8F64A12A8CCCCD0042AE74 /* DGCharts */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -2044,6 +2147,7 @@
 				7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */,
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
+				7D8F64A02A8CCCCD0042AE74 /* XCRemoteSwiftPackageReference "Charts" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -2154,6 +2258,7 @@
 				7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */,
 				7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */,
 				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
+				7D8F64B32A8E43F90042AE74 /* TonChartErrorView.swift in Sources */,
 				7D384A4A2A66973D00DE2A66 /* SendRecipientAssembly.swift in Sources */,
 				7DE27E682A30D94100842FA8 /* TransactionCellContentView.swift in Sources */,
 				7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */,
@@ -2172,6 +2277,7 @@
 				7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */,
 				7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */,
 				7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */,
+				7D32F8B22A8BA65B002C130C /* ActivityListHeaderContainer.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
 				7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */,
 				7D45D31B2A82E73200733DFE /* TransactionCellNFTView.swift in Sources */,
@@ -2196,13 +2302,16 @@
 				7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */,
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
+				7D8F64AA2A8D3DE80042AE74 /* TonChartMarker.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
 				7D16E18A2A77C1FB00A27AB0 /* PassthroughWindow.swift in Sources */,
 				7D384A552A66ACED00DE2A66 /* ReceiveRootPresenterAnyProvider.swift in Sources */,
 				7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */,
 				7D92928D2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift in Sources */,
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
+				7D8F64B12A8E08010042AE74 /* TonChartHeaderView.swift in Sources */,
 				7D9292FC2A29DCDA005B83DF /* SendAmountTitleView.swift in Sources */,
+				7D8F64A72A8D3BF40042AE74 /* Gradient.swift in Sources */,
 				7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */,
 				7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */,
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
@@ -2234,6 +2343,7 @@
 				7D3E43862A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift in Sources */,
 				7DB17F472A4C2D9B007C6154 /* OnboardingAssembly.swift in Sources */,
 				7D9292C42A274131005B83DF /* SendAssembly.swift in Sources */,
+				7D8F64AD2A8D48C30042AE74 /* TonChartButtonsView.swift in Sources */,
 				7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */,
 				7D0207852A803C7100D63B4C /* NotDelayCollectionView.swift in Sources */,
 				7D68361D2A1CB1CB002DBBC7 /* String+TextStyle.swift in Sources */,
@@ -2273,6 +2383,7 @@
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */,
 				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
+				7D32F8B62A8BD225002C130C /* TokenDetailsHeaderViewController.swift in Sources */,
 				7D384A4F2A66A0E500DE2A66 /* ReceiveRootAssembly.swift in Sources */,
 				7DEE8E1D2A57982A004D42B7 /* ActivityViewContainer.swift in Sources */,
 				7D91442B2A31F5F700B0FD17 /* DimmingPresentationController.swift in Sources */,
@@ -2291,6 +2402,7 @@
 				7D1163142A61E80C00DF4F30 /* Token.swift in Sources */,
 				7D9292D12A275B6D005B83DF /* TextField.swift in Sources */,
 				7D5928722A1FC981006B0A8A /* WalletHeaderButtonType.swift in Sources */,
+				7D32F8B82A8BD298002C130C /* TonChartAssembly.swift in Sources */,
 				7D6836222A1CD1EC002DBBC7 /* Presentable.swift in Sources */,
 				7DE27E652A30D2D400842FA8 /* ActivityListTransactionBuilder.swift in Sources */,
 				7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */,
@@ -2386,6 +2498,10 @@
 				977233829BFB3A47453882FF /* TokenDetailsView.swift in Sources */,
 				7F316234DE732364EDD8983C /* TokenDetailsPresenter.swift in Sources */,
 				BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */,
+				95F3E77FC6DBC86F8EB6745F /* TonChartViewController.swift in Sources */,
+				B91D795CFF06D6E93B856F37 /* TonChartView.swift in Sources */,
+				E4178183A698EC6ABCAC4CC7 /* TonChartPresenter.swift in Sources */,
+				22C5887CCD3DB975055E331B /* TonChartProtocols.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2628,6 +2744,14 @@
 				minimumVersion = 7.8.1;
 			};
 		};
+		7D8F64A02A8CCCCD0042AE74 /* XCRemoteSwiftPackageReference "Charts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/danielgindi/Charts";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
 		7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/luximetr/AnyFormatKit";
@@ -2640,7 +2764,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				branch = feature/activity_list;
+				branch = develop;
 				kind = branch;
 			};
 		};
@@ -2656,6 +2780,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
+		};
+		7D8F64A12A8CCCCD0042AE74 /* DGCharts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D8F64A02A8CCCCD0042AE74 /* XCRemoteSwiftPackageReference "Charts" */;
+			productName = DGCharts;
 		};
 		7DB17F342A4B2F07007C6154 /* AnyFormatKit */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -14,6 +14,10 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
     customView.collectionView
   }
   
+  var didStartRefresh: (() -> Void)?
+  
+  private var headerViewController: UIViewController?
+  
   // MARK: - Module
 
   private let presenter: ActivityListPresenterInput
@@ -43,6 +47,22 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
     super.viewDidLoad()
     setup()
     presenter.viewDidLoad()
+  }
+  
+  func setHeaderView(_ headerView: UIView?) {
+    collectionController.headerView = headerView
+  }
+  
+  func setHeaderViewController(_ headerViewController: UIViewController?) {
+    self.headerViewController?.willMove(toParent: nil)
+    self.headerViewController?.removeFromParent()
+    self.headerViewController?.didMove(toParent: nil)
+    self.headerViewController = headerViewController
+    if let headerViewController = headerViewController {
+      addChild(headerViewController)
+    }
+    collectionController.headerView = headerViewController?.view
+    headerViewController?.didMove(toParent: self)
   }
 }
 
@@ -88,6 +108,7 @@ extension ActivityListViewController: ActivityListCollectionControllerDelegate {
   
   func activityListCollectionControllerDidPullToRefresh(_ collectionController: ActivityListCollectionController) {
     presenter.reload()
+    didStartRefresh?()
   }
 }
 

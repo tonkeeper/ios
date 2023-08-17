@@ -15,6 +15,7 @@ final class TokenDetailsPresenter {
   
   weak var viewInput: TokenDetailsViewInput?
   weak var output: TokenDetailsModuleOutput?
+  weak var chartInput: TonChartModuleInput?
   
   // MARK: - Dependecies
   
@@ -32,6 +33,7 @@ final class TokenDetailsPresenter {
 extension TokenDetailsPresenter: TokenDetailsPresenterInput {
   func viewDidLoad() {
     updateHeader()
+    updateChart()
     refreshContent()
   }
   
@@ -79,7 +81,6 @@ extension TokenDetailsPresenter {
     output?.didTapTokenSwap(tokenInfo: tokenInfo)
   }
 }
-  
 
 // MARK: - Private
 
@@ -115,10 +116,19 @@ private extension TokenDetailsPresenter {
     viewInput?.updateHeader(model: tokenDetailsHeaderViewModel)
   }
   
+  func updateChart() {
+    guard tokenDetailsController.hasChart(),
+    let output = output else { return }
+    let module = output.tonChartModule()
+    self.chartInput = module.input
+    viewInput?.showChart(module.view)
+  }
+  
   func refreshContent() {
     Task {
       do {
         try await tokenDetailsController.reloadContent()
+        chartInput?.reload()
         Task { @MainActor in
           updateHeader()
           viewInput?.stopRefresh()

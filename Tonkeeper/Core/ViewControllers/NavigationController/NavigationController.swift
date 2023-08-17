@@ -14,4 +14,15 @@ final class NavigationController: UINavigationController {
   }
 }
 
-extension NavigationController: UIGestureRecognizerDelegate {}
+extension NavigationController: UIGestureRecognizerDelegate {
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldBeRequiredToFailBy otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    guard let view = gestureRecognizer.view,
+          let otherView = otherGestureRecognizer.view else { return false }
+    
+    guard otherView.next is NavigationController,
+            otherView.isDescendant(of: view) else {
+      return true
+    }
+    return false
+  }
+}

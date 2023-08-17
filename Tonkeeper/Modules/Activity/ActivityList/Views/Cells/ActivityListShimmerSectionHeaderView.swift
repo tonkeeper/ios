@@ -40,10 +40,10 @@ private extension ActivityListShimmerSectionHeaderView {
     
     shimmerView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-      shimmerView.topAnchor.constraint(equalTo: topAnchor),
       shimmerView.leftAnchor.constraint(equalTo: leftAnchor),
-      shimmerView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      shimmerView.widthAnchor.constraint(equalToConstant: 120)
+      shimmerView.centerYAnchor.constraint(equalTo: centerYAnchor),
+      shimmerView.widthAnchor.constraint(equalToConstant: 120),
+      shimmerView.heightAnchor.constraint(equalToConstant: 28)
     ])
   }
 }

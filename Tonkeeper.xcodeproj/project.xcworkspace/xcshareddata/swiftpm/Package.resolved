@@ -19,12 +19,21 @@
       }
     },
     {
+      "identity" : "charts",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/danielgindi/Charts",
+      "state" : {
+        "revision" : "0a229f8c914b0ec93798cee058cf75b339297513",
+        "version" : "5.0.0"
+      }
+    },
+    {
       "identity" : "core-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
-        "branch" : "feature/activity_list",
-        "revision" : "687696a487b009e64b1d75ceeeae724e27499632"
+        "branch" : "develop",
+        "revision" : "412c7cbec1b5d83aa30441fc55dd50c04c955482"
       }
     },
     {
@@ -50,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "revision" : "79884ba2dfb2891bfd848d8979714c8592c069a6",
-        "version" : "0.0.7"
+        "revision" : "8d6f1bc4d700e37f797315a5abe75b350850b19e",
+        "version" : "0.0.8"
       }
     },
     {

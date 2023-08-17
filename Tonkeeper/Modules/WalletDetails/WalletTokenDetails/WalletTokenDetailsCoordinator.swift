@@ -125,6 +125,12 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
   func didTapTokenSwap(tokenInfo: TokenInfo) {
     
   }
+  
+  func tonChartModule() -> Module<TonChartViewController, TonChartModuleInput> {
+    let module = TonChartAssembly.module(chartController: walletCoreAssembly.chartController(),
+                                         output: self)
+    return module
+  }
 }
 
 // MARK: - SendCoordinatorOutput
@@ -151,3 +157,7 @@ extension WalletTokenDetailsCoordinator: ActivityListModuleOutput {
   func didSelectTransaction(in section: Int, at index: Int) {}
   func activityListNoEvents(_ activityList: ActivityListModuleInput) {}
 }
+
+// MARK: -
+
+extension WalletTokenDetailsCoordinator: TonChartModuleOutput {}
