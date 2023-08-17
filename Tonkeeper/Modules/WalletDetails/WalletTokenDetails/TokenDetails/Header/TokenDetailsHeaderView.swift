@@ -135,10 +135,8 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
     NSLayoutConstraint.activate([
       chartView.topAnchor.constraint(equalTo: chartContainer.topAnchor),
       chartView.leftAnchor.constraint(equalTo: chartContainer.leftAnchor),
-      chartView.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor)
-        .withPriority(.defaultHigh),
+      chartView.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor),
       chartView.rightAnchor.constraint(equalTo: chartContainer.rightAnchor)
-        .withPriority(.defaultHigh)
     ])
   }
 }
@@ -190,11 +188,12 @@ private extension TokenDetailsHeaderView {
       buttonsRowView.topAnchor.constraint(equalTo: topContainer.bottomAnchor, constant: .buttonsRowVerticalSpacing),
       buttonsRowView.leftAnchor.constraint(equalTo: leftAnchor),
       buttonsRowView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
-      buttonsRowView.bottomAnchor.constraint(equalTo: buttonsSeparatorView.topAnchor, constant: -.buttonsRowVerticalSpacing).withPriority(.defaultHigh),
+      buttonsRowView.bottomAnchor.constraint(equalTo: chartContainer.topAnchor, constant: -.buttonsRowVerticalSpacing).withPriority(.defaultHigh),
       
       buttonsSeparatorView.leftAnchor.constraint(equalTo: leftAnchor),
       buttonsSeparatorView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
       buttonsSeparatorView.heightAnchor.constraint(equalToConstant: .separatorHeight),
+      buttonsSeparatorView.bottomAnchor.constraint(equalTo: buttonsRowView.bottomAnchor, constant: .buttonsRowVerticalSpacing),
       
       priceStackView.topAnchor.constraint(equalTo: topContainer.topAnchor, constant: .topContainerTopSpacing),
       priceStackView.leftAnchor.constraint(equalTo: topContainer.leftAnchor, constant: .topContainerSideSpacing),
@@ -210,10 +209,11 @@ private extension TokenDetailsHeaderView {
       separatorView.heightAnchor.constraint(equalToConstant: .separatorHeight),
       separatorView.bottomAnchor.constraint(equalTo: topContainer.bottomAnchor).withPriority(.defaultHigh),
       
-      chartContainer.topAnchor.constraint(equalTo: buttonsSeparatorView.bottomAnchor),
       chartContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      chartContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      chartContainer.rightAnchor.constraint(equalTo: rightAnchor)
+        .withPriority(.defaultHigh),
       chartContainer.bottomAnchor.constraint(equalTo: bottomAnchor)
+        .withPriority(.defaultHigh)
     ])
   }
 }
