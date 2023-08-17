@@ -42,6 +42,10 @@ extension TonChartViewController: TonChartViewInput {
     customView.buttonsView.configure(model: model)
   }
   
+  func updateHeader(with model: TonChartHeaderView.Model) {
+    customView.headerView.configure(model: model)
+  }
+  
   func selectButton(at index: Int) {
     customView.buttonsView.selectButton(at: index)
   }
@@ -76,13 +80,47 @@ private extension TonChartViewController {
     customView.chartView.marker = TonChartMarker()
     customView.chartView.delegate = self
     customView.chartView.highlightPerTapEnabled = false
+    
+    
+    let longTapGesture = UILongPressGestureRecognizer(
+      target: self,
+      action: #selector(longPressGestureHandler(gestureRecognizer:))
+    )
+    longTapGesture.minimumPressDuration = 0.5
+    customView.addGestureRecognizer(longTapGesture)
   }
 }
 
 extension TonChartViewController: ChartViewDelegate {
   func chartViewDidEndPanning(_ chartView: ChartViewBase) {
     chartView.highlightValue(nil)
+    presenter.didDeselectChartValue()
   }
   
-  func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {}
+  func chartValueSelected(_ chartView: ChartViewBase, 
+                          entry: ChartDataEntry,
+                          highlight: Highlight) {
+    guard let dataSet = chartView.data?.dataSets[highlight.dataSetIndex] else { return }
+    let index = dataSet.entryIndex(entry: entry)
+    presenter.didSelectChartValue(at: index)
+    TapticGenerator.generateTapHeavyFeedback()
+  }
+  
+  @objc
+  func longPressGestureHandler(gestureRecognizer: UILongPressGestureRecognizer) {
+    switch gestureRecognizer.state {
+    case .began, .changed:
+      let point = gestureRecognizer.location(in: gestureRecognizer.view)
+      guard let entry = customView.chartView.getEntryByTouchPoint(point: point),
+            let highlight = customView.chartView.getHighlightByTouchPoint(point),
+            let dataSet = customView.chartView.data?.dataSets[highlight.dataSetIndex]else { return }
+      let index = dataSet.entryIndex(entry: entry)
+      customView.chartView.highlightValue(highlight)
+      presenter.didSelectChartValue(at: index)
+      TapticGenerator.generateTapHeavyFeedback()
+    case .cancelled, .ended, .failed:
+      customView.chartView.highlightValue(nil)
+    default: break
+    }
+  }
 }

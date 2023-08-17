@@ -11,6 +11,7 @@ import DGCharts
 
 final class TonChartView: UIView {
   
+  let headerView = TonChartHeaderView()
   let chartView = LineChartView()
   let buttonsView = TonChartButtonsView()
 
@@ -28,7 +29,7 @@ final class TonChartView: UIView {
   // MARK: - Layout
   
   override var intrinsicContentSize: CGSize {
-    CGSize(width: UIView.noIntrinsicMetric, height: 418)
+    CGSize(width: UIView.noIntrinsicMetric, height: 300)
   }
 }
 
@@ -36,6 +37,7 @@ final class TonChartView: UIView {
 
 private extension TonChartView {
   func setup() {
+    addSubview(headerView)
     addSubview(chartView)
     addSubview(buttonsView)
     
@@ -43,13 +45,18 @@ private extension TonChartView {
   }
   
   func setupConstraints() {
+    headerView.translatesAutoresizingMaskIntoConstraints = false
     chartView.translatesAutoresizingMaskIntoConstraints = false
     buttonsView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      chartView.topAnchor.constraint(equalTo: topAnchor),
-      chartView.leftAnchor.constraint(equalTo: leftAnchor),
-      chartView.rightAnchor.constraint(equalTo: rightAnchor),
+      headerView.topAnchor.constraint(equalTo: topAnchor),
+      headerView.leftAnchor.constraint(equalTo: leftAnchor),
+      headerView.rightAnchor.constraint(equalTo: rightAnchor),
+      
+      chartView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
+      chartView.leftAnchor.constraint(equalTo: leftAnchor, constant: .chartSideSpacing),
+      chartView.rightAnchor.constraint(equalTo: rightAnchor, constant: -.chartSideSpacing),
 
       buttonsView.topAnchor.constraint(equalTo: chartView.bottomAnchor),
       buttonsView.leftAnchor.constraint(equalTo: leftAnchor),
@@ -57,4 +64,8 @@ private extension TonChartView {
       buttonsView.bottomAnchor.constraint(equalTo: bottomAnchor)
     ])
   }
+}
+
+private extension CGFloat {
+  static let chartSideSpacing: CGFloat = -10
 }

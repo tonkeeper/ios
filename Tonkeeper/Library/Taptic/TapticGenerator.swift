@@ -13,6 +13,10 @@ struct TapticGenerator {
     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
   }
   
+  static func generateTapHeavyFeedback() {
+    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+  }
+  
   static func generateCopyFeedback() {
     UINotificationFeedbackGenerator().notificationOccurred(.warning)
   }

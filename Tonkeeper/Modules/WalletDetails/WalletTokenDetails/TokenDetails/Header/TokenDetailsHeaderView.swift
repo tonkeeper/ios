@@ -135,8 +135,10 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
     NSLayoutConstraint.activate([
       chartView.topAnchor.constraint(equalTo: chartContainer.topAnchor),
       chartView.leftAnchor.constraint(equalTo: chartContainer.leftAnchor),
-      chartView.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor),
+      chartView.bottomAnchor.constraint(equalTo: chartContainer.bottomAnchor)
+        .withPriority(.defaultHigh),
       chartView.rightAnchor.constraint(equalTo: chartContainer.rightAnchor)
+        .withPriority(.defaultHigh)
     ])
   }
 }
