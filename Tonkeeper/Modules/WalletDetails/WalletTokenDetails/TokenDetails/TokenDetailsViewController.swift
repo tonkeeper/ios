@@ -92,6 +92,10 @@ private extension TokenDetailsViewController {
     listContentViewController.didMove(toParent: self)
     
     listContentViewController.setHeaderViewController(headerViewController)
+    
+    listContentViewController.didStartRefresh = { [weak self] in
+      self?.presenter.didPullToRefresh()
+    }
   }
   
   @objc

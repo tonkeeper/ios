@@ -14,6 +14,8 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
     customView.collectionView
   }
   
+  var didStartRefresh: (() -> Void)?
+  
   private var headerViewController: UIViewController?
   
   // MARK: - Module
@@ -106,6 +108,7 @@ extension ActivityListViewController: ActivityListCollectionControllerDelegate {
   
   func activityListCollectionControllerDidPullToRefresh(_ collectionController: ActivityListCollectionController) {
     presenter.reload()
+    didStartRefresh?()
   }
 }
 

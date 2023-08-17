@@ -64,7 +64,11 @@ extension TonChartPresenter: TonChartPresenterInput {
 
 // MARK: - TonChartModuleInput
 
-extension TonChartPresenter: TonChartModuleInput {}
+extension TonChartPresenter: TonChartModuleInput {
+  func reload() {
+    loadChartData()
+  }
+}
 
 // MARK: - Private
 
@@ -89,7 +93,10 @@ private extension TonChartPresenter {
           viewInput?.updateChart(with: chartData)
         }
       } catch {
-        // TBD: show error on graphic
+        await MainActor.run {
+          showError(error: error)
+          showErrorHeader()
+        }
       }
     }
   }
@@ -167,10 +174,52 @@ private extension TonChartPresenter {
         .diff
         .fiat
         .attributed(
-          with: .amountTextStyle,
+          with: .otherTextStyle,
           color: diffColor.withAlphaComponent(0.44))
       
       return .init(amount: amount, percentDiff: percentDiff, fiatDiff: fiatDiff, date: date)
+  }
+  
+  func showError(error: Error) {
+    let title: String
+    let subtitle: String
+    if error.isNoConnectionError {
+      title = "No internet connection"
+      subtitle = "Please check your connection and try again."
+    } else {
+      title = "Failed to load chart data"
+      subtitle = "Please try again"
+    }
+    let model = TonChartErrorView.Model(
+      title: title,
+      subtitle: subtitle
+    )
+    viewInput?.showError(with: model)
+  }
+  
+  func showErrorHeader() {
+    let amount = "0".attributed(
+      with: .amountTextStyle,
+      color: .Text.primary
+    )
+    
+    let date = "Price".attributed(
+      with: .otherTextStyle,
+      color: .Text.secondary
+    )
+      
+    let percentDiff = "0%"
+        .attributed(
+          with: .otherTextStyle,
+          color: .Text.secondary)
+    let fiatDiff = "0,00"
+        .attributed(
+          with: .otherTextStyle,
+          color: .Text.secondary.withAlphaComponent(0.44))
+    
+    
+    let headerModel = TonChartHeaderView.Model.init(amount: amount, percentDiff: percentDiff, fiatDiff: fiatDiff, date: date)
+    viewInput?.updateHeader(with: headerModel)
   }
 }
 

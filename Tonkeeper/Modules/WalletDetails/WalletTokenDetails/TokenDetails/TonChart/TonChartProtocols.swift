@@ -11,7 +11,9 @@ import DGCharts
 
 protocol TonChartModuleOutput: AnyObject {}
 
-protocol TonChartModuleInput: AnyObject {}
+protocol TonChartModuleInput: AnyObject {
+  func reload()
+}
 
 protocol TonChartPresenterInput {
   func viewDidLoad()
@@ -25,4 +27,5 @@ protocol TonChartViewInput: AnyObject {
   func updateHeader(with model: TonChartHeaderView.Model)
   func selectButton(at index: Int)
   func updateChart(with data: LineChartData)
+  func showError(with model: TonChartErrorView.Model)
 }

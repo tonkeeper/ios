@@ -51,7 +51,15 @@ extension TonChartViewController: TonChartViewInput {
   }
   
   func updateChart(with data: LineChartData) {
+    customView.errorView.isHidden = true
+    customView.chartView.isHidden = false
     customView.chartView.data = data
+  }
+  
+  func showError(with model: TonChartErrorView.Model) {
+    customView.errorView.isHidden = false
+    customView.chartView.isHidden = true
+    customView.errorView.configure(model: model)
   }
 }
 

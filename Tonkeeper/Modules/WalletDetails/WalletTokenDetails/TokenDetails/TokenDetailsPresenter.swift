@@ -15,6 +15,7 @@ final class TokenDetailsPresenter {
   
   weak var viewInput: TokenDetailsViewInput?
   weak var output: TokenDetailsModuleOutput?
+  weak var chartInput: TonChartModuleInput?
   
   // MARK: - Dependecies
   
@@ -119,6 +120,7 @@ private extension TokenDetailsPresenter {
     guard tokenDetailsController.hasChart(),
     let output = output else { return }
     let module = output.tonChartModule()
+    self.chartInput = module.input
     viewInput?.showChart(module.view)
   }
   
@@ -126,6 +128,7 @@ private extension TokenDetailsPresenter {
     Task {
       do {
         try await tokenDetailsController.reloadContent()
+        chartInput?.reload()
         Task { @MainActor in
           updateHeader()
           viewInput?.stopRefresh()

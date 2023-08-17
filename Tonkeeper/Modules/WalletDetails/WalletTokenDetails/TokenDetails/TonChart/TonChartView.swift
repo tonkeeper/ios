@@ -14,6 +14,7 @@ final class TonChartView: UIView {
   let headerView = TonChartHeaderView()
   let chartView = LineChartView()
   let buttonsView = TonChartButtonsView()
+  let errorView = TonChartErrorView()
 
   // MARK: - Init
 
@@ -40,6 +41,7 @@ private extension TonChartView {
     addSubview(headerView)
     addSubview(chartView)
     addSubview(buttonsView)
+    addSubview(errorView)
     
     setupConstraints()
   }
@@ -48,6 +50,7 @@ private extension TonChartView {
     headerView.translatesAutoresizingMaskIntoConstraints = false
     chartView.translatesAutoresizingMaskIntoConstraints = false
     buttonsView.translatesAutoresizingMaskIntoConstraints = false
+    errorView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       headerView.topAnchor.constraint(equalTo: topAnchor),
@@ -57,6 +60,11 @@ private extension TonChartView {
       chartView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
       chartView.leftAnchor.constraint(equalTo: leftAnchor, constant: .chartSideSpacing),
       chartView.rightAnchor.constraint(equalTo: rightAnchor, constant: -.chartSideSpacing),
+      
+      errorView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
+      errorView.leftAnchor.constraint(equalTo: leftAnchor),
+      errorView.rightAnchor.constraint(equalTo: rightAnchor),
+      errorView.bottomAnchor.constraint(equalTo: buttonsView.topAnchor),
 
       buttonsView.topAnchor.constraint(equalTo: chartView.bottomAnchor),
       buttonsView.leftAnchor.constraint(equalTo: leftAnchor),

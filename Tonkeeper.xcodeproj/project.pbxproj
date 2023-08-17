@@ -210,6 +210,7 @@
 		7D8F64AA2A8D3DE80042AE74 /* TonChartMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */; };
 		7D8F64AD2A8D48C30042AE74 /* TonChartButtonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */; };
 		7D8F64B12A8E08010042AE74 /* TonChartHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64B02A8E08010042AE74 /* TonChartHeaderView.swift */; };
+		7D8F64B32A8E43F90042AE74 /* TonChartErrorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64B22A8E43F90042AE74 /* TonChartErrorView.swift */; };
 		7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */; };
 		7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */; };
 		7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9144232A31EF7600B0FD17 /* Selectable.swift */; };
@@ -534,6 +535,8 @@
 		7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartMarker.swift; sourceTree = "<group>"; };
 		7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartButtonsView.swift; sourceTree = "<group>"; };
 		7D8F64B02A8E08010042AE74 /* TonChartHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartHeaderView.swift; sourceTree = "<group>"; };
+		7D8F64B22A8E43F90042AE74 /* TonChartErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartErrorView.swift; sourceTree = "<group>"; };
+		7D8F64B52A8E586F0042AE74 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveAssembly.swift; sourceTree = "<group>"; };
 		7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D9144232A31EF7600B0FD17 /* Selectable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectable.swift; sourceTree = "<group>"; };
@@ -1350,6 +1353,7 @@
 		7D68361E2A1CD1B8002DBBC7 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				7D8F64B42A8E58690042AE74 /* Error */,
 				7D527BF22A2DFD9C00A2D29A /* Views */,
 				7D6836652A1D6E6B002DBBC7 /* Module */,
 				7D68365E2A1D6998002DBBC7 /* ViewControllers */,
@@ -1699,8 +1703,17 @@
 			children = (
 				7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */,
 				7D8F64B02A8E08010042AE74 /* TonChartHeaderView.swift */,
+				7D8F64B22A8E43F90042AE74 /* TonChartErrorView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7D8F64B42A8E58690042AE74 /* Error */ = {
+			isa = PBXGroup;
+			children = (
+				7D8F64B52A8E586F0042AE74 /* Error.swift */,
+			);
+			path = Error;
 			sourceTree = "<group>";
 		};
 		7D9144252A31F59500B0FD17 /* ModalCard */ = {
@@ -2245,6 +2258,7 @@
 				7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */,
 				7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */,
 				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
+				7D8F64B32A8E43F90042AE74 /* TonChartErrorView.swift in Sources */,
 				7D384A4A2A66973D00DE2A66 /* SendRecipientAssembly.swift in Sources */,
 				7DE27E682A30D94100842FA8 /* TransactionCellContentView.swift in Sources */,
 				7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */,
