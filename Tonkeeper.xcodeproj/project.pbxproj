@@ -2764,7 +2764,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				branch = feature/ton_chart;
+				branch = develop;
 				kind = branch;
 			};
 		};
