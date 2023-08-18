@@ -46,6 +46,7 @@ extension TokenDetailsPresenter: TokenDetailsPresenterInput {
   
   func didPullToRefresh() {
     refreshContent()
+    chartInput?.reload()
   }
   
   func didTapTonButton() {
@@ -163,7 +164,6 @@ private extension TokenDetailsPresenter {
     Task {
       do {
         try await tokenDetailsController.reloadContent()
-        chartInput?.reload()
         Task { @MainActor in
           updateHeader()
           viewInput?.stopRefresh()
