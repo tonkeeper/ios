@@ -62,6 +62,20 @@ extension InAppBrowserMainViewController: InAppBrowserMainViewInput {
     refreshControl.endRefreshing()
     customView.webView.load(urlRequest)
   }
+  
+  func showMenu(with items: [TKMenuItem]) {
+    TKMenuController.show(sourceView: self.customView.headerView.twinButton,
+                          position: .right,
+                          width: .menuWidth,
+                          items: items,
+                          selectionClosure: { [weak self] in self?.presenter.didSelectMenuItem(at: $0) })
+  }
+  
+  func shareURL(_ url: URL) {
+    let activityViewController = UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    activityViewController.overrideUserInterfaceStyle = .dark
+    present(activityViewController, animated: true)
+  }
 }
 
 // MARK: - Private
@@ -83,7 +97,7 @@ private extension InAppBrowserMainViewController {
     urlObservation = customView.webView.observe(\.url, options: .new) { [weak self] webView, _ in
       self?.updateTitle(webView: webView)
     }
-    
+  
     customView.headerView.didTapLeftTwinButton = { [presenter] in
       presenter.didTapMenuButton()
     }
@@ -137,4 +151,5 @@ private extension InAppBrowserMainViewController {
 
 private extension CGFloat {
   static let attachmentBaselineOffset: CGFloat = -2
+  static let menuWidth: CGFloat = 196
 }

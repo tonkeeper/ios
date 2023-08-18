@@ -20,8 +20,11 @@ protocol InAppBrowserMainPresenterInput {
   func didTapMenuButton()
   func didPullToRefresh()
   func didChangeURL(_ url: URL)
+  func didSelectMenuItem(at index: Int)
 }
 
 protocol InAppBrowserMainViewInput: AnyObject {
   func loadURLRequest(_ urlRequest: URLRequest)
+  func showMenu(with items: [TKMenuItem])
+  func shareURL(_ url: URL)
 }

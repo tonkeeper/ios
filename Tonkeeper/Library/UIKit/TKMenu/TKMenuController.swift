@@ -9,19 +9,28 @@ import UIKit
 
 final class TKMenuController {
   
+  enum Position {
+    case center
+    case right
+  }
+  
   private static var window: UIWindow?
   private static var menuViewController: TKMenuViewController?
   private static weak var sourceView: UIView?
   
   static func show(sourceView: UIView,
+                   position: Position,
+                   width: CGFloat,
                    items: [TKMenuItem],
                    selectionClosure: @escaping (Int) -> Void) {
     self.sourceView = sourceView
     guard let sourceWindow = sourceView.window else { return }
     
-    let sourceViewConvertedFrame = sourceWindow.convert(sourceView.frame, from: sourceView.superview)
-    let origin = CGPoint(x: sourceViewConvertedFrame.midX - .menuWidth/2,
-                         y: sourceViewConvertedFrame.maxY + 10)
+    let origin = calculateOrigin(
+      sourceView: sourceView,
+      sourceWindow: sourceWindow,
+      position: position
+    )
     
     let menuViewController = TKMenuViewController(items: items,
                                                   origin: origin,
@@ -48,6 +57,25 @@ final class TKMenuController {
       menuViewController?.view.removeFromSuperview()
       self.menuViewController = nil
     })
+  }
+}
+
+private extension TKMenuController {
+  static func calculateOrigin(sourceView: UIView,
+                              sourceWindow: UIWindow,
+                              position: Position) -> CGPoint {
+    let sourceViewConvertedFrame = sourceWindow.convert(sourceView.frame,
+                                                        from: sourceView.superview)
+    let origin: CGPoint
+    switch position {
+    case .center:
+      origin = CGPoint(x: sourceViewConvertedFrame.midX - .menuWidth/2,
+                       y: sourceViewConvertedFrame.maxY + 10)
+    case .right:
+      origin = CGPoint(x: sourceViewConvertedFrame.maxX - .menuWidth,
+                       y:  sourceViewConvertedFrame.maxY + 10)
+    }
+    return origin
   }
 }
 

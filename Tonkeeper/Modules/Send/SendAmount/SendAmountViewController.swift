@@ -93,6 +93,8 @@ extension SendAmountViewController: SendAmountViewInput {
   
   func showMenu(items: [TKMenuItem]) {
     TKMenuController.show(sourceView: enterAmountViewController.customView.tokenSelectionButton,
+                          position: .center,
+                          width: .tokenMenuWidth,
                           items: items) { [weak self] index in
       self?.deselectMaxButton()
       self?.presenter.didSelectToken(at: index)
@@ -164,4 +166,8 @@ private extension SendAmountViewController {
   func didTapSwapCurrency() {
     presenter.didTapSwapButton()
   }
+}
+
+private extension CGFloat {
+  static let tokenMenuWidth: CGFloat = 220
 }

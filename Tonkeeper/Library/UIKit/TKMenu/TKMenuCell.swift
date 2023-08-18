@@ -14,7 +14,6 @@ final class TKMenuCell: UITableViewCell, ConfigurableView {
     let imageView = UIImageView()
     imageView.contentMode = .scaleAspectFit
     imageView.tintColor = .Icon.primary
-    imageView.layer.masksToBounds = true
     return imageView
   }()
   let leftLabel: UILabel = {
@@ -51,6 +50,10 @@ final class TKMenuCell: UITableViewCell, ConfigurableView {
   
   private let iconContainer = UIView()
   
+  private var iconImageViewWidthConstraint: NSLayoutConstraint?
+  private var iconImageViewHeightConstraint: NSLayoutConstraint?
+  private var iconContainerHeightConstraint: NSLayoutConstraint?
+  
   weak var imageLoader: ImageLoader?
   
   override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
@@ -72,7 +75,17 @@ final class TKMenuCell: UITableViewCell, ConfigurableView {
       iconImageView.backgroundColor = backgroundColor
       iconImageView.tintColor = tintColor
     case let .url(url):
-      imageLoader?.loadImage(imageURL: url, imageView: iconImageView, size: .init(width: .iconSide, height: .iconSide))
+      imageLoader?.loadImage(imageURL: url, imageView: iconImageView, size: .init(width: .iconSide, height: .iconSide), cornerRadius: model.iconCornerRadius)
+    }
+    iconImageViewWidthConstraint?.constant = model.iconSide
+    iconImageViewHeightConstraint?.constant = model.iconSide
+    iconContainerHeightConstraint?.constant = model.iconSide
+    
+    switch model.iconPosition {
+    case .left:
+      stackView.insertArrangedSubview(iconContainer, at: 0)
+    case .right:
+      stackView.insertArrangedSubview(iconContainer, at: stackView.arrangedSubviews.count - 1)
     }
   }
   
@@ -110,6 +123,14 @@ private extension TKMenuCell {
     stackView.translatesAutoresizingMaskIntoConstraints = false
     iconImageView.translatesAutoresizingMaskIntoConstraints = false
     tickImageView.translatesAutoresizingMaskIntoConstraints = false
+    
+    iconImageViewWidthConstraint = iconImageView.widthAnchor.constraint(equalToConstant: 0)
+    iconImageViewWidthConstraint?.isActive = true
+    iconImageViewHeightConstraint = iconImageView.widthAnchor.constraint(equalToConstant: 0)
+    iconImageViewHeightConstraint?.isActive = true
+    iconContainerHeightConstraint = iconContainer.widthAnchor.constraint(equalToConstant: 0)
+    iconContainerHeightConstraint?.isActive = true
+    
     NSLayoutConstraint.activate([
       stackView.topAnchor.constraint(equalTo: contentView.topAnchor),
       stackView.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: .stackViewSideSpace),
@@ -118,14 +139,11 @@ private extension TKMenuCell {
       stackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
         .withPriority(.defaultHigh),
       
-      iconImageView.widthAnchor.constraint(equalToConstant: .iconSide),
-      iconImageView.heightAnchor.constraint(equalToConstant: .iconSide),
+      iconImageView.heightAnchor.constraint(equalTo: iconContainer.widthAnchor),
       iconImageView.centerXAnchor.constraint(equalTo: iconContainer.centerXAnchor),
       iconImageView.centerYAnchor.constraint(equalTo: iconContainer.centerYAnchor),
       
-      tickImageView.widthAnchor.constraint(equalToConstant: .tickSide),
-      
-      iconContainer.widthAnchor.constraint(equalToConstant: .iconSide)
+      tickImageView.widthAnchor.constraint(equalToConstant: .tickSide)
     ])
   }
 }
