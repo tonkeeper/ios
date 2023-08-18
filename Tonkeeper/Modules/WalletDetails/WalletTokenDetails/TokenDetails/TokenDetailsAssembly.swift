@@ -12,8 +12,12 @@ struct TokenDetailsAssembly {
   static func module(output: TokenDetailsModuleOutput,
                      activityListModule: Module<ActivityListViewController, ActivityListModuleInput>,
                      tokenDetailsController: WalletCore.TokenDetailsController,
-                     imageLoader: ImageLoader) -> Module<UIViewController, TokenDetailsModuleInput> {
-    let presenter = TokenDetailsPresenter(tokenDetailsController: tokenDetailsController)
+                     imageLoader: ImageLoader,
+                     urlOpener: URLOpener) -> Module<UIViewController, TokenDetailsModuleInput> {
+    let presenter = TokenDetailsPresenter(
+      tokenDetailsController: tokenDetailsController,
+      urlOpener: urlOpener
+    )
     presenter.output = output
     
     let viewController = TokenDetailsViewController(presenter: presenter,

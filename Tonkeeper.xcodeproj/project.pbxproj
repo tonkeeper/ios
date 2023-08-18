@@ -197,6 +197,11 @@
 		7D70D3C62A2A037F0096E1A2 /* CryptoCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */; };
 		7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */; };
 		7D790EEB2A67E28200587C96 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */; };
+		7D797E102A8E6A3F00A626D7 /* TonDetailsAboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */; };
+		7D797E142A8F62BC00A626D7 /* TonDetailsLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */; };
+		7D797E172A8F637300A626D7 /* URLOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E162A8F637300A626D7 /* URLOpener.swift */; };
+		7D797E1A2A8F7A2600A626D7 /* ListTitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E192A8F7A2600A626D7 /* ListTitleView.swift */; };
+		7D797E1C2A8F7ACE00A626D7 /* ContainerCollectionViewReusableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E1B2A8F7ACE00A626D7 /* ContainerCollectionViewReusableView.swift */; };
 		7D7CE3F92A879ADA002BA9EC /* BalanceCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7CE3F82A879ADA002BA9EC /* BalanceCellContentView.swift */; };
 		7D7CE3FE2A89B3ED002BA9EC /* ActivityListShimmerSectionHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7CE3FD2A89B3ED002BA9EC /* ActivityListShimmerSectionHeaderView.swift */; };
 		7D80C0D52A6AA5F4007054DD /* TKKeyboardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */; };
@@ -523,6 +528,11 @@
 		7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoCurrency.swift; sourceTree = "<group>"; };
 		7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyWallet.swift; sourceTree = "<group>"; };
 		7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
+		7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonDetailsAboutView.swift; sourceTree = "<group>"; };
+		7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonDetailsLinks.swift; sourceTree = "<group>"; };
+		7D797E162A8F637300A626D7 /* URLOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLOpener.swift; sourceTree = "<group>"; };
+		7D797E192A8F7A2600A626D7 /* ListTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTitleView.swift; sourceTree = "<group>"; };
+		7D797E1B2A8F7ACE00A626D7 /* ContainerCollectionViewReusableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerCollectionViewReusableView.swift; sourceTree = "<group>"; };
 		7D7CE3F82A879ADA002BA9EC /* BalanceCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceCellContentView.swift; sourceTree = "<group>"; };
 		7D7CE3FD2A89B3ED002BA9EC /* ActivityListShimmerSectionHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListShimmerSectionHeaderView.swift; sourceTree = "<group>"; };
 		7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardButton.swift; sourceTree = "<group>"; };
@@ -820,13 +830,6 @@
 				7D1163132A61E80C00DF4F30 /* Token.swift */,
 			);
 			path = Token;
-			sourceTree = "<group>";
-		};
-		7D1163102A616CA500DF4F30 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Views;
 			sourceTree = "<group>";
 		};
 		7D13B24D3B53384824E51AA9 /* WalletContent */ = {
@@ -1303,6 +1306,7 @@
 				7D5D05D12A3090B2009F42FF /* DefaultCell */,
 				7D5D05D42A309674009F42FF /* ContainerCollectionViewCell.swift */,
 				7D9144232A31EF7600B0FD17 /* Selectable.swift */,
+				7D797E1B2A8F7ACE00A626D7 /* ContainerCollectionViewReusableView.swift */,
 			);
 			path = Cell;
 			sourceTree = "<group>";
@@ -1321,6 +1325,7 @@
 		7D6836152A1CAEAA002DBBC7 /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				7D797E152A8F634E00A626D7 /* URL */,
 				7D16E18D2A77DC5E00A27AB0 /* Toasts */,
 				7D5943472A547D0C00C89967 /* Taptic */,
 				7D5141CC2A53453D00EC7F59 /* Images */,
@@ -1554,6 +1559,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D797E182A8F7A1900A626D7 /* ListElements */,
 				7D8F64A52A8D3BE60042AE74 /* Gradient */,
 				7D16E1622A7526F300A27AB0 /* Toasts */,
 				7DB944BF2A728E0F0008B512 /* Shimmer */,
@@ -1636,6 +1642,38 @@
 				7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7D797E0E2A8E6A3300A626D7 /* TonDetailsLinksView */ = {
+			isa = PBXGroup;
+			children = (
+				7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */,
+			);
+			path = TonDetailsLinksView;
+			sourceTree = "<group>";
+		};
+		7D797E122A8F62AF00A626D7 /* Links */ = {
+			isa = PBXGroup;
+			children = (
+				7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */,
+			);
+			path = Links;
+			sourceTree = "<group>";
+		};
+		7D797E152A8F634E00A626D7 /* URL */ = {
+			isa = PBXGroup;
+			children = (
+				7D797E162A8F637300A626D7 /* URLOpener.swift */,
+			);
+			path = URL;
+			sourceTree = "<group>";
+		};
+		7D797E182A8F7A1900A626D7 /* ListElements */ = {
+			isa = PBXGroup;
+			children = (
+				7D797E192A8F7A2600A626D7 /* ListTitleView.swift */,
+			);
+			path = ListElements;
 			sourceTree = "<group>";
 		};
 		7D7CE3F72A879AC2002BA9EC /* BalanceCellContent */ = {
@@ -2076,10 +2114,11 @@
 		E15A4D816E375EC6F055D7F0 /* TokenDetails */ = {
 			isa = PBXGroup;
 			children = (
+				7D797E122A8F62AF00A626D7 /* Links */,
+				7D797E0E2A8E6A3300A626D7 /* TonDetailsLinksView */,
 				21E2D78094F5685866878D1B /* TonChart */,
 				7D32F8B42A8BD08E002C130C /* Header */,
 				7DC8A3B32A7C172B00B8B219 /* ListContent */,
-				7D1163102A616CA500DF4F30 /* Views */,
 				C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */,
 				8BB3CFCBC7CE604AC87B3E7A /* TokenDetailsView.swift */,
 				A11E39BAB09CFAC56EA2F4E0 /* TokenDetailsPresenter.swift */,
@@ -2254,6 +2293,7 @@
 				7D3BCFAF2A4C5DC500BE6AD9 /* CoreAssembly.swift in Sources */,
 				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
 				7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */,
+				7D797E142A8F62BC00A626D7 /* TonDetailsLinks.swift in Sources */,
 				7D384A482A6695A200DE2A66 /* SendAmountAssembly.swift in Sources */,
 				7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */,
 				7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */,
@@ -2266,6 +2306,7 @@
 				7D59287D2A20C92E006B0A8A /* TokensListTokensSectionBackgroundView.swift in Sources */,
 				7D3BCFB42A4C83BE00BE6AD9 /* SetupWalletAssembly.swift in Sources */,
 				7D7CE3F92A879ADA002BA9EC /* BalanceCellContentView.swift in Sources */,
+				7D797E1C2A8F7ACE00A626D7 /* ContainerCollectionViewReusableView.swift in Sources */,
 				7D3BCFD02A4D923400BE6AD9 /* PasscodeInputAssembly.swift in Sources */,
 				7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */,
 				7D5928552A1F6C71006B0A8A /* TKButton.swift in Sources */,
@@ -2328,6 +2369,7 @@
 				7D0207602A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift in Sources */,
 				7D59284D2A1F579E006B0A8A /* WalletHeaderProtocols.swift in Sources */,
 				7D3BCFCE2A4D90E200BE6AD9 /* PasscodeAssembly.swift in Sources */,
+				7D797E172A8F637300A626D7 /* URLOpener.swift in Sources */,
 				7D9292882A24CCB8005B83DF /* PagingContentViewController.swift in Sources */,
 				7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */,
 				7D80C0D52A6AA5F4007054DD /* TKKeyboardButton.swift in Sources */,
@@ -2437,6 +2479,7 @@
 				7D790EEB2A67E28200587C96 /* QRScannerSwipeDownButton.swift in Sources */,
 				987FA16FC8F9D0CBA2353D9D /* ReceiveRootView.swift in Sources */,
 				9EB19BBDABB92B4B6A28684B /* ReceiveRootPresenter.swift in Sources */,
+				7D797E102A8E6A3F00A626D7 /* TonDetailsAboutView.swift in Sources */,
 				86DEB0A35D88DABB3EAEFDD3 /* ReceiveRootProtocols.swift in Sources */,
 				4F9520B5A7862EFB04753658 /* ActivityRootViewController.swift in Sources */,
 				CB34DBE367608982460FD5AA /* ActivityRootView.swift in Sources */,
@@ -2495,6 +2538,7 @@
 				40B98115F358DDDBD1D6FAB1 /* PasscodeInputPresenter.swift in Sources */,
 				064BCFE4418858F3E6EAD791 /* PasscodeInputProtocols.swift in Sources */,
 				4710C223A1FF0E23BAD189BA /* TokenDetailsViewController.swift in Sources */,
+				7D797E1A2A8F7A2600A626D7 /* ListTitleView.swift in Sources */,
 				977233829BFB3A47453882FF /* TokenDetailsView.swift in Sources */,
 				7F316234DE732364EDD8983C /* TokenDetailsPresenter.swift in Sources */,
 				BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */,
@@ -2640,7 +2684,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 12;
-				DEVELOPMENT_TEAM = YS34WB4Z9W;
+				DEVELOPMENT_TEAM = PLLDWT87ZL;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
@@ -2656,7 +2700,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx;
+				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx1;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;

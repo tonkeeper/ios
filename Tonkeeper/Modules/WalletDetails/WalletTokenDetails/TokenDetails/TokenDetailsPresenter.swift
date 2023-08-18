@@ -20,17 +20,24 @@ final class TokenDetailsPresenter {
   // MARK: - Dependecies
   
   private let tokenDetailsController: WalletCore.TokenDetailsController
+  private let urlOpener: URLOpener
   
   // MARK: - Init
   
-  init(tokenDetailsController: WalletCore.TokenDetailsController) {
+  init(tokenDetailsController: WalletCore.TokenDetailsController,
+       urlOpener: URLOpener) {
     self.tokenDetailsController = tokenDetailsController
+    self.urlOpener = urlOpener
   }
 }
 
 // MARK: - TokenDetailsPresenterIntput
 
 extension TokenDetailsPresenter: TokenDetailsPresenterInput {
+  var hasAbout: Bool {
+    tokenDetailsController.hasAbout
+  }
+  
   func viewDidLoad() {
     updateHeader()
     updateChart()
@@ -39,6 +46,34 @@ extension TokenDetailsPresenter: TokenDetailsPresenterInput {
   
   func didPullToRefresh() {
     refreshContent()
+  }
+  
+  func didTapTonButton() {
+    urlOpener.open(url: TonDetailsLinks.tonURL)
+  }
+  
+  func didTapTwitterButton() {
+    urlOpener.open(url: TonDetailsLinks.twitterURL)
+  }
+  
+  func didTapChatButton() {
+    urlOpener.open(url: TonDetailsLinks.chatURL)
+  }
+  
+  func didTapCommunityButton() {
+    urlOpener.open(url: TonDetailsLinks.communityURL)
+  }
+  
+  func didTapWhitepaperButton() {
+    urlOpener.open(url: TonDetailsLinks.whitepaperURL)
+  }
+  
+  func didTapTonViewerButton() {
+    urlOpener.open(url: TonDetailsLinks.tonviewerURL)
+  }
+  
+  func didTapSourceCodeButton() {
+    urlOpener.open(url: TonDetailsLinks.sourceCodeURL)
   }
 }
 

@@ -25,8 +25,16 @@ protocol TokenDetailsModuleOutput: AnyObject {
 protocol TokenDetailsModuleInput: AnyObject, TokenDetailsControllerOutput {}
 
 protocol TokenDetailsPresenterInput {
+  var hasAbout: Bool { get }
   func viewDidLoad()
   func didPullToRefresh()
+  func didTapTonButton()
+  func didTapTwitterButton()
+  func didTapChatButton()
+  func didTapCommunityButton()
+  func didTapWhitepaperButton()
+  func didTapTonViewerButton()
+  func didTapSourceCodeButton()
 }
 
 protocol TokenDetailsViewInput: AnyObject {

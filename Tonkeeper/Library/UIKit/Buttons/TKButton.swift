@@ -229,6 +229,7 @@ private extension TKButton {
     maskLayer.shouldRasterize = true
     
     contentStackView.axis = .horizontal
+    contentStackView.spacing = 8
     contentStackView.alignment = .center
     contentStackView.isUserInteractionEnabled = false
     

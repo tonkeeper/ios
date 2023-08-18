@@ -71,6 +71,7 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
   
   private let topContainer = UIView()
   private let chartContainer = UIView()
+  private let aboutContainer = UIView()
   
   private let fiatPriceTopSpacingView = SpacingView(verticalSpacing: .constant(.fiatPriceTopSpacing))
   
@@ -139,6 +140,19 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
       chartView.rightAnchor.constraint(equalTo: chartContainer.rightAnchor)
     ])
   }
+  
+  // MARK: - Links view
+  
+  func embedAboutView(_ aboutView: UIView) {
+    aboutContainer.addSubview(aboutView)
+    aboutView.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+      aboutView.topAnchor.constraint(equalTo: aboutContainer.topAnchor),
+      aboutView.leftAnchor.constraint(equalTo: aboutContainer.leftAnchor),
+      aboutView.bottomAnchor.constraint(equalTo: aboutContainer.bottomAnchor),
+      aboutView.rightAnchor.constraint(equalTo: aboutContainer.rightAnchor)
+    ])
+  }
 }
 
 private extension TokenDetailsHeaderView {
@@ -147,6 +161,7 @@ private extension TokenDetailsHeaderView {
     addSubview(buttonsRowView)
     addSubview(buttonsSeparatorView)
     addSubview(chartContainer)
+    addSubview(aboutContainer)
     
     topContainer.addSubview(priceStackView)
     topContainer.addSubview(imageView)
@@ -168,6 +183,7 @@ private extension TokenDetailsHeaderView {
     
     topContainer.translatesAutoresizingMaskIntoConstraints = false
     chartContainer.translatesAutoresizingMaskIntoConstraints = false
+    aboutContainer.translatesAutoresizingMaskIntoConstraints = false
     priceStackView.translatesAutoresizingMaskIntoConstraints = false
     imageView.translatesAutoresizingMaskIntoConstraints = false
     separatorView.translatesAutoresizingMaskIntoConstraints = false
@@ -212,8 +228,11 @@ private extension TokenDetailsHeaderView {
       chartContainer.leftAnchor.constraint(equalTo: leftAnchor),
       chartContainer.rightAnchor.constraint(equalTo: rightAnchor)
         .withPriority(.defaultHigh),
-      chartContainer.bottomAnchor.constraint(equalTo: bottomAnchor)
-        .withPriority(.defaultHigh)
+      
+      aboutContainer.topAnchor.constraint(equalTo: chartContainer.bottomAnchor),
+      aboutContainer.leftAnchor.constraint(equalTo: leftAnchor),
+      aboutContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      aboutContainer.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh)
     ])
   }
 }

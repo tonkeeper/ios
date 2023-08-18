@@ -23,10 +23,10 @@ extension TKButton: ConfigurableView {
   }
   
   func configure(model: Model) {
-    titleLabel.text = model.title
+    title = model.title
     titleLabel.isHidden = model.title == nil
     
-    iconImageView.image = model.icon
+    icon = model.icon
     iconImageView.isHidden = model.icon == nil
     
     iconPosition = model.iconPosition
