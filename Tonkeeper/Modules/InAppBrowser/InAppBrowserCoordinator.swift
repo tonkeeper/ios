@@ -7,7 +7,9 @@
 
 import UIKit
 
-protocol InAppBrowserCoordinatorOutput: AnyObject {}
+protocol InAppBrowserCoordinatorOutput: AnyObject {
+  func inAppBrowserCoordinatorDidFinish(_ inAppBrowserCoordinator: InAppBrowserCoordinator)
+}
 
 final class InAppBrowserCoordinator: Coordinator<NavigationRouter> {
   weak var output: InAppBrowserCoordinatorOutput?
@@ -27,6 +29,15 @@ final class InAppBrowserCoordinator: Coordinator<NavigationRouter> {
 
 private extension InAppBrowserCoordinator {
   func openMain() {
-    
+    let module = InAppBrowserMainAssembly.module(output: self, url: url)
+    router.setPresentables([(module.view, nil)])
+  }
+}
+
+// MARK: - InAppBrowserCoordinator
+
+extension InAppBrowserCoordinator: InAppBrowserMainModuleOutput {
+  func inAppBrowserMainDidFinish(_ inAppBrowserMain: InAppBrowserMainModuleInput) {
+    output?.inAppBrowserCoordinatorDidFinish(self)
   }
 }

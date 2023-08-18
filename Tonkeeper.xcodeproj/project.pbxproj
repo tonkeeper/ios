@@ -269,6 +269,8 @@
 		7DAC789E2A8FAA8400358D35 /* InAppBrowserCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC789D2A8FAA8400358D35 /* InAppBrowserCoordinator.swift */; };
 		7DAC78A02A8FAAB000358D35 /* InAppBrowserAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC789F2A8FAAB000358D35 /* InAppBrowserAssembly.swift */; };
 		7DAC78C42A8FB34E00358D35 /* TwinButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78C32A8FB34E00358D35 /* TwinButton.swift */; };
+		7DAC78C72A8FB96A00358D35 /* InAppBrowserMainHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78C62A8FB96A00358D35 /* InAppBrowserMainHeaderView.swift */; };
+		7DAC78C92A8FBABF00358D35 /* InAppBrowserMainAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78C82A8FBABF00358D35 /* InAppBrowserMainAssembly.swift */; };
 		7DAC78CD2A8FE3AD00358D35 /* HeaderTwoLineTitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78CC2A8FE3AD00358D35 /* HeaderTwoLineTitleView.swift */; };
 		7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F342A4B2F07007C6154 /* AnyFormatKit */; };
 		7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F3E2A4B3338007C6154 /* WalletCore */; };
@@ -608,6 +610,8 @@
 		7DAC789D2A8FAA8400358D35 /* InAppBrowserCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserCoordinator.swift; sourceTree = "<group>"; };
 		7DAC789F2A8FAAB000358D35 /* InAppBrowserAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserAssembly.swift; sourceTree = "<group>"; };
 		7DAC78C32A8FB34E00358D35 /* TwinButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwinButton.swift; sourceTree = "<group>"; };
+		7DAC78C62A8FB96A00358D35 /* InAppBrowserMainHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserMainHeaderView.swift; sourceTree = "<group>"; };
+		7DAC78C82A8FBABF00358D35 /* InAppBrowserMainAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserMainAssembly.swift; sourceTree = "<group>"; };
 		7DAC78CC2A8FE3AD00358D35 /* HeaderTwoLineTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderTwoLineTitleView.swift; sourceTree = "<group>"; };
 		7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		7DB17F462A4C2D9B007C6154 /* OnboardingAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAssembly.swift; sourceTree = "<group>"; };
@@ -1948,6 +1952,14 @@
 			path = InAppBrowser;
 			sourceTree = "<group>";
 		};
+		7DAC78C52A8FB94800358D35 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7DAC78C62A8FB96A00358D35 /* InAppBrowserMainHeaderView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		7DB17F432A4C2D71007C6154 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
@@ -2143,10 +2155,12 @@
 		AD9327BFCCB9AE4486C5AC80 /* InAppBrowserMain */ = {
 			isa = PBXGroup;
 			children = (
+				7DAC78C52A8FB94800358D35 /* Views */,
 				68881E3458D55ED42C15ED75 /* InAppBrowserMainViewController.swift */,
 				DB7DC1929D9E928450B25896 /* InAppBrowserMainView.swift */,
 				F35315FE149F6BF9400B4324 /* InAppBrowserMainPresenter.swift */,
 				63E1770C8CEAAC7E5196ACB6 /* InAppBrowserMainProtocols.swift */,
+				7DAC78C82A8FBABF00358D35 /* InAppBrowserMainAssembly.swift */,
 			);
 			path = InAppBrowserMain;
 			sourceTree = "<group>";
@@ -2290,6 +2304,7 @@
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
 				7D9292D82A288013005B83DF /* Notificiation+Keyboard.swift in Sources */,
+				7DAC78C92A8FBABF00358D35 /* InAppBrowserMainAssembly.swift in Sources */,
 				7D384A592A66ACFA00DE2A66 /* ReceiveRootPresenterTokenProvider.swift in Sources */,
 				7D6836422A1D0B5C002DBBC7 /* TabBarAssembly.swift in Sources */,
 				7D9144222A31C3AA00B0FD17 /* ReceiveCoordinator.swift in Sources */,
@@ -2434,6 +2449,7 @@
 				7D68366E2A1D6F1E002DBBC7 /* WalletRootView.swift in Sources */,
 				7D70D3C62A2A037F0096E1A2 /* CryptoCurrency.swift in Sources */,
 				7D5928612A1FB62A006B0A8A /* ButtonsRowView.swift in Sources */,
+				7DAC78C72A8FB96A00358D35 /* InAppBrowserMainHeaderView.swift in Sources */,
 				7D9292E12A28A1F5005B83DF /* EnterAmountView.swift in Sources */,
 				7D92929B2A25F939005B83DF /* NSLayoutConstraint+Priority.swift in Sources */,
 				7DB944C12A728E160008B512 /* ShimmerView.swift in Sources */,

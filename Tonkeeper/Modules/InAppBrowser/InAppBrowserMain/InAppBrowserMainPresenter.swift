@@ -14,12 +14,38 @@ final class InAppBrowserMainPresenter {
   
   weak var viewInput: InAppBrowserMainViewInput?
   weak var output: InAppBrowserMainModuleOutput?
+  
+  // MARK: - Dependencies
+  
+  private var url: URL
+  
+  init(url: URL) {
+    self.url = url
+  }
 }
 
 // MARK: - InAppBrowserMainPresenterIntput
 
 extension InAppBrowserMainPresenter: InAppBrowserMainPresenterInput {
-  func viewDidLoad() {}
+  func viewDidLoad() {
+    viewInput?.loadURLRequest(URLRequest(url: url))
+  }
+  
+  func didTapMenuButton() {
+    
+  }
+  
+  func didTapCloseButton() {
+    output?.inAppBrowserMainDidFinish(self)
+  }
+  
+  func didChangeURL(_ url: URL) {
+    self.url = url
+  }
+  
+  func didPullToRefresh() {
+    viewInput?.loadURLRequest(URLRequest(url: url))
+  }
 }
 
 // MARK: - InAppBrowserMainModuleInput

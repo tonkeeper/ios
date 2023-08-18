@@ -139,8 +139,12 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
   func openURL(_ url: URL) {
     let navigationController = NavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
+    navigationController.modalPresentationStyle = .fullScreen
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = inAppBrowserAssembly.coordinator(router: router, url: url)
+    coordinator.output = self
+    addChild(coordinator)
+    coordinator.start()
     self.router.present(coordinator.router.rootViewController)
   }
 }
@@ -170,6 +174,14 @@ extension WalletTokenDetailsCoordinator: ActivityListModuleOutput {
   func activityListNoEvents(_ activityList: ActivityListModuleInput) {}
 }
 
-// MARK: -
+// MARK: - TonChartModuleOutput
 
 extension WalletTokenDetailsCoordinator: TonChartModuleOutput {}
+
+// MARK: - InAppBrowserCoordinatorOutput
+
+extension WalletTokenDetailsCoordinator: InAppBrowserCoordinatorOutput {
+  func inAppBrowserCoordinatorDidFinish(_ inAppBrowserCoordinator: InAppBrowserCoordinator) {
+    self.router.dismiss()
+  }
+}
