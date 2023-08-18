@@ -5,7 +5,7 @@
 //  Created by Grigory on 28.6.23..
 //
 
-import Foundation
+import UIKit
 
 struct CoreAssembly {
   var appSetting: AppSettings {
@@ -24,5 +24,19 @@ struct CoreAssembly {
   
   var fileManager: FileManager {
     .default
+  }
+  
+  func urlOpener() -> URLOpener {
+    URLOpener(systemOpener: systemOpener, inAppOpener: inAppOpener())
+  }
+}
+
+private extension CoreAssembly {
+  var systemOpener: URLSystemOpener {
+    UIApplication.shared
+  }
+  
+  func inAppOpener() -> URLInAppOpener {
+    DefaultURLInAppOpener()
   }
 }

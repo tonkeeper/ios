@@ -54,7 +54,8 @@ private extension WalletTokenDetailsCoordinator {
     let module = TokenDetailsAssembly.module(output: self,
                                              activityListModule: activityListModule,
                                              tokenDetailsController: tokenDetailsController,
-                                             imageLoader: NukeImageLoader())
+                                             imageLoader: NukeImageLoader(),
+                                             urlOpener: walletCoreAssembly.coreAssembly.urlOpener())
     tokenDetailsController.output = module.input
     
     module.view.setupBackButton()

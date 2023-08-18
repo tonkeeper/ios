@@ -22,6 +22,10 @@ class TokenDetailsViewController: GenericViewController<TokenDetailsView> {
   
   private let headerViewController = TokenDetailsHeaderViewController()
   
+  // MARK: - About view
+  
+  private let aboutView = TonDetailsAboutView()
+  
   // MARK: - Dependencies
   
   private let imageLoader: ImageLoader
@@ -84,6 +88,7 @@ private extension TokenDetailsViewController {
     headerViewController.imageLoader = imageLoader
     
     setupListContent()
+    setupAbout()
   }
   
   func setupListContent() {
@@ -98,8 +103,46 @@ private extension TokenDetailsViewController {
     }
   }
   
+  func setupAbout() {
+    guard presenter.hasAbout else { return }
+    headerViewController.setAboutView(aboutView)
+    aboutView.delegate = self
+  }
+  
   @objc
   func didPullToRefresh() {
     presenter.didPullToRefresh()
+  }
+}
+
+// MARK: TonDetailsAboutViewDelegate
+
+extension TokenDetailsViewController: TonDetailsAboutViewDelegate {
+  func didTapTonButton() {
+    presenter.didTapTonButton()
+  }
+  
+  func didTapTwitterButton() {
+    presenter.didTapTwitterButton()
+  }
+  
+  func didTapChatButton() {
+    presenter.didTapChatButton()
+  }
+  
+  func didTapCommunityButton() {
+    presenter.didTapCommunityButton()
+  }
+  
+  func didTapWhitepaperButton() {
+    presenter.didTapWhitepaperButton()
+  }
+  
+  func didTapTonViewerButton() {
+    presenter.didTapTonViewerButton()
+  }
+  
+  func didTapSourceCodeButton() {
+    presenter.didTapSourceCodeButton()
   }
 }

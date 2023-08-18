@@ -157,6 +157,36 @@ extension UIImage {
           .init(named: "Icons/16/ic-chevron-left-16")?.withRenderingMode(.alwaysTemplate)
         }
       }
+      
+      enum TonDetailsLinks {
+        static var tonOrg: UIImage? {
+          .init(named: "Icons/16/ic-globe-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var twitter: UIImage? {
+          .init(named: "Icons/16/ic-twitter-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var chat: UIImage? {
+          .init(named: "Icons/16/ic-telegram-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var community: UIImage? {
+          .init(named: "Icons/16/ic-telegram-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var whitepaper: UIImage? {
+          .init(named: "Icons/16/ic-doc-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var tonviewer: UIImage? {
+          .init(named: "Icons/16/ic-magnifying-glass-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var sourceCode: UIImage? {
+          .init(named: "Icons/16/ic-code-16")?.withRenderingMode(.alwaysTemplate)
+        }
+      }
     }
     
     enum TabBar {

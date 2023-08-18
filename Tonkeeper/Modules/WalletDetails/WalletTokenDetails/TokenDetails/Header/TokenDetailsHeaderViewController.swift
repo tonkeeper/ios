@@ -27,5 +27,9 @@ final class TokenDetailsHeaderViewController: GenericViewController<TokenDetails
     customView.embedChartView(chartViewController.view)
     chartViewController.didMove(toParent: self)
   }
+  
+  func setAboutView(_ aboutView: UIView) {
+    customView.embedAboutView(aboutView)
+  }
 }
 
