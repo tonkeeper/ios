@@ -50,7 +50,7 @@ extension TokenDetailsPresenter: TokenDetailsPresenterInput {
   }
   
   func didTapTonButton() {
-    urlOpener.open(url: TonDetailsLinks.tonURL)
+    output?.openURL(TonDetailsLinks.tonURL)
   }
   
   func didTapTwitterButton() {
@@ -66,11 +66,11 @@ extension TokenDetailsPresenter: TokenDetailsPresenterInput {
   }
   
   func didTapWhitepaperButton() {
-    urlOpener.open(url: TonDetailsLinks.whitepaperURL)
+    output?.openURL(TonDetailsLinks.whitepaperURL)
   }
   
   func didTapTonViewerButton() {
-    urlOpener.open(url: TonDetailsLinks.tonviewerURL)
+    output?.openURL(TonDetailsLinks.tonviewerURL)
   }
   
   func didTapSourceCodeButton() {

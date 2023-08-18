@@ -13,6 +13,7 @@ final class WalletTokenDetailsCoordinator: Coordinator<NavigationRouter> {
   private let walletCoreAssembly: WalletCoreAssembly
   private let sendAssembly: SendAssembly
   private let receiveAssembly: ReceiveAssembly
+  private let inAppBrowserAssembly: InAppBrowserAssembly
   
   let token: Token
   
@@ -20,11 +21,13 @@ final class WalletTokenDetailsCoordinator: Coordinator<NavigationRouter> {
        walletCoreAssembly: WalletCoreAssembly,
        sendAssembly: SendAssembly,
        receiveAssembly: ReceiveAssembly,
+       inAppBrowserAssembly: InAppBrowserAssembly,
        router: NavigationRouter) {
     self.token = token
     self.walletCoreAssembly = walletCoreAssembly
     self.sendAssembly = sendAssembly
     self.receiveAssembly = receiveAssembly
+    self.inAppBrowserAssembly = inAppBrowserAssembly
     super.init(router: router)
   }
   
@@ -132,6 +135,18 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
                                          output: self)
     return module
   }
+  
+  func openURL(_ url: URL) {
+    let navigationController = NavigationController()
+    navigationController.setNavigationBarHidden(true, animated: false)
+    navigationController.modalPresentationStyle = .fullScreen
+    let router = NavigationRouter(rootViewController: navigationController)
+    let coordinator = inAppBrowserAssembly.coordinator(router: router, url: url)
+    coordinator.output = self
+    addChild(coordinator)
+    coordinator.start()
+    self.router.present(coordinator.router.rootViewController)
+  }
 }
 
 // MARK: - SendCoordinatorOutput
@@ -159,6 +174,14 @@ extension WalletTokenDetailsCoordinator: ActivityListModuleOutput {
   func activityListNoEvents(_ activityList: ActivityListModuleInput) {}
 }
 
-// MARK: -
+// MARK: - TonChartModuleOutput
 
 extension WalletTokenDetailsCoordinator: TonChartModuleOutput {}
+
+// MARK: - InAppBrowserCoordinatorOutput
+
+extension WalletTokenDetailsCoordinator: InAppBrowserCoordinatorOutput {
+  func inAppBrowserCoordinatorDidFinish(_ inAppBrowserCoordinator: InAppBrowserCoordinator) {
+    self.router.dismiss()
+  }
+}

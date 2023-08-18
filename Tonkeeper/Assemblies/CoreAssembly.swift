@@ -27,7 +27,7 @@ struct CoreAssembly {
   }
   
   func urlOpener() -> URLOpener {
-    URLOpener(systemOpener: systemOpener, inAppOpener: inAppOpener())
+    URLOpener(systemOpener: systemOpener)
   }
 }
 

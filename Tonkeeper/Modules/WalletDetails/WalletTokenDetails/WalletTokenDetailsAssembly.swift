@@ -12,13 +12,16 @@ final class WalletTokenDetailsAssembly {
   let walletCoreAssembly: WalletCoreAssembly
   let sendAssembly: SendAssembly
   let receiveAssembly: ReceiveAssembly
+  let inAppBrowserAssembly: InAppBrowserAssembly
   
   init(walletCoreAssembly: WalletCoreAssembly,
        sendAssembly: SendAssembly,
-       receiveAssembly: ReceiveAssembly) {
+       receiveAssembly: ReceiveAssembly,
+       inAppBrowserAssembly: InAppBrowserAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
     self.sendAssembly = sendAssembly
     self.receiveAssembly = receiveAssembly
+    self.inAppBrowserAssembly = inAppBrowserAssembly
   }
     
   func coordinator(token: Token,
@@ -27,6 +30,7 @@ final class WalletTokenDetailsAssembly {
                                          walletCoreAssembly: walletCoreAssembly,
                                          sendAssembly: sendAssembly,
                                          receiveAssembly: receiveAssembly,
+                                         inAppBrowserAssembly: inAppBrowserAssembly,
                                          router: router)
   }
 }

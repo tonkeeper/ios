@@ -156,6 +156,10 @@ extension UIImage {
         static var back: UIImage? {
           .init(named: "Icons/16/ic-chevron-left-16")?.withRenderingMode(.alwaysTemplate)
         }
+        
+        static var more: UIImage? {
+          .init(named: "Icons/16/ic-ellipsis-16")?.withRenderingMode(.alwaysTemplate)
+        }
       }
       
       enum TonDetailsLinks {
@@ -230,6 +234,26 @@ extension UIImage {
     enum TKMenu {
       static var tick: UIImage? {
         .init(named: "Icons/16/ic-done-16")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
+    enum InAppBrowser {
+      static var ssl: UIImage? {
+        .init(named: "Icons/12/ic-lock-12")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      enum Menu {
+        static var share: UIImage? {
+          .init(named: "Icons/16/ic-share-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var copy: UIImage? {
+          .init(named: "Icons/16/ic-copy-16")?.withRenderingMode(.alwaysTemplate)
+        }
+        
+        static var refresh: UIImage? {
+          .init(named: "Icons/16/ic-refresh-16")?.withRenderingMode(.alwaysTemplate)
+        }
       }
     }
     

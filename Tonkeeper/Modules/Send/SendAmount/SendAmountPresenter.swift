@@ -73,6 +73,9 @@ extension SendAmountPresenter: SendAmountPresenterInput {
     let listModel = sendInputController.tokenListModel()
     let menuItems = listModel.tokens.enumerated().map {
       TKMenuItem(icon: .with(image: $0.element.icon),
+                 iconPosition: .left,
+                 iconSide: .tokenIconSide,
+                 iconCornerRadius: .tokenIconSide/2,
                  leftTitle: $0.element.code,
                  rightTitle: $0.element.amount,
                  isSelected: $0.offset == listModel.selectedIndex)
@@ -162,3 +165,8 @@ private extension SendAmountPresenter {
     }
   }
 }
+
+private extension CGFloat {
+  static let tokenIconSide: CGFloat = 24
+}
+
