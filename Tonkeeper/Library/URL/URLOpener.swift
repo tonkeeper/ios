@@ -22,15 +22,9 @@ protocol URLInAppOpener {
 
 struct URLOpener {
   let systemOpener: URLSystemOpener
-  let inAppOpener: URLInAppOpener
   
-  func open(url: TKURL) {
-    switch url {
-    case .inApp(let url):
-      inAppOpener.open(url: url)
-    case .system(let url):
-      systemOpener.open(url: url)
-    }
+  func open(url: URL) {
+    systemOpener.open(url: url)
   }
 }
 

@@ -16,6 +16,7 @@ struct WalletAssembly {
   let receiveAssembly: ReceiveAssembly
   let buyAssembly: BuyAssembly
   let walletTokenDetailsAssembly: WalletTokenDetailsAssembly
+  let inAppBrowserAssembly: InAppBrowserAssembly
   
   private var walletBalanceModelMapper: WalletBalanceModelMapper {
     WalletBalanceModelMapper()
@@ -24,15 +25,18 @@ struct WalletAssembly {
   init(walletCoreAssembly: WalletCoreAssembly,
        sendAssembly: SendAssembly,
        receiveAssembly: ReceiveAssembly,
-       buyAssembly: BuyAssembly) {
+       buyAssembly: BuyAssembly,
+       inAppBrowserAssembly: InAppBrowserAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
     self.sendAssembly = sendAssembly
     self.receiveAssembly = receiveAssembly
     self.buyAssembly = buyAssembly
+    self.inAppBrowserAssembly = inAppBrowserAssembly
     self.walletTokenDetailsAssembly = WalletTokenDetailsAssembly(
       walletCoreAssembly: walletCoreAssembly,
       sendAssembly: sendAssembly,
-      receiveAssembly: receiveAssembly
+      receiveAssembly: receiveAssembly,
+      inAppBrowserAssembly: inAppBrowserAssembly
     )
   }
   

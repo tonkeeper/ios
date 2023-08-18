@@ -20,6 +20,8 @@ protocol TokenDetailsModuleOutput: AnyObject {
   func didTapTokenSwap(tokenInfo: TokenInfo)
   
   func tonChartModule() -> Module<TonChartViewController, TonChartModuleInput>
+  
+  func openURL(_ url: URL)
 }
 
 protocol TokenDetailsModuleInput: AnyObject, TokenDetailsControllerOutput {}
