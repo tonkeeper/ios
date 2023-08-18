@@ -268,6 +268,8 @@
 		7DA0EFF82A866D2B0062C8BA /* ActivityListFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA0EFF72A866D2B0062C8BA /* ActivityListFooterView.swift */; };
 		7DAC789E2A8FAA8400358D35 /* InAppBrowserCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC789D2A8FAA8400358D35 /* InAppBrowserCoordinator.swift */; };
 		7DAC78A02A8FAAB000358D35 /* InAppBrowserAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC789F2A8FAAB000358D35 /* InAppBrowserAssembly.swift */; };
+		7DAC78C42A8FB34E00358D35 /* TwinButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78C32A8FB34E00358D35 /* TwinButton.swift */; };
+		7DAC78CD2A8FE3AD00358D35 /* HeaderTwoLineTitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78CC2A8FE3AD00358D35 /* HeaderTwoLineTitleView.swift */; };
 		7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F342A4B2F07007C6154 /* AnyFormatKit */; };
 		7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F3E2A4B3338007C6154 /* WalletCore */; };
 		7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */; };
@@ -605,6 +607,8 @@
 		7DA0EFF72A866D2B0062C8BA /* ActivityListFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListFooterView.swift; sourceTree = "<group>"; };
 		7DAC789D2A8FAA8400358D35 /* InAppBrowserCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserCoordinator.swift; sourceTree = "<group>"; };
 		7DAC789F2A8FAAB000358D35 /* InAppBrowserAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserAssembly.swift; sourceTree = "<group>"; };
+		7DAC78C32A8FB34E00358D35 /* TwinButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwinButton.swift; sourceTree = "<group>"; };
+		7DAC78CC2A8FE3AD00358D35 /* HeaderTwoLineTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HeaderTwoLineTitleView.swift; sourceTree = "<group>"; };
 		7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		7DB17F462A4C2D9B007C6154 /* OnboardingAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAssembly.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -1218,6 +1222,7 @@
 				7D527BED2A2DEA2C00A2D29A /* ResultView.swift */,
 				7D91442E2A31FC0100B0FD17 /* PassthroughView.swift */,
 				7D16E1892A77C1FB00A27AB0 /* PassthroughWindow.swift */,
+				7DAC78CC2A8FE3AD00358D35 /* HeaderTwoLineTitleView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -1605,6 +1610,7 @@
 				7D5928732A2007C0006B0A8A /* Button.Configuration+Header.swift */,
 				7D59285B2A1FA5FE006B0A8A /* IconButton.swift */,
 				7D5928682A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift */,
+				7DAC78C32A8FB34E00358D35 /* TwinButton.swift */,
 			);
 			path = Buttons;
 			sourceTree = "<group>";
@@ -2333,6 +2339,7 @@
 				7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */,
 				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
 				7D8F64B32A8E43F90042AE74 /* TonChartErrorView.swift in Sources */,
+				7DAC78C42A8FB34E00358D35 /* TwinButton.swift in Sources */,
 				7D384A4A2A66973D00DE2A66 /* SendRecipientAssembly.swift in Sources */,
 				7DE27E682A30D94100842FA8 /* TransactionCellContentView.swift in Sources */,
 				7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */,
@@ -2580,6 +2587,7 @@
 				BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */,
 				95F3E77FC6DBC86F8EB6745F /* TonChartViewController.swift in Sources */,
 				B91D795CFF06D6E93B856F37 /* TonChartView.swift in Sources */,
+				7DAC78CD2A8FE3AD00358D35 /* HeaderTwoLineTitleView.swift in Sources */,
 				E4178183A698EC6ABCAC4CC7 /* TonChartPresenter.swift in Sources */,
 				22C5887CCD3DB975055E331B /* TonChartProtocols.swift in Sources */,
 				E9BBB17A63ECB9F506226280 /* InAppBrowserMainViewController.swift in Sources */,
