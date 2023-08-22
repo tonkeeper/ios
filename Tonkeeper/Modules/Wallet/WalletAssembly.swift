@@ -16,6 +16,7 @@ struct WalletAssembly {
   let receiveAssembly: ReceiveAssembly
   let buyAssembly: BuyAssembly
   let walletTokenDetailsAssembly: WalletTokenDetailsAssembly
+  let collectibleAssembly: CollectibleAssembly
   let inAppBrowserAssembly: InAppBrowserAssembly
   
   private var walletBalanceModelMapper: WalletBalanceModelMapper {
@@ -38,6 +39,7 @@ struct WalletAssembly {
       receiveAssembly: receiveAssembly,
       inAppBrowserAssembly: inAppBrowserAssembly
     )
+    self.collectibleAssembly = CollectibleAssembly()
   }
   
   func walletRootModule(output: WalletRootModuleOutput) -> Module<UIViewController, Void> {    

@@ -7,10 +7,12 @@
 //
 
 import Foundation
+import TonSwift
 
 protocol ActivityRootModuleOutput: AnyObject {
   func didTapReceiveButton()
   func didSelectTransaction()
+  func didSelectCollectible(address: Address)
 }
 
 protocol ActivityRootModuleInput: AnyObject {}

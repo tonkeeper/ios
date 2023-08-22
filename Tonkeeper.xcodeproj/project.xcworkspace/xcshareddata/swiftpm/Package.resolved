@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
-        "branch" : "develop",
-        "revision" : "b1c9daef02d81fc2ac12c15d6629b77dc7112d12"
+        "branch" : "feature/collectible_details",
+        "revision" : "085e50f1e873adc093427b40231a8af6f06836da"
       }
     },
     {

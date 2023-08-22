@@ -7,7 +7,20 @@
 
 import UIKit
 
+protocol ActivityListCompositionTransactionCellDelegate: AnyObject {
+  func activityListCompositionTransactionCell(
+    _ activityListCompositionTransactionCell: ActivityListCompositionTransactionCell,
+    didSelectTransactionAt index: Int
+  )
+  func activityListCompositionTransactionCell(
+    _ activityListCompositionTransactionCell: ActivityListCompositionTransactionCell,
+    didSelectNFTAt index: Int
+  )
+}
+
 final class ActivityListCompositionTransactionCell: ContainerCollectionViewCell<CompositionTransactionCellContentView>, Reusable {
+  
+  weak var delegate: ActivityListCompositionTransactionCellDelegate?
   
   weak var imageLoader: ImageLoader? {
     didSet {
@@ -41,6 +54,23 @@ private extension ActivityListCompositionTransactionCell {
   func setup() {
     layer.masksToBounds = true
     layer.cornerRadius = 16
+    
+    cellContentView.delegate = self
+  }
+}
+
+extension ActivityListCompositionTransactionCell: CompositionTransactionCellContentViewDelegate {
+  func compositionTransactionCellContentView(
+    _ compositionTransactionCell: CompositionTransactionCellContentView,
+    didSelectTransactionAt index: Int) {
+      delegate?.activityListCompositionTransactionCell(self,
+                                                       didSelectTransactionAt: index)
+  }
+  
+  func compositionTransactionCellContentView(_ compositionTransactionCell: CompositionTransactionCellContentView,
+                                             didSelectNFTAt index: Int) {
+    delegate?.activityListCompositionTransactionCell(self,
+                                                     didSelectNFTAt: index)
   }
 }
 

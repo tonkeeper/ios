@@ -139,6 +139,10 @@ extension WalletRootPresenter: WalletContentModuleOutput {
   func didSelectItem(item: WalletItemViewModel) {
     output?.didSelectItem(item)
   }
+  
+  func didSelectCollectibleItem(_ collectibleItem: WalletCollectibleItemViewModel) {
+    output?.didSelectCollectibleItem(collectibleItem)
+  }
 }
 
 private extension String {

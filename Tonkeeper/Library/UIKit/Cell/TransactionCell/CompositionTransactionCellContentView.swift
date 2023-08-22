@@ -7,12 +7,25 @@
 
 import UIKit
 
+protocol CompositionTransactionCellContentViewDelegate: AnyObject {
+  func compositionTransactionCellContentView(
+    _ compositionTransactionCell: CompositionTransactionCellContentView,
+    didSelectTransactionAt index: Int
+  )
+  func compositionTransactionCellContentView(
+    _ compositionTransactionCell: CompositionTransactionCellContentView,
+    didSelectNFTAt index: Int
+  )
+}
+
 final class CompositionTransactionCellContentView: UIView, ContainerCollectionViewCellContent {
   struct Model {
     let transactionContentModels: [TransactionCellContentView.Model]
   }
   
   var transactionContentViews = [TransactionCellContentView]()
+  
+  weak var delegate: CompositionTransactionCellContentViewDelegate?
   
   weak var imageLoader: ImageLoader? {
     didSet { transactionContentViews.forEach { $0.imageLoader = imageLoader } }
@@ -37,6 +50,11 @@ final class CompositionTransactionCellContentView: UIView, ContainerCollectionVi
         view = views[index]
       } else {
         view = TransactionCellContentView()
+        view.delegate = self
+        view.addTarget(
+          self,
+          action: #selector(didTapTransaction(sender:)),
+          for: .touchUpInside)
         view.imageLoader = imageLoader
         views.append(view)
         addSubview(view)
@@ -66,5 +84,18 @@ final class CompositionTransactionCellContentView: UIView, ContainerCollectionVi
       
     }
     return CGSize(width: size.width, height: height)
+  }
+  
+  @objc
+  private func didTapTransaction(sender: TransactionCellContentView) {
+    guard let index = transactionContentViews.firstIndex(of: sender) else { return }
+    delegate?.compositionTransactionCellContentView(self, didSelectTransactionAt: index)
+  }
+}
+
+extension CompositionTransactionCellContentView: TransactionCellContentViewDelegate {
+  func transactionCellDidTapNFTView(_ transactionCell: TransactionCellContentView) {
+    guard let index = transactionContentViews.firstIndex(of: transactionCell) else { return }
+    delegate?.compositionTransactionCellContentView(self, didSelectNFTAt: index)
   }
 }

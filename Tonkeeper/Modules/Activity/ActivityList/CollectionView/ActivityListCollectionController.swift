@@ -8,11 +8,15 @@
 import UIKit
 
 protocol ActivityListCollectionControllerDelegate: AnyObject {
-  func activityListCollectionController(_ collectionController: ActivityListCollectionController,
-                                        didSelectTransactionAt indexPath: IndexPath)
   func activityListCollectionControllerLoadNextPage(_ collectionController: ActivityListCollectionController)
   func activityListCollectionControllerEventViewModel(for eventId: String) -> ActivityListCompositionTransactionCell.Model?
   func activityListCollectionControllerDidPullToRefresh(_ collectionController: ActivityListCollectionController)
+  func activityListCollectionControllerDidSelectAction(_ collectionController: ActivityListCollectionController,
+                                        transactionIndexPath: IndexPath,
+                                        actionIndex: Int)
+  func activityListCollectionControllerDidSelectNFT(_ collectionController: ActivityListCollectionController,
+                                        transactionIndexPath: IndexPath,
+                                        actionIndex: Int)
 }
 
 final class ActivityListCollectionController: NSObject {
@@ -200,6 +204,7 @@ private extension ActivityListCollectionController {
       return UICollectionViewCell()
     }
     
+    cell.delegate = self
     cell.imageLoader = self.imageLoader
     cell.configure(model: model)
     return cell
@@ -235,13 +240,6 @@ private extension ActivityListCollectionController {
 }
 
 extension ActivityListCollectionController: UICollectionViewDelegate {
-  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    (collectionView.cellForItem(at: indexPath) as? Selectable)?.select()
-    collectionView.deselectItem(at: indexPath, animated: true)
-    delegate?.activityListCollectionController(self,
-                                               didSelectTransactionAt: indexPath)
-  }
-  
   func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
     (collectionView.cellForItem(at: indexPath) as? Selectable)?.deselect()
   }
@@ -256,5 +254,30 @@ extension ActivityListCollectionController: UICollectionViewDelegate {
                       willDisplay cell: UICollectionViewCell,
                       forItemAt indexPath: IndexPath) {
     fetchNextIfNeeded(collectionView: collectionView, indexPath: indexPath)
+  }
+}
+
+extension ActivityListCollectionController: ActivityListCompositionTransactionCellDelegate {
+  func activityListCompositionTransactionCell(_ activityListCompositionTransactionCell: ActivityListCompositionTransactionCell,
+                                              didSelectTransactionAt index: Int) {
+    guard let collectionView = collectionView,
+    let cellIndexPath = collectionView.indexPath(for: activityListCompositionTransactionCell) else { return }
+    
+    delegate?.activityListCollectionControllerDidSelectAction(
+      self,
+      transactionIndexPath: cellIndexPath,
+      actionIndex: index
+    )
+  }
+  
+  func activityListCompositionTransactionCell(_ activityListCompositionTransactionCell: ActivityListCompositionTransactionCell,
+                                              didSelectNFTAt index: Int) {
+    guard let collectionView = collectionView,
+    let cellIndexPath = collectionView.indexPath(for: activityListCompositionTransactionCell) else { return }
+    delegate?.activityListCollectionControllerDidSelectNFT(
+      self,
+      transactionIndexPath: cellIndexPath,
+      actionIndex: index
+    )
   }
 }

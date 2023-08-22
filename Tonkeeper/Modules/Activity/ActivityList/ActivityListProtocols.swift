@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import TonSwift
 
 enum ActivityListViewState {
   case shimmer(sections: [ActivityListSection])
@@ -20,14 +21,19 @@ protocol ActivityListModuleOutput: AnyObject {
   func activityListNoEvents(_ activityList: ActivityListModuleInput)
 }
 
+protocol ActivityListModuleCollectibleOutput: ActivityListModuleOutput {
+  func didSelectCollectible(with address: Address)
+}
+
 protocol ActivityListModuleInput: AnyObject {}
 
 protocol ActivityListPresenterInput {
   func viewDidLoad()
-  func didSelectTransactionAt(indexPath: IndexPath)
   func reload()
   func fetchNext()
   func viewModel(eventId: String) -> ActivityListCompositionTransactionCell.Model?
+  func didSelectTransactionAt(indexPath: IndexPath, actionIndex: Int)
+  func didSelectNFTAt(indexPath: IndexPath, actionIndex: Int)
 }
 
 protocol ActivityListViewInput: AnyObject {

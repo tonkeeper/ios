@@ -61,8 +61,9 @@ extension WalletContentPresenter: WalletContentPageOutput {
     case .token(let items):
       let item = items[indexPath.item]
       output?.didSelectItem(item: item)
-    case .collectibles:
-      break
+    case .collectibles(let items):
+      let item = items[indexPath.item]
+      output?.didSelectCollectibleItem(item)
     }
   }
 }

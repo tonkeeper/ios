@@ -55,10 +55,6 @@ extension ActivityListPresenter: ActivityListPresenterInput {
     }
   }
   
-  func didSelectTransactionAt(indexPath: IndexPath) {
-    output?.didSelectTransaction(in: indexPath.section, at: indexPath.item)
-  }
-  
   func reload() {
     Task {
       do {
@@ -112,6 +108,24 @@ extension ActivityListPresenter: ActivityListPresenterInput {
   
   func viewModel(eventId: String) -> ActivityListCompositionTransactionCell.Model? {
     return cellsViewModels[eventId]
+  }
+  
+  func didSelectTransactionAt(indexPath: IndexPath, actionIndex: Int) {
+    
+  }
+  
+  func didSelectNFTAt(indexPath: IndexPath, actionIndex: Int) {
+    Task { [activityListController] in
+      guard let collectibleAddress = try? await activityListController.getCollectibleAddress(
+        sectionIndex: indexPath.section,
+        eventIndex: indexPath.item,
+        actionIndex: actionIndex
+      ) else { return }
+      
+      await MainActor.run { [output] in
+        (output as? ActivityListModuleCollectibleOutput)?.didSelectCollectible(with: collectibleAddress)
+      }
+    }
   }
 }
 

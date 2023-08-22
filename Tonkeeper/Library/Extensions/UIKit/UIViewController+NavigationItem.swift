@@ -25,4 +25,13 @@ extension UIViewController {
     }), for: .touchUpInside)
     navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeButton)
   }
+  
+  func setupSwipeButton(closure: @escaping () -> Void) {
+    let swipeButton = TKButton(configuration: .Header.button)
+    swipeButton.configure(model: .init(icon: .Icons.Buttons.Header.swipe))
+    swipeButton.addAction(.init(handler: {
+      closure()
+    }), for: .touchUpInside)
+    navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeButton)
+  }
 }
