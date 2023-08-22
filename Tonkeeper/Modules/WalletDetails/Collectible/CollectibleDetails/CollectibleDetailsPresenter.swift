@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import WalletCore
 
 final class CollectibleDetailsPresenter {
   
@@ -14,6 +15,14 @@ final class CollectibleDetailsPresenter {
   
   weak var viewInput: CollectibleDetailsViewInput?
   weak var output: CollectibleDetailsModuleOutput?
+  
+  // MARK: - Dependencies
+  
+  private let collectibleDetailsController: CollectibleDetailsController
+  
+  init(collectibleDetailsController: CollectibleDetailsController) {
+    self.collectibleDetailsController = collectibleDetailsController
+  }
 }
 
 // MARK: - CollectibleDetailsPresenterIntput

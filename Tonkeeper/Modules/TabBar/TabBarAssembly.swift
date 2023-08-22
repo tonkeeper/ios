@@ -25,7 +25,7 @@ final class TabBarAssembly {
   lazy var browserAssembly = BrowserAssembly()
   lazy var settingsAssembly = SettingsAssembly()
   lazy var receiveAssembly = ReceiveAssembly(walletCoreAssembly: walletCoreAssembly)
-  let collectibleAssembly = CollectibleAssembly()
+  lazy var collectibleAssembly = CollectibleAssembly(walletCoreAssembly: walletCoreAssembly)
   
   init(coreAssembly: CoreAssembly,
        walletCoreAssembly: WalletCoreAssembly) {

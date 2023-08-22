@@ -66,7 +66,10 @@ extension ActivityCoordinator: ActivityRootModuleOutput {
     let navigationController = NavigationController()
     navigationController.configureDefaultAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
-    let coordinator = collectibleAssembly.coordinator(router: router)
+    let coordinator = collectibleAssembly.coordinator(
+      router: router,
+      collectibleAddress: address
+    )
     coordinator.output = self
     addChild(coordinator)
     coordinator.start()

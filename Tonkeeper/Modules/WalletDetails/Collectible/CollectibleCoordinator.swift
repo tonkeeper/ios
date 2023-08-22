@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import TonSwift
 
 protocol CollectibleCoordinatorOutput: AnyObject {
   func collectibleCoordinatorDidFinish(_ coordinator: CollectibleCoordinator)
@@ -15,7 +16,14 @@ final class CollectibleCoordinator: Coordinator<NavigationRouter> {
   
   weak var output: CollectibleCoordinatorOutput?
   
-  override init(router: NavigationRouter) {
+  private let collectibleAddress: Address
+  private let walletCoreAssembly: WalletCoreAssembly
+  
+  init(router: NavigationRouter,
+       collectibleAddress: Address,
+       walletCoreAssembly: WalletCoreAssembly) {
+    self.walletCoreAssembly = walletCoreAssembly
+    self.collectibleAddress = collectibleAddress
     super.init(router: router)
   }
   
@@ -26,7 +34,11 @@ final class CollectibleCoordinator: Coordinator<NavigationRouter> {
 
 private extension CollectibleCoordinator {
   func openCollectibleDetails() {
-    let module = CollectibleDetailsAssembly.module(output: self)
+    let collectibleDetailsController = walletCoreAssembly.collectibleDetailsController(collectibleAddress: collectibleAddress)
+    let module = CollectibleDetailsAssembly.module(
+      collectibleDetailsController: collectibleDetailsController,
+      output: self
+    )
     
     router.setPresentables([(module.view, nil)])
   }

@@ -54,7 +54,8 @@ private extension WalletCoordinator {
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = walletAssembly
       .collectibleAssembly
-      .coordinator(router: router)
+      .coordinator(router: router,
+                   collectibleAddress: Address.mock(workchain: 2, seed: ""))
     coordinator.output = self
     
     addChild(coordinator)

@@ -6,10 +6,12 @@
 //
 
 import UIKit
+import WalletCore
 
 struct CollectibleDetailsAssembly {
-  static func module(output: CollectibleDetailsModuleOutput?) -> Module<CollectibleDetailsViewController, CollectibleDetailsModuleInput> {
-    let presenter = CollectibleDetailsPresenter()
+  static func module(collectibleDetailsController: CollectibleDetailsController,
+                     output: CollectibleDetailsModuleOutput?) -> Module<CollectibleDetailsViewController, CollectibleDetailsModuleInput> {
+    let presenter = CollectibleDetailsPresenter(collectibleDetailsController: collectibleDetailsController)
     presenter.output = output
     
     let viewController = CollectibleDetailsViewController(presenter: presenter)

@@ -6,9 +6,19 @@
 //
 
 import Foundation
+import TonSwift
 
 struct CollectibleAssembly {
-  func coordinator(router: NavigationRouter) -> CollectibleCoordinator {
-    return CollectibleCoordinator(router: router)
+  let walletCoreAssembly: WalletCoreAssembly
+  
+  init(walletCoreAssembly: WalletCoreAssembly) {
+    self.walletCoreAssembly = walletCoreAssembly
+  }
+  
+  func coordinator(router: NavigationRouter,
+                   collectibleAddress: Address) -> CollectibleCoordinator {
+    return CollectibleCoordinator(router: router,
+                                  collectibleAddress: collectibleAddress,
+                                  walletCoreAssembly: walletCoreAssembly)
   }
 }
