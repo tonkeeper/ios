@@ -19,4 +19,7 @@ protocol CollectibleDetailsPresenterInput {
   func didTapSwipeButton()
 }
 
-protocol CollectibleDetailsViewInput: AnyObject {}
+protocol CollectibleDetailsViewInput: AnyObject {
+  func updateDetailsSection(model: CollectibleDetailsDetailsView.Model)
+  func updateContentSection(model: CollectibleDetailsCollectionDescriptionView.Model)
+}

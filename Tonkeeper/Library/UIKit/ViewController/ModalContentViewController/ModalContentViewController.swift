@@ -24,6 +24,7 @@ final class ModalContentViewController: UIViewController, ScrollableModalCardCon
     stackView.axis = .vertical
     return stackView
   }()
+  private let contentView = UIView()
   private let headerView = ModalContentHeaderView()
   private let listView = ModalContentListView()
   private let actionBarView = ModalContentActionBarView()
@@ -117,7 +118,8 @@ private extension ModalContentViewController {
     
     view.addSubview(scrollView)
     view.addSubview(actionBarView)
-    scrollView.addSubview(contentStackView)
+    scrollView.addSubview(contentView)
+    contentView.addSubview(contentStackView)
     
     contentStackView.addArrangedSubview(headerView)
     contentStackView.addArrangedSubview(listTopSpacingView)
@@ -137,6 +139,7 @@ private extension ModalContentViewController {
     scrollView.translatesAutoresizingMaskIntoConstraints = false
     contentStackView.translatesAutoresizingMaskIntoConstraints = false
     actionBarView.translatesAutoresizingMaskIntoConstraints = false
+    contentView.translatesAutoresizingMaskIntoConstraints = false
     
     actionBarBottomConstraint = actionBarView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
     actionBarBottomConstraint?.isActive = true
@@ -147,11 +150,16 @@ private extension ModalContentViewController {
       scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
       scrollView.rightAnchor.constraint(equalTo: view.rightAnchor),
       
-      contentStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-      contentStackView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),
-      contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: -.listItemsBottomSpace),
-      contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor),
-      contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+      contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+      contentView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),
+      contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: -.listItemsBottomSpace),
+      contentView.rightAnchor.constraint(equalTo: scrollView.rightAnchor),
+      contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+      
+      contentStackView.topAnchor.constraint(equalTo: contentView.topAnchor),
+      contentStackView.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: ContentInsets.sideSpace),
+      contentStackView.rightAnchor.constraint(equalTo: contentView.rightAnchor, constant: -ContentInsets.sideSpace),
+      contentStackView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
       
       actionBarView.leftAnchor.constraint(equalTo: view.leftAnchor),
       actionBarView.rightAnchor.constraint(equalTo: view.rightAnchor)

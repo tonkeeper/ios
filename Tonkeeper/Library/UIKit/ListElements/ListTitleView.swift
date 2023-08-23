@@ -10,10 +10,10 @@ import UIKit
 final class ListTitleView: UIView, Reusable, ContainerCollectionViewReusableViewContent {
   
   struct Model: Hashable {
-    let date: String?
+    let title: String?
   }
   
-  private let dateLabel: UILabel = {
+  private let titleLabel: UILabel = {
     let label = UILabel()
     label.applyTextStyleFont(.h3)
     label.textColor = .Text.primary
@@ -39,27 +39,27 @@ final class ListTitleView: UIView, Reusable, ContainerCollectionViewReusableView
   }
   
   func prepareForReuse() {
-    dateLabel.text = nil
+    titleLabel.text = nil
   }
   
   func configure(model: Model) {
-    dateLabel.text = model.date
+    titleLabel.text = model.title
   }
 }
 
 private extension ListTitleView {
   func setup() {
-    addSubview(dateLabel)
+    addSubview(titleLabel)
     backgroundColor = .Background.page
     
-    dateLabel.backgroundColor = .Background.page
+    titleLabel.backgroundColor = .Background.page
     
-    dateLabel.translatesAutoresizingMaskIntoConstraints = false
+    titleLabel.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-      dateLabel.topAnchor.constraint(equalTo: topAnchor),
-      dateLabel.leftAnchor.constraint(equalTo: leftAnchor),
-      dateLabel.bottomAnchor.constraint(equalTo: bottomAnchor),
-      dateLabel.rightAnchor.constraint(equalTo: rightAnchor)
+      titleLabel.topAnchor.constraint(equalTo: topAnchor),
+      titleLabel.leftAnchor.constraint(equalTo: leftAnchor),
+      titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor),
+      titleLabel.rightAnchor.constraint(equalTo: rightAnchor)
     ])
   }
 }

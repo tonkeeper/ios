@@ -148,7 +148,7 @@ private extension ActivityListCollectionController {
           withReuseIdentifier: ActivityListSectionHeaderView.reuseIdentifier,
           for: indexPath
         ) as? ActivityListSectionHeaderView else { return nil }
-      headerView.configure(model: .init(date: sectionData.title))
+      headerView.configure(model: .init(title: sectionData.title))
       return headerView
     case .pagination(let pagination):
       guard let footerView = collectionView

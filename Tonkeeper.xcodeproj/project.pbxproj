@@ -278,6 +278,9 @@
 		7DAC78D02A93F8AF00358D35 /* CollectibleDetailsAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78CF2A93F8AF00358D35 /* CollectibleDetailsAssembly.swift */; };
 		7DAC78D32A93F95D00358D35 /* CollectibleCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78D22A93F95D00358D35 /* CollectibleCoordinator.swift */; };
 		7DAC78D52A93F96500358D35 /* CollectibleAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78D42A93F96500358D35 /* CollectibleAssembly.swift */; };
+		7DAC78DB2A9509EC00358D35 /* CollectibleDetailsDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78DA2A9509EC00358D35 /* CollectibleDetailsDetailsView.swift */; };
+		7DAC78DD2A95197E00358D35 /* MoreTextViewContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78DC2A95197E00358D35 /* MoreTextViewContainer.swift */; };
+		7DAC78DF2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78DE2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift */; };
 		7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F342A4B2F07007C6154 /* AnyFormatKit */; };
 		7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F3E2A4B3338007C6154 /* WalletCore */; };
 		7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */; };
@@ -623,6 +626,10 @@
 		7DAC78CF2A93F8AF00358D35 /* CollectibleDetailsAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsAssembly.swift; sourceTree = "<group>"; };
 		7DAC78D22A93F95D00358D35 /* CollectibleCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleCoordinator.swift; sourceTree = "<group>"; };
 		7DAC78D42A93F96500358D35 /* CollectibleAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleAssembly.swift; sourceTree = "<group>"; };
+		7DAC78D82A95070E00358D35 /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "core-swift"; path = "../core-swift"; sourceTree = "<group>"; };
+		7DAC78DA2A9509EC00358D35 /* CollectibleDetailsDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsDetailsView.swift; sourceTree = "<group>"; };
+		7DAC78DC2A95197E00358D35 /* MoreTextViewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreTextViewContainer.swift; sourceTree = "<group>"; };
+		7DAC78DE2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsCollectionDescriptionView.swift; sourceTree = "<group>"; };
 		7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		7DB17F462A4C2D9B007C6154 /* OnboardingAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAssembly.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -843,6 +850,7 @@
 		7AB8BED046293A7468EDF1A1 /* CollectibleDetails */ = {
 			isa = PBXGroup;
 			children = (
+				7DAC78D92A9509DD00358D35 /* Views */,
 				ED6656AABDA3F1B16FCD0BB4 /* CollectibleDetailsViewController.swift */,
 				958782CB6E6252E58AA7AF89 /* CollectibleDetailsView.swift */,
 				C95F21019C4885C194206234 /* CollectibleDetailsPresenter.swift */,
@@ -1886,6 +1894,7 @@
 				7D9292CB2A275725005B83DF /* TextFieldContainer.swift */,
 				7D9292D02A275B6D005B83DF /* TextField.swift */,
 				7D3BCFC42A4CADB200BE6AD9 /* MnemonicTextField.swift */,
+				7DAC78DC2A95197E00358D35 /* MoreTextViewContainer.swift */,
 			);
 			path = TextFields;
 			sourceTree = "<group>";
@@ -1997,6 +2006,15 @@
 			path = Collectible;
 			sourceTree = "<group>";
 		};
+		7DAC78D92A9509DD00358D35 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7DAC78DA2A9509EC00358D35 /* CollectibleDetailsDetailsView.swift */,
+				7DAC78DE2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		7DB17F432A4C2D71007C6154 /* Onboarding */ = {
 			isa = PBXGroup;
 			children = (
@@ -2010,6 +2028,7 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
+				7DAC78D82A95070E00358D35 /* core-swift */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7DB8FB632A1BCC92005B4B11 /* Products */,
 			);
@@ -2336,6 +2355,7 @@
 				7D4934772A5D4A9E00F4BCA2 /* TKMenuCell.swift in Sources */,
 				7D9292F92A29DCDA005B83DF /* SendAmountProtocols.swift in Sources */,
 				7D5D05D02A308C4C009F42FF /* DefaultCellContentView.swift in Sources */,
+				7DAC78DD2A95197E00358D35 /* MoreTextViewContainer.swift in Sources */,
 				7D8EB7202A4ED86B005BE1B0 /* CreateWalletCoordinator.swift in Sources */,
 				7D9292FD2A29DCDA005B83DF /* SendRecipientViewController.swift in Sources */,
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
@@ -2391,6 +2411,7 @@
 				7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */,
 				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
 				7D8F64B32A8E43F90042AE74 /* TonChartErrorView.swift in Sources */,
+				7DAC78DF2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift in Sources */,
 				7DAC78C42A8FB34E00358D35 /* TwinButton.swift in Sources */,
 				7D384A4A2A66973D00DE2A66 /* SendRecipientAssembly.swift in Sources */,
 				7DE27E682A30D94100842FA8 /* TransactionCellContentView.swift in Sources */,
@@ -2457,6 +2478,7 @@
 				7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */,
 				7D6836672A1D6E74002DBBC7 /* Module.swift in Sources */,
 				7D1163002A60381300DF4F30 /* WalletTokenDetailsAssembly.swift in Sources */,
+				7DAC78DB2A9509EC00358D35 /* CollectibleDetailsDetailsView.swift in Sources */,
 				7D68366A2A1D6ED5002DBBC7 /* WalletRootViewController.swift in Sources */,
 				7DAC78D32A93F95D00358D35 /* CollectibleCoordinator.swift in Sources */,
 				7DE27E6C2A30DA3A00842FA8 /* TransactionCellCommentView.swift in Sources */,

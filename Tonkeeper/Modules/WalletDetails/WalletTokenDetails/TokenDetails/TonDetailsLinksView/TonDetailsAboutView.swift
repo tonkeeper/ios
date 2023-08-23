@@ -72,7 +72,7 @@ private extension TonDetailsAboutView {
     stackView.addArrangedSubview(middleStackView)
     stackView.addArrangedSubview(bottomStackView)
     
-    headerView.configure(model: .init(date: "About"))
+    headerView.configure(model: .init(title: "About"))
     
     let tonOrgButton = TKButton(configuration: .secondarySmall)
     tonOrgButton.configure(model: .init(title: "ton.org", icon: .Icons.Buttons.TonDetailsLinks.tonOrg))

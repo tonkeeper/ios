@@ -36,7 +36,15 @@ class CollectibleDetailsViewController: GenericViewController<CollectibleDetails
 
 // MARK: - CollectibleDetailsViewInput
 
-extension CollectibleDetailsViewController: CollectibleDetailsViewInput {}
+extension CollectibleDetailsViewController: CollectibleDetailsViewInput {
+  func updateDetailsSection(model: CollectibleDetailsDetailsView.Model) {
+    customView.detailsView.configure(model: model)
+  }
+  
+  func updateContentSection(model: CollectibleDetailsCollectionDescriptionView.Model) {
+    customView.collectionDescriptionView.configure(model: model)
+  }
+}
 
 // MARK: - Private
 
