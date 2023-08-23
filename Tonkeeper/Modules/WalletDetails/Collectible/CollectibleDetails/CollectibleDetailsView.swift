@@ -20,6 +20,7 @@ final class CollectibleDetailsView: UIView {
     return stackView
   }()
   
+  let collectibleView = CollectibleDetailsCollectibleView()
   let collectionDescriptionView = CollectibleDetailsCollectionDescriptionView()
   let detailsView = CollectibleDetailsDetailsView()
   
@@ -46,8 +47,11 @@ private extension CollectibleDetailsView {
     scrollView.addSubview(scrollContent)
     scrollContent.addSubview(contentStackView)
     
+    contentStackView.addArrangedSubview(collectibleView)
     contentStackView.addArrangedSubview(collectionDescriptionView)
     contentStackView.addArrangedSubview(detailsView)
+    
+    contentStackView.setCustomSpacing(16, after: collectibleView)
     
     setupConstraints()
   }

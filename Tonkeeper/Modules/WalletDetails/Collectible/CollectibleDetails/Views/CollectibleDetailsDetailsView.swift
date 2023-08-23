@@ -58,7 +58,7 @@ private extension CollectibleDetailsDetailsView {
     
     NSLayoutConstraint.activate([
       titleView.topAnchor.constraint(equalTo: topAnchor),
-      titleView.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
+      titleView.leftAnchor.constraint(equalTo: leftAnchor),
       
       viewInExplorerButton.centerYAnchor.constraint(equalTo: titleView.centerYAnchor),
       viewInExplorerButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),

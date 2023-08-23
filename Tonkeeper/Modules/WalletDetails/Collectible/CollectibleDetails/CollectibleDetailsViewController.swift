@@ -13,6 +13,10 @@ class CollectibleDetailsViewController: GenericViewController<CollectibleDetails
   // MARK: - Module
 
   private let presenter: CollectibleDetailsPresenterInput
+  
+  // MARK: - ImageLoader
+  
+  private var imageLoader = NukeImageLoader()
 
   // MARK: - Init
 
@@ -37,12 +41,20 @@ class CollectibleDetailsViewController: GenericViewController<CollectibleDetails
 // MARK: - CollectibleDetailsViewInput
 
 extension CollectibleDetailsViewController: CollectibleDetailsViewInput {
-  func updateDetailsSection(model: CollectibleDetailsDetailsView.Model) {
-    customView.detailsView.configure(model: model)
+  func updateTitle(_ title: String) {
+    navigationItem.title = title
+  }
+  
+  func updateCollectibleSection(model: CollectibleDetailsCollectibleView.Model) {
+    customView.collectibleView.configure(model: model)
   }
   
   func updateContentSection(model: CollectibleDetailsCollectionDescriptionView.Model) {
     customView.collectionDescriptionView.configure(model: model)
+  }
+  
+  func updateDetailsSection(model: CollectibleDetailsDetailsView.Model) {
+    customView.detailsView.configure(model: model)
   }
 }
 
@@ -50,6 +62,7 @@ extension CollectibleDetailsViewController: CollectibleDetailsViewInput {
 
 private extension CollectibleDetailsViewController {
   func setup() {
+    customView.collectibleView.imageLoader = imageLoader
     setupSwipeButton { [weak self] in
       self?.presenter.didTapSwipeButton()
     }

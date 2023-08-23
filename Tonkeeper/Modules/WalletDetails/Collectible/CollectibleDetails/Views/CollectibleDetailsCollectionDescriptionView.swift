@@ -9,13 +9,7 @@ import UIKit
 
 final class CollectibleDetailsCollectionDescriptionView: UIView, ConfigurableView {
   
-  let titleLabel: UILabel = {
-    let label = UILabel()
-    label.textColor = .Text.primary
-    label.applyTextStyleFont(.label1)
-    label.numberOfLines = 1
-    return label
-  }()
+  let titleLabel = UILabel()
   
   let descriptionView = MoreTextViewContainer()
   

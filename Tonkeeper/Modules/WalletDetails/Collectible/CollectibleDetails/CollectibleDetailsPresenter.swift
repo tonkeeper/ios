@@ -56,6 +56,12 @@ private extension CollectibleDetailsPresenter {
     
     let descriptionModel = CollectibleDetailsCollectionDescriptionView.Model(title: "About Eggs Wisdom", description: desc)
     viewInput?.updateContentSection(model: descriptionModel)
+    
+    
+    let collectibleModel = CollectibleDetailsCollectibleView.Model(title: "Dragons Avatar", subtitle: "Domestic Dragons", description: desc, imageURL: URL(string: "https://cache.tonapi.io/imgproxy/Z9k3r26OkIQaB7TIKrorHuYvc-sNEYZHzm8jiZQiHoo/rs:fill:1500:1500:1/g:no/aHR0cHM6Ly9zLmdldGdlbXMuaW8vbmZ0L2MvNjNiYWU2NjUzM2UxMWIyODFmNDdkMWFkLzE1NjgvaW1hZ2UucG5n.webp")!)
+    viewInput?.updateCollectibleSection(model: collectibleModel)
+    
+    viewInput?.updateTitle("Egg #1569")
   }
 }
 
