@@ -282,6 +282,8 @@
 		7DAC78DD2A95197E00358D35 /* MoreTextViewContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78DC2A95197E00358D35 /* MoreTextViewContainer.swift */; };
 		7DAC78DF2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78DE2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift */; };
 		7DAC78E12A969D3D00358D35 /* CollectibleDetailsCollectibleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78E02A969D3D00358D35 /* CollectibleDetailsCollectibleView.swift */; };
+		7DAC78E32A96AB5E00358D35 /* CollectibleDetailsPropertiesСarouselView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78E22A96AB5E00358D35 /* CollectibleDetailsPropertiesСarouselView.swift */; };
+		7DAC78E52A96ABF600358D35 /* CollectibleDetailsPropertyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78E42A96ABF600358D35 /* CollectibleDetailsPropertyView.swift */; };
 		7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F342A4B2F07007C6154 /* AnyFormatKit */; };
 		7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F3E2A4B3338007C6154 /* WalletCore */; };
 		7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */; };
@@ -632,6 +634,8 @@
 		7DAC78DC2A95197E00358D35 /* MoreTextViewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreTextViewContainer.swift; sourceTree = "<group>"; };
 		7DAC78DE2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsCollectionDescriptionView.swift; sourceTree = "<group>"; };
 		7DAC78E02A969D3D00358D35 /* CollectibleDetailsCollectibleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsCollectibleView.swift; sourceTree = "<group>"; };
+		7DAC78E22A96AB5E00358D35 /* CollectibleDetailsPropertiesСarouselView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CollectibleDetailsPropertiesСarouselView.swift"; sourceTree = "<group>"; };
+		7DAC78E42A96ABF600358D35 /* CollectibleDetailsPropertyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsPropertyView.swift; sourceTree = "<group>"; };
 		7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		7DB17F462A4C2D9B007C6154 /* OnboardingAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAssembly.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -2014,6 +2018,8 @@
 				7DAC78DA2A9509EC00358D35 /* CollectibleDetailsDetailsView.swift */,
 				7DAC78DE2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift */,
 				7DAC78E02A969D3D00358D35 /* CollectibleDetailsCollectibleView.swift */,
+				7DAC78E22A96AB5E00358D35 /* CollectibleDetailsPropertiesСarouselView.swift */,
+				7DAC78E42A96ABF600358D35 /* CollectibleDetailsPropertyView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2471,6 +2477,7 @@
 				7D8F64B12A8E08010042AE74 /* TonChartHeaderView.swift in Sources */,
 				7D9292FC2A29DCDA005B83DF /* SendAmountTitleView.swift in Sources */,
 				7D8F64A72A8D3BF40042AE74 /* Gradient.swift in Sources */,
+				7DAC78E52A96ABF600358D35 /* CollectibleDetailsPropertyView.swift in Sources */,
 				7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */,
 				7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */,
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
@@ -2562,6 +2569,7 @@
 				7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */,
 				7D5D05D32A309322009F42FF /* DefaultCellContentView+Model.swift in Sources */,
 				7D7CE3FE2A89B3ED002BA9EC /* ActivityListShimmerSectionHeaderView.swift in Sources */,
+				7DAC78E32A96AB5E00358D35 /* CollectibleDetailsPropertiesСarouselView.swift in Sources */,
 				7D3E43B42A3737E700C23A75 /* BuyListServiceBuilder.swift in Sources */,
 				7D1163142A61E80C00DF4F30 /* Token.swift in Sources */,
 				7D9292D12A275B6D005B83DF /* TextField.swift in Sources */,

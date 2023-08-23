@@ -24,4 +24,5 @@ protocol CollectibleDetailsViewInput: AnyObject {
   func updateCollectibleSection(model: CollectibleDetailsCollectibleView.Model)
   func updateContentSection(model: CollectibleDetailsCollectionDescriptionView.Model)
   func updateDetailsSection(model: CollectibleDetailsDetailsView.Model)
+  func updatePropertiesSection(model: CollectibleDetailsPropertiesСarouselView.Model)
 }

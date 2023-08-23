@@ -62,6 +62,16 @@ private extension CollectibleDetailsPresenter {
     viewInput?.updateCollectibleSection(model: collectibleModel)
     
     viewInput?.updateTitle("Egg #1569")
+    
+    
+    let carousel = CollectibleDetailsPropertiesСarouselView.Model(titleModel: .init(title: "Properties"), propertiesModels: [
+      .init(title: "Size", value: "Small"),
+      .init(title: "Background", value: "Blur"),
+      .init(title: "Blur", value: "Background"),
+      .init(title: "Color", value: "Orange"),
+    ])
+    
+    viewInput?.updatePropertiesSection(model: carousel)
   }
 }
 

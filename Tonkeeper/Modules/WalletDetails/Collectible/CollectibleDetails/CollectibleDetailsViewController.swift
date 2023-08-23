@@ -53,6 +53,10 @@ extension CollectibleDetailsViewController: CollectibleDetailsViewInput {
     customView.collectionDescriptionView.configure(model: model)
   }
   
+  func updatePropertiesSection(model: CollectibleDetailsPropertiesСarouselView.Model) {
+    customView.propertiesCarouselView.configure(model: model)
+  }
+  
   func updateDetailsSection(model: CollectibleDetailsDetailsView.Model) {
     customView.detailsView.configure(model: model)
   }
