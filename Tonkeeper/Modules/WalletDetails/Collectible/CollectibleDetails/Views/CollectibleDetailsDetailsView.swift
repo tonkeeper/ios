@@ -9,6 +9,8 @@ import UIKit
 
 final class CollectibleDetailsDetailsView: UIView, ConfigurableView {
   
+  var didTapOpenInExplorer: (() -> Void)?
+  
   let titleView = ListTitleView()
   let viewInExplorerButton: UIButton = {
     let button = UIButton(type: .system)
@@ -47,6 +49,11 @@ private extension CollectibleDetailsDetailsView {
     addSubview(listView)
     
     viewInExplorerButton.setContentHuggingPriority(.required, for: .horizontal)
+    viewInExplorerButton.addTarget(
+      self,
+      action: #selector(didTapOpenInExplorerButton),
+      for: .touchUpInside
+    )
     
     setupConstraints()
   }
@@ -69,5 +76,10 @@ private extension CollectibleDetailsDetailsView {
       listView.rightAnchor.constraint(equalTo: rightAnchor),
       listView.bottomAnchor.constraint(equalTo: bottomAnchor)
     ])
+  }
+  
+  @objc
+  func didTapOpenInExplorerButton() {
+    didTapOpenInExplorer?()
   }
 }

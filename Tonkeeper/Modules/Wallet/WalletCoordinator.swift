@@ -48,14 +48,14 @@ private extension WalletCoordinator {
     
   }
   
-  func openCollectibleDetails() {
+  func openCollectibleDetails(collectible: WalletCollectibleItemViewModel) {
     let navigationController = UINavigationController()
     navigationController.configureDefaultAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = walletAssembly
       .collectibleAssembly
       .coordinator(router: router,
-                   collectibleAddress: Address.mock(workchain: 2, seed: ""))
+                   collectibleAddress: collectible.address)
     coordinator.output = self
     
     addChild(coordinator)
@@ -117,7 +117,7 @@ extension WalletCoordinator: WalletRootModuleOutput {
   }
   
   func didSelectCollectibleItem(_ collectibleItem: WalletCollectibleItemViewModel) {
-    openCollectibleDetails()
+    openCollectibleDetails(collectible: collectibleItem)
   }
 }
 

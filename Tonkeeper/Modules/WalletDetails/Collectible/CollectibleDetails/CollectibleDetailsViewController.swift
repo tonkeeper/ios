@@ -41,7 +41,7 @@ class CollectibleDetailsViewController: GenericViewController<CollectibleDetails
 // MARK: - CollectibleDetailsViewInput
 
 extension CollectibleDetailsViewController: CollectibleDetailsViewInput {
-  func updateTitle(_ title: String) {
+  func updateTitle(_ title: String?) {
     navigationItem.title = title
   }
   
@@ -54,6 +54,7 @@ extension CollectibleDetailsViewController: CollectibleDetailsViewInput {
   }
   
   func updatePropertiesSection(model: CollectibleDetailsPropertiesСarouselView.Model) {
+    customView.propertiesCarouselView.isHidden = model.propertiesModels.isEmpty
     customView.propertiesCarouselView.configure(model: model)
   }
   
@@ -69,6 +70,9 @@ private extension CollectibleDetailsViewController {
     customView.collectibleView.imageLoader = imageLoader
     setupSwipeButton { [weak self] in
       self?.presenter.didTapSwipeButton()
+    }
+    customView.detailsView.didTapOpenInExplorer = { [weak self] in
+      self?.presenter.didTapOpenInExplorerButton()
     }
   }
 }

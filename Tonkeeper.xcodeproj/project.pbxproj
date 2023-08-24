@@ -629,7 +629,6 @@
 		7DAC78CF2A93F8AF00358D35 /* CollectibleDetailsAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsAssembly.swift; sourceTree = "<group>"; };
 		7DAC78D22A93F95D00358D35 /* CollectibleCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleCoordinator.swift; sourceTree = "<group>"; };
 		7DAC78D42A93F96500358D35 /* CollectibleAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleAssembly.swift; sourceTree = "<group>"; };
-		7DAC78D82A95070E00358D35 /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "core-swift"; path = "../core-swift"; sourceTree = "<group>"; };
 		7DAC78DA2A9509EC00358D35 /* CollectibleDetailsDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsDetailsView.swift; sourceTree = "<group>"; };
 		7DAC78DC2A95197E00358D35 /* MoreTextViewContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreTextViewContainer.swift; sourceTree = "<group>"; };
 		7DAC78DE2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsCollectionDescriptionView.swift; sourceTree = "<group>"; };
@@ -2037,7 +2036,6 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
-				7DAC78D82A95070E00358D35 /* core-swift */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7DB8FB632A1BCC92005B4B11 /* Products */,
 			);

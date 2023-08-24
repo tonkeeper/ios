@@ -70,8 +70,8 @@ private extension CollectibleDetailsPropertiesСarouselView {
       scrollView.topAnchor.constraint(equalTo: titleView.bottomAnchor),
       scrollView.leftAnchor.constraint(equalTo: leftAnchor),
       scrollView.rightAnchor.constraint(equalTo: rightAnchor),
-      scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      scrollView.heightAnchor.constraint(equalToConstant: 70),
+      scrollView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -.scrollViewBottomSpace),
+      scrollView.heightAnchor.constraint(equalToConstant: .scrollViewHeight),
 
       propertiesStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
       propertiesStackView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),
@@ -84,6 +84,8 @@ private extension CollectibleDetailsPropertiesСarouselView {
 
 private extension CGFloat {
   static let stackViewSpacing: CGFloat = 12
+  static let scrollViewHeight: CGFloat = 70
+  static let scrollViewBottomSpace: CGFloat = 20
 }
 
 

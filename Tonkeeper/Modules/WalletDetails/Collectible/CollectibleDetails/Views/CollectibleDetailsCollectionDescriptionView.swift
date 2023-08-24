@@ -11,7 +11,11 @@ final class CollectibleDetailsCollectionDescriptionView: UIView, ConfigurableVie
   
   let titleLabel = UILabel()
   
-  let descriptionView = MoreTextViewContainer()
+  let descriptionView: MoreTextViewContainer = {
+    let view = MoreTextViewContainer()
+    view.numberOfLinesInCollapsed = 3
+    return view
+  }()
   
   private let contentView = UIView()
   
@@ -25,18 +29,18 @@ final class CollectibleDetailsCollectionDescriptionView: UIView, ConfigurableVie
   }
   
   struct Model {
-    let title: String
-    let description: String
+    let title: String?
+    let description: String?
   }
   
   func configure(model: Model) {
-    titleLabel.attributedText = model.title.attributed(
+    titleLabel.attributedText = model.title?.attributed(
       with: .label1,
       alignment: .left,
       lineBreakMode: .byWordWrapping,
       color: .Text.primary)
     
-    descriptionView.attributedText = model.description.attributed(
+    descriptionView.attributedText = model.description?.attributed(
       with: .body2,
       alignment: .left,
       lineBreakMode: .byWordWrapping,

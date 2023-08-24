@@ -19,9 +19,18 @@ final class CollectibleDetailsPresenter {
   // MARK: - Dependencies
   
   private let collectibleDetailsController: CollectibleDetailsController
+  private let urlOpener: URLOpener
   
-  init(collectibleDetailsController: CollectibleDetailsController) {
+  // MARK: - Open URL
+  
+  private var openDetailsURL: (() -> Void)?
+  
+  // MARK: - Init
+  
+  init(collectibleDetailsController: CollectibleDetailsController,
+       urlOpener: URLOpener) {
     self.collectibleDetailsController = collectibleDetailsController
+    self.urlOpener = urlOpener
   }
 }
 
@@ -35,6 +44,10 @@ extension CollectibleDetailsPresenter: CollectibleDetailsPresenterInput {
   func didTapSwipeButton() {
     output?.collectibleDetailsDidFinish(self)
   }
+  
+  func didTapOpenInExplorerButton() {
+    openDetailsURL?()
+  }
 }
 
 // MARK: - CollectibleDetailsModuleInput
@@ -45,36 +58,48 @@ extension CollectibleDetailsPresenter: CollectibleDetailsModuleInput {}
 
 private extension CollectibleDetailsPresenter {
   func updateView() {
-    let listItems: [ModalContentViewController.Configuration.ListItem] = [
-      .init(left: "Owner", rightTop: .value("EQCc…G21L"), rightBottom: .value(nil)),
-      .init(left: "Contract address", rightTop: .value("EQAK…OREO"), rightBottom: .value(nil))
-    ]
-    let model = CollectibleDetailsDetailsView.Model(titleViewModel: .init(title: "Details"),
-                                                    buttonTitle: "View in explorer",
-                                                    listViewModel: listItems)
-    viewInput?.updateDetailsSection(model: model)
-    
-    let descriptionModel = CollectibleDetailsCollectionDescriptionView.Model(title: "About Eggs Wisdom", description: desc)
-    viewInput?.updateContentSection(model: descriptionModel)
-    
-    
-    let collectibleModel = CollectibleDetailsCollectibleView.Model(title: "Dragons Avatar", subtitle: "Domestic Dragons", description: desc, imageURL: URL(string: "https://cache.tonapi.io/imgproxy/Z9k3r26OkIQaB7TIKrorHuYvc-sNEYZHzm8jiZQiHoo/rs:fill:1500:1500:1/g:no/aHR0cHM6Ly9zLmdldGdlbXMuaW8vbmZ0L2MvNjNiYWU2NjUzM2UxMWIyODFmNDdkMWFkLzE1NjgvaW1hZ2UucG5n.webp")!)
-    viewInput?.updateCollectibleSection(model: collectibleModel)
-    
-    viewInput?.updateTitle("Egg #1569")
-    
-    
-    let carousel = CollectibleDetailsPropertiesСarouselView.Model(titleModel: .init(title: "Properties"), propertiesModels: [
-      .init(title: "Size", value: "Small"),
-      .init(title: "Background", value: "Blur"),
-      .init(title: "Blur", value: "Background"),
-      .init(title: "Color", value: "Orange"),
-    ])
-    
-    viewInput?.updatePropertiesSection(model: carousel)
+    Task {
+      let model = try collectibleDetailsController.getCollectibleModel()
+      
+      let collectibleModel = CollectibleDetailsCollectibleView.Model(
+        title: model.collectibleDetails.title,
+        subtitle: model.collectibleDetails.subtitle,
+        description: model.collectibleDetails.description,
+        imageURL: model.collectibleDetails.imageURL
+      )
+      
+      let collectionModel = CollectibleDetailsCollectionDescriptionView.Model(
+        title: model.collectionDetails.title,
+        description: model.collectionDetails.description
+      )
+      
+      let propertiesModel = CollectibleDetailsPropertiesСarouselView.Model(
+        titleModel: .init(title: "Properties"),
+        propertiesModels: model.properties.map { .init(title: $0.title, value: $0.value) }
+      )
+      
+      let listViewModel = model.details.items.map {
+        ModalContentViewController.Configuration.ListItem(left: $0.title, rightTop: .value($0.value), rightBottom: .value(nil))
+      }
+      
+      let detailsModel = CollectibleDetailsDetailsView.Model(
+        titleViewModel: .init(title: "Details"),
+        buttonTitle: "View in explorer",
+        listViewModel: listViewModel
+      )
+      
+      await MainActor.run {
+        viewInput?.updateTitle(model.title)
+        viewInput?.updateCollectibleSection(model: collectibleModel)
+        viewInput?.updateContentSection(model: collectionModel)
+        viewInput?.updatePropertiesSection(model: propertiesModel)
+        viewInput?.updateDetailsSection(model: detailsModel)
+        
+        openDetailsURL = { [weak self] in
+          guard let url = model.details.url else { return }
+          self?.urlOpener.open(url: url)
+        }
+      }
+    }
   }
 }
-
-let desc = """
-Contests, gifts, auctions on our channel @EggsWisdom . We have established a gift fund with over 375 Telegram Usernames 💎, which we will give away to the winners of upcoming auctions free of charge.\n\nOur NFT Eggs project is planning to pursue more ambitious ideas, and we would like to give you a glimpse of what's to come.\n\nThe value of our NFTs Eggs will gradually increase as they become associated with Telegram Usernames, and we anticipate that they could appreciate by a factor of 5x to 100x⬆ their original value.\n\nIn the future, we will offer custom-designed NFTs Eggs as gifts with a unique theme of your choice.\n\nThank you for your continued support!🤝\n\nTelegram @EggsWisdom
-"""

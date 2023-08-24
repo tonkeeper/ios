@@ -28,7 +28,7 @@ final class MoreTextViewContainer: UIView {
       update()
     }
   }
-  var numberOfLinesInCollapsed = 3 {
+  var numberOfLinesInCollapsed = 2 {
     didSet {
       update()
     }
@@ -95,7 +95,7 @@ private extension MoreTextViewContainer {
       return
     }
     
-    moreButton.isHidden = false
+    
     guard let attributedText = attributedText else {
       textViewHeightConstraint?.constant = 0
       return
@@ -112,6 +112,8 @@ private extension MoreTextViewContainer {
                                                              height: CGFloat.greatestFiniteMagnitude),
                                                  options: [.usesFontLeading, .usesLineFragmentOrigin],
                                                  context: nil).size.height)
+    
+    moreButton.isHidden = textHeight <= maximumHeight
     
     textViewHeightConstraint?.constant = min(maximumHeight, textHeight)
   }

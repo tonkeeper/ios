@@ -35,14 +35,14 @@ final class CollectibleDetailsCollectibleView: UIView, ConfigurableView {
   }
 
   struct Model {
-    let title: String
+    let title: String?
     let subtitle: String?
-    let description: String
-    let imageURL: URL
+    let description: String?
+    let imageURL: URL?
   }
 
   func configure(model: Model) {
-    titleLabel.attributedText = model.title.attributed(
+    titleLabel.attributedText = model.title?.attributed(
       with: .h2,
       alignment: .left,
       lineBreakMode: .byWordWrapping,
@@ -55,11 +55,12 @@ final class CollectibleDetailsCollectibleView: UIView, ConfigurableView {
       color: .Text.secondary)
     subtitleLabel.isHidden = model.subtitle == nil
 
-    descriptionView.attributedText = model.description.attributed(
+    descriptionView.attributedText = model.description?.attributed(
       with: .body2,
       alignment: .left,
       lineBreakMode: .byWordWrapping,
       color: .Text.secondary)
+    descriptionView.isHidden = model.description == nil || model.description?.isEmpty == true
     
     imageLoader?.loadImage(imageURL: model.imageURL, imageView: imageView, size: nil)
   }

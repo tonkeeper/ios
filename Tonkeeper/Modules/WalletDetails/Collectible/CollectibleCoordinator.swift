@@ -37,6 +37,7 @@ private extension CollectibleCoordinator {
     let collectibleDetailsController = walletCoreAssembly.collectibleDetailsController(collectibleAddress: collectibleAddress)
     let module = CollectibleDetailsAssembly.module(
       collectibleDetailsController: collectibleDetailsController,
+      urlOpener: walletCoreAssembly.coreAssembly.urlOpener(),
       output: self
     )
     
