@@ -22,8 +22,5 @@ protocol CollectibleDetailsPresenterInput {
 
 protocol CollectibleDetailsViewInput: AnyObject {
   func updateTitle(_ title: String?)
-  func updateCollectibleSection(model: CollectibleDetailsCollectibleView.Model)
-  func updateContentSection(model: CollectibleDetailsCollectionDescriptionView.Model)
-  func updateDetailsSection(model: CollectibleDetailsDetailsView.Model)
-  func updatePropertiesSection(model: CollectibleDetailsPropertiesСarouselView.Model)
+  func updateView(model: CollectibleDetailsView.Model)
 }

@@ -8,7 +8,7 @@
 
 import UIKit
 
-final class CollectibleDetailsView: UIView {
+final class CollectibleDetailsView: UIView, ConfigurableView {
   
   private let scrollView: UIScrollView = {
     return NotDelayScrollView()
@@ -22,6 +22,7 @@ final class CollectibleDetailsView: UIView {
   
   let collectibleView = CollectibleDetailsCollectibleView()
   let collectionDescriptionView = CollectibleDetailsCollectionDescriptionView()
+  let buttonsView = CollectibleDetailsButtonsView()
   let propertiesCarouselView = CollectibleDetailsPropertiesСarouselView()
   let detailsView = CollectibleDetailsDetailsView()
 
@@ -34,6 +35,53 @@ final class CollectibleDetailsView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  // MARK: - ConfigurableView
+  
+  struct Model {
+    let collectibleDescriptionModel: CollectibleDetailsCollectibleView.Model?
+    let collectionDescriptionModel: CollectibleDetailsCollectionDescriptionView.Model?
+    let buttonsModel: CollectibleDetailsButtonsView.Model?
+    let propertiesModel: CollectibleDetailsPropertiesСarouselView.Model?
+    let detailsModel: CollectibleDetailsDetailsView.Model?
+  }
+  
+  func configure(model: Model) {
+    if let collectibleDescriptionModel = model.collectibleDescriptionModel {
+      collectibleView.isHidden = false
+      collectibleView.configure(model: collectibleDescriptionModel)
+    } else {
+      collectibleView.isHidden = true
+    }
+    
+    if let collectionDescriptionModel = model.collectionDescriptionModel {
+      collectionDescriptionView.isHidden = false
+      collectionDescriptionView.configure(model: collectionDescriptionModel)
+    } else {
+      collectionDescriptionView.isHidden = true
+    }
+    
+    if let buttonsModel = model.buttonsModel {
+      buttonsView.isHidden = false
+      buttonsView.configure(model: buttonsModel)
+    } else {
+      buttonsView.isHidden = true
+    }
+    
+    if let propertiesModel = model.propertiesModel {
+      propertiesCarouselView.isHidden = false
+      propertiesCarouselView.configure(model: propertiesModel)
+    } else {
+      propertiesCarouselView.isHidden = true
+    }
+    
+    if let detailsModel = model.detailsModel {
+      detailsView.isHidden = false
+      detailsView.configure(model: detailsModel)
+    } else {
+      detailsView.isHidden = true
+    }
   }
 }
 
@@ -49,6 +97,7 @@ private extension CollectibleDetailsView {
     
     contentStackView.addArrangedSubview(collectibleView)
     contentStackView.addArrangedSubview(collectionDescriptionView)
+    contentStackView.addArrangedSubview(buttonsView)
     contentStackView.addArrangedSubview(propertiesCarouselView)
     contentStackView.addArrangedSubview(detailsView)
     

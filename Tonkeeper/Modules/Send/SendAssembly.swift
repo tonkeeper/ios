@@ -23,4 +23,11 @@ final class SendAssembly {
                     token: token,
                     recipient: recipient)
   }
+  
+  func sendCollectibleCoordinator(router: NavigationRouter) -> SendCollectibleCoordinator {
+    SendCollectibleCoordinator(
+      router: router,
+      walletCoreAssembly: walletCoreAssembly
+    )
+  }
 }
