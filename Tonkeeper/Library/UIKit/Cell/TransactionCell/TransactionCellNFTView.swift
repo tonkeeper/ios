@@ -9,7 +9,7 @@ import UIKit
 
 extension TransactionCellContentView {
   
-  final class TransactionCellNFTView: UIView, ConfigurableView, ContainerCollectionViewCellContent {
+  final class TransactionCellNFTView: UIControl, ConfigurableView, ContainerCollectionViewCellContent {
     
     struct Model {
       let image: Image
@@ -105,6 +105,7 @@ extension TransactionCellContentView {
 private extension TransactionCellContentView.TransactionCellNFTView {
   func setup() {
     contentView.backgroundColor = .Background.contentTint
+    contentView.isUserInteractionEnabled = false
     
     contentView.layer.cornerRadius = .cornerRadius
     contentView.layer.masksToBounds = true

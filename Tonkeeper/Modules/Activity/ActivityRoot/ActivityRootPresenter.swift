@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import TonSwift
 
 final class ActivityRootPresenter {
   
@@ -48,6 +49,14 @@ extension ActivityRootPresenter: ActivityListModuleOutput {
   
   func activityListNoEvents(_ activityList: ActivityListModuleInput) {
     viewInput?.showEmptyState()
+  }
+}
+
+// MARK: - ActivityListModuleCollectibleOutput
+
+extension ActivityRootPresenter: ActivityListModuleCollectibleOutput {
+  func didSelectCollectible(with address: Address) {
+    output?.didSelectCollectible(address: address)
   }
 }
 

@@ -54,8 +54,8 @@ private extension ModalContentListView {
     backgroundView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       backgroundView.topAnchor.constraint(equalTo: topAnchor),
-      backgroundView.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
-      backgroundView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),
+      backgroundView.leftAnchor.constraint(equalTo: leftAnchor),
+      backgroundView.rightAnchor.constraint(equalTo: rightAnchor),
       backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor),
       
       stackView.topAnchor.constraint(equalTo: backgroundView.topAnchor),

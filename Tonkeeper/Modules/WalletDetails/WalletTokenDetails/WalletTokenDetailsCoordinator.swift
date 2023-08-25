@@ -7,6 +7,7 @@
 
 import UIKit
 import WalletCore
+import TonSwift
 
 final class WalletTokenDetailsCoordinator: Coordinator<NavigationRouter> {
   

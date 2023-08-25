@@ -7,6 +7,7 @@
 
 import Foundation
 import WalletCore
+import TonSwift
 
 final class WalletCoreAssembly {
   
@@ -61,6 +62,12 @@ final class WalletCoreAssembly {
   
   func chartController() -> ChartController {
     walletCoreContainer.chartController()
+  }
+  
+  public func collectibleDetailsController(
+    collectibleAddress: Address
+  ) -> CollectibleDetailsController {
+    walletCoreContainer.collectibleDetailsController(collectibleAddress: collectibleAddress)
   }
   
   var deeplinkParser: DeeplinkParser {

@@ -7,7 +7,13 @@
 
 import UIKit
 
+protocol TransactionCellContentViewDelegate: AnyObject {
+  func transactionCellDidTapNFTView(_ transactionCell: TransactionCellContentView)
+}
+
 final class TransactionCellContentView: UIControl, ContainerCollectionViewCellContent {
+  
+  weak var delegate: TransactionCellContentViewDelegate?
   
   override var isHighlighted: Bool {
     didSet {
@@ -144,14 +150,22 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
 private extension TransactionCellContentView {
   func setup() {
     isExclusiveTouch = true
-    contentView.isUserInteractionEnabled = false
-    
+    defaultCellContentView.isUserInteractionEnabled = false
+    statusView.isUserInteractionEnabled = false
+    commentView.isUserInteractionEnabled = false
+
     addSubview(contentView)
     addSubview(separatorView)
     contentView.addSubview(defaultCellContentView)
     contentView.addSubview(statusView)
     contentView.addSubview(commentView)
     contentView.addSubview(nftView)
+    
+    nftView.addTarget(
+      self,
+      action: #selector(didTapNFTView),
+      for: .touchUpInside
+    )
   }
   
   func didUpdateHightlightState() {
@@ -166,6 +180,11 @@ private extension TransactionCellContentView {
   func updateSeparatorVisibility() {
     let isVisible = !isHighlighted && isSeparatorVisible
     separatorView.isHidden = !isVisible
+  }
+  
+  @objc
+  func didTapNFTView() {
+    delegate?.transactionCellDidTapNFTView(self)
   }
 }
 

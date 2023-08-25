@@ -19,10 +19,13 @@ final class TabBarAssembly {
     buyAssembly: BuyAssembly(),
     inAppBrowserAssembly: InAppBrowserAssembly()
   )
-  lazy var activityAssembly = ActivityAssembly(receiveAssembly: receiveAssembly, walletCoreAssembly: walletCoreAssembly)
+  lazy var activityAssembly = ActivityAssembly(receiveAssembly: receiveAssembly,
+                                               collectibleAssembly: collectibleAssembly,
+                                               walletCoreAssembly: walletCoreAssembly)
   lazy var browserAssembly = BrowserAssembly()
   lazy var settingsAssembly = SettingsAssembly()
   lazy var receiveAssembly = ReceiveAssembly(walletCoreAssembly: walletCoreAssembly)
+  lazy var collectibleAssembly = CollectibleAssembly(walletCoreAssembly: walletCoreAssembly)
   
   init(coreAssembly: CoreAssembly,
        walletCoreAssembly: WalletCoreAssembly) {

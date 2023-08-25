@@ -93,11 +93,6 @@ extension ActivityListViewController: ActivityListViewInput {
 // MARK: - ActivityListCollectionControllerDelegate
 
 extension ActivityListViewController: ActivityListCollectionControllerDelegate {
-  func activityListCollectionController(_ collectionController: ActivityListCollectionController,
-                                        didSelectTransactionAt indexPath: IndexPath) {
-    presenter.didSelectTransactionAt(indexPath: indexPath)
-  }
-  
   func activityListCollectionControllerLoadNextPage(_ collectionController: ActivityListCollectionController) {
     presenter.fetchNext()
   }
@@ -109,6 +104,18 @@ extension ActivityListViewController: ActivityListCollectionControllerDelegate {
   func activityListCollectionControllerDidPullToRefresh(_ collectionController: ActivityListCollectionController) {
     presenter.reload()
     didStartRefresh?()
+  }
+  
+  func activityListCollectionControllerDidSelectAction(_ collectionController: ActivityListCollectionController,
+                                                       transactionIndexPath: IndexPath,
+                                                       actionIndex: Int) {
+    presenter.didSelectTransactionAt(indexPath: transactionIndexPath, actionIndex: actionIndex)
+  }
+  
+  func activityListCollectionControllerDidSelectNFT(_ collectionController: ActivityListCollectionController,
+                                                    transactionIndexPath: IndexPath,
+                                                    actionIndex: Int) {
+    presenter.didSelectNFTAt(indexPath: transactionIndexPath, actionIndex: actionIndex)
   }
 }
 

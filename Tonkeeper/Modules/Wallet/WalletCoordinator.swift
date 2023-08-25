@@ -47,6 +47,24 @@ private extension WalletCoordinator {
   func openOldWalletMigration() {
     
   }
+  
+  func openCollectibleDetails(collectible: WalletCollectibleItemViewModel) {
+    let navigationController = UINavigationController()
+    navigationController.configureDefaultAppearance()
+    let router = NavigationRouter(rootViewController: navigationController)
+    let coordinator = walletAssembly
+      .collectibleAssembly
+      .coordinator(router: router,
+                   collectibleAddress: collectible.address)
+    coordinator.output = self
+    
+    addChild(coordinator)
+    coordinator.start()
+    self.router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
+      guard let self = self, let coordinator = coordinator else { return }
+      self.removeChild(coordinator)
+    })
+  }
 }
 
 // MARK: - WalletRootModuleOutput
@@ -97,6 +115,10 @@ extension WalletCoordinator: WalletRootModuleOutput {
       openTokenDetails(token: .ton)
     }
   }
+  
+  func didSelectCollectibleItem(_ collectibleItem: WalletCollectibleItemViewModel) {
+    openCollectibleDetails(collectible: collectibleItem)
+  }
 }
 
 // MARK: - QRScannerModuleOutput
@@ -135,6 +157,15 @@ extension WalletCoordinator: SendCoordinatorOutput {
 
 extension WalletCoordinator: ReceiveCoordinatorOutput {
   func receiveCoordinatorDidClose(_ coordinator: ReceiveCoordinator) {
+    router.dismiss()
+    removeChild(coordinator)
+  }
+}
+
+// MARK: -
+
+extension WalletCoordinator: CollectibleCoordinatorOutput {
+  func collectibleCoordinatorDidFinish(_ coordinator: CollectibleCoordinator) {
     router.dismiss()
     removeChild(coordinator)
   }

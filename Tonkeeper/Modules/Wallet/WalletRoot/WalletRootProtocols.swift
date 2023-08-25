@@ -14,6 +14,7 @@ protocol WalletRootModuleOutput: AnyObject {
   func openReceive(address: String)
   func openBuy()
   func didSelectItem(_ item: WalletItemViewModel)
+  func didSelectCollectibleItem(_ collectibleItem: WalletCollectibleItemViewModel)
 }
 
 protocol WalletRootPresenterInput {
