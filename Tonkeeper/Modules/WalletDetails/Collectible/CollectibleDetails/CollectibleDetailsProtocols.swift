@@ -7,9 +7,14 @@
 //
 
 import Foundation
+import TonSwift
 
 protocol CollectibleDetailsModuleOutput: AnyObject {
   func collectibleDetailsDidFinish(_ collectibleDetails: CollectibleDetailsModuleInput)
+  func collectibleDetails(
+    _ collectibleDetails: CollectibleDetailsModuleInput,
+    transferCollectible collectibleAddress: Address
+  )
 }
 
 protocol CollectibleDetailsModuleInput: AnyObject {}

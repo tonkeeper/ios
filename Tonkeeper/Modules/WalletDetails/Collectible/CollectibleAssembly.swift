@@ -10,15 +10,19 @@ import TonSwift
 
 struct CollectibleAssembly {
   let walletCoreAssembly: WalletCoreAssembly
+  let sendAssembly: SendAssembly
   
-  init(walletCoreAssembly: WalletCoreAssembly) {
+  init(walletCoreAssembly: WalletCoreAssembly,
+       sendAssembly: SendAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
+    self.sendAssembly = sendAssembly
   }
   
   func coordinator(router: NavigationRouter,
                    collectibleAddress: Address) -> CollectibleCoordinator {
     return CollectibleCoordinator(router: router,
                                   collectibleAddress: collectibleAddress,
-                                  walletCoreAssembly: walletCoreAssembly)
+                                  walletCoreAssembly: walletCoreAssembly,
+                                  sendAssembly: sendAssembly)
   }
 }

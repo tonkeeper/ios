@@ -78,10 +78,13 @@ private extension CollectibleDetailsPresenter {
         buttonsModels(model: model)
       )
       
-      let propertiesModel = CollectibleDetailsPropertiesСarouselView.Model(
-        titleModel: .init(title: "Properties"),
-        propertiesModels: model.properties.map { .init(title: $0.title, value: $0.value) }
-      )
+      var propertiesModel: CollectibleDetailsPropertiesСarouselView.Model?
+      if !model.properties.isEmpty {
+        propertiesModel = CollectibleDetailsPropertiesСarouselView.Model(
+          titleModel: .init(title: "Properties"),
+          propertiesModels: model.properties.map { .init(title: $0.title, value: $0.value) }
+        )
+      }
       
       let listViewModel = model.details.items.map {
         ModalContentViewController.Configuration.ListItem(left: $0.title, rightTop: .value($0.value), rightBottom: .value(nil))
@@ -125,8 +128,9 @@ private extension CollectibleDetailsPresenter {
       title: "Transfer",
       configuration: .primaryLarge,
       isEnabled: model.isTransferEnable,
-      tapAction: {
-        print("Transfer!")
+      tapAction: { [weak self] in
+        guard let self = self else { return }
+        self.output?.collectibleDetails(self, transferCollectible: self.collectibleDetailsController.collectibleAddress)
       },
       description: transferButtonDescription
     )

@@ -18,12 +18,15 @@ final class CollectibleCoordinator: Coordinator<NavigationRouter> {
   
   private let collectibleAddress: Address
   private let walletCoreAssembly: WalletCoreAssembly
+  private let sendAssembly: SendAssembly
   
   init(router: NavigationRouter,
        collectibleAddress: Address,
-       walletCoreAssembly: WalletCoreAssembly) {
+       walletCoreAssembly: WalletCoreAssembly,
+       sendAssembly: SendAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
     self.collectibleAddress = collectibleAddress
+    self.sendAssembly = sendAssembly
     super.init(router: router)
   }
   
@@ -50,5 +53,30 @@ private extension CollectibleCoordinator {
 extension CollectibleCoordinator: CollectibleDetailsModuleOutput {
   func collectibleDetailsDidFinish(_ collectibleDetails: CollectibleDetailsModuleInput) {
     output?.collectibleCoordinatorDidFinish(self)
+  }
+  
+  func collectibleDetails(_ collectibleDetails: CollectibleDetailsModuleInput, transferCollectible collectibleAddress: Address) {
+    let navigationController = UINavigationController()
+    navigationController.configureDefaultAppearance()
+    let router = NavigationRouter(rootViewController: navigationController)
+    let coordinator = sendAssembly.sendCollectibleCoordinator(router: router)
+    coordinator.output = self
+    
+    addChild(coordinator)
+    coordinator.start()
+    
+    self.router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
+      guard let self = self, let coordinator = coordinator else { return }
+      self.removeChild(coordinator)
+    })
+  }
+}
+
+// MARK: - SendCollectibleCoordinatorOutput
+
+extension CollectibleCoordinator: SendCollectibleCoordinatorOutput {
+  func sendCollectibleCoordinatorDidClose(_ coordinator: SendCollectibleCoordinator) {
+    router.dismiss()
+    removeChild(coordinator)
   }
 }
