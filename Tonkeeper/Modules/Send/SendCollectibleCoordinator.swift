@@ -51,6 +51,8 @@ private extension SendCollectibleCoordinator {
     sendRecipientInput = module.input
     router.setPresentables([(module.view, nil)])
   }
+  
+  func openConfirmation() {}
 }
 
 // MARK: - SendRecipientModuleOutput

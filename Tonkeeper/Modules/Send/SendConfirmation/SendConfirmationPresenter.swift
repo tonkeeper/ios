@@ -20,19 +20,10 @@ final class SendConfirmationPresenter {
   // MARK: - Dependencies
   
   private let sendController: SendController
-  private let recipient: Recipient
-  private let itemTransferModel: ItemTransferModel
-  private let comment: String?
   
   // MARK: - State
 
-  init(recipient: Recipient,
-       itemTransferModel: ItemTransferModel,
-       comment: String?,
-       sendController: SendController) {
-    self.recipient = recipient
-    self.itemTransferModel = itemTransferModel
-    self.comment = comment
+  init(sendController: SendController) {
     self.sendController = sendController
   }
 }
@@ -60,32 +51,21 @@ extension SendConfirmationPresenter: SendConfirmationModuleInput {}
 
 private extension SendConfirmationPresenter {
   func updateInitialState() {
-    let model = sendController.initialSendTransactionModel(
-      itemTransferModel: itemTransferModel,
-      recipient: recipient,
-      comment: comment
-    )
+    let model = sendController.initialSendTransactionModel()
     let configuration = mapToConfiguration(model: model, isInitial: true)
     viewInput?.update(with: configuration)
   }
   
   func loadTransactionInformation() async {
     do {
-      let model = try await sendController.loadTransactionInformation(
-        itemTransferModel: itemTransferModel,
-        recipient: recipient,
-        comment: comment)
+      let model = try await sendController.loadTransactionInformation()
       await MainActor.run {
         let configuration = mapToConfiguration(model: model, isInitial: false)
         viewInput?.update(with: configuration)
       }
     } catch {
       await MainActor.run {
-        let model = sendController.initialSendTransactionModel(
-          itemTransferModel: itemTransferModel,
-          recipient: recipient,
-          comment: comment
-        )
+        let model = sendController.initialSendTransactionModel()
         let configuration = mapToConfiguration(model: model, isInitial: false)
         viewInput?.update(with: configuration)
         viewInput?.showFailedToLoadFeeError(errorTitle: .failedToCalculateFeeErrorTitle)
@@ -124,11 +104,7 @@ private extension SendConfirmationPresenter {
   func tapAction(closure: @escaping (Bool) -> Void) {
     Task {
       do {
-        try await self.sendController.sendTransaction(
-          itemTransferModel: itemTransferModel,
-          recipient: recipient,
-          comment: comment
-        )
+        try await self.sendController.sendTransaction()
         await MainActor.run {
           closure(true)
         }

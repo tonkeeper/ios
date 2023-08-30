@@ -28,8 +28,12 @@ final class WalletCoreAssembly {
     walletCoreContainer.sendInputController()
   }
   
-  func sendController() -> SendController {
-    walletCoreContainer.sendController()
+  func sendController(itemTransferModel: ItemTransferModel,
+                      recipient: Recipient,
+                      comment: String?) -> SendController {
+    walletCoreContainer.sendController(itemTransferModel: itemTransferModel,
+                                       recipient: recipient,
+                                       comment: comment)
   }
   
   func sendRecipientController() -> SendRecipientController {

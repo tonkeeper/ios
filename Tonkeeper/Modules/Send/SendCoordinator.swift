@@ -71,12 +71,15 @@ private extension SendCoordinator {
     guard let recipient = recipient,
           let itemTransferModel = itemTransferModel else { return }
     
+    let sendController = walletCoreAssembly.sendController(
+      itemTransferModel: itemTransferModel,
+      recipient: recipient,
+      comment: comment
+    )
+    
     let module = SendConfirmationAssembly
       .module(
-        recipient: recipient,
-        itemTransferModel: itemTransferModel,
-        comment: comment,
-        sendController: walletCoreAssembly.sendController(),
+        sendController: sendController,
         output: self)
     module.view.setupBackButton()
     router.push(presentable: module.view)
