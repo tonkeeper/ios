@@ -7,6 +7,7 @@
 
 import UIKit
 import WalletCore
+import TonSwift
 
 final class SendAssembly {
   let walletCoreAssembly: WalletCoreAssembly
@@ -24,9 +25,11 @@ final class SendAssembly {
                     recipient: recipient)
   }
   
-  func sendCollectibleCoordinator(router: NavigationRouter) -> SendCollectibleCoordinator {
+  func sendCollectibleCoordinator(router: NavigationRouter,
+                                  collectibleAddress: Address) -> SendCollectibleCoordinator {
     SendCollectibleCoordinator(
       router: router,
+      collectibleAddress: collectibleAddress,
       walletCoreAssembly: walletCoreAssembly
     )
   }

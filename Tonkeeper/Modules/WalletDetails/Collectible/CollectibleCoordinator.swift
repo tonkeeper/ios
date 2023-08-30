@@ -55,11 +55,14 @@ extension CollectibleCoordinator: CollectibleDetailsModuleOutput {
     output?.collectibleCoordinatorDidFinish(self)
   }
   
-  func collectibleDetails(_ collectibleDetails: CollectibleDetailsModuleInput, transferCollectible collectibleAddress: Address) {
+  func collectibleDetails(_ collectibleDetails: CollectibleDetailsModuleInput,
+                          transferCollectible collectibleAddress: Address) {
     let navigationController = UINavigationController()
     navigationController.configureDefaultAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
-    let coordinator = sendAssembly.sendCollectibleCoordinator(router: router)
+    let coordinator = sendAssembly.sendCollectibleCoordinator(
+      router: router,
+      collectibleAddress: collectibleAddress)
     coordinator.output = self
     
     addChild(coordinator)

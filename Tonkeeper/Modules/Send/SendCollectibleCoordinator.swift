@@ -7,6 +7,7 @@
 
 import UIKit
 import WalletCore
+import TonSwift
 import BigInt
 
 protocol SendCollectibleCoordinatorOutput: AnyObject {
@@ -18,6 +19,7 @@ final class SendCollectibleCoordinator: Coordinator<NavigationRouter> {
   weak var output: SendCollectibleCoordinatorOutput?
 
   private let walletCoreAssembly: WalletCoreAssembly
+  private let collectibleAddress: Address
   
   private var recipient: Recipient?
   private var itemTransferModel: ItemTransferModel?
@@ -26,8 +28,10 @@ final class SendCollectibleCoordinator: Coordinator<NavigationRouter> {
   private weak var sendRecipientInput: SendRecipientModuleInput?
   
   init(router: NavigationRouter,
+       collectibleAddress: Address,
        walletCoreAssembly: WalletCoreAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
+    self.collectibleAddress = collectibleAddress
     super.init(router: router)
   }
   
