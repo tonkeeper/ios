@@ -28,10 +28,10 @@ final class WalletCoreAssembly {
     walletCoreContainer.sendInputController()
   }
   
-  func sendController(itemTransferModel: ItemTransferModel,
+  func sendController(transferModel: TransferModel,
                       recipient: Recipient,
                       comment: String?) -> SendController {
-    walletCoreContainer.sendController(itemTransferModel: itemTransferModel,
+    walletCoreContainer.sendController(transferModel: transferModel,
                                        recipient: recipient,
                                        comment: comment)
   }

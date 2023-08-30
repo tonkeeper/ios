@@ -21,7 +21,7 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
   private let token: Token
   
   private var recipient: Recipient?
-  private var itemTransferModel: ItemTransferModel?
+  private var tokenTransferModel: TokenTransferModel?
   private var comment: String?
   
   private weak var sendRecipientInput: SendRecipientModuleInput?
@@ -69,10 +69,10 @@ private extension SendCoordinator {
   
   func openConfirmation() {
     guard let recipient = recipient,
-          let itemTransferModel = itemTransferModel else { return }
+          let tokenTransferModel = tokenTransferModel else { return }
     
     let sendController = walletCoreAssembly.sendController(
-      itemTransferModel: itemTransferModel,
+      transferModel: .token(tokenTransferModel),
       recipient: recipient,
       comment: comment
     )
@@ -132,8 +132,8 @@ extension SendCoordinator: SendAmountModuleOutput {
     output?.sendCoordinatorDidClose(self)
   }
   
-  func sendAmountModuleDidEnterAmount(itemTransferModel: ItemTransferModel) {
-    self.itemTransferModel = itemTransferModel
+  func sendAmountModuleDidEnterAmount(tokenTransferModel: TokenTransferModel) {
+    self.tokenTransferModel = tokenTransferModel
     self.openConfirmation()
   }
 }

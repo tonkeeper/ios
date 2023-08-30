@@ -11,7 +11,7 @@ import WalletCore
 
 protocol SendAmountModuleOutput: AnyObject {
   func sendAmountModuleDidTapCloseButton()
-  func sendAmountModuleDidEnterAmount(itemTransferModel: ItemTransferModel)
+  func sendAmountModuleDidEnterAmount(tokenTransferModel: TokenTransferModel)
 }
 
 protocol SendAmountModuleInput: AnyObject {}

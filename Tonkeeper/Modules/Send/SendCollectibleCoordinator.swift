@@ -22,7 +22,7 @@ final class SendCollectibleCoordinator: Coordinator<NavigationRouter> {
   private let collectibleAddress: Address
   
   private var recipient: Recipient?
-  private var itemTransferModel: ItemTransferModel?
+  private var itemTransferModel: TransferModel?
   private var comment: String?
   
   private weak var sendRecipientInput: SendRecipientModuleInput?
