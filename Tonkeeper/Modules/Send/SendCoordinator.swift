@@ -145,8 +145,12 @@ extension SendCoordinator: SendConfirmationModuleOutput {
     output?.sendCoordinatorDidClose(self)
   }
   
-  func sendRecipientModuleDidFinish() {
+  func sendConfirmationModuleDidFinish() {
     output?.sendCoordinatorDidClose(self)
+  }
+  
+  func sendConfirmationModuleDidFailedToPrepareTransaction() {
+    router.pop()
   }
 }
 

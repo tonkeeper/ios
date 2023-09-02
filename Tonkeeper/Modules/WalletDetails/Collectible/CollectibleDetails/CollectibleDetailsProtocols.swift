@@ -8,12 +8,13 @@
 
 import Foundation
 import TonSwift
+import WalletCore
 
 protocol CollectibleDetailsModuleOutput: AnyObject {
   func collectibleDetailsDidFinish(_ collectibleDetails: CollectibleDetailsModuleInput)
   func collectibleDetails(
     _ collectibleDetails: CollectibleDetailsModuleInput,
-    transferCollectible collectibleAddress: Address
+    transferNFT nftAddress: Address
   )
 }
 

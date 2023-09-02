@@ -10,7 +10,8 @@ import Foundation
 
 protocol SendConfirmationModuleOutput: AnyObject {
   func sendConfirmationModuleDidTapCloseButton()
-  func sendRecipientModuleDidFinish()
+  func sendConfirmationModuleDidFinish()
+  func sendConfirmationModuleDidFailedToPrepareTransaction()
 }
 
 protocol SendConfirmationModuleInput: AnyObject {}
@@ -22,5 +23,5 @@ protocol SendConfirmationPresenterInput {
 
 protocol SendConfirmationViewInput: AnyObject {
   func update(with configuration: ModalContentViewController.Configuration)
-  func showFailedToLoadFeeError(errorTitle: String)
+  func showError(errorTitle: String)
 }

@@ -19,19 +19,18 @@ final class SendCollectibleCoordinator: Coordinator<NavigationRouter> {
   weak var output: SendCollectibleCoordinatorOutput?
 
   private let walletCoreAssembly: WalletCoreAssembly
-  private let collectibleAddress: Address
+  private let nftAddress: Address
   
   private var recipient: Recipient?
-  private var itemTransferModel: TransferModel?
   private var comment: String?
   
   private weak var sendRecipientInput: SendRecipientModuleInput?
   
   init(router: NavigationRouter,
-       collectibleAddress: Address,
+       nftAddress: Address,
        walletCoreAssembly: WalletCoreAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
-    self.collectibleAddress = collectibleAddress
+    self.nftAddress = nftAddress
     super.init(router: router)
   }
   
@@ -52,7 +51,22 @@ private extension SendCollectibleCoordinator {
     router.setPresentables([(module.view, nil)])
   }
   
-  func openConfirmation() {}
+  func openConfirmation() {
+    guard let recipient = recipient else { return }
+    
+    let sendController = walletCoreAssembly.sendController(
+      transferModel: .nft(nftAddress: nftAddress),
+      recipient: recipient,
+      comment: comment
+    )
+    
+    let module = SendConfirmationAssembly
+      .module(
+        sendController: sendController,
+        output: self)
+    module.view.setupBackButton()
+    router.push(presentable: module.view)
+  }
 }
 
 // MARK: - SendRecipientModuleOutput
@@ -72,6 +86,7 @@ extension SendCollectibleCoordinator: SendRecipientModuleOutput {
     comment: String?) {
       self.recipient = recipient
       self.comment = comment
+      openConfirmation()
   }
 }
 // MARK: - SendConfirmationModuleOutput
@@ -81,8 +96,12 @@ extension SendCollectibleCoordinator: SendConfirmationModuleOutput {
     output?.sendCollectibleCoordinatorDidClose(self)
   }
   
-  func sendRecipientModuleDidFinish() {
+  func sendConfirmationModuleDidFinish() {
     output?.sendCollectibleCoordinatorDidClose(self)
+  }
+
+  func sendConfirmationModuleDidFailedToPrepareTransaction() {
+    router.pop()
   }
 }
 

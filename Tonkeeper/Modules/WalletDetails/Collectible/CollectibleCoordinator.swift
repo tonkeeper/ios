@@ -7,6 +7,7 @@
 
 import UIKit
 import TonSwift
+import WalletCore
 
 protocol CollectibleCoordinatorOutput: AnyObject {
   func collectibleCoordinatorDidFinish(_ coordinator: CollectibleCoordinator)
@@ -55,14 +56,14 @@ extension CollectibleCoordinator: CollectibleDetailsModuleOutput {
     output?.collectibleCoordinatorDidFinish(self)
   }
   
-  func collectibleDetails(_ collectibleDetails: CollectibleDetailsModuleInput,
-                          transferCollectible collectibleAddress: Address) {
-    let navigationController = UINavigationController()
+  func collectibleDetails(_ collectibleDetails: CollectibleDetailsModuleInput, 
+                          transferNFT nftAddress: Address) {
+    let navigationController = NavigationController()
     navigationController.configureDefaultAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = sendAssembly.sendCollectibleCoordinator(
       router: router,
-      collectibleAddress: collectibleAddress)
+      nftAddress: nftAddress)
     coordinator.output = self
     
     addChild(coordinator)

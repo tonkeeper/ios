@@ -26,10 +26,10 @@ final class SendAssembly {
   }
   
   func sendCollectibleCoordinator(router: NavigationRouter,
-                                  collectibleAddress: Address) -> SendCollectibleCoordinator {
+                                  nftAddress: Address) -> SendCollectibleCoordinator {
     SendCollectibleCoordinator(
       router: router,
-      collectibleAddress: collectibleAddress,
+      nftAddress: nftAddress,
       walletCoreAssembly: walletCoreAssembly
     )
   }

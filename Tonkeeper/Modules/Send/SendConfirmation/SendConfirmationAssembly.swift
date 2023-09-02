@@ -18,6 +18,8 @@ struct SendConfirmationAssembly {
     presenter.output = output
     presenter.viewInput = viewController
     
+    sendController.delegate = presenter
+    
     return Module(view: viewController, input: presenter)
   }
 }

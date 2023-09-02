@@ -26,6 +26,7 @@ struct SendConfirmationModalConfigurationBuilder {
   ) -> ModalContentViewController.Configuration {
     let header = ModalContentViewController.Configuration.Header(
       image: image,
+      imageShape: .circle,
       title: title,
       topDescription: .description
     )
@@ -80,6 +81,7 @@ struct SendConfirmationModalConfigurationBuilder {
   }
   
   static func nftSendConfiguration(title: String,
+                                   description: String,
                                    image: Image,
                                    recipientName: String? = nil,
                                    recipientAddress: String? = nil,
@@ -96,8 +98,9 @@ struct SendConfirmationModalConfigurationBuilder {
   ) -> ModalContentViewController.Configuration {
     let header = ModalContentViewController.Configuration.Header(
       image: image,
+      imageShape: .roundedRect(cornerRadius: 20),
       title: title,
-      topDescription: .description
+      topDescription: description
     )
     
     var listItems = [ModalContentViewController.Configuration.ListItem]()
@@ -119,6 +122,14 @@ struct SendConfirmationModalConfigurationBuilder {
     
     if let comment = comment, !comment.isEmpty {
       listItems.append(.init(left: .commentTitle, rightTop: .value(comment), rightBottom: .value(nil)))
+    }
+    
+    if let nftCollectionId = nftCollectionId {
+      listItems.append(.init(left: .nftCollectionID, rightTop: .value(nftCollectionId), rightBottom: .value(nil)))
+    }
+    
+    if let nftId = nftId {
+      listItems.append(.init(left: .nftItemID, rightTop: .value(nftId), rightBottom: .value(nil)))
     }
     
     let buttons = ModalContentViewController.Configuration.ActionBar.Button(
@@ -180,5 +191,7 @@ private extension String {
   static let amountTitle = "Amount"
   static let feeTitle = "Fee"
   static let commentTitle = "Comment"
+  static let nftItemID = "NFT item ID"
+  static let nftCollectionID = "NFT collection ID"
   static let buttonTitle = "Confirm and send"
 }

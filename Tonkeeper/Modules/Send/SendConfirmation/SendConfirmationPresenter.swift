@@ -32,10 +32,7 @@ final class SendConfirmationPresenter {
 
 extension SendConfirmationPresenter: SendConfirmationPresenterInput {
   func viewDidLoad() {
-    updateInitialState()
-    Task {
-      await loadTransactionInformation()
-    }
+    sendController.prepareTransaction()
   }
   
   func didTapCloseButton() {
@@ -47,49 +44,56 @@ extension SendConfirmationPresenter: SendConfirmationPresenterInput {
 
 extension SendConfirmationPresenter: SendConfirmationModuleInput {}
 
-// MARK: - Private
-
-private extension SendConfirmationPresenter {
-  func updateInitialState() {
-    let model = sendController.getInitialTransactionModel()
-    let configuration = mapToConfiguration(model: model, isInitial: true)
+extension SendConfirmationPresenter: SendControllerDelegate {
+  func sendControllerDidStartLoadInitialData(_ sendController: WalletCore.SendController) {}
+  
+  func sendController(_ sendController: SendController, didUpdate model: SendTransactionViewModel) {
+    let configuration = mapToConfiguration(model: model)
     viewInput?.update(with: configuration)
   }
   
-  func loadTransactionInformation() async {
-    do {
-      let model = try await sendController.loadTransactionModel()
-      await MainActor.run {
-        let configuration = mapToConfiguration(model: model, isInitial: false)
-        viewInput?.update(with: configuration)
-      }
-    } catch {
-      await MainActor.run {
-        let model = sendController.getInitialTransactionModel()
-        let configuration = mapToConfiguration(model: model, isInitial: false)
-        viewInput?.update(with: configuration)
-        viewInput?.showFailedToLoadFeeError(errorTitle: .failedToCalculateFeeErrorTitle)
-      }
+  func sendControllerFailed(_ sendController: SendController, error: SendControllerError) {
+    switch error {
+    case .failedToPrepareTransaction:
+      viewInput?.showError(errorTitle: .failedToPrepareTransactionErrorTitle)
+      output?.sendConfirmationModuleDidFailedToPrepareTransaction()
+    case .failedToEmulateTransaction:
+      viewInput?.showError(errorTitle: .failedToCalculateFeeErrorTitle)
+    case .failedToSendTransaction:
+      viewInput?.showError(errorTitle: .failedToSendTransactionErrorTitle)
     }
   }
-  
-  func mapToConfiguration(model: SendTransactionViewModel,
-                          isInitial: Bool) -> ModalContentViewController.Configuration {
+}
+
+// MARK: - Private
+
+private extension SendConfirmationPresenter {
+  func mapToConfiguration(model: SendTransactionViewModel) -> ModalContentViewController.Configuration {
     switch model {
     case .token(let sendTokenModel):
-      return mapSendTokenModelToConfiguration(model: sendTokenModel, isInitial: isInitial)
+      return mapSendTokenModelToConfiguration(model: sendTokenModel)
     case .nft(let sendNFTModel):
-      return mapSendNFTModelToConfiguration(model: sendNFTModel, isInitial: isInitial)
+      return mapSendNFTModelToConfiguration(model: sendNFTModel)
     }
   }
   
-  func mapSendTokenModelToConfiguration(model: SendTransactionViewModel.SendTokenModel,
-                                        isInitial: Bool) -> ModalContentViewController.Configuration {
-    let fiatAmountItem: ModalContentViewController.Configuration.ListItem.RightItem<String?>
-    if let fiatAmount = model.amountFiat {
-      fiatAmountItem = .value(fiatAmount)
-    } else {
-      fiatAmountItem = isInitial ? .loading : .value(nil)
+  func mapSendTokenModelToConfiguration(model: SendTransactionViewModel.SendTokenModel) -> ModalContentViewController.Configuration {
+    let fiatAmount: ModalContentViewController.Configuration.ListItem.RightItem<String?>
+    switch model.amountFiat {
+    case .loading: fiatAmount = .loading
+    case .value(let value): fiatAmount = .value(value)
+    }
+    
+    let fee: ModalContentViewController.Configuration.ListItem.RightItem<String?>
+    switch model.feeTon {
+    case .loading: fee = .loading
+    case .value(let value): fee = .value(value ?? "?")
+    }
+    
+    let feeFiat: ModalContentViewController.Configuration.ListItem.RightItem<String?>
+    switch model.feeFiat {
+    case .loading: feeFiat = .loading
+    case .value(let value):feeFiat = .value(value)
     }
     
     let configuration = SendConfirmationModalConfigurationBuilder
@@ -99,9 +103,9 @@ private extension SendConfirmationPresenter {
         recipientName: model.recipientName,
         recipientAddress: model.recipientAddress,
         amount: model.amountToken,
-        fiatAmount: fiatAmountItem,
-        fee: isInitial ? .loading : .value(model.feeTon ?? "?"),
-        fiatFee: isInitial ? .loading : .value(model.feeFiat),
+        fiatAmount: fiatAmount,
+        fee: fee,
+        fiatFee: feeFiat,
         comment: model.comment,
         showActivity: false,
         showActivityOnTap: true,
@@ -111,16 +115,32 @@ private extension SendConfirmationPresenter {
     return configuration
   }
   
-  func mapSendNFTModelToConfiguration(model: SendTransactionViewModel.SendNFTModel,
-                                      isInitial: Bool) -> ModalContentViewController.Configuration {
+  func mapSendNFTModelToConfiguration(model: SendTransactionViewModel.SendNFTModel) -> ModalContentViewController.Configuration {
+    let fee: ModalContentViewController.Configuration.ListItem.RightItem<String?>
+    switch model.feeTon {
+    case .loading:
+      fee = .loading
+    case .value(let value):
+      fee = .value(value ?? "?")
+    }
+    
+    let feeFiat: ModalContentViewController.Configuration.ListItem.RightItem<String?>
+    switch model.feeFiat {
+    case .loading:
+      feeFiat = .loading
+    case .value(let value):
+      feeFiat = .value(value)
+    }
+    
     let configuration = SendConfirmationModalConfigurationBuilder
       .nftSendConfiguration(
         title: model.title,
+        description: model.description,
         image: .with(image: model.image),
         recipientName: model.recipientName,
         recipientAddress: model.recipientAddress,
-        fee: isInitial ? .loading : .value(model.feeTon ?? "?"),
-        fiatFee: isInitial ? .loading : .value(model.feeFiat),
+        fee: fee,
+        fiatFee: feeFiat,
         comment: model.comment,
         nftId: model.nftId,
         nftCollectionId: model.nftCollectionId,
@@ -149,12 +169,14 @@ private extension SendConfirmationPresenter {
 
   func completion(isSuccess: Bool) {
     guard isSuccess else { return }
-    output?.sendRecipientModuleDidFinish()
+    output?.sendConfirmationModuleDidFinish()
   }
 }
 
 
 private extension String {
+  static let failedToPrepareTransactionErrorTitle = "Failed to prepare transaction"
   static let failedToCalculateFeeErrorTitle = "Failed to calculate fee"
+  static let failedToSendTransactionErrorTitle = "Failed"
 }
 
