@@ -56,6 +56,10 @@ final class WalletCoreAssembly {
     walletCoreContainer.activityListController()
   }
   
+  func activityController() -> ActivityController {
+    walletCoreContainer.activityController()
+  }
+  
   func activityListTonEventsController() -> ActivityListController {
     walletCoreContainer.activityListTonEventsController()
   }

@@ -32,6 +32,7 @@ final class ActivityCoordinator: Coordinator<NavigationRouter> {
 private extension ActivityCoordinator {
   func openActivityRoot() {
     let module = ActivityRootAssembly.module(output: self,
+                                             activityController: walletCoreAssembly.activityController(),
                                              activityListController: walletCoreAssembly.activityListController())
     router.setPresentables([(module.view, nil)])
   }

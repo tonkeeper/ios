@@ -10,9 +10,10 @@ import WalletCore
 
 struct ActivityRootAssembly {
   static func module(output: ActivityRootModuleOutput?,
+                     activityController: ActivityController,
                      activityListController: ActivityListController) -> Module<ActivityRootViewController, ActivityRootModuleInput> {
     
-    let presenter = ActivityRootPresenter()
+    let presenter = ActivityRootPresenter(activityController: activityController)
     
     let emptyModule = ActivityEmptyAssembly.module(output: presenter)
     let listModule = ActivityListAssembly.module(
