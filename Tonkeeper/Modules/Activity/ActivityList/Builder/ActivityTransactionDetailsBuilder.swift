@@ -20,6 +20,7 @@ struct ActivityTransactionDetailsBuilder {
   ) -> ModalContentViewController.Configuration {
     let header = ModalContentViewController.Configuration.Header(
       image: nil,
+      imageShape: .circle,
       title: title,
       bottomDescription: description,
       fixBottomDescription: fixDescription

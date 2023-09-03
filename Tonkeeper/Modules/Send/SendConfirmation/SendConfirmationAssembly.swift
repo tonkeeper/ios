@@ -10,21 +10,15 @@ import WalletCore
 import BigInt
 
 struct SendConfirmationAssembly {
-  static func module(recipient: Recipient,
-                     itemTransferModel: ItemTransferModel,
-                     comment: String?,
-                     sendController: SendController,
+  static func module(sendController: SendController,
                      output: SendConfirmationModuleOutput?) -> Module<SendConfirmationViewController, SendConfirmationModuleInput> {
-    let presenter = SendConfirmationPresenter(
-      recipient: recipient,
-      itemTransferModel: itemTransferModel,
-      comment: comment,
-      sendController: sendController
-    )
+    let presenter = SendConfirmationPresenter(sendController: sendController)
     let viewController = SendConfirmationViewController(presenter: presenter)
     
     presenter.output = output
     presenter.viewInput = viewController
+    
+    sendController.delegate = presenter
     
     return Module(view: viewController, input: presenter)
   }

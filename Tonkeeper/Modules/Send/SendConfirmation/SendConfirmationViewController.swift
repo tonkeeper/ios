@@ -45,7 +45,7 @@ extension SendConfirmationViewController: SendConfirmationViewInput {
     contentViewController.configuration = configuration
   }
 
-  func showFailedToLoadFeeError(errorTitle: String) {
+  func showError(errorTitle: String) {
     ToastController.showToast(configuration: .init(title: errorTitle))
   }
 }

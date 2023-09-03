@@ -60,18 +60,27 @@ extension ModalContentViewController {
     }
     
     struct Header {
+      enum ImageShape {
+        case rect
+        case circle
+        case roundedRect(cornerRadius: CGFloat)
+      }
+      
       let image: Image?
+      let imageShape: ImageShape
       let title: String?
       let topDescription: String?
       let bottomDescription: String?
       let fixBottomDescription: String?
       
       init(image: Image?,
+           imageShape: ImageShape,
            title: String?,
            topDescription: String? = nil,
            bottomDescription: String? = nil,
            fixBottomDescription: String? = nil) {
         self.image = image
+        self.imageShape = imageShape
         self.title = title
         self.topDescription = topDescription
         self.bottomDescription = bottomDescription

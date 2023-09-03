@@ -73,10 +73,18 @@ private extension CollectibleDetailsPresenter {
         description: model.collectionDetails.description
       )
       
-      let propertiesModel = CollectibleDetailsPropertiesСarouselView.Model(
-        titleModel: .init(title: "Properties"),
-        propertiesModels: model.properties.map { .init(title: $0.title, value: $0.value) }
+      
+      let buttonsModel = CollectibleDetailsButtonsView.Model(buttonsModels:
+        buttonsModels(model: model)
       )
+      
+      var propertiesModel: CollectibleDetailsPropertiesСarouselView.Model?
+      if !model.properties.isEmpty {
+        propertiesModel = CollectibleDetailsPropertiesСarouselView.Model(
+          titleModel: .init(title: "Properties"),
+          propertiesModels: model.properties.map { .init(title: $0.title, value: $0.value) }
+        )
+      }
       
       let listViewModel = model.details.items.map {
         ModalContentViewController.Configuration.ListItem(left: $0.title, rightTop: .value($0.value), rightBottom: .value(nil))
@@ -88,12 +96,15 @@ private extension CollectibleDetailsPresenter {
         listViewModel: listViewModel
       )
       
+      let viewModel = CollectibleDetailsView.Model(collectibleDescriptionModel: collectibleModel,
+                                                   collectionDescriptionModel: collectionModel,
+                                                   buttonsModel: buttonsModel,
+                                                   propertiesModel: propertiesModel,
+                                                   detailsModel: detailsModel)
+      
       await MainActor.run {
         viewInput?.updateTitle(model.title)
-        viewInput?.updateCollectibleSection(model: collectibleModel)
-        viewInput?.updateContentSection(model: collectionModel)
-        viewInput?.updatePropertiesSection(model: propertiesModel)
-        viewInput?.updateDetailsSection(model: detailsModel)
+        viewInput?.updateView(model: viewModel)
         
         openDetailsURL = { [weak self] in
           guard let url = model.details.url else { return }
@@ -102,4 +113,33 @@ private extension CollectibleDetailsPresenter {
       }
     }
   }
+  
+  func buttonsModels(model: CollectibleDetailsViewModel) -> [CollectibleDetailsButtonsView.Model.Button] {
+    var transferButtonDescription: NSAttributedString?
+    if model.isOnSale {
+      transferButtonDescription = String.onSaleDescription.attributed(
+        with: .body2,
+        alignment: .center,
+        lineBreakMode: .byWordWrapping,
+        color: .Text.secondary)
+    }
+    
+    let transferButtonModel = CollectibleDetailsButtonsView.Model.Button(
+      title: "Transfer",
+      configuration: .primaryLarge,
+      isEnabled: model.isTransferEnable,
+      tapAction: { [weak self] in
+        guard let self = self else { return }
+        self.output?.collectibleDetails(
+          self,
+          transferNFT: self.collectibleDetailsController.collectibleAddress)
+      },
+      description: transferButtonDescription
+    )
+    return [transferButtonModel]
+  }
+}
+
+private extension String {
+  static let onSaleDescription = "Domain is on sale at the marketplace now. For transfer, you should remove it from sale first."
 }

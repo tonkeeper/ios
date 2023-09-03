@@ -28,8 +28,12 @@ final class WalletCoreAssembly {
     walletCoreContainer.sendInputController()
   }
   
-  func sendController() -> SendController {
-    walletCoreContainer.sendController()
+  func sendController(transferModel: TransferModel,
+                      recipient: Recipient,
+                      comment: String?) -> SendController {
+    walletCoreContainer.sendController(transferModel: transferModel,
+                                       recipient: recipient,
+                                       comment: comment)
   }
   
   func sendRecipientController() -> SendRecipientController {
@@ -50,6 +54,10 @@ final class WalletCoreAssembly {
   
   func activityListController() -> ActivityListController {
     walletCoreContainer.activityListController()
+  }
+  
+  func activityController() -> ActivityController {
+    walletCoreContainer.activityController()
   }
   
   func activityListTonEventsController() -> ActivityListController {

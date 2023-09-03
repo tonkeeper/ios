@@ -33,7 +33,7 @@
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
         "branch" : "develop",
-        "revision" : "ec5340542b2007fccfdcd707f5081e4c98c1e06c"
+        "revision" : "d5d94cf6c58dbe62d2f5820a5c51e38c67f21fc2"
       }
     },
     {
@@ -68,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "branch" : "feature/jetton_transfer",
-        "revision" : "8de358bb6d85ac806c7e42cf9824b18332d3c5d5"
+        "branch" : "feature/nft_transfer",
+        "revision" : "5ca17b6c98be35ef05a0e83791c081c35adbec7c"
       }
     },
     {

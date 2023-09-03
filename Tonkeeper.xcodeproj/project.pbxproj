@@ -38,6 +38,8 @@
 		6DDD78B4E9BC9191CF5EC900 /* BuyListProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0320D77CB84A1DB3ADC49C5F /* BuyListProtocols.swift */; };
 		708F4E78995F7F1DD8EE8648 /* ActivityRootPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E1882B1276DA0C0A8DE642E /* ActivityRootPresenter.swift */; };
 		795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC1F118C75E99C32396A981 /* SendConfirmationProtocols.swift */; };
+		7D009A802A989E8C00A15B8A /* SendCollectibleCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D009A7F2A989E8C00A15B8A /* SendCollectibleCoordinator.swift */; };
+		7D009A832A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D009A822A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift */; };
 		7D0207602A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D02075F2A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift */; };
 		7D0207622A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0207612A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift */; };
 		7D0207852A803C7100D63B4C /* NotDelayCollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0207842A803C7100D63B4C /* NotDelayCollectionView.swift */; };
@@ -392,6 +394,8 @@
 		747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokensListPresenter.swift; sourceTree = "<group>"; };
 		76CC01E09098A23F4C78514F /* SetupWalletView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SetupWalletView.swift; sourceTree = "<group>"; };
 		7AD5CD51542108C56210A491 /* ActivityRootProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityRootProtocols.swift; sourceTree = "<group>"; };
+		7D009A7F2A989E8C00A15B8A /* SendCollectibleCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendCollectibleCoordinator.swift; sourceTree = "<group>"; };
+		7D009A822A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsButtonsView.swift; sourceTree = "<group>"; };
 		7D02075F2A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionTransactionCellContentView.swift; sourceTree = "<group>"; };
 		7D0207612A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListCompositionTransactionCell.swift; sourceTree = "<group>"; };
 		7D0207842A803C7100D63B4C /* NotDelayCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotDelayCollectionView.swift; sourceTree = "<group>"; };
@@ -1876,6 +1880,7 @@
 		7D9292C02A27411E005B83DF /* Send */ = {
 			isa = PBXGroup;
 			children = (
+				7D009A7F2A989E8C00A15B8A /* SendCollectibleCoordinator.swift */,
 				7D9292C12A27412A005B83DF /* SendCoordinator.swift */,
 				7D9292C32A274131005B83DF /* SendAssembly.swift */,
 				7D9292EA2A29DCDA005B83DF /* SendAmount */,
@@ -2019,6 +2024,7 @@
 				7DAC78E02A969D3D00358D35 /* CollectibleDetailsCollectibleView.swift */,
 				7DAC78E22A96AB5E00358D35 /* CollectibleDetailsPropertiesСarouselView.swift */,
 				7DAC78E42A96ABF600358D35 /* CollectibleDetailsPropertyView.swift */,
+				7D009A822A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2479,6 +2485,7 @@
 				7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */,
 				7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */,
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
+				7D009A802A989E8C00A15B8A /* SendCollectibleCoordinator.swift in Sources */,
 				7D5928652A1FB6C4006B0A8A /* UIControlClosure.swift in Sources */,
 				7D9144332A32130500B0FD17 /* ModalCardContainerContent.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
@@ -2630,6 +2637,7 @@
 				7D4934752A5CA44000F4BCA2 /* TKMenuItem.swift in Sources */,
 				7D16E1642A75270A00A27AB0 /* ToastController.swift in Sources */,
 				14250E44D164B234E513925F /* ActivityListPresenter.swift in Sources */,
+				7D009A832A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift in Sources */,
 				F2E003198428DC1A9FA401BB /* ActivityListProtocols.swift in Sources */,
 				7D384A532A66AC7300DE2A66 /* ReceiveRootPresenterProvider.swift in Sources */,
 				0D6D9286FE3AD2FE83868D1B /* ActivityTransactionDetailsViewController.swift in Sources */,

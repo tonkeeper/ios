@@ -45,6 +45,8 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
   
   private let imageLoader = NukeImageLoader()
   
+  private var imageShape: Model.ImageShape = .circle
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -58,7 +60,11 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
     super.layoutSubviews()
     
     imageView.layoutIfNeeded()
-    imageView.layer.cornerRadius = imageView.bounds.width / 2 
+    switch imageShape {
+    case .circle: imageView.layer.cornerRadius = imageView.bounds.width / 2
+    case .rect: imageView.layer.cornerRadius = 0
+    case .roundedRect(let cornerRadius): imageView.layer.cornerRadius = cornerRadius
+    }
   }
   
   func configure(model: ModalContentViewController.Configuration.Header) {
@@ -77,6 +83,8 @@ final class ModalContentHeaderView: UIView, ConfigurableView {
     case let .url(url):
       imageLoader.loadImage(imageURL: url, imageView: imageView, size: .init(width: .imageSide, height: .imageSide))
     }
+    
+    imageShape = model.imageShape
     
     topDescriptionLabel.isHidden = model.topDescription == nil
     topDescriptionSpacing.isHidden = model.topDescription == nil

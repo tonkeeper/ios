@@ -55,6 +55,7 @@ private extension SetupWalletPresenter {
     
     let configuration = ModalContentViewController.Configuration(
       header: .init(image: .image(.Icons.tonIcon128, tinColor: .Accent.blue, backgroundColor: .clear),
+                    imageShape: .circle,
                     title: .title,
                     bottomDescription: .description),
       listItems: [],

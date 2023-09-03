@@ -39,7 +39,8 @@ struct WalletAssembly {
       receiveAssembly: receiveAssembly,
       inAppBrowserAssembly: inAppBrowserAssembly
     )
-    self.collectibleAssembly = CollectibleAssembly(walletCoreAssembly: walletCoreAssembly)
+    self.collectibleAssembly = CollectibleAssembly(walletCoreAssembly: walletCoreAssembly,
+                                                   sendAssembly: sendAssembly)
   }
   
   func walletRootModule(output: WalletRootModuleOutput) -> Module<UIViewController, Void> {    

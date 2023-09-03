@@ -8,6 +8,7 @@
 
 import Foundation
 import TonSwift
+import WalletCore
 
 final class ActivityRootPresenter {
   
@@ -18,6 +19,14 @@ final class ActivityRootPresenter {
   
   weak var emptyInput: ActivityEmptyModuleInput?
   weak var listInput: ActivityListModuleInput?
+  
+  // MARK: - Dependencies
+  
+  private let activityController: ActivityController
+  
+  init(activityController: ActivityController) {
+    self.activityController = activityController
+  }
 }
 
 // MARK: - ActivityRootPresenterIntput
@@ -56,7 +65,25 @@ extension ActivityRootPresenter: ActivityListModuleOutput {
 
 extension ActivityRootPresenter: ActivityListModuleCollectibleOutput {
   func didSelectCollectible(with address: Address) {
-    output?.didSelectCollectible(address: address)
+    if activityController.isNeedToLoadNFT(with: address) {
+      ToastController.showToast(configuration: .loading)
+      Task {
+        do {
+          try await activityController.loadNFT(with: address)
+          await MainActor.run {
+            ToastController.hideToast()
+            output?.didSelectCollectible(address: address)
+          }
+        } catch {
+          await MainActor.run {
+            ToastController.hideToast()
+            ToastController.showToast(configuration: .failed)
+          }
+        }
+      }
+    } else {
+      output?.didSelectCollectible(address: address)
+    }
   }
 }
 

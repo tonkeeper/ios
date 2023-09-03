@@ -21,7 +21,7 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
   private let token: Token
   
   private var recipient: Recipient?
-  private var itemTransferModel: ItemTransferModel?
+  private var tokenTransferModel: TokenTransferModel?
   private var comment: String?
   
   private weak var sendRecipientInput: SendRecipientModuleInput?
@@ -69,14 +69,17 @@ private extension SendCoordinator {
   
   func openConfirmation() {
     guard let recipient = recipient,
-          let itemTransferModel = itemTransferModel else { return }
+          let tokenTransferModel = tokenTransferModel else { return }
+    
+    let sendController = walletCoreAssembly.sendController(
+      transferModel: .token(tokenTransferModel),
+      recipient: recipient,
+      comment: comment
+    )
     
     let module = SendConfirmationAssembly
       .module(
-        recipient: recipient,
-        itemTransferModel: itemTransferModel,
-        comment: comment,
-        sendController: walletCoreAssembly.sendController(),
+        sendController: sendController,
         output: self)
     module.view.setupBackButton()
     router.push(presentable: module.view)
@@ -129,8 +132,8 @@ extension SendCoordinator: SendAmountModuleOutput {
     output?.sendCoordinatorDidClose(self)
   }
   
-  func sendAmountModuleDidEnterAmount(itemTransferModel: ItemTransferModel) {
-    self.itemTransferModel = itemTransferModel
+  func sendAmountModuleDidEnterAmount(tokenTransferModel: TokenTransferModel) {
+    self.tokenTransferModel = tokenTransferModel
     self.openConfirmation()
   }
 }
@@ -142,8 +145,12 @@ extension SendCoordinator: SendConfirmationModuleOutput {
     output?.sendCoordinatorDidClose(self)
   }
   
-  func sendRecipientModuleDidFinish() {
+  func sendConfirmationModuleDidFinish() {
     output?.sendCoordinatorDidClose(self)
+  }
+  
+  func sendConfirmationModuleDidFailedToPrepareTransaction() {
+    router.pop()
   }
 }
 

@@ -84,8 +84,8 @@ extension SendAmountPresenter: SendAmountPresenterInput {
   }
   
   func didTapContinueButton() {
-    guard let itemTransferModel = sendInputController.itemTransferModel else { return }
-    output?.sendAmountModuleDidEnterAmount(itemTransferModel: itemTransferModel)
+    guard let itemTransferModel = sendInputController.tokenTransferModel else { return }
+    output?.sendAmountModuleDidEnterAmount(tokenTransferModel: itemTransferModel)
   }
   
   func didSelectToken(at index: Int) {
