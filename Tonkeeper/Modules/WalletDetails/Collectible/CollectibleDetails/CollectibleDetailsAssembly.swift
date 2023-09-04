@@ -18,6 +18,8 @@ struct CollectibleDetailsAssembly {
     )
     presenter.output = output
     
+    collectibleDetailsController.delegate = presenter
+    
     let viewController = CollectibleDetailsViewController(presenter: presenter)
     presenter.viewInput = viewController
     
