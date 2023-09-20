@@ -9,7 +9,7 @@ import UIKit
 
 extension WalletHeaderViewController: ScrollContainerHeaderContent {
   var height: CGFloat {
-    view.systemLayoutSizeFitting(.zero).height
+    view.systemLayoutSizeFitting(CGSize(width: view.bounds.width, height: 0)).height
   }
   
   var minimumHeight: CGFloat {
