@@ -1,0 +1,84 @@
+//
+//  WalletHeaderConnectionStatusView.swift
+//  Tonkeeper
+//
+//  Created by Grigory on 19.9.23..
+//
+
+import UIKit
+
+final class WalletHeaderConnectionStatusView: UIView, ConfigurableView {
+  
+  private let titleLabel: UILabel = {
+    let label = UILabel()
+    label.numberOfLines = 1
+    return label
+  }()
+  
+  private let loaderView: LoaderView = {
+    let loaderView = LoaderView(size: .xSmall)
+    loaderView.isHidden = false
+    loaderView.color = .white.withAlphaComponent(0.4)
+    loaderView.innerColor = .white
+    return loaderView
+  }()
+  
+  private let loaderViewContrainer = UIView()
+  
+  private let stackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .horizontal
+    stackView.spacing = 4
+    return stackView
+  }()
+  
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    setup()
+  }
+  
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+  
+  // MARK: - ConfigurableView
+  
+  struct Model {
+    let title: String
+    let titleColor: UIColor
+    let isLoading: Bool
+  }
+  
+  func configure(model: Model) {
+    titleLabel.attributedText = model.title.attributed(with: .body2, alignment: .center, color: model.titleColor)
+    loaderViewContrainer.isHidden = !model.isLoading
+    model.isLoading ? loaderView.startAnimation() : loaderView.stopAnimation()
+  }
+}
+
+private extension WalletHeaderConnectionStatusView {
+  func setup() {
+    addSubview(stackView)
+    loaderViewContrainer.addSubview(loaderView)
+    stackView.addArrangedSubview(titleLabel)
+    stackView.addArrangedSubview(loaderViewContrainer)
+    
+    setupConstraints()
+  }
+  
+  func setupConstraints() {
+    stackView.translatesAutoresizingMaskIntoConstraints = false
+    loaderView.translatesAutoresizingMaskIntoConstraints = false
+    
+    NSLayoutConstraint.activate([
+      stackView.topAnchor.constraint(equalTo: topAnchor),
+      stackView.leftAnchor.constraint(equalTo: leftAnchor),
+      stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
+      stackView.rightAnchor.constraint(equalTo: rightAnchor),
+      
+      loaderView.leftAnchor.constraint(equalTo: loaderViewContrainer.leftAnchor),
+      loaderView.rightAnchor.constraint(equalTo: loaderViewContrainer.rightAnchor),
+      loaderView.centerYAnchor.constraint(equalTo: loaderViewContrainer.centerYAnchor, constant: 2),
+    ])
+  }
+}

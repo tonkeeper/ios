@@ -300,6 +300,7 @@
 		7DB8FB842A1BEF74005B4B11 /* UIFont+Montserrat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */; };
 		7DB944C12A728E160008B512 /* ShimmerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB944C02A728E160008B512 /* ShimmerView.swift */; };
 		7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC1D96B2A55903300D61C96 /* AmountInputFormatController.swift */; };
+		7DC88C582AB9C42100F47614 /* WalletHeaderConnectionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC88C572AB9C42100F47614 /* WalletHeaderConnectionStatusView.swift */; };
 		7DC8A3B62A7C172B00B8B219 /* TokenDetailsListContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC8A3B42A7C172B00B8B219 /* TokenDetailsListContentViewController.swift */; };
 		7DC8A3B72A7C172B00B8B219 /* ActivityListViewController+TokenDetailsListContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC8A3B52A7C172B00B8B219 /* ActivityListViewController+TokenDetailsListContentViewController.swift */; };
 		7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050B2A6952E7003E9F13 /* ActivityRootAssembly.swift */; };
@@ -653,6 +654,7 @@
 		7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIFont+Montserrat.swift"; sourceTree = "<group>"; };
 		7DB944C02A728E160008B512 /* ShimmerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShimmerView.swift; sourceTree = "<group>"; };
 		7DC1D96B2A55903300D61C96 /* AmountInputFormatController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AmountInputFormatController.swift; sourceTree = "<group>"; };
+		7DC88C572AB9C42100F47614 /* WalletHeaderConnectionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderConnectionStatusView.swift; sourceTree = "<group>"; };
 		7DC8A3B42A7C172B00B8B219 /* TokenDetailsListContentViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenDetailsListContentViewController.swift; sourceTree = "<group>"; };
 		7DC8A3B52A7C172B00B8B219 /* ActivityListViewController+TokenDetailsListContentViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "ActivityListViewController+TokenDetailsListContentViewController.swift"; sourceTree = "<group>"; };
 		7DDF050B2A6952E7003E9F13 /* ActivityRootAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityRootAssembly.swift; sourceTree = "<group>"; };
@@ -1287,8 +1289,8 @@
 		7D59285F2A1FB616006B0A8A /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				7DC88C562AB9C40D00F47614 /* WalletHeaderTitleView */,
 				7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */,
-				7D92929C2A2608A0005B83DF /* WalletHeaderTitleView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2128,6 +2130,15 @@
 			path = Shimmer;
 			sourceTree = "<group>";
 		};
+		7DC88C562AB9C40D00F47614 /* WalletHeaderTitleView */ = {
+			isa = PBXGroup;
+			children = (
+				7D92929C2A2608A0005B83DF /* WalletHeaderTitleView.swift */,
+				7DC88C572AB9C42100F47614 /* WalletHeaderConnectionStatusView.swift */,
+			);
+			path = WalletHeaderTitleView;
+			sourceTree = "<group>";
+		};
 		7DC8A3B32A7C172B00B8B219 /* ListContent */ = {
 			isa = PBXGroup;
 			children = (
@@ -2373,6 +2384,7 @@
 				7D9292FD2A29DCDA005B83DF /* SendRecipientViewController.swift in Sources */,
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
+				7DC88C582AB9C42100F47614 /* WalletHeaderConnectionStatusView.swift in Sources */,
 				7D9292D82A288013005B83DF /* Notificiation+Keyboard.swift in Sources */,
 				7DAC78C92A8FBABF00358D35 /* InAppBrowserMainAssembly.swift in Sources */,
 				7D384A592A66ACFA00DE2A66 /* ReceiveRootPresenterTokenProvider.swift in Sources */,
