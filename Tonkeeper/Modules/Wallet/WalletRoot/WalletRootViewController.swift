@@ -22,14 +22,6 @@ final class WalletRootViewController: GenericViewController<WalletRootView> {
   
   private let scrollContainerViewController: ScrollContainerViewController
   
-  // MARK: - Pull-to-refresh
-  
-  private let refreshControl: UIRefreshControl = {
-    let refreshControl = UIRefreshControl()
-    refreshControl.tintColor = .Icon.primary
-    return refreshControl
-  }()
-  
   // MARK: - Init
   
   init(presenter: WalletRootPresenterInput,
@@ -65,11 +57,7 @@ final class WalletRootViewController: GenericViewController<WalletRootView> {
 
 // MARK: - WalletRootViewInput
 
-extension WalletRootViewController: WalletRootViewInput {
-  func didFinishLoading() {
-    scrollContainerViewController.stopRefreshControl()
-  }
-}
+extension WalletRootViewController: WalletRootViewInput {}
 
 // MARK: - Private
 
@@ -78,9 +66,5 @@ private extension WalletRootViewController {
     addChild(scrollContainerViewController)
     customView.addContent(contentView: scrollContainerViewController.view)
     scrollContainerViewController.didMove(toParent: self)
-    
-    scrollContainerViewController.didPullToRefreshClosure = { [weak self] in
-      self?.presenter.didPullToRefresh()
-    }
   }
 }

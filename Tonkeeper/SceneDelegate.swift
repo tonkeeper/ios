@@ -34,7 +34,8 @@ private extension SceneDelegate {
     let router = WindowRouter(window: window)
     let appAssembly = AppAssembly()
     let coordinator = AppCoordinator(router: router,
-                                     appAssembly: appAssembly)
+                                     appAssembly: appAssembly,
+                                     appStateTracker: appAssembly.rootAssembly.coreAssembly.appStateTracker)
     return coordinator
   }
 }

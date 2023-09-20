@@ -19,6 +19,7 @@ protocol WalletHeaderModuleOutput: AnyObject {
 protocol WalletHeaderModuleInput: AnyObject {
   func updateTitle(_ title: String)
   func updateWith(walletHeader: WalletBalanceModel.Header)
+  func updateConnectionState(_ model: WalletHeaderConnectionStatusView.Model?)
 }
 
 protocol WalletHeaderPresenterInput {
@@ -31,4 +32,5 @@ protocol WalletHeaderViewInput: AnyObject {
   func update(with model: WalletHeaderView.Model)
   func updateButtons(with models: [WalletHeaderButtonModel])
   func updateTitle(_ title: String?)
+  func updateConnectionState(_ model: WalletHeaderConnectionStatusView.Model?)
 }

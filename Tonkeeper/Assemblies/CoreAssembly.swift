@@ -8,6 +8,9 @@
 import UIKit
 
 struct CoreAssembly {
+  
+  let appStateTracker = AppStateTracker()
+  
   var appSetting: AppSettings {
     AppSettings()
   }

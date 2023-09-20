@@ -11,13 +11,17 @@ import WalletCore
 final class AppCoordinator: Coordinator<WindowRouter> {
   
   private let appAssembly: AppAssembly
+  private let appStateTracker: AppStateTracker
   
   private var blurViewController: BlurViewController?
  
   init(router: WindowRouter,
-       appAssembly: AppAssembly) {
+       appAssembly: AppAssembly,
+       appStateTracker: AppStateTracker) {
     self.appAssembly = appAssembly
+    self.appStateTracker = appStateTracker
     super.init(router: router)
+    appStateTracker.addObserver(self)
   }
   
   override func start() {
@@ -25,35 +29,10 @@ final class AppCoordinator: Coordinator<WindowRouter> {
     router.setRoot(presentable: coordinator.router.rootViewController)
     addChild(coordinator)
     coordinator.start()
-    startObserveAppStates()
   }
 }
 
 private extension AppCoordinator {
-  func startObserveAppStates() {
-    NotificationCenter.default
-      .addObserver(self,
-                   selector: #selector(appWillResignActive),
-                   name: UIApplication.willResignActiveNotification,
-                   object: nil)
-    
-    NotificationCenter.default
-      .addObserver(self,
-                   selector: #selector(appDidBecomeActive),
-                   name: UIApplication.didBecomeActiveNotification,
-                   object: nil)
-  }
-  
-  @objc
-  func appWillResignActive() {
-    showBlur()
-  }
-  
-  @objc
-  func appDidBecomeActive() {
-    hideBlur()
-  }
-  
   func showBlur() {
     let blurViewController = BlurViewController()
     self.blurViewController = blurViewController
@@ -73,6 +52,19 @@ private extension AppCoordinator {
     } completion: { _ in
       self.blurViewController?.view.removeFromSuperview()
       self.blurViewController = nil
+    }
+  }
+}
+
+extension AppCoordinator: AppStateTrackerObserver {
+  func didUpdateState(_ state: AppStateTracker.State) {
+    switch state {
+    case .becomeActive:
+      hideBlur()
+    case .resignActive:
+      showBlur()
+    default:
+      return
     }
   }
 }

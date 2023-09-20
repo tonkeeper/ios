@@ -21,13 +21,17 @@ final class WalletRootPresenter {
   private let keeperController: KeeperController
   private let walletBalanceController: WalletBalanceController
   private let pageContentProvider: PageContentProvider
+  private let appStateTracker: AppStateTracker
   
   init(keeperController: KeeperController,
        walletBalanceController: WalletBalanceController,
-       pageContentProvider: PageContentProvider) {
+       pageContentProvider: PageContentProvider,
+       appStateTracker: AppStateTracker) {
     self.keeperController = keeperController
     self.walletBalanceController = walletBalanceController
     self.pageContentProvider = pageContentProvider
+    self.appStateTracker = appStateTracker
+    appStateTracker.addObserver(self)
   }
   
   // MARK: - Module
@@ -43,12 +47,9 @@ final class WalletRootPresenter {
 extension WalletRootPresenter: WalletRootPresenterInput {
   func viewDidLoad() {
     updateTitle()
-    getBalanceFromCache()
-    reloadBalance()
-  }
-  
-  func didPullToRefresh() {
-    reloadBalance()
+    startBalanceObservation()
+    startConnectionStateObservation()
+    walletBalanceController.startUpdate()
   }
 }
 
@@ -59,39 +60,35 @@ private extension WalletRootPresenter {
     headerInput?.updateTitle("Wallet")
   }
   
-  func getBalanceFromCache() {
-    do {
-      let cachedWalletState = try walletBalanceController.getWalletBalance()
-      headerInput?.updateWith(walletHeader: cachedWalletState.header)
-      contentInput?.updateWith(walletPages: cachedWalletState.pages)
-    } catch {
-      showEmptyState()
-    }
-  }
-  
-  func reloadBalance() {
+  func startBalanceObservation() {
     Task {
-      do {
-        let walletState = try await walletBalanceController.reloadWalletBalance()
-        Task { @MainActor in
-          headerInput?.updateWith(walletHeader: walletState.header)
-          contentInput?.updateWith(walletPages: walletState.pages)
+      let balanceStream = walletBalanceController.balanceStream()
+      for try await balanceModel in balanceStream {
+        await MainActor.run {
+          headerInput?.updateWith(walletHeader: balanceModel.header)
+          contentInput?.updateWith(walletPages: balanceModel.pages)
         }
-      } catch {
-        Task { @MainActor in
-          showEmptyState()
-        }
-      }
-      Task { @MainActor in
-        viewInput?.didFinishLoading()
       }
     }
   }
   
-  func showEmptyState() {
-    if let emptyBalanceState = try? walletBalanceController.emptyWalletBalance() {
-      headerInput?.updateWith(walletHeader: emptyBalanceState.header)
-      contentInput?.updateWith(walletPages: emptyBalanceState.pages)
+  func startConnectionStateObservation() {
+    Task {
+      let connectionStateStream = walletBalanceController.connectionStateStream()
+      for try await connectionState in connectionStateStream {
+        await MainActor.run {
+          switch connectionState {
+          case .connected:
+            headerInput?.updateConnectionState(nil)
+          case .connecting:
+            headerInput?.updateConnectionState(.init(title: "Updating", titleColor: .Text.secondary, isLoading: true))
+          case .noInternet:
+            headerInput?.updateConnectionState(.init(title: "No internet connection", titleColor: .Text.secondary, isLoading: false))
+          case .failed:
+            headerInput?.updateConnectionState(.init(title: "No connection", titleColor: .Accent.orange, isLoading: false))
+          }
+        }
+      }
     }
   }
 }
@@ -142,6 +139,19 @@ extension WalletRootPresenter: WalletContentModuleOutput {
   
   func didSelectCollectibleItem(_ collectibleItem: WalletCollectibleItemViewModel) {
     output?.didSelectCollectibleItem(collectibleItem)
+  }
+}
+
+extension WalletRootPresenter: AppStateTrackerObserver {
+  func didUpdateState(_ state: AppStateTracker.State) {
+    switch state {
+    case .becomeActive:
+      walletBalanceController.startUpdate()
+    case .enterBackground:
+      walletBalanceController.stopUpdate()
+    default:
+      break
+    }
   }
 }
 
