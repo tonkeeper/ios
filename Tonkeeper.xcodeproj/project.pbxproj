@@ -41,6 +41,7 @@
 		7D009A802A989E8C00A15B8A /* SendCollectibleCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D009A7F2A989E8C00A15B8A /* SendCollectibleCoordinator.swift */; };
 		7D009A832A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D009A822A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift */; };
 		7D0203532ABB182300D8E13B /* AppStateTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0203522ABB182300D8E13B /* AppStateTracker.swift */; };
+		7D0203572ABB37D000D8E13B /* ReachabilityTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0203562ABB37D000D8E13B /* ReachabilityTracker.swift */; };
 		7D0207602A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D02075F2A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift */; };
 		7D0207622A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0207612A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift */; };
 		7D0207852A803C7100D63B4C /* NotDelayCollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0207842A803C7100D63B4C /* NotDelayCollectionView.swift */; };
@@ -399,6 +400,7 @@
 		7D009A7F2A989E8C00A15B8A /* SendCollectibleCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendCollectibleCoordinator.swift; sourceTree = "<group>"; };
 		7D009A822A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsButtonsView.swift; sourceTree = "<group>"; };
 		7D0203522ABB182300D8E13B /* AppStateTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTracker.swift; sourceTree = "<group>"; };
+		7D0203562ABB37D000D8E13B /* ReachabilityTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReachabilityTracker.swift; sourceTree = "<group>"; };
 		7D02075F2A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionTransactionCellContentView.swift; sourceTree = "<group>"; };
 		7D0207612A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListCompositionTransactionCell.swift; sourceTree = "<group>"; };
 		7D0207842A803C7100D63B4C /* NotDelayCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotDelayCollectionView.swift; sourceTree = "<group>"; };
@@ -877,6 +879,7 @@
 			isa = PBXGroup;
 			children = (
 				7D0203522ABB182300D8E13B /* AppStateTracker.swift */,
+				7D0203562ABB37D000D8E13B /* ReachabilityTracker.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -2464,6 +2467,7 @@
 				7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */,
 				7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */,
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
+				7D0203572ABB37D000D8E13B /* ReachabilityTracker.swift in Sources */,
 				7D3E438F2A339E2A00C23A75 /* BuyListServiceCell.swift in Sources */,
 				7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */,
 				7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */,

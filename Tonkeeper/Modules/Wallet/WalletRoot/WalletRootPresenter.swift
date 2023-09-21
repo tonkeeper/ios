@@ -22,16 +22,25 @@ final class WalletRootPresenter {
   private let walletBalanceController: WalletBalanceController
   private let pageContentProvider: PageContentProvider
   private let appStateTracker: AppStateTracker
+  private let reachabilityTracker: ReachabilityTracker
   
   init(keeperController: KeeperController,
        walletBalanceController: WalletBalanceController,
        pageContentProvider: PageContentProvider,
-       appStateTracker: AppStateTracker) {
+       appStateTracker: AppStateTracker,
+       reachabilityTracker: ReachabilityTracker) {
     self.keeperController = keeperController
     self.walletBalanceController = walletBalanceController
     self.pageContentProvider = pageContentProvider
     self.appStateTracker = appStateTracker
+    self.reachabilityTracker = reachabilityTracker
     appStateTracker.addObserver(self)
+    reachabilityTracker.addObserver(self)
+  }
+  
+  deinit {
+    appStateTracker.removeObserver(self)
+    reachabilityTracker.removeObserver(self)
   }
   
   // MARK: - Module
@@ -150,6 +159,17 @@ extension WalletRootPresenter: AppStateTrackerObserver {
     case .enterBackground:
       walletBalanceController.stopUpdate()
     default:
+      break
+    }
+  }
+}
+
+extension WalletRootPresenter: ReachabilityTrackerObserver {
+  func didUpdateState(_ state: ReachabilityTracker.State) {
+    switch state {
+    case .connected:
+      walletBalanceController.startUpdate()
+    case .noInternetConnection:
       break
     }
   }
