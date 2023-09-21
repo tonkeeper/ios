@@ -45,6 +45,10 @@ extension WalletHeaderPresenter: WalletHeaderModuleInput {
     let headerModel = WalletHeaderView.Model(balance: walletHeader.amount, address: walletHeader.shortAddress)
     viewInput?.update(with: headerModel)
   }
+  
+  func updateConnectionState(_ model: WalletHeaderConnectionStatusView.Model?) {
+    viewInput?.updateConnectionState(model)
+  }
 }
 
 // MARK: - WalletHeaderPresenter

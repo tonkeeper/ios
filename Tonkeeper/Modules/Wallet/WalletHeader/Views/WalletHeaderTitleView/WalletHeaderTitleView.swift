@@ -23,7 +23,7 @@ final class WalletHeaderTitleView: UIView {
   
   var title: String? {
     didSet {
-      titleLabel.text = title
+      titleLabel.attributedText = title?.attributed(with: .h3, alignment: .center, color: .Text.primary)
       bigTitleLabel.text = title
     }
   }
@@ -64,6 +64,8 @@ final class WalletHeaderTitleView: UIView {
     label.isHidden = true
     return label
   }()
+  
+  let connectionStatusView = WalletHeaderConnectionStatusView()
   
   private let rightButtonsStackView: UIStackView = {
     let stackView = UIStackView()
@@ -112,6 +114,7 @@ private extension WalletHeaderTitleView {
     contentView.addSubview(titleLabel)
     contentView.addSubview(bigTitleLabel)
     contentView.addSubview(rightButtonsStackView)
+    contentView.addSubview(connectionStatusView)
     
     setupConstraints()
     didUpdateSize()
@@ -123,6 +126,7 @@ private extension WalletHeaderTitleView {
     bigTitleLabel.translatesAutoresizingMaskIntoConstraints = false
     rightButtonsStackView.translatesAutoresizingMaskIntoConstraints = false
     safeAreaView.translatesAutoresizingMaskIntoConstraints = false
+    connectionStatusView.translatesAutoresizingMaskIntoConstraints = false
     
     contentViewHeightConstraint = contentView.heightAnchor.constraint(equalToConstant: .compactHeight)
     contentViewHeightConstraint?.isActive = true
@@ -133,13 +137,17 @@ private extension WalletHeaderTitleView {
       contentView.bottomAnchor.constraint(equalTo: bottomAnchor),
       
       titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-      titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -.smallTitleBottomSpace),
+      
       
       bigTitleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -.bigTitleBottomSpace),
       bigTitleLabel.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: ContentInsets.sideSpace),
 
       rightButtonsStackView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
       rightButtonsStackView.rightAnchor.constraint(equalTo: contentView.rightAnchor, constant: -.scanQRButtonRightSpace),
+      
+      connectionStatusView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor),
+      connectionStatusView.centerXAnchor.constraint(equalTo: centerXAnchor),
+      titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -.smallTitleBottomSpace),
     ])
   }
   

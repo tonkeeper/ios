@@ -36,42 +36,40 @@ final class ActivityListPresenter {
 
 extension ActivityListPresenter: ActivityListPresenterInput {
   func viewDidLoad() {
-    showShimmer()
     Task {
-      do {
-        let sections = try await loadNextEvents()
-        await MainActor.run {
-          if sections.isEmpty {
-            output?.activityListNoEvents(self)
+      let stream = await activityListController.eventsStream()
+      for try await event in stream {
+          switch event {
+          case .paginationFailed:
+            isPagingLoading = false
+            await MainActor.run {
+              viewInput?.showPagination(.error(title: "Failed to load"))
+            }
+          case .startLoading:
+            await MainActor.run {
+              showShimmer()
+            }
+          case .startPagination:
+            await MainActor.run {
+              viewInput?.showPagination(.loading)
+            }
+          case .stopPagination:
+            isPagingLoading = false
+          case .updateEvents(let eventsSections):
+            let sections = await mapEventsViewModels(eventsSections)
+            await MainActor.run {
+              if sections.isEmpty {
+                output?.activityListNoEvents(self)
+              } else {
+                output?.activityListHasEvents(self)
+              }
+              viewInput?.updateSections(sections)
+            }
           }
-          viewInput?.updateSections(sections)
-        }
-      } catch {
-        await MainActor.run {
-          viewInput?.updateSections([])
-          output?.activityListNoEvents(self)
-        }
       }
     }
-  }
-  
-  func reload() {
     Task {
-      do {
-        await activityListController.reset()
-        let sections = try await loadNextEvents()
-        await MainActor.run {
-          if sections.isEmpty {
-            output?.activityListNoEvents(self)
-          }
-          viewInput?.hideRefreshControl()
-          viewInput?.updateSections(sections)
-        }
-      } catch {
-        await MainActor.run {
-          viewInput?.hideRefreshControl()
-        }
-      }
+      await activityListController.start()
     }
   }
   
@@ -87,23 +85,10 @@ extension ActivityListPresenter: ActivityListPresenterInput {
         }
         return
       }
-      
-      await MainActor.run {
-        viewInput?.showPagination(.loading)
-      }
-      do {
-        let sections = try await loadNextEvents()
-        await MainActor.run {
-          isPagingLoading = false
-          viewInput?.updateSections(sections)
-        }
-      } catch {
-        await MainActor.run {
-          isPagingLoading = false
-          viewInput?.showPagination(.error(title: "Failed to load"))
-        }
-      }
+      await activityListController.fetchNext()
     }
+    guard !isPagingLoading else { return }
+    isPagingLoading = true
   }
   
   func viewModel(eventId: String) -> ActivityListCompositionTransactionCell.Model? {
@@ -136,8 +121,7 @@ extension ActivityListPresenter: ActivityListModuleInput {}
 // MARK: - Private
 
 private extension ActivityListPresenter {
-  func loadNextEvents() async throws -> [ActivityListSection] {
-    let viewModels = try await activityListController.loadNextEvents()
+  func mapEventsViewModels(_ viewModels: [String: ActivityEventViewModel]) async -> [ActivityListSection] {
     viewModels.forEach { key, value in
       let actions = value.actions.map { action in
         return transactionBuilder.buildTransactionModel(

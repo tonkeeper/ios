@@ -13,6 +13,8 @@ final class WalletHeaderViewController: GenericViewController<WalletHeaderView> 
   
   private let presenter: WalletHeaderPresenterInput
   
+  
+  var didUpdateHeight: (() -> Void)?
   // MARK: - Init
   
   init(presenter: WalletHeaderPresenterInput) {
@@ -38,6 +40,7 @@ final class WalletHeaderViewController: GenericViewController<WalletHeaderView> 
 extension WalletHeaderViewController: WalletHeaderViewInput {
   func update(with model: WalletHeaderView.Model) {
     customView.configure(model: model)
+    didUpdateHeight?()
   }
   
   func updateButtons(with models: [WalletHeaderButtonModel]) {
@@ -54,6 +57,15 @@ extension WalletHeaderViewController: WalletHeaderViewInput {
   
   func updateTitle(_ title: String?) {
     customView.titleView.title = title
+  }
+  
+  func updateConnectionState(_ model: WalletHeaderConnectionStatusView.Model?) {
+    guard let model = model else {
+      customView.titleView.connectionStatusView.isHidden = true
+      return
+    }
+    customView.titleView.connectionStatusView.isHidden = false
+    customView.titleView.connectionStatusView.configure(model: model)
   }
 }
 

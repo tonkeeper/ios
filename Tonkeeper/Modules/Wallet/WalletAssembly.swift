@@ -50,7 +50,9 @@ struct WalletAssembly {
       let module = tokensListModule(page: page, output: output)
       return (PagingContentContainer(pageContentViewController: module.view),
               module.input)
-    }))
+    }),
+                                        appStateTracker: walletCoreAssembly.coreAssembly.appStateTracker,
+                                        reachabilityTracker: walletCoreAssembly.coreAssembly.reachabilityTracker)
   
     presenter.output = output
         

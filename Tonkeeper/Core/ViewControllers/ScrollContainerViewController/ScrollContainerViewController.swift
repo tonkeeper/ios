@@ -10,6 +10,7 @@ import UIKit
 protocol ScrollContainerHeaderContent: UIViewController {
   var height: CGFloat { get }
   var minimumHeight: CGFloat { get }
+  var didUpdateHeight: (() -> Void)? { get set }
   func update(with headerScrollProgress: CGFloat)
 }
  
@@ -23,19 +24,11 @@ protocol ScrollContainerBodyContent: UIViewController {
 
 final class ScrollContainerViewController: UIViewController {
   
-  var didPullToRefreshClosure: (() -> Void)?
-
   private let headerContent: ScrollContainerHeaderContent
   private let bodyContent: ScrollContainerBodyContent
   
   private let scrollView = NotDelayScrollView()
   private let panGestureScrollView = NotDelayScrollView()
-  
-  private let refreshControl: UIRefreshControl = {
-    let refreshControl = UIRefreshControl()
-    refreshControl.tintColor = .Icon.primary
-    return refreshControl
-  }()
   
   init(headerContent: ScrollContainerHeaderContent,
        bodyContent: ScrollContainerBodyContent) {
@@ -75,10 +68,6 @@ final class ScrollContainerViewController: UIViewController {
     recalculateScrollViewContentSize()
     recalculatePanGestureScrollViewContentSize()
   }
-  
-  func stopRefreshControl() {
-    refreshControl.endRefreshing()
-  }
 }
 
 private extension ScrollContainerViewController {
@@ -89,7 +78,6 @@ private extension ScrollContainerViewController {
     
     panGestureScrollView.delegate = self
     panGestureScrollView.contentInsetAdjustmentBehavior = .never
-    panGestureScrollView.refreshControl = refreshControl
     panGestureScrollView.showsVerticalScrollIndicator = false
     
     view.addSubview(panGestureScrollView)
@@ -112,6 +100,10 @@ private extension ScrollContainerViewController {
     bodyContent.didUpdateYContentOffset = { [weak self, scrollView] yContentOffset in
       self?.panGestureScrollView.contentOffset.y = scrollView.contentOffset.y + yContentOffset
     }
+    
+    headerContent.didUpdateHeight = { [weak self] in
+      self?.view.setNeedsLayout()
+    }
   }
   
   func recalculateScrollViewContentSize() {
@@ -122,11 +114,6 @@ private extension ScrollContainerViewController {
   func recalculatePanGestureScrollViewContentSize() {
     let height = bodyContent.height + headerContent.height
     panGestureScrollView.contentSize = .init(width: panGestureScrollView.bounds.width, height: height)
-  }
-  
-  @objc
-  func didPullToRefresh() {
-    refreshControl.beginRefreshing()
   }
 }
 
@@ -144,11 +131,5 @@ extension ScrollContainerViewController: UIScrollViewDelegate {
     
     let headerScrollProgress = max(min((self.scrollView.contentOffset.y) / (bodyScrollTreshold - headerContent.minimumHeight), 1), 0)
     headerContent.update(with: headerScrollProgress)
-  }
-  
-  func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-    if refreshControl.isRefreshing {
-      didPullToRefreshClosure?()
-    }
   }
 }

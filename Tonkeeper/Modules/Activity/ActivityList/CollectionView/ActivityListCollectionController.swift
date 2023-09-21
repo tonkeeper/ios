@@ -10,7 +10,6 @@ import UIKit
 protocol ActivityListCollectionControllerDelegate: AnyObject {
   func activityListCollectionControllerLoadNextPage(_ collectionController: ActivityListCollectionController)
   func activityListCollectionControllerEventViewModel(for eventId: String) -> ActivityListCompositionTransactionCell.Model?
-  func activityListCollectionControllerDidPullToRefresh(_ collectionController: ActivityListCollectionController)
   func activityListCollectionControllerDidSelectAction(_ collectionController: ActivityListCollectionController,
                                         transactionIndexPath: IndexPath,
                                         actionIndex: Int)
@@ -242,12 +241,6 @@ private extension ActivityListCollectionController {
 extension ActivityListCollectionController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
     (collectionView.cellForItem(at: indexPath) as? Selectable)?.deselect()
-  }
-  
-  func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-    if scrollView.refreshControl?.isRefreshing == true {
-      delegate?.activityListCollectionControllerDidPullToRefresh(self)
-    }
   }
   
   func collectionView(_ collectionView: UICollectionView,

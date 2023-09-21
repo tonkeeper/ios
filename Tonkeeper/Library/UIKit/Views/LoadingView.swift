@@ -18,7 +18,7 @@ final class LoaderView: UIView {
     
     var side: CGFloat {
       switch self {
-      case .xSmall: return 8.5
+      case .xSmall: return 10
       case .small: return 14
       case .medium: return 20
       case .large: return 30
@@ -42,14 +42,28 @@ final class LoaderView: UIView {
   }
   
   var color: UIColor = .Icon.primary {
-    didSet { circleLayer.strokeColor = color.cgColor }
+    didSet { upperCircleLayer.strokeColor = color.cgColor }
   }
   
-  private lazy var circleLayer: CAShapeLayer = {
+  var innerColor: UIColor = .clear {
+    didSet { innerCircleLayer.strokeColor = innerColor.cgColor }
+  }
+  
+  private lazy var upperCircleLayer: CAShapeLayer = {
     let layer = CAShapeLayer()
     layer.fillColor = UIColor.clear.cgColor
     layer.strokeColor = color.cgColor
-    layer.strokeEnd = 0.75
+    layer.strokeStart = 0
+    layer.strokeEnd = 0.25
+    return layer
+  }()
+  
+  private lazy var innerCircleLayer: CAShapeLayer = {
+    let layer = CAShapeLayer()
+    layer.fillColor = UIColor.clear.cgColor
+    layer.strokeColor = innerColor.cgColor
+    layer.strokeStart = 0.25
+    layer.strokeEnd = 1
     return layer
   }()
   
@@ -76,8 +90,10 @@ final class LoaderView: UIView {
     
     CATransaction.begin()
     CATransaction.setValue(true, forKey: kCATransactionDisableActions)
-    circleLayer.frame = bounds
-    circleLayer.path = path.cgPath
+    upperCircleLayer.frame = bounds
+    upperCircleLayer.path = path.cgPath
+    innerCircleLayer.frame = bounds
+    innerCircleLayer.path = path.cgPath
     CATransaction.commit()
   }
   
@@ -93,24 +109,28 @@ final class LoaderView: UIView {
   
   func startAnimation() {
     isAnimating = true
-    circleLayer.add(rotateAnimation(), forKey: .rotateAnimationKey)
+    upperCircleLayer.add(rotateAnimation(), forKey: .rotateAnimationKey)
+    innerCircleLayer.add(rotateAnimation(), forKey: .rotateAnimationKey)
   }
   
   func stopAnimation() {
     isAnimating = false
-    circleLayer.removeAnimation(forKey: .rotateAnimationKey)
+    upperCircleLayer.removeAnimation(forKey: .rotateAnimationKey)
+    innerCircleLayer.removeAnimation(forKey: .rotateAnimationKey)
   }
 }
 
 private extension LoaderView {
   func setup() {
-    layer.addSublayer(circleLayer)
+    layer.addSublayer(upperCircleLayer)
+    layer.addSublayer(innerCircleLayer)
     didChangeSize()
   }
   
   func didChangeSize() {
     invalidateIntrinsicContentSize()
-    circleLayer.lineWidth = size.lineWidth
+    upperCircleLayer.lineWidth = size.lineWidth
+    innerCircleLayer.lineWidth = size.lineWidth
   }
   
   func rotateAnimation() -> CAAnimation {

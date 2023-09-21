@@ -8,6 +8,10 @@
 import UIKit
 
 struct CoreAssembly {
+  
+  let appStateTracker = AppStateTracker()
+  let reachabilityTracker = ReachabilityTracker()
+  
   var appSetting: AppSettings {
     AppSettings()
   }

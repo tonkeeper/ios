@@ -173,6 +173,7 @@ extension WalletTokenDetailsCoordinator: ReceiveCoordinatorOutput {
 extension WalletTokenDetailsCoordinator: ActivityListModuleOutput {
   func didSelectTransaction(in section: Int, at index: Int) {}
   func activityListNoEvents(_ activityList: ActivityListModuleInput) {}
+  func activityListHasEvents(_ activityList: ActivityListModuleInput) {}
 }
 
 // MARK: - TonChartModuleOutput

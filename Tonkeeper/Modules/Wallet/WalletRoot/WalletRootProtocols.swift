@@ -19,9 +19,6 @@ protocol WalletRootModuleOutput: AnyObject {
 
 protocol WalletRootPresenterInput {
   func viewDidLoad()
-  func didPullToRefresh()
 }
 
-protocol WalletRootViewInput: AnyObject {
-  func didFinishLoading()
-}
+protocol WalletRootViewInput: AnyObject {}
