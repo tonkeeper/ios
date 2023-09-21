@@ -19,6 +19,7 @@ enum ActivityListViewState {
 protocol ActivityListModuleOutput: AnyObject {
   func didSelectTransaction(in section: Int, at index: Int)
   func activityListNoEvents(_ activityList: ActivityListModuleInput)
+  func activityListHasEvents(_ activityList: ActivityListModuleInput)
 }
 
 protocol ActivityListModuleCollectibleOutput: ActivityListModuleOutput {
@@ -29,7 +30,6 @@ protocol ActivityListModuleInput: AnyObject {}
 
 protocol ActivityListPresenterInput {
   func viewDidLoad()
-  func reload()
   func fetchNext()
   func viewModel(eventId: String) -> ActivityListCompositionTransactionCell.Model?
   func didSelectTransactionAt(indexPath: IndexPath, actionIndex: Int)
@@ -38,7 +38,6 @@ protocol ActivityListPresenterInput {
 
 protocol ActivityListViewInput: AnyObject {
   func updateSections(_ sections: [ActivityListSection])
-  func hideRefreshControl()
   func showPagination(_ pagination: ActivityListSection.Pagination)
   func hidePagination()
 }

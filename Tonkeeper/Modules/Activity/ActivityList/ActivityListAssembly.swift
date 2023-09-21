@@ -14,6 +14,7 @@ struct ActivityListAssembly {
                      output: ActivityListModuleOutput?) -> Module<ActivityListViewController, ActivityListModuleInput> {
     let presenter = ActivityListPresenter(activityListController: activityListController,
                                           transactionBuilder: transactionBuilder)
+    
     let viewController = ActivityListViewController(presenter: presenter)
     
     presenter.viewInput = viewController

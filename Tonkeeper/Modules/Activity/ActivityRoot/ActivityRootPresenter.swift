@@ -59,6 +59,10 @@ extension ActivityRootPresenter: ActivityListModuleOutput {
   func activityListNoEvents(_ activityList: ActivityListModuleInput) {
     viewInput?.showEmptyState()
   }
+  
+  func activityListHasEvents(_ activityList: ActivityListModuleInput) {
+    viewInput?.showList()
+  }
 }
 
 // MARK: - ActivityListModuleCollectibleOutput

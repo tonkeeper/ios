@@ -23,5 +23,6 @@ protocol ActivityRootPresenterInput {
 
 protocol ActivityRootViewInput: AnyObject {
   func showEmptyState()
+  func showList()
   func updateTitle(_ title: String)
 }

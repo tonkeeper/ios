@@ -54,6 +54,10 @@ extension ActivityRootViewController: ActivityRootViewInput {
   func showEmptyState() {
     customView.showEmptyState()
   }
+
+  func showList() {
+    customView.showList()
+  }
   
   func updateTitle(_ title: String) {
     navigationItem.title = title
