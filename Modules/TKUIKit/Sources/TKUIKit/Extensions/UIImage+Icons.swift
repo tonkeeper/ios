@@ -257,6 +257,12 @@ public extension UIImage {
       }
     }
     
+    public enum Widget {
+      public static var refresh: UIImage? {
+        .imageWithName("Icons/28/ic-update-28")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     public enum Mock {
       public static var tonCurrencyIcon: UIImage? {
         .imageWithName("Icons/44/ton_currency_icon")

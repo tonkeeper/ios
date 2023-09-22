@@ -33,19 +33,46 @@ struct ChartWidgetView: View {
     return .init(uiImage: .Images.Mock.mercuryoLogo!)
   }
   
+  @Environment(\.widgetFamily) var family: WidgetFamily
+  
+  var amountFont: Font {
+    switch family {
+    case .systemSmall:
+      return .system(size: 14, weight: .bold, design: .monospaced)
+    default:
+      return .system(size: 16, weight: .bold, design: .monospaced)
+    }
+  }
+  
+  var diffFont: Font {
+    switch family {
+    case .systemSmall:
+      return .system(size: 10, weight: .bold, design: .monospaced)
+    default:
+      return .system(size: 12, weight: .bold, design: .monospaced)
+    }
+  }
+  
   var body: some View {
     VStack(alignment: .leading) {
-      VStack(alignment: .leading) {
-        Text(entry.amount)
-          .foregroundColor(Color(UIColor.Text.primary))
-          .font(.system(size: 16, weight: .bold, design: .monospaced))
-        HStack {
-          Text(entry.percentDiff)
-            .foregroundColor(entry.diffColor)
-            .font(.system(size: 12, weight: .medium, design: .monospaced))
-          Text(entry.fiatDiff)
-            .foregroundColor(entry.diffColor)
-            .font(.system(size: 12, weight: .medium, design: .monospaced))
+      HStack {
+        VStack(alignment: .leading) {
+          Text(entry.amount)
+            .foregroundColor(Color(UIColor.Text.primary))
+            .font(amountFont)
+          HStack {
+            Text(entry.percentDiff)
+              .foregroundColor(entry.diffColor)
+              .font(diffFont)
+            Text(entry.fiatDiff)
+              .foregroundColor(entry.diffColor)
+              .font(diffFont)
+          }
+        }
+        if #available(iOSApplicationExtension 17.0, *) {
+          Spacer()
+          ReloadView()
+//              .frame(width: 28, height: 28)
         }
       }
       GeometryReader { geometry in
@@ -107,7 +134,7 @@ struct ChartWidgetTimelineProvider: TimelineProvider {
     let cacheURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
     let chartController = WalletCoreContainer(cacheURL: cacheURL).chartController()
     Task {
-      let period: ChartController.Period = .day
+      let period: ChartController.Period = .week
       let data = try await chartController.getChartData(period: period)
       let information = await chartController.getInformation(at: data.count-1, period: period)
       let color: UIColor
@@ -146,3 +173,27 @@ struct ChartWidget: Widget {
 }
 
 extension WalletCore.Coordinate: TKChart.Coordinate {}
+
+import AppIntents
+import Intents
+@available(iOSApplicationExtension 16, *)
+struct ReloadChartWidgetIntent: AppIntent {
+  static var title: LocalizedStringResource = "Reload chart widget"
+  
+  init() {}
+  
+  func perform() async throws -> some IntentResult {
+    return .result()
+  }
+}
+
+@available(iOSApplicationExtension 17, *)
+struct ReloadView: View {
+  var body: some View {
+    Button(intent: ReloadChartWidgetIntent()) {
+      Image(uiImage: UIImage.Icons.Widget.refresh!)
+        .foregroundColor(Color(uiColor: .Accent.blue))
+    }
+    .buttonStyle(.plain)
+  }
+}
