@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 56;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -61,9 +61,9 @@
 		7D16E1662A752BF900A27AB0 /* ToastView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E1652A752BF900A27AB0 /* ToastView.swift */; };
 		7D16E18A2A77C1FB00A27AB0 /* PassthroughWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E1892A77C1FB00A27AB0 /* PassthroughWindow.swift */; };
 		7D16E18F2A77DC6F00A27AB0 /* ToastConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */; };
+		7D19EB582ABD941000BDE7FA /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7D19EB572ABD941000BDE7FA /* TKUIKit */; };
 		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
 		7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */; };
-		7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */; };
 		7D32F8B22A8BA65B002C130C /* ActivityListHeaderContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */; };
 		7D32F8B62A8BD225002C130C /* TokenDetailsHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B52A8BD225002C130C /* TokenDetailsHeaderViewController.swift */; };
 		7D32F8B82A8BD298002C130C /* TonChartAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B72A8BD298002C130C /* TonChartAssembly.swift */; };
@@ -97,7 +97,6 @@
 		7D3BCFDC2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */; };
 		7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFDD2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift */; };
 		7D3BCFE12A4EBE7E00BE6AD9 /* SuccessViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFE02A4EBE7E00BE6AD9 /* SuccessViewController.swift */; };
-		7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43792A33749F00C23A75 /* UIImage+Images.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
 		7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43832A3395CB00C23A75 /* BuyListSection.swift */; };
@@ -180,7 +179,6 @@
 		7D6836422A1D0B5C002DBBC7 /* TabBarAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836412A1D0B5C002DBBC7 /* TabBarAssembly.swift */; };
 		7D6836482A1D1044002DBBC7 /* WalletCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836472A1D1044002DBBC7 /* WalletCoordinator.swift */; };
 		7D68364A2A1D1052002DBBC7 /* WalletAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836492A1D1052002DBBC7 /* WalletAssembly.swift */; };
-		7D68364C2A1D1ABB002DBBC7 /* UIImage+Icons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68364B2A1D1ABB002DBBC7 /* UIImage+Icons.swift */; };
 		7D68364E2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68364D2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift */; };
 		7D6836512A1D1EB1002DBBC7 /* ActivityCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836502A1D1EB1002DBBC7 /* ActivityCoordinator.swift */; };
 		7D6836532A1D1EB9002DBBC7 /* ActivityAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836522A1D1EB9002DBBC7 /* ActivityAssembly.swift */; };
@@ -421,7 +419,6 @@
 		7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastConfiguration.swift; sourceTree = "<group>"; };
 		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
 		7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletBalanceModelMapper.swift; sourceTree = "<group>"; };
-		7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "UIColor+Tonkeeper.swift"; sourceTree = "<group>"; };
 		7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListHeaderContainer.swift; sourceTree = "<group>"; };
 		7D32F8B52A8BD225002C130C /* TokenDetailsHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenDetailsHeaderViewController.swift; sourceTree = "<group>"; };
 		7D32F8B72A8BD298002C130C /* TonChartAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartAssembly.swift; sourceTree = "<group>"; };
@@ -455,7 +452,6 @@
 		7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeConfigurator.swift; sourceTree = "<group>"; };
 		7D3BCFDD2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReenterPasscodeConfigurator.swift; sourceTree = "<group>"; };
 		7D3BCFE02A4EBE7E00BE6AD9 /* SuccessViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuccessViewController.swift; sourceTree = "<group>"; };
-		7D3E43792A33749F00C23A75 /* UIImage+Images.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Images.swift"; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
 		7D3E43832A3395CB00C23A75 /* BuyListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListSection.swift; sourceTree = "<group>"; };
@@ -536,7 +532,6 @@
 		7D6836412A1D0B5C002DBBC7 /* TabBarAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabBarAssembly.swift; sourceTree = "<group>"; };
 		7D6836472A1D1044002DBBC7 /* WalletCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCoordinator.swift; sourceTree = "<group>"; };
 		7D6836492A1D1052002DBBC7 /* WalletAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletAssembly.swift; sourceTree = "<group>"; };
-		7D68364B2A1D1ABB002DBBC7 /* UIImage+Icons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Icons.swift"; sourceTree = "<group>"; };
 		7D68364D2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UITabBarController+Appearance.swift"; sourceTree = "<group>"; };
 		7D6836502A1D1EB1002DBBC7 /* ActivityCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityCoordinator.swift; sourceTree = "<group>"; };
 		7D6836522A1D1EB9002DBBC7 /* ActivityAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityAssembly.swift; sourceTree = "<group>"; };
@@ -720,6 +715,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D19EB582ABD941000BDE7FA /* TKUIKit in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */,
 				7D8F64A22A8CCCCD0042AE74 /* DGCharts in Frameworks */,
@@ -2122,11 +2118,8 @@
 		7DB8FB822A1BEF64005B4B11 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
-				7D2988692A1C2AE1006D8500 /* UIColor+Tonkeeper.swift */,
 				7DB8FB832A1BEF74005B4B11 /* UIFont+Montserrat.swift */,
 				7D6836192A1CB113002DBBC7 /* UILabel+TextStyle.swift */,
-				7D68364B2A1D1ABB002DBBC7 /* UIImage+Icons.swift */,
-				7D3E43792A33749F00C23A75 /* UIImage+Images.swift */,
 				7D68364D2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift */,
 				7D6836612A1D6A79002DBBC7 /* UINavigationController+Appearance.swift */,
 				7D92929A2A25F939005B83DF /* NSLayoutConstraint+Priority.swift */,
@@ -2300,6 +2293,7 @@
 				7D143C352A4EC0D300B5FCC0 /* Lottie */,
 				7D5A18112A5406CB00793769 /* Kingfisher */,
 				7D8F64A12A8CCCCD0042AE74 /* DGCharts */,
+				7D19EB572ABD941000BDE7FA /* TKUIKit */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -2335,6 +2329,7 @@
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				7D8F64A02A8CCCCD0042AE74 /* XCRemoteSwiftPackageReference "Charts" */,
+				7D19EB562ABD941000BDE7FA /* XCLocalSwiftPackageReference "Modules/TKUIKit" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -2433,7 +2428,6 @@
 				7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */,
 				7D9144312A320F1500B0FD17 /* ModalCardContainerView.swift in Sources */,
 				7D59284B2A1F5797006B0A8A /* WalletHeaderPresenter.swift in Sources */,
-				7D3E437A2A33749F00C23A75 /* UIImage+Images.swift in Sources */,
 				7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */,
 				7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */,
 				7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */,
@@ -2442,7 +2436,6 @@
 				7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */,
 				7D5D05A92A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift in Sources */,
 				7D3BCFAF2A4C5DC500BE6AD9 /* CoreAssembly.swift in Sources */,
-				7D29886A2A1C2AE2006D8500 /* UIColor+Tonkeeper.swift in Sources */,
 				7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */,
 				7D797E142A8F62BC00A626D7 /* TonDetailsLinks.swift in Sources */,
 				7D384A482A6695A200DE2A66 /* SendAmountAssembly.swift in Sources */,
@@ -2539,7 +2532,6 @@
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
 				7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */,
-				7D68364C2A1D1ABB002DBBC7 /* UIImage+Icons.swift in Sources */,
 				7D70D3C42A2A03770096E1A2 /* FiatCurrency.swift in Sources */,
 				7D3E43862A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift in Sources */,
 				7DB17F472A4C2D9B007C6154 /* OnboardingAssembly.swift in Sources */,
@@ -2947,6 +2939,13 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		7D19EB562ABD941000BDE7FA /* XCLocalSwiftPackageReference "Modules/TKUIKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/TKUIKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
 		7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -2995,6 +2994,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */;
 			productName = Lottie;
+		};
+		7D19EB572ABD941000BDE7FA /* TKUIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKit;
 		};
 		7D5A18112A5406CB00793769 /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;
