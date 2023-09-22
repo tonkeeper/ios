@@ -9,6 +9,10 @@ import Foundation
 import UIKit
 
 struct TapticGenerator {
+  static func generateTapLightFeedback() {
+    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+  }
+  
   static func generateButtonTapMediumFeedback() {
     UIImpactFeedbackGenerator(style: .medium).impactOccurred()
   }

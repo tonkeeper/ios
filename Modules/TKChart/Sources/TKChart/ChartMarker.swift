@@ -1,14 +1,14 @@
 //
-//  TonChartMarker.swift
-//  Tonkeeper
+//  ChartMarker.swift
 //
-//  Created by Grigory on 16.8.23..
+//
+//  Created by Grigory on 22.9.23..
 //
 
 import UIKit
 import DGCharts
 
-class TonChartMarker: Marker {
+class ChartMarker: Marker {
   var offset: CGPoint = .zero
   
   func offsetForDrawing(atPoint: CGPoint) -> CGPoint { .zero }
@@ -45,3 +45,4 @@ private extension CGFloat {
   static let smallDiameter: CGFloat = 16
   static let bigCircleAlpha: CGFloat = 0.24
 }
+

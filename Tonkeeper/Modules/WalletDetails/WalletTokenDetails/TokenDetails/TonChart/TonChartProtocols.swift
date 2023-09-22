@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import DGCharts
+import TKChart
 
 protocol TonChartModuleOutput: AnyObject {}
 
@@ -26,6 +26,6 @@ protocol TonChartViewInput: AnyObject {
   func updateButtons(with model: TonChartButtonsView.Model)
   func updateHeader(with model: TonChartHeaderView.Model)
   func selectButton(at index: Int)
-  func updateChart(with data: LineChartData)
+  func updateChart(with data: TKLineChartView.Data)
   func showError(with model: TonChartErrorView.Model)
 }
