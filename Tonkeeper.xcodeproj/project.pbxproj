@@ -63,6 +63,15 @@
 		7D16E18F2A77DC6F00A27AB0 /* ToastConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */; };
 		7D19EB582ABD941000BDE7FA /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7D19EB572ABD941000BDE7FA /* TKUIKit */; };
 		7D19EB5B2ABDA5B500BDE7FA /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = 7D19EB5A2ABDA5B500BDE7FA /* TKChart */; };
+		7D19EB632ABDB58C00BDE7FA /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */; };
+		7D19EB652ABDB58C00BDE7FA /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */; };
+		7D19EB682ABDB58C00BDE7FA /* ChartWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D19EB672ABDB58C00BDE7FA /* ChartWidgetBundle.swift */; };
+		7D19EB6A2ABDB58C00BDE7FA /* ChartWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D19EB692ABDB58C00BDE7FA /* ChartWidget.swift */; };
+		7D19EB6C2ABDB58D00BDE7FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7D19EB6B2ABDB58D00BDE7FA /* Assets.xcassets */; };
+		7D19EB702ABDB58D00BDE7FA /* ChartWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7D19EB602ABDB58C00BDE7FA /* ChartWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7D19EB762ABDB5F900BDE7FA /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = 7D19EB752ABDB5F900BDE7FA /* TKChart */; };
+		7D19EB782ABDB5FE00BDE7FA /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7D19EB772ABDB5FE00BDE7FA /* WalletCore */; };
+		7D19EB7B2ABDF25600BDE7FA /* MockChartData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D19EB792ABDF0E900BDE7FA /* MockChartData.swift */; };
 		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
 		7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */; };
 		7D32F8B22A8BA65B002C130C /* ActivityListHeaderContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */; };
@@ -344,7 +353,28 @@
 		FD5AC7C6F094091CB911C3D8 /* TokensListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3B82E8B681EE6CE930E250D /* TokensListViewController.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		7D19EB6E2ABDB58D00BDE7FA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 7DB8FB5A2A1BCC92005B4B11 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 7D19EB5F2ABDB58C00BDE7FA;
+			remoteInfo = ChartWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
+		7D19EB742ABDB58D00BDE7FA /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				7D19EB702ABDB58D00BDE7FA /* ChartWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7D32F8C02A8CCB58002C130C /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -408,6 +438,14 @@
 		7D16E1652A752BF900A27AB0 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		7D16E1892A77C1FB00A27AB0 /* PassthroughWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassthroughWindow.swift; sourceTree = "<group>"; };
 		7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastConfiguration.swift; sourceTree = "<group>"; };
+		7D19EB602ABDB58C00BDE7FA /* ChartWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ChartWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		7D19EB672ABDB58C00BDE7FA /* ChartWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWidgetBundle.swift; sourceTree = "<group>"; };
+		7D19EB692ABDB58C00BDE7FA /* ChartWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWidget.swift; sourceTree = "<group>"; };
+		7D19EB6B2ABDB58D00BDE7FA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7D19EB6D2ABDB58D00BDE7FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7D19EB792ABDF0E900BDE7FA /* MockChartData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockChartData.swift; sourceTree = "<group>"; };
 		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
 		7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletBalanceModelMapper.swift; sourceTree = "<group>"; };
 		7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListHeaderContainer.swift; sourceTree = "<group>"; };
@@ -693,6 +731,17 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		7D19EB5D2ABDB58C00BDE7FA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D19EB782ABDB5FE00BDE7FA /* WalletCore in Frameworks */,
+				7D19EB762ABDB5F900BDE7FA /* TKChart in Frameworks */,
+				7D19EB652ABDB58C00BDE7FA /* SwiftUI.framework in Frameworks */,
+				7D19EB632ABDB58C00BDE7FA /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7DB8FB5F2A1BCC92005B4B11 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -927,6 +976,27 @@
 				7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */,
 			);
 			path = Toasts;
+			sourceTree = "<group>";
+		};
+		7D19EB612ABDB58C00BDE7FA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */,
+				7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		7D19EB662ABDB58C00BDE7FA /* ChartWidget */ = {
+			isa = PBXGroup;
+			children = (
+				7D19EB672ABDB58C00BDE7FA /* ChartWidgetBundle.swift */,
+				7D19EB692ABDB58C00BDE7FA /* ChartWidget.swift */,
+				7D19EB792ABDF0E900BDE7FA /* MockChartData.swift */,
+				7D19EB6B2ABDB58D00BDE7FA /* Assets.xcassets */,
+				7D19EB6D2ABDB58D00BDE7FA /* Info.plist */,
+			);
+			path = ChartWidget;
 			sourceTree = "<group>";
 		};
 		7D27E5992A515AEE00156D0C /* Mapper */ = {
@@ -2009,6 +2079,8 @@
 			isa = PBXGroup;
 			children = (
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
+				7D19EB662ABDB58C00BDE7FA /* ChartWidget */,
+				7D19EB612ABDB58C00BDE7FA /* Frameworks */,
 				7DB8FB632A1BCC92005B4B11 /* Products */,
 			);
 			indentWidth = 2;
@@ -2019,6 +2091,7 @@
 			isa = PBXGroup;
 			children = (
 				7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */,
+				7D19EB602ABDB58C00BDE7FA /* ChartWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2213,6 +2286,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		7D19EB5F2ABDB58C00BDE7FA /* ChartWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7D19EB712ABDB58D00BDE7FA /* Build configuration list for PBXNativeTarget "ChartWidgetExtension" */;
+			buildPhases = (
+				7D19EB5C2ABDB58C00BDE7FA /* Sources */,
+				7D19EB5D2ABDB58C00BDE7FA /* Frameworks */,
+				7D19EB5E2ABDB58C00BDE7FA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ChartWidgetExtension;
+			packageProductDependencies = (
+				7D19EB752ABDB5F900BDE7FA /* TKChart */,
+				7D19EB772ABDB5FE00BDE7FA /* WalletCore */,
+			);
+			productName = ChartWidgetExtension;
+			productReference = 7D19EB602ABDB58C00BDE7FA /* ChartWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		7DB8FB612A1BCC92005B4B11 /* Tonkeeper */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7DB8FB762A1BCC92005B4B11 /* Build configuration list for PBXNativeTarget "Tonkeeper" */;
@@ -2222,10 +2316,12 @@
 				7DB8FB602A1BCC92005B4B11 /* Resources */,
 				7D0207632A80025B00D63B4C /* ShellScript */,
 				7D32F8C02A8CCB58002C130C /* Embed Frameworks */,
+				7D19EB742ABDB58D00BDE7FA /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				7D19EB6F2ABDB58D00BDE7FA /* PBXTargetDependency */,
 			);
 			name = Tonkeeper;
 			packageProductDependencies = (
@@ -2247,9 +2343,12 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1430;
+				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					7D19EB5F2ABDB58C00BDE7FA = {
+						CreatedOnToolsVersion = 15.0;
+					};
 					7DB8FB612A1BCC92005B4B11 = {
 						CreatedOnToolsVersion = 14.3;
 					};
@@ -2277,11 +2376,20 @@
 			projectRoot = "";
 			targets = (
 				7DB8FB612A1BCC92005B4B11 /* Tonkeeper */,
+				7D19EB5F2ABDB58C00BDE7FA /* ChartWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		7D19EB5E2ABDB58C00BDE7FA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D19EB6C2ABDB58D00BDE7FA /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7DB8FB602A1BCC92005B4B11 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -2317,6 +2425,16 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		7D19EB5C2ABDB58C00BDE7FA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7D19EB7B2ABDF25600BDE7FA /* MockChartData.swift in Sources */,
+				7D19EB6A2ABDB58C00BDE7FA /* ChartWidget.swift in Sources */,
+				7D19EB682ABDB58C00BDE7FA /* ChartWidgetBundle.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		7DB8FB5E2A1BCC92005B4B11 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -2651,6 +2769,14 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		7D19EB6F2ABDB58D00BDE7FA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 7D19EB5F2ABDB58C00BDE7FA /* ChartWidgetExtension */;
+			targetProxy = 7D19EB6E2ABDB58D00BDE7FA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXVariantGroup section */
 		7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
@@ -2663,6 +2789,72 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		7D19EB722ABDB58D00BDE7FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = YS34WB4Z9W;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ChartWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ChartWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx1.ChartWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7D19EB732ABDB58D00BDE7FA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Distribution: TONAPPS INC (CT523DK2KC)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ChartWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ChartWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jbig.tonkeeperx.ChartWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		7DB8FB742A1BCC92005B4B11 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2780,6 +2972,7 @@
 		7DB8FB772A1BCC92005B4B11 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
@@ -2814,6 +3007,7 @@
 		7DB8FB782A1BCC92005B4B11 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Distribution: TONAPPS INC (CT523DK2KC)";
@@ -2851,6 +3045,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		7D19EB712ABDB58D00BDE7FA /* Build configuration list for PBXNativeTarget "ChartWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7D19EB722ABDB58D00BDE7FA /* Debug */,
+				7D19EB732ABDB58D00BDE7FA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		7DB8FB5D2A1BCC92005B4B11 /* Build configuration list for PBXProject "Tonkeeper" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -2930,6 +3133,16 @@
 		7D19EB5A2ABDA5B500BDE7FA /* TKChart */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKChart;
+		};
+		7D19EB752ABDB5F900BDE7FA /* TKChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D19EB592ABDA5B500BDE7FA /* XCLocalSwiftPackageReference "Modules/TKChart" */;
+			productName = TKChart;
+		};
+		7D19EB772ABDB5FE00BDE7FA /* WalletCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */;
+			productName = WalletCore;
 		};
 		7D5A18112A5406CB00793769 /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;

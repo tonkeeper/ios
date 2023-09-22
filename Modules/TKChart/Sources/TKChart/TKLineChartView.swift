@@ -107,19 +107,20 @@ private extension TKLineChartView {
   }
   
   func setupChart() {
-   chartView.drawGridBackgroundEnabled = false
-   chartView.legend.enabled = false
-   chartView.leftAxis.enabled = false
-   chartView.rightAxis.enabled = false
-   chartView.xAxis.enabled = false
-   chartView.pinchZoomEnabled = false
-   chartView.doubleTapToZoomEnabled = false
-   chartView.scaleXEnabled = false
-   chartView.scaleYEnabled = false
-   chartView.dragYEnabled = false
-   chartView.marker = ChartMarker()
-   chartView.delegate = self
-   chartView.highlightPerTapEnabled = false
+    chartView.drawGridBackgroundEnabled = false
+    chartView.legend.enabled = false
+    chartView.leftAxis.enabled = false
+    chartView.rightAxis.enabled = false
+    chartView.xAxis.enabled = false
+    chartView.pinchZoomEnabled = false
+    chartView.doubleTapToZoomEnabled = false
+    chartView.scaleXEnabled = false
+    chartView.scaleYEnabled = false
+    chartView.dragYEnabled = false
+    chartView.marker = ChartMarker()
+    chartView.delegate = self
+    chartView.highlightPerTapEnabled = false
+    chartView.backgroundColor = .Background.page
   }
   
   @objc
