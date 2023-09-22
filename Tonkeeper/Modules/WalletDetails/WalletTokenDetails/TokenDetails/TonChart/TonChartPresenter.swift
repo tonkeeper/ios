@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import TKUIKit
 import WalletCore
 import DGCharts
 

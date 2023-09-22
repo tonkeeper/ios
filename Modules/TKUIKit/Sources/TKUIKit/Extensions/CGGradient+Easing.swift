@@ -1,28 +1,28 @@
 //
-//  Gradient.swift
-//  Tonkeeper
+//  CGGradient+Easing.swift
 //
-//  Created by Grigory on 16.8.23..
+//
+//  Created by Grigory on 22.9.23..
 //
 
 // https://gist.github.com/drinkius/54cd2eb4bfb8769816e205fa5eb4615b
 
 import UIKit
 
-typealias Easing = (_ t: CGFloat, _ b: CGFloat, _ c: CGFloat, _ d: CGFloat) -> CGFloat
+public typealias Easing = (_ t: CGFloat, _ b: CGFloat, _ c: CGFloat, _ d: CGFloat) -> CGFloat
 
-struct Cubic{
-  static var easeIn: Easing = { (_t,b,c,d) -> CGFloat in
+public struct Cubic {
+  public static var easeIn: Easing = { (_t,b,c,d) -> CGFloat in
     let t = _t/d
     return c*t*t*t + b
   }
   
-  static var easeOut: Easing = { (_t,b,c,d) -> CGFloat in
+  public static var easeOut: Easing = { (_t,b,c,d) -> CGFloat in
     let t = _t/d-1
     return c*(t*t*t + 1) + b
   }
   
-  static var easeInOut: Easing = { (_t,b,c,d) -> CGFloat in
+  public static var easeInOut: Easing = { (_t,b,c,d) -> CGFloat in
     var t = _t/(d/2)
     if t < 1 {
       return c/2*t*t*t + b;
@@ -32,12 +32,12 @@ struct Cubic{
   }
 }
 
-extension CGGradient {
-  class func with(colors: [UIColor], locations: [CGFloat]) -> CGGradient{
+public extension CGGradient {
+  class func with(colors: [UIColor], locations: [CGFloat]) -> CGGradient {
     return CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors.map{$0.cgColor} as CFArray, locations: locations)!
   }
   
-  private class func with(colors: [CGColor], locations: [CGFloat]) -> CGGradient{
+  private class func with(colors: [CGColor], locations: [CGFloat]) -> CGGradient {
     return CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(), colors: colors as CFArray, locations: locations)!
   }
   
@@ -86,12 +86,13 @@ extension CGGradient {
   }
   
   private class func linearBezierCurveFactors(t: CGFloat) -> (CGFloat, CGFloat) {
-      return ((1-t),t)
+    return ((1-t),t)
   }
-
+  
   // Linear Bezier Curve, Just a Parameterized Line Equation
   private class func bezierCurve(t: CGFloat, p0: CGFloat, p1: CGFloat) -> CGFloat {
-      let factors = linearBezierCurveFactors(t: t)
-      return (factors.0*p0) + (factors.1*p1)
+    let factors = linearBezierCurveFactors(t: t)
+    return (factors.0*p0) + (factors.1*p1)
   }
 }
+

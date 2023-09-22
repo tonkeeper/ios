@@ -218,7 +218,6 @@
 		7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */; };
 		7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */; };
 		7D8F64A22A8CCCCD0042AE74 /* DGCharts in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8F64A12A8CCCCD0042AE74 /* DGCharts */; };
-		7D8F64A72A8D3BF40042AE74 /* Gradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64A62A8D3BF40042AE74 /* Gradient.swift */; };
 		7D8F64AA2A8D3DE80042AE74 /* TonChartMarker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */; };
 		7D8F64AD2A8D48C30042AE74 /* TonChartButtonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */; };
 		7D8F64B12A8E08010042AE74 /* TonChartHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F64B02A8E08010042AE74 /* TonChartHeaderView.swift */; };
@@ -570,7 +569,6 @@
 		7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletCoordinator.swift; sourceTree = "<group>"; };
 		7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletAssembly.swift; sourceTree = "<group>"; };
 		7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCreator.swift; sourceTree = "<group>"; };
-		7D8F64A62A8D3BF40042AE74 /* Gradient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Gradient.swift; sourceTree = "<group>"; };
 		7D8F64A92A8D3DE80042AE74 /* TonChartMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartMarker.swift; sourceTree = "<group>"; };
 		7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartButtonsView.swift; sourceTree = "<group>"; };
 		7D8F64B02A8E08010042AE74 /* TonChartHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartHeaderView.swift; sourceTree = "<group>"; };
@@ -1638,7 +1636,6 @@
 			isa = PBXGroup;
 			children = (
 				7D797E182A8F7A1900A626D7 /* ListElements */,
-				7D8F64A52A8D3BE60042AE74 /* Gradient */,
 				7D16E1622A7526F300A27AB0 /* Toasts */,
 				7DB944BF2A728E0F0008B512 /* Shimmer */,
 				7D80C0D32A6AA5E3007054DD /* TKKeyboard */,
@@ -1797,14 +1794,6 @@
 				7D1B1F382A4F46B000EC873F /* WalletImporter.swift */,
 			);
 			path = Wallet;
-			sourceTree = "<group>";
-		};
-		7D8F64A52A8D3BE60042AE74 /* Gradient */ = {
-			isa = PBXGroup;
-			children = (
-				7D8F64A62A8D3BF40042AE74 /* Gradient.swift */,
-			);
-			path = Gradient;
 			sourceTree = "<group>";
 		};
 		7D8F64A82A8D3DCB0042AE74 /* Marker */ = {
@@ -2500,7 +2489,6 @@
 				7D6836242A1CD210002DBBC7 /* UIViewController+Presentable.swift in Sources */,
 				7D8F64B12A8E08010042AE74 /* TonChartHeaderView.swift in Sources */,
 				7D9292FC2A29DCDA005B83DF /* SendAmountTitleView.swift in Sources */,
-				7D8F64A72A8D3BF40042AE74 /* Gradient.swift in Sources */,
 				7DAC78E52A96ABF600358D35 /* CollectibleDetailsPropertyView.swift in Sources */,
 				7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */,
 				7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */,
