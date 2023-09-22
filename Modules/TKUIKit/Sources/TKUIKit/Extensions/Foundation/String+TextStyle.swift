@@ -1,15 +1,15 @@
 //
 //  String+TextStyle.swift
-//  Tonkeeper
+//  
 //
-//  Created by Grigory on 23.5.23..
+//  Created by Grigory on 22.9.23..
 //
 
 import Foundation
 import UIKit.NSParagraphStyle
 
-extension String {
-  func attributed(with textStyle: TextStyle,
+public extension String {
+  func attributed(with textStyle: TKUIKit.TextStyle,
                   alignment: NSTextAlignment = .left,
                   lineBreakMode: NSLineBreakMode = .byTruncatingTail,
                   color: UIColor = .black) -> NSAttributedString {
@@ -28,3 +28,4 @@ extension String {
     return NSAttributedString(string: string, attributes: attributes)
   }
 }
+

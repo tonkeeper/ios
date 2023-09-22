@@ -15,8 +15,5 @@ let package = Package(
     targets: [
         .target(
             name: "TKUIKit"),
-        .testTarget(
-            name: "TKUIKitTests",
-            dependencies: ["TKUIKit"]),
     ]
 )

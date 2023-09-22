@@ -1,13 +1,13 @@
 //
 //  UILabel+TextStyle.swift
-//  Tonkeeper
 //
-//  Created by Grigory on 23.5.23..
+//
+//  Created by Grigory on 22.9.23..
 //
 
 import UIKit
 
-extension UILabel {
+public extension UILabel {
   func applyTextStyleFont(_ textStyle: TextStyle) {
     font = textStyle.font
   }
@@ -23,3 +23,4 @@ extension UILabel {
                                      color: color)
   }
 }
+

@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import TKUIKit
 
 extension UITabBarController {
   func configureAppearance() {

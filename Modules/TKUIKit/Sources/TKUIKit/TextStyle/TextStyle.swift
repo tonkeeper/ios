@@ -7,25 +7,25 @@
 
 import UIKit
 
-struct TextStyle {
-  let font: UIFont
-  let lineHeight: CGFloat
-  let uppercased: Bool
+public struct TextStyle {
+  public let font: UIFont
+  public let lineHeight: CGFloat
+  public let uppercased: Bool
   
-  var lineSpacing: CGFloat {
+  public var lineSpacing: CGFloat {
       return lineHeight - font.lineHeight
   }
   
-  init(font: UIFont,
-       lineHeight: CGFloat,
-       uppercased: Bool = false) {
+  public init(font: UIFont,
+              lineHeight: CGFloat,
+              uppercased: Bool = false) {
     self.font = font
     self.lineHeight = lineHeight
     self.uppercased = uppercased
   }
 }
 
-extension TextStyle {
+public extension TextStyle {
   static let num1: TextStyle = .init(
     font: .montserratSemiBold(size: 32),
     lineHeight: 40
