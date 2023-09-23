@@ -7,12 +7,12 @@
 //
 
 import UIKit
-import DGCharts
+import TKChart
 
 final class TonChartView: UIView {
   
   let headerView = TonChartHeaderView()
-  let chartView = LineChartView()
+  let chartView = TKLineChartView()
   let buttonsView = TonChartButtonsView()
   let errorView = TonChartErrorView()
 

@@ -7,8 +7,9 @@
 //
 
 import UIKit
+import TKUIKit
+import TKChart
 import WalletCore
-import DGCharts
 
 final class TonChartPresenter {
   
@@ -119,37 +120,17 @@ private extension TonChartPresenter {
     }
   }
 
-  func prepareChartData(coordinates: [Coordinate],
-                        period: ChartController.Period) -> LineChartData {
-    let chartEntries = coordinates.map { coordinate in
-      ChartDataEntry(x: coordinate.x, y: coordinate.y)
-    }
-
-    let gradient = CGGradient.with(
-      easing: Cubic.easeIn,
-      between: UIColor.Background.page,
-      and: UIColor.Accent.blue)
-
-    let dataSet = LineChartDataSet(entries: chartEntries)
-    dataSet.circleRadius = 0
-    dataSet.setColor(.Accent.blue)
-    dataSet.drawValuesEnabled = false
-    dataSet.lineWidth = 2
-    dataSet.fillAlpha = 1
-    dataSet.fill = LinearGradientFill(gradient: gradient, angle: 90)
-    dataSet.drawFilledEnabled = true
-    dataSet.drawHorizontalHighlightIndicatorEnabled = false
-    dataSet.highlightColor = .Accent.blue
-    dataSet.highlightLineWidth = 1
-
+  func prepareChartData(coordinates: [WalletCore.Coordinate],
+                        period: ChartController.Period) -> TKLineChartView.Data {
+    let mode: TKLineChartView.Mode
     switch period {
     case .hour:
-      dataSet.mode = .stepped
+      mode = .stepped
     default:
-      dataSet.mode = .linear
+      mode = .linear
     }
-
-    return LineChartData(dataSet: dataSet)
+    
+    return TKLineChartView.Data(coordinates: coordinates, mode: mode)
   }
 
   func prepareHeaderModel(pointInformation: ChartPointInformationViewModel,
@@ -241,3 +222,5 @@ private extension TextStyle {
                     lineHeight: 20)
   }
 }
+
+extension WalletCore.Coordinate: TKChart.Coordinate {}

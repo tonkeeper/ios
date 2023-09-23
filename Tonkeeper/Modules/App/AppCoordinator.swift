@@ -7,6 +7,7 @@
 
 import UIKit
 import WalletCore
+import WidgetKit
 
 final class AppCoordinator: Coordinator<WindowRouter> {
   
@@ -63,6 +64,9 @@ extension AppCoordinator: AppStateTrackerObserver {
       hideBlur()
     case .resignActive:
       showBlur()
+      if #available(iOS 14.0, *) {
+        WidgetCenter.shared.reloadTimelines(ofKind: "ChartWidget")
+      }
     default:
       return
     }
