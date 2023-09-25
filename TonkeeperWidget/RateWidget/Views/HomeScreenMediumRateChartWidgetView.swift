@@ -25,17 +25,15 @@ struct HomeScreenMediumRateChartWidgetView: View {
         .frame(width: 0.5)
       ZStack(alignment: .trailing) {
         RateWidgetChartView(chartData: entry.chartData)
-          .background(Color.green)
+          .background(Color(UIColor.Background.page))
           .padding(EdgeInsets(top: 16, leading: 0, bottom: 16, trailing: 0))
         VStack(alignment: .trailing) {
           Text(entry.chartData.maximumValue)
-            .foregroundColor(Color(UIColor.Text.tertiary))
-            .font(.system(size: 11, weight: .regular))
           Spacer()
           Text(entry.chartData.minimumValue)
-            .foregroundColor(Color(UIColor.Text.tertiary))
-            .font(.system(size: 11, weight: .regular))
         }
+        .foregroundColor(Color(UIColor.Text.tertiary))
+        .font(.system(size: 11, weight: .regular))
         .padding(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 16))
       }
     }
