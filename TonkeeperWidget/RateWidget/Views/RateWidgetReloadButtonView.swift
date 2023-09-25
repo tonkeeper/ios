@@ -7,8 +7,6 @@
 
 import SwiftUI
 
-import SwiftUI
-
 @available(iOSApplicationExtension 17, *)
 struct RateWidgetReloadButtonView: View {
   var body: some View {

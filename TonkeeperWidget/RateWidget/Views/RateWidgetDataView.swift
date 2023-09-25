@@ -18,7 +18,7 @@ struct RateWidgetDataView: View {
       return .system(size: 15, weight: .bold, design: .monospaced)
     case .systemMedium:
       return .system(size: 16, weight: .bold, design: .monospaced)
-    case .accessoryRectangular:
+    case .accessoryRectangular, .systemLarge:
       return .system(size: 18, weight: .bold, design: .monospaced)
     default:
       return .system(size: 0, weight: .bold, design: .monospaced)
@@ -30,7 +30,7 @@ struct RateWidgetDataView: View {
       return .system(size: 11, weight: .bold, design: .monospaced)
     case .systemMedium:
       return .system(size: 12, weight: .bold, design: .monospaced)
-    case .accessoryRectangular:
+    case .accessoryRectangular, .systemLarge:
       return .system(size: 14, weight: .bold, design: .monospaced)
     default:
       return .system(size: 0, weight: .bold, design: .monospaced)
@@ -41,7 +41,7 @@ struct RateWidgetDataView: View {
   }
   var diffPercentColor: Color {
     switch family {
-    case .systemSmall, .systemMedium:
+    case .systemSmall, .systemMedium, .systemLarge:
       let color: UIColor
       switch information.diffDirection {
       case .up: color = .Accent.green
@@ -57,7 +57,7 @@ struct RateWidgetDataView: View {
   }
   var diffFiatColor: Color {
     switch family {
-    case .systemSmall, .systemMedium:
+    case .systemSmall, .systemMedium, .systemLarge:
       let color: UIColor
       switch information.diffDirection {
       case .up: color = .Accent.green
