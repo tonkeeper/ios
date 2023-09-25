@@ -64,9 +64,7 @@ extension AppCoordinator: AppStateTrackerObserver {
       hideBlur()
     case .resignActive:
       showBlur()
-      if #available(iOS 14.0, *) {
-        WidgetCenter.shared.reloadTimelines(ofKind: "ChartWidget")
-      }
+      WidgetCenter.shared.reloadTimelines(ofKind: "RateWidget")
     default:
       return
     }

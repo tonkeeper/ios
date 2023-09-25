@@ -1,8 +1,8 @@
 //
 //  WidgetConfiguration+ContentMargins.swift
-//  ChartWidgetExtension
+//  TonkeeperWidgetExtension
 //
-//  Created by Grigory on 23.9.23..
+//  Created by Grigory on 25.9.23..
 //
 
 import SwiftUI

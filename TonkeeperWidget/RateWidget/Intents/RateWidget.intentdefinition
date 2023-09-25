@@ -8,7 +8,7 @@
 			<key>INEnumDisplayName</key>
 			<string>Period</string>
 			<key>INEnumDisplayNameID</key>
-			<string>YapCnF</string>
+			<string>REhK10</string>
 			<key>INEnumGeneratesHeader</key>
 			<true/>
 			<key>INEnumName</key>
@@ -19,9 +19,9 @@
 			<array>
 				<dict>
 					<key>INEnumValueDisplayName</key>
-					<string>Unknown</string>
+					<string>unknown</string>
 					<key>INEnumValueDisplayNameID</key>
-					<string>pH5gx3</string>
+					<string>0vCcZ7</string>
 					<key>INEnumValueName</key>
 					<string>unknown</string>
 				</dict>
@@ -29,9 +29,9 @@
 					<key>INEnumValueDisplayName</key>
 					<string>Hour</string>
 					<key>INEnumValueDisplayNameID</key>
-					<string>rkb26u</string>
+					<string>sbHcpN</string>
 					<key>INEnumValueIndex</key>
-					<integer>2</integer>
+					<integer>1</integer>
 					<key>INEnumValueName</key>
 					<string>hour</string>
 				</dict>
@@ -39,9 +39,9 @@
 					<key>INEnumValueDisplayName</key>
 					<string>Day</string>
 					<key>INEnumValueDisplayNameID</key>
-					<string>xfQzLH</string>
+					<string>JwoMAd</string>
 					<key>INEnumValueIndex</key>
-					<integer>1</integer>
+					<integer>2</integer>
 					<key>INEnumValueName</key>
 					<string>day</string>
 				</dict>
@@ -49,7 +49,7 @@
 					<key>INEnumValueDisplayName</key>
 					<string>Week</string>
 					<key>INEnumValueDisplayNameID</key>
-					<string>zMpLfe</string>
+					<string>4XoBvx</string>
 					<key>INEnumValueIndex</key>
 					<integer>3</integer>
 					<key>INEnumValueName</key>
@@ -59,7 +59,7 @@
 					<key>INEnumValueDisplayName</key>
 					<string>Month</string>
 					<key>INEnumValueDisplayNameID</key>
-					<string>sf9uJ5</string>
+					<string>iAVJqs</string>
 					<key>INEnumValueIndex</key>
 					<integer>4</integer>
 					<key>INEnumValueName</key>
@@ -69,17 +69,17 @@
 					<key>INEnumValueDisplayName</key>
 					<string>6 Months</string>
 					<key>INEnumValueDisplayNameID</key>
-					<string>QKbCbK</string>
+					<string>WDMmFN</string>
 					<key>INEnumValueIndex</key>
 					<integer>5</integer>
 					<key>INEnumValueName</key>
-					<string>halfyear</string>
+					<string>halfYear</string>
 				</dict>
 				<dict>
 					<key>INEnumValueDisplayName</key>
 					<string>Year</string>
 					<key>INEnumValueDisplayNameID</key>
-					<string>P7biYm</string>
+					<string>VIg0Yc</string>
 					<key>INEnumValueIndex</key>
 					<integer>6</integer>
 					<key>INEnumValueName</key>
@@ -91,9 +91,9 @@
 	<key>INIntentDefinitionModelVersion</key>
 	<string>1.2</string>
 	<key>INIntentDefinitionNamespace</key>
-	<string>DVclOL</string>
+	<string>8sGcd5</string>
 	<key>INIntentDefinitionSystemVersion</key>
-	<string>22G91</string>
+	<string>22G120</string>
 	<key>INIntentDefinitionToolsBuildVersion</key>
 	<string>15A240d</string>
 	<key>INIntentDefinitionToolsVersion</key>
@@ -104,15 +104,15 @@
 			<key>INIntentCategory</key>
 			<string>generic</string>
 			<key>INIntentDescriptionID</key>
-			<string>pXkeEF</string>
+			<string>aBtswl</string>
 			<key>INIntentEligibleForWidgets</key>
 			<true/>
 			<key>INIntentIneligibleForSuggestions</key>
 			<true/>
 			<key>INIntentLastParameterTag</key>
-			<integer>4</integer>
+			<integer>2</integer>
 			<key>INIntentName</key>
-			<string>ChartWidget</string>
+			<string>RateWidget</string>
 			<key>INIntentParameters</key>
 			<array>
 				<dict>
@@ -121,13 +121,13 @@
 					<key>INIntentParameterDisplayName</key>
 					<string>Period</string>
 					<key>INIntentParameterDisplayNameID</key>
-					<string>5vsN4S</string>
+					<string>xudSBV</string>
 					<key>INIntentParameterDisplayPriority</key>
 					<integer>1</integer>
 					<key>INIntentParameterEnumType</key>
 					<string>Period</string>
 					<key>INIntentParameterEnumTypeNamespace</key>
-					<string>DVclOL</string>
+					<string>8sGcd5</string>
 					<key>INIntentParameterMetadata</key>
 					<dict>
 						<key>INIntentParameterMetadataDefaultValue</key>
@@ -155,7 +155,7 @@
 							<key>INIntentParameterPromptDialogFormatString</key>
 							<string>There are ${count} options matching ‘${period}’.</string>
 							<key>INIntentParameterPromptDialogFormatStringID</key>
-							<string>f3unhB</string>
+							<string>itIyBp</string>
 							<key>INIntentParameterPromptDialogType</key>
 							<string>DisambiguationIntroduction</string>
 						</dict>
@@ -165,7 +165,7 @@
 							<key>INIntentParameterPromptDialogFormatString</key>
 							<string>Just to confirm, you wanted ‘${period}’?</string>
 							<key>INIntentParameterPromptDialogFormatStringID</key>
-							<string>0ylJl8</string>
+							<string>fV25FR</string>
 							<key>INIntentParameterPromptDialogType</key>
 							<string>Confirmation</string>
 						</dict>
@@ -193,9 +193,9 @@
 				</array>
 			</dict>
 			<key>INIntentTitle</key>
-			<string>Chart Widget</string>
+			<string>Rate Widget</string>
 			<key>INIntentTitleID</key>
-			<string>IjeegL</string>
+			<string>5XYURU</string>
 			<key>INIntentType</key>
 			<string>Custom</string>
 			<key>INIntentVerb</key>
