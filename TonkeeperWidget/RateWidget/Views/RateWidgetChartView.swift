@@ -9,13 +9,13 @@ import SwiftUI
 import TKChart
 
 struct RateWidgetChartView: View {
-  let chartData: TKLineChartView.Data
+  let chartData: RateWidgetEntry.ChartData
   
   func chartImage(size: CGSize) -> SwiftUI.Image {
     let chartView = TKLineChartView()
     chartView.frame.size = size
     chartView.layoutIfNeeded()
-    chartView.setData(chartData)
+    chartView.setData(chartData.data)
     if let image = chartView.getChartImage(transparent: false) {
       return .init(uiImage: image)
     }
@@ -24,8 +24,7 @@ struct RateWidgetChartView: View {
   
   var body: some View {
     GeometryReader { geometry in
-      chartImage(size: .init(width: geometry.size.width + 20, height: geometry.size.height))
-        .offset(x: -10)
+      chartImage(size: geometry.size)
     }
   }
 }

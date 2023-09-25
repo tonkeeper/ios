@@ -53,10 +53,7 @@ public final class TKLineChartView: UIView {
       ChartDataEntry(x: coordinate.x, y: coordinate.y)
     }
 
-    let gradient = CGGradient.with(
-      easing: Cubic.easeIn,
-      between: UIColor.Background.page,
-      and: UIColor.Accent.blue)
+    let gradient = CGGradient.chartGradient()
 
     let dataSet = LineChartDataSet(entries: chartEntries)
     dataSet.circleRadius = 0
@@ -64,7 +61,7 @@ public final class TKLineChartView: UIView {
     dataSet.drawValuesEnabled = false
     dataSet.lineWidth = 2
     dataSet.fillAlpha = 1
-    dataSet.fill = LinearGradientFill(gradient: gradient, angle: 90)
+    dataSet.fill = LinearGradientFill(gradient: gradient, angle: 270)
     dataSet.drawFilledEnabled = true
     dataSet.drawHorizontalHighlightIndicatorEnabled = false
     dataSet.highlightColor = .Accent.blue
@@ -120,6 +117,7 @@ private extension TKLineChartView {
     chartView.marker = ChartMarker()
     chartView.delegate = self
     chartView.highlightPerTapEnabled = false
+    chartView.minOffset = 0
     chartView.backgroundColor = .Background.page
   }
   

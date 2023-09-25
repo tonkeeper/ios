@@ -11,6 +11,7 @@ import SwiftUI
 @main
 struct TonkeeperWidgetBundle: WidgetBundle {
     var body: some Widget {
-        RateWidget()
+      RateChartWidget()
+      RateWidget()
     }
 }
