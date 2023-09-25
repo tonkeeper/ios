@@ -64,7 +64,7 @@ extension AppCoordinator: AppStateTrackerObserver {
       hideBlur()
     case .resignActive:
       showBlur()
-      WidgetCenter.shared.reloadTimelines(ofKind: "ChartWidget")
+      WidgetCenter.shared.reloadTimelines(ofKind: "RateWidget")
     default:
       return
     }
