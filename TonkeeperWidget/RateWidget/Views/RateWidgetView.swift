@@ -15,12 +15,10 @@ struct RateWidgetView: View {
   
   var body: some View {
     switch family {
-    case .systemSmall, .systemMedium, .systemLarge:
-      HomeScreenRateWidgetView(entry: entry)
-    case .accessoryInline:
-      LockScreenInlineRateWidgetView(entry: entry)
-    case .accessoryRectangular:
-      LockScreenRectangleRateWidgetView(entry: entry)
+    case .systemSmall:
+      HomeScreenSmallRateChartWidgetView(entry: entry)
+    case .systemMedium:
+      HomeScreenMediumRateChartWidgetView(entry: entry)
     default:
       Text("MOCK")
     }

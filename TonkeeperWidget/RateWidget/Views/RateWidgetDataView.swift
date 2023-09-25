@@ -11,79 +11,40 @@ import WidgetKit
 struct RateWidgetDataView: View {
   let information: RateWidgetEntry.Information
   
-  @Environment(\.widgetFamily) var family: WidgetFamily
-  var amountFont: Font {
-    switch family {
-    case .systemSmall:
-      return .system(size: 15, weight: .bold, design: .monospaced)
-    case .systemMedium:
-      return .system(size: 16, weight: .bold, design: .monospaced)
-    case .accessoryRectangular, .systemLarge:
-      return .system(size: 18, weight: .bold, design: .monospaced)
-    default:
-      return .system(size: 0, weight: .bold, design: .monospaced)
-    }
-  }
-  var diffFont: Font {
-    switch family {
-    case .systemSmall:
-      return .system(size: 11, weight: .bold, design: .monospaced)
-    case .systemMedium:
-      return .system(size: 12, weight: .bold, design: .monospaced)
-    case .accessoryRectangular, .systemLarge:
-      return .system(size: 14, weight: .bold, design: .monospaced)
-    default:
-      return .system(size: 0, weight: .bold, design: .monospaced)
-    }
-  }
   var amountColor: Color {
     return Color(UIColor.Text.primary)
   }
   var diffPercentColor: Color {
-    switch family {
-    case .systemSmall, .systemMedium, .systemLarge:
-      let color: UIColor
-      switch information.diffDirection {
-      case .up: color = .Accent.green
-      case .none: color = .Text.secondary
-      case .down: color = .Accent.red
-      }
-      return Color(color)
-    case .accessoryRectangular:
-      return Color(UIColor.Text.primary)
-    default:
-      return Color(UIColor.Text.primary)
+    let color: UIColor
+    switch information.diffDirection {
+    case .up: color = .Accent.green
+    case .none: color = .Text.secondary
+    case .down: color = .Accent.red
     }
+    return Color(color)
   }
   var diffFiatColor: Color {
-    switch family {
-    case .systemSmall, .systemMedium, .systemLarge:
-      let color: UIColor
-      switch information.diffDirection {
-      case .up: color = .Accent.green
-      case .none: color = .Text.secondary
-      case .down: color = .Accent.red
-      }
-      return Color(color).opacity(0.44)
-    case .accessoryRectangular:
-      return Color(UIColor.Text.primary)
-    default:
-      return Color(UIColor.Text.primary)
+    let color: UIColor
+    switch information.diffDirection {
+    case .up: color = .Accent.green
+    case .none: color = .Text.secondary
+    case .down: color = .Accent.red
     }
+    return Color(color).opacity(0.44)
   }
-  
+
   var body: some View {
-    VStack(alignment: .leading) {
+    VStack(alignment: .leading, spacing: 2) {
       Text(information.amount)
         .foregroundColor(amountColor)
-        .font(amountFont)
+        .font(.system(size: 28, weight: .medium))
       HStack {
         Text(information.percentDiff)
           .foregroundColor(diffPercentColor)
-          .font(diffFont)
+          .font(.system(size: 13, weight: .medium))
         Text(information.fiatDiff)
           .foregroundColor(diffFiatColor)
-          .font(diffFont)
+          .font(.system(size: 13, weight: .medium))
       }
     }
   }

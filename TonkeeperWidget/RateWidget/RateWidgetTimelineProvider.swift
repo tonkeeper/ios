@@ -19,7 +19,9 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
                          percentDiff: "+63.08%",
                          fiatDiff: "$0.90",
                          diffDirection: .up),
-      chartData: RateWidgetChartMock.data
+      chartData: .init(data: RateWidgetChartMock.data,
+                       minimumValue: "$1.47",
+                       maximumValue: "$2.57")
     )
   }
   
@@ -34,7 +36,9 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
                          percentDiff: "+63.08%",
                          fiatDiff: "$0.90",
                          diffDirection: .up),
-      chartData: RateWidgetChartMock.data
+      chartData: .init(data: RateWidgetChartMock.data,
+                       minimumValue: "$1.47",
+                       maximumValue: "$2.57")
     )
     completion(entry)
   }
@@ -73,11 +77,15 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
         }
         let data = try await chartController.getChartData(period: period)
         let information = await chartController.getInformation(at: data.count-1, period: period)
+        let maximumValue = await chartController.getMaximumValue()
+        let minimumValue = await chartController.getMinimumValue()
         let entryInformation = RateWidgetEntry.Information(chartPointInformationViewModel: information)
         let entry = RateWidgetEntry(date: Date(),
                                     period: period.title,
                                     information: entryInformation,
-                                    chartData: .init(coordinates: data, mode: mode))
+                                    chartData: .init(data: .init(coordinates: data, mode: mode),
+                                                     minimumValue: minimumValue,
+                                                     maximumValue: maximumValue))
         let nextUpdate = Calendar.current.date(byAdding: DateComponents(minute: 30), to: Date())!
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)

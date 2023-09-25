@@ -117,20 +117,14 @@
 		7D3F25EE2AC19424002DF1B7 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7D3F25ED2AC19424002DF1B7 /* WalletCore */; };
 		7D3F25F22AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F12AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift */; };
 		7D3F25F42AC19470002DF1B7 /* View+WidgetBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F32AC19470002DF1B7 /* View+WidgetBackground.swift */; };
-		7D3F25F62AC19493002DF1B7 /* RateWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F52AC19493002DF1B7 /* RateWidget.swift */; };
 		7D3F25F82AC19558002DF1B7 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; settings = {ATTRIBUTES = (private_codegen, ); }; };
 		7D3F25FA2AC195F1002DF1B7 /* RateWidgetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */; };
 		7D3F25FC2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */; };
 		7D3F25FE2AC1975F002DF1B7 /* RateWidgetChartMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */; };
-		7D3F26022AC1984E002DF1B7 /* HomeScreenRateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26012AC1984E002DF1B7 /* HomeScreenRateWidgetView.swift */; };
 		7D3F26042AC198BE002DF1B7 /* RateWidgetDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26032AC198BE002DF1B7 /* RateWidgetDataView.swift */; };
 		7D3F26062AC198DB002DF1B7 /* RateWidgetChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */; };
-		7D3F26082AC198F7002DF1B7 /* RateWidgetReloadButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26072AC198F7002DF1B7 /* RateWidgetReloadButtonView.swift */; };
 		7D3F260A2AC1990C002DF1B7 /* RateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26092AC1990C002DF1B7 /* RateWidgetView.swift */; };
-		7D3F260C2AC19BE6002DF1B7 /* LockScreenInlineRateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F260B2AC19BE6002DF1B7 /* LockScreenInlineRateWidgetView.swift */; };
-		7D3F260E2AC19EC2002DF1B7 /* LockScreenRectangleRateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F260D2AC19EC2002DF1B7 /* LockScreenRectangleRateWidgetView.swift */; };
 		7D3F260F2AC19F79002DF1B7 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; settings = {ATTRIBUTES = (private_codegen, ); }; };
-		7D3F26112AC1A03D002DF1B7 /* ReloadRateWidgetIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26102AC1A03D002DF1B7 /* ReloadRateWidgetIntent.swift */; };
 		7D45D31B2A82E73200733DFE /* TransactionCellNFTView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D45D31A2A82E73200733DFE /* TransactionCellNFTView.swift */; };
 		7D4934672A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */; };
 		7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */; };
@@ -308,6 +302,9 @@
 		7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DB17F3E2A4B3338007C6154 /* WalletCore */; };
 		7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */; };
 		7DB17F472A4C2D9B007C6154 /* OnboardingAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB17F462A4C2D9B007C6154 /* OnboardingAssembly.swift */; };
+		7DB46DF32AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB46DF22AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift */; };
+		7DB46DF52AC232E8006E9F71 /* RateChartWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB46DF42AC232E8006E9F71 /* RateChartWidget.swift */; };
+		7DB46DF72AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB46DF62AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift */; };
 		7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */; };
 		7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */; };
 		7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */; };
@@ -505,19 +502,13 @@
 		7D3F25E42AC19418002DF1B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7D3F25F12AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WidgetConfiguration+ContentMargins.swift"; sourceTree = "<group>"; };
 		7D3F25F32AC19470002DF1B7 /* View+WidgetBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+WidgetBackground.swift"; sourceTree = "<group>"; };
-		7D3F25F52AC19493002DF1B7 /* RateWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidget.swift; sourceTree = "<group>"; };
 		7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; path = RateWidget.intentdefinition; sourceTree = "<group>"; };
 		7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetEntry.swift; sourceTree = "<group>"; };
 		7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetTimelineProvider.swift; sourceTree = "<group>"; };
 		7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetChartMock.swift; sourceTree = "<group>"; };
-		7D3F26012AC1984E002DF1B7 /* HomeScreenRateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenRateWidgetView.swift; sourceTree = "<group>"; };
 		7D3F26032AC198BE002DF1B7 /* RateWidgetDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetDataView.swift; sourceTree = "<group>"; };
 		7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetChartView.swift; sourceTree = "<group>"; };
-		7D3F26072AC198F7002DF1B7 /* RateWidgetReloadButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetReloadButtonView.swift; sourceTree = "<group>"; };
 		7D3F26092AC1990C002DF1B7 /* RateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetView.swift; sourceTree = "<group>"; };
-		7D3F260B2AC19BE6002DF1B7 /* LockScreenInlineRateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreenInlineRateWidgetView.swift; sourceTree = "<group>"; };
-		7D3F260D2AC19EC2002DF1B7 /* LockScreenRectangleRateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreenRectangleRateWidgetView.swift; sourceTree = "<group>"; };
-		7D3F26102AC1A03D002DF1B7 /* ReloadRateWidgetIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReloadRateWidgetIntent.swift; sourceTree = "<group>"; };
 		7D45D31A2A82E73200733DFE /* TransactionCellNFTView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellNFTView.swift; sourceTree = "<group>"; };
 		7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthCoordinator.swift; sourceTree = "<group>"; };
 		7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthConfigurator.swift; sourceTree = "<group>"; };
@@ -692,6 +683,9 @@
 		7DAC78E42A96ABF600358D35 /* CollectibleDetailsPropertyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsPropertyView.swift; sourceTree = "<group>"; };
 		7DB17F442A4C2D90007C6154 /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		7DB17F462A4C2D9B007C6154 /* OnboardingAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingAssembly.swift; sourceTree = "<group>"; };
+		7DB46DF22AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenSmallRateChartWidgetView.swift; sourceTree = "<group>"; };
+		7DB46DF42AC232E8006E9F71 /* RateChartWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateChartWidget.swift; sourceTree = "<group>"; };
+		7DB46DF62AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenMediumRateChartWidgetView.swift; sourceTree = "<group>"; };
 		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -1250,7 +1244,7 @@
 			children = (
 				7D3F26002AC1982F002DF1B7 /* Views */,
 				7D3F25FF2AC19826002DF1B7 /* Intents */,
-				7D3F25F52AC19493002DF1B7 /* RateWidget.swift */,
+				7DB46DF42AC232E8006E9F71 /* RateChartWidget.swift */,
 				7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */,
 				7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */,
 				7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */,
@@ -1271,7 +1265,6 @@
 			isa = PBXGroup;
 			children = (
 				7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */,
-				7D3F26102AC1A03D002DF1B7 /* ReloadRateWidgetIntent.swift */,
 			);
 			path = Intents;
 			sourceTree = "<group>";
@@ -1279,13 +1272,11 @@
 		7D3F26002AC1982F002DF1B7 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				7D3F26012AC1984E002DF1B7 /* HomeScreenRateWidgetView.swift */,
+				7DB46DF22AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift */,
+				7DB46DF62AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift */,
 				7D3F26032AC198BE002DF1B7 /* RateWidgetDataView.swift */,
 				7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */,
-				7D3F26072AC198F7002DF1B7 /* RateWidgetReloadButtonView.swift */,
 				7D3F26092AC1990C002DF1B7 /* RateWidgetView.swift */,
-				7D3F260B2AC19BE6002DF1B7 /* LockScreenInlineRateWidgetView.swift */,
-				7D3F260D2AC19EC2002DF1B7 /* LockScreenRectangleRateWidgetView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2507,16 +2498,13 @@
 				7D3F25F42AC19470002DF1B7 /* View+WidgetBackground.swift in Sources */,
 				7D3F25FC2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift in Sources */,
 				7D3F25FA2AC195F1002DF1B7 /* RateWidgetEntry.swift in Sources */,
-				7D3F260E2AC19EC2002DF1B7 /* LockScreenRectangleRateWidgetView.swift in Sources */,
-				7D3F26112AC1A03D002DF1B7 /* ReloadRateWidgetIntent.swift in Sources */,
-				7D3F25F62AC19493002DF1B7 /* RateWidget.swift in Sources */,
+				7DB46DF32AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift in Sources */,
 				7D3F25F22AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift in Sources */,
-				7D3F26082AC198F7002DF1B7 /* RateWidgetReloadButtonView.swift in Sources */,
+				7DB46DF52AC232E8006E9F71 /* RateChartWidget.swift in Sources */,
 				7D3F25DF2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift in Sources */,
-				7D3F26022AC1984E002DF1B7 /* HomeScreenRateWidgetView.swift in Sources */,
 				7D3F25FE2AC1975F002DF1B7 /* RateWidgetChartMock.swift in Sources */,
 				7D3F26042AC198BE002DF1B7 /* RateWidgetDataView.swift in Sources */,
-				7D3F260C2AC19BE6002DF1B7 /* LockScreenInlineRateWidgetView.swift in Sources */,
+				7DB46DF72AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -3201,7 +3189,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				branch = feature/sse;
+				branch = develop;
 				kind = branch;
 			};
 		};

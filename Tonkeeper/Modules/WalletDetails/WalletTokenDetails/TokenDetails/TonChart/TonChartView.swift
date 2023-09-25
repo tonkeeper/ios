@@ -58,8 +58,8 @@ private extension TonChartView {
       headerView.rightAnchor.constraint(equalTo: rightAnchor),
       
       chartView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
-      chartView.leftAnchor.constraint(equalTo: leftAnchor, constant: .chartSideSpacing),
-      chartView.rightAnchor.constraint(equalTo: rightAnchor, constant: -.chartSideSpacing),
+      chartView.leftAnchor.constraint(equalTo: leftAnchor),
+      chartView.rightAnchor.constraint(equalTo: rightAnchor),
       
       errorView.topAnchor.constraint(equalTo: headerView.bottomAnchor),
       errorView.leftAnchor.constraint(equalTo: leftAnchor),
@@ -72,8 +72,4 @@ private extension TonChartView {
       buttonsView.bottomAnchor.constraint(equalTo: bottomAnchor)
     ])
   }
-}
-
-private extension CGFloat {
-  static let chartSideSpacing: CGFloat = -10
 }
