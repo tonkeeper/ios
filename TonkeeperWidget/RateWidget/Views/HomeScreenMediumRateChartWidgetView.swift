@@ -17,7 +17,7 @@ struct HomeScreenMediumRateChartWidgetView: View {
           .foregroundColor(Color(UIColor.Text.secondary))
           .font(.system(size: 13, weight: .medium))
           .padding(.bottom, 8)
-        RateWidgetDataView(information: entry.information)
+        RateWidgetDataView(information: entry.information, isRegularOrder: true)
         Spacer()
       }
       .padding(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 26))

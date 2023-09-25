@@ -19,7 +19,7 @@ struct HomeScreenSmallRateChartWidgetView: View {
           .foregroundColor(Color(UIColor.Text.secondary))
           .font(.system(size: 13, weight: .medium))
         Spacer()
-        RateWidgetDataView(information: entry.information)
+        RateWidgetDataView(information: entry.information, isRegularOrder: true)
       }
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       .padding(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))

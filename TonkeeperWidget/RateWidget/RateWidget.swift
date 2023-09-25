@@ -1,18 +1,18 @@
 //
-//  RateChartWidget.swift
+//  RateWidget.swift
 //  TonkeeperWidgetExtension
 //
-//  Created by Grigory on 25.9.23..
+//  Created by Grigory on 26.9.23..
 //
 
 import WidgetKit
 import SwiftUI
 
-struct RateChartWidget: Widget {
-  let kind: String = "RateChartWidget"
+struct RateWidget: Widget {
+  let kind: String = "RateWidget"
   
   var supportedFamilies: [WidgetFamily] {
-    return [.systemSmall, .systemMedium]
+    return [.systemSmall]
   }
   
   var body: some WidgetConfiguration {
@@ -20,10 +20,10 @@ struct RateChartWidget: Widget {
       kind: kind,
       intent: RateWidgetIntent.self,
       provider: RateWidgetTimelineProvider()) { entry in
-        RateChartWidgetView(entry: entry)
+        RateWidgetView(entry: entry)
           .widgetBackground(backgroundView: Color(UIColor.Background.page))
       }
-      .configurationDisplayName("Rate with chart")
+      .configurationDisplayName("Rate")
       .description("")
       .supportedFamilies(supportedFamilies)
       .contentMarginsDisabledIfAvailable()

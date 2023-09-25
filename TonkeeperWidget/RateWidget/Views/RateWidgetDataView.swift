@@ -10,6 +10,7 @@ import WidgetKit
 
 struct RateWidgetDataView: View {
   let information: RateWidgetEntry.Information
+  let isRegularOrder: Bool
   
   var amountColor: Color {
     return Color(UIColor.Text.primary)
@@ -32,19 +33,32 @@ struct RateWidgetDataView: View {
     }
     return Color(color).opacity(0.44)
   }
+  
+  var amountView: some View {
+    Text(information.amount)
+      .foregroundColor(amountColor)
+      .font(.system(size: 28, weight: .medium))
+  }
+  
+  var diffView: some View {
+    HStack {
+      Text(information.percentDiff)
+        .foregroundColor(diffPercentColor)
+        .font(.system(size: 13, weight: .medium))
+      Text(information.fiatDiff)
+        .foregroundColor(diffFiatColor)
+        .font(.system(size: 13, weight: .medium))
+    }
+  }
 
   var body: some View {
     VStack(alignment: .leading, spacing: 2) {
-      Text(information.amount)
-        .foregroundColor(amountColor)
-        .font(.system(size: 28, weight: .medium))
-      HStack {
-        Text(information.percentDiff)
-          .foregroundColor(diffPercentColor)
-          .font(.system(size: 13, weight: .medium))
-        Text(information.fiatDiff)
-          .foregroundColor(diffFiatColor)
-          .font(.system(size: 13, weight: .medium))
+      if isRegularOrder {
+        amountView
+        diffView
+      } else {
+        diffView
+        amountView
       }
     }
   }

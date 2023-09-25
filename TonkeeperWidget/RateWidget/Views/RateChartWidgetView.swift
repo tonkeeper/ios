@@ -1,14 +1,14 @@
 //
-//  RateWidgetView.swift
+//  RateChartWidgetView.swift
 //  TonkeeperWidgetExtension
 //
-//  Created by Grigory on 26.9.23..
+//  Created by Grigory on 25.9.23..
 //
 
 import SwiftUI
 import WidgetKit
 
-struct RateWidgetView: View {
+struct RateChartWidgetView: View {
   let entry: RateWidgetEntry
   
   @Environment(\.widgetFamily) var family: WidgetFamily
@@ -16,7 +16,9 @@ struct RateWidgetView: View {
   var body: some View {
     switch family {
     case .systemSmall:
-      HomeScreenSmallRateWidgetView(entry: entry)
+      HomeScreenSmallRateChartWidgetView(entry: entry)
+    case .systemMedium:
+      HomeScreenMediumRateChartWidgetView(entry: entry)
     default:
       EmptyView()
     }
