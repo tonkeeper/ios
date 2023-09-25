@@ -13,14 +13,14 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
   func placeholder(in context: Context) -> RateWidgetEntry {
     RateWidgetEntry(
       date: Date(),
-      period: "-",
-      information: RateWidgetEntry.Information(
-        date: "-",
-        amount: "-",
-        percentDiff: "-",
-        fiatDiff: "-",
-        diffDirection: .up),
-      chartData: RateWidgetChartMock.data)
+      period: "W",
+      information: .init(date: "2018 Wed, 31 Oct",
+                         amount: "$2.3381",
+                         percentDiff: "+63.08%",
+                         fiatDiff: "$0.90",
+                         diffDirection: .up),
+      chartData: RateWidgetChartMock.data
+    )
   }
   
   func getSnapshot(for configuration: RateWidgetIntent,
