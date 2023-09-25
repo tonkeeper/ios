@@ -1,14 +1,16 @@
 //
-//  MockChartData.swift
-//  Tonkeeper
+//  RateWidgetChartMock.swift
+//  TonkeeperWidgetExtension
 //
-//  Created by Grigory on 22.9.23..
+//  Created by Grigory on 25.9.23..
 //
+
+import Foundation
 
 import Foundation
 import TKChart
 
-struct MockChartData {
+struct RateWidgetChartMock {
   static var data: TKLineChartView.Data {
     let jsonDecoder = JSONDecoder()
     let stringData = mockDataString.data(using: .utf8)!

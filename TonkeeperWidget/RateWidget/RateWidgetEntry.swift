@@ -1,22 +1,23 @@
 //
-//  ChartWidgetEntry.swift
-//  ChartWidgetExtension
+//  RateWidgetEntry.swift
+//  TonkeeperWidgetExtension
 //
-//  Created by Grigory on 23.9.23..
+//  Created by Grigory on 25.9.23..
 //
 
-import SwiftUI
 import WidgetKit
 import WalletCore
 import TKChart
 
-struct ChartWidgetEntry: TimelineEntry {
+struct RateWidgetEntry: TimelineEntry {
+  
   struct Information {
     enum DiffDirection {
       case none
       case up
       case down
     }
+    
     let date: String
     let amount: String
     let percentDiff: String

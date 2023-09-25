@@ -1,16 +1,15 @@
 //
-//  ChartWidgetAmountView.swift
-//  ChartWidgetExtension
+//  RateWidgetDataView.swift
+//  TonkeeperWidgetExtension
 //
-//  Created by Grigory on 23.9.23..
+//  Created by Grigory on 25.9.23..
 //
 
 import SwiftUI
 import WidgetKit
-import WalletCore
 
-struct ChartWidgetAmountView: View {
-  let information: ChartWidgetEntry.Information
+struct RateWidgetDataView: View {
+  let information: RateWidgetEntry.Information
   
   @Environment(\.widgetFamily) var family: WidgetFamily
   var amountFont: Font {

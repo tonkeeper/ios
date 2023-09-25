@@ -63,16 +63,6 @@
 		7D16E18F2A77DC6F00A27AB0 /* ToastConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */; };
 		7D19EB582ABD941000BDE7FA /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7D19EB572ABD941000BDE7FA /* TKUIKit */; };
 		7D19EB5B2ABDA5B500BDE7FA /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = 7D19EB5A2ABDA5B500BDE7FA /* TKChart */; };
-		7D19EB632ABDB58C00BDE7FA /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */; };
-		7D19EB652ABDB58C00BDE7FA /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */; };
-		7D19EB682ABDB58C00BDE7FA /* ChartWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D19EB672ABDB58C00BDE7FA /* ChartWidgetBundle.swift */; };
-		7D19EB6A2ABDB58C00BDE7FA /* ChartWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D19EB692ABDB58C00BDE7FA /* ChartWidget.swift */; };
-		7D19EB6C2ABDB58D00BDE7FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7D19EB6B2ABDB58D00BDE7FA /* Assets.xcassets */; };
-		7D19EB702ABDB58D00BDE7FA /* ChartWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7D19EB602ABDB58C00BDE7FA /* ChartWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		7D19EB762ABDB5F900BDE7FA /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = 7D19EB752ABDB5F900BDE7FA /* TKChart */; };
-		7D19EB782ABDB5FE00BDE7FA /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7D19EB772ABDB5FE00BDE7FA /* WalletCore */; };
-		7D19EB7B2ABDF25600BDE7FA /* MockChartData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D19EB792ABDF0E900BDE7FA /* MockChartData.swift */; };
-		7D19EB7E2ABF069000BDE7FA /* ChartWidgetAmountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D19EB7D2ABF069000BDE7FA /* ChartWidgetAmountView.swift */; };
 		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
 		7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */; };
 		7D32F8B22A8BA65B002C130C /* ActivityListHeaderContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */; };
@@ -118,6 +108,29 @@
 		7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */; };
 		7D3E43B42A3737E700C23A75 /* BuyListServiceBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43B32A3737E700C23A75 /* BuyListServiceBuilder.swift */; };
 		7D3E43B62A373B2200C23A75 /* ModalCardContainerScrollController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */; };
+		7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */; };
+		7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */; };
+		7D3F25DF2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25DE2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift */; };
+		7D3F25E32AC19418002DF1B7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 7D3F25E22AC19418002DF1B7 /* Assets.xcassets */; };
+		7D3F25E72AC19418002DF1B7 /* TonkeeperWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7D3F25EC2AC1941E002DF1B7 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = 7D3F25EB2AC1941E002DF1B7 /* TKChart */; };
+		7D3F25EE2AC19424002DF1B7 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7D3F25ED2AC19424002DF1B7 /* WalletCore */; };
+		7D3F25F22AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F12AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift */; };
+		7D3F25F42AC19470002DF1B7 /* View+WidgetBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F32AC19470002DF1B7 /* View+WidgetBackground.swift */; };
+		7D3F25F62AC19493002DF1B7 /* RateWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F52AC19493002DF1B7 /* RateWidget.swift */; };
+		7D3F25F82AC19558002DF1B7 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; settings = {ATTRIBUTES = (private_codegen, ); }; };
+		7D3F25FA2AC195F1002DF1B7 /* RateWidgetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */; };
+		7D3F25FC2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */; };
+		7D3F25FE2AC1975F002DF1B7 /* RateWidgetChartMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */; };
+		7D3F26022AC1984E002DF1B7 /* HomeScreenRateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26012AC1984E002DF1B7 /* HomeScreenRateWidgetView.swift */; };
+		7D3F26042AC198BE002DF1B7 /* RateWidgetDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26032AC198BE002DF1B7 /* RateWidgetDataView.swift */; };
+		7D3F26062AC198DB002DF1B7 /* RateWidgetChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */; };
+		7D3F26082AC198F7002DF1B7 /* RateWidgetReloadButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26072AC198F7002DF1B7 /* RateWidgetReloadButtonView.swift */; };
+		7D3F260A2AC1990C002DF1B7 /* RateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26092AC1990C002DF1B7 /* RateWidgetView.swift */; };
+		7D3F260C2AC19BE6002DF1B7 /* LockScreenInlineRateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F260B2AC19BE6002DF1B7 /* LockScreenInlineRateWidgetView.swift */; };
+		7D3F260E2AC19EC2002DF1B7 /* LockScreenRectangleRateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F260D2AC19EC2002DF1B7 /* LockScreenRectangleRateWidgetView.swift */; };
+		7D3F260F2AC19F79002DF1B7 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; settings = {ATTRIBUTES = (private_codegen, ); }; };
+		7D3F26112AC1A03D002DF1B7 /* ReloadRateWidgetIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26102AC1A03D002DF1B7 /* ReloadRateWidgetIntent.swift */; };
 		7D45D31B2A82E73200733DFE /* TransactionCellNFTView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D45D31A2A82E73200733DFE /* TransactionCellNFTView.swift */; };
 		7D4934672A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */; };
 		7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */; };
@@ -308,19 +321,6 @@
 		7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050D2A6953FF003E9F13 /* ActivityEmptyAssembly.swift */; };
 		7DDF05102A695467003E9F13 /* ActivityListAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050F2A695467003E9F13 /* ActivityListAssembly.swift */; };
 		7DDF05122A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF05112A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift */; };
-		7DE139C62ABF103B0032FD10 /* ChartWidgetChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139C52ABF103B0032FD10 /* ChartWidgetChartView.swift */; };
-		7DE139C82ABF106B0032FD10 /* ChartWidgetReloadButtonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139C72ABF106B0032FD10 /* ChartWidgetReloadButtonView.swift */; };
-		7DE139CA2ABF10A10032FD10 /* ChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139C92ABF10A10032FD10 /* ChartWidgetView.swift */; };
-		7DE139CC2ABF10BD0032FD10 /* ChartWidgetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139CB2ABF10BD0032FD10 /* ChartWidgetEntry.swift */; };
-		7DE139D02ABF11190032FD10 /* ReloadChartWidgetIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139CF2ABF11190032FD10 /* ReloadChartWidgetIntent.swift */; };
-		7DE139D32ABF11550032FD10 /* WidgetConfiguration+ContentMargins.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139D22ABF11550032FD10 /* WidgetConfiguration+ContentMargins.swift */; };
-		7DE139D52ABF116E0032FD10 /* View+WidgetBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139D42ABF116E0032FD10 /* View+WidgetBackground.swift */; };
-		7DE139D72ABF11950032FD10 /* HomeScreenChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139D62ABF11950032FD10 /* HomeScreenChartWidgetView.swift */; };
-		7DE139D92ABF11B00032FD10 /* LockScreenRectangleChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139D82ABF11B00032FD10 /* LockScreenRectangleChartWidgetView.swift */; };
-		7DE139DB2ABF11C20032FD10 /* LockScreenInlineChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139DA2ABF11C20032FD10 /* LockScreenInlineChartWidgetView.swift */; };
-		7DE139DD2ABF11DB0032FD10 /* ChartWidgetTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139DC2ABF11DB0032FD10 /* ChartWidgetTimelineProvider.swift */; };
-		7DE139DF2ABF19E50032FD10 /* ChartWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139DE2ABF19E50032FD10 /* ChartWidget.intentdefinition */; settings = {ATTRIBUTES = (codegen, ); }; };
-		7DE139E12ABF19FA0032FD10 /* ChartWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7DE139DE2ABF19E50032FD10 /* ChartWidget.intentdefinition */; settings = {ATTRIBUTES = (codegen, ); }; };
 		7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */; };
 		7DE27E5F2A30C61E00842FA8 /* ActivityListSectionHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E5E2A30C61E00842FA8 /* ActivityListSectionHeaderView.swift */; };
 		7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DE27E612A30CDEE00842FA8 /* TransactionType.swift */; };
@@ -368,12 +368,12 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		7D19EB6E2ABDB58D00BDE7FA /* PBXContainerItemProxy */ = {
+		7D3F25E52AC19418002DF1B7 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 7DB8FB5A2A1BCC92005B4B11 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 7D19EB5F2ABDB58C00BDE7FA;
-			remoteInfo = ChartWidgetExtension;
+			remoteGlobalIDString = 7D3F25D92AC19417002DF1B7;
+			remoteInfo = TonkeeperWidgetExtension;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -384,7 +384,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				7D19EB702ABDB58D00BDE7FA /* ChartWidgetExtension.appex in Embed Foundation Extensions */,
+				7D3F25E72AC19418002DF1B7 /* TonkeeperWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -452,15 +452,8 @@
 		7D16E1652A752BF900A27AB0 /* ToastView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastView.swift; sourceTree = "<group>"; };
 		7D16E1892A77C1FB00A27AB0 /* PassthroughWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PassthroughWindow.swift; sourceTree = "<group>"; };
 		7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastConfiguration.swift; sourceTree = "<group>"; };
-		7D19EB602ABDB58C00BDE7FA /* ChartWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ChartWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		7D19EB672ABDB58C00BDE7FA /* ChartWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWidgetBundle.swift; sourceTree = "<group>"; };
-		7D19EB692ABDB58C00BDE7FA /* ChartWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWidget.swift; sourceTree = "<group>"; };
-		7D19EB6B2ABDB58D00BDE7FA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		7D19EB6D2ABDB58D00BDE7FA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		7D19EB792ABDF0E900BDE7FA /* MockChartData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockChartData.swift; sourceTree = "<group>"; };
-		7D19EB7D2ABF069000BDE7FA /* ChartWidgetAmountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWidgetAmountView.swift; sourceTree = "<group>"; };
 		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
 		7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletBalanceModelMapper.swift; sourceTree = "<group>"; };
 		7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListHeaderContainer.swift; sourceTree = "<group>"; };
@@ -506,6 +499,25 @@
 		7D3E43902A339E9000C23A75 /* ServiceCellContentView+Model.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServiceCellContentView+Model.swift"; sourceTree = "<group>"; };
 		7D3E43B32A3737E700C23A75 /* BuyListServiceBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListServiceBuilder.swift; sourceTree = "<group>"; };
 		7D3E43B52A373B2200C23A75 /* ModalCardContainerScrollController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardContainerScrollController.swift; sourceTree = "<group>"; };
+		7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TonkeeperWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D3F25DE2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonkeeperWidgetBundle.swift; sourceTree = "<group>"; };
+		7D3F25E22AC19418002DF1B7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7D3F25E42AC19418002DF1B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7D3F25F12AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WidgetConfiguration+ContentMargins.swift"; sourceTree = "<group>"; };
+		7D3F25F32AC19470002DF1B7 /* View+WidgetBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+WidgetBackground.swift"; sourceTree = "<group>"; };
+		7D3F25F52AC19493002DF1B7 /* RateWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidget.swift; sourceTree = "<group>"; };
+		7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; path = RateWidget.intentdefinition; sourceTree = "<group>"; };
+		7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetEntry.swift; sourceTree = "<group>"; };
+		7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetTimelineProvider.swift; sourceTree = "<group>"; };
+		7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetChartMock.swift; sourceTree = "<group>"; };
+		7D3F26012AC1984E002DF1B7 /* HomeScreenRateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenRateWidgetView.swift; sourceTree = "<group>"; };
+		7D3F26032AC198BE002DF1B7 /* RateWidgetDataView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetDataView.swift; sourceTree = "<group>"; };
+		7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetChartView.swift; sourceTree = "<group>"; };
+		7D3F26072AC198F7002DF1B7 /* RateWidgetReloadButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetReloadButtonView.swift; sourceTree = "<group>"; };
+		7D3F26092AC1990C002DF1B7 /* RateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetView.swift; sourceTree = "<group>"; };
+		7D3F260B2AC19BE6002DF1B7 /* LockScreenInlineRateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreenInlineRateWidgetView.swift; sourceTree = "<group>"; };
+		7D3F260D2AC19EC2002DF1B7 /* LockScreenRectangleRateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreenRectangleRateWidgetView.swift; sourceTree = "<group>"; };
+		7D3F26102AC1A03D002DF1B7 /* ReloadRateWidgetIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReloadRateWidgetIntent.swift; sourceTree = "<group>"; };
 		7D45D31A2A82E73200733DFE /* TransactionCellNFTView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionCellNFTView.swift; sourceTree = "<group>"; };
 		7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthCoordinator.swift; sourceTree = "<group>"; };
 		7D4934692A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeAuthConfigurator.swift; sourceTree = "<group>"; };
@@ -695,18 +707,6 @@
 		7DDF050D2A6953FF003E9F13 /* ActivityEmptyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityEmptyAssembly.swift; sourceTree = "<group>"; };
 		7DDF050F2A695467003E9F13 /* ActivityListAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListAssembly.swift; sourceTree = "<group>"; };
 		7DDF05112A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityTransactionDetailsAssembly.swift; sourceTree = "<group>"; };
-		7DE139C52ABF103B0032FD10 /* ChartWidgetChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWidgetChartView.swift; sourceTree = "<group>"; };
-		7DE139C72ABF106B0032FD10 /* ChartWidgetReloadButtonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWidgetReloadButtonView.swift; sourceTree = "<group>"; };
-		7DE139C92ABF10A10032FD10 /* ChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWidgetView.swift; sourceTree = "<group>"; };
-		7DE139CB2ABF10BD0032FD10 /* ChartWidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWidgetEntry.swift; sourceTree = "<group>"; };
-		7DE139CF2ABF11190032FD10 /* ReloadChartWidgetIntent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReloadChartWidgetIntent.swift; sourceTree = "<group>"; };
-		7DE139D22ABF11550032FD10 /* WidgetConfiguration+ContentMargins.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WidgetConfiguration+ContentMargins.swift"; sourceTree = "<group>"; };
-		7DE139D42ABF116E0032FD10 /* View+WidgetBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+WidgetBackground.swift"; sourceTree = "<group>"; };
-		7DE139D62ABF11950032FD10 /* HomeScreenChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenChartWidgetView.swift; sourceTree = "<group>"; };
-		7DE139D82ABF11B00032FD10 /* LockScreenRectangleChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreenRectangleChartWidgetView.swift; sourceTree = "<group>"; };
-		7DE139DA2ABF11C20032FD10 /* LockScreenInlineChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreenInlineChartWidgetView.swift; sourceTree = "<group>"; };
-		7DE139DC2ABF11DB0032FD10 /* ChartWidgetTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartWidgetTimelineProvider.swift; sourceTree = "<group>"; };
-		7DE139DE2ABF19E50032FD10 /* ChartWidget.intentdefinition */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; path = ChartWidget.intentdefinition; sourceTree = "<group>"; };
 		7DE27E5B2A30BB1800842FA8 /* ActivityListTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListTransactionCell.swift; sourceTree = "<group>"; };
 		7DE27E5E2A30C61E00842FA8 /* ActivityListSectionHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListSectionHeaderView.swift; sourceTree = "<group>"; };
 		7DE27E612A30CDEE00842FA8 /* TransactionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionType.swift; sourceTree = "<group>"; };
@@ -758,14 +758,14 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		7D19EB5D2ABDB58C00BDE7FA /* Frameworks */ = {
+		7D3F25D72AC19417002DF1B7 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7D19EB782ABDB5FE00BDE7FA /* WalletCore in Frameworks */,
-				7D19EB762ABDB5F900BDE7FA /* TKChart in Frameworks */,
-				7D19EB652ABDB58C00BDE7FA /* SwiftUI.framework in Frameworks */,
-				7D19EB632ABDB58C00BDE7FA /* WidgetKit.framework in Frameworks */,
+				7D3F25EE2AC19424002DF1B7 /* WalletCore in Frameworks */,
+				7D3F25EC2AC1941E002DF1B7 /* TKChart in Frameworks */,
+				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
+				7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1014,32 +1014,6 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		7D19EB662ABDB58C00BDE7FA /* ChartWidget */ = {
-			isa = PBXGroup;
-			children = (
-				7D19EB7C2ABEFDBE00BDE7FA /* ChartWidget */,
-				7D19EB672ABDB58C00BDE7FA /* ChartWidgetBundle.swift */,
-				7D19EB792ABDF0E900BDE7FA /* MockChartData.swift */,
-				7D19EB6B2ABDB58D00BDE7FA /* Assets.xcassets */,
-				7D19EB6D2ABDB58D00BDE7FA /* Info.plist */,
-			);
-			path = ChartWidget;
-			sourceTree = "<group>";
-		};
-		7D19EB7C2ABEFDBE00BDE7FA /* ChartWidget */ = {
-			isa = PBXGroup;
-			children = (
-				7DE139D12ABF113B0032FD10 /* Extensions */,
-				7DE139CE2ABF10F90032FD10 /* Views */,
-				7DE139CD2ABF10F40032FD10 /* Intents */,
-				7D19EB692ABDB58C00BDE7FA /* ChartWidget.swift */,
-				7DE139CB2ABF10BD0032FD10 /* ChartWidgetEntry.swift */,
-				7DE139DC2ABF11DB0032FD10 /* ChartWidgetTimelineProvider.swift */,
-				7DE139DE2ABF19E50032FD10 /* ChartWidget.intentdefinition */,
-			);
-			path = ChartWidget;
-			sourceTree = "<group>";
-		};
 		7D27E5992A515AEE00156D0C /* Mapper */ = {
 			isa = PBXGroup;
 			children = (
@@ -1257,6 +1231,63 @@
 				7D91442C2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift */,
 			);
 			path = Dimming;
+			sourceTree = "<group>";
+		};
+		7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */ = {
+			isa = PBXGroup;
+			children = (
+				7D3F25F02AC19442002DF1B7 /* Extensions */,
+				7D3F25EF2AC19434002DF1B7 /* RateWidget */,
+				7D3F25DE2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift */,
+				7D3F25E22AC19418002DF1B7 /* Assets.xcassets */,
+				7D3F25E42AC19418002DF1B7 /* Info.plist */,
+			);
+			path = TonkeeperWidget;
+			sourceTree = "<group>";
+		};
+		7D3F25EF2AC19434002DF1B7 /* RateWidget */ = {
+			isa = PBXGroup;
+			children = (
+				7D3F26002AC1982F002DF1B7 /* Views */,
+				7D3F25FF2AC19826002DF1B7 /* Intents */,
+				7D3F25F52AC19493002DF1B7 /* RateWidget.swift */,
+				7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */,
+				7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */,
+				7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */,
+			);
+			path = RateWidget;
+			sourceTree = "<group>";
+		};
+		7D3F25F02AC19442002DF1B7 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				7D3F25F12AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift */,
+				7D3F25F32AC19470002DF1B7 /* View+WidgetBackground.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		7D3F25FF2AC19826002DF1B7 /* Intents */ = {
+			isa = PBXGroup;
+			children = (
+				7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */,
+				7D3F26102AC1A03D002DF1B7 /* ReloadRateWidgetIntent.swift */,
+			);
+			path = Intents;
+			sourceTree = "<group>";
+		};
+		7D3F26002AC1982F002DF1B7 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D3F26012AC1984E002DF1B7 /* HomeScreenRateWidgetView.swift */,
+				7D3F26032AC198BE002DF1B7 /* RateWidgetDataView.swift */,
+				7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */,
+				7D3F26072AC198F7002DF1B7 /* RateWidgetReloadButtonView.swift */,
+				7D3F26092AC1990C002DF1B7 /* RateWidgetView.swift */,
+				7D3F260B2AC19BE6002DF1B7 /* LockScreenInlineRateWidgetView.swift */,
+				7D3F260D2AC19EC2002DF1B7 /* LockScreenRectangleRateWidgetView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		7D4934682A5C622C00F4BCA2 /* PasscodeAuth */ = {
@@ -2120,7 +2151,7 @@
 			isa = PBXGroup;
 			children = (
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
-				7D19EB662ABDB58C00BDE7FA /* ChartWidget */,
+				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,
 				7D19EB612ABDB58C00BDE7FA /* Frameworks */,
 				7DB8FB632A1BCC92005B4B11 /* Products */,
 			);
@@ -2132,7 +2163,7 @@
 			isa = PBXGroup;
 			children = (
 				7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */,
-				7D19EB602ABDB58C00BDE7FA /* ChartWidgetExtension.appex */,
+				7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -2208,37 +2239,6 @@
 				7DC8A3B52A7C172B00B8B219 /* ActivityListViewController+TokenDetailsListContentViewController.swift */,
 			);
 			path = ListContent;
-			sourceTree = "<group>";
-		};
-		7DE139CD2ABF10F40032FD10 /* Intents */ = {
-			isa = PBXGroup;
-			children = (
-				7DE139CF2ABF11190032FD10 /* ReloadChartWidgetIntent.swift */,
-			);
-			path = Intents;
-			sourceTree = "<group>";
-		};
-		7DE139CE2ABF10F90032FD10 /* Views */ = {
-			isa = PBXGroup;
-			children = (
-				7D19EB7D2ABF069000BDE7FA /* ChartWidgetAmountView.swift */,
-				7DE139C52ABF103B0032FD10 /* ChartWidgetChartView.swift */,
-				7DE139C72ABF106B0032FD10 /* ChartWidgetReloadButtonView.swift */,
-				7DE139C92ABF10A10032FD10 /* ChartWidgetView.swift */,
-				7DE139D62ABF11950032FD10 /* HomeScreenChartWidgetView.swift */,
-				7DE139D82ABF11B00032FD10 /* LockScreenRectangleChartWidgetView.swift */,
-				7DE139DA2ABF11C20032FD10 /* LockScreenInlineChartWidgetView.swift */,
-			);
-			path = Views;
-			sourceTree = "<group>";
-		};
-		7DE139D12ABF113B0032FD10 /* Extensions */ = {
-			isa = PBXGroup;
-			children = (
-				7DE139D22ABF11550032FD10 /* WidgetConfiguration+ContentMargins.swift */,
-				7DE139D42ABF116E0032FD10 /* View+WidgetBackground.swift */,
-			);
-			path = Extensions;
 			sourceTree = "<group>";
 		};
 		7DE27E592A30BB0600842FA8 /* Views */ = {
@@ -2358,25 +2358,25 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		7D19EB5F2ABDB58C00BDE7FA /* ChartWidgetExtension */ = {
+		7D3F25D92AC19417002DF1B7 /* TonkeeperWidgetExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 7D19EB712ABDB58D00BDE7FA /* Build configuration list for PBXNativeTarget "ChartWidgetExtension" */;
+			buildConfigurationList = 7D3F25EA2AC19418002DF1B7 /* Build configuration list for PBXNativeTarget "TonkeeperWidgetExtension" */;
 			buildPhases = (
-				7D19EB5C2ABDB58C00BDE7FA /* Sources */,
-				7D19EB5D2ABDB58C00BDE7FA /* Frameworks */,
-				7D19EB5E2ABDB58C00BDE7FA /* Resources */,
+				7D3F25D62AC19417002DF1B7 /* Sources */,
+				7D3F25D72AC19417002DF1B7 /* Frameworks */,
+				7D3F25D82AC19417002DF1B7 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = ChartWidgetExtension;
+			name = TonkeeperWidgetExtension;
 			packageProductDependencies = (
-				7D19EB752ABDB5F900BDE7FA /* TKChart */,
-				7D19EB772ABDB5FE00BDE7FA /* WalletCore */,
+				7D3F25EB2AC1941E002DF1B7 /* TKChart */,
+				7D3F25ED2AC19424002DF1B7 /* WalletCore */,
 			);
-			productName = ChartWidgetExtension;
-			productReference = 7D19EB602ABDB58C00BDE7FA /* ChartWidgetExtension.appex */;
+			productName = TonkeeperWidgetExtension;
+			productReference = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		7DB8FB612A1BCC92005B4B11 /* Tonkeeper */ = {
@@ -2393,7 +2393,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				7D19EB6F2ABDB58D00BDE7FA /* PBXTargetDependency */,
+				7D3F25E62AC19418002DF1B7 /* PBXTargetDependency */,
 			);
 			name = Tonkeeper;
 			packageProductDependencies = (
@@ -2418,7 +2418,7 @@
 				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
-					7D19EB5F2ABDB58C00BDE7FA = {
+					7D3F25D92AC19417002DF1B7 = {
 						CreatedOnToolsVersion = 15.0;
 					};
 					7DB8FB612A1BCC92005B4B11 = {
@@ -2448,17 +2448,17 @@
 			projectRoot = "";
 			targets = (
 				7DB8FB612A1BCC92005B4B11 /* Tonkeeper */,
-				7D19EB5F2ABDB58C00BDE7FA /* ChartWidgetExtension */,
+				7D3F25D92AC19417002DF1B7 /* TonkeeperWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		7D19EB5E2ABDB58C00BDE7FA /* Resources */ = {
+		7D3F25D82AC19417002DF1B7 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7D19EB6C2ABDB58D00BDE7FA /* Assets.xcassets in Resources */,
+				7D3F25E32AC19418002DF1B7 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2497,26 +2497,26 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		7D19EB5C2ABDB58C00BDE7FA /* Sources */ = {
+		7D3F25D62AC19417002DF1B7 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7D19EB7B2ABDF25600BDE7FA /* MockChartData.swift in Sources */,
-				7DE139CA2ABF10A10032FD10 /* ChartWidgetView.swift in Sources */,
-				7DE139D92ABF11B00032FD10 /* LockScreenRectangleChartWidgetView.swift in Sources */,
-				7D19EB6A2ABDB58C00BDE7FA /* ChartWidget.swift in Sources */,
-				7DE139D02ABF11190032FD10 /* ReloadChartWidgetIntent.swift in Sources */,
-				7DE139D72ABF11950032FD10 /* HomeScreenChartWidgetView.swift in Sources */,
-				7DE139C82ABF106B0032FD10 /* ChartWidgetReloadButtonView.swift in Sources */,
-				7D19EB682ABDB58C00BDE7FA /* ChartWidgetBundle.swift in Sources */,
-				7DE139CC2ABF10BD0032FD10 /* ChartWidgetEntry.swift in Sources */,
-				7DE139DB2ABF11C20032FD10 /* LockScreenInlineChartWidgetView.swift in Sources */,
-				7DE139D52ABF116E0032FD10 /* View+WidgetBackground.swift in Sources */,
-				7DE139DF2ABF19E50032FD10 /* ChartWidget.intentdefinition in Sources */,
-				7DE139DD2ABF11DB0032FD10 /* ChartWidgetTimelineProvider.swift in Sources */,
-				7DE139C62ABF103B0032FD10 /* ChartWidgetChartView.swift in Sources */,
-				7DE139D32ABF11550032FD10 /* WidgetConfiguration+ContentMargins.swift in Sources */,
-				7D19EB7E2ABF069000BDE7FA /* ChartWidgetAmountView.swift in Sources */,
+				7D3F25F82AC19558002DF1B7 /* RateWidget.intentdefinition in Sources */,
+				7D3F26062AC198DB002DF1B7 /* RateWidgetChartView.swift in Sources */,
+				7D3F260A2AC1990C002DF1B7 /* RateWidgetView.swift in Sources */,
+				7D3F25F42AC19470002DF1B7 /* View+WidgetBackground.swift in Sources */,
+				7D3F25FC2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift in Sources */,
+				7D3F25FA2AC195F1002DF1B7 /* RateWidgetEntry.swift in Sources */,
+				7D3F260E2AC19EC2002DF1B7 /* LockScreenRectangleRateWidgetView.swift in Sources */,
+				7D3F26112AC1A03D002DF1B7 /* ReloadRateWidgetIntent.swift in Sources */,
+				7D3F25F62AC19493002DF1B7 /* RateWidget.swift in Sources */,
+				7D3F25F22AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift in Sources */,
+				7D3F26082AC198F7002DF1B7 /* RateWidgetReloadButtonView.swift in Sources */,
+				7D3F25DF2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift in Sources */,
+				7D3F26022AC1984E002DF1B7 /* HomeScreenRateWidgetView.swift in Sources */,
+				7D3F25FE2AC1975F002DF1B7 /* RateWidgetChartMock.swift in Sources */,
+				7D3F26042AC198BE002DF1B7 /* RateWidgetDataView.swift in Sources */,
+				7D3F260C2AC19BE6002DF1B7 /* LockScreenInlineRateWidgetView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2605,6 +2605,7 @@
 				7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */,
 				7D32F8B22A8BA65B002C130C /* ActivityListHeaderContainer.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
+				7D3F260F2AC19F79002DF1B7 /* RateWidget.intentdefinition in Sources */,
 				7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */,
 				7D45D31B2A82E73200733DFE /* TransactionCellNFTView.swift in Sources */,
 				7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */,
@@ -2805,7 +2806,6 @@
 				DB9A1AA91502A6E162CD3BC3 /* BuyListView.swift in Sources */,
 				7D3BCFC02A4C9E6B00BE6AD9 /* RootAssembly.swift in Sources */,
 				7DC8A3B72A7C172B00B8B219 /* ActivityListViewController+TokenDetailsListContentViewController.swift in Sources */,
-				7DE139E12ABF19FA0032FD10 /* ChartWidget.intentdefinition in Sources */,
 				097A038C8793EF67158AD194 /* BuyListPresenter.swift in Sources */,
 				6DDD78B4E9BC9191CF5EC900 /* BuyListProtocols.swift in Sources */,
 				A6E8CD628DD1CBC7A9D9ADA3 /* WelcomeViewController.swift in Sources */,
@@ -2856,10 +2856,10 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		7D19EB6F2ABDB58D00BDE7FA /* PBXTargetDependency */ = {
+		7D3F25E62AC19418002DF1B7 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 7D19EB5F2ABDB58C00BDE7FA /* ChartWidgetExtension */;
-			targetProxy = 7D19EB6E2ABDB58D00BDE7FA /* PBXContainerItemProxy */;
+			target = 7D3F25D92AC19417002DF1B7 /* TonkeeperWidgetExtension */;
+			targetProxy = 7D3F25E52AC19418002DF1B7 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -2875,7 +2875,7 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		7D19EB722ABDB58D00BDE7FA /* Debug */ = {
+		7D3F25E82AC19418002DF1B7 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -2887,8 +2887,8 @@
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ChartWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ChartWidget;
+				INFOPLIST_FILE = TonkeeperWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TonkeeperWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2898,7 +2898,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx11.ChartWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx11.TonkeeperWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -2908,21 +2908,21 @@
 			};
 			name = Debug;
 		};
-		7D19EB732ABDB58D00BDE7FA /* Release */ = {
+		7D3F25E92AC19418002DF1B7 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_IDENTITY = "Apple Distribution: TONAPPS INC (CT523DK2KC)";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = CT523DK2KC;
+				DEVELOPMENT_TEAM = "";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ChartWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ChartWidget;
+				INFOPLIST_FILE = TonkeeperWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TonkeeperWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2932,8 +2932,9 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jbig.tonkeeperx.ChartWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jbig.tonkeeperx.TonkeeperWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -3131,11 +3132,11 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		7D19EB712ABDB58D00BDE7FA /* Build configuration list for PBXNativeTarget "ChartWidgetExtension" */ = {
+		7D3F25EA2AC19418002DF1B7 /* Build configuration list for PBXNativeTarget "TonkeeperWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				7D19EB722ABDB58D00BDE7FA /* Debug */,
-				7D19EB732ABDB58D00BDE7FA /* Release */,
+				7D3F25E82AC19418002DF1B7 /* Debug */,
+				7D3F25E92AC19418002DF1B7 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -3220,12 +3221,12 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = TKChart;
 		};
-		7D19EB752ABDB5F900BDE7FA /* TKChart */ = {
+		7D3F25EB2AC1941E002DF1B7 /* TKChart */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7D19EB592ABDA5B500BDE7FA /* XCLocalSwiftPackageReference "Modules/TKChart" */;
 			productName = TKChart;
 		};
-		7D19EB772ABDB5FE00BDE7FA /* WalletCore */ = {
+		7D3F25ED2AC19424002DF1B7 /* WalletCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7DB17F3D2A4B3338007C6154 /* XCRemoteSwiftPackageReference "core-swift" */;
 			productName = WalletCore;

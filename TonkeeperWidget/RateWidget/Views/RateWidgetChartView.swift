@@ -1,14 +1,14 @@
 //
-//  ChartWidgetChartView.swift
-//  ChartWidgetExtension
+//  RateWidgetChartView.swift
+//  TonkeeperWidgetExtension
 //
-//  Created by Grigory on 23.9.23..
+//  Created by Grigory on 25.9.23..
 //
 
 import SwiftUI
 import TKChart
 
-struct ChartWidgetChartView: View {
+struct RateWidgetChartView: View {
   let chartData: TKLineChartView.Data
   
   func chartImage(size: CGSize) -> SwiftUI.Image {

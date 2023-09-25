@@ -1,20 +1,23 @@
 //
-//  ChartWidget.swift
-//  ChartWidget
+//  RateWidget.swift
+//  TonkeeperWidgetExtension
 //
-//  Created by Grigory on 22.9.23..
+//  Created by Grigory on 25.9.23..
 //
 
 import WidgetKit
 import SwiftUI
 
-struct ChartWidget: Widget {
-  let kind: String = "ChartWidget"
+struct RateWidget: Widget {
+  let kind: String = "RateWidget"
   
   var supportedFamilies: [WidgetFamily] {
     var result: [WidgetFamily] = [.systemSmall, .systemMedium]
     if #available(iOSApplicationExtension 16.0, *) {
       result.append(contentsOf: [.accessoryInline, .accessoryRectangular])
+    }
+    if #available(iOSApplicationExtension 17.0, *) {
+      result.append(.systemLarge)
     }
     return result
   }
@@ -22,14 +25,15 @@ struct ChartWidget: Widget {
   var body: some WidgetConfiguration {
     IntentConfiguration(
       kind: kind,
-      intent: ChartWidgetIntent.self,
-      provider: ChartWidgetTimelineProvider()) { entry in
-        ChartWidgetView(entry: entry)
+      intent: RateWidgetIntent.self,
+      provider: RateWidgetTimelineProvider()) { entry in
+        RateWidgetView(entry: entry)
       }
-      .configurationDisplayName("Chart Widget")
+      .configurationDisplayName("Rate")
       .description("")
       .supportedFamilies(supportedFamilies)
       .contentMarginsDisabledIfAvailable()
   }
 }
+
 
