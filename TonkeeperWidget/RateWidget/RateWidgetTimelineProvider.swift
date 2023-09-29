@@ -7,6 +7,7 @@
 
 import WidgetKit
 import WalletCore
+import TKCore
 import TKChart
 
 struct RateWidgetTimelineProvider: IntentTimelineProvider {
@@ -47,8 +48,7 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
     for configuration: RateWidgetIntent,
     in context: Context,
     completion: @escaping (Timeline<RateWidgetEntry>) -> Void) {
-      let cacheURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-      let chartController = WalletCoreContainer(cacheURL: cacheURL).chartController()
+      let chartController = WalletCoreContainer(cacheURL: CoreAssembly().cacheURL).chartController()
       Task {
         let period: ChartController.Period
         let mode: TKLineChartView.Mode

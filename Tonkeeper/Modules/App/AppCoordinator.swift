@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import TKCore
 import WalletCore
 import WidgetKit
 

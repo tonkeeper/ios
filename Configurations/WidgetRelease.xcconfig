@@ -1,0 +1,10 @@
+//
+//  WidgetRelease.xcconfig
+//  Tonkeeper
+//
+//  Created by Grigory on 29.9.23..
+//
+
+#include "Release.xcconfig"
+#include "WidgetBase.xcconfig"
+#include "Signing/WidgetSignRelease.xcconfig"

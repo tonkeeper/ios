@@ -1,0 +1,16 @@
+//
+//  Base.xcconfig
+//  Tonkeeper
+//
+//  Created by Grigory on 29.9.23..
+//
+
+APP_NAME = Tonkeeper X
+
+BUNDLE_DISPLAY_NAME = $(APP_NAME)
+
+BASE_BUNDLE_IDENTIFIER = com.jbig.tonkeeperx
+
+PRODUCT_BUNDLE_IDENTIFIER = $(BASE_BUNDLE_IDENTIFIER)
+
+APP_GROUP_IDENTIFIER = group.app.$(BASE_BUNDLE_IDENTIFIER)

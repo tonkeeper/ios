@@ -40,8 +40,6 @@
 		795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FC1F118C75E99C32396A981 /* SendConfirmationProtocols.swift */; };
 		7D009A802A989E8C00A15B8A /* SendCollectibleCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D009A7F2A989E8C00A15B8A /* SendCollectibleCoordinator.swift */; };
 		7D009A832A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D009A822A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift */; };
-		7D0203532ABB182300D8E13B /* AppStateTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0203522ABB182300D8E13B /* AppStateTracker.swift */; };
-		7D0203572ABB37D000D8E13B /* ReachabilityTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0203562ABB37D000D8E13B /* ReachabilityTracker.swift */; };
 		7D0207602A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D02075F2A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift */; };
 		7D0207622A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0207612A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift */; };
 		7D0207852A803C7100D63B4C /* NotDelayCollectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D0207842A803C7100D63B4C /* NotDelayCollectionView.swift */; };
@@ -79,7 +77,6 @@
 		7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */; };
 		7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */; };
 		7D3BCFAC2A4C598C00BE6AD9 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFAB2A4C598C00BE6AD9 /* AppSettings.swift */; };
-		7D3BCFAF2A4C5DC500BE6AD9 /* CoreAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFAE2A4C5DC500BE6AD9 /* CoreAssembly.swift */; };
 		7D3BCFB22A4C601F00BE6AD9 /* WalletCoreAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFB12A4C601F00BE6AD9 /* WalletCoreAssembly.swift */; };
 		7D3BCFB42A4C83BE00BE6AD9 /* SetupWalletAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFB32A4C83BE00BE6AD9 /* SetupWalletAssembly.swift */; };
 		7D3BCFB72A4C999B00BE6AD9 /* ImportWalletCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFB62A4C999B00BE6AD9 /* ImportWalletCoordinator.swift */; };
@@ -221,7 +218,6 @@
 		7D790EEB2A67E28200587C96 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */; };
 		7D797E102A8E6A3F00A626D7 /* TonDetailsAboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */; };
 		7D797E142A8F62BC00A626D7 /* TonDetailsLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */; };
-		7D797E172A8F637300A626D7 /* URLOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E162A8F637300A626D7 /* URLOpener.swift */; };
 		7D797E1A2A8F7A2600A626D7 /* ListTitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E192A8F7A2600A626D7 /* ListTitleView.swift */; };
 		7D797E1C2A8F7ACE00A626D7 /* ContainerCollectionViewReusableView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E1B2A8F7ACE00A626D7 /* ContainerCollectionViewReusableView.swift */; };
 		7D7CE3F92A879ADA002BA9EC /* BalanceCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D7CE3F82A879ADA002BA9EC /* BalanceCellContentView.swift */; };
@@ -229,6 +225,9 @@
 		7D80C0D52A6AA5F4007054DD /* TKKeyboardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */; };
 		7D80C0F72A6AA941007054DD /* TKKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0F62A6AA941007054DD /* TKKeyboardView.swift */; };
 		7D80C0F92A6AAC8E007054DD /* TKKeyboardConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0F82A6AAC8E007054DD /* TKKeyboardConfiguration.swift */; };
+		7D8A50982AC70D6000AA396C /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8A50972AC70D6000AA396C /* TKCore */; };
+		7D8A509A2AC70D6F00AA396C /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8A50992AC70D6F00AA396C /* TKCore */; };
+		7D8A509C2AC70D8000AA396C /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8A509B2AC70D8000AA396C /* TKUIKit */; };
 		7D8EB7202A4ED86B005BE1B0 /* CreateWalletCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */; };
 		7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */; };
 		7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */; };
@@ -432,8 +431,6 @@
 		7AD5CD51542108C56210A491 /* ActivityRootProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ActivityRootProtocols.swift; sourceTree = "<group>"; };
 		7D009A7F2A989E8C00A15B8A /* SendCollectibleCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendCollectibleCoordinator.swift; sourceTree = "<group>"; };
 		7D009A822A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsButtonsView.swift; sourceTree = "<group>"; };
-		7D0203522ABB182300D8E13B /* AppStateTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppStateTracker.swift; sourceTree = "<group>"; };
-		7D0203562ABB37D000D8E13B /* ReachabilityTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReachabilityTracker.swift; sourceTree = "<group>"; };
 		7D02075F2A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompositionTransactionCellContentView.swift; sourceTree = "<group>"; };
 		7D0207612A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListCompositionTransactionCell.swift; sourceTree = "<group>"; };
 		7D0207842A803C7100D63B4C /* NotDelayCollectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotDelayCollectionView.swift; sourceTree = "<group>"; };
@@ -470,7 +467,6 @@
 		7D3BCFA42A4C348900BE6AD9 /* WelcomeListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeListItem.swift; sourceTree = "<group>"; };
 		7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ButtonBottomContainer.swift; sourceTree = "<group>"; };
 		7D3BCFAB2A4C598C00BE6AD9 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
-		7D3BCFAE2A4C5DC500BE6AD9 /* CoreAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFB12A4C601F00BE6AD9 /* WalletCoreAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCoreAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFB32A4C83BE00BE6AD9 /* SetupWalletAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupWalletAssembly.swift; sourceTree = "<group>"; };
 		7D3BCFB62A4C999B00BE6AD9 /* ImportWalletCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportWalletCoordinator.swift; sourceTree = "<group>"; };
@@ -606,14 +602,25 @@
 		7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
 		7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonDetailsAboutView.swift; sourceTree = "<group>"; };
 		7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonDetailsLinks.swift; sourceTree = "<group>"; };
-		7D797E162A8F637300A626D7 /* URLOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLOpener.swift; sourceTree = "<group>"; };
 		7D797E192A8F7A2600A626D7 /* ListTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ListTitleView.swift; sourceTree = "<group>"; };
 		7D797E1B2A8F7ACE00A626D7 /* ContainerCollectionViewReusableView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerCollectionViewReusableView.swift; sourceTree = "<group>"; };
 		7D7CE3F82A879ADA002BA9EC /* BalanceCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceCellContentView.swift; sourceTree = "<group>"; };
 		7D7CE3FD2A89B3ED002BA9EC /* ActivityListShimmerSectionHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListShimmerSectionHeaderView.swift; sourceTree = "<group>"; };
+		7D7CF6C02AC7041A00EB0BFF /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		7D7CF6C32AC7043F00EB0BFF /* WidgetBase.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetBase.xcconfig; sourceTree = "<group>"; };
+		7D7CF6C42AC7044700EB0BFF /* WidgetDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetDebug.xcconfig; sourceTree = "<group>"; };
+		7D7CF6C52AC7045000EB0BFF /* WidgetRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetRelease.xcconfig; sourceTree = "<group>"; };
+		7D7CF6C72AC7050600EB0BFF /* SignDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SignDebug.xcconfig; sourceTree = "<group>"; };
+		7D7CF6C82AC7050D00EB0BFF /* SignRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SignRelease.xcconfig; sourceTree = "<group>"; };
+		7D7CF6C92AC7051700EB0BFF /* WidgetSignDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetSignDebug.xcconfig; sourceTree = "<group>"; };
+		7D7CF6CA2AC7051E00EB0BFF /* WidgetSignRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetSignRelease.xcconfig; sourceTree = "<group>"; };
 		7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardButton.swift; sourceTree = "<group>"; };
 		7D80C0F62A6AA941007054DD /* TKKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardView.swift; sourceTree = "<group>"; };
 		7D80C0F82A6AAC8E007054DD /* TKKeyboardConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardConfiguration.swift; sourceTree = "<group>"; };
+		7D8A50922AC709F800AA396C /* Tonkeeper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Tonkeeper.entitlements; sourceTree = "<group>"; };
+		7D8A50932AC709FF00AA396C /* TonkeeperWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperWidgetExtension.entitlements; sourceTree = "<group>"; };
 		7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletCoordinator.swift; sourceTree = "<group>"; };
 		7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletAssembly.swift; sourceTree = "<group>"; };
 		7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCreator.swift; sourceTree = "<group>"; };
@@ -762,6 +769,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D8A509C2AC70D8000AA396C /* TKUIKit in Frameworks */,
+				7D8A509A2AC70D6F00AA396C /* TKCore in Frameworks */,
 				7D3F25EE2AC19424002DF1B7 /* WalletCore in Frameworks */,
 				7D3F25EC2AC1941E002DF1B7 /* TKChart in Frameworks */,
 				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
@@ -777,6 +786,7 @@
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */,
 				7D19EB5B2ABDA5B500BDE7FA /* TKChart in Frameworks */,
+				7D8A50982AC70D6000AA396C /* TKCore in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
 			);
@@ -928,15 +938,6 @@
 			path = CollectibleDetails;
 			sourceTree = "<group>";
 		};
-		7D0203512ABB181700D8E13B /* App */ = {
-			isa = PBXGroup;
-			children = (
-				7D0203522ABB182300D8E13B /* AppStateTracker.swift */,
-				7D0203562ABB37D000D8E13B /* ReachabilityTracker.swift */,
-			);
-			path = App;
-			sourceTree = "<group>";
-		};
 		7D1162FB2A60343700DF4F30 /* WalletDetails */ = {
 			isa = PBXGroup;
 			children = (
@@ -1082,7 +1083,6 @@
 		7D3BCFAD2A4C5DB900BE6AD9 /* Assemblies */ = {
 			isa = PBXGroup;
 			children = (
-				7D3BCFAE2A4C5DC500BE6AD9 /* CoreAssembly.swift */,
 				7D3BCFB12A4C601F00BE6AD9 /* WalletCoreAssembly.swift */,
 			);
 			path = Assemblies;
@@ -1524,8 +1524,6 @@
 		7D6836152A1CAEAA002DBBC7 /* Library */ = {
 			isa = PBXGroup;
 			children = (
-				7D0203512ABB181700D8E13B /* App */,
-				7D797E152A8F634E00A626D7 /* URL */,
 				7D16E18D2A77DC5E00A27AB0 /* Toasts */,
 				7D5943472A547D0C00C89967 /* Taptic */,
 				7D5141CC2A53453D00EC7F59 /* Images */,
@@ -1851,14 +1849,6 @@
 			path = Links;
 			sourceTree = "<group>";
 		};
-		7D797E152A8F634E00A626D7 /* URL */ = {
-			isa = PBXGroup;
-			children = (
-				7D797E162A8F637300A626D7 /* URLOpener.swift */,
-			);
-			path = URL;
-			sourceTree = "<group>";
-		};
 		7D797E182A8F7A1900A626D7 /* ListElements */ = {
 			isa = PBXGroup;
 			children = (
@@ -1873,6 +1863,32 @@
 				7D7CE3F82A879ADA002BA9EC /* BalanceCellContentView.swift */,
 			);
 			path = BalanceCellContent;
+			sourceTree = "<group>";
+		};
+		7D7CF6BF2AC7040900EB0BFF /* Configurations */ = {
+			isa = PBXGroup;
+			children = (
+				7D8A50942AC70A2500AA396C /* Entitlements */,
+				7D7CF6C62AC704F900EB0BFF /* Signing */,
+				7D7CF6C02AC7041A00EB0BFF /* Base.xcconfig */,
+				7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */,
+				7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */,
+				7D7CF6C32AC7043F00EB0BFF /* WidgetBase.xcconfig */,
+				7D7CF6C42AC7044700EB0BFF /* WidgetDebug.xcconfig */,
+				7D7CF6C52AC7045000EB0BFF /* WidgetRelease.xcconfig */,
+			);
+			path = Configurations;
+			sourceTree = "<group>";
+		};
+		7D7CF6C62AC704F900EB0BFF /* Signing */ = {
+			isa = PBXGroup;
+			children = (
+				7D7CF6C72AC7050600EB0BFF /* SignDebug.xcconfig */,
+				7D7CF6C82AC7050D00EB0BFF /* SignRelease.xcconfig */,
+				7D7CF6C92AC7051700EB0BFF /* WidgetSignDebug.xcconfig */,
+				7D7CF6CA2AC7051E00EB0BFF /* WidgetSignRelease.xcconfig */,
+			);
+			path = Signing;
 			sourceTree = "<group>";
 		};
 		7D80C0D32A6AA5E3007054DD /* TKKeyboard */ = {
@@ -1891,6 +1907,15 @@
 				7D5928602A1FB62A006B0A8A /* ButtonsRowView.swift */,
 			);
 			path = ButtonsRowView;
+			sourceTree = "<group>";
+		};
+		7D8A50942AC70A2500AA396C /* Entitlements */ = {
+			isa = PBXGroup;
+			children = (
+				7D8A50922AC709F800AA396C /* Tonkeeper.entitlements */,
+				7D8A50932AC709FF00AA396C /* TonkeeperWidgetExtension.entitlements */,
+			);
+			path = Entitlements;
 			sourceTree = "<group>";
 		};
 		7D8EB71E2A4ED857005BE1B0 /* CreateWallet */ = {
@@ -2152,6 +2177,7 @@
 			children = (
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,
+				7D7CF6BF2AC7040900EB0BFF /* Configurations */,
 				7D19EB612ABDB58C00BDE7FA /* Frameworks */,
 				7DB8FB632A1BCC92005B4B11 /* Products */,
 			);
@@ -2374,6 +2400,8 @@
 			packageProductDependencies = (
 				7D3F25EB2AC1941E002DF1B7 /* TKChart */,
 				7D3F25ED2AC19424002DF1B7 /* WalletCore */,
+				7D8A50992AC70D6F00AA396C /* TKCore */,
+				7D8A509B2AC70D8000AA396C /* TKUIKit */,
 			);
 			productName = TonkeeperWidgetExtension;
 			productReference = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */;
@@ -2403,6 +2431,7 @@
 				7D5A18112A5406CB00793769 /* Kingfisher */,
 				7D19EB572ABD941000BDE7FA /* TKUIKit */,
 				7D19EB5A2ABDA5B500BDE7FA /* TKChart */,
+				7D8A50972AC70D6000AA396C /* TKCore */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -2442,6 +2471,7 @@
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				7D19EB562ABD941000BDE7FA /* XCLocalSwiftPackageReference "Modules/TKUIKit" */,
 				7D19EB592ABDA5B500BDE7FA /* XCLocalSwiftPackageReference "Modules/TKChart" */,
+				7D8A50962AC70D6000AA396C /* XCLocalSwiftPackageReference "Modules/TKCore" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -2574,7 +2604,6 @@
 				7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */,
 				7D68367C2A1E666D002DBBC7 /* QRScannerProtocols.swift in Sources */,
 				7D5D05A92A2F8417009F42FF /* ActivityListCollectionLayoutConfigurator.swift in Sources */,
-				7D3BCFAF2A4C5DC500BE6AD9 /* CoreAssembly.swift in Sources */,
 				7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */,
 				7D797E142A8F62BC00A626D7 /* TonDetailsLinks.swift in Sources */,
 				7D384A482A6695A200DE2A66 /* SendAmountAssembly.swift in Sources */,
@@ -2598,7 +2627,6 @@
 				7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */,
 				7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */,
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
-				7D0203572ABB37D000D8E13B /* ReachabilityTracker.swift in Sources */,
 				7D3E438F2A339E2A00C23A75 /* BuyListServiceCell.swift in Sources */,
 				7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */,
 				7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */,
@@ -2658,7 +2686,6 @@
 				7D0207602A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift in Sources */,
 				7D59284D2A1F579E006B0A8A /* WalletHeaderProtocols.swift in Sources */,
 				7D3BCFCE2A4D90E200BE6AD9 /* PasscodeAssembly.swift in Sources */,
-				7D797E172A8F637300A626D7 /* URLOpener.swift in Sources */,
 				7D9292882A24CCB8005B83DF /* PagingContentViewController.swift in Sources */,
 				7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */,
 				7D80C0D52A6AA5F4007054DD /* TKKeyboardButton.swift in Sources */,
@@ -2794,7 +2821,6 @@
 				14250E44D164B234E513925F /* ActivityListPresenter.swift in Sources */,
 				7D009A832A98A2BE00A15B8A /* CollectibleDetailsButtonsView.swift in Sources */,
 				F2E003198428DC1A9FA401BB /* ActivityListProtocols.swift in Sources */,
-				7D0203532ABB182300D8E13B /* AppStateTracker.swift in Sources */,
 				7D384A532A66AC7300DE2A66 /* ReceiveRootPresenterProvider.swift in Sources */,
 				0D6D9286FE3AD2FE83868D1B /* ActivityTransactionDetailsViewController.swift in Sources */,
 				63468D514D5142929F969B22 /* ActivityTransactionDetailsView.swift in Sources */,
@@ -2877,13 +2903,16 @@
 /* Begin XCBuildConfiguration section */
 		7D3F25E82AC19418002DF1B7 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7D7CF6C42AC7044700EB0BFF /* WidgetDebug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/TonkeeperWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PLLDWT87ZL;
+				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2898,8 +2927,9 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx11.TonkeeperWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -2910,14 +2940,16 @@
 		};
 		7D3F25E92AC19418002DF1B7 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7D7CF6C52AC7045000EB0BFF /* WidgetRelease.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_IDENTITY = "Apple Distribution: TONAPPS INC (CT523DK2KC)";
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/TonkeeperWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -2932,9 +2964,9 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jbig.tonkeeperx.TonkeeperWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "";
+				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -3058,16 +3090,19 @@
 		};
 		7DB8FB772A1BCC92005B4B11 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
+				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 15;
-				DEVELOPMENT_TEAM = PLLDWT87ZL;
+				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -3080,8 +3115,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = grisha.tonkeeperxxx11;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
@@ -3093,18 +3129,20 @@
 		};
 		7DB8FB782A1BCC92005B4B11 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_IDENTITY = "Apple Distribution: TONAPPS INC (CT523DK2KC)";
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
+				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 15;
-				DEVELOPMENT_TEAM = CT523DK2KC;
+				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -3117,8 +3155,9 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jbig.tonkeeperx;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
 				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "TonkeeperX-AppStore";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -3169,6 +3208,10 @@
 		7D19EB592ABDA5B500BDE7FA /* XCLocalSwiftPackageReference "Modules/TKChart" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/TKChart;
+		};
+		7D8A50962AC70D6000AA396C /* XCLocalSwiftPackageReference "Modules/TKCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/TKCore;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -3235,6 +3278,20 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
+		};
+		7D8A50972AC70D6000AA396C /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKCore;
+		};
+		7D8A50992AC70D6F00AA396C /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D8A50962AC70D6000AA396C /* XCLocalSwiftPackageReference "Modules/TKCore" */;
+			productName = TKCore;
+		};
+		7D8A509B2AC70D8000AA396C /* TKUIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D19EB562ABD941000BDE7FA /* XCLocalSwiftPackageReference "Modules/TKUIKit" */;
+			productName = TKUIKit;
 		};
 		7DB17F342A4B2F07007C6154 /* AnyFormatKit */ = {
 			isa = XCSwiftPackageProductDependency;

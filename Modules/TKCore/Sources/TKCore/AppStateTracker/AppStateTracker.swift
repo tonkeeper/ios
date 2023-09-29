@@ -7,13 +7,13 @@
 
 import UIKit
 
-protocol AppStateTrackerObserver: AnyObject {
+public protocol AppStateTrackerObserver: AnyObject {
   func didUpdateState(_ state: AppStateTracker.State)
 }
 
-final class AppStateTracker {
+public final class AppStateTracker {
   
-  enum State {
+  public enum State {
     case becomeActive
     case resignActive
     case enterBackground
@@ -57,11 +57,11 @@ final class AppStateTracker {
     }
   }
   
-  func addObserver(_ observer: AppStateTrackerObserver) {
+  public func addObserver(_ observer: AppStateTrackerObserver) {
     observers.append(.init(observer: observer))
   }
   
-  func removeObserver(_ observer: AppStateTrackerObserver) {
+  public func removeObserver(_ observer: AppStateTrackerObserver) {
     observers = observers.filter { $0.observer !== observer }
   }
 }

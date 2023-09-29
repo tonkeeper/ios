@@ -8,11 +8,12 @@
 import Foundation
 import WalletCore
 import TonSwift
+import TKCore
 
 final class WalletCoreAssembly {
   
   let coreAssembly: CoreAssembly
-  lazy var walletCoreContainer = WalletCoreContainer(cacheURL: coreAssembly.documentsURL)
+  lazy var walletCoreContainer = WalletCoreContainer(cacheURL: coreAssembly.cacheURL)
   
   init(coreAssembly: CoreAssembly) {
     self.coreAssembly = coreAssembly
