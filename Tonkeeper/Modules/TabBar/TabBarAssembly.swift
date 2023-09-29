@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import TKCore
 
 final class TabBarAssembly {
   

@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import TKCore
 import WalletCore
 
 final class TokenDetailsPresenter {

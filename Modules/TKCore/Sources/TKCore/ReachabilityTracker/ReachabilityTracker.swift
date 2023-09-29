@@ -8,13 +8,13 @@
 import Foundation
 import Network
 
-protocol ReachabilityTrackerObserver: AnyObject {
+public protocol ReachabilityTrackerObserver: AnyObject {
   func didUpdateState(_ state: ReachabilityTracker.State)
 }
 
-final class ReachabilityTracker {
+public final class ReachabilityTracker {
   
-  enum State {
+  public enum State {
     case noInternetConnection
     case connected
   }
@@ -48,11 +48,11 @@ final class ReachabilityTracker {
     pathMonitor.cancel()
   }
   
-  func addObserver(_ observer: ReachabilityTrackerObserver) {
+  public func addObserver(_ observer: ReachabilityTrackerObserver) {
     observers.append(.init(observer: observer))
   }
   
-  func removeObserver(_ observer: ReachabilityTrackerObserver) {
+  public func removeObserver(_ observer: ReachabilityTrackerObserver) {
     observers = observers.filter { $0.observer !== observer }
   }
 }
