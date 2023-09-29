@@ -229,6 +229,9 @@
 		7D80C0D52A6AA5F4007054DD /* TKKeyboardButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */; };
 		7D80C0F72A6AA941007054DD /* TKKeyboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0F62A6AA941007054DD /* TKKeyboardView.swift */; };
 		7D80C0F92A6AAC8E007054DD /* TKKeyboardConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D80C0F82A6AAC8E007054DD /* TKKeyboardConfiguration.swift */; };
+		7D8A50982AC70D6000AA396C /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8A50972AC70D6000AA396C /* TKCore */; };
+		7D8A509A2AC70D6F00AA396C /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8A50992AC70D6F00AA396C /* TKCore */; };
+		7D8A509C2AC70D8000AA396C /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7D8A509B2AC70D8000AA396C /* TKUIKit */; };
 		7D8EB7202A4ED86B005BE1B0 /* CreateWalletCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */; };
 		7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */; };
 		7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */; };
@@ -774,6 +777,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D8A509C2AC70D8000AA396C /* TKUIKit in Frameworks */,
+				7D8A509A2AC70D6F00AA396C /* TKCore in Frameworks */,
 				7D3F25EE2AC19424002DF1B7 /* WalletCore in Frameworks */,
 				7D3F25EC2AC1941E002DF1B7 /* TKChart in Frameworks */,
 				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
@@ -789,6 +794,7 @@
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				7DB17F3F2A4B3338007C6154 /* WalletCore in Frameworks */,
 				7D19EB5B2ABDA5B500BDE7FA /* TKChart in Frameworks */,
+				7D8A50982AC70D6000AA396C /* TKCore in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
 			);
@@ -2422,6 +2428,8 @@
 			packageProductDependencies = (
 				7D3F25EB2AC1941E002DF1B7 /* TKChart */,
 				7D3F25ED2AC19424002DF1B7 /* WalletCore */,
+				7D8A50992AC70D6F00AA396C /* TKCore */,
+				7D8A509B2AC70D8000AA396C /* TKUIKit */,
 			);
 			productName = TonkeeperWidgetExtension;
 			productReference = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */;
@@ -2451,6 +2459,7 @@
 				7D5A18112A5406CB00793769 /* Kingfisher */,
 				7D19EB572ABD941000BDE7FA /* TKUIKit */,
 				7D19EB5A2ABDA5B500BDE7FA /* TKChart */,
+				7D8A50972AC70D6000AA396C /* TKCore */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -2490,6 +2499,7 @@
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				7D19EB562ABD941000BDE7FA /* XCLocalSwiftPackageReference "Modules/TKUIKit" */,
 				7D19EB592ABDA5B500BDE7FA /* XCLocalSwiftPackageReference "Modules/TKChart" */,
+				7D8A50962AC70D6000AA396C /* XCLocalSwiftPackageReference "Modules/TKCore" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -3231,6 +3241,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Modules/TKChart;
 		};
+		7D8A50962AC70D6000AA396C /* XCLocalSwiftPackageReference "Modules/TKCore" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Modules/TKCore;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -3296,6 +3310,20 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */;
 			productName = Kingfisher;
+		};
+		7D8A50972AC70D6000AA396C /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKCore;
+		};
+		7D8A50992AC70D6F00AA396C /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D8A50962AC70D6000AA396C /* XCLocalSwiftPackageReference "Modules/TKCore" */;
+			productName = TKCore;
+		};
+		7D8A509B2AC70D8000AA396C /* TKUIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 7D19EB562ABD941000BDE7FA /* XCLocalSwiftPackageReference "Modules/TKUIKit" */;
+			productName = TKUIKit;
 		};
 		7DB17F342A4B2F07007C6154 /* AnyFormatKit */ = {
 			isa = XCSwiftPackageProductDependency;
