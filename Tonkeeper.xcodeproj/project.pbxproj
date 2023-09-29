@@ -624,6 +624,8 @@
 		7D80C0D42A6AA5F4007054DD /* TKKeyboardButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardButton.swift; sourceTree = "<group>"; };
 		7D80C0F62A6AA941007054DD /* TKKeyboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardView.swift; sourceTree = "<group>"; };
 		7D80C0F82A6AAC8E007054DD /* TKKeyboardConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKKeyboardConfiguration.swift; sourceTree = "<group>"; };
+		7D8A50922AC709F800AA396C /* Tonkeeper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Tonkeeper.entitlements; sourceTree = "<group>"; };
+		7D8A50932AC709FF00AA396C /* TonkeeperWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperWidgetExtension.entitlements; sourceTree = "<group>"; };
 		7D8EB71F2A4ED86B005BE1B0 /* CreateWalletCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletCoordinator.swift; sourceTree = "<group>"; };
 		7D8EB7212A4ED873005BE1B0 /* CreateWalletAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateWalletAssembly.swift; sourceTree = "<group>"; };
 		7D8EB72F2A4F2233005BE1B0 /* WalletCreator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletCreator.swift; sourceTree = "<group>"; };
@@ -1888,6 +1890,7 @@
 		7D7CF6BF2AC7040900EB0BFF /* Configurations */ = {
 			isa = PBXGroup;
 			children = (
+				7D8A50942AC70A2500AA396C /* Entitlements */,
 				7D7CF6C62AC704F900EB0BFF /* Signing */,
 				7D7CF6C02AC7041A00EB0BFF /* Base.xcconfig */,
 				7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */,
@@ -1926,6 +1929,15 @@
 				7D5928602A1FB62A006B0A8A /* ButtonsRowView.swift */,
 			);
 			path = ButtonsRowView;
+			sourceTree = "<group>";
+		};
+		7D8A50942AC70A2500AA396C /* Entitlements */ = {
+			isa = PBXGroup;
+			children = (
+				7D8A50922AC709F800AA396C /* Tonkeeper.entitlements */,
+				7D8A50932AC709FF00AA396C /* TonkeeperWidgetExtension.entitlements */,
+			);
+			path = Entitlements;
 			sourceTree = "<group>";
 		};
 		7D8EB71E2A4ED857005BE1B0 /* CreateWallet */ = {
@@ -2918,6 +2930,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/TonkeeperWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
@@ -2954,6 +2967,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/TonkeeperWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 1;
@@ -3103,6 +3117,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 15;
@@ -3141,6 +3156,7 @@
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 15;
