@@ -13,5 +13,6 @@ struct TonkeeperWidgetBundle: WidgetBundle {
     var body: some Widget {
       RateChartWidget()
       RateWidget()
+      BalanceWidget()
     }
 }
