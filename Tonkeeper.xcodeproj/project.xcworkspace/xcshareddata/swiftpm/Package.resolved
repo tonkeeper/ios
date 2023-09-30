@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
-        "branch" : "feature/balance_widget",
-        "revision" : "435258060439c585f749547ab57a25e221f05e93"
+        "branch" : "develop",
+        "revision" : "caae166399bb8dc4040c3651fdffaca1363920a4"
       }
     },
     {
