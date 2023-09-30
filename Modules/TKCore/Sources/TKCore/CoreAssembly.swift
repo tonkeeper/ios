@@ -17,6 +17,10 @@ public struct CoreAssembly {
   }
   
   public var cacheURL: URL {
+    documentsURL
+  }
+    
+  public var sharedCacheURL: URL {
     if let appGroupId: String = try? infoProvider.value(for: .appGroupName),
        let containerURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) {
       return containerURL
@@ -33,6 +37,14 @@ public struct CoreAssembly {
       documentsDirectory = fileManager.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }
     return documentsDirectory
+  }
+  
+  public var keychainAccessGroupIdentifier: String {
+    guard let keychainAccessGroup: String = try? infoProvider.value(for: .keychainAccessGroup),
+          let appIdentifierPrefix: String = try? infoProvider.value(for: .appIdentifierPrefix) else {
+      return ""
+    }
+    return appIdentifierPrefix+keychainAccessGroup
   }
   
   public var fileManager: FileManager {

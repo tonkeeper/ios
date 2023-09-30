@@ -13,10 +13,16 @@ import TKCore
 final class WalletCoreAssembly {
   
   let coreAssembly: CoreAssembly
-  lazy var walletCoreContainer = WalletCoreContainer(cacheURL: coreAssembly.cacheURL)
+  let walletCoreContainer: WalletCoreContainer
   
   init(coreAssembly: CoreAssembly) {
     self.coreAssembly = coreAssembly
+    self.walletCoreContainer = WalletCoreContainer(
+      dependencies: Dependencies(
+        cacheURL: coreAssembly.cacheURL,
+        sharedCacheURL: coreAssembly.sharedCacheURL,
+        sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)
+    )
   }
   
   lazy var keeperController: KeeperController = walletCoreContainer.keeperController()

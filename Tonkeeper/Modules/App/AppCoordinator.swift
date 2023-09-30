@@ -67,6 +67,7 @@ extension AppCoordinator: AppStateTrackerObserver {
       showBlur()
       WidgetCenter.shared.reloadTimelines(ofKind: "RateWidget")
       WidgetCenter.shared.reloadTimelines(ofKind: "RateChartWidget")
+      WidgetCenter.shared.reloadTimelines(ofKind: "BalanceWidget")
     default:
       return
     }
