@@ -13,6 +13,8 @@ public enum InfoProviderError: Swift.Error {
 
 public enum InfoKey: String {
   case appGroupName = "APP_GROUP_IDENTIFIER"
+  case keychainAccessGroup = "KEYCHAIN_ACCESS_GROUP"
+  case appIdentifierPrefix = "AppIdentifierPrefix"
 }
 
 public protocol InfoProvider {

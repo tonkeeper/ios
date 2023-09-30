@@ -48,7 +48,13 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
     for configuration: RateWidgetIntent,
     in context: Context,
     completion: @escaping (Timeline<RateWidgetEntry>) -> Void) {
-      let chartController = WalletCoreContainer(cacheURL: CoreAssembly().cacheURL).chartController()
+      let coreAssembly = CoreAssembly()
+      let walletCoreContainer = WalletCoreContainer(dependencies: Dependencies(
+        cacheURL: coreAssembly.cacheURL,
+        sharedCacheURL: coreAssembly.sharedCacheURL,
+        sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)
+      )
+      let chartController = walletCoreContainer.chartController()
       Task {
         let period: ChartController.Period
         let mode: TKLineChartView.Mode

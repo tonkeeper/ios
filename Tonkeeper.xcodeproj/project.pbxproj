@@ -3244,7 +3244,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				branch = develop;
+				branch = feature/balance_widget;
 				kind = branch;
 			};
 		};
