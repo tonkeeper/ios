@@ -86,7 +86,9 @@ private extension SendRecipientPresenter {
     guard let recipient = recipient else {
       return
     }
-    viewInput?.updateRecipientAddress(recipient.address.toString(), name: recipient.domain)
+    viewInput?.updateRecipientAddress(
+      recipient.address.toString(bounceable: false),
+      name: recipient.domain)
   }
   
   func handleAddressInput(address: String) {

@@ -94,6 +94,7 @@ private extension ReceiveRootViewController {
   @objc
   func didTapCopyAddress() {
     TapticGenerator.generateCopyFeedback()
+    ToastController.showToast(configuration: .copied)
     presenter.copyAddress()
   }
   
