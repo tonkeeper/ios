@@ -8,10 +8,19 @@
 import UIKit
 import TKUIKit
 
-final class SettingsListCellContentView: UIView, ContainerCollectionViewCellContent {
+final class SettingsListCellContentView: UIControlClosure, ContainerCollectionViewCellContent {
   
   let titleLabel = UILabel()
-  private let contentContainer = UIStackView()
+  let accessoryView = SettingsListCellAccessoryView()
+
+  private var isHighlightable = false
+  
+  override var isHighlighted: Bool {
+    didSet {
+      guard isHighlighted != oldValue && isHighlightable else { return }
+      didUpdateHightlightState()
+    }
+  }
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -24,6 +33,8 @@ final class SettingsListCellContentView: UIView, ContainerCollectionViewCellCont
   
   struct Model {
     let title: String
+    let accessoryModel: SettingsListCellAccessoryView.Model
+    let handler: (() -> Void)?
   }
   
   func configure(model: Model) {
@@ -32,6 +43,12 @@ final class SettingsListCellContentView: UIView, ContainerCollectionViewCellCont
       alignment: .left,
       color: .Text.primary
     )
+    accessoryView.configure(model: model.accessoryModel)
+    isHighlightable = model.handler != nil
+    removeActions()
+    addAction(.init(handler: {
+      model.handler?()
+    }), for: .touchUpInside)
   }
   
   func prepareForReuse() {
@@ -41,20 +58,34 @@ final class SettingsListCellContentView: UIView, ContainerCollectionViewCellCont
 
 private extension SettingsListCellContentView {
   func setup() {
-    addSubview(contentContainer)
-    
-    contentContainer.addArrangedSubview(titleLabel)
+    addSubview(titleLabel)
+    addSubview(accessoryView)
     
     setupConstraints()
   }
   
   func setupConstraints() {
-    contentContainer.translatesAutoresizingMaskIntoConstraints = false
+    titleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    
+    titleLabel.translatesAutoresizingMaskIntoConstraints = false
+    accessoryView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
-      contentContainer.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
-      contentContainer.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
-      contentContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace),
-      contentContainer.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace)
+      titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
+      titleLabel.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
+      titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace),
+      
+      accessoryView.leftAnchor.constraint(equalTo: titleLabel.rightAnchor),
+      accessoryView.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
+      accessoryView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),
+      accessoryView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace),
     ])
+  }
+  
+  func didUpdateHightlightState() {
+    let duration: TimeInterval = isHighlighted ? 0.05 : 0.2
+    
+    UIView.animate(withDuration: duration, delay: 0, options: [.allowUserInteraction, .curveEaseInOut]) {
+      self.backgroundColor = self.isHighlighted ? .Background.highlighted : .Background.content
+    }
   }
 }

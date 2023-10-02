@@ -108,6 +108,9 @@
 		7D3D65132ACAC2D400E64537 /* SettingsListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65122ACAC2D400E64537 /* SettingsListItem.swift */; };
 		7D3D65162ACAD03E00E64537 /* SettingsListCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65152ACAD03E00E64537 /* SettingsListCellContentView.swift */; };
 		7D3D65192ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65182ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift */; };
+		7D3D651B2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D651A2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift */; };
+		7D3D651D2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D651C2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift */; };
+		7D3D651F2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D651E2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
 		7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43832A3395CB00C23A75 /* BuyListSection.swift */; };
@@ -517,6 +520,9 @@
 		7D3D65122ACAC2D400E64537 /* SettingsListItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsListItem.swift; sourceTree = "<group>"; };
 		7D3D65152ACAD03E00E64537 /* SettingsListCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellContentView.swift; sourceTree = "<group>"; };
 		7D3D65182ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListItemCollectionViewCell.swift; sourceTree = "<group>"; };
+		7D3D651A2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellAccessoryView.swift; sourceTree = "<group>"; };
+		7D3D651C2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellTextAccessoryView.swift; sourceTree = "<group>"; };
+		7D3D651E2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellIconAccessoryView.swift; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
 		7D3E43832A3395CB00C23A75 /* BuyListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListSection.swift; sourceTree = "<group>"; };
@@ -1255,6 +1261,9 @@
 			isa = PBXGroup;
 			children = (
 				7D3D65152ACAD03E00E64537 /* SettingsListCellContentView.swift */,
+				7D3D651A2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift */,
+				7D3D651C2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift */,
+				7D3D651E2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -2723,6 +2732,7 @@
 				7D59284B2A1F5797006B0A8A /* WalletHeaderPresenter.swift in Sources */,
 				7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */,
 				7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */,
+				7D3D651B2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift in Sources */,
 				7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */,
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
 				7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */,
@@ -2785,6 +2795,7 @@
 				7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */,
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
+				7D3D651F2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
 				7D16E18A2A77C1FB00A27AB0 /* PassthroughWindow.swift in Sources */,
 				7D384A552A66ACED00DE2A66 /* ReceiveRootPresenterAnyProvider.swift in Sources */,
@@ -2822,6 +2833,7 @@
 				7DDF05102A695467003E9F13 /* ActivityListAssembly.swift in Sources */,
 				7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */,
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
+				7D3D651D2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
 				7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */,
 				7D70D3C42A2A03770096E1A2 /* FiatCurrency.swift in Sources */,

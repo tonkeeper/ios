@@ -23,6 +23,10 @@ class UIControlClosure: UIControl {
     actions[event] = eventActions
   }
   
+  func removeActions() {
+    actions = [:]
+  }
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
