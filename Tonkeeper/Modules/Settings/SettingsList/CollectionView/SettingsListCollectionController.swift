@@ -24,69 +24,48 @@ final class SettingsListCollectionController: NSObject {
 private extension SettingsListCollectionController {
   func setupCollectionView() {
     guard let collectionView = collectionView else { return }
-//    let layout = collectionLayoutConfigurator.getLayout { [weak self] sectionIndex in
-//      guard let self = self, let snapshot = self.dataSource?.snapshot() else { return nil }
-//      return snapshot.sectionIdentifiers[sectionIndex]
-//    }
-//    collectionView.delegate = self
     collectionView.setCollectionViewLayout(collectionLayoutConfigurator.layout, animated: false)
-    
-    collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "Cell")
-//    collectionView.register(UITableViewCell.self, forCellWithReuseIdentifier: "Cell")
+    collectionView.register(
+      SettingsListItemCollectionViewCell.self,
+      forCellWithReuseIdentifier: SettingsListItemCollectionViewCell.reuseIdentifier
+    )
     collectionView.dataSource = self
-//    collectionView.register(
-//      ActivityListCompositionTransactionCell.self,
-//      forCellWithReuseIdentifier: ActivityListCompositionTransactionCell.reuseIdentifier)
-//    collectionView.register(
-//      ActivityListShimmerCell.self,
-//      forCellWithReuseIdentifier: ActivityListShimmerCell.reuseIdentifier)
-//    collectionView.register(
-//      ActivityListSectionHeaderView.self,
-//      forSupplementaryViewOfKind: ActivityListSectionHeaderView.reuseIdentifier,
-//      withReuseIdentifier: ActivityListSectionHeaderView.reuseIdentifier)
-//    collectionView.register(
-//      ActivityListFooterView.self,
-//      forSupplementaryViewOfKind: ActivityListFooterView.reuseIdentifier,
-//      withReuseIdentifier: ActivityListFooterView.reuseIdentifier)
-//    collectionView.register(
-//      ActivityListShimmerSectionHeaderView.self,
-//      forSupplementaryViewOfKind: ActivityListShimmerSectionHeaderView.reuseIdentifier,
-//      withReuseIdentifier: ActivityListShimmerSectionHeaderView.reuseIdentifier)
-//    collectionView.register(
-//      ActivityListHeaderContainer.self,
-//      forSupplementaryViewOfKind: ActivityListHeaderContainer.reuseIdentifier,
-//      withReuseIdentifier: ActivityListHeaderContainer.reuseIdentifier
-//    )
-//    dataSource = createDataSource(collectionView: collectionView)
+    collectionView.delegate = self
   }
 }
+
+// MARK: UICollectionViewDataSource
 
 extension SettingsListCollectionController: UICollectionViewDataSource {
   func numberOfSections(in collectionView: UICollectionView) -> Int {
     sections.count
   }
   
-  func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+  func collectionView(_ collectionView: UICollectionView, 
+                      numberOfItemsInSection section: Int) -> Int {
     sections[section].items.count
   }
   
-  func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+  func collectionView(_ collectionView: UICollectionView, 
+                      cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+    
+    guard let cell = collectionView.dequeueReusableCell(
+      withReuseIdentifier: SettingsListItemCollectionViewCell.reuseIdentifier,
+      for: indexPath) as? SettingsListItemCollectionViewCell else { return UICollectionViewCell() }
+    
     let item = sections[indexPath.section].items[indexPath.row]
-    let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Cell", for: indexPath)
-    cell.contentView.backgroundColor = .red
-    let l = UILabel()
-    l.textColor = .white
-    l.text = item.title
-    cell.contentView.addSubview(l)
-    l.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-      l.topAnchor.constraint(equalTo: cell.contentView.topAnchor),
-      l.leftAnchor.constraint(equalTo: cell.contentView.leftAnchor),
-      l.bottomAnchor.constraint(equalTo: cell.contentView.bottomAnchor),
-      l.rightAnchor.constraint(equalTo: cell.contentView.rightAnchor)
-    ])
-    
-    
+    cell.configure(model: .init(title: item.title))
+    cell.isFirstCell = indexPath.item == 0
+    cell.isLastCell = indexPath.item == sections[indexPath.section].items.count - 1
     return cell
   }
 }
+
+// MARK: UICollectionViewDelegate
+
+extension SettingsListCollectionController: UICollectionViewDelegate {
+  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    collectionView.deselectItem(at: indexPath, animated: true)
+  }
+}
+

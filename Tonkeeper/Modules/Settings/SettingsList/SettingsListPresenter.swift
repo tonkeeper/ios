@@ -27,7 +27,7 @@ extension SettingsListPresenter: SettingsListPresenterInput {
         }))),
       ]),
       .init(items: [
-        .init(title: "Log out", option: .plain(.init(accessory: .image(.Icons.tonIcon28), handler: {
+        .init(title: "Log out", option: .plain(.init(accessory: .icon(.init(image: .Icons.tonIcon28, tintColor: .red)), handler: {
           print("Pressed logout")
         })))
       ])

@@ -19,8 +19,13 @@ enum SettingsListItemOption {
 
 struct SettingsListItemPlainOption {
   enum Accessory {
+    struct Icon {
+      let image: UIImage?
+      let tintColor: UIColor
+    }
     case value(String)
-    case image(UIImage?)
+    case icon(Icon)
+    case chevron
   }
   
   let accessory: Accessory

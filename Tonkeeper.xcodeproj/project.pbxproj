@@ -106,6 +106,8 @@
 		7D3D650F2ACAB6A400E64537 /* SettingsListCollectionLayoutConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D650E2ACAB6A400E64537 /* SettingsListCollectionLayoutConfigurator.swift */; };
 		7D3D65112ACAB80200E64537 /* SettingsListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65102ACAB80200E64537 /* SettingsListCollectionController.swift */; };
 		7D3D65132ACAC2D400E64537 /* SettingsListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65122ACAC2D400E64537 /* SettingsListItem.swift */; };
+		7D3D65162ACAD03E00E64537 /* SettingsListCellContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65152ACAD03E00E64537 /* SettingsListCellContentView.swift */; };
+		7D3D65192ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65182ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
 		7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43832A3395CB00C23A75 /* BuyListSection.swift */; };
@@ -513,6 +515,8 @@
 		7D3D650E2ACAB6A400E64537 /* SettingsListCollectionLayoutConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCollectionLayoutConfigurator.swift; sourceTree = "<group>"; };
 		7D3D65102ACAB80200E64537 /* SettingsListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCollectionController.swift; sourceTree = "<group>"; };
 		7D3D65122ACAC2D400E64537 /* SettingsListItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsListItem.swift; sourceTree = "<group>"; };
+		7D3D65152ACAD03E00E64537 /* SettingsListCellContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellContentView.swift; sourceTree = "<group>"; };
+		7D3D65182ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListItemCollectionViewCell.swift; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
 		7D3E43832A3395CB00C23A75 /* BuyListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListSection.swift; sourceTree = "<group>"; };
@@ -1217,6 +1221,7 @@
 		7D3D64FA2ACAB01300E64537 /* SettingsList */ = {
 			isa = PBXGroup;
 			children = (
+				7D3D65172ACAD1BF00E64537 /* Views */,
 				7D3D650B2ACAB15F00E64537 /* Model */,
 				7D3D65082ACAB14000E64537 /* CollectionView */,
 				7D3D64FB2ACAB01300E64537 /* SettingsListAssembly.swift */,
@@ -1244,6 +1249,22 @@
 				7D3D65092ACAB14A00E64537 /* SettingsListSection.swift */,
 			);
 			path = Model;
+			sourceTree = "<group>";
+		};
+		7D3D65142ACAD01A00E64537 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				7D3D65152ACAD03E00E64537 /* SettingsListCellContentView.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		7D3D65172ACAD1BF00E64537 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D3D65182ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 		7D3E437B2A33830800C23A75 /* Buy */ = {
@@ -1576,6 +1597,7 @@
 		7D5D05CC2A307161009F42FF /* Cell */ = {
 			isa = PBXGroup;
 			children = (
+				7D3D65142ACAD01A00E64537 /* Settings */,
 				7D7CE3F72A879AC2002BA9EC /* BalanceCellContent */,
 				7D3E438B2A33998700C23A75 /* ServiceCell */,
 				7DE27E662A30D93100842FA8 /* TransactionCell */,
@@ -2679,6 +2701,7 @@
 				7D5D05D52A309674009F42FF /* ContainerCollectionViewCell.swift in Sources */,
 				7D9144372A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift in Sources */,
 				7D0207622A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift in Sources */,
+				7D3D65192ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift in Sources */,
 				7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */,
 				7D3BCFD72A4DA4D300BE6AD9 /* PasscodeDotView.swift in Sources */,
 				7D5928672A1FBB56006B0A8A /* Button+ConfigurableView.swift in Sources */,
@@ -2750,6 +2773,7 @@
 				7D1163122A616CC400DF4F30 /* TokenDetailsHeaderView.swift in Sources */,
 				7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */,
 				7D048D6F2A8B80D800DFC1A5 /* DefaultCellTextContentView+Model.swift in Sources */,
+				7D3D65162ACAD03E00E64537 /* SettingsListCellContentView.swift in Sources */,
 				7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */,
 				7D3BCFB92A4C99A300BE6AD9 /* ImportWalletAssembly.swift in Sources */,
 				7D3D65062ACAB01300E64537 /* SettingsListViewController.swift in Sources */,
