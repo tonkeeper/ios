@@ -16,4 +16,19 @@ final class SettingsCoordinator: Coordinator<NavigationRouter> {
     self.assembly = assembly
     super.init(router: router)
   }
+  
+  override func start() {
+    openSettingsList()
+  }
+}
+
+private extension SettingsCoordinator {
+  func openSettingsList() {
+    let module = SettingsListAssembly.module(output: self)
+    router.setPresentables([(module.view, nil)])
+  }
+}
+
+extension SettingsCoordinator: SettingsListModuleOutput {
+  
 }

@@ -95,6 +95,17 @@
 		7D3BCFDC2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */; };
 		7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFDD2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift */; };
 		7D3BCFE12A4EBE7E00BE6AD9 /* SuccessViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3BCFE02A4EBE7E00BE6AD9 /* SuccessViewController.swift */; };
+		7D3D65012ACAB01300E64537 /* SettingsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D64F82ACAB01300E64537 /* SettingsCoordinator.swift */; };
+		7D3D65022ACAB01300E64537 /* SettingsAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D64F92ACAB01300E64537 /* SettingsAssembly.swift */; };
+		7D3D65032ACAB01300E64537 /* SettingsListAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D64FB2ACAB01300E64537 /* SettingsListAssembly.swift */; };
+		7D3D65042ACAB01300E64537 /* SettingsListProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D64FC2ACAB01300E64537 /* SettingsListProtocols.swift */; };
+		7D3D65052ACAB01300E64537 /* SettingsListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D64FD2ACAB01300E64537 /* SettingsListPresenter.swift */; };
+		7D3D65062ACAB01300E64537 /* SettingsListViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D64FF2ACAB01300E64537 /* SettingsListViewController.swift */; };
+		7D3D65072ACAB01300E64537 /* SettingsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65002ACAB01300E64537 /* SettingsListView.swift */; };
+		7D3D650A2ACAB14A00E64537 /* SettingsListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65092ACAB14A00E64537 /* SettingsListSection.swift */; };
+		7D3D650F2ACAB6A400E64537 /* SettingsListCollectionLayoutConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D650E2ACAB6A400E64537 /* SettingsListCollectionLayoutConfigurator.swift */; };
+		7D3D65112ACAB80200E64537 /* SettingsListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65102ACAB80200E64537 /* SettingsListCollectionController.swift */; };
+		7D3D65132ACAC2D400E64537 /* SettingsListItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65122ACAC2D400E64537 /* SettingsListItem.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
 		7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43832A3395CB00C23A75 /* BuyListSection.swift */; };
@@ -196,8 +207,6 @@
 		7D6836532A1D1EB9002DBBC7 /* ActivityAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836522A1D1EB9002DBBC7 /* ActivityAssembly.swift */; };
 		7D6836562A1D5951002DBBC7 /* BrowserCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836552A1D5951002DBBC7 /* BrowserCoordinator.swift */; };
 		7D6836582A1D595A002DBBC7 /* BrowserAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836572A1D595A002DBBC7 /* BrowserAssembly.swift */; };
-		7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68365A2A1D5AC3002DBBC7 /* SettingsCoordinator.swift */; };
-		7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68365C2A1D5AD8002DBBC7 /* SettingsAssembly.swift */; };
 		7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68365F2A1D69A3002DBBC7 /* GenericViewController.swift */; };
 		7D6836622A1D6A79002DBBC7 /* UINavigationController+Appearance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836612A1D6A79002DBBC7 /* UINavigationController+Appearance.swift */; };
 		7D6836672A1D6E74002DBBC7 /* Module.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D6836662A1D6E74002DBBC7 /* Module.swift */; };
@@ -493,6 +502,17 @@
 		7D3BCFDB2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreatePasscodeConfigurator.swift; sourceTree = "<group>"; };
 		7D3BCFDD2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReenterPasscodeConfigurator.swift; sourceTree = "<group>"; };
 		7D3BCFE02A4EBE7E00BE6AD9 /* SuccessViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuccessViewController.swift; sourceTree = "<group>"; };
+		7D3D64F82ACAB01300E64537 /* SettingsCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsCoordinator.swift; sourceTree = "<group>"; };
+		7D3D64F92ACAB01300E64537 /* SettingsAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsAssembly.swift; sourceTree = "<group>"; };
+		7D3D64FB2ACAB01300E64537 /* SettingsListAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsListAssembly.swift; sourceTree = "<group>"; };
+		7D3D64FC2ACAB01300E64537 /* SettingsListProtocols.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsListProtocols.swift; sourceTree = "<group>"; };
+		7D3D64FD2ACAB01300E64537 /* SettingsListPresenter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsListPresenter.swift; sourceTree = "<group>"; };
+		7D3D64FF2ACAB01300E64537 /* SettingsListViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsListViewController.swift; sourceTree = "<group>"; };
+		7D3D65002ACAB01300E64537 /* SettingsListView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsListView.swift; sourceTree = "<group>"; };
+		7D3D65092ACAB14A00E64537 /* SettingsListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = SettingsListSection.swift; path = Tonkeeper/Modules/Settings/SettingsList/Model/SettingsListSection.swift; sourceTree = SOURCE_ROOT; };
+		7D3D650E2ACAB6A400E64537 /* SettingsListCollectionLayoutConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCollectionLayoutConfigurator.swift; sourceTree = "<group>"; };
+		7D3D65102ACAB80200E64537 /* SettingsListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCollectionController.swift; sourceTree = "<group>"; };
+		7D3D65122ACAC2D400E64537 /* SettingsListItem.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsListItem.swift; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
 		7D3E43832A3395CB00C23A75 /* BuyListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListSection.swift; sourceTree = "<group>"; };
@@ -588,8 +608,6 @@
 		7D6836522A1D1EB9002DBBC7 /* ActivityAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityAssembly.swift; sourceTree = "<group>"; };
 		7D6836552A1D5951002DBBC7 /* BrowserCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserCoordinator.swift; sourceTree = "<group>"; };
 		7D6836572A1D595A002DBBC7 /* BrowserAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserAssembly.swift; sourceTree = "<group>"; };
-		7D68365A2A1D5AC3002DBBC7 /* SettingsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCoordinator.swift; sourceTree = "<group>"; };
-		7D68365C2A1D5AD8002DBBC7 /* SettingsAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsAssembly.swift; sourceTree = "<group>"; };
 		7D68365F2A1D69A3002DBBC7 /* GenericViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenericViewController.swift; sourceTree = "<group>"; };
 		7D6836612A1D6A79002DBBC7 /* UINavigationController+Appearance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UINavigationController+Appearance.swift"; sourceTree = "<group>"; };
 		7D6836662A1D6E74002DBBC7 /* Module.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Module.swift; sourceTree = "<group>"; };
@@ -1186,6 +1204,48 @@
 			path = SuccessViewController;
 			sourceTree = "<group>";
 		};
+		7D3D64F72ACAB01300E64537 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				7D3D64F82ACAB01300E64537 /* SettingsCoordinator.swift */,
+				7D3D64F92ACAB01300E64537 /* SettingsAssembly.swift */,
+				7D3D64FA2ACAB01300E64537 /* SettingsList */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		7D3D64FA2ACAB01300E64537 /* SettingsList */ = {
+			isa = PBXGroup;
+			children = (
+				7D3D650B2ACAB15F00E64537 /* Model */,
+				7D3D65082ACAB14000E64537 /* CollectionView */,
+				7D3D64FB2ACAB01300E64537 /* SettingsListAssembly.swift */,
+				7D3D64FC2ACAB01300E64537 /* SettingsListProtocols.swift */,
+				7D3D64FD2ACAB01300E64537 /* SettingsListPresenter.swift */,
+				7D3D64FF2ACAB01300E64537 /* SettingsListViewController.swift */,
+				7D3D65002ACAB01300E64537 /* SettingsListView.swift */,
+			);
+			path = SettingsList;
+			sourceTree = "<group>";
+		};
+		7D3D65082ACAB14000E64537 /* CollectionView */ = {
+			isa = PBXGroup;
+			children = (
+				7D3D650E2ACAB6A400E64537 /* SettingsListCollectionLayoutConfigurator.swift */,
+				7D3D65102ACAB80200E64537 /* SettingsListCollectionController.swift */,
+			);
+			path = CollectionView;
+			sourceTree = "<group>";
+		};
+		7D3D650B2ACAB15F00E64537 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				7D3D65122ACAC2D400E64537 /* SettingsListItem.swift */,
+				7D3D65092ACAB14A00E64537 /* SettingsListSection.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
 		7D3E437B2A33830800C23A75 /* Buy */ = {
 			isa = PBXGroup;
 			children = (
@@ -1640,7 +1700,7 @@
 				7D9292C02A27411E005B83DF /* Send */,
 				7D68364F2A1D1EA7002DBBC7 /* Activity */,
 				7D6836542A1D5940002DBBC7 /* Browser */,
-				7D6836592A1D5AAF002DBBC7 /* Settings */,
+				7D3D64F72ACAB01300E64537 /* Settings */,
 				1FD65265E925500BDFE6175B /* SetupWallet */,
 			);
 			path = Modules;
@@ -1697,15 +1757,6 @@
 				7D6836572A1D595A002DBBC7 /* BrowserAssembly.swift */,
 			);
 			path = Browser;
-			sourceTree = "<group>";
-		};
-		7D6836592A1D5AAF002DBBC7 /* Settings */ = {
-			isa = PBXGroup;
-			children = (
-				7D68365A2A1D5AC3002DBBC7 /* SettingsCoordinator.swift */,
-				7D68365C2A1D5AD8002DBBC7 /* SettingsAssembly.swift */,
-			);
-			path = Settings;
 			sourceTree = "<group>";
 		};
 		7D68365E2A1D6998002DBBC7 /* ViewControllers */ = {
@@ -2612,6 +2663,8 @@
 				7D9292FD2A29DCDA005B83DF /* SendRecipientViewController.swift in Sources */,
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
+				7D3D65112ACAB80200E64537 /* SettingsListCollectionController.swift in Sources */,
+				7D3D65022ACAB01300E64537 /* SettingsAssembly.swift in Sources */,
 				7DC88C582AB9C42100F47614 /* WalletHeaderConnectionStatusView.swift in Sources */,
 				7D9292D82A288013005B83DF /* Notificiation+Keyboard.swift in Sources */,
 				7DAC78C92A8FBABF00358D35 /* InAppBrowserMainAssembly.swift in Sources */,
@@ -2638,9 +2691,9 @@
 				7D68362C2A1CE874002DBBC7 /* UINavigationController+Completion.swift in Sources */,
 				7D9292C72A275176005B83DF /* NavigationController.swift in Sources */,
 				7D92928B2A24DB50005B83DF /* ScrollContainerViewController.swift in Sources */,
+				7D3D65072ACAB01300E64537 /* SettingsListView.swift in Sources */,
 				7D6836622A1D6A79002DBBC7 /* UINavigationController+Appearance.swift in Sources */,
 				7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */,
-				7D68365D2A1D5AD8002DBBC7 /* SettingsAssembly.swift in Sources */,
 				7D3BCFC52A4CADB200BE6AD9 /* MnemonicTextField.swift in Sources */,
 				7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */,
 				7D9144312A320F1500B0FD17 /* ModalCardContainerView.swift in Sources */,
@@ -2658,6 +2711,7 @@
 				7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */,
 				7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */,
 				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
+				7D3D65132ACAC2D400E64537 /* SettingsListItem.swift in Sources */,
 				7D8F64B32A8E43F90042AE74 /* TonChartErrorView.swift in Sources */,
 				7DAC78DF2A951AAF00358D35 /* CollectibleDetailsCollectionDescriptionView.swift in Sources */,
 				7DAC78C42A8FB34E00358D35 /* TwinButton.swift in Sources */,
@@ -2698,10 +2752,12 @@
 				7D048D6F2A8B80D800DFC1A5 /* DefaultCellTextContentView+Model.swift in Sources */,
 				7D3E43912A339E9000C23A75 /* ServiceCellContentView+Model.swift in Sources */,
 				7D3BCFB92A4C99A300BE6AD9 /* ImportWalletAssembly.swift in Sources */,
+				7D3D65062ACAB01300E64537 /* SettingsListViewController.swift in Sources */,
 				7D4934732A5CA1D900F4BCA2 /* TKMenuViewController.swift in Sources */,
 				7D527BC22A2A955700A2D29A /* ModalContentHeaderView.swift in Sources */,
 				7D048D4D2A8A2D2400DFC1A5 /* DefaultCellTextContentView.swift in Sources */,
 				7D527BC82A2A9E5D00A2D29A /* ModalContentActionBarView.swift in Sources */,
+				7D3D65042ACAB01300E64537 /* SettingsListProtocols.swift in Sources */,
 				7DC1D96C2A55903300D61C96 /* AmountInputFormatController.swift in Sources */,
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
@@ -2745,6 +2801,7 @@
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
 				7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */,
 				7D70D3C42A2A03770096E1A2 /* FiatCurrency.swift in Sources */,
+				7D3D650F2ACAB6A400E64537 /* SettingsListCollectionLayoutConfigurator.swift in Sources */,
 				7D3E43862A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift in Sources */,
 				7DB17F472A4C2D9B007C6154 /* OnboardingAssembly.swift in Sources */,
 				7D9292C42A274131005B83DF /* SendAssembly.swift in Sources */,
@@ -2788,7 +2845,6 @@
 				7D1162FD2A60379D00DF4F30 /* WalletTokenDetailsCoordinator.swift in Sources */,
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */,
-				7D68365B2A1D5AC3002DBBC7 /* SettingsCoordinator.swift in Sources */,
 				7D32F8B62A8BD225002C130C /* TokenDetailsHeaderViewController.swift in Sources */,
 				7D384A4F2A66A0E500DE2A66 /* ReceiveRootAssembly.swift in Sources */,
 				7DEE8E1D2A57982A004D42B7 /* ActivityViewContainer.swift in Sources */,
@@ -2802,6 +2858,7 @@
 				7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */,
 				7D16E18F2A77DC6F00A27AB0 /* ToastConfiguration.swift in Sources */,
 				7D5928822A20CDEC006B0A8A /* Reusable.swift in Sources */,
+				7D3D65032ACAB01300E64537 /* SettingsListAssembly.swift in Sources */,
 				7D5D05D32A309322009F42FF /* DefaultCellContentView+Model.swift in Sources */,
 				7D7CE3FE2A89B3ED002BA9EC /* ActivityListShimmerSectionHeaderView.swift in Sources */,
 				7DAC78E32A96AB5E00358D35 /* CollectibleDetailsPropertiesСarouselView.swift in Sources */,
@@ -2834,11 +2891,13 @@
 				7D9292F82A29DCDA005B83DF /* SendAmountView.swift in Sources */,
 				7D5D05A72A2F83ED009F42FF /* ActivityListCollectionController.swift in Sources */,
 				7D91442F2A31FC0100B0FD17 /* PassthroughView.swift in Sources */,
+				7D3D65052ACAB01300E64537 /* SettingsListPresenter.swift in Sources */,
 				7D9144292A31F5E900B0FD17 /* DimmingView.swift in Sources */,
 				7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */,
 				7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */,
 				8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */,
 				7D5823397229401915615466 /* SendConfirmationView.swift in Sources */,
+				7D3D65012ACAB01300E64537 /* SettingsCoordinator.swift in Sources */,
 				0A919C70A2EDEAA0AB313C6C /* SendConfirmationPresenter.swift in Sources */,
 				795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */,
 				3C01D6946E22BFB97B2E82A6 /* ReceiveRootViewController.swift in Sources */,
@@ -2851,6 +2910,7 @@
 				CB34DBE367608982460FD5AA /* ActivityRootView.swift in Sources */,
 				708F4E78995F7F1DD8EE8648 /* ActivityRootPresenter.swift in Sources */,
 				2D8B9585056DA7795FC4C912 /* ActivityRootProtocols.swift in Sources */,
+				7D3D650A2ACAB14A00E64537 /* SettingsListSection.swift in Sources */,
 				7D3BCFC82A4D637800BE6AD9 /* MnemonicValidator.swift in Sources */,
 				7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */,
 				83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */,

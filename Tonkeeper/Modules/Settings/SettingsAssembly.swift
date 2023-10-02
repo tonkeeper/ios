@@ -7,4 +7,9 @@
 
 import Foundation
 
-final class SettingsAssembly {}
+final class SettingsAssembly {
+  
+  func coordinator(router: NavigationRouter) -> SettingsCoordinator {
+    SettingsCoordinator(router: router, assembly: SettingsAssembly())
+  }
+}

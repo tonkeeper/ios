@@ -65,6 +65,7 @@ final class TabBarAssembly {
   
   func settingsCoordinator() -> SettingsCoordinator {
     let navigationController = UINavigationController()
+    navigationController.navigationBar.prefersLargeTitles = true
     navigationController.configureDefaultAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = SettingsCoordinator(router: router,
