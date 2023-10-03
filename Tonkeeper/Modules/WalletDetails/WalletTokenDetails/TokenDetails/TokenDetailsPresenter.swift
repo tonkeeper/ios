@@ -20,15 +20,20 @@ final class TokenDetailsPresenter {
   
   // MARK: - Dependecies
   
+  private let walletProvider: WalletCore.WalletProvider
   private let tokenDetailsController: WalletCore.TokenDetailsController
   private let urlOpener: URLOpener
   
   // MARK: - Init
   
-  init(tokenDetailsController: WalletCore.TokenDetailsController,
+  init(walletProvider: WalletCore.WalletProvider,
+       tokenDetailsController: WalletCore.TokenDetailsController,
        urlOpener: URLOpener) {
+    self.walletProvider = walletProvider
     self.tokenDetailsController = tokenDetailsController
     self.urlOpener = urlOpener
+    
+    walletProvider.addObserver(self)
   }
 }
 
@@ -116,6 +121,13 @@ extension TokenDetailsPresenter {
   
   func handleTokenSwap(tokenInfo: TokenInfo) {
     output?.didTapTokenSwap(tokenInfo: tokenInfo)
+  }
+}
+
+extension TokenDetailsPresenter: WalletProviderObserver {
+  func didUpdateActiveWallet() {
+    updateHeader()
+    refreshContent()
   }
 }
 

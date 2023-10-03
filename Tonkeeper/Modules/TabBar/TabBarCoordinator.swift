@@ -31,7 +31,8 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
     
     let presentables = [
       walletCoordinator,
-      activityCoordinator
+      activityCoordinator,
+      settingsCoordinator
     ]
       .map {
         $0.start()

@@ -9,17 +9,19 @@ import WidgetKit
 import TKCore
 import WalletCore
 
-struct BalanceWidgetTimelineProvider: TimelineProvider {
+struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
   func placeholder(in context: Context) -> BalanceWidgetEntry {
     mockEntry()
   }
   
-  func getSnapshot(in context: Context,
+  func getSnapshot(for configuration: BalanceWidgetIntent,
+                   in context: Context,
                    completion: @escaping (BalanceWidgetEntry) -> Void) {
     completion(mockEntry())
   }
   
-  func getTimeline(in context: Context,
+  func getTimeline(for configuration: BalanceWidgetIntent,
+                   in context: Context,
                    completion: @escaping (Timeline<BalanceWidgetEntry>) -> Void) {
     let coreAssembly = CoreAssembly()
     let walletCoreContainer = WalletCoreContainer(dependencies: Dependencies(
@@ -28,10 +30,17 @@ struct BalanceWidgetTimelineProvider: TimelineProvider {
       sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)
     )
     let balanceWidgetController = walletCoreContainer.balanceWidgetController()
+    let currency: Currency
+    if let configurationCurrencyIdentifier = configuration.currency?.identifier,
+       let configurationCurrency = Currency(rawValue: configurationCurrencyIdentifier) {
+      currency = configurationCurrency
+    } else {
+      currency = .USD
+    }
     Task {
       let entry: BalanceWidgetEntry
       do {
-        let model = try await balanceWidgetController.loadBalance()
+        let model = try await balanceWidgetController.loadBalance(currency: currency)
         entry = BalanceWidgetEntry(date: Date(),
                                    loadResult: .success(model))
       } catch let error as BalanceWidgetController.Error {

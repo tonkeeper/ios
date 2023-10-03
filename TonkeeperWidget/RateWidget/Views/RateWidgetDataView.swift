@@ -38,6 +38,8 @@ struct RateWidgetDataView: View {
     Text(information.amount)
       .foregroundColor(amountColor)
       .font(.system(size: 28, weight: .medium))
+      .scaledToFit()
+      .minimumScaleFactor(0.3)
   }
   
   var diffView: some View {

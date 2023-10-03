@@ -12,8 +12,9 @@ struct BalanceWidget: Widget {
   let kind = "BalanceWidget"
   
   var body: some WidgetConfiguration {
-    StaticConfiguration(
+    IntentConfiguration(
       kind: kind,
+      intent: BalanceWidgetIntent.self,
       provider: BalanceWidgetTimelineProvider()) { entry in
         BalanceWidgetView(entry: entry)
           .widgetBackground(backgroundView: Color(UIColor.Background.page))

@@ -9,9 +9,10 @@ import UIKit
 import WalletCore
 
 struct TonChartAssembly {
-  static func module(chartController: ChartController,
+  static func module(walletProvider: WalletProvider,
+                     chartController: ChartController,
                      output: TonChartModuleOutput) -> Module<TonChartViewController, TonChartModuleInput> {
-    let presenter = TonChartPresenter(chartController: chartController)
+    let presenter = TonChartPresenter(walletProvider: walletProvider, chartController: chartController)
     presenter.output = output
     
     let viewController = TonChartViewController(presenter: presenter)

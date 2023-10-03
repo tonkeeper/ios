@@ -85,6 +85,10 @@ final class WalletCoreAssembly {
     walletCoreContainer.collectibleDetailsController(collectibleAddress: collectibleAddress)
   }
   
+  func settingsController() -> SettingsController {
+    walletCoreContainer.settingsController()
+  }
+  
   var deeplinkParser: DeeplinkParser {
     walletCoreContainer.deeplinkParser()
   }

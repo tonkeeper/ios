@@ -6,5 +6,17 @@
 //
 
 import Foundation
+import WalletCore
 
-final class SettingsAssembly {}
+final class SettingsAssembly {
+  private let walletCoreAssembly: WalletCoreAssembly
+  
+  init(walletCoreAssembly: WalletCoreAssembly) {
+    self.walletCoreAssembly = walletCoreAssembly
+  }
+  
+  func coordinator(router: NavigationRouter) -> SettingsCoordinator {
+    SettingsCoordinator(router: router,
+                        walletCoreAssembly: walletCoreAssembly)
+  }
+}

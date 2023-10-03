@@ -15,7 +15,9 @@
 	</dict>
 	<key>NSUserActivityTypes</key>
 	<array>
+		<string>BalanceWidgetIntent</string>
 		<string>ChartWidgetIntent</string>
+		<string>RateWidgetIntent</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>

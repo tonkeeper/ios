@@ -12,10 +12,12 @@ import WalletCore
 struct TokenDetailsAssembly {
   static func module(output: TokenDetailsModuleOutput,
                      activityListModule: Module<ActivityListViewController, ActivityListModuleInput>,
+                     walletProvider: WalletProvider,
                      tokenDetailsController: WalletCore.TokenDetailsController,
                      imageLoader: ImageLoader,
                      urlOpener: URLOpener) -> Module<UIViewController, TokenDetailsModuleInput> {
     let presenter = TokenDetailsPresenter(
+      walletProvider: walletProvider,
       tokenDetailsController: tokenDetailsController,
       urlOpener: urlOpener
     )

@@ -9,11 +9,36 @@ import Foundation
 
 final class SettingsCoordinator: Coordinator<NavigationRouter> {
   
-  private let assembly: SettingsAssembly
+  private let walletCoreAssembly: WalletCoreAssembly
   
   init(router: NavigationRouter,
-       assembly: SettingsAssembly) {
-    self.assembly = assembly
+       walletCoreAssembly: WalletCoreAssembly) {
+    self.walletCoreAssembly = walletCoreAssembly
     super.init(router: router)
+  }
+  
+  override func start() {
+    openSettingsList()
+  }
+}
+
+private extension SettingsCoordinator {
+  func openSettingsList() {
+    let module = SettingsListAssembly.module(
+      settingsController: walletCoreAssembly.settingsController(),
+      output: self
+    )
+    router.setPresentables([(module.view, nil)])
+  }
+}
+
+extension SettingsCoordinator: SettingsListModuleOutput {
+  func settingsListDidSelectCurrencySetting(_ settingsList: SettingsListModuleInput) {
+    let module = SettingsCurrencyPickerAssembly.module(
+      settingsController: walletCoreAssembly.settingsController(),
+      output: self
+    )
+    module.view.setupBackButton()
+    router.push(presentable: module.view)
   }
 }

@@ -48,6 +48,13 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
     for configuration: RateWidgetIntent,
     in context: Context,
     completion: @escaping (Timeline<RateWidgetEntry>) -> Void) {
+      let currency: Currency
+      if let configurationCurrencyIdentifier = configuration.currency?.identifier,
+         let configurationCurrency = Currency(rawValue: configurationCurrencyIdentifier) {
+        currency = configurationCurrency
+      } else {
+        currency = .USD
+      }
       let coreAssembly = CoreAssembly()
       let walletCoreContainer = WalletCoreContainer(dependencies: Dependencies(
         cacheURL: coreAssembly.cacheURL,
@@ -56,7 +63,7 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
       )
       let chartController = walletCoreContainer.chartController()
       Task {
-        let period: ChartController.Period
+        let period: WalletCore.Period
         let mode: TKLineChartView.Mode
         switch configuration.period {
         case .day:
@@ -81,10 +88,10 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
           period = .year
           mode = .linear
         }
-        let data = try await chartController.getChartData(period: period)
-        let information = await chartController.getInformation(at: data.count-1, period: period)
-        let maximumValue = await chartController.getMaximumValue()
-        let minimumValue = await chartController.getMinimumValue()
+        let data = try await chartController.getChartData(period: period, currency: currency)
+        let information = await chartController.getInformation(at: data.count-1, period: period, currency: currency)
+        let maximumValue = await chartController.getMaximumValue(currency: currency)
+        let minimumValue = await chartController.getMinimumValue(currency: currency)
         let entryInformation = RateWidgetEntry.Information(chartPointInformationViewModel: information)
         let entry = RateWidgetEntry(date: Date(),
                                     period: period.title,
