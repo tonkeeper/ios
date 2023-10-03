@@ -10,6 +10,7 @@ let package = Package(
     products: [
         .library(
             name: "TKUIKit",
+            type: .dynamic,
             targets: ["TKUIKit"]),
     ],
     targets: [
