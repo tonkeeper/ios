@@ -113,6 +113,8 @@
 		7D3D651F2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D651E2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift */; };
 		7D3D65212ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65202ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift */; };
 		7D3D65252ACC135600E64537 /* SettingsListItemMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65242ACC135600E64537 /* SettingsListItemMapper.swift */; };
+		7D3D65282ACC291800E64537 /* SettingsCurrencyPickerPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65272ACC291800E64537 /* SettingsCurrencyPickerPresenter.swift */; };
+		7D3D652A2ACC293F00E64537 /* SettingsCurrencyPickerAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65292ACC293F00E64537 /* SettingsCurrencyPickerAssembly.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
 		7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43832A3395CB00C23A75 /* BuyListSection.swift */; };
@@ -527,6 +529,8 @@
 		7D3D651E2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellIconAccessoryView.swift; sourceTree = "<group>"; };
 		7D3D65202ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellSwitchAccessoryView.swift; sourceTree = "<group>"; };
 		7D3D65242ACC135600E64537 /* SettingsListItemMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListItemMapper.swift; sourceTree = "<group>"; };
+		7D3D65272ACC291800E64537 /* SettingsCurrencyPickerPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCurrencyPickerPresenter.swift; sourceTree = "<group>"; };
+		7D3D65292ACC293F00E64537 /* SettingsCurrencyPickerAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCurrencyPickerAssembly.swift; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
 		7D3E43832A3395CB00C23A75 /* BuyListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListSection.swift; sourceTree = "<group>"; };
@@ -1221,6 +1225,7 @@
 		7D3D64F72ACAB01300E64537 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				7D3D65262ACC290000E64537 /* SettingsCurrencyPicker */,
 				7D3D64F82ACAB01300E64537 /* SettingsCoordinator.swift */,
 				7D3D64F92ACAB01300E64537 /* SettingsAssembly.swift */,
 				7D3D64FA2ACAB01300E64537 /* SettingsList */,
@@ -1288,6 +1293,15 @@
 				7D3D65242ACC135600E64537 /* SettingsListItemMapper.swift */,
 			);
 			path = Mapper;
+			sourceTree = "<group>";
+		};
+		7D3D65262ACC290000E64537 /* SettingsCurrencyPicker */ = {
+			isa = PBXGroup;
+			children = (
+				7D3D65272ACC291800E64537 /* SettingsCurrencyPickerPresenter.swift */,
+				7D3D65292ACC293F00E64537 /* SettingsCurrencyPickerAssembly.swift */,
+			);
+			path = SettingsCurrencyPicker;
 			sourceTree = "<group>";
 		};
 		7D3E437B2A33830800C23A75 /* Buy */ = {
@@ -3007,6 +3021,7 @@
 				CA74A7FB85A60A6A7A11D37C /* SetupWalletProtocols.swift in Sources */,
 				49D41F7981620397A6533318 /* EnterMnemonicViewController.swift in Sources */,
 				7D4934672A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift in Sources */,
+				7D3D65282ACC291800E64537 /* SettingsCurrencyPickerPresenter.swift in Sources */,
 				BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */,
 				C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */,
 				7D49346E2A5C7A6A00F4BCA2 /* BlurViewController.swift in Sources */,
@@ -3030,6 +3045,7 @@
 				22C5887CCD3DB975055E331B /* TonChartProtocols.swift in Sources */,
 				E9BBB17A63ECB9F506226280 /* InAppBrowserMainViewController.swift in Sources */,
 				56E8907C0B2906F192ACF200 /* InAppBrowserMainView.swift in Sources */,
+				7D3D652A2ACC293F00E64537 /* SettingsCurrencyPickerAssembly.swift in Sources */,
 				4D8BB62F233D94F18A0663F3 /* InAppBrowserMainPresenter.swift in Sources */,
 				C66B40FEF5B9FA11EE482612 /* InAppBrowserMainProtocols.swift in Sources */,
 				0A7BD5F52ED30A90F947D98C /* CollectibleDetailsViewController.swift in Sources */,

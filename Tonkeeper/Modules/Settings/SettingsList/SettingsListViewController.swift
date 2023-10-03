@@ -53,7 +53,7 @@ extension SettingsListViewController: SettingsListViewInput {
 
 private extension SettingsListViewController {
   func setup() {
-    title = "Settings"
-    navigationItem.largeTitleDisplayMode = .always
+    title = presenter.title
+    navigationItem.largeTitleDisplayMode = presenter.isTitleLarge ? .always : .never
   }
 }

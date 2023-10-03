@@ -12,7 +12,11 @@ final class SettingsListCollectionController: NSObject {
   
   private let collectionLayoutConfigurator = SettingsListCollectionLayoutConfigurator()
   
-  var sections = [[SettingsListCellContentView.Model]]()
+  var sections = [[SettingsListCellContentView.Model]]() {
+    didSet {
+      collectionView?.reloadData()
+    }
+  }
   
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView

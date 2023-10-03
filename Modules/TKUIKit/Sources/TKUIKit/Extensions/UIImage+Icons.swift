@@ -269,8 +269,11 @@ public extension UIImage {
       public static var chevron: UIImage? {
         .imageWithName("Icons/16/ic-chevron-right-16")?.withRenderingMode(.alwaysTemplate)
       }
+        
+      public static var checkmark: UIImage? {
+        .imageWithName("Icons/28/ic-donemark-thin-28")?.withRenderingMode(.alwaysTemplate)
+      }
     }
-      
       
     public enum Mock {
       public static var tonCurrencyIcon: UIImage? {

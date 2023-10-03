@@ -33,7 +33,7 @@ final class SettingsListCellContentView: UIControlClosure, ContainerCollectionVi
   
   struct Model {
     let title: String
-    let accessoryModel: SettingsListCellAccessoryView.Model
+    let accessoryModel: SettingsListCellAccessoryView.Model?
     let handler: (() -> Void)?
   }
   
@@ -43,7 +43,12 @@ final class SettingsListCellContentView: UIControlClosure, ContainerCollectionVi
       alignment: .left,
       color: .Text.primary
     )
-    accessoryView.configure(model: model.accessoryModel)
+    if let accessoryModel = model.accessoryModel {
+      accessoryView.isHidden = false
+      accessoryView.configure(model: accessoryModel)
+    } else {
+      accessoryView.isHidden = true
+    }
     isHighlightable = model.handler != nil
     removeActions()
     addAction(.init(handler: {

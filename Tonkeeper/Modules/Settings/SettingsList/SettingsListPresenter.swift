@@ -28,17 +28,18 @@ final class SettingsListPresenter {
   
   init(settingsController: SettingsController) {
     self.settingsController = settingsController
+    settingsController.addObserver(self)
   }
 }
 
 // MARK: - SettingsListPresenterIntput
 
 extension SettingsListPresenter: SettingsListPresenterInput {
+  var isTitleLarge: Bool { true }
+  var title: String { "Settings" }
+  
   func viewDidLoad() {
-    let sections = getSettingsItems()
-    let models = mapper.mapSettingsSections(sections)
-    
-    viewInput?.didUpdateSettings(models)
+    updateSettings()
   }
 }
 
@@ -46,9 +47,22 @@ extension SettingsListPresenter: SettingsListPresenterInput {
 
 extension SettingsListPresenter: SettingsListModuleInput {}
 
+extension SettingsListPresenter: SettingsControllerObserver {
+  func didUpdateSettings() {
+    updateSettings()
+  }
+}
+
 // MARK: - Private
 
 private extension SettingsListPresenter {
+  func updateSettings() {
+    let sections = getSettingsItems()
+    let models = mapper.mapSettingsSections(sections)
+    
+    viewInput?.didUpdateSettings(models)
+  }
+  
   func getSettingsItems() -> [SettingsListSection] {
     [
       SettingsListSection(items: [
@@ -75,12 +89,14 @@ private extension SettingsListPresenter {
   }
   
   func getCurrencyItem() -> SettingsListItem {
-    SettingsListItem(
+    let value = (try? settingsController.getSelectedCurrency().code) ?? ""
+    return SettingsListItem(
       title: "Currency",
       option: SettingsListItemOption.plain(SettingsListItemPlainOption(
-        accessory: .value("USD"),
-        handler: {
-          print("Pressed Currency")
+        accessory: .value(value),
+        handler: { [weak self] in
+          guard let self = self else { return }
+          self.output?.settingsListDidSelectCurrencySetting(self)
         }))
     )
   }

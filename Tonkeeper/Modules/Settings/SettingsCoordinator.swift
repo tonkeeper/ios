@@ -33,5 +33,12 @@ private extension SettingsCoordinator {
 }
 
 extension SettingsCoordinator: SettingsListModuleOutput {
-  
+  func settingsListDidSelectCurrencySetting(_ settingsList: SettingsListModuleInput) {
+    let module = SettingsCurrencyPickerAssembly.module(
+      settingsController: walletCoreAssembly.settingsController(),
+      output: self
+    )
+    module.view.setupBackButton()
+    router.push(presentable: module.view)
+  }
 }

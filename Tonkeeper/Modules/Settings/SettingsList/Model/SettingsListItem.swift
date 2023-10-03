@@ -23,9 +23,11 @@ struct SettingsListItemPlainOption {
       let image: UIImage?
       let tintColor: UIColor
     }
+    case none
     case value(String)
     case icon(Icon)
     case chevron
+    case checkmark
   }
   
   let accessory: Accessory

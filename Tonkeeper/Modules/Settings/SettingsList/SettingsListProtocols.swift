@@ -8,11 +8,15 @@
 
 import Foundation
 
-protocol SettingsListModuleOutput: AnyObject {}
+protocol SettingsListModuleOutput: AnyObject {
+  func settingsListDidSelectCurrencySetting(_ settingsList: SettingsListModuleInput)
+}
 
 protocol SettingsListModuleInput: AnyObject {}
 
 protocol SettingsListPresenterInput {
+  var isTitleLarge: Bool { get }
+  var title: String { get }
   func viewDidLoad()
 }
 
