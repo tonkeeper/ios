@@ -70,10 +70,7 @@ private extension SettingsListPresenter {
       ]),
       SettingsListSection(items: [
         getCurrencyItem()
-      ]),
-      SettingsListSection(items: [
-        getLogoutItem()
-      ]),
+      ])
     ]
   }
   
@@ -83,7 +80,7 @@ private extension SettingsListPresenter {
       option: SettingsListItemOption.plain(SettingsListItemPlainOption(
         accessory: .icon(.init(image: .Icons.SettingsList.security, tintColor: .Accent.blue)),
         handler: {
-          print("Pressed security")
+          
         }))
     )
   }
@@ -107,7 +104,7 @@ private extension SettingsListPresenter {
       option: SettingsListItemOption.plain(SettingsListItemPlainOption(
         accessory: .icon(.init(image: .Icons.SettingsList.logout, tintColor: .Accent.blue)),
         handler: {
-          print("Pressed logout")
+          
         }))
     )
   }
