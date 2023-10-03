@@ -24,7 +24,7 @@ final class TabBarAssembly {
                                                collectibleAssembly: collectibleAssembly,
                                                walletCoreAssembly: walletCoreAssembly)
   lazy var browserAssembly = BrowserAssembly()
-  lazy var settingsAssembly = SettingsAssembly()
+  lazy var settingsAssembly = SettingsAssembly(walletCoreAssembly: walletCoreAssembly)
   lazy var receiveAssembly = ReceiveAssembly(walletCoreAssembly: walletCoreAssembly)
   lazy var collectibleAssembly = CollectibleAssembly(walletCoreAssembly: walletCoreAssembly,
                                                      sendAssembly: SendAssembly(walletCoreAssembly: walletCoreAssembly))
@@ -69,7 +69,7 @@ final class TabBarAssembly {
     navigationController.configureDefaultAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = SettingsCoordinator(router: router,
-                                          assembly: settingsAssembly)
+                                          walletCoreAssembly: walletCoreAssembly)
     return coordinator
   }
 }

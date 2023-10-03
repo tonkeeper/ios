@@ -82,7 +82,7 @@ private extension SettingsListItemCollectionViewCell {
       layer.cornerRadius = 0
     }
     
-    separatorView.isHidden = isLastCell
+    separatorView.isHidden = isLastCell || (isLastCell && isFirstCell)
   }
 }
 

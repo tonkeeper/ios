@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import WalletCore
 
 final class SettingsListPresenter {
   
@@ -14,25 +15,30 @@ final class SettingsListPresenter {
   
   weak var viewInput: SettingsListViewInput?
   weak var output: SettingsListModuleOutput?
+  
+  // MARK: - Dependencies
+  
+  private let settingsController: SettingsController
+  
+  // MARK: - Mapper
+  
+  private let mapper = SettingsListItemMapper()
+  
+  // MARK: - Init
+  
+  init(settingsController: SettingsController) {
+    self.settingsController = settingsController
+  }
 }
 
 // MARK: - SettingsListPresenterIntput
 
 extension SettingsListPresenter: SettingsListPresenterInput {
   func viewDidLoad() {
-    let sections: [SettingsListSection] = [
-      .init(items: [
-        .init(title: "Currency", option: .plain(.init(accessory: .value("USD"), handler: {
-          print("Pressed currency")
-        }))),
-      ]),
-      .init(items: [
-        .init(title: "Log out", option: .plain(.init(accessory: .icon(.init(image: .Icons.tonIcon28, tintColor: .red)), handler: {
-          print("Pressed logout")
-        })))
-      ])
-    ]
-    viewInput?.didUpdateSettings(sections)
+    let sections = getSettingsItems()
+    let models = mapper.mapSettingsSections(sections)
+    
+    viewInput?.didUpdateSettings(models)
   }
 }
 
@@ -42,4 +48,51 @@ extension SettingsListPresenter: SettingsListModuleInput {}
 
 // MARK: - Private
 
-private extension SettingsListPresenter {}
+private extension SettingsListPresenter {
+  func getSettingsItems() -> [SettingsListSection] {
+    [
+      SettingsListSection(items: [
+        getSecurityItem()
+      ]),
+      SettingsListSection(items: [
+        getCurrencyItem()
+      ]),
+      SettingsListSection(items: [
+        getLogoutItem()
+      ]),
+    ]
+  }
+  
+  func getSecurityItem() -> SettingsListItem {
+    SettingsListItem(
+      title: "Security",
+      option: SettingsListItemOption.plain(SettingsListItemPlainOption(
+        accessory: .icon(.init(image: .Icons.SettingsList.security, tintColor: .Accent.blue)),
+        handler: {
+          print("Pressed security")
+        }))
+    )
+  }
+  
+  func getCurrencyItem() -> SettingsListItem {
+    SettingsListItem(
+      title: "Currency",
+      option: SettingsListItemOption.plain(SettingsListItemPlainOption(
+        accessory: .value("USD"),
+        handler: {
+          print("Pressed Currency")
+        }))
+    )
+  }
+  
+  func getLogoutItem() -> SettingsListItem {
+    SettingsListItem(
+      title: "Log out",
+      option: SettingsListItemOption.plain(SettingsListItemPlainOption(
+        accessory: .icon(.init(image: .Icons.SettingsList.logout, tintColor: .Accent.blue)),
+        handler: {
+          print("Pressed logout")
+        }))
+    )
+  }
+}

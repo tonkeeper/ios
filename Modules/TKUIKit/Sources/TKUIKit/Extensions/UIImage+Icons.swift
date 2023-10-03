@@ -256,13 +256,22 @@ public extension UIImage {
         }
       }
     }
-    
-    public enum Widget {
-      public static var refresh: UIImage? {
-        .imageWithName("Icons/28/ic-update-28")?.withRenderingMode(.alwaysTemplate)
+      
+    public enum SettingsList {
+      public static var logout: UIImage? {
+        .imageWithName("Icons/28/ic-door-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      public static var security: UIImage? {
+        .imageWithName("Icons/28/ic-key-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      public static var chevron: UIImage? {
+        .imageWithName("Icons/16/ic-chevron-right-16")?.withRenderingMode(.alwaysTemplate)
       }
     }
-    
+      
+      
     public enum Mock {
       public static var tonCurrencyIcon: UIImage? {
         .imageWithName("Icons/44/ton_currency_icon")

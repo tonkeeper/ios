@@ -12,7 +12,7 @@ final class SettingsListCollectionController: NSObject {
   
   private let collectionLayoutConfigurator = SettingsListCollectionLayoutConfigurator()
   
-  var sections = [SettingsListSection]()
+  var sections = [[SettingsListCellContentView.Model]]()
   
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
@@ -30,7 +30,6 @@ private extension SettingsListCollectionController {
       forCellWithReuseIdentifier: SettingsListItemCollectionViewCell.reuseIdentifier
     )
     collectionView.dataSource = self
-    collectionView.delegate = self
   }
 }
 
@@ -43,7 +42,7 @@ extension SettingsListCollectionController: UICollectionViewDataSource {
   
   func collectionView(_ collectionView: UICollectionView, 
                       numberOfItemsInSection section: Int) -> Int {
-    sections[section].items.count
+    sections[section].count
   }
   
   func collectionView(_ collectionView: UICollectionView, 
@@ -53,19 +52,10 @@ extension SettingsListCollectionController: UICollectionViewDataSource {
       withReuseIdentifier: SettingsListItemCollectionViewCell.reuseIdentifier,
       for: indexPath) as? SettingsListItemCollectionViewCell else { return UICollectionViewCell() }
     
-    let item = sections[indexPath.section].items[indexPath.row]
-    cell.configure(model: .init(title: item.title))
+    let item = sections[indexPath.section][indexPath.row]
+    cell.configure(model: item)
     cell.isFirstCell = indexPath.item == 0
-    cell.isLastCell = indexPath.item == sections[indexPath.section].items.count - 1
+    cell.isLastCell = indexPath.item == sections[indexPath.section].count - 1
     return cell
   }
 }
-
-// MARK: UICollectionViewDelegate
-
-extension SettingsListCollectionController: UICollectionViewDelegate {
-  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    collectionView.deselectItem(at: indexPath, animated: true)
-  }
-}
-

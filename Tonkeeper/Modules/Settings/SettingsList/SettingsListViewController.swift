@@ -44,7 +44,7 @@ class SettingsListViewController: GenericViewController<SettingsListView> {
 // MARK: - SettingsListViewInput
 
 extension SettingsListViewController: SettingsListViewInput {
-  func didUpdateSettings(_ sections: [SettingsListSection]) {
+  func didUpdateSettings(_ sections: [[SettingsListCellContentView.Model]]) {
     collectionController.sections = sections
   }
 }

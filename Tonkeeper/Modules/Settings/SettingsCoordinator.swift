@@ -9,11 +9,11 @@ import Foundation
 
 final class SettingsCoordinator: Coordinator<NavigationRouter> {
   
-  private let assembly: SettingsAssembly
+  private let walletCoreAssembly: WalletCoreAssembly
   
   init(router: NavigationRouter,
-       assembly: SettingsAssembly) {
-    self.assembly = assembly
+       walletCoreAssembly: WalletCoreAssembly) {
+    self.walletCoreAssembly = walletCoreAssembly
     super.init(router: router)
   }
   
@@ -24,7 +24,10 @@ final class SettingsCoordinator: Coordinator<NavigationRouter> {
 
 private extension SettingsCoordinator {
   func openSettingsList() {
-    let module = SettingsListAssembly.module(output: self)
+    let module = SettingsListAssembly.module(
+      settingsController: walletCoreAssembly.settingsController(),
+      output: self
+    )
     router.setPresentables([(module.view, nil)])
   }
 }

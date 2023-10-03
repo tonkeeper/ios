@@ -112,6 +112,7 @@
 		7D3D651D2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D651C2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift */; };
 		7D3D651F2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D651E2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift */; };
 		7D3D65212ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65202ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift */; };
+		7D3D65252ACC135600E64537 /* SettingsListItemMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65242ACC135600E64537 /* SettingsListItemMapper.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
 		7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43832A3395CB00C23A75 /* BuyListSection.swift */; };
@@ -525,6 +526,7 @@
 		7D3D651C2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellTextAccessoryView.swift; sourceTree = "<group>"; };
 		7D3D651E2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellIconAccessoryView.swift; sourceTree = "<group>"; };
 		7D3D65202ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellSwitchAccessoryView.swift; sourceTree = "<group>"; };
+		7D3D65242ACC135600E64537 /* SettingsListItemMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListItemMapper.swift; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
 		7D3E43832A3395CB00C23A75 /* BuyListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListSection.swift; sourceTree = "<group>"; };
@@ -1229,6 +1231,7 @@
 		7D3D64FA2ACAB01300E64537 /* SettingsList */ = {
 			isa = PBXGroup;
 			children = (
+				7D3D65232ACC134700E64537 /* Mapper */,
 				7D3D65172ACAD1BF00E64537 /* Views */,
 				7D3D650B2ACAB15F00E64537 /* Model */,
 				7D3D65082ACAB14000E64537 /* CollectionView */,
@@ -1277,6 +1280,14 @@
 				7D3D65182ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		7D3D65232ACC134700E64537 /* Mapper */ = {
+			isa = PBXGroup;
+			children = (
+				7D3D65242ACC135600E64537 /* SettingsListItemMapper.swift */,
+			);
+			path = Mapper;
 			sourceTree = "<group>";
 		};
 		7D3E437B2A33830800C23A75 /* Buy */ = {
@@ -2955,6 +2966,7 @@
 				7D3BCFA52A4C348900BE6AD9 /* WelcomeListItem.swift in Sources */,
 				83D486B3B7F6DE00D8335CA1 /* ActivityEmptyViewController.swift in Sources */,
 				7D5D05AB2A306739009F42FF /* ActivityListSection.swift in Sources */,
+				7D3D65252ACC135600E64537 /* SettingsListItemMapper.swift in Sources */,
 				7D3E43882A3397AF00C23A75 /* BuyListCollectionController.swift in Sources */,
 				920F2D1C164D714EF8B77CB8 /* ActivityEmptyView.swift in Sources */,
 				7D9144352A32230C00B0FD17 /* ModalCardHeaderView.swift in Sources */,
@@ -3392,7 +3404,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				branch = develop;
+				branch = feature/settings_screen;
 				kind = branch;
 			};
 		};

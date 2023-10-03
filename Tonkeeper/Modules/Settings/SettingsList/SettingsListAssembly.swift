@@ -6,10 +6,12 @@
 //
 
 import Foundation
+import WalletCore
 
 struct SettingsListAssembly {
-  static func module(output: SettingsListModuleOutput?) -> Module<SettingsListViewController, SettingsListModuleInput> {
-    let presenter = SettingsListPresenter()
+  static func module(settingsController: SettingsController,
+                     output: SettingsListModuleOutput?) -> Module<SettingsListViewController, SettingsListModuleInput> {
+    let presenter = SettingsListPresenter(settingsController: settingsController)
     presenter.output = output
     
     let viewController = SettingsListViewController(presenter: presenter)
