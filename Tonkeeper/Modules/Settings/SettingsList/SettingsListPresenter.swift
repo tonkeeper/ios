@@ -79,8 +79,8 @@ private extension SettingsListPresenter {
       title: "Security",
       option: SettingsListItemOption.plain(SettingsListItemPlainOption(
         accessory: .icon(.init(image: .Icons.SettingsList.security, tintColor: .Accent.blue)),
-        handler: {
-          
+        handler: { [weak self] in
+          self?.viewInput?.openKeychainRestore()
         }))
     )
   }

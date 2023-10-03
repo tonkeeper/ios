@@ -347,6 +347,7 @@
 		7DDBBFF82ACCA12E00F811A5 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; };
 		7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
 		7DDBBFFB2ACCA4C200F811A5 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBBFFA2ACCA4C200F811A5 /* WalletCore */; };
+		7DDBBFFF2ACCAD9300F811A5 /* WalletRestoreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFFE2ACCAD9300F811A5 /* WalletRestoreViewController.swift */; };
 		7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050B2A6952E7003E9F13 /* ActivityRootAssembly.swift */; };
 		7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050D2A6953FF003E9F13 /* ActivityEmptyAssembly.swift */; };
 		7DDF05102A695467003E9F13 /* ActivityListAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050F2A695467003E9F13 /* ActivityListAssembly.swift */; };
@@ -778,6 +779,12 @@
 		7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentHandler.swift; sourceTree = "<group>"; };
 		7DDBBFF12ACCA10E00F811A5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7DDBBFFE2ACCAD9300F811A5 /* WalletRestoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletRestoreViewController.swift; sourceTree = "<group>"; };
+		7DDBC0012ACCAFE200F811A5 /* IntentsBase.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsBase.xcconfig; sourceTree = "<group>"; };
+		7DDBC0022ACCAFEF00F811A5 /* IntentsDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsDebug.xcconfig; sourceTree = "<group>"; };
+		7DDBC0032ACCAFF700F811A5 /* IntentsRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsRelease.xcconfig; sourceTree = "<group>"; };
+		7DDBC0042ACCB03900F811A5 /* IntentsSignDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsSignDebug.xcconfig; sourceTree = "<group>"; };
+		7DDBC0052ACCB04200F811A5 /* IntentsSignRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsSignRelease.xcconfig; sourceTree = "<group>"; };
 		7DDF050B2A6952E7003E9F13 /* ActivityRootAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityRootAssembly.swift; sourceTree = "<group>"; };
 		7DDF050D2A6953FF003E9F13 /* ActivityEmptyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityEmptyAssembly.swift; sourceTree = "<group>"; };
 		7DDF050F2A695467003E9F13 /* ActivityListAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListAssembly.swift; sourceTree = "<group>"; };
@@ -1251,6 +1258,7 @@
 		7D3D64F72ACAB01300E64537 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				7DDBBFFD2ACCAD8900F811A5 /* WalletRestore */,
 				7D3D65262ACC290000E64537 /* SettingsCurrencyPicker */,
 				7D3D64F82ACAB01300E64537 /* SettingsCoordinator.swift */,
 				7D3D64F92ACAB01300E64537 /* SettingsAssembly.swift */,
@@ -2028,6 +2036,9 @@
 				7D7CF6C32AC7043F00EB0BFF /* WidgetBase.xcconfig */,
 				7D7CF6C42AC7044700EB0BFF /* WidgetDebug.xcconfig */,
 				7D7CF6C52AC7045000EB0BFF /* WidgetRelease.xcconfig */,
+				7DDBC0012ACCAFE200F811A5 /* IntentsBase.xcconfig */,
+				7DDBC0022ACCAFEF00F811A5 /* IntentsDebug.xcconfig */,
+				7DDBC0032ACCAFF700F811A5 /* IntentsRelease.xcconfig */,
 			);
 			path = Configurations;
 			sourceTree = "<group>";
@@ -2039,6 +2050,8 @@
 				7D7CF6C82AC7050D00EB0BFF /* SignRelease.xcconfig */,
 				7D7CF6C92AC7051700EB0BFF /* WidgetSignDebug.xcconfig */,
 				7D7CF6CA2AC7051E00EB0BFF /* WidgetSignRelease.xcconfig */,
+				7DDBC0042ACCB03900F811A5 /* IntentsSignDebug.xcconfig */,
+				7DDBC0052ACCB04200F811A5 /* IntentsSignRelease.xcconfig */,
 			);
 			path = Signing;
 			sourceTree = "<group>";
@@ -2451,6 +2464,14 @@
 				7DDBBFF12ACCA10E00F811A5 /* Info.plist */,
 			);
 			path = TonkeeperIntents;
+			sourceTree = "<group>";
+		};
+		7DDBBFFD2ACCAD8900F811A5 /* WalletRestore */ = {
+			isa = PBXGroup;
+			children = (
+				7DDBBFFE2ACCAD9300F811A5 /* WalletRestoreViewController.swift */,
+			);
+			path = WalletRestore;
 			sourceTree = "<group>";
 		};
 		7DE27E592A30BB0600842FA8 /* Views */ = {
@@ -3095,6 +3116,7 @@
 				7D49346E2A5C7A6A00F4BCA2 /* BlurViewController.swift in Sources */,
 				9C2743C59B411E3CF174F747 /* EnterMnemonicProtocols.swift in Sources */,
 				7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */,
+				7DDBBFFF2ACCAD9300F811A5 /* WalletRestoreViewController.swift in Sources */,
 				3A56A8E00A6AB82880329EAF /* PasscodeInputViewController.swift in Sources */,
 				96B2CB2B1E4ACD7BA8897D36 /* PasscodeInputView.swift in Sources */,
 				7DC8A3B62A7C172B00B8B219 /* TokenDetailsListContentViewController.swift in Sources */,
@@ -3430,10 +3452,11 @@
 		};
 		7DDBBFF62ACCA10E00F811A5 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7DDBC0022ACCAFEF00F811A5 /* IntentsDebug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -3450,8 +3473,9 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jbig.tonkeeperx.TonkeeperIntents;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -3462,10 +3486,11 @@
 		};
 		7DDBBFF72ACCA10E00F811A5 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7DDBC0032ACCAFF700F811A5 /* IntentsRelease.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 16;
 				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -3482,8 +3507,9 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jbig.tonkeeperx.TonkeeperIntents;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;

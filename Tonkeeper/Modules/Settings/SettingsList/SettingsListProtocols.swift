@@ -22,4 +22,5 @@ protocol SettingsListPresenterInput {
 
 protocol SettingsListViewInput: AnyObject {
   func didUpdateSettings(_ sections: [[SettingsListCellContentView.Model]])
+  func openKeychainRestore()
 }

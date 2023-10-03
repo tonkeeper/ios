@@ -1,0 +1,10 @@
+//
+//  IntentsDebug.xcconfig
+//  Tonkeeper
+//
+//  Created by Grigory on 3.10.23..
+//
+
+#include "Debug.xcconfig"
+#include "IntentsBase.xcconfig"
+#include "Signing/IntentsSignDebug.xcconfig"
