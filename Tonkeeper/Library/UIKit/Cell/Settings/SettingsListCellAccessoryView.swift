@@ -24,6 +24,7 @@ final class SettingsListCellAccessoryView: UIView, ContainerCollectionViewCellCo
   enum Model {
     case text(SettingsListCellTextAccessoryView.Model)
     case icon(SettingsListCellIconAccessoryView.Model)
+    case switchControl(SettingsListCellSwitchAccessoryView.Model)
   }
 
   func configure(model: Model) {
@@ -39,9 +40,13 @@ final class SettingsListCellAccessoryView: UIView, ContainerCollectionViewCellCo
     case .icon(let model):
       let iconAccessoryView = SettingsListCellIconAccessoryView()
       iconAccessoryView.configure(model: model)
-      iconAccessoryView.isUserInteractionEnabled = false
       isUserInteractionEnabled = false
       view = iconAccessoryView
+    case .switchControl(let model):
+      let switchAccessoryView = SettingsListCellSwitchAccessoryView()
+      switchAccessoryView.configure(model: model)
+      isUserInteractionEnabled = true
+      view = switchAccessoryView
     }
     
     self.isUserInteractionEnabled = isUserInteractionEnabled

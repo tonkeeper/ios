@@ -111,6 +111,7 @@
 		7D3D651B2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D651A2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift */; };
 		7D3D651D2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D651C2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift */; };
 		7D3D651F2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D651E2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift */; };
+		7D3D65212ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65202ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
 		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
 		7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43832A3395CB00C23A75 /* BuyListSection.swift */; };
@@ -523,6 +524,7 @@
 		7D3D651A2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellAccessoryView.swift; sourceTree = "<group>"; };
 		7D3D651C2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellTextAccessoryView.swift; sourceTree = "<group>"; };
 		7D3D651E2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellIconAccessoryView.swift; sourceTree = "<group>"; };
+		7D3D65202ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListCellSwitchAccessoryView.swift; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
 		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
 		7D3E43832A3395CB00C23A75 /* BuyListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListSection.swift; sourceTree = "<group>"; };
@@ -1264,6 +1266,7 @@
 				7D3D651A2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift */,
 				7D3D651C2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift */,
 				7D3D651E2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift */,
+				7D3D65202ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -2875,6 +2878,7 @@
 				7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */,
 				7D527BC62A2A972A00A2D29A /* ModalContentListItemView.swift in Sources */,
 				7D70D3C02A2A03350096E1A2 /* Currency.swift in Sources */,
+				7D3D65212ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift in Sources */,
 				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
 				7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */,
 				7DE27E5F2A30C61E00842FA8 /* ActivityListSectionHeaderView.swift in Sources */,
