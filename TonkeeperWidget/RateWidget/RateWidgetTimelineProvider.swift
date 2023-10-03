@@ -48,7 +48,13 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
     for configuration: RateWidgetIntent,
     in context: Context,
     completion: @escaping (Timeline<RateWidgetEntry>) -> Void) {
-      let currency = Currency.RUB
+      let currency: Currency
+      if let configurationCurrencyIdentifier = configuration.currency?.identifier,
+         let configurationCurrency = Currency(rawValue: configurationCurrencyIdentifier) {
+        currency = configurationCurrency
+      } else {
+        currency = .USD
+      }
       let coreAssembly = CoreAssembly()
       let walletCoreContainer = WalletCoreContainer(dependencies: Dependencies(
         cacheURL: coreAssembly.cacheURL,
