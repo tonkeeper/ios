@@ -57,6 +57,7 @@ private extension WalletTokenDetailsCoordinator {
     
     let module = TokenDetailsAssembly.module(output: self,
                                              activityListModule: activityListModule,
+                                             walletProvider: walletCoreAssembly.keeperController,
                                              tokenDetailsController: tokenDetailsController,
                                              imageLoader: NukeImageLoader(),
                                              urlOpener: walletCoreAssembly.coreAssembly.urlOpener())
@@ -132,7 +133,8 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
   }
   
   func tonChartModule() -> Module<TonChartViewController, TonChartModuleInput> {
-    let module = TonChartAssembly.module(chartController: walletCoreAssembly.chartController(),
+    let module = TonChartAssembly.module(walletProvider: walletCoreAssembly.keeperController,
+                                         chartController: walletCoreAssembly.chartController(),
                                          output: self)
     return module
   }

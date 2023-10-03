@@ -20,15 +20,24 @@ final class TonChartPresenter {
   
   // MARK: - Dependencies
   
+  private let walletProvider: WalletProvider
   private let chartController: ChartController
   
   // MARK: - State
   
-  private var selectedPeriod: ChartController.Period = .week
+  private var selectedPeriod: WalletCore.Period = .week
   private var reloadTask: Task<Void, Error>?
   
-  init(chartController: ChartController) {
+  private var currency: WalletCore.Currency {
+    (try? walletProvider.activeWallet.currency) ?? .USD
+  }
+  
+  init(walletProvider: WalletProvider,
+       chartController: ChartController) {
+    self.walletProvider = walletProvider
     self.chartController = chartController
+    
+    walletProvider.addObserver(self)
   }
 }
 
@@ -42,7 +51,7 @@ extension TonChartPresenter: TonChartPresenterInput {
   
   func didSelectButton(at index: Int) {
     viewInput?.selectButton(at: index)
-    selectedPeriod = ChartController.Period.allCases[index]
+    selectedPeriod = WalletCore.Period.allCases[index]
     reloadChartDataAndHeader()
   }
   
@@ -73,12 +82,12 @@ extension TonChartPresenter: TonChartModuleInput {
 
 private extension TonChartPresenter {
   func setupButtons() {
-    let buttons = ChartController.Period.allCases.map {
+    let buttons = WalletCore.Period.allCases.map {
       TKButton.Model(title: $0.title)
     }
     let model = TonChartButtonsView.Model(buttons: buttons)
     viewInput?.updateButtons(with: model)
-    viewInput?.selectButton(at: ChartController.Period.allCases.firstIndex(of: selectedPeriod) ?? 0)
+    viewInput?.selectButton(at: WalletCore.Period.allCases.firstIndex(of: selectedPeriod) ?? 0)
   }
   
   func reloadChartDataAndHeader() {
@@ -96,7 +105,10 @@ private extension TonChartPresenter {
   }
   
   func reloadChartData() async throws {
-    let coordinates = try await chartController.getChartData(period: selectedPeriod)
+    let coordinates = try await chartController.getChartData(
+      period: selectedPeriod, 
+      currency: currency
+    )
     let chartData = prepareChartData(coordinates: coordinates, period: selectedPeriod)
     await MainActor.run {
       viewInput?.updateChart(with: chartData)
@@ -105,7 +117,11 @@ private extension TonChartPresenter {
   
   func showUnselectedHeader() async {
     guard await !chartController.coordinates.isEmpty else { return }
-    let pointInformation = await chartController.getInformation(at: chartController.coordinates.count - 1, period: selectedPeriod)
+    let pointInformation = await chartController.getInformation(
+      at: chartController.coordinates.count - 1,
+      period: selectedPeriod,
+      currency: currency
+    )
     let headerModel = prepareHeaderModel(pointInformation: pointInformation, date: "Price")
     await MainActor.run {
       viewInput?.updateHeader(with: headerModel)
@@ -113,7 +129,11 @@ private extension TonChartPresenter {
   }
   
   func showSelectedHeader(index: Int) async {
-    let pointInformation = await chartController.getInformation(at: index, period: selectedPeriod)
+    let pointInformation = await chartController.getInformation(
+      at: index,
+      period: selectedPeriod,
+      currency: currency
+    )
     let headerModel = prepareHeaderModel(pointInformation: pointInformation, date: pointInformation.date)
     await MainActor.run {
       viewInput?.updateHeader(with: headerModel)
@@ -121,7 +141,7 @@ private extension TonChartPresenter {
   }
 
   func prepareChartData(coordinates: [WalletCore.Coordinate],
-                        period: ChartController.Period) -> TKLineChartView.Data {
+                        period: WalletCore.Period) -> TKLineChartView.Data {
     let mode: TKLineChartView.Mode
     switch period {
     case .hour:
@@ -208,6 +228,12 @@ private extension TonChartPresenter {
 
     let headerModel = TonChartHeaderView.Model.init(amount: amount, percentDiff: percentDiff, fiatDiff: fiatDiff, date: date)
     viewInput?.updateHeader(with: headerModel)
+  }
+}
+
+extension TonChartPresenter: WalletProviderObserver {
+  func didUpdateActiveWallet() {
+    reload()
   }
 }
 
