@@ -1,0 +1,10 @@
+//
+//  IntentsBase.xcconfig
+//  Tonkeeper
+//
+//  Created by Grigory on 3.10.23..
+//
+
+#include "Base.xcconfig"
+
+PRODUCT_BUNDLE_IDENTIFIER = $(BASE_BUNDLE_IDENTIFIER).TonkeeperIntents
