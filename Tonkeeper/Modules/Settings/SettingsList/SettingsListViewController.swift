@@ -47,6 +47,11 @@ extension SettingsListViewController: SettingsListViewInput {
   func didUpdateSettings(_ sections: [[SettingsListCellContentView.Model]]) {
     collectionController.sections = sections
   }
+  
+  func openKeychainRestore() {
+    let vc = WalletRestoreViewController()
+    present(vc, animated: true)
+  }
 }
 
 // MARK: - Private

@@ -347,6 +347,7 @@
 		7DDBBFF82ACCA12E00F811A5 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; };
 		7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
 		7DDBBFFB2ACCA4C200F811A5 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBBFFA2ACCA4C200F811A5 /* WalletCore */; };
+		7DDBBFFF2ACCAD9300F811A5 /* WalletRestoreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFFE2ACCAD9300F811A5 /* WalletRestoreViewController.swift */; };
 		7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050B2A6952E7003E9F13 /* ActivityRootAssembly.swift */; };
 		7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050D2A6953FF003E9F13 /* ActivityEmptyAssembly.swift */; };
 		7DDF05102A695467003E9F13 /* ActivityListAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF050F2A695467003E9F13 /* ActivityListAssembly.swift */; };
@@ -778,6 +779,7 @@
 		7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentHandler.swift; sourceTree = "<group>"; };
 		7DDBBFF12ACCA10E00F811A5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7DDBBFFE2ACCAD9300F811A5 /* WalletRestoreViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletRestoreViewController.swift; sourceTree = "<group>"; };
 		7DDBC0012ACCAFE200F811A5 /* IntentsBase.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsBase.xcconfig; sourceTree = "<group>"; };
 		7DDBC0022ACCAFEF00F811A5 /* IntentsDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsDebug.xcconfig; sourceTree = "<group>"; };
 		7DDBC0032ACCAFF700F811A5 /* IntentsRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsRelease.xcconfig; sourceTree = "<group>"; };
@@ -1256,6 +1258,7 @@
 		7D3D64F72ACAB01300E64537 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				7DDBBFFD2ACCAD8900F811A5 /* WalletRestore */,
 				7D3D65262ACC290000E64537 /* SettingsCurrencyPicker */,
 				7D3D64F82ACAB01300E64537 /* SettingsCoordinator.swift */,
 				7D3D64F92ACAB01300E64537 /* SettingsAssembly.swift */,
@@ -2463,6 +2466,14 @@
 			path = TonkeeperIntents;
 			sourceTree = "<group>";
 		};
+		7DDBBFFD2ACCAD8900F811A5 /* WalletRestore */ = {
+			isa = PBXGroup;
+			children = (
+				7DDBBFFE2ACCAD9300F811A5 /* WalletRestoreViewController.swift */,
+			);
+			path = WalletRestore;
+			sourceTree = "<group>";
+		};
 		7DE27E592A30BB0600842FA8 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -3105,6 +3116,7 @@
 				7D49346E2A5C7A6A00F4BCA2 /* BlurViewController.swift in Sources */,
 				9C2743C59B411E3CF174F747 /* EnterMnemonicProtocols.swift in Sources */,
 				7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */,
+				7DDBBFFF2ACCAD9300F811A5 /* WalletRestoreViewController.swift in Sources */,
 				3A56A8E00A6AB82880329EAF /* PasscodeInputViewController.swift in Sources */,
 				96B2CB2B1E4ACD7BA8897D36 /* PasscodeInputView.swift in Sources */,
 				7DC8A3B62A7C172B00B8B219 /* TokenDetailsListContentViewController.swift in Sources */,
