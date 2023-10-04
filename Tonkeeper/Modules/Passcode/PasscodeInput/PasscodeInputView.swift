@@ -10,8 +10,7 @@ import UIKit
 
 final class PasscodeInputView: UIView {
   
-  let keyboardConfiguration = TKKeyboardPasscodeConfiguration()
-  lazy var keyboardView = TKKeyboardView(configuration: keyboardConfiguration)
+  lazy var keyboardView = TKKeyboardView(configuration: TKKeyboardPasscodeConfiguration(biometryButtonType: .faceId))
   let dotRowView = PasscodeDotRowView()
   let titleLabel: UILabel = {
     let label = UILabel()
@@ -36,13 +35,24 @@ final class PasscodeInputView: UIView {
   
   // MARK: - Biometry
   
-  func hideBiometryButton() {
-    keyboardConfiguration.biometryButton.alpha = 0
+  func updateBiometryButton(biometry: PasscodeInputBiometry) {
+    switch biometry {
+    case .faceID:
+      keyboardView.configuration = TKKeyboardPasscodeConfiguration(biometryButtonType: .faceId)
+    case .touchID:
+      keyboardView.configuration = TKKeyboardPasscodeConfiguration(biometryButtonType: .touchId)
+    case .none:
+      (keyboardView.configuration as? TKKeyboardPasscodeConfiguration)?.biometryButton.alpha = 0
+    }
   }
   
-  func showBiometryButton() {
-    keyboardConfiguration.biometryButton.alpha = 1
-  }
+//  func hideBiometryButton() {
+//    keyboardConfiguration.biometryButton.alpha = 0
+//  }
+//  
+//  func showBiometryButton() {
+//    keyboardConfiguration.biometryButton.alpha = 1
+//  }
 }
 
 // MARK: - Private

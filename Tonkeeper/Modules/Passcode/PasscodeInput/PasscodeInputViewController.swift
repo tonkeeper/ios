@@ -52,8 +52,8 @@ extension PasscodeInputViewController: PasscodeInputViewInput {
     customView.titleLabel.text = title
   }
   
-  func updateBiometryAvailability(_ isAvailable: Bool) {
-    isAvailable ? customView.showBiometryButton() : customView.hideBiometryButton()
+  func updateBiometry(biometry: PasscodeInputBiometry) {
+    customView.updateBiometryButton(biometry: biometry)
   }
   
   func handlePinInputFailed() {

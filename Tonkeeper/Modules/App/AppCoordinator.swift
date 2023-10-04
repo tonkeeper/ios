@@ -28,6 +28,7 @@ final class AppCoordinator: Coordinator<WindowRouter> {
   
   override func start() {
     let coordinator = appAssembly.rootCoordinator()
+    coordinator.output = self
     router.setRoot(presentable: coordinator.router.rootViewController)
     addChild(coordinator)
     coordinator.start()
@@ -36,11 +37,12 @@ final class AppCoordinator: Coordinator<WindowRouter> {
 
 private extension AppCoordinator {
   func showBlur() {
+    guard self.blurViewController == nil else { return }
     let blurViewController = BlurViewController()
     self.blurViewController = blurViewController
     
-    router.window.addSubview(blurViewController.view)
-    blurViewController.view.frame = router.window.bounds
+    self.router.window.addSubview(blurViewController.view)
+    blurViewController.view.frame = self.router.window.bounds
     
     blurViewController.view.alpha = .showBlurInitialOpacity
     UIView.animate(withDuration: .showBlurAnimationDuration) {
@@ -71,6 +73,16 @@ extension AppCoordinator: AppStateTrackerObserver {
     default:
       return
     }
+  }
+}
+
+extension AppCoordinator: RootCoordinatorOutput {
+  func rootCoordinatorDidStartBiometry(_ coordinator: RootCoordinator) {
+    showBlur()
+  }
+  
+  func rootCoordinatorDidFinishBiometry(_ coordinator: RootCoordinator) {
+    hideBlur()
   }
 }
 

@@ -7,16 +7,15 @@
 
 import Foundation
 import WalletCore
+import UIKit
 
-final class PasscodeAuthConfigurator: PasscodeInputPresenterConfigurator {
-  let title: String = "Enter passcode"
-  var isBiometryAvailable: Bool {
-    // TBD: get from settings if turned on
-    false
-  }
+final class PasscodeAuthConfigurator: PasscodeInputBiometryPresenterConfigurator {
   
+  let title: String = "Enter passcode"
   var didFinish: ((_ passcode: Passcode) -> Void)?
   var didFailed: (() -> Void)?
+  var didStartBiometry: (() -> Void)?
+  var didFinishBiometry: ((Bool) -> Void)?
   
   func validateInput(_ input: String) -> PasscodeInputPresenterValidation {
     do {
@@ -33,8 +32,49 @@ final class PasscodeAuthConfigurator: PasscodeInputPresenterConfigurator {
   }
   
   private let passcodeController: PasscodeController
+  private let biometryAuthentificator: BiometryAuthentificator
   
-  init(passcodeController: PasscodeController) {
+  init(passcodeController: PasscodeController,
+       biometryAuthentificator: BiometryAuthentificator) {
     self.passcodeController = passcodeController
+    self.biometryAuthentificator = biometryAuthentificator
+  }
+  
+  func checkBiometryAvailability() -> PasscodeInputBiometry {
+    let result = biometryAuthentificator.canEvaluate(policy: .deviceOwnerAuthenticationWithBiometrics)
+    switch result {
+    case .failure:
+      return .none
+    case .success(let result):
+      guard result.isSuccess else {
+        return .none
+      }
+      switch result.type {
+      case .faceID:
+        return .faceID
+      case .touchID:
+        return .touchID
+      default: return .none
+      }
+    }
+  }
+  
+  func evaluateBiometryAuth() {
+    Task {
+      await MainActor.run {
+        didStartBiometry?()
+      }
+      let result = await biometryAuthentificator.evaluate(policy: .deviceOwnerAuthenticationWithBiometrics)
+      switch result {
+      case .failure:
+        await MainActor.run {
+          didFinishBiometry?(false)
+        }
+      case .success(let isSuccess):
+        await MainActor.run {
+          didFinishBiometry?(isSuccess)
+        }
+      }
+    }
   }
 }

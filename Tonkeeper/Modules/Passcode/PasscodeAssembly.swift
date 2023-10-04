@@ -26,6 +26,7 @@ final class PasscodeAssembly {
   }
   
   func passcodeAuthConfigurator() -> PasscodeAuthConfigurator {
-    PasscodeAuthConfigurator(passcodeController: walletCoreAssembly.passcodeController)
+    PasscodeAuthConfigurator(passcodeController: walletCoreAssembly.passcodeController,
+                             biometryAuthentificator: BiometryAuthentificator())
   }
 }

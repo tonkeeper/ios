@@ -38,5 +38,7 @@
 	</dict>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Tonkeeper uses biometric authentication to authorize transactions</string>
 </dict>
 </plist>

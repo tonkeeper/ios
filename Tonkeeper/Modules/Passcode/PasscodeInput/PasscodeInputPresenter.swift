@@ -8,6 +8,7 @@
 
 import Foundation
 import WalletCore
+import UIKit
 
 enum PasscodeInputPresenterValidation {
   case success
@@ -15,16 +16,28 @@ enum PasscodeInputPresenterValidation {
   case failed
 }
 
+enum PasscodeInputBiometry {
+  case none
+  case faceID
+  case touchID
+}
+
 protocol PasscodeInputPresenterConfigurator {
   var title: String { get }
   var didFinish: ((_ passcode: Passcode) -> Void)? { get set }
   var didFailed: (() -> Void)? { get set }
-  var isBiometryAvailable: Bool { get }
   func validateInput(_ input: String) -> PasscodeInputPresenterValidation
 }
 
 extension PasscodeInputPresenterConfigurator {
   func configureInitialState() {}
+}
+
+protocol PasscodeInputBiometryPresenterConfigurator: PasscodeInputPresenterConfigurator {
+  var didStartBiometry: (() -> Void)? { get set }
+  var didFinishBiometry: ((Bool) -> Void)? { get set }
+  func checkBiometryAvailability() -> PasscodeInputBiometry
+  func evaluateBiometryAuth()
 }
 
 final class PasscodeInputPresenter {
@@ -67,7 +80,7 @@ extension PasscodeInputPresenter: PasscodeInputPresenterInput {
   }
   
   func didTapBiometryButton() {
-    
+    (configurator as? PasscodeInputBiometryPresenterConfigurator)?.evaluateBiometryAuth()
   }
   
   func didTapBackspaceButton() {
@@ -97,7 +110,15 @@ private extension PasscodeInputPresenter {
   }
   
   func updateBiometryAvailability() {
-    viewInput?.updateBiometryAvailability(configurator.isBiometryAvailable)
+    let biometry = (configurator as? PasscodeInputBiometryPresenterConfigurator)?.checkBiometryAvailability() ?? .none
+    viewInput?.updateBiometry(biometry: biometry)
+    switch biometry {
+    case .faceID, .touchID:
+      DispatchQueue.main.async {
+        (self.configurator as? PasscodeInputBiometryPresenterConfigurator)?.evaluateBiometryAuth()
+      }
+    case .none: return
+    }
   }
   
   func updateInputState() {
