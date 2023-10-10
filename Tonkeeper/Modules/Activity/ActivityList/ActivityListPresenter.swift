@@ -128,6 +128,7 @@ private extension ActivityListPresenter {
           type: action.eventType,
           subtitle: action.leftTopDescription,
           amount: action.amount,
+          subamount: action.subamount,
           time: action.rightTopDesription,
           status: action.status,
           comment: action.comment,

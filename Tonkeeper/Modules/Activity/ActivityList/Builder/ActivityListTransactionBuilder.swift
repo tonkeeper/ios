@@ -13,6 +13,7 @@ struct ActivityListTransactionBuilder {
   func buildTransactionModel(type: ActivityEventViewModel.ActionViewModel.ActionType,
                              subtitle: String?,
                              amount: String?,
+                             subamount: String?,
                              time: String?,
                              status: String?,
                              comment: String? = nil,
@@ -20,7 +21,7 @@ struct ActivityListTransactionBuilder {
     let textContentModel = DefaultCellTextContentView.Model(
       title: type.title,
       amount: amount?.attributed(with: .label1, alignment: .left, color: type.amountColor),
-      subamount: nil,
+      subamount: subamount?.attributed(with: .label1, alignment: .left, color: type.subamountColor),
       topLeftDescriptionValue: subtitle,
       topLeftDescriptionSubvalue: nil,
       topRightDescriptionValue: time
@@ -61,6 +62,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Icons.Transaction.sent
     case .receieved:
       return .Icons.Transaction.receieved
+    case .sentAndReceieved:
+      return .Icons.Transaction.receieved
     case .spam:
       return .Icons.Transaction.spam
     case .bounced:
@@ -98,6 +101,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return "Sent"
     case .receieved:
       return "Received"
+    case .sentAndReceieved:
+      return "Sent and received"
     case .spam:
       return "Spam"
     case .bounced:
@@ -132,6 +137,7 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
   var amountColor: UIColor {
     switch self {
     case .sent,
+        .sentAndReceieved,
         .subscribed,
         .unsubscribed,
         .walletInitialized,
@@ -148,6 +154,15 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Accent.green
     case .spam:
       return .Text.tertiary
+    }
+  }
+  
+  var subamountColor: UIColor {
+    switch self {
+    case .sentAndReceieved:
+      return .Accent.green
+    default:
+      return .Text.primary
     }
   }
 }
