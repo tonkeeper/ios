@@ -12,6 +12,7 @@ protocol SendConfirmationModuleOutput: AnyObject {
   func sendConfirmationModuleDidTapCloseButton()
   func sendConfirmationModuleDidFinish()
   func sendConfirmationModuleDidFailedToPrepareTransaction()
+  func sendConfirmationModuleConfirmation() async -> Bool
 }
 
 protocol SendConfirmationModuleInput: AnyObject {}

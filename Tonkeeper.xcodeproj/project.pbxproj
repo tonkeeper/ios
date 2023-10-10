@@ -160,6 +160,8 @@
 		7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BF32A2DFDA600A2D29A /* NotDelayScrollView.swift */; };
 		7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527C012A2E3FC400A2D29A /* MultilineUIButton.swift */; };
 		7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527C052A2E469900A2D29A /* QRCodeGenerator.swift */; };
+		7D5735822AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5735812AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift */; };
+		7D5735842AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5735832AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift */; };
 		7D5823397229401915615466 /* SendConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */; };
 		7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */; };
 		7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */; };
@@ -621,6 +623,8 @@
 		7D527BF32A2DFDA600A2D29A /* NotDelayScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotDelayScrollView.swift; sourceTree = "<group>"; };
 		7D527C012A2E3FC400A2D29A /* MultilineUIButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultilineUIButton.swift; sourceTree = "<group>"; };
 		7D527C052A2E469900A2D29A /* QRCodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeGenerator.swift; sourceTree = "<group>"; };
+		7D5735812AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeConfirmationCoordinator.swift; sourceTree = "<group>"; };
+		7D5735832AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSecurityProtocols.swift; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
 		7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderView.swift; sourceTree = "<group>"; };
 		7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderPresenter.swift; sourceTree = "<group>"; };
@@ -1258,6 +1262,7 @@
 				7D3BCFCD2A4D90E200BE6AD9 /* PasscodeAssembly.swift */,
 				7D3BCFCB2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift */,
 				7D4934662A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift */,
+				7D5735812AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift */,
 			);
 			path = Passcode;
 			sourceTree = "<group>";
@@ -2350,6 +2355,7 @@
 			children = (
 				7DA4C3A12AD588F40059A48E /* SettingsSecurityPresenter.swift */,
 				7DA4C3A32AD592180059A48E /* SettingsSecurityAssembly.swift */,
+				7D5735832AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift */,
 			);
 			path = SettingsSecurity;
 			sourceTree = "<group>";
@@ -2930,6 +2936,7 @@
 				7D797E1C2A8F7ACE00A626D7 /* ContainerCollectionViewReusableView.swift in Sources */,
 				7D3BCFD02A4D923400BE6AD9 /* PasscodeInputAssembly.swift in Sources */,
 				7D5928532A1F6411006B0A8A /* ConfigurableView.swift in Sources */,
+				7D5735842AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift in Sources */,
 				7D5928552A1F6C71006B0A8A /* TKButton.swift in Sources */,
 				7D527BEE2A2DEA2C00A2D29A /* ResultView.swift in Sources */,
 				7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */,
@@ -3064,6 +3071,7 @@
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				7DA0EFF82A866D2B0062C8BA /* ActivityListFooterView.swift in Sources */,
 				7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */,
+				7D5735822AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift in Sources */,
 				7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
 				7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */,

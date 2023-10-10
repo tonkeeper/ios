@@ -35,7 +35,7 @@ final class ImportWalletCoordinator: Coordinator<NavigationRouter> {
 private extension ImportWalletCoordinator {
   func openEnterMnemonic() {
     let module = assembly.enterMnemonic(output: self)
-    module.view.setupCloseButton { [weak self] in
+    module.view.setupCloseRightButton { [weak self] in
       guard let self = self else { return }
       self.output?.importWalletCoordinatorDidClose(self)
     }

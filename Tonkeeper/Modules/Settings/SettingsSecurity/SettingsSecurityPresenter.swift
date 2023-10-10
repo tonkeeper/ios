@@ -13,6 +13,7 @@ final class SettingsSecurityPresenter {
   // MARK: - Module
   
   weak var viewInput: SettingsListViewInput?
+  weak var output: SettingsSecurityModuleOutput?
   
   // MARK: - Mapper
   
@@ -50,7 +51,6 @@ private extension SettingsSecurityPresenter {
   }
   
   func getFaceIdSetting() -> SettingsListItem {
-    
     let isTurnedOn = settingsController.getIsBiometryEnabled()
     
     let option: SettingsListItemOption = {
@@ -67,14 +67,28 @@ private extension SettingsSecurityPresenter {
         isEnabled = false
       }
       
-      return .switchOption(SettingsListItemSwitchOption(isOn: isOn, isEnabled: isEnabled) { [weak self] newValue in
+      return .switchOption(.init(isOn: isOn, isEnabled: isEnabled, handler: { [weak self] newValue in
+        guard let self = self else { return false }
+        
+        let isConfirmed = await {
+          guard newValue else { return true }
+          if let isConfirmed = await self.output?.settingsSecurityBiometryTurnOnConfirmation(),
+             isConfirmed {
+            return true
+          } else {
+            return false
+          }
+        }()
+        
+        guard isConfirmed else { return isConfirmed }
+        
         do {
-          try self?.settingsController.setIsBiometryEnabled(newValue)
-          return true
+          try self.settingsController.setIsBiometryEnabled(newValue)
+          return isConfirmed
         } catch {
           return false
         }
-      })
+      }))
     }()
    
     let title: String

@@ -11,10 +11,12 @@ import WalletCore
 struct SettingsSecurityAssembly {
   static func module(biometryAuthentificator: BiometryAuthentificator,
                      settingsController: SettingsController,
-                     output: SettingsListModuleOutput?) -> Module<SettingsListViewController, Void> {
+                     output: SettingsSecurityModuleOutput?) -> Module<SettingsListViewController, Void> {
     let presenter = SettingsSecurityPresenter(
       biometryAuthentificator: biometryAuthentificator,
       settingsController: settingsController)
+    presenter.output = output
+    
     let viewController = SettingsListViewController(presenter: presenter)
     presenter.viewInput = viewController
     
