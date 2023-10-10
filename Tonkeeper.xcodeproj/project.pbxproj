@@ -300,6 +300,8 @@
 		7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */; };
 		7DA0EFF12A8641560062C8BA /* ActivityListShimmerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */; };
 		7DA0EFF82A866D2B0062C8BA /* ActivityListFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA0EFF72A866D2B0062C8BA /* ActivityListFooterView.swift */; };
+		7DA4C3A22AD588F40059A48E /* SettingsSecurityPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA4C3A12AD588F40059A48E /* SettingsSecurityPresenter.swift */; };
+		7DA4C3A42AD592180059A48E /* SettingsSecurityAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DA4C3A32AD592180059A48E /* SettingsSecurityAssembly.swift */; };
 		7DAC789E2A8FAA8400358D35 /* InAppBrowserCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC789D2A8FAA8400358D35 /* InAppBrowserCoordinator.swift */; };
 		7DAC78A02A8FAAB000358D35 /* InAppBrowserAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC789F2A8FAAB000358D35 /* InAppBrowserAssembly.swift */; };
 		7DAC78C42A8FB34E00358D35 /* TwinButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DAC78C32A8FB34E00358D35 /* TwinButton.swift */; };
@@ -770,6 +772,8 @@
 		7D9293052A29F0BF005B83DF /* NumberProvider+Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NumberProvider+Formatters.swift"; sourceTree = "<group>"; };
 		7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListShimmerCell.swift; sourceTree = "<group>"; };
 		7DA0EFF72A866D2B0062C8BA /* ActivityListFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListFooterView.swift; sourceTree = "<group>"; };
+		7DA4C3A12AD588F40059A48E /* SettingsSecurityPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSecurityPresenter.swift; sourceTree = "<group>"; };
+		7DA4C3A32AD592180059A48E /* SettingsSecurityAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSecurityAssembly.swift; sourceTree = "<group>"; };
 		7DAC789D2A8FAA8400358D35 /* InAppBrowserCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserCoordinator.swift; sourceTree = "<group>"; };
 		7DAC789F2A8FAAB000358D35 /* InAppBrowserAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InAppBrowserAssembly.swift; sourceTree = "<group>"; };
 		7DAC78C32A8FB34E00358D35 /* TwinButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwinButton.swift; sourceTree = "<group>"; };
@@ -1288,11 +1292,12 @@
 		7D3D64F72ACAB01300E64537 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				7DA4C3A02AD588DC0059A48E /* SettingsSecurity */,
 				7DDBBFFD2ACCAD8900F811A5 /* WalletRestore */,
 				7D3D65262ACC290000E64537 /* SettingsCurrencyPicker */,
+				7D3D64FA2ACAB01300E64537 /* SettingsList */,
 				7D3D64F82ACAB01300E64537 /* SettingsCoordinator.swift */,
 				7D3D64F92ACAB01300E64537 /* SettingsAssembly.swift */,
-				7D3D64FA2ACAB01300E64537 /* SettingsList */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -2340,6 +2345,15 @@
 			path = Formatters;
 			sourceTree = "<group>";
 		};
+		7DA4C3A02AD588DC0059A48E /* SettingsSecurity */ = {
+			isa = PBXGroup;
+			children = (
+				7DA4C3A12AD588F40059A48E /* SettingsSecurityPresenter.swift */,
+				7DA4C3A32AD592180059A48E /* SettingsSecurityAssembly.swift */,
+			);
+			path = SettingsSecurity;
+			sourceTree = "<group>";
+		};
 		7DAC789C2A8FA9E900358D35 /* InAppBrowser */ = {
 			isa = PBXGroup;
 			children = (
@@ -2990,6 +3004,7 @@
 				7D6836322A1CF58D002DBBC7 /* TabBarRouter.swift in Sources */,
 				7D91442D2A31F60600B0FD17 /* DimmingTransitioningDelegate.swift in Sources */,
 				7DDF05102A695467003E9F13 /* ActivityListAssembly.swift in Sources */,
+				7DA4C3A42AD592180059A48E /* SettingsSecurityAssembly.swift in Sources */,
 				7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */,
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D3D651D2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift in Sources */,
@@ -3032,6 +3047,7 @@
 				7D6836562A1D5951002DBBC7 /* BrowserCoordinator.swift in Sources */,
 				7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */,
 				7D527BC62A2A972A00A2D29A /* ModalContentListItemView.swift in Sources */,
+				7DA4C3A22AD588F40059A48E /* SettingsSecurityPresenter.swift in Sources */,
 				7D70D3C02A2A03350096E1A2 /* Currency.swift in Sources */,
 				7D3D65212ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift in Sources */,
 				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
@@ -3644,7 +3660,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				branch = develop;
+				branch = feature/biometry_settings;
 				kind = branch;
 			};
 		};

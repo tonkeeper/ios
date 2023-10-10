@@ -32,15 +32,19 @@ final class PasscodeAuthConfigurator: PasscodeInputBiometryPresenterConfigurator
   }
   
   private let passcodeController: PasscodeController
+  private let securitySettingsController: SecuritySettingsController
   private let biometryAuthentificator: BiometryAuthentificator
   
   init(passcodeController: PasscodeController,
+       securitySettingsController: SecuritySettingsController,
        biometryAuthentificator: BiometryAuthentificator) {
     self.passcodeController = passcodeController
+    self.securitySettingsController = securitySettingsController
     self.biometryAuthentificator = biometryAuthentificator
   }
   
   func checkBiometryAvailability() -> PasscodeInputBiometry {
+    guard securitySettingsController.getIsBiometryEnabled() else { return .none }
     let result = biometryAuthentificator.canEvaluate(policy: .deviceOwnerAuthenticationWithBiometrics)
     switch result {
     case .failure:

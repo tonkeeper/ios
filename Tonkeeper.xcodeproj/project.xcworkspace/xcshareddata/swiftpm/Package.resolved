@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
-        "branch" : "develop",
-        "revision" : "d804e842a6457fa78786a55b929fafa8c564a831"
+        "branch" : "feature/biometry_settings",
+        "revision" : "15363b7eea6d3e2ac8e9c770c77604af6a0bde82"
       }
     },
     {

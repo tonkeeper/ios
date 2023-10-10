@@ -33,6 +33,7 @@ struct SettingsListItemMapper {
           accessoryModel = .switchControl(
             SettingsListCellSwitchAccessoryView.Model(
               isOn: settingsListItemSwitchOption.isOn,
+              isEnabled: settingsListItemSwitchOption.isEnabled,
               handler: settingsListItemSwitchOption.handler)
           )
           handler = nil

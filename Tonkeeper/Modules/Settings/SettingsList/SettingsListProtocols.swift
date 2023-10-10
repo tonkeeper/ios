@@ -9,6 +9,7 @@
 import Foundation
 
 protocol SettingsListModuleOutput: AnyObject {
+  func settingsListDidSelectSecuritySetting(_ settingsList: SettingsListModuleInput)
   func settingsListDidSelectCurrencySetting(_ settingsList: SettingsListModuleInput)
 }
 

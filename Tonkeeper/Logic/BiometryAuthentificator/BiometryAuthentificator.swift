@@ -33,6 +33,7 @@ final class BiometryAuthentificator {
     case authenticationFailed
     case userCancel
     case userFallback
+    case passcodeNotSet
     case biometryNotAvailable
     case biometryNotEnrolled
     case biometryLockout
@@ -46,6 +47,8 @@ final class BiometryAuthentificator {
         self = .userCancel
       case LAError.userFallback:
         self = .userFallback
+      case LAError.passcodeNotSet:
+        self = .passcodeNotSet
       case LAError.biometryNotAvailable:
         self = .biometryNotAvailable
       case LAError.biometryNotEnrolled:
@@ -64,6 +67,10 @@ final class BiometryAuthentificator {
   }
   
   private let context = LAContext()
+  
+  var biometryType: BiometryType {
+    .init(type: context.biometryType)
+  }
   
   func canEvaluate(policy: LAPolicy) -> Result<BiometryResult, Error> {
     var error: NSError?
