@@ -12,7 +12,8 @@ final class RootAssembly {
   let coreAssembly = CoreAssembly()
   lazy var walletCoreAssembly = WalletCoreAssembly(coreAssembly: coreAssembly)
   lazy var tabBarAssembly = TabBarAssembly(coreAssembly: coreAssembly,
-                                           walletCoreAssembly: walletCoreAssembly)
+                                           walletCoreAssembly: walletCoreAssembly,
+                                           passcodeAssembly: passcodeAssembly)
   lazy var onboardingAssembly = OnboardingAssembly()
   lazy var importWalletAssembly = ImportWalletAssembly(passcodeAssembly: passcodeAssembly,
                                                        walletCoreAssembly: walletCoreAssembly)

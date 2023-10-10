@@ -30,4 +30,13 @@ final class PasscodeAssembly {
                              securitySettingsController: walletCoreAssembly.settingsController(),
                              biometryAuthentificator: BiometryAuthentificator())
   }
+  
+  func passcodeConfirmationCoordinator() -> PasscodeConfirmationCoordinator {
+    let navigationController = NavigationController()
+    navigationController.configureTransparentAppearance()
+    let router = NavigationRouter(rootViewController: navigationController)
+    
+    return PasscodeConfirmationCoordinator(router: router,
+                                           assembly: self)
+  }
 }

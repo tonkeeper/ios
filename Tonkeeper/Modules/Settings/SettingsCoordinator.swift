@@ -10,10 +10,15 @@ import Foundation
 final class SettingsCoordinator: Coordinator<NavigationRouter> {
   
   private let walletCoreAssembly: WalletCoreAssembly
+  private let passcodeAssembly: PasscodeAssembly
+  
+  private var confirmationContinuation: CheckedContinuation<Bool, Never>?
   
   init(router: NavigationRouter,
-       walletCoreAssembly: WalletCoreAssembly) {
+       walletCoreAssembly: WalletCoreAssembly,
+       passcodeAssembly: PasscodeAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
+    self.passcodeAssembly = passcodeAssembly
     super.init(router: router)
   }
   
@@ -31,6 +36,8 @@ private extension SettingsCoordinator {
     router.setPresentables([(module.view, nil)])
   }
 }
+
+// MARK: - SettingsListModuleOutput
 
 extension SettingsCoordinator: SettingsListModuleOutput {
   func settingsListDidSelectCurrencySetting(_ settingsList: SettingsListModuleInput) {
@@ -52,3 +59,43 @@ extension SettingsCoordinator: SettingsListModuleOutput {
     router.push(presentable: module.view)
   }
 }
+
+// MARK: - SettingsSecurityModuleOutput
+
+extension SettingsCoordinator: SettingsSecurityModuleOutput {
+  func settingsSecurityBiometryTurnOnConfirmation() async -> Bool {
+    return await withCheckedContinuation { [weak self] continuation in
+      guard let self = self else { return }
+      self.confirmationContinuation = continuation
+      Task {
+        await MainActor.run {
+          let coordinator = self.passcodeAssembly.passcodeConfirmationCoordinator()
+          coordinator.output = self
+          coordinator.router.rootViewController.modalPresentationStyle = .fullScreen
+          coordinator.router.rootViewController.modalTransitionStyle = .crossDissolve
+          
+          self.addChild(coordinator)
+          coordinator.start()
+          self.router.present(coordinator.router.rootViewController)
+        }
+      }
+    }
+  }
+}
+
+extension SettingsCoordinator: PasscodeConfirmationCoordinatorOutput {
+  func passcodeConfirmationCoordinatorDidConfirm(_ coordinator: PasscodeConfirmationCoordinator) {
+    router.dismiss()
+    removeChild(coordinator)
+    confirmationContinuation?.resume(returning: true)
+    confirmationContinuation = nil
+  }
+  
+  func passcodeConfirmationCoordinatorDidClose(_ coordinator: PasscodeConfirmationCoordinator) {
+    router.dismiss()
+    removeChild(coordinator)
+    confirmationContinuation?.resume(returning: false)
+    confirmationContinuation = nil
+  }
+}
+

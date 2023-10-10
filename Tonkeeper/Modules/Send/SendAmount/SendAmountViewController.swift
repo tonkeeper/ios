@@ -122,7 +122,7 @@ private extension SendAmountViewController {
   func setup() {
     navigationItem.titleView = titleView
   
-    setupCloseButton { [weak self] in
+    setupCloseRightButton { [weak self] in
       self?.presenter.didTapCloseButton()
     }
     

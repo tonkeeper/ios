@@ -10,13 +10,17 @@ import WalletCore
 
 final class SettingsAssembly {
   private let walletCoreAssembly: WalletCoreAssembly
+  private let passcodeAssembly: PasscodeAssembly
   
-  init(walletCoreAssembly: WalletCoreAssembly) {
+  init(walletCoreAssembly: WalletCoreAssembly,
+       passcodeAssembly: PasscodeAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
+    self.passcodeAssembly = passcodeAssembly
   }
   
   func coordinator(router: NavigationRouter) -> SettingsCoordinator {
     SettingsCoordinator(router: router,
-                        walletCoreAssembly: walletCoreAssembly)
+                        walletCoreAssembly: walletCoreAssembly,
+                        passcodeAssembly: passcodeAssembly)
   }
 }

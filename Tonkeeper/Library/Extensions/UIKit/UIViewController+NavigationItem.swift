@@ -8,13 +8,12 @@
 import UIKit
 
 extension UIViewController {
-  func setupCloseButton(closure: @escaping () -> Void) {
-    let swipeButton = TKButton(configuration: .Header.button)
-    swipeButton.configure(model: .init(icon: .Icons.Buttons.Header.close))
-    swipeButton.addAction(.init(handler: {
-      closure()
-    }), for: .touchUpInside)
-    navigationItem.rightBarButtonItem = UIBarButtonItem(customView: swipeButton)
+  func setupCloseLeftButton(closure: @escaping () -> Void) {
+    navigationItem.leftBarButtonItem = createCloseButton(closure: closure)
+  }
+  
+  func setupCloseRightButton(closure: @escaping () -> Void) {
+    navigationItem.rightBarButtonItem = createCloseButton(closure: closure)
   }
   
   func setupBackButton() {
@@ -33,5 +32,16 @@ extension UIViewController {
       closure()
     }), for: .touchUpInside)
     navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeButton)
+  }
+}
+
+private extension UIViewController {
+  func createCloseButton(closure: @escaping () -> Void) -> UIBarButtonItem {
+    let button = TKButton(configuration: .Header.button)
+    button.configure(model: .init(icon: .Icons.Buttons.Header.close))
+    button.addAction(.init(handler: {
+      closure()
+    }), for: .touchUpInside)
+    return UIBarButtonItem(customView: button)
   }
 }

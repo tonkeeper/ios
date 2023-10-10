@@ -11,6 +11,7 @@ import TKCore
 final class TabBarAssembly {
   
   let coreAssembly: CoreAssembly
+  let passcodeAssembly: PasscodeAssembly
   let walletCoreAssembly: WalletCoreAssembly
   
   lazy var walletAssembly = WalletAssembly(
@@ -24,15 +25,18 @@ final class TabBarAssembly {
                                                collectibleAssembly: collectibleAssembly,
                                                walletCoreAssembly: walletCoreAssembly)
   lazy var browserAssembly = BrowserAssembly()
-  lazy var settingsAssembly = SettingsAssembly(walletCoreAssembly: walletCoreAssembly)
+  lazy var settingsAssembly = SettingsAssembly(walletCoreAssembly: walletCoreAssembly,
+                                               passcodeAssembly: passcodeAssembly)
   lazy var receiveAssembly = ReceiveAssembly(walletCoreAssembly: walletCoreAssembly)
   lazy var collectibleAssembly = CollectibleAssembly(walletCoreAssembly: walletCoreAssembly,
                                                      sendAssembly: SendAssembly(walletCoreAssembly: walletCoreAssembly))
   
   init(coreAssembly: CoreAssembly,
-       walletCoreAssembly: WalletCoreAssembly) {
+       walletCoreAssembly: WalletCoreAssembly,
+       passcodeAssembly: PasscodeAssembly) {
     self.coreAssembly = coreAssembly
     self.walletCoreAssembly = walletCoreAssembly
+    self.passcodeAssembly = passcodeAssembly
   }
   
   func walletCoordinator() -> WalletCoordinator {
@@ -69,7 +73,8 @@ final class TabBarAssembly {
     navigationController.configureDefaultAppearance()
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = SettingsCoordinator(router: router,
-                                          walletCoreAssembly: walletCoreAssembly)
+                                          walletCoreAssembly: walletCoreAssembly,
+                                          passcodeAssembly: passcodeAssembly)
     return coordinator
   }
 }

@@ -28,7 +28,7 @@ final class SettingsListCellSwitchAccessoryView: UIView {
   struct Model {
     let isOn: Bool
     let isEnabled: Bool
-    let handler: (Bool) -> Bool
+    let handler: (Bool) async -> Bool
   }
   
   func configure(model: Model) {
@@ -36,8 +36,10 @@ final class SettingsListCellSwitchAccessoryView: UIView {
     switchControl.isEnabled = model.isEnabled
     switchControl.addAction(.init(handler: { [weak self] action in
       guard let self = self else { return }
-      if !model.handler(self.switchControl.isOn) {
-        self.switchControl.setOn(!self.switchControl.isOn, animated: true)
+      Task {
+        if await !model.handler(self.switchControl.isOn) {
+          self.switchControl.setOn(!self.switchControl.isOn, animated: false)
+        }
       }
     }), for: .valueChanged)
   }

@@ -54,7 +54,7 @@ extension SendConfirmationViewController: SendConfirmationViewInput {
 
 private extension SendConfirmationViewController {
   func setup() {
-    setupCloseButton { [weak self] in
+    setupCloseRightButton { [weak self] in
       self?.presenter.didTapCloseButton()
     }
     
