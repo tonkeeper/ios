@@ -158,7 +158,7 @@ private extension TokenDetailsPresenter {
     let tokenDetailsHeaderViewModel = TokenDetailsHeaderView.Model(
       amount: header.amount,
       fiatAmount: header.fiatAmount,
-      fiatPrice: header.price,
+      fiatPrice: nil,
       image: .with(image: header.image),
       buttonRowModel: .init(buttons: buttonsRowButtons))
     viewInput?.updateTitle(title: header.name)

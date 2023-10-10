@@ -23,7 +23,7 @@ final class TokensListCollectionController: NSObject {
   }
   
   weak var collectionView: UICollectionView?
-  var dataSource: UICollectionViewDiffableDataSource<TokensListSection.SectionType, AnyHashable>?
+  var dataSource: UICollectionViewDiffableDataSource<TokensListSection.Identifier, AnyHashable>?
   
   private let collectionLayoutConfigurator = TokensListCollectionLayoutConfigurator()
   
@@ -52,15 +52,15 @@ final class TokensListCollectionController: NSObject {
 
 private extension TokensListCollectionController {
   func didUpdateSections() {
-    var snapshot = NSDiffableDataSourceSnapshot<TokensListSection.SectionType, AnyHashable>()
+    var snapshot = NSDiffableDataSourceSnapshot<TokensListSection.Identifier, AnyHashable>()
     sections.forEach { section in
-      snapshot.appendSections([section.type])
-      snapshot.appendItems(section.items, toSection: section.type)
+      snapshot.appendSections([section.id])
+      snapshot.appendItems(section.items, toSection: section.id)
     }
     dataSource?.apply(snapshot, animatingDifferences: false)
   }
   
-  func createDataSource(collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<TokensListSection.SectionType, AnyHashable> {
+  func createDataSource(collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<TokensListSection.Identifier, AnyHashable> {
     .init(collectionView: collectionView) { [weak self] collectionView, indexPath, itemIdentifier in
       guard let self = self else { return UICollectionViewCell() }
       switch itemIdentifier {

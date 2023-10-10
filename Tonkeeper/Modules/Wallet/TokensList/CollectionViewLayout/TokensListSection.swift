@@ -8,12 +8,15 @@
 import Foundation
 
 struct TokensListSection {
+  typealias Identifier = UUID
+  
   enum SectionType {
     case token
     case application
     case collectibles
   }
   
+  let id = Identifier()
   let type: SectionType
   let items: [AnyHashable]
 }
