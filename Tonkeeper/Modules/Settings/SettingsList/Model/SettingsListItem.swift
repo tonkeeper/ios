@@ -36,5 +36,6 @@ struct SettingsListItemPlainOption {
 
 struct SettingsListItemSwitchOption {
   let isOn: Bool
-  let handler: (Bool) -> Void
+  let isEnabled: Bool
+  let handler: (Bool) -> Bool
 }

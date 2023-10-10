@@ -9,6 +9,8 @@ import UIKit
 import WalletCore
 
 protocol PasscodeAuthCoordinatorOutput: AnyObject {
+  func createPasscodeCoordinatorDidStartBiometry(_ coordinator: PasscodeAuthCoordinator)
+  func createPasscodeCoordinatorDidFinishBiometry(_ coordinator: PasscodeAuthCoordinator)
   func createPasscodeCoordinatorDidAuth(_ coordinator: PasscodeAuthCoordinator)
 }
 
@@ -37,6 +39,17 @@ private extension PasscodeAuthCoordinator {
       self.output?.createPasscodeCoordinatorDidAuth(self)
     }
     configurator.didFailed = {}
+    configurator.didStartBiometry = { [weak self] in
+      guard let self = self else { return }
+      self.output?.createPasscodeCoordinatorDidStartBiometry(self)
+    }
+    configurator.didFinishBiometry = { [weak self] isSuccess in
+      guard let self = self else { return }
+      if isSuccess {
+        self.output?.createPasscodeCoordinatorDidAuth(self)
+      }
+      self.output?.createPasscodeCoordinatorDidFinishBiometry(self)
+    }
     
     let module = assembly.passcodeInputAssembly(output: self, configurator: configurator)
     initialPresentable = module.view

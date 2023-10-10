@@ -7,7 +7,14 @@
 
 import UIKit
 
+protocol RootCoordinatorOutput: AnyObject {
+  func rootCoordinatorDidStartBiometry(_ coordinator: RootCoordinator)
+  func rootCoordinatorDidFinishBiometry(_ coordinator: RootCoordinator)
+}
+
 final class RootCoordinator: Coordinator<NavigationRouter> {
+  
+  weak var output: RootCoordinatorOutput?
   
   private let assembly: RootAssembly
  
@@ -144,5 +151,13 @@ extension RootCoordinator: PasscodeAuthCoordinatorOutput {
   func createPasscodeCoordinatorDidAuth(_ coordinator: PasscodeAuthCoordinator) {
     removeChild(coordinator)
     openTabBar()
+  }
+  
+  func createPasscodeCoordinatorDidStartBiometry(_ coordinator: PasscodeAuthCoordinator) {
+    output?.rootCoordinatorDidStartBiometry(self)
+  }
+  
+  func createPasscodeCoordinatorDidFinishBiometry(_ coordinator: PasscodeAuthCoordinator) {
+    output?.rootCoordinatorDidFinishBiometry(self)
   }
 }

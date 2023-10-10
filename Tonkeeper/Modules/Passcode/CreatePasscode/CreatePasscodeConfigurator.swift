@@ -9,8 +9,10 @@ import Foundation
 import WalletCore
 
 struct CreatePasscodeConfigurator: PasscodeInputPresenterConfigurator {
+  var didFinishBiometry: (() -> Void)?
+  
   let title: String = "Create new passcode"
-  var isBiometryAvailable: Bool { false }
+  var passcodeBiometry: PasscodeInputBiometry { .none }
   
   var didFinish: ((_ passcode: Passcode) -> Void)?
   var didFailed: (() -> Void)?

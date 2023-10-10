@@ -80,7 +80,8 @@ private extension SettingsListPresenter {
       option: SettingsListItemOption.plain(SettingsListItemPlainOption(
         accessory: .icon(.init(image: .Icons.SettingsList.security, tintColor: .Accent.blue)),
         handler: { [weak self] in
-          self?.viewInput?.openKeychainRestore()
+          guard let self = self else { return }
+          output?.settingsListDidSelectSecuritySetting(self)
         }))
     )
   }

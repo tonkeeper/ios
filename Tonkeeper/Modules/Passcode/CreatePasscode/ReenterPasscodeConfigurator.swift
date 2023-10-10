@@ -10,7 +10,7 @@ import WalletCore
 
 struct ReenterPasscodeConfigurator: PasscodeInputPresenterConfigurator {
   let title: String = "Re-enter passcode"
-  var isBiometryAvailable: Bool { false }
+  var passcodeBiometry: PasscodeInputBiometry { .none }
     
   var didFinish: ((_ passcode: Passcode) -> Void)?
   var didFailed: (() -> Void)?

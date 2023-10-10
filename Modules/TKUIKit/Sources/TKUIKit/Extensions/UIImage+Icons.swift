@@ -222,8 +222,12 @@ public extension UIImage {
     }
     
     public enum PasscodeButton {
-      public static var biometry: UIImage? {
+      public static var faceId: UIImage? {
         .imageWithName("Icons/36/ic-faceid-36")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      public static var touchId: UIImage? {
+        .imageWithName("Icons/36/ic-fingerprint-36")?.withRenderingMode(.alwaysTemplate)
       }
       
       public static var backspace: UIImage? {

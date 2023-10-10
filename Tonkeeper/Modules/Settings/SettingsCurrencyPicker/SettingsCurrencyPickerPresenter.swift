@@ -14,7 +14,6 @@ final class SettingsCurrencyPickerPresenter {
   // MARK: - Module
   
   weak var viewInput: SettingsListViewInput?
-  weak var output: SettingsListModuleOutput?
   
   // MARK: - Dependencies
   
@@ -35,7 +34,7 @@ final class SettingsCurrencyPickerPresenter {
 
 extension SettingsCurrencyPickerPresenter: SettingsListPresenterInput {
   var isTitleLarge: Bool { false }
-  var title: String { "Primary currency" }
+  var title: String { .title }
   
   func viewDidLoad() {
     getCurrencies()
@@ -66,4 +65,8 @@ private extension SettingsCurrencyPickerPresenter {
     let models = mapper.mapSettingsSections([SettingsListSection(items: items)])
     viewInput?.didUpdateSettings(models)
   }
+}
+
+private extension String {
+  static let title = "Primary currency"
 }

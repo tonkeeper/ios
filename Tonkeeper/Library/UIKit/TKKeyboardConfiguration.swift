@@ -33,8 +33,8 @@ struct TKKeyboardPasscodeConfiguration: TKKeyboardConfiguration {
   let biometryButton: TKKeyboardButton
   let buttons: [TKKeyboardButton]
   
-  init() {
-    self.biometryButton = .init(buttonType: .biometry, style: .init(backgroundShape: .round, backgroundColor: .clear))
+  init(biometryButtonType: TKKeyboardButton.ButtonType.BiometryButton) {
+    self.biometryButton = .init(buttonType: .biometry(biometryButtonType), style: .init(backgroundShape: .round, backgroundColor: .clear))
     self.buttons = [
      .init(buttonType: .digit(1), style: .init(backgroundShape: .round, backgroundColor: .clear)),
      .init(buttonType: .digit(2), style: .init(backgroundShape: .round, backgroundColor: .clear)),

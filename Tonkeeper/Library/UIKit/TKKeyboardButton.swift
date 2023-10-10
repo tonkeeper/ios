@@ -24,9 +24,14 @@ final class TKKeyboardButton: UIControlClosure {
   }
 
   enum ButtonType {
+    enum BiometryButton {
+      case faceId
+      case touchId
+    }
+    
     case digit(Int)
     case backspace
-    case biometry
+    case biometry(BiometryButton)
     case decimalSeparator
     
     var title: String? {
@@ -48,8 +53,13 @@ final class TKKeyboardButton: UIControlClosure {
         return nil
       case .backspace:
         return .Icons.PasscodeButton.backspace
-      case .biometry:
-        return .Icons.PasscodeButton.biometry
+      case .biometry(let button):
+        switch button {
+        case .faceId:
+          return .Icons.PasscodeButton.faceId
+        case .touchId:
+          return .Icons.PasscodeButton.touchId
+        }
       case .decimalSeparator:
         return nil
       }

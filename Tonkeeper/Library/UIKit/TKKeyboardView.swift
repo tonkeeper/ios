@@ -30,7 +30,11 @@ final class TKKeyboardView: UIView {
     }
   }
 
-  private let configuration: TKKeyboardConfiguration
+  var configuration: TKKeyboardConfiguration {
+    didSet {
+      createButtonRowsStackViews()
+    }
+  }
   private let stackView = UIStackView()
   
   // MARK: - State
@@ -73,6 +77,8 @@ private extension TKKeyboardView {
   }
   
   func createButtonRowsStackViews() {
+    stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    
     let buttons = configuration.buttons
     
     stackView.axis = .vertical

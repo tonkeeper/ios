@@ -41,4 +41,14 @@ extension SettingsCoordinator: SettingsListModuleOutput {
     module.view.setupBackButton()
     router.push(presentable: module.view)
   }
+  
+  func settingsListDidSelectSecuritySetting(_ settingsList: SettingsListModuleInput) {
+    let module = SettingsSecurityAssembly.module(
+      biometryAuthentificator: BiometryAuthentificator(),
+      settingsController: walletCoreAssembly.settingsController(),
+      output: self)
+    
+    module.view.setupBackButton()
+    router.push(presentable: module.view)
+  }
 }
