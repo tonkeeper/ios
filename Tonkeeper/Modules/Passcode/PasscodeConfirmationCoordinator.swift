@@ -22,6 +22,8 @@ final class PasscodeConfirmationCoordinator: Coordinator<NavigationRouter> {
        assembly: PasscodeAssembly) {
     self.assembly = assembly
     super.init(router: router)
+    router.rootViewController.modalPresentationStyle = .fullScreen
+    router.rootViewController.modalTransitionStyle = .crossDissolve
   }
   
   override func start() {

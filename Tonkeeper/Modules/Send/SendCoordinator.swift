@@ -26,6 +26,8 @@ final class SendCoordinator: Coordinator<NavigationRouter> {
   
   private weak var sendRecipientInput: SendRecipientModuleInput?
   
+  private var confirmationContinuation: CheckedContinuation<Bool, Never>?
+  
   init(router: NavigationRouter,
        walletCoreAssembly: WalletCoreAssembly,
        token: Token,
@@ -151,6 +153,43 @@ extension SendCoordinator: SendConfirmationModuleOutput {
   
   func sendConfirmationModuleDidFailedToPrepareTransaction() {
     router.pop()
+  }
+  
+  func sendConfirmationModuleConfirmation() async -> Bool {
+    return await withCheckedContinuation { [weak self] continuation in
+      guard let self = self else { return }
+      self.confirmationContinuation = continuation
+      
+      Task {
+        await MainActor.run {
+          let passcodeAssembly = PasscodeAssembly(walletCoreAssembly: self.walletCoreAssembly)
+          let coordinator = passcodeAssembly.passcodeConfirmationCoordinator()
+          coordinator.output = self
+          
+          self.addChild(coordinator)
+          coordinator.start()
+          self.router.present(coordinator.router.rootViewController)
+        }
+      }
+    }
+  }
+}
+
+// MARK: - PasscodeConfirmationCoordinatorOutput
+
+extension SendCoordinator: PasscodeConfirmationCoordinatorOutput {
+  func passcodeConfirmationCoordinatorDidConfirm(_ coordinator: PasscodeConfirmationCoordinator) {
+    router.dismiss()
+    removeChild(coordinator)
+    confirmationContinuation?.resume(returning: true)
+    confirmationContinuation = nil
+  }
+  
+  func passcodeConfirmationCoordinatorDidClose(_ coordinator: PasscodeConfirmationCoordinator) {
+    router.dismiss()
+    removeChild(coordinator)
+    confirmationContinuation?.resume(returning: false)
+    confirmationContinuation = nil
   }
 }
 

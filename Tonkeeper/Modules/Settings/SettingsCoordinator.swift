@@ -71,8 +71,6 @@ extension SettingsCoordinator: SettingsSecurityModuleOutput {
         await MainActor.run {
           let coordinator = self.passcodeAssembly.passcodeConfirmationCoordinator()
           coordinator.output = self
-          coordinator.router.rootViewController.modalPresentationStyle = .fullScreen
-          coordinator.router.rootViewController.modalTransitionStyle = .crossDissolve
           
           self.addChild(coordinator)
           coordinator.start()

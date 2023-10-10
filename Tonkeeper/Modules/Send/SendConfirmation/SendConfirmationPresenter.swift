@@ -154,6 +154,13 @@ private extension SendConfirmationPresenter {
   
   func tapAction(closure: @escaping (Bool) -> Void) {
     Task {
+      guard let isConfirmed = await output?.sendConfirmationModuleConfirmation(),
+            isConfirmed else {
+        await MainActor.run {
+          closure(false)
+        }
+        return
+      }
       do {
         try await self.sendController.sendTransaction()
         await MainActor.run {
