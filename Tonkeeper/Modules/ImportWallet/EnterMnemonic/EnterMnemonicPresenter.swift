@@ -54,9 +54,11 @@ private extension EnterMnemonicPresenter {
       .attributed(with: .h2, alignment: .center, color: .Text.primary)
     let description = String.description
       .attributed(with: .body1, alignment: .center, color: .Text.secondary)
-    let model = EnterMnemonicView.Model(title: title,
-                                        description: description,
-                                        continueButtonTitle: .continueButtonTitle)
+    let model = EnterMnemonicView.Model(
+      scrollContainerModel: .init(
+        title: title,
+        description: description),
+      continueButtonTitle: .continueButtonTitle)
     viewInput?.update(with: model)
   }
 }

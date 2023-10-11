@@ -202,13 +202,7 @@ private extension EnterMnemonicViewController {
   }
   
   func scrollToTextField(_ textField: MnemonicTextField) {
-    let scrollViewMaxOrigin = customView.scrollView.contentSize.height
-    - customView.scrollView.frame.height
-    + customView.scrollView.contentInset.bottom
-    let originY = min(textField.frame.origin.y - 64, scrollViewMaxOrigin)
-    UIView.animate(withDuration: .textFieldChangeScrollDuration) {
-      self.customView.scrollView.contentOffset = .init(x: 0, y: originY)
-    }
+    customView.scrollContainer.scrollToView(textField, animationDuration: .textFieldChangeScrollDuration)
   }
   
   func extractMnemonic(from string: String) -> [String] {

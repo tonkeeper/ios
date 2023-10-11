@@ -162,6 +162,7 @@
 		7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527C052A2E469900A2D29A /* QRCodeGenerator.swift */; };
 		7D5735822AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5735812AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift */; };
 		7D5735842AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5735832AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift */; };
+		7D57358A2AD6D7D000B7D0A3 /* ScrollContainerWithTitleAndDescription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5735892AD6D7D000B7D0A3 /* ScrollContainerWithTitleAndDescription.swift */; };
 		7D5823397229401915615466 /* SendConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */; };
 		7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */; };
 		7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */; };
@@ -625,6 +626,7 @@
 		7D527C052A2E469900A2D29A /* QRCodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeGenerator.swift; sourceTree = "<group>"; };
 		7D5735812AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeConfirmationCoordinator.swift; sourceTree = "<group>"; };
 		7D5735832AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSecurityProtocols.swift; sourceTree = "<group>"; };
+		7D5735892AD6D7D000B7D0A3 /* ScrollContainerWithTitleAndDescription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollContainerWithTitleAndDescription.swift; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
 		7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderView.swift; sourceTree = "<group>"; };
 		7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderPresenter.swift; sourceTree = "<group>"; };
@@ -1592,6 +1594,14 @@
 			path = QRCodeGenerator;
 			sourceTree = "<group>";
 		};
+		7D5735882AD6D78E00B7D0A3 /* Headers */ = {
+			isa = PBXGroup;
+			children = (
+				7D5735892AD6D7D000B7D0A3 /* ScrollContainerWithTitleAndDescription.swift */,
+			);
+			path = Headers;
+			sourceTree = "<group>";
+		};
 		7D5928452A1F5776006B0A8A /* WalletHeader */ = {
 			isa = PBXGroup;
 			children = (
@@ -1949,6 +1959,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D5735882AD6D78E00B7D0A3 /* Headers */,
 				7D797E182A8F7A1900A626D7 /* ListElements */,
 				7D16E1622A7526F300A27AB0 /* Toasts */,
 				7DB944BF2A728E0F0008B512 /* Shimmer */,
@@ -3059,6 +3070,7 @@
 				7D3D65212ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift in Sources */,
 				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
 				7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */,
+				7D57358A2AD6D7D000B7D0A3 /* ScrollContainerWithTitleAndDescription.swift in Sources */,
 				7DE27E5F2A30C61E00842FA8 /* ActivityListSectionHeaderView.swift in Sources */,
 				7D1162FD2A60379D00DF4F30 /* WalletTokenDetailsCoordinator.swift in Sources */,
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
