@@ -45,8 +45,11 @@ extension SettingsSecurityPresenter: SettingsListPresenterInput {
 private extension SettingsSecurityPresenter {
   func updateSettings() {
     
-    let sections = SettingsListSection(items: [getFaceIdSetting()])
-    let models = mapper.mapSettingsSections([sections])
+    let sections = [
+      SettingsListSection(items: [getFaceIdSetting()]),
+      SettingsListSection(items: [getRecoveryPhraseSetting()])
+    ]
+    let models = mapper.mapSettingsSections(sections)
     viewInput?.didUpdateSettings(models)
   }
   
@@ -107,6 +110,18 @@ private extension SettingsSecurityPresenter {
     
     return item
   }
+  
+  func getRecoveryPhraseSetting() -> SettingsListItem {
+    SettingsListItem(
+      title: .showRecoveryPhrase,
+      option: .plain(.init(
+        accessory: .icon(.init(image: .Icons.SettingsList.security,
+                               tintColor: .Accent.blue)),
+        handler: { [weak self] in
+          self?.output?.settingsSecurityDidSelectShowRecoveryPhrase()
+        }))
+    )
+  }
 }
 
 private extension String {
@@ -115,4 +130,5 @@ private extension String {
   static let faceId = "Face ID"
   static let touchId = "Touch ID"
   static let biometryUnavailable = "Biometry unavailable"
+  static let showRecoveryPhrase = "Show recovery phrase"
 }

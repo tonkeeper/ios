@@ -277,6 +277,10 @@ public extension UIImage {
       public static var checkmark: UIImage? {
         .imageWithName("Icons/28/ic-donemark-thin-28")?.withRenderingMode(.alwaysTemplate)
       }
+        
+        public static var recoveryPhrase: UIImage? {
+          .imageWithName("Icons/28/ic-key-28")?.withRenderingMode(.alwaysTemplate)
+        }
     }
       
     public enum Mock {

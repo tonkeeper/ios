@@ -124,7 +124,7 @@ private extension ScrollContainerWithTitleAndDescription {
 
       contentStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
       contentStackView.leftAnchor.constraint(equalTo: scrollView.leftAnchor, constant: .contentSideSpace),
-      contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor, constant: -.contentSideSpace),
+      contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor, constant: -.contentSideSpace).withPriority(.defaultHigh),
       
       footerStackView.topAnchor.constraint(equalTo: contentStackView.bottomAnchor),
       footerStackView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),

@@ -9,4 +9,5 @@ import Foundation
 
 protocol SettingsSecurityModuleOutput: AnyObject {
   func settingsSecurityBiometryTurnOnConfirmation() async -> Bool
+  func settingsSecurityDidSelectShowRecoveryPhrase()
 }

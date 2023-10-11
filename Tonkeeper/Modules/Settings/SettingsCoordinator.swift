@@ -79,6 +79,15 @@ extension SettingsCoordinator: SettingsSecurityModuleOutput {
       }
     }
   }
+  
+  func settingsSecurityDidSelectShowRecoveryPhrase() {
+    let module = SettingsRecoveryPhraseAssembly.module(
+      keeperController: walletCoreAssembly.keeperController,
+      output: self
+    )
+    module.view.setupBackButton()
+    router.push(presentable: module.view)
+  }
 }
 
 extension SettingsCoordinator: PasscodeConfirmationCoordinatorOutput {
@@ -97,3 +106,4 @@ extension SettingsCoordinator: PasscodeConfirmationCoordinatorOutput {
   }
 }
 
+extension SettingsCoordinator: SettingsRecoveryPhraseModuleOutput {}
