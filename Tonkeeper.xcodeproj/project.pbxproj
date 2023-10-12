@@ -146,6 +146,13 @@
 		7D4934732A5CA1D900F4BCA2 /* TKMenuViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934722A5CA1D900F4BCA2 /* TKMenuViewController.swift */; };
 		7D4934752A5CA44000F4BCA2 /* TKMenuItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934742A5CA44000F4BCA2 /* TKMenuItem.swift */; };
 		7D4934772A5D4A9E00F4BCA2 /* TKMenuCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4934762A5D4A9E00F4BCA2 /* TKMenuCell.swift */; };
+		7D4C144F2AD6E1CC002B2922 /* SettingsRecoveryPhraseProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C144E2AD6E1CC002B2922 /* SettingsRecoveryPhraseProtocols.swift */; };
+		7D4C14512AD6E1D0002B2922 /* SettingsRecoveryPhraseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C14502AD6E1D0002B2922 /* SettingsRecoveryPhraseView.swift */; };
+		7D4C14532AD6E1D6002B2922 /* SettingsRecoveryPhraseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C14522AD6E1D6002B2922 /* SettingsRecoveryPhraseViewController.swift */; };
+		7D4C14552AD6E1DE002B2922 /* SettingsRecoveryPhrasePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C14542AD6E1DE002B2922 /* SettingsRecoveryPhrasePresenter.swift */; };
+		7D4C14572AD6E1E6002B2922 /* SettingsRecoveryPhraseAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C14562AD6E1E6002B2922 /* SettingsRecoveryPhraseAssembly.swift */; };
+		7D4C145A2AD6E853002B2922 /* RecoveryPhraseWordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C14592AD6E853002B2922 /* RecoveryPhraseWordView.swift */; };
+		7D4C145C2AD6E979002B2922 /* RecoveryPhraseListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C145B2AD6E979002B2922 /* RecoveryPhraseListView.swift */; };
 		7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CA2A53429200EC7F59 /* ImageLoader.swift */; };
 		7D5141CE2A53454400EC7F59 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CD2A53454400EC7F59 /* Image.swift */; };
 		7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */; };
@@ -162,6 +169,7 @@
 		7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527C052A2E469900A2D29A /* QRCodeGenerator.swift */; };
 		7D5735822AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5735812AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift */; };
 		7D5735842AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5735832AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift */; };
+		7D57358A2AD6D7D000B7D0A3 /* ScrollContainerWithTitleAndDescription.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5735892AD6D7D000B7D0A3 /* ScrollContainerWithTitleAndDescription.swift */; };
 		7D5823397229401915615466 /* SendConfirmationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8AB8E1231F98D1A0F36AB5C8 /* SendConfirmationView.swift */; };
 		7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */; };
 		7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */; };
@@ -609,6 +617,13 @@
 		7D4934722A5CA1D900F4BCA2 /* TKMenuViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKMenuViewController.swift; sourceTree = "<group>"; };
 		7D4934742A5CA44000F4BCA2 /* TKMenuItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKMenuItem.swift; sourceTree = "<group>"; };
 		7D4934762A5D4A9E00F4BCA2 /* TKMenuCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TKMenuCell.swift; sourceTree = "<group>"; };
+		7D4C144E2AD6E1CC002B2922 /* SettingsRecoveryPhraseProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRecoveryPhraseProtocols.swift; sourceTree = "<group>"; };
+		7D4C14502AD6E1D0002B2922 /* SettingsRecoveryPhraseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRecoveryPhraseView.swift; sourceTree = "<group>"; };
+		7D4C14522AD6E1D6002B2922 /* SettingsRecoveryPhraseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRecoveryPhraseViewController.swift; sourceTree = "<group>"; };
+		7D4C14542AD6E1DE002B2922 /* SettingsRecoveryPhrasePresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRecoveryPhrasePresenter.swift; sourceTree = "<group>"; };
+		7D4C14562AD6E1E6002B2922 /* SettingsRecoveryPhraseAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRecoveryPhraseAssembly.swift; sourceTree = "<group>"; };
+		7D4C14592AD6E853002B2922 /* RecoveryPhraseWordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryPhraseWordView.swift; sourceTree = "<group>"; };
+		7D4C145B2AD6E979002B2922 /* RecoveryPhraseListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryPhraseListView.swift; sourceTree = "<group>"; };
 		7D5141CA2A53429200EC7F59 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		7D5141CD2A53454400EC7F59 /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
 		7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentViewController.swift; sourceTree = "<group>"; };
@@ -625,6 +640,7 @@
 		7D527C052A2E469900A2D29A /* QRCodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeGenerator.swift; sourceTree = "<group>"; };
 		7D5735812AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeConfirmationCoordinator.swift; sourceTree = "<group>"; };
 		7D5735832AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSecurityProtocols.swift; sourceTree = "<group>"; };
+		7D5735892AD6D7D000B7D0A3 /* ScrollContainerWithTitleAndDescription.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScrollContainerWithTitleAndDescription.swift; sourceTree = "<group>"; };
 		7D5928462A1F578A006B0A8A /* WalletHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderViewController.swift; sourceTree = "<group>"; };
 		7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderView.swift; sourceTree = "<group>"; };
 		7D59284A2A1F5797006B0A8A /* WalletHeaderPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderPresenter.swift; sourceTree = "<group>"; };
@@ -1297,8 +1313,9 @@
 		7D3D64F72ACAB01300E64537 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
-				7DA4C3A02AD588DC0059A48E /* SettingsSecurity */,
 				7DDBBFFD2ACCAD8900F811A5 /* WalletRestore */,
+				7D57358B2AD6DD9700B7D0A3 /* SettingsRecoveryPhrase */,
+				7DA4C3A02AD588DC0059A48E /* SettingsSecurity */,
 				7D3D65262ACC290000E64537 /* SettingsCurrencyPicker */,
 				7D3D64FA2ACAB01300E64537 /* SettingsList */,
 				7D3D64F82ACAB01300E64537 /* SettingsCoordinator.swift */,
@@ -1526,6 +1543,15 @@
 			path = TKMenu;
 			sourceTree = "<group>";
 		};
+		7D4C14582AD6E843002B2922 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				7D4C14592AD6E853002B2922 /* RecoveryPhraseWordView.swift */,
+				7D4C145B2AD6E979002B2922 /* RecoveryPhraseListView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		7D5141C92A53428700EC7F59 /* ImageLoader */ = {
 			isa = PBXGroup;
 			children = (
@@ -1590,6 +1616,27 @@
 				7D527C052A2E469900A2D29A /* QRCodeGenerator.swift */,
 			);
 			path = QRCodeGenerator;
+			sourceTree = "<group>";
+		};
+		7D5735882AD6D78E00B7D0A3 /* Headers */ = {
+			isa = PBXGroup;
+			children = (
+				7D5735892AD6D7D000B7D0A3 /* ScrollContainerWithTitleAndDescription.swift */,
+			);
+			path = Headers;
+			sourceTree = "<group>";
+		};
+		7D57358B2AD6DD9700B7D0A3 /* SettingsRecoveryPhrase */ = {
+			isa = PBXGroup;
+			children = (
+				7D4C14582AD6E843002B2922 /* Views */,
+				7D4C144E2AD6E1CC002B2922 /* SettingsRecoveryPhraseProtocols.swift */,
+				7D4C14502AD6E1D0002B2922 /* SettingsRecoveryPhraseView.swift */,
+				7D4C14522AD6E1D6002B2922 /* SettingsRecoveryPhraseViewController.swift */,
+				7D4C14542AD6E1DE002B2922 /* SettingsRecoveryPhrasePresenter.swift */,
+				7D4C14562AD6E1E6002B2922 /* SettingsRecoveryPhraseAssembly.swift */,
+			);
+			path = SettingsRecoveryPhrase;
 			sourceTree = "<group>";
 		};
 		7D5928452A1F5776006B0A8A /* WalletHeader */ = {
@@ -1949,6 +1996,7 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7D5735882AD6D78E00B7D0A3 /* Headers */,
 				7D797E182A8F7A1900A626D7 /* ListElements */,
 				7D16E1622A7526F300A27AB0 /* Toasts */,
 				7DB944BF2A728E0F0008B512 /* Shimmer */,
@@ -2976,9 +3024,11 @@
 				7D6836742A1E6614002DBBC7 /* QRScannerViewController.swift in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D3D651F2ACB330800E64537 /* SettingsListCellIconAccessoryView.swift in Sources */,
+				7D4C14552AD6E1DE002B2922 /* SettingsRecoveryPhrasePresenter.swift in Sources */,
 				7D6836A02A1EB644002DBBC7 /* ToggleButton.swift in Sources */,
 				7D16E18A2A77C1FB00A27AB0 /* PassthroughWindow.swift in Sources */,
 				7D384A552A66ACED00DE2A66 /* ReceiveRootPresenterAnyProvider.swift in Sources */,
+				7D4C14532AD6E1D6002B2922 /* SettingsRecoveryPhraseViewController.swift in Sources */,
 				7D68362E2A1CE903002DBBC7 /* NavigationRouter.swift in Sources */,
 				7D92928D2A24DFAB005B83DF /* WalletHeaderViewController+ScrollContainerHeaderContent.swift in Sources */,
 				7DAC78E12A969D3D00358D35 /* CollectibleDetailsCollectibleView.swift in Sources */,
@@ -2989,6 +3039,7 @@
 				7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */,
 				7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */,
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
+				7D4C145A2AD6E853002B2922 /* RecoveryPhraseWordView.swift in Sources */,
 				7D009A802A989E8C00A15B8A /* SendCollectibleCoordinator.swift in Sources */,
 				7D5928652A1FB6C4006B0A8A /* UIControlClosure.swift in Sources */,
 				7D9144332A32130500B0FD17 /* ModalCardContainerContent.swift in Sources */,
@@ -3059,7 +3110,10 @@
 				7D3D65212ACB60DF00E64537 /* SettingsListCellSwitchAccessoryView.swift in Sources */,
 				7D5928502A1F614B006B0A8A /* SpacingView.swift in Sources */,
 				7D9292D62A287FF9005B83DF /* UIViewController+Keyboard.swift in Sources */,
+				7D57358A2AD6D7D000B7D0A3 /* ScrollContainerWithTitleAndDescription.swift in Sources */,
 				7DE27E5F2A30C61E00842FA8 /* ActivityListSectionHeaderView.swift in Sources */,
+				7D4C14512AD6E1D0002B2922 /* SettingsRecoveryPhraseView.swift in Sources */,
+				7D4C144F2AD6E1CC002B2922 /* SettingsRecoveryPhraseProtocols.swift in Sources */,
 				7D1162FD2A60379D00DF4F30 /* WalletTokenDetailsCoordinator.swift in Sources */,
 				7D9293002A29DCDA005B83DF /* SendRecipientView.swift in Sources */,
 				7D143C3D2A4ED05600B5FCC0 /* SuccessViewController+Configuration.swift in Sources */,
@@ -3140,6 +3194,7 @@
 				920F2D1C164D714EF8B77CB8 /* ActivityEmptyView.swift in Sources */,
 				7D9144352A32230C00B0FD17 /* ModalCardHeaderView.swift in Sources */,
 				44FC2415321AB434412B8523 /* ActivityEmptyPresenter.swift in Sources */,
+				7D4C14572AD6E1E6002B2922 /* SettingsRecoveryPhraseAssembly.swift in Sources */,
 				7D3BCFE12A4EBE7E00BE6AD9 /* SuccessViewController.swift in Sources */,
 				48DB3E42B318C80B7090AFD0 /* ActivityEmptyProtocols.swift in Sources */,
 				2E9AD80F15E6019A55846F61 /* ActivityListViewController.swift in Sources */,
@@ -3177,6 +3232,7 @@
 				49D41F7981620397A6533318 /* EnterMnemonicViewController.swift in Sources */,
 				7D4934672A5C61E100F4BCA2 /* PasscodeAuthCoordinator.swift in Sources */,
 				7D3D65282ACC291800E64537 /* SettingsCurrencyPickerPresenter.swift in Sources */,
+				7D4C145C2AD6E979002B2922 /* RecoveryPhraseListView.swift in Sources */,
 				BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */,
 				C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */,
 				7D49346E2A5C7A6A00F4BCA2 /* BlurViewController.swift in Sources */,

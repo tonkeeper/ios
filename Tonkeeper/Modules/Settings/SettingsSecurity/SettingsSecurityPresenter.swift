@@ -45,8 +45,11 @@ extension SettingsSecurityPresenter: SettingsListPresenterInput {
 private extension SettingsSecurityPresenter {
   func updateSettings() {
     
-    let sections = SettingsListSection(items: [getFaceIdSetting()])
-    let models = mapper.mapSettingsSections([sections])
+    let sections = [
+      SettingsListSection(items: [getFaceIdSetting()]),
+      SettingsListSection(items: [getRecoveryPhraseSetting()])
+    ]
+    let models = mapper.mapSettingsSections(sections)
     viewInput?.didUpdateSettings(models)
   }
   
@@ -72,12 +75,7 @@ private extension SettingsSecurityPresenter {
         
         let isConfirmed = await {
           guard newValue else { return true }
-          if let isConfirmed = await self.output?.settingsSecurityBiometryTurnOnConfirmation(),
-             isConfirmed {
-            return true
-          } else {
-            return false
-          }
+          return await self.askActionConfirmation()
         }()
         
         guard isConfirmed else { return isConfirmed }
@@ -107,6 +105,30 @@ private extension SettingsSecurityPresenter {
     
     return item
   }
+  
+  func getRecoveryPhraseSetting() -> SettingsListItem {
+    SettingsListItem(
+      title: .showRecoveryPhrase,
+      option: .plain(.init(
+        accessory: .icon(.init(image: .Icons.SettingsList.security,
+                               tintColor: .Accent.blue)),
+        handler: { [weak self] in
+          guard let self = self else { return }
+          Task {
+            let isConfirmed = await self.askActionConfirmation()
+            guard isConfirmed else { return }
+            await MainActor.run {
+              self.output?.settingsSecurityDidSelectShowRecoveryPhrase()
+            }
+          }
+        }))
+    )
+  }
+  
+  func askActionConfirmation() async -> Bool {
+    guard let output = output else { return false }
+    return await output.settingsSecurityConfirmation()
+  }
 }
 
 private extension String {
@@ -115,4 +137,5 @@ private extension String {
   static let faceId = "Face ID"
   static let touchId = "Touch ID"
   static let biometryUnavailable = "Biometry unavailable"
+  static let showRecoveryPhrase = "Show recovery phrase"
 }

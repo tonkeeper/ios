@@ -63,7 +63,7 @@ extension SettingsCoordinator: SettingsListModuleOutput {
 // MARK: - SettingsSecurityModuleOutput
 
 extension SettingsCoordinator: SettingsSecurityModuleOutput {
-  func settingsSecurityBiometryTurnOnConfirmation() async -> Bool {
+  func settingsSecurityConfirmation() async -> Bool {
     return await withCheckedContinuation { [weak self] continuation in
       guard let self = self else { return }
       self.confirmationContinuation = continuation
@@ -78,6 +78,15 @@ extension SettingsCoordinator: SettingsSecurityModuleOutput {
         }
       }
     }
+  }
+  
+  func settingsSecurityDidSelectShowRecoveryPhrase() {
+    let module = SettingsRecoveryPhraseAssembly.module(
+      keeperController: walletCoreAssembly.keeperController,
+      output: self
+    )
+    module.view.setupBackButton()
+    router.push(presentable: module.view)
   }
 }
 
@@ -97,3 +106,4 @@ extension SettingsCoordinator: PasscodeConfirmationCoordinatorOutput {
   }
 }
 
+extension SettingsCoordinator: SettingsRecoveryPhraseModuleOutput {}

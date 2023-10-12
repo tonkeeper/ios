@@ -40,11 +40,8 @@ private extension PasscodeConfirmationCoordinator {
     }
     configurator.didFinishBiometry = { [weak self] isSuccess in
       guard let self = self else { return }
-      if isSuccess {
-        self.output?.passcodeConfirmationCoordinatorDidConfirm(self)
-      } else {
-        self.output?.passcodeConfirmationCoordinatorDidClose(self)
-      }
+      guard isSuccess else { return }
+      self.output?.passcodeConfirmationCoordinatorDidConfirm(self)
     }
     
     let module = assembly.passcodeInputAssembly(output: self, configurator: configurator)
