@@ -57,6 +57,10 @@ final class WalletRootPresenter {
 extension WalletRootPresenter: WalletRootPresenterInput {
   func viewDidLoad() {
     updateTitle()
+    if let cachedBalance = try? walletBalanceController.getWalletBalance() {
+      headerInput?.updateWith(walletHeader: cachedBalance.header)
+      contentInput?.updateWith(walletPages: cachedBalance.pages)
+    }
     startBalanceObservation()
     startConnectionStateObservation()
     walletBalanceController.startUpdate()

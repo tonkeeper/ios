@@ -18,12 +18,16 @@ final class WalletHeaderConnectionStatusView: UIView, ConfigurableView {
   private let loaderView: LoaderView = {
     let loaderView = LoaderView(size: .xSmall)
     loaderView.isHidden = false
-    loaderView.color = .white.withAlphaComponent(0.4)
-    loaderView.innerColor = .white
+    loaderView.color = .Icon.secondary
+    loaderView.innerColor = .Icon.tertiary
     return loaderView
   }()
   
-  private let loaderViewContrainer = UIView()
+  private let loaderViewContrainer: UIView = {
+    let view = UIView()
+    view.isHidden = true
+    return view
+  }()
   
   private let stackView: UIStackView = {
     let stackView = UIStackView()
