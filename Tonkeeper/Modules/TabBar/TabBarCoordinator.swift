@@ -7,7 +7,13 @@
 
 import UIKit
 
+protocol TabBarCoordinatorOutput: AnyObject {
+  func tabBarCoordinatorDidLogout(_ coordinator: TabBarCoordinator)
+}
+
 final class TabBarCoordinator: Coordinator<TabBarRouter> {
+  
+  weak var output: TabBarCoordinatorOutput?
   
   private let assembly: TabBarAssembly
   
@@ -24,6 +30,7 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
     self.browserCoordinator = assembly.browserCoordinator()
     self.settingsCoordinator = assembly.settingsCoordinator()
     super.init(router: router)
+    self.settingsCoordinator.output = self
   }
   
   override func start() {
@@ -65,5 +72,13 @@ private extension TabBarCoordinator {
                                          image: .Icons.TabBar.settings,
                                          tag: 0)
     settingsCoordinator.router.rootViewController.tabBarItem = settingsTabBarItem
+  }
+}
+
+// MARK: - SettingsCoordinatorOutput
+
+extension TabBarCoordinator: SettingsCoordinatorOutput {
+  func settingsCoordinatorDidLogout(_ settingsCoordinator: SettingsCoordinator) {
+    output?.tabBarCoordinatorDidLogout(self)
   }
 }

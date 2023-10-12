@@ -36,6 +36,7 @@ final class RootCoordinator: Coordinator<NavigationRouter> {
 private extension RootCoordinator {
   func openTabBar() {
     let coordinator = assembly.tabBarCoordinator()
+    coordinator.output = self
     router.setPresentables([(coordinator.router.rootViewController, nil)])
     addChild(coordinator)
     coordinator.start()
@@ -159,5 +160,14 @@ extension RootCoordinator: PasscodeAuthCoordinatorOutput {
   
   func createPasscodeCoordinatorDidFinishBiometry(_ coordinator: PasscodeAuthCoordinator) {
     output?.rootCoordinatorDidFinishBiometry(self)
+  }
+}
+
+// MARK: - TabBarCoordinatorOutput
+
+extension RootCoordinator: TabBarCoordinatorOutput {
+  func tabBarCoordinatorDidLogout(_ coordinator: TabBarCoordinator) {
+    removeChild(coordinator)
+    start()
   }
 }

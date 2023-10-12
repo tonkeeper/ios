@@ -7,7 +7,13 @@
 
 import Foundation
 
+protocol SettingsCoordinatorOutput: AnyObject {
+  func settingsCoordinatorDidLogout(_ settingsCoordinator: SettingsCoordinator)
+}
+
 final class SettingsCoordinator: Coordinator<NavigationRouter> {
+  
+  weak var output: SettingsCoordinatorOutput?
   
   private let walletCoreAssembly: WalletCoreAssembly
   private let passcodeAssembly: PasscodeAssembly
@@ -31,6 +37,7 @@ private extension SettingsCoordinator {
   func openSettingsList() {
     let module = SettingsListAssembly.module(
       settingsController: walletCoreAssembly.settingsController(),
+      logoutController: walletCoreAssembly.logoutController(),
       output: self
     )
     router.setPresentables([(module.view, nil)])
@@ -57,6 +64,10 @@ extension SettingsCoordinator: SettingsListModuleOutput {
     
     module.view.setupBackButton()
     router.push(presentable: module.view)
+  }
+  
+  func settingsListDidLogout(_ settingsList: SettingsListModuleInput) {
+    output?.settingsCoordinatorDidLogout(self)
   }
 }
 

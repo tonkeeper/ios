@@ -7,10 +7,12 @@
 //
 
 import Foundation
+import UIKit
 
 protocol SettingsListModuleOutput: AnyObject {
   func settingsListDidSelectSecuritySetting(_ settingsList: SettingsListModuleInput)
   func settingsListDidSelectCurrencySetting(_ settingsList: SettingsListModuleInput)
+  func settingsListDidLogout(_ settingsList: SettingsListModuleInput)
 }
 
 protocol SettingsListModuleInput: AnyObject {}
@@ -24,4 +26,5 @@ protocol SettingsListPresenterInput {
 protocol SettingsListViewInput: AnyObject {
   func didUpdateSettings(_ sections: [[SettingsListCellContentView.Model]])
   func openKeychainRestore()
+  func showAlert(title: String, description: String?, actions: [UIAlertAction])
 }
