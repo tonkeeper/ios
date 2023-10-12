@@ -8,6 +8,7 @@
 
 import Foundation
 import WalletCore
+import UIKit
 
 final class SettingsListPresenter {
   
@@ -19,6 +20,7 @@ final class SettingsListPresenter {
   // MARK: - Dependencies
   
   private let settingsController: SettingsController
+  private let logoutController: LogoutController
   
   // MARK: - Mapper
   
@@ -26,8 +28,10 @@ final class SettingsListPresenter {
   
   // MARK: - Init
   
-  init(settingsController: SettingsController) {
+  init(settingsController: SettingsController,
+       logoutController: LogoutController) {
     self.settingsController = settingsController
+    self.logoutController = logoutController
     settingsController.addObserver(self)
   }
 }
@@ -70,6 +74,9 @@ private extension SettingsListPresenter {
       ]),
       SettingsListSection(items: [
         getCurrencyItem()
+      ]),
+      SettingsListSection(items: [
+        getLogoutItem()
       ])
     ]
   }
@@ -104,9 +111,30 @@ private extension SettingsListPresenter {
       title: "Log out",
       option: SettingsListItemOption.plain(SettingsListItemPlainOption(
         accessory: .icon(.init(image: .Icons.SettingsList.logout, tintColor: .Accent.blue)),
-        handler: {
+        handler: { [weak self] in
+          guard let self = self else { return }
           
+          let actions = [
+            UIAlertAction(title: .logoutCancelButtonTitle, style: .cancel),
+            UIAlertAction(title: .logoutLogoutButtonTitle, style: .destructive, handler: { _ in
+              self.logoutController.logout()
+              self.output?.settingsListDidLogout(self)
+            })
+          ]
+          
+          self.viewInput?.showAlert(
+            title: .logoutTitle,
+            description: .logoutDescription,
+            actions: actions
+          )
         }))
     )
   }
+}
+
+private extension String {
+  static let logoutTitle = "Log out?"
+  static let logoutDescription = "This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase."
+  static let logoutCancelButtonTitle = "Cancel"
+  static let logoutLogoutButtonTitle = "Log out"
 }

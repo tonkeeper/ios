@@ -10,8 +10,12 @@ import WalletCore
 
 struct SettingsListAssembly {
   static func module(settingsController: SettingsController,
+                     logoutController: LogoutController,
                      output: SettingsListModuleOutput?) -> Module<SettingsListViewController, SettingsListModuleInput> {
-    let presenter = SettingsListPresenter(settingsController: settingsController)
+    let presenter = SettingsListPresenter(
+      settingsController: settingsController,
+      logoutController: logoutController
+    )
     presenter.output = output
     
     let viewController = SettingsListViewController(presenter: presenter)

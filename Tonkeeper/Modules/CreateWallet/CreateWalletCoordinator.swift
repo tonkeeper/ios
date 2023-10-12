@@ -61,10 +61,6 @@ private extension CreateWalletCoordinator {
 // MARK: - CreatePasscodeCoordinatorOutput
 
 extension CreateWalletCoordinator: CreatePasscodeCoordinatorOutput {
-  func createPasscodeCoordinatorDidFinish(_ coordinator: CreatePasscodeCoordinator) {
-    removeChild(coordinator)
-  }
-  
   func createPasscodeCoordinatorDidCreatePasscode(
     _ coordinator: CreatePasscodeCoordinator,
     passcode: Passcode

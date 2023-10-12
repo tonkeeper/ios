@@ -52,6 +52,17 @@ extension SettingsListViewController: SettingsListViewInput {
     let vc = WalletRestoreViewController()
     present(vc, animated: true)
   }
+  
+  func showAlert(title: String, description: String?, actions: [UIAlertAction]) {
+    let alertController = UIAlertController(
+      title: title,
+      message: description,
+      preferredStyle: .alert
+    )
+    alertController.overrideUserInterfaceStyle = .dark
+    actions.forEach { alertController.addAction($0) }
+    present(alertController, animated: true)
+  }
 }
 
 // MARK: - Private

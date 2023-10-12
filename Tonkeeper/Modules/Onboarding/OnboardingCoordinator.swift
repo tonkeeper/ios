@@ -31,7 +31,7 @@ final class OnboardingCoordinator: Coordinator<NavigationRouter> {
 private extension OnboardingCoordinator {
   func openWelcome() {
     let module = assembly.welcomeModule(output: self)
-    router.setPresentables([(module.view, nil)])
+    router.setPresentables([(module.view, nil)], options: .init(isAnimated: false))
   }
 }
 

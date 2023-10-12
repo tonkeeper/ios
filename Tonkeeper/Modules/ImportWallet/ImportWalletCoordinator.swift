@@ -80,10 +80,6 @@ extension ImportWalletCoordinator: EnterMnemonicModuleOutput {
 // MARK: - CreatePasscodeCoordinatorOutput
 
 extension ImportWalletCoordinator: CreatePasscodeCoordinatorOutput {
-  func createPasscodeCoordinatorDidFinish(_ coordinator: CreatePasscodeCoordinator) {
-    removeChild(coordinator)
-  }
-  
   func createPasscodeCoordinatorDidCreatePasscode(
     _ coordinator: CreatePasscodeCoordinator,
     passcode: Passcode
