@@ -75,12 +75,7 @@ private extension SettingsSecurityPresenter {
         
         let isConfirmed = await {
           guard newValue else { return true }
-          if let isConfirmed = await self.output?.settingsSecurityBiometryTurnOnConfirmation(),
-             isConfirmed {
-            return true
-          } else {
-            return false
-          }
+          return await self.askActionConfirmation()
         }()
         
         guard isConfirmed else { return isConfirmed }
@@ -118,9 +113,21 @@ private extension SettingsSecurityPresenter {
         accessory: .icon(.init(image: .Icons.SettingsList.security,
                                tintColor: .Accent.blue)),
         handler: { [weak self] in
-          self?.output?.settingsSecurityDidSelectShowRecoveryPhrase()
+          guard let self = self else { return }
+          Task {
+            let isConfirmed = await self.askActionConfirmation()
+            guard isConfirmed else { return }
+            await MainActor.run {
+              self.output?.settingsSecurityDidSelectShowRecoveryPhrase()
+            }
+          }
         }))
     )
+  }
+  
+  func askActionConfirmation() async -> Bool {
+    guard let output = output else { return false }
+    return await output.settingsSecurityConfirmation()
   }
 }
 

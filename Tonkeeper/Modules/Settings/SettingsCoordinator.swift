@@ -63,7 +63,7 @@ extension SettingsCoordinator: SettingsListModuleOutput {
 // MARK: - SettingsSecurityModuleOutput
 
 extension SettingsCoordinator: SettingsSecurityModuleOutput {
-  func settingsSecurityBiometryTurnOnConfirmation() async -> Bool {
+  func settingsSecurityConfirmation() async -> Bool {
     return await withCheckedContinuation { [weak self] continuation in
       guard let self = self else { return }
       self.confirmationContinuation = continuation
