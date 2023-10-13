@@ -38,6 +38,9 @@ private extension SettingsCoordinator {
     let module = SettingsListAssembly.module(
       settingsController: walletCoreAssembly.settingsController(),
       logoutController: walletCoreAssembly.logoutController(),
+      urlOpener: walletCoreAssembly.coreAssembly.urlOpener(),
+      infoProvider: walletCoreAssembly.coreAssembly.infoProvider,
+      appStoreReviewer: walletCoreAssembly.coreAssembly.appStoreReviewer(),
       output: self
     )
     router.setPresentables([(module.view, nil)])

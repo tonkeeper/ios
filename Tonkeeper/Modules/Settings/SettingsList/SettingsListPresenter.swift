@@ -9,6 +9,7 @@
 import Foundation
 import WalletCore
 import UIKit
+import TKCore
 
 final class SettingsListPresenter {
   
@@ -21,6 +22,9 @@ final class SettingsListPresenter {
   
   private let settingsController: SettingsController
   private let logoutController: LogoutController
+  private let urlOpener: URLOpener
+  private let infoProvider: InfoProvider
+  private let appStoreReviewer: AppStoreReviewer
   
   // MARK: - Mapper
   
@@ -29,10 +33,20 @@ final class SettingsListPresenter {
   // MARK: - Init
   
   init(settingsController: SettingsController,
-       logoutController: LogoutController) {
+       logoutController: LogoutController,
+       urlOpener: URLOpener,
+       infoProvider: InfoProvider,
+       appStoreReviewer: AppStoreReviewer) {
     self.settingsController = settingsController
     self.logoutController = logoutController
+    self.urlOpener = urlOpener
+    self.infoProvider = infoProvider
+    self.appStoreReviewer = appStoreReviewer
     settingsController.addObserver(self)
+  }
+  
+  deinit {
+    settingsController.removeObserver(self)
   }
 }
 
@@ -75,6 +89,7 @@ private extension SettingsListPresenter {
       SettingsListSection(items: [
         getCurrencyItem()
       ]),
+      socialLinksSection(),
       SettingsListSection(items: [
         getLogoutItem()
       ])
@@ -130,6 +145,82 @@ private extension SettingsListPresenter {
         }))
     )
   }
+  
+  func socialLinksSection() -> SettingsListSection {
+    .init(items: [
+      supportLinkItem(),
+      tonkeeperNewsLinkItem(),
+      contactUsLinkItem(),
+      rateTonkeeperItem()
+    ])
+  }
+  
+  func supportLinkItem() -> SettingsListItem {
+    SettingsListItem(
+      title: .supportTitle,
+      option: .plain(.init(
+        accessory: .icon(.init(image: .Icons.SettingsList.support, tintColor: .Accent.blue)),
+        handler: { [weak self] in
+          guard let self = self else { return }
+          guard let urlString: String = try? self.infoProvider.value(for: .supportURL),
+          let url = URL(string: urlString)  else { return }
+          self.urlOpener.open(url: url)
+        })
+      )
+    )
+  }
+  
+  func tonkeeperNewsLinkItem() -> SettingsListItem {
+    SettingsListItem(
+      title: .tonkeeperNewsTitle,
+      option: .plain(.init(
+        accessory: .icon(.init(image: .Icons.SettingsList.tonkeeperNews, tintColor: .Accent.blue)),
+        handler: { [weak self] in
+          guard let self = self else { return }
+          guard let urlString: String = try? self.infoProvider.value(for: .tonkeeperNewsURL),
+          let url = URL(string: urlString)  else { return }
+          self.urlOpener.open(url: url)
+        })
+      )
+    )
+  }
+  
+  func contactUsLinkItem() -> SettingsListItem {
+    SettingsListItem(
+      title: .contactUsTitle,
+      option: .plain(.init(
+        accessory: .icon(.init(image: .Icons.SettingsList.contactUs, tintColor: .Accent.blue)),
+        handler: { [weak self] in
+          guard let self = self else { return }
+          guard let urlString: String = try? self.infoProvider.value(for: .contactUsURL),
+          let url = URL(string: urlString)  else { return }
+          self.urlOpener.open(url: url)
+        })
+      )
+    )
+  }
+  
+  func rateTonkeeperItem() -> SettingsListItem {
+    SettingsListItem(
+      title: .rateTonkeeperXTitle,
+      option: .plain(.init(
+        accessory: .icon(.init(image: .Icons.SettingsList.rate, tintColor: .Accent.blue)),
+        handler: { [weak self] in
+          self?.appStoreReviewer.requestReview()
+        })
+      )
+    )
+  }
+  
+  func legalItem() -> SettingsListItem {
+    SettingsListItem(
+      title: .legalTitle,
+      option: .plain(.init(
+        accessory: .icon(.init(image: .Icons.SettingsList.legal, tintColor: .Accent.blue)),
+        handler: {})
+      )
+    )
+  }
 }
 
 private extension String {
@@ -137,4 +228,9 @@ private extension String {
   static let logoutDescription = "This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase."
   static let logoutCancelButtonTitle = "Cancel"
   static let logoutLogoutButtonTitle = "Log out"
+  static let supportTitle = "Support"
+  static let tonkeeperNewsTitle = "Tonkeeper news"
+  static let contactUsTitle = "Contact us"
+  static let rateTonkeeperXTitle = "Rate Tonkeeper X"
+  static let legalTitle = "Legal"
 }
