@@ -273,16 +273,36 @@ public extension UIImage {
       public static var chevron: UIImage? {
         .imageWithName("Icons/16/ic-chevron-right-16")?.withRenderingMode(.alwaysTemplate)
       }
-        
+      
       public static var checkmark: UIImage? {
         .imageWithName("Icons/28/ic-donemark-thin-28")?.withRenderingMode(.alwaysTemplate)
       }
-        
-        public static var recoveryPhrase: UIImage? {
-          .imageWithName("Icons/28/ic-key-28")?.withRenderingMode(.alwaysTemplate)
-        }
-    }
       
+      public static var recoveryPhrase: UIImage? {
+        .imageWithName("Icons/28/ic-key-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      public static var support: UIImage? {
+        .imageWithName("Icons/28/ic-telegram-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      public static var tonkeeperNews: UIImage? {
+        .imageWithName("Icons/28/ic-telegram-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      public static var contactUs: UIImage? {
+        .imageWithName("Icons/28/ic-message-bubble-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      public static var legal: UIImage? {
+        .imageWithName("Icons/28/ic-doc-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
+      public static var rate: UIImage? {
+        .imageWithName("Icons/28/ic-star-28")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     public enum Mock {
       public static var tonCurrencyIcon: UIImage? {
         .imageWithName("Icons/44/ton_currency_icon")

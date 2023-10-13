@@ -55,5 +55,9 @@ public struct CoreAssembly {
     UIApplication.shared
   }
   
+  public func appStoreReviewer() -> AppStoreReviewer {
+    UIApplication.shared
+  }
+  
   public init() {}
 }
