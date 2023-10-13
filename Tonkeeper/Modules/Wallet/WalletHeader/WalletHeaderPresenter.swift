@@ -55,7 +55,7 @@ extension WalletHeaderPresenter: WalletHeaderModuleInput {
 
 private extension WalletHeaderPresenter {
   func createHeaderButtonModels() -> [WalletHeaderButtonModel] {
-    let types: [WalletHeaderButtonModel.ButtonType] = [.send, .receive]
+    let types: [WalletHeaderButtonModel.ButtonType] = [.send, .receive, .buy]
     return types.map { type in
       let buttonModel = TKButton.Model(icon: type.icon)
       let iconButtonModel = IconButton.Model(buttonModel: buttonModel, title: type.title)

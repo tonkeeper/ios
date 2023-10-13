@@ -44,21 +44,23 @@ final class ServiceCellContentView: UIView, ContainerCollectionViewCellContent {
   override func layoutSubviews() {
     super.layoutSubviews()
     
+    let width = bounds.width - UIEdgeInsets.contentPadding.left - UIEdgeInsets.contentPadding.right
+    
     logoImageView.frame = .init(
-      x: 0,
+      x: UIEdgeInsets.contentPadding.left,
       y: bounds.height/2 - .logoSide/2,
       width: .logoSide,
       height: .logoSide
     )
     
     chevronImageView.frame = .init(
-      x: bounds.width - .chevronWidth,
+      x: bounds.width - UIEdgeInsets.contentPadding.right - .chevronWidth,
       y: bounds.height/2 - .chevronHeight/2,
       width: .chevronWidth,
       height: .chevronHeight
     )
     
-    let textWidth = bounds.width - .logoRightSpace - logoImageView.frame.maxX - chevronImageView.frame.width - .chevronLeftSpace
+    let textWidth = width - .logoRightSpace - logoImageView.frame.maxX - chevronImageView.frame.width - .chevronLeftSpace
     
     let tokenLabelSize = tokenLabel.sizeThatFits(.init(width: textWidth, height: 0))
     let tokenWidth = tokenLabelSize.width + UIEdgeInsets.tokenLabelPadding.left + UIEdgeInsets.tokenLabelPadding.right
@@ -98,7 +100,10 @@ final class ServiceCellContentView: UIView, ContainerCollectionViewCellContent {
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
-    let textWidth = size.width - .logoSide - .logoRightSpace - .chevronWidth - .chevronLeftSpace
+    var contentSize = size
+    contentSize.width -= UIEdgeInsets.contentPadding.left + UIEdgeInsets.contentPadding.right
+    
+    let textWidth = contentSize.width - .logoSide - .logoRightSpace - .chevronWidth - .chevronLeftSpace
     let tokenLabelSize = tokenLabel.sizeThatFits(.init(width: textWidth, height: 0))
     let tokenWidth = tokenLabelSize.width + UIEdgeInsets.tokenLabelPadding.left + UIEdgeInsets.tokenLabelPadding.right
     
@@ -108,7 +113,11 @@ final class ServiceCellContentView: UIView, ContainerCollectionViewCellContent {
     let descriptionLabelSize = descriptionLabel.sizeThatFits(.init(width: textWidth, height: 0))
     
     let textHeight = titleLabelSize.height + descriptionLabelSize.height
-    return .init(width: size.width, height: max(textHeight, .logoSide))
+    let heigth = max(textHeight, .logoSide)
+    return .init(
+      width: size.width,
+      height: heigth + UIEdgeInsets.contentPadding.top + UIEdgeInsets.contentPadding.bottom
+    )
   }
   
   func configure(model: Model) {
@@ -160,4 +169,5 @@ private extension CGFloat {
 
 private extension UIEdgeInsets {
   static let tokenLabelPadding: UIEdgeInsets = .init(top: 2.5, left: 5, bottom: 3.5, right: 5)
+  static let contentPadding: UIEdgeInsets = .init(top: 16, left: 16, bottom: 16, right: 16)
 }
