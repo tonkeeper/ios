@@ -64,6 +64,12 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Icons.Transaction.receieved
     case .sentAndReceieved:
       return .Icons.Transaction.receieved
+    case .mint:
+      return .Icons.Transaction.receieved
+    case .depositStake:
+      return .Icons.Transaction.sent
+    case .withdrawStake:
+      return .Icons.Transaction.sent
     case .spam:
       return .Icons.Transaction.spam
     case .bounced:
@@ -103,6 +109,12 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return "Received"
     case .sentAndReceieved:
       return "Sent and received"
+    case .mint:
+      return "Mint"
+    case .depositStake:
+      return "Stake"
+    case .withdrawStake:
+      return "Stake"
     case .spam:
       return "Spam"
     case .bounced:
@@ -138,19 +150,21 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
     switch self {
     case .sent,
         .sentAndReceieved,
+        .depositStake,
         .subscribed,
         .unsubscribed,
         .walletInitialized,
         .nftCollectionCreation,
         .nftCreation,
         .removalFromSale,
-        .nftPurchase, .bid,
+        .nftPurchase, 
+        .bid,
         .putUpForAuction,
         .endOfAuction,
         .contractExec,
         .putUpForSale:
       return .Text.primary
-    case .receieved, .bounced:
+    case .receieved, .bounced, .mint, .withdrawStake:
       return .Accent.green
     case .spam:
       return .Text.tertiary
