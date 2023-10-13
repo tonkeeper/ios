@@ -77,12 +77,15 @@ private extension SettingsListCellContentView {
     NSLayoutConstraint.activate([
       titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
       titleLabel.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
-      titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace),
+      titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace)
+        .withPriority(.defaultHigh),
       
       accessoryView.leftAnchor.constraint(equalTo: titleLabel.rightAnchor),
       accessoryView.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
-      accessoryView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace),
-      accessoryView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace),
+      accessoryView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace)
+        .withPriority(.defaultHigh),
+      accessoryView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace)
+        .withPriority(.defaultHigh),
     ])
   }
   

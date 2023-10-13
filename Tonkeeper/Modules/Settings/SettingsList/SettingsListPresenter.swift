@@ -58,6 +58,7 @@ extension SettingsListPresenter: SettingsListPresenterInput {
   
   func viewDidLoad() {
     updateSettings()
+    updateFooter()
   }
 }
 
@@ -79,6 +80,16 @@ private extension SettingsListPresenter {
     let models = mapper.mapSettingsSections(sections)
     
     viewInput?.didUpdateSettings(models)
+  }
+  
+  func updateFooter() {
+    do {
+      let appName: String = try infoProvider.value(for: .appName)
+      let appVersion: String = try infoProvider.value(for: .appVersion)
+      let buildVersion: String = try infoProvider.value(for: .buildVersion)
+      let version = "\(appVersion)(\(buildVersion))"
+      viewInput?.updateFooter(.init(appName: appName, version: version))
+    } catch {}
   }
   
   func getSettingsItems() -> [SettingsListSection] {

@@ -1,5 +1,5 @@
 //
-//  ActivityListHeaderContainer.swift
+//  CollectionViewReusableContainerView.swift
 //  Tonkeeper
 //
 //  Created by Grigory on 15.8.23..
@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class ActivityListHeaderContainer: UICollectionReusableView, Reusable {
+final class CollectionViewReusableContainerView: UICollectionReusableView, Reusable {
   
   private var contentView: UIView?
   

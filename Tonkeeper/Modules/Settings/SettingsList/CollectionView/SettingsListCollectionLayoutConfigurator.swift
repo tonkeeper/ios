@@ -29,9 +29,37 @@ struct SettingsListCollectionLayoutConfigurator {
     layout.register(TokensListTokensSectionBackgroundView.self,
                     forDecorationViewOfKind: .sectionBackgroundIdentifier)
     
+    let footerSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(100)
+    )
+    
+    let footer = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: footerSize,
+      elementKind: CollectionViewReusableContainerView.reuseIdentifier,
+      alignment: .bottom
+    )
+    
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
     configuration.interSectionSpacing = .interSectionSpacing
+    configuration.boundarySupplementaryItems = [footer]
     layout.configuration = configuration
+    
+    
+//    let headerSize = NSCollectionLayoutSize(
+//      widthDimension: .fractionalWidth(1.0),
+//      heightDimension: .estimated(100)
+//    )
+//    let header = NSCollectionLayoutBoundarySupplementaryItem(
+//      layoutSize: headerSize,
+//      elementKind: ActivityListHeaderContainer.reuseIdentifier,
+//      alignment: .top
+//    )
+//    
+//    let configuration = UICollectionViewCompositionalLayoutConfiguration()
+//    configuration.scrollDirection = .vertical
+//    configuration.boundarySupplementaryItems = [header]
+//    layout.configuration = configuration
     
     return layout
   }

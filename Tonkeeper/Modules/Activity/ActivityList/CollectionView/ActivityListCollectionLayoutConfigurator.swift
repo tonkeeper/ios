@@ -20,7 +20,7 @@ struct ActivityListCollectionLayoutConfigurator {
     )
     let header = NSCollectionLayoutBoundarySupplementaryItem(
       layoutSize: headerSize,
-      elementKind: ActivityListHeaderContainer.reuseIdentifier,
+      elementKind: CollectionViewReusableContainerView.reuseIdentifier,
       alignment: .top
     )
     

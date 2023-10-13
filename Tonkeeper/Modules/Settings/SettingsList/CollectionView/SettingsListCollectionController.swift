@@ -18,6 +18,12 @@ final class SettingsListCollectionController: NSObject {
     }
   }
   
+  var footerView: UIView? {
+    didSet {
+      collectionView?.reloadData()
+    }
+  }
+  
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
     super.init()
@@ -32,6 +38,11 @@ private extension SettingsListCollectionController {
     collectionView.register(
       SettingsListItemCollectionViewCell.self,
       forCellWithReuseIdentifier: SettingsListItemCollectionViewCell.reuseIdentifier
+    )
+    collectionView.register(
+      CollectionViewReusableContainerView.self,
+      forSupplementaryViewOfKind: CollectionViewReusableContainerView.reuseIdentifier,
+      withReuseIdentifier: CollectionViewReusableContainerView.reuseIdentifier
     )
     collectionView.dataSource = self
   }
@@ -61,5 +72,27 @@ extension SettingsListCollectionController: UICollectionViewDataSource {
     cell.isFirstCell = indexPath.item == 0
     cell.isLastCell = indexPath.item == sections[indexPath.section].count - 1
     return cell
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, 
+                      viewForSupplementaryElementOfKind kind: String,
+                      at indexPath: IndexPath) -> UICollectionReusableView {
+    if kind == CollectionViewReusableContainerView.reuseIdentifier {
+      return createFooterView(collectionView: collectionView, kind: kind, indexPath: indexPath)
+    }
+    return UICollectionReusableView(frame: .zero)
+  }
+}
+
+private extension SettingsListCollectionController {
+  func createFooterView(collectionView: UICollectionView, kind: String, indexPath: IndexPath) -> UICollectionReusableView {
+    let container = collectionView.dequeueReusableSupplementaryView(
+      ofKind: kind,
+      withReuseIdentifier: CollectionViewReusableContainerView.reuseIdentifier,
+      for: indexPath)
+    if let container = container as? CollectionViewReusableContainerView {
+      container.setContentView(footerView)
+    }
+    return container
   }
 }

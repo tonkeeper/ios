@@ -25,6 +25,7 @@ protocol SettingsListPresenterInput {
 
 protocol SettingsListViewInput: AnyObject {
   func didUpdateSettings(_ sections: [[SettingsListCellContentView.Model]])
+  func updateFooter(_ footerModel: SettingsListFooterView.Model)
   func openKeychainRestore()
   func showAlert(title: String, description: String?, actions: [UIAlertAction])
 }

@@ -104,9 +104,9 @@ private extension ActivityListCollectionController {
       forSupplementaryViewOfKind: ActivityListShimmerSectionHeaderView.reuseIdentifier,
       withReuseIdentifier: ActivityListShimmerSectionHeaderView.reuseIdentifier)
     collectionView.register(
-      ActivityListHeaderContainer.self,
-      forSupplementaryViewOfKind: ActivityListHeaderContainer.reuseIdentifier,
-      withReuseIdentifier: ActivityListHeaderContainer.reuseIdentifier
+      CollectionViewReusableContainerView.self,
+      forSupplementaryViewOfKind: CollectionViewReusableContainerView.reuseIdentifier,
+      withReuseIdentifier: CollectionViewReusableContainerView.reuseIdentifier
     )
     dataSource = createDataSource(collectionView: collectionView)
   }
@@ -134,7 +134,7 @@ private extension ActivityListCollectionController {
   func dequeueSupplementaryView(collectionView: UICollectionView,
                                 kind: String,
                                 indexPath: IndexPath) -> UICollectionReusableView? {
-    if kind == ActivityListHeaderContainer.reuseIdentifier {
+    if kind == CollectionViewReusableContainerView.reuseIdentifier {
       return createHeaderView(collectionView: collectionView, kind: kind, indexPath: indexPath)
     }
     guard let snapshot = self.dataSource?.snapshot() else { return nil }
@@ -222,9 +222,9 @@ private extension ActivityListCollectionController {
   func createHeaderView(collectionView: UICollectionView, kind: String, indexPath: IndexPath) -> UICollectionReusableView {
     let headerContainer = collectionView.dequeueReusableSupplementaryView(
       ofKind: kind,
-      withReuseIdentifier: ActivityListHeaderContainer.reuseIdentifier,
+      withReuseIdentifier: CollectionViewReusableContainerView.reuseIdentifier,
       for: indexPath)
-    if let headerContainer = headerContainer as? ActivityListHeaderContainer {
+    if let headerContainer = headerContainer as? CollectionViewReusableContainerView {
       headerContainer.setContentView(headerView)
     }
     return headerContainer

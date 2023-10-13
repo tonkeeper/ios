@@ -61,7 +61,7 @@
 		7D16E18F2A77DC6F00A27AB0 /* ToastConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D16E18E2A77DC6F00A27AB0 /* ToastConfiguration.swift */; };
 		7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D1B1F382A4F46B000EC873F /* WalletImporter.swift */; };
 		7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */; };
-		7D32F8B22A8BA65B002C130C /* ActivityListHeaderContainer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */; };
+		7D32F8B22A8BA65B002C130C /* CollectionViewReusableContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B12A8BA65B002C130C /* CollectionViewReusableContainerView.swift */; };
 		7D32F8B62A8BD225002C130C /* TokenDetailsHeaderViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B52A8BD225002C130C /* TokenDetailsHeaderViewController.swift */; };
 		7D32F8B82A8BD298002C130C /* TonChartAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D32F8B72A8BD298002C130C /* TonChartAssembly.swift */; };
 		7D384A482A6695A200DE2A66 /* SendAmountAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */; };
@@ -153,6 +153,8 @@
 		7D4C14572AD6E1E6002B2922 /* SettingsRecoveryPhraseAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C14562AD6E1E6002B2922 /* SettingsRecoveryPhraseAssembly.swift */; };
 		7D4C145A2AD6E853002B2922 /* RecoveryPhraseWordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C14592AD6E853002B2922 /* RecoveryPhraseWordView.swift */; };
 		7D4C145C2AD6E979002B2922 /* RecoveryPhraseListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C145B2AD6E979002B2922 /* RecoveryPhraseListView.swift */; };
+		7D4C14642AD98E44002B2922 /* diamond.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D4C14632AD98E44002B2922 /* diamond.json */; };
+		7D4C14662AD99152002B2922 /* SettingsListFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C14652AD99152002B2922 /* SettingsListFooterView.swift */; };
 		7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CA2A53429200EC7F59 /* ImageLoader.swift */; };
 		7D5141CE2A53454400EC7F59 /* Image.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D5141CD2A53454400EC7F59 /* Image.swift */; };
 		7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */; };
@@ -534,7 +536,7 @@
 		7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		7D1B1F382A4F46B000EC873F /* WalletImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletImporter.swift; sourceTree = "<group>"; };
 		7D27E59A2A515B1400156D0C /* WalletBalanceModelMapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletBalanceModelMapper.swift; sourceTree = "<group>"; };
-		7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityListHeaderContainer.swift; sourceTree = "<group>"; };
+		7D32F8B12A8BA65B002C130C /* CollectionViewReusableContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionViewReusableContainerView.swift; sourceTree = "<group>"; };
 		7D32F8B52A8BD225002C130C /* TokenDetailsHeaderViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TokenDetailsHeaderViewController.swift; sourceTree = "<group>"; };
 		7D32F8B72A8BD298002C130C /* TonChartAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartAssembly.swift; sourceTree = "<group>"; };
 		7D384A472A6695A200DE2A66 /* SendAmountAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SendAmountAssembly.swift; sourceTree = "<group>"; };
@@ -624,6 +626,8 @@
 		7D4C14562AD6E1E6002B2922 /* SettingsRecoveryPhraseAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRecoveryPhraseAssembly.swift; sourceTree = "<group>"; };
 		7D4C14592AD6E853002B2922 /* RecoveryPhraseWordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryPhraseWordView.swift; sourceTree = "<group>"; };
 		7D4C145B2AD6E979002B2922 /* RecoveryPhraseListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryPhraseListView.swift; sourceTree = "<group>"; };
+		7D4C14632AD98E44002B2922 /* diamond.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = diamond.json; sourceTree = "<group>"; };
+		7D4C14652AD99152002B2922 /* SettingsListFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListFooterView.swift; sourceTree = "<group>"; };
 		7D5141CA2A53429200EC7F59 /* ImageLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageLoader.swift; sourceTree = "<group>"; };
 		7D5141CD2A53454400EC7F59 /* Image.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Image.swift; sourceTree = "<group>"; };
 		7D527BBD2A2A910100A2D29A /* ModalContentViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentViewController.swift; sourceTree = "<group>"; };
@@ -1123,6 +1127,7 @@
 			children = (
 				7D143C382A4EC0E800B5FCC0 /* check480.json */,
 				7D143C392A4EC0E800B5FCC0 /* confetti.json */,
+				7D4C14632AD98E44002B2922 /* diamond.json */,
 			);
 			path = Animations;
 			sourceTree = "<group>";
@@ -1206,6 +1211,7 @@
 		7D3BCFA62A4C3E1C00BE6AD9 /* Containers */ = {
 			isa = PBXGroup;
 			children = (
+				7D32F8B12A8BA65B002C130C /* CollectionViewReusableContainerView.swift */,
 				7D3BCFA72A4C3E3100BE6AD9 /* ButtonBottomContainer.swift */,
 			);
 			path = Containers;
@@ -1374,6 +1380,7 @@
 			isa = PBXGroup;
 			children = (
 				7D3D65182ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift */,
+				7D4C14652AD99152002B2922 /* SettingsListFooterView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2598,7 +2605,6 @@
 				7DA0EFF02A8641560062C8BA /* ActivityListShimmerCell.swift */,
 				7D7CE3FD2A89B3ED002BA9EC /* ActivityListShimmerSectionHeaderView.swift */,
 				7DA0EFF72A866D2B0062C8BA /* ActivityListFooterView.swift */,
-				7D32F8B12A8BA65B002C130C /* ActivityListHeaderContainer.swift */,
 			);
 			path = Cells;
 			sourceTree = "<group>";
@@ -2839,6 +2845,7 @@
 			files = (
 				7DB8FB722A1BCC92005B4B11 /* LaunchScreen.storyboard in Resources */,
 				7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */,
+				7D4C14642AD98E44002B2922 /* diamond.json in Resources */,
 				7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */,
 				7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */,
 			);
@@ -2937,6 +2944,7 @@
 				7D5D05D52A309674009F42FF /* ContainerCollectionViewCell.swift in Sources */,
 				7D9144372A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift in Sources */,
 				7D0207622A7FE42A00D63B4C /* ActivityListCompositionTransactionCell.swift in Sources */,
+				7D4C14662AD99152002B2922 /* SettingsListFooterView.swift in Sources */,
 				7D3D65192ACAD1D000E64537 /* SettingsListItemCollectionViewCell.swift in Sources */,
 				7DE27E622A30CDEE00842FA8 /* TransactionType.swift in Sources */,
 				7D3BCFD72A4DA4D300BE6AD9 /* PasscodeDotView.swift in Sources */,
@@ -2994,7 +3002,7 @@
 				7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */,
 				7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */,
 				7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */,
-				7D32F8B22A8BA65B002C130C /* ActivityListHeaderContainer.swift in Sources */,
+				7D32F8B22A8BA65B002C130C /* CollectionViewReusableContainerView.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
 				7D3F260F2AC19F79002DF1B7 /* RateWidget.intentdefinition in Sources */,
 				7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */,

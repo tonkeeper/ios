@@ -20,6 +20,10 @@ class SettingsListViewController: GenericViewController<SettingsListView> {
     let controller = SettingsListCollectionController(collectionView: customView.collectionView)
     return controller
   }()
+  
+  // MARK: - Footer
+  
+  private let footerView = SettingsListFooterView()
 
   // MARK: - Init
 
@@ -48,6 +52,10 @@ extension SettingsListViewController: SettingsListViewInput {
     collectionController.sections = sections
   }
   
+  func updateFooter(_ footerModel: SettingsListFooterView.Model) {
+    footerView.configure(model: footerModel)
+  }
+  
   func openKeychainRestore() {
     let vc = WalletRestoreViewController()
     present(vc, animated: true)
@@ -71,5 +79,7 @@ private extension SettingsListViewController {
   func setup() {
     title = presenter.title
     navigationItem.largeTitleDisplayMode = presenter.isTitleLarge ? .always : .never
+    
+    collectionController.footerView = footerView
   }
 }

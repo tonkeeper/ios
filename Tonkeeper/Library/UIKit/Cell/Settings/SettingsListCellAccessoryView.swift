@@ -80,8 +80,8 @@ private extension SettingsListCellAccessoryView {
     NSLayoutConstraint.activate([
       containerView.topAnchor.constraint(equalTo: topAnchor),
       containerView.leftAnchor.constraint(equalTo: leftAnchor),
-      containerView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      containerView.rightAnchor.constraint(equalTo: rightAnchor)
+      containerView.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
+      containerView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh)
     ])
   }
 }
