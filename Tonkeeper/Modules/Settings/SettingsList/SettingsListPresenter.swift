@@ -87,7 +87,7 @@ private extension SettingsListPresenter {
       let appName: String = try infoProvider.value(for: .appName)
       let appVersion: String = try infoProvider.value(for: .appVersion)
       let buildVersion: String = try infoProvider.value(for: .buildVersion)
-      let version = "\(appVersion)(\(buildVersion))"
+      let version = "Version \(appVersion)(\(buildVersion))"
       viewInput?.updateFooter(.init(appName: appName, version: version))
     } catch {}
   }
