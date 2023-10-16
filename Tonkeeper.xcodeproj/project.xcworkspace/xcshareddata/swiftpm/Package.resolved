@@ -32,8 +32,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
-        "branch" : "develop",
-        "revision" : "04a12812bfa0c7afc0b9a7a9873e43b1dbc3d90c"
+        "branch" : "feature/buy_ton",
+        "revision" : "4385a4ae83b24783a4307edfee037f0f2a84748d"
       }
     },
     {
@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "revision" : "5e79c03849e1de240bcc018191924ecee7a03eb7",
-        "version" : "0.0.14"
+        "revision" : "8abe00aeebce7d498a3f9b61fb3437dd723ea2f6",
+        "version" : "0.0.15"
       }
     },
     {

@@ -114,7 +114,7 @@
 		7D3D65282ACC291800E64537 /* SettingsCurrencyPickerPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65272ACC291800E64537 /* SettingsCurrencyPickerPresenter.swift */; };
 		7D3D652A2ACC293F00E64537 /* SettingsCurrencyPickerAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3D65292ACC293F00E64537 /* SettingsCurrencyPickerAssembly.swift */; };
 		7D3E437D2A33834200C23A75 /* BuyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */; };
-		7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyAssembly.swift */; };
+		7D3E437F2A33835100C23A75 /* BuyListAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E437E2A33835100C23A75 /* BuyListAssembly.swift */; };
 		7D3E43842A3395CB00C23A75 /* BuyListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43832A3395CB00C23A75 /* BuyListSection.swift */; };
 		7D3E43862A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43852A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift */; };
 		7D3E43882A3397AF00C23A75 /* BuyListCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3E43872A3397AF00C23A75 /* BuyListCollectionController.swift */; };
@@ -589,7 +589,7 @@
 		7D3D65272ACC291800E64537 /* SettingsCurrencyPickerPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCurrencyPickerPresenter.swift; sourceTree = "<group>"; };
 		7D3D65292ACC293F00E64537 /* SettingsCurrencyPickerAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCurrencyPickerAssembly.swift; sourceTree = "<group>"; };
 		7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyCoordinator.swift; sourceTree = "<group>"; };
-		7D3E437E2A33835100C23A75 /* BuyAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyAssembly.swift; sourceTree = "<group>"; };
+		7D3E437E2A33835100C23A75 /* BuyListAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListAssembly.swift; sourceTree = "<group>"; };
 		7D3E43832A3395CB00C23A75 /* BuyListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListSection.swift; sourceTree = "<group>"; };
 		7D3E43852A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListCollectionLayoutConfigurator.swift; sourceTree = "<group>"; };
 		7D3E43872A3397AF00C23A75 /* BuyListCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuyListCollectionController.swift; sourceTree = "<group>"; };
@@ -1407,7 +1407,7 @@
 			children = (
 				04FF381D2F96AC549BAFBA3F /* BuyList */,
 				7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */,
-				7D3E437E2A33835100C23A75 /* BuyAssembly.swift */,
+				7D3E437E2A33835100C23A75 /* BuyListAssembly.swift */,
 			);
 			path = Buy;
 			sourceTree = "<group>";
@@ -3217,7 +3217,7 @@
 				0D6D9286FE3AD2FE83868D1B /* ActivityTransactionDetailsViewController.swift in Sources */,
 				63468D514D5142929F969B22 /* ActivityTransactionDetailsView.swift in Sources */,
 				9182307863BB72BE320AE516 /* ActivityTransactionDetailsPresenter.swift in Sources */,
-				7D3E437F2A33835100C23A75 /* BuyAssembly.swift in Sources */,
+				7D3E437F2A33835100C23A75 /* BuyListAssembly.swift in Sources */,
 				65C380B2FDF23EC99083A8C4 /* ActivityTransactionDetailsProtocols.swift in Sources */,
 				D1D4A0F33F327EA564739A5C /* BuyListViewController.swift in Sources */,
 				7D1163042A603B6A00DF4F30 /* TokenDetailsAssembly.swift in Sources */,
@@ -3732,7 +3732,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
 			requirement = {
-				branch = develop;
+				branch = feature/buy_ton;
 				kind = branch;
 			};
 		};

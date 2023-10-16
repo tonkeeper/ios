@@ -14,7 +14,6 @@ struct WalletAssembly {
   
   let sendAssembly: SendAssembly
   let receiveAssembly: ReceiveAssembly
-  let buyAssembly: BuyAssembly
   let walletTokenDetailsAssembly: WalletTokenDetailsAssembly
   let collectibleAssembly: CollectibleAssembly
   let inAppBrowserAssembly: InAppBrowserAssembly
@@ -26,12 +25,10 @@ struct WalletAssembly {
   init(walletCoreAssembly: WalletCoreAssembly,
        sendAssembly: SendAssembly,
        receiveAssembly: ReceiveAssembly,
-       buyAssembly: BuyAssembly,
        inAppBrowserAssembly: InAppBrowserAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
     self.sendAssembly = sendAssembly
     self.receiveAssembly = receiveAssembly
-    self.buyAssembly = buyAssembly
     self.inAppBrowserAssembly = inAppBrowserAssembly
     self.walletTokenDetailsAssembly = WalletTokenDetailsAssembly(
       walletCoreAssembly: walletCoreAssembly,
@@ -120,7 +117,7 @@ struct WalletAssembly {
     modalCardContainerViewController.headerSize = .big
     let router = Router(rootViewController: modalCardContainerViewController)
     let coordinator = BuyCoordinator(router: router,
-                                     assembly: buyAssembly)
+                                     walletCoreAssembly: walletCoreAssembly)
     return coordinator
   }
   

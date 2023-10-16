@@ -7,13 +7,17 @@
 
 import UIKit
 
-final class ServiceCellContentView: UIView, ContainerCollectionViewCellContent {  
+final class ServiceCellContentView: UIControlClosure, ContainerCollectionViewCellContent {
+  
+  weak var imageLoader: ImageLoader?
+  
   private let titleLabel = UILabel()
   private let descriptionLabel = UILabel()
   private let tokenContainer: UIView = {
     let view = UIView()
     view.backgroundColor = .Background.contentTint
     view.layer.cornerRadius = .tokenCornerRadius
+    view.isUserInteractionEnabled = false
     return view
   }()
   private let tokenLabel = UILabel()
@@ -21,6 +25,7 @@ final class ServiceCellContentView: UIView, ContainerCollectionViewCellContent {
     let imageView = UIImageView()
     imageView.image = .Icons.Service.chevron
     imageView.tintColor = .Icon.tertiary
+    imageView.isUserInteractionEnabled = false
     return imageView
   }()
   private let logoImageView: UIImageView = {
@@ -28,9 +33,21 @@ final class ServiceCellContentView: UIView, ContainerCollectionViewCellContent {
     imageView.contentMode = .center
     imageView.layer.cornerRadius = .logoCornerRadius
     imageView.layer.masksToBounds = true
+    imageView.isUserInteractionEnabled = false
     return imageView
   }()
-  private let textContainer = UIView()
+  private let textContainer: UIView = {
+    let view = UIView()
+    view.isUserInteractionEnabled = false
+    return view
+  }()
+  
+  override var isHighlighted: Bool {
+    didSet {
+      guard isHighlighted != oldValue else { return }
+      didUpdateHightlightState()
+    }
+  }
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -121,7 +138,14 @@ final class ServiceCellContentView: UIView, ContainerCollectionViewCellContent {
   }
   
   func configure(model: Model) {
-    logoImageView.image = model.logo
+    switch model.logo {
+    case let .image(image, tinColor, backgroundColor):
+      logoImageView.image = image
+      logoImageView.tintColor = tinColor
+      logoImageView.backgroundColor = backgroundColor
+    case let .url(url):
+      imageLoader?.loadImage(imageURL: url, imageView: logoImageView, size: .init(width: .logoSide, height: .logoSide))
+    }
     titleLabel.attributedText = model.title
     descriptionLabel.attributedText = model.description
     tokenLabel.attributedText = model.token
@@ -152,6 +176,14 @@ private extension ServiceCellContentView {
     textContainer.addSubview(descriptionLabel)
     
     tokenContainer.addSubview(tokenLabel)
+  }
+  
+  func didUpdateHightlightState() {
+    let duration: TimeInterval = isHighlighted ? 0.05 : 0.2
+    
+    UIView.animate(withDuration: duration, delay: 0, options: [.allowUserInteraction, .curveEaseInOut]) {
+      self.backgroundColor = self.isHighlighted ? .Background.highlighted : .Background.content
+    }
   }
 }
 

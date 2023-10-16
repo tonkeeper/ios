@@ -26,6 +26,7 @@ final class BuyListCollectionController: NSObject {
   private var dataSource: UICollectionViewDiffableDataSource<BuyListSection, AnyHashable>?
   
   private let collectionLayoutConfigurator = BuyListCollectionLayoutConfigurator()
+  private let imageLoader = NukeImageLoader()
   
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
@@ -49,7 +50,7 @@ private extension BuyListCollectionController {
       snapshot.appendSections([section])
       snapshot.appendItems(section.items, toSection: section)
     }
-    dataSource?.apply(snapshot)
+    dataSource?.apply(snapshot, animatingDifferences: false)
   }
   
   func createDataSource(collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<BuyListSection, AnyHashable> {
@@ -75,6 +76,7 @@ private extension BuyListCollectionController {
       return UICollectionViewCell()
     }
     
+    cell.imageLoader = imageLoader
     cell.configure(model: model)
     cell.isFirstCell = indexPath.item == 0
     cell.isLastCell = indexPath.item == sections[indexPath.section].items.count - 1

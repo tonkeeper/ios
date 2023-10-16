@@ -9,11 +9,11 @@ import UIKit
 
 final class BuyCoordinator: Coordinator<Router<ModalCardContainerViewController>> {
   
-  private let assembly: BuyAssembly
+  private let walletCoreAssembly: WalletCoreAssembly
   
   init(router: Router<ModalCardContainerViewController>,
-       assembly: BuyAssembly) {
-    self.assembly = assembly
+       walletCoreAssembly: WalletCoreAssembly) {
+    self.walletCoreAssembly = walletCoreAssembly
     super.init(router: router)
   }
   
@@ -24,7 +24,10 @@ final class BuyCoordinator: Coordinator<Router<ModalCardContainerViewController>
 
 private extension BuyCoordinator {
   func showBuyList() {
-    let module = assembly.buyListModule(output: self)
+    let module = BuyListAssembly.module(
+      fiatMethodsController: walletCoreAssembly.fiatMethodsController(), 
+      output: self
+    )
     router.rootViewController.content = module.view
   }
 }

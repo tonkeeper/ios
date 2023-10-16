@@ -8,8 +8,8 @@
 import UIKit
 
 extension ServiceCellContentView {
-  struct Model {
-    let logo: UIImage?
+  struct Model: Hashable {
+    let logo: Image
     let title: NSAttributedString
     let description: NSAttributedString?
     let token: NSAttributedString?
@@ -17,7 +17,7 @@ extension ServiceCellContentView {
 }
 
 extension ServiceCellContentView.Model {
-  init(logo: UIImage?,
+  init(logo: Image,
        title: String,
        description: String?,
        token: String?) {

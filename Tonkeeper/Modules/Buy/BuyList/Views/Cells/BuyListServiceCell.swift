@@ -9,12 +9,10 @@ import UIKit
 
 final class BuyListServiceCell: ContainerCollectionViewCell<ServiceCellContentView>, Reusable {
   
-  struct Model: Hashable {
-    let id = UUID()
-    let logo: UIImage?
-    let title: String
-    let description: String?
-    let token: String?
+  weak var imageLoader: ImageLoader? {
+    didSet {
+      cellContentView.imageLoader = imageLoader
+    }
   }
   
   var isFirstCell = false {
@@ -63,16 +61,6 @@ final class BuyListServiceCell: ContainerCollectionViewCell<ServiceCellContentVi
                                 y: bounds.height - .separatorWidth,
                                 width: bounds.width - ContentInsets.sideSpace,
                                 height: .separatorWidth)
-  }
-  
-  func configure(model: Model) {
-    let serviceCellModel = ServiceCellContentView.Model(
-      logo: model.logo,
-      title: model.title,
-      description: model.description,
-      token: model.token
-    )
-    cellContentView.configure(model: serviceCellModel)
   }
 }
 
