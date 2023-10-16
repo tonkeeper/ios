@@ -240,6 +240,7 @@
 		7D70D3C02A2A03350096E1A2 /* Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3BF2A2A03350096E1A2 /* Currency.swift */; };
 		7D70D3C62A2A037F0096E1A2 /* CryptoCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */; };
 		7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */; };
+		7D744BB02ADD6E2300E94332 /* WebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BAF2ADD6E2300E94332 /* WebViewController.swift */; };
 		7D790EEB2A67E28200587C96 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */; };
 		7D797E102A8E6A3F00A626D7 /* TonDetailsAboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */; };
 		7D797E142A8F62BC00A626D7 /* TonDetailsLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */; };
@@ -711,6 +712,7 @@
 		7D70D3BF2A2A03350096E1A2 /* Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Currency.swift; sourceTree = "<group>"; };
 		7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoCurrency.swift; sourceTree = "<group>"; };
 		7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyWallet.swift; sourceTree = "<group>"; };
+		7D744BAF2ADD6E2300E94332 /* WebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewController.swift; sourceTree = "<group>"; };
 		7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
 		7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonDetailsAboutView.swift; sourceTree = "<group>"; };
 		7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonDetailsLinks.swift; sourceTree = "<group>"; };
@@ -1266,13 +1268,6 @@
 				7D3BCFC72A4D637800BE6AD9 /* MnemonicValidator.swift */,
 			);
 			path = Validation;
-			sourceTree = "<group>";
-		};
-		7D3BCFC92A4D7BEE00BE6AD9 /* Success */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			path = Success;
 			sourceTree = "<group>";
 		};
 		7D3BCFCA2A4D90C800BE6AD9 /* Passcode */ = {
@@ -1871,7 +1866,6 @@
 		7D6836382A1CFECF002DBBC7 /* Modules */ = {
 			isa = PBXGroup;
 			children = (
-				7DAC789C2A8FA9E900358D35 /* InAppBrowser */,
 				7D1162FB2A60343700DF4F30 /* WalletDetails */,
 				7D8EB71E2A4ED857005BE1B0 /* CreateWallet */,
 				7D3BCFCA2A4D90C800BE6AD9 /* Passcode */,
@@ -1981,7 +1975,7 @@
 		7D6836712A1E65ED002DBBC7 /* Common */ = {
 			isa = PBXGroup;
 			children = (
-				7D3BCFC92A4D7BEE00BE6AD9 /* Success */,
+				7DAC789C2A8FA9E900358D35 /* InAppBrowser */,
 				7D6836722A1E65F7002DBBC7 /* QRScanner */,
 			);
 			path = Common;
@@ -2079,6 +2073,14 @@
 				7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */,
 			);
 			path = CurrencyWallet;
+			sourceTree = "<group>";
+		};
+		7D744BAE2ADD6E1A00E94332 /* WebViewController */ = {
+			isa = PBXGroup;
+			children = (
+				7D744BAF2ADD6E2300E94332 /* WebViewController.swift */,
+			);
+			path = WebViewController;
 			sourceTree = "<group>";
 		};
 		7D790EE92A67E27300587C96 /* Views */ = {
@@ -2337,6 +2339,7 @@
 		7D9292DC2A28A1D2005B83DF /* ViewController */ = {
 			isa = PBXGroup;
 			children = (
+				7D744BAE2ADD6E1A00E94332 /* WebViewController */,
 				7D49346C2A5C7A4D00F4BCA2 /* BlurViewController */,
 				7D3BCFDF2A4EBE7200BE6AD9 /* SuccessViewController */,
 				7D527BBC2A2A90F400A2D29A /* ModalContentViewController */,
@@ -3046,6 +3049,7 @@
 				7DAC78E52A96ABF600358D35 /* CollectibleDetailsPropertyView.swift in Sources */,
 				7D5928802A20CDCA006B0A8A /* TokenListTokenCell.swift in Sources */,
 				7D527BF12A2DF62400A2D29A /* SendConfirmationModalConfigurationBuilder.swift in Sources */,
+				7D744BB02ADD6E2300E94332 /* WebViewController.swift in Sources */,
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
 				7D4C145A2AD6E853002B2922 /* RecoveryPhraseWordView.swift in Sources */,
 				7D009A802A989E8C00A15B8A /* SendCollectibleCoordinator.swift in Sources */,

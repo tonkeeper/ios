@@ -33,7 +33,7 @@
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
         "branch" : "feature/buy_ton",
-        "revision" : "4385a4ae83b24783a4307edfee037f0f2a84748d"
+        "revision" : "37c7007d0ebe5aa9374586b9c208ef17c9e25ca2"
       }
     },
     {
@@ -69,7 +69,7 @@
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
         "branch" : "feature/nft_transfer",
-        "revision" : "5ca17b6c98be35ef05a0e83791c081c35adbec7c"
+        "revision" : "20c17ee92b85bcdd4a78c2eb0467fcd6de5f7698"
       }
     },
     {

@@ -35,7 +35,6 @@ final class BuyListCollectionController: NSObject {
       guard let self = self else { return .services }
       return self.sections[sectionIndex].type
     }
-    collectionView.delegate = self
     collectionView.setCollectionViewLayout(layout, animated: false)
     collectionView.register(BuyListServiceCell.self,
                              forCellWithReuseIdentifier: BuyListServiceCell.reuseIdentifier)
@@ -81,6 +80,7 @@ private extension BuyListCollectionController {
     cell.isFirstCell = indexPath.item == 0
     cell.isLastCell = indexPath.item == sections[indexPath.section].items.count - 1
     cell.isInGroup = sections[indexPath.section].items.count > 1
+    cell.delegate = self
     return cell
   }
   
@@ -91,16 +91,10 @@ private extension BuyListCollectionController {
   }
 }
 
-extension BuyListCollectionController: UICollectionViewDelegate {
-  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    (collectionView.cellForItem(at: indexPath) as? Selectable)?.select()
-    collectionView.deselectItem(at: indexPath, animated: true)
-    delegate?.buyListCollectionController(self,
-                                          didSelectServiceAt: indexPath)
-  }
-  
-  func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
-    (collectionView.cellForItem(at: indexPath) as? Selectable)?.deselect()
+extension BuyListCollectionController: BuyListServiceCellDelegate {
+  func buyListServiceCellDidTap(_ cell: BuyListServiceCell) {
+    guard let indexPath = collectionView?.indexPath(for: cell) else { return }
+    delegate?.buyListCollectionController(self, didSelectServiceAt: indexPath)
   }
 }
 

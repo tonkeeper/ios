@@ -7,7 +7,13 @@
 
 import UIKit
 
+protocol BuyListServiceCellDelegate: AnyObject {
+  func buyListServiceCellDidTap(_ cell: BuyListServiceCell)
+}
+
 final class BuyListServiceCell: ContainerCollectionViewCell<ServiceCellContentView>, Reusable {
+  
+  weak var delegate: BuyListServiceCellDelegate?
   
   weak var imageLoader: ImageLoader? {
     didSet {
@@ -68,6 +74,11 @@ private extension BuyListServiceCell {
   func setup() {
     contentView.addSubview(separatorView)
     layer.masksToBounds = true
+    
+    cellContentView.addAction(.init(handler: { [weak self] in
+      guard let self = self else { return }
+      self.delegate?.buyListServiceCellDidTap(self)
+    }), for: .touchUpInside)
   }
   
   func didUpdateCellOrder() {

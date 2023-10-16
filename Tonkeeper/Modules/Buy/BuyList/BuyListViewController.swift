@@ -67,6 +67,14 @@ extension BuyListViewController: BuyListViewInput {
   func updateSections(_ sections: [BuyListSection]) {
     collectionController.sections = sections
   }
+  
+  func openURL(_ url: URL) {
+    let webViewController = WebViewController(url: url)
+    let navigationController = UINavigationController(rootViewController: webViewController)
+    navigationController.modalPresentationStyle = .fullScreen
+    navigationController.configureTransparentAppearance()
+    present(navigationController, animated: true)
+  }
 }
 
 // MARK: - Private
@@ -74,6 +82,9 @@ extension BuyListViewController: BuyListViewInput {
 private extension BuyListViewController {
   func setup() {
     title = "Buy or sell"
+    
+    collectionController.delegate = self
+    
     contentSizeObserveToken = customView.collectionView
       .observe(\.contentSize, changeHandler: { [weak self] _, _ in
         guard let self,
@@ -81,5 +92,14 @@ private extension BuyListViewController {
         self.cachedContentHeight = self.customView.collectionView.contentSize.height
         self.didUpdateHeight?()
       })
+  }
+}
+
+// MARK: - BuyListCollectionControllerDelegate
+
+extension BuyListViewController: BuyListCollectionControllerDelegate {
+  func buyListCollectionController(_ collectionController: BuyListCollectionController, 
+                                   didSelectServiceAt indexPath: IndexPath) {
+    presenter.didSelectServiceAt(indexPath: indexPath)
   }
 }
