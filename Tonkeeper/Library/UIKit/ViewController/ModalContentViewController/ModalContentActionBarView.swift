@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SwiftUI
 
 final class ModalContentActionBarView: UIView, ConfigurableView {
   
@@ -34,12 +35,15 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
     return view
   }()
   
+  private var parentViewController: UIViewController
+  
   private let resultView = ResultView(state: .success)
   private lazy var stackViewContainer = ButtonBottomContainer(button: itemsStackView, insets: .init(top: 0, left: 0, bottom: 0, right: 0))
   private var stackViewBottomConstraint: NSLayoutConstraint?
   
-  override init(frame: CGRect) {
-    super.init(frame: frame)
+  init(parentViewController: UIViewController) {
+    self.parentViewController = parentViewController
+    super.init(frame: .zero)
     setup()
   }
   
@@ -88,6 +92,27 @@ final class ModalContentActionBarView: UIView, ConfigurableView {
           stackView.addArrangedSubview(buttonActivityContainer)
         }
         itemsStackView.addArrangedSubview(stackView)
+      case .checkmark(let model):
+        let checkbox = CheckboxControl(
+          title: model.title,
+          isMarked: model.isMarked) { isMarked in
+            model.markAction(isMarked)
+          }
+        let hostingController = UIHostingController(rootView: checkbox)
+        hostingController.view.backgroundColor = .Background.page
+        parentViewController.addChild(hostingController)
+        itemsStackView.addArrangedSubview(hostingController.view)
+        hostingController.didMove(toParent: parentViewController)
+      case .warning(let model):
+        let warningView = ModalContentWarningView(
+          text: model.text,
+          buttons: model.buttons.map { .init(title: $0.title, closure: $0.closure) }
+        )
+        let hostingController = UIHostingController(rootView: warningView)
+        hostingController.view.backgroundColor = .Background.page
+        parentViewController.addChild(hostingController)
+        itemsStackView.addArrangedSubview(hostingController.view)
+        hostingController.didMove(toParent: parentViewController)
       }
     }
   }

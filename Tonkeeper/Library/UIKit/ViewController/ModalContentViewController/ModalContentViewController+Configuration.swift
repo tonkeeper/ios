@@ -52,8 +52,26 @@ extension ModalContentViewController {
         }
       }
       
+      struct Checkmark {
+        let title: String
+        let isMarked: Bool
+        let markAction: (Bool) -> Void
+      }
+      
+      struct Warning {
+        struct Button {
+          let title: String
+          let closure: (() -> Void)?
+        }
+        
+        let text: String
+        let buttons: [Button]
+      }
+      
       enum Item {
         case buttons([Button])
+        case checkmark(Checkmark)
+        case warning(Warning)
       }
       
       let items: [Item]
