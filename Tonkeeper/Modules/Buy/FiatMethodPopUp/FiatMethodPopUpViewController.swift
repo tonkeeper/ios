@@ -63,7 +63,9 @@ private extension FiatMethodPopUpViewController {
   func setup() {
     modalContentViewController.isRespectSafeArea = false
     
+    addChild(modalContentViewController)
     view.addSubview(modalContentViewController.view)
+    modalContentViewController.didMove(toParent: self)
     modalContentViewController.view.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       modalContentViewController.view.topAnchor.constraint(equalTo: view.topAnchor),

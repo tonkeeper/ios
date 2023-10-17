@@ -62,7 +62,9 @@ private extension SetupWalletViewController {
   }
   
   func setupModalContent() {
+    addChild(contentViewController)
     customView.embedContent(contentViewController.view)
+    contentViewController.didMove(toParent: self)
     contentViewController.isRespectSafeArea = false
     contentViewController.didUpdateHeight = { [weak self] in
       self?.didUpdateHeight?()

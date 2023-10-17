@@ -7,6 +7,7 @@
 
 import Foundation
 import WalletCore
+import TKCore
 
 final class FiatMethodPopUpPresenter {
   
@@ -19,11 +20,15 @@ final class FiatMethodPopUpPresenter {
   
   private let fiatMethodItem: FiatMethodViewModel
   private let fiatMethodsController: FiatMethodsController
+  private let urlOpener: URLOpener
+  private let appSettings = AppSettings()
   
   init(fiatMethodItem: FiatMethodViewModel,
-       fiatMethodsController: FiatMethodsController) {
+       fiatMethodsController: FiatMethodsController,
+       urlOpener: URLOpener) {
     self.fiatMethodItem = fiatMethodItem
     self.fiatMethodsController = fiatMethodsController
+    self.urlOpener = urlOpener
   }
 }
 
@@ -49,10 +54,22 @@ private extension FiatMethodPopUpPresenter {
       title: fiatMethodItem.title,
       bottomDescription: fiatMethodItem.description)
     
+    let warningButtons: [ModalContentViewController.Configuration.ActionBar.Warning.Button] = fiatMethodItem
+      .infoButtons.map { buttonModel in .init(title: buttonModel.title) { [weak self] in
+        guard let string = buttonModel.url,
+              let url = URL(string: string) else { return }
+        self?.urlOpener.open(url: url)
+    }}
+    
     let actionBar = ModalContentViewController.Configuration.ActionBar(
       items: [
+        .warning(ModalContentViewController.Configuration.ActionBar.Warning(
+          text: .externalWarningText,
+          buttons: warningButtons
+          )
+        ),
         .buttons([ModalContentViewController.Configuration.ActionBar.Button(
-          title: fiatMethodItem.buttonTitle,
+          title: fiatMethodItem.actionButton?.title,
           configuration: .primaryLarge,
           tapAction: { [weak self] _ in
             guard let self = self else { return }
@@ -63,7 +80,15 @@ private extension FiatMethodPopUpPresenter {
               }
             }
           }
-        )])
+        )]),
+        .checkmark(ModalContentViewController.Configuration.ActionBar.Checkmark(
+          title: .checkmarkTitle,
+          isMarked: false,
+          markAction: { [weak self] isMarked in
+            guard let self = self else { return }
+            self.appSettings.setIsFiatMethodPopUpMarkedDoNotShow(for: self.fiatMethodItem.id, isNeed: isMarked)
+          })
+        )
       ]
     )
     
@@ -75,4 +100,9 @@ private extension FiatMethodPopUpPresenter {
     
     viewInput?.updateContent(configuration: configuration)
   }
+}
+
+private extension String {
+  static let checkmarkTitle = "Do not show again"
+  static let externalWarningText = "You are opening an external app not operated by Tonkeeper."
 }

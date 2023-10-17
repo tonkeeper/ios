@@ -20,6 +20,7 @@ final class BuyListPresenter {
   
   private let fiatMethodsController: FiatMethodsController
   private let buyListServiceBuilder: BuyListServiceBuilder
+  private let appSettings = AppSettings()
   
   init(fiatMethodsController: FiatMethodsController,
        buyListServiceBuilder: BuyListServiceBuilder) {
@@ -40,8 +41,15 @@ extension BuyListPresenter: BuyListPresenterInput {
       guard let item = await fiatMethodsController.fiatMethodViewModel(at: indexPath.section, item: indexPath.row) else {
         return
       }
-      await MainActor.run {
-        output?.buyListModule(self, showFiatMethodPopUp: item)
+      if appSettings.isFiatMethodPopUpMarkedDoNotShow(for: item.id) {
+        guard let url = await fiatMethodsController.urlForMethod(item) else { return }
+        await MainActor.run {
+          output?.buyListModule(self, showWebView: url)
+        }
+      } else {
+        await MainActor.run {
+          output?.buyListModule(self, showFiatMethodPopUp: item)
+        }
       }
     }
   }

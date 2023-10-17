@@ -40,6 +40,7 @@ extension BuyCoordinator: BuyListModuleOutput {
                      showFiatMethodPopUp fiatMethod: FiatMethodViewModel) {
     let module = FiatMethodPopUpAssembly.module(fiatMethodItem: fiatMethod,
                                                 fiatMethodsController: walletCoreAssembly.fiatMethodsController(),
+                                                urlOpener: walletCoreAssembly.coreAssembly.urlOpener(),
                                                 output: self)
     let modalCardContainerViewController = ModalCardContainerViewController(content: module.view)
     modalCardContainerViewController.headerSize = .small
