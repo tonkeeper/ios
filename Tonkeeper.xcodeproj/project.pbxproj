@@ -241,6 +241,10 @@
 		7D70D3C62A2A037F0096E1A2 /* CryptoCurrency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */; };
 		7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */; };
 		7D744BB02ADD6E2300E94332 /* WebViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BAF2ADD6E2300E94332 /* WebViewController.swift */; };
+		7D744BB32ADD7FC500E94332 /* FiatMethodPopUpProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BB22ADD7FC500E94332 /* FiatMethodPopUpProtocols.swift */; };
+		7D744BB52ADD7FEB00E94332 /* FiatMethodPopUpPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BB42ADD7FEB00E94332 /* FiatMethodPopUpPresenter.swift */; };
+		7D744BB72ADD805E00E94332 /* FiatMethodPopUpViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BB62ADD805E00E94332 /* FiatMethodPopUpViewController.swift */; };
+		7D744BB92ADD819B00E94332 /* FiatMethodPopUpAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BB82ADD819B00E94332 /* FiatMethodPopUpAssembly.swift */; };
 		7D790EEB2A67E28200587C96 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */; };
 		7D797E102A8E6A3F00A626D7 /* TonDetailsAboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */; };
 		7D797E142A8F62BC00A626D7 /* TonDetailsLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */; };
@@ -713,6 +717,10 @@
 		7D70D3C52A2A037F0096E1A2 /* CryptoCurrency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoCurrency.swift; sourceTree = "<group>"; };
 		7D70D3C82A2A046F0096E1A2 /* CurrencyWallet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyWallet.swift; sourceTree = "<group>"; };
 		7D744BAF2ADD6E2300E94332 /* WebViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewController.swift; sourceTree = "<group>"; };
+		7D744BB22ADD7FC500E94332 /* FiatMethodPopUpProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiatMethodPopUpProtocols.swift; sourceTree = "<group>"; };
+		7D744BB42ADD7FEB00E94332 /* FiatMethodPopUpPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiatMethodPopUpPresenter.swift; sourceTree = "<group>"; };
+		7D744BB62ADD805E00E94332 /* FiatMethodPopUpViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiatMethodPopUpViewController.swift; sourceTree = "<group>"; };
+		7D744BB82ADD819B00E94332 /* FiatMethodPopUpAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiatMethodPopUpAssembly.swift; sourceTree = "<group>"; };
 		7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
 		7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonDetailsAboutView.swift; sourceTree = "<group>"; };
 		7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonDetailsLinks.swift; sourceTree = "<group>"; };
@@ -949,6 +957,7 @@
 				41EDD045CD5D2603FDDED394 /* BuyListView.swift */,
 				4FBBFAE16AF8CF5F10D04789 /* BuyListPresenter.swift */,
 				0320D77CB84A1DB3ADC49C5F /* BuyListProtocols.swift */,
+				7D3E437E2A33835100C23A75 /* BuyListAssembly.swift */,
 			);
 			path = BuyList;
 			sourceTree = "<group>";
@@ -1400,9 +1409,9 @@
 		7D3E437B2A33830800C23A75 /* Buy */ = {
 			isa = PBXGroup;
 			children = (
+				7D744BB12ADD7FB200E94332 /* FiatMethodPopUp */,
 				04FF381D2F96AC549BAFBA3F /* BuyList */,
 				7D3E437C2A33834200C23A75 /* BuyCoordinator.swift */,
-				7D3E437E2A33835100C23A75 /* BuyListAssembly.swift */,
 			);
 			path = Buy;
 			sourceTree = "<group>";
@@ -2081,6 +2090,17 @@
 				7D744BAF2ADD6E2300E94332 /* WebViewController.swift */,
 			);
 			path = WebViewController;
+			sourceTree = "<group>";
+		};
+		7D744BB12ADD7FB200E94332 /* FiatMethodPopUp */ = {
+			isa = PBXGroup;
+			children = (
+				7D744BB22ADD7FC500E94332 /* FiatMethodPopUpProtocols.swift */,
+				7D744BB42ADD7FEB00E94332 /* FiatMethodPopUpPresenter.swift */,
+				7D744BB62ADD805E00E94332 /* FiatMethodPopUpViewController.swift */,
+				7D744BB82ADD819B00E94332 /* FiatMethodPopUpAssembly.swift */,
+			);
+			path = FiatMethodPopUp;
 			sourceTree = "<group>";
 		};
 		7D790EE92A67E27300587C96 /* Views */ = {
@@ -3155,6 +3175,7 @@
 				7D32F8B82A8BD298002C130C /* TonChartAssembly.swift in Sources */,
 				7D6836222A1CD1EC002DBBC7 /* Presentable.swift in Sources */,
 				7DE27E652A30D2D400842FA8 /* ActivityListTransactionBuilder.swift in Sources */,
+				7D744BB92ADD819B00E94332 /* FiatMethodPopUpAssembly.swift in Sources */,
 				7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */,
 				7D6836482A1D1044002DBBC7 /* WalletCoordinator.swift in Sources */,
 				7D384A4C2A66989100DE2A66 /* SendConfirmationAssembly.swift in Sources */,
@@ -3250,15 +3271,18 @@
 				7D49346E2A5C7A6A00F4BCA2 /* BlurViewController.swift in Sources */,
 				9C2743C59B411E3CF174F747 /* EnterMnemonicProtocols.swift in Sources */,
 				7D5141CB2A53429200EC7F59 /* ImageLoader.swift in Sources */,
+				7D744BB52ADD7FEB00E94332 /* FiatMethodPopUpPresenter.swift in Sources */,
 				7DDBBFFF2ACCAD9300F811A5 /* WalletRestoreViewController.swift in Sources */,
 				3A56A8E00A6AB82880329EAF /* PasscodeInputViewController.swift in Sources */,
 				96B2CB2B1E4ACD7BA8897D36 /* PasscodeInputView.swift in Sources */,
 				7DC8A3B62A7C172B00B8B219 /* TokenDetailsListContentViewController.swift in Sources */,
 				40B98115F358DDDBD1D6FAB1 /* PasscodeInputPresenter.swift in Sources */,
 				064BCFE4418858F3E6EAD791 /* PasscodeInputProtocols.swift in Sources */,
+				7D744BB32ADD7FC500E94332 /* FiatMethodPopUpProtocols.swift in Sources */,
 				4710C223A1FF0E23BAD189BA /* TokenDetailsViewController.swift in Sources */,
 				7D797E1A2A8F7A2600A626D7 /* ListTitleView.swift in Sources */,
 				977233829BFB3A47453882FF /* TokenDetailsView.swift in Sources */,
+				7D744BB72ADD805E00E94332 /* FiatMethodPopUpViewController.swift in Sources */,
 				7DAC78D52A93F96500358D35 /* CollectibleAssembly.swift in Sources */,
 				7F316234DE732364EDD8983C /* TokenDetailsPresenter.swift in Sources */,
 				BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */,

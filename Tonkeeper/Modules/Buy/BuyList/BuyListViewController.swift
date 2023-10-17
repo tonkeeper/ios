@@ -67,14 +67,6 @@ extension BuyListViewController: BuyListViewInput {
   func updateSections(_ sections: [BuyListSection]) {
     collectionController.sections = sections
   }
-  
-  func openURL(_ url: URL) {
-    let webViewController = WebViewController(url: url)
-    let navigationController = UINavigationController(rootViewController: webViewController)
-    navigationController.modalPresentationStyle = .fullScreen
-    navigationController.configureTransparentAppearance()
-    present(navigationController, animated: true)
-  }
 }
 
 // MARK: - Private

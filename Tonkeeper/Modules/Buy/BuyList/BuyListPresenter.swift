@@ -37,11 +37,11 @@ extension BuyListPresenter: BuyListPresenterInput {
   
   func didSelectServiceAt(indexPath: IndexPath) {
     Task {
-      guard let url = await fiatMethodsController.urlForMethod(at: indexPath.section, item: indexPath.row) else {
-        return 
+      guard let item = await fiatMethodsController.fiatMethodViewModel(at: indexPath.section, item: indexPath.row) else {
+        return
       }
       await MainActor.run {
-        viewInput?.openURL(url)
+        output?.buyListModule(self, showFiatMethodPopUp: item)
       }
     }
   }
