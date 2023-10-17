@@ -245,6 +245,8 @@
 		7D744BB52ADD7FEB00E94332 /* FiatMethodPopUpPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BB42ADD7FEB00E94332 /* FiatMethodPopUpPresenter.swift */; };
 		7D744BB72ADD805E00E94332 /* FiatMethodPopUpViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BB62ADD805E00E94332 /* FiatMethodPopUpViewController.swift */; };
 		7D744BB92ADD819B00E94332 /* FiatMethodPopUpAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BB82ADD819B00E94332 /* FiatMethodPopUpAssembly.swift */; };
+		7D744BC12ADE9AA800E94332 /* CheckboxView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BC02ADE9AA800E94332 /* CheckboxView.swift */; };
+		7D744BC32ADE9E9300E94332 /* CheckboxControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D744BC22ADE9E9300E94332 /* CheckboxControl.swift */; };
 		7D790EEB2A67E28200587C96 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */; };
 		7D797E102A8E6A3F00A626D7 /* TonDetailsAboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */; };
 		7D797E142A8F62BC00A626D7 /* TonDetailsLinks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */; };
@@ -352,6 +354,7 @@
 		7DC88C582AB9C42100F47614 /* WalletHeaderConnectionStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC88C572AB9C42100F47614 /* WalletHeaderConnectionStatusView.swift */; };
 		7DC8A3B62A7C172B00B8B219 /* TokenDetailsListContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC8A3B42A7C172B00B8B219 /* TokenDetailsListContentViewController.swift */; };
 		7DC8A3B72A7C172B00B8B219 /* ActivityListViewController+TokenDetailsListContentViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DC8A3B52A7C172B00B8B219 /* ActivityListViewController+TokenDetailsListContentViewController.swift */; };
+		7DDB75E02ADEB4C900BFE023 /* ModalContentWarningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDB75DF2ADEB4C900BFE023 /* ModalContentWarningView.swift */; };
 		7DDBBFED2ACCA10E00F811A5 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */; };
 		7DDBBFF02ACCA10E00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
 		7DDBBFF42ACCA10E00F811A5 /* TonkeeperIntents.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -721,6 +724,8 @@
 		7D744BB42ADD7FEB00E94332 /* FiatMethodPopUpPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiatMethodPopUpPresenter.swift; sourceTree = "<group>"; };
 		7D744BB62ADD805E00E94332 /* FiatMethodPopUpViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiatMethodPopUpViewController.swift; sourceTree = "<group>"; };
 		7D744BB82ADD819B00E94332 /* FiatMethodPopUpAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FiatMethodPopUpAssembly.swift; sourceTree = "<group>"; };
+		7D744BC02ADE9AA800E94332 /* CheckboxView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckboxView.swift; sourceTree = "<group>"; };
+		7D744BC22ADE9E9300E94332 /* CheckboxControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CheckboxControl.swift; sourceTree = "<group>"; };
 		7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
 		7D797E0F2A8E6A3F00A626D7 /* TonDetailsAboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonDetailsAboutView.swift; sourceTree = "<group>"; };
 		7D797E132A8F62BC00A626D7 /* TonDetailsLinks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonDetailsLinks.swift; sourceTree = "<group>"; };
@@ -842,6 +847,7 @@
 		7DC88C572AB9C42100F47614 /* WalletHeaderConnectionStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderConnectionStatusView.swift; sourceTree = "<group>"; };
 		7DC8A3B42A7C172B00B8B219 /* TokenDetailsListContentViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TokenDetailsListContentViewController.swift; sourceTree = "<group>"; };
 		7DC8A3B52A7C172B00B8B219 /* ActivityListViewController+TokenDetailsListContentViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "ActivityListViewController+TokenDetailsListContentViewController.swift"; sourceTree = "<group>"; };
+		7DDB75DF2ADEB4C900BFE023 /* ModalContentWarningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalContentWarningView.swift; sourceTree = "<group>"; };
 		7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TonkeeperIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentHandler.swift; sourceTree = "<group>"; };
@@ -2006,6 +2012,8 @@
 		7D68369D2A1EB60E002DBBC7 /* UIKit */ = {
 			isa = PBXGroup;
 			children = (
+				7DDB75DE2ADEB4B800BFE023 /* ExternalAppWarning */,
+				7D744BBB2ADE951A00E94332 /* Checkbox */,
 				7D5735882AD6D78E00B7D0A3 /* Headers */,
 				7D797E182A8F7A1900A626D7 /* ListElements */,
 				7D16E1622A7526F300A27AB0 /* Toasts */,
@@ -2101,6 +2109,15 @@
 				7D744BB82ADD819B00E94332 /* FiatMethodPopUpAssembly.swift */,
 			);
 			path = FiatMethodPopUp;
+			sourceTree = "<group>";
+		};
+		7D744BBB2ADE951A00E94332 /* Checkbox */ = {
+			isa = PBXGroup;
+			children = (
+				7D744BC02ADE9AA800E94332 /* CheckboxView.swift */,
+				7D744BC22ADE9E9300E94332 /* CheckboxControl.swift */,
+			);
+			path = Checkbox;
 			sourceTree = "<group>";
 		};
 		7D790EE92A67E27300587C96 /* Views */ = {
@@ -2586,6 +2603,14 @@
 			path = ListContent;
 			sourceTree = "<group>";
 		};
+		7DDB75DE2ADEB4B800BFE023 /* ExternalAppWarning */ = {
+			isa = PBXGroup;
+			children = (
+				7DDB75DF2ADEB4C900BFE023 /* ModalContentWarningView.swift */,
+			);
+			path = ExternalAppWarning;
+			sourceTree = "<group>";
+		};
 		7DDBBFEE2ACCA10E00F811A5 /* TonkeeperIntents */ = {
 			isa = PBXGroup;
 			children = (
@@ -2986,6 +3011,7 @@
 				7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */,
 				7D3BCFC52A4CADB200BE6AD9 /* MnemonicTextField.swift in Sources */,
 				7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */,
+				7D744BC32ADE9E9300E94332 /* CheckboxControl.swift in Sources */,
 				7D9144312A320F1500B0FD17 /* ModalCardContainerView.swift in Sources */,
 				7D59284B2A1F5797006B0A8A /* WalletHeaderPresenter.swift in Sources */,
 				7D527C062A2E469900A2D29A /* QRCodeGenerator.swift in Sources */,
@@ -3174,6 +3200,7 @@
 				7D5928722A1FC981006B0A8A /* WalletHeaderButtonType.swift in Sources */,
 				7D32F8B82A8BD298002C130C /* TonChartAssembly.swift in Sources */,
 				7D6836222A1CD1EC002DBBC7 /* Presentable.swift in Sources */,
+				7D744BC12ADE9AA800E94332 /* CheckboxView.swift in Sources */,
 				7DE27E652A30D2D400842FA8 /* ActivityListTransactionBuilder.swift in Sources */,
 				7D744BB92ADD819B00E94332 /* FiatMethodPopUpAssembly.swift in Sources */,
 				7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */,
@@ -3233,6 +3260,7 @@
 				2E9AD80F15E6019A55846F61 /* ActivityListViewController.swift in Sources */,
 				7D80C0F92A6AAC8E007054DD /* TKKeyboardConfiguration.swift in Sources */,
 				27E0B9B4BE1065171C3AFD76 /* ActivityListView.swift in Sources */,
+				7DDB75E02ADEB4C900BFE023 /* ModalContentWarningView.swift in Sources */,
 				7D4934752A5CA44000F4BCA2 /* TKMenuItem.swift in Sources */,
 				7D16E1642A75270A00A27AB0 /* ToastController.swift in Sources */,
 				14250E44D164B234E513925F /* ActivityListPresenter.swift in Sources */,

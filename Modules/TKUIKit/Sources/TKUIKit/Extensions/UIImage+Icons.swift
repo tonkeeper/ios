@@ -303,6 +303,12 @@ public extension UIImage {
       }
     }
     
+    public enum Controls {
+      public static var checkmark: UIImage? {
+        .imageWithName("Icons/16/ic-done-bold-16")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     public enum Mock {
       public static var tonCurrencyIcon: UIImage? {
         .imageWithName("Icons/44/ton_currency_icon")
