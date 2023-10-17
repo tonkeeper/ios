@@ -7,14 +7,18 @@
 
 import UIKit
 
+protocol BuyListServiceCellDelegate: AnyObject {
+  func buyListServiceCellDidTap(_ cell: BuyListServiceCell)
+}
+
 final class BuyListServiceCell: ContainerCollectionViewCell<ServiceCellContentView>, Reusable {
   
-  struct Model: Hashable {
-    let id = UUID()
-    let logo: UIImage?
-    let title: String
-    let description: String?
-    let token: String?
+  weak var delegate: BuyListServiceCellDelegate?
+  
+  weak var imageLoader: ImageLoader? {
+    didSet {
+      cellContentView.imageLoader = imageLoader
+    }
   }
   
   var isFirstCell = false {
@@ -64,22 +68,17 @@ final class BuyListServiceCell: ContainerCollectionViewCell<ServiceCellContentVi
                                 width: bounds.width - ContentInsets.sideSpace,
                                 height: .separatorWidth)
   }
-  
-  func configure(model: Model) {
-    let serviceCellModel = ServiceCellContentView.Model(
-      logo: model.logo,
-      title: model.title,
-      description: model.description,
-      token: model.token
-    )
-    cellContentView.configure(model: serviceCellModel)
-  }
 }
 
 private extension BuyListServiceCell {
   func setup() {
     contentView.addSubview(separatorView)
     layer.masksToBounds = true
+    
+    cellContentView.addAction(.init(handler: { [weak self] in
+      guard let self = self else { return }
+      self.delegate?.buyListServiceCellDidTap(self)
+    }), for: .touchUpInside)
   }
   
   func didUpdateCellOrder() {

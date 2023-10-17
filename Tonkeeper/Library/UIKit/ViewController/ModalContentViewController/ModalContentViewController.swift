@@ -27,9 +27,10 @@ final class ModalContentViewController: UIViewController, ScrollableModalCardCon
   private let contentView = UIView()
   private let headerView = ModalContentHeaderView()
   private let listView = ModalContentListView()
-  private let actionBarView = ModalContentActionBarView()
+  private lazy var actionBarView = ModalContentActionBarView(parentViewController: self)
   
   private let listTopSpacingView = SpacingView(verticalSpacing: .constant(.listTopSpace))
+  private let listBottomSpacingView = SpacingView(verticalSpacing: .constant(.listItemsBottomSpace))
   
   private var actionBarBottomConstraint: NSLayoutConstraint?
   
@@ -124,6 +125,7 @@ private extension ModalContentViewController {
     contentStackView.addArrangedSubview(headerView)
     contentStackView.addArrangedSubview(listTopSpacingView)
     contentStackView.addArrangedSubview(listView)
+    contentStackView.addArrangedSubview(listBottomSpacingView)
     
     setupConstraints()
     configure()
@@ -152,7 +154,7 @@ private extension ModalContentViewController {
       
       contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
       contentView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),
-      contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor, constant: -.listItemsBottomSpace),
+      contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
       contentView.rightAnchor.constraint(equalTo: scrollView.rightAnchor),
       contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
       
@@ -187,7 +189,11 @@ private extension ModalContentViewController {
     guard isViewLoaded else { return }
     if model.isEmpty {
       listView.isHidden = true
+      listTopSpacingView.isHidden = true
+      listBottomSpacingView.isHidden = true
     } else {
+      listTopSpacingView.isHidden = false
+      listBottomSpacingView.isHidden = false
       listView.configure(model: model)
       listView.isHidden = false
     }

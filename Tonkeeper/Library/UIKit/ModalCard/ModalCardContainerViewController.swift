@@ -112,12 +112,12 @@ private extension ModalCardContainerViewController {
   
   func updateContentHeight() {
     guard let content = content else { return }
-    let contentHeight = content.height == 0 ? customView.maximumContentHeight : content.height
+    let contentHeight = content.height == 0 ? 1 : content.height
     let maximumContentHeight = customView.maximumContentHeight
     let finalContentHeight = min(contentHeight, maximumContentHeight)
     scrollableContent?.scrollView.isScrollEnabled = contentHeight > maximumContentHeight
     customView.contentHeight = finalContentHeight
-    customView.layoutIfNeeded()
+    content.view.layoutIfNeeded()
     animateLayout()
   }
   

@@ -18,7 +18,6 @@ final class TabBarAssembly {
     walletCoreAssembly: walletCoreAssembly,
     sendAssembly: SendAssembly(walletCoreAssembly: walletCoreAssembly),
     receiveAssembly: receiveAssembly,
-    buyAssembly: BuyAssembly(),
     inAppBrowserAssembly: InAppBrowserAssembly()
   )
   lazy var activityAssembly = ActivityAssembly(receiveAssembly: receiveAssembly,

@@ -14,7 +14,7 @@ final class ModalCardContainerView: PassthroughView {
     - safeAreaInsets.top - safeAreaInsets.bottom
     - headerView.bounds.height
   }
-  
+
   var contentHeight: CGFloat = 0 {
     didSet {
       mainViewHeightConstraint?.constant = contentHeight

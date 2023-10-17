@@ -15,6 +15,16 @@ final class AppSettings {
     set { userDefaults?.setValue(newValue, forKey: .didShowOnboardingKey) }
   }
   
+  func isFiatMethodPopUpMarkedDoNotShow(for fiatMethodId: String) -> Bool {
+    let key = "fiat_method_popup_\(fiatMethodId)"
+    return userDefaults?.bool(forKey: key) ?? false
+  }
+  
+  func setIsFiatMethodPopUpMarkedDoNotShow(for fiatMethodId: String, isNeed: Bool) {
+    let key = "fiat_method_popup_\(fiatMethodId)"
+    userDefaults?.setValue(isNeed, forKey: key)
+  }
+  
   func reset() {
     userDefaults?.removePersistentDomain(forName: .appSettingsSuiteName)
   }

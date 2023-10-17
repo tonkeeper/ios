@@ -27,7 +27,7 @@ extension ModalContentViewController {
     
     struct ActionBar {
       struct Button {
-        let title: String
+        let title: String?
         let configuration: TKButton.Configuration
         let isEnabled: Bool
         let tapAction: (( @escaping (Bool) -> Void) -> Void)?
@@ -35,7 +35,7 @@ extension ModalContentViewController {
         let showActivityOnTap: (() -> Bool)?
         let completion: ((Bool) -> Void)?
         
-        init(title: String,
+        init(title: String?,
              configuration: TKButton.Configuration,
              isEnabled: Bool = true,
              tapAction: (( @escaping (Bool) -> Void) -> Void)? = nil,
@@ -52,8 +52,26 @@ extension ModalContentViewController {
         }
       }
       
+      struct Checkmark {
+        let title: String
+        let isMarked: Bool
+        let markAction: (Bool) -> Void
+      }
+      
+      struct Warning {
+        struct Button {
+          let title: String
+          let closure: (() -> Void)?
+        }
+        
+        let text: String
+        let buttons: [Button]
+      }
+      
       enum Item {
         case buttons([Button])
+        case checkmark(Checkmark)
+        case warning(Warning)
       }
       
       let items: [Item]

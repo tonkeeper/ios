@@ -26,6 +26,7 @@ final class BuyListCollectionController: NSObject {
   private var dataSource: UICollectionViewDiffableDataSource<BuyListSection, AnyHashable>?
   
   private let collectionLayoutConfigurator = BuyListCollectionLayoutConfigurator()
+  private let imageLoader = NukeImageLoader()
   
   init(collectionView: UICollectionView) {
     self.collectionView = collectionView
@@ -34,7 +35,6 @@ final class BuyListCollectionController: NSObject {
       guard let self = self else { return .services }
       return self.sections[sectionIndex].type
     }
-    collectionView.delegate = self
     collectionView.setCollectionViewLayout(layout, animated: false)
     collectionView.register(BuyListServiceCell.self,
                              forCellWithReuseIdentifier: BuyListServiceCell.reuseIdentifier)
@@ -49,7 +49,7 @@ private extension BuyListCollectionController {
       snapshot.appendSections([section])
       snapshot.appendItems(section.items, toSection: section)
     }
-    dataSource?.apply(snapshot)
+    dataSource?.apply(snapshot, animatingDifferences: false)
   }
   
   func createDataSource(collectionView: UICollectionView) -> UICollectionViewDiffableDataSource<BuyListSection, AnyHashable> {
@@ -75,10 +75,12 @@ private extension BuyListCollectionController {
       return UICollectionViewCell()
     }
     
+    cell.imageLoader = imageLoader
     cell.configure(model: model)
     cell.isFirstCell = indexPath.item == 0
     cell.isLastCell = indexPath.item == sections[indexPath.section].items.count - 1
     cell.isInGroup = sections[indexPath.section].items.count > 1
+    cell.delegate = self
     return cell
   }
   
@@ -89,16 +91,10 @@ private extension BuyListCollectionController {
   }
 }
 
-extension BuyListCollectionController: UICollectionViewDelegate {
-  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    (collectionView.cellForItem(at: indexPath) as? Selectable)?.select()
-    collectionView.deselectItem(at: indexPath, animated: true)
-    delegate?.buyListCollectionController(self,
-                                          didSelectServiceAt: indexPath)
-  }
-  
-  func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
-    (collectionView.cellForItem(at: indexPath) as? Selectable)?.deselect()
+extension BuyListCollectionController: BuyListServiceCellDelegate {
+  func buyListServiceCellDidTap(_ cell: BuyListServiceCell) {
+    guard let indexPath = collectionView?.indexPath(for: cell) else { return }
+    delegate?.buyListCollectionController(self, didSelectServiceAt: indexPath)
   }
 }
 

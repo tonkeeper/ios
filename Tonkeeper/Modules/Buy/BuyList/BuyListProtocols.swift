@@ -7,8 +7,14 @@
 //
 
 import Foundation
+import WalletCore
 
-protocol BuyListModuleOutput: AnyObject {}
+protocol BuyListModuleOutput: AnyObject {
+  func buyListModule(_ buyListModule: BuyListModuleInput,
+                     showFiatMethodPopUp fiatMethod: FiatMethodViewModel)
+  func buyListModule(_ buyListModule: BuyListModuleInput,
+                     showWebView url: URL)
+}
 
 protocol BuyListModuleInput: AnyObject {}
 

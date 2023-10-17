@@ -6,15 +6,15 @@
 //
 
 import UIKit
+import WalletCore
 
 struct BuyListServiceBuilder {
-  func buildServiceModel(logo: UIImage?,
-                         title: String,
-                         description: String?,
-                         token: String?) -> BuyListServiceCell.Model {
-    .init(logo: logo,
-          title: title,
-          description: description,
-          token: token)
+  func buildServiceModel(viewModel: WalletCore.FiatMethodViewModel) -> BuyListServiceCell.Model {
+    BuyListServiceCell.Model(
+      logo: .url(viewModel.iconURL),
+      title: viewModel.title,
+      description: viewModel.description,
+      token: viewModel.token
+    )
   }
 }

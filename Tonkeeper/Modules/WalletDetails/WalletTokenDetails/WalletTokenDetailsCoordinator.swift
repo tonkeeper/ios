@@ -99,6 +99,20 @@ private extension WalletTokenDetailsCoordinator {
       self?.removeChild(coordinator)
     })
   }
+  
+  func openBuyTon() {
+    let modalCardContainerViewController = ModalCardContainerViewController()
+    modalCardContainerViewController.headerSize = .big
+    let router = Router(rootViewController: modalCardContainerViewController)
+    let coordinator = BuyCoordinator(router: router,
+                                     walletCoreAssembly: walletCoreAssembly)
+    addChild(coordinator)
+    coordinator.start()
+    self.router.present(coordinator.router.rootViewController, dismiss: { [weak self, weak coordinator] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+    })
+  }
 }
 
 // MARK: - TokenDetailsModuleOutput
@@ -113,7 +127,7 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
   }
   
   func didTapTonBuy() {
-    
+    openBuyTon()
   }
   
   func didTapTopSwap() {
