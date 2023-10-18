@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -361,15 +361,6 @@
 		7DDBBFF82ACCA12E00F811A5 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; };
 		7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
 		7DDBBFFF2ACCAD9300F811A5 /* WalletRestoreViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFFE2ACCAD9300F811A5 /* WalletRestoreViewController.swift */; };
-		7DDBC0162ACCCEF500F811A5 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC0152ACCCEF500F811A5 /* TKChart */; };
-		7DDBC0182ACCCEF500F811A5 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC0172ACCCEF500F811A5 /* TKCore */; };
-		7DDBC01A2ACCCEF500F811A5 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC0192ACCCEF500F811A5 /* TKUIKit */; };
-		7DDBC01C2ACCCF1F00F811A5 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC01B2ACCCF1F00F811A5 /* TKChart */; };
-		7DDBC01E2ACCCF1F00F811A5 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC01D2ACCCF1F00F811A5 /* TKCore */; };
-		7DDBC0202ACCCF1F00F811A5 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC01F2ACCCF1F00F811A5 /* TKUIKit */; };
-		7DDBC0222ACCD0CF00F811A5 /* TKUIKit in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC01F2ACCCF1F00F811A5 /* TKUIKit */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		7DDBC0232ACCD0D000F811A5 /* TKCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC01D2ACCCF1F00F811A5 /* TKCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		7DDBC0242ACCD0D100F811A5 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC01B2ACCCF1F00F811A5 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		7DDBC0272ACCD1E600F811A5 /* WalletCoreDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC0262ACCD1E600F811A5 /* WalletCoreDynamic */; };
 		7DDBC0292ACCD1F500F811A5 /* WalletCoreDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC0282ACCD1F500F811A5 /* WalletCoreDynamic */; };
 		7DDBC02B2ACCD20100F811A5 /* WalletCoreDynamic in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 7DDBC0262ACCD1E600F811A5 /* WalletCoreDynamic */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -409,6 +400,18 @@
 		BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773774CBEA3D5DDBE5D6AFF /* TokenDetailsProtocols.swift */; };
 		BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6AC52DF8E6970E81B415D8 /* EnterMnemonicView.swift */; };
 		C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C81CE487C82E845B444588 /* EnterMnemonicPresenter.swift */; };
+		C35E6C382ADFC9F100F8B524 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C372ADFC9F100F8B524 /* TKUIKit */; };
+		C35E6C392ADFC9F100F8B524 /* TKUIKit in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C372ADFC9F100F8B524 /* TKUIKit */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C35E6C3B2ADFC9F400F8B524 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3A2ADFC9F400F8B524 /* TKChart */; };
+		C35E6C3C2ADFC9F400F8B524 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3A2ADFC9F400F8B524 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3D2ADFC9F800F8B524 /* TKCore */; };
+		C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3D2ADFC9F800F8B524 /* TKCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C35E6C412ADFC9FC00F8B524 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C402ADFC9FC00F8B524 /* TKUIKit */; };
+		C35E6C422ADFC9FC00F8B524 /* TKUIKit in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C402ADFC9FC00F8B524 /* TKUIKit */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C432ADFCA0500F8B524 /* TKCore */; };
+		C35E6C452ADFCA0500F8B524 /* TKCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C432ADFCA0500F8B524 /* TKCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C35E6C472ADFCA1300F8B524 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C462ADFCA1300F8B524 /* TKChart */; };
+		C35E6C482ADFCA1300F8B524 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C462ADFCA1300F8B524 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
 		C66B40FEF5B9FA11EE482612 /* InAppBrowserMainProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E1770C8CEAAC7E5196ACB6 /* InAppBrowserMainProtocols.swift */; };
@@ -461,10 +464,10 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				C35E6C3C2ADFC9F400F8B524 /* TKChart in Embed Frameworks */,
+				C35E6C392ADFC9F100F8B524 /* TKUIKit in Embed Frameworks */,
+				C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */,
 				7DDBC02B2ACCD20100F811A5 /* WalletCoreDynamic in Embed Frameworks */,
-				7DDBC0242ACCD0D100F811A5 /* TKChart in Embed Frameworks */,
-				7DDBC0222ACCD0CF00F811A5 /* TKUIKit in Embed Frameworks */,
-				7DDBC0232ACCD0D000F811A5 /* TKCore in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -475,6 +478,9 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				C35E6C482ADFCA1300F8B524 /* TKChart in Embed Frameworks */,
+				C35E6C452ADFCA0500F8B524 /* TKCore in Embed Frameworks */,
+				C35E6C422ADFC9FC00F8B524 /* TKUIKit in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -897,6 +903,9 @@
 		B305512CBFAF5DE77C5D0556 /* EnterMnemonicProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnterMnemonicProtocols.swift; sourceTree = "<group>"; };
 		B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartPresenter.swift; sourceTree = "<group>"; };
 		C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsViewController.swift; sourceTree = "<group>"; };
+		C35E6C342ADFC9CC00F8B524 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKUIKit; path = Modules/TKUIKit; sourceTree = "<group>"; };
+		C35E6C352ADFC9DA00F8B524 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKCore; path = Modules/TKCore; sourceTree = "<group>"; };
+		C35E6C362ADFC9E400F8B524 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKChart; path = Modules/TKChart; sourceTree = "<group>"; };
 		C94035FBBB4278C3B31B95C0 /* PasscodeInputPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputPresenter.swift; sourceTree = "<group>"; };
 		C95F21019C4885C194206234 /* CollectibleDetailsPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsPresenter.swift; sourceTree = "<group>"; };
 		CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentViewController.swift; sourceTree = "<group>"; };
@@ -918,10 +927,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7DDBC01A2ACCCEF500F811A5 /* TKUIKit in Frameworks */,
-				7DDBC0182ACCCEF500F811A5 /* TKCore in Frameworks */,
+				C35E6C472ADFCA1300F8B524 /* TKChart in Frameworks */,
+				C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */,
+				C35E6C412ADFC9FC00F8B524 /* TKUIKit in Frameworks */,
 				7DDBC0292ACCD1F500F811A5 /* WalletCoreDynamic in Frameworks */,
-				7DDBC0162ACCCEF500F811A5 /* TKChart in Frameworks */,
 				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
 				7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */,
 			);
@@ -931,13 +940,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C35E6C3B2ADFC9F400F8B524 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
-				7DDBC0202ACCCF1F00F811A5 /* TKUIKit in Frameworks */,
-				7DDBC01E2ACCCF1F00F811A5 /* TKCore in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
-				7DDBC01C2ACCCF1F00F811A5 /* TKChart in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
+				C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */,
 				7DDBC0272ACCD1E600F811A5 /* WalletCoreDynamic in Frameworks */,
+				C35E6C382ADFC9F100F8B524 /* TKUIKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2509,6 +2518,7 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
+				C35E6C332ADFC9CC00F8B524 /* Packages */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,
 				7D7CF6BF2AC7040900EB0BFF /* Configurations */,
@@ -2732,6 +2742,16 @@
 			path = InAppBrowserMain;
 			sourceTree = "<group>";
 		};
+		C35E6C332ADFC9CC00F8B524 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				C35E6C342ADFC9CC00F8B524 /* TKUIKit */,
+				C35E6C352ADFC9DA00F8B524 /* TKCore */,
+				C35E6C362ADFC9E400F8B524 /* TKChart */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
 		E15A4D816E375EC6F055D7F0 /* TokenDetails */ = {
 			isa = PBXGroup;
 			children = (
@@ -2767,10 +2787,10 @@
 			);
 			name = TonkeeperWidgetExtension;
 			packageProductDependencies = (
-				7DDBC0152ACCCEF500F811A5 /* TKChart */,
-				7DDBC0172ACCCEF500F811A5 /* TKCore */,
-				7DDBC0192ACCCEF500F811A5 /* TKUIKit */,
 				7DDBC0282ACCD1F500F811A5 /* WalletCoreDynamic */,
+				C35E6C402ADFC9FC00F8B524 /* TKUIKit */,
+				C35E6C432ADFCA0500F8B524 /* TKCore */,
+				C35E6C462ADFCA1300F8B524 /* TKChart */,
 			);
 			productName = TonkeeperWidgetExtension;
 			productReference = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */;
@@ -2798,10 +2818,10 @@
 				7DB17F342A4B2F07007C6154 /* AnyFormatKit */,
 				7D143C352A4EC0D300B5FCC0 /* Lottie */,
 				7D5A18112A5406CB00793769 /* Kingfisher */,
-				7DDBC01B2ACCCF1F00F811A5 /* TKChart */,
-				7DDBC01D2ACCCF1F00F811A5 /* TKCore */,
-				7DDBC01F2ACCCF1F00F811A5 /* TKUIKit */,
 				7DDBC0262ACCD1E600F811A5 /* WalletCoreDynamic */,
+				C35E6C372ADFC9F100F8B524 /* TKUIKit */,
+				C35E6C3A2ADFC9F400F8B524 /* TKChart */,
+				C35E6C3D2ADFC9F800F8B524 /* TKCore */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -2862,9 +2882,6 @@
 				7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */,
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
-				7D19EB592ABDA5B500BDE7FA /* XCLocalSwiftPackageReference "Modules/TKChart" */,
-				7D8A50962AC70D6000AA396C /* XCLocalSwiftPackageReference "Modules/TKCore" */,
-				7DDBC0082ACCCCC100F811A5 /* XCLocalSwiftPackageReference "Modules/TKUIKit" */,
 				7DDBC0252ACCD1E600F811A5 /* XCRemoteSwiftPackageReference "core-swift" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
@@ -3744,21 +3761,6 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		7D19EB592ABDA5B500BDE7FA /* XCLocalSwiftPackageReference "Modules/TKChart" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Modules/TKChart;
-		};
-		7D8A50962AC70D6000AA396C /* XCLocalSwiftPackageReference "Modules/TKCore" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Modules/TKCore;
-		};
-		7DDBC0082ACCCCC100F811A5 /* XCLocalSwiftPackageReference "Modules/TKUIKit" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Modules/TKUIKit;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCRemoteSwiftPackageReference section */
 		7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -3810,36 +3812,6 @@
 			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
 			productName = AnyFormatKit;
 		};
-		7DDBC0152ACCCEF500F811A5 /* TKChart */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7D19EB592ABDA5B500BDE7FA /* XCLocalSwiftPackageReference "Modules/TKChart" */;
-			productName = TKChart;
-		};
-		7DDBC0172ACCCEF500F811A5 /* TKCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7D8A50962AC70D6000AA396C /* XCLocalSwiftPackageReference "Modules/TKCore" */;
-			productName = TKCore;
-		};
-		7DDBC0192ACCCEF500F811A5 /* TKUIKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7DDBC0082ACCCCC100F811A5 /* XCLocalSwiftPackageReference "Modules/TKUIKit" */;
-			productName = TKUIKit;
-		};
-		7DDBC01B2ACCCF1F00F811A5 /* TKChart */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7D19EB592ABDA5B500BDE7FA /* XCLocalSwiftPackageReference "Modules/TKChart" */;
-			productName = TKChart;
-		};
-		7DDBC01D2ACCCF1F00F811A5 /* TKCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7D8A50962AC70D6000AA396C /* XCLocalSwiftPackageReference "Modules/TKCore" */;
-			productName = TKCore;
-		};
-		7DDBC01F2ACCCF1F00F811A5 /* TKUIKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 7DDBC0082ACCCCC100F811A5 /* XCLocalSwiftPackageReference "Modules/TKUIKit" */;
-			productName = TKUIKit;
-		};
 		7DDBC0262ACCD1E600F811A5 /* WalletCoreDynamic */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7DDBC0252ACCD1E600F811A5 /* XCRemoteSwiftPackageReference "core-swift" */;
@@ -3854,6 +3826,30 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7DDBC0252ACCD1E600F811A5 /* XCRemoteSwiftPackageReference "core-swift" */;
 			productName = WalletCoreDynamic;
+		};
+		C35E6C372ADFC9F100F8B524 /* TKUIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKit;
+		};
+		C35E6C3A2ADFC9F400F8B524 /* TKChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKChart;
+		};
+		C35E6C3D2ADFC9F800F8B524 /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKCore;
+		};
+		C35E6C402ADFC9FC00F8B524 /* TKUIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKit;
+		};
+		C35E6C432ADFCA0500F8B524 /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKCore;
+		};
+		C35E6C462ADFCA1300F8B524 /* TKChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKChart;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
