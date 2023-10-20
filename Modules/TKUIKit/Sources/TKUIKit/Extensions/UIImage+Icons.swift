@@ -79,6 +79,10 @@ public extension UIImage {
       public static var putUpForSale: UIImage? {
         .imageWithName("Icons/28/ic-sale-badge-28")?.withRenderingMode(.alwaysTemplate)
       }
+        
+      public static var swap: UIImage? {
+        .imageWithName("Icons/28/ic-swap-horizontal-alternative-28")?.withRenderingMode(.alwaysTemplate)
+      }
     }
     
     public enum Service {

@@ -20,8 +20,8 @@ struct ActivityListTransactionBuilder {
                              collectible: ActivityEventViewModel.ActionViewModel.CollectibleViewModel? = nil) -> TransactionCellContentView.Model {
     let textContentModel = DefaultCellTextContentView.Model(
       title: type.title,
-      amount: amount?.attributed(with: .label1, alignment: .left, color: type.amountColor),
-      subamount: subamount?.attributed(with: .label1, alignment: .left, color: type.subamountColor),
+      amount: amount?.attributed(with: .label1, alignment: .right, color: type.amountColor),
+      subamount: subamount?.attributed(with: .label1, alignment: .right, color: type.subamountColor),
       topLeftDescriptionValue: subtitle,
       topLeftDescriptionSubvalue: nil,
       topRightDescriptionValue: time
@@ -70,6 +70,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Icons.Transaction.sent
     case .withdrawStake:
       return .Icons.Transaction.sent
+    case .jettonSwap:
+      return .Icons.Transaction.swap
     case .spam:
       return .Icons.Transaction.spam
     case .bounced:
@@ -110,11 +112,13 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
     case .sentAndReceieved:
       return "Sent and received"
     case .mint:
-      return "Mint"
+      return "Received"
     case .depositStake:
       return "Stake"
     case .withdrawStake:
       return "Stake"
+    case .jettonSwap:
+      return "Swap"
     case .spam:
       return "Spam"
     case .bounced:
@@ -164,7 +168,7 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
         .contractExec,
         .putUpForSale:
       return .Text.primary
-    case .receieved, .bounced, .mint, .withdrawStake:
+    case .receieved, .bounced, .mint, .withdrawStake, .jettonSwap:
       return .Accent.green
     case .spam:
       return .Text.tertiary
@@ -175,6 +179,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
     switch self {
     case .sentAndReceieved:
       return .Accent.green
+    case .jettonSwap:
+      return .Text.primary
     default:
       return .Text.primary
     }
