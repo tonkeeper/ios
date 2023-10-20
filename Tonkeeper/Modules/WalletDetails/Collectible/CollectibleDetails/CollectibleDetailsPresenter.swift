@@ -120,19 +120,21 @@ extension CollectibleDetailsPresenter: CollectibleDetailsControllerDelegate {
 
 private extension CollectibleDetailsPresenter {
   func buttonsModels(model: CollectibleDetailsViewModel) -> [CollectibleDetailsButtonsView.Model.Button] {
-    let transferButtonModel = createTransferButtonModel(model: model)
-    let linkButtonModel = createLinkButtonModel(model: model)
-    var models = [transferButtonModel, linkButtonModel]
+    var models = [createTransferButtonModel(model: model)]
+    if let linkButton = createLinkButtonModel(model: model) {
+      models.append(linkButton)
+    }
     if let expirationDateButtonModel = createExpirationDateButtonModel(model: model) {
       models.append(expirationDateButtonModel)
     }
     return models
   }
   
-  func createLinkButtonModel(model: CollectibleDetailsViewModel) -> CollectibleDetailsButtonsView.Model.Button {
+  func createLinkButtonModel(model: CollectibleDetailsViewModel) -> CollectibleDetailsButtonsView.Model.Button? {
+    guard let linkedAddress = model.linkedAddress else { return nil }
     let title: String
     let isLoading: Bool
-    switch model.linkedAddress {
+    switch linkedAddress {
     case .value(let value):
       if let value = value {
         title = "Linked with \(value)"
@@ -192,7 +194,8 @@ private extension CollectibleDetailsPresenter {
   func createTransferButtonModel(model: CollectibleDetailsViewModel) -> CollectibleDetailsButtonsView.Model.Button {
     var transferButtonDescription: NSAttributedString?
     if model.isOnSale {
-      transferButtonDescription = String.onSaleDescription.attributed(
+      let description: String = model.isDns ? .domainOnSaleDescription : .nftOnSaleDescription
+      transferButtonDescription = description.attributed(
         with: .body2,
         alignment: .center,
         lineBreakMode: .byWordWrapping,
@@ -218,6 +221,7 @@ private extension CollectibleDetailsPresenter {
 }
 
 private extension String {
-  static let onSaleDescription = "Domain is on sale at the marketplace now. For transfer, you should remove it from sale first."
+  static let domainOnSaleDescription = "Domain is on sale at the marketplace now. For transfer, you should remove it from sale first."
+  static let nftOnSaleDescription = "NFT is on sale at the marketplace now. For transfer, you should remove it from sale first."
   static let expirationDateTitle = "Expiration date"
 }
