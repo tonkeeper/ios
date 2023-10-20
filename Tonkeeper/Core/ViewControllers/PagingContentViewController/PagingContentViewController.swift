@@ -87,6 +87,13 @@ final class PagingContentViewController: UIViewController {
     super.viewDidLoad()
     setup()
   }
+  
+  func selectFirstTab() {
+    guard contentViewControllers.count > 1 else { return }
+    headerView.pageSegmentControl.selectedIndex = 0
+    pageViewController.selectedIndex = 0
+    didSelectPageAt(index: 0)
+  }
 }
 
 private extension PagingContentViewController {

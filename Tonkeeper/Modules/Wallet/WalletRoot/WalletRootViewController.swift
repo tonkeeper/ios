@@ -7,7 +7,7 @@
 
 import UIKit
 
-final class WalletRootViewController: GenericViewController<WalletRootView> {
+final class WalletRootViewController: GenericViewController<WalletRootView>, ScrollViewController {
   
   // MARK: - Module
   
@@ -52,6 +52,16 @@ final class WalletRootViewController: GenericViewController<WalletRootView> {
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     navigationController?.setNavigationBarHidden(true, animated: true)
+  }
+  
+  // MARK: - ScrollViewController
+  
+  func scrollToTop() {
+    if scrollContainerViewController.isScrollOnTop {
+      contentViewController.selectFirstTab()
+    } else {
+      scrollContainerViewController.scrollToTop()
+    }
   }
 }
 

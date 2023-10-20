@@ -8,7 +8,7 @@
 
 import UIKit
 
-class ActivityRootViewController: GenericViewController<ActivityRootView> {
+class ActivityRootViewController: GenericViewController<ActivityRootView>, ScrollViewController {
 
   // MARK: - Module
 
@@ -45,6 +45,12 @@ class ActivityRootViewController: GenericViewController<ActivityRootView> {
   
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
+  }
+  
+  // MARK: - ScrollViewController
+  
+  func scrollToTop() {
+    listViewController.scrollToTop()
   }
 }
 

@@ -8,6 +8,12 @@
 import UIKit
 
 final class TabBarRouter: Router<UITabBarController> {
+  
+  override init(rootViewController: UITabBarController) {
+    super.init(rootViewController: rootViewController)
+    rootViewController.delegate = self
+  }
+  
   func set(presentables: [Presentable],
            options: RouteOptions = .default,
            completion: (() -> Void)? = nil) {
@@ -30,5 +36,25 @@ final class TabBarRouter: Router<UITabBarController> {
     rootViewController.select(index: index,
                               options: options,
                               completion: completion)
+  }
+}
+
+extension TabBarRouter: UITabBarControllerDelegate {
+  func tabBarController(_ tabBarController: UITabBarController,
+                        shouldSelect viewController: UIViewController) -> Bool {
+    if tabBarController.viewControllers?[tabBarController.selectedIndex] == viewController {
+      (viewController as? ScrollViewController)?.scrollToTop()
+    }
+    return true
+  }
+}
+
+protocol ScrollViewController: UIViewController {
+  func scrollToTop()
+}
+
+extension UINavigationController: ScrollViewController {
+  func scrollToTop() {
+    (topViewController as? ScrollViewController)?.scrollToTop()
   }
 }

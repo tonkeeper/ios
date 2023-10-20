@@ -8,12 +8,13 @@
 
 import UIKit
 
-class ActivityListViewController: GenericViewController<ActivityListView> {
+class ActivityListViewController: GenericViewController<ActivityListView>, ScrollViewController {
 
   var scrollView: UIScrollView {
     customView.collectionView
   }
   
+  private var biggestTopSafeAreaInset: CGFloat = 0
   var didStartRefresh: (() -> Void)?
   
   private var headerViewController: UIViewController?
@@ -63,6 +64,24 @@ class ActivityListViewController: GenericViewController<ActivityListView> {
     }
     collectionController.headerView = headerViewController?.view
     headerViewController?.didMove(toParent: self)
+  }
+  
+  override func viewSafeAreaInsetsDidChange() {
+    super.viewSafeAreaInsetsDidChange()
+    self.biggestTopSafeAreaInset = max(view.safeAreaInsets.top, biggestTopSafeAreaInset)
+  }
+  
+  // MARK: - ScrollViewController
+
+  func scrollToTop() {
+    guard !collectionController.isScrollingToTop &&
+    scrollView.contentOffset.y > scrollView.adjustedContentInset.top else { return }
+    collectionController.isScrollingToTop = true
+    scrollView.setContentOffset(
+      CGPoint(x: 0,
+              y: -biggestTopSafeAreaInset),
+      animated: true
+    )
   }
 }
 

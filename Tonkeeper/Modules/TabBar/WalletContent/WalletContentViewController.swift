@@ -39,6 +39,12 @@ class WalletContentViewController: GenericViewController<WalletContentView> {
     setup()
     presenter.viewDidLoad()
   }
+  
+  // MARK: - Tabs
+  
+  func selectFirstTab() {
+    pagingContentViewController.selectFirstTab()
+  }
 }
 
 // MARK: - WalletContentViewInput

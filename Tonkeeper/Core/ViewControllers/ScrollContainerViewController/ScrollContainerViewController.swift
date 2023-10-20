@@ -22,13 +22,15 @@ protocol ScrollContainerBodyContent: UIViewController {
   func updateYContentOffset(_ offset: CGFloat)
 }
 
-final class ScrollContainerViewController: UIViewController {
+final class ScrollContainerViewController: UIViewController, ScrollViewController {
   
   private let headerContent: ScrollContainerHeaderContent
   private let bodyContent: ScrollContainerBodyContent
   
   private let scrollView = NotDelayScrollView()
   private let panGestureScrollView = NotDelayScrollView()
+  
+  private var isScrollingToTop = false
   
   init(headerContent: ScrollContainerHeaderContent,
        bodyContent: ScrollContainerBodyContent) {
@@ -67,6 +69,22 @@ final class ScrollContainerViewController: UIViewController {
     
     recalculateScrollViewContentSize()
     recalculatePanGestureScrollViewContentSize()
+  }
+  
+  // MARK: - ScrollViewController
+  
+  func scrollToTop() {
+    guard !isScrollingToTop else { return }
+    isScrollingToTop = true
+    panGestureScrollView.setContentOffset(
+      CGPoint(x: 0,
+              y: -panGestureScrollView.adjustedContentInset.top),
+      animated: true
+    )
+  }
+  
+  var isScrollOnTop: Bool {
+    panGestureScrollView.contentOffset.y <= panGestureScrollView.adjustedContentInset.top
   }
 }
 
@@ -131,5 +149,9 @@ extension ScrollContainerViewController: UIScrollViewDelegate {
     
     let headerScrollProgress = max(min((self.scrollView.contentOffset.y) / (bodyScrollTreshold - headerContent.minimumHeight), 1), 0)
     headerContent.update(with: headerScrollProgress)
+  }
+  
+  func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+    isScrollingToTop = false
   }
 }

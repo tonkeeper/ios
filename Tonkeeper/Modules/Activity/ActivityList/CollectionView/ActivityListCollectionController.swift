@@ -27,6 +27,8 @@ final class ActivityListCollectionController: NSObject {
     }
   }
   
+  var isScrollingToTop = false
+  
   private weak var collectionView: UICollectionView?
   private var dataSource: UICollectionViewDiffableDataSource<ActivityListSection, String>?
   private let collectionLayoutConfigurator = ActivityListCollectionLayoutConfigurator()
@@ -247,6 +249,10 @@ extension ActivityListCollectionController: UICollectionViewDelegate {
                       willDisplay cell: UICollectionViewCell,
                       forItemAt indexPath: IndexPath) {
     fetchNextIfNeeded(collectionView: collectionView, indexPath: indexPath)
+  }
+  
+  func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+    isScrollingToTop = false
   }
 }
 

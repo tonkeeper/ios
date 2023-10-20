@@ -8,7 +8,7 @@
 
 import UIKit
 
-class SettingsListViewController: GenericViewController<SettingsListView> {
+class SettingsListViewController: GenericViewController<SettingsListView>, ScrollViewController {
 
   // MARK: - Module
 
@@ -16,6 +16,7 @@ class SettingsListViewController: GenericViewController<SettingsListView> {
   
   // MARK: - Collection
   
+  private var biggestTopSafeAreaInset: CGFloat = 0
   private lazy var collectionController: SettingsListCollectionController = {
     let controller = SettingsListCollectionController(collectionView: customView.collectionView)
     return controller
@@ -42,6 +43,21 @@ class SettingsListViewController: GenericViewController<SettingsListView> {
     super.viewDidLoad()
     setup()
     presenter.viewDidLoad()
+  }
+  
+  override func viewSafeAreaInsetsDidChange() {
+    super.viewSafeAreaInsetsDidChange()
+    self.biggestTopSafeAreaInset = max(view.safeAreaInsets.top, biggestTopSafeAreaInset)
+  }
+  
+  // MARK: - ScrollViewController
+  
+  func scrollToTop() {
+    customView.collectionView.setContentOffset(
+      CGPoint(x: 0,
+              y: -biggestTopSafeAreaInset),
+      animated: true
+    )
   }
 }
 
