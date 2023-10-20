@@ -32,6 +32,7 @@ final class SendRecipientView: UIView {
   
   let commentLimitLabel: UILabel = {
     let label = UILabel()
+    label.numberOfLines = 0
     label.isHidden = true
     return label
   }()
@@ -135,9 +136,11 @@ private extension SendRecipientView {
   }
   
   func updateContinueButtonBottomConstraint() {
-    continueButtonBottomConstraint?.constant = keyboardHeight == 0
+    let inset = keyboardHeight == 0
     ? -safeAreaInsets.bottom - .continueButtonBottomSpace
     : -keyboardHeight - .continueButtonBottomSpace
+    continueButtonBottomConstraint?.constant = inset
+    scrollView.contentInset.bottom = -(inset - continueButtonActivityContainer.frame.height - .continueButtonBottomSpace)
   }
 }
 

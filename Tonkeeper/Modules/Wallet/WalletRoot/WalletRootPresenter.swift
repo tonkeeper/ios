@@ -130,7 +130,7 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
   }
   
   func didTapAddress() {
-    guard let walletAddress = try? walletBalanceController.getWalletBalance().header.fullAddress else {
+    guard let walletAddress = try? walletBalanceController.walletAddress.toString(bounceable: false) else {
       return
     }
 

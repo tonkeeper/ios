@@ -124,8 +124,9 @@ private extension SendRecipientPresenter {
   }
   
   func validate() {
-    let isValid = validateRecipient() && validateComment()
-    viewInput?.updateContinueButtonIsAvailable(isAvailable: isValid)
+    let isRecipientValid = validateRecipient()
+    let isCommentValid = validateComment()
+    viewInput?.updateContinueButtonIsAvailable(isAvailable: isRecipientValid && isCommentValid)
   }
   
   func validateRecipient() -> Bool {

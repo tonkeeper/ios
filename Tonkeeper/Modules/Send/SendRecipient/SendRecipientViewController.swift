@@ -50,8 +50,8 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
   
   func keyboardWillShow(_ notification: Notification) {
     guard let keyboardSize = notification.keyboardSize,
-    let duration = notification.keyboardAnimationDuration,
-    let curve = notification.keyboardAnimationCurve else { return }
+          let duration = notification.keyboardAnimationDuration,
+          let curve = notification.keyboardAnimationCurve else { return }
     customView.updateKeyboardHeight(keyboardSize.height,
                                     duration: duration,
                                     curve: curve)
@@ -59,7 +59,7 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
   
   func keyboardWillHide(_ notification: Notification) {
     guard let duration = notification.keyboardAnimationDuration,
-    let curve = notification.keyboardAnimationCurve else { return }
+          let curve = notification.keyboardAnimationCurve else { return }
     customView.updateKeyboardHeight(0,
                                     duration: duration,
                                     curve: curve)
