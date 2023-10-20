@@ -70,6 +70,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Icons.Transaction.sent
     case .withdrawStake:
       return .Icons.Transaction.sent
+    case .withdrawStakeRequest:
+      return .Icons.Transaction.receieved
     case .jettonSwap:
       return .Icons.Transaction.swap
     case .spam:
@@ -117,6 +119,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return "Stake"
     case .withdrawStake:
       return "Stake"
+    case .withdrawStakeRequest:
+      return "Unstake Request"
     case .jettonSwap:
       return "Swap"
     case .spam:
@@ -170,7 +174,7 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Text.primary
     case .receieved, .bounced, .mint, .withdrawStake, .jettonSwap:
       return .Accent.green
-    case .spam:
+    case .spam, .withdrawStakeRequest:
       return .Text.tertiary
     }
   }
