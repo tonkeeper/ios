@@ -65,10 +65,13 @@ extension CollectibleDetailsPresenter: CollectibleDetailsControllerDelegate {
       imageURL: model.collectibleDetails.imageURL
     )
     
-    let collectionModel = CollectibleDetailsCollectionDescriptionView.Model(
-      title: model.collectionDetails.title,
-      description: model.collectionDetails.description
-    )
+    var collectionModel: CollectibleDetailsCollectionDescriptionView.Model?
+    if let collectionDetails = model.collectionDetails {
+      collectionModel = .init(
+        title: collectionDetails.title,
+        description: collectionDetails.description
+      )
+    }
     
     let buttonsModel = CollectibleDetailsButtonsView.Model(buttonsModels:
       buttonsModels(model: model)
