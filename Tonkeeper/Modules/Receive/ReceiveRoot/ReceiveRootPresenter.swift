@@ -80,10 +80,6 @@ private extension ReceiveRootPresenter {
                   alignment: .left,
                   color: .Text.primary)
     let address = try? receiveController.getWalletAddress()
-      .attributed(with: .label1,
-                  alignment: .left,
-                  lineBreakMode: .byCharWrapping,
-                  color: .Text.secondary)
     viewInput?.updateView(model: .init(title: title,
                                        qrTitle: qrTitle,
                                        addressTitle: addressTitle,

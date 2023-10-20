@@ -18,7 +18,7 @@ final class ReceiveRootView: UIView, ConfigurableView {
     let title: NSAttributedString?
     let qrTitle: NSAttributedString?
     let addressTitle: NSAttributedString?
-    let address: NSAttributedString?
+    let address: String?
     let copyButtonTitle: String?
     let shareButtonTitle: String?
   }
@@ -147,7 +147,20 @@ final class ReceiveRootView: UIView, ConfigurableView {
     titleLabel.attributedText = model.title
     qrTitleLabel.attributedText = model.qrTitle
     addressTitleLabel.attributedText = model.addressTitle
-    addressButton.setAttributedTitle(model.address, for: .normal)
+    addressButton.setAttributedTitle(
+      model.address?.attributed(with: .label1,
+                               alignment: .left,
+                               lineBreakMode: .byCharWrapping,
+                               color: .Text.secondary
+                              ), for: .normal
+    )
+    addressButton.setAttributedTitle(
+      model.address?.attributed(with: .label1,
+                               alignment: .left,
+                               lineBreakMode: .byCharWrapping,
+                               color: .Text.tertiary
+                              ), for: .highlighted
+    )
     copyButton.title = model.copyButtonTitle
     shareButton.title = model.shareButtonTitle
   }

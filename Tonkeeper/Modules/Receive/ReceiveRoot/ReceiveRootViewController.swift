@@ -79,6 +79,12 @@ private extension ReceiveRootViewController {
     }), for: .touchUpInside)
     navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeButton)
     
+    customView.addressButton.addTarget(
+      self,
+      action: #selector(didTapCopyAddress),
+      for: .touchUpInside
+    )
+    
     customView.copyButton.addTarget(
       self,
       action: #selector(didTapCopyAddress),
