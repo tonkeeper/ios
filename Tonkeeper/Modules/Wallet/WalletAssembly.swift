@@ -70,7 +70,10 @@ struct WalletAssembly {
   }
   
   func qrScannerModule(output: QRScannerModuleOutput) -> Module<UIViewController, Void> {
-    QRScannerAssembly.qrScannerModule(output: output)
+    QRScannerAssembly.qrScannerModule(
+      urlOpener: walletCoreAssembly.coreAssembly.urlOpener(),
+      output: output
+    )
   }
   
   func tokensListModule(page: WalletContentPage, output: TokensListModuleOutput) -> Module<TokensListViewController, TokensListModuleInput> {

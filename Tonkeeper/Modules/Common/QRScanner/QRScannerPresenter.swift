@@ -8,6 +8,8 @@
 import Foundation
 import AVFoundation
 import WalletCore
+import TKCore
+import UIKit
 
 final class QRScannerPresenter: NSObject {
   
@@ -27,10 +29,20 @@ final class QRScannerPresenter: NSObject {
   weak var viewInput: QRScannerViewInput?
   weak var output: QRScannerModuleOutput?
   
+  // MARK: - Dependencies
+  
+  private let urlOpener: URLOpener
+  
   // MARK: - State
   
   private let metadataOutputQueue = DispatchQueue(label: "metadata.capturesession.queue")
   private let captureSession = AVCaptureSession()
+  
+  // MARK: - Init
+  
+  init(urlOpener: URLOpener) {
+    self.urlOpener = urlOpener
+  }
 }
 
 // MARK: - QRScannerPresenterInput
@@ -61,6 +73,11 @@ extension QRScannerPresenter: QRScannerPresenterInput {
   
   func didTapSwipeButton() {
     output?.qrScannerModuleDidFinish()
+  }
+  
+  func openSettings() {
+    guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+    urlOpener.open(url: url)
   }
 }
 
@@ -103,7 +120,9 @@ private extension QRScannerPresenter {
     }
   }
   
-  func handlePermissionDenied() {}
+  func handlePermissionDenied() {
+    viewInput?.showCameraPermissionDenied()
+  }
   
   func setupSession() throws {
     guard let device = AVCaptureDevice.default(for: .video) else {

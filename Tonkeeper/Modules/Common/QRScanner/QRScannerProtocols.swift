@@ -18,8 +18,10 @@ protocol QRScannerPresenterInput {
   func viewDidDisappear()
   func didToggleFlashligt(isSelected: Bool)
   func didTapSwipeButton()
+  func openSettings()
 }
 
 protocol QRScannerViewInput: AnyObject {
   func showVideoLayer(_ layer: CALayer)
+  func showCameraPermissionDenied()
 }

@@ -110,7 +110,10 @@ private extension SendCoordinator {
 
 extension SendCoordinator: SendRecipientModuleOutput {
   func sendRecipientModuleOpenQRScanner() {
-    let module = QRScannerAssembly.qrScannerModule(output: self)
+    let module = QRScannerAssembly.qrScannerModule(
+      urlOpener: walletCoreAssembly.coreAssembly.urlOpener(),
+      output: self
+    )
     router.present(module.view)
   }
   

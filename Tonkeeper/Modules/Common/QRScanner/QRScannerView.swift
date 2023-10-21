@@ -13,6 +13,7 @@ final class QRScannerView: UIView {
   let overlayView = UIView()
   let flashlightButton = ToggleButton()
   let titleLabel = UILabel()
+  let cameraPermissionViewContainer = UIView()
   
   private let maskLayer = CAShapeLayer()
   private let cornersLayer = CAShapeLayer()
@@ -49,22 +50,39 @@ final class QRScannerView: UIView {
     titleLabel.sizeToFit()
     titleLabel.frame.origin.y = holeRect.minY - titleLabel.frame.size.height - .titleBottomOffset
     titleLabel.center.x = bounds.width / 2
+    
+    cameraPermissionViewContainer.frame = bounds
   }
   
   func setVideoPreviewLayer(_ layer: CALayer) {
     videoContainerView.layer.insertSublayer(layer, at: 0)
     layer.frame = videoContainerView.layer.bounds
   }
+  
+  func setCameraPermissionDeniedView(_ view: UIView) {
+    cameraPermissionViewContainer.isHidden = false
+    cameraPermissionViewContainer.addSubview(view)
+    view.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+      view.topAnchor.constraint(equalTo: cameraPermissionViewContainer.topAnchor),
+      view.leftAnchor.constraint(equalTo: cameraPermissionViewContainer.leftAnchor),
+      view.bottomAnchor.constraint(equalTo: cameraPermissionViewContainer.bottomAnchor),
+      view.rightAnchor.constraint(equalTo: cameraPermissionViewContainer.rightAnchor),
+    ])
+  }
 }
 
 private extension QRScannerView {
   func setup() {
+    cameraPermissionViewContainer.isHidden = true
     addSubview(videoContainerView)
     videoContainerView.addSubview(overlayView)
     overlayView.addSubview(flashlightButton)
     overlayView.addSubview(titleLabel)
     
     layer.addSublayer(cornersLayer)
+    
+    addSubview(cameraPermissionViewContainer)
     
     backgroundColor = .black
     overlayView.backgroundColor = .black.withAlphaComponent(0.72)

@@ -6,10 +6,12 @@
 //
 
 import UIKit
+import TKCore
 
 struct QRScannerAssembly {
-  static func qrScannerModule(output: QRScannerModuleOutput) -> Module<UIViewController, Void> {
-    let presenter = QRScannerPresenter()
+  static func qrScannerModule(urlOpener: URLOpener,
+                              output: QRScannerModuleOutput) -> Module<UIViewController, Void> {
+    let presenter = QRScannerPresenter(urlOpener: urlOpener)
     presenter.output = output
     let viewController = QRScannerViewController(presenter: presenter)
     presenter.viewInput = viewController

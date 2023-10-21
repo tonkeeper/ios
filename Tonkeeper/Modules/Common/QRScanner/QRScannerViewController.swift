@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SwiftUI
 import AVFoundation
 
 final class QRScannerViewController: GenericViewController<QRScannerView> {
@@ -49,6 +50,15 @@ final class QRScannerViewController: GenericViewController<QRScannerView> {
 extension QRScannerViewController: QRScannerViewInput {
   func showVideoLayer(_ layer: CALayer) {
     customView.setVideoPreviewLayer(layer)
+  }
+  
+  func showCameraPermissionDenied() {
+    let viewController = UIHostingController(rootView: NoCameraPermissionView(buttonHandler: { [weak self] in
+      self?.presenter.openSettings()
+    }))
+    addChild(viewController)
+    customView.setCameraPermissionDeniedView(viewController.view)
+    viewController.didMove(toParent: self)
   }
 }
 

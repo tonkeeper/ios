@@ -412,6 +412,7 @@
 		C35E6C452ADFCA0500F8B524 /* TKCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C432ADFCA0500F8B524 /* TKCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C35E6C472ADFCA1300F8B524 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C462ADFCA1300F8B524 /* TKChart */; };
 		C35E6C482ADFCA1300F8B524 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C462ADFCA1300F8B524 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C3A337BC2AE340BD00E315F5 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */; };
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
 		C66B40FEF5B9FA11EE482612 /* InAppBrowserMainProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E1770C8CEAAC7E5196ACB6 /* InAppBrowserMainProtocols.swift */; };
@@ -906,6 +907,7 @@
 		C35E6C342ADFC9CC00F8B524 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKUIKit; path = Modules/TKUIKit; sourceTree = "<group>"; };
 		C35E6C352ADFC9DA00F8B524 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKCore; path = Modules/TKCore; sourceTree = "<group>"; };
 		C35E6C362ADFC9E400F8B524 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKChart; path = Modules/TKChart; sourceTree = "<group>"; };
+		C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
 		C94035FBBB4278C3B31B95C0 /* PasscodeInputPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputPresenter.swift; sourceTree = "<group>"; };
 		C95F21019C4885C194206234 /* CollectibleDetailsPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsPresenter.swift; sourceTree = "<group>"; };
 		CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentViewController.swift; sourceTree = "<group>"; };
@@ -2133,6 +2135,7 @@
 			isa = PBXGroup;
 			children = (
 				7D790EEA2A67E28200587C96 /* QRScannerSwipeDownButton.swift */,
+				C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -2993,6 +2996,7 @@
 				7D9292FD2A29DCDA005B83DF /* SendRecipientViewController.swift in Sources */,
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
+				C3A337BC2AE340BD00E315F5 /* NoCameraPermissionView.swift in Sources */,
 				7D3D65112ACAB80200E64537 /* SettingsListCollectionController.swift in Sources */,
 				7D3D65022ACAB01300E64537 /* SettingsAssembly.swift in Sources */,
 				7DC88C582AB9C42100F47614 /* WalletHeaderConnectionStatusView.swift in Sources */,

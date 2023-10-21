@@ -313,6 +313,12 @@ public extension UIImage {
       }
     }
     
+    public enum Permission {
+      public static var camera: UIImage? {
+        .imageWithName("Icons/84/ic-camera-84")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     public enum Mock {
       public static var tonCurrencyIcon: UIImage? {
         .imageWithName("Icons/44/ton_currency_icon")
@@ -332,3 +338,6 @@ public extension UIImage {
     }
   }
 }
+
+
+
