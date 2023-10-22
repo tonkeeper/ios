@@ -15,8 +15,9 @@ extension UITabBarController {
     
     let tabBarAppearance = UITabBarAppearance()
     tabBarAppearance.configureWithOpaqueBackground()
-    tabBarAppearance.backgroundColor = .Background.page
+    tabBarAppearance.backgroundColor = .Background.transparent
     tabBarAppearance.stackedLayoutAppearance = itemAppearance
+    tabBarAppearance.shadowColor = .Separator.common
     
     tabBar.standardAppearance = tabBarAppearance
     if #available(iOS 15.0, *) {
