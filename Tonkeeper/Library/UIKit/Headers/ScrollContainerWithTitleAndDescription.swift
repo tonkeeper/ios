@@ -87,7 +87,10 @@ final class ScrollContainerWithTitleAndDescription: UIView, ConfigurableView {
     let scrollViewMaxOrigin = scrollView.contentSize.height
     - scrollView.frame.height
     + scrollView.contentInset.bottom
-    let originY = min(viewFrame.origin.y - 64, scrollViewMaxOrigin)
+    let originY = min(
+      viewFrame.origin.y - descriptionLabel.frame.maxY - .descriptionBottomSpace,
+      scrollViewMaxOrigin
+    )
     UIView.animate(withDuration: animationDuration) {
       self.scrollView.contentOffset = .init(x: 0, y: originY)
     }
