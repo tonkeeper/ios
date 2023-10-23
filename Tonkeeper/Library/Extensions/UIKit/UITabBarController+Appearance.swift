@@ -11,18 +11,29 @@ import TKUIKit
 extension UITabBarController {
   func configureAppearance() {
     let itemAppearance = UITabBarItemAppearance()
-    itemAppearance.normal.titleTextAttributes = [.font: TextStyle.label3.font]
+    itemAppearance.normal.titleTextAttributes = [.font: TextStyle.label3.font,
+                                                 .foregroundColor: UIColor.TabBar.inactiveIcon]
+    itemAppearance.normal.iconColor = .TabBar.inactiveIcon
+    itemAppearance.selected.titleTextAttributes = [.font: TextStyle.label3.font,
+                                                 .foregroundColor: UIColor.TabBar.activeIcon]
+    itemAppearance.selected.iconColor = .TabBar.activeIcon
     
-    let tabBarAppearance = UITabBarAppearance()
-    tabBarAppearance.configureWithOpaqueBackground()
-    tabBarAppearance.backgroundColor = .Background.page
-    tabBarAppearance.stackedLayoutAppearance = itemAppearance
-    
-    tabBar.standardAppearance = tabBarAppearance
-    if #available(iOS 15.0, *) {
-      tabBar.scrollEdgeAppearance = tabBarAppearance
+    func createTabBarAppearance() -> UITabBarAppearance {
+      let appearance = UITabBarAppearance()
+      appearance.configureWithOpaqueBackground()
+      appearance.backgroundColor = .Background.transparent
+      appearance.stackedLayoutAppearance = itemAppearance
+      return appearance
     }
-    tabBar.tintColor = .TabBar.activeIcon
-    tabBar.unselectedItemTintColor = .TabBar.inactiveIcon
+   
+    let tabBarAppearance = createTabBarAppearance()
+    tabBarAppearance.shadowColor = .Separator.common
+    tabBar.standardAppearance = tabBarAppearance
+    
+    if #available(iOS 15.0, *) {
+      let scrollEdgeAppearance = createTabBarAppearance()
+      scrollEdgeAppearance.shadowColor = .clear
+      tabBar.scrollEdgeAppearance = scrollEdgeAppearance
+    }
   }
 }

@@ -66,7 +66,7 @@ final class EnterAmountView: UIView {
     button.setTitleColor(.Text.secondary, for: .normal)
     button.layer.masksToBounds = true
     button.layer.borderWidth = .secondaryCurrencyButtonBorderWidth
-    button.layer.borderColor = UIColor.Text.secondary.cgColor
+    button.layer.borderColor = UIColor.Button.tertiaryBackground.cgColor
     button.contentEdgeInsets = .buttonContentInsets
     return button
   }()

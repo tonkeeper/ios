@@ -10,10 +10,13 @@ import UIKit
 struct TokensListCollectionLayoutConfigurator {
   
   func getLayout(section: @escaping (_ sectionIndex: Int) -> TokensListSection.SectionType) -> UICollectionViewLayout {
-    let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
+    let configuration = UICollectionViewCompositionalLayoutConfiguration()
+    configuration.interSectionSpacing = 32
+    
+    let layout = UICollectionViewCompositionalLayout(sectionProvider: { sectionIndex, environment in
       let sectionType = section(sectionIndex)
       return self.createLayoutSection(type: sectionType, environment: environment)
-    }
+    }, configuration: configuration)
     layout.register(TokensListTokensSectionBackgroundView.self,
                     forDecorationViewOfKind: .tokensSectionBackgroundElementKid)
     return layout
@@ -93,11 +96,11 @@ private extension NSCollectionLayoutSize {
 
 private extension NSDirectionalEdgeInsets {
   static var tokensSectionContentInsets: NSDirectionalEdgeInsets {
-    .init(top: 0, leading: 16, bottom: 32, trailing: 16)
+    .init(top: 0, leading: 16, bottom: 0, trailing: 16)
   }
   
   static var collectiblesSectionContentInsets: NSDirectionalEdgeInsets {
-    .init(top: 0, leading: 16, bottom: 32, trailing: 16)
+    .init(top: 0, leading: 16, bottom: 0, trailing: 16)
   }
 }
 
@@ -109,6 +112,7 @@ private extension NSCollectionLayoutSpacing {
 
 private extension CGFloat {
   static let collectiblesSectionInterGroupSpacing: CGFloat = 8
+  static let interSectionSpacing: CGFloat = 32
 }
 
 private extension String {

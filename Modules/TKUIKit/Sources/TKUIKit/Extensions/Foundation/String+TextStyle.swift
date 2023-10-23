@@ -21,6 +21,7 @@ public extension String {
     let attributes: [NSAttributedString.Key: Any] = [
       .font: textStyle.font,
       .paragraphStyle: paragraphStyle,
+      .baselineOffset: (textStyle.lineHeight - textStyle.font.lineHeight)/4,
       .foregroundColor: color
     ]
     

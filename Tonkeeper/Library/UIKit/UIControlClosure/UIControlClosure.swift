@@ -6,10 +6,11 @@
 //
 
 import UIKit
+import TKUIKit
 
 extension UIControl.Event: Hashable {}
 
-class UIControlClosure: UIControl {
+class UIControlClosure: IncreaseTapAreaUIControl {
   
   struct UIAction {
     let handler: () -> Void

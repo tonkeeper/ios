@@ -9,5 +9,6 @@ import UIKit
 
 struct ContentInsets {
   static let sideSpace: CGFloat = 16
+  static let bottomSpace: CGFloat = 16
 }
 

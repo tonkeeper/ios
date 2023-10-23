@@ -143,7 +143,10 @@ private extension ModalContentViewController {
     actionBarView.translatesAutoresizingMaskIntoConstraints = false
     contentView.translatesAutoresizingMaskIntoConstraints = false
     
-    actionBarBottomConstraint = actionBarView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+    actionBarBottomConstraint = actionBarView.bottomAnchor.constraint(
+      equalTo: view.bottomAnchor,
+      constant: -ContentInsets.bottomSpace
+    )
     actionBarBottomConstraint?.isActive = true
     
     NSLayoutConstraint.activate([
@@ -210,10 +213,10 @@ private extension ModalContentViewController {
   }
   
   func updateActionBarBottomConstraint() {
-    let scrollViewBottomContentInset = actionBarView.bounds.height
+    let scrollViewBottomContentInset = actionBarView.bounds.height + ContentInsets.bottomSpace
     scrollView.contentInset.bottom = scrollViewBottomContentInset
     
-    actionBarBottomConstraint?.constant = 0
+    actionBarBottomConstraint?.constant = -ContentInsets.bottomSpace
   }
   
   func didUpdateRespectSafeArea() {

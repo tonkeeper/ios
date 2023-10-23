@@ -71,7 +71,7 @@ private extension SendAmountView {
     keyboardView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      contentView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+      contentView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 4),
       contentView.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
       contentView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace)
         .withPriority(.defaultHigh),

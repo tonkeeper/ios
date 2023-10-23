@@ -34,6 +34,7 @@ class TokensListViewController: GenericViewController<TokensListView>, PagingScr
   var itemTitle: String? { title }
   var contentHeight: CGFloat {
     let contentHeight = customView.collectionView.contentSize.height
+    + customView.collectionView.contentInset.bottom
     let viewHeight = view.bounds.height
     return max(contentHeight, viewHeight)
   }
@@ -95,5 +96,6 @@ private extension TokensListViewController {
       })
     
     collectionController.delegate = self
+    customView.collectionView.contentInset.bottom = ContentInsets.bottomSpace
   }
 }
