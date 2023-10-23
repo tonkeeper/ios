@@ -91,6 +91,8 @@ private extension CollectibleDetailsView {
   func setup() {
     backgroundColor = .Background.page
     
+    scrollView.contentInset.bottom = ContentInsets.bottomSpace
+    
     addSubview(scrollView)
     scrollView.addSubview(scrollContent)
     scrollContent.addSubview(contentStackView)
@@ -115,7 +117,7 @@ private extension CollectibleDetailsView {
       scrollView.topAnchor.constraint(equalTo: topAnchor),
       scrollView.leftAnchor.constraint(equalTo: leftAnchor),
       scrollView.rightAnchor.constraint(equalTo: rightAnchor),
-      scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
+      scrollView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
       
       scrollContent.topAnchor.constraint(equalTo: scrollView.topAnchor),
       scrollContent.leftAnchor.constraint(equalTo: scrollView.leftAnchor),

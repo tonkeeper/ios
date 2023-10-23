@@ -97,5 +97,6 @@ private extension SettingsListViewController {
     navigationItem.largeTitleDisplayMode = presenter.isTitleLarge ? .always : .never
     
     collectionController.footerView = footerView
+    customView.collectionView.contentInset.bottom = ContentInsets.bottomSpace
   }
 }
