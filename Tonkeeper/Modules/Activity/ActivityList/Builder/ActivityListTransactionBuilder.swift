@@ -62,8 +62,6 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Icons.Transaction.sent
     case .receieved:
       return .Icons.Transaction.receieved
-    case .sentAndReceieved:
-      return .Icons.Transaction.receieved
     case .mint:
       return .Icons.Transaction.receieved
     case .depositStake:
@@ -111,8 +109,6 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return "Sent"
     case .receieved:
       return "Received"
-    case .sentAndReceieved:
-      return "Sent and received"
     case .mint:
       return "Received"
     case .depositStake:
@@ -157,7 +153,6 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
   var amountColor: UIColor {
     switch self {
     case .sent,
-        .sentAndReceieved,
         .depositStake,
         .subscribed,
         .unsubscribed,
@@ -181,8 +176,6 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
   
   var subamountColor: UIColor {
     switch self {
-    case .sentAndReceieved:
-      return .Accent.green
     case .jettonSwap:
       return .Text.primary
     default:
