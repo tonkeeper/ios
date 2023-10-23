@@ -64,6 +64,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Icons.Transaction.receieved
     case .mint:
       return .Icons.Transaction.receieved
+    case .burn:
+      return .Icons.Transaction.sent
     case .depositStake:
       return .Icons.Transaction.sent
     case .withdrawStake:
@@ -111,6 +113,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return "Received"
     case .mint:
       return "Received"
+    case .burn:
+      return "Sent"
     case .depositStake:
       return "Stake"
     case .withdrawStake:
@@ -165,7 +169,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
         .putUpForAuction,
         .endOfAuction,
         .contractExec,
-        .putUpForSale:
+        .putUpForSale,
+        .burn:
       return .Text.primary
     case .receieved, .bounced, .mint, .withdrawStake, .jettonSwap:
       return .Accent.green
