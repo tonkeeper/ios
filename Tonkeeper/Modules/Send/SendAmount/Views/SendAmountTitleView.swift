@@ -14,25 +14,13 @@ final class SendAmountTitleView: UIView, ConfigurableView {
     let subtitle: NSAttributedString
   }
   
-  let titleLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.h3)
-    label.textColor = .Text.primary
-    label.textAlignment = .center
-    return label
-  }()
-  
-  let subtitleLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.body2)
-    label.textColor = .Text.secondary
-    label.textAlignment = .center
-    return label
-  }()
+  let titleLabel = UILabel()
+  let subtitleLabel = UILabel()
   
   private let stackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
+    stackView.spacing = 4
     return stackView
   }()
   
@@ -56,7 +44,8 @@ final class SendAmountTitleView: UIView, ConfigurableView {
   }
   
   func configure(model: Model) {
-    titleLabel.text = model.title
+    titleLabel.attributedText = model.title
+      .attributed(with: .h3, alignment: .center, color: .Text.primary)
     subtitleLabel.attributedText = model.subtitle
   }
 }
