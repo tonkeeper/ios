@@ -122,6 +122,7 @@ private extension TKKeyboardView {
   
   @objc
   func didTouchUpButton(button: TKKeyboardButton) {
+    TapticGenerator.generateButtonTapMediumFeedback()
     touchedDownButton = nil
     switch button.buttonType {
     case .backspace:

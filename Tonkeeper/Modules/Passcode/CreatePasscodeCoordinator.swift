@@ -34,7 +34,9 @@ private extension CreatePasscodeCoordinator {
   func openCreatePasscode() {
     var configurator = CreatePasscodeConfigurator()
     configurator.didFinish = { [weak self] passcode in
-      self?.openReenterPasscode(enteredPasscode: passcode)
+      DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        self?.openReenterPasscode(enteredPasscode: passcode)
+      }
     }
     let module = assembly.passcodeInputAssembly(output: self, configurator: configurator)
     
