@@ -121,7 +121,9 @@ private extension QRScannerPresenter {
   }
   
   func handlePermissionDenied() {
-    viewInput?.showCameraPermissionDenied()
+    Task { @MainActor in    
+      viewInput?.showCameraPermissionDenied()
+    }
   }
   
   func setupSession() throws {
