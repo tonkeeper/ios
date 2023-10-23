@@ -11,19 +11,22 @@ import TKUIKit
 extension UITabBarController {
   func configureAppearance() {
     let itemAppearance = UITabBarItemAppearance()
-    itemAppearance.normal.titleTextAttributes = [.font: TextStyle.label3.font]
-    
+    itemAppearance.normal.titleTextAttributes = [.font: TextStyle.label3.font,
+                                                 .foregroundColor: UIColor.TabBar.inactiveIcon]
+    itemAppearance.normal.iconColor = .TabBar.inactiveIcon
+    itemAppearance.selected.titleTextAttributes = [.font: TextStyle.label3.font,
+                                                 .foregroundColor: UIColor.TabBar.activeIcon]
+    itemAppearance.selected.iconColor = .TabBar.activeIcon
+   
     let tabBarAppearance = UITabBarAppearance()
     tabBarAppearance.configureWithOpaqueBackground()
     tabBarAppearance.backgroundColor = .Background.transparent
     tabBarAppearance.stackedLayoutAppearance = itemAppearance
     tabBarAppearance.shadowColor = .Separator.common
-    
+
     tabBar.standardAppearance = tabBarAppearance
     if #available(iOS 15.0, *) {
       tabBar.scrollEdgeAppearance = tabBarAppearance
     }
-    tabBar.tintColor = .TabBar.activeIcon
-    tabBar.unselectedItemTintColor = .TabBar.inactiveIcon
   }
 }
