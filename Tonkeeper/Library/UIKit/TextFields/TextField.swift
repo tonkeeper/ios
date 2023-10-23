@@ -85,10 +85,11 @@ final class TextField: UIControlClosure {
   }()
   
   private let clearButton: UIButton = {
-    let button = UIButton(type: .system)
+    let button = IncreaseTapAreaUIButton(type: .system)
     button.setImage(.Icons.TextField.clear, for: .normal)
     button.tintColor = .Icon.secondary
     button.isHidden = true
+    button.tapAreaInsets = .init(top: 12, leading: 12, bottom: 12, trailing: 12)
     return button
   }()
   

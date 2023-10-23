@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import TKUIKit
 
 final class WalletHeaderViewController: GenericViewController<WalletHeaderView> {
   
@@ -78,15 +79,8 @@ private extension WalletHeaderViewController {
       action: #selector(didTapAddressButton),
       for: .touchUpInside
     )
-    
-    let scanQRButton = UIButton(type: .system)
-    scanQRButton.setImage(.Icons.Buttons.scanQR, for: .normal)
-    scanQRButton.tintColor = .Accent.blue
-    scanQRButton.addTarget(self,
-                           action: #selector(didTapScanQRButton),
-                           for: .touchUpInside)
-    
-    customView.titleView.rightButtons = [scanQRButton]
+  
+    customView.titleView.rightButtons = [createQRScanButton()]
   }
 }
 
@@ -102,5 +96,17 @@ private extension WalletHeaderViewController {
   @objc
   func didTapScanQRButton() {
     presenter.didTapScanQRButton()
+  }
+  
+  func createQRScanButton() -> UIButton {
+    let scanQRButton = IncreaseTapAreaUIButton(type: .system)
+    scanQRButton.addTarget(self,
+                           action: #selector(didTapScanQRButton),
+                           for: .touchUpInside)
+    scanQRButton.tapAreaInsets = .init(top: 16, leading: 16, bottom: 16, trailing: 16)
+    scanQRButton.setImage(.Icons.Buttons.scanQR, for: .normal)
+    scanQRButton.tintColor = .Accent.blue
+    scanQRButton.contentEdgeInsets = .init(top: 16, left: 16, bottom: 16, right: 0)
+    return scanQRButton
   }
 }
