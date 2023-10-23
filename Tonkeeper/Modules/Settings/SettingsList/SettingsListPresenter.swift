@@ -185,7 +185,7 @@ private extension SettingsListPresenter {
     SettingsListItem(
       title: .tonkeeperNewsTitle,
       option: .plain(.init(
-        accessory: .icon(.init(image: .Icons.SettingsList.tonkeeperNews, tintColor: .Accent.blue)),
+        accessory: .icon(.init(image: .Icons.SettingsList.tonkeeperNews, tintColor: .Icon.secondary)),
         handler: { [weak self] in
           guard let self = self else { return }
           guard let urlString: String = try? self.infoProvider.value(for: .tonkeeperNewsURL),
@@ -200,7 +200,7 @@ private extension SettingsListPresenter {
     SettingsListItem(
       title: .contactUsTitle,
       option: .plain(.init(
-        accessory: .icon(.init(image: .Icons.SettingsList.contactUs, tintColor: .Accent.blue)),
+        accessory: .icon(.init(image: .Icons.SettingsList.contactUs, tintColor: .Icon.secondary)),
         handler: { [weak self] in
           guard let self = self else { return }
           guard let urlString: String = try? self.infoProvider.value(for: .contactUsURL),
@@ -215,7 +215,7 @@ private extension SettingsListPresenter {
     SettingsListItem(
       title: .rateTonkeeperXTitle,
       option: .plain(.init(
-        accessory: .icon(.init(image: .Icons.SettingsList.rate, tintColor: .Accent.blue)),
+        accessory: .icon(.init(image: .Icons.SettingsList.rate, tintColor: .Icon.secondary)),
         handler: { [weak self] in
           self?.appStoreReviewer.requestReview()
         })
@@ -227,7 +227,7 @@ private extension SettingsListPresenter {
     SettingsListItem(
       title: .legalTitle,
       option: .plain(.init(
-        accessory: .icon(.init(image: .Icons.SettingsList.legal, tintColor: .Accent.blue)),
+        accessory: .icon(.init(image: .Icons.SettingsList.legal, tintColor: .Icon.secondary)),
         handler: {})
       )
     )
