@@ -17,16 +17,23 @@ extension UITabBarController {
     itemAppearance.selected.titleTextAttributes = [.font: TextStyle.label3.font,
                                                  .foregroundColor: UIColor.TabBar.activeIcon]
     itemAppearance.selected.iconColor = .TabBar.activeIcon
+    
+    func createTabBarAppearance() -> UITabBarAppearance {
+      let appearance = UITabBarAppearance()
+      appearance.configureWithOpaqueBackground()
+      appearance.backgroundColor = .Background.transparent
+      appearance.stackedLayoutAppearance = itemAppearance
+      return appearance
+    }
    
-    let tabBarAppearance = UITabBarAppearance()
-    tabBarAppearance.configureWithOpaqueBackground()
-    tabBarAppearance.backgroundColor = .Background.transparent
-    tabBarAppearance.stackedLayoutAppearance = itemAppearance
+    let tabBarAppearance = createTabBarAppearance()
     tabBarAppearance.shadowColor = .Separator.common
-
     tabBar.standardAppearance = tabBarAppearance
+    
     if #available(iOS 15.0, *) {
-      tabBar.scrollEdgeAppearance = tabBarAppearance
+      let scrollEdgeAppearance = createTabBarAppearance()
+      scrollEdgeAppearance.shadowColor = .clear
+      tabBar.scrollEdgeAppearance = scrollEdgeAppearance
     }
   }
 }
