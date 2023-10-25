@@ -50,6 +50,11 @@ final class MoreTextViewContainer: UIView {
     setup()
   }
   
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    update()
+  }
+  
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
@@ -96,7 +101,6 @@ private extension MoreTextViewContainer {
       return
     }
     
-    
     guard let attributedText = attributedText else {
       textViewHeightConstraint?.constant = 0
       return
@@ -108,11 +112,9 @@ private extension MoreTextViewContainer {
     } else {
       lineHeight = 0
     }
+    
     let maximumHeight = lineHeight * CGFloat(numberOfLinesInCollapsed)
-    let textHeight = ceil(attributedText.boundingRect(with: .init(width: bounds.width,
-                                                             height: CGFloat.greatestFiniteMagnitude),
-                                                 options: [.usesFontLeading, .usesLineFragmentOrigin],
-                                                 context: nil).size.height)
+    let textHeight = textView.sizeThatFits(.init(width: bounds.width, height: 0)).height.rounded(.down)
     
     moreButton.isHidden = textHeight <= maximumHeight
     
