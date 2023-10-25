@@ -24,7 +24,7 @@ struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
                    in context: Context,
                    completion: @escaping (Timeline<BalanceWidgetEntry>) -> Void) {
     let coreAssembly = CoreAssembly()
-    let walletCoreContainer = WalletCoreContainer(dependencies: Dependencies(
+    let walletCoreContainer = WalletCore.Assembly(dependencies: Dependencies(
       cacheURL: coreAssembly.cacheURL,
       sharedCacheURL: coreAssembly.sharedCacheURL,
       sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)

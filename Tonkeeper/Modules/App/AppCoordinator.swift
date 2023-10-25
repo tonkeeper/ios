@@ -24,6 +24,9 @@ final class AppCoordinator: Coordinator<WindowRouter> {
     self.appStateTracker = appStateTracker
     super.init(router: router)
     appStateTracker.addObserver(self)
+    Task {
+      await appAssembly.rootAssembly.walletCoreAssembly.configurationController.loadConfiguration()
+    }
   }
   
   override func start() {

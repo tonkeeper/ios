@@ -4,12 +4,6 @@
 <dict>
 	<key>APP_NAME</key>
 	<string>$(APP_NAME)</string>
-	<key>ContactUsURL</key>
-	<string>$(ContactUsURL)</string>
-	<key>TonkeeperNewsURL</key>
-	<string>$(TonkeeperNewsURL)</string>
-	<key>SupportURL</key>
-	<string>$(SupportURL)</string>
 	<key>APP_GROUP_IDENTIFIER</key>
 	<string>$(APP_GROUP_IDENTIFIER)</string>
 	<key>AppIdentifierPrefix</key>

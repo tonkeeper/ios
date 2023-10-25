@@ -407,11 +407,8 @@
 		C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3D2ADFC9F800F8B524 /* TKCore */; };
 		C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3D2ADFC9F800F8B524 /* TKCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C35E6C412ADFC9FC00F8B524 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C402ADFC9FC00F8B524 /* TKUIKit */; };
-		C35E6C422ADFC9FC00F8B524 /* TKUIKit in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C402ADFC9FC00F8B524 /* TKUIKit */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C432ADFCA0500F8B524 /* TKCore */; };
-		C35E6C452ADFCA0500F8B524 /* TKCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C432ADFCA0500F8B524 /* TKCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C35E6C472ADFCA1300F8B524 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C462ADFCA1300F8B524 /* TKChart */; };
-		C35E6C482ADFCA1300F8B524 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C462ADFCA1300F8B524 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C3A337BC2AE340BD00E315F5 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */; };
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
@@ -479,9 +476,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				C35E6C482ADFCA1300F8B524 /* TKChart in Embed Frameworks */,
-				C35E6C452ADFCA0500F8B524 /* TKCore in Embed Frameworks */,
-				C35E6C422ADFC9FC00F8B524 /* TKUIKit in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;

@@ -33,7 +33,7 @@
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
         "branch" : "develop",
-        "revision" : "e000e126eb251b009aeb2f781e807df5d9fef2f5"
+        "revision" : "39569e62742fb712a1e0d8fe72a8a47b07ff4caa"
       }
     },
     {
@@ -55,12 +55,30 @@
       }
     },
     {
+      "identity" : "swift-http-types",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-http-types",
+      "state" : {
+        "revision" : "99d066e29effa8845e4761dd3f2f831edfdf8925",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "swift-openapi-runtime",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-openapi-runtime",
+      "state" : {
+        "revision" : "d5aa7ce0c1d7d0e90ea810189e9f9f0022aa069e",
+        "version" : "0.3.4"
+      }
+    },
+    {
       "identity" : "ton-api-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "revision" : "8abe00aeebce7d498a3f9b61fb3437dd723ea2f6",
-        "version" : "0.0.15"
+        "revision" : "56d2d4f693d03f13833a36457bdcd481e14c261d",
+        "version" : "0.1.1"
       }
     },
     {

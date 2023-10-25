@@ -56,7 +56,7 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
         currency = .USD
       }
       let coreAssembly = CoreAssembly()
-      let walletCoreContainer = WalletCoreContainer(dependencies: Dependencies(
+      let walletCoreContainer = WalletCore.Assembly(dependencies: Dependencies(
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
         sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)
