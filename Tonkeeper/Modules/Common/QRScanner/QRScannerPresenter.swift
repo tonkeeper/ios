@@ -182,10 +182,12 @@ extension QRScannerPresenter: AVCaptureMetadataOutputObjectsDelegate {
           metadataObject.type == .qr,
           let stringValue = metadataObject.stringValue
     else { return }
+    guard self.output?.isQrCodeValid(string: stringValue) == true else {
+      return
+    }
     self.captureSession.stopRunning()
     TapticGenerator.generateSuccessFeedback()
-    
-    Task { @MainActor in
+    DispatchQueue.main.async {
       self.output?.didScanQrCode(with: stringValue)
     }
   }

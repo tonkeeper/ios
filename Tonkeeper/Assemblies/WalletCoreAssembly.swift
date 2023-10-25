@@ -107,8 +107,16 @@ final class WalletCoreAssembly {
     walletCoreAssembly.fiatMethodsController()
   }
   
-  var deeplinkParser: DeeplinkParser {
-    walletCoreAssembly.deeplinkParser()
+  func deeplinkParser(handlers: [DeeplinkHandler]) -> DeeplinkParser {
+    walletCoreAssembly.deeplinkParser(handlers: handlers)
+  }
+  
+  var tonDeeplinkHandler: DeeplinkHandler {
+    walletCoreAssembly.tonDeeplinkHandler
+  }
+  
+  var tonConnectDeeplinkHandler: DeeplinkHandler {
+    walletCoreAssembly.tonConnectDeeplinkHandler
   }
   
   var deeplinkGenerator: DeeplinkGenerator {

@@ -128,19 +128,25 @@ extension WalletCoordinator: QRScannerModuleOutput {
     router.dismiss()
   }
   
+  func isQrCodeValid(string: String) -> Bool {
+    (try? walletAssembly.deeplinkParser.isValid(string: string)) ?? false
+  }
+  
   func didScanQrCode(with string: String) {
-    let deeplinkParser = walletAssembly.deeplinkParser
-    guard let deeplink = try? deeplinkParser.parse(string: string) else { return }
-    
-    switch deeplink {
-    case let .ton(tonDeeplink):
-      switch tonDeeplink {
-      case let .transfer(address):
-        router.dismiss { [weak self] in
-          self?.openSend(recipient: Recipient(address: address, domain: nil))
+    router.dismiss()
+    do {
+      switch try walletAssembly.deeplinkParser.parse(string: string) {
+      case .ton(let tonDeeplink):
+        switch tonDeeplink {
+        case .transfer(let address):
+          router.dismiss { [weak self] in
+            self?.openSend(recipient: Recipient(address: address, domain: nil))
+          }
         }
+      case .tonConnect(let tonConnectDeeplink):
+        return
       }
-    }
+    } catch {}
   }
 }
 
