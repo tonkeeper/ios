@@ -36,7 +36,7 @@ struct ActivityListTransactionBuilder {
     }
     
     var commentModel: TransactionCellContentView.TransactionCellCommentView.Model?
-    if let comment = comment {
+    if let comment = comment, !comment.isEmpty {
       commentModel = .init(comment: comment.attributed(with: .body2, color: .Text.primary))
     }
     

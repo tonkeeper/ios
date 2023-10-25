@@ -10,21 +10,21 @@ import TKUIKit
 
 extension UINavigationController {
   func configureDefaultAppearance() {
-    let standartAppearance = UINavigationBarAppearance()
-    standartAppearance.configureWithOpaqueBackground()
-    standartAppearance.backgroundColor = .Background.page
-    standartAppearance.shadowColor = .clear
-    standartAppearance.titleTextAttributes = [.foregroundColor: UIColor.Text.primary,
-                                              .font: TextStyle.h3.font]
-    standartAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.Text.primary,
-                                                   .font: TextStyle.h1.font]
-
-    navigationBar.standardAppearance = standartAppearance
-    navigationBar.compactAppearance = standartAppearance
-    navigationBar.scrollEdgeAppearance = standartAppearance
-    if #available(iOS 15.0, *) {
-      navigationBar.compactScrollEdgeAppearance = standartAppearance
+    
+    func createAppearance() -> UINavigationBarAppearance {
+      let standartAppearance = UINavigationBarAppearance()
+      standartAppearance.configureWithOpaqueBackground()
+      standartAppearance.backgroundColor = .Background.page
+      standartAppearance.titleTextAttributes = [.foregroundColor: UIColor.Text.primary,
+                                                .font: TextStyle.h3.font]
+      standartAppearance.largeTitleTextAttributes = [.foregroundColor: UIColor.Text.primary,
+                                                     .font: TextStyle.h1.font]
+      return standartAppearance
     }
+    
+    let separatorAppearance = createAppearance()
+    separatorAppearance.shadowColor = .Separator.common
+    navigationBar.standardAppearance = separatorAppearance
   }
   
   func configureTransparentAppearance() {
