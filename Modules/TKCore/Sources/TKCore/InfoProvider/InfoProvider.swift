@@ -18,9 +18,6 @@ public enum InfoKey: String {
   case buildVersion = "CFBundleVersion"
   case keychainAccessGroup = "KEYCHAIN_ACCESS_GROUP"
   case appIdentifierPrefix = "AppIdentifierPrefix"
-  case supportURL = "SupportURL"
-  case tonkeeperNewsURL = "TonkeeperNewsURL"
-  case contactUsURL = "ContactUsURL"
 }
 
 public protocol InfoProvider {

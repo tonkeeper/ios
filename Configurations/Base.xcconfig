@@ -16,9 +16,3 @@ PRODUCT_BUNDLE_IDENTIFIER = $(BASE_BUNDLE_IDENTIFIER)
 APP_GROUP_IDENTIFIER = group.app.$(BASE_BUNDLE_IDENTIFIER)
 
 KEYCHAIN_ACCESS_GROUP = $(BASE_BUNDLE_IDENTIFIER).shared
-
-SupportURL = https:/$()/t.me/tonkeeper_supportbot
-
-TonkeeperNewsURL = https:/$()/t.me/tonkeeper_news
-
-ContactUsURL = mailto:support@tonkeeper.com

@@ -13,11 +13,11 @@ import TKCore
 final class WalletCoreAssembly {
   
   let coreAssembly: CoreAssembly
-  let walletCoreContainer: WalletCoreContainer
+  let walletCoreAssembly: WalletCore.Assembly
   
   init(coreAssembly: CoreAssembly) {
     self.coreAssembly = coreAssembly
-    self.walletCoreContainer = WalletCoreContainer(
+    self.walletCoreAssembly = WalletCore.Assembly(
       dependencies: Dependencies(
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
@@ -25,87 +25,97 @@ final class WalletCoreAssembly {
     )
   }
   
-  lazy var keeperController: KeeperController = walletCoreContainer.keeperController()
+  var configurationController: ConfigurationController {
+    walletCoreAssembly.configurationController
+  }
   
-  lazy var passcodeController: PasscodeController = walletCoreContainer.passcodeController()
+  var keeperController: KeeperController {
+    walletCoreAssembly.keeperController
+  }
   
-  lazy var balanceController: WalletBalanceController = walletCoreContainer.walletBalanceController()
+  var passcodeController: PasscodeController {
+    walletCoreAssembly.passcodeController
+  }
+  
+  var balanceController: WalletBalanceController {
+    walletCoreAssembly.walletBalanceController
+  }
   
   var sendInputController: SendInputController {
-    walletCoreContainer.sendInputController()
+    walletCoreAssembly.sendInputController
   }
   
   func sendController(transferModel: TransferModel,
                       recipient: Recipient,
                       comment: String?) -> SendController {
-    walletCoreContainer.sendController(transferModel: transferModel,
+    walletCoreAssembly.sendController(transferModel: transferModel,
                                        recipient: recipient,
                                        comment: comment)
   }
   
   func sendRecipientController() -> SendRecipientController {
-    walletCoreContainer.sendRecipientController()
+    walletCoreAssembly.sendRecipientController()
   }
   
   func receiveController() -> ReceiveController {
-    walletCoreContainer.receiveController()
+    walletCoreAssembly.receiveController()
   }
   
   func tokenDetailsTonController() -> TokenDetailsController {
-    walletCoreContainer.tokenDetailsTonController()
+    walletCoreAssembly.tokenDetailsTonController()
   }
   
   func tokenDetailsTokenController(tokenInfo: TokenInfo) -> TokenDetailsController {
-    walletCoreContainer.tokenDetailsTokenController(tokenInfo: tokenInfo)
+    walletCoreAssembly.tokenDetailsTokenController(tokenInfo: tokenInfo)
   }
   
   func activityListController() -> ActivityListController {
-    walletCoreContainer.activityListController()
+    walletCoreAssembly.activityListController()
   }
   
   func activityController() -> ActivityController {
-    walletCoreContainer.activityController()
+    walletCoreAssembly.activityController()
   }
   
   func activityListTonEventsController() -> ActivityListController {
-    walletCoreContainer.activityListTonEventsController()
+    walletCoreAssembly.activityListTonEventsController()
   }
   
   func activityListTokenEventsController(tokenInfo: TokenInfo) -> ActivityListController {
-    walletCoreContainer.activityListTokenEventsController(tokenInfo: tokenInfo)
+    walletCoreAssembly.activityListTokenEventsController(tokenInfo: tokenInfo)
   }
   
   func chartController() -> ChartController {
-    walletCoreContainer.chartController()
+    walletCoreAssembly.chartController()
   }
   
   public func collectibleDetailsController(
     collectibleAddress: Address
   ) -> CollectibleDetailsController {
-    walletCoreContainer.collectibleDetailsController(collectibleAddress: collectibleAddress)
+    walletCoreAssembly.collectibleDetailsController(collectibleAddress: collectibleAddress)
   }
   
   func settingsController() -> SettingsController {
-    walletCoreContainer.settingsController()
+    walletCoreAssembly.settingsController()
   }
   
   func logoutController() -> LogoutController {
-    walletCoreContainer.logoutController()
+    walletCoreAssembly.logoutController()
   }
   
   func fiatMethodsController() -> FiatMethodsController {
-    walletCoreContainer.fiatMethodsController()
+    walletCoreAssembly.fiatMethodsController()
   }
   
   var deeplinkParser: DeeplinkParser {
-    walletCoreContainer.deeplinkParser()
+    walletCoreAssembly.deeplinkParser()
   }
   
   var deeplinkGenerator: DeeplinkGenerator {
-    walletCoreContainer.deeplinkGenerator()
+    walletCoreAssembly.deeplinkGenerator()
   }
   
   var addressValidator: AddressValidator {
-    walletCoreContainer.addressValidator()
+    walletCoreAssembly.addressValidator()
   }
 }

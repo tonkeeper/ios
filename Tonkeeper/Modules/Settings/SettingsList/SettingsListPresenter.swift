@@ -173,9 +173,14 @@ private extension SettingsListPresenter {
         accessory: .icon(.init(image: .Icons.SettingsList.support, tintColor: .Accent.blue)),
         handler: { [weak self] in
           guard let self = self else { return }
-          guard let urlString: String = try? self.infoProvider.value(for: .supportURL),
-          let url = URL(string: urlString)  else { return }
-          self.urlOpener.open(url: url)
+          Task {
+            guard let url = await self.settingsController.supportURL else {
+              return
+            }
+            await MainActor.run {
+              self.urlOpener.open(url: url)
+            }
+          }
         })
       )
     )
@@ -188,9 +193,14 @@ private extension SettingsListPresenter {
         accessory: .icon(.init(image: .Icons.SettingsList.tonkeeperNews, tintColor: .Icon.secondary)),
         handler: { [weak self] in
           guard let self = self else { return }
-          guard let urlString: String = try? self.infoProvider.value(for: .tonkeeperNewsURL),
-          let url = URL(string: urlString)  else { return }
-          self.urlOpener.open(url: url)
+          Task {
+            guard let url = await self.settingsController.tonkeeperNews else {
+              return
+            }
+            await MainActor.run {
+              self.urlOpener.open(url: url)
+            }
+          }
         })
       )
     )
@@ -203,9 +213,14 @@ private extension SettingsListPresenter {
         accessory: .icon(.init(image: .Icons.SettingsList.contactUs, tintColor: .Icon.secondary)),
         handler: { [weak self] in
           guard let self = self else { return }
-          guard let urlString: String = try? self.infoProvider.value(for: .contactUsURL),
-          let url = URL(string: urlString)  else { return }
-          self.urlOpener.open(url: url)
+          Task {
+            guard let url = await self.settingsController.contactUsURL else {
+              return
+            }
+            await MainActor.run {
+              self.urlOpener.open(url: url)
+            }
+          }
         })
       )
     )
