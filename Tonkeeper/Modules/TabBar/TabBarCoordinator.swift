@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import WalletCore
 
 protocol TabBarCoordinatorOutput: AnyObject {
   func tabBarCoordinatorDidLogout(_ coordinator: TabBarCoordinator)
@@ -57,6 +58,7 @@ private extension TabBarCoordinator {
                                         image: .Icons.TabBar.wallet,
                                         tag: 0)
     walletCoordinator.router.rootViewController.tabBarItem = walletTabBarItem
+    walletCoordinator.output = self
     
     let activityTabBarItem = UITabBarItem(title: "Activity",
                                           image: .Icons.TabBar.activity,
@@ -73,6 +75,36 @@ private extension TabBarCoordinator {
                                          tag: 0)
     settingsCoordinator.router.rootViewController.tabBarItem = settingsTabBarItem
   }
+  
+  func openTonConnectDeeplink(_ deeplink: TonConnectDeeplink) {
+    ToastController.showToast(configuration: .loading)
+    Task {
+      do {
+        let (parameters, manifest) = try await assembly
+          .walletCoreAssembly
+          .tonConnectDeeplinkProcessor()
+          .processDeeplink(deeplink)
+        await MainActor.run {
+          ToastController.hideToast()
+          let coordinator = assembly.tonConnectCoordinator(
+            navigationRouter: Router(rootViewController: router.rootViewController),
+            parameters: parameters,
+            manifest: manifest
+          )
+          addChild(coordinator)
+          coordinator.start()
+          guard let initialPresentable = coordinator.initialPresentable else { return }
+          router.present(initialPresentable, dismiss: { [weak self, coordinator] in
+            self?.removeChild(coordinator)
+          })
+        }
+      } catch {
+        await MainActor.run {
+          ToastController.showToast(configuration: .failed)
+        }
+      }
+    }
+  }
 }
 
 // MARK: - SettingsCoordinatorOutput
@@ -80,5 +112,14 @@ private extension TabBarCoordinator {
 extension TabBarCoordinator: SettingsCoordinatorOutput {
   func settingsCoordinatorDidLogout(_ settingsCoordinator: SettingsCoordinator) {
     output?.tabBarCoordinatorDidLogout(self)
+  }
+}
+
+// MARK: - WalletCoordinatorOutput
+
+extension TabBarCoordinator: WalletCoordinatorOutput {
+  func walletCoordinator(_ coordinator: WalletCoordinator,
+                         openTonConnectDeeplink deeplink: TonConnectDeeplink) {
+    self.openTonConnectDeeplink(deeplink)
   }
 }

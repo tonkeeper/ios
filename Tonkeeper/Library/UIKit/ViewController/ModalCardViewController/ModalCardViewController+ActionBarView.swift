@@ -35,7 +35,7 @@ extension ModalCardViewController {
       super.init(frame: .zero)
       setup()
     }
-    
+
     required init?(coder: NSCoder) {
       fatalError("init(coder:) has not been implemented")
     }
@@ -97,7 +97,7 @@ private extension ModalCardViewController.ActionBar {
                                              constant: ContentInsets.sideSpace),
       contentStackView.rightAnchor.constraint(equalTo: rightAnchor,
                                               constant: -ContentInsets.sideSpace),
-      contentStackView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
+      contentStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
       
       loaderView.topAnchor.constraint(equalTo: contentStackView.topAnchor),
       loaderView.leftAnchor.constraint(equalTo: contentStackView.leftAnchor),

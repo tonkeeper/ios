@@ -409,6 +409,18 @@
 		C35E6C412ADFC9FC00F8B524 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C402ADFC9FC00F8B524 /* TKUIKit */; };
 		C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C432ADFCA0500F8B524 /* TKCore */; };
 		C35E6C472ADFCA1300F8B524 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C462ADFCA1300F8B524 /* TKChart */; };
+		C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */; };
+		C384B3B12AE96ADB009CD062 /* ModalCardViewBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */; };
+		C384B3B32AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */; };
+		C384B3B52AE96AF4009CD062 /* ModalCardViewController+Configuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B42AE96AF4009CD062 /* ModalCardViewController+Configuration.swift */; };
+		C384B3B72AE96B01009CD062 /* ModalCardViewController+ActionBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B62AE96B01009CD062 /* ModalCardViewController+ActionBarView.swift */; };
+		C384B3BC2AE96FF2009CD062 /* TonConnectModalHeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3BB2AE96FF2009CD062 /* TonConnectModalHeaderView.swift */; };
+		C384B3BE2AE9721C009CD062 /* TonConnectCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3BD2AE9721C009CD062 /* TonConnectCoordinator.swift */; };
+		C384B3C02AE97224009CD062 /* TonConnectAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3BF2AE97224009CD062 /* TonConnectAssembly.swift */; };
+		C384B3C32AE97795009CD062 /* TonConnectPopupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3C22AE97795009CD062 /* TonConnectPopupViewController.swift */; };
+		C384B3C52AE977B2009CD062 /* TonConnectPopupProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3C42AE977B2009CD062 /* TonConnectPopupProtocols.swift */; };
+		C384B3C72AE977BB009CD062 /* TonConnectPopupPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3C62AE977BB009CD062 /* TonConnectPopupPresenter.swift */; };
+		C384B3C92AE9B792009CD062 /* TonConnectPopupAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3C82AE9B792009CD062 /* TonConnectPopupAssembly.swift */; };
 		C3A337BC2AE340BD00E315F5 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */; };
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
@@ -901,6 +913,18 @@
 		C35E6C342ADFC9CC00F8B524 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKUIKit; path = Modules/TKUIKit; sourceTree = "<group>"; };
 		C35E6C352ADFC9DA00F8B524 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKCore; path = Modules/TKCore; sourceTree = "<group>"; };
 		C35E6C362ADFC9E400F8B524 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKChart; path = Modules/TKChart; sourceTree = "<group>"; };
+		C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewController.swift; sourceTree = "<group>"; };
+		C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewBuilder.swift; sourceTree = "<group>"; };
+		C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+HeaderView.swift"; sourceTree = "<group>"; };
+		C384B3B42AE96AF4009CD062 /* ModalCardViewController+Configuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+Configuration.swift"; sourceTree = "<group>"; };
+		C384B3B62AE96B01009CD062 /* ModalCardViewController+ActionBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+ActionBarView.swift"; sourceTree = "<group>"; };
+		C384B3BB2AE96FF2009CD062 /* TonConnectModalHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectModalHeaderView.swift; sourceTree = "<group>"; };
+		C384B3BD2AE9721C009CD062 /* TonConnectCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectCoordinator.swift; sourceTree = "<group>"; };
+		C384B3BF2AE97224009CD062 /* TonConnectAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectAssembly.swift; sourceTree = "<group>"; };
+		C384B3C22AE97795009CD062 /* TonConnectPopupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectPopupViewController.swift; sourceTree = "<group>"; };
+		C384B3C42AE977B2009CD062 /* TonConnectPopupProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectPopupProtocols.swift; sourceTree = "<group>"; };
+		C384B3C62AE977BB009CD062 /* TonConnectPopupPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectPopupPresenter.swift; sourceTree = "<group>"; };
+		C384B3C82AE9B792009CD062 /* TonConnectPopupAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectPopupAssembly.swift; sourceTree = "<group>"; };
 		C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
 		C94035FBBB4278C3B31B95C0 /* PasscodeInputPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputPresenter.swift; sourceTree = "<group>"; };
 		C95F21019C4885C194206234 /* CollectibleDetailsPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsPresenter.swift; sourceTree = "<group>"; };
@@ -1886,6 +1910,7 @@
 		7D6836382A1CFECF002DBBC7 /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				C384B3B92AE96FDA009CD062 /* TonConnect */,
 				7D1162FB2A60343700DF4F30 /* WalletDetails */,
 				7D8EB71E2A4ED857005BE1B0 /* CreateWallet */,
 				7D3BCFCA2A4D90C800BE6AD9 /* Passcode */,
@@ -2382,6 +2407,7 @@
 		7D9292DC2A28A1D2005B83DF /* ViewController */ = {
 			isa = PBXGroup;
 			children = (
+				C384B3AD2AE96ABF009CD062 /* ModalCardViewController */,
 				7D744BAE2ADD6E1A00E94332 /* WebViewController */,
 				7D49346C2A5C7A4D00F4BCA2 /* BlurViewController */,
 				7D3BCFDF2A4EBE7200BE6AD9 /* SuccessViewController */,
@@ -2749,6 +2775,48 @@
 			name = Packages;
 			sourceTree = "<group>";
 		};
+		C384B3AD2AE96ABF009CD062 /* ModalCardViewController */ = {
+			isa = PBXGroup;
+			children = (
+				C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */,
+				C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */,
+				C384B3B42AE96AF4009CD062 /* ModalCardViewController+Configuration.swift */,
+				C384B3B62AE96B01009CD062 /* ModalCardViewController+ActionBarView.swift */,
+				C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */,
+			);
+			path = ModalCardViewController;
+			sourceTree = "<group>";
+		};
+		C384B3B92AE96FDA009CD062 /* TonConnect */ = {
+			isa = PBXGroup;
+			children = (
+				C384B3C12AE97782009CD062 /* TonConnectPopup */,
+				C384B3BA2AE96FE5009CD062 /* Views */,
+				C384B3BD2AE9721C009CD062 /* TonConnectCoordinator.swift */,
+				C384B3BF2AE97224009CD062 /* TonConnectAssembly.swift */,
+			);
+			path = TonConnect;
+			sourceTree = "<group>";
+		};
+		C384B3BA2AE96FE5009CD062 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C384B3BB2AE96FF2009CD062 /* TonConnectModalHeaderView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C384B3C12AE97782009CD062 /* TonConnectPopup */ = {
+			isa = PBXGroup;
+			children = (
+				C384B3C42AE977B2009CD062 /* TonConnectPopupProtocols.swift */,
+				C384B3C22AE97795009CD062 /* TonConnectPopupViewController.swift */,
+				C384B3C62AE977BB009CD062 /* TonConnectPopupPresenter.swift */,
+				C384B3C82AE9B792009CD062 /* TonConnectPopupAssembly.swift */,
+			);
+			path = TonConnectPopup;
+			sourceTree = "<group>";
+		};
 		E15A4D816E375EC6F055D7F0 /* TokenDetails */ = {
 			isa = PBXGroup;
 			children = (
@@ -3022,6 +3090,7 @@
 				7D9292C72A275176005B83DF /* NavigationController.swift in Sources */,
 				7D92928B2A24DB50005B83DF /* ScrollContainerViewController.swift in Sources */,
 				7D3D65072ACAB01300E64537 /* SettingsListView.swift in Sources */,
+				C384B3C72AE977BB009CD062 /* TonConnectPopupPresenter.swift in Sources */,
 				7D6836622A1D6A79002DBBC7 /* UINavigationController+Appearance.swift in Sources */,
 				7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */,
 				7D3BCFC52A4CADB200BE6AD9 /* MnemonicTextField.swift in Sources */,
@@ -3051,6 +3120,7 @@
 				7DE27E682A30D94100842FA8 /* TransactionCellContentView.swift in Sources */,
 				7D6836702A1E5B76002DBBC7 /* WalletRootProtocols.swift in Sources */,
 				7D59287D2A20C92E006B0A8A /* TokensListTokensSectionBackgroundView.swift in Sources */,
+				C384B3BC2AE96FF2009CD062 /* TonConnectModalHeaderView.swift in Sources */,
 				7D3BCFB42A4C83BE00BE6AD9 /* SetupWalletAssembly.swift in Sources */,
 				7D7CE3F92A879ADA002BA9EC /* BalanceCellContentView.swift in Sources */,
 				7D797E1C2A8F7ACE00A626D7 /* ContainerCollectionViewReusableView.swift in Sources */,
@@ -3079,6 +3149,7 @@
 				7D6836532A1D1EB9002DBBC7 /* ActivityAssembly.swift in Sources */,
 				7D70D3C92A2A046F0096E1A2 /* CurrencyWallet.swift in Sources */,
 				7D3BCFAC2A4C598C00BE6AD9 /* AppSettings.swift in Sources */,
+				C384B3C52AE977B2009CD062 /* TonConnectPopupProtocols.swift in Sources */,
 				7D9292FE2A29DCDA005B83DF /* SendRecipientProtocols.swift in Sources */,
 				7D1163122A616CC400DF4F30 /* TokenDetailsHeaderView.swift in Sources */,
 				7D59285C2A1FA5FE006B0A8A /* IconButton.swift in Sources */,
@@ -3128,6 +3199,7 @@
 				7DE27E6C2A30DA3A00842FA8 /* TransactionCellCommentView.swift in Sources */,
 				7D0207602A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift in Sources */,
 				7D59284D2A1F579E006B0A8A /* WalletHeaderProtocols.swift in Sources */,
+				C384B3BE2AE9721C009CD062 /* TonConnectCoordinator.swift in Sources */,
 				7D3BCFCE2A4D90E200BE6AD9 /* PasscodeAssembly.swift in Sources */,
 				7D9292882A24CCB8005B83DF /* PagingContentViewController.swift in Sources */,
 				7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */,
@@ -3146,6 +3218,7 @@
 				7DB17F472A4C2D9B007C6154 /* OnboardingAssembly.swift in Sources */,
 				7D9292C42A274131005B83DF /* SendAssembly.swift in Sources */,
 				7D8F64AD2A8D48C30042AE74 /* TonChartButtonsView.swift in Sources */,
+				C384B3C32AE97795009CD062 /* TonConnectPopupViewController.swift in Sources */,
 				7DAC789E2A8FAA8400358D35 /* InAppBrowserCoordinator.swift in Sources */,
 				7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */,
 				7D0207852A803C7100D63B4C /* NotDelayCollectionView.swift in Sources */,
@@ -3161,6 +3234,7 @@
 				7D9292852A24BEF8005B83DF /* PageViewControllerCell.swift in Sources */,
 				7DE27E6A2A30D9CE00842FA8 /* TransactionCellStatusView.swift in Sources */,
 				7D3BCFDC2A4DB27100BE6AD9 /* CreatePasscodeConfigurator.swift in Sources */,
+				C384B3B72AE96B01009CD062 /* ModalCardViewController+ActionBarView.swift in Sources */,
 				7D9293062A29F0BF005B83DF /* NumberProvider+Formatters.swift in Sources */,
 				7D9144272A31F5DE00B0FD17 /* ModalCardContainerViewController.swift in Sources */,
 				7D9292C22A27412A005B83DF /* SendCoordinator.swift in Sources */,
@@ -3172,8 +3246,10 @@
 				7DE27E5C2A30BB1800842FA8 /* ActivityListTransactionCell.swift in Sources */,
 				7D6836302A1CF471002DBBC7 /* UITabBarController+Completions.swift in Sources */,
 				7D384A572A66ACF300DE2A66 /* ReceiveRootPresenterTonProvider.swift in Sources */,
+				C384B3C92AE9B792009CD062 /* TonConnectPopupAssembly.swift in Sources */,
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
 				7D3BCFB72A4C999B00BE6AD9 /* ImportWalletCoordinator.swift in Sources */,
+				C384B3B32AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift in Sources */,
 				7D3BCFBB2A4C99C900BE6AD9 /* EnterMnemonicAssembly.swift in Sources */,
 				7D6836562A1D5951002DBBC7 /* BrowserCoordinator.swift in Sources */,
 				7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */,
@@ -3200,6 +3276,7 @@
 				7D9144212A31C3AA00B0FD17 /* ReceiveAssembly.swift in Sources */,
 				7D5735822AD5AF5100B7D0A3 /* PasscodeConfirmationCoordinator.swift in Sources */,
 				7D1B1F392A4F46B000EC873F /* WalletImporter.swift in Sources */,
+				C384B3B52AE96AF4009CD062 /* ModalCardViewController+Configuration.swift in Sources */,
 				7D6836402A1D0B56002DBBC7 /* TabBarCoordinator.swift in Sources */,
 				7D5928692A1FBBFD006B0A8A /* IconButton+ConfigurableView.swift in Sources */,
 				7DDBC0362ACD794C00F811A5 /* BiometryAuthentificator.swift in Sources */,
@@ -3216,14 +3293,17 @@
 				7D32F8B82A8BD298002C130C /* TonChartAssembly.swift in Sources */,
 				7D6836222A1CD1EC002DBBC7 /* Presentable.swift in Sources */,
 				7D744BC12ADE9AA800E94332 /* CheckboxView.swift in Sources */,
+				C384B3C02AE97224009CD062 /* TonConnectAssembly.swift in Sources */,
 				7DE27E652A30D2D400842FA8 /* ActivityListTransactionBuilder.swift in Sources */,
 				7D744BB92ADD819B00E94332 /* FiatMethodPopUpAssembly.swift in Sources */,
+				C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */,
 				7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */,
 				7D6836482A1D1044002DBBC7 /* WalletCoordinator.swift in Sources */,
 				7D384A4C2A66989100DE2A66 /* SendConfirmationAssembly.swift in Sources */,
 				FD5AC7C6F094091CB911C3D8 /* TokensListViewController.swift in Sources */,
 				0C1DF00128AE8BA90E30FCB1 /* TokensListView.swift in Sources */,
 				C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */,
+				C384B3B12AE96ADB009CD062 /* ModalCardViewBuilder.swift in Sources */,
 				7D9292DE2A28A1DF005B83DF /* EnterAmountViewController.swift in Sources */,
 				7D5141CE2A53454400EC7F59 /* Image.swift in Sources */,
 				FC58CA56982D098FE4E85989 /* TokensListProtocols.swift in Sources */,

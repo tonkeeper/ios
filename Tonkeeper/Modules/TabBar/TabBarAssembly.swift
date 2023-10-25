@@ -7,6 +7,7 @@
 
 import UIKit
 import TKCore
+import WalletCore
 
 final class TabBarAssembly {
   
@@ -29,6 +30,7 @@ final class TabBarAssembly {
   lazy var receiveAssembly = ReceiveAssembly(walletCoreAssembly: walletCoreAssembly)
   lazy var collectibleAssembly = CollectibleAssembly(walletCoreAssembly: walletCoreAssembly,
                                                      sendAssembly: SendAssembly(walletCoreAssembly: walletCoreAssembly))
+  lazy var tonConnectAssembly = TonConnectAssembly(walletCoreAssembly: walletCoreAssembly)
   
   init(coreAssembly: CoreAssembly,
        walletCoreAssembly: WalletCoreAssembly,
@@ -75,5 +77,13 @@ final class TabBarAssembly {
                                           walletCoreAssembly: walletCoreAssembly,
                                           passcodeAssembly: passcodeAssembly)
     return coordinator
+  }
+  
+  func tonConnectCoordinator(navigationRouter: Router<UIViewController>,
+                             parameters: TCParameters,
+                             manifest: TonConnectManifest) -> TonConnectCoordinator {
+    return tonConnectAssembly.coordinator(router: navigationRouter,
+                                          parameters: parameters,
+                                          manifest: manifest)
   }
 }

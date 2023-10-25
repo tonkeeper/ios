@@ -8,8 +8,15 @@
 import UIKit
 import WalletCore
 import TonSwift
+ 
+protocol WalletCoordinatorOutput: AnyObject {
+  func walletCoordinator(_ coordinator: WalletCoordinator,
+                         openTonConnectDeeplink deeplink: TonConnectDeeplink)
+}
 
 final class WalletCoordinator: Coordinator<NavigationRouter> {
+  
+  weak var output: WalletCoordinatorOutput?
   
   private let walletAssembly: WalletAssembly
   
@@ -144,7 +151,10 @@ extension WalletCoordinator: QRScannerModuleOutput {
           }
         }
       case .tonConnect(let tonConnectDeeplink):
-        return
+        output?.walletCoordinator(
+          self,
+          openTonConnectDeeplink: tonConnectDeeplink
+        )
       }
     } catch {}
   }

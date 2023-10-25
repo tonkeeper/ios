@@ -87,7 +87,7 @@
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
         "branch" : "feature/nft_transfer",
-        "revision" : "20c17ee92b85bcdd4a78c2eb0467fcd6de5f7698"
+        "revision" : "299fba0e718b7f893b325316237ef6dfb11eb11b"
       }
     },
     {

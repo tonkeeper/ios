@@ -43,7 +43,9 @@ final class ModalCardViewController: UIViewController, ScrollableModalCardContai
   // MARK: - ScrollableModalCardContainerContent
   
   var height: CGFloat {
-    let height = scrollView.contentSize.height + scrollView.contentInset.top + scrollView.contentInset.bottom
+    let height = scrollView.contentSize.height
+    + scrollView.contentInset.top
+    + scrollView.contentInset.bottom
     return height
   }
   
@@ -79,6 +81,8 @@ private extension ModalCardViewController {
   
   func setup() {
     view.backgroundColor = .Background.page
+    
+    scrollView.contentInsetAdjustmentBehavior = .never
     
     view.addSubview(scrollView)
     view.addSubview(actionBarView)
@@ -120,7 +124,6 @@ private extension ModalCardViewController {
                                               constant: -ContentInsets.sideSpace),
       contentStackView.bottomAnchor.constraint(equalTo: scrollViewContentView.bottomAnchor),
       
-      
       actionBarView.leftAnchor.constraint(equalTo: view.leftAnchor),
       actionBarView.rightAnchor.constraint(equalTo: view.rightAnchor)
     ])
@@ -129,7 +132,6 @@ private extension ModalCardViewController {
   func updateActionBarBottomConstraint() {
     let scrollViewBottomContentInset = actionBarView.bounds.height
     scrollView.contentInset.bottom = scrollViewBottomContentInset
-    
     actionBarBottomConstraint?.constant = 0
   }
 }

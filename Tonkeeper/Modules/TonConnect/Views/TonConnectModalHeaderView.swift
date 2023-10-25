@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import TKUIKit
 
 final class TonConnectModalHeaderView: UIView, ConfigurableView {
   
@@ -13,12 +14,19 @@ final class TonConnectModalHeaderView: UIView, ConfigurableView {
   
   private let tonImageView: UIImageView = {
     let imageView = UIImageView()
-    imageView.backgroundColor = .red
+    imageView.backgroundColor = .Background.content
+    imageView.image = .Images.TonConnect.tonkeeperLogo
+    imageView.tintColor = .Accent.blue
+    imageView.contentMode = .scaleAspectFit
+    imageView.layer.cornerRadius = .imageCornerRadius
+    imageView.layer.masksToBounds = true
     return imageView
   }()
   private let appImageView: UIImageView = {
     let imageView = UIImageView()
-    imageView.backgroundColor = .green
+    imageView.backgroundColor = .clear
+    imageView.layer.cornerRadius = .imageCornerRadius
+    imageView.layer.masksToBounds = true
     return imageView
   }()
   private let stackView: UIStackView = {
@@ -26,6 +34,10 @@ final class TonConnectModalHeaderView: UIView, ConfigurableView {
     stackView.axis = .horizontal
     return stackView
   }()
+  
+  // MARK: - Image Loader
+  
+  var imageLoader: ImageLoader?
   
   // MARK: - Init
   
@@ -41,12 +53,16 @@ final class TonConnectModalHeaderView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   struct Model {
-    let tonImage: Image
-    let appImage: Image
+    let appImage: URL?
   }
   
   func configure(model: Model) {
-    
+    imageLoader?.loadImage(
+      imageURL: model.appImage,
+      imageView: appImageView,
+      size: nil,
+      cornerRadius: nil
+    )
   }
 }
 
@@ -76,4 +92,8 @@ private extension TonConnectModalHeaderView {
       appImageView.heightAnchor.constraint(equalToConstant: 72)
     ])
   }
+}
+
+private extension CGFloat {
+  static let imageCornerRadius: CGFloat = 20
 }
