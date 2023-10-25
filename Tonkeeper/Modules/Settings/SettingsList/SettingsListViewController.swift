@@ -70,6 +70,7 @@ extension SettingsListViewController: SettingsListViewInput {
   
   func updateFooter(_ footerModel: SettingsListFooterView.Model) {
     footerView.configure(model: footerModel)
+    collectionController.footerView = footerView
   }
   
   func openKeychainRestore() {
@@ -95,8 +96,6 @@ private extension SettingsListViewController {
   func setup() {
     title = presenter.title
     navigationItem.largeTitleDisplayMode = presenter.isTitleLarge ? .always : .never
-    
-    collectionController.footerView = footerView
     customView.collectionView.contentInset.bottom = ContentInsets.bottomSpace
   }
 }
