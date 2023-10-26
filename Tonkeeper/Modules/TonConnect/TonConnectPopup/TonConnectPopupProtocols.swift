@@ -8,7 +8,10 @@
 import Foundation
 import UIKit
 
-protocol TonConnectPopupModuleOutput: AnyObject {}
+protocol TonConnectPopupModuleOutput: AnyObject {
+  func tonConnectPopupModuleDidConnect(_ module: TonConnectPopupModuleInput)
+  func tonConnectPopupModuleConfirmation(_ module: TonConnectPopupModuleInput) async -> Bool
+}
 
 protocol TonConnectPopupModuleInput: AnyObject {}
 

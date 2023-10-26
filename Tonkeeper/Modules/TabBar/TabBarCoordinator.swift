@@ -94,7 +94,8 @@ private extension TabBarCoordinator {
           addChild(coordinator)
           coordinator.start()
           guard let initialPresentable = coordinator.initialPresentable else { return }
-          router.present(initialPresentable, dismiss: { [weak self, coordinator] in
+          router.present(initialPresentable, dismiss: { [weak self, weak coordinator] in
+            guard let coordinator = coordinator else { return }
             self?.removeChild(coordinator)
           })
         }

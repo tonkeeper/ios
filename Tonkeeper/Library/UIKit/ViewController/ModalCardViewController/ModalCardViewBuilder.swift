@@ -76,12 +76,12 @@ struct ModalCardViewBuilder {
     }
     
     button.addAction(.init(handler: {
-      
+
       let activityClosure: (Bool) -> Void = { isActivity in
         guard isActivity else { return }
         actionStateHandler?(.activity)
       }
-      
+
       let completionClosure: (Bool) -> Void = { isSuccess in
         actionStateHandler?(.result(isSuccess: isSuccess))
         DispatchQueue.main.asyncAfter(deadline: .now() + .completionDelay) {
@@ -89,7 +89,7 @@ struct ModalCardViewBuilder {
           actionStateHandler?(.none)
         }
       }
-      
+
       item.tapAction?(activityClosure, completionClosure)
     }), for: .touchUpInside)
     return button

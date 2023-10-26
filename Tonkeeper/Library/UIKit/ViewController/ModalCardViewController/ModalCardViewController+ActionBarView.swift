@@ -10,7 +10,7 @@ import TKUIKit
 
 extension ModalCardViewController {
   final class ActionBar: UIView, ConfigurableView {
-    private let viewController: UIViewController
+    private weak var viewController: UIViewController?
     private let contentStackView: UIStackView = {
       let stackView = UIStackView()
       stackView.axis = .vertical
@@ -43,22 +43,25 @@ extension ModalCardViewController {
     // MARK: - ConfigurableView
     
     func configure(model: Configuration.ActionBar) {
-      let views = ModalCardViewBuilder.buildViews(items: model.items, viewController: viewController) { [weak self] state in
-        switch state {
-        case .none:
-          self?.hideLoader()
-          self?.hideResult()
-          self?.showContent()
-        case .activity:
-          self?.hideResult()
-          self?.hideContent()
-          self?.showLoader()
-        case .result(let isSuccess):
-          self?.hideLoader()
-          self?.hideContent()
-          self?.showResult(isSuccess: isSuccess)
+      guard let viewController = viewController else { return }
+      let views = ModalCardViewBuilder.buildViews(
+        items: model.items,
+        viewController: viewController) { [weak self] state in
+          switch state {
+          case .none:
+            self?.hideLoader()
+            self?.hideResult()
+            self?.showContent()
+          case .activity:
+            self?.hideResult()
+            self?.hideContent()
+            self?.showLoader()
+          case .result(let isSuccess):
+            self?.hideLoader()
+            self?.hideContent()
+            self?.showResult(isSuccess: isSuccess)
+          }
         }
-      }
       views.forEach { view in
         contentStackView.addArrangedSubview(view)
       }

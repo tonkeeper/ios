@@ -29,44 +29,12 @@ final class TonConnectPopupPresenter {
 extension TonConnectPopupPresenter: TonConnectPopupPresenterInput {
   func viewDidLoad() {
     updateContent()
-//    
-////    let vc = ModalCardViewController()
-//    let headerView = TonConnectModalHeaderView()
-////
-//    let headerConfigurationItems: [ModalCardViewController.Configuration.Item] = [
-//      .customView(headerView, bottomSpacing: 20),
-//      .text(.init(text: "Connect to StickerFace?".attributed(with: .h2, alignment: .center, color: .Text.primary),
-//                  numberOfLines: 1),
-//            bottomSpacing: 4),
-//      .text(.init(text: "stickerface.io is requesting access to your wallet address EQF2…G21Z v4R2.".attributed(with: .body1, alignment: .center, color: .Text.secondary), numberOfLines: 0), bottomSpacing: 16)
-//    ]
-//    let header = ModalCardViewController.Configuration.Header(items: headerConfigurationItems)
-//
-//    let actionBarItems: [ModalCardViewController.Configuration.Item] = [
-//      .button(.init(title: "Connect wallet",
-//                    configuration: .primaryLarge,
-//                    isEnabled: true,
-//                    isActivity: false,
-//                    tapAction: { isActivity, isSuccess in
-//                      isActivity(true)
-//                      DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-//                        isSuccess(true)
-//                      }
-//                    },
-//                    completionAction: { isSuccess in
-//                      if isSuccess {
-////                        vc.dismiss(animated: true)
-//                      }
-//                    }),
-//              bottomSpacing: 16),
-//      .text(.init(text: "Be sure to check the service address before connecting the wallet.".attributed(with: .body2, alignment: .center, color: .Text.tertiary), numberOfLines: 0), bottomSpacing: 16)
-//    ]
-//
-//    let actionBar = ModalCardViewController.Configuration.ActionBar(items: actionBarItems)
-//    let configuration = ModalCardViewController.Configuration(header: header, actionBar: actionBar)
-//    viewInput?.update(with: configuration)
   }
 }
+
+// MARK: - TonConnectPopupModuleInput
+
+extension TonConnectPopupPresenter: TonConnectPopupModuleInput {}
 
 // MARK: - Private
 
@@ -99,16 +67,20 @@ private extension TonConnectPopupPresenter {
                     configuration: .primaryLarge,
                     isEnabled: true,
                     isActivity: false,
-                    tapAction: { isActivity, isSuccess in
-                      isActivity(true)
-                      DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                        isSuccess(true)
+                    tapAction: { [weak self] isActivityClosure, isSuccessClosure in
+                      guard let self = self else { return }
+                      isActivityClosure(true)
+                      Task {
+                        let isSuccess = await self.handleConnectButtonTap()
+                        await MainActor.run {
+                          isSuccessClosure(isSuccess)
+                        }
                       }
                     },
-                    completionAction: { isSuccess in
-                      if isSuccess {
-                        
-                      }
+                    completionAction: { [weak self] isSuccess in
+                      guard let self = self,
+                            isSuccess else { return }
+                      self.output?.tonConnectPopupModuleDidConnect(self)
                     }),
               bottomSpacing: 16),
       .text(.init(text: .footerText,
@@ -142,6 +114,18 @@ private extension TonConnectPopupPresenter {
     result.append(addressPart)
     result.append(revisionPart)
     return result
+  }
+  
+  func handleConnectButtonTap() async -> Bool {
+    guard let output = output else { return false }
+    let isConfirmed = await output.tonConnectPopupModuleConfirmation(self)
+    guard isConfirmed else { return false }
+    do {
+      try await tonConnectController.connect()
+      return true
+    } catch {
+      return false
+    }
   }
 }
 

@@ -10,7 +10,7 @@ import TKUIKit
 
 extension ModalCardViewController {
   final class HeaderView: UIView, ConfigurableView {
-    private let viewController: UIViewController
+    private weak var viewController: UIViewController?
     
     private let stackView: UIStackView = {
       let stackView = UIStackView()
@@ -33,6 +33,7 @@ extension ModalCardViewController {
     // MARK: - ConfigurableView
     
     func configure(model: Configuration.Header) {
+      guard let viewController = viewController else { return }
       ModalCardViewBuilder.buildViews(items: model.items, viewController: viewController).forEach { view in
         stackView.addArrangedSubview(view)
       }

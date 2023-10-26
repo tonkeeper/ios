@@ -9,10 +9,11 @@ import UIKit
 import WalletCore
 
 final class TonConnectCoordinator: Coordinator<Router<UIViewController>> {
-  
   private let walletCoreAssembly: WalletCoreAssembly
   private let parameters: TCParameters
   private let manifest: TonConnectManifest
+  
+  private var confirmationContinuation: CheckedContinuation<Bool, Never>?
   
   init(router: Router<UIViewController>,
        walletCoreAssembly: WalletCoreAssembly,
@@ -47,5 +48,44 @@ private extension TonConnectCoordinator {
 // MARK: - TonConnectPopupModuleOutput
 
 extension TonConnectCoordinator: TonConnectPopupModuleOutput {
+  func tonConnectPopupModuleDidConnect(_ module: TonConnectPopupModuleInput) {
+    initialPresentable?.dismiss(animated: true)
+  }
   
+  func tonConnectPopupModuleConfirmation(_ module: TonConnectPopupModuleInput) async -> Bool {
+    return await withCheckedContinuation { [weak self] continuation in
+      guard let self = self else { return }
+      self.confirmationContinuation = continuation
+      
+      Task {
+        await MainActor.run {
+          let passcodeAssembly = PasscodeAssembly(walletCoreAssembly: self.walletCoreAssembly)
+          let coordinator = passcodeAssembly.passcodeConfirmationCoordinator()
+          coordinator.output = self
+          
+          self.addChild(coordinator)
+          coordinator.start()
+          self.initialPresentable?.present(coordinator.router.rootViewController, animated: true)
+        }
+      }
+    }
+  }
+}
+
+// MARK: - PasscodeConfirmationCoordinatorOutput
+
+extension TonConnectCoordinator: PasscodeConfirmationCoordinatorOutput {
+  func passcodeConfirmationCoordinatorDidConfirm(_ coordinator: PasscodeConfirmationCoordinator) {
+    initialPresentable?.dismiss(animated: true)
+    removeChild(coordinator)
+    confirmationContinuation?.resume(returning: true)
+    confirmationContinuation = nil
+  }
+  
+  func passcodeConfirmationCoordinatorDidClose(_ coordinator: PasscodeConfirmationCoordinator) {
+    initialPresentable?.dismiss(animated: true)
+    removeChild(coordinator)
+    confirmationContinuation?.resume(returning: false)
+    confirmationContinuation = nil
+  }
 }
