@@ -1,0 +1,101 @@
+//
+//  TonConnectConfirmationPresenter.swift
+//  Tonkeeper
+//
+//  Created by Grigory Serebryanyy on 27.10.2023.
+//
+
+import Foundation
+import WalletCore
+
+final class TonConnectConfirmationPresenter {
+  
+  // MARK: - Module
+  
+  weak var viewInput: TonConnectConfirmationViewInput?
+  weak var output: TonConnectConfirmationModuleOutput?
+  
+  // MARK: - Dependencies
+
+  // MARK: - Init
+  
+}
+
+// MARK: - TonConnectConfirmationPresenterInput
+
+extension TonConnectConfirmationPresenter: TonConnectConfirmationPresenterInput {
+  func viewDidLoad() {
+    updateContent()
+  }
+}
+
+// MARK: - TonConnectConfirmationModuleInput
+
+extension TonConnectConfirmationPresenter: TonConnectConfirmationModuleInput {}
+
+// MARK: - Private
+
+private extension TonConnectConfirmationPresenter {
+  func updateContent() {
+    guard let viewInput = viewInput else { return }
+    
+    let actionBarItems: [ModalCardViewController.Configuration.Item] = [
+      .buttonsRow(.init(buttons: [
+        cancelButton(),
+        confirmButton()
+      ]), bottomSpacing: 16, itemSpacing: 8)
+    ]
+    let configuration = ModalCardViewController.Configuration(
+      header: .init(items: []),
+      actionBar: .init(items: actionBarItems)
+    )
+    viewInput.update(with: configuration)
+  }
+  
+  func confirmButton() -> ModalCardViewController.Configuration.Button {
+    ModalCardViewController.Configuration.Button.init(
+      title: "Confirm",
+      configuration: .primaryLarge,
+      isEnabled: true,
+      isActivity: false,
+      tapAction: { [weak self] isActivityClosure, isSuccessClosure in
+        guard let self = self else { return }
+        isActivityClosure(true)
+        Task {
+          do {
+            try await self.output?.tonConnectConfirmationModuleDidConfirm(self)
+            await MainActor.run {
+              isSuccessClosure(true)
+            }
+          } catch {
+            await MainActor.run {
+              isSuccessClosure(false)
+            }
+          }
+        }
+      },
+      completionAction: { [weak self] isSuccess in
+        guard let self = self,
+              isSuccess else { return }
+        self.output?.tonConnectConfirmationModuleDidFinish(self)
+    })
+  }
+  
+  func cancelButton() -> ModalCardViewController.Configuration.Button {
+    ModalCardViewController.Configuration.Button.init(
+      title: "Cancel",
+      configuration: .secondaryLarge,
+      isEnabled: true,
+      isActivity: false,
+      tapAction: { [weak self] isActivityClosure, isSuccessClosure in
+        guard let self = self else { return }
+        isActivityClosure(false)
+        self.output?.tonConnectConfirmationModuleDidCancel(self)
+      },
+      completionAction: { [weak self] isSuccess in
+        guard let self = self,
+              isSuccess else { return }
+        self.output?.tonConnectConfirmationModuleDidFinish(self)
+    })
+  }
+}

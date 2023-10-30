@@ -10,14 +10,14 @@ import WalletCore
 
 final class TonConnectCoordinator: Coordinator<Router<UIViewController>> {
   private let walletCoreAssembly: WalletCoreAssembly
-  private let parameters: TCParameters
+  private let parameters: TonConnectParameters
   private let manifest: TonConnectManifest
   
   private var confirmationContinuation: CheckedContinuation<Bool, Never>?
   
   init(router: Router<UIViewController>,
        walletCoreAssembly: WalletCoreAssembly,
-       parameters: TCParameters,
+       parameters: TonConnectParameters,
        manifest: TonConnectManifest) {
     self.walletCoreAssembly = walletCoreAssembly
     self.parameters = parameters

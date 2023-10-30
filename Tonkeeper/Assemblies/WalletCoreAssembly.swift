@@ -107,10 +107,18 @@ final class WalletCoreAssembly {
     walletCoreAssembly.tonConnectDeeplinkProcessor()
 }
   
-  func tonConnectController(parameters: TCParameters,
+  func tonConnectController(parameters: TonConnectParameters,
                             manifest: TonConnectManifest) -> TonConnectController {
     walletCoreAssembly.tonConnectController(parameters: parameters,
                                             manifest: manifest)
+  }
+  
+  func tonConnectConfirmationController() -> TonConnectConfirmationController {
+    walletCoreAssembly.tonConnectConfirmationController()
+  }
+  
+  func tonConnectEventsDaemon() -> TonConnectEventsDaemon {
+    walletCoreAssembly.tonConnectEventsDaemon()
   }
   
   func fiatMethodsController() -> FiatMethodsController {

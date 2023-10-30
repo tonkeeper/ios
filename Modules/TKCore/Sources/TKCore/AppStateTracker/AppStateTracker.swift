@@ -18,6 +18,12 @@ public final class AppStateTracker {
     case resignActive
     case enterBackground
   }
+    
+  public private(set) var state: State = .becomeActive {
+    didSet {
+      notifyObservers(state)
+    }
+  }
   
   struct AppStateTrackerObserverWrapper {
     weak var observer: AppStateTrackerObserver?
@@ -32,19 +38,19 @@ public final class AppStateTracker {
     becomeActiveNotificationToken = NotificationCenter
       .default
       .addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: nil) { [weak self] notification in
-        self?.notifyObservers(.becomeActive)
+        self?.state = .becomeActive
       }
     
     resignActiveNotificationToken = NotificationCenter
       .default
       .addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: nil) { [weak self] notification in
-        self?.notifyObservers(.resignActive)
+        self?.state = .resignActive
       }
     
     enterBackgroundNotificationToken = NotificationCenter
       .default
       .addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil) { [weak self] notification in
-        self?.notifyObservers(.enterBackground)
+        self?.state = .enterBackground
     }
   }
   

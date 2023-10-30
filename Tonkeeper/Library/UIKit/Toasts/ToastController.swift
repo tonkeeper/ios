@@ -116,13 +116,7 @@ final class ToastController {
   
   private static func showToastView(model: ToastView.Model,
                                     completion: (() -> Void)? = nil) {
-    let scene = UIApplication
-      .shared
-      .connectedScenes
-      .compactMap { ($0 as? UIWindowScene)?.windows }
-      .flatMap { $0 }
-      .last { $0.isKeyWindow }?
-      .windowScene
+    let scene = UIApplication.keyWindowScene
     guard let scene = scene else { return }
     let toastWindow = PassthroughWindow(windowScene: scene)
     toastWindow.makeKeyAndVisible()
@@ -164,4 +158,16 @@ private extension CGFloat {
 private extension TimeInterval {
   static let animationDuration: TimeInterval = 0.2
   static let defaultPresentationDuration: TimeInterval = 2.0
+}
+
+extension UIApplication {
+  static var keyWindowScene: UIWindowScene? {
+    self
+      .shared
+      .connectedScenes
+      .compactMap { ($0 as? UIWindowScene)?.windows }
+      .flatMap { $0 }
+      .last { $0.isKeyWindow }?
+      .windowScene
+  }
 }

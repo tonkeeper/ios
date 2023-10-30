@@ -12,7 +12,7 @@ struct TonConnectAssembly {
   let walletCoreAssembly: WalletCoreAssembly
   
   func coordinator(router: Router<UIViewController>,
-                   parameters: TCParameters,
+                   parameters: TonConnectParameters,
                    manifest: TonConnectManifest) -> TonConnectCoordinator {
     TonConnectCoordinator(
       router: router,
@@ -20,5 +20,16 @@ struct TonConnectAssembly {
       parameters: parameters,
       manifest: manifest
     )
+  }
+  
+  func confirmationCoordinator() -> TonConnectConfirmationCoordinator {
+    let router = Router(rootViewController: UIViewController())
+    let tonConnectConfirmationController = walletCoreAssembly.tonConnectConfirmationController()
+    let coordinator = TonConnectConfirmationCoordinator(
+      router: router,
+      tonConnectConfirmationController: tonConnectConfirmationController
+    )
+    tonConnectConfirmationController.output = coordinator
+    return coordinator
   }
 }

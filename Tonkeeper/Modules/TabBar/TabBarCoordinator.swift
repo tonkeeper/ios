@@ -23,6 +23,10 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
   private let browserCoordinator: BrowserCoordinator
   private let settingsCoordinator: SettingsCoordinator
   
+  private let authEventsDaemon: AuthEventsDaemon
+  private var _tonConnectConfirmationCoordinator: TonConnectConfirmationCoordinator?
+  
+  
   init(router: TabBarRouter,
        assembly: TabBarAssembly) {
     self.assembly = assembly
@@ -30,8 +34,14 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
     self.activityCoordinator = assembly.activityCoordinator()
     self.browserCoordinator = assembly.browserCoordinator()
     self.settingsCoordinator = assembly.settingsCoordinator()
+    self.authEventsDaemon = assembly.authEventsDaemon
     super.init(router: router)
     self.settingsCoordinator.output = self
+  }
+  
+  deinit {
+    authEventsDaemon.removeObserver(self)
+    authEventsDaemon.stopObserving()
   }
   
   override func start() {
@@ -47,6 +57,8 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
         return $0.router.rootViewController
       }
     router.set(presentables: presentables, options: .init(isAnimated: false))
+    authEventsDaemon.startObserving()
+    authEventsDaemon.addObserver(self)
   }
 }
 
@@ -122,5 +134,39 @@ extension TabBarCoordinator: WalletCoordinatorOutput {
   func walletCoordinator(_ coordinator: WalletCoordinator,
                          openTonConnectDeeplink deeplink: TonConnectDeeplink) {
     self.openTonConnectDeeplink(deeplink)
+  }
+}
+
+// MARK: - AuthEventsDaemonObserver
+
+extension TabBarCoordinator: AuthEventsDaemonObserver {
+  func authEventsDaemon(_ daemon: AuthEventsDaemon,
+                        didReceiveTonConnectAppRequest appRequest: TonConnect.AppRequest,
+                        app: TonConnectApp) {
+    Task { @MainActor in
+      let tonConnectConfirmationCoordinator: TonConnectConfirmationCoordinator
+      if let _tonConnectConfirmationCoordinator = self._tonConnectConfirmationCoordinator {
+        tonConnectConfirmationCoordinator = _tonConnectConfirmationCoordinator
+      } else {
+        tonConnectConfirmationCoordinator = assembly.tonConnectAssembly.confirmationCoordinator()
+        tonConnectConfirmationCoordinator.output = self
+        addChild(tonConnectConfirmationCoordinator)
+        tonConnectConfirmationCoordinator.start()
+        _tonConnectConfirmationCoordinator = tonConnectConfirmationCoordinator
+      }
+      
+      tonConnectConfirmationCoordinator.handleAppRequest(
+        appRequest,
+        app: app
+      )
+    }
+  }
+}
+
+// MARK: - TonConnectConfirmationCoordinatorOutput
+
+extension TabBarCoordinator: TonConnectConfirmationCoordinatorOutput {
+  func tonConnectConfirmationCoordinatorDidFinish(_ coordinator: TonConnectConfirmationCoordinator) {
+    removeChild(coordinator)
   }
 }

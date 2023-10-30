@@ -80,10 +80,16 @@ final class TabBarAssembly {
   }
   
   func tonConnectCoordinator(navigationRouter: Router<UIViewController>,
-                             parameters: TCParameters,
+                             parameters: TonConnectParameters,
                              manifest: TonConnectManifest) -> TonConnectCoordinator {
     return tonConnectAssembly.coordinator(router: navigationRouter,
                                           parameters: parameters,
                                           manifest: manifest)
+  }
+  
+  var authEventsDaemon: AuthEventsDaemon {
+    AuthEventsDaemon(tonConnectEventsDaemon: walletCoreAssembly.tonConnectEventsDaemon(),
+                     appStateTracker: coreAssembly.appStateTracker,
+                     reachabilityTracker: coreAssembly.reachabilityTracker)
   }
 }

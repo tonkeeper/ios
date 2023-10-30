@@ -400,6 +400,12 @@
 		BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773774CBEA3D5DDBE5D6AFF /* TokenDetailsProtocols.swift */; };
 		BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6AC52DF8E6970E81B415D8 /* EnterMnemonicView.swift */; };
 		C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C81CE487C82E845B444588 /* EnterMnemonicPresenter.swift */; };
+		C35684112AEBFD810064DD0A /* AuthEventsDaemon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684102AEBFD810064DD0A /* AuthEventsDaemon.swift */; };
+		C35684152AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684142AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift */; };
+		C35684172AEC397A0064DD0A /* TonConnectConfirmationProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684162AEC397A0064DD0A /* TonConnectConfirmationProtocols.swift */; };
+		C35684192AEC39C30064DD0A /* TonConnectConfirmationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684182AEC39C30064DD0A /* TonConnectConfirmationViewController.swift */; };
+		C356841B2AEC3A1B0064DD0A /* TonConnectConfirmationPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C356841A2AEC3A1B0064DD0A /* TonConnectConfirmationPresenter.swift */; };
+		C356841D2AEC3A780064DD0A /* TonConnectConfirmationAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C356841C2AEC3A780064DD0A /* TonConnectConfirmationAssembly.swift */; };
 		C35E6C382ADFC9F100F8B524 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C372ADFC9F100F8B524 /* TKUIKit */; };
 		C35E6C392ADFC9F100F8B524 /* TKUIKit in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C372ADFC9F100F8B524 /* TKUIKit */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C35E6C3B2ADFC9F400F8B524 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3A2ADFC9F400F8B524 /* TKChart */; };
@@ -775,7 +781,6 @@
 		7D8F64AC2A8D48C30042AE74 /* TonChartButtonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartButtonsView.swift; sourceTree = "<group>"; };
 		7D8F64B02A8E08010042AE74 /* TonChartHeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartHeaderView.swift; sourceTree = "<group>"; };
 		7D8F64B22A8E43F90042AE74 /* TonChartErrorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonChartErrorView.swift; sourceTree = "<group>"; };
-		7D8F64B52A8E586F0042AE74 /* Error.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Error.swift; sourceTree = "<group>"; };
 		7D91441F2A31C3AA00B0FD17 /* ReceiveAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveAssembly.swift; sourceTree = "<group>"; };
 		7D9144202A31C3AA00B0FD17 /* ReceiveCoordinator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReceiveCoordinator.swift; sourceTree = "<group>"; };
 		7D9144232A31EF7600B0FD17 /* Selectable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Selectable.swift; sourceTree = "<group>"; };
@@ -910,6 +915,12 @@
 		B305512CBFAF5DE77C5D0556 /* EnterMnemonicProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnterMnemonicProtocols.swift; sourceTree = "<group>"; };
 		B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartPresenter.swift; sourceTree = "<group>"; };
 		C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsViewController.swift; sourceTree = "<group>"; };
+		C35684102AEBFD810064DD0A /* AuthEventsDaemon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthEventsDaemon.swift; sourceTree = "<group>"; };
+		C35684142AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationCoordinator.swift; sourceTree = "<group>"; };
+		C35684162AEC397A0064DD0A /* TonConnectConfirmationProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationProtocols.swift; sourceTree = "<group>"; };
+		C35684182AEC39C30064DD0A /* TonConnectConfirmationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationViewController.swift; sourceTree = "<group>"; };
+		C356841A2AEC3A1B0064DD0A /* TonConnectConfirmationPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationPresenter.swift; sourceTree = "<group>"; };
+		C356841C2AEC3A780064DD0A /* TonConnectConfirmationAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationAssembly.swift; sourceTree = "<group>"; };
 		C35E6C342ADFC9CC00F8B524 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKUIKit; path = Modules/TKUIKit; sourceTree = "<group>"; };
 		C35E6C352ADFC9DA00F8B524 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKCore; path = Modules/TKCore; sourceTree = "<group>"; };
 		C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewController.swift; sourceTree = "<group>"; };
@@ -1849,7 +1860,6 @@
 		7D68361E2A1CD1B8002DBBC7 /* Core */ = {
 			isa = PBXGroup;
 			children = (
-				7D8F64B42A8E58690042AE74 /* Error */,
 				7D527BF22A2DFD9C00A2D29A /* Views */,
 				7D6836652A1D6E6B002DBBC7 /* Module */,
 				7D68365E2A1D6998002DBBC7 /* ViewControllers */,
@@ -2085,6 +2095,7 @@
 		7D70D3BE2A2A03280096E1A2 /* Logic */ = {
 			isa = PBXGroup;
 			children = (
+				C356840F2AEBFD700064DD0A /* AuthEventsDaemon */,
 				7DDBC0342ACD793B00F811A5 /* BiometryAuthentificator */,
 				7D5141C92A53428700EC7F59 /* ImageLoader */,
 				7D8EB72E2A4F2227005BE1B0 /* Wallet */,
@@ -2298,14 +2309,6 @@
 				7D8F64B22A8E43F90042AE74 /* TonChartErrorView.swift */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		7D8F64B42A8E58690042AE74 /* Error */ = {
-			isa = PBXGroup;
-			children = (
-				7D8F64B52A8E586F0042AE74 /* Error.swift */,
-			);
-			path = Error;
 			sourceTree = "<group>";
 		};
 		7D9144252A31F59500B0FD17 /* ModalCard */ = {
@@ -2765,6 +2768,25 @@
 			path = InAppBrowserMain;
 			sourceTree = "<group>";
 		};
+		C356840F2AEBFD700064DD0A /* AuthEventsDaemon */ = {
+			isa = PBXGroup;
+			children = (
+				C35684102AEBFD810064DD0A /* AuthEventsDaemon.swift */,
+			);
+			path = AuthEventsDaemon;
+			sourceTree = "<group>";
+		};
+		C35684132AEC37B00064DD0A /* TonConnectConfirmation */ = {
+			isa = PBXGroup;
+			children = (
+				C35684162AEC397A0064DD0A /* TonConnectConfirmationProtocols.swift */,
+				C35684182AEC39C30064DD0A /* TonConnectConfirmationViewController.swift */,
+				C356841A2AEC3A1B0064DD0A /* TonConnectConfirmationPresenter.swift */,
+				C356841C2AEC3A780064DD0A /* TonConnectConfirmationAssembly.swift */,
+			);
+			path = TonConnectConfirmation;
+			sourceTree = "<group>";
+		};
 		C35E6C332ADFC9CC00F8B524 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
@@ -2790,9 +2812,11 @@
 		C384B3B92AE96FDA009CD062 /* TonConnect */ = {
 			isa = PBXGroup;
 			children = (
+				C35684132AEC37B00064DD0A /* TonConnectConfirmation */,
 				C384B3C12AE97782009CD062 /* TonConnectPopup */,
 				C384B3BA2AE96FE5009CD062 /* Views */,
 				C384B3BD2AE9721C009CD062 /* TonConnectCoordinator.swift */,
+				C35684142AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift */,
 				C384B3BF2AE97224009CD062 /* TonConnectAssembly.swift */,
 			);
 			path = TonConnect;
@@ -3134,6 +3158,7 @@
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
 				7D3E438F2A339E2A00C23A75 /* BuyListServiceCell.swift in Sources */,
 				7DDF050C2A6952E7003E9F13 /* ActivityRootAssembly.swift in Sources */,
+				C35684152AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift in Sources */,
 				7D3BCFC32A4CAB1300BE6AD9 /* TabBarController.swift in Sources */,
 				7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */,
 				7D32F8B22A8BA65B002C130C /* CollectionViewReusableContainerView.swift in Sources */,
@@ -3195,6 +3220,7 @@
 				7D1163002A60381300DF4F30 /* WalletTokenDetailsAssembly.swift in Sources */,
 				7DAC78DB2A9509EC00358D35 /* CollectibleDetailsDetailsView.swift in Sources */,
 				7D68366A2A1D6ED5002DBBC7 /* WalletRootViewController.swift in Sources */,
+				C356841B2AEC3A1B0064DD0A /* TonConnectConfirmationPresenter.swift in Sources */,
 				7DAC78D32A93F95D00358D35 /* CollectibleCoordinator.swift in Sources */,
 				7DE27E6C2A30DA3A00842FA8 /* TransactionCellCommentView.swift in Sources */,
 				7D0207602A7FDD8500D63B4C /* CompositionTransactionCellContentView.swift in Sources */,
@@ -3219,6 +3245,7 @@
 				7D9292C42A274131005B83DF /* SendAssembly.swift in Sources */,
 				7D8F64AD2A8D48C30042AE74 /* TonChartButtonsView.swift in Sources */,
 				C384B3C32AE97795009CD062 /* TonConnectPopupViewController.swift in Sources */,
+				C35684192AEC39C30064DD0A /* TonConnectConfirmationViewController.swift in Sources */,
 				7DAC789E2A8FAA8400358D35 /* InAppBrowserCoordinator.swift in Sources */,
 				7D92927E2A24AA33005B83DF /* TokensListCollectibleCell.swift in Sources */,
 				7D0207852A803C7100D63B4C /* NotDelayCollectionView.swift in Sources */,
@@ -3251,6 +3278,7 @@
 				7D3BCFB72A4C999B00BE6AD9 /* ImportWalletCoordinator.swift in Sources */,
 				C384B3B32AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift in Sources */,
 				7D3BCFBB2A4C99C900BE6AD9 /* EnterMnemonicAssembly.swift in Sources */,
+				C356841D2AEC3A780064DD0A /* TonConnectConfirmationAssembly.swift in Sources */,
 				7D6836562A1D5951002DBBC7 /* BrowserCoordinator.swift in Sources */,
 				7D9293012A29DCDA005B83DF /* SendCommentLengthValidator.swift in Sources */,
 				7D527BC62A2A972A00A2D29A /* ModalContentListItemView.swift in Sources */,
@@ -3304,6 +3332,7 @@
 				0C1DF00128AE8BA90E30FCB1 /* TokensListView.swift in Sources */,
 				C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */,
 				C384B3B12AE96ADB009CD062 /* ModalCardViewBuilder.swift in Sources */,
+				C35684172AEC397A0064DD0A /* TonConnectConfirmationProtocols.swift in Sources */,
 				7D9292DE2A28A1DF005B83DF /* EnterAmountViewController.swift in Sources */,
 				7D5141CE2A53454400EC7F59 /* Image.swift in Sources */,
 				FC58CA56982D098FE4E85989 /* TokensListProtocols.swift in Sources */,
@@ -3380,6 +3409,7 @@
 				7D3BCFB22A4C601F00BE6AD9 /* WalletCoreAssembly.swift in Sources */,
 				C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */,
 				7DAC78A02A8FAAB000358D35 /* InAppBrowserAssembly.swift in Sources */,
+				C35684112AEBFD810064DD0A /* AuthEventsDaemon.swift in Sources */,
 				5B350CAE4F889BA8B86B8274 /* WelcomeProtocols.swift in Sources */,
 				0BD4049EC87EC6C963E6CFD4 /* SetupWalletViewController.swift in Sources */,
 				9E942CD15F5FF5F4FFE029AC /* SetupWalletView.swift in Sources */,
