@@ -73,7 +73,7 @@ private extension TonConnectConfirmationFeeView {
       stackView.topAnchor.constraint(equalTo: topAnchor, constant: 12),
       stackView.leftAnchor.constraint(equalTo: leftAnchor, constant: 16),
       stackView.rightAnchor.constraint(equalTo: rightAnchor, constant: -16),
-      stackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16)
+      stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
     ])
   }
 }

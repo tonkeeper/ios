@@ -55,7 +55,7 @@ private extension TonConnectPopupPresenter {
     let headerItems: [ModalCardViewController.Configuration.Item] = [
       .customView(headerView, bottomSpacing: 20),
       .text(.init(text: title,
-                  numberOfLines: 1),
+                  numberOfLines: 0),
             bottomSpacing: 4),
       .text(.init(text: description,
                   numberOfLines: 0),

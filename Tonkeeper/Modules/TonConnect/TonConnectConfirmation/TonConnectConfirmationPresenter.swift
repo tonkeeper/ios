@@ -47,8 +47,11 @@ private extension TonConnectConfirmationPresenter {
   func updateContent() {
     guard let viewInput = viewInput else { return }
     
+    let contentItems: [ModalCardViewController.Configuration.ContentItem] = [
+      .item(contentItem())
+    ]
+    
     let actionBarItems: [ModalCardViewController.Configuration.Item] = [
-      contentItem(),
       .buttonsRow(.init(buttons: [
         cancelButton(),
         confirmButton()
@@ -56,6 +59,7 @@ private extension TonConnectConfirmationPresenter {
     ]
     let configuration = ModalCardViewController.Configuration(
       header: .init(items: []),
+      content: .init(items: contentItems),
       actionBar: .init(items: actionBarItems)
     )
     viewInput.update(with: configuration)

@@ -49,6 +49,7 @@ private extension TonConnectConfirmationCoordinator {
       output: self
     )
     let container = ModalCardContainerViewController(content: module.view)
+    container.headerSize = .big
     let modalCardRouter = Router(rootViewController: container)
     
     router.present(modalCardRouter.rootViewController, dismiss: { [weak self] in
