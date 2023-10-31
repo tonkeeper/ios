@@ -21,18 +21,6 @@ final class BuyListServiceCell: ContainerCollectionViewCell<ServiceCellContentVi
     }
   }
   
-  var isFirstCell = false {
-    didSet {
-      didUpdateCellOrder()
-    }
-  }
-  
-  var isLastCell = false {
-    didSet {
-      didUpdateCellOrder()
-    }
-  }
-  
   var isInGroup = false {
     didSet {
       didUpdateIsInGroup()
@@ -53,60 +41,17 @@ final class BuyListServiceCell: ContainerCollectionViewCell<ServiceCellContentVi
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-  
-  override func prepareForReuse() {
-    super.prepareForReuse()
-    isFirstCell = false
-    isLastCell = false
-    separatorView.isHidden = true
-  }
-  
-  override func layoutSubviews() {
-    super.layoutSubviews()
-    separatorView.frame = .init(x: ContentInsets.sideSpace,
-                                y: bounds.height - .separatorWidth,
-                                width: bounds.width - ContentInsets.sideSpace,
-                                height: .separatorWidth)
-  }
 }
 
 private extension BuyListServiceCell {
   func setup() {
-    contentView.addSubview(separatorView)
-    layer.masksToBounds = true
-    
     cellContentView.addAction(.init(handler: { [weak self] in
       guard let self = self else { return }
       self.delegate?.buyListServiceCellDidTap(self)
     }), for: .touchUpInside)
   }
   
-  func didUpdateCellOrder() {
-    switch (isLastCell, isFirstCell) {
-    case (true, false):
-      layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
-      layer.cornerRadius = .cornerRadius
-    case (false, true):
-      layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-      layer.cornerRadius = .cornerRadius
-    case (true, true):
-      layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner,
-                             .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
-      layer.cornerRadius = .cornerRadius
-    case (false, false):
-      layer.cornerRadius = 0
-    }
-    
-    separatorView.isHidden = isLastCell
-  }
-  
   func didUpdateIsInGroup() {
     separatorView.isHidden = isLastCell || !isInGroup
   }
 }
-
-private extension CGFloat {
-  static let cornerRadius: CGFloat = 16
-  static let separatorWidth: CGFloat = 0.5
-}
-

@@ -9,9 +9,13 @@ import UIKit
 import WalletCore
 
 struct TonConnectConfirmationAssembly {
-  static func module(output: TonConnectConfirmationModuleOutput?) -> Module<TonConnectConfirmationViewController, TonConnectConfirmationPresenterInput> {
+  static func module(model: TonConnectConfirmationModel,
+                     output: TonConnectConfirmationModuleOutput?) -> Module<TonConnectConfirmationViewController, TonConnectConfirmationPresenterInput> {
     
-    let presenter = TonConnectConfirmationPresenter()
+    let presenter = TonConnectConfirmationPresenter(
+      model: model,
+      transactionBuilder: ActivityListTransactionBuilder()
+    )
     let viewController = TonConnectConfirmationViewController(presenter: presenter)
     
     presenter.viewInput = viewController

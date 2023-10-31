@@ -37,14 +37,17 @@ final class TonConnectConfirmationCoordinator: Coordinator<Router<UIViewControll
 }
 
 private extension TonConnectConfirmationCoordinator {
-  func showConfirmation() {
+  func showConfirmation(model: TonConnectConfirmationModel) {
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = UIWindow(windowScene: windowScene)
     window.rootViewController = router.rootViewController
     window.makeKeyAndVisible()
     self.window = window
     
-    let module = TonConnectConfirmationAssembly.module(output: self)
+    let module = TonConnectConfirmationAssembly.module(
+      model: model,
+      output: self
+    )
     let container = ModalCardContainerViewController(content: module.view)
     let modalCardRouter = Router(rootViewController: container)
     
@@ -79,11 +82,11 @@ extension TonConnectConfirmationCoordinator: TonConnectConfirmationControllerOut
     ToastController.showToast(configuration: .loading)
   }
   
-  func tonConnectConfirmationControllerDidFinishEmulation(_ controller: WalletCore.TonConnectConfirmationController, result: Result<Void, Error>) {
+  func tonConnectConfirmationControllerDidFinishEmulation(_ controller: WalletCore.TonConnectConfirmationController, result: Result<TonConnectConfirmationModel, Error>) {
     switch result {
     case .success(let success):
       ToastController.hideToast()
-      showConfirmation()
+      showConfirmation(model: success)
     case .failure:
       ToastController.showToast(configuration: .failed)
     }

@@ -11,22 +11,34 @@ protocol ContainerCollectionViewCellContent: ConfigurableView {
   func prepareForReuse()
 }
 
-class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellContent>: UICollectionViewCell, ConfigurableView, Selectable {
+class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellContent>: UICollectionViewCell, ConfigurableView {
 
   let cellContentView = CellContentView()
+  let highlightView = HighlightContainerView()
+  private let separatorView: UIView = {
+    let view = UIView()
+    view.backgroundColor = .Separator.common
+    return view
+  }()
   
-  override var isHighlighted: Bool {
+  var isSeparatorVisible = true {
     didSet {
-      updateHighlightApperance()
+      separatorView.isHidden = !isSeparatorVisible
     }
   }
   
-  override var isSelected: Bool {
+  var isFirstCell = false {
     didSet {
-      updateHighlightApperance()
+      didUpdateCellOrder()
     }
   }
   
+  var isLastCell = false {
+    didSet {
+      didUpdateCellOrder()
+    }
+  }
+
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -50,38 +62,60 @@ class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellCo
   
   override func layoutSubviews() {
     super.layoutSubviews()
-    cellContentView.frame = contentView.bounds
+    highlightView.frame = contentView.bounds
+    cellContentView.frame = highlightView.bounds
+    separatorView.frame = .init(x: ContentInsets.sideSpace,
+                                y: bounds.height - .separatorWidth,
+                                width: bounds.width - ContentInsets.sideSpace,
+                                height: .separatorWidth)
   }
   
   override func prepareForReuse() {
     super.prepareForReuse()
     cellContentView.prepareForReuse()
-    deselect()
+    isFirstCell = false
+    isLastCell = false
+    updateSeparatorVisibility()
   }
   
-  func updateHighlightApperance() {
-    let isHighlighted = isSelected || isHighlighted
-    isHighlighted ? select() : deselect()
+  func didUpdateCellOrder() {
+    switch (isLastCell, isFirstCell) {
+    case (true, false):
+      layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+      layer.cornerRadius = .cornerRadius
+    case (false, true):
+      layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
+      layer.cornerRadius = .cornerRadius
+    case (true, true):
+      layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner,
+                             .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
+      layer.cornerRadius = .cornerRadius
+    case (false, false):
+      layer.cornerRadius = 0
+    }
+    
+    separatorView.isHidden = isLastCell || !isSeparatorVisible
   }
   
-  func select() {
-    let color = UIColor.clear
-    contentView.backgroundColor = color
-  }
-  
-  func deselect() {
-    let color = UIColor.Background.content
-    contentView.backgroundColor = color
+  func updateSeparatorVisibility() {
+    separatorView.isHidden = isLastCell || !isSeparatorVisible || highlightView.isHighlighted
   }
 }
 
 private extension ContainerCollectionViewCell {
   func setup() {
-    contentView.backgroundColor = .Background.content
-    contentView.addSubview(cellContentView)
-    
-    let selectedView = UIView()
-    selectedView.backgroundColor = .Background.highlighted
-    selectedBackgroundView = selectedView
+    layer.masksToBounds = true
+    contentView.addSubview(highlightView)
+    contentView.addSubview(separatorView)
+    highlightView.addSubview(cellContentView)
+    highlightView.didUpdateIsHighlighted = { [weak self] _ in
+      self?.updateSeparatorVisibility()
+    }
   }
 }
+
+private extension CGFloat {
+  static let cornerRadius: CGFloat = 16
+  static let separatorWidth: CGFloat = 0.5
+}
+

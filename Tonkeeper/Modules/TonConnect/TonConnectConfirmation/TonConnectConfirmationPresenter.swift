@@ -16,9 +16,17 @@ final class TonConnectConfirmationPresenter {
   weak var output: TonConnectConfirmationModuleOutput?
   
   // MARK: - Dependencies
+  
+  private let model: TonConnectConfirmationModel
+  private let transactionBuilder: ActivityListTransactionBuilder
 
   // MARK: - Init
   
+  init(model: TonConnectConfirmationModel,
+       transactionBuilder: ActivityListTransactionBuilder) {
+    self.model = model
+    self.transactionBuilder = transactionBuilder
+  }
 }
 
 // MARK: - TonConnectConfirmationPresenterInput
@@ -40,6 +48,7 @@ private extension TonConnectConfirmationPresenter {
     guard let viewInput = viewInput else { return }
     
     let actionBarItems: [ModalCardViewController.Configuration.Item] = [
+      contentItem(),
       .buttonsRow(.init(buttons: [
         cancelButton(),
         confirmButton()
@@ -78,7 +87,7 @@ private extension TonConnectConfirmationPresenter {
         guard let self = self,
               isSuccess else { return }
         self.output?.tonConnectConfirmationModuleDidFinish(self)
-    })
+      })
   }
   
   func cancelButton() -> ModalCardViewController.Configuration.Button {
@@ -96,6 +105,32 @@ private extension TonConnectConfirmationPresenter {
         guard let self = self,
               isSuccess else { return }
         self.output?.tonConnectConfirmationModuleDidFinish(self)
-    })
+      })
+  }
+  
+  func contentItem() -> ModalCardViewController.Configuration.Item {
+    let view = TonConnectConfirmationContentView()
+    let model = TonConnectConfirmationContentView.Model(
+      actionsModel: mapEventViewModel(model.event),
+      feeModel: .init(title: "Network fee", fee: model.fee)
+    )
+    view.configure(model: model)
+    return .customView(view, bottomSpacing: 16)
+  }
+  
+  func mapEventViewModel(_ viewModel: ActivityEventViewModel) -> CompositionTransactionCellContentView.Model {
+    let actions = viewModel.actions.map { action in
+      return transactionBuilder.buildTransactionModel(
+        type: action.eventType,
+        subtitle: action.leftTopDescription,
+        amount: action.amount,
+        subamount: action.subamount,
+        time: action.rightTopDescription,
+        status: action.status,
+        comment: action.comment,
+        collectible: action.collectible
+      )
+    }
+    return CompositionTransactionCellContentView.Model(transactionContentModels: actions)
   }
 }

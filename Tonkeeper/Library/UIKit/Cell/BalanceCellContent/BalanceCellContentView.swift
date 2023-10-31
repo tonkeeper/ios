@@ -70,6 +70,7 @@ final class BalanceCellContentView: UIView, ContainerCollectionViewCellContent {
 
 private extension BalanceCellContentView {
   func setup() {
+    isUserInteractionEnabled = false
     addSubview(defaultCellContentView)
   }
 }

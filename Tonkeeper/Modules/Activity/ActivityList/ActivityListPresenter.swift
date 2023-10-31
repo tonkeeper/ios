@@ -129,7 +129,7 @@ private extension ActivityListPresenter {
           subtitle: action.leftTopDescription,
           amount: action.amount,
           subamount: action.subamount,
-          time: action.rightTopDesription,
+          time: action.rightTopDescription,
           status: action.status,
           comment: action.comment,
           collectible: action.collectible

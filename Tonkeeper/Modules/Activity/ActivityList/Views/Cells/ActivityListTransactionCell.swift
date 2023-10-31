@@ -50,6 +50,7 @@ private extension ActivityListTransactionCell {
     cellContentView.isSeparatorVisible = false
     layer.masksToBounds = true
     layer.cornerRadius = 16
+    isSeparatorVisible = false
   }
 }
 

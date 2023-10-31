@@ -52,10 +52,8 @@ final class ActivityListCompositionTransactionCell: ContainerCollectionViewCell<
 
 private extension ActivityListCompositionTransactionCell {
   func setup() {
-    layer.masksToBounds = true
-    layer.cornerRadius = 16
-    
     cellContentView.delegate = self
+    isSeparatorVisible = false
   }
 }
 
