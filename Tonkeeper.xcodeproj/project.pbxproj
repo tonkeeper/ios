@@ -429,6 +429,7 @@
 		C384B3C52AE977B2009CD062 /* TonConnectPopupProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3C42AE977B2009CD062 /* TonConnectPopupProtocols.swift */; };
 		C384B3C72AE977BB009CD062 /* TonConnectPopupPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3C62AE977BB009CD062 /* TonConnectPopupPresenter.swift */; };
 		C384B3C92AE9B792009CD062 /* TonConnectPopupAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3C82AE9B792009CD062 /* TonConnectPopupAssembly.swift */; };
+		C38957812AF13FD70083B98A /* ModalCardViewController+ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38957802AF13FD70083B98A /* ModalCardViewController+ContentView.swift */; };
 		C3A337BC2AE340BD00E315F5 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */; };
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
@@ -939,6 +940,7 @@
 		C384B3C42AE977B2009CD062 /* TonConnectPopupProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectPopupProtocols.swift; sourceTree = "<group>"; };
 		C384B3C62AE977BB009CD062 /* TonConnectPopupPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectPopupPresenter.swift; sourceTree = "<group>"; };
 		C384B3C82AE9B792009CD062 /* TonConnectPopupAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectPopupAssembly.swift; sourceTree = "<group>"; };
+		C38957802AF13FD70083B98A /* ModalCardViewController+ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+ContentView.swift"; sourceTree = "<group>"; };
 		C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
 		C3C13F8A2AE9F15900EFC88D /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKChart; path = Modules/TKChart; sourceTree = "<group>"; };
 		C94035FBBB4278C3B31B95C0 /* PasscodeInputPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputPresenter.swift; sourceTree = "<group>"; };
@@ -2816,6 +2818,7 @@
 			children = (
 				C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */,
 				C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */,
+				C38957802AF13FD70083B98A /* ModalCardViewController+ContentView.swift */,
 				C384B3B42AE96AF4009CD062 /* ModalCardViewController+Configuration.swift */,
 				C384B3B62AE96B01009CD062 /* ModalCardViewController+ActionBarView.swift */,
 				C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */,
@@ -3417,6 +3420,7 @@
 				7D3BCFC02A4C9E6B00BE6AD9 /* RootAssembly.swift in Sources */,
 				7DC8A3B72A7C172B00B8B219 /* ActivityListViewController+TokenDetailsListContentViewController.swift in Sources */,
 				097A038C8793EF67158AD194 /* BuyListPresenter.swift in Sources */,
+				C38957812AF13FD70083B98A /* ModalCardViewController+ContentView.swift in Sources */,
 				6DDD78B4E9BC9191CF5EC900 /* BuyListProtocols.swift in Sources */,
 				A6E8CD628DD1CBC7A9D9ADA3 /* WelcomeViewController.swift in Sources */,
 				7D3BCFCC2A4D90D700BE6AD9 /* CreatePasscodeCoordinator.swift in Sources */,

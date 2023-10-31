@@ -10,6 +10,7 @@ import UIKit
 extension ModalCardViewController {
   struct Configuration {
     var header: Header?
+    var content: Content?
     var actionBar: ActionBar?
   }
 }
@@ -57,6 +58,12 @@ extension ModalCardViewController.Configuration {
 }
 
 extension ModalCardViewController.Configuration {
+  enum ContentItem {
+    case item(Item)
+  }
+}
+
+extension ModalCardViewController.Configuration {
   struct Header {
     let items: [Item]
   }
@@ -64,4 +71,9 @@ extension ModalCardViewController.Configuration {
   struct ActionBar {
     let items: [Item]
   }
+  
+  struct Content {
+    let items: [ContentItem]
+  }
 }
+

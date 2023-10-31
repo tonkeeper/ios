@@ -12,9 +12,14 @@ final class ModalCardViewController: UIViewController, ScrollableModalCardContai
     NotDelayScrollView()
   }()
   private let scrollViewContentView = UIView()
-  private let contentStackView = UIStackView()
+  private let contentStackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .vertical
+    return stackView
+  }()
   
   private lazy var headerView = ModalCardViewController.HeaderView(viewController: self)
+  private lazy var contentView = ModalCardViewController.ContentView(viewController: self)
   private lazy var actionBarView = ModalCardViewController.ActionBar(viewController: self)
   
   private var actionBarBottomConstraint: NSLayoutConstraint?
@@ -56,6 +61,7 @@ private extension ModalCardViewController {
   func configure() {
     guard isViewLoaded else { return }
     configureHeader()
+    configureContent()
     configureActionBar()
   }
   
@@ -67,6 +73,16 @@ private extension ModalCardViewController {
     }
     headerView.isHidden = false
     headerView.configure(model: model)
+  }
+  
+  func configureContent() {
+    guard isViewLoaded else { return }
+    guard let model = configuration.content else {
+      contentView.isHidden = true
+      return
+    }
+    contentView.isHidden = false
+    contentView.configure(model: model)
   }
   
   func configureActionBar() {
@@ -90,6 +106,7 @@ private extension ModalCardViewController {
     scrollViewContentView.addSubview(contentStackView)
     
     contentStackView.addArrangedSubview(headerView)
+    contentStackView.addArrangedSubview(contentView)
     
     setupConstraints()
     

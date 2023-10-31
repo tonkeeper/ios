@@ -14,6 +14,17 @@ enum ModalCardActionState {
 }
 
 struct ModalCardViewBuilder {
+  static func buildContentViews(contentItems: [ModalCardViewController.Configuration.ContentItem],
+                                viewController: UIViewController) -> [UIView] {
+    return contentItems.map { contentItem in
+      switch contentItem {
+      case .item(let item):
+        return buildViews(items: [item], viewController: viewController)
+      }
+    }
+    .flatMap { $0 }
+  }
+  
   static func buildViews(items: [ModalCardViewController.Configuration.Item],
                          viewController: UIViewController,
                          actionStateHandler: ((ModalCardActionState) -> Void)? = nil) -> [UIView] {
