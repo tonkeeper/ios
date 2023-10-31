@@ -430,6 +430,7 @@
 		C384B3C72AE977BB009CD062 /* TonConnectPopupPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3C62AE977BB009CD062 /* TonConnectPopupPresenter.swift */; };
 		C384B3C92AE9B792009CD062 /* TonConnectPopupAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3C82AE9B792009CD062 /* TonConnectPopupAssembly.swift */; };
 		C38957812AF13FD70083B98A /* ModalCardViewController+ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38957802AF13FD70083B98A /* ModalCardViewController+ContentView.swift */; };
+		C38957842AF1497E0083B98A /* AccountEventActionContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38957832AF1497E0083B98A /* AccountEventActionContentProvider.swift */; };
 		C3A337BC2AE340BD00E315F5 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */; };
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
@@ -941,6 +942,7 @@
 		C384B3C62AE977BB009CD062 /* TonConnectPopupPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectPopupPresenter.swift; sourceTree = "<group>"; };
 		C384B3C82AE9B792009CD062 /* TonConnectPopupAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectPopupAssembly.swift; sourceTree = "<group>"; };
 		C38957802AF13FD70083B98A /* ModalCardViewController+ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+ContentView.swift"; sourceTree = "<group>"; };
+		C38957832AF1497E0083B98A /* AccountEventActionContentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountEventActionContentProvider.swift; sourceTree = "<group>"; };
 		C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
 		C3C13F8A2AE9F15900EFC88D /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKChart; path = Modules/TKChart; sourceTree = "<group>"; };
 		C94035FBBB4278C3B31B95C0 /* PasscodeInputPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputPresenter.swift; sourceTree = "<group>"; };
@@ -2712,6 +2714,7 @@
 			children = (
 				7DE27E642A30D2D400842FA8 /* ActivityListTransactionBuilder.swift */,
 				7D9144362A33403000B0FD17 /* ActivityTransactionDetailsBuilder.swift */,
+				C38957832AF1497E0083B98A /* AccountEventActionContentProvider.swift */,
 			);
 			path = Builder;
 			sourceTree = "<group>";
@@ -3343,6 +3346,7 @@
 				7DE27E652A30D2D400842FA8 /* ActivityListTransactionBuilder.swift in Sources */,
 				7D744BB92ADD819B00E94332 /* FiatMethodPopUpAssembly.swift in Sources */,
 				C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */,
+				C38957842AF1497E0083B98A /* AccountEventActionContentProvider.swift in Sources */,
 				7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */,
 				7D6836482A1D1044002DBBC7 /* WalletCoordinator.swift in Sources */,
 				7D384A4C2A66989100DE2A66 /* SendConfirmationAssembly.swift in Sources */,

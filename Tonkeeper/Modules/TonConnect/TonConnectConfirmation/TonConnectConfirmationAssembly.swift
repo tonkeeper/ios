@@ -14,7 +14,9 @@ struct TonConnectConfirmationAssembly {
     
     let presenter = TonConnectConfirmationPresenter(
       model: model,
-      transactionBuilder: ActivityListTransactionBuilder()
+      transactionBuilder: ActivityListTransactionBuilder(
+        accountEventActionContentProvider: TonConnectConfirmationAccountEventActionContentProvider()
+      )
     )
     let viewController = TonConnectConfirmationViewController(presenter: presenter)
     

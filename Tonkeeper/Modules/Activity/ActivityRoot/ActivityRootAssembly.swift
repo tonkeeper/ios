@@ -18,7 +18,9 @@ struct ActivityRootAssembly {
     let emptyModule = ActivityEmptyAssembly.module(output: presenter)
     let listModule = ActivityListAssembly.module(
       activityListController: activityListController,
-      transactionBuilder: ActivityListTransactionBuilder(),
+      transactionBuilder: ActivityListTransactionBuilder(
+        accountEventActionContentProvider: ActivityListAccountEventActionContentProvider()
+      ),
       output: presenter
     )
     

@@ -52,7 +52,9 @@ private extension WalletTokenDetailsCoordinator {
     }
     
     let activityListModule = ActivityListAssembly.module(activityListController: activityListController,
-                                                         transactionBuilder: ActivityListTransactionBuilder(),
+                                                         transactionBuilder: ActivityListTransactionBuilder(
+                                                          accountEventActionContentProvider: ActivityListAccountEventActionContentProvider()
+                                                         ),
                                                          output: self)
     
     let module = TokenDetailsAssembly.module(output: self,
