@@ -7,11 +7,13 @@
 
 import UIKit
 import TKCore
+import WalletCore
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   
   var window: UIWindow?
   var appCoordinator: AppCoordinator?
+  let appAssembly = AppAssembly()
 
   func scene(_ scene: UIScene,
              willConnectTo session: UISceneSession,
@@ -21,23 +23,37 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     let window = UIWindow(windowScene: windowScene)
     
     let appCoordinator = buildAppCoordinator(window: window)
-    appCoordinator.start()
+    appCoordinator.start(deeplink: getDeeplink(urlContexts: connectionOptions.urlContexts))
     
     window.makeKeyAndVisible()
     
     self.appCoordinator = appCoordinator
     self.window = window
   }
+  
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    guard let deeplink = getDeeplink(urlContexts: URLContexts) else { return }
+    appCoordinator?.handleDeeplink(deeplink)
+  }
 }
 
 private extension SceneDelegate {
   func buildAppCoordinator(window: UIWindow) -> AppCoordinator {
     let router = WindowRouter(window: window)
-    let appAssembly = AppAssembly()
     let coordinator = AppCoordinator(router: router,
                                      appAssembly: appAssembly,
-                                     appStateTracker: appAssembly.rootAssembly.coreAssembly.appStateTracker)
+                                     appStateTracker: appAssembly.coreAssembly.appStateTracker)
     return coordinator
+  }
+  
+  func getDeeplink(urlContexts: Set<UIOpenURLContext>) -> Deeplink? {
+    guard let deeplinkURL = urlContexts.first?.url else { return  nil}
+    let deeplinkParser = appAssembly.walletCoreAssembly.deeplinkParser(
+      handlers: [appAssembly.walletCoreAssembly.tonConnectDeeplinkHandler]
+    )
+    guard let deeplink = try? deeplinkParser.parse(string: deeplinkURL.absoluteString) else { return nil }
+    return deeplink
   }
 }
 
+extension WalletCore.Deeplink: Deeplink {}

@@ -431,6 +431,7 @@
 		C384B3C92AE9B792009CD062 /* TonConnectPopupAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3C82AE9B792009CD062 /* TonConnectPopupAssembly.swift */; };
 		C38957812AF13FD70083B98A /* ModalCardViewController+ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38957802AF13FD70083B98A /* ModalCardViewController+ContentView.swift */; };
 		C38957842AF1497E0083B98A /* AccountEventActionContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38957832AF1497E0083B98A /* AccountEventActionContentProvider.swift */; };
+		C38957872AF168F70083B98A /* Deeplink.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38957862AF168F70083B98A /* Deeplink.swift */; };
 		C3A337BC2AE340BD00E315F5 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */; };
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
@@ -943,6 +944,7 @@
 		C384B3C82AE9B792009CD062 /* TonConnectPopupAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectPopupAssembly.swift; sourceTree = "<group>"; };
 		C38957802AF13FD70083B98A /* ModalCardViewController+ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+ContentView.swift"; sourceTree = "<group>"; };
 		C38957832AF1497E0083B98A /* AccountEventActionContentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountEventActionContentProvider.swift; sourceTree = "<group>"; };
+		C38957862AF168F70083B98A /* Deeplink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deeplink.swift; sourceTree = "<group>"; };
 		C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
 		C3C13F8A2AE9F15900EFC88D /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKChart; path = Modules/TKChart; sourceTree = "<group>"; };
 		C94035FBBB4278C3B31B95C0 /* PasscodeInputPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputPresenter.swift; sourceTree = "<group>"; };
@@ -1868,6 +1870,7 @@
 		7D68361E2A1CD1B8002DBBC7 /* Core */ = {
 			isa = PBXGroup;
 			children = (
+				C38957852AF168EB0083B98A /* Deeplink */,
 				7D527BF22A2DFD9C00A2D29A /* Views */,
 				7D6836652A1D6E6B002DBBC7 /* Module */,
 				7D68365E2A1D6998002DBBC7 /* ViewControllers */,
@@ -2861,6 +2864,14 @@
 			path = TonConnectPopup;
 			sourceTree = "<group>";
 		};
+		C38957852AF168EB0083B98A /* Deeplink */ = {
+			isa = PBXGroup;
+			children = (
+				C38957862AF168F70083B98A /* Deeplink.swift */,
+			);
+			path = Deeplink;
+			sourceTree = "<group>";
+		};
 		E15A4D816E375EC6F055D7F0 /* TokenDetails */ = {
 			isa = PBXGroup;
 			children = (
@@ -3369,6 +3380,7 @@
 				7D3E43B62A373B2200C23A75 /* ModalCardContainerScrollController.swift in Sources */,
 				4A49914B972D6D6029FC0359 /* WalletContentProtocols.swift in Sources */,
 				7D9292F82A29DCDA005B83DF /* SendAmountView.swift in Sources */,
+				C38957872AF168F70083B98A /* Deeplink.swift in Sources */,
 				7D5D05A72A2F83ED009F42FF /* ActivityListCollectionController.swift in Sources */,
 				7D91442F2A31FC0100B0FD17 /* PassthroughView.swift in Sources */,
 				7D3D65052ACAB01300E64537 /* SettingsListPresenter.swift in Sources */,

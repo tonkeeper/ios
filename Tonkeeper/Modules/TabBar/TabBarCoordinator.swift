@@ -44,7 +44,7 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
     authEventsDaemon.stopObserving()
   }
   
-  override func start() {
+  override func start(deeplink: Deeplink?) {
     setupTabBarItems()
     
     let presentables = [
@@ -56,9 +56,25 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
         $0.start()
         return $0.router.rootViewController
       }
-    router.set(presentables: presentables, options: .init(isAnimated: false))
+    router.set(presentables: presentables, options: .init(isAnimated: false)) { [weak self] in
+      DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+        self?.handleDeeplink(deeplink)
+      }
+    }
     authEventsDaemon.startObserving()
     authEventsDaemon.addObserver(self)
+  }
+  
+  override func handleDeeplink(_ deeplink: Deeplink?) {
+    switch deeplink {
+    case let walletCoreDeeplink as WalletCore.Deeplink:
+      switch walletCoreDeeplink {
+      case .tonConnect(let tonConnectDeeplink):
+        openTonConnectDeeplink(tonConnectDeeplink)
+      default: return
+      }
+    default: return
+    }
   }
 }
 

@@ -17,18 +17,31 @@ final class RootCoordinator: Coordinator<NavigationRouter> {
   weak var output: RootCoordinatorOutput?
   
   private let assembly: RootAssembly
+  
+  private var tabBarCoordinator: TabBarCoordinator?
+  
+  private var deeplink: Deeplink?
  
   init(router: NavigationRouter,
        assembly: RootAssembly) {
     self.assembly = assembly
     super.init(router: router)
   }
-  
-  override func start() {
+ 
+  override func start(deeplink: Deeplink?) {
+    self.deeplink = deeplink
     if assembly.walletCoreAssembly.keeperController.hasWallets {
       openAuth()
     } else {
       openOnboarding()
+    }
+  }
+  
+  override func handleDeeplink(_ deeplink: Deeplink) {
+    if tabBarCoordinator == nil {
+      self.deeplink = deeplink
+    } else {
+      tabBarCoordinator?.handleDeeplink(deeplink)
     }
   }
 }
@@ -36,10 +49,12 @@ final class RootCoordinator: Coordinator<NavigationRouter> {
 private extension RootCoordinator {
   func openTabBar() {
     let coordinator = assembly.tabBarCoordinator()
+    self.tabBarCoordinator = coordinator
     coordinator.output = self
     router.setPresentables([(coordinator.router.rootViewController, nil)])
     addChild(coordinator)
-    coordinator.start()
+    coordinator.start(deeplink: deeplink)
+    self.deeplink = nil
   }
   
   func openOnboarding() {
@@ -168,6 +183,6 @@ extension RootCoordinator: PasscodeAuthCoordinatorOutput {
 extension RootCoordinator: TabBarCoordinatorOutput {
   func tabBarCoordinatorDidLogout(_ coordinator: TabBarCoordinator) {
     removeChild(coordinator)
-    start()
+    start(deeplink: nil)
   }
 }

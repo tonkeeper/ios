@@ -161,13 +161,18 @@ private extension TimeInterval {
 }
 
 extension UIApplication {
-  static var keyWindowScene: UIWindowScene? {
+  static var keyWindow: UIWindow? {
     self
       .shared
       .connectedScenes
       .compactMap { ($0 as? UIWindowScene)?.windows }
       .flatMap { $0 }
-      .last { $0.isKeyWindow }?
+      .last { $0.isKeyWindow }
+  }
+  
+  static var keyWindowScene: UIWindowScene? {
+    self
+      .keyWindow?
       .windowScene
   }
 }

@@ -37,4 +37,7 @@ class Coordinator<Router: RouterProtocol>: CoordinatorProtocol {
   }
   
   func start() {}
+  func start(deeplink: Deeplink?) {}
+  
+  func handleDeeplink(_ deeplink: Deeplink) {}
 }
