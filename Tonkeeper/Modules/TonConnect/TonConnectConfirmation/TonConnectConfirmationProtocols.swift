@@ -12,6 +12,7 @@ protocol TonConnectConfirmationModuleOutput: AnyObject {
   func tonConnectConfirmationModuleDidConfirm(_ module: TonConnectConfirmationModuleInput) async throws
   func tonConnectConfirmationModuleDidFinish(_ module: TonConnectConfirmationModuleInput)
   func tonConnectConfirmationModuleDidCancel(_ module: TonConnectConfirmationModuleInput)
+  func tonConnectConfirmationModuleUserConfirmation(_ module: TonConnectConfirmationModuleInput) async -> Bool
 }
 
 protocol TonConnectConfirmationModuleInput: AnyObject {}

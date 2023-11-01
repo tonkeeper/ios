@@ -15,13 +15,17 @@ protocol TonConnectConfirmationCoordinatorOutput: AnyObject {
 final class TonConnectConfirmationCoordinator: Coordinator<Router<UIViewController>> {
   weak var output: TonConnectConfirmationCoordinatorOutput?
   
-  
   private var window: UIWindow?
   private let tonConnectConfirmationController: TonConnectConfirmationController
+  private let walletCoreAssembly: WalletCoreAssembly
+  
+  private var confirmationContinuation: CheckedContinuation<Bool, Never>?
   
   init(router: Router<UIViewController>,
-       tonConnectConfirmationController: TonConnectConfirmationController) {
+       tonConnectConfirmationController: TonConnectConfirmationController,
+       walletCoreAssembly: WalletCoreAssembly) {
     self.tonConnectConfirmationController = tonConnectConfirmationController
+    self.walletCoreAssembly = walletCoreAssembly
     super.init(router: router)
   }
   
@@ -74,6 +78,25 @@ extension TonConnectConfirmationCoordinator: TonConnectConfirmationModuleOutput 
   func tonConnectConfirmationModuleDidCancel(_ module: TonConnectConfirmationModuleInput) {
     router.dismiss()
   }
+  
+  func tonConnectConfirmationModuleUserConfirmation(_ module: TonConnectConfirmationModuleInput) async -> Bool {
+    return await withCheckedContinuation { [weak self] continuation in
+      guard let self = self else { return }
+      self.confirmationContinuation = continuation
+      
+      Task {
+        await MainActor.run {
+          let passcodeAssembly = PasscodeAssembly(walletCoreAssembly: self.walletCoreAssembly)
+          let coordinator = passcodeAssembly.passcodeConfirmationCoordinator()
+          coordinator.output = self
+          
+          self.addChild(coordinator)
+          coordinator.start()
+          self.window?.rootViewController?.presentedViewController?.present(coordinator.router.rootViewController, animated: true)
+        }
+      }
+    }
+  }
 }
 
 // MARK: - TonConnectConfirmationControllerOutput
@@ -92,5 +115,23 @@ extension TonConnectConfirmationCoordinator: TonConnectConfirmationControllerOut
       ToastController.hideToast()
       ToastController.showToast(configuration: .failed)
     }
+  }
+}
+
+// MARK: - PasscodeConfirmationCoordinatorOutput
+
+extension TonConnectConfirmationCoordinator: PasscodeConfirmationCoordinatorOutput {
+  func passcodeConfirmationCoordinatorDidConfirm(_ coordinator: PasscodeConfirmationCoordinator) {
+    window?.rootViewController?.presentedViewController?.dismiss(animated: true)
+    removeChild(coordinator)
+    confirmationContinuation?.resume(returning: true)
+    confirmationContinuation = nil
+  }
+  
+  func passcodeConfirmationCoordinatorDidClose(_ coordinator: PasscodeConfirmationCoordinator) {
+    window?.rootViewController?.presentedViewController?.dismiss(animated: true)
+    removeChild(coordinator)
+    confirmationContinuation?.resume(returning: false)
+    confirmationContinuation = nil
   }
 }

@@ -27,7 +27,8 @@ struct TonConnectAssembly {
     let tonConnectConfirmationController = walletCoreAssembly.tonConnectConfirmationController()
     let coordinator = TonConnectConfirmationCoordinator(
       router: router,
-      tonConnectConfirmationController: tonConnectConfirmationController
+      tonConnectConfirmationController: tonConnectConfirmationController,
+      walletCoreAssembly: walletCoreAssembly
     )
     tonConnectConfirmationController.output = coordinator
     return coordinator

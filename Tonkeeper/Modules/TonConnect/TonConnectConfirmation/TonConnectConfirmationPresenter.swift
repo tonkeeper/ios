@@ -76,15 +76,9 @@ private extension TonConnectConfirmationPresenter {
         guard let self = self else { return }
         isActivityClosure(true)
         Task {
-          do {
-            try await self.output?.tonConnectConfirmationModuleDidConfirm(self)
-            await MainActor.run {
-              isSuccessClosure(true)
-            }
-          } catch {
-            await MainActor.run {
-              isSuccessClosure(false)
-            }
+          let isSuccess = try await self.handleConfirmButtonTap()
+          await MainActor.run {
+            isSuccessClosure(isSuccess)
           }
         }
       },
@@ -139,5 +133,17 @@ private extension TonConnectConfirmationPresenter {
       )
     }
     return CompositionTransactionCellContentView.Model(transactionContentModels: actions)
+  }
+  
+  func handleConfirmButtonTap() async throws -> Bool {
+    guard let output = output else { return false }
+    let isConfirmed = await output.tonConnectConfirmationModuleUserConfirmation(self)
+    guard isConfirmed else { return false }
+    do {
+      try await self.output?.tonConnectConfirmationModuleDidConfirm(self)
+      return true
+    } catch {
+      return false
+    }
   }
 }
