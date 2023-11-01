@@ -22,4 +22,5 @@ protocol TonConnectConfirmationPresenterInput {
 
 protocol TonConnectConfirmationViewInput: AnyObject {
   func update(with configuration: ModalCardViewController.Configuration)
+  func getConfirmationContentView(model: TonConnectConfirmationContentView.Model) -> TonConnectConfirmationContentView
 }

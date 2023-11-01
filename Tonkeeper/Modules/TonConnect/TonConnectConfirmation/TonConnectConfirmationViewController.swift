@@ -17,6 +17,10 @@ final class TonConnectConfirmationViewController: UIViewController, ScrollableMo
   
   private let modalCardViewController = ModalCardViewController()
   
+  // MARK: - ImageLoader
+  
+  private var imageLoader = NukeImageLoader()
+  
   // MARK: - Init
   
   init(presenter: TonConnectConfirmationPresenterInput) {
@@ -63,6 +67,13 @@ extension TonConnectConfirmationViewController: TonConnectConfirmationViewInput 
       model: .init(appImage: appIconURL)
     )
     return headerView
+  }
+  
+  func getConfirmationContentView(model: TonConnectConfirmationContentView.Model) -> TonConnectConfirmationContentView {
+    let view = TonConnectConfirmationContentView()
+    view.imageLoader = imageLoader
+    view.configure(model: model)
+    return view
   }
 }
 

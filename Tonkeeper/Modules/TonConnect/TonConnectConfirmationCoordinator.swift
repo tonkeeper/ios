@@ -89,6 +89,7 @@ extension TonConnectConfirmationCoordinator: TonConnectConfirmationControllerOut
       ToastController.hideToast()
       showConfirmation(model: success)
     case .failure:
+      ToastController.hideToast()
       ToastController.showToast(configuration: .failed)
     }
   }

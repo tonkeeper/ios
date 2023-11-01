@@ -47,9 +47,10 @@ private extension TonConnectConfirmationPresenter {
   func updateContent() {
     guard let viewInput = viewInput else { return }
     
-    let contentItems: [ModalCardViewController.Configuration.ContentItem] = [
-      .item(contentItem())
-    ]
+    var contentItems = [ModalCardViewController.Configuration.ContentItem]()
+    if let contentItem = contentItem() {
+      contentItems.append(.item(contentItem))
+    }
     
     let actionBarItems: [ModalCardViewController.Configuration.Item] = [
       .buttonsRow(.init(buttons: [
@@ -88,9 +89,12 @@ private extension TonConnectConfirmationPresenter {
         }
       },
       completionAction: { [weak self] isSuccess in
-        guard let self = self,
-              isSuccess else { return }
-        self.output?.tonConnectConfirmationModuleDidFinish(self)
+        guard let self = self else { return }
+        if isSuccess {
+          self.output?.tonConnectConfirmationModuleDidFinish(self)
+        } else {
+          self.output?.tonConnectConfirmationModuleDidCancel(self)
+        }
       })
   }
   
@@ -112,13 +116,12 @@ private extension TonConnectConfirmationPresenter {
       })
   }
   
-  func contentItem() -> ModalCardViewController.Configuration.Item {
-    let view = TonConnectConfirmationContentView()
+  func contentItem() -> ModalCardViewController.Configuration.Item? {
     let model = TonConnectConfirmationContentView.Model(
       actionsModel: mapEventViewModel(model.event),
       feeModel: .init(title: "Network fee", fee: model.fee)
     )
-    view.configure(model: model)
+    guard let view = viewInput?.getConfirmationContentView(model: model) else { return nil }
     return .customView(view, bottomSpacing: 16)
   }
   

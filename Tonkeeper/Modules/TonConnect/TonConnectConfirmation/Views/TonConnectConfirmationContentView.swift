@@ -11,6 +11,10 @@ import WalletCore
 
 final class TonConnectConfirmationContentView: UIView, ConfigurableView {
   
+  weak var imageLoader: ImageLoader? {
+    didSet { actionsView.imageLoader = imageLoader }
+  }
+  
   private let actionsView = CompositionTransactionCellContentView()
   private let feeView = TonConnectConfirmationFeeView()
   
