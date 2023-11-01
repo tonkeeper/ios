@@ -60,15 +60,6 @@ extension TonConnectConfirmationViewController: TonConnectConfirmationViewInput 
     modalCardViewController.configuration = configuration
   }
   
-  func getHeaderView(appIconURL: URL?) -> UIView {
-    let headerView = TonConnectModalHeaderView()
-    headerView.imageLoader = NukeImageLoader()
-    headerView.configure(
-      model: .init(appImage: appIconURL)
-    )
-    return headerView
-  }
-  
   func getConfirmationContentView(model: TonConnectConfirmationContentView.Model) -> TonConnectConfirmationContentView {
     let view = TonConnectConfirmationContentView()
     view.imageLoader = imageLoader

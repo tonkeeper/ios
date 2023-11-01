@@ -35,6 +35,8 @@ final class TonConnectModalHeaderView: UIView, ConfigurableView {
     return stackView
   }()
   
+  private let walletAnimationView = TonConnectHeaderWalletAnimationView()
+  
   // MARK: - Image Loader
   
   var imageLoader: ImageLoader?
@@ -53,10 +55,12 @@ final class TonConnectModalHeaderView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   struct Model {
+    let walletAddress: String
     let appImage: URL?
   }
   
   func configure(model: Model) {
+    walletAnimationView.configure(model: .init(walletAddress: model.walletAddress))
     imageLoader?.loadImage(
       imageURL: model.appImage,
       imageView: appImageView,
@@ -70,8 +74,8 @@ private extension TonConnectModalHeaderView {
   func setup() {
     addSubview(stackView)
     stackView.addArrangedSubview(tonImageView)
+    stackView.addArrangedSubview(walletAnimationView)
     stackView.addArrangedSubview(appImageView)
-    stackView.setCustomSpacing(86, after: tonImageView)
     
     setupConstraints()
   }
@@ -80,6 +84,7 @@ private extension TonConnectModalHeaderView {
     stackView.translatesAutoresizingMaskIntoConstraints = false
     tonImageView.translatesAutoresizingMaskIntoConstraints = false
     appImageView.translatesAutoresizingMaskIntoConstraints = false
+    walletAnimationView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       stackView.topAnchor.constraint(equalTo: topAnchor),
       stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
@@ -89,11 +94,14 @@ private extension TonConnectModalHeaderView {
       tonImageView.heightAnchor.constraint(equalToConstant: 72),
       
       appImageView.widthAnchor.constraint(equalToConstant: 72),
-      appImageView.heightAnchor.constraint(equalToConstant: 72)
+      appImageView.heightAnchor.constraint(equalToConstant: 72),
+      
+      walletAnimationView.widthAnchor.constraint(equalToConstant: .animationViewWidth)
     ])
   }
 }
 
 private extension CGFloat {
   static let imageCornerRadius: CGFloat = 20
+  static let animationViewWidth: CGFloat = 86
 }

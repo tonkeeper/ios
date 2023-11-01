@@ -42,7 +42,10 @@ private extension TonConnectPopupPresenter {
   func updateContent() {
     guard let viewInput = viewInput else { return }
     let model = tonConnectController.getPopUpModel()
-    let headerView = viewInput.getHeaderView(appIconURL: model.appImageURL)
+    let headerView = viewInput.getHeaderView(
+      walletAddress: tonConnectController.getWalletAddress(), 
+      appIconURL: model.appImageURL
+    )
     let title = "Connect to \(model.name)"
       .attributed(with: .h2,
                   alignment: .center,

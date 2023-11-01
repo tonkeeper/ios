@@ -56,11 +56,11 @@ extension TonConnectPopupViewController: TonConnectPopupViewInput {
     modalCardViewController.configuration = configuration
   }
   
-  func getHeaderView(appIconURL: URL?) -> UIView {
+  func getHeaderView(walletAddress: String, appIconURL: URL?) -> UIView {
     let headerView = TonConnectModalHeaderView()
     headerView.imageLoader = NukeImageLoader()
     headerView.configure(
-      model: .init(appImage: appIconURL)
+      model: .init(walletAddress: walletAddress, appImage: appIconURL)
     )
     return headerView
   }

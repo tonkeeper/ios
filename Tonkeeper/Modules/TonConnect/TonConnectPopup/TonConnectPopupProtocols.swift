@@ -21,5 +21,5 @@ protocol TonConnectPopupPresenterInput {
 
 protocol TonConnectPopupViewInput: AnyObject {
   func update(with configuration: ModalCardViewController.Configuration)
-  func getHeaderView(appIconURL: URL?) -> UIView
+  func getHeaderView(walletAddress: String, appIconURL: URL?) -> UIView
 }

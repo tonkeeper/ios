@@ -400,6 +400,7 @@
 		BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773774CBEA3D5DDBE5D6AFF /* TokenDetailsProtocols.swift */; };
 		BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6AC52DF8E6970E81B415D8 /* EnterMnemonicView.swift */; };
 		C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C81CE487C82E845B444588 /* EnterMnemonicPresenter.swift */; };
+		C33F72462AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33F72452AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift */; };
 		C35684112AEBFD810064DD0A /* AuthEventsDaemon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684102AEBFD810064DD0A /* AuthEventsDaemon.swift */; };
 		C35684152AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684142AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift */; };
 		C35684172AEC397A0064DD0A /* TonConnectConfirmationProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684162AEC397A0064DD0A /* TonConnectConfirmationProtocols.swift */; };
@@ -920,6 +921,7 @@
 		B305512CBFAF5DE77C5D0556 /* EnterMnemonicProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnterMnemonicProtocols.swift; sourceTree = "<group>"; };
 		B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartPresenter.swift; sourceTree = "<group>"; };
 		C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsViewController.swift; sourceTree = "<group>"; };
+		C33F72452AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectHeaderWalletAnimationView.swift; sourceTree = "<group>"; };
 		C35684102AEBFD810064DD0A /* AuthEventsDaemon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthEventsDaemon.swift; sourceTree = "<group>"; };
 		C35684142AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationCoordinator.swift; sourceTree = "<group>"; };
 		C35684162AEC397A0064DD0A /* TonConnectConfirmationProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationProtocols.swift; sourceTree = "<group>"; };
@@ -2849,6 +2851,7 @@
 			isa = PBXGroup;
 			children = (
 				C384B3BB2AE96FF2009CD062 /* TonConnectModalHeaderView.swift */,
+				C33F72452AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -3475,6 +3478,7 @@
 				7DAC78D52A93F96500358D35 /* CollectibleAssembly.swift in Sources */,
 				7F316234DE732364EDD8983C /* TokenDetailsPresenter.swift in Sources */,
 				BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */,
+				C33F72462AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift in Sources */,
 				95F3E77FC6DBC86F8EB6745F /* TonChartViewController.swift in Sources */,
 				B91D795CFF06D6E93B856F37 /* TonChartView.swift in Sources */,
 				7DAC78CD2A8FE3AD00358D35 /* HeaderTwoLineTitleView.swift in Sources */,
