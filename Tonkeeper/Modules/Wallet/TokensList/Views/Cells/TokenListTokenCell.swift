@@ -20,24 +20,6 @@ final class TokenListTokenCell: ContainerCollectionViewCell<BalanceCellContentVi
     let fiatAmount: String?
   }
   
-  var isFirstCell = false {
-    didSet {
-      didUpdateCellOrder()
-    }
-  }
-  
-  var isLastCell = false {
-    didSet {
-      didUpdateCellOrder()
-    }
-  }
-  
-  private let separatorView: UIView = {
-    let view = UIView()
-    view.backgroundColor = .Separator.common
-    return view
-  }()
-  
   weak var imageLoader: ImageLoader? {
     didSet {
       cellContentView.imageLoader = imageLoader
@@ -46,7 +28,6 @@ final class TokenListTokenCell: ContainerCollectionViewCell<BalanceCellContentVi
   
   override init(frame: CGRect) {
     super.init(frame: frame)
-    setup()
   }
   
   required init?(coder: NSCoder) {
@@ -68,59 +49,4 @@ final class TokenListTokenCell: ContainerCollectionViewCell<BalanceCellContentVi
     )
     cellContentView.configure(model: .init(defaultContentModel: contentModel))
   }
-  
-  override func prepareForReuse() {
-    super.prepareForReuse()
-    isFirstCell = false
-    isLastCell = false
-  }
-  
-  override func layoutSubviews() {
-    super.layoutSubviews()
-    separatorView.frame = .init(x: ContentInsets.sideSpace,
-                                y: bounds.height - .separatorWidth,
-                                width: bounds.width - ContentInsets.sideSpace,
-                                height: .separatorWidth)
-  }
-  
-  override func select() {
-    super.select()
-    separatorView.isHidden = true
-  }
-
-  override func deselect() {
-    super.deselect()
-    separatorView.isHidden = false
-  }
-}
-
-private extension TokenListTokenCell {
-  func setup() {
-    addSubview(separatorView)
-    layer.masksToBounds = true
-  }
-  
-  func didUpdateCellOrder() {
-    switch (isLastCell, isFirstCell) {
-    case (true, false):
-      layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
-      layer.cornerRadius = .cornerRadius
-    case (false, true):
-      layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
-      layer.cornerRadius = .cornerRadius
-    case (true, true):
-      layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner,
-                             .layerMinXMaxYCorner, .layerMaxXMaxYCorner]
-      layer.cornerRadius = .cornerRadius
-    case (false, false):
-      layer.cornerRadius = 0
-    }
-    
-    separatorView.isHidden = isLastCell
-  }
-}
-
-private extension CGFloat {
-  static let cornerRadius: CGFloat = 16
-  static let separatorWidth: CGFloat = 0.5
 }

@@ -10,6 +10,12 @@ import UIKit
 import WalletCore
 
 struct ActivityListTransactionBuilder {
+  private let accountEventActionContentProvider: AccountEventActionContentProvider
+  
+  init(accountEventActionContentProvider: AccountEventActionContentProvider) {
+    self.accountEventActionContentProvider = accountEventActionContentProvider
+  }
+  
   func buildTransactionModel(type: ActivityEventViewModel.ActionViewModel.ActionType,
                              subtitle: String?,
                              amount: String?,
@@ -19,7 +25,7 @@ struct ActivityListTransactionBuilder {
                              comment: String? = nil,
                              collectible: ActivityEventViewModel.ActionViewModel.CollectibleViewModel? = nil) -> TransactionCellContentView.Model {
     let textContentModel = DefaultCellTextContentView.Model(
-      title: type.title,
+      title: accountEventActionContentProvider.title(actionType: type),
       amount: amount?.attributed(with: .label1, alignment: .right, color: type.amountColor),
       subamount: subamount?.attributed(with: .label1, alignment: .right, color: type.subamountColor),
       topLeftDescriptionValue: subtitle,
@@ -105,54 +111,7 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
     }
   }
   
-  var title: String {
-    switch self {
-    case .sent:
-      return "Sent"
-    case .receieved:
-      return "Received"
-    case .mint:
-      return "Received"
-    case .burn:
-      return "Sent"
-    case .depositStake:
-      return "Stake"
-    case .withdrawStake:
-      return "Stake"
-    case .withdrawStakeRequest:
-      return "Unstake Request"
-    case .jettonSwap:
-      return "Swap"
-    case .spam:
-      return "Spam"
-    case .bounced:
-      return "Bounced"
-    case .subscribed:
-      return "Received"
-    case .unsubscribed:
-      return "Unsubscribed"
-    case .walletInitialized:
-      return "Wallet initialized"
-    case .contractExec:
-      return "Call contract"
-    case .nftCollectionCreation:
-      return "NFT сollection creation"
-    case .nftCreation:
-      return "NFT creation"
-    case .removalFromSale:
-      return "Removal from sale"
-    case .nftPurchase:
-      return "NFT purchase"
-    case .bid:
-      return "Bid"
-    case .putUpForAuction:
-      return "Put up for auction"
-    case .endOfAuction:
-      return "End of auction"
-    case .putUpForSale:
-      return "Put up for sale"
-    }
-  }
+ 
   
   var amountColor: UIColor {
     switch self {

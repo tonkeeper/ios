@@ -14,20 +14,14 @@ protocol TransactionCellContentViewDelegate: AnyObject {
 final class TransactionCellContentView: UIControl, ContainerCollectionViewCellContent {
   
   weak var delegate: TransactionCellContentViewDelegate?
-  
-  override var isHighlighted: Bool {
-    didSet {
-      guard isHighlighted != oldValue else { return }
-      didUpdateHightlightState()
-    }
-  }
-  
+
   var isSeparatorVisible: Bool = true {
     didSet {
       updateSeparatorVisibility()
     }
   }
 
+  let hightlightView = HighlightContainerView()
   let contentView = PassthroughView()
   let defaultCellContentView = DefaultCellContentView()
   let statusView = TransactionCellStatusView()
@@ -61,6 +55,7 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
   
   override func layoutSubviews() {
     super.layoutSubviews()
+    hightlightView.frame = bounds
     let contentViewSize = CGSize(width: bounds.width - ContentInsets.sideSpace * 2,
                                  height: max(0, bounds.height - ContentInsets.sideSpace * 2))
     let defaultCellContentSize = defaultCellContentView.sizeThatFits(.init(width: contentViewSize.width, height: 0))
@@ -149,11 +144,18 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
 
 private extension TransactionCellContentView {
   func setup() {
+    self.backgroundColor = .Background.content
+    
+    hightlightView.didUpdateIsHighlighted = { [weak self] isHightlighted in
+      self?.updateSeparatorVisibility()
+    }
+    
     isExclusiveTouch = true
     defaultCellContentView.isUserInteractionEnabled = false
     statusView.isUserInteractionEnabled = false
     commentView.isUserInteractionEnabled = false
 
+    addSubview(hightlightView)
     addSubview(contentView)
     addSubview(separatorView)
     contentView.addSubview(defaultCellContentView)
@@ -168,17 +170,8 @@ private extension TransactionCellContentView {
     )
   }
   
-  func didUpdateHightlightState() {
-    let duration: TimeInterval = isHighlighted ? 0.05 : 0.2
-    
-    updateSeparatorVisibility()
-    UIView.animate(withDuration: duration, delay: 0, options: [.allowUserInteraction, .curveEaseInOut]) {
-      self.backgroundColor = self.isHighlighted ? .Background.highlighted : .Background.content
-    }
-  }
-  
   func updateSeparatorVisibility() {
-    let isVisible = !isHighlighted && isSeparatorVisible
+    let isVisible = !hightlightView.isHighlighted && isSeparatorVisible
     separatorView.isHidden = !isVisible
   }
   

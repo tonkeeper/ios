@@ -124,7 +124,11 @@ struct WalletAssembly {
   }
   
   var deeplinkParser: DeeplinkParser {
-    walletCoreAssembly.deeplinkParser
+    walletCoreAssembly.deeplinkParser(
+      handlers:
+        [walletCoreAssembly.tonConnectDeeplinkHandler,
+         walletCoreAssembly.tonDeeplinkHandler]
+    )
   }
 }
 

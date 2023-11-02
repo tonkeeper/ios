@@ -103,12 +103,38 @@ final class WalletCoreAssembly {
     walletCoreAssembly.logoutController()
   }
   
+  func tonConnectDeeplinkProcessor() -> TonConnectDeeplinkProcessor {
+    walletCoreAssembly.tonConnectDeeplinkProcessor()
+}
+  
+  func tonConnectController(parameters: TonConnectParameters,
+                            manifest: TonConnectManifest) -> TonConnectController {
+    walletCoreAssembly.tonConnectController(parameters: parameters,
+                                            manifest: manifest)
+  }
+  
+  func tonConnectConfirmationController() -> TonConnectConfirmationController {
+    walletCoreAssembly.tonConnectConfirmationController()
+  }
+  
+  func tonConnectEventsDaemon() -> TonConnectEventsDaemon {
+    walletCoreAssembly.tonConnectEventsDaemon()
+  }
+  
   func fiatMethodsController() -> FiatMethodsController {
     walletCoreAssembly.fiatMethodsController()
   }
   
-  var deeplinkParser: DeeplinkParser {
-    walletCoreAssembly.deeplinkParser()
+  func deeplinkParser(handlers: [DeeplinkHandler]) -> DeeplinkParser {
+    walletCoreAssembly.deeplinkParser(handlers: handlers)
+  }
+  
+  var tonDeeplinkHandler: DeeplinkHandler {
+    walletCoreAssembly.tonDeeplinkHandler
+  }
+  
+  var tonConnectDeeplinkHandler: DeeplinkHandler {
+    walletCoreAssembly.tonConnectDeeplinkHandler
   }
   
   var deeplinkGenerator: DeeplinkGenerator {

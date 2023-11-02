@@ -31,6 +31,15 @@ final class CompositionTransactionCellContentView: UIView, ContainerCollectionVi
     didSet { transactionContentViews.forEach { $0.imageLoader = imageLoader } }
   }
   
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    setup()
+  }
+  
+  required init?(coder: NSCoder) {
+    super.init(coder: coder)
+  }
+  
   func prepareForReuse() {
     transactionContentViews.forEach { $0.prepareForReuse() }
   }
@@ -76,6 +85,11 @@ final class CompositionTransactionCellContentView: UIView, ContainerCollectionVi
       view.frame.size = size
       y = view.frame.maxY
     }
+    invalidateIntrinsicContentSize()
+  }
+  
+  override var intrinsicContentSize: CGSize {
+    return CGSize(width: UIView.noIntrinsicMetric, height: sizeThatFits(.init(width: bounds.width, height: 0)).height)
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
@@ -93,9 +107,82 @@ final class CompositionTransactionCellContentView: UIView, ContainerCollectionVi
   }
 }
 
+private extension CompositionTransactionCellContentView {
+  func setup() {
+    layer.masksToBounds = true
+    layer.cornerRadius = 16
+  }
+}
+
 extension CompositionTransactionCellContentView: TransactionCellContentViewDelegate {
   func transactionCellDidTapNFTView(_ transactionCell: TransactionCellContentView) {
     guard let index = transactionContentViews.firstIndex(of: transactionCell) else { return }
     delegate?.compositionTransactionCellContentView(self, didSelectNFTAt: index)
+  }
+}
+
+final class HighlightContainerView: UIView {
+  
+  var didUpdateIsHighlighted: ((_ isHightlighted: Bool) -> Void)?
+  var isHighlighted: Bool = false {
+    didSet {
+      guard isHighlighted != oldValue else { return }
+      didUpdateHightlightState()
+      didUpdateIsHighlighted?(isHighlighted)
+    }
+  }
+  
+  override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+    self.isHighlighted = true
+    super.touchesBegan(touches, with: event)
+  }
+  
+  override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    self.isHighlighted = false
+    super.touchesEnded(touches, with: event)
+  }
+  
+  override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+    self.isHighlighted = false
+    super.touchesCancelled(touches, with: event)
+  }
+
+  private let hightlightView: UIView = {
+    let view = UIView()
+    view.backgroundColor = .Background.highlighted
+    view.isUserInteractionEnabled = false
+    view.alpha = 0
+    return view
+  }()
+  
+  // MARK: - Init
+  
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    setup()
+  }
+  
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+  
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    hightlightView.frame = bounds
+  }
+}
+
+private extension HighlightContainerView {
+  func setup() {
+    backgroundColor = .clear
+    addSubview(hightlightView)
+  }
+  
+  func didUpdateHightlightState() {
+    let duration: TimeInterval = isHighlighted ? 0.05 : 0.2
+    
+    UIView.animate(withDuration: duration, delay: 0, options: [.allowUserInteraction, .curveEaseInOut]) {
+      self.hightlightView.alpha = self.isHighlighted ? 1 : 0
+    }
   }
 }

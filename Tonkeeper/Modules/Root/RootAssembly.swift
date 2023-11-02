@@ -9,8 +9,8 @@ import UIKit
 import TKCore
 
 final class RootAssembly {
-  let coreAssembly = CoreAssembly()
-  lazy var walletCoreAssembly = WalletCoreAssembly(coreAssembly: coreAssembly)
+  let coreAssembly: CoreAssembly
+  let walletCoreAssembly: WalletCoreAssembly
   lazy var tabBarAssembly = TabBarAssembly(coreAssembly: coreAssembly,
                                            walletCoreAssembly: walletCoreAssembly,
                                            passcodeAssembly: passcodeAssembly)
@@ -20,6 +20,12 @@ final class RootAssembly {
   lazy var createWalletAssembly = CreateWalletAssembly(passcodeAssembly: passcodeAssembly,
                                                        walletCoreAssembly: walletCoreAssembly)
   lazy var passcodeAssembly = PasscodeAssembly(walletCoreAssembly: walletCoreAssembly)
+  
+  init(coreAssembly: CoreAssembly, 
+       walletCoreAssembly: WalletCoreAssembly) {
+    self.coreAssembly = coreAssembly
+    self.walletCoreAssembly = walletCoreAssembly
+  }
   
   func tabBarCoordinator() -> TabBarCoordinator {
     let tabBarController = TabBarController()

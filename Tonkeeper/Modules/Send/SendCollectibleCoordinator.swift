@@ -20,6 +20,7 @@ final class SendCollectibleCoordinator: Coordinator<NavigationRouter> {
 
   private let walletCoreAssembly: WalletCoreAssembly
   private let nftAddress: Address
+  private let deeplinkParser: DeeplinkParser
   
   private var recipient: Recipient?
   private var comment: String?
@@ -33,6 +34,7 @@ final class SendCollectibleCoordinator: Coordinator<NavigationRouter> {
        walletCoreAssembly: WalletCoreAssembly) {
     self.walletCoreAssembly = walletCoreAssembly
     self.nftAddress = nftAddress
+    self.deeplinkParser = walletCoreAssembly.deeplinkParser(handlers: [walletCoreAssembly.tonDeeplinkHandler])
     super.init(router: router)
   }
   
@@ -155,18 +157,19 @@ extension SendCollectibleCoordinator: QRScannerModuleOutput {
     router.dismiss()
   }
   
+  func isQrCodeValid(string: String) -> Bool {
+    (try? deeplinkParser.isValid(string: string)) ?? false
+  }
+  
   func didScanQrCode(with string: String) {
-    router.dismiss()
-    guard let deeplink = try? walletCoreAssembly.deeplinkParser.parse(string: string) else {
+    guard let deeplink = try? deeplinkParser.parse(string: string),
+          case .ton(let tonDeeplink) = deeplink else {
       return
     }
-
-    switch deeplink {
-    case let .ton(tonDeeplink):
-      switch tonDeeplink {
-      case let .transfer(address):
-        sendRecipientInput?.setRecipient(Recipient(address: address, domain: nil))
-      }
+    router.dismiss()
+    switch tonDeeplink {
+    case .transfer(let address):
+      sendRecipientInput?.setRecipient(Recipient(address: address, domain: nil))
     }
   }
 }

@@ -33,7 +33,7 @@
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
         "branch" : "develop",
-        "revision" : "39569e62742fb712a1e0d8fe72a8a47b07ff4caa"
+        "revision" : "df64b761954f2eff50c57d35e38ee1e8bea7e848"
       }
     },
     {
@@ -68,8 +68,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-openapi-runtime",
       "state" : {
-        "revision" : "d5aa7ce0c1d7d0e90ea810189e9f9f0022aa069e",
-        "version" : "0.3.4"
+        "revision" : "a51b3bd6f2151e9a6f792ca6937a7242c4758768",
+        "version" : "0.3.6"
       }
     },
     {
@@ -77,8 +77,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
       "state" : {
-        "revision" : "56d2d4f693d03f13833a36457bdcd481e14c261d",
-        "version" : "0.1.1"
+        "revision" : "3252791d91e0d4c1a6278a1e60d0f83137eea37c",
+        "version" : "0.1.3"
       }
     },
     {
@@ -86,8 +86,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
-        "branch" : "feature/nft_transfer",
-        "revision" : "20c17ee92b85bcdd4a78c2eb0467fcd6de5f7698"
+        "branch" : "main",
+        "revision" : "49636b0e078321a7a9a9f309dba152615bcebf8b"
       }
     },
     {

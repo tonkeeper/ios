@@ -24,7 +24,7 @@ public final class ReachabilityTracker {
   }
   
   private let pathMonitor = NWPathMonitor()
-  private var state = State.connected {
+  public private(set) var state = State.connected {
     didSet {
       guard state != oldValue else { return }
       notifyObservers(state)
