@@ -103,6 +103,7 @@ extension TonConnectConfirmationCoordinator: TonConnectConfirmationModuleOutput 
 
 extension TonConnectConfirmationCoordinator: TonConnectConfirmationControllerOutput {
   func tonConnectConfirmationControllerDidStartEmulation(_ controller: WalletCore.TonConnectConfirmationController) {
+    ToastController.hideAll()
     ToastController.showToast(configuration: .loading)
   }
   

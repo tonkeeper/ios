@@ -105,6 +105,7 @@ private extension TabBarCoordinator {
   }
   
   func openTonConnectDeeplink(_ deeplink: TonConnectDeeplink) {
+    ToastController.hideAll()
     ToastController.showToast(configuration: .loading)
     Task {
       do {
@@ -129,7 +130,7 @@ private extension TabBarCoordinator {
         }
       } catch {
         await MainActor.run {
-          ToastController.showToast(configuration: .failed)
+          ToastController.hideToast()
         }
       }
     }

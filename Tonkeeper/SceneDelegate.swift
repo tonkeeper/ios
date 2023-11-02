@@ -35,6 +35,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     guard let deeplink = getDeeplink(urlContexts: URLContexts) else { return }
     appCoordinator?.handleDeeplink(deeplink)
   }
+  
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+    guard let deeplink = getDeeplink(url: userActivity.webpageURL) else { return }
+    appCoordinator?.handleDeeplink(deeplink)
+  }
 }
 
 private extension SceneDelegate {
@@ -47,11 +52,15 @@ private extension SceneDelegate {
   }
   
   func getDeeplink(urlContexts: Set<UIOpenURLContext>) -> Deeplink? {
-    guard let deeplinkURL = urlContexts.first?.url else { return  nil}
+    getDeeplink(url: urlContexts.first?.url)
+  }
+  
+  func getDeeplink(url: URL?) -> Deeplink? {
+    guard let url = url else { return nil }
     let deeplinkParser = appAssembly.walletCoreAssembly.deeplinkParser(
       handlers: [appAssembly.walletCoreAssembly.tonConnectDeeplinkHandler]
     )
-    guard let deeplink = try? deeplinkParser.parse(string: deeplinkURL.absoluteString) else { return nil }
+    guard let deeplink = try? deeplinkParser.parse(string: url.absoluteString) else { return nil }
     return deeplink
   }
 }
