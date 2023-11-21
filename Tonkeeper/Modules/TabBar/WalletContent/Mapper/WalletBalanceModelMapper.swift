@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 final class WalletBalanceModelMapper {
   func map(pages: [WalletBalanceModel.Page]) -> [WalletContentPage] {
@@ -49,7 +49,7 @@ private extension WalletBalanceModelMapper {
 }
 
 extension Image {
-  static func with(image: WalletCore.Image) -> Image {
+  static func with(image: WalletCoreKeeper.Image) -> Image {
     switch image {
     case .ton: return .image(.Icons.tonIcon, tinColor: .Icon.primary, backgroundColor: .Constant.tonBlue)
     case .oldWallet: return .image(.Icons.tonIcon, tinColor: .Icon.primary, backgroundColor: .Button.tertiaryBackground)

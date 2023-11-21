@@ -6,7 +6,8 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 protocol CreateWalletCoordinatorOutput: AnyObject {
   func createWalletCoordinatorDidClose(_ coordinator: CreateWalletCoordinator)
@@ -24,7 +25,7 @@ final class CreateWalletCoordinator: Coordinator<NavigationRouter> {
        assembly: CreateWalletAssembly) {
     self.assembly = assembly
     self.walletCreator = WalletCreator(
-      keeperController: assembly.walletCoreAssembly.keeperController,
+      walletsController: assembly.walletCoreAssembly.walletsController,
       passcodeController: assembly.walletCoreAssembly.passcodeController
     )
     super.init(router: router)

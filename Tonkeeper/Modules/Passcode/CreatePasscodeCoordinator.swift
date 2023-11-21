@@ -6,7 +6,8 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 protocol CreatePasscodeCoordinatorOutput: AnyObject {
   func createPasscodeCoordinatorDidCreatePasscode(_ coordinator: CreatePasscodeCoordinator,

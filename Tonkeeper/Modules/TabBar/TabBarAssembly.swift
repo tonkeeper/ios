@@ -7,7 +7,7 @@
 
 import UIKit
 import TKCore
-import WalletCore
+import WalletCoreKeeper
 
 final class TabBarAssembly {
   

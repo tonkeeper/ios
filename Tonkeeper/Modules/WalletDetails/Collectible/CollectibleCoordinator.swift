@@ -7,7 +7,7 @@
 
 import UIKit
 import TonSwift
-import WalletCore
+import WalletCoreKeeper
 
 protocol CollectibleCoordinatorOutput: AnyObject {
   func collectibleCoordinatorDidFinish(_ coordinator: CollectibleCoordinator)

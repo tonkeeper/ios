@@ -7,7 +7,7 @@
 
 import UIKit
 import SwiftUI
-import WalletCore
+import WalletCoreKeeper
 
 final class TonConnectConfirmationContentView: UIView, ConfigurableView {
   

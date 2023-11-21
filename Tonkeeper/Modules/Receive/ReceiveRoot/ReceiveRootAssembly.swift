@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 struct ReceiveRootAssembly {
   static func module(qrCodeGenerator: QRCodeGenerator,

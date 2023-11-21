@@ -7,13 +7,14 @@
 
 import UIKit
 import TKCore
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 struct TokenDetailsAssembly {
   static func module(output: TokenDetailsModuleOutput,
                      activityListModule: Module<ActivityListViewController, ActivityListModuleInput>,
                      walletProvider: WalletProvider,
-                     tokenDetailsController: WalletCore.TokenDetailsController,
+                     tokenDetailsController: WalletCoreKeeper.TokenDetailsController,
                      imageLoader: ImageLoader,
                      urlOpener: URLOpener) -> Module<UIViewController, TokenDetailsModuleInput> {
     let presenter = TokenDetailsPresenter(

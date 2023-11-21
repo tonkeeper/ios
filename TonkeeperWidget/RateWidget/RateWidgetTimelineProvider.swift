@@ -6,7 +6,8 @@
 //
 
 import WidgetKit
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 import TKCore
 import TKChart
 
@@ -56,14 +57,14 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
         currency = .USD
       }
       let coreAssembly = CoreAssembly()
-      let walletCoreContainer = WalletCore.Assembly(dependencies: Dependencies(
+      let walletCoreContainer = WalletCoreKeeper.Assembly(dependencies: Dependencies(
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
         sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)
       )
       let chartController = walletCoreContainer.chartController()
       Task {
-        let period: WalletCore.Period
+        let period: WalletCoreKeeper.Period
         let mode: TKLineChartView.Mode
         switch configuration.period {
         case .day:
@@ -106,4 +107,4 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
     }
 }
 
-extension WalletCore.Coordinate: TKChart.Coordinate {}
+extension WalletCoreKeeper.Coordinate: TKChart.Coordinate {}

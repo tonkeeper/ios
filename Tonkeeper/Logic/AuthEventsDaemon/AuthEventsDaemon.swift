@@ -6,12 +6,12 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 import TKCore
 
 protocol AuthEventsDaemonObserver: AnyObject {
   func authEventsDaemon(_ daemon: AuthEventsDaemon,
-                        didReceiveTonConnectAppRequest appRequest: WalletCore.TonConnect.AppRequest,
+                        didReceiveTonConnectAppRequest appRequest: WalletCoreKeeper.TonConnect.AppRequest,
                         app: TonConnectApp)
 }
 
@@ -20,13 +20,13 @@ final class AuthEventsDaemon {
       weak var observer: AuthEventsDaemonObserver?
   }
   
-  private let tonConnectEventsDaemon: WalletCore.TonConnectEventsDaemon
+  private let tonConnectEventsDaemon: WalletCoreKeeper.TonConnectEventsDaemon
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
   
   private var observers = [AuthEventsDaemonObserverWrapper]()
   
-  init(tonConnectEventsDaemon: WalletCore.TonConnectEventsDaemon,
+  init(tonConnectEventsDaemon: WalletCoreKeeper.TonConnectEventsDaemon,
        appStateTracker: AppStateTracker,
        reachabilityTracker: ReachabilityTracker) {
     self.tonConnectEventsDaemon = tonConnectEventsDaemon

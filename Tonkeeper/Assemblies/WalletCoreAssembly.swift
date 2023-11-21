@@ -6,18 +6,19 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 import TonSwift
 import TKCore
 
 final class WalletCoreAssembly {
   
   let coreAssembly: CoreAssembly
-  let walletCoreAssembly: WalletCore.Assembly
+  let walletCoreAssembly: WalletCoreKeeper.Assembly
   
   init(coreAssembly: CoreAssembly) {
     self.coreAssembly = coreAssembly
-    self.walletCoreAssembly = WalletCore.Assembly(
+    self.walletCoreAssembly = WalletCoreKeeper.Assembly(
       dependencies: Dependencies(
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
@@ -29,8 +30,12 @@ final class WalletCoreAssembly {
     walletCoreAssembly.configurationController
   }
   
-  var keeperController: KeeperController {
-    walletCoreAssembly.keeperController
+  var walletsController: WalletsController {
+    walletCoreAssembly.walletsController
+  }
+  
+  var walletProvider: WalletProvider {
+    walletCoreAssembly.walletsProvider
   }
   
   var passcodeController: PasscodeController {

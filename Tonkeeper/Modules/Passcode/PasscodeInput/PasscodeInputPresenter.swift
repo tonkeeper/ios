@@ -7,7 +7,8 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 import UIKit
 
 enum PasscodeInputPresenterValidation {

@@ -7,7 +7,7 @@
 
 import UIKit
 import TKUIKit
-import WalletCore
+import WalletCoreKeeper
 
 final class WalletRestoreViewController: UIViewController {
   

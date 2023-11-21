@@ -7,7 +7,7 @@
 
 import UIKit
 import TKCore
-import WalletCore
+import WalletCoreKeeper
 
 struct PageContentProvider {
   let factory: (_ page: WalletContentPage, _ output: WalletContentPageOutputMediator) -> (PagingContentContainer, WalletContentPageInput)
@@ -19,18 +19,15 @@ struct PageContentProvider {
 
 final class WalletRootPresenter {
   
-  private let keeperController: KeeperController
   private let walletBalanceController: WalletBalanceController
   private let pageContentProvider: PageContentProvider
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
   
-  init(keeperController: KeeperController,
-       walletBalanceController: WalletBalanceController,
+  init(walletBalanceController: WalletBalanceController,
        pageContentProvider: PageContentProvider,
        appStateTracker: AppStateTracker,
        reachabilityTracker: ReachabilityTracker) {
-    self.keeperController = keeperController
     self.walletBalanceController = walletBalanceController
     self.pageContentProvider = pageContentProvider
     self.appStateTracker = appStateTracker

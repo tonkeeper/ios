@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 final class BuyListPresenter {
   

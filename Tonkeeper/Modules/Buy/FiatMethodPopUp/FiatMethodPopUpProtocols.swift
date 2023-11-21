@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 protocol FiatMethodPopUpModuleOutput: AnyObject {
   func fiatMethodPopUpModule(_ module: FiatMethodPopUpModuleInput,

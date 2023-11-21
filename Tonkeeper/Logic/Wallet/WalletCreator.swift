@@ -6,7 +6,8 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 import TonSwift
 
 struct WalletCreator {
@@ -15,19 +16,19 @@ struct WalletCreator {
     case failedToCreateWallet
   }
   
-  private let keeperController: KeeperController
+  private let walletsController: WalletsController
   private let passcodeController: PasscodeController
   
-  init(keeperController: KeeperController,
+  init(walletsController: WalletsController,
        passcodeController: PasscodeController) {
-    self.keeperController = keeperController
+    self.walletsController = walletsController
     self.passcodeController = passcodeController
   }
 
   func create(with passcode: Passcode) throws {
-    let mnemonic = Mnemonic.mnemonicNew(wordsCount: 24)
+    let mnemonic = try Mnemonic(mnemonicWords: Mnemonic.mnemonicNew(wordsCount: 24))
     do {
-      try keeperController.addWallet(with: mnemonic)
+      try walletsController.addWallet(with: mnemonic)
       try passcodeController.setPasscode(passcode)
     } catch {
       throw Error.failedToCreateWallet

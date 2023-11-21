@@ -6,7 +6,7 @@
 //
 
 import WidgetKit
-import WalletCore
+import WalletCoreKeeper
 
 struct BalanceWidgetEntry: TimelineEntry {
   let date: Date

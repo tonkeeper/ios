@@ -6,7 +6,8 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 import UIKit
 
 final class PasscodeAuthConfigurator: PasscodeInputBiometryPresenterConfigurator {

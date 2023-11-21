@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 protocol WalletContentPageInput: AnyObject {}
 protocol WalletContentPageOutput: AnyObject {

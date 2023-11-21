@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 final class BuyCoordinator: Coordinator<Router<ModalCardContainerViewController>> {
   

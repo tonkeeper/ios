@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 protocol WalletHeaderModuleOutput: AnyObject {
   func didTapSendButton()

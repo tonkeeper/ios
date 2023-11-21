@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 final class TonConnectCoordinator: Coordinator<Router<UIViewController>> {
   private let walletCoreAssembly: WalletCoreAssembly

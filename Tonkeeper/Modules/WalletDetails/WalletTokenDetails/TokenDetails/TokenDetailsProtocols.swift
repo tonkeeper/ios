@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 protocol TokenDetailsModuleOutput: AnyObject {
   func didTapTonSend()

@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 struct WalletAssembly {
   
@@ -41,8 +41,7 @@ struct WalletAssembly {
   }
   
   func walletRootModule(output: WalletRootModuleOutput) -> Module<UIViewController, Void> {    
-    let presenter = WalletRootPresenter(keeperController: walletCoreAssembly.keeperController,
-                                        walletBalanceController: walletCoreAssembly.balanceController,
+    let presenter = WalletRootPresenter(walletBalanceController: walletCoreAssembly.balanceController,
                                         pageContentProvider: .init(factory: { page, output in
       let module = tokensListModule(page: page, output: output)
       return (PagingContentContainer(pageContentViewController: module.view),

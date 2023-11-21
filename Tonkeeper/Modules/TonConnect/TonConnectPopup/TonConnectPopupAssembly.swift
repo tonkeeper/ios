@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 struct TonConnectPopupAssembly {
   static func module(tonConnectController: TonConnectController,

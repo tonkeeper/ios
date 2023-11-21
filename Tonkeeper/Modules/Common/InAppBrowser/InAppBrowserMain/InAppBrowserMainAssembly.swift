@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 struct InAppBrowserMainAssembly {
   static func module(output: InAppBrowserMainModuleOutput, url: URL) -> Module<UIViewController, InAppBrowserMainModuleInput> {

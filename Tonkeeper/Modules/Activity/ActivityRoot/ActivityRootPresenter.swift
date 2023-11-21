@@ -8,7 +8,7 @@
 
 import Foundation
 import TonSwift
-import WalletCore
+import WalletCoreKeeper
 
 final class ActivityRootPresenter {
   

@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 struct TonConnectAssembly {
   let walletCoreAssembly: WalletCoreAssembly

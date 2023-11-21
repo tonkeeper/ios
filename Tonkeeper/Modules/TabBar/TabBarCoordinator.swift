@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 protocol TabBarCoordinatorOutput: AnyObject {
   func tabBarCoordinatorDidLogout(_ coordinator: TabBarCoordinator)
@@ -67,7 +67,7 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
   
   override func handleDeeplink(_ deeplink: Deeplink?) {
     switch deeplink {
-    case let walletCoreDeeplink as WalletCore.Deeplink:
+    case let walletCoreDeeplink as WalletCoreKeeper.Deeplink:
       switch walletCoreDeeplink {
       case .tonConnect(let tonConnectDeeplink):
         openTonConnectDeeplink(tonConnectDeeplink)

@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 final class WalletContentPresenter {
   

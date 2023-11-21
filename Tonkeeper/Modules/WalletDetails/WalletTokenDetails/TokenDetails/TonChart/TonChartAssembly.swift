@@ -6,7 +6,8 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 struct TonChartAssembly {
   static func module(walletProvider: WalletProvider,

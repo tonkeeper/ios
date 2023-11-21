@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 import TonSwift
 
 final class WalletTokenDetailsCoordinator: Coordinator<NavigationRouter> {
@@ -59,7 +59,7 @@ private extension WalletTokenDetailsCoordinator {
     
     let module = TokenDetailsAssembly.module(output: self,
                                              activityListModule: activityListModule,
-                                             walletProvider: walletCoreAssembly.keeperController,
+                                             walletProvider: walletCoreAssembly.walletProvider,
                                              tokenDetailsController: tokenDetailsController,
                                              imageLoader: NukeImageLoader(),
                                              urlOpener: walletCoreAssembly.coreAssembly.urlOpener())
@@ -149,7 +149,7 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
   }
   
   func tonChartModule() -> Module<TonChartViewController, TonChartModuleInput> {
-    let module = TonChartAssembly.module(walletProvider: walletCoreAssembly.keeperController,
+    let module = TonChartAssembly.module(walletProvider: walletCoreAssembly.walletProvider,
                                          chartController: walletCoreAssembly.chartController(),
                                          output: self)
     return module

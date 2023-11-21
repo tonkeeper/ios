@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 struct SettingsSecurityAssembly {
   static func module(biometryAuthentificator: BiometryAuthentificator,

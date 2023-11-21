@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 protocol TonConnectConfirmationCoordinatorOutput: AnyObject {
   func tonConnectConfirmationCoordinatorDidFinish(_ coordinator: TonConnectConfirmationCoordinator)
@@ -31,7 +31,7 @@ final class TonConnectConfirmationCoordinator: Coordinator<Router<UIViewControll
   
   override func start() {}
   
-  func handleAppRequest(_ appRequest: WalletCore.TonConnect.AppRequest,
+  func handleAppRequest(_ appRequest: WalletCoreKeeper.TonConnect.AppRequest,
                      app: TonConnectApp) {
     tonConnectConfirmationController.handleAppRequest(
       appRequest,
@@ -102,12 +102,12 @@ extension TonConnectConfirmationCoordinator: TonConnectConfirmationModuleOutput 
 // MARK: - TonConnectConfirmationControllerOutput
 
 extension TonConnectConfirmationCoordinator: TonConnectConfirmationControllerOutput {
-  func tonConnectConfirmationControllerDidStartEmulation(_ controller: WalletCore.TonConnectConfirmationController) {
+  func tonConnectConfirmationControllerDidStartEmulation(_ controller: WalletCoreKeeper.TonConnectConfirmationController) {
     ToastController.hideAll()
     ToastController.showToast(configuration: .loading)
   }
   
-  func tonConnectConfirmationControllerDidFinishEmulation(_ controller: WalletCore.TonConnectConfirmationController, result: Result<TonConnectConfirmationModel, Error>) {
+  func tonConnectConfirmationControllerDidFinishEmulation(_ controller: WalletCoreKeeper.TonConnectConfirmationController, result: Result<TonConnectConfirmationModel, Error>) {
     switch result {
     case .success(let success):
       ToastController.hideToast()

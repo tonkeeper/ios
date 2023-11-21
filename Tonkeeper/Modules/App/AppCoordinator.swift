@@ -7,7 +7,7 @@
 
 import UIKit
 import TKCore
-import WalletCore
+import WalletCoreKeeper
 import WidgetKit
 
 final class AppCoordinator: Coordinator<WindowRouter> {

@@ -33,7 +33,7 @@
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
         "branch" : "develop",
-        "revision" : "2acff51ab1faa8e6e49edaa0d8169fed4f0cd5f5"
+        "revision" : "54d867ee10cda6ed99fc896de35940172eccbf60"
       }
     },
     {
@@ -41,8 +41,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/onevcat/Kingfisher",
       "state" : {
-        "revision" : "c1f60c63f356d364f4284ba82961acbe7de79bcc",
-        "version" : "7.8.1"
+        "revision" : "277f1ab2c6664b19b4a412e32b094b201e2d5757",
+        "version" : "7.10.0"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/airbnb/lottie-spm.git",
       "state" : {
-        "revision" : "60ea4f82fba8b4cb21a75665a889e86ed4d81c6e",
-        "version" : "4.2.0"
+        "revision" : "3e7eb8281ff9ac67e64a3a58a80c0aa9fa388b04",
+        "version" : "4.3.3"
       }
     },
     {
@@ -87,7 +87,7 @@
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
         "branch" : "main",
-        "revision" : "49636b0e078321a7a9a9f309dba152615bcebf8b"
+        "revision" : "77babfe33d165655f2072eabd4ff26df925ba915"
       }
     },
     {
