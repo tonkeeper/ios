@@ -19,7 +19,7 @@ final class WalletCoreAssembly {
   init(coreAssembly: CoreAssembly) {
     self.coreAssembly = coreAssembly
     self.walletCoreAssembly = WalletCoreKeeper.Assembly(
-      dependencies: Dependencies(
+      dependencies: Dependencies( 
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
         sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)
@@ -42,8 +42,8 @@ final class WalletCoreAssembly {
     walletCoreAssembly.passcodeController
   }
   
-  var balanceController: WalletBalanceController {
-    walletCoreAssembly.walletBalanceController
+  var balanceController: BalanceController {
+    walletCoreAssembly.balanceController
   }
   
   var sendInputController: SendInputController {
@@ -124,6 +124,10 @@ final class WalletCoreAssembly {
   
   func tonConnectEventsDaemon() -> TonConnectEventsDaemon {
     walletCoreAssembly.tonConnectEventsDaemon()
+  }
+  
+  func transactionsEventsDaemon() -> TransactionsEventDaemon {
+    walletCoreAssembly.transactionsEventsDaemon
   }
   
   func fiatMethodsController() -> FiatMethodsController {

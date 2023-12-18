@@ -87,9 +87,9 @@ private extension AppCoordinator {
 extension AppCoordinator: AppStateTrackerObserver {
   func didUpdateState(_ state: AppStateTracker.State) {
     switch state {
-    case .becomeActive:
+    case .active:
       hideBlur()
-    case .resignActive:
+    case .resign:
       showBlur()
       WidgetCenter.shared.reloadTimelines(ofKind: "RateWidget")
       WidgetCenter.shared.reloadTimelines(ofKind: "RateChartWidget")

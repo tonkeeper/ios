@@ -40,15 +40,14 @@ struct WalletAssembly {
                                                    sendAssembly: sendAssembly)
   }
   
-  func walletRootModule(output: WalletRootModuleOutput) -> Module<UIViewController, Void> {    
-    let presenter = WalletRootPresenter(walletBalanceController: walletCoreAssembly.balanceController,
+  func walletRootModule(output: WalletRootModuleOutput,
+                        transactionsEventDaemon: TransactionsEventDaemon) -> Module<UIViewController, Void> {
+    let presenter = WalletRootPresenter(balanceController: walletCoreAssembly.balanceController,
                                         pageContentProvider: .init(factory: { page, output in
       let module = tokensListModule(page: page, output: output)
       return (PagingContentContainer(pageContentViewController: module.view),
               module.input)
-    }),
-                                        appStateTracker: walletCoreAssembly.coreAssembly.appStateTracker,
-                                        reachabilityTracker: walletCoreAssembly.coreAssembly.reachabilityTracker)
+    }), transactionsEventDaemon: transactionsEventDaemon)
   
     presenter.output = output
         

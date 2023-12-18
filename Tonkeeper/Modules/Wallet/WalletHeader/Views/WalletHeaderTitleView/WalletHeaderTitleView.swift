@@ -21,23 +21,9 @@ final class WalletHeaderTitleView: UIView {
     }
   }
   
-  var title: String? {
-    didSet {
-      titleLabel.attributedText = title?.attributed(with: .h3, alignment: .center, color: .Text.primary)
-      bigTitleLabel.text = title
-    }
-  }
-  
   weak var scrollView: UIScrollView? {
     didSet {
       didSetScrollView()
-    }
-  }
-  
-  var size: Size = .compact {
-    didSet {
-      guard size != oldValue else { return }
-      didUpdateSize()
     }
   }
   
@@ -50,23 +36,8 @@ final class WalletHeaderTitleView: UIView {
 
   private var scrollViewContentOffsetObserveToken: NSKeyValueObservation?
 
-  private let titleLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.h3)
-    label.textColor = .Text.primary
-    return label
-  }()
-  
-  private let bigTitleLabel: UILabel = {
-    let label = UILabel()
-    label.applyTextStyleFont(.h1)
-    label.textColor = .Text.primary
-    label.isHidden = true
-    return label
-  }()
-  
-  let connectionStatusView = WalletHeaderConnectionStatusView()
-  
+  let titleConnectionView = TitleConnectionView()
+    
   private let rightButtonsStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .horizontal
@@ -77,10 +48,9 @@ final class WalletHeaderTitleView: UIView {
   private let contentView = UIView()
   
   private var contentViewHeightConstraint: NSLayoutConstraint?
-  
-  init(size: Size) {
-    self.size = size
-    super.init(frame: .zero)
+
+  override init(frame: CGRect) {
+    super.init(frame: frame)
     setup()
   }
   
@@ -89,9 +59,8 @@ final class WalletHeaderTitleView: UIView {
   }
   
   override var intrinsicContentSize: CGSize {
-    let height = safeAreaInsets.top + size.height
     return .init(width: UIView.noIntrinsicMetric,
-                 height: height)
+                 height: .compactHeight)
   }
   
   override func safeAreaInsetsDidChange() {
@@ -111,22 +80,17 @@ private extension WalletHeaderTitleView {
     backgroundColor = .Background.page
     
     addSubview(contentView)
-    contentView.addSubview(titleLabel)
-    contentView.addSubview(bigTitleLabel)
+    contentView.addSubview(titleConnectionView)
     contentView.addSubview(rightButtonsStackView)
-    contentView.addSubview(connectionStatusView)
     
     setupConstraints()
-    didUpdateSize()
   }
   
   func setupConstraints() {
     contentView.translatesAutoresizingMaskIntoConstraints = false
-    titleLabel.translatesAutoresizingMaskIntoConstraints = false
-    bigTitleLabel.translatesAutoresizingMaskIntoConstraints = false
+    titleConnectionView.translatesAutoresizingMaskIntoConstraints = false
     rightButtonsStackView.translatesAutoresizingMaskIntoConstraints = false
     safeAreaView.translatesAutoresizingMaskIntoConstraints = false
-    connectionStatusView.translatesAutoresizingMaskIntoConstraints = false
     
     contentViewHeightConstraint = contentView.heightAnchor.constraint(equalToConstant: .compactHeight)
     contentViewHeightConstraint?.isActive = true
@@ -136,18 +100,12 @@ private extension WalletHeaderTitleView {
       contentView.rightAnchor.constraint(equalTo: rightAnchor),
       contentView.bottomAnchor.constraint(equalTo: bottomAnchor),
       
-      titleLabel.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-      
-      
-      bigTitleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -.bigTitleBottomSpace),
-      bigTitleLabel.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: ContentInsets.sideSpace),
+      titleConnectionView.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
+      titleConnectionView.topAnchor.constraint(equalTo: contentView.topAnchor),
+      titleConnectionView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
 
       rightButtonsStackView.centerYAnchor.constraint(equalTo: contentView.centerYAnchor),
       rightButtonsStackView.rightAnchor.constraint(equalTo: contentView.rightAnchor, constant: -.scanQRButtonRightSpace),
-      
-      connectionStatusView.topAnchor.constraint(equalTo: titleLabel.bottomAnchor),
-      connectionStatusView.centerXAnchor.constraint(equalTo: centerXAnchor),
-      titleLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -.smallTitleBottomSpace),
     ])
   }
   
@@ -166,26 +124,10 @@ private extension WalletHeaderTitleView {
   }
   
   func updateTitle(with progress: CGFloat) {
-    bigTitleLabel.alpha = 1 - progress * 2.5
-    titleLabel.alpha = progress * 2
+    titleConnectionView.alpha = 1 - progress * 2.5
 
     let translationY = (.largeHeight - .compactHeight) * progress
     transform = CGAffineTransformMakeTranslation(0, -translationY)
-  }
-  
-  func didUpdateSize() {
-    invalidateIntrinsicContentSize()
-    switch size {
-    case .compact:
-      bigTitleLabel.isHidden = true
-    case .large:
-      bigTitleLabel.isHidden = false
-      if let scrollView = scrollView {
-        handleScrollViewScroll(scrollView: scrollView)
-      } else {
-        updateTitle(with: 0)
-      }
-    }
   }
 }
 

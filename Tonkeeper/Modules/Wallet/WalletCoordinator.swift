@@ -33,7 +33,10 @@ final class WalletCoordinator: Coordinator<NavigationRouter> {
 
 private extension WalletCoordinator {
   func openWalletRoot() {
-    let module = walletAssembly.walletRootModule(output: self)
+    let module = walletAssembly.walletRootModule(
+      output: self,
+      transactionsEventDaemon: walletAssembly.walletCoreAssembly.transactionsEventsDaemon()
+    )
     router.setPresentables([(module.view, nil)])
   }
   

@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import WalletCoreCore
 import WalletCoreKeeper
 import TKCore
 
@@ -17,18 +18,24 @@ protocol AuthEventsDaemonObserver: AnyObject {
 
 final class AuthEventsDaemon {
   struct AuthEventsDaemonObserverWrapper {
-      weak var observer: AuthEventsDaemonObserver?
+    weak var observer: AuthEventsDaemonObserver?
   }
   
+  private let walletProvider: WalletProvider
+  private let transactionsEventDaemon: WalletCoreKeeper.TransactionsEventDaemon
   private let tonConnectEventsDaemon: WalletCoreKeeper.TonConnectEventsDaemon
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
   
   private var observers = [AuthEventsDaemonObserverWrapper]()
   
-  init(tonConnectEventsDaemon: WalletCoreKeeper.TonConnectEventsDaemon,
+  init(walletProvider: WalletProvider,
+       transactionsEventDaemon: WalletCoreKeeper.TransactionsEventDaemon,
+       tonConnectEventsDaemon: WalletCoreKeeper.TonConnectEventsDaemon,
        appStateTracker: AppStateTracker,
        reachabilityTracker: ReachabilityTracker) {
+    self.walletProvider = walletProvider
+    self.transactionsEventDaemon = transactionsEventDaemon
     self.tonConnectEventsDaemon = tonConnectEventsDaemon
     self.appStateTracker = appStateTracker
     self.reachabilityTracker = reachabilityTracker
@@ -38,32 +45,59 @@ final class AuthEventsDaemon {
     reachabilityTracker.addObserver(self)
   }
   
-  func startObserving() {
-    tonConnectEventsDaemon.startEventsObserving()
+  func start() {
+    startTransactionsObserving()
+    startTonConnectObserving()
   }
   
-  func stopObserving() {
-    tonConnectEventsDaemon.stopEventsObserving()
+  func stop() {
+    stopTransactionsObserving()
+    stopTonConnectObserving()
   }
   
   public func addObserver(_ observer: AuthEventsDaemonObserver) {
-      var observers = observers.filter { $0.observer != nil }
-      observers.append(.init(observer: observer))
-      self.observers = observers
+    var observers = observers.filter { $0.observer != nil }
+    observers.append(.init(observer: observer))
+    self.observers = observers
   }
   
   public func removeObserver(_ observer: AuthEventsDaemonObserver) {
-      observers = observers.filter { $0.observer !== observer }
+    observers = observers.filter { $0.observer !== observer }
   }
 }
 
 private extension AuthEventsDaemon {
   func handleStateChange() {
-    switch (appStateTracker.state, reachabilityTracker.state) {
-    case (.becomeActive, .connected):
-      startObserving()
-    default:
-      stopObserving()
+    switch appStateTracker.state {
+    case .active:
+      startTransactionsObserving()
+      startTonConnectObserving()
+    case .background:
+      stopTransactionsObserving()
+      stopTonConnectObserving()
+    case .resign:
+      return
+    }
+  }
+  
+  func startTonConnectObserving() {
+    tonConnectEventsDaemon.startEventsObserving()
+  }
+  
+  func stopTonConnectObserving() {
+    tonConnectEventsDaemon.stopEventsObserving()
+  }
+  
+  func startTransactionsObserving() {
+    Task {
+      let addresses = [try walletProvider.activeWallet.address]
+      await transactionsEventDaemon.start(addresses: addresses)
+    }
+  }
+  
+  func stopTransactionsObserving() {
+    Task {
+      await transactionsEventDaemon.stop()
     }
   }
   

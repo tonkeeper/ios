@@ -18,27 +18,22 @@ struct PageContentProvider {
 }
 
 final class WalletRootPresenter {
-  
-  private let walletBalanceController: WalletBalanceController
+  private let balanceController: BalanceController
   private let pageContentProvider: PageContentProvider
-  private let appStateTracker: AppStateTracker
-  private let reachabilityTracker: ReachabilityTracker
-  
-  init(walletBalanceController: WalletBalanceController,
+  private let transactionsEventDaemon: TransactionsEventDaemon
+
+  init(balanceController: BalanceController,
        pageContentProvider: PageContentProvider,
-       appStateTracker: AppStateTracker,
-       reachabilityTracker: ReachabilityTracker) {
-    self.walletBalanceController = walletBalanceController
+       transactionsEventDaemon: TransactionsEventDaemon) {
+    self.balanceController = balanceController
     self.pageContentProvider = pageContentProvider
-    self.appStateTracker = appStateTracker
-    self.reachabilityTracker = reachabilityTracker
-    appStateTracker.addObserver(self)
-    reachabilityTracker.addObserver(self)
+    self.transactionsEventDaemon = transactionsEventDaemon
+    
+    transactionsEventDaemon.addObserver(self)
   }
   
   deinit {
-    appStateTracker.removeObserver(self)
-    reachabilityTracker.removeObserver(self)
+    transactionsEventDaemon.removeObserver(self)
   }
   
   // MARK: - Module
@@ -54,13 +49,9 @@ final class WalletRootPresenter {
 extension WalletRootPresenter: WalletRootPresenterInput {
   func viewDidLoad() {
     updateTitle()
-    if let cachedBalance = try? walletBalanceController.getWalletBalance() {
-      headerInput?.updateWith(walletHeader: cachedBalance.header)
-      contentInput?.updateWith(walletPages: cachedBalance.pages)
-    }
-    startBalanceObservation()
-    startConnectionStateObservation()
-    walletBalanceController.startUpdate()
+    
+    setupControllerBindings()
+    balanceController.load()
   }
 }
 
@@ -68,37 +59,19 @@ extension WalletRootPresenter: WalletRootPresenterInput {
 
 private extension WalletRootPresenter {
   func updateTitle() {
-    headerInput?.updateTitle("Wallet")
+    headerInput?.updateTitleView(
+      with: TitleConnectionView.Model(
+        title: "Wallet", statusViewModel: nil
+      )
+    )
   }
   
-  func startBalanceObservation() {
-    Task {
-      let balanceStream = walletBalanceController.balanceStream()
-      for try await balanceModel in balanceStream {
-        await MainActor.run {
-          headerInput?.updateWith(walletHeader: balanceModel.header)
-          contentInput?.updateWith(walletPages: balanceModel.pages)
-        }
-      }
-    }
-  }
-  
-  func startConnectionStateObservation() {
-    Task {
-      let connectionStateStream = walletBalanceController.connectionStateStream()
-      for try await connectionState in connectionStateStream {
-        await MainActor.run {
-          switch connectionState {
-          case .connected:
-            headerInput?.updateConnectionState(nil)
-          case .connecting:
-            headerInput?.updateConnectionState(.init(title: "Updating", titleColor: .Text.secondary, isLoading: true))
-          case .noInternet:
-            headerInput?.updateConnectionState(.init(title: "No internet connection", titleColor: .Text.secondary, isLoading: false))
-          case .failed:
-            headerInput?.updateConnectionState(.init(title: "No connection", titleColor: .Accent.orange, isLoading: false))
-          }
-        }
+  func setupControllerBindings() {
+    balanceController.didUpdateBalance = { [weak self] balanceModel in
+      guard let self = self else { return }
+      Task { @MainActor in
+        self.headerInput?.updateWith(walletHeader: balanceModel.header)
+        self.contentInput?.updateWith(walletPages: balanceModel.pages)
       }
     }
   }
@@ -112,10 +85,8 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
   }
   
   func didTapReceiveButton() {
-    guard let walletAddress = try? walletBalanceController.getWalletBalance().header.fullAddress else {
-      return
-    }
-    output?.openReceive(address: walletAddress)
+    guard let addresss = balanceController.address else { return }
+    output?.openReceive(address: addresss.toString(bounceable: false))
   }
   
   func didTapBuyButton() {
@@ -127,12 +98,10 @@ extension WalletRootPresenter: WalletHeaderModuleOutput {
   }
   
   func didTapAddress() {
-    guard let walletAddress = try? walletBalanceController.walletAddress.toString(bounceable: false) else {
-      return
-    }
-
+    guard let address = balanceController.address else { return }
+    
     ToastController.showToast(configuration: .copied)
-    UIPasteboard.general.string = walletAddress
+    UIPasteboard.general.string = address.toString(bounceable: false)
   }
 }
 
@@ -153,30 +122,39 @@ extension WalletRootPresenter: WalletContentModuleOutput {
   }
 }
 
-extension WalletRootPresenter: AppStateTrackerObserver {
-  func didUpdateState(_ state: AppStateTracker.State) {
-    switch state {
-    case .becomeActive:
-      walletBalanceController.startUpdate()
-    case .enterBackground:
-      walletBalanceController.stopUpdate()
-    default:
-      break
+extension WalletRootPresenter: TransactionsEventDaemonObserver {
+  func didUpdateState(_ state: WalletCoreKeeper.TransactionsEventDaemonState) {
+    DispatchQueue.main.async { [headerInput, balanceController] in
+      let model: ConnectionStatusView.Model?
+      switch state {
+      case .connected:
+        model = nil
+        balanceController.reload()
+      case .connecting:
+        model = ConnectionStatusView.Model(
+          title: "Updating",
+          titleColor: .Text.secondary,
+          isLoading: true
+        )
+      case .disconnected:
+        model = ConnectionStatusView.Model(
+          title: "Updating",
+          titleColor: .Text.secondary,
+          isLoading: true
+        )
+      case .noConnection:
+        model = ConnectionStatusView.Model(
+          title: "No Internet connection",
+          titleColor: .Accent.orange,
+          isLoading: false
+        )
+        balanceController.reload()
+      }
+      headerInput?.updateTitleView(with: TitleConnectionView.Model(title: "Wallet", statusViewModel: model))
     }
   }
-}
-
-extension WalletRootPresenter: ReachabilityTrackerObserver {
-  func didUpdateState(_ state: ReachabilityTracker.State) {
-    switch state {
-    case .connected:
-      walletBalanceController.startUpdate()
-    case .noInternetConnection:
-      break
-    }
+  
+  func didReceiveTransaction(_ transaction: WalletCoreKeeper.TransactionsEventDaemonTransaction) {
+    balanceController.reload()
   }
-}
-
-private extension String {
-  static let setupWalletButtonTitle = "Set up wallet"
 }

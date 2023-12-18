@@ -1,13 +1,6 @@
-//
-//  WalletHeaderConnectionStatusView.swift
-//  Tonkeeper
-//
-//  Created by Grigory on 19.9.23..
-//
-
 import UIKit
 
-final class WalletHeaderConnectionStatusView: UIView, ConfigurableView {
+final class ConnectionStatusView: UIView, ConfigurableView {
   
   private let titleLabel: UILabel = {
     let label = UILabel()
@@ -60,7 +53,7 @@ final class WalletHeaderConnectionStatusView: UIView, ConfigurableView {
   }
 }
 
-private extension WalletHeaderConnectionStatusView {
+private extension ConnectionStatusView {
   func setup() {
     addSubview(stackView)
     loaderViewContrainer.addSubview(loaderView)

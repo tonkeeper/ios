@@ -88,7 +88,9 @@ final class TabBarAssembly {
   }
   
   var authEventsDaemon: AuthEventsDaemon {
-    AuthEventsDaemon(tonConnectEventsDaemon: walletCoreAssembly.tonConnectEventsDaemon(),
+    AuthEventsDaemon(walletProvider: walletCoreAssembly.walletProvider,
+                     transactionsEventDaemon: walletCoreAssembly.transactionsEventsDaemon(),
+                     tonConnectEventsDaemon: walletCoreAssembly.tonConnectEventsDaemon(),
                      appStateTracker: coreAssembly.appStateTracker,
                      reachabilityTracker: coreAssembly.reachabilityTracker)
   }

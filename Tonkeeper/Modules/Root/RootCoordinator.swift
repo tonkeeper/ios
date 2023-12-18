@@ -18,7 +18,7 @@ final class RootCoordinator: Coordinator<NavigationRouter> {
   
   private let assembly: RootAssembly
   
-  private var tabBarCoordinator: TabBarCoordinator?
+  private weak var tabBarCoordinator: TabBarCoordinator?
   
   private var deeplink: Deeplink?
  
