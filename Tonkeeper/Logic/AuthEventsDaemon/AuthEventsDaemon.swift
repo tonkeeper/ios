@@ -68,16 +68,9 @@ final class AuthEventsDaemon {
 
 private extension AuthEventsDaemon {
   func handleStateChange() {
-    switch appStateTracker.state {
-    case .active:
-      startTransactionsObserving()
-      startTonConnectObserving()
-    case .background:
-      stopTransactionsObserving()
-      stopTonConnectObserving()
-    case .resign:
-      return
-    }
+    
+    
+  
   }
   
   func startTonConnectObserving() {
@@ -126,7 +119,16 @@ extension AuthEventsDaemon: TonConnectEventsDaemonObserver {
 
 extension AuthEventsDaemon: AppStateTrackerObserver {
   func didUpdateState(_ state: TKCore.AppStateTracker.State) {
-    handleStateChange()
+    switch appStateTracker.state {
+    case .active:
+      startTransactionsObserving()
+      startTonConnectObserving()
+    case .background:
+      stopTransactionsObserving()
+      stopTonConnectObserving()
+    case .resign:
+      return
+    }
   }
 }
 
@@ -134,6 +136,12 @@ extension AuthEventsDaemon: AppStateTrackerObserver {
 
 extension AuthEventsDaemon: ReachabilityTrackerObserver {
   func didUpdateState(_ state: TKCore.ReachabilityTracker.State) {
-    handleStateChange()
+    switch reachabilityTracker.state {
+    case .connected:
+      startTransactionsObserving()
+      startTonConnectObserving()
+    default:
+      return
+    }
   }
 }

@@ -55,6 +55,7 @@ private extension WalletTokenDetailsCoordinator {
                                                          transactionBuilder: ActivityListTransactionBuilder(
                                                           accountEventActionContentProvider: ActivityListAccountEventActionContentProvider()
                                                          ),
+                                                         transactionsEventDaemon: walletCoreAssembly.transactionsEventsDaemon(),
                                                          output: self)
     
     let module = TokenDetailsAssembly.module(output: self,
@@ -192,6 +193,7 @@ extension WalletTokenDetailsCoordinator: ActivityListModuleOutput {
   func didSelectTransaction(in section: Int, at index: Int) {}
   func activityListNoEvents(_ activityList: ActivityListModuleInput) {}
   func activityListHasEvents(_ activityList: ActivityListModuleInput) {}
+  func didSetIsConnecting(_ isConnecting: Bool) {}
 }
 
 // MARK: - TonChartModuleOutput

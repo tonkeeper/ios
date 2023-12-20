@@ -104,6 +104,7 @@ private extension TKLineChartView {
   }
   
   func setupChart() {
+    chartView.noDataText = ""
     chartView.drawGridBackgroundEnabled = false
     chartView.legend.enabled = false
     chartView.leftAxis.enabled = false

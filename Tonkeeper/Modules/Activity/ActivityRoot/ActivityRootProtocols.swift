@@ -25,4 +25,5 @@ protocol ActivityRootViewInput: AnyObject {
   func showEmptyState()
   func showList()
   func updateTitle(_ title: String)
+  func setIsConnecting(_ isConnecting: Bool)
 }

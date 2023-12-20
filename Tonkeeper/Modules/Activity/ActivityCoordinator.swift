@@ -33,7 +33,8 @@ private extension ActivityCoordinator {
   func openActivityRoot() {
     let module = ActivityRootAssembly.module(output: self,
                                              activityController: walletCoreAssembly.activityController(),
-                                             activityListController: walletCoreAssembly.activityListController())
+                                             activityListController: walletCoreAssembly.activityListController(),
+                                             transactionsEventDaemon: walletCoreAssembly.transactionsEventsDaemon())
     router.setPresentables([(module.view, nil)])
   }
 }

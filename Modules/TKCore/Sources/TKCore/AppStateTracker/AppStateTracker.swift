@@ -34,7 +34,7 @@ public final class AppStateTracker {
   private var enterBackgroundNotificationToken: Any?
   private var observers = [AppStateTrackerObserverWrapper]()
   
-  init() {
+  public init() {
     becomeActiveNotificationToken = NotificationCenter
       .default
       .addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: nil) { [weak self] notification in

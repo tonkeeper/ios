@@ -25,7 +25,6 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
   
   override func layoutSubviews() {
     super.layoutSubviews()
-    
     let titleSizeThatFits = titleLabel.sizeThatFits(.zero)
     let titleSize = CGSize(width: min(bounds.width, titleSizeThatFits.width),
                            height: titleSizeThatFits.height)
@@ -71,6 +70,9 @@ final class DefaultCellTextContentView: UIView, ConfigurableView, ContainerColle
     amountView.frame = amountFrame
     topRightDescriptionLabel.frame = topRightDescriptionFrame
     topLeftDescriptionView.frame = topLeftDescriptionFrame
+    amountView.layoutIfNeeded()
+    topRightDescriptionLabel.layoutIfNeeded()
+    topLeftDescriptionView.layoutIfNeeded()
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
@@ -190,7 +192,7 @@ extension DefaultCellTextContentView {
         height: leftLabelSize.height
       )
       let rightLabelFrame = CGRect(
-        x: leftLabel.frame.maxX + 6,
+        x: leftLabelFrame.maxX + 6,
         y: bounds.height/2 - rightLabelSize.height/2,
         width: max(0, bounds.width - leftLabel.frame.width - 6),
         height: rightLabelSize.height

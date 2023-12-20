@@ -20,6 +20,7 @@ protocol ActivityListModuleOutput: AnyObject {
   func didSelectTransaction(in section: Int, at index: Int)
   func activityListNoEvents(_ activityList: ActivityListModuleInput)
   func activityListHasEvents(_ activityList: ActivityListModuleInput)
+  func didSetIsConnecting(_ isConnecting: Bool)
 }
 
 protocol ActivityListModuleCollectibleOutput: ActivityListModuleOutput {

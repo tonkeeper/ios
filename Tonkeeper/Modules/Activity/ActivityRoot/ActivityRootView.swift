@@ -9,7 +9,8 @@
 import UIKit
 
 final class ActivityRootView: UIView {
-  
+  let navigationBarView = NavigationBarView()
+  let largeTitleView = ActivityLargeTitleView()
   private let emptyContainer = UIView()
   private let listContainer = UIView()
 
@@ -67,10 +68,18 @@ private extension ActivityRootView {
   func setup() {
     addSubview(listContainer)
     addSubview(emptyContainer)
+    addSubview(navigationBarView)
+    
+    navigationBarView.largeBarContentView = largeTitleView
     
     emptyContainer.translatesAutoresizingMaskIntoConstraints = false
     listContainer.translatesAutoresizingMaskIntoConstraints = false
+    navigationBarView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
+      navigationBarView.topAnchor.constraint(equalTo: topAnchor),
+      navigationBarView.leftAnchor.constraint(equalTo: leftAnchor),
+      navigationBarView.rightAnchor.constraint(equalTo: rightAnchor),
+      
       emptyContainer.topAnchor.constraint(equalTo: topAnchor),
       emptyContainer.leftAnchor.constraint(equalTo: leftAnchor),
       emptyContainer.bottomAnchor.constraint(equalTo: bottomAnchor),

@@ -33,6 +33,7 @@ final class TitleConnectionView: UIView, ConfigurableView {
     let connectionStatusViewAlpha: CGFloat
     if let statusViewModel = model.statusViewModel {
       connectionStatusView.configure(model: statusViewModel)
+      self.layoutIfNeeded()
       connectionStatusViewAlpha = 1.0
       titleLabelCenterYConstraint?.isActive = false
       titleLabelBottomConstraint?.isActive = true

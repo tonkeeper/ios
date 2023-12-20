@@ -11,7 +11,8 @@ import WalletCoreKeeper
 struct ActivityRootAssembly {
   static func module(output: ActivityRootModuleOutput?,
                      activityController: ActivityController,
-                     activityListController: ActivityListController) -> Module<ActivityRootViewController, ActivityRootModuleInput> {
+                     activityListController: ActivityListController,
+                     transactionsEventDaemon: TransactionsEventDaemon) -> Module<ActivityRootViewController, ActivityRootModuleInput> {
     
     let presenter = ActivityRootPresenter(activityController: activityController)
     
@@ -21,6 +22,7 @@ struct ActivityRootAssembly {
       transactionBuilder: ActivityListTransactionBuilder(
         accountEventActionContentProvider: ActivityListAccountEventActionContentProvider()
       ),
+      transactionsEventDaemon: transactionsEventDaemon,
       output: presenter
     )
     

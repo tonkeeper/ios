@@ -51,9 +51,9 @@ final class TabBarAssembly {
   }
   
   func activityCoordinator() -> ActivityCoordinator {
-    let navigationController = UINavigationController()
+    let navigationController = NavigationController()
     navigationController.configureDefaultAppearance()
-    navigationController.navigationBar.prefersLargeTitles = true
+    navigationController.setNavigationBarHidden(true, animated: false)
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = activityAssembly.coordinator(router: router)
     return coordinator

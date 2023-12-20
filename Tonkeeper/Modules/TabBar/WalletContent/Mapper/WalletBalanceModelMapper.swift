@@ -5,7 +5,7 @@
 //  Created by Grigory on 2.7.23..
 //
 
-import Foundation
+import UIKit
 import WalletCoreKeeper
 
 final class WalletBalanceModelMapper {
@@ -32,11 +32,22 @@ private extension WalletBalanceModelMapper {
   func map(item: WalletItemViewModel) -> TokenListTokenCell.Model {
     let image: Image = .with(image: item.image)
     
+    var priceDiff: NSAttributedString?
+    if let leftRightSubtitle = item.leftRightSubtitle {
+      let color: UIColor
+      if leftRightSubtitle.hasPrefix("-") {
+        color = .Accent.red
+      } else {
+        color = .Accent.green
+      }
+      priceDiff = leftRightSubtitle.attributed(with: .body2, alignment: .left, color: color)
+    }
+    
     return .init(image: image,
                  title: item.leftTitle,
                  shortTitle: item.rightTitle,
-                 price: item.leftSubtitle,
-                 priceDiff: nil,
+                 price: item.leftLeftSubtitle,
+                 priceDiff: priceDiff,
                  amount: item.rightValue,
                  fiatAmount: item.rightSubvalue)
   }

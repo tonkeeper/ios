@@ -28,11 +28,8 @@ final class LoaderView: UIView {
     
     var lineWidth: CGFloat {
       switch self {
-      case .xSmall,
-          .small,
-          .medium,
-          .large: return 1.5
-      case .xLarge: return 3
+      case .xSmall, .small: return 1.5
+      case .xLarge, .medium, .large: return 3
       }
     }
   }

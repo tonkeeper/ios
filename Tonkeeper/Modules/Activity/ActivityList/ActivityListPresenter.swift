@@ -9,6 +9,7 @@
 import Foundation
 import WalletCoreKeeper
 import TonSwift
+import TKCore
 
 final class ActivityListPresenter {
   
@@ -21,14 +22,18 @@ final class ActivityListPresenter {
   
   private let activityListController: ActivityListController
   private let transactionBuilder: ActivityListTransactionBuilder
+  private let transactionsEventDaemon: TransactionsEventDaemon
+  private let appStateTracket = AppStateTracker()
   
   private var cellsViewModels = [String: ActivityListCompositionTransactionCell.Model]()
   private var isPagingLoading = false
   
   init(activityListController: ActivityListController,
-       transactionBuilder: ActivityListTransactionBuilder) {
+       transactionBuilder: ActivityListTransactionBuilder,
+       transactionsEventDaemon: TransactionsEventDaemon) {
     self.activityListController = activityListController
     self.transactionBuilder = transactionBuilder
+    self.transactionsEventDaemon = transactionsEventDaemon
   }
 }
 
@@ -36,6 +41,9 @@ final class ActivityListPresenter {
 
 extension ActivityListPresenter: ActivityListPresenterInput {
   func viewDidLoad() {
+    transactionsEventDaemon.addObserver(self)
+    appStateTracket.addObserver(self)
+    Task { handleTransactionsEventDaemonStateUpdate(state: await transactionsEventDaemon.state )}
     Task {
       let stream = await activityListController.eventsStream()
       for try await event in stream {
@@ -151,4 +159,43 @@ private extension ActivityListPresenter {
     let shimmers = (0..<5).map { _ in UUID().uuidString }
     viewInput?.updateSections([.shimmer(shimmers: shimmers)])
   }
+  
+  func handleTransactionsEventDaemonStateUpdate(state: WalletCoreKeeper.TransactionsEventDaemonState) {
+    DispatchQueue.main.async { [output] in
+      switch state {
+      case .connected:
+        output?.didSetIsConnecting(false)
+      case .connecting:
+        output?.didSetIsConnecting(true)
+      case .disconnected:
+        output?.didSetIsConnecting(false)
+      case .noConnection:
+        output?.didSetIsConnecting(false)
+      }
+    }
+  }
 }
+
+extension ActivityListPresenter: TransactionsEventDaemonObserver {
+  func didUpdateState(_ state: WalletCoreKeeper.TransactionsEventDaemonState) {
+    handleTransactionsEventDaemonStateUpdate(state: state)
+  }
+  
+  func didReceiveTransaction(_ transaction: WalletCoreKeeper.TransactionsEventDaemonTransaction) {
+    Task { await activityListController.start() }
+  }
+}
+
+extension ActivityListPresenter: AppStateTrackerObserver {
+  func didUpdateState(_ state: TKCore.AppStateTracker.State) {
+    switch state {
+    case .active:
+      Task {
+        await activityListController.start()
+      }
+    default:
+      break
+    }
+  }
+}
+

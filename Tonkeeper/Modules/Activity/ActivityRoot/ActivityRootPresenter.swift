@@ -63,6 +63,10 @@ extension ActivityRootPresenter: ActivityListModuleOutput {
   func activityListHasEvents(_ activityList: ActivityListModuleInput) {
     viewInput?.showList()
   }
+  
+  func didSetIsConnecting(_ isConnecting: Bool) {
+    viewInput?.setIsConnecting(isConnecting)
+  }
 }
 
 // MARK: - ActivityListModuleCollectibleOutput
