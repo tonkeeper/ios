@@ -63,6 +63,33 @@ private extension ActivityTransactionDetailsPresenter {
     
     var headerItems = [ModalCardViewController.Configuration.Item]()
     
+    if let headerImage = model.headerImage {
+      switch headerImage {
+      case .swap(let fromImage, let toImage):
+        let view = SwapHeaderImageView()
+        view.imageLoader = NukeImageLoader()
+        view.configure(model: SwapHeaderImageView.Model(
+          leftImage: .with(image: fromImage),
+          rightImage: .with(image: toImage))
+        )
+        headerItems.append(ModalCardViewController.Configuration.Item.customView(view, bottomSpacing: 20))
+      case .image(let image):
+        let view = ActionDetailsTokenHeaderImageView()
+        view.imageLoader = NukeImageLoader()
+        view.configure(model: ActionDetailsTokenHeaderImageView.Model(
+          image: .with(image: image)
+        ))
+        headerItems.append(ModalCardViewController.Configuration.Item.customView(view, bottomSpacing: 20))
+      case .nft(let image):
+        let view = ActionDetailsNFTHeaderImageView()
+        view.imageLoader = NukeImageLoader()
+        view.configure(model: ActionDetailsNFTHeaderImageView.Model(
+          image: .with(image: .url(image))
+        ))
+        headerItems.append(ModalCardViewController.Configuration.Item.customView(view, bottomSpacing: 20))
+      }
+    }
+    
     if let nftName = model.nftName {
       headerItems.append(.text(.init(text: nftName.attributed(with: .h2, alignment: .center, color: .Text.primary), numberOfLines: 1), bottomSpacing: 0))
       if let nftCollectionName = model.nftCollectionName {
