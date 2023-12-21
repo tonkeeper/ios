@@ -1,15 +1,8 @@
-//
-//  ActivityTransactionDetailsActivityTransactionDetailsPresenter.swift
-//  Tonkeeper
-
-//  Tonkeeper
-//  Created by Grigory Serebryanyy on 09/06/2023.
-//
-
 import Foundation
 import WalletCoreKeeper
 import TKUIKit
 import TKCore
+import UIKit
 
 final class ActivityTransactionDetailsPresenter {
   
@@ -32,7 +25,6 @@ final class ActivityTransactionDetailsPresenter {
 
 extension ActivityTransactionDetailsPresenter: ActivityTransactionDetailsPresenterInput {
   func viewDidLoad() {
-    configureOpenTransactionButton()
     configureDetails()
   }
 }
@@ -44,20 +36,6 @@ extension ActivityTransactionDetailsPresenter: ActivityTransactionDetailsModuleI
 // MARK: - Private
 
 private extension ActivityTransactionDetailsPresenter {
-  func configureOpenTransactionButton() {
-    let model = TKButtonControl<OpenTransactionTKButtonContentView>.Model(
-      contentModel: OpenTransactionTKButtonContentView.Model(
-        title: "Transaction ",
-        transactionHash: activityEventDetailsController.transactionHash,
-        image: .Icons.Size16.globe16
-      ),
-      action: { [urlOpener, activityEventDetailsController] in
-        urlOpener.open(url: activityEventDetailsController.transactionURL)
-      }
-    )
-    viewInput?.updateOpenTransactionButton(with: model)
-  }
-  
   func configureDetails() {
     let model = activityEventDetailsController.model
     
@@ -123,12 +101,42 @@ private extension ActivityTransactionDetailsPresenter {
         rightBottom: .value($0.bottomValue))
     }
     let list = ModalCardViewController.Configuration.ContentItem.list(listItems)
+    let buttonItem = ModalCardViewController.Configuration.ContentItem.item(.customView(createOpenTransactionButtonContainerView(), bottomSpacing: 32))
 
     let configuration = ModalCardViewController.Configuration(
       header: ModalCardViewController.Configuration.Header(items: headerItems),
-      content: ModalCardViewController.Configuration.Content(items: [list]),
+      content: ModalCardViewController.Configuration.Content(items: [list, buttonItem]),
       actionBar: nil
     )
     viewInput?.update(with: configuration)
+  }
+}
+
+private extension ActivityTransactionDetailsPresenter {
+  func createOpenTransactionButtonContainerView() -> UIView {
+    let buttonContainer = UIView()
+    let button = TKButtonControl(buttonContent: OpenTransactionTKButtonContentView(),
+                                 buttonCategory: .secondary,
+                                 buttonSize: .small)
+    buttonContainer.addSubview(button)
+    button.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+      button.topAnchor.constraint(equalTo: buttonContainer.topAnchor),
+      button.centerXAnchor.constraint(equalTo: buttonContainer.centerXAnchor),
+      button.bottomAnchor.constraint(equalTo: buttonContainer.bottomAnchor)
+    ])
+    
+    let model = TKButtonControl<OpenTransactionTKButtonContentView>.Model(
+      contentModel: OpenTransactionTKButtonContentView.Model(
+        title: "Transaction ",
+        transactionHash: activityEventDetailsController.transactionHash,
+        image: .Icons.Size16.globe16
+      ),
+      action: { [urlOpener, activityEventDetailsController] in
+        urlOpener.open(url: activityEventDetailsController.transactionURL)
+      }
+    )
+    button.configure(model: model)
+    return buttonContainer
   }
 }

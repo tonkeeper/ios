@@ -42,9 +42,6 @@ class ActivityTransactionDetailsViewController: GenericViewController<ActivityTr
   
   var height: CGFloat {
     modalCardViewController.height
-    + customView.openTransactionButton.intrinsicContentSize.height
-    + customView.safeAreaInsets.bottom
-    + 32
   }
   
   var didUpdateHeight: (() -> Void)?

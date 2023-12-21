@@ -51,16 +51,17 @@ private extension ActivityTransactionDetailsView {
     addSubview(openTransactionButton)
     
     modalContentContainer.translatesAutoresizingMaskIntoConstraints = false
-    openTransactionButton.translatesAutoresizingMaskIntoConstraints = false
+//    openTransactionButton.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       modalContentContainer.topAnchor.constraint(equalTo: topAnchor),
       modalContentContainer.leftAnchor.constraint(equalTo: leftAnchor),
       modalContentContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      modalContentContainer.bottomAnchor.constraint(equalTo: bottomAnchor)
       
-      openTransactionButton.topAnchor.constraint(equalTo: modalContentContainer.bottomAnchor),
-      openTransactionButton.centerXAnchor.constraint(equalTo: centerXAnchor),
-      openTransactionButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -32).withPriority(.defaultHigh)
+//      openTransactionButton.topAnchor.constraint(equalTo: modalContentContainer.bottomAnchor),
+//      openTransactionButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+//      openTransactionButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -32).withPriority(.defaultHigh)
     ])
   }
 }
