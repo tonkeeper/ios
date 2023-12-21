@@ -7,6 +7,7 @@
 
 import UIKit
 import TonSwift
+import WalletCoreKeeper
 
 final class ActivityCoordinator: Coordinator<NavigationRouter> {
   
@@ -33,7 +34,8 @@ private extension ActivityCoordinator {
   func openActivityRoot() {
     let module = ActivityRootAssembly.module(output: self,
                                              activityController: walletCoreAssembly.activityController(),
-                                             activityListController: walletCoreAssembly.activityListController())
+                                             activityListController: walletCoreAssembly.activityListController(),
+                                             transactionsEventDaemon: walletCoreAssembly.transactionsEventsDaemon())
     router.setPresentables([(module.view, nil)])
   }
 }
@@ -55,8 +57,12 @@ extension ActivityCoordinator: ActivityRootModuleOutput {
     })
   }
   
-  func didSelectTransaction() {
-    let module = ActivityTransactionDetailsAssembly.module(output: self)
+  func didSelectAction(_ action: ActivityEventAction) {
+    let module = ActivityTransactionDetailsAssembly.module(
+      activityEventDetailsController: walletCoreAssembly.activityEventDetailsController(action: action),
+      urlOpener: UIApplication.shared,
+      output: self
+    )
     let modalCardContainerViewController = ModalCardContainerViewController(content: module.view)
     modalCardContainerViewController.headerSize = .small
     

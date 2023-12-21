@@ -6,7 +6,7 @@
 //
 
 import WidgetKit
-import WalletCore
+import WalletCoreKeeper
 import TKChart
 
 struct RateWidgetEntry: TimelineEntry {

@@ -9,7 +9,8 @@
 import UIKit
 import TKUIKit
 import TKChart
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 final class TonChartPresenter {
   
@@ -25,10 +26,10 @@ final class TonChartPresenter {
   
   // MARK: - State
   
-  private var selectedPeriod: WalletCore.Period = .week
+  private var selectedPeriod: WalletCoreKeeper.Period = .week
   private var reloadTask: Task<Void, Error>?
   
-  private var currency: WalletCore.Currency {
+  private var currency: WalletCoreCore.Currency {
     (try? walletProvider.activeWallet.currency) ?? .USD
   }
   
@@ -51,7 +52,7 @@ extension TonChartPresenter: TonChartPresenterInput {
   
   func didSelectButton(at index: Int) {
     viewInput?.selectButton(at: index)
-    selectedPeriod = WalletCore.Period.allCases[index]
+    selectedPeriod = WalletCoreKeeper.Period.allCases[index]
     reloadChartDataAndHeader()
   }
   
@@ -82,12 +83,12 @@ extension TonChartPresenter: TonChartModuleInput {
 
 private extension TonChartPresenter {
   func setupButtons() {
-    let buttons = WalletCore.Period.allCases.map {
-      TKButton.Model(title: $0.title)
+    let buttons = WalletCoreKeeper.Period.allCases.map {
+      TKButton.Model(title: .string($0.title))
     }
     let model = TonChartButtonsView.Model(buttons: buttons)
     viewInput?.updateButtons(with: model)
-    viewInput?.selectButton(at: WalletCore.Period.allCases.firstIndex(of: selectedPeriod) ?? 0)
+    viewInput?.selectButton(at: WalletCoreKeeper.Period.allCases.firstIndex(of: selectedPeriod) ?? 0)
   }
   
   func reloadChartDataAndHeader() {
@@ -140,8 +141,8 @@ private extension TonChartPresenter {
     }
   }
 
-  func prepareChartData(coordinates: [WalletCore.Coordinate],
-                        period: WalletCore.Period) -> TKLineChartView.Data {
+  func prepareChartData(coordinates: [WalletCoreKeeper.Coordinate],
+                        period: WalletCoreKeeper.Period) -> TKLineChartView.Data {
     let mode: TKLineChartView.Mode
     switch period {
     case .hour:
@@ -249,4 +250,4 @@ private extension TextStyle {
   }
 }
 
-extension WalletCore.Coordinate: TKChart.Coordinate {}
+extension WalletCoreKeeper.Coordinate: TKChart.Coordinate {}

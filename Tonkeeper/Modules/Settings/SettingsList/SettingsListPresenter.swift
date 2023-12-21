@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 import UIKit
 import TKCore
 

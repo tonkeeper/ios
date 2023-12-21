@@ -20,6 +20,13 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
       updateSeparatorVisibility()
     }
   }
+  
+  override var isHighlighted: Bool {
+    didSet {
+      guard isHighlighted != oldValue else { return }
+      hightlightView.isHighlighted = isHighlighted
+    }
+  }
 
   let hightlightView = HighlightContainerView()
   let contentView = PassthroughView()

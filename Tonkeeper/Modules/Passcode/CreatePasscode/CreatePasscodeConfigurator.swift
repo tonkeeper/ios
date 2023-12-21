@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreCore
 
 struct CreatePasscodeConfigurator: PasscodeInputPresenterConfigurator {
   var didFinishBiometry: (() -> Void)?

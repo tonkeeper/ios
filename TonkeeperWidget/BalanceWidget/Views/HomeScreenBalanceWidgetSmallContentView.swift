@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import WalletCore
+import WalletCoreKeeper
 
 struct HomeScreenBalanceWidgetSmallContentView: View {
   let model: BalanceWidgetController.Model

@@ -14,12 +14,12 @@ public protocol AppStateTrackerObserver: AnyObject {
 public final class AppStateTracker {
   
   public enum State {
-    case becomeActive
-    case resignActive
-    case enterBackground
+    case active
+    case resign
+    case background
   }
     
-  public private(set) var state: State = .becomeActive {
+  public private(set) var state: State = .active {
     didSet {
       notifyObservers(state)
     }
@@ -34,23 +34,23 @@ public final class AppStateTracker {
   private var enterBackgroundNotificationToken: Any?
   private var observers = [AppStateTrackerObserverWrapper]()
   
-  init() {
+  public init() {
     becomeActiveNotificationToken = NotificationCenter
       .default
       .addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: nil) { [weak self] notification in
-        self?.state = .becomeActive
+        self?.state = .active
       }
     
     resignActiveNotificationToken = NotificationCenter
       .default
       .addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: nil) { [weak self] notification in
-        self?.state = .resignActive
+        self?.state = .resign
       }
     
     enterBackgroundNotificationToken = NotificationCenter
       .default
       .addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: nil) { [weak self] notification in
-        self?.state = .enterBackground
+        self?.state = .background
     }
   }
   

@@ -6,12 +6,13 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 struct SettingsRecoveryPhraseAssembly {
-  static func module(keeperController: KeeperController,
+  static func module(walletProvider: WalletProvider,
                      output: SettingsRecoveryPhraseModuleOutput?) -> Module<SettingsRecoveryPhraseViewController, SettingsRecoveryPhraseModuleInput> {
-    let presenter = SettingsRecoveryPhrasePresenter(keeperController: keeperController)
+    let presenter = SettingsRecoveryPhrasePresenter(walletProvider: walletProvider)
     presenter.output = output
     
     let viewController = SettingsRecoveryPhraseViewController(presenter: presenter)

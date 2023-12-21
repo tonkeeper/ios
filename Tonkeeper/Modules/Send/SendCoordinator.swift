@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 import BigInt
 
 protocol SendCoordinatorOutput: AnyObject {

@@ -96,7 +96,7 @@ extension SettingsCoordinator: SettingsSecurityModuleOutput {
   
   func settingsSecurityDidSelectShowRecoveryPhrase() {
     let module = SettingsRecoveryPhraseAssembly.module(
-      keeperController: walletCoreAssembly.keeperController,
+      walletProvider: walletCoreAssembly.walletProvider,
       output: self
     )
     module.view.setupBackButton()

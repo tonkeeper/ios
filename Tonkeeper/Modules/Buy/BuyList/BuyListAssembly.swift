@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 struct BuyListAssembly {
   static func module(fiatMethodsController: FiatMethodsController,

@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 struct SendRecipientAssembly {
   static func module(sendRecipientController: SendRecipientController,

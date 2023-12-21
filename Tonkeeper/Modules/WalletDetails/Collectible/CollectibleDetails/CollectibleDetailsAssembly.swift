@@ -7,7 +7,7 @@
 
 import UIKit
 import TKCore
-import WalletCore
+import WalletCoreKeeper
 
 struct CollectibleDetailsAssembly {
   static func module(collectibleDetailsController: CollectibleDetailsController,

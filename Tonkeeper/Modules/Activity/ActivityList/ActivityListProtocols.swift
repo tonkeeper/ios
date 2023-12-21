@@ -8,6 +8,7 @@
 
 import Foundation
 import TonSwift
+import WalletCoreKeeper
 
 enum ActivityListViewState {
   case shimmer(sections: [ActivityListSection])
@@ -17,9 +18,11 @@ enum ActivityListViewState {
 }
 
 protocol ActivityListModuleOutput: AnyObject {
-  func didSelectTransaction(in section: Int, at index: Int)
+//  func didSelectTransaction(in section: Int, at index: Int)
+  func didSelectAction(_ action: ActivityEventAction)
   func activityListNoEvents(_ activityList: ActivityListModuleInput)
   func activityListHasEvents(_ activityList: ActivityListModuleInput)
+  func didSetIsConnecting(_ isConnecting: Bool)
 }
 
 protocol ActivityListModuleCollectibleOutput: ActivityListModuleOutput {

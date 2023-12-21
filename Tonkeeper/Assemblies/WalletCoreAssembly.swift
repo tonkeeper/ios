@@ -6,19 +6,20 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 import TonSwift
 import TKCore
 
 final class WalletCoreAssembly {
   
   let coreAssembly: CoreAssembly
-  let walletCoreAssembly: WalletCore.Assembly
+  let walletCoreAssembly: WalletCoreKeeper.Assembly
   
   init(coreAssembly: CoreAssembly) {
     self.coreAssembly = coreAssembly
-    self.walletCoreAssembly = WalletCore.Assembly(
-      dependencies: Dependencies(
+    self.walletCoreAssembly = WalletCoreKeeper.Assembly(
+      dependencies: Dependencies( 
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
         sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)
@@ -29,16 +30,20 @@ final class WalletCoreAssembly {
     walletCoreAssembly.configurationController
   }
   
-  var keeperController: KeeperController {
-    walletCoreAssembly.keeperController
+  var walletsController: WalletsController {
+    walletCoreAssembly.walletsController
+  }
+  
+  var walletProvider: WalletProvider {
+    walletCoreAssembly.walletsProvider
   }
   
   var passcodeController: PasscodeController {
     walletCoreAssembly.passcodeController
   }
   
-  var balanceController: WalletBalanceController {
-    walletCoreAssembly.walletBalanceController
+  var balanceController: BalanceController {
+    walletCoreAssembly.balanceController
   }
   
   var sendInputController: SendInputController {
@@ -85,6 +90,10 @@ final class WalletCoreAssembly {
     walletCoreAssembly.activityListTokenEventsController(tokenInfo: tokenInfo)
   }
   
+  func activityEventDetailsController(action: ActivityEventAction) -> ActivityEventDetailsController {
+    walletCoreAssembly.activityEventDetailsController(action: action)
+  }
+  
   func chartController() -> ChartController {
     walletCoreAssembly.chartController()
   }
@@ -119,6 +128,10 @@ final class WalletCoreAssembly {
   
   func tonConnectEventsDaemon() -> TonConnectEventsDaemon {
     walletCoreAssembly.tonConnectEventsDaemon()
+  }
+  
+  func transactionsEventsDaemon() -> TransactionsEventDaemon {
+    walletCoreAssembly.transactionsEventsDaemon
   }
   
   func fiatMethodsController() -> FiatMethodsController {

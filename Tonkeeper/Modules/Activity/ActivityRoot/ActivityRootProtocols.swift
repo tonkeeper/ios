@@ -8,10 +8,11 @@
 
 import Foundation
 import TonSwift
+import WalletCoreKeeper
 
 protocol ActivityRootModuleOutput: AnyObject {
   func didTapReceiveButton()
-  func didSelectTransaction()
+  func didSelectAction(_ action: ActivityEventAction)
   func didSelectCollectible(address: Address)
 }
 
@@ -25,4 +26,5 @@ protocol ActivityRootViewInput: AnyObject {
   func showEmptyState()
   func showList()
   func updateTitle(_ title: String)
+  func setIsConnecting(_ isConnecting: Bool)
 }

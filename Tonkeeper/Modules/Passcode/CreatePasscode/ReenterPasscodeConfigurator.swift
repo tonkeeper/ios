@@ -6,7 +6,8 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 struct ReenterPasscodeConfigurator: PasscodeInputPresenterConfigurator {
   let title: String = "Re-enter passcode"

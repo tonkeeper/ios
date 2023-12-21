@@ -10,6 +10,10 @@ import UIKit
 
 final class ActivityTransactionDetailsView: UIView {
   
+  let openTransactionButton = TKButtonControl(buttonContent: OpenTransactionTKButtonContentView(),
+                                              buttonCategory: .secondary,
+                                              buttonSize: .small)
+  
   private let modalContentContainer = UIView()
 
   // MARK: - Init
@@ -44,14 +48,19 @@ final class ActivityTransactionDetailsView: UIView {
 private extension ActivityTransactionDetailsView {
   func setup() {
     addSubview(modalContentContainer)
+    addSubview(openTransactionButton)
     
     modalContentContainer.translatesAutoresizingMaskIntoConstraints = false
+    openTransactionButton.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       modalContentContainer.topAnchor.constraint(equalTo: topAnchor),
       modalContentContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      modalContentContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
-      modalContentContainer.rightAnchor.constraint(equalTo: rightAnchor)
+      modalContentContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      
+      openTransactionButton.topAnchor.constraint(equalTo: modalContentContainer.bottomAnchor),
+      openTransactionButton.centerXAnchor.constraint(equalTo: centerXAnchor),
+      openTransactionButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -32).withPriority(.defaultHigh)
     ])
   }
 }

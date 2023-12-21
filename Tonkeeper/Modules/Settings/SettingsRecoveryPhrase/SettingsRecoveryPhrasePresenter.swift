@@ -6,7 +6,8 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 final class SettingsRecoveryPhrasePresenter {
   
@@ -17,12 +18,12 @@ final class SettingsRecoveryPhrasePresenter {
   
   // MARK: - Dependencies
   
-  private let keeperController: KeeperController
+  private let walletProvider: WalletProvider
   
   // MARK: - Init
   
-  init(keeperController: KeeperController) {
-    self.keeperController = keeperController
+  init(walletProvider: WalletProvider) {
+    self.walletProvider = walletProvider
   }
 }
 
@@ -49,9 +50,10 @@ private extension SettingsRecoveryPhrasePresenter {
     
     var wordViewModels = [RecoveryPhraseWordView.Model]()
     do {
-      let wallet = try keeperController.activeWallet
-      let mnemonic = try keeperController.getWalletMnemonic(wallet)
+      let wallet = try walletProvider.activeWallet
+      let mnemonic = try walletProvider.getWalletMnemonic(wallet)
       wordViewModels = mnemonic
+        .mnemonicWords
         .enumerated()
         .map {
           .init(orderNumber: $0.offset + 1, word: $0.element)

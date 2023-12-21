@@ -56,17 +56,8 @@ extension WalletHeaderViewController: WalletHeaderViewInput {
     customView.buttonsView.buttons = buttons
   }
   
-  func updateTitle(_ title: String?) {
-    customView.titleView.title = title
-  }
-  
-  func updateConnectionState(_ model: WalletHeaderConnectionStatusView.Model?) {
-    guard let model = model else {
-      customView.titleView.connectionStatusView.isHidden = true
-      return
-    }
-    customView.titleView.connectionStatusView.isHidden = false
-    customView.titleView.connectionStatusView.configure(model: model)
+  func updateTitleView(with model: TitleConnectionView.Model) {
+    customView.titleView.titleConnectionView.configure(model: model)
   }
 }
 

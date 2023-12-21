@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 protocol BuyListModuleOutput: AnyObject {
   func buyListModule(_ buyListModule: BuyListModuleInput,

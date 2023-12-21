@@ -6,29 +6,36 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreCore
+import WalletCoreKeeper
 import TKCore
 
 protocol AuthEventsDaemonObserver: AnyObject {
   func authEventsDaemon(_ daemon: AuthEventsDaemon,
-                        didReceiveTonConnectAppRequest appRequest: WalletCore.TonConnect.AppRequest,
+                        didReceiveTonConnectAppRequest appRequest: WalletCoreKeeper.TonConnect.AppRequest,
                         app: TonConnectApp)
 }
 
 final class AuthEventsDaemon {
   struct AuthEventsDaemonObserverWrapper {
-      weak var observer: AuthEventsDaemonObserver?
+    weak var observer: AuthEventsDaemonObserver?
   }
   
-  private let tonConnectEventsDaemon: WalletCore.TonConnectEventsDaemon
+  private let walletProvider: WalletProvider
+  private let transactionsEventDaemon: WalletCoreKeeper.TransactionsEventDaemon
+  private let tonConnectEventsDaemon: WalletCoreKeeper.TonConnectEventsDaemon
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
   
   private var observers = [AuthEventsDaemonObserverWrapper]()
   
-  init(tonConnectEventsDaemon: WalletCore.TonConnectEventsDaemon,
+  init(walletProvider: WalletProvider,
+       transactionsEventDaemon: WalletCoreKeeper.TransactionsEventDaemon,
+       tonConnectEventsDaemon: WalletCoreKeeper.TonConnectEventsDaemon,
        appStateTracker: AppStateTracker,
        reachabilityTracker: ReachabilityTracker) {
+    self.walletProvider = walletProvider
+    self.transactionsEventDaemon = transactionsEventDaemon
     self.tonConnectEventsDaemon = tonConnectEventsDaemon
     self.appStateTracker = appStateTracker
     self.reachabilityTracker = reachabilityTracker
@@ -38,32 +45,52 @@ final class AuthEventsDaemon {
     reachabilityTracker.addObserver(self)
   }
   
-  func startObserving() {
-    tonConnectEventsDaemon.startEventsObserving()
+  func start() {
+    startTransactionsObserving()
+    startTonConnectObserving()
   }
   
-  func stopObserving() {
-    tonConnectEventsDaemon.stopEventsObserving()
+  func stop() {
+    stopTransactionsObserving()
+    stopTonConnectObserving()
   }
   
   public func addObserver(_ observer: AuthEventsDaemonObserver) {
-      var observers = observers.filter { $0.observer != nil }
-      observers.append(.init(observer: observer))
-      self.observers = observers
+    var observers = observers.filter { $0.observer != nil }
+    observers.append(.init(observer: observer))
+    self.observers = observers
   }
   
   public func removeObserver(_ observer: AuthEventsDaemonObserver) {
-      observers = observers.filter { $0.observer !== observer }
+    observers = observers.filter { $0.observer !== observer }
   }
 }
 
 private extension AuthEventsDaemon {
   func handleStateChange() {
-    switch (appStateTracker.state, reachabilityTracker.state) {
-    case (.becomeActive, .connected):
-      startObserving()
-    default:
-      stopObserving()
+    
+    
+  
+  }
+  
+  func startTonConnectObserving() {
+    tonConnectEventsDaemon.startEventsObserving()
+  }
+  
+  func stopTonConnectObserving() {
+    tonConnectEventsDaemon.stopEventsObserving()
+  }
+  
+  func startTransactionsObserving() {
+    Task {
+      let addresses = [try walletProvider.activeWallet.address]
+      await transactionsEventDaemon.start(addresses: addresses)
+    }
+  }
+  
+  func stopTransactionsObserving() {
+    Task {
+      await transactionsEventDaemon.stop()
     }
   }
   
@@ -92,7 +119,16 @@ extension AuthEventsDaemon: TonConnectEventsDaemonObserver {
 
 extension AuthEventsDaemon: AppStateTrackerObserver {
   func didUpdateState(_ state: TKCore.AppStateTracker.State) {
-    handleStateChange()
+    switch appStateTracker.state {
+    case .active:
+      startTransactionsObserving()
+      startTonConnectObserving()
+    case .background:
+      stopTransactionsObserving()
+      stopTonConnectObserving()
+    case .resign:
+      return
+    }
   }
 }
 
@@ -100,6 +136,12 @@ extension AuthEventsDaemon: AppStateTrackerObserver {
 
 extension AuthEventsDaemon: ReachabilityTrackerObserver {
   func didUpdateState(_ state: TKCore.ReachabilityTracker.State) {
-    handleStateChange()
+    switch reachabilityTracker.state {
+    case .connected:
+      startTransactionsObserving()
+      startTonConnectObserving()
+    default:
+      return
+    }
   }
 }

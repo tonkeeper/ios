@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 import TonSwift
 
 final class WalletTokenDetailsCoordinator: Coordinator<NavigationRouter> {
@@ -55,11 +55,12 @@ private extension WalletTokenDetailsCoordinator {
                                                          transactionBuilder: ActivityListTransactionBuilder(
                                                           accountEventActionContentProvider: ActivityListAccountEventActionContentProvider()
                                                          ),
+                                                         transactionsEventDaemon: walletCoreAssembly.transactionsEventsDaemon(),
                                                          output: self)
     
     let module = TokenDetailsAssembly.module(output: self,
                                              activityListModule: activityListModule,
-                                             walletProvider: walletCoreAssembly.keeperController,
+                                             walletProvider: walletCoreAssembly.walletProvider,
                                              tokenDetailsController: tokenDetailsController,
                                              imageLoader: NukeImageLoader(),
                                              urlOpener: walletCoreAssembly.coreAssembly.urlOpener())
@@ -149,7 +150,7 @@ extension WalletTokenDetailsCoordinator: TokenDetailsModuleOutput {
   }
   
   func tonChartModule() -> Module<TonChartViewController, TonChartModuleInput> {
-    let module = TonChartAssembly.module(walletProvider: walletCoreAssembly.keeperController,
+    let module = TonChartAssembly.module(walletProvider: walletCoreAssembly.walletProvider,
                                          chartController: walletCoreAssembly.chartController(),
                                          output: self)
     return module
@@ -189,9 +190,20 @@ extension WalletTokenDetailsCoordinator: ReceiveCoordinatorOutput {
 // MARK: - ActivityListModuleOutput
 
 extension WalletTokenDetailsCoordinator: ActivityListModuleOutput {
-  func didSelectTransaction(in section: Int, at index: Int) {}
+  func didSelectAction(_ action: ActivityEventAction) {
+    let module = ActivityTransactionDetailsAssembly.module(
+      activityEventDetailsController: walletCoreAssembly.activityEventDetailsController(action: action),
+      urlOpener: UIApplication.shared,
+      output: nil
+    )
+    let modalCardContainerViewController = ModalCardContainerViewController(content: module.view)
+    modalCardContainerViewController.headerSize = .small
+    
+    router.present(modalCardContainerViewController)
+  }
   func activityListNoEvents(_ activityList: ActivityListModuleInput) {}
   func activityListHasEvents(_ activityList: ActivityListModuleInput) {}
+  func didSetIsConnecting(_ isConnecting: Bool) {}
 }
 
 // MARK: - TonChartModuleOutput

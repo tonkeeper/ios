@@ -19,5 +19,6 @@ protocol ActivityTransactionDetailsPresenterInput {
 }
 
 protocol ActivityTransactionDetailsViewInput: AnyObject {
-  func update(with modalContentConfiguration: ModalContentViewController.Configuration)
+  func update(with modalContentConfiguration: ModalCardViewController.Configuration)
+  func updateOpenTransactionButton(with model: TKButtonControl<OpenTransactionTKButtonContentView>.Model)
 }

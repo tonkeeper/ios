@@ -128,25 +128,8 @@ final class HighlightContainerView: UIView {
     didSet {
       guard isHighlighted != oldValue else { return }
       didUpdateHightlightState()
-      didUpdateIsHighlighted?(isHighlighted)
     }
   }
-  
-  override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-    self.isHighlighted = true
-    super.touchesBegan(touches, with: event)
-  }
-  
-  override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-    self.isHighlighted = false
-    super.touchesEnded(touches, with: event)
-  }
-  
-  override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-    self.isHighlighted = false
-    super.touchesCancelled(touches, with: event)
-  }
-
   private let hightlightView: UIView = {
     let view = UIView()
     view.backgroundColor = .Background.highlighted
@@ -174,6 +157,7 @@ final class HighlightContainerView: UIView {
 
 private extension HighlightContainerView {
   func setup() {
+    isUserInteractionEnabled = false
     backgroundColor = .clear
     addSubview(hightlightView)
   }

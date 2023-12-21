@@ -84,7 +84,7 @@ extension SendAmountViewController: SendAmountViewInput {
   
   func showTokenSelectionButton(_ code: String) {
     enterAmountViewController.customView.tokenSelectionButton.isHidden = false
-    enterAmountViewController.customView.tokenSelectionButton.title = code
+    enterAmountViewController.customView.tokenSelectionButton.configure(model: TKButton.Model(title: .string(code)))
   }
   
   func hideTokenSelectionButton() {

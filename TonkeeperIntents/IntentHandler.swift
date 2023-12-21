@@ -6,12 +6,12 @@
 //
 
 import Intents
-import WalletCore
+import WalletCoreCore
 
 class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentHandling {
   func provideCurrencyOptionsCollection(for intent: BalanceWidgetIntent, 
                                         with completion: @escaping (INObjectCollection<WidgetCurrency>?, Error?) -> Void) {
-    let currencies: [WidgetCurrency] = WalletCore.Currency.allCases.map { currency in
+    let currencies: [WidgetCurrency] = WalletCoreCore.Currency.allCases.map { currency in
       WidgetCurrency(identifier: currency.code, display: currency.code)
     }
     
@@ -22,7 +22,7 @@ class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentH
   func provideCurrencyOptionsCollection(for intent: RateWidgetIntent,
                                         with completion: @escaping (INObjectCollection<WidgetCurrency>?, Error?) -> Void) {
     
-    let currencies: [WidgetCurrency] = WalletCore.Currency.allCases.map { currency in
+    let currencies: [WidgetCurrency] = WalletCoreCore.Currency.allCases.map { currency in
       WidgetCurrency(identifier: currency.code, display: currency.code)
     }
     
@@ -30,16 +30,3 @@ class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentH
     completion(collection, nil)
   }
 }
-
-//class IntentHandler: INExtension, RateWidgetIntentHandling {
-//  func provideCurrencyOptionsCollection(for intent: RateWidgetIntent,
-//                                        with completion: @escaping (INObjectCollection<WidgetCurrency>?, Error?) -> Void) {
-//    
-//    let currencies: [WidgetCurrency] = WalletCore.Currency.allCases.map { currency in
-//      WidgetCurrency(identifier: currency.code, display: currency.code)
-//    }
-//    
-//    let collection = INObjectCollection(items: currencies)
-//    completion(collection, nil)
-//  }
-//}

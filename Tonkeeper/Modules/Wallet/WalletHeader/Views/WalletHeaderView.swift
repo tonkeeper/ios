@@ -9,7 +9,7 @@ import UIKit
 
 final class WalletHeaderView: UIView, ConfigurableView {
   
-  let titleView = WalletHeaderTitleView(size: .compact)
+  let titleView = WalletHeaderTitleView()
   
   let balanceLabel: UILabel = {
     let label = UILabel()
@@ -26,6 +26,8 @@ final class WalletHeaderView: UIView, ConfigurableView {
     button.titleLabel?.applyTextStyleFont(.body2)
     return button
   }()
+  
+  let dateLabel = UILabel()
   
   private let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -52,23 +54,41 @@ final class WalletHeaderView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   struct Model {
+    enum Subtitle {
+      case address(String)
+      case date(String)
+    }
     let balance: String
-    let address: String?
+    let subtitle: Subtitle?
   }
   
   func configure(model: Model) {
     balanceLabel.text = model.balance
     
-    addressButton.setTitle(model.address, for: .normal)
-    addressButton.isHidden = model.address == nil
-    addressTopSpacer.isHidden = model.address == nil
+    switch model.subtitle {
+    case .address(let address):
+      addressButton.setTitle(address, for: .normal)
+      addressButton.isHidden = false
+      dateLabel.isHidden = true
+      addressTopSpacer.isHidden = false
+    case .date(let date):
+      dateLabel.attributedText = date.attributed(with: .body2, alignment: .center, color: .Text.secondary)
+      dateLabel.isHidden = false
+      addressButton.isHidden = true
+      addressTopSpacer.isHidden = false
+    case .none:
+      dateLabel.isHidden = true
+      addressButton.isHidden = true
+      addressTopSpacer.isHidden = true
+    }
   }
 }
 
 private extension WalletHeaderView {
   func setup() {
     stackView.addArrangedSubview(balanceLabel)
-    stackView.addArrangedSubview(addressTopSpacer)
+//    stackView.addArrangedSubview(addressTopSpacer)
+    stackView.addArrangedSubview(dateLabel)
     stackView.addArrangedSubview(addressButton)
     
     addSubview(stackView)
@@ -78,6 +98,8 @@ private extension WalletHeaderView {
     stackView.translatesAutoresizingMaskIntoConstraints = false
     buttonsView.translatesAutoresizingMaskIntoConstraints = false
     titleView.translatesAutoresizingMaskIntoConstraints = false
+    dateLabel.translatesAutoresizingMaskIntoConstraints = false
+    addressButton.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       titleView.topAnchor.constraint(equalTo: topAnchor),
@@ -94,7 +116,11 @@ private extension WalletHeaderView {
       buttonsView.rightAnchor.constraint(equalTo: rightAnchor),
       buttonsView.heightAnchor.constraint(equalToConstant: 82),
       buttonsView.bottomAnchor.constraint(equalTo: bottomAnchor)
-        .withPriority(.defaultHigh)
+        .withPriority(.defaultHigh),
+      
+      dateLabel.heightAnchor.constraint(equalToConstant: 36),
+      
+      addressButton.heightAnchor.constraint(equalToConstant: 36)
     ])
   }
 }

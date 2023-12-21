@@ -17,7 +17,7 @@ class ActivityTransactionDetailsViewController: GenericViewController<ActivityTr
   
   // MARK: - Children
   
-  private let modalContentViewController = ModalContentViewController()
+  private let modalCardViewController = ModalCardViewController()
 
   // MARK: - Init
 
@@ -41,21 +41,28 @@ class ActivityTransactionDetailsViewController: GenericViewController<ActivityTr
   // MARK: - ScrollableModalCardContainerContent
   
   var height: CGFloat {
-    modalContentViewController.height
+    modalCardViewController.height
+    + customView.openTransactionButton.intrinsicContentSize.height
+    + customView.safeAreaInsets.bottom
+    + 32
   }
   
   var didUpdateHeight: (() -> Void)?
   
   var scrollView: UIScrollView {
-    modalContentViewController.scrollView
+    modalCardViewController.scrollView
   }
 }
 
 // MARK: - ActivityTransactionDetailsViewInput
 
 extension ActivityTransactionDetailsViewController: ActivityTransactionDetailsViewInput {
-  func update(with modalContentConfiguration: ModalContentViewController.Configuration) {
-    modalContentViewController.configuration = modalContentConfiguration
+  func update(with modalContentConfiguration: ModalCardViewController.Configuration) {
+    modalCardViewController.configuration = modalContentConfiguration
+  }
+  
+  func updateOpenTransactionButton(with model: TKButtonControl<OpenTransactionTKButtonContentView>.Model) {
+    customView.openTransactionButton.configure(model: model)
   }
 }
 
@@ -67,9 +74,8 @@ private extension ActivityTransactionDetailsViewController {
   }
   
   func setupModalContent() {
-    customView.embedContent(modalContentViewController.view)
-    modalContentViewController.isRespectSafeArea = false
-    modalContentViewController.didUpdateHeight = { [weak self] in
+    customView.embedContent(modalCardViewController.view)
+    modalCardViewController.didUpdateHeight = { [weak self] in
       self?.didUpdateHeight?()
     }
   }

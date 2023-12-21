@@ -8,7 +8,7 @@
 
 import Foundation
 import TKCore
-import WalletCore
+import WalletCoreKeeper
 
 final class CollectibleDetailsPresenter {
   

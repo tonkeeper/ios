@@ -7,7 +7,7 @@
 
 import UIKit
 import TKCore
-import WalletCore
+import WalletCoreKeeper
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   
@@ -65,4 +65,4 @@ private extension SceneDelegate {
   }
 }
 
-extension WalletCore.Deeplink: Deeplink {}
+extension WalletCoreKeeper.Deeplink: Deeplink {}

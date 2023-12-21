@@ -6,7 +6,8 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 protocol ImportWalletCoordinatorOutput: AnyObject {
   func importWalletCoordinatorDidClose(_ coordinator: ImportWalletCoordinator)
@@ -69,7 +70,7 @@ private extension ImportWalletCoordinator {
 extension ImportWalletCoordinator: EnterMnemonicModuleOutput {
   func didInputMnemonic(_ mnemonic: [String]) {
     let walletImporter = WalletImporter(
-      keeperController: assembly.walletCoreAssembly.keeperController,
+      walletsController: assembly.walletCoreAssembly.walletsController,
       passcodeController: assembly.walletCoreAssembly.passcodeController,
       mnemonic: mnemonic
     )

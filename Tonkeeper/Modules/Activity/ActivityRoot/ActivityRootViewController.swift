@@ -45,6 +45,7 @@ class ActivityRootViewController: GenericViewController<ActivityRootView>, Scrol
   
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
+    listViewController.scrollView.contentInset.top = customView.navigationBarView.additionalInset
   }
   
   // MARK: - ScrollViewController
@@ -59,14 +60,21 @@ class ActivityRootViewController: GenericViewController<ActivityRootView>, Scrol
 extension ActivityRootViewController: ActivityRootViewInput {
   func showEmptyState() {
     customView.showEmptyState()
+    customView.navigationBarView.scrollView = nil
   }
 
   func showList() {
     customView.showList()
+    customView.navigationBarView.scrollView = listViewController.scrollView
   }
   
   func updateTitle(_ title: String) {
-    navigationItem.title = title
+    customView.navigationBarView.title = title
+    customView.largeTitleView.title = title
+  }
+  
+  func setIsConnecting(_ isConnecting: Bool) {
+    customView.largeTitleView.isLoading = isConnecting
   }
 }
 
@@ -74,7 +82,6 @@ extension ActivityRootViewController: ActivityRootViewInput {
 
 private extension ActivityRootViewController {
   func setup() {
-    navigationItem.largeTitleDisplayMode = .always
     setupEmptyViewController()
     setupListViewController()
   }

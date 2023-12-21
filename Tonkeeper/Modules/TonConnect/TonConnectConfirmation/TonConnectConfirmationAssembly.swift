@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 struct TonConnectConfirmationAssembly {
   static func module(model: TonConnectConfirmationModel,

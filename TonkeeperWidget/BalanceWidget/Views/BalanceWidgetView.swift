@@ -7,7 +7,7 @@
 
 import SwiftUI
 import WidgetKit
-import WalletCore
+import WalletCoreKeeper
 
 struct BalanceWidgetView: View {
   let entry: BalanceWidgetEntry

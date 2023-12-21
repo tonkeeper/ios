@@ -9,11 +9,15 @@ import UIKit
 
 extension TKButton: ConfigurableView {
   struct Model {
-    let title: String?
+    enum Title {
+      case string(String?)
+      case attributedString(NSAttributedString?)
+    }
+    let title: Title?
     let icon: UIImage?
     let iconPosition: IconPosition
     
-    init(title: String? = nil,
+    init(title: Title? = nil,
          icon: UIImage? = nil,
          iconPosition: IconPosition = .left) {
       self.title = title
@@ -23,7 +27,15 @@ extension TKButton: ConfigurableView {
   }
   
   func configure(model: Model) {
-    title = model.title
+//    title = model.title
+    switch model.title {
+    case .string(let string):
+      title = string?.attributed(with: configuration.size.textStyle, alignment: .center, color: configuration.type.tintColors[.normal] ?? .white)
+    case .attributedString(let string):
+      title = string
+    case .none:
+      title = nil
+    }
     titleLabel.isHidden = model.title == nil
     
     icon = model.icon

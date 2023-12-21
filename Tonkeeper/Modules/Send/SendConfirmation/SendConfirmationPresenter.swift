@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 import BigInt
 
 final class SendConfirmationPresenter {
@@ -45,7 +45,7 @@ extension SendConfirmationPresenter: SendConfirmationPresenterInput {
 extension SendConfirmationPresenter: SendConfirmationModuleInput {}
 
 extension SendConfirmationPresenter: SendControllerDelegate {
-  func sendControllerDidStartLoadInitialData(_ sendController: WalletCore.SendController) {}
+  func sendControllerDidStartLoadInitialData(_ sendController: WalletCoreKeeper.SendController) {}
   
   func sendController(_ sendController: SendController, didUpdate model: SendTransactionViewModel) {
     let configuration = mapToConfiguration(model: model)

@@ -14,7 +14,7 @@ final class EnterAmountViewController: GenericViewController<EnterAmountView> {
   
   var tokenCode: String? {
     didSet {
-      customView.tokenSelectionButton.title = tokenCode
+      customView.tokenSelectionButton.configure(model: TKButton.Model(title: .string(tokenCode)))
     }
   }
   

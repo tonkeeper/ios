@@ -50,7 +50,7 @@ final class WelcomeView: UIView, ConfigurableView {
   
   func configure(model: Model) {
     titleLabel.attributedText = model.title
-    button.title = model.buttonTitle
+    button.configure(model: TKButton.Model(title: .string(model.buttonTitle)))
     
     contentStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
     model.items.forEach {

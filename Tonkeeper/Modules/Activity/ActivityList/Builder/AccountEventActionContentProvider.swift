@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 protocol AccountEventActionContentProvider {
   func title(actionType: ActivityEventViewModel.ActionViewModel.ActionType) -> String?

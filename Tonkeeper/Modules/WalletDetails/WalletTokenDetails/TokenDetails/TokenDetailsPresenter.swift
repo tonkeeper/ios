@@ -8,7 +8,8 @@
 
 import Foundation
 import TKCore
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 final class TokenDetailsPresenter {
   
@@ -20,14 +21,14 @@ final class TokenDetailsPresenter {
   
   // MARK: - Dependecies
   
-  private let walletProvider: WalletCore.WalletProvider
-  private let tokenDetailsController: WalletCore.TokenDetailsController
+  private let walletProvider: WalletCoreCore.WalletProvider
+  private let tokenDetailsController: WalletCoreKeeper.TokenDetailsController
   private let urlOpener: URLOpener
   
   // MARK: - Init
   
-  init(walletProvider: WalletCore.WalletProvider,
-       tokenDetailsController: WalletCore.TokenDetailsController,
+  init(walletProvider: WalletCoreCore.WalletProvider,
+       tokenDetailsController: WalletCoreKeeper.TokenDetailsController,
        urlOpener: URLOpener) {
     self.walletProvider = walletProvider
     self.tokenDetailsController = tokenDetailsController

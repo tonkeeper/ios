@@ -7,7 +7,7 @@
 
 import Foundation
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 final class WalletHeaderPresenter {
   
@@ -37,17 +37,20 @@ extension WalletHeaderPresenter: WalletHeaderPresenterInput {
 // MARK: - WalletHeaderModuleInput
 
 extension WalletHeaderPresenter: WalletHeaderModuleInput {
-  func updateTitle(_ title: String) {
-    viewInput?.updateTitle(title)
+  func updateTitleView(with model: TitleConnectionView.Model) {
+    viewInput?.updateTitleView(with: model)
   }
   
   func updateWith(walletHeader: WalletBalanceModel.Header) {
-    let headerModel = WalletHeaderView.Model(balance: walletHeader.amount, address: walletHeader.shortAddress)
+    let subtitle: WalletHeaderView.Model.Subtitle
+    switch walletHeader.subtitle {
+    case .address(let address):
+      subtitle = .address(address)
+    case .date(let date):
+      subtitle = .date(date)
+    }
+    let headerModel = WalletHeaderView.Model(balance: walletHeader.amount, subtitle: subtitle)
     viewInput?.update(with: headerModel)
-  }
-  
-  func updateConnectionState(_ model: WalletHeaderConnectionStatusView.Model?) {
-    viewInput?.updateConnectionState(model)
   }
 }
 
@@ -57,7 +60,7 @@ private extension WalletHeaderPresenter {
   func createHeaderButtonModels() -> [WalletHeaderButtonModel] {
     let types: [WalletHeaderButtonModel.ButtonType] = [.send, .receive, .buy]
     return types.map { type in
-      let buttonModel = TKButton.Model(icon: type.icon)
+      let buttonModel = TKButton.Model(title: .string(nil), icon: type.icon)
       let iconButtonModel = IconButton.Model(buttonModel: buttonModel, title: type.title)
       let model = WalletHeaderButtonModel(viewModel: iconButtonModel) { [weak self] in
         self?.handleHeaderButtonAction(type: type)

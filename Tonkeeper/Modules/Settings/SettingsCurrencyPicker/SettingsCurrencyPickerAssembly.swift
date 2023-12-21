@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 struct SettingsCurrencyPickerAssembly {
   static func module(settingsController: SettingsController,

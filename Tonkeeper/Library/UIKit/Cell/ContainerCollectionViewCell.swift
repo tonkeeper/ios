@@ -107,7 +107,7 @@ private extension ContainerCollectionViewCell {
     layer.masksToBounds = true
     contentView.addSubview(highlightView)
     contentView.addSubview(separatorView)
-    highlightView.addSubview(cellContentView)
+    contentView.addSubview(cellContentView)
     highlightView.didUpdateIsHighlighted = { [weak self] _ in
       self?.updateSeparatorVisibility()
     }

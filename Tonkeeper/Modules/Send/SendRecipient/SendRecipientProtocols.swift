@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 protocol SendRecipientModuleOutput: AnyObject {
   func sendRecipientModuleDidTapCloseButton()

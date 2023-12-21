@@ -43,6 +43,7 @@ class SendRecipientViewController: GenericViewController<SendRecipientView>, Key
   
   override func viewWillDisappear(_ animated: Bool) {
     super.viewWillDisappear(animated)
+    customView.endEditing(true)
     unregisterFromKeyboardEvents()
   }
 

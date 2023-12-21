@@ -8,7 +8,7 @@
 
 import Foundation
 import TonSwift
-import WalletCore
+import WalletCoreKeeper
 
 final class ActivityRootPresenter {
   
@@ -52,8 +52,8 @@ extension ActivityRootPresenter: ActivityEmptyModuleOutput {
 // MARK: - ActivityListModuleOutput
 
 extension ActivityRootPresenter: ActivityListModuleOutput {
-  func didSelectTransaction(in section: Int, at index: Int) {
-    output?.didSelectTransaction()
+  func didSelectAction(_ action: ActivityEventAction) {
+    output?.didSelectAction(action)
   }
   
   func activityListNoEvents(_ activityList: ActivityListModuleInput) {
@@ -62,6 +62,10 @@ extension ActivityRootPresenter: ActivityListModuleOutput {
   
   func activityListHasEvents(_ activityList: ActivityListModuleInput) {
     viewInput?.showList()
+  }
+  
+  func didSetIsConnecting(_ isConnecting: Bool) {
+    viewInput?.setIsConnecting(isConnecting)
   }
 }
 

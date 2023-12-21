@@ -75,43 +75,43 @@ private extension TonDetailsAboutView {
     headerView.configure(model: .init(title: "About"))
     
     let tonOrgButton = TKButton(configuration: .secondarySmall)
-    tonOrgButton.configure(model: .init(title: "ton.org", icon: .Icons.Buttons.TonDetailsLinks.tonOrg))
+    tonOrgButton.configure(model: .init(title: .string("ton.org"), icon: .Icons.Buttons.TonDetailsLinks.tonOrg))
     tonOrgButton.addAction(.init(handler: { [weak self] in
       self?.delegate?.didTapTonButton()
     }), for: .touchUpInside)
     
     let twitterButton = TKButton(configuration: .secondarySmall)
-    twitterButton.configure(model: .init(title: "Twitter", icon: .Icons.Buttons.TonDetailsLinks.twitter))
+    twitterButton.configure(model: .init(title: .string("Twitter"), icon: .Icons.Buttons.TonDetailsLinks.twitter))
     twitterButton.addAction(.init(handler: { [weak self] in
       self?.delegate?.didTapTwitterButton()
     }), for: .touchUpInside)
     
     let chatButton = TKButton(configuration: .secondarySmall)
-    chatButton.configure(model: .init(title: "Chat", icon: .Icons.Buttons.TonDetailsLinks.chat))
+    chatButton.configure(model: .init(title: .string("Chat"), icon: .Icons.Buttons.TonDetailsLinks.chat))
     chatButton.addAction(.init(handler: { [weak self] in
       self?.delegate?.didTapChatButton()
     }), for: .touchUpInside)
     
     let communityButton = TKButton(configuration: .secondarySmall)
-    communityButton.configure(model: .init(title: "Community", icon: .Icons.Buttons.TonDetailsLinks.community))
+    communityButton.configure(model: .init(title: .string("Community"), icon: .Icons.Buttons.TonDetailsLinks.community))
     communityButton.addAction(.init(handler: { [weak self] in
       self?.delegate?.didTapCommunityButton()
     }), for: .touchUpInside)
     
     let whitepaperButton = TKButton(configuration: .secondarySmall)
-    whitepaperButton.configure(model: .init(title: "Whitepaper", icon: .Icons.Buttons.TonDetailsLinks.whitepaper))
+    whitepaperButton.configure(model: .init(title: .string("Whitepaper"), icon: .Icons.Buttons.TonDetailsLinks.whitepaper))
     whitepaperButton.addAction(.init(handler: { [weak self] in
       self?.delegate?.didTapWhitepaperButton()
     }), for: .touchUpInside)
     
     let tonViewerButton = TKButton(configuration: .secondarySmall)
-    tonViewerButton.configure(model: .init(title: "tonviewer", icon: .Icons.Buttons.TonDetailsLinks.tonviewer))
+    tonViewerButton.configure(model: .init(title: .string("tonviewer"), icon: .Icons.Buttons.TonDetailsLinks.tonviewer))
     tonViewerButton.addAction(.init(handler: { [weak self] in
       self?.delegate?.didTapTonViewerButton()
     }), for: .touchUpInside)
     
     let sourcecodeButton = TKButton(configuration: .secondarySmall)
-    sourcecodeButton.configure(model: .init(title: "Source code", icon: .Icons.Buttons.TonDetailsLinks.sourceCode))
+    sourcecodeButton.configure(model: .init(title: .string("Source code"), icon: .Icons.Buttons.TonDetailsLinks.sourceCode))
     sourcecodeButton.addAction(.init(handler: { [weak self] in
       self?.delegate?.didTapSourceCodeButton()
     }), for: .touchUpInside)

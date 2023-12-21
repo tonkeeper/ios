@@ -7,7 +7,7 @@
 
 import Foundation
 import UIKit
-import WalletCore
+import WalletCoreKeeper
 
 struct ActivityListTransactionBuilder {
   private let accountEventActionContentProvider: AccountEventActionContentProvider

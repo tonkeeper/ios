@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
 
 final class SettingsAssembly {
   private let walletCoreAssembly: WalletCoreAssembly

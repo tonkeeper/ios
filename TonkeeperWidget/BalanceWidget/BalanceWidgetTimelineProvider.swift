@@ -7,7 +7,8 @@
 
 import WidgetKit
 import TKCore
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
   func placeholder(in context: Context) -> BalanceWidgetEntry {
@@ -24,7 +25,7 @@ struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
                    in context: Context,
                    completion: @escaping (Timeline<BalanceWidgetEntry>) -> Void) {
     let coreAssembly = CoreAssembly()
-    let walletCoreContainer = WalletCore.Assembly(dependencies: Dependencies(
+    let walletCoreContainer = WalletCoreKeeper.Assembly(dependencies: Dependencies(
       cacheURL: coreAssembly.cacheURL,
       sharedCacheURL: coreAssembly.sharedCacheURL,
       sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)

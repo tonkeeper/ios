@@ -6,7 +6,8 @@
 //
 
 import Foundation
-import WalletCore
+import WalletCoreKeeper
+import WalletCoreCore
 
 struct WalletImporter {
   
@@ -14,21 +15,21 @@ struct WalletImporter {
     case failedToImportWallet(error: Swift.Error)
   }
   
-  private let keeperController: KeeperController
+  private let walletsController: WalletsController
   private let passcodeController: PasscodeController
   private let mnemonic: [String]
   
-  init(keeperController: KeeperController,
+  init(walletsController: WalletsController,
        passcodeController: PasscodeController,
        mnemonic: [String]) {
-    self.keeperController = keeperController
+    self.walletsController = walletsController
     self.passcodeController = passcodeController
     self.mnemonic = mnemonic
   }
 
   func importWallet(with passcode: Passcode) throws {
     do {
-      try keeperController.addWallet(with: mnemonic)
+      try walletsController.addWallet(with: Mnemonic(mnemonicWords: mnemonic))
       try passcodeController.setPasscode(passcode)
     } catch {
       throw Error.failedToImportWallet(error: error)

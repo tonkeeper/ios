@@ -38,7 +38,7 @@ final class EnterMnemonicView: UIView, ConfigurableView {
   
   func configure(model: Model) {
     scrollContainer.configure(model: model.scrollContainerModel)
-    continueButton.title = model.continueButtonTitle
+    continueButton.configure(model: TKButton.Model(title: .string(model.continueButtonTitle)))
   }
   
   // MARK: - Keyboard
