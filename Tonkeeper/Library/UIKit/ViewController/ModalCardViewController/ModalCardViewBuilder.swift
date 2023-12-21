@@ -20,9 +20,17 @@ struct ModalCardViewBuilder {
       switch contentItem {
       case .item(let item):
         return buildViews(items: [item], viewController: viewController)
+      case .list(let items):
+        return buildList(items: items)
       }
     }
     .flatMap { $0 }
+  }
+  
+  static func buildList(items: [ModalCardViewController.Configuration.ListItem]) -> [UIView] {
+    let view = ModalCardListView()
+    view.configure(model: items)
+    return [SpacingView(verticalSpacing: .constant(32)), view, SpacingView(verticalSpacing: .constant(32))]
   }
   
   static func buildViews(items: [ModalCardViewController.Configuration.Item],

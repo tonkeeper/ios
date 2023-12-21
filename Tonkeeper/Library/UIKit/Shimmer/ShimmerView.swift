@@ -10,6 +10,16 @@ import UIKit
 final class ShimmerView: UIView {
   private let gradientLayer = CAGradientLayer()
   
+  private let animation: CABasicAnimation = {
+    let animation = CABasicAnimation(keyPath: .animationKeyPath)
+    animation.isRemovedOnCompletion = false
+    animation.fromValue = [-1.0, -0.5, 0.0]
+    animation.toValue = [1.0, 1.5, 2.0]
+    animation.repeatCount = .infinity
+    animation.duration = 0.9
+    return animation
+  }()
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -30,12 +40,6 @@ final class ShimmerView: UIView {
   }
   
   func startAnimation() {
-    let animation = CABasicAnimation(keyPath: .animationKeyPath)
-    animation.isRemovedOnCompletion = false
-    animation.fromValue = [-1.0, -0.5, 0.0]
-    animation.toValue = [1.0, 1.5, 2.0]
-    animation.repeatCount = .infinity
-    animation.duration = 0.9
     gradientLayer.add(animation, forKey: animation.keyPath)
   }
   

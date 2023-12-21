@@ -1,13 +1,6 @@
-//
-//  ModalContentListItemView.swift
-//  Tonkeeper
-//
-//  Created by Grigory on 2.6.23..
-//
-
 import UIKit
 
-final class ModalContentListItemView: UIControl, ConfigurableView {
+final class ModalCardListItemView: UIControl, ConfigurableView {
   
   override var isHighlighted: Bool {
     didSet {
@@ -46,13 +39,13 @@ final class ModalContentListItemView: UIControl, ConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  func configure(model: ModalContentViewController.Configuration.ListItem) {
+  func configure(model: ModalCardViewController.Configuration.ListItem) {
     leftLabel.attributedText = model.left
       .attributed(with: .body1, alignment: .left, color: .Text.secondary)
     
     switch model.rightTop {
     case .value(let value):
-      rightTopLabel.attributedText = value.attributed(with: .label1, alignment: .left, color: .Text.primary)
+      rightTopLabel.attributedText = value.attributed(with: .label1, alignment: .left, lineBreakMode: .byTruncatingMiddle, color: .Text.primary)
       rightTopLabel.isHidden = false
       rightTopShimmerView.isHidden = true
       rightTopShimmerView.stopAnimation()
@@ -65,7 +58,7 @@ final class ModalContentListItemView: UIControl, ConfigurableView {
     
     switch model.rightBottom {
     case .value(let value):
-      rightBottomLabel.attributedText = value?.attributed(with: .body2, alignment: .left, color: .Text.secondary)
+      rightBottomLabel.attributedText = value?.attributed(with: .body2, alignment: .left, lineBreakMode: .byTruncatingMiddle, color: .Text.secondary)
       rightBottomLabel.isHidden = false
       rightBottomShimmerView.isHidden = true
       rightBottomShimmerView.stopAnimation()
@@ -121,7 +114,7 @@ final class ModalContentListItemView: UIControl, ConfigurableView {
     let bottomHeight = rightBottomShimmerView.isHidden ? bottomLabelFitSize.height : CGFloat.rightBottomShimmerheight
     
     rightContentView.frame = CGRect(
-      origin: CGPoint(x: rightOriginX, y: rightOriginY), 
+      origin: CGPoint(x: rightOriginX, y: rightOriginY),
       size: CGSize(width: rightWidth, height: topHeight + bottomHeight)
     )
     
@@ -153,7 +146,7 @@ final class ModalContentListItemView: UIControl, ConfigurableView {
   }
 }
 
-private extension ModalContentListItemView {
+private extension ModalCardListItemView {
   func setup() {
     didUpdateIsHighlighted()
     rightTopLabel.numberOfLines = 0

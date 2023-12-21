@@ -104,7 +104,16 @@ extension ActivityListPresenter: ActivityListPresenterInput {
   }
   
   func didSelectTransactionAt(indexPath: IndexPath, actionIndex: Int) {
-    
+    Task {
+      let eventAction = try await activityListController.getEvent(
+        sectionIndex: indexPath.section,
+        eventIndex: indexPath.item,
+        actionIndex: actionIndex
+      )
+      await MainActor.run {
+        output?.didSelectAction(eventAction)
+      }
+    }
   }
   
   func didSelectNFTAt(indexPath: IndexPath, actionIndex: Int) {

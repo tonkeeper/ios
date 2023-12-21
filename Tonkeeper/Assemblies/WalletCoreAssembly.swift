@@ -90,6 +90,10 @@ final class WalletCoreAssembly {
     walletCoreAssembly.activityListTokenEventsController(tokenInfo: tokenInfo)
   }
   
+  func activityEventDetailsController(action: ActivityEventAction) -> ActivityEventDetailsController {
+    walletCoreAssembly.activityEventDetailsController(action: action)
+  }
+  
   func chartController() -> ChartController {
     walletCoreAssembly.chartController()
   }

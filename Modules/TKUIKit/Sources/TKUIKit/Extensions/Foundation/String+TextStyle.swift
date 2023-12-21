@@ -20,6 +20,7 @@ public extension String {
     paragraphStyle.minimumLineHeight = textStyle.lineHeight
     paragraphStyle.maximumLineHeight = textStyle.lineHeight
     paragraphStyle.alignment = alignment
+    paragraphStyle.lineBreakMode = lineBreakMode
     
     let attributes: [NSAttributedString.Key: Any] = [
       .font: textStyle.font,

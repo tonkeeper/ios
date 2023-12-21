@@ -19,8 +19,8 @@ final class ReceiveRootView: UIView, ConfigurableView {
     let qrTitle: NSAttributedString?
     let addressTitle: NSAttributedString?
     let address: String?
-    let copyButtonTitle: String?
-    let shareButtonTitle: String?
+    let copyButtonTitle: String
+    let shareButtonTitle: String
   }
   
   let logoImageView: UIImageView = {
@@ -161,8 +161,8 @@ final class ReceiveRootView: UIView, ConfigurableView {
                                color: .Text.tertiary
                               ), for: .highlighted
     )
-    copyButton.title = model.copyButtonTitle
-    shareButton.title = model.shareButtonTitle
+    copyButton.configure(model: TKButton.Model(title: .string(model.copyButtonTitle)))
+    shareButton.configure(model: TKButton.Model(title: .string(model.shareButtonTitle)))
   }
 }
 

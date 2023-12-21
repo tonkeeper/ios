@@ -190,7 +190,17 @@ extension WalletTokenDetailsCoordinator: ReceiveCoordinatorOutput {
 // MARK: - ActivityListModuleOutput
 
 extension WalletTokenDetailsCoordinator: ActivityListModuleOutput {
-  func didSelectTransaction(in section: Int, at index: Int) {}
+  func didSelectAction(_ action: ActivityEventAction) {
+    let module = ActivityTransactionDetailsAssembly.module(
+      activityEventDetailsController: walletCoreAssembly.activityEventDetailsController(action: action),
+      urlOpener: UIApplication.shared,
+      output: nil
+    )
+    let modalCardContainerViewController = ModalCardContainerViewController(content: module.view)
+    modalCardContainerViewController.headerSize = .small
+    
+    router.present(modalCardContainerViewController)
+  }
   func activityListNoEvents(_ activityList: ActivityListModuleInput) {}
   func activityListHasEvents(_ activityList: ActivityListModuleInput) {}
   func didSetIsConnecting(_ isConnecting: Bool) {}

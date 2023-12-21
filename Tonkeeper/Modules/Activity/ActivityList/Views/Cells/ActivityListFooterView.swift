@@ -68,7 +68,13 @@ private extension ActivityListFooterView {
       loaderView.stopAnimation()
       loaderView.isHidden = true
       retryButton.isHidden = false
-      retryButton.title = title
+      let buttonTitle: TKButton.Model.Title?
+      if let title = title {
+        buttonTitle = .string(title)
+      } else {
+        buttonTitle = nil
+      }
+      retryButton.configure(model: TKButton.Model(title: buttonTitle))
     }
     setNeedsLayout()
   }

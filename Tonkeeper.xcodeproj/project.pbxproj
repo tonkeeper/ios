@@ -438,6 +438,15 @@
 		C3E4C9A72B310989005526DA /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C3E4C9A62B310989005526DA /* WalletCore */; };
 		C3E4C9AB2B31C85C005526DA /* NavigationBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9AA2B31C85C005526DA /* NavigationBarView.swift */; };
 		C3E4C9AE2B31FABA005526DA /* ActivityLargeTitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9AD2B31FABA005526DA /* ActivityLargeTitleView.swift */; };
+		C3E4C9DD2B33AE72005526DA /* TKButtonCategory.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9D52B33AE72005526DA /* TKButtonCategory.swift */; };
+		C3E4C9DE2B33AE72005526DA /* TKButton+Content.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9D62B33AE72005526DA /* TKButton+Content.swift */; };
+		C3E4C9DF2B33AE72005526DA /* ButtonTitleContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9D82B33AE72005526DA /* ButtonTitleContentView.swift */; };
+		C3E4C9E02B33AE72005526DA /* TKButtonSize.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9D92B33AE72005526DA /* TKButtonSize.swift */; };
+		C3E4C9E12B33AE72005526DA /* TKButtonControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9DA2B33AE72005526DA /* TKButtonControl.swift */; };
+		C3E4C9E22B33AE72005526DA /* TKButtonBackgroundView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9DB2B33AE72005526DA /* TKButtonBackgroundView.swift */; };
+		C3E4C9E52B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E42B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift */; };
+		C3E4C9E72B33CAD4005526DA /* ModalCardListItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E62B33CAD4005526DA /* ModalCardListItemView.swift */; };
+		C3E4C9E92B33CB14005526DA /* ModalCardListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E82B33CB14005526DA /* ModalCardListView.swift */; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
 		C66B40FEF5B9FA11EE482612 /* InAppBrowserMainProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E1770C8CEAAC7E5196ACB6 /* InAppBrowserMainProtocols.swift */; };
 		C8C8146A655C693012C56BBB /* SetupWalletPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47434FDA8878AC2C6E9D4C24 /* SetupWalletPresenter.swift */; };
@@ -955,6 +964,16 @@
 		C3E4C9A02B30FFCD005526DA /* TitleConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleConnectionView.swift; sourceTree = "<group>"; };
 		C3E4C9AA2B31C85C005526DA /* NavigationBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationBarView.swift; sourceTree = "<group>"; };
 		C3E4C9AD2B31FABA005526DA /* ActivityLargeTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLargeTitleView.swift; sourceTree = "<group>"; };
+		C3E4C9B02B3308A0005526DA /* ton-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "ton-swift"; path = "../ton-swift"; sourceTree = "<group>"; };
+		C3E4C9D52B33AE72005526DA /* TKButtonCategory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TKButtonCategory.swift; sourceTree = "<group>"; };
+		C3E4C9D62B33AE72005526DA /* TKButton+Content.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "TKButton+Content.swift"; sourceTree = "<group>"; };
+		C3E4C9D82B33AE72005526DA /* ButtonTitleContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ButtonTitleContentView.swift; sourceTree = "<group>"; };
+		C3E4C9D92B33AE72005526DA /* TKButtonSize.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TKButtonSize.swift; sourceTree = "<group>"; };
+		C3E4C9DA2B33AE72005526DA /* TKButtonControl.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TKButtonControl.swift; sourceTree = "<group>"; };
+		C3E4C9DB2B33AE72005526DA /* TKButtonBackgroundView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TKButtonBackgroundView.swift; sourceTree = "<group>"; };
+		C3E4C9E42B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenTransactionTKButtonContentView.swift; sourceTree = "<group>"; };
+		C3E4C9E62B33CAD4005526DA /* ModalCardListItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardListItemView.swift; sourceTree = "<group>"; };
+		C3E4C9E82B33CB14005526DA /* ModalCardListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardListView.swift; sourceTree = "<group>"; };
 		C94035FBBB4278C3B31B95C0 /* PasscodeInputPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputPresenter.swift; sourceTree = "<group>"; };
 		C95F21019C4885C194206234 /* CollectibleDetailsPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsPresenter.swift; sourceTree = "<group>"; };
 		CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentViewController.swift; sourceTree = "<group>"; };
@@ -2100,6 +2119,7 @@
 		7D68369E2A1EB624002DBBC7 /* Buttons */ = {
 			isa = PBXGroup;
 			children = (
+				C3E4C9D32B33AE72005526DA /* New */,
 				7D68369F2A1EB644002DBBC7 /* ToggleButton.swift */,
 				7D5928542A1F6C71006B0A8A /* TKButton.swift */,
 				7D5928662A1FBB56006B0A8A /* Button+ConfigurableView.swift */,
@@ -2565,6 +2585,7 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
+				C3E4C9B02B3308A0005526DA /* ton-swift */,
 				C35E6C332ADFC9CC00F8B524 /* Packages */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,
@@ -2754,6 +2775,7 @@
 		8B0C0767FD46C94FB4520D2B /* ActivityTransactionDetails */ = {
 			isa = PBXGroup;
 			children = (
+				C3E4C9E32B33AF21005526DA /* Views */,
 				7DDF05112A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift */,
 				A3471921C88E65DE3DA36AB1 /* ActivityTransactionDetailsViewController.swift */,
 				97572A827415CAEE71C004FB /* ActivityTransactionDetailsView.swift */,
@@ -2837,6 +2859,8 @@
 				C384B3B42AE96AF4009CD062 /* ModalCardViewController+Configuration.swift */,
 				C384B3B62AE96B01009CD062 /* ModalCardViewController+ActionBarView.swift */,
 				C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */,
+				C3E4C9E62B33CAD4005526DA /* ModalCardListItemView.swift */,
+				C3E4C9E82B33CB14005526DA /* ModalCardListView.swift */,
 			);
 			path = ModalCardViewController;
 			sourceTree = "<group>";
@@ -2896,6 +2920,35 @@
 			isa = PBXGroup;
 			children = (
 				C3E4C9AD2B31FABA005526DA /* ActivityLargeTitleView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C3E4C9D32B33AE72005526DA /* New */ = {
+			isa = PBXGroup;
+			children = (
+				C3E4C9D72B33AE72005526DA /* Content */,
+				C3E4C9D52B33AE72005526DA /* TKButtonCategory.swift */,
+				C3E4C9D62B33AE72005526DA /* TKButton+Content.swift */,
+				C3E4C9D92B33AE72005526DA /* TKButtonSize.swift */,
+				C3E4C9DA2B33AE72005526DA /* TKButtonControl.swift */,
+				C3E4C9DB2B33AE72005526DA /* TKButtonBackgroundView.swift */,
+			);
+			path = New;
+			sourceTree = "<group>";
+		};
+		C3E4C9D72B33AE72005526DA /* Content */ = {
+			isa = PBXGroup;
+			children = (
+				C3E4C9D82B33AE72005526DA /* ButtonTitleContentView.swift */,
+			);
+			path = Content;
+			sourceTree = "<group>";
+		};
+		C3E4C9E32B33AF21005526DA /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C3E4C9E42B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -3116,6 +3169,7 @@
 				7D5D05D02A308C4C009F42FF /* DefaultCellContentView.swift in Sources */,
 				7DAC78DD2A95197E00358D35 /* MoreTextViewContainer.swift in Sources */,
 				7D8EB7202A4ED86B005BE1B0 /* CreateWalletCoordinator.swift in Sources */,
+				C3E4C9E72B33CAD4005526DA /* ModalCardListItemView.swift in Sources */,
 				7D9292FD2A29DCDA005B83DF /* SendRecipientViewController.swift in Sources */,
 				7D9292C92A275303005B83DF /* UIViewController+NavigationItem.swift in Sources */,
 				7D6836272A1CD239002DBBC7 /* Router.swift in Sources */,
@@ -3171,6 +3225,7 @@
 				7D9292832A24BD58005B83DF /* PageViewController.swift in Sources */,
 				7D797E142A8F62BC00A626D7 /* TonDetailsLinks.swift in Sources */,
 				7D384A482A6695A200DE2A66 /* SendAmountAssembly.swift in Sources */,
+				C3E4C9E52B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift in Sources */,
 				7D527BEC2A2DE93300A2D29A /* LoadingView.swift in Sources */,
 				7D527C022A2E3FC400A2D29A /* MultilineUIButton.swift in Sources */,
 				7D59285E2A1FA75A006B0A8A /* Button.Configuration+Icon.swift in Sources */,
@@ -3191,6 +3246,8 @@
 				7D5735842AD5B10800B7D0A3 /* SettingsSecurityProtocols.swift in Sources */,
 				7D5928552A1F6C71006B0A8A /* TKButton.swift in Sources */,
 				7D527BEE2A2DEA2C00A2D29A /* ResultView.swift in Sources */,
+				C3E4C9DD2B33AE72005526DA /* TKButtonCategory.swift in Sources */,
+				C3E4C9DE2B33AE72005526DA /* TKButton+Content.swift in Sources */,
 				7D68366C2A1D6EE2002DBBC7 /* WalletRootPresenter.swift in Sources */,
 				7D9292FF2A29DCDA005B83DF /* SendRecipientPresenter.swift in Sources */,
 				7D5928782A20BE9A006B0A8A /* TokensListCollectionLayoutConfigurator.swift in Sources */,
@@ -3249,6 +3306,7 @@
 				7D9292922A24EF31005B83DF /* WalletContentPage.swift in Sources */,
 				7D4C145A2AD6E853002B2922 /* RecoveryPhraseWordView.swift in Sources */,
 				7D009A802A989E8C00A15B8A /* SendCollectibleCoordinator.swift in Sources */,
+				C3E4C9E22B33AE72005526DA /* TKButtonBackgroundView.swift in Sources */,
 				7D5928652A1FB6C4006B0A8A /* UIControlClosure.swift in Sources */,
 				7D9144332A32130500B0FD17 /* ModalCardContainerContent.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
@@ -3266,6 +3324,7 @@
 				7D59284D2A1F579E006B0A8A /* WalletHeaderProtocols.swift in Sources */,
 				C384B3BE2AE9721C009CD062 /* TonConnectCoordinator.swift in Sources */,
 				7D3BCFCE2A4D90E200BE6AD9 /* PasscodeAssembly.swift in Sources */,
+				C3E4C9DF2B33AE72005526DA /* ButtonTitleContentView.swift in Sources */,
 				7D9292882A24CCB8005B83DF /* PagingContentViewController.swift in Sources */,
 				7D6836782A1E662E002DBBC7 /* QRScannerView.swift in Sources */,
 				7D80C0D52A6AA5F4007054DD /* TKKeyboardButton.swift in Sources */,
@@ -3366,6 +3425,7 @@
 				7D744BB92ADD819B00E94332 /* FiatMethodPopUpAssembly.swift in Sources */,
 				C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */,
 				C38957842AF1497E0083B98A /* AccountEventActionContentProvider.swift in Sources */,
+				C3E4C9E02B33AE72005526DA /* TKButtonSize.swift in Sources */,
 				7D5928492A1F5790006B0A8A /* WalletHeaderView.swift in Sources */,
 				7D6836482A1D1044002DBBC7 /* WalletCoordinator.swift in Sources */,
 				7D384A4C2A66989100DE2A66 /* SendConfirmationAssembly.swift in Sources */,
@@ -3395,6 +3455,7 @@
 				7D9144292A31F5E900B0FD17 /* DimmingView.swift in Sources */,
 				7D9144242A31EF7600B0FD17 /* Selectable.swift in Sources */,
 				7D9292CF2A275A18005B83DF /* ContentInsets.swift in Sources */,
+				C3E4C9E92B33CB14005526DA /* ModalCardListView.swift in Sources */,
 				8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */,
 				7D5823397229401915615466 /* SendConfirmationView.swift in Sources */,
 				7D3D65012ACAB01300E64537 /* SettingsCoordinator.swift in Sources */,
@@ -3476,6 +3537,7 @@
 				7DC8A3B62A7C172B00B8B219 /* TokenDetailsListContentViewController.swift in Sources */,
 				40B98115F358DDDBD1D6FAB1 /* PasscodeInputPresenter.swift in Sources */,
 				064BCFE4418858F3E6EAD791 /* PasscodeInputProtocols.swift in Sources */,
+				C3E4C9E12B33AE72005526DA /* TKButtonControl.swift in Sources */,
 				7D744BB32ADD7FC500E94332 /* FiatMethodPopUpProtocols.swift in Sources */,
 				4710C223A1FF0E23BAD189BA /* TokenDetailsViewController.swift in Sources */,
 				7D797E1A2A8F7A2600A626D7 /* ListTitleView.swift in Sources */,

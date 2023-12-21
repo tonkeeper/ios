@@ -60,7 +60,7 @@ private extension WalletHeaderPresenter {
   func createHeaderButtonModels() -> [WalletHeaderButtonModel] {
     let types: [WalletHeaderButtonModel.ButtonType] = [.send, .receive, .buy]
     return types.map { type in
-      let buttonModel = TKButton.Model(icon: type.icon)
+      let buttonModel = TKButton.Model(title: .string(nil), icon: type.icon)
       let iconButtonModel = IconButton.Model(buttonModel: buttonModel, title: type.title)
       let model = WalletHeaderButtonModel(viewModel: iconButtonModel) { [weak self] in
         self?.handleHeaderButtonAction(type: type)

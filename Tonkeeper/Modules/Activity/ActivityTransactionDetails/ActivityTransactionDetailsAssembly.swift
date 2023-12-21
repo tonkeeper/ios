@@ -6,10 +6,14 @@
 //
 
 import Foundation
+import WalletCoreKeeper
+import TKCore
 
 struct ActivityTransactionDetailsAssembly {
-  static func module(output: ActivityTransactionDetailsModuleOutput?) -> Module<ActivityTransactionDetailsViewController, ActivityTransactionDetailsModuleInput> {
-    let presenter = ActivityTransactionDetailsPresenter()
+  static func module(activityEventDetailsController: ActivityEventDetailsController,
+                     urlOpener: URLOpener,
+                     output: ActivityTransactionDetailsModuleOutput?) -> Module<ActivityTransactionDetailsViewController, ActivityTransactionDetailsModuleInput> {
+    let presenter = ActivityTransactionDetailsPresenter(activityEventDetailsController: activityEventDetailsController, urlOpener: urlOpener)
     let viewController = ActivityTransactionDetailsViewController(presenter: presenter)
     
     presenter.viewInput = viewController

@@ -29,6 +29,22 @@ extension ModalCardViewController.Configuration {
     let numberOfLines: Int
   }
   
+  struct ListItem {
+    enum RightItem<T> {
+      case loading
+      case value(T)
+      
+      var value: T? {
+        guard case let .value(value) = self else { return nil }
+        return value
+      }
+    }
+    
+    let left: String
+    let rightTop: RightItem<String>
+    let rightBottom: RightItem<String?>
+  }
+  
   struct Button {
     let title: String?
     let configuration: TKButton.Configuration
@@ -60,6 +76,7 @@ extension ModalCardViewController.Configuration {
 extension ModalCardViewController.Configuration {
   enum ContentItem {
     case item(Item)
+    case list([ListItem])
   }
 }
 

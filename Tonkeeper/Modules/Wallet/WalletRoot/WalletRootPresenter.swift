@@ -21,6 +21,7 @@ final class WalletRootPresenter {
   private let balanceController: BalanceController
   private let pageContentProvider: PageContentProvider
   private let transactionsEventDaemon: TransactionsEventDaemon
+  private let appStateTracket = AppStateTracker()
 
   init(balanceController: BalanceController,
        pageContentProvider: PageContentProvider,
@@ -28,8 +29,6 @@ final class WalletRootPresenter {
     self.balanceController = balanceController
     self.pageContentProvider = pageContentProvider
     self.transactionsEventDaemon = transactionsEventDaemon
-    
-    transactionsEventDaemon.addObserver(self)
   }
   
   deinit {
@@ -52,6 +51,11 @@ extension WalletRootPresenter: WalletRootPresenterInput {
     
     setupControllerBindings()
     balanceController.load()
+    
+    Task { didUpdateState(await transactionsEventDaemon.state)  }
+    
+    appStateTracket.addObserver(self)
+    transactionsEventDaemon.addObserver(self)
   }
 }
 
@@ -129,7 +133,6 @@ extension WalletRootPresenter: TransactionsEventDaemonObserver {
       switch state {
       case .connected:
         model = nil
-        balanceController.reload()
       case .connecting:
         model = ConnectionStatusView.Model(
           title: "Updating",
@@ -158,3 +161,15 @@ extension WalletRootPresenter: TransactionsEventDaemonObserver {
     balanceController.reload()
   }
 }
+
+extension WalletRootPresenter: AppStateTrackerObserver {
+  func didUpdateState(_ state: TKCore.AppStateTracker.State) {
+    switch state {
+    case .active:
+      balanceController.reload()
+    default:
+      break
+    }
+  }
+}
+

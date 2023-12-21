@@ -84,7 +84,7 @@ extension TonChartPresenter: TonChartModuleInput {
 private extension TonChartPresenter {
   func setupButtons() {
     let buttons = WalletCoreKeeper.Period.allCases.map {
-      TKButton.Model(title: $0.title)
+      TKButton.Model(title: .string($0.title))
     }
     let model = TonChartButtonsView.Model(buttons: buttons)
     viewInput?.updateButtons(with: model)

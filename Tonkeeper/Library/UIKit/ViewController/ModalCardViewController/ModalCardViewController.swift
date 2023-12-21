@@ -24,6 +24,8 @@ final class ModalCardViewController: UIViewController, ScrollableModalCardContai
   
   private var actionBarBottomConstraint: NSLayoutConstraint?
   
+  private var cachedHeight: CGFloat?
+  
   private var _configuration = ModalCardViewController.Configuration(header: nil)
   var configuration: ModalCardViewController.Configuration {
     get { _configuration }
@@ -38,6 +40,7 @@ final class ModalCardViewController: UIViewController, ScrollableModalCardContai
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
     updateActionBarBottomConstraint()
+    didUpdateHeight?()
   }
   
   override func viewSafeAreaInsetsDidChange() {
@@ -63,6 +66,7 @@ private extension ModalCardViewController {
     configureHeader()
     configureContent()
     configureActionBar()
+    updateActionBarBottomConstraint()
   }
   
   func configureHeader() {
@@ -147,7 +151,7 @@ private extension ModalCardViewController {
   }
   
   func updateActionBarBottomConstraint() {
-    let scrollViewBottomContentInset = actionBarView.bounds.height
+    let scrollViewBottomContentInset = actionBarView.isHidden ? 0 : actionBarView.bounds.height
     scrollView.contentInset.bottom = scrollViewBottomContentInset
     actionBarBottomConstraint?.constant = 0
   }

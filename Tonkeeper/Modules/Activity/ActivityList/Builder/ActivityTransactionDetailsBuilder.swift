@@ -17,43 +17,51 @@ struct ActivityTransactionDetailsBuilder {
                             feeFiat: String,
                             message: String? = nil,
                             tapAction: (( @escaping (Bool) -> Void ) -> Void)? = nil
-  ) -> ModalContentViewController.Configuration {
-    let header = ModalContentViewController.Configuration.Header(
-      image: nil,
-      imageShape: .circle,
-      title: title,
-      bottomDescription: description,
-      fixBottomDescription: fixDescription
-    )
+  ) -> ModalCardViewController.Configuration {
     
-    var listItems: [ModalContentViewController.Configuration.ListItem] = [
-      .init(left: .recipientAddressTitle, rightTop: .value(recipientAddress), rightBottom: .value(nil)),
-      .init(left: .transactionTitle, rightTop: .value(transaction), rightBottom: .value(nil)),
-      .init(left: .feeTitle, rightTop: .value(fee), rightBottom: .value(feeFiat)),
-    ]
-    
-    if let message = message {
-      listItems.append(.init(left: .messageTitle, rightTop: .value(message), rightBottom: .value(nil)))
-    }
-    
-    let buttons = ModalContentViewController.Configuration.ActionBar.Button(
-      title: .viewDetailsButtonTitle,
-      configuration: .secondaryLarge,
-      tapAction: tapAction
-    )
-    
-    let actionBarItems: [ModalContentViewController.Configuration.ActionBar.Item] = [
-      .buttons([buttons])
-    ]
-    
-    let actionBar = ModalContentViewController.Configuration.ActionBar(items: actionBarItems)
-    
-    let configuration = ModalContentViewController.Configuration(
-      header: header,
-      listItems: listItems,
-      actionBar: actionBar)
+    let button = TKButton(configuration: .secondarySmall)
+    button.configure(model: .init(title: .string("Transaction"), icon: nil, iconPosition: .left))
+    let configuration = ModalCardViewController.Configuration(header: nil,
+                                                              content: ModalCardViewController.Configuration.Content(items: [.item(.customView(button, bottomSpacing: 10))]),
+                                                              actionBar: nil)
     
     return configuration
+//    let header = ModalContentViewController.Configuration.Header(
+//      image: nil,
+//      imageShape: .circle,
+//      title: title,
+//      bottomDescription: description,
+//      fixBottomDescription: fixDescription
+//    )
+//    
+//    var listItems: [ModalContentViewController.Configuration.ListItem] = [
+//      .init(left: .recipientAddressTitle, rightTop: .value(recipientAddress), rightBottom: .value(nil)),
+//      .init(left: .transactionTitle, rightTop: .value(transaction), rightBottom: .value(nil)),
+//      .init(left: .feeTitle, rightTop: .value(fee), rightBottom: .value(feeFiat)),
+//    ]
+//    
+//    if let message = message {
+//      listItems.append(.init(left: .messageTitle, rightTop: .value(message), rightBottom: .value(nil)))
+//    }
+//    
+//    let buttons = ModalContentViewController.Configuration.ActionBar.Button(
+//      title: .viewDetailsButtonTitle,
+//      configuration: .secondarySmall,
+//      tapAction: tapAction
+//    )
+//    
+//    let actionBarItems: [ModalContentViewController.Configuration.ActionBar.Item] = [
+//      .buttons([buttons])
+//    ]
+//    
+//    let actionBar = ModalContentViewController.Configuration.ActionBar(items: actionBarItems)
+//    
+//    let configuration = ModalContentViewController.Configuration(
+//      header: header,
+//      listItems: listItems,
+//      actionBar: actionBar)
+//    
+//    return configuration
   }
 }
 

@@ -8,10 +8,11 @@
 
 import Foundation
 import TonSwift
+import WalletCoreKeeper
 
 protocol ActivityRootModuleOutput: AnyObject {
   func didTapReceiveButton()
-  func didSelectTransaction()
+  func didSelectAction(_ action: ActivityEventAction)
   func didSelectCollectible(address: Address)
 }
 

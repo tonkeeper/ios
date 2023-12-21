@@ -94,6 +94,7 @@ private extension ModalCardContainerViewController {
     guard let content = content else { return }
     
     content.didUpdateHeight = { [weak self] in
+      guard self?.panGestureRecognizer.state != .began && self?.panGestureRecognizer.state != .changed else { return }
       self?.panGestureRecognizer.isEnabled = false
       self?.updateContentHeight()
       self?.panGestureRecognizer.isEnabled = true

@@ -123,12 +123,12 @@ final class TKButton: UIControlClosure {
     }
   }
   
-  var title: String? {
+  var title: NSAttributedString? {
     get {
-      titleLabel.text
+      titleLabel.attributedText
     }
     set {
-      titleLabel.text = newValue
+      titleLabel.attributedText = newValue
       updateContentSpacing()
       invalidateIntrinsicContentSize()
     }
@@ -296,7 +296,7 @@ private extension TKButton {
   }
   
   func updateContentSpacing() {
-    let hasTitle = title != nil && title?.isEmpty != true
+    let hasTitle = title != nil && title?.string.isEmpty != true
     let hasIcon = icon != nil
     contentStackView.spacing = hasTitle && hasIcon ? 9 : 0
   }

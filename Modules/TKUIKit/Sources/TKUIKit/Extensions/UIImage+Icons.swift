@@ -325,6 +325,12 @@ public extension UIImage {
       }
     }
     
+    public enum Size16 {
+      public static var globe16: UIImage? {
+        .imageWithName("Icons/16/ic-globe-16")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     public static var tonIcon28: UIImage? {
       .imageWithName("Icons/28/ic-ton-28")?.withRenderingMode(.alwaysTemplate)
     }

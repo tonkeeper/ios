@@ -239,8 +239,8 @@ private extension TokenDetailsHeaderView {
 
 private extension CGFloat {
   static let fiatPriceTopSpacing: CGFloat = 12
-  static let topContainerTopSpacing: CGFloat = 16
-  static let topContainerSideSpacing: CGFloat = 28
+  static let topContainerTopSpacing: CGFloat = 27
+  static let topContainerSideSpacing: CGFloat = 16
   static let topContainerBottomSpacing: CGFloat = 28
   static let imageViewLeftSpacing: CGFloat = 16
   static let imageViewSide: CGFloat = 64

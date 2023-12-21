@@ -43,7 +43,7 @@ final class CollectibleDetailsButtonsView: UIView, ConfigurableView {
     
     model.buttonsModels.forEach { buttonConfiguration in
       let button = TKButton(configuration: buttonConfiguration.configuration)
-      button.title = buttonConfiguration.title
+      button.configure(model: TKButton.Model(title: .string(buttonConfiguration.title)))
       button.isEnabled = buttonConfiguration.isEnabled
       button.addAction(.init(handler: { buttonConfiguration.tapAction?() }), for: .touchUpInside)
       let activityContainer = ActivityViewContainer(view: button)
