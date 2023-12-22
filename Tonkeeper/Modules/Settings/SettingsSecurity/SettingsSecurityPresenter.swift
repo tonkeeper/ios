@@ -47,6 +47,7 @@ private extension SettingsSecurityPresenter {
     
     let sections = [
       SettingsListSection(items: [getFaceIdSetting()]),
+      SettingsListSection(items: [getChangePasscodeSetting()]),
       SettingsListSection(items: [getRecoveryPhraseSetting()])
     ]
     let models = mapper.mapSettingsSections(sections)
@@ -106,6 +107,22 @@ private extension SettingsSecurityPresenter {
     return item
   }
   
+  func getChangePasscodeSetting() -> SettingsListItem {
+    SettingsListItem(
+      title: .changePasscode,
+      option: .plain(SettingsListItemPlainOption(
+        accessory: SettingsListItemPlainOption.Accessory.icon(
+          SettingsListItemPlainOption.Accessory.Icon(
+            image: .Icons.SettingsList.changePasscode, tintColor: .Accent.blue
+          )
+        ),
+        handler: { [weak self] in
+          self?.output?.settingsSecurityDidSelectChangePasscode()
+        })
+      )
+    )
+  }
+  
   func getRecoveryPhraseSetting() -> SettingsListItem {
     SettingsListItem(
       title: .showRecoveryPhrase,
@@ -137,5 +154,6 @@ private extension String {
   static let faceId = "Face ID"
   static let touchId = "Touch ID"
   static let biometryUnavailable = "Biometry unavailable"
+  static let changePasscode = "Change passcode"
   static let showRecoveryPhrase = "Show recovery phrase"
 }

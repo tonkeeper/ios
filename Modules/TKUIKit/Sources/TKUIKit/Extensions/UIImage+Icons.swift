@@ -274,6 +274,10 @@ public extension UIImage {
         .imageWithName("Icons/28/ic-key-28")?.withRenderingMode(.alwaysTemplate)
       }
       
+      public  static var changePasscode: UIImage? {
+        .imageWithName("Icons/28/ic-lock-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
       public static var chevron: UIImage? {
         .imageWithName("Icons/16/ic-chevron-right-16")?.withRenderingMode(.alwaysTemplate)
       }

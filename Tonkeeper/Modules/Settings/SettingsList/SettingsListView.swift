@@ -38,5 +38,7 @@ private extension SettingsListView {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
     addSubview(collectionView)
+    
+    collectionView.contentInset.top = 11
   }
 }

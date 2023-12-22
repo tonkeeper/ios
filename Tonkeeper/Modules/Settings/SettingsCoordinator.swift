@@ -102,6 +102,39 @@ extension SettingsCoordinator: SettingsSecurityModuleOutput {
     module.view.setupBackButton()
     router.push(presentable: module.view)
   }
+  
+  func settingsSecurityDidSelectChangePasscode() {
+    let navigationController = NavigationController()
+    navigationController.configureDefaultAppearance()
+    let changePasscodeCoordinator = SettingsChangePasscodeCoordinator(
+      router: NavigationRouter(rootViewController: navigationController),
+      walletCoreAssembly: walletCoreAssembly
+    )
+    
+    changePasscodeCoordinator.didClose = { [weak self, unowned changePasscodeCoordinator] in
+      self?.router.rootViewController.dismiss(animated: true)
+      self?.removeChild(changePasscodeCoordinator)
+    }
+    
+    changePasscodeCoordinator.didChangePasscode = { [weak self, unowned changePasscodeCoordinator] in
+      self?.router.rootViewController.dismiss(animated: true)
+      self?.removeChild(changePasscodeCoordinator)
+      TapticGenerator.generateSuccessFeedback()
+      ToastController.showToast(configuration: ToastController.Configuration(title: "Passcode changed"))
+    }
+    
+    changePasscodeCoordinator.didFailedToChangePasscode = { [weak self, unowned changePasscodeCoordinator] in
+      self?.router.rootViewController.dismiss(animated: true)
+      self?.removeChild(changePasscodeCoordinator)
+      TapticGenerator.generateFailureFeedback()
+      ToastController.showToast(configuration: .failed)
+    }
+    
+    addChild(changePasscodeCoordinator)
+    changePasscodeCoordinator.start()
+    
+    router.rootViewController.present(navigationController, animated: true)
+  }
 }
 
 extension SettingsCoordinator: PasscodeConfirmationCoordinatorOutput {

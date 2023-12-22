@@ -10,4 +10,5 @@ import Foundation
 protocol SettingsSecurityModuleOutput: AnyObject {
   func settingsSecurityConfirmation() async -> Bool
   func settingsSecurityDidSelectShowRecoveryPhrase()
+  func settingsSecurityDidSelectChangePasscode()
 }

@@ -9,7 +9,7 @@ import Foundation
 
 struct PasscodeInputAssembly {
   static func create(
-    output: PasscodeInputModuleOutput,
+    output: PasscodeInputModuleOutput?,
     configurator: PasscodeInputPresenterConfigurator
   ) -> Module<PasscodeInputViewController, Void> {
     let presenter = PasscodeInputPresenter(configurator: configurator)

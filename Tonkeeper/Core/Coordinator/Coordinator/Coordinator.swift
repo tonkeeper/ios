@@ -26,6 +26,10 @@ class Coordinator<Router: RouterProtocol>: CoordinatorProtocol {
     self.router = router
   }
   
+  deinit {
+    print("👄 \(String(describing: self)) deinit")
+  }
+  
   func addChild(_ child: CoordinatorProtocol) {
     guard !children.contains(where: { $0 === child }) else { return }
     children.append(child)
