@@ -26,6 +26,7 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
   private let authEventsDaemon: AuthEventsDaemon
   private var _tonConnectConfirmationCoordinator: TonConnectConfirmationCoordinator?
   
+  private var transactionDidSendNotificationToken: AnyObject?
   
   init(router: TabBarRouter,
        assembly: TabBarAssembly) {
@@ -37,11 +38,15 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
     self.authEventsDaemon = assembly.authEventsDaemon
     super.init(router: router)
     self.settingsCoordinator.output = self
+    subscribeOnNotification()
   }
   
   deinit {
     authEventsDaemon.removeObserver(self)
     authEventsDaemon.stop()
+    if let transactionDidSendNotificationToken = transactionDidSendNotificationToken {
+      NotificationCenter.default.removeObserver(transactionDidSendNotificationToken)
+    }
   }
   
   override func start(deeplink: Deeplink?) {
@@ -134,6 +139,15 @@ private extension TabBarCoordinator {
         }
       }
     }
+  }
+  
+  func subscribeOnNotification() {
+    transactionDidSendNotificationToken = NotificationCenter.default
+      .addObserver(
+        forName: Notification.Name(rawValue: "DidSendTransaction"), object: nil, queue: .main
+      ) { [weak self] _ in
+        self?.router.rootViewController.selectedIndex = 1
+      }
   }
 }
 

@@ -165,6 +165,8 @@ private extension SendConfirmationPresenter {
         try await self.sendController.sendTransaction()
         await MainActor.run {
           closure(true)
+          // TODO: Implement without NotificationCenter
+          NotificationCenter.default.post(Notification(name: Notification.Name("DidSendTransaction")))
         }
       } catch {
         await MainActor.run {

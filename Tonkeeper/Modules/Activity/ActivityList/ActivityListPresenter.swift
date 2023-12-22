@@ -28,12 +28,21 @@ final class ActivityListPresenter {
   private var cellsViewModels = [String: ActivityListCompositionTransactionCell.Model]()
   private var isPagingLoading = false
   
+  private var transactionDidSendNotificationToken: AnyObject?
+  
   init(activityListController: ActivityListController,
        transactionBuilder: ActivityListTransactionBuilder,
        transactionsEventDaemon: TransactionsEventDaemon) {
     self.activityListController = activityListController
     self.transactionBuilder = transactionBuilder
     self.transactionsEventDaemon = transactionsEventDaemon
+    subscribeOnNotification()
+  }
+  
+  deinit {
+    if let transactionDidSendNotificationToken = transactionDidSendNotificationToken {
+      NotificationCenter.default.removeObserver(transactionDidSendNotificationToken)
+    }
   }
 }
 
@@ -183,6 +192,18 @@ private extension ActivityListPresenter {
       }
     }
   }
+  
+  func subscribeOnNotification() {
+    transactionDidSendNotificationToken = NotificationCenter.default
+      .addObserver(
+        forName: Notification.Name(rawValue: "DidSendTransaction"), object: nil, queue: .main
+      ) { [weak self] _ in
+        guard let self = self else { return }
+        Task {
+          await self.activityListController.reload()
+        }
+      }
+  }
 }
 
 extension ActivityListPresenter: TransactionsEventDaemonObserver {
@@ -191,7 +212,7 @@ extension ActivityListPresenter: TransactionsEventDaemonObserver {
   }
   
   func didReceiveTransaction(_ transaction: WalletCoreKeeper.TransactionsEventDaemonTransaction) {
-    Task { await activityListController.start() }
+    Task { await activityListController.reload() }
   }
 }
 
@@ -200,7 +221,7 @@ extension ActivityListPresenter: AppStateTrackerObserver {
     switch state {
     case .active:
       Task {
-        await activityListController.start()
+        await activityListController.reload()
       }
     default:
       break
