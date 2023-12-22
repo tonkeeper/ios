@@ -22,6 +22,7 @@ final class TokenDetailsHeaderView: UIView, ConfigurableView {
     label.applyTextStyleFont(.h2)
     label.textColor = .Text.primary
     label.textAlignment = .left
+    label.numberOfLines = 0
     return label
   }()
   

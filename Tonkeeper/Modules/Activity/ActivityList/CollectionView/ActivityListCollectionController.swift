@@ -237,7 +237,7 @@ private extension ActivityListCollectionController {
   func fetchNextIfNeeded(collectionView: UICollectionView, indexPath: IndexPath) {
     let numberOfSections = collectionView.numberOfSections
     let numberOfItems = collectionView.numberOfItems(inSection: numberOfSections - 1)
-    guard indexPath.item == numberOfItems - 1 else { return }
+    guard (indexPath.section == numberOfSections - 1) && (indexPath.item == numberOfItems - 1) else { return }
     delegate?.activityListCollectionControllerLoadNextPage(self)
   }
 }

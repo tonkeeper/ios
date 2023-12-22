@@ -126,8 +126,9 @@ extension TokenDetailsPresenter {
 }
 
 extension TokenDetailsPresenter: WalletProviderObserver {
-  func didUpdateActiveWallet() {
+  func walletProvider(_ walletProvider: WalletProvider, didUpdateActiveWallet wallet: Wallet) {
     updateHeader()
+    updateChart()
     refreshContent()
   }
 }

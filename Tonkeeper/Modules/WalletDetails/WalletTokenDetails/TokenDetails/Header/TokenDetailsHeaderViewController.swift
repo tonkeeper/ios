@@ -9,6 +9,8 @@ import UIKit
 
 final class TokenDetailsHeaderViewController: GenericViewController<TokenDetailsHeaderView> {
   
+  private var chartViewController: UIViewController?
+  
   var imageLoader: ImageLoader? {
     get {
       customView.imageLoader
@@ -23,9 +25,14 @@ final class TokenDetailsHeaderViewController: GenericViewController<TokenDetails
   }
   
   func setChartViewController(_ chartViewController: UIViewController) {
+    self.chartViewController?.view.removeFromSuperview()
+    self.chartViewController?.removeFromParent()
+    
     addChild(chartViewController)
     customView.embedChartView(chartViewController.view)
     chartViewController.didMove(toParent: self)
+    
+    self.chartViewController = chartViewController
   }
   
   func setAboutView(_ aboutView: UIView) {
