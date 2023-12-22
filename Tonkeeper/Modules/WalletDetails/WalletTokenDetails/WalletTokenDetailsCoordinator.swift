@@ -73,7 +73,6 @@ private extension WalletTokenDetailsCoordinator {
   func openSend(token: Token) {
     let navigationController = NavigationController()
     navigationController.configureDefaultAppearance()
-    navigationController.isModalInPresentation = true
     let router = NavigationRouter(rootViewController: navigationController)
     let coordinator = sendAssembly.coordinator(
       router: router,

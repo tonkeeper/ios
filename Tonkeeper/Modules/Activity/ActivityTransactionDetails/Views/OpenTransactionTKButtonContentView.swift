@@ -3,13 +3,6 @@ import TKUIKit
 
 public final class OpenTransactionTKButtonContentView: UIView, TKButtonContent {
 
-  private let stackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .horizontal
-    stackView.spacing = 8
-    return stackView
-  }()
-  
   private let titleLabel = UILabel()
   private let imageView = UIImageView()
 
@@ -25,7 +18,7 @@ public final class OpenTransactionTKButtonContentView: UIView, TKButtonContent {
   // MARK: TKButtonContent
   
   public func width(withHeight height: CGFloat) -> CGFloat {
-    stackView.systemLayoutSizeFitting(CGSize(width: 0, height: height)).width
+    systemLayoutSizeFitting(CGSize(width: 0, height: height)).width
   }
   
   public func setForegroundColor(_ color: UIColor) {}
@@ -61,21 +54,24 @@ private extension OpenTransactionTKButtonContentView {
     imageView.contentMode = .center
     imageView.tintColor = .Icon.primary
     
-    addSubview(stackView)
-    stackView.addArrangedSubview(imageView)
-    stackView.addArrangedSubview(titleLabel)
+    addSubview(imageView)
+    addSubview(titleLabel)
     
     setupConstraints()
   }
   
   func setupConstraints() {
-    stackView.translatesAutoresizingMaskIntoConstraints = false
+    imageView.translatesAutoresizingMaskIntoConstraints = false
+    titleLabel.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      stackView.topAnchor.constraint(equalTo: topAnchor),
-      stackView.leftAnchor.constraint(equalTo: leftAnchor),
-      stackView.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
-      stackView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh)
+      imageView.topAnchor.constraint(equalTo: topAnchor),
+      imageView.leftAnchor.constraint(equalTo: leftAnchor),
+      imageView.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
+      
+      titleLabel.centerYAnchor.constraint(equalTo: imageView.centerYAnchor, constant: -1),
+      titleLabel.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
+      titleLabel.leftAnchor.constraint(equalTo: imageView.rightAnchor, constant: 8)
     ])
   }
 }

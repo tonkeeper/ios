@@ -33,7 +33,7 @@
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
         "branch" : "develop",
-        "revision" : "6247445d6992f68673524cfcc3408b08ab8a5757"
+        "revision" : "3d208f65f0702677695df6c90cc5b3bc5a689dc2"
       }
     },
     {
@@ -87,7 +87,7 @@
       "location" : "https://github.com/tonkeeper/ton-swift",
       "state" : {
         "branch" : "main",
-        "revision" : "5df081778d4ea62d9fe91d91bdc87b14bee919a3"
+        "revision" : "e920261a12f7721f33dacc4eb3dba8b3eeec6dd3"
       }
     },
     {

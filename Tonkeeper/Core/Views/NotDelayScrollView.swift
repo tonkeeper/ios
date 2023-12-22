@@ -11,6 +11,7 @@ final class NotDelayScrollView: UIScrollView {
   override init(frame: CGRect) {
     super.init(frame: frame)
     delaysContentTouches = false
+    canCancelContentTouches = true
   }
   
   required init?(coder: NSCoder) {

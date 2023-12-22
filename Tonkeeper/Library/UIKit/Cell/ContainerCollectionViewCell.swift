@@ -14,7 +14,7 @@ protocol ContainerCollectionViewCellContent: ConfigurableView {
 class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellContent>: UICollectionViewCell, ConfigurableView {
 
   let cellContentView = CellContentView()
-  let highlightView = HighlightContainerView()
+  let highlightView = HighlightView()
   private let separatorView: UIView = {
     let view = UIView()
     view.backgroundColor = .Separator.common
@@ -46,6 +46,12 @@ class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellCo
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  public override func updateConfiguration(using state: UICellConfigurationState) {
+    automaticallyUpdatesBackgroundConfiguration = false
+    highlightView.isHighlighted = state.isHighlighted
+    separatorView.isHidden = !isSeparatorVisible || state.isHighlighted
   }
   
   func configure(model: CellContentView.Model) {
@@ -105,12 +111,10 @@ class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellCo
 private extension ContainerCollectionViewCell {
   func setup() {
     layer.masksToBounds = true
+    backgroundColor = .Background.content
     contentView.addSubview(highlightView)
     contentView.addSubview(separatorView)
     contentView.addSubview(cellContentView)
-    highlightView.didUpdateIsHighlighted = { [weak self] _ in
-      self?.updateSeparatorVisibility()
-    }
   }
 }
 

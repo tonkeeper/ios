@@ -97,8 +97,8 @@ private extension ActivityTransactionDetailsPresenter {
     let listItems = model.listItems.map {
       ModalCardViewController.Configuration.ListItem(
         left: $0.title,
-        rightTop: .value($0.topValue),
-        rightBottom: .value($0.bottomValue))
+        rightTop: .value($0.topValue, numberOfLines: $0.topNumberOfLines),
+        rightBottom: .value($0.bottomValue, numberOfLines: 1))
     }
     let list = ModalCardViewController.Configuration.ContentItem.list(listItems)
     let buttonItem = ModalCardViewController.Configuration.ContentItem.item(.customView(createOpenTransactionButtonContainerView(), bottomSpacing: 32))

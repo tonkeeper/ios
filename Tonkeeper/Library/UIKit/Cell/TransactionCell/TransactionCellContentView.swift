@@ -28,7 +28,7 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
     }
   }
 
-  let hightlightView = HighlightContainerView()
+  let hightlightView = HighlightView()
   let contentView = PassthroughView()
   let defaultCellContentView = DefaultCellContentView()
   let statusView = TransactionCellStatusView()
@@ -152,10 +152,6 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
 private extension TransactionCellContentView {
   func setup() {
     self.backgroundColor = .Background.content
-    
-    hightlightView.didUpdateIsHighlighted = { [weak self] isHightlighted in
-      self?.updateSeparatorVisibility()
-    }
     
     isExclusiveTouch = true
     defaultCellContentView.isUserInteractionEnabled = false

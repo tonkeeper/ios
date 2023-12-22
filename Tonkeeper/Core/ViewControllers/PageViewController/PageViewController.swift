@@ -43,7 +43,7 @@ final class PageViewController: UIViewController {
   private var isScrollingWithPan = false
   
   private lazy var layout = createLayout()
-  private lazy var collectionView = UICollectionView(frame: .zero, collectionViewLayout: createLayout())
+  private lazy var collectionView = NotDelayCollectionView(frame: .zero, collectionViewLayout: createLayout())
   
   // MARK: - View Life Cycle
   

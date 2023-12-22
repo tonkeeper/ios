@@ -10,6 +10,8 @@ import UIKit
 final class NotDelayCollectionView: UICollectionView {
   override init(frame: CGRect, collectionViewLayout layout: UICollectionViewLayout) {
     super.init(frame: frame, collectionViewLayout: layout)
+    self.delaysContentTouches = false
+    self.canCancelContentTouches = true
   }
   
   required init?(coder: NSCoder) {

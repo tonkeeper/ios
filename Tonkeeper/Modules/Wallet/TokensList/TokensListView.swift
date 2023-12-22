@@ -10,7 +10,7 @@ import UIKit
 
 final class TokensListView: UIView {
   
-  let collectionView = UICollectionView(frame: .zero, collectionViewLayout: .init())
+  let collectionView = NotDelayCollectionView(frame: .zero, collectionViewLayout: .init())
   
   // MARK: - Init
 

@@ -208,6 +208,8 @@ private extension ActivityListCollectionController {
     cell.delegate = self
     cell.imageLoader = self.imageLoader
     cell.configure(model: model)
+    cell.isFirstCell = true
+    cell.isLastCell = true
     return cell
   }
   

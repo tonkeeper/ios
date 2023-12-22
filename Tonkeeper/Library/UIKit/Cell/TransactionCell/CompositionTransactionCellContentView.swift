@@ -121,9 +121,7 @@ extension CompositionTransactionCellContentView: TransactionCellContentViewDeleg
   }
 }
 
-final class HighlightContainerView: UIView {
-  
-  var didUpdateIsHighlighted: ((_ isHightlighted: Bool) -> Void)?
+final class HighlightView: UIView {
   var isHighlighted: Bool = false {
     didSet {
       guard isHighlighted != oldValue else { return }
@@ -155,7 +153,7 @@ final class HighlightContainerView: UIView {
   }
 }
 
-private extension HighlightContainerView {
+private extension HighlightView {
   func setup() {
     isUserInteractionEnabled = false
     backgroundColor = .clear

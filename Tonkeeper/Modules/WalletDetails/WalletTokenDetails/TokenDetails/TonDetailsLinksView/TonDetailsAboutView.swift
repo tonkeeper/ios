@@ -105,7 +105,7 @@ private extension TonDetailsAboutView {
     }), for: .touchUpInside)
     
     let tonViewerButton = TKButton(configuration: .secondarySmall)
-    tonViewerButton.configure(model: .init(title: .string("tonviewer"), icon: .Icons.Buttons.TonDetailsLinks.tonviewer))
+    tonViewerButton.configure(model: .init(title: .string("tonviewer.com"), icon: .Icons.Buttons.TonDetailsLinks.tonviewer))
     tonViewerButton.addAction(.init(handler: { [weak self] in
       self?.delegate?.didTapTonViewerButton()
     }), for: .touchUpInside)

@@ -37,6 +37,11 @@ final class ModalContentListView: UIView, ConfigurableView {
     model.enumerated().forEach { index, item in
       let listItemView = ModalContentListItemView()
       listItemView.configure(model: item)
+      listItemView.addAction(UIAction(handler: { _ in
+        UIPasteboard.general.string = item.rightTop.value
+        ToastController.showToast(configuration: .copied)
+        TapticGenerator.generateCopyFeedback()
+      }), for: .touchUpInside)
       stackView.addArrangedSubview(listItemView)
       if (index == model.count - 1) {
         listItemView.isSeparatorHidden = true

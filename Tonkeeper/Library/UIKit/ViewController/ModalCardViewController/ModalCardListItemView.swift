@@ -44,9 +44,10 @@ final class ModalCardListItemView: UIControl, ConfigurableView {
       .attributed(with: .body1, alignment: .left, color: .Text.secondary)
     
     switch model.rightTop {
-    case .value(let value):
-      rightTopLabel.attributedText = value.attributed(with: .label1, alignment: .left, lineBreakMode: .byTruncatingMiddle, color: .Text.primary)
+    case .value(let value, let numberOfLines):
+      rightTopLabel.attributedText = value.attributed(with: .label1, alignment: numberOfLines == 0 ? .right : .left, lineBreakMode: .byTruncatingMiddle, color: .Text.primary)
       rightTopLabel.isHidden = false
+      rightTopLabel.numberOfLines = numberOfLines
       rightTopShimmerView.isHidden = true
       rightTopShimmerView.stopAnimation()
     case .loading:
@@ -57,9 +58,10 @@ final class ModalCardListItemView: UIControl, ConfigurableView {
     }
     
     switch model.rightBottom {
-    case .value(let value):
+    case .value(let value, let numberOfLines):
       rightBottomLabel.attributedText = value?.attributed(with: .body2, alignment: .left, lineBreakMode: .byTruncatingMiddle, color: .Text.secondary)
       rightBottomLabel.isHidden = false
+      rightBottomLabel.numberOfLines = numberOfLines
       rightBottomShimmerView.isHidden = true
       rightBottomShimmerView.stopAnimation()
     case .loading:
@@ -91,7 +93,7 @@ final class ModalCardListItemView: UIControl, ConfigurableView {
   }
   
   func layoutRight() {
-    let topLabelFitSize = rightTopLabel.sizeThatFits(.zero)
+    var topLabelFitSize = rightTopLabel.sizeThatFits(.zero)
     let bottomLabelFitSize = rightBottomLabel.sizeThatFits(.zero)
     let maxLabelWidth = max(topLabelFitSize.width, bottomLabelFitSize.width)
     let maxRightWidth = max(maxLabelWidth, .shimmerWidth)
@@ -110,6 +112,7 @@ final class ModalCardListItemView: UIControl, ConfigurableView {
       rightWidth = contentView.frame.width
     }
     
+    topLabelFitSize = rightTopLabel.sizeThatFits(CGSize(width: rightWidth, height: 0))
     let topHeight: CGFloat = rightTopShimmerView.isHidden ? topLabelFitSize.height : CGFloat.rightTopShimmerHeight
     let bottomHeight = rightBottomShimmerView.isHidden ? bottomLabelFitSize.height : CGFloat.rightBottomShimmerheight
     

@@ -133,6 +133,7 @@ extension WalletRootPresenter: TransactionsEventDaemonObserver {
       switch state {
       case .connected:
         model = nil
+        balanceController.reload()
       case .connecting:
         model = ConnectionStatusView.Model(
           title: "Updating",
