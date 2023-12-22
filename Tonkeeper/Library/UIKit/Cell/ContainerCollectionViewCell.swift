@@ -51,7 +51,7 @@ class ContainerCollectionViewCell<CellContentView: ContainerCollectionViewCellCo
   public override func updateConfiguration(using state: UICellConfigurationState) {
     automaticallyUpdatesBackgroundConfiguration = false
     highlightView.isHighlighted = state.isHighlighted
-    separatorView.isHidden = !isSeparatorVisible || state.isHighlighted
+    separatorView.isHidden = !isSeparatorVisible || isLastCell || state.isHighlighted
   }
   
   func configure(model: CellContentView.Model) {
