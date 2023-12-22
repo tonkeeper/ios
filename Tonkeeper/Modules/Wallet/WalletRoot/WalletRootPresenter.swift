@@ -78,6 +78,24 @@ private extension WalletRootPresenter {
         self.contentInput?.updateWith(walletPages: balanceModel.pages)
       }
     }
+    
+    balanceController.didCheckDateAndTime = { [weak self] isSuccess in
+      guard let self = self else { return }
+      if isSuccess {
+        Task { @MainActor in
+          self.viewInput?.hideBanner(with: "incorrectDateAndTime")
+        }
+      } else {
+        let incorrectDateAndTimeBannerModel = WalletHeaderBannerModel(
+          identifier: "incorrectDateAndTime",
+          title: "Time and date are incorrect",
+          description: "In device settings, enable automatic time and date. When time isn't set automatically, it may affect fund transfers.",
+          appearance: .regular)
+        Task { @MainActor in
+          self.viewInput?.showBanner(bannerModel: incorrectDateAndTimeBannerModel)
+        }
+      }
+    }
   }
 }
 

@@ -14,7 +14,6 @@ final class WalletHeaderViewController: GenericViewController<WalletHeaderView> 
   
   private let presenter: WalletHeaderPresenterInput
   
-  
   var didUpdateHeight: (() -> Void)?
   // MARK: - Init
   
@@ -33,6 +32,19 @@ final class WalletHeaderViewController: GenericViewController<WalletHeaderView> 
     super.viewDidLoad()
     setup()
     presenter.viewDidLoad()
+  }
+  
+  func showBanner(bannerModel: WalletHeaderBannerModel) {
+    customView.walletHeaderBannersContainerView.showBanner(model: bannerModel) { [weak self] in
+      self?.didUpdateHeight?()
+    }
+    didUpdateHeight?()
+  }
+  
+  func hideBanner(with identifier: String) {
+    customView.walletHeaderBannersContainerView.hideBanner(identifier: identifier) { [weak self] in
+      self?.didUpdateHeight?()
+    }
   }
 }
 

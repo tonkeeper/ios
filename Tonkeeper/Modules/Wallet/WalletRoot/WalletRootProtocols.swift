@@ -21,4 +21,7 @@ protocol WalletRootPresenterInput {
   func viewDidLoad()
 }
 
-protocol WalletRootViewInput: AnyObject {}
+protocol WalletRootViewInput: AnyObject {
+  func showBanner(bannerModel: WalletHeaderBannerModel)
+  func hideBanner(with identifier: String)
+}

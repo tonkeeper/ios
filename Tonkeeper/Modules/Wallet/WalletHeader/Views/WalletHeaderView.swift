@@ -11,6 +11,8 @@ final class WalletHeaderView: UIView, ConfigurableView {
   
   let titleView = WalletHeaderTitleView()
   
+  let walletHeaderBannersContainerView = WalletHeaderBannersContainerView()
+  
   let balanceLabel: UILabel = {
     let label = UILabel()
     label.textColor = .Text.primary
@@ -86,8 +88,8 @@ final class WalletHeaderView: UIView, ConfigurableView {
 
 private extension WalletHeaderView {
   func setup() {
+    stackView.addArrangedSubview(walletHeaderBannersContainerView)
     stackView.addArrangedSubview(balanceLabel)
-//    stackView.addArrangedSubview(addressTopSpacer)
     stackView.addArrangedSubview(dateLabel)
     stackView.addArrangedSubview(addressButton)
     
