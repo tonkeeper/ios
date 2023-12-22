@@ -415,6 +415,11 @@
 		C3774F002B340F0600B15B78 /* SwapHeaderImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774EFF2B340F0600B15B78 /* SwapHeaderImageView.swift */; };
 		C3774F022B34130D00B15B78 /* ActionDetailsTokenHeaderImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774F012B34130D00B15B78 /* ActionDetailsTokenHeaderImageView.swift */; };
 		C3774F042B34153E00B15B78 /* ActionDetailsNFTHeaderImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774F032B34153E00B15B78 /* ActionDetailsNFTHeaderImageView.swift */; };
+		C3774F0D2B35AF6100B15B78 /* SettingsChangePasscodeCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774F0C2B35AF6100B15B78 /* SettingsChangePasscodeCoordinator.swift */; };
+		C3774F102B35B08600B15B78 /* PasscodeChangeConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774F0F2B35B08600B15B78 /* PasscodeChangeConfigurator.swift */; };
+		C3774F142B35BA2800B15B78 /* WalletHeaderBannersContainerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774F132B35BA2800B15B78 /* WalletHeaderBannersContainerView.swift */; };
+		C3774F162B35BB3B00B15B78 /* WalletHeaderBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774F152B35BB3B00B15B78 /* WalletHeaderBannerView.swift */; };
+		C3774F182B35C30400B15B78 /* WalletHeaderBanneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774F172B35C30400B15B78 /* WalletHeaderBanneModel.swift */; };
 		C37D0C4D2AEF6A110003C5CE /* TonConnectConfirmationContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37D0C4C2AEF6A110003C5CE /* TonConnectConfirmationContentView.swift */; };
 		C37D0C4F2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */; };
 		C38462492B0BAF240087D945 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C38462482B0BAF240087D945 /* TKChart */; };
@@ -948,6 +953,11 @@
 		C3774EFF2B340F0600B15B78 /* SwapHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapHeaderImageView.swift; sourceTree = "<group>"; };
 		C3774F012B34130D00B15B78 /* ActionDetailsTokenHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionDetailsTokenHeaderImageView.swift; sourceTree = "<group>"; };
 		C3774F032B34153E00B15B78 /* ActionDetailsNFTHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionDetailsNFTHeaderImageView.swift; sourceTree = "<group>"; };
+		C3774F0C2B35AF6100B15B78 /* SettingsChangePasscodeCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsChangePasscodeCoordinator.swift; sourceTree = "<group>"; };
+		C3774F0F2B35B08600B15B78 /* PasscodeChangeConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasscodeChangeConfigurator.swift; sourceTree = "<group>"; };
+		C3774F132B35BA2800B15B78 /* WalletHeaderBannersContainerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderBannersContainerView.swift; sourceTree = "<group>"; };
+		C3774F152B35BB3B00B15B78 /* WalletHeaderBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderBannerView.swift; sourceTree = "<group>"; };
+		C3774F172B35C30400B15B78 /* WalletHeaderBanneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderBanneModel.swift; sourceTree = "<group>"; };
 		C37D0C4C2AEF6A110003C5CE /* TonConnectConfirmationContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationContentView.swift; sourceTree = "<group>"; };
 		C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationFeeView.swift; sourceTree = "<group>"; };
 		C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewController.swift; sourceTree = "<group>"; };
@@ -1370,6 +1380,7 @@
 		7D3BCFCA2A4D90C800BE6AD9 /* Passcode */ = {
 			isa = PBXGroup;
 			children = (
+				C3774F0E2B35B04400B15B78 /* PasscodeChange */,
 				7D4934682A5C622C00F4BCA2 /* PasscodeAuth */,
 				7D3BCFDA2A4DB1E700BE6AD9 /* CreatePasscode */,
 				A207C781017B143B4580D3FC /* PasscodeInput */,
@@ -1411,6 +1422,7 @@
 		7D3D64F72ACAB01300E64537 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				C3774F092B35AF3B00B15B78 /* SettingsChangePasscode */,
 				7DDBBFFD2ACCAD8900F811A5 /* WalletRestore */,
 				7D57358B2AD6DD9700B7D0A3 /* SettingsRecoveryPhrase */,
 				7DA4C3A02AD588DC0059A48E /* SettingsSecurity */,
@@ -1776,6 +1788,7 @@
 		7D59285F2A1FB616006B0A8A /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				C3774F122B35BA1C00B15B78 /* WalletHeaderBannersView */,
 				7DC88C562AB9C40D00F47614 /* WalletHeaderTitleView */,
 				7D5928482A1F5790006B0A8A /* WalletHeaderView.swift */,
 			);
@@ -2619,6 +2632,7 @@
 				7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */,
 				7D3BCFAD2A4C5DB900BE6AD9 /* Assemblies */,
 				7D70D3BE2A2A03280096E1A2 /* Logic */,
+				C3774F0A2B35AF4700B15B78 /* Flows */,
 				7D6836382A1CFECF002DBBC7 /* Modules */,
 				7D6836152A1CAEAA002DBBC7 /* Library */,
 				7D68361E2A1CD1B8002DBBC7 /* Core */,
@@ -2843,6 +2857,47 @@
 				C3C13F8A2AE9F15900EFC88D /* TKChart */,
 			);
 			name = Packages;
+			sourceTree = "<group>";
+		};
+		C3774F092B35AF3B00B15B78 /* SettingsChangePasscode */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = SettingsChangePasscode;
+			sourceTree = "<group>";
+		};
+		C3774F0A2B35AF4700B15B78 /* Flows */ = {
+			isa = PBXGroup;
+			children = (
+				C3774F0B2B35AF4F00B15B78 /* Settings */,
+			);
+			path = Flows;
+			sourceTree = "<group>";
+		};
+		C3774F0B2B35AF4F00B15B78 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				C3774F0C2B35AF6100B15B78 /* SettingsChangePasscodeCoordinator.swift */,
+			);
+			path = Settings;
+			sourceTree = "<group>";
+		};
+		C3774F0E2B35B04400B15B78 /* PasscodeChange */ = {
+			isa = PBXGroup;
+			children = (
+				C3774F0F2B35B08600B15B78 /* PasscodeChangeConfigurator.swift */,
+			);
+			path = PasscodeChange;
+			sourceTree = "<group>";
+		};
+		C3774F122B35BA1C00B15B78 /* WalletHeaderBannersView */ = {
+			isa = PBXGroup;
+			children = (
+				C3774F132B35BA2800B15B78 /* WalletHeaderBannersContainerView.swift */,
+				C3774F152B35BB3B00B15B78 /* WalletHeaderBannerView.swift */,
+				C3774F172B35C30400B15B78 /* WalletHeaderBanneModel.swift */,
+			);
+			path = WalletHeaderBannersView;
 			sourceTree = "<group>";
 		};
 		C37D0C4B2AEF6A040003C5CE /* Views */ = {
@@ -3265,6 +3320,7 @@
 				7DDF050E2A6953FF003E9F13 /* ActivityEmptyAssembly.swift in Sources */,
 				7D32F8B22A8BA65B002C130C /* CollectionViewReusableContainerView.swift in Sources */,
 				7D9292FB2A29DCDA005B83DF /* SendAmountPresenter.swift in Sources */,
+				C3774F102B35B08600B15B78 /* PasscodeChangeConfigurator.swift in Sources */,
 				7D3F260F2AC19F79002DF1B7 /* RateWidget.intentdefinition in Sources */,
 				7D3BCFA82A4C3E3100BE6AD9 /* ButtonBottomContainer.swift in Sources */,
 				7D45D31B2A82E73200733DFE /* TransactionCellNFTView.swift in Sources */,
@@ -3420,6 +3476,7 @@
 				7D3D65032ACAB01300E64537 /* SettingsListAssembly.swift in Sources */,
 				7D5D05D32A309322009F42FF /* DefaultCellContentView+Model.swift in Sources */,
 				7D7CE3FE2A89B3ED002BA9EC /* ActivityListShimmerSectionHeaderView.swift in Sources */,
+				C3774F0D2B35AF6100B15B78 /* SettingsChangePasscodeCoordinator.swift in Sources */,
 				7DAC78E32A96AB5E00358D35 /* CollectibleDetailsPropertiesСarouselView.swift in Sources */,
 				7D3E43B42A3737E700C23A75 /* BuyListServiceBuilder.swift in Sources */,
 				7D1163142A61E80C00DF4F30 /* Token.swift in Sources */,
@@ -3449,6 +3506,7 @@
 				7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */,
 				D97B981CF3DBE823EDA9A091 /* WalletContentViewController.swift in Sources */,
 				B2DC87224B8264B43A27920C /* WalletContentView.swift in Sources */,
+				C3774F162B35BB3B00B15B78 /* WalletHeaderBannerView.swift in Sources */,
 				7D8EB7302A4F2233005BE1B0 /* WalletCreator.swift in Sources */,
 				8FD2051305C8DE79A1D70FBA /* WalletContentPresenter.swift in Sources */,
 				7D527BBE2A2A910100A2D29A /* ModalContentViewController.swift in Sources */,
@@ -3475,6 +3533,7 @@
 				987FA16FC8F9D0CBA2353D9D /* ReceiveRootView.swift in Sources */,
 				9EB19BBDABB92B4B6A28684B /* ReceiveRootPresenter.swift in Sources */,
 				7D797E102A8E6A3F00A626D7 /* TonDetailsAboutView.swift in Sources */,
+				C3774F142B35BA2800B15B78 /* WalletHeaderBannersContainerView.swift in Sources */,
 				86DEB0A35D88DABB3EAEFDD3 /* ReceiveRootProtocols.swift in Sources */,
 				4F9520B5A7862EFB04753658 /* ActivityRootViewController.swift in Sources */,
 				CB34DBE367608982460FD5AA /* ActivityRootView.swift in Sources */,
@@ -3553,6 +3612,7 @@
 				7D797E1A2A8F7A2600A626D7 /* ListTitleView.swift in Sources */,
 				977233829BFB3A47453882FF /* TokenDetailsView.swift in Sources */,
 				7D744BB72ADD805E00E94332 /* FiatMethodPopUpViewController.swift in Sources */,
+				C3774F182B35C30400B15B78 /* WalletHeaderBanneModel.swift in Sources */,
 				7DAC78D52A93F96500358D35 /* CollectibleAssembly.swift in Sources */,
 				7F316234DE732364EDD8983C /* TokenDetailsPresenter.swift in Sources */,
 				BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */,

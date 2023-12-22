@@ -30,6 +30,9 @@ final class NukeImageLoader: ImageLoader {
     var options = KingfisherOptionsInfo()
     var processor: ImageProcessor = DefaultImageProcessor.default
     
+    options.append(.keepCurrentImageWhileLoading)
+    options.append(.loadDiskFileSynchronously)
+    
     if let size = size {
       processor = processor |> DownsamplingImageProcessor(size: size)
       options.append(.scaleFactor(UIScreen.main.scale))
