@@ -176,6 +176,11 @@ extension RootCoordinator: PasscodeAuthCoordinatorOutput {
   func createPasscodeCoordinatorDidFinishBiometry(_ coordinator: PasscodeAuthCoordinator) {
     output?.rootCoordinatorDidFinishBiometry(self)
   }
+  
+  func createPasscodeCoordinatorDidLogout(_ coordinator: PasscodeAuthCoordinator) {
+    removeChild(coordinator)
+    start(deeplink: nil)
+  }
 }
 
 // MARK: - TabBarCoordinatorOutput
