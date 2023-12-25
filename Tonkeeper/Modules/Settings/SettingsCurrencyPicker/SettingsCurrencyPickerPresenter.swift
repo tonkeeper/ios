@@ -55,6 +55,7 @@ private extension SettingsCurrencyPickerPresenter {
     let items = allCurrencies.map { currency in
       let isSelected = currency == selectedCurrency
       return SettingsListItem(title: currency.code,
+                              subtitle: currency.title,
                               option: .plain(.init(accessory: isSelected ? .checkmark : .none,
                                                    handler: { [weak self] in
         try? self?.settingsController.setCurrency(currency)

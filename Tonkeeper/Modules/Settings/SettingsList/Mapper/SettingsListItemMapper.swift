@@ -11,14 +11,14 @@ struct SettingsListItemMapper {
   func mapSettingsSections(_ sections: [SettingsListSection]) -> [[SettingsListCellContentView.Model]] {
     let models = sections.map { section in
       section.items.map { item in
-        let accessoryModel: SettingsListCellAccessoryView.Model?
+        let accessoryModel: SettingsListCellAccessoryView.Model
         let handler: (() -> Void)?
         
         switch item.option {
         case .plain(let settingsListItemPlainOption):
           switch settingsListItemPlainOption.accessory {
           case .none:
-            accessoryModel = nil
+            accessoryModel = .none
           case .value(let value):
             accessoryModel = .text(SettingsListCellTextAccessoryView.Model(text: value))
           case .icon(let icon):
@@ -41,6 +41,7 @@ struct SettingsListItemMapper {
 
         return SettingsListCellContentView.Model(
           title: item.title,
+          subtitle: item.subtitle,
           accessoryModel: accessoryModel,
           handler: handler
         )

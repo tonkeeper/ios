@@ -11,6 +11,7 @@ import TKUIKit
 final class SettingsListCellContentView: UIControlClosure, ContainerCollectionViewCellContent {
   
   let titleLabel = UILabel()
+  let subtitleLabel = UILabel()
   let accessoryView = SettingsListCellAccessoryView()
 
   private var isHighlightable = false
@@ -33,7 +34,8 @@ final class SettingsListCellContentView: UIControlClosure, ContainerCollectionVi
   
   struct Model {
     let title: String
-    let accessoryModel: SettingsListCellAccessoryView.Model?
+    let subtitle: String?
+    let accessoryModel: SettingsListCellAccessoryView.Model
     let handler: (() -> Void)?
   }
   
@@ -43,12 +45,12 @@ final class SettingsListCellContentView: UIControlClosure, ContainerCollectionVi
       alignment: .left,
       color: .Text.primary
     )
-    if let accessoryModel = model.accessoryModel {
-      accessoryView.isHidden = false
-      accessoryView.configure(model: accessoryModel)
-    } else {
-      accessoryView.isHidden = true
-    }
+    subtitleLabel.attributedText = model.subtitle?.attributed(
+      with: .body1,
+      alignment: .left,
+      color: .Text.secondary
+    )
+    accessoryView.configure(model: model.accessoryModel)
     isHighlightable = model.handler != nil
     removeActions()
     addAction(.init(handler: {
@@ -64,6 +66,7 @@ final class SettingsListCellContentView: UIControlClosure, ContainerCollectionVi
 private extension SettingsListCellContentView {
   func setup() {
     addSubview(titleLabel)
+    addSubview(subtitleLabel)
     addSubview(accessoryView)
     
     setupConstraints()
@@ -71,8 +74,11 @@ private extension SettingsListCellContentView {
   
   func setupConstraints() {
     titleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    subtitleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     
     titleLabel.translatesAutoresizingMaskIntoConstraints = false
+    subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
     accessoryView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
@@ -80,7 +86,10 @@ private extension SettingsListCellContentView {
       titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace)
         .withPriority(.defaultHigh),
       
-      accessoryView.leftAnchor.constraint(equalTo: titleLabel.rightAnchor),
+      subtitleLabel.leftAnchor.constraint(equalTo: titleLabel.rightAnchor, constant: 8),
+      subtitleLabel.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor),
+      
+      accessoryView.leftAnchor.constraint(greaterThanOrEqualTo: subtitleLabel.rightAnchor),
       accessoryView.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
       accessoryView.rightAnchor.constraint(equalTo: rightAnchor, constant: -ContentInsets.sideSpace)
         .withPriority(.defaultHigh),

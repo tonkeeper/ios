@@ -22,6 +22,7 @@ final class SettingsListCellAccessoryView: UIView, ContainerCollectionViewCellCo
   }
   
   enum Model {
+    case none
     case text(SettingsListCellTextAccessoryView.Model)
     case icon(SettingsListCellIconAccessoryView.Model)
     case switchControl(SettingsListCellSwitchAccessoryView.Model)
@@ -30,7 +31,7 @@ final class SettingsListCellAccessoryView: UIView, ContainerCollectionViewCellCo
   func configure(model: Model) {
     let isUserInteractionEnabled: Bool
     containerView.subviews.forEach { $0.removeFromSuperview() }
-    let view: UIView
+    var view: UIView?
     switch model {
     case .text(let model):
       let textAccessoryView = SettingsListCellTextAccessoryView()
@@ -47,10 +48,13 @@ final class SettingsListCellAccessoryView: UIView, ContainerCollectionViewCellCo
       switchAccessoryView.configure(model: model)
       isUserInteractionEnabled = true
       view = switchAccessoryView
+    case .none:
+      isUserInteractionEnabled = false
     }
     
     self.isUserInteractionEnabled = isUserInteractionEnabled
     containerView.isUserInteractionEnabled = isUserInteractionEnabled
+    guard let view = view else { return }
     view.isUserInteractionEnabled = isUserInteractionEnabled
     
     containerView.addSubview(view)

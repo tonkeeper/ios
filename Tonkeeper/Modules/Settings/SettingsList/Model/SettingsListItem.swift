@@ -9,7 +9,14 @@ import UIKit
 
 struct SettingsListItem {
   let title: String
+  let subtitle: String?
   let option: SettingsListItemOption
+  
+  init(title: String, subtitle: String? = nil, option: SettingsListItemOption) {
+    self.title = title
+    self.subtitle = subtitle
+    self.option = option
+  }
 }
 
 enum SettingsListItemOption {
