@@ -344,7 +344,7 @@ public extension UIImage {
     }
     
     public static var tonIcon: UIImage? {
-      .imageWithName("Icons/44/ic-ton-44")?.withRenderingMode(.alwaysTemplate)
+      .imageWithName("Icons/44/ton_currency_icon")
     }
   }
 }
