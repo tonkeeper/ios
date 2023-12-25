@@ -32,6 +32,7 @@ final class NukeImageLoader: ImageLoader {
     
     options.append(.keepCurrentImageWhileLoading)
     options.append(.loadDiskFileSynchronously)
+    options.append(.memoryCacheExpiration(.expired))
     
     if let size = size {
       processor = processor |> DownsamplingImageProcessor(size: size)
