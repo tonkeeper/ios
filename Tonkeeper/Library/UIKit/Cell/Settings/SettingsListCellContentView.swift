@@ -93,7 +93,7 @@ private extension SettingsListCellContentView {
     let duration: TimeInterval = isHighlighted ? 0.05 : 0.2
     
     UIView.animate(withDuration: duration, delay: 0, options: [.allowUserInteraction, .curveEaseInOut]) {
-      self.backgroundColor = self.isHighlighted ? .Background.highlighted : .Background.content
+      self.backgroundColor = self.isHighlighted ? .Background.highlighted : .clear
     }
   }
 }
