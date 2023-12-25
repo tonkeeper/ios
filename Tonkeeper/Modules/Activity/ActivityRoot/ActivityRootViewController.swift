@@ -46,6 +46,7 @@ class ActivityRootViewController: GenericViewController<ActivityRootView>, Scrol
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
     listViewController.scrollView.contentInset.top = customView.navigationBarView.additionalInset
+    listViewController.scrollView.verticalScrollIndicatorInsets.top = customView.navigationBarView.additionalInset
   }
   
   // MARK: - ScrollViewController

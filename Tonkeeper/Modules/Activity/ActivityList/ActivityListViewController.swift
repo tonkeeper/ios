@@ -79,7 +79,7 @@ class ActivityListViewController: GenericViewController<ActivityListView>, Scrol
     collectionController.isScrollingToTop = true
     scrollView.setContentOffset(
       CGPoint(x: 0,
-              y: -biggestTopSafeAreaInset),
+              y: -scrollView.adjustedContentInset.top),
       animated: true
     )
   }
