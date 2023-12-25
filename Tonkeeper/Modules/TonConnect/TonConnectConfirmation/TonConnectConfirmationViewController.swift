@@ -26,6 +26,7 @@ final class TonConnectConfirmationViewController: UIViewController, ScrollableMo
   init(presenter: TonConnectConfirmationPresenterInput) {
     self.presenter = presenter
     super.init(nibName: nil, bundle: nil)
+    self.title = "Confirm Action"
   }
   
   required init?(coder: NSCoder) {

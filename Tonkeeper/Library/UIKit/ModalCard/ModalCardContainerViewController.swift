@@ -93,6 +93,8 @@ private extension ModalCardContainerViewController {
   func setupContent() {
     guard let content = content else { return }
     
+    customView.headerView.titleLabel.text = content.title
+    
     content.didUpdateHeight = { [weak self] in
       guard self?.panGestureRecognizer.state != .began && self?.panGestureRecognizer.state != .changed else { return }
       self?.panGestureRecognizer.isEnabled = false

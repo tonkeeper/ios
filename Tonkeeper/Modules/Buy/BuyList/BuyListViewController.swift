@@ -31,6 +31,7 @@ class BuyListViewController: GenericViewController<BuyListView>, ScrollableModal
   init(presenter: BuyListPresenterInput) {
     self.presenter = presenter
     super.init(nibName: nil, bundle: nil)
+    self.title = "Buy or sell"
   }
 
   required init?(coder: NSCoder) {
@@ -73,8 +74,6 @@ extension BuyListViewController: BuyListViewInput {
 
 private extension BuyListViewController {
   func setup() {
-    title = "Buy or sell"
-    
     collectionController.delegate = self
     
     contentSizeObserveToken = customView.collectionView
