@@ -29,7 +29,8 @@ final class AppCoordinator: Coordinator<WindowRouter> {
     super.init(router: router)
     appStateTracker.addObserver(self)
     Task {
-      await appAssembly.walletCoreAssembly.configurationController.loadConfiguration()
+      _ = await appAssembly.walletCoreAssembly.configurationController.loadConfiguration()
+      _ = try await appAssembly.walletCoreAssembly.fiatMethodsController().loadFiatMethods()
     }
   }
 
