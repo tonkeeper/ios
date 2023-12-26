@@ -21,6 +21,8 @@
 	</array>
 	<key>KEYCHAIN_ACCESS_GROUP</key>
 	<string>$(KEYCHAIN_ACCESS_GROUP)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
