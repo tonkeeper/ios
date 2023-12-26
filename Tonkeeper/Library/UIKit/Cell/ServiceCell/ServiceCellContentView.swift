@@ -163,8 +163,6 @@ final class ServiceCellContentView: UIControlClosure, ContainerCollectionViewCel
 
 private extension ServiceCellContentView {
   func setup() {
-    backgroundColor = .Background.content
-    
     descriptionLabel.numberOfLines = 0
     
     addSubview(textContainer)
