@@ -32,10 +32,10 @@ extension ModalCardViewController.Configuration {
   struct ListItem {
     enum RightItem<T> {
       case loading
-      case value(T, numberOfLines: Int)
+      case value(T, numberOfLines: Int, isFullString: Bool)
       
       var value: T? {
-        guard case let .value(value, _) = self else { return nil }
+        guard case let .value(value, _, _) = self else { return nil }
         return value
       }
     }

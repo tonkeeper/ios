@@ -45,7 +45,7 @@ final class DefaultCellContentView: UIView, ConfigurableView, ContainerCollectio
     
     imageView.frame.size = .init(width: .imageViewSide, height: .imageViewSide)
     imageView.frame.origin.x = 0
-    imageView.center.y = textContentView.center.y
+    imageView.frame.origin.y = 0
     
     imageView.layer.cornerRadius = .imageViewSide/2
     imageView.layer.masksToBounds = true

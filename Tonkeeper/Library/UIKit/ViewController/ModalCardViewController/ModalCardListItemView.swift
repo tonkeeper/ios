@@ -21,6 +21,8 @@ final class ModalCardListItemView: UIControl, ConfigurableView {
   private let rightTopShimmerView = ShimmerView()
   private let rightBottomShimmerView = ShimmerView()
   
+  private var isRightTopFullString = false
+  
   private let separatorView: UIView = {
     let view = UIView()
     view.backgroundColor = .Separator.common
@@ -44,7 +46,8 @@ final class ModalCardListItemView: UIControl, ConfigurableView {
       .attributed(with: .body1, alignment: .left, color: .Text.secondary)
     
     switch model.rightTop {
-    case .value(let value, let numberOfLines):
+    case .value(let value, let numberOfLines, let isFullString):
+      isRightTopFullString = isFullString
       rightTopLabel.attributedText = value.attributed(with: .label1, alignment: numberOfLines == 0 ? .right : .left, lineBreakMode: .byTruncatingMiddle, color: .Text.primary)
       rightTopLabel.isHidden = false
       rightTopLabel.numberOfLines = numberOfLines
@@ -58,7 +61,7 @@ final class ModalCardListItemView: UIControl, ConfigurableView {
     }
     
     switch model.rightBottom {
-    case .value(let value, let numberOfLines):
+    case .value(let value, let numberOfLines, _):
       rightBottomLabel.attributedText = value?.attributed(with: .body2, alignment: .left, lineBreakMode: .byTruncatingMiddle, color: .Text.secondary)
       rightBottomLabel.isHidden = false
       rightBottomLabel.numberOfLines = numberOfLines
@@ -102,7 +105,7 @@ final class ModalCardListItemView: UIControl, ConfigurableView {
     let rightOriginY: CGFloat
     let rightOriginX: CGFloat
     let rightWidth: CGFloat
-    if availableWidth > maxRightWidth {
+    if availableWidth > maxRightWidth || !isRightTopFullString {
       rightOriginY = 0
       rightOriginX = leftLabel.frame.maxX
       rightWidth = availableWidth

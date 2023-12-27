@@ -61,6 +61,8 @@ struct ActivityListAccountEventActionContentProvider: AccountEventActionContentP
       return "Put up for sale"
     case .domainRenew:
       return "Domain Renew"
+    case .unknown:
+      return "Unknown"
     }
   }
 }
@@ -114,6 +116,8 @@ struct TonConnectConfirmationAccountEventActionContentProvider: AccountEventActi
       return "Put up for sale"
     case .domainRenew:
       return "Renew Domain"
+    case .unknown:
+      return "Unknown"
     }
   }
 }

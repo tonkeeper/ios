@@ -117,6 +117,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Icons.Transaction.putUpForSale
     case .domainRenew:
       return .Icons.Transaction.smartContractExec
+    case .unknown:
+      return .Icons.Transaction.smartContractExec
     }
   }
   
@@ -137,7 +139,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
         .contractExec,
         .putUpForSale,
         .burn,
-        .domainRenew:
+        .domainRenew,
+        .unknown:
       return .Text.primary
     case .receieved, .bounced, .mint, .withdrawStake, .jettonSwap:
       return .Accent.green
