@@ -26,7 +26,7 @@ struct ActivityListAccountEventActionContentProvider: AccountEventActionContentP
     case .depositStake:
       return "Stake"
     case .withdrawStake:
-      return "Stake"
+      return "Unstake"
     case .withdrawStakeRequest:
       return "Unstake Request"
     case .jettonSwap:
@@ -59,6 +59,8 @@ struct ActivityListAccountEventActionContentProvider: AccountEventActionContentP
       return "End of auction"
     case .putUpForSale:
       return "Put up for sale"
+    case .domainRenew:
+      return "Domain Renew"
     }
   }
 }
@@ -77,7 +79,7 @@ struct TonConnectConfirmationAccountEventActionContentProvider: AccountEventActi
     case .depositStake:
       return "Stake"
     case .withdrawStake:
-      return "Stake"
+      return "Unstake"
     case .withdrawStakeRequest:
       return "Unstake Request"
     case .jettonSwap:
@@ -110,6 +112,8 @@ struct TonConnectConfirmationAccountEventActionContentProvider: AccountEventActi
       return "End of auction"
     case .putUpForSale:
       return "Put up for sale"
+    case .domainRenew:
+      return "Renew Domain"
     }
   }
 }

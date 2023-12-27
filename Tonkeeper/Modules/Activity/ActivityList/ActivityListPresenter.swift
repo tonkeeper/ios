@@ -158,6 +158,7 @@ private extension ActivityListPresenter {
           time: action.rightTopDescription,
           status: action.status,
           comment: action.comment,
+          description: action.description,
           collectible: action.collectible
         )
       }

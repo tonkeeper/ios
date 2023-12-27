@@ -23,6 +23,7 @@ struct ActivityListTransactionBuilder {
                              time: String?,
                              status: String?,
                              comment: String? = nil,
+                             description: String? = nil,
                              collectible: ActivityEventViewModel.ActionViewModel.CollectibleViewModel? = nil) -> TransactionCellContentView.Model {
     let textContentModel = DefaultCellTextContentView.Model(
       title: accountEventActionContentProvider.title(actionType: type),
@@ -46,6 +47,11 @@ struct ActivityListTransactionBuilder {
       commentModel = .init(comment: comment.attributed(with: .body2, color: .Text.primary))
     }
     
+    var descriptionModel: TransactionCellContentView.TransactionCellCommentView.Model?
+    if let description = description, !description.isEmpty {
+      descriptionModel = .init(comment: description.attributed(with: .body2, color: .Text.primary))
+    }
+    
     var nftModel: TransactionCellContentView.TransactionCellNFTView.Model?
     if let collectible = collectible {
       nftModel = .init(image: .with(image: collectible.image), name: collectible.name, collectionName: collectible.collectionName)
@@ -55,6 +61,7 @@ struct ActivityListTransactionBuilder {
       defaultContentModel: contentModel,
       statusModel: statusModel,
       commentModel: commentModel,
+      descriptionModel: descriptionModel,
       nftModel: nftModel)
     
     return transactionModel
@@ -108,10 +115,10 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
       return .Icons.Transaction.endOfAuction
     case .putUpForSale:
       return .Icons.Transaction.putUpForSale
+    case .domainRenew:
+      return .Icons.Transaction.smartContractExec
     }
   }
-  
- 
   
   var amountColor: UIColor {
     switch self {
@@ -129,7 +136,8 @@ extension ActivityEventViewModel.ActionViewModel.ActionType {
         .endOfAuction,
         .contractExec,
         .putUpForSale,
-        .burn:
+        .burn,
+        .domainRenew:
       return .Text.primary
     case .receieved, .bounced, .mint, .withdrawStake, .jettonSwap:
       return .Accent.green

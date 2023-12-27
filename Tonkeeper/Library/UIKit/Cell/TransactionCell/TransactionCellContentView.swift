@@ -33,6 +33,7 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
   let defaultCellContentView = DefaultCellContentView()
   let statusView = TransactionCellStatusView()
   let commentView = TransactionCellCommentView()
+  let descriptionView = TransactionCellCommentView()
   let nftView = TransactionCellNFTView()
   let separatorView: UIView = {
     let view = UIView()
@@ -44,6 +45,7 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
     let defaultContentModel: DefaultCellContentView.Model
     let statusModel: TransactionCellStatusView.Model?
     let commentModel: TransactionCellCommentView.Model?
+    let descriptionModel: TransactionCellCommentView.Model?
     let nftModel: TransactionCellNFTView.Model?
   }
   
@@ -80,6 +82,14 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
     
     bottomContentY = statusView.frame.maxY
     
+    let nftSize = nftView.sizeThatFits(.init(width: contentViewSize.width - .additionalContentLeftSpacing, height: 0))
+    nftView.frame = CGRect(x: defaultCellContentView.textContentFrame.minX,
+                           y: bottomContentY,
+                           width: min(nftSize.width, contentViewSize.width),
+                           height: nftSize.height)
+    
+    bottomContentY = nftView.frame.maxY
+    
     let commentSize = commentView.sizeThatFits(.init(width: contentViewSize.width - .additionalContentLeftSpacing, height: 0))
     commentView.frame = CGRect(x: defaultCellContentView.textContentFrame.minX,
                                y: bottomContentY,
@@ -87,19 +97,20 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
                                height: commentSize.height)
     bottomContentY = commentView.frame.maxY
     
-    let nftSize = nftView.sizeThatFits(.init(width: contentViewSize.width, height: 0))
-    nftView.frame = CGRect(x: defaultCellContentView.textContentFrame.minX,
-                           y: bottomContentY,
-                           width: min(nftSize.width, contentViewSize.width),
-                           height: nftSize.height)
+    let descriptionSize = descriptionView.sizeThatFits(.init(width: contentViewSize.width - .additionalContentLeftSpacing, height: 0))
+    descriptionView.frame = CGRect(x: defaultCellContentView.textContentFrame.minX,
+                               y: bottomContentY,
+                               width: descriptionSize.width,
+                               height: descriptionSize.height)
+    bottomContentY = descriptionView.frame.maxY
     
     contentView.frame.size = contentViewSize
     contentView.frame.origin = CGPoint(x: ContentInsets.sideSpace, y: ContentInsets.sideSpace)
     
     separatorView.frame = CGRect(
       x: ContentInsets.sideSpace,
-      y: bounds.height - .separatorHeight, width
-      : bounds.width - ContentInsets.sideSpace,
+      y: bounds.height - .separatorHeight,
+      width: bounds.width - ContentInsets.sideSpace,
       height: .separatorHeight)
   }
   
@@ -109,8 +120,9 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
     let defaultCellContentHeight = defaultCellContentView.sizeThatFits(contentViewSize).height
     let statusHeight = statusView.sizeThatFits(contentViewSize).height
     let commentHeight = commentView.sizeThatFits(.init(width: contentViewSize.width - .additionalContentLeftSpacing, height: 0)).height
+    let descriptionHeight = descriptionView.sizeThatFits(.init(width: contentViewSize.width - .additionalContentLeftSpacing, height: 0)).height
     let nftHeight = nftView.sizeThatFits(contentViewSize).height
-    let height = defaultCellContentHeight + statusHeight + commentHeight + nftHeight + ContentInsets.sideSpace * 2
+    let height = defaultCellContentHeight + statusHeight + commentHeight + descriptionHeight + nftHeight + ContentInsets.sideSpace * 2
     return .init(width: size.width, height: height)
   }
   
@@ -131,6 +143,13 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
       commentView.isHidden = true
     }
     
+    if let descriptionModel = model.descriptionModel {
+      descriptionView.configure(model: descriptionModel)
+      descriptionView.isHidden = false
+    } else {
+      descriptionView.isHidden = true
+    }
+    
     if let nftModel = model.nftModel {
       nftView.configure(model: nftModel)
       nftView.isHidden = false
@@ -145,6 +164,7 @@ final class TransactionCellContentView: UIControl, ContainerCollectionViewCellCo
     defaultCellContentView.prepareForReuse()
     statusView.prepareForReuse()
     commentView.prepareForReuse()
+    descriptionView.prepareForReuse()
     nftView.prepareForReuse()
   }
 }
@@ -164,6 +184,7 @@ private extension TransactionCellContentView {
     contentView.addSubview(defaultCellContentView)
     contentView.addSubview(statusView)
     contentView.addSubview(commentView)
+    contentView.addSubview(descriptionView)
     contentView.addSubview(nftView)
     
     nftView.addTarget(
