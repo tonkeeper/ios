@@ -35,10 +35,13 @@ final class MoreTextViewContainer: UIView {
     }
   }
   
-  var attributedText: NSAttributedString? {
+  var text: String? {
     didSet {
-      textView.attributedText = attributedText
-      update()
+      textView.attributedText = text?.attributed(
+        with: .body2,
+        alignment: .left,
+        lineBreakMode: .byWordWrapping,
+        color: .Text.secondary)
     }
   }
   
@@ -101,18 +104,12 @@ private extension MoreTextViewContainer {
       return
     }
     
-    guard let attributedText = attributedText else {
+    guard let text = text else {
       textViewHeightConstraint?.constant = 0
       return
     }
     
-    let lineHeight: CGFloat
-    if let paragraphStyle = attributedText.attributes(at: 0, effectiveRange: nil)[.paragraphStyle] as? NSParagraphStyle {
-      lineHeight = paragraphStyle.minimumLineHeight
-    } else {
-      lineHeight = 0
-    }
-    
+    let lineHeight = TextStyle.body2.lineHeight - TextStyle.body2.adjustment    
     let maximumHeight = lineHeight * CGFloat(numberOfLinesInCollapsed)
     let textHeight = textView.sizeThatFits(.init(width: bounds.width, height: 0)).height.rounded(.down)
     

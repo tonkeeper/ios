@@ -40,11 +40,7 @@ final class CollectibleDetailsCollectionDescriptionView: UIView, ConfigurableVie
       lineBreakMode: .byWordWrapping,
       color: .Text.primary)
     
-    descriptionView.attributedText = model.description?.attributed(
-      with: .body2,
-      alignment: .left,
-      lineBreakMode: .byWordWrapping,
-      color: .Text.secondary)
+    descriptionView.text = model.description
   }
 }
 

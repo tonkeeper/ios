@@ -55,11 +55,7 @@ final class CollectibleDetailsCollectibleView: UIView, ConfigurableView {
       color: .Text.secondary)
     subtitleLabel.isHidden = model.subtitle == nil
 
-    descriptionView.attributedText = model.description?.attributed(
-      with: .body2,
-      alignment: .left,
-      lineBreakMode: .byWordWrapping,
-      color: .Text.secondary)
+    descriptionView.text = model.description
     descriptionView.isHidden = model.description == nil || model.description?.isEmpty == true
     
     imageLoader?.loadImage(imageURL: model.imageURL, imageView: imageView, size: nil)
@@ -68,6 +64,8 @@ final class CollectibleDetailsCollectibleView: UIView, ConfigurableView {
 
 private extension CollectibleDetailsCollectibleView {
   func setup() {
+    titleLabel.numberOfLines = 0
+    
     contentView.backgroundColor = .Background.content
     contentView.layer.cornerRadius = .cornerRadius
     contentView.layer.masksToBounds = true

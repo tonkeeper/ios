@@ -117,7 +117,7 @@ private extension CollectibleDetailsView {
       scrollView.topAnchor.constraint(equalTo: topAnchor),
       scrollView.leftAnchor.constraint(equalTo: leftAnchor),
       scrollView.rightAnchor.constraint(equalTo: rightAnchor),
-      scrollView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
+      scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
       
       scrollContent.topAnchor.constraint(equalTo: scrollView.topAnchor),
       scrollContent.leftAnchor.constraint(equalTo: scrollView.leftAnchor),

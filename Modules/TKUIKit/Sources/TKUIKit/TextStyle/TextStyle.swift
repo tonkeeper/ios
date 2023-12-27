@@ -13,9 +13,13 @@ public struct TextStyle {
   public let uppercased: Bool
   
   public var lineSpacing: CGFloat {
-      return lineHeight - font.lineHeight
+    return lineHeight - font.lineHeight
   }
   
+  public var adjustment: CGFloat {
+    lineHeight > font.lineHeight ? 2.0 : 1.0
+  }
+    
   public init(font: UIFont,
               lineHeight: CGFloat,
               uppercased: Bool = false) {
