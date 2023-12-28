@@ -99,14 +99,8 @@ private extension SendCoordinator {
       output: self
     )
     sendRecipientInput = recipientModule.input
-    
-    let amountModule = SendAmountAssembly.module(recipient: recipient,
-                                                 inputCurrencyFormatter: .inputCurrencyFormatter,
-                                                 sendInputController: walletCoreAssembly.sendInputController,
-                                                 output: self)
-    amountModule.view.setupBackButton()
 
-    router.setPresentables([(recipientModule.view, nil), (amountModule.view, nil)])
+    router.setPresentables([(recipientModule.view, nil)])
   }
 }
 
@@ -122,6 +116,7 @@ extension SendCoordinator: SendRecipientModuleOutput {
   }
   
   func sendRecipientModuleDidTapCloseButton() {
+    router.rootViewController.dismiss(animated: true)
     output?.sendCoordinatorDidClose(self)
   }
   
@@ -138,6 +133,7 @@ extension SendCoordinator: SendRecipientModuleOutput {
 
 extension SendCoordinator: SendAmountModuleOutput {
   func sendAmountModuleDidTapCloseButton() {
+    router.rootViewController.dismiss(animated: true)
     output?.sendCoordinatorDidClose(self)
   }
   
@@ -151,10 +147,12 @@ extension SendCoordinator: SendAmountModuleOutput {
 
 extension SendCoordinator: SendConfirmationModuleOutput {
   func sendConfirmationModuleDidTapCloseButton() {
+    router.rootViewController.dismiss(animated: true)
     output?.sendCoordinatorDidClose(self)
   }
   
   func sendConfirmationModuleDidFinish() {
+    router.rootViewController.dismiss(animated: true)
     output?.sendCoordinatorDidClose(self)
   }
   

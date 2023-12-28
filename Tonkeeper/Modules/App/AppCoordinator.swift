@@ -56,13 +56,6 @@ private extension AppCoordinator {
     let blurViewController = BlurViewController()
     window.rootViewController = blurViewController
     self.blurWindow = window
-//    guard self.blurViewController == nil else { return }
-//    let blurViewController = BlurViewController()
-//    self.blurViewController = blurViewController
-//    
-//    self.router.window.addSubview(blurViewController.view)
-//    blurViewController.view.frame = self.router.window.bounds
-//    
     window.makeKeyAndVisible()
     blurViewController.view.alpha = .showBlurInitialOpacity
     UIView.animate(withDuration: .showBlurAnimationDuration) {
@@ -75,13 +68,10 @@ private extension AppCoordinator {
     
     UIView.animate(withDuration: .hideBlurAnimationDuration) {
       blurWindow?.rootViewController?.view.alpha = 0
-//      self.blurViewController?.view.alpha = 0
     } completion: { _ in
       if blurWindow === self.blurWindow {
         self.blurWindow = nil
       }
-//      self.blurViewController?.view.removeFromSuperview()
-//      self.blurViewController = nil
     }
   }
 }

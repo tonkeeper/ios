@@ -12,6 +12,8 @@ import TonSwift
 protocol WalletCoordinatorOutput: AnyObject {
   func walletCoordinator(_ coordinator: WalletCoordinator,
                          openTonConnectDeeplink deeplink: TonConnectDeeplink)
+  func walletCoordinator(_ coordinator: WalletCoordinator,
+                         openSend recipient: Recipient?)
 }
 
 final class WalletCoordinator: Coordinator<NavigationRouter> {
@@ -86,13 +88,7 @@ extension WalletCoordinator: WalletRootModuleOutput {
   }
   
   func openSend(recipient: Recipient?) {
-    let coordinator = walletAssembly.sendCoordinator(
-      output: self,
-      recipient: recipient
-    )
-    addChild(coordinator)
-    coordinator.start()
-    router.present(coordinator.router.rootViewController)
+    output?.walletCoordinator(self, openSend: recipient)
   }
   
   func openReceive(address: String) {
@@ -160,15 +156,6 @@ extension WalletCoordinator: QRScannerModuleOutput {
         )
       }
     } catch {}
-  }
-}
-
-// MARK: - SendCoordinatorOutput
-
-extension WalletCoordinator: SendCoordinatorOutput {
-  func sendCoordinatorDidClose(_ coordinator: SendCoordinator) {
-    router.dismiss()
-    removeChild(coordinator)
   }
 }
 

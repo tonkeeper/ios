@@ -2,10 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>APP_NAME</key>
-	<string>$(APP_NAME)</string>
 	<key>APP_GROUP_IDENTIFIER</key>
 	<string>$(APP_GROUP_IDENTIFIER)</string>
+	<key>APP_NAME</key>
+	<string>$(APP_NAME)</string>
 	<key>AppIdentifierPrefix</key>
 	<string>$(AppIdentifierPrefix)</string>
 	<key>CFBundleURLTypes</key>
@@ -18,11 +18,19 @@
 				<string>tc</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>ton</string>
+			</array>
+		</dict>
 	</array>
-	<key>KEYCHAIN_ACCESS_GROUP</key>
-	<string>$(KEYCHAIN_ACCESS_GROUP)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>KEYCHAIN_ACCESS_GROUP</key>
+	<string>$(KEYCHAIN_ACCESS_GROUP)</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
@@ -53,7 +61,5 @@
 	</dict>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Tonkeeper uses biometric authentication to authorize transactions</string>
 </dict>
 </plist>

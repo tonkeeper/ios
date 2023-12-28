@@ -58,7 +58,7 @@ private extension SceneDelegate {
   func getDeeplink(url: URL?) -> Deeplink? {
     guard let url = url else { return nil }
     let deeplinkParser = appAssembly.walletCoreAssembly.deeplinkParser(
-      handlers: [appAssembly.walletCoreAssembly.tonConnectDeeplinkHandler]
+      handlers: [appAssembly.walletCoreAssembly.tonConnectDeeplinkHandler, appAssembly.walletCoreAssembly.tonDeeplinkHandler]
     )
     guard let deeplink = try? deeplinkParser.parse(string: url.absoluteString) else { return nil }
     return deeplink

@@ -76,7 +76,11 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
       switch walletCoreDeeplink {
       case .tonConnect(let tonConnectDeeplink):
         openTonConnectDeeplink(tonConnectDeeplink)
-      default: return
+      case .ton(let tonDeeplink):
+        switch tonDeeplink {
+        case .transfer(let address):
+          self.openSend(recipient: Recipient(address: address, domain: nil))
+        }
       }
     default: return
     }
@@ -149,6 +153,21 @@ private extension TabBarCoordinator {
         self?.router.rootViewController.selectedIndex = 1
       }
   }
+  
+  func openSend(recipient: Recipient?) {
+    let coordinator = assembly.walletAssembly.sendCoordinator(
+      output: self,
+      recipient: recipient
+    )
+    addChild(coordinator)
+    coordinator.start()
+    
+    if let presentedViewController = router.rootViewController.presentedViewController {
+      presentedViewController.present(coordinator.router.rootViewController, animated: true)
+    } else {
+      router.present(coordinator.router.rootViewController)
+    }
+  }
 }
 
 // MARK: - SettingsCoordinatorOutput
@@ -165,6 +184,10 @@ extension TabBarCoordinator: WalletCoordinatorOutput {
   func walletCoordinator(_ coordinator: WalletCoordinator,
                          openTonConnectDeeplink deeplink: TonConnectDeeplink) {
     self.openTonConnectDeeplink(deeplink)
+  }
+  
+  func walletCoordinator(_ coordinator: WalletCoordinator, openSend recipient: Recipient?) {
+    openSend(recipient: recipient)
   }
 }
 
@@ -201,3 +224,12 @@ extension TabBarCoordinator: TonConnectConfirmationCoordinatorOutput {
     removeChild(coordinator)
   }
 }
+
+// MARK: - SendCoordinatorOutput
+
+extension TabBarCoordinator: SendCoordinatorOutput {
+  func sendCoordinatorDidClose(_ coordinator: SendCoordinator) {
+    removeChild(coordinator)
+  }
+}
+
