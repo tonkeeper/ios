@@ -48,6 +48,7 @@ private extension SendCollectibleCoordinator {
     let module = SendRecipientAssembly.module(
       sendRecipientController: walletCoreAssembly.sendRecipientController(),
       commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
+      knownAccounts: walletCoreAssembly.knownAccounts,
       recipient: recipient,
       output: self
     )

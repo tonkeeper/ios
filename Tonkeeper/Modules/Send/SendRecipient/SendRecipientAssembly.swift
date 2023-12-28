@@ -11,10 +11,12 @@ import WalletCoreKeeper
 struct SendRecipientAssembly {
   static func module(sendRecipientController: SendRecipientController,
                      commentLengthValidator: SendRecipientCommentLengthValidator,
+                     knownAccounts: KnownAccounts,
                      recipient: Recipient?,
                      output: SendRecipientModuleOutput?) -> Module<SendRecipientViewController, SendRecipientModuleInput> {
     let presenter = SendRecipientPresenter(sendRecipientController: sendRecipientController,
                                            commentLengthValidator: commentLengthValidator,
+                                           knownAccounts: knownAccounts,
                                            recipient: recipient)
     presenter.output = output
     

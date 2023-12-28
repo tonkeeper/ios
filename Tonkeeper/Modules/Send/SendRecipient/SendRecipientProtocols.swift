@@ -35,4 +35,7 @@ protocol SendRecipientViewInput: AnyObject {
   func updateAddressValidationState(isValid: Bool)
   func updateContinueButtonIsAvailable(isAvailable: Bool)
   func updateContinueButtonIsActivity(isActivity: Bool)
+  func setRequireMemoState()
+  func setNotRequireMemoState()
+  func updateCommentVisibilityLabelIsHidden(_ isHidden: Bool)
 }

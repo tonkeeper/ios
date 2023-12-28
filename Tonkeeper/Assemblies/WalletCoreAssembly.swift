@@ -30,6 +30,10 @@ final class WalletCoreAssembly {
     walletCoreAssembly.configurationController
   }
   
+  var knownAccounts: KnownAccounts {
+    walletCoreAssembly.knownAccounts
+  }
+  
   var walletsController: WalletsController {
     walletCoreAssembly.walletsController
   }

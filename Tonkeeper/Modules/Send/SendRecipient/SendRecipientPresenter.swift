@@ -8,6 +8,7 @@
 
 import Foundation
 import WalletCoreKeeper
+import TonSwift
 
 final class SendRecipientPresenter {
   
@@ -20,8 +21,22 @@ final class SendRecipientPresenter {
   
   private let sendRecipientController: SendRecipientController
   private let commentLengthValidator: SendRecipientCommentLengthValidator
+  private let knownAccounts: KnownAccounts
   private var recipient: Recipient?
   private var comment: String?
+  
+  private var isRequireMemo = false {
+    didSet {
+      Task { @MainActor in
+        if isRequireMemo {
+          viewInput?.setRequireMemoState()
+        } else {
+          viewInput?.setNotRequireMemoState()
+        }
+        validate()
+      }
+    }
+  }
   
   // MARK: - State
   
@@ -31,9 +46,11 @@ final class SendRecipientPresenter {
   
   init(sendRecipientController: SendRecipientController,
        commentLengthValidator: SendRecipientCommentLengthValidator,
+       knownAccounts: KnownAccounts,
        recipient: Recipient?) {
     self.sendRecipientController = sendRecipientController
     self.commentLengthValidator = commentLengthValidator
+    self.knownAccounts = knownAccounts
     self.recipient = recipient
   }
 }
@@ -94,6 +111,7 @@ private extension SendRecipientPresenter {
   func handleAddressInput(address: String) {
     viewInput?.updateContinueButtonIsAvailable(isAvailable: false)
     addressInputTimer?.invalidate()
+    handleKnownAccounts(addressString: address)
     guard !address.isEmpty else {
       recipient = nil
       viewInput?.updateAddressValidationState(isValid: true)
@@ -127,6 +145,9 @@ private extension SendRecipientPresenter {
     let isRecipientValid = validateRecipient()
     let isCommentValid = validateComment()
     viewInput?.updateContinueButtonIsAvailable(isAvailable: isRecipientValid && isCommentValid)
+    
+    let commentVisibilityLabelIsHidden = isRequireMemo || (comment ?? "").isEmpty
+    viewInput?.updateCommentVisibilityLabelIsHidden(commentVisibilityLabelIsHidden)
   }
   
   func validateRecipient() -> Bool {
@@ -134,23 +155,53 @@ private extension SendRecipientPresenter {
   }
   
   func validateComment() -> Bool {
-    let result = commentLengthValidator.validate(text: comment ?? "")
-    let isValid: Bool
-    switch result {
-    case .valid:
-      viewInput?.hideCommentLengthWarning()
-      isValid = true
-    case .warning(let charsLeft):
-      let string = "\(charsLeft) charactes left."
+    if isRequireMemo {
+      let isValid = !(comment ?? "").isEmpty
+      let string = "You must include the note from the exchange for transfer. Without it your funds will be lost."
         .attributed(with: .body2,  alignment: .left, color: .Accent.orange)
       viewInput?.showCommentLengthWarning(text: string)
-      isValid = true
-    case .notValid(let charsOver):
-      let string = "Message size has been exceeded by \(charsOver) characters"
-        .attributed(with: .body2,  alignment: .left, color: .Accent.red)
-      viewInput?.showCommentLengthWarning(text: string)
-      isValid = false
+      return isValid
+    } else {
+      let result = commentLengthValidator.validate(text: comment ?? "")
+      let isValid: Bool
+      switch result {
+      case .valid:
+        viewInput?.hideCommentLengthWarning()
+        isValid = true
+      case .warning(let charsLeft):
+        let string = "\(charsLeft) charactes left."
+          .attributed(with: .body2,  alignment: .left, color: .Accent.orange)
+        viewInput?.showCommentLengthWarning(text: string)
+        isValid = true
+      case .notValid(let charsOver):
+        let string = "Message size has been exceeded by \(charsOver) characters"
+          .attributed(with: .body2,  alignment: .left, color: .Accent.red)
+        viewInput?.showCommentLengthWarning(text: string)
+        isValid = false
+      }
+      return isValid
     }
-    return isValid
+  }
+  
+  func handleKnownAccounts(addressString: String) {
+    Task {
+      let address: Address
+      do {
+        address = try Address.parse(addressString)
+      } catch {
+        isRequireMemo = false
+        return
+      }
+      let knownAccounts = await knownAccounts.knownAccounts
+      guard let account = knownAccounts.first(where: { $0.address == address }) else {
+        isRequireMemo = false
+        return
+      }
+      if account.requireMemo {
+        isRequireMemo = true
+      } else {
+        isRequireMemo = false
+      }
+    }
   }
 }

@@ -54,6 +54,7 @@ private extension SendCoordinator {
     let module = SendRecipientAssembly.module(
       sendRecipientController: walletCoreAssembly.sendRecipientController(),
       commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
+      knownAccounts: walletCoreAssembly.knownAccounts,
       recipient: recipient,
       output: self
     )
@@ -93,6 +94,7 @@ private extension SendCoordinator {
     let recipientModule = SendRecipientAssembly.module(
       sendRecipientController: walletCoreAssembly.sendRecipientController(),
       commentLengthValidator: DefaultSendRecipientCommentLengthValidator(),
+      knownAccounts: walletCoreAssembly.knownAccounts,
       recipient: recipient,
       output: self
     )

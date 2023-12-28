@@ -94,6 +94,20 @@ extension SendRecipientViewController: SendRecipientViewInput {
   func updateContinueButtonIsActivity(isActivity: Bool) {
     isActivity ? customView.continueButtonActivityContainer.showActivity() : customView.continueButtonActivityContainer.hideActivity()
   }
+  
+  func setRequireMemoState() {
+    customView.commentTextField.placeholder = "Required comment"
+    customView.commentTextField.isPasteButtonAvailable = true
+  }
+  
+  func setNotRequireMemoState() {
+    customView.commentTextField.placeholder = "Comment"
+    customView.commentTextField.isPasteButtonAvailable = false
+  }
+  
+  func updateCommentVisibilityLabelIsHidden(_ isHidden: Bool) {
+    customView.commentVisibilityLabel.isHidden = isHidden
+  }
 }
 
 // MARK: - Private
@@ -126,7 +140,6 @@ private extension SendRecipientViewController {
   }
   
   func commentDidChange(_ textView: UITextView) {
-    customView.commentVisibilityLabel.isHidden = textView.text.isEmpty
     presenter.didChangeComment(text: textView.text)
   }
 }
