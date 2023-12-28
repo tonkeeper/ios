@@ -31,7 +31,7 @@ final class RootCoordinator: Coordinator<NavigationRouter> {
   override func start(deeplink: Deeplink?) {
     self.deeplink = deeplink
     if assembly.walletCoreAssembly.walletProvider.hasWallets {
-      openAuth()
+      openTabBar()
     } else {
       openOnboarding()
     }
