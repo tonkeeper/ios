@@ -27,6 +27,7 @@ final class SendAmountPresenter {
 
   private let inputCurrencyFormatter: NumberFormatter
   private let recipient: Recipient
+  private let token: Token
   
   let amountInputFormatController: AmountInputFormatController
   let sendInputController: SendInputController
@@ -35,10 +36,12 @@ final class SendAmountPresenter {
   
   init(inputCurrencyFormatter: NumberFormatter,
        sendInputController: SendInputController,
+       token: Token,
        recipient: Recipient) {
     self.inputCurrencyFormatter = inputCurrencyFormatter
     self.amountInputFormatController = AmountInputFormatController(currencyFormatter: inputCurrencyFormatter)
     self.sendInputController = sendInputController
+    self.token = token
     self.recipient = recipient
   }
 }
@@ -50,6 +53,11 @@ extension SendAmountPresenter: SendAmountPresenterInput {
     setup()
     updateTitle()
     sendInputController.setInitialState()
+    switch token {
+    case .token(let tokenInfo):
+      try? sendInputController.didSelectToken(tokenInfo: tokenInfo)
+    case .ton: break
+    }
   }
   
   func didTapCloseButton() {

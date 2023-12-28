@@ -64,6 +64,7 @@ private extension SendCoordinator {
   
   func openSendAmount(recipient: Recipient) {
     let module = SendAmountAssembly.module(recipient: recipient,
+                                           token: token,
                                            inputCurrencyFormatter: .inputCurrencyFormatter,
                                            sendInputController: walletCoreAssembly.sendInputController,
                                            output: self)

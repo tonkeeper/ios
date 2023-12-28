@@ -10,12 +10,14 @@ import WalletCoreKeeper
 
 struct SendAmountAssembly {
   static func module(recipient: Recipient,
+                     token: Token,
                      inputCurrencyFormatter: NumberFormatter,
                      sendInputController: SendInputController,
                      output: SendAmountModuleOutput?) -> Module<SendAmountViewController, SendAmountModuleInput> {
     
     let presenter = SendAmountPresenter(inputCurrencyFormatter: inputCurrencyFormatter,
                                         sendInputController: sendInputController,
+                                        token: token,
                                         recipient: recipient)
     presenter.output = output
     
