@@ -53,14 +53,16 @@ extension SendConfirmationPresenter: SendControllerDelegate {
   }
   
   func sendControllerFailed(_ sendController: SendController, error: SendControllerError) {
-    switch error {
-    case .failedToPrepareTransaction:
-      viewInput?.showError(errorTitle: .failedToPrepareTransactionErrorTitle)
-      output?.sendConfirmationModuleDidFailedToPrepareTransaction()
-    case .failedToEmulateTransaction:
-      viewInput?.showError(errorTitle: .failedToCalculateFeeErrorTitle)
-    case .failedToSendTransaction:
-      viewInput?.showError(errorTitle: .failedToSendTransactionErrorTitle)
+    DispatchQueue.main.async { [viewInput, output] in
+      switch error {
+      case .failedToPrepareTransaction:
+        viewInput?.showError(errorTitle: .failedToPrepareTransactionErrorTitle)
+        output?.sendConfirmationModuleDidFailedToPrepareTransaction()
+      case .failedToEmulateTransaction:
+        viewInput?.showError(errorTitle: .failedToCalculateFeeErrorTitle)
+      case .failedToSendTransaction:
+        viewInput?.showError(errorTitle: .failedToSendTransactionErrorTitle)
+      }
     }
   }
 }
