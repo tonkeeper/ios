@@ -144,9 +144,9 @@ extension WalletCoordinator: QRScannerModuleOutput {
       switch try walletAssembly.deeplinkParser.parse(string: string) {
       case .ton(let tonDeeplink):
         switch tonDeeplink {
-        case .transfer(let address):
+        case .transfer(let recipient):
           router.dismiss { [weak self] in
-            self?.openSend(recipient: Recipient(address: address, domain: nil))
+            self?.openSend(recipient: recipient)
           }
         }
       case .tonConnect(let tonConnectDeeplink):

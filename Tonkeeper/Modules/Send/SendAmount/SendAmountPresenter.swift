@@ -150,12 +150,12 @@ private extension SendAmountPresenter {
     if let name = recipient.domain {
       let nameString = "To: \(name)"
         .attributed(with: .body2,  alignment: .center, lineBreakMode: .byWordWrapping, color: .Text.secondary)
-      let walletString = " \(recipient.address.toShortString(bounceable: false))"
+      let walletString = " \(recipient.shortAddress)"
         .attributed(with: .body2,  alignment: .center, lineBreakMode: .byClipping, color: .Text.tertiary)
       subtitle.append(nameString)
       subtitle.append(walletString)
     } else {
-      let walletString = "To: \(recipient.address.toShortString(bounceable: false))"
+      let walletString = "To: \(recipient.shortAddress)"
         .attributed(with: .body2,  alignment: .center, lineBreakMode: .byClipping, color: .Text.secondary)
       subtitle.append(walletString)
     }

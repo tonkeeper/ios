@@ -217,8 +217,8 @@ extension SendCoordinator: QRScannerModuleOutput {
     }
     router.dismiss()
     switch tonDeeplink {
-    case .transfer(let address):
-      sendRecipientInput?.setRecipient(Recipient(address: address, domain: nil))
+    case .transfer(let recipient):
+      sendRecipientInput?.setRecipient(recipient)
     }
   }
 }

@@ -104,7 +104,7 @@ private extension SendRecipientPresenter {
       return
     }
     viewInput?.updateRecipientAddress(
-      recipient.address.toString(bounceable: false),
+      recipient.address.toString(),
       name: recipient.domain)
   }
   

@@ -78,8 +78,8 @@ final class TabBarCoordinator: Coordinator<TabBarRouter> {
         openTonConnectDeeplink(tonConnectDeeplink)
       case .ton(let tonDeeplink):
         switch tonDeeplink {
-        case .transfer(let address):
-          self.openSend(recipient: Recipient(address: address, domain: nil))
+        case .transfer(let recipient):
+          self.openSend(recipient: recipient)
         }
       }
     default: return
