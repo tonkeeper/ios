@@ -967,6 +967,7 @@
 		C37E2AF62B49BE8100EDFB9C /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
 		C37E2AF72B49BE8100EDFB9C /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
 		C37E2AFC2B49BEEF00EDFB9C /* Onboarding */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Onboarding; sourceTree = "<group>"; };
+		C37E2B302B49C30300EDFB9C /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
 		C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewController.swift; sourceTree = "<group>"; };
 		C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewBuilder.swift; sourceTree = "<group>"; };
 		C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+HeaderView.swift"; sourceTree = "<group>"; };
@@ -2910,6 +2911,7 @@
 		C37E2AF42B49BE8100EDFB9C /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				C37E2B302B49C30300EDFB9C /* TKCoordinator */,
 				C37E2AF52B49BE8100EDFB9C /* TKUIKitLegacy */,
 				C37E2AF62B49BE8100EDFB9C /* TKCore */,
 				C37E2AF72B49BE8100EDFB9C /* TKChart */,

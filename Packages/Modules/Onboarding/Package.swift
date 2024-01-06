@@ -12,7 +12,8 @@ let package = Package(
             targets: ["Onboarding"]),
     ],
     dependencies: [
-      .package(url: "git@github.com:tonkeeper/tkuikit-ios.git", branch: "main")
+      .package(url: "git@github.com:tonkeeper/tkuikit-ios.git", branch: "main"),
+      .package(path: "../TKCoordinator")
     ],
     targets: [
         .target(
