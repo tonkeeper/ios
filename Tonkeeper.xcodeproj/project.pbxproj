@@ -427,6 +427,9 @@
 		C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE42B499D9B00EDFB9C /* WalletCore */; };
 		C37E2AE62B499D9B00EDFB9C /* WalletCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE42B499D9B00EDFB9C /* WalletCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C37E2AE92B499E3700EDFB9C /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE82B499E3700EDFB9C /* TKUIKit */; };
+		C37E2AF92B49BE8100EDFB9C /* TKUIKitLegacy in Resources */ = {isa = PBXBuildFile; fileRef = C37E2AF52B49BE8100EDFB9C /* TKUIKitLegacy */; };
+		C37E2AFA2B49BE8100EDFB9C /* TKCore in Resources */ = {isa = PBXBuildFile; fileRef = C37E2AF62B49BE8100EDFB9C /* TKCore */; };
+		C37E2AFB2B49BE8100EDFB9C /* TKChart in Resources */ = {isa = PBXBuildFile; fileRef = C37E2AF72B49BE8100EDFB9C /* TKChart */; };
 		C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */; };
 		C384B3B12AE96ADB009CD062 /* ModalCardViewBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */; };
 		C384B3B32AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */; };
@@ -942,8 +945,6 @@
 		B305512CBFAF5DE77C5D0556 /* EnterMnemonicProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnterMnemonicProtocols.swift; sourceTree = "<group>"; };
 		B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartPresenter.swift; sourceTree = "<group>"; };
 		C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsViewController.swift; sourceTree = "<group>"; };
-		C318DC442B499C62008A2273 /* TKUIKitLegacy */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKUIKitLegacy; path = Modules/TKUIKitLegacy; sourceTree = "<group>"; };
-		C318DC452B499C72008A2273 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKChart; path = Modules/TKChart; sourceTree = "<group>"; };
 		C33F72452AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectHeaderWalletAnimationView.swift; sourceTree = "<group>"; };
 		C35684102AEBFD810064DD0A /* AuthEventsDaemon.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = AuthEventsDaemon.swift; sourceTree = "<group>"; tabWidth = 2; };
 		C35684142AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationCoordinator.swift; sourceTree = "<group>"; };
@@ -951,7 +952,6 @@
 		C35684182AEC39C30064DD0A /* TonConnectConfirmationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationViewController.swift; sourceTree = "<group>"; };
 		C356841A2AEC3A1B0064DD0A /* TonConnectConfirmationPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationPresenter.swift; sourceTree = "<group>"; };
 		C356841C2AEC3A780064DD0A /* TonConnectConfirmationAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationAssembly.swift; sourceTree = "<group>"; };
-		C35E6C352ADFC9DA00F8B524 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKCore; path = Modules/TKCore; sourceTree = "<group>"; };
 		C3774EFF2B340F0600B15B78 /* SwapHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapHeaderImageView.swift; sourceTree = "<group>"; };
 		C3774F012B34130D00B15B78 /* ActionDetailsTokenHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionDetailsTokenHeaderImageView.swift; sourceTree = "<group>"; };
 		C3774F032B34153E00B15B78 /* ActionDetailsNFTHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionDetailsNFTHeaderImageView.swift; sourceTree = "<group>"; };
@@ -962,6 +962,9 @@
 		C3774F172B35C30400B15B78 /* WalletHeaderBanneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderBanneModel.swift; sourceTree = "<group>"; };
 		C37D0C4C2AEF6A110003C5CE /* TonConnectConfirmationContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationContentView.swift; sourceTree = "<group>"; };
 		C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationFeeView.swift; sourceTree = "<group>"; };
+		C37E2AF52B49BE8100EDFB9C /* TKUIKitLegacy */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKitLegacy; sourceTree = "<group>"; };
+		C37E2AF62B49BE8100EDFB9C /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
+		C37E2AF72B49BE8100EDFB9C /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
 		C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewController.swift; sourceTree = "<group>"; };
 		C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewBuilder.swift; sourceTree = "<group>"; };
 		C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+HeaderView.swift"; sourceTree = "<group>"; };
@@ -2605,7 +2608,7 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
-				C35E6C332ADFC9CC00F8B524 /* Packages */,
+				C37E2AF42B49BE8100EDFB9C /* Packages */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,
 				7D7CF6BF2AC7040900EB0BFF /* Configurations */,
@@ -2851,16 +2854,6 @@
 			path = TonConnectConfirmation;
 			sourceTree = "<group>";
 		};
-		C35E6C332ADFC9CC00F8B524 /* Packages */ = {
-			isa = PBXGroup;
-			children = (
-				C35E6C352ADFC9DA00F8B524 /* TKCore */,
-				C318DC442B499C62008A2273 /* TKUIKitLegacy */,
-				C318DC452B499C72008A2273 /* TKChart */,
-			);
-			name = Packages;
-			sourceTree = "<group>";
-		};
 		C3774F092B35AF3B00B15B78 /* SettingsChangePasscode */ = {
 			isa = PBXGroup;
 			children = (
@@ -2909,6 +2902,24 @@
 				C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		C37E2AF42B49BE8100EDFB9C /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				C37E2AF52B49BE8100EDFB9C /* TKUIKitLegacy */,
+				C37E2AF62B49BE8100EDFB9C /* TKCore */,
+				C37E2AF72B49BE8100EDFB9C /* TKChart */,
+				C37E2AF82B49BE8100EDFB9C /* Modules */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		C37E2AF82B49BE8100EDFB9C /* Modules */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Modules;
 			sourceTree = "<group>";
 		};
 		C384B3AD2AE96ABF009CD062 /* ModalCardViewController */ = {
@@ -3174,11 +3185,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C37E2AFB2B49BE8100EDFB9C /* TKChart in Resources */,
 				7DB8FB722A1BCC92005B4B11 /* LaunchScreen.storyboard in Resources */,
 				7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */,
 				7D4C14642AD98E44002B2922 /* diamond.json in Resources */,
 				7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */,
+				C37E2AFA2B49BE8100EDFB9C /* TKCore in Resources */,
 				7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */,
+				C37E2AF92B49BE8100EDFB9C /* TKUIKitLegacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
