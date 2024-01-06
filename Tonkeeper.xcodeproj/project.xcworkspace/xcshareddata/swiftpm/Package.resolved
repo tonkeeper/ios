@@ -73,6 +73,15 @@
       }
     },
     {
+      "identity" : "tkuikit-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "git@github.com:tonkeeper/tkuikit-ios.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "499d26dbc6f555376f4a1200f95d674d1058a708"
+      }
+    },
+    {
       "identity" : "ton-api-swift",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tonkeeper/ton-api-swift",
