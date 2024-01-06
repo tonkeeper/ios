@@ -426,10 +426,11 @@
 		C37D0C4F2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */; };
 		C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE42B499D9B00EDFB9C /* WalletCore */; };
 		C37E2AE62B499D9B00EDFB9C /* WalletCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE42B499D9B00EDFB9C /* WalletCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		C37E2AE92B499E3700EDFB9C /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE82B499E3700EDFB9C /* TKUIKit */; };
 		C37E2AF92B49BE8100EDFB9C /* TKUIKitLegacy in Resources */ = {isa = PBXBuildFile; fileRef = C37E2AF52B49BE8100EDFB9C /* TKUIKitLegacy */; };
 		C37E2AFA2B49BE8100EDFB9C /* TKCore in Resources */ = {isa = PBXBuildFile; fileRef = C37E2AF62B49BE8100EDFB9C /* TKCore */; };
 		C37E2AFB2B49BE8100EDFB9C /* TKChart in Resources */ = {isa = PBXBuildFile; fileRef = C37E2AF72B49BE8100EDFB9C /* TKChart */; };
+		C37E2AFE2B49BF5E00EDFB9C /* Onboarding in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AFD2B49BF5E00EDFB9C /* Onboarding */; };
+		C37E2B082B49C1C900EDFB9C /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2B072B49C1C900EDFB9C /* TKUIKit */; };
 		C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */; };
 		C384B3B12AE96ADB009CD062 /* ModalCardViewBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */; };
 		C384B3B32AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */; };
@@ -965,6 +966,7 @@
 		C37E2AF52B49BE8100EDFB9C /* TKUIKitLegacy */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKitLegacy; sourceTree = "<group>"; };
 		C37E2AF62B49BE8100EDFB9C /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
 		C37E2AF72B49BE8100EDFB9C /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
+		C37E2AFC2B49BEEF00EDFB9C /* Onboarding */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Onboarding; sourceTree = "<group>"; };
 		C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewController.swift; sourceTree = "<group>"; };
 		C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewBuilder.swift; sourceTree = "<group>"; };
 		C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+HeaderView.swift"; sourceTree = "<group>"; };
@@ -1029,10 +1031,11 @@
 			files = (
 				C318DC472B499C83008A2273 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
+				C37E2AFE2B49BF5E00EDFB9C /* Onboarding in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
-				C37E2AE92B499E3700EDFB9C /* TKUIKit in Frameworks */,
 				C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */,
+				C37E2B082B49C1C900EDFB9C /* TKUIKit in Frameworks */,
 				C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */,
 				C318DC4A2B499C83008A2273 /* TKUIKitLegacy in Frameworks */,
 			);
@@ -2918,6 +2921,7 @@
 		C37E2AF82B49BE8100EDFB9C /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				C37E2AFC2B49BEEF00EDFB9C /* Onboarding */,
 			);
 			path = Modules;
 			sourceTree = "<group>";
@@ -3097,7 +3101,8 @@
 				C318DC462B499C83008A2273 /* TKChart */,
 				C318DC492B499C83008A2273 /* TKUIKitLegacy */,
 				C37E2AE42B499D9B00EDFB9C /* WalletCore */,
-				C37E2AE82B499E3700EDFB9C /* TKUIKit */,
+				C37E2AFD2B49BF5E00EDFB9C /* Onboarding */,
+				C37E2B072B49C1C900EDFB9C /* TKUIKit */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -3159,7 +3164,7 @@
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				C311FC842B3C68B700BE9022 /* XCRemoteSwiftPackageReference "core-swift" */,
-				C37E2AE72B499E3700EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */,
+				C37E2B062B49C1C800EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -4098,7 +4103,7 @@
 				kind = branch;
 			};
 		};
-		C37E2AE72B499E3700EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */ = {
+		C37E2B062B49C1C800EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "git@github.com:tonkeeper/tkuikit-ios.git";
 			requirement = {
@@ -4163,9 +4168,13 @@
 			package = C311FC842B3C68B700BE9022 /* XCRemoteSwiftPackageReference "core-swift" */;
 			productName = WalletCore;
 		};
-		C37E2AE82B499E3700EDFB9C /* TKUIKit */ = {
+		C37E2AFD2B49BF5E00EDFB9C /* Onboarding */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C37E2AE72B499E3700EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */;
+			productName = Onboarding;
+		};
+		C37E2B072B49C1C900EDFB9C /* TKUIKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C37E2B062B49C1C800EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */;
 			productName = TKUIKit;
 		};
 /* End XCSwiftPackageProductDependency section */
