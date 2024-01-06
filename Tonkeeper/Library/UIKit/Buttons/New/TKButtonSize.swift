@@ -1,5 +1,5 @@
 import UIKit
-import TKUIKit
+import TKUIKitLegacy
 
 public enum TKButtonSize {
   case small

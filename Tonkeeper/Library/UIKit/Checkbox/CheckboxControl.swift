@@ -6,7 +6,7 @@
 //
 
 import SwiftUI
-import TKUIKit
+import TKUIKitLegacy
 
 struct CheckboxControl: View {
   var title: String

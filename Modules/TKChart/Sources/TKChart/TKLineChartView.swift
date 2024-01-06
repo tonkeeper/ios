@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import TKUIKit
+import TKUIKitLegacy
 import DGCharts
 
 public protocol TKLineChartViewDelegate: AnyObject {

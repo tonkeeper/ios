@@ -16,7 +16,7 @@ let package = Package(
       targets: ["TKChart"]),
   ],
   dependencies: [
-    .package(path: "../TKUIKit"),
+    .package(path: "../TKUIKitLegacy"),
     .package(url: "https://github.com/danielgindi/Charts", .upToNextMajor(from: "5.0.0"))
   ],
   targets: [
@@ -24,7 +24,7 @@ let package = Package(
     // Targets can depend on other targets in this package and products from dependencies.
     .target(
       name: "TKChart",
-      dependencies: [.product(name: "TKUIKit", package: "TKUIKit"),
+      dependencies: [.product(name: "TKUIKitLegacy", package: "TKUIKitLegacy"),
                      .product(name: "DGCharts", package: "Charts")]),
     .testTarget(
             name: "TKChartTests",

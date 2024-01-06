@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import TKUIKit
+import TKUIKitLegacy
 
 protocol MnemonicTextFieldDelegate: AnyObject {
   func didTapNextButton(textField: MnemonicTextField)

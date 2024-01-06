@@ -8,7 +8,7 @@
 import SwiftUI
 
 public extension Text {
-  func textStyle(_ textStyle: TKUIKit.TextStyle) -> some View {
+  func textStyle(_ textStyle: TKUIKitLegacy.TextStyle) -> some View {
     self
       .font(Font(textStyle.font))
       .lineSpacing(textStyle.lineSpacing)

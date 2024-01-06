@@ -3,18 +3,18 @@
 import PackageDescription
 
 let package = Package(
-    name: "TKUIKit",
+    name: "TKUIKitLegacy",
     platforms: [
         .macOS(.v12), .iOS(.v13)
     ],
     products: [
         .library(
-            name: "TKUIKit",
+            name: "TKUIKitLegacy",
             type: .dynamic,
-            targets: ["TKUIKit"]),
+            targets: ["TKUIKitLegacy"]),
     ],
     targets: [
         .target(
-            name: "TKUIKit"),
+            name: "TKUIKitLegacy"),
     ]
 )

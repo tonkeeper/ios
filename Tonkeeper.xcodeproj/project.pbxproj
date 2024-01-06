@@ -395,9 +395,13 @@
 		B91D795CFF06D6E93B856F37 /* TonChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA90234EDC8FC9E16D62F310 /* TonChartView.swift */; };
 		BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773774CBEA3D5DDBE5D6AFF /* TokenDetailsProtocols.swift */; };
 		BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6AC52DF8E6970E81B415D8 /* EnterMnemonicView.swift */; };
+		C318DC472B499C83008A2273 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC462B499C83008A2273 /* TKChart */; };
+		C318DC482B499C83008A2273 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C318DC462B499C83008A2273 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C318DC4A2B499C83008A2273 /* TKUIKitLegacy in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC492B499C83008A2273 /* TKUIKitLegacy */; };
+		C318DC4B2B499C83008A2273 /* TKUIKitLegacy in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C318DC492B499C83008A2273 /* TKUIKitLegacy */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C318DC4D2B499C8B008A2273 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC4C2B499C8B008A2273 /* TKChart */; };
+		C318DC502B499C8B008A2273 /* TKUIKitLegacy in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC4F2B499C8B008A2273 /* TKUIKitLegacy */; };
 		C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C81CE487C82E845B444588 /* EnterMnemonicPresenter.swift */; };
-		C3388B182B3C690A000FE225 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C3388B172B3C690A000FE225 /* WalletCore */; };
-		C3388B192B3C690A000FE225 /* WalletCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C3388B172B3C690A000FE225 /* WalletCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C3388B1B2B3C6913000FE225 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C3388B1A2B3C6913000FE225 /* WalletCore */; };
 		C3388B1E2B3C691B000FE225 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C3388B1D2B3C691B000FE225 /* WalletCore */; };
 		C33F72462AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33F72452AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift */; };
@@ -407,13 +411,8 @@
 		C35684192AEC39C30064DD0A /* TonConnectConfirmationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684182AEC39C30064DD0A /* TonConnectConfirmationViewController.swift */; };
 		C356841B2AEC3A1B0064DD0A /* TonConnectConfirmationPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C356841A2AEC3A1B0064DD0A /* TonConnectConfirmationPresenter.swift */; };
 		C356841D2AEC3A780064DD0A /* TonConnectConfirmationAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C356841C2AEC3A780064DD0A /* TonConnectConfirmationAssembly.swift */; };
-		C35E6C382ADFC9F100F8B524 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C372ADFC9F100F8B524 /* TKUIKit */; };
-		C35E6C392ADFC9F100F8B524 /* TKUIKit in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C372ADFC9F100F8B524 /* TKUIKit */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		C35E6C3B2ADFC9F400F8B524 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3A2ADFC9F400F8B524 /* TKChart */; };
-		C35E6C3C2ADFC9F400F8B524 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3A2ADFC9F400F8B524 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3D2ADFC9F800F8B524 /* TKCore */; };
 		C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3D2ADFC9F800F8B524 /* TKCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		C35E6C412ADFC9FC00F8B524 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C402ADFC9FC00F8B524 /* TKUIKit */; };
 		C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C432ADFCA0500F8B524 /* TKCore */; };
 		C3774F002B340F0600B15B78 /* SwapHeaderImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774EFF2B340F0600B15B78 /* SwapHeaderImageView.swift */; };
 		C3774F022B34130D00B15B78 /* ActionDetailsTokenHeaderImageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774F012B34130D00B15B78 /* ActionDetailsTokenHeaderImageView.swift */; };
@@ -425,7 +424,8 @@
 		C3774F182B35C30400B15B78 /* WalletHeaderBanneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774F172B35C30400B15B78 /* WalletHeaderBanneModel.swift */; };
 		C37D0C4D2AEF6A110003C5CE /* TonConnectConfirmationContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37D0C4C2AEF6A110003C5CE /* TonConnectConfirmationContentView.swift */; };
 		C37D0C4F2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */; };
-		C38462492B0BAF240087D945 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C38462482B0BAF240087D945 /* TKChart */; };
+		C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE42B499D9B00EDFB9C /* WalletCore */; };
+		C37E2AE62B499D9B00EDFB9C /* WalletCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE42B499D9B00EDFB9C /* WalletCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */; };
 		C384B3B12AE96ADB009CD062 /* ModalCardViewBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */; };
 		C384B3B32AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */; };
@@ -506,10 +506,10 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				C3388B192B3C690A000FE225 /* WalletCore in Embed Frameworks */,
-				C35E6C3C2ADFC9F400F8B524 /* TKChart in Embed Frameworks */,
-				C35E6C392ADFC9F100F8B524 /* TKUIKit in Embed Frameworks */,
+				C37E2AE62B499D9B00EDFB9C /* WalletCore in Embed Frameworks */,
+				C318DC482B499C83008A2273 /* TKChart in Embed Frameworks */,
 				C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */,
+				C318DC4B2B499C83008A2273 /* TKUIKitLegacy in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -941,6 +941,8 @@
 		B305512CBFAF5DE77C5D0556 /* EnterMnemonicProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnterMnemonicProtocols.swift; sourceTree = "<group>"; };
 		B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartPresenter.swift; sourceTree = "<group>"; };
 		C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsViewController.swift; sourceTree = "<group>"; };
+		C318DC442B499C62008A2273 /* TKUIKitLegacy */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKUIKitLegacy; path = Modules/TKUIKitLegacy; sourceTree = "<group>"; };
+		C318DC452B499C72008A2273 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKChart; path = Modules/TKChart; sourceTree = "<group>"; };
 		C33F72452AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectHeaderWalletAnimationView.swift; sourceTree = "<group>"; };
 		C35684102AEBFD810064DD0A /* AuthEventsDaemon.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = AuthEventsDaemon.swift; sourceTree = "<group>"; tabWidth = 2; };
 		C35684142AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationCoordinator.swift; sourceTree = "<group>"; };
@@ -948,7 +950,6 @@
 		C35684182AEC39C30064DD0A /* TonConnectConfirmationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationViewController.swift; sourceTree = "<group>"; };
 		C356841A2AEC3A1B0064DD0A /* TonConnectConfirmationPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationPresenter.swift; sourceTree = "<group>"; };
 		C356841C2AEC3A780064DD0A /* TonConnectConfirmationAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationAssembly.swift; sourceTree = "<group>"; };
-		C35E6C342ADFC9CC00F8B524 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKUIKit; path = Modules/TKUIKit; sourceTree = "<group>"; };
 		C35E6C352ADFC9DA00F8B524 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKCore; path = Modules/TKCore; sourceTree = "<group>"; };
 		C3774EFF2B340F0600B15B78 /* SwapHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapHeaderImageView.swift; sourceTree = "<group>"; };
 		C3774F012B34130D00B15B78 /* ActionDetailsTokenHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionDetailsTokenHeaderImageView.swift; sourceTree = "<group>"; };
@@ -976,7 +977,6 @@
 		C38957832AF1497E0083B98A /* AccountEventActionContentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountEventActionContentProvider.swift; sourceTree = "<group>"; };
 		C38957862AF168F70083B98A /* Deeplink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deeplink.swift; sourceTree = "<group>"; };
 		C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
-		C3C13F8A2AE9F15900EFC88D /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKChart; path = Modules/TKChart; sourceTree = "<group>"; };
 		C3E4C9A02B30FFCD005526DA /* TitleConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleConnectionView.swift; sourceTree = "<group>"; };
 		C3E4C9AA2B31C85C005526DA /* NavigationBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationBarView.swift; sourceTree = "<group>"; };
 		C3E4C9AD2B31FABA005526DA /* ActivityLargeTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLargeTitleView.swift; sourceTree = "<group>"; };
@@ -1010,11 +1010,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C318DC4D2B499C8B008A2273 /* TKChart in Frameworks */,
 				C3388B1B2B3C6913000FE225 /* WalletCore in Frameworks */,
-				C38462492B0BAF240087D945 /* TKChart in Frameworks */,
 				C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */,
-				C35E6C412ADFC9FC00F8B524 /* TKUIKit in Frameworks */,
 				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
+				C318DC502B499C8B008A2273 /* TKUIKitLegacy in Frameworks */,
 				7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1023,13 +1023,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C35E6C3B2ADFC9F400F8B524 /* TKChart in Frameworks */,
+				C318DC472B499C83008A2273 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
 				C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */,
-				C3388B182B3C690A000FE225 /* WalletCore in Frameworks */,
-				C35E6C382ADFC9F100F8B524 /* TKUIKit in Frameworks */,
+				C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */,
+				C318DC4A2B499C83008A2273 /* TKUIKitLegacy in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2852,9 +2852,9 @@
 		C35E6C332ADFC9CC00F8B524 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				C35E6C342ADFC9CC00F8B524 /* TKUIKit */,
 				C35E6C352ADFC9DA00F8B524 /* TKCore */,
-				C3C13F8A2AE9F15900EFC88D /* TKChart */,
+				C318DC442B499C62008A2273 /* TKUIKitLegacy */,
+				C318DC452B499C72008A2273 /* TKChart */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -3050,10 +3050,10 @@
 			);
 			name = TonkeeperWidgetExtension;
 			packageProductDependencies = (
-				C35E6C402ADFC9FC00F8B524 /* TKUIKit */,
 				C35E6C432ADFCA0500F8B524 /* TKCore */,
-				C38462482B0BAF240087D945 /* TKChart */,
 				C3388B1A2B3C6913000FE225 /* WalletCore */,
+				C318DC4C2B499C8B008A2273 /* TKChart */,
+				C318DC4F2B499C8B008A2273 /* TKUIKitLegacy */,
 			);
 			productName = TonkeeperWidgetExtension;
 			productReference = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */;
@@ -3080,10 +3080,10 @@
 				7DB17F342A4B2F07007C6154 /* AnyFormatKit */,
 				7D143C352A4EC0D300B5FCC0 /* Lottie */,
 				7D5A18112A5406CB00793769 /* Kingfisher */,
-				C35E6C372ADFC9F100F8B524 /* TKUIKit */,
-				C35E6C3A2ADFC9F400F8B524 /* TKChart */,
 				C35E6C3D2ADFC9F800F8B524 /* TKCore */,
-				C3388B172B3C690A000FE225 /* WalletCore */,
+				C318DC462B499C83008A2273 /* TKChart */,
+				C318DC492B499C83008A2273 /* TKUIKitLegacy */,
+				C37E2AE42B499D9B00EDFB9C /* WalletCore */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -4098,10 +4098,21 @@
 			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
 			productName = AnyFormatKit;
 		};
-		C3388B172B3C690A000FE225 /* WalletCore */ = {
+		C318DC462B499C83008A2273 /* TKChart */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C311FC842B3C68B700BE9022 /* XCRemoteSwiftPackageReference "core-swift" */;
-			productName = WalletCore;
+			productName = TKChart;
+		};
+		C318DC492B499C83008A2273 /* TKUIKitLegacy */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKitLegacy;
+		};
+		C318DC4C2B499C8B008A2273 /* TKChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKChart;
+		};
+		C318DC4F2B499C8B008A2273 /* TKUIKitLegacy */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKitLegacy;
 		};
 		C3388B1A2B3C6913000FE225 /* WalletCore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -4113,29 +4124,18 @@
 			package = C311FC842B3C68B700BE9022 /* XCRemoteSwiftPackageReference "core-swift" */;
 			productName = WalletCore;
 		};
-		C35E6C372ADFC9F100F8B524 /* TKUIKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKUIKit;
-		};
-		C35E6C3A2ADFC9F400F8B524 /* TKChart */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKChart;
-		};
 		C35E6C3D2ADFC9F800F8B524 /* TKCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKCore;
-		};
-		C35E6C402ADFC9FC00F8B524 /* TKUIKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKUIKit;
 		};
 		C35E6C432ADFCA0500F8B524 /* TKCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKCore;
 		};
-		C38462482B0BAF240087D945 /* TKChart */ = {
+		C37E2AE42B499D9B00EDFB9C /* WalletCore */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = TKChart;
+			package = C311FC842B3C68B700BE9022 /* XCRemoteSwiftPackageReference "core-swift" */;
+			productName = WalletCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

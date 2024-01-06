@@ -1,5 +1,5 @@
 import UIKit
-import TKUIKit
+import TKUIKitLegacy
 
 public final class ButtonTitleContentView: UIView, TKButtonTextContent {
 

@@ -6,7 +6,7 @@
 //
 
 import UIKit
-import TKUIKit
+import TKUIKitLegacy
 
 final class TonConnectHeaderWalletAnimationView: UIView, ConfigurableView {
   

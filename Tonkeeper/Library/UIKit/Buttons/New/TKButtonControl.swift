@@ -1,5 +1,5 @@
 import UIKit
-import TKUIKit
+import TKUIKitLegacy
 
 protocol TKButtonContent: UIView, ConfigurableView {
   func width(withHeight height: CGFloat) -> CGFloat

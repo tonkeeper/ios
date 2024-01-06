@@ -9,7 +9,7 @@ import Foundation
 import UIKit.NSParagraphStyle
 
 public extension String {
-  func attributed(with textStyle: TKUIKit.TextStyle,
+  func attributed(with textStyle: TKUIKitLegacy.TextStyle,
                   alignment: NSTextAlignment = .left,
                   lineBreakMode: NSLineBreakMode = .byTruncatingTail,
                   color: UIColor = .black) -> NSAttributedString {

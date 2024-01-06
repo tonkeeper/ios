@@ -1,6 +1,6 @@
 import Foundation
 import WalletCoreKeeper
-import TKUIKit
+import TKUIKitLegacy
 import TKCore
 import UIKit
 

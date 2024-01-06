@@ -1,5 +1,5 @@
 import UIKit
-import TKUIKit
+import TKUIKitLegacy
 
 final class WalletHeaderBannersContainerView: UIView {
   

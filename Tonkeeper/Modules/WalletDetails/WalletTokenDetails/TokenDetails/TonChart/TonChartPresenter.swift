@@ -7,7 +7,7 @@
 //
 
 import UIKit
-import TKUIKit
+import TKUIKitLegacy
 import TKChart
 import WalletCoreKeeper
 import WalletCoreCore

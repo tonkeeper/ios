@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import TKUIKit
+import TKUIKitLegacy
 
 final class ActivityEmptyPresenter {
   
