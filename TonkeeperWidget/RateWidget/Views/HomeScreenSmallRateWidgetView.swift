@@ -13,7 +13,7 @@ struct HomeScreenSmallRateWidgetView: View {
   var body: some View {
     VStack(alignment: .leading, spacing: 0) {
       Text("TON")
-        .foregroundColor(Color(UIColor.Text.secondary))
+        .foregroundColor(Color(UIColor.Legacy.Text.secondary))
         .font(.system(size: 13, weight: .medium))
       Spacer()
       RateWidgetDataView(information: entry.information, isRegularOrder: false)
@@ -22,11 +22,11 @@ struct HomeScreenSmallRateWidgetView: View {
         Text("Updated at ") + Text(entry.date, style: .time)
       }
       .opacity(0.56)
-      .foregroundColor(Color(UIColor.Text.tertiary))
+      .foregroundColor(Color(UIColor.Legacy.Text.tertiary))
       .font(.system(size: 13, weight: .regular))
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .padding(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
-    .widgetBackground(backgroundView: Color(UIColor.Background.page))
+    .widgetBackground(backgroundView: Color(UIColor.Legacy.Background.page))
   }
 }

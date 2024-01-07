@@ -4,25 +4,23 @@
 import PackageDescription
 
 let package = Package(
-    name: "Onboarding",
+    name: "AppModule",
     platforms: [.iOS(.v14)],
     products: [
         .library(
-            name: "Onboarding",
-            targets: ["Onboarding"]),
+            name: "AppModule",
+            targets: ["AppModule"]),
     ],
     dependencies: [
-      .package(url: "git@github.com:tonkeeper/tkuikit-ios.git", branch: "main"),
       .package(path: "../TKCoordinator"),
-      .package(path: "../TKCore")
+      .package(path: "Onboarding")
     ],
     targets: [
         .target(
-            name: "Onboarding",
+            name: "AppModule",
             dependencies: [
-              .product(name: "TKUIKit", package: "tkuikit-ios"),
               .product(name: "TKCoordinator", package: "TKCoordinator"),
-              .product(name: "TKCore", package: "TKCore")
-            ]),
+              .product(name: "Onboarding", package: "Onboarding")
+            ])
     ]
 )

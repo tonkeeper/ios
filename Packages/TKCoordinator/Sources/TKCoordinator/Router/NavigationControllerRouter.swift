@@ -3,7 +3,7 @@ import UIKit
 public final class NavigationControllerRouter: ContainerViewControllerRouter<UINavigationController>, Router {
   private var onPopClosures = [UIViewController: () -> Void]()
   
-  override init(rootViewController: UINavigationController) {
+  public override init(rootViewController: UINavigationController) {
     super.init(rootViewController: rootViewController)
     rootViewController.delegate = self
   }

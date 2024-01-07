@@ -57,14 +57,14 @@ public final class TKLineChartView: UIView {
 
     let dataSet = LineChartDataSet(entries: chartEntries)
     dataSet.circleRadius = 0
-    dataSet.setColor(.Accent.blue)
+    dataSet.setColor(.Legacy.Accent.blue)
     dataSet.drawValuesEnabled = false
     dataSet.lineWidth = 2
     dataSet.fillAlpha = 1
     dataSet.fill = LinearGradientFill(gradient: gradient, angle: 270)
     dataSet.drawFilledEnabled = true
     dataSet.drawHorizontalHighlightIndicatorEnabled = false
-    dataSet.highlightColor = .Accent.blue
+    dataSet.highlightColor = .Legacy.Accent.blue
     dataSet.highlightLineWidth = 1
     
     switch data.mode {
@@ -119,7 +119,7 @@ private extension TKLineChartView {
     chartView.delegate = self
     chartView.highlightPerTapEnabled = false
     chartView.minOffset = 0
-    chartView.backgroundColor = .Background.page
+    chartView.backgroundColor = .Legacy.Background.page
   }
   
   @objc

@@ -13,23 +13,23 @@ struct RateWidgetDataView: View {
   let isRegularOrder: Bool
   
   var amountColor: Color {
-    return Color(UIColor.Text.primary)
+    return Color(UIColor.Legacy.Text.primary)
   }
   var diffPercentColor: Color {
     let color: UIColor
     switch information.diffDirection {
-    case .up: color = .Accent.green
-    case .none: color = .Text.secondary
-    case .down: color = .Accent.red
+    case .up: color = .Legacy.Accent.green
+    case .none: color = .Legacy.Text.secondary
+    case .down: color = .Legacy.Accent.red
     }
     return Color(color)
   }
   var diffFiatColor: Color {
     let color: UIColor
     switch information.diffDirection {
-    case .up: color = .Accent.green
-    case .none: color = .Text.secondary
-    case .down: color = .Accent.red
+    case .up: color = .Legacy.Accent.green
+    case .none: color = .Legacy.Text.secondary
+    case .down: color = .Legacy.Accent.red
     }
     return Color(color).opacity(0.44)
   }

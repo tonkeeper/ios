@@ -30,11 +30,11 @@ class ChartMarker: Marker {
       width: .smallDiameter,
       height: .smallDiameter))
     
-    UIColor.Accent.blue.withAlphaComponent(.bigCircleAlpha).setFill()
+    UIColor.Legacy.Accent.blue.withAlphaComponent(.bigCircleAlpha).setFill()
     bigCircle.fill()
     bigCircle.stroke()
     
-    UIColor.Accent.blue.setFill()
+    UIColor.Legacy.Accent.blue.setFill()
     smallCircle.fill()
     smallCircle.stroke()
   }

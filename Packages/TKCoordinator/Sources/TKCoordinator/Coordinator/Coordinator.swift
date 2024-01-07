@@ -6,8 +6,8 @@ public protocol Coordinator: AnyObject {
   func start()
 }
 
-public class RouterCoordinator<CoordinatorRouter: Router>: Coordinator {
-  let router: CoordinatorRouter
+open class RouterCoordinator<CoordinatorRouter: Router>: Coordinator {
+  public let router: CoordinatorRouter
   private var children = [Coordinator]()
   
   public init(router: CoordinatorRouter) {
@@ -28,5 +28,5 @@ public class RouterCoordinator<CoordinatorRouter: Router>: Coordinator {
     children.removeAll(where: { $0 === child })
   }
   
-  public func start() {}
+  open func start() {}
 }

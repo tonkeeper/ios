@@ -3,7 +3,7 @@ import UIKit
 public class ContainerViewControllerRouter<RootViewController: UIViewController>: NSObject, UIAdaptivePresentationControllerDelegate {
   private var onDismiss: (() -> Void)?
   
-  let rootViewController: RootViewController
+  public let rootViewController: RootViewController
   public init(rootViewController: RootViewController) {
     self.rootViewController = rootViewController
   }

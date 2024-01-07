@@ -35,7 +35,7 @@ struct HomeScreenBalanceWidget<Content: View>: View {
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     .padding(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
-    .widgetBackground(backgroundView: Color(UIColor.Background.page))
+    .widgetBackground(backgroundView: Color(UIColor.Legacy.Background.page))
   }
   
   @ViewBuilder
@@ -44,11 +44,11 @@ struct HomeScreenBalanceWidget<Content: View>: View {
     case .noWallet:
       Text("Create a new wallet or import an existing one")
         .font(.system(size: 13, weight: .regular))
-        .foregroundColor(Color(.Text.secondary))
+        .foregroundColor(Color(.Legacy.Text.secondary))
     case .failedToLoad:
       Text("Failed to load balance. Check your internet connection.")
         .font(.system(size: 13, weight: .regular))
-        .foregroundColor(Color(.Text.secondary))
+        .foregroundColor(Color(.Legacy.Text.secondary))
     }
   }
 }

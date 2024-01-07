@@ -8,11 +8,13 @@
 import UIKit
 import TKCore
 import WalletCoreKeeper
+import AppModule
+import TKCoordinator
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   
   var window: UIWindow?
-  var appCoordinator: AppCoordinator?
+  var appCoordinator: AppModule.AppCoordinator?
   let appAssembly = AppAssembly()
 
   func scene(_ scene: UIScene,
@@ -21,24 +23,22 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     guard let windowScene = (scene as? UIWindowScene) else { return }
     
     let window = UIWindow(windowScene: windowScene)
-    
-    let appCoordinator = buildAppCoordinator(window: window)
-    appCoordinator.start(deeplink: getDeeplink(urlContexts: connectionOptions.urlContexts))
-    
+    let coordinator = AppModule.AppCoordinator(router: TKCoordinator.WindowRouter(window: window))
+    coordinator.start()
     window.makeKeyAndVisible()
     
-    self.appCoordinator = appCoordinator
+    self.appCoordinator = coordinator
     self.window = window
   }
   
   func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-    guard let deeplink = getDeeplink(urlContexts: URLContexts) else { return }
-    appCoordinator?.handleDeeplink(deeplink)
+//    guard let deeplink = getDeeplink(urlContexts: URLContexts) else { return }
+//    appCoordinator?.handleDeeplink(deeplink)
   }
   
   func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
-    guard let deeplink = getDeeplink(url: userActivity.webpageURL) else { return }
-    appCoordinator?.handleDeeplink(deeplink)
+//    guard let deeplink = getDeeplink(url: userActivity.webpageURL) else { return }
+//    appCoordinator?.handleDeeplink(deeplink)
   }
 }
 

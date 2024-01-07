@@ -38,8 +38,8 @@ public extension CGGradient {
     var colors = [CGColor]()
     var locations = [CGFloat]()
     
-    let between: UIColor = .Background.page
-    let and: UIColor = .Accent.blue
+    let between: UIColor = .Legacy.Background.page
+    let and: UIColor = .Legacy.Accent.blue
     
     let percents: [CGFloat] = [
       0.1, 0.99, 0.96, 0.91, 0.85, 0.76, 0.66, 0.55, 0.44, 0.33, 0.23, 0.14, 0.08, 0.03, 0.008, 0

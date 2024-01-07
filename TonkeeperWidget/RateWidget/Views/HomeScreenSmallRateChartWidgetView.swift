@@ -16,7 +16,7 @@ struct HomeScreenSmallRateChartWidgetView: View {
         .padding(EdgeInsets(top: 24, leading: 0, bottom: 62, trailing: 0))
       VStack(alignment: .leading) {
         Text("TON")
-          .foregroundColor(Color(UIColor.Text.secondary))
+          .foregroundColor(Color(UIColor.Legacy.Text.secondary))
           .font(.system(size: 13, weight: .medium))
         Spacer()
         RateWidgetDataView(information: entry.information, isRegularOrder: true)
@@ -24,7 +24,7 @@ struct HomeScreenSmallRateChartWidgetView: View {
       .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
       .padding(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
     }
-    .widgetBackground(backgroundView: Color(UIColor.Background.page))
+    .widgetBackground(backgroundView: Color(UIColor.Legacy.Background.page))
   }
 }
 

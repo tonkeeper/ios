@@ -431,6 +431,7 @@
 		C37E2AFB2B49BE8100EDFB9C /* TKChart in Resources */ = {isa = PBXBuildFile; fileRef = C37E2AF72B49BE8100EDFB9C /* TKChart */; };
 		C37E2AFE2B49BF5E00EDFB9C /* Onboarding in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AFD2B49BF5E00EDFB9C /* Onboarding */; };
 		C37E2B082B49C1C900EDFB9C /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2B072B49C1C900EDFB9C /* TKUIKit */; };
+		C37E2B352B4A0ACB00EDFB9C /* AppModule in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2B342B4A0ACB00EDFB9C /* AppModule */; };
 		C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */; };
 		C384B3B12AE96ADB009CD062 /* ModalCardViewBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */; };
 		C384B3B32AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */; };
@@ -968,6 +969,7 @@
 		C37E2AF72B49BE8100EDFB9C /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
 		C37E2AFC2B49BEEF00EDFB9C /* Onboarding */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Onboarding; sourceTree = "<group>"; };
 		C37E2B302B49C30300EDFB9C /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
+		C37E2B332B4A0AB900EDFB9C /* AppModule */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AppModule; sourceTree = "<group>"; };
 		C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewController.swift; sourceTree = "<group>"; };
 		C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewBuilder.swift; sourceTree = "<group>"; };
 		C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+HeaderView.swift"; sourceTree = "<group>"; };
@@ -1030,6 +1032,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C37E2B352B4A0ACB00EDFB9C /* AppModule in Frameworks */,
 				C318DC472B499C83008A2273 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				C37E2AFE2B49BF5E00EDFB9C /* Onboarding in Frameworks */,
@@ -2923,6 +2926,7 @@
 		C37E2AF82B49BE8100EDFB9C /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				C37E2B332B4A0AB900EDFB9C /* AppModule */,
 				C37E2AFC2B49BEEF00EDFB9C /* Onboarding */,
 			);
 			path = Modules;
@@ -3105,6 +3109,7 @@
 				C37E2AE42B499D9B00EDFB9C /* WalletCore */,
 				C37E2AFD2B49BF5E00EDFB9C /* Onboarding */,
 				C37E2B072B49C1C900EDFB9C /* TKUIKit */,
+				C37E2B342B4A0ACB00EDFB9C /* AppModule */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -4178,6 +4183,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C37E2B062B49C1C800EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */;
 			productName = TKUIKit;
+		};
+		C37E2B342B4A0ACB00EDFB9C /* AppModule */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AppModule;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

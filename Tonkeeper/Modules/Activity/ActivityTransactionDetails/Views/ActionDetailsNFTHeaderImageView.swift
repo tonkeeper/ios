@@ -1,4 +1,5 @@
 import UIKit
+import TKUIKit
 
 final class ActionDetailsNFTHeaderImageView: UIView, ConfigurableView {
   
