@@ -39,14 +39,21 @@ final class OnboardingRootView: UIView, ConfigurableView {
     let titleDescriptionModel: TKTitleDescriptionView.Model
     let createButtonModel: TKUIActionButton.Model
     let importButtonModel: TKUIActionButton.Model
+    let createButtonAction: (() -> Void)?
+    let importButtonAction: (() -> Void)?
   }
   
   func configure(model: Model) {
     titleDescriptionView.configure(model: model.titleDescriptionModel)
     createButton.configure(model: model.createButtonModel)
+    createButton.addTapAction {
+      model.createButtonAction?()
+    }
     importButton.configure(model: model.importButtonModel)
+    importButton.addTapAction {
+      model.importButtonAction?()
+    }
   }
-  
 }
 
 private extension OnboardingRootView {

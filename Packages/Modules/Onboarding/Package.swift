@@ -21,6 +21,7 @@ let package = Package(
             name: "Onboarding",
             dependencies: [
               .product(name: "TKUIKit", package: "tkuikit-ios"),
+              .product(name: "TKScreenKit", package: "tkuikit-ios"),
               .product(name: "TKCoordinator", package: "TKCoordinator"),
               .product(name: "TKCore", package: "TKCore")
             ]),

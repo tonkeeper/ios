@@ -47,7 +47,13 @@ private extension OnboardingRootViewModelImplementation {
     return OnboardingRootView.Model(
       titleDescriptionModel: titleDescriptionModel,
       createButtonModel: createButtonModel,
-      importButtonModel: importButtonModel
+      importButtonModel: importButtonModel,
+      createButtonAction: { [weak self] in
+        self?.didTapCreateButton?()
+      },
+      importButtonAction: { [weak self] in
+        self?.didTapImportButton?()
+      }
     )
   }
 }
