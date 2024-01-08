@@ -96,8 +96,8 @@ private extension WalletHeaderView {
     
     addSubview(stackView)
     addSubview(buttonsView)
-    addSubview(titleView)
     addSubview(bottomWalletHeaderBannersContainerView)
+    addSubview(titleView)
     
     stackView.translatesAutoresizingMaskIntoConstraints = false
     buttonsView.translatesAutoresizingMaskIntoConstraints = false
