@@ -21,14 +21,18 @@ final class WalletRootPresenter {
   private let balanceController: BalanceController
   private let pageContentProvider: PageContentProvider
   private let transactionsEventDaemon: TransactionsEventDaemon
+  private let urlOpener: URLOpener
   private let appStateTracket = AppStateTracker()
+  private let appSettings = AppSettings()
 
   init(balanceController: BalanceController,
        pageContentProvider: PageContentProvider,
-       transactionsEventDaemon: TransactionsEventDaemon) {
+       transactionsEventDaemon: TransactionsEventDaemon,
+       urlOpener: URLOpener) {
     self.balanceController = balanceController
     self.pageContentProvider = pageContentProvider
     self.transactionsEventDaemon = transactionsEventDaemon
+    self.urlOpener = urlOpener
   }
   
   deinit {
@@ -56,6 +60,10 @@ extension WalletRootPresenter: WalletRootPresenterInput {
     
     appStateTracket.addObserver(self)
     transactionsEventDaemon.addObserver(self)
+    
+    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+      self.showExperimentalBannerIfNeed()
+    }
   }
 }
 
@@ -83,7 +91,7 @@ private extension WalletRootPresenter {
       guard let self = self else { return }
       if isSuccess {
         Task { @MainActor in
-          self.viewInput?.hideBanner(with: "incorrectDateAndTime")
+          self.viewInput?.hideBannerOnTop(with: "incorrectDateAndTime")
         }
       } else {
         let incorrectDateAndTimeBannerModel = WalletHeaderBannerModel(
@@ -92,10 +100,35 @@ private extension WalletRootPresenter {
           description: "In device settings, enable automatic time and date. When time isn't set automatically, it may affect fund transfers.",
           appearance: .regular)
         Task { @MainActor in
-          self.viewInput?.showBanner(bannerModel: incorrectDateAndTimeBannerModel)
+          self.viewInput?.showBannerOnTop(bannerModel: incorrectDateAndTimeBannerModel)
         }
       }
     }
+  }
+  
+  func showExperimentalBannerIfNeed() {
+    guard !appSettings.didShowExperimentalBanner else { return }
+
+    let bannerModel = WalletHeaderBannerModel(
+      identifier: "experimental",
+      title: nil,
+      description: "You currently using an experimental version of Tonkeeper.",
+      appearance: .accentBlue,
+      actionButton: WalletHeaderBannerModel.ActionButton(
+        title: "Install stable version",
+        action: { [urlOpener] in
+          urlOpener.open(url: .tonkeeperAppstoreURL)
+        }),
+      closeButtonAction: { [appSettings] in
+        appSettings.didShowExperimentalBanner = true
+      }
+    )
+    
+    viewInput?.showBannerOnBottom(bannerModel: bannerModel)
+  }
+  
+  func openStableTonkeeper() {
+    
   }
 }
 
@@ -190,5 +223,9 @@ extension WalletRootPresenter: AppStateTrackerObserver {
       break
     }
   }
+}
+
+private extension URL {
+  static let tonkeeperAppstoreURL = URL(string: "https://apps.apple.com/us/app/tonkeeper/id1587742107")!
 }
 

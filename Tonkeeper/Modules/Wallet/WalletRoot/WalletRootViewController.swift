@@ -68,12 +68,20 @@ final class WalletRootViewController: GenericViewController<WalletRootView>, Scr
 // MARK: - WalletRootViewInput
 
 extension WalletRootViewController: WalletRootViewInput {
-  func showBanner(bannerModel: WalletHeaderBannerModel) {
-    headerViewController.showBanner(bannerModel: bannerModel)
+  func showBannerOnTop(bannerModel: WalletHeaderBannerModel) {
+    headerViewController.showBannerOnTop(bannerModel: bannerModel)
   }
   
-  func hideBanner(with identifier: String) {
-    headerViewController.hideBanner(with: identifier)
+  func hideBannerOnTop(with identifier: String) {
+    headerViewController.hideBannerOnTop(with: identifier)
+  }
+  
+  func showBannerOnBottom(bannerModel: WalletHeaderBannerModel) {
+    headerViewController.showBannerOnBottom(bannerModel: bannerModel)
+  }
+  
+  func hideBannerOnBottom(with identifier: String) {
+    headerViewController.hideBannerOnBottom(with: identifier)
   }
 }
 

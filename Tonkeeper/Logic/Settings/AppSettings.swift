@@ -37,6 +37,13 @@ final class AppSettings {
     }
   }
   
+  var didShowExperimentalBanner: Bool {
+    get { userDefaults?.bool(forKey: .didShowExperimentalBannerKey) ?? false }
+    set {
+      userDefaults?.setValue(newValue, forKey: .didShowExperimentalBannerKey)
+    }
+  }
+  
   func isFiatMethodPopUpMarkedDoNotShow(for fiatMethodId: String) -> Bool {
     let key = "fiat_method_popup_\(fiatMethodId)"
     return userDefaults?.bool(forKey: key) ?? false
@@ -58,4 +65,5 @@ private extension String {
   static let isNeedToMakeBackupKey = "isNeedToMakeBackup"
   static let isWalletImportedKey = "isWalletImported"
   static let backUpDateKey = "backUpDate"
+  static let didShowExperimentalBannerKey = "didShowExperimentalBanner"
 }

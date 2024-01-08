@@ -47,7 +47,9 @@ struct WalletAssembly {
       let module = tokensListModule(page: page, output: output)
       return (PagingContentContainer(pageContentViewController: module.view),
               module.input)
-    }), transactionsEventDaemon: transactionsEventDaemon)
+    }),
+                                        transactionsEventDaemon: transactionsEventDaemon,
+                                        urlOpener: walletCoreAssembly.coreAssembly.urlOpener())
   
     presenter.output = output
         

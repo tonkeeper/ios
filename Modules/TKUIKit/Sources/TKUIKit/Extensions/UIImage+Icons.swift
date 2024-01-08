@@ -339,6 +339,12 @@ public extension UIImage {
       }
     }
     
+    public enum Size12 {
+      public static var chevronRight: UIImage? {
+        .imageWithName("Icons/12/ic-chevron-right-12")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
     public static var tonIcon28: UIImage? {
       .imageWithName("Icons/28/ic-ton-28")?.withRenderingMode(.alwaysTemplate)
     }
