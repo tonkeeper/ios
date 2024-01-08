@@ -45,6 +45,24 @@ private extension SettingsCoordinator {
     )
     router.setPresentables([(module.view, nil)])
   }
+  
+  func openManuallyBackup() {
+    let coordinator = SettingsManuallyBackupCoordinator(
+      router: router,
+      walletCoreAssembly: walletCoreAssembly
+    )
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didFinish = {
+      
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
 }
 
 // MARK: - SettingsListModuleOutput
@@ -67,6 +85,25 @@ extension SettingsCoordinator: SettingsListModuleOutput {
     
     module.view.setupBackButton()
     router.push(presentable: module.view)
+  }
+  
+  func settingsListDidSelectBackupSetting(_ settingsList: SettingsListModuleInput) {
+    let module = SettingsBackupAssembly.module()
+    
+    module.1.didTapShowRecoveryPhrase = { [weak self] in
+      self?.settingsSecurityDidSelectShowRecoveryPhrase()
+    }
+    
+    module.1.didTapBackupManually = { [weak self] in
+      self?.openManuallyBackup()
+    }
+    
+    module.1.confirmation = { [weak self] in
+      await self?.settingsSecurityConfirmation() ?? false
+    }
+    
+    module.0.setupBackButton()
+    router.push(presentable: module.0)
   }
   
   func settingsListDidLogout(_ settingsList: SettingsListModuleInput) {

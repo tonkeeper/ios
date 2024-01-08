@@ -7,7 +7,13 @@
 
 import Foundation
 
-protocol SettingsRecoveryPhraseModuleOutput: AnyObject {}
+protocol SettingsRecoveryPhraseModuleOutput: AnyObject {
+  func settingsRecoveryPhraseModuleCheckBackup()
+}
+
+extension SettingsRecoveryPhraseModuleOutput {
+  func settingsRecoveryPhraseModuleCheckBackup() {}
+}
 
 protocol SettingsRecoveryPhraseModuleInput: AnyObject {}
 

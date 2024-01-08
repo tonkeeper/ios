@@ -18,6 +18,7 @@ struct WalletCreator {
   
   private let walletsController: WalletsController
   private let passcodeController: PasscodeController
+  private let appSettings = AppSettings()
   
   init(walletsController: WalletsController,
        passcodeController: PasscodeController) {
@@ -30,6 +31,9 @@ struct WalletCreator {
     do {
       try walletsController.addWallet(with: mnemonic)
       try passcodeController.setPasscode(passcode)
+      appSettings.isNeedToMakeBackup = true
+      appSettings.isWalletImported = false
+      appSettings.backUpDate = nil
     } catch {
       throw Error.failedToCreateWallet
     }

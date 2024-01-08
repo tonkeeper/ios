@@ -11,11 +11,13 @@ struct SettingsListItem {
   let title: String
   let subtitle: String?
   let option: SettingsListItemOption
+  let isBadgeVisible: Bool
   
-  init(title: String, subtitle: String? = nil, option: SettingsListItemOption) {
+  init(title: String, subtitle: String? = nil, option: SettingsListItemOption, isBadgeVisible: Bool = false) {
     self.title = title
     self.subtitle = subtitle
     self.option = option
+    self.isBadgeVisible = isBadgeVisible
   }
 }
 

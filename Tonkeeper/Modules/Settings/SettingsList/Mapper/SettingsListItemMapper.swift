@@ -43,6 +43,7 @@ struct SettingsListItemMapper {
           title: item.title,
           subtitle: item.subtitle,
           accessoryModel: accessoryModel,
+          isBadgeVisible: item.isBadgeVisible,
           handler: handler
         )
       }

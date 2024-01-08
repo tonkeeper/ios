@@ -25,6 +25,7 @@ final class SettingsListPresenter {
   private let urlOpener: URLOpener
   private let infoProvider: InfoProvider
   private let appStoreReviewer: AppStoreReviewer
+  private let appSettings = AppSettings()
   
   // MARK: - Mapper
   
@@ -43,10 +44,21 @@ final class SettingsListPresenter {
     self.infoProvider = infoProvider
     self.appStoreReviewer = appStoreReviewer
     settingsController.addObserver(self)
+    
+    NotificationCenter.default
+      .addObserver(
+        self,
+        selector: #selector(updateBackupBadge),
+        name: Notification.Name("isNeedToMakeBackupUpdated"), object: nil
+      )
   }
   
   deinit {
     settingsController.removeObserver(self)
+    NotificationCenter.default.removeObserver(
+      self,
+      name: Notification.Name("isNeedToMakeBackupUpdated"),
+      object: nil)
   }
 }
 
@@ -95,7 +107,8 @@ private extension SettingsListPresenter {
   func getSettingsItems() -> [SettingsListSection] {
     [
       SettingsListSection(items: [
-        getSecurityItem()
+        getSecurityItem(),
+        getBackupItem()
       ]),
       SettingsListSection(items: [
         getCurrencyItem()
@@ -116,6 +129,19 @@ private extension SettingsListPresenter {
           guard let self = self else { return }
           output?.settingsListDidSelectSecuritySetting(self)
         }))
+    )
+  }
+  
+  func getBackupItem() -> SettingsListItem {
+    SettingsListItem(
+      title: "Backup",
+      option: SettingsListItemOption.plain(SettingsListItemPlainOption(
+        accessory: .icon(.init(image: .Icons.SettingsList.changePasscode, tintColor: .Accent.blue)),
+        handler: { [weak self] in
+          guard let self = self else { return }
+          output?.settingsListDidSelectBackupSetting(self)
+        })),
+      isBadgeVisible: appSettings.isNeedToMakeBackup
     )
   }
   
@@ -157,12 +183,38 @@ private extension SettingsListPresenter {
     )
   }
   
+  func getDeleteAccountItem() -> SettingsListItem {
+    SettingsListItem(
+      title: "Delete account",
+      option: SettingsListItemOption.plain(SettingsListItemPlainOption(
+        accessory: .icon(.init(image: .Icons.SettingsList.delete, tintColor: .Icon.secondary)),
+        handler: { [weak self] in
+          guard let self = self else { return }
+          
+          let actions = [
+            UIAlertAction(title: .deleteDeleteButtonTitle, style: .destructive, handler: { _ in
+              self.logoutController.logout()
+              self.output?.settingsListDidLogout(self)
+            }),
+            UIAlertAction(title: .deleteCancelButtonTitle, style: .cancel)
+          ]
+          
+          self.viewInput?.showAlert(
+            title: .deleteTitle,
+            description: .deleteDescription,
+            actions: actions
+          )
+        }))
+    )
+  }
+  
   func socialLinksSection() -> SettingsListSection {
     .init(items: [
       supportLinkItem(),
       tonkeeperNewsLinkItem(),
       contactUsLinkItem(),
-      rateTonkeeperItem()
+      rateTonkeeperItem(),
+      getDeleteAccountItem()
     ])
   }
   
@@ -247,6 +299,11 @@ private extension SettingsListPresenter {
       )
     )
   }
+  
+  @objc
+  func updateBackupBadge() {
+    updateSettings()
+  }
 }
 
 private extension String {
@@ -259,4 +316,9 @@ private extension String {
   static let contactUsTitle = "Contact us"
   static let rateTonkeeperXTitle = "Rate Tonkeeper X"
   static let legalTitle = "Legal"
+  
+  static let deleteTitle = "Are you sure you want to delete your account?"
+  static let deleteDescription = "This action will delete your account and all data from this application."
+  static let deleteDeleteButtonTitle = "Delete account and data"
+  static let deleteCancelButtonTitle = "Cancel"
 }

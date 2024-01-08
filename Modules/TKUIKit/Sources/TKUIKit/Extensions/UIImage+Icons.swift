@@ -270,6 +270,10 @@ public extension UIImage {
         .imageWithName("Icons/28/ic-door-28")?.withRenderingMode(.alwaysTemplate)
       }
       
+      public static var delete: UIImage? {
+        .imageWithName("Icons/28/ic-trash-bin-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
       public static var security: UIImage? {
         .imageWithName("Icons/28/ic-key-28")?.withRenderingMode(.alwaysTemplate)
       }
