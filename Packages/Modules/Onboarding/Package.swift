@@ -13,8 +13,10 @@ let package = Package(
     ],
     dependencies: [
       .package(url: "git@github.com:tonkeeper/tkuikit-ios.git", branch: "main"),
+      .package(url: "https://github.com/tonkeeper/core-swift", branch: "release/1.0.0"),
       .package(path: "../TKCoordinator"),
-      .package(path: "../TKCore")
+      .package(path: "../Passcode"),
+      .package(path: "../TKCore"),
     ],
     targets: [
         .target(
@@ -23,7 +25,10 @@ let package = Package(
               .product(name: "TKUIKit", package: "tkuikit-ios"),
               .product(name: "TKScreenKit", package: "tkuikit-ios"),
               .product(name: "TKCoordinator", package: "TKCoordinator"),
-              .product(name: "TKCore", package: "TKCore")
-            ]),
+              .product(name: "TKCore", package: "TKCore"),
+              .product(name: "WalletCore", package: "core-swift"),
+              .product(name: "Passcode", package: "Passcode")
+            ]
+        ),
     ]
 )
