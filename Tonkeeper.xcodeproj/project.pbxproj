@@ -461,6 +461,7 @@
 		C3E4C9E52B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E42B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift */; };
 		C3E4C9E72B33CAD4005526DA /* ModalCardListItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E62B33CAD4005526DA /* ModalCardListItemView.swift */; };
 		C3E4C9E92B33CB14005526DA /* ModalCardListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E82B33CB14005526DA /* ModalCardListView.swift */; };
+		C3EC26972B4B94BB0077FC56 /* Passcode in Frameworks */ = {isa = PBXBuildFile; productRef = C3EC26962B4B94BB0077FC56 /* Passcode */; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
 		C66B40FEF5B9FA11EE482612 /* InAppBrowserMainProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E1770C8CEAAC7E5196ACB6 /* InAppBrowserMainProtocols.swift */; };
 		C8C8146A655C693012C56BBB /* SetupWalletPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47434FDA8878AC2C6E9D4C24 /* SetupWalletPresenter.swift */; };
@@ -998,6 +999,7 @@
 		C3E4C9E42B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenTransactionTKButtonContentView.swift; sourceTree = "<group>"; };
 		C3E4C9E62B33CAD4005526DA /* ModalCardListItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardListItemView.swift; sourceTree = "<group>"; };
 		C3E4C9E82B33CB14005526DA /* ModalCardListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardListView.swift; sourceTree = "<group>"; };
+		C3EC26952B4B92490077FC56 /* Passcode */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Passcode; sourceTree = "<group>"; };
 		C94035FBBB4278C3B31B95C0 /* PasscodeInputPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputPresenter.swift; sourceTree = "<group>"; };
 		C95F21019C4885C194206234 /* CollectibleDetailsPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsPresenter.swift; sourceTree = "<group>"; };
 		CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentViewController.swift; sourceTree = "<group>"; };
@@ -1034,6 +1036,7 @@
 			files = (
 				C37E2B352B4A0ACB00EDFB9C /* AppModule in Frameworks */,
 				C318DC472B499C83008A2273 /* TKChart in Frameworks */,
+				C3EC26972B4B94BB0077FC56 /* Passcode in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				C37E2AFE2B49BF5E00EDFB9C /* Onboarding in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
@@ -2926,6 +2929,7 @@
 		C37E2AF82B49BE8100EDFB9C /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				C3EC26952B4B92490077FC56 /* Passcode */,
 				C37E2B332B4A0AB900EDFB9C /* AppModule */,
 				C37E2AFC2B49BEEF00EDFB9C /* Onboarding */,
 			);
@@ -3110,6 +3114,7 @@
 				C37E2AFD2B49BF5E00EDFB9C /* Onboarding */,
 				C37E2B072B49C1C900EDFB9C /* TKUIKit */,
 				C37E2B342B4A0ACB00EDFB9C /* AppModule */,
+				C3EC26962B4B94BB0077FC56 /* Passcode */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -4187,6 +4192,10 @@
 		C37E2B342B4A0ACB00EDFB9C /* AppModule */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AppModule;
+		};
+		C3EC26962B4B94BB0077FC56 /* Passcode */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Passcode;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
