@@ -29,5 +29,5 @@ DerivedData/
 *.dSYM.zip
 *.dSYM
 
-# CocoaPods
-Pods/
+## Firebase config
+Tonkeeper/Resources/Firebase/*/*.plist
