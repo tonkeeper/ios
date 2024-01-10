@@ -60,7 +60,9 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
       let walletCoreContainer = WalletCoreKeeper.Assembly(dependencies: Dependencies(
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
-        sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)
+        sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier,
+        oldSharedCacheURL: coreAssembly.oldSharedCacheURL,
+        oldSharedKeychainGroup: coreAssembly.oldKeychainAccessGroupIdentifier)
       )
       let chartController = walletCoreContainer.chartController()
       Task {

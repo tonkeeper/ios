@@ -44,6 +44,13 @@ final class AppSettings {
     }
   }
   
+  var didMigrateFromOldWallet: Bool {
+    get { userDefaults?.bool(forKey: .didMigrateFromOldWalletKey) ?? false }
+    set {
+      userDefaults?.setValue(newValue, forKey: .didMigrateFromOldWalletKey)
+    }
+  }
+  
   func isFiatMethodPopUpMarkedDoNotShow(for fiatMethodId: String) -> Bool {
     let key = "fiat_method_popup_\(fiatMethodId)"
     return userDefaults?.bool(forKey: key) ?? false
@@ -66,4 +73,5 @@ private extension String {
   static let isWalletImportedKey = "isWalletImported"
   static let backUpDateKey = "backUpDate"
   static let didShowExperimentalBannerKey = "didShowExperimentalBanner"
+  static let didMigrateFromOldWalletKey = "didMigrateFromOldWallet"
 }

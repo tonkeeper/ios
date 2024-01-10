@@ -22,7 +22,9 @@ final class WalletCoreAssembly {
       dependencies: Dependencies( 
         cacheURL: coreAssembly.cacheURL,
         sharedCacheURL: coreAssembly.sharedCacheURL,
-        sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)
+        sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier,
+        oldSharedCacheURL: coreAssembly.oldSharedCacheURL,
+        oldSharedKeychainGroup: coreAssembly.oldKeychainAccessGroupIdentifier)
     )
   }
   
@@ -160,5 +162,9 @@ final class WalletCoreAssembly {
   
   var addressValidator: AddressValidator {
     walletCoreAssembly.addressValidator()
+  }
+  
+  var oldAppMigration: OldAppMigration {
+    walletCoreAssembly.oldAppMigration
   }
 }
