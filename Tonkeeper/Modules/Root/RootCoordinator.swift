@@ -29,7 +29,6 @@ final class RootCoordinator: Coordinator<NavigationRouter> {
   }
  
   override func start(deeplink: Deeplink?) {
-    performMigrationIfNeed()
     self.deeplink = deeplink
     if assembly.walletCoreAssembly.walletProvider.hasWallets {
       openTabBar()
