@@ -28,6 +28,15 @@ public struct CoreAssembly {
       return documentsURL
     }
   }
+    
+  public var oldSharedCacheURL: URL {
+    if let appGroupId: String = try? infoProvider.value(for: .oldAppGroupName),
+       let containerURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) {
+      return containerURL
+    } else {
+      return documentsURL
+    }
+  }
   
   public var documentsURL: URL {
     let documentsDirectory: URL
@@ -41,6 +50,14 @@ public struct CoreAssembly {
   
   public var keychainAccessGroupIdentifier: String {
     guard let keychainAccessGroup: String = try? infoProvider.value(for: .keychainAccessGroup),
+          let appIdentifierPrefix: String = try? infoProvider.value(for: .appIdentifierPrefix) else {
+      return ""
+    }
+    return appIdentifierPrefix+keychainAccessGroup
+  }
+  
+  public var oldKeychainAccessGroupIdentifier: String {
+    guard let keychainAccessGroup: String = try? infoProvider.value(for: .oldKeychainAccessGroup),
           let appIdentifierPrefix: String = try? infoProvider.value(for: .appIdentifierPrefix) else {
       return ""
     }

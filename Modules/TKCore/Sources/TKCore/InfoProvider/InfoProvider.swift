@@ -13,10 +13,12 @@ public enum InfoProviderError: Swift.Error {
 
 public enum InfoKey: String {
   case appGroupName = "APP_GROUP_IDENTIFIER"
+  case oldAppGroupName = "OLD_APP_GROUP_IDENTIFIER"
   case appName = "APP_NAME"
   case appVersion = "CFBundleShortVersionString"
   case buildVersion = "CFBundleVersion"
   case keychainAccessGroup = "KEYCHAIN_ACCESS_GROUP"
+  case oldKeychainAccessGroup = "OLD_KEYCHAIN_ACCESS_GROUP"
   case appIdentifierPrefix = "AppIdentifierPrefix"
 }
 

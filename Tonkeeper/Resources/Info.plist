@@ -4,6 +4,8 @@
 <dict>
 	<key>APP_GROUP_IDENTIFIER</key>
 	<string>$(APP_GROUP_IDENTIFIER)</string>
+	<key>OLD_APP_GROUP_IDENTIFIER</key>
+	<string>$(OLD_APP_GROUP_IDENTIFIER)</string>
 	<key>APP_NAME</key>
 	<string>$(APP_NAME)</string>
 	<key>AppIdentifierPrefix</key>
@@ -31,6 +33,8 @@
 	<false/>
 	<key>KEYCHAIN_ACCESS_GROUP</key>
 	<string>$(KEYCHAIN_ACCESS_GROUP)</string>
+	<key>OLD_KEYCHAIN_ACCESS_GROUP</key>
+	<string>$(OLD_KEYCHAIN_ACCESS_GROUP)</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
@@ -61,7 +65,7 @@
 	</dict>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-    <key>NSFaceIDUsageDescription</key>
-    <string>Tonkeeper uses biometric authentication to authorize transactions</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Tonkeeper uses biometric authentication to authorize transactions</string>
 </dict>
 </plist>
