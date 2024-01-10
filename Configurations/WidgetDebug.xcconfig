@@ -8,3 +8,5 @@
 #include "Debug.xcconfig"
 #include "WidgetBase.xcconfig"
 #include "Signing/WidgetSignDebug.xcconfig"
+
+PRODUCT_BUNDLE_IDENTIFIER = $(BASE_BUNDLE_IDENTIFIER).debug.widget

@@ -9,3 +9,5 @@
 #include "Signing/SignDebug.xcconfig"
 
 BUNDLE_DISPLAY_NAME = $(APP_NAME) Debug
+
+PRODUCT_BUNDLE_IDENTIFIER = $(BASE_BUNDLE_IDENTIFIER).debug
