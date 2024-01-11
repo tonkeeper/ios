@@ -13,6 +13,7 @@ final class SettingsListCellContentView: UIControlClosure, ContainerCollectionVi
   let titleLabel = UILabel()
   let subtitleLabel = UILabel()
   let accessoryView = SettingsListCellAccessoryView()
+  let badgeView = BadgeView()
 
   private var isHighlightable = false
   
@@ -36,6 +37,7 @@ final class SettingsListCellContentView: UIControlClosure, ContainerCollectionVi
     let title: String
     let subtitle: String?
     let accessoryModel: SettingsListCellAccessoryView.Model
+    let isBadgeVisible: Bool
     let handler: (() -> Void)?
   }
   
@@ -56,6 +58,8 @@ final class SettingsListCellContentView: UIControlClosure, ContainerCollectionVi
     addAction(.init(handler: {
       model.handler?()
     }), for: .touchUpInside)
+    
+    badgeView.isHidden = !model.isBadgeVisible
   }
   
   func prepareForReuse() {
@@ -65,9 +69,12 @@ final class SettingsListCellContentView: UIControlClosure, ContainerCollectionVi
 
 private extension SettingsListCellContentView {
   func setup() {
+    badgeView.isHidden = true
+    
     addSubview(titleLabel)
     addSubview(subtitleLabel)
     addSubview(accessoryView)
+    addSubview(badgeView)
     
     setupConstraints()
   }
@@ -80,6 +87,8 @@ private extension SettingsListCellContentView {
     titleLabel.translatesAutoresizingMaskIntoConstraints = false
     subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
     accessoryView.translatesAutoresizingMaskIntoConstraints = false
+    badgeView.translatesAutoresizingMaskIntoConstraints = false
+    
     NSLayoutConstraint.activate([
       titleLabel.topAnchor.constraint(equalTo: topAnchor, constant: ContentInsets.sideSpace),
       titleLabel.leftAnchor.constraint(equalTo: leftAnchor, constant: ContentInsets.sideSpace),
@@ -95,6 +104,9 @@ private extension SettingsListCellContentView {
         .withPriority(.defaultHigh),
       accessoryView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -ContentInsets.sideSpace)
         .withPriority(.defaultHigh),
+      
+      badgeView.leftAnchor.constraint(equalTo: titleLabel.rightAnchor, constant: 7),
+      badgeView.centerYAnchor.constraint(equalTo: titleLabel.centerYAnchor, constant: 2)
     ])
   }
   

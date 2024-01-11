@@ -107,6 +107,14 @@ private extension RootCoordinator {
     createWalletCoordinator.start()
     router.present(createWalletCoordinator.router.rootViewController)
   }
+  
+  func performMigrationIfNeed() {
+    let appSettings = AppSettings()
+    if !appSettings.didMigrateFromOldWallet {
+      assembly.walletCoreAssembly.oldAppMigration.migrateIfNeeded()
+      appSettings.didMigrateFromOldWallet = true
+    }
+  }
 }
 
 // MARK: - SetupWalletModuleOutput

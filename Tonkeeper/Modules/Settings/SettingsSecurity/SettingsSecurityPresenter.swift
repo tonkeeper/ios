@@ -47,8 +47,7 @@ private extension SettingsSecurityPresenter {
     
     let sections = [
       SettingsListSection(items: [getFaceIdSetting()]),
-      SettingsListSection(items: [getChangePasscodeSetting()]),
-      SettingsListSection(items: [getRecoveryPhraseSetting()])
+      SettingsListSection(items: [getChangePasscodeSetting()])
     ]
     let models = mapper.mapSettingsSections(sections)
     viewInput?.didUpdateSettings(models)

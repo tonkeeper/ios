@@ -11,6 +11,7 @@ import UIKit
 
 protocol SettingsListModuleOutput: AnyObject {
   func settingsListDidSelectSecuritySetting(_ settingsList: SettingsListModuleInput)
+  func settingsListDidSelectBackupSetting(_ settingsList: SettingsListModuleInput)
   func settingsListDidSelectCurrencySetting(_ settingsList: SettingsListModuleInput)
   func settingsListDidLogout(_ settingsList: SettingsListModuleInput)
 }

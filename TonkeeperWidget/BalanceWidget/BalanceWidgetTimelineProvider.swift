@@ -28,7 +28,9 @@ struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
     let walletCoreContainer = WalletCoreKeeper.Assembly(dependencies: Dependencies(
       cacheURL: coreAssembly.cacheURL,
       sharedCacheURL: coreAssembly.sharedCacheURL,
-      sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier)
+      sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier,
+      oldSharedCacheURL: coreAssembly.oldSharedCacheURL,
+      oldSharedKeychainGroup: coreAssembly.oldKeychainAccessGroupIdentifier)
     )
     let balanceWidgetController = walletCoreContainer.balanceWidgetController()
     let currency: Currency

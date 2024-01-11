@@ -270,6 +270,10 @@ public extension UIImage {
         .imageWithName("Icons/28/ic-door-28")?.withRenderingMode(.alwaysTemplate)
       }
       
+      public static var delete: UIImage? {
+        .imageWithName("Icons/28/ic-trash-bin-28")?.withRenderingMode(.alwaysTemplate)
+      }
+      
       public static var security: UIImage? {
         .imageWithName("Icons/28/ic-key-28")?.withRenderingMode(.alwaysTemplate)
       }
@@ -332,6 +336,12 @@ public extension UIImage {
     public enum Size16 {
       public static var globe16: UIImage? {
         .imageWithName("Icons/16/ic-globe-16")?.withRenderingMode(.alwaysTemplate)
+      }
+    }
+    
+    public enum Size12 {
+      public static var chevronRight: UIImage? {
+        .imageWithName("Icons/12/ic-chevron-right-12")?.withRenderingMode(.alwaysTemplate)
       }
     }
     

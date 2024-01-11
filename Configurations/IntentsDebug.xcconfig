@@ -8,3 +8,5 @@
 #include "Debug.xcconfig"
 #include "IntentsBase.xcconfig"
 #include "Signing/IntentsSignDebug.xcconfig"
+
+PRODUCT_BUNDLE_IDENTIFIER = $(BASE_BUNDLE_IDENTIFIER).debug.intents

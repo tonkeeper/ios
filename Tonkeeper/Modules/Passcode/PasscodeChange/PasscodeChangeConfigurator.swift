@@ -5,7 +5,7 @@ import UIKit
 
 final class PasscodeChangeConfigurator: PasscodeInputBiometryPresenterConfigurator {
   
-  let title: String = "Enter currnet passcode"
+  let title: String = "Enter current passcode"
   var didFinish: ((_ passcode: Passcode) -> Void)?
   var didFailed: (() -> Void)?
   var didStartBiometry: (() -> Void)?

@@ -401,9 +401,22 @@
 		C318DC4B2B499C83008A2273 /* TKUIKitLegacy in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C318DC492B499C83008A2273 /* TKUIKitLegacy */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C318DC4D2B499C8B008A2273 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC4C2B499C8B008A2273 /* TKChart */; };
 		C318DC502B499C8B008A2273 /* TKUIKitLegacy in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC4F2B499C8B008A2273 /* TKUIKitLegacy */; };
+		C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */; };
+		C327C6322B4F682B00AAFB43 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */; };
 		C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C81CE487C82E845B444588 /* EnterMnemonicPresenter.swift */; };
 		C3388B1B2B3C6913000FE225 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C3388B1A2B3C6913000FE225 /* WalletCore */; };
 		C3388B1E2B3C691B000FE225 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C3388B1D2B3C691B000FE225 /* WalletCore */; };
+		C33B7A3E2B4BA43000BE7E60 /* SettingsBackupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A3D2B4BA43000BE7E60 /* SettingsBackupViewController.swift */; };
+		C33B7A402B4BA43C00BE7E60 /* SettingsBackupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A3F2B4BA43C00BE7E60 /* SettingsBackupView.swift */; };
+		C33B7A422B4BA44200BE7E60 /* SettingsBackupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A412B4BA44200BE7E60 /* SettingsBackupViewModel.swift */; };
+		C33B7A442B4BA44E00BE7E60 /* SettingsBackupAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A432B4BA44E00BE7E60 /* SettingsBackupAssembly.swift */; };
+		C33B7A472B4BB07A00BE7E60 /* SettingsManuallyBackupCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A462B4BB07A00BE7E60 /* SettingsManuallyBackupCoordinator.swift */; };
+		C33B7A502B4BBE3E00BE7E60 /* BackupCheckPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A492B4BBE3E00BE7E60 /* BackupCheckPresenter.swift */; };
+		C33B7A512B4BBE3E00BE7E60 /* BackupCheckProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A4A2B4BBE3E00BE7E60 /* BackupCheckProtocols.swift */; };
+		C33B7A522B4BBE3E00BE7E60 /* BackupCheckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A4B2B4BBE3E00BE7E60 /* BackupCheckView.swift */; };
+		C33B7A532B4BBE3E00BE7E60 /* BackupCheckViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A4C2B4BBE3E00BE7E60 /* BackupCheckViewController.swift */; };
+		C33B7A542B4BBE3E00BE7E60 /* BackupCheckAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A4D2B4BBE3E00BE7E60 /* BackupCheckAssembly.swift */; };
+		C33B7A582B4BC91B00BE7E60 /* SettingsBackupDateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A572B4BC91B00BE7E60 /* SettingsBackupDateView.swift */; };
 		C33F72462AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33F72452AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift */; };
 		C35684112AEBFD810064DD0A /* AuthEventsDaemon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684102AEBFD810064DD0A /* AuthEventsDaemon.swift */; };
 		C35684152AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684142AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift */; };
@@ -948,6 +961,17 @@
 		B305512CBFAF5DE77C5D0556 /* EnterMnemonicProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnterMnemonicProtocols.swift; sourceTree = "<group>"; };
 		B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartPresenter.swift; sourceTree = "<group>"; };
 		C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsViewController.swift; sourceTree = "<group>"; };
+		C33B7A3D2B4BA43000BE7E60 /* SettingsBackupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupViewController.swift; sourceTree = "<group>"; };
+		C33B7A3F2B4BA43C00BE7E60 /* SettingsBackupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupView.swift; sourceTree = "<group>"; };
+		C33B7A412B4BA44200BE7E60 /* SettingsBackupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupViewModel.swift; sourceTree = "<group>"; };
+		C33B7A432B4BA44E00BE7E60 /* SettingsBackupAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupAssembly.swift; sourceTree = "<group>"; };
+		C33B7A462B4BB07A00BE7E60 /* SettingsManuallyBackupCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsManuallyBackupCoordinator.swift; sourceTree = "<group>"; };
+		C33B7A492B4BBE3E00BE7E60 /* BackupCheckPresenter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BackupCheckPresenter.swift; sourceTree = "<group>"; };
+		C33B7A4A2B4BBE3E00BE7E60 /* BackupCheckProtocols.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BackupCheckProtocols.swift; sourceTree = "<group>"; };
+		C33B7A4B2B4BBE3E00BE7E60 /* BackupCheckView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BackupCheckView.swift; sourceTree = "<group>"; };
+		C33B7A4C2B4BBE3E00BE7E60 /* BackupCheckViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BackupCheckViewController.swift; sourceTree = "<group>"; };
+		C33B7A4D2B4BBE3E00BE7E60 /* BackupCheckAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BackupCheckAssembly.swift; sourceTree = "<group>"; };
+		C33B7A572B4BC91B00BE7E60 /* SettingsBackupDateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupDateView.swift; sourceTree = "<group>"; };
 		C33F72452AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectHeaderWalletAnimationView.swift; sourceTree = "<group>"; };
 		C35684102AEBFD810064DD0A /* AuthEventsDaemon.swift */ = {isa = PBXFileReference; indentWidth = 2; lastKnownFileType = sourcecode.swift; path = AuthEventsDaemon.swift; sourceTree = "<group>"; tabWidth = 2; };
 		C35684142AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationCoordinator.swift; sourceTree = "<group>"; };
@@ -1045,6 +1069,8 @@
 				C37E2B082B49C1C900EDFB9C /* TKUIKit in Frameworks */,
 				C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */,
 				C318DC4A2B499C83008A2273 /* TKUIKitLegacy in Frameworks */,
+				C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
+				C327C6322B4F682B00AAFB43 /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1437,6 +1463,8 @@
 		7D3D64F72ACAB01300E64537 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				C33B7A452B4BB06600BE7E60 /* SettingsManuallyBackup */,
+				C33B7A3C2B4BA40F00BE7E60 /* SettingsBackup */,
 				C3774F092B35AF3B00B15B78 /* SettingsChangePasscode */,
 				7DDBBFFD2ACCAD8900F811A5 /* WalletRestore */,
 				7D57358B2AD6DD9700B7D0A3 /* SettingsRecoveryPhrase */,
@@ -2844,6 +2872,47 @@
 			path = InAppBrowserMain;
 			sourceTree = "<group>";
 		};
+		C33B7A3C2B4BA40F00BE7E60 /* SettingsBackup */ = {
+			isa = PBXGroup;
+			children = (
+				C33B7A562B4BC90A00BE7E60 /* Views */,
+				C33B7A3D2B4BA43000BE7E60 /* SettingsBackupViewController.swift */,
+				C33B7A3F2B4BA43C00BE7E60 /* SettingsBackupView.swift */,
+				C33B7A412B4BA44200BE7E60 /* SettingsBackupViewModel.swift */,
+				C33B7A432B4BA44E00BE7E60 /* SettingsBackupAssembly.swift */,
+			);
+			path = SettingsBackup;
+			sourceTree = "<group>";
+		};
+		C33B7A452B4BB06600BE7E60 /* SettingsManuallyBackup */ = {
+			isa = PBXGroup;
+			children = (
+				C33B7A482B4BBDC600BE7E60 /* BackupCheck */,
+				C33B7A462B4BB07A00BE7E60 /* SettingsManuallyBackupCoordinator.swift */,
+			);
+			path = SettingsManuallyBackup;
+			sourceTree = "<group>";
+		};
+		C33B7A482B4BBDC600BE7E60 /* BackupCheck */ = {
+			isa = PBXGroup;
+			children = (
+				C33B7A4D2B4BBE3E00BE7E60 /* BackupCheckAssembly.swift */,
+				C33B7A492B4BBE3E00BE7E60 /* BackupCheckPresenter.swift */,
+				C33B7A4A2B4BBE3E00BE7E60 /* BackupCheckProtocols.swift */,
+				C33B7A4B2B4BBE3E00BE7E60 /* BackupCheckView.swift */,
+				C33B7A4C2B4BBE3E00BE7E60 /* BackupCheckViewController.swift */,
+			);
+			path = BackupCheck;
+			sourceTree = "<group>";
+		};
+		C33B7A562B4BC90A00BE7E60 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C33B7A572B4BC91B00BE7E60 /* SettingsBackupDateView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		C356840F2AEBFD700064DD0A /* AuthEventsDaemon */ = {
 			isa = PBXGroup;
 			children = (
@@ -3095,6 +3164,8 @@
 				7DB8FB602A1BCC92005B4B11 /* Resources */,
 				7D32F8C02A8CCB58002C130C /* Embed Frameworks */,
 				7D19EB742ABDB58D00BDE7FA /* Embed Foundation Extensions */,
+				C30297552B4EE30300DD6FFC /* Firebase plist */,
+				C30297502B4EDDDD00DD6FFC /* Crashlytics+dSYM */,
 			);
 			buildRules = (
 			);
@@ -3115,6 +3186,8 @@
 				C37E2B072B49C1C900EDFB9C /* TKUIKit */,
 				C37E2B342B4A0ACB00EDFB9C /* AppModule */,
 				C3EC26962B4B94BB0077FC56 /* Passcode */,
+				C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */,
+				C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -3177,6 +3250,7 @@
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				C311FC842B3C68B700BE9022 /* XCRemoteSwiftPackageReference "core-swift" */,
 				C37E2B062B49C1C800EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */,
+				C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -3221,6 +3295,50 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C30297502B4EDDDD00DD6FFC /* Crashlytics+dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+			);
+			name = "Crashlytics+dSYM";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
+		C30297552B4EE30300DD6FFC /* Firebase plist */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Firebase plist";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "INFO_PLIST=GoogleService-Info.plist\nDEVELOPMENT_INFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/Debug/${INFO_PLIST}\nRELEASE_INFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/Release/${INFO_PLIST}\necho \"Checking ${INFO_PLIST} in ${DEVELOPMENT_INFO_PLIST}\"\nif [ ! -f $DEVELOPMENT_INFO_PLIST ] ; then\necho \"Development GoogleService-Info.plist not found.\"\nexit 1\nfi\necho \"Checking ${INFO_PLIST} in ${RELEASE_INFO_PLIST}\"\nif [ ! -f $RELEASE_INFO_PLIST ] ; then\necho \"Release GoogleService-Info.plist not found.\"\nexit 1\nfi\nPLIST_DESTINATION=${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\necho \"Copying ${INFO_PLIST} to final destination: ${PLIST_DESTINATION}\"\nif [ \"${CONFIGURATION}\" == \"Release\" ] ; then\necho \"Copied ${RELEASE_INFO_PLIST}.\"\ncp \"${RELEASE_INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nelse\necho \"Copied ${DEVELOPMENT_INFO_PLIST}.\"\ncp \"${DEVELOPMENT_INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		7D3F25D62AC19417002DF1B7 /* Sources */ = {
@@ -3296,6 +3414,7 @@
 				7D527BC02A2A913400A2D29A /* ModalContentViewController+Configuration.swift in Sources */,
 				7D9292972A25EB16005B83DF /* PageSegmentControlTab.swift in Sources */,
 				7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */,
+				C33B7A582B4BC91B00BE7E60 /* SettingsBackupDateView.swift in Sources */,
 				7D9292992A25EC70005B83DF /* PagingContentHeaderView.swift in Sources */,
 				7DDF05122A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift in Sources */,
 				7D68362C2A1CE874002DBBC7 /* UINavigationController+Completion.swift in Sources */,
@@ -3304,6 +3423,7 @@
 				7D3D65072ACAB01300E64537 /* SettingsListView.swift in Sources */,
 				C384B3C72AE977BB009CD062 /* TonConnectPopupPresenter.swift in Sources */,
 				7D6836622A1D6A79002DBBC7 /* UINavigationController+Appearance.swift in Sources */,
+				C33B7A532B4BBE3E00BE7E60 /* BackupCheckViewController.swift in Sources */,
 				7D27E59B2A515B1400156D0C /* WalletBalanceModelMapper.swift in Sources */,
 				7D3BCFC52A4CADB200BE6AD9 /* MnemonicTextField.swift in Sources */,
 				7D527BF42A2DFDA600A2D29A /* NotDelayScrollView.swift in Sources */,
@@ -3314,6 +3434,7 @@
 				7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */,
 				7D3D651B2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift in Sources */,
 				7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */,
+				C33B7A422B4BA44200BE7E60 /* SettingsBackupViewModel.swift in Sources */,
 				C37D0C4F2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift in Sources */,
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
 				7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */,
@@ -3410,7 +3531,9 @@
 				7D9144332A32130500B0FD17 /* ModalCardContainerContent.swift in Sources */,
 				7D6836372A1CFDB7002DBBC7 /* WindowRouter.swift in Sources */,
 				7D527BC42A2A96CC00A2D29A /* ModalContentListView.swift in Sources */,
+				C33B7A512B4BBE3E00BE7E60 /* BackupCheckProtocols.swift in Sources */,
 				7D68364E2A1D1C0E002DBBC7 /* UITabBarController+Appearance.swift in Sources */,
+				C33B7A472B4BB07A00BE7E60 /* SettingsManuallyBackupCoordinator.swift in Sources */,
 				7D6836352A1CFBFB002DBBC7 /* Coordinator.swift in Sources */,
 				7D6836672A1D6E74002DBBC7 /* Module.swift in Sources */,
 				7D1163002A60381300DF4F30 /* WalletTokenDetailsAssembly.swift in Sources */,
@@ -3435,6 +3558,7 @@
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D3D651D2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
+				C33B7A402B4BA43C00BE7E60 /* SettingsBackupView.swift in Sources */,
 				7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */,
 				7D3D650F2ACAB6A400E64537 /* SettingsListCollectionLayoutConfigurator.swift in Sources */,
 				7D3E43862A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift in Sources */,
@@ -3523,6 +3647,7 @@
 				C384B3C02AE97224009CD062 /* TonConnectAssembly.swift in Sources */,
 				C3774F022B34130D00B15B78 /* ActionDetailsTokenHeaderImageView.swift in Sources */,
 				7DE27E652A30D2D400842FA8 /* ActivityListTransactionBuilder.swift in Sources */,
+				C33B7A542B4BBE3E00BE7E60 /* BackupCheckAssembly.swift in Sources */,
 				7D744BB92ADD819B00E94332 /* FiatMethodPopUpAssembly.swift in Sources */,
 				C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */,
 				C38957842AF1497E0083B98A /* AccountEventActionContentProvider.swift in Sources */,
@@ -3538,6 +3663,7 @@
 				7D9292DE2A28A1DF005B83DF /* EnterAmountViewController.swift in Sources */,
 				7D5141CE2A53454400EC7F59 /* Image.swift in Sources */,
 				FC58CA56982D098FE4E85989 /* TokensListProtocols.swift in Sources */,
+				C33B7A3E2B4BA43000BE7E60 /* SettingsBackupViewController.swift in Sources */,
 				7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */,
 				D97B981CF3DBE823EDA9A091 /* WalletContentViewController.swift in Sources */,
 				B2DC87224B8264B43A27920C /* WalletContentView.swift in Sources */,
@@ -3561,6 +3687,7 @@
 				8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */,
 				7D5823397229401915615466 /* SendConfirmationView.swift in Sources */,
 				7D3D65012ACAB01300E64537 /* SettingsCoordinator.swift in Sources */,
+				C33B7A442B4BA44E00BE7E60 /* SettingsBackupAssembly.swift in Sources */,
 				0A919C70A2EDEAA0AB313C6C /* SendConfirmationPresenter.swift in Sources */,
 				795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */,
 				3C01D6946E22BFB97B2E82A6 /* ReceiveRootViewController.swift in Sources */,
@@ -3646,6 +3773,7 @@
 				4710C223A1FF0E23BAD189BA /* TokenDetailsViewController.swift in Sources */,
 				7D797E1A2A8F7A2600A626D7 /* ListTitleView.swift in Sources */,
 				977233829BFB3A47453882FF /* TokenDetailsView.swift in Sources */,
+				C33B7A522B4BBE3E00BE7E60 /* BackupCheckView.swift in Sources */,
 				7D744BB72ADD805E00E94332 /* FiatMethodPopUpViewController.swift in Sources */,
 				C3774F182B35C30400B15B78 /* WalletHeaderBanneModel.swift in Sources */,
 				7DAC78D52A93F96500358D35 /* CollectibleAssembly.swift in Sources */,
@@ -3654,6 +3782,7 @@
 				C33F72462AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift in Sources */,
 				95F3E77FC6DBC86F8EB6745F /* TonChartViewController.swift in Sources */,
 				B91D795CFF06D6E93B856F37 /* TonChartView.swift in Sources */,
+				C33B7A502B4BBE3E00BE7E60 /* BackupCheckPresenter.swift in Sources */,
 				7DAC78CD2A8FE3AD00358D35 /* HeaderTwoLineTitleView.swift in Sources */,
 				E4178183A698EC6ABCAC4CC7 /* TonChartPresenter.swift in Sources */,
 				22C5887CCD3DB975055E331B /* TonChartProtocols.swift in Sources */,
@@ -3715,7 +3844,7 @@
 				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/TonkeeperWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 37;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -3730,7 +3859,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
@@ -3752,7 +3881,7 @@
 				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/TonkeeperWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 37;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -3767,7 +3896,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
@@ -3811,7 +3940,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 37;
+				CURRENT_PROJECT_VERSION = "";
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -3872,7 +4001,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 37;
+				CURRENT_PROJECT_VERSION = "";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -3904,7 +4033,8 @@
 				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 37;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
@@ -3920,7 +4050,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
@@ -3943,7 +4073,7 @@
 				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 37;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3960,7 +4090,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
@@ -3968,6 +4098,7 @@
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = RELEASE;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
@@ -3981,7 +4112,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 37;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -3996,7 +4127,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
@@ -4015,7 +4146,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 37;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -4030,7 +4161,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
@@ -4107,6 +4238,14 @@
 				version = 2.5.2;
 			};
 		};
+		C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 10.19.1;
+			};
+		};
 		C311FC842B3C68B700BE9022 /* XCRemoteSwiftPackageReference "core-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tonkeeper/core-swift";
@@ -4156,6 +4295,16 @@
 		C318DC4F2B499C8B008A2273 /* TKUIKitLegacy */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKUIKitLegacy;
+		};
+		C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalyticsWithoutAdIdSupport;
+		};
+		C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
 		};
 		C3388B1A2B3C6913000FE225 /* WalletCore */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -34,15 +34,28 @@ final class WalletHeaderViewController: GenericViewController<WalletHeaderView> 
     presenter.viewDidLoad()
   }
   
-  func showBanner(bannerModel: WalletHeaderBannerModel) {
-    customView.walletHeaderBannersContainerView.showBanner(model: bannerModel) { [weak self] in
+  func showBannerOnTop(bannerModel: WalletHeaderBannerModel) {
+    customView.topWalletHeaderBannersContainerView.showBanner(model: bannerModel) { [weak self] in
       self?.didUpdateHeight?()
     }
     didUpdateHeight?()
   }
   
-  func hideBanner(with identifier: String) {
-    customView.walletHeaderBannersContainerView.hideBanner(identifier: identifier) { [weak self] in
+  func hideBannerOnTop(with identifier: String) {
+    customView.topWalletHeaderBannersContainerView.hideBanner(identifier: identifier) { [weak self] in
+      self?.didUpdateHeight?()
+    }
+  }
+  
+  func showBannerOnBottom(bannerModel: WalletHeaderBannerModel) {
+    customView.bottomWalletHeaderBannersContainerView.showBanner(model: bannerModel) { [weak self] in
+      self?.didUpdateHeight?()
+    }
+    didUpdateHeight?()
+  }
+  
+  func hideBannerOnBottom(with identifier: String) {
+    customView.bottomWalletHeaderBannersContainerView.hideBanner(identifier: identifier) { [weak self] in
       self?.didUpdateHeight?()
     }
   }

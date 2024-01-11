@@ -11,7 +11,8 @@ final class WalletHeaderView: UIView, ConfigurableView {
   
   let titleView = WalletHeaderTitleView()
   
-  let walletHeaderBannersContainerView = WalletHeaderBannersContainerView()
+  let topWalletHeaderBannersContainerView = WalletHeaderBannersContainerView()
+  let bottomWalletHeaderBannersContainerView = WalletHeaderBannersContainerView()
   
   let balanceLabel: UILabel = {
     let label = UILabel()
@@ -52,7 +53,7 @@ final class WalletHeaderView: UIView, ConfigurableView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-  
+
   // MARK: - ConfigurableView
   
   struct Model {
@@ -88,13 +89,14 @@ final class WalletHeaderView: UIView, ConfigurableView {
 
 private extension WalletHeaderView {
   func setup() {
-    stackView.addArrangedSubview(walletHeaderBannersContainerView)
+    stackView.addArrangedSubview(topWalletHeaderBannersContainerView)
     stackView.addArrangedSubview(balanceLabel)
     stackView.addArrangedSubview(dateLabel)
     stackView.addArrangedSubview(addressButton)
     
     addSubview(stackView)
     addSubview(buttonsView)
+    addSubview(bottomWalletHeaderBannersContainerView)
     addSubview(titleView)
     
     stackView.translatesAutoresizingMaskIntoConstraints = false
@@ -102,6 +104,7 @@ private extension WalletHeaderView {
     titleView.translatesAutoresizingMaskIntoConstraints = false
     dateLabel.translatesAutoresizingMaskIntoConstraints = false
     addressButton.translatesAutoresizingMaskIntoConstraints = false
+    bottomWalletHeaderBannersContainerView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       titleView.topAnchor.constraint(equalTo: topAnchor),
@@ -117,12 +120,15 @@ private extension WalletHeaderView {
       buttonsView.leftAnchor.constraint(equalTo: leftAnchor),
       buttonsView.rightAnchor.constraint(equalTo: rightAnchor),
       buttonsView.heightAnchor.constraint(equalToConstant: 82),
-      buttonsView.bottomAnchor.constraint(equalTo: bottomAnchor)
-        .withPriority(.defaultHigh),
       
       dateLabel.heightAnchor.constraint(equalToConstant: 36),
       
-      addressButton.heightAnchor.constraint(equalToConstant: 36)
+      addressButton.heightAnchor.constraint(equalToConstant: 36),
+      
+      bottomWalletHeaderBannersContainerView.topAnchor.constraint(equalTo: buttonsView.bottomAnchor, constant: 6),
+      bottomWalletHeaderBannersContainerView.leftAnchor.constraint(equalTo: leftAnchor),
+      bottomWalletHeaderBannersContainerView.rightAnchor.constraint(equalTo: rightAnchor),
+      bottomWalletHeaderBannersContainerView.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh)
     ])
   }
 }

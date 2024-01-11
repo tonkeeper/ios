@@ -38,6 +38,8 @@ final class MnemonicTextField: UIControlClosure {
     }
   }
   
+  var checkPaste: Bool = true
+  
   private let container: TextFieldContainer = {
     let container = TextFieldContainer()
     container.isUserInteractionEnabled = false
@@ -172,7 +174,7 @@ extension MnemonicTextField: UITextFieldDelegate {
   func textField(_ textField: UITextField,
                  shouldChangeCharactersIn range: NSRange,
                  replacementString string: String) -> Bool {
-    if UIPasteboard.general.hasStrings,
+    if checkPaste, UIPasteboard.general.hasStrings,
        let pasteString = UIPasteboard.general.string?.replacingOccurrences(of: "\n", with: " "),
        string == pasteString {
       delegate?.didPaste(text: pasteString, textField: self)
