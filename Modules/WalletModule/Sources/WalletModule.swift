@@ -1,8 +1,14 @@
-//
-//  File.swift
-//  
-//
-//  Created by Grigory Serebryanyy on 11.01.2024.
-//
+import TKUIKit
+import TKCoordinator
 
-import Foundation
+public struct WalletModule {
+  public init() {}
+  
+  public func createWalletCoordinator() -> WalletCoordinator {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    let coordinator = WalletCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+    return coordinator
+  }
+}
