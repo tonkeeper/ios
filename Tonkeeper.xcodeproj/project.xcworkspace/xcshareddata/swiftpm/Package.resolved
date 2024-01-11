@@ -192,7 +192,7 @@
     {
       "identity" : "tkuikit-ios",
       "kind" : "remoteSourceControl",
-      "location" : "git@github.com:tonkeeper/tkuikit-ios.git",
+      "location" : "https://github.com/tonkeeper/tkuikit-ios.git",
       "state" : {
         "branch" : "main",
         "revision" : "3910dd4dc9463ca1381c6f1237b79f5849076699"

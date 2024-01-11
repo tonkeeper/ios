@@ -395,8 +395,6 @@
 		B91D795CFF06D6E93B856F37 /* TonChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA90234EDC8FC9E16D62F310 /* TonChartView.swift */; };
 		BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773774CBEA3D5DDBE5D6AFF /* TokenDetailsProtocols.swift */; };
 		BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6AC52DF8E6970E81B415D8 /* EnterMnemonicView.swift */; };
-		C318DC472B499C83008A2273 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC462B499C83008A2273 /* TKChart */; };
-		C318DC482B499C83008A2273 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C318DC462B499C83008A2273 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C318DC4A2B499C83008A2273 /* TKUIKitLegacy in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC492B499C83008A2273 /* TKUIKitLegacy */; };
 		C318DC4B2B499C83008A2273 /* TKUIKitLegacy in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C318DC492B499C83008A2273 /* TKUIKitLegacy */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C318DC4D2B499C8B008A2273 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC4C2B499C8B008A2273 /* TKChart */; };
@@ -439,12 +437,6 @@
 		C37D0C4F2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */; };
 		C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE42B499D9B00EDFB9C /* WalletCore */; };
 		C37E2AE62B499D9B00EDFB9C /* WalletCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE42B499D9B00EDFB9C /* WalletCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		C37E2AF92B49BE8100EDFB9C /* TKUIKitLegacy in Resources */ = {isa = PBXBuildFile; fileRef = C37E2AF52B49BE8100EDFB9C /* TKUIKitLegacy */; };
-		C37E2AFA2B49BE8100EDFB9C /* TKCore in Resources */ = {isa = PBXBuildFile; fileRef = C37E2AF62B49BE8100EDFB9C /* TKCore */; };
-		C37E2AFB2B49BE8100EDFB9C /* TKChart in Resources */ = {isa = PBXBuildFile; fileRef = C37E2AF72B49BE8100EDFB9C /* TKChart */; };
-		C37E2AFE2B49BF5E00EDFB9C /* Onboarding in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AFD2B49BF5E00EDFB9C /* Onboarding */; };
-		C37E2B082B49C1C900EDFB9C /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2B072B49C1C900EDFB9C /* TKUIKit */; };
-		C37E2B352B4A0ACB00EDFB9C /* AppModule in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2B342B4A0ACB00EDFB9C /* AppModule */; };
 		C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */; };
 		C384B3B12AE96ADB009CD062 /* ModalCardViewBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */; };
 		C384B3B32AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */; };
@@ -462,6 +454,14 @@
 		C38957872AF168F70083B98A /* Deeplink.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38957862AF168F70083B98A /* Deeplink.swift */; };
 		C3A337BC2AE340BD00E315F5 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */; };
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
+		C3B4DAA32B500AE60050703B /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAA22B500AE60050703B /* TKUIKit */; };
+		C3B4DAA52B500AF20050703B /* TKScreenKit in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAA42B500AF20050703B /* TKScreenKit */; };
+		C3B4DAB42B500B840050703B /* AppModule in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAB32B500B840050703B /* AppModule */; };
+		C3B4DAB62B500B840050703B /* OnboardingModule in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAB52B500B840050703B /* OnboardingModule */; };
+		C3B4DAB82B500B840050703B /* PasscodeModule in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAB72B500B840050703B /* PasscodeModule */; };
+		C3B4DABA2B500BFB0050703B /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAB92B500BFB0050703B /* TKChart */; };
+		C3B4DABB2B500BFB0050703B /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAB92B500BFB0050703B /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C3B4DABD2B500BFB0050703B /* TKCoordinator in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DABC2B500BFB0050703B /* TKCoordinator */; };
 		C3E4C9A12B30FFCD005526DA /* TitleConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9A02B30FFCD005526DA /* TitleConnectionView.swift */; };
 		C3E4C9AB2B31C85C005526DA /* NavigationBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9AA2B31C85C005526DA /* NavigationBarView.swift */; };
 		C3E4C9AE2B31FABA005526DA /* ActivityLargeTitleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9AD2B31FABA005526DA /* ActivityLargeTitleView.swift */; };
@@ -474,7 +474,6 @@
 		C3E4C9E52B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E42B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift */; };
 		C3E4C9E72B33CAD4005526DA /* ModalCardListItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E62B33CAD4005526DA /* ModalCardListItemView.swift */; };
 		C3E4C9E92B33CB14005526DA /* ModalCardListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E82B33CB14005526DA /* ModalCardListView.swift */; };
-		C3EC26972B4B94BB0077FC56 /* Passcode in Frameworks */ = {isa = PBXBuildFile; productRef = C3EC26962B4B94BB0077FC56 /* Passcode */; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
 		C66B40FEF5B9FA11EE482612 /* InAppBrowserMainProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E1770C8CEAAC7E5196ACB6 /* InAppBrowserMainProtocols.swift */; };
 		C8C8146A655C693012C56BBB /* SetupWalletPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47434FDA8878AC2C6E9D4C24 /* SetupWalletPresenter.swift */; };
@@ -526,8 +525,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				C3B4DABB2B500BFB0050703B /* TKChart in Embed Frameworks */,
 				C37E2AE62B499D9B00EDFB9C /* WalletCore in Embed Frameworks */,
-				C318DC482B499C83008A2273 /* TKChart in Embed Frameworks */,
 				C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */,
 				C318DC4B2B499C83008A2273 /* TKUIKitLegacy in Embed Frameworks */,
 			);
@@ -961,6 +960,11 @@
 		B305512CBFAF5DE77C5D0556 /* EnterMnemonicProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnterMnemonicProtocols.swift; sourceTree = "<group>"; };
 		B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartPresenter.swift; sourceTree = "<group>"; };
 		C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsViewController.swift; sourceTree = "<group>"; };
+		C313EC092B50138D009DF825 /* Modules */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Modules; sourceTree = "<group>"; };
+		C313EC0B2B50138D009DF825 /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
+		C313EC0C2B50138D009DF825 /* TKUIKitLegacy */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKitLegacy; sourceTree = "<group>"; };
+		C313EC0D2B50138D009DF825 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
+		C313EC0E2B50138D009DF825 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
 		C33B7A3D2B4BA43000BE7E60 /* SettingsBackupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupViewController.swift; sourceTree = "<group>"; };
 		C33B7A3F2B4BA43C00BE7E60 /* SettingsBackupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupView.swift; sourceTree = "<group>"; };
 		C33B7A412B4BA44200BE7E60 /* SettingsBackupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupViewModel.swift; sourceTree = "<group>"; };
@@ -989,12 +993,6 @@
 		C3774F172B35C30400B15B78 /* WalletHeaderBanneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderBanneModel.swift; sourceTree = "<group>"; };
 		C37D0C4C2AEF6A110003C5CE /* TonConnectConfirmationContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationContentView.swift; sourceTree = "<group>"; };
 		C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationFeeView.swift; sourceTree = "<group>"; };
-		C37E2AF52B49BE8100EDFB9C /* TKUIKitLegacy */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKitLegacy; sourceTree = "<group>"; };
-		C37E2AF62B49BE8100EDFB9C /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
-		C37E2AF72B49BE8100EDFB9C /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
-		C37E2AFC2B49BEEF00EDFB9C /* Onboarding */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Onboarding; sourceTree = "<group>"; };
-		C37E2B302B49C30300EDFB9C /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
-		C37E2B332B4A0AB900EDFB9C /* AppModule */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = AppModule; sourceTree = "<group>"; };
 		C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewController.swift; sourceTree = "<group>"; };
 		C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewBuilder.swift; sourceTree = "<group>"; };
 		C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+HeaderView.swift"; sourceTree = "<group>"; };
@@ -1023,7 +1021,6 @@
 		C3E4C9E42B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenTransactionTKButtonContentView.swift; sourceTree = "<group>"; };
 		C3E4C9E62B33CAD4005526DA /* ModalCardListItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardListItemView.swift; sourceTree = "<group>"; };
 		C3E4C9E82B33CB14005526DA /* ModalCardListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardListView.swift; sourceTree = "<group>"; };
-		C3EC26952B4B92490077FC56 /* Passcode */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Passcode; sourceTree = "<group>"; };
 		C94035FBBB4278C3B31B95C0 /* PasscodeInputPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PasscodeInputPresenter.swift; sourceTree = "<group>"; };
 		C95F21019C4885C194206234 /* CollectibleDetailsPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CollectibleDetailsPresenter.swift; sourceTree = "<group>"; };
 		CB80F9FBBEFF36F2B62FC21E /* WalletContentViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WalletContentViewController.swift; sourceTree = "<group>"; };
@@ -1058,16 +1055,18 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C37E2B352B4A0ACB00EDFB9C /* AppModule in Frameworks */,
-				C318DC472B499C83008A2273 /* TKChart in Frameworks */,
-				C3EC26972B4B94BB0077FC56 /* Passcode in Frameworks */,
+				C3B4DAB42B500B840050703B /* AppModule in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
-				C37E2AFE2B49BF5E00EDFB9C /* Onboarding in Frameworks */,
+				C3B4DAA52B500AF20050703B /* TKScreenKit in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
+				C3B4DABA2B500BFB0050703B /* TKChart in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
+				C3B4DABD2B500BFB0050703B /* TKCoordinator in Frameworks */,
 				C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */,
-				C37E2B082B49C1C900EDFB9C /* TKUIKit in Frameworks */,
+				C3B4DAA32B500AE60050703B /* TKUIKit in Frameworks */,
+				C3B4DAB62B500B840050703B /* OnboardingModule in Frameworks */,
 				C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */,
+				C3B4DAB82B500B840050703B /* PasscodeModule in Frameworks */,
 				C318DC4A2B499C83008A2273 /* TKUIKitLegacy in Frameworks */,
 				C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
 				C327C6322B4F682B00AAFB43 /* FirebaseCrashlytics in Frameworks */,
@@ -2646,7 +2645,8 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
-				C37E2AF42B49BE8100EDFB9C /* Packages */,
+				C313EC0A2B50138D009DF825 /* LocalPackages */,
+				C313EC092B50138D009DF825 /* Modules */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,
 				7D7CF6BF2AC7040900EB0BFF /* Configurations */,
@@ -2872,6 +2872,17 @@
 			path = InAppBrowserMain;
 			sourceTree = "<group>";
 		};
+		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
+			isa = PBXGroup;
+			children = (
+				C313EC0B2B50138D009DF825 /* TKCoordinator */,
+				C313EC0C2B50138D009DF825 /* TKUIKitLegacy */,
+				C313EC0D2B50138D009DF825 /* TKCore */,
+				C313EC0E2B50138D009DF825 /* TKChart */,
+			);
+			path = LocalPackages;
+			sourceTree = "<group>";
+		};
 		C33B7A3C2B4BA40F00BE7E60 /* SettingsBackup */ = {
 			isa = PBXGroup;
 			children = (
@@ -2981,28 +2992,6 @@
 				C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */,
 			);
 			path = Views;
-			sourceTree = "<group>";
-		};
-		C37E2AF42B49BE8100EDFB9C /* Packages */ = {
-			isa = PBXGroup;
-			children = (
-				C37E2B302B49C30300EDFB9C /* TKCoordinator */,
-				C37E2AF52B49BE8100EDFB9C /* TKUIKitLegacy */,
-				C37E2AF62B49BE8100EDFB9C /* TKCore */,
-				C37E2AF72B49BE8100EDFB9C /* TKChart */,
-				C37E2AF82B49BE8100EDFB9C /* Modules */,
-			);
-			path = Packages;
-			sourceTree = "<group>";
-		};
-		C37E2AF82B49BE8100EDFB9C /* Modules */ = {
-			isa = PBXGroup;
-			children = (
-				C3EC26952B4B92490077FC56 /* Passcode */,
-				C37E2B332B4A0AB900EDFB9C /* AppModule */,
-				C37E2AFC2B49BEEF00EDFB9C /* Onboarding */,
-			);
-			path = Modules;
 			sourceTree = "<group>";
 		};
 		C384B3AD2AE96ABF009CD062 /* ModalCardViewController */ = {
@@ -3179,15 +3168,17 @@
 				7D143C352A4EC0D300B5FCC0 /* Lottie */,
 				7D5A18112A5406CB00793769 /* Kingfisher */,
 				C35E6C3D2ADFC9F800F8B524 /* TKCore */,
-				C318DC462B499C83008A2273 /* TKChart */,
 				C318DC492B499C83008A2273 /* TKUIKitLegacy */,
 				C37E2AE42B499D9B00EDFB9C /* WalletCore */,
-				C37E2AFD2B49BF5E00EDFB9C /* Onboarding */,
-				C37E2B072B49C1C900EDFB9C /* TKUIKit */,
-				C37E2B342B4A0ACB00EDFB9C /* AppModule */,
-				C3EC26962B4B94BB0077FC56 /* Passcode */,
 				C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */,
 				C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */,
+				C3B4DAA22B500AE60050703B /* TKUIKit */,
+				C3B4DAA42B500AF20050703B /* TKScreenKit */,
+				C3B4DAB32B500B840050703B /* AppModule */,
+				C3B4DAB52B500B840050703B /* OnboardingModule */,
+				C3B4DAB72B500B840050703B /* PasscodeModule */,
+				C3B4DAB92B500BFB0050703B /* TKChart */,
+				C3B4DABC2B500BFB0050703B /* TKCoordinator */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -3249,8 +3240,8 @@
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				C311FC842B3C68B700BE9022 /* XCRemoteSwiftPackageReference "core-swift" */,
-				C37E2B062B49C1C800EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */,
 				C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				C3B4DAA12B500AE60050703B /* XCRemoteSwiftPackageReference "tkuikit-ios" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -3276,14 +3267,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C37E2AFB2B49BE8100EDFB9C /* TKChart in Resources */,
 				7DB8FB722A1BCC92005B4B11 /* LaunchScreen.storyboard in Resources */,
 				7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */,
 				7D4C14642AD98E44002B2922 /* diamond.json in Resources */,
 				7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */,
-				C37E2AFA2B49BE8100EDFB9C /* TKCore in Resources */,
 				7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */,
-				C37E2AF92B49BE8100EDFB9C /* TKUIKitLegacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -4254,9 +4242,9 @@
 				kind = branch;
 			};
 		};
-		C37E2B062B49C1C800EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */ = {
+		C3B4DAA12B500AE60050703B /* XCRemoteSwiftPackageReference "tkuikit-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "git@github.com:tonkeeper/tkuikit-ios.git";
+			repositoryURL = "https://github.com/tonkeeper/tkuikit-ios.git";
 			requirement = {
 				branch = main;
 				kind = branch;
@@ -4279,10 +4267,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
 			productName = AnyFormatKit;
-		};
-		C318DC462B499C83008A2273 /* TKChart */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKChart;
 		};
 		C318DC492B499C83008A2273 /* TKUIKitLegacy */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -4329,22 +4313,35 @@
 			package = C311FC842B3C68B700BE9022 /* XCRemoteSwiftPackageReference "core-swift" */;
 			productName = WalletCore;
 		};
-		C37E2AFD2B49BF5E00EDFB9C /* Onboarding */ = {
+		C3B4DAA22B500AE60050703B /* TKUIKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Onboarding;
-		};
-		C37E2B072B49C1C900EDFB9C /* TKUIKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C37E2B062B49C1C800EDFB9C /* XCRemoteSwiftPackageReference "tkuikit-ios" */;
+			package = C3B4DAA12B500AE60050703B /* XCRemoteSwiftPackageReference "tkuikit-ios" */;
 			productName = TKUIKit;
 		};
-		C37E2B342B4A0ACB00EDFB9C /* AppModule */ = {
+		C3B4DAA42B500AF20050703B /* TKScreenKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C3B4DAA12B500AE60050703B /* XCRemoteSwiftPackageReference "tkuikit-ios" */;
+			productName = TKScreenKit;
+		};
+		C3B4DAB32B500B840050703B /* AppModule */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = AppModule;
 		};
-		C3EC26962B4B94BB0077FC56 /* Passcode */ = {
+		C3B4DAB52B500B840050703B /* OnboardingModule */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = Passcode;
+			productName = OnboardingModule;
+		};
+		C3B4DAB72B500B840050703B /* PasscodeModule */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PasscodeModule;
+		};
+		C3B4DAB92B500BFB0050703B /* TKChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKChart;
+		};
+		C3B4DABC2B500BFB0050703B /* TKCoordinator */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKCoordinator;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 import TKCoordinator
-import Onboarding
+import OnboardingModule
 
 final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
@@ -17,7 +17,7 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
 private extension RootCoordinator {
   func openOnboarding() {
-    let onboarding = Onboarding()
+    let onboarding = OnboardingModule()
     let coordinator = onboarding.createOnboardingCoordinator()
     
     addChild(coordinator)

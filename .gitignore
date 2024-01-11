@@ -31,3 +31,6 @@ DerivedData/
 
 ## Firebase config
 Tonkeeper/Resources/Firebase/*/*.plist
+
+## Modules
+Modules/Package.resolved

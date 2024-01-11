@@ -2,7 +2,7 @@ import UIKit
 import TKCoordinator
 import TKUIKit
 import TKScreenKit
-import Passcode
+import PasscodeModule
 
 public final class ImportWalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didCancel: (() -> Void)?
@@ -36,7 +36,7 @@ private extension ImportWalletCoordinator {
   }
   
   func openCreatePasscode() {
-    let coordinator = Passcode().createCreatePasscodeCoordinator(router: router)
+    let coordinator = PasscodeModule().createCreatePasscodeCoordinator(router: router)
     
     coordinator.didCancel = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }

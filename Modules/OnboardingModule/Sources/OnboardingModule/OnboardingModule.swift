@@ -1,7 +1,7 @@
 import TKUIKit
 import TKCoordinator
 
-public struct Onboarding {
+public struct OnboardingModule {
   public init() {}
   
   public func createOnboardingCoordinator() -> OnboardingCoordinator {

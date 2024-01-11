@@ -1,7 +1,7 @@
 import TKUIKit
 import TKCoordinator
 
-public struct Passcode {
+public struct PasscodeModule {
   public init() {}
   
   public func createCreatePasscodeCoordinator(router: NavigationControllerRouter) -> CreatePasscodeCoordinator {
