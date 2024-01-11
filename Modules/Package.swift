@@ -15,6 +15,21 @@ let package = Package(
     .library(
       name: "PasscodeModule",
       targets: ["PasscodeModule"]),
+    .library(
+      name: "MainModule",
+      targets: ["MainModule"]),
+    .library(
+      name: "WalletModule",
+      targets: ["WalletModule"]),
+    .library(
+      name: "HistoryModule",
+      targets: ["HistoryModule"]),
+    .library(
+      name: "CollectiblesModule",
+      targets: ["CollectiblesModule"]),
+    .library(
+      name: "SettingsModule",
+      targets: ["SettingsModule"])
   ],
   dependencies: [
     .package(url: "https://github.com/tonkeeper/tkuikit-ios.git", branch: "main"),
@@ -55,6 +70,51 @@ let package = Package(
         .product(name: "TKCoordinator", package: "TKCoordinator")
       ],
       path: "PasscodeModule",
+      sources: ["Sources"]
+    ),
+    .target(
+      name: "MainModule",
+      dependencies: [
+        .product(name: "TKUIKit", package: "tkuikit-ios"),
+        .product(name: "TKCoordinator", package: "TKCoordinator")
+      ],
+      path: "MainModule",
+      sources: ["Sources"]
+    ),
+    .target(
+      name: "WalletModule",
+      dependencies: [
+        .product(name: "TKUIKit", package: "tkuikit-ios"),
+        .product(name: "TKCoordinator", package: "TKCoordinator")
+      ],
+      path: "WalletModule",
+      sources: ["Sources"]
+    ),
+    .target(
+      name: "HistoryModule",
+      dependencies: [
+        .product(name: "TKUIKit", package: "tkuikit-ios"),
+        .product(name: "TKCoordinator", package: "TKCoordinator")
+      ],
+      path: "HistoryModule",
+      sources: ["Sources"]
+    ),
+    .target(
+      name: "CollectiblesModule",
+      dependencies: [
+        .product(name: "TKUIKit", package: "tkuikit-ios"),
+        .product(name: "TKCoordinator", package: "TKCoordinator")
+      ],
+      path: "CollectiblesModule",
+      sources: ["Sources"]
+    ),
+    .target(
+      name: "SettingsModule",
+      dependencies: [
+        .product(name: "TKUIKit", package: "tkuikit-ios"),
+        .product(name: "TKCoordinator", package: "TKCoordinator")
+      ],
+      path: "SettingsModule",
       sources: ["Sources"]
     ),
   ]
