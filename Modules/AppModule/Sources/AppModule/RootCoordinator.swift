@@ -2,8 +2,11 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 import OnboardingModule
+import MainModule
 
 final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
+  
+  var hasWallet = true
 
   override init(router: NavigationControllerRouter) {
     super.init(router: router)
@@ -11,7 +14,11 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   }
   
   override func start() {
-    openOnboarding()
+    if hasWallet {
+      openMain()
+    } else {
+      openOnboarding()
+    }
   }
 }
 
@@ -20,6 +27,13 @@ private extension RootCoordinator {
     let onboarding = OnboardingModule()
     let coordinator = onboarding.createOnboardingCoordinator()
     
+    coordinator.didFinishOnboarding = { [weak self, weak coordinator] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+      self?.hasWallet = true
+      self?.start()
+    }
+    
     addChild(coordinator)
     coordinator.start()
     
@@ -27,7 +41,13 @@ private extension RootCoordinator {
   }
   
   func openMain() {
+    let module = MainModule()
+    let coordinator = module.createMainCoordinator()
     
+    addChild(coordinator)
+    coordinator.start()
+    
+    showViewController(coordinator.router.rootViewController, animated: true)
   }
   
   func showViewController(_ viewController: UIViewController, animated: Bool) {
@@ -44,6 +64,8 @@ private extension RootCoordinator {
       viewController.view.rightAnchor.constraint(equalTo: containerViewController.view.rightAnchor)
     ])
     
-    router.push(viewController: containerViewController, animated: animated)
+//    router.push(viewController: containerViewController, animated: animated)
+//    router.setViewControllers([containerViewController], animated: animated)
+    router.setViewControllers([(containerViewController , nil)])
   }
 }

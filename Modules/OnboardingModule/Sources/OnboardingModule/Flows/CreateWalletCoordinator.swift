@@ -27,6 +27,7 @@ private extension CreateWalletCoordinator {
     coordinator.didCreatePasscode = { [weak self, weak coordinator] passcode in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
+      self?.didCreateWallet?()
     }
     
     addChild(coordinator)

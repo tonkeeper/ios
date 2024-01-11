@@ -3,6 +3,8 @@ import TKCoordinator
 import TKUIKit
 
 public final class OnboardingCoordinator: RouterCoordinator<NavigationControllerRouter> {
+  
+  public var didFinishOnboarding: (() -> Void)?
 
   public override func start() {
     openOnboardingStart()
@@ -34,6 +36,7 @@ private extension OnboardingCoordinator {
     coordinator.didCreateWallet = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
+      self?.didFinishOnboarding?()
     }
     
     addChild(coordinator)
@@ -50,6 +53,7 @@ private extension OnboardingCoordinator {
     coordinator.didImportWallet = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
+      self?.didFinishOnboarding?()
     }
     
     addChild(coordinator)
