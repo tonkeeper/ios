@@ -17,8 +17,15 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
 
 private extension WalletCoordinator {
   func openWalletContainer() {
-    let module = WalletContainerAssembly.module()
+    let module = WalletContainerAssembly.module(childModuleProvider: self)
     
     router.push(viewController: module.view, animated: false)
+  }
+}
+
+extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
+  func getWalletBalanceModuleView() -> UIViewController {
+    let module = WalletBalanceAssembly.module()
+    return module.view
   }
 }

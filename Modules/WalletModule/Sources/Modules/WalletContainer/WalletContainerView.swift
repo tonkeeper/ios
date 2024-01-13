@@ -4,6 +4,7 @@ import TKUIKit
 final class WalletContainerView: UIView, ConfigurableView {
   
   let topBarView = WalletContainerTopBarView()
+  let walletBalanceContainerView = UIView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -28,17 +29,24 @@ private extension WalletContainerView {
     backgroundColor = .Background.page
     
     addSubview(topBarView)
+    addSubview(walletBalanceContainerView)
     
     setupConstraints()
   }
   
   func setupConstraints() {
     topBarView.translatesAutoresizingMaskIntoConstraints = false
+    walletBalanceContainerView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       topBarView.topAnchor.constraint(equalTo: topAnchor),
       topBarView.leftAnchor.constraint(equalTo: leftAnchor),
-      topBarView.rightAnchor.constraint(equalTo: rightAnchor)
+      topBarView.rightAnchor.constraint(equalTo: rightAnchor),
+      
+      walletBalanceContainerView.topAnchor.constraint(equalTo: topBarView.bottomAnchor),
+      walletBalanceContainerView.leftAnchor.constraint(equalTo: leftAnchor),
+      walletBalanceContainerView.bottomAnchor.constraint(equalTo: bottomAnchor),
+      walletBalanceContainerView.rightAnchor.constraint(equalTo: rightAnchor)
     ])
   }
 }
