@@ -4,6 +4,11 @@ import TKUIKit
 final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView> {
   private let viewModel: WalletBalanceViewModel
   
+  private lazy var collectionController = WalletBalanceCollectionController(
+    collectionView: customView.collectionView,
+    headerViewProvider: { [customView] in customView.headerView }
+  )
+  
   init(viewModel: WalletBalanceViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
@@ -18,9 +23,14 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
     
     setupBindings()
     viewModel.viewDidLoad()
+    collectionController.description
   }
 }
 
 private extension WalletBalanceViewController {
-  func setupBindings() {}
+  func setupBindings() {
+    viewModel.didUpdateModel = { [customView] model in
+      customView.configure(model: model)
+    }
+  }
 }
