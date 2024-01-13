@@ -23,8 +23,14 @@ private extension CreatePasscodeCoordinator {
     passcodeInput.output.didInputPasscode = { [weak self] passcode in
       self?.openReenterPasscode(createdPasscode: passcode)
     }
-    
-    passcodeInput.viewController.setupBackButton()
+        
+    if router.rootViewController.viewControllers.isEmpty {
+      passcodeInput.viewController.setupLeftCloseButton { [weak self] in
+        self?.didCancel?()
+      }
+    } else {
+      passcodeInput.viewController.setupBackButton()
+    }
     
     router.push(
       viewController: passcodeInput.viewController,

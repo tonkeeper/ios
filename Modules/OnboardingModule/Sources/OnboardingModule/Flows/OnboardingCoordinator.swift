@@ -27,36 +27,52 @@ private extension OnboardingCoordinator {
   }
   
   func openCreate() {
-    let coordinator = CreateWalletCoordinator(router: router)
-    coordinator.didCancel = { [weak self, weak coordinator] in
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    navigationController.isModalInPresentation = true
+    
+    let coordinator = CreateWalletCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+    coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
+      navigationController?.dismiss(animated: true)
     }
     
     coordinator.didCreateWallet = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
       self?.didFinishOnboarding?()
+      navigationController.dismiss(animated: true)
     }
     
     addChild(coordinator)
     coordinator.start()
+    
+    router.present(navigationController)
   }
   
   func openImport() {
-    let coordinator = ImportWalletCoordinator(router: router)
-    coordinator.didCancel = { [weak self, weak coordinator] in
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    navigationController.isModalInPresentation = true
+    
+    let coordinator = ImportWalletCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+    coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
+      navigationController?.dismiss(animated: true)
     }
     
     coordinator.didImportWallet = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
       self?.didFinishOnboarding?()
+      navigationController.dismiss(animated: true)
     }
     
     addChild(coordinator)
     coordinator.start()
+    
+    router.present(navigationController)
   }
 }

@@ -25,7 +25,13 @@ private extension ImportWalletCoordinator {
       self?.openCreatePasscode()
     }
     
-    inputRecoveryPhrase.viewController.setupBackButton()
+    if router.rootViewController.viewControllers.isEmpty {
+      inputRecoveryPhrase.viewController.setupLeftCloseButton { [weak self] in
+        self?.didCancel?()
+      }
+    } else {
+      inputRecoveryPhrase.viewController.setupBackButton()
+    }
     
     router.push(
       viewController: inputRecoveryPhrase.viewController,
