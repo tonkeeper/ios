@@ -3,6 +3,7 @@ import TKCoordinator
 import TKUIKit
 import TKScreenKit
 import PasscodeModule
+import WalletCustomizationModule
 
 public final class CreateWalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -24,13 +25,22 @@ private extension CreateWalletCoordinator {
       self?.didCancel?()
     }
     
-    coordinator.didCreatePasscode = { [weak self, weak coordinator] passcode in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
-      self?.didCreateWallet?()
+    coordinator.didCreatePasscode = { [weak self] passcode in
+      self?.openCustomizeWallet()
     }
     
     addChild(coordinator)
     coordinator.start()
+  }
+  
+  func openCustomizeWallet() {
+    let module = WalletCustomizationModule().customizeWalletModule()
+    module.output.didCustomizeWallet = { [weak self] model in
+      self?.didCreateWallet?()
+    }
+    
+    module.view.setupBackButton()
+    
+    router.push(viewController: module.view)
   }
 }
