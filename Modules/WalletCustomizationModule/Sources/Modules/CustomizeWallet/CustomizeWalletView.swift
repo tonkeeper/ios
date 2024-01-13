@@ -109,43 +109,18 @@ private extension CustomizeWalletView {
   }
   
   func setupConstraints() {
-//    let grLayer = CAGradientLayer.tkLayer()
-//    layer.mask = grLayer
-    
-//    grLayer.frame = CGRect(x: 0, y: 0, width: 100, height: 100)
-//    continueButton.layer.mask = grLayer
-//    layer.addSublayer(grLayer)
-//    grLayer.frame = CGRect(x: 0, y: 100, width: 100, height: 50)
-//    let grView = TKGradientView()
-//    grView.backgroundColor = .Background.page
-//    grView.frame = CGRect(x: 0, y: 0, width: 200, height: 200)
-//    continueButtonContainer.backgroundView = grView
-//    grView.fromColor = .clear
-//    grView.toColor = .Background.page
-//    let view = UIView()
-//    view.mask = grView
-//    continueButtonContainer.backgroundView = grView
-//    addSubview(grView)
-//    grView.translatesAutoresizingMaskIntoConstraints = false
-    
     contentStackView.translatesAutoresizingMaskIntoConstraints = false
     continueButtonContainer.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       contentStackView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
       contentStackView.leftAnchor.constraint(equalTo: leftAnchor),
-//      contentStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
       contentStackView.bottomAnchor.constraint(equalTo: continueButtonContainer.topAnchor),
       contentStackView.rightAnchor.constraint(equalTo: rightAnchor),
       
       continueButtonContainerBottomConstraint,
       continueButtonContainer.leftAnchor.constraint(equalTo: leftAnchor),
       continueButtonContainer.rightAnchor.constraint(equalTo: rightAnchor),
-      
-//      grView.topAnchor.constraint(equalTo: continueButtonContainer.topAnchor),
-//      grView.leftAnchor.constraint(equalTo: continueButtonContainer.leftAnchor),
-//      grView.bottomAnchor.constraint(equalTo: continueButtonContainer.bottomAnchor),
-//      grView.rightAnchor.constraint(equalTo: continueButtonContainer.rightAnchor),
     ])
   }
 }

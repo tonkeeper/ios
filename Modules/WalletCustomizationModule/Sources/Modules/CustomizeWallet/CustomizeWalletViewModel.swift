@@ -139,6 +139,6 @@ private extension Int {
 
 private extension String {
   static let defaultWalletName = "Wallet"
-  static let defaultColorIdentifier = "Color 1"
+  static let defaultColorIdentifier = "Color1"
   static let defaultEmoji = "😀"
 }
