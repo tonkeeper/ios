@@ -11,13 +11,13 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   }
   
   public override func start() {
-    openWalletBalance()
+    openWalletContainer()
   }
 }
 
 private extension WalletCoordinator {
-  func openWalletBalance() {
-    let module = WalletBalanceAssembly.module()
+  func openWalletContainer() {
+    let module = WalletContainerAssembly.module()
     
     router.push(viewController: module.view, animated: false)
   }
