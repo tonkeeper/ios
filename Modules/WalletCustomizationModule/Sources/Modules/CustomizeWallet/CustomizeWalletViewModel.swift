@@ -3,9 +3,9 @@ import TKUIKit
 import TKCore
 
 public struct CustomizeWalletModel {
-  let name: String
-  let colorIdentifier: String
-  let emoji: String
+  public let name: String
+  public let colorIdentifier: String
+  public let emoji: String
 }
 
 public protocol CustomizeWalletModuleOutput: AnyObject {

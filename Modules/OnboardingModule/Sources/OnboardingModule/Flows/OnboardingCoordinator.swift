@@ -1,11 +1,20 @@
 import UIKit
 import TKCoordinator
 import TKUIKit
+import KeeperCore
 
 public final class OnboardingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
+  private let keeperCoreAssembly: KeeperCore.Assembly
+  
   public var didFinishOnboarding: (() -> Void)?
-
+  
+  init(router: NavigationControllerRouter,
+       keeperCoreAssembly: KeeperCore.Assembly) {
+    self.keeperCoreAssembly = keeperCoreAssembly
+    super.init(router: router)
+  }
+  
   public override func start() {
     openOnboardingStart()
   }
@@ -31,7 +40,10 @@ private extension OnboardingCoordinator {
     navigationController.configureTransparentAppearance()
     navigationController.isModalInPresentation = true
     
-    let coordinator = CreateWalletCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+    let coordinator = CreateWalletCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      walletAddController: keeperCoreAssembly.walletAddController()
+    )
     coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
@@ -56,7 +68,10 @@ private extension OnboardingCoordinator {
     navigationController.configureTransparentAppearance()
     navigationController.isModalInPresentation = true
     
-    let coordinator = ImportWalletCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+    let coordinator = ImportWalletCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      walletAddController: keeperCoreAssembly.walletAddController()
+    )
     coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)

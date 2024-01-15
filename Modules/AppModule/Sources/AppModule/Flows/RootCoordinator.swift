@@ -1,37 +1,60 @@
 import UIKit
 import TKUIKit
 import TKCoordinator
+import TKCore
+import KeeperCore
 import OnboardingModule
 import MainModule
 
 final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
+  struct Dependencies {
+    let coreAssembly: TKCore.CoreAssembly
+    let keeperCoreAssembly: KeeperCore.Assembly
+  }
   
-  var hasWallet = true
+  private let dependencies: Dependencies
+  private let rootController: RootController
+  private let onboardingModule: OnboardingModule
 
-  override init(router: NavigationControllerRouter) {
+  init(router: NavigationControllerRouter,
+       dependencies: Dependencies) {
+    self.dependencies = dependencies
+    self.rootController = dependencies.keeperCoreAssembly.rootController()
+    self.onboardingModule = OnboardingModule(
+      dependencies: OnboardingModule.Dependencies(
+        coreAssembly: dependencies.coreAssembly,
+        keeperCoreAssembly: dependencies.keeperCoreAssembly
+      )
+    )
     super.init(router: router)
     router.rootViewController.setNavigationBarHidden(true, animated: false)
   }
   
   override func start() {
-    if hasWallet {
-      openMain()
-    } else {
-      openOnboarding()
+    func handleState(_ state: RootController.State) {
+      switch rootController.state {
+      case .main:
+        openMain()
+      case .onboarding:
+        openOnboarding()
+      }
     }
+    
+    rootController.didUpdateState = { state in
+      handleState(state)
+    }
+    
+    handleState(rootController.state)
   }
 }
 
 private extension RootCoordinator {
   func openOnboarding() {
-    let onboarding = OnboardingModule()
-    let coordinator = onboarding.createOnboardingCoordinator()
+    let coordinator = onboardingModule.createOnboardingCoordinator()
     
     coordinator.didFinishOnboarding = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      self?.hasWallet = true
-      self?.start()
     }
     
     addChild(coordinator)
@@ -63,9 +86,6 @@ private extension RootCoordinator {
       viewController.view.bottomAnchor.constraint(equalTo: containerViewController.view.bottomAnchor),
       viewController.view.rightAnchor.constraint(equalTo: containerViewController.view.rightAnchor)
     ])
-    
-//    router.push(viewController: containerViewController, animated: animated)
-//    router.setViewControllers([containerViewController], animated: animated)
     router.setViewControllers([(containerViewController , nil)])
   }
 }

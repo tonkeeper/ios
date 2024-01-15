@@ -36,7 +36,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/tonkeeper/tkuikit-ios.git", branch: "main"),
-    .package(url: "https://github.com/tonkeeper/core-swift", branch: "release/1.0.0"),
+    .package(url: "https://github.com/tonkeeper/core-swift", branch: "feature/refact"),
     .package(path: "../LocalPackages/TKCore"),
     .package(path: "../LocalPackages/TKCoordinator")
   ],
@@ -46,7 +46,10 @@ let package = Package(
       dependencies: [
         .product(name: "TKUIKit", package: "tkuikit-ios"),
         .product(name: "TKCoordinator", package: "TKCoordinator"),
+        .product(name: "TKCore", package: "TKCore"),
+        .product(name: "WalletCore", package: "core-swift"),
         .target(name: "OnboardingModule"),
+        .target(name: "MainModule")
       ],
       path: "AppModule",
       sources: ["Sources"]
@@ -80,7 +83,11 @@ let package = Package(
       name: "MainModule",
       dependencies: [
         .product(name: "TKUIKit", package: "tkuikit-ios"),
-        .product(name: "TKCoordinator", package: "TKCoordinator")
+        .product(name: "TKCoordinator", package: "TKCoordinator"),
+        .target(name: "WalletModule"),
+        .target(name: "HistoryModule"),
+        .target(name: "CollectiblesModule"),
+        .target(name: "SettingsModule")
       ],
       path: "MainModule",
       sources: ["Sources"]
