@@ -5,13 +5,13 @@ import KeeperCore
 
 public final class OnboardingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
-  private let keeperCoreAssembly: KeeperCore.Assembly
+  private let keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly
   
   public var didFinishOnboarding: (() -> Void)?
   
   init(router: NavigationControllerRouter,
-       keeperCoreAssembly: KeeperCore.Assembly) {
-    self.keeperCoreAssembly = keeperCoreAssembly
+       keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly) {
+    self.keeperCoreOnboardingAssembly = keeperCoreOnboardingAssembly
     super.init(router: router)
   }
   
@@ -42,7 +42,7 @@ private extension OnboardingCoordinator {
     
     let coordinator = CreateWalletCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
-      walletAddController: keeperCoreAssembly.walletAddController()
+      walletAddController: keeperCoreOnboardingAssembly.walletAddController()
     )
     coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
@@ -70,7 +70,7 @@ private extension OnboardingCoordinator {
     
     let coordinator = ImportWalletCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
-      walletAddController: keeperCoreAssembly.walletAddController()
+      walletAddController: keeperCoreOnboardingAssembly.walletAddController()
     )
     coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }

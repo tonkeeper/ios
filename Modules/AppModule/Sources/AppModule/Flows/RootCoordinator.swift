@@ -14,18 +14,11 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   private let dependencies: Dependencies
   private let rootController: RootController
-  private let onboardingModule: OnboardingModule
 
   init(router: NavigationControllerRouter,
        dependencies: Dependencies) {
     self.dependencies = dependencies
     self.rootController = dependencies.keeperCoreAssembly.rootController()
-    self.onboardingModule = OnboardingModule(
-      dependencies: OnboardingModule.Dependencies(
-        coreAssembly: dependencies.coreAssembly,
-        keeperCoreAssembly: dependencies.keeperCoreAssembly
-      )
-    )
     super.init(router: router)
     router.rootViewController.setNavigationBarHidden(true, animated: false)
   }
@@ -33,8 +26,8 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   override func start() {
     func handleState(_ state: RootController.State) {
       switch rootController.state {
-      case .main:
-        openMain()
+      case let .main(wallets, activeWallet):
+        openMain(wallets: wallets, activeWallet: activeWallet)
       case .onboarding:
         openOnboarding()
       }
@@ -50,7 +43,13 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
 private extension RootCoordinator {
   func openOnboarding() {
-    let coordinator = onboardingModule.createOnboardingCoordinator()
+    let module = OnboardingModule(
+      dependencies: OnboardingModule.Dependencies(
+        coreAssembly: dependencies.coreAssembly,
+        keeperCoreOnboardingAssembly: dependencies.keeperCoreAssembly.onboardingAssembly()
+      )
+    )
+    let coordinator = module.createOnboardingCoordinator()
     
     coordinator.didFinishOnboarding = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
@@ -63,8 +62,17 @@ private extension RootCoordinator {
     showViewController(coordinator.router.rootViewController, animated: true)
   }
   
-  func openMain() {
-    let module = MainModule()
+  func openMain(wallets: [Wallet], activeWallet: Wallet) {
+    let mainAssemblyDependencies = MainAssembly.Dependencies(
+      wallets: wallets, 
+      activeWallet: activeWallet
+    )
+    let module = MainModule(
+      dependencies: MainModule.Dependencies(
+        coreAssembly: dependencies.coreAssembly,
+        keeperCoreMainAssembly: dependencies.keeperCoreAssembly.mainAssembly(dependencies: mainAssemblyDependencies)
+      )
+    )
     let coordinator = module.createMainCoordinator()
     
     addChild(coordinator)

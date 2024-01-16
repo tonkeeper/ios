@@ -96,7 +96,8 @@ let package = Package(
       name: "WalletModule",
       dependencies: [
         .product(name: "TKUIKit", package: "tkuikit-ios"),
-        .product(name: "TKCoordinator", package: "TKCoordinator")
+        .product(name: "TKCoordinator", package: "TKCoordinator"),
+        .product(name: "WalletCore", package: "core-swift"),
       ],
       path: "WalletModule",
       sources: ["Sources"]

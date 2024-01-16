@@ -15,7 +15,7 @@ public struct OnboardingModule {
     
     let coordinator = OnboardingCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
-      keeperCoreAssembly: dependencies.keeperCoreAssembly
+      keeperCoreOnboardingAssembly: dependencies.keeperCoreOnboardingAssembly
     )
     return coordinator
   }
@@ -24,12 +24,12 @@ public struct OnboardingModule {
 public extension OnboardingModule {
   struct Dependencies {
     let coreAssembly: TKCore.CoreAssembly
-    let keeperCoreAssembly: KeeperCore.Assembly
+    let keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly
     
     public init(coreAssembly: TKCore.CoreAssembly, 
-                keeperCoreAssembly: KeeperCore.Assembly) {
+                keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly) {
       self.coreAssembly = coreAssembly
-      self.keeperCoreAssembly = keeperCoreAssembly
+      self.keeperCoreOnboardingAssembly = keeperCoreOnboardingAssembly
     }
   }
 }

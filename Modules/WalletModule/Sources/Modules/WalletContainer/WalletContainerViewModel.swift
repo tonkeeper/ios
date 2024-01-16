@@ -1,9 +1,10 @@
 import Foundation
 import TKUIKit
 import UIKit
+import KeeperCore
 
 protocol WalletContainerModuleOutput: AnyObject {
-
+  var didTapWalletButton: (() -> Void)? { get set }
 }
 
 protocol WalletContainerViewModel: AnyObject {
@@ -21,34 +22,46 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   
   // MARK: - WalletContainerModuleOutput
   
+  var didTapWalletButton: (() -> Void)?
+  
   // MARK: - WalletContainerViewModel
   
   var didUpdateModel: ((WalletContainerView.Model) -> Void)?
   var didUpdateWalletBalanceViewController: ((_ viewController: UIViewController, _ animated: Bool) -> Void)?
   
   func viewDidLoad() {
-    didUpdateModel?(createModel())
+    walletMainController.didUpdateActiveWallet = { [weak self] model in
+      self?.didUpdateActiveWallet(model: model)
+    }
+    walletMainController.getActiveWallet()
     setupWalletBalance(animated: false)
   }
   
   // MARK: - Dependencies
   
   private let childModuleProvider: WalletContainerViewModelChildModuleProvider
+  private let walletMainController: WalletMainController
   
-  init(childModuleProvider: WalletContainerViewModelChildModuleProvider) {
+  init(childModuleProvider: WalletContainerViewModelChildModuleProvider,
+       walletMainController: WalletMainController) {
     self.childModuleProvider = childModuleProvider
+    self.walletMainController = walletMainController
   }
 }
 
 private extension WalletContainerViewModelImplementation {
-  func createModel() -> WalletContainerView.Model {
+  func didUpdateActiveWallet(model: WalletMainController.WalletModel) {
+    didUpdateModel?(createModel(walletModel: model))
+  }
+  
+  func createModel(walletModel: WalletMainController.WalletModel) -> WalletContainerView.Model {
     let walletButtonModel = WalletContainerWalletButton.Model(
-      title: "🙃 Wallet",
+      title: walletModel.name,
       icon: .init(icon: .TKUIKit.Icons.Size16.chevronDown, position: .right)
     )
     
     let walletButtonAppearance = WalletContainerWalletButton.Appearance(
-      backgroundColor: .Tint.color1,
+      backgroundColor: .Tint.color(with: walletModel.colorIdentifier),
       foregroundColor: .Icon.primary
     )
     
@@ -57,7 +70,10 @@ private extension WalletContainerViewModelImplementation {
     let topBarViewModel = WalletContainerTopBarView.Model(
       walletButtonModel: walletButtonModel,
       walletButtonAppearance: walletButtonAppearance,
-      settingsButtonModel: settingsButtonModel
+      settingsButtonModel: settingsButtonModel,
+      walletButtonAction: { [weak self] in
+        self?.didTapWalletButton?()
+      }
     )
     
     return WalletContainerView.Model(

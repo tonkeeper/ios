@@ -20,12 +20,15 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
     let walletButtonModel: WalletContainerWalletButton.Model
     let walletButtonAppearance: WalletContainerWalletButton.Appearance
     let settingsButtonModel: TKUIHeaderAccentIconButton.Model
+    let walletButtonAction: () -> Void
   }
   
   func configure(model: Model) {
     walletButton.configure(model: model.walletButtonModel)
     walletButton.appearance = model.walletButtonAppearance
     settingsButton.configure(model: model.settingsButtonModel)
+    
+    walletButton.addTapAction(model.walletButtonAction)
   }
 }
 
