@@ -29,7 +29,7 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
 
 private extension AddWalletCoordinator {
   func openAddWalletOptionPicker() {
-    let module = AddWalletOptionPickerAssembly.module(options: [.createRegular, .importRegular, .importTestnet])
+    let module = AddWalletOptionPickerAssembly.module(options: [.createRegular, .importRegular])
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
     module.output.didSelectOption = { [weak self, unowned bottomSheetViewController] option in
@@ -37,7 +37,7 @@ private extension AddWalletCoordinator {
         switch option {
         case .createRegular: self?.openCreateRegularWallet()
         case .importRegular: self?.openAddRegularWallet()
-        case .importTestnet: self?.openAddTestnetWallet()
+        case .importTestnet: break
         }
       }
     }
@@ -80,12 +80,34 @@ private extension AddWalletCoordinator {
   }
   
   func openAddRegularWallet() {
-    openAddWallet(isTestnet: false)
+    openAddWallet()
   }
-  
-  func openAddTestnetWallet() {
-    openAddWallet(isTestnet: true)
+
+  func openAddWallet() {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    let coordinator = importWalletCoordinatorProvider(
+      NavigationControllerRouter(rootViewController: navigationController)
+    )
+    
+    coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+      navigationController?.dismiss(animated: true)
+      self?.didCancel?()
+    }
+    
+    coordinator.didImportWallets = { [weak self, weak coordinator, weak navigationController] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+      navigationController?.dismiss(animated: true)
+      self?.didAddWallets?()
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+    
+    router.present(navigationController)
   }
-  
-  func openAddWallet(isTestnet: Bool) {}
 }

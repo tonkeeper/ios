@@ -25,7 +25,11 @@ public struct AddWalletModule {
   }
   
   public func createImportWalletCoordinator(router: NavigationControllerRouter) -> ImportWalletCoordinator {
-    let coordinator = ImportWalletCoordinator(router: router)
+    let coordinator = ImportWalletCoordinator(
+      router: router,
+      walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      customizeWalletModule: { self.createCustomizeWalletModule() }
+    )
     
     return coordinator
   }
