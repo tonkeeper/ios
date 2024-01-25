@@ -5,7 +5,8 @@ import KeeperCore
 
 public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter> {
   
-  public var didFinish: (() -> Void)?
+  public var didCancel: (() -> Void)?
+  public var didAddWallets: (() -> Void)?
   
   private let walletAddController: WalletAddController
   private let createWalletCoordinatorProvider: (NavigationControllerRouter) -> CreateWalletCoordinator
@@ -41,8 +42,10 @@ private extension AddWalletCoordinator {
       }
     }
     
-    bottomSheetViewController.didClose = { [weak self] _ in
-      self?.didFinish?()
+    bottomSheetViewController.didClose = { [weak self] interactivly in
+      if interactivly {
+        self?.didCancel?()
+      }
     }
     
     bottomSheetViewController.present(fromViewController: router.rootViewController)
@@ -60,14 +63,14 @@ private extension AddWalletCoordinator {
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
       navigationController?.dismiss(animated: true)
-      self?.didFinish?()
+      self?.didCancel?()
     }
     
     coordinator.didCreateWallet = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
       navigationController?.dismiss(animated: true)
-      self?.didFinish?()
+      self?.didAddWallets?()
     }
     
     addChild(coordinator)
@@ -84,58 +87,5 @@ private extension AddWalletCoordinator {
     openAddWallet(isTestnet: true)
   }
   
-  func openAddWallet(isTestnet: Bool) {
-    let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
-    navigationController.isModalInPresentation = true
-    
-    let coordinator = importWalletCoordinatorProvider(
-      NavigationControllerRouter(rootViewController: navigationController)
-    )
-    
-    coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
-      navigationController?.dismiss(animated: true)
-      self?.didFinish?()
-    }
-    
-//    coordinator.didImportWallet = { [weak self, weak coordinator, weak navigationController] phrase, model in
-//      guard let coordinator = coordinator else { return }
-//      self?.removeChild(coordinator)
-//      self?.importWallet(phrase: phrase, model: model, isTestnet: isTestnet)
-//      navigationController?.dismiss(animated: true)
-//    }
-    
-    addChild(coordinator)
-    coordinator.start()
-    
-    router.present(navigationController)
-  }
-  
-  func createWallet(model: CustomizeWalletModel) {
-//    let metaData = WalletMetaData(
-//      label: model.name,
-//      colorIdentifier: model.colorIdentifier,
-//      emoji: model.emoji)
-//    do {
-//      try walletAddController.createWallet(metaData: metaData)
-//      didFinish?()
-//    } catch {
-//      print("Log: Wallet creation failed")
-//    }
-  }
-  
-  func importWallet(phrase: [String], model: CustomizeWalletModel, isTestnet: Bool) {
-//    let metaData = WalletMetaData(
-//      label: model.name,
-//      colorIdentifier: model.colorIdentifier,
-//      emoji: model.emoji)
-//    do {
-//      try walletAddController.addWallet(phrase: phrase, metaData: metaData, isTestnet: isTestnet)
-//      didFinish?()
-//    } catch {
-//      print("Log: Wallet import failed")
-//    }
-  }
+  func openAddWallet(isTestnet: Bool) {}
 }

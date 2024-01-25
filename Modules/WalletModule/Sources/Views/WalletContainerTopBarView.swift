@@ -64,6 +64,7 @@ private extension WalletContainerTopBarView {
       walletButton.topAnchor.constraint(equalTo: contentContainerView.topAnchor, constant: .walletButtonTopInset),
       walletButton.bottomAnchor.constraint(equalTo: contentContainerView.bottomAnchor, constant: -.walletButtonBottomInset),
       walletButton.centerXAnchor.constraint(equalTo: contentContainerView.centerXAnchor),
+      walletButton.widthAnchor.constraint(lessThanOrEqualToConstant: .walletButtonMaxWidth)
     ])
   }
 }
@@ -71,5 +72,6 @@ private extension WalletContainerTopBarView {
 private extension CGFloat {
   static let walletButtonTopInset: CGFloat = 12
   static let walletButtonBottomInset: CGFloat = 12
+  static let walletButtonMaxWidth: CGFloat = 200
   static let settingsButtonRightInset: CGFloat = 8
 }

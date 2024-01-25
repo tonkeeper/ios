@@ -31,8 +31,8 @@ let package = Package(
       name: "SettingsModule",
       targets: ["SettingsModule"]),
     .library(
-      name: "WalletCustomizationModule",
-      targets: ["WalletCustomizationModule"])
+      name: "AddWalletModule",
+      targets: ["AddWalletModule"])
   ],
   dependencies: [
     .package(url: "https://github.com/tonkeeper/tkuikit-ios.git", branch: "main"),
@@ -63,7 +63,7 @@ let package = Package(
         .product(name: "TKCore", package: "TKCore"),
         .product(name: "WalletCore", package: "core-swift"),
         .target(name: "PasscodeModule"),
-        .target(name: "WalletCustomizationModule")
+        .target(name: "AddWalletModule")
       ],
       path: "OnboardingModule",
       sources: ["Sources"],
@@ -130,13 +130,13 @@ let package = Package(
       sources: ["Sources"]
     ),
     .target(
-      name: "WalletCustomizationModule",
+      name: "AddWalletModule",
       dependencies: [
         .product(name: "TKUIKit", package: "tkuikit-ios"),
-        .product(name: "TKCore", package: "TKCore"),
-        .product(name: "TKCoordinator", package: "TKCoordinator")
+        .product(name: "TKCoordinator", package: "TKCoordinator"),
+        .product(name: "WalletCore", package: "core-swift")
       ],
-      path: "WalletCustomizationModule",
+      path: "AddWalletModule",
       sources: ["Sources"]
     )
   ]

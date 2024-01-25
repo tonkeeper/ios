@@ -3,6 +3,7 @@ import TKCoordinator
 import TKUIKit
 import TKCore
 import KeeperCore
+import AddWalletModule
 
 public final class WalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
   private let coreAssembly: TKCore.CoreAssembly
@@ -37,7 +38,39 @@ private extension WalletCoordinator {
     router.push(viewController: module.view, animated: false)
   }
   
-  func openWalletPicker() {}
+  func openWalletPicker() {
+    let module = WalletsListAssembly.module(
+      walletListController: keeperCoreMainAssembly.walletListController()
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    module.output.didTapAddWalletButton = { [weak self, unowned bottomSheetViewController] in
+      self?.openAddWallet(router: ViewControllerRouter(rootViewController: bottomSheetViewController)) {
+        bottomSheetViewController.dismiss()
+      }
+    }
+    
+    module.output.didSelectWallet = { [unowned bottomSheetViewController] in
+      bottomSheetViewController.dismiss()
+    }
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func openAddWallet(router: ViewControllerRouter, onAddWallets: @escaping () -> Void) {
+    let module = AddWalletModule(dependencies: AddWalletModule.Dependencies(
+      walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly)
+    )
+    
+    let coordinator = module.createAddWalletCoordinator(router: router)
+    coordinator.didAddWallets = { [weak router] in
+      onAddWallets()
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
 }
 
 extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {

@@ -33,7 +33,7 @@ private extension AppCoordinator {
       router: NavigationControllerRouter(rootViewController: navigationController),
       dependencies: RootCoordinator.Dependencies(
         coreAssembly: coreAssembly,
-        keeperCoreAssembly: keeperCoreAssembly
+        keeperCoreRootAssembly: keeperCoreAssembly.rootAssembly()
       )
     )
     self.router.window.rootViewController = rootCoordinator.router.rootViewController

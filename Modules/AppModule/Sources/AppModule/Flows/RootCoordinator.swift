@@ -9,7 +9,7 @@ import MainModule
 final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   struct Dependencies {
     let coreAssembly: TKCore.CoreAssembly
-    let keeperCoreAssembly: KeeperCore.Assembly
+    let keeperCoreRootAssembly: KeeperCore.RootAssembly
   }
   
   private let dependencies: Dependencies
@@ -18,26 +18,18 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   init(router: NavigationControllerRouter,
        dependencies: Dependencies) {
     self.dependencies = dependencies
-    self.rootController = dependencies.keeperCoreAssembly.rootController()
+    self.rootController = dependencies.keeperCoreRootAssembly.rootController()
     super.init(router: router)
     router.rootViewController.setNavigationBarHidden(true, animated: false)
   }
   
   override func start() {
-    func handleState(_ state: RootController.State) {
-      switch rootController.state {
-      case let .main(wallets, activeWallet):
-        openMain(wallets: wallets, activeWallet: activeWallet)
-      case .onboarding:
-        openOnboarding()
-      }
+    switch rootController.getState() {
+    case .onboarding:
+      openOnboarding()
+    case let .main(wallets, activeWallet):
+      openMain(wallets: wallets, activeWallet: activeWallet)
     }
-    
-    rootController.didUpdateState = { state in
-      handleState(state)
-    }
-    
-    handleState(rootController.state)
   }
 }
 
@@ -46,7 +38,7 @@ private extension RootCoordinator {
     let module = OnboardingModule(
       dependencies: OnboardingModule.Dependencies(
         coreAssembly: dependencies.coreAssembly,
-        keeperCoreOnboardingAssembly: dependencies.keeperCoreAssembly.onboardingAssembly()
+        keeperCoreOnboardingAssembly: dependencies.keeperCoreRootAssembly.onboardingAssembly()
       )
     )
     let coordinator = module.createOnboardingCoordinator()
@@ -54,6 +46,7 @@ private extension RootCoordinator {
     coordinator.didFinishOnboarding = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
+      self?.start()
     }
     
     addChild(coordinator)
@@ -70,7 +63,9 @@ private extension RootCoordinator {
     let module = MainModule(
       dependencies: MainModule.Dependencies(
         coreAssembly: dependencies.coreAssembly,
-        keeperCoreMainAssembly: dependencies.keeperCoreAssembly.mainAssembly(dependencies: mainAssemblyDependencies)
+        keeperCoreMainAssembly: dependencies.keeperCoreRootAssembly.mainAssembly(
+          dependencies: mainAssemblyDependencies
+        )
       )
     )
     let coordinator = module.createMainCoordinator()
