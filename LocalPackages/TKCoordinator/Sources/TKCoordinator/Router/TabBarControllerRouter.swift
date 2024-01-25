@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TabBarControllerRouter: ContainerViewControllerRouter<UITabBarController>, Router {
+public final class TabBarControllerRouter: ContainerViewControllerRouter<UITabBarController> {
   
   public override init(rootViewController: UITabBarController) {
     super.init(rootViewController: rootViewController)

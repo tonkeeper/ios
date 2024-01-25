@@ -1,6 +1,6 @@
 import UIKit
 
-public final class NavigationControllerRouter: ContainerViewControllerRouter<UINavigationController>, Router {
+public final class NavigationControllerRouter: ContainerViewControllerRouter<UINavigationController> {
   private var onPopClosures = [UIViewController: () -> Void]()
   
   public override init(rootViewController: UINavigationController) {

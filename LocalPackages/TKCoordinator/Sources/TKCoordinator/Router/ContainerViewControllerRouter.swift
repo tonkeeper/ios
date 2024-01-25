@@ -1,6 +1,6 @@
 import UIKit
 
-public class ContainerViewControllerRouter<RootViewController: UIViewController>: NSObject, UIAdaptivePresentationControllerDelegate {
+public class ContainerViewControllerRouter<RootViewController: UIViewController>: NSObject, Router, UIAdaptivePresentationControllerDelegate {
   private var onDismiss: (() -> Void)?
   
   public let rootViewController: RootViewController
