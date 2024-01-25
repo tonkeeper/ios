@@ -40,9 +40,9 @@ private extension OnboardingCoordinator {
     navigationController.configureTransparentAppearance()
     navigationController.isModalInPresentation = true
     
-    let coordinator = CreateWalletCoordinator(
+    let coordinator = OnboardingCreateCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
-      walletAddController: keeperCoreOnboardingAssembly.walletAddController()
+      assembly: keeperCoreOnboardingAssembly
     )
     coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
@@ -68,21 +68,13 @@ private extension OnboardingCoordinator {
     navigationController.configureTransparentAppearance()
     navigationController.isModalInPresentation = true
     
-    let coordinator = ImportWalletCoordinator(
-      router: NavigationControllerRouter(rootViewController: navigationController),
-      walletAddController: keeperCoreOnboardingAssembly.walletAddController()
+    let coordinator = OnboardingImportCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController)
     )
     coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
       navigationController?.dismiss(animated: true)
-    }
-    
-    coordinator.didImportWallet = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
-      self?.didFinishOnboarding?()
-      navigationController.dismiss(animated: true)
     }
     
     addChild(coordinator)

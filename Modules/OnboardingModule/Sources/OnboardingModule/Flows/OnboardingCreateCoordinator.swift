@@ -1,30 +1,36 @@
 import UIKit
+import KeeperCore
 import TKCoordinator
 import TKUIKit
 import TKScreenKit
-import KeeperCore
 import PasscodeModule
-import WalletCustomizationModule
+import AddWalletModule
 
-public final class CreateWalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
+public final class OnboardingCreateCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
-  private let walletAddController: WalletAddController
+  public var didCancel: (() -> Void)?
+  public var didCreateWallet: (() -> Void)?
   
-  var didCancel: (() -> Void)?
-  var didCreateWallet: (() -> Void)?
+  private let assembly: KeeperCore.OnboardingAssembly
+  private let addWalletModule: AddWalletModule
   
   init(router: NavigationControllerRouter,
-       walletAddController: WalletAddController) {
-    self.walletAddController = walletAddController
+       assembly: KeeperCore.OnboardingAssembly) {
+    self.assembly = assembly
+    self.addWalletModule = AddWalletModule(
+      dependencies: AddWalletModule.Dependencies(
+        walletsUpdateAssembly: assembly.walletsUpdateAssembly
+      )
+    )
     super.init(router: router)
   }
-  
+
   public override func start() {
     openCreatePasscode()
   }
 }
 
-private extension CreateWalletCoordinator {
+private extension OnboardingCreateCoordinator {
   func openCreatePasscode() {
     let coordinator = PasscodeModule().createCreatePasscodeCoordinator(router: router)
     
@@ -43,25 +49,25 @@ private extension CreateWalletCoordinator {
   }
   
   func openCustomizeWallet(passcode: String) {
-    let module = WalletCustomizationModule().customizeWalletModule()
+    let module = addWalletModule.createCustomizeWalletModule()
+    
     module.output.didCustomizeWallet = { [weak self] model in
-      self?.createWalletWith(passcode: passcode, model: model)
+      self?.createWallet(model: model, passcode: passcode)
     }
     
     module.view.setupBackButton()
     
     router.push(viewController: module.view)
   }
-}
-
-private extension CreateWalletCoordinator {
-  func createWalletWith(passcode: String, model: CustomizeWalletModel) {
+  
+  func createWallet(model: CustomizeWalletModel, passcode: String) {
+    let addController = assembly.walletsUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
       label: model.name,
       colorIdentifier: model.colorIdentifier,
       emoji: model.emoji)
     do {
-      try walletAddController.createWallet(metaData: metaData)
+      try addController.createWallet(metaData: metaData)
       didCreateWallet?()
     } catch {
       print("Log: Wallet creation failed")
