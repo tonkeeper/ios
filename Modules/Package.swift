@@ -98,6 +98,7 @@ let package = Package(
         .product(name: "TKUIKit", package: "tkuikit-ios"),
         .product(name: "TKCoordinator", package: "TKCoordinator"),
         .product(name: "WalletCore", package: "core-swift"),
+        .target(name: "AddWalletModule")
       ],
       path: "WalletModule",
       sources: ["Sources"]
