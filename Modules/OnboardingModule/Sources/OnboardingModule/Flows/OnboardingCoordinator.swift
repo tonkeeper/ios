@@ -69,12 +69,20 @@ private extension OnboardingCoordinator {
     navigationController.isModalInPresentation = true
     
     let coordinator = OnboardingImportCoordinator(
-      router: NavigationControllerRouter(rootViewController: navigationController)
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      assembly: keeperCoreOnboardingAssembly
     )
     coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
       navigationController?.dismiss(animated: true)
+    }
+    
+    coordinator.didImportWallets = { [weak self, weak coordinator] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+      self?.didFinishOnboarding?()
+      navigationController.dismiss(animated: true)
     }
     
     addChild(coordinator)
