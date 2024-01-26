@@ -28,7 +28,10 @@ public final class ImportWalletCoordinator: RouterCoordinator<NavigationControll
 
 private extension ImportWalletCoordinator {
   func openInputRecoveryPhrase() {
-    let coordinator = RecoveryPhraseCoordinator(router: router)
+    let coordinator = RecoveryPhraseCoordinator(
+      router: router,
+      walletsUpdateAssembly: walletsUpdateAssembly
+    )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
@@ -61,9 +64,7 @@ private extension ImportWalletCoordinator {
       module.view.setupBackButton()
     }
     
-    router.push(viewController: module.view, onPopClosures: { [weak self] in
-      self?.didCancel?()
-    })
+    router.push(viewController: module.view)
   }
   
   func importWallet(phrase: [String],
