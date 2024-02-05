@@ -6,12 +6,6 @@ final class ChooseWalletToAddViewController: GenericViewViewController<ChooseWal
   
   private lazy var collectionController = ChooseWalletToAddCollectionController(
     collectionView: customView.collectionView,
-    sectionPaddingProvider: { section in
-      switch section {
-      case .list:
-        return NSDirectionalEdgeInsets(top: 0, leading: 32, bottom: 16, trailing: 32)
-      }
-    },
     headerViewProvider: { [customView] in customView.titleDescriptionView }
   )
   

@@ -51,7 +51,7 @@
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
         "branch" : "feature/refact",
-        "revision" : "0ed726498deee96c888d3c5e9053d32634a99811"
+        "revision" : "6a97df62c5a87c012f1923c2d662d4fd8084b6cf"
       }
     },
     {
@@ -195,7 +195,7 @@
       "location" : "https://github.com/tonkeeper/tkuikit-ios.git",
       "state" : {
         "branch" : "main",
-        "revision" : "d21825b945983ea7f6e02e32cfca6ff7c2bd5a73"
+        "revision" : "6d7f6b8b332e8f5759b3d4ff69fc16c6d703c16a"
       }
     },
     {

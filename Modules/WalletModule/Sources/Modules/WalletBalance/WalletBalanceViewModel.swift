@@ -1,14 +1,17 @@
 import Foundation
 import TKUIKit
+import KeeperCore
 
 protocol WalletBalanceModuleOutput: AnyObject {
   
 }
 
 protocol WalletBalanceViewModel: AnyObject {
-  var didUpdateModel: ((WalletBalanceView.Model) -> Void)? { get set }
+  var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)? { get set }
+  var didUpdateBalanceItems: (([WalletBalanceBalanceItemCell.Model]) -> Void)? { get set }
   
   func viewDidLoad()
+  func didTapBalanceItem(at index: Int)
 }
 
 final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput {
@@ -17,32 +20,73 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   // MARK: - WalletBalanceViewModel
   
-  var didUpdateModel: ((WalletBalanceView.Model) -> Void)?
+  var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)?
+  var didUpdateBalanceItems: (([WalletBalanceBalanceItemCell.Model]) -> Void)?
   
   func viewDidLoad() {
-    didUpdateModel?(createModel())
+    walletBalanceController.didUpdateBalance = { [weak self] balanceModel in
+      guard let self = self else { return }
+      self.updateBalance(balanceModel: balanceModel)
+    }
+    walletBalanceController.loadBalance()
+  }
+  
+  func didTapBalanceItem(at index: Int) {
+    balanceItems[index].selectionHandler?()
+  }
+  
+  // MARK: - State
+  
+  private var balanceModel: WalletBalanceModel?
+  
+  private var balanceItems = [WalletBalanceBalanceItemCell.Model]() {
+    didSet {
+      didUpdateBalanceItems?(balanceItems)
+    }
+  }
+  
+  // MARK: - Mapper
+  
+  private let listItemMapper = WalletBalanceListItemMapper()
+  
+  // MARK: - Init
+  
+  private let walletBalanceController: WalletBalanceController
+  
+  init(walletBalanceController: WalletBalanceController) {
+    self.walletBalanceController = walletBalanceController
   }
 }
 
 private extension WalletBalanceViewModelImplementation {
-  func createModel() -> WalletBalanceView.Model {
+  func updateBalance(balanceModel: WalletBalanceModel) {
+    let headerModel = createHeaderModel(balanceModel: balanceModel)
+    let balanceItems = balanceModel.items.map { item in
+      listItemMapper.mapBalanceItems(item) {
+        print("Did tap balance item")
+      }
+    }
     
+    Task { @MainActor in
+      self.balanceModel = balanceModel
+      didUpdateHeader?(headerModel)
+      self.balanceItems = balanceItems
+    }
+  }
+  
+  func createHeaderModel(balanceModel: WalletBalanceModel) -> WalletBalanceHeaderView.Model {
     let balanceViewModel = WalletBalanceHeaderBalanceView.Model(
-      balance: "$17,471",
-      address: "EQF2…G21Z",
+      balance: balanceModel.total,
+      address: walletBalanceController.address,
       addressAction: {}
     )
     
-    let headerViewModel = WalletBalanceHeaderView.Model(
+    return WalletBalanceHeaderView.Model(
       balanceViewModel: balanceViewModel,
       buttonsViewModel: createButtonsViewModel()
     )
-    
-    return WalletBalanceView.Model(
-      headerViewModel: headerViewModel
-    )
   }
-  
+
   func createButtonsViewModel() -> WalletBalanceHeaderButtonsView.Model {
     WalletBalanceHeaderButtonsView.Model(buttons: [
       WalletBalanceHeaderButtonsView.Model.Button(

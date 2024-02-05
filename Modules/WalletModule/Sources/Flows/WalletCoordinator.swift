@@ -51,8 +51,8 @@ private extension WalletCoordinator {
       }
     }
     
-    module.output.didSelectWallet = { [unowned bottomSheetViewController] in
-      bottomSheetViewController.dismiss()
+    module.output.didSelectWallet = { [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
     }
     
     bottomSheetViewController.present(fromViewController: router.rootViewController)
@@ -74,8 +74,9 @@ private extension WalletCoordinator {
 }
 
 extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
-  func getWalletBalanceModuleView() -> UIViewController {
-    let module = WalletBalanceAssembly.module()
+  func getWalletBalanceModuleView(wallet: Wallet) -> UIViewController {
+    let walletBalanceController = keeperCoreMainAssembly.walletBalanceController(wallet: wallet)
+    let module = WalletBalanceAssembly.module(walletBalanceController: walletBalanceController)
     return module.view
   }
 }

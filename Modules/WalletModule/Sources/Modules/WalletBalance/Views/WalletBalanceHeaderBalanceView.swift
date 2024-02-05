@@ -4,7 +4,7 @@ import TKUIKit
 final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
   
   let balanceLabel = UILabel()
-  let addressLabel = UIButton(type: .system)
+  let addressLabel = UIButton(type: .custom)
   
   private let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -28,7 +28,7 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-  
+
   struct Model {
     let balance: String
     let address: String
@@ -44,6 +44,10 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
     addressLabel.setAttributedTitle(
       model.address.withTextStyle(.body2, color: .Text.secondary), 
       for: .normal
+    )
+    addressLabel.setAttributedTitle(
+      model.address.withTextStyle(.body2, color: .Text.secondary.withAlphaComponent(0.48)),
+      for: .highlighted
     )
     addressLabel.removeTarget(nil, action: nil, for: .touchUpInside)
     addressLabel.addAction(UIAction(handler: { _ in

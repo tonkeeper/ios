@@ -3,17 +3,12 @@ import TKUIKit
 
 final class WalletsListViewController: GenericViewViewController<WalletsListView>, TKBottomSheetScrollContentViewController {
   private let viewModel: WalletsListViewModel
-  
-  private lazy var collectionController = TKCollectionController(
+
+  lazy var collectionController = WalletsListCollectionController(
     collectionView: customView.collectionView,
-    sectionPaddingProvider: { section in
-      switch section {
-      case .list:
-          return NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
-      }
-    },
-    footerViewProvider: { [customView] in customView.footerView }
-  )
+    footerViewProvider: { [customView] in
+      customView.footerView
+    })
   
   init(viewModel: WalletsListViewModel) {
     self.viewModel = viewModel
@@ -50,12 +45,12 @@ private extension WalletsListViewController {
     
     viewModel.didUpdateIsEditing = { [collectionController] isEditing in
       UIView.animate(withDuration: 0.2) {
-        collectionController.isReordering = isEditing
+        collectionController.isEditing = isEditing
       }
     }
     
     viewModel.didUpdateItems = { [weak self, collectionController] items in
-      collectionController.setSections([.list(items: items)], animated: false)
+      collectionController.setWallets(items)
       self?.didUpdateHeight?()
     }
     
@@ -72,6 +67,9 @@ private extension WalletsListViewController {
   }
   
   func setupCollectionController() {
+    collectionController.didSelect = { [viewModel] _, index in
+      viewModel.didSelectWallet(at: index)
+    }
     collectionController.didReorder = { [weak self] difference in
       var deletes = [Int]()
       var inserts = [Int]()

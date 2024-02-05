@@ -10,13 +10,14 @@ protocol WalletsListModuleOutput: AnyObject {
 
 protocol WalletsListViewModel: AnyObject {
   var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)? { get set }
-  var didUpdateItems: (([TKCollectionItemIdentifier]) -> Void)? { get set }
+  var didUpdateItems: (([WalletsListWalletCell.Model]) -> Void)? { get set }
   var didUpdateSelectedItem: ((Int?, Bool) -> Void)? { get set }
   var didUpdateFooterModel: ((WalletsListFooterView.Model) -> Void)? { get set }
   var didUpdateIsEditing: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
   func moveWallet(fromIndex: Int, toIndex: Int)
+  func didSelectWallet(at index: Int)
 }
 
 final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsListModuleOutput {
@@ -29,7 +30,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   // MARK: - WalletsListViewModel
   
   var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)?
-  var didUpdateItems: (([TKCollectionItemIdentifier]) -> Void)?
+  var didUpdateItems: (([WalletsListWalletCell.Model]) -> Void)?
   var didUpdateSelectedItem: ((Int?, Bool) -> Void)?
   var didUpdateFooterModel: ((WalletsListFooterView.Model) -> Void)?
   var didUpdateIsEditing: ((Bool) -> Void)?
@@ -38,12 +39,16 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
     setupWalletListControllerBindings()
     didUpdateFooterModel?(createFooterModel())
     didUpdateHeaderItem?(createHeaderItem())
-    didUpdateItems?(createListItems())
+    walletItems = self.createListItems()
     didUpdateSelectedItem?(getSelectedItemIndex(), false)
   }
   
   func moveWallet(fromIndex: Int, toIndex: Int) {
     walletListController.moveWallet(fromIndex: fromIndex, toIndex: toIndex)
+  }
+  
+  func didSelectWallet(at index: Int) {
+    walletItems[index].selectionHandler?()
   }
   
   // MARK: - State
@@ -55,6 +60,12 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
       if !isEditing {
         didUpdateSelectedItem?(getSelectedItemIndex(), true)
       }
+    }
+  }
+  
+  private var walletItems = [WalletsListWalletCell.Model]() {
+    didSet {
+      didUpdateItems?(walletItems)
     }
   }
 
@@ -71,14 +82,10 @@ private extension WalletsListViewModelImplementation {
   func setupWalletListControllerBindings() {
     walletListController.didUpdateWallets = { [weak self] in
       guard let self = self else { return }
-      self.didUpdateItems?(self.createListItems())
-      self.didUpdateHeaderItem?(self.createHeaderItem())
-    }
-    
-    walletListController.didUpdateActiveWallet = { [weak self] in
-      guard let self = self else { return }
-      self.didUpdateSelectedItem?(self.getSelectedItemIndex(), false)
-      self.didSelectWallet?()
+      Task { @MainActor in
+        self.walletItems = self.createListItems()
+        self.didUpdateHeaderItem?(self.createHeaderItem())
+      }
     }
   }
   
@@ -96,41 +103,35 @@ private extension WalletsListViewModelImplementation {
       leftButton: leftButton)
   }
   
-  func createListItems() -> [TKCollectionItemIdentifier] {
+  func createListItems() -> [WalletsListWalletCell.Model] {
     let models = walletListController.walletsModels
     let isSelectable = models.count > 1
+    let isHighlightable = models.count > 1
     let items = models
       .enumerated()
-      .map { index, walletModel in
-        var tagModel: TKTagView.Model?
-        if let tag = walletModel.tag {
-          tagModel = TKTagView.Model(title: tag)
-        }
+      .map {
+        index,
+        walletModel in
         
-        let listItemModel = TKListItemView.Model(
-          iconModel: TKListItemIconView.Model(
-            type: .emoji(
-              model: TKListItemIconEmojiContentView.Model(
-                emoji: walletModel.emoji,
-                backgroundColor: .Tint.color(with: walletModel.colorIdentifier)
-              )
-            ),
-            alignment: .top),
-          textContentModel: TKListItemTextContentView.Model(
-            textWithTagModel: TKTextWithTagView.Model(title: walletModel.name, tagViewModel: tagModel),
-            subtitle: walletModel.balance
-          )
+        let contentModel = WalletsListWalletCellContentView.Model(
+          emoji: walletModel.emoji,
+          backgroundColor: .Tint.color(with: walletModel.colorIdentifier),
+          walletName: walletModel.name,
+          balance: walletModel.balance
         )
         
-        let cellModel = TKCollectionItemIdentifier(
+        return WalletsListWalletCell.Model(
           identifier: walletModel.identifier,
+          isHighlightable: isHighlightable,
           isSelectable: isSelectable,
-          isReorderable: true,
-          model: listItemModel) { [weak self] in
+          selectionHandler: { [weak self] in
             guard isSelectable else { return }
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+            self?.didSelectWallet?()
             self?.walletListController.setWalletActive(with: walletModel.identifier)
-          }
-        return cellModel
+          },
+          cellContentModel: contentModel
+        )
       }
     return items
   }

@@ -15,7 +15,7 @@ protocol WalletContainerViewModel: AnyObject {
 }
 
 protocol WalletContainerViewModelChildModuleProvider {
-  func getWalletBalanceModuleView() -> UIViewController
+  func getWalletBalanceModuleView(wallet: Wallet) -> UIViewController
 }
 
 final class WalletContainerViewModelImplementation: WalletContainerViewModel, WalletContainerModuleOutput {
@@ -30,13 +30,15 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   var didUpdateWalletBalanceViewController: ((_ viewController: UIViewController, _ animated: Bool) -> Void)?
   
   func viewDidLoad() {
-    walletMainController.didUpdateActiveWallet = { [weak self] model in
-      self?.didUpdateActiveWallet(model: model)
+    walletMainController.didUpdateActiveWallet = { [weak self] in
+      guard let self = self else { return }
+      Task { @MainActor in
+        self.didUpdateActiveWallet()
+      }
     }
-    walletMainController.getActiveWallet()
-    setupWalletBalance(animated: false)
+    didUpdateActiveWallet()
   }
-  
+
   // MARK: - Dependencies
   
   private let childModuleProvider: WalletContainerViewModelChildModuleProvider
@@ -50,8 +52,10 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 }
 
 private extension WalletContainerViewModelImplementation {
-  func didUpdateActiveWallet(model: WalletMainController.WalletModel) {
+  func didUpdateActiveWallet() {
+    let model = walletMainController.getActiveWalletModel()
     didUpdateModel?(createModel(walletModel: model))
+    setupWalletBalance(animated: false)
   }
   
   func createModel(walletModel: WalletMainController.WalletModel) -> WalletContainerView.Model {
@@ -72,6 +76,7 @@ private extension WalletContainerViewModelImplementation {
       walletButtonAppearance: walletButtonAppearance,
       settingsButtonModel: settingsButtonModel,
       walletButtonAction: { [weak self] in
+        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         self?.didTapWalletButton?()
       }
     )
@@ -82,7 +87,8 @@ private extension WalletContainerViewModelImplementation {
   }
   
   func setupWalletBalance(animated: Bool) {
-    let viewController = childModuleProvider.getWalletBalanceModuleView()
+    let wallet = walletMainController.getActiveWallet()
+    let viewController = childModuleProvider.getWalletBalanceModuleView(wallet: wallet)
     didUpdateWalletBalanceViewController?(viewController, animated)
   }
 }

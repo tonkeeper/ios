@@ -19,7 +19,6 @@ final class ChooseWalletToAddCollectionController: NSObject {
   var didDeselect: ((IndexPath) -> Void)?
   
   private let collectionView: UICollectionView
-  private let sectionPaddingProvider: (TKCollectionSection) -> NSDirectionalEdgeInsets
   private let headerViewProvider: (() -> UIView)?
   
   private let dataSource: DataSource
@@ -27,10 +26,8 @@ final class ChooseWalletToAddCollectionController: NSObject {
   private let headerRegistration: HeaderRegistration
   
   init(collectionView: UICollectionView,
-       sectionPaddingProvider: @escaping (TKCollectionSection) -> NSDirectionalEdgeInsets,
        headerViewProvider: (() -> UIView)? = nil) {
     self.collectionView = collectionView
-    self.sectionPaddingProvider = sectionPaddingProvider
     self.headerViewProvider = headerViewProvider
     
     let cellRegistration = CellRegistration { cell, indexPath, itemIdentifier in
@@ -38,7 +35,7 @@ final class ChooseWalletToAddCollectionController: NSObject {
     }
     self.cellRegistration = cellRegistration
     
-    let headerRegistration = HeaderRegistration(elementKind: TKCollectionLayout.SupplementaryItem.header.rawValue) {
+    let headerRegistration = HeaderRegistration(elementKind: TKCollectionSupplementaryItem.header.rawValue) {
       supplementaryView, elementKind, indexPath in
       supplementaryView.setContentView(headerViewProvider?())
     }
@@ -60,7 +57,7 @@ final class ChooseWalletToAddCollectionController: NSObject {
     setupCollectionView()
     
     self.dataSource.supplementaryViewProvider = { collectionView, elementKind, indexPath in
-      switch TKCollectionLayout.SupplementaryItem(rawValue: elementKind) {
+      switch TKCollectionSupplementaryItem(rawValue: elementKind) {
       case .header:
         return collectionView.dequeueConfiguredReusableSupplementary(
           using: headerRegistration,

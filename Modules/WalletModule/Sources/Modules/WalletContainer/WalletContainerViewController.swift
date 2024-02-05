@@ -60,11 +60,12 @@ private extension WalletContainerViewController {
     
     UIView.transition(
       with: customView.walletBalanceContainerView,
-      duration: 0.5,
-      options: .transitionCrossDissolve,
+      duration: 0.4,
+      options: [.transitionCrossDissolve],
       animations: nil,
       completion: { _ in
         previousViewController?.didMove(toParent: nil)
+        previousViewController?.removeFromParent()
         viewController.didMove(toParent: self)
       })
     

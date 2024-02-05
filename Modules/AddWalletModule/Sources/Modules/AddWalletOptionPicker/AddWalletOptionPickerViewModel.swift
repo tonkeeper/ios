@@ -10,11 +10,12 @@ protocol AddWalletOptionPickerViewModel: AnyObject {
   var didUpdateModel: ((AddWalletModel) -> Void)? { get set }
   
   func viewDidLoad()
+  func didSelectOption(in section: AddWalletOptionPickerSection)
 }
 
 struct AddWalletModel {
   let titleDescriptionModel: TKTitleDescriptionView.Model
-  let listSections: [TKCollectionSection]
+  let optionSections: [AddWalletOptionPickerSection]
 }
 
 enum AddWalletOption: String {
@@ -70,6 +71,13 @@ final class AddWalletOptionPickerViewModelImplementation: AddWalletOptionPickerV
     didUpdateModel?(createModel())
   }
   
+  func didSelectOption(in section: AddWalletOptionPickerSection) {
+    switch section {
+    case .options(let item):
+      item.selectionHandler?()
+    }
+  }
+  
   private let options: [AddWalletOption]
   
   init(options: [AddWalletOption]) {
@@ -79,9 +87,11 @@ final class AddWalletOptionPickerViewModelImplementation: AddWalletOptionPickerV
 
 private extension AddWalletOptionPickerViewModelImplementation {
   func createModel() -> AddWalletModel {
+    let sections = createOptionItemSections()
+    
     return AddWalletModel(
       titleDescriptionModel: createTitleDescriptionModel(),
-      listSections: createListSections()
+      optionSections: sections
     )
   }
   
@@ -92,36 +102,23 @@ private extension AddWalletOptionPickerViewModelImplementation {
     )
   }
   
-  func createListSections() -> [TKCollectionSection] {
-    let sections = options.map { option in
-      let listItemModel = TKListItemView.Model(
-        iconModel: TKListItemIconView.Model(
-          type: .image(
-            model: TKListItemIconImageContentView.Model(
-              image: option.icon,
-              tintColor: .Accent.blue,
-              backgroundColor: .clear
-            )
-          ),
-          alignment: .center),
-        textContentModel: TKListItemTextContentView.Model(
-          textWithTagModel: TKTextWithTagView.Model(title: option.title),
-          attributedSubtitle: nil,
-          description: option.subtitle)
-      )
-      let cell = TKCollectionItemIdentifier(
-        identifier: option.rawValue,
-        isSelectable: false,
-        isReorderable: false,
-        accessoryViewType: .disclosureIndicator,
-        model: listItemModel,
-        tapClosure: { [weak self] in
-          self?.didSelectOption?(option)
-        }
+  func createOptionItemSections() -> [AddWalletOptionPickerSection] {
+    return options.map { option in
+      
+      let cellContentModel = AddWalletOptionPickerCellContentView.Model(
+        iconModel: .init(image: .image(option.icon), tintColor: .Accent.blue, backgroundColor: .clear, size: CGSize(width: 28, height: 28)),
+        title: option.title,
+        description: option.subtitle
       )
       
-      return TKCollectionSection.list(items: [cell])
+      let model = AddWalletOptionPickerCell.Model(
+        identifier: option.rawValue,
+        selectionHandler: { [weak self] in
+          self?.didSelectOption?(option)
+        },
+        cellContentModel: cellContentModel
+      )
+      return AddWalletOptionPickerSection.options(item: model)
     }
-    return sections
   }
 }

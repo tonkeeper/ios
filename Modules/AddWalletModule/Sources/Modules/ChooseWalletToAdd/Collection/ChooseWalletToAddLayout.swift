@@ -1,4 +1,5 @@
 import UIKit
+import TKUIKit
 
 public struct ChooseWalletToAddLayout {
   public enum SupplementaryItem: String {
@@ -51,7 +52,7 @@ public struct ChooseWalletToAddLayout {
     )
     let header = NSCollectionLayoutBoundarySupplementaryItem(
       layoutSize: size,
-      elementKind: SupplementaryItem.header.rawValue,
+      elementKind: TKCollectionSupplementaryItem.header.rawValue,
       alignment: .top
     )
     return header

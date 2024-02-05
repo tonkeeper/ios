@@ -1,24 +1,24 @@
 import UIKit
 import TKUIKit
 
-final class WalletBalanceCollectionController: TKCollectionController<WalletBalanceSection, AnyHashable> {
+final class AddWalletOptionPickerCollectionController: TKCollectionController<AddWalletOptionPickerSection, AnyHashable> {
   
-  typealias BalanceCellRegistration = UICollectionView.CellRegistration<WalletBalanceBalanceItemCell, WalletBalanceBalanceItemCell.Model>
+  typealias OptionCellRegistration = UICollectionView.CellRegistration<AddWalletOptionPickerCell, AddWalletOptionPickerCell.Model>
   
-  private let balanceCellRegistration: BalanceCellRegistration
+  private let optionCellRegistration: OptionCellRegistration
   
   init(collectionView: UICollectionView,
        headerViewProvider: (() -> UIView)? = nil, footerViewProvider: (() -> UIView)? = nil) {
-    let balanceCellRegistration = BalanceCellRegistration { cell, indexPath, itemIdentifier in
+    let optionCellRegistration = OptionCellRegistration { cell, indexPath, itemIdentifier in
       cell.configure(model: itemIdentifier)
     }
-    self.balanceCellRegistration = balanceCellRegistration
+    self.optionCellRegistration = optionCellRegistration
     
     super.init(
       collectionView: collectionView, cellProvider: { collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
-        case let model as WalletBalanceBalanceItemCell.Model:
-          let cell = collectionView.dequeueConfiguredReusableCell(using: balanceCellRegistration, for: indexPath, item: model)
+        case let model as AddWalletOptionPickerCell.Model:
+          let cell = collectionView.dequeueConfiguredReusableCell(using: optionCellRegistration, for: indexPath, item: model)
           cell.isFirstInSection = { return $0.item == 0 }
           cell.isLastInSection = { [unowned collectionView] in
             let numberOfItems = collectionView.numberOfItems(inSection: $0.section)
@@ -34,24 +34,26 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
       guard let self = self else { return nil }
       let section = dataSource.snapshot().sectionIdentifiers[sectionIndex]
       switch section {
-      case .balanceItems:
+      case .options:
         return TKCollectionLayout.listSectionLayout(
-          padding: NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16),
-          heightDimension: .absolute(76))
+          padding: NSDirectionalEdgeInsets(top: 0, leading: 32, bottom: 16, trailing: 32),
+          heightDimension: .estimated(76))
       }
     }), animated: false)
     
     collectionView.contentInset.bottom = 16
   }
   
-  func setBalanceItems(_ items: [AnyHashable]) {
+  func setOptionSections(_ sections: [AddWalletOptionPickerSection]) {
     var snapshot = dataSource!.snapshot()
-    snapshot.deleteSections([.balanceItems])
-    snapshot.appendSections([.balanceItems])
-    snapshot.appendItems(items, toSection: .balanceItems)
-    snapshot.reloadSections([.balanceItems])
-    UIView.performWithoutAnimation {
-      dataSource?.apply(snapshot, animatingDifferences: true)
+    snapshot.deleteAllItems()
+    for section in sections {
+      switch section {
+      case .options(let item):
+        snapshot.appendSections([section])
+        snapshot.appendItems([item], toSection: section)
+      }
     }
+    dataSource.apply(snapshot, animatingDifferences: false)
   }
 }

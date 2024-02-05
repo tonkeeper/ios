@@ -4,14 +4,8 @@ import TKUIKit
 final class AddWalletOptionPickerViewController: GenericViewViewController<AddWalletOptionPickerView>, TKBottomSheetScrollContentViewController {
   private let viewModel: AddWalletOptionPickerViewModel
   
-  private lazy var collectionController = TKCollectionController(
+  private lazy var collectionController = AddWalletOptionPickerCollectionController(
     collectionView: customView.collectionView,
-    sectionPaddingProvider: { section in
-      switch section {
-      case .list:
-        return NSDirectionalEdgeInsets(top: 0, leading: 32, bottom: 16, trailing: 32)
-      }
-    },
     headerViewProvider: { [customView] in customView.titleDescriptionView }
   )
   
@@ -47,7 +41,11 @@ private extension AddWalletOptionPickerViewController {
       guard let self = self else { return }
       
       self.customView.titleDescriptionView.configure(model: model.titleDescriptionModel)
-      self.collectionController.setSections(model.listSections, animated: false)
+      self.collectionController.setOptionSections(model.optionSections)
+    }
+    
+    collectionController.didSelect = { [weak viewModel] section, _ in
+      viewModel?.didSelectOption(in: section)
     }
   }
 }
