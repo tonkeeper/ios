@@ -24,6 +24,7 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   }
   
   override func start() {
+    rootController.loadConfiguration()
     switch rootController.getState() {
     case .onboarding:
       openOnboarding()
