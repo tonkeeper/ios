@@ -40,7 +40,6 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
     didUpdateFooterModel?(createFooterModel())
     didUpdateHeaderItem?(createHeaderItem())
     walletItems = self.createListItems()
-    didUpdateSelectedItem?(getSelectedItemIndex(), false)
   }
   
   func moveWallet(fromIndex: Int, toIndex: Int) {
@@ -66,6 +65,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   private var walletItems = [WalletsListWalletCell.Model]() {
     didSet {
       didUpdateItems?(walletItems)
+      didUpdateSelectedItem?(getSelectedItemIndex(), false)
     }
   }
 

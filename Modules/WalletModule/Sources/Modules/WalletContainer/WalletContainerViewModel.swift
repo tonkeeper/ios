@@ -37,6 +37,7 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
       }
     }
     didUpdateActiveWallet()
+    walletMainController.loadBalances()
   }
 
   // MARK: - Dependencies
