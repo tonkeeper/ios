@@ -395,14 +395,6 @@
 		B91D795CFF06D6E93B856F37 /* TonChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA90234EDC8FC9E16D62F310 /* TonChartView.swift */; };
 		BB0FE74E0B5BEAF8E8525B0E /* TokenDetailsProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = F773774CBEA3D5DDBE5D6AFF /* TokenDetailsProtocols.swift */; };
 		BF4E029FFA5C8E0FCF16DF94 /* EnterMnemonicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A6AC52DF8E6970E81B415D8 /* EnterMnemonicView.swift */; };
-		C313EC102B501944009DF825 /* AppModule in Frameworks */ = {isa = PBXBuildFile; productRef = C313EC0F2B501944009DF825 /* AppModule */; };
-		C313EC122B501944009DF825 /* CollectiblesModule in Frameworks */ = {isa = PBXBuildFile; productRef = C313EC112B501944009DF825 /* CollectiblesModule */; };
-		C313EC142B501944009DF825 /* HistoryModule in Frameworks */ = {isa = PBXBuildFile; productRef = C313EC132B501944009DF825 /* HistoryModule */; };
-		C313EC162B501944009DF825 /* MainModule in Frameworks */ = {isa = PBXBuildFile; productRef = C313EC152B501944009DF825 /* MainModule */; };
-		C313EC182B501944009DF825 /* OnboardingModule in Frameworks */ = {isa = PBXBuildFile; productRef = C313EC172B501944009DF825 /* OnboardingModule */; };
-		C313EC1A2B501944009DF825 /* PasscodeModule in Frameworks */ = {isa = PBXBuildFile; productRef = C313EC192B501944009DF825 /* PasscodeModule */; };
-		C313EC1C2B501944009DF825 /* SettingsModule in Frameworks */ = {isa = PBXBuildFile; productRef = C313EC1B2B501944009DF825 /* SettingsModule */; };
-		C313EC1E2B501944009DF825 /* WalletModule in Frameworks */ = {isa = PBXBuildFile; productRef = C313EC1D2B501944009DF825 /* WalletModule */; };
 		C318DC4A2B499C83008A2273 /* TKUIKitLegacy in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC492B499C83008A2273 /* TKUIKitLegacy */; };
 		C318DC4B2B499C83008A2273 /* TKUIKitLegacy in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C318DC492B499C83008A2273 /* TKUIKitLegacy */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C318DC4D2B499C8B008A2273 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C318DC4C2B499C8B008A2273 /* TKChart */; };
@@ -460,6 +452,7 @@
 		C38957812AF13FD70083B98A /* ModalCardViewController+ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38957802AF13FD70083B98A /* ModalCardViewController+ContentView.swift */; };
 		C38957842AF1497E0083B98A /* AccountEventActionContentProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38957832AF1497E0083B98A /* AccountEventActionContentProvider.swift */; };
 		C38957872AF168F70083B98A /* Deeplink.swift in Sources */ = {isa = PBXBuildFile; fileRef = C38957862AF168F70083B98A /* Deeplink.swift */; };
+		C39560162B7380C5003303C7 /* App in Frameworks */ = {isa = PBXBuildFile; productRef = C39560152B7380C5003303C7 /* App */; };
 		C3A337BC2AE340BD00E315F5 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */; };
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
 		C3B4DAA32B500AE60050703B /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAA22B500AE60050703B /* TKUIKit */; };
@@ -965,7 +958,6 @@
 		B305512CBFAF5DE77C5D0556 /* EnterMnemonicProtocols.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = EnterMnemonicProtocols.swift; sourceTree = "<group>"; };
 		B62AE3731FD3FF7FC9DD00BC /* TonChartPresenter.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TonChartPresenter.swift; sourceTree = "<group>"; };
 		C24F1C51A27E9AFA7AEAA1F8 /* TokenDetailsViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = TokenDetailsViewController.swift; sourceTree = "<group>"; };
-		C313EC092B50138D009DF825 /* Modules */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Modules; sourceTree = "<group>"; };
 		C313EC0B2B50138D009DF825 /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
 		C313EC0C2B50138D009DF825 /* TKUIKitLegacy */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKitLegacy; sourceTree = "<group>"; };
 		C313EC0D2B50138D009DF825 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
@@ -1013,6 +1005,7 @@
 		C38957802AF13FD70083B98A /* ModalCardViewController+ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+ContentView.swift"; sourceTree = "<group>"; };
 		C38957832AF1497E0083B98A /* AccountEventActionContentProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountEventActionContentProvider.swift; sourceTree = "<group>"; };
 		C38957862AF168F70083B98A /* Deeplink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deeplink.swift; sourceTree = "<group>"; };
+		C39560142B737F12003303C7 /* App */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = App; sourceTree = "<group>"; };
 		C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
 		C3E4C9A02B30FFCD005526DA /* TitleConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleConnectionView.swift; sourceTree = "<group>"; };
 		C3E4C9AA2B31C85C005526DA /* NavigationBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationBarView.swift; sourceTree = "<group>"; };
@@ -1061,24 +1054,17 @@
 			buildActionMask = 2147483647;
 			files = (
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
-				C313EC1C2B501944009DF825 /* SettingsModule in Frameworks */,
-				C313EC182B501944009DF825 /* OnboardingModule in Frameworks */,
 				C3B4DAA52B500AF20050703B /* TKScreenKit in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
-				C313EC1A2B501944009DF825 /* PasscodeModule in Frameworks */,
 				C3B4DABA2B500BFB0050703B /* TKChart in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
-				C313EC162B501944009DF825 /* MainModule in Frameworks */,
-				C313EC102B501944009DF825 /* AppModule in Frameworks */,
-				C313EC142B501944009DF825 /* HistoryModule in Frameworks */,
-				C313EC1E2B501944009DF825 /* WalletModule in Frameworks */,
 				C3B4DABD2B500BFB0050703B /* TKCoordinator in Frameworks */,
-				C313EC122B501944009DF825 /* CollectiblesModule in Frameworks */,
 				C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */,
 				C3B4DAA32B500AE60050703B /* TKUIKit in Frameworks */,
 				C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */,
 				C318DC4A2B499C83008A2273 /* TKUIKitLegacy in Frameworks */,
 				C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
+				C39560162B7380C5003303C7 /* App in Frameworks */,
 				C327C6322B4F682B00AAFB43 /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2656,7 +2642,6 @@
 			isa = PBXGroup;
 			children = (
 				C313EC0A2B50138D009DF825 /* LocalPackages */,
-				C313EC092B50138D009DF825 /* Modules */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,
 				7D7CF6BF2AC7040900EB0BFF /* Configurations */,
@@ -2885,6 +2870,7 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				C39560142B737F12003303C7 /* App */,
 				C313EC0B2B50138D009DF825 /* TKCoordinator */,
 				C313EC0C2B50138D009DF825 /* TKUIKitLegacy */,
 				C313EC0D2B50138D009DF825 /* TKCore */,
@@ -3186,14 +3172,7 @@
 				C3B4DAA42B500AF20050703B /* TKScreenKit */,
 				C3B4DAB92B500BFB0050703B /* TKChart */,
 				C3B4DABC2B500BFB0050703B /* TKCoordinator */,
-				C313EC0F2B501944009DF825 /* AppModule */,
-				C313EC112B501944009DF825 /* CollectiblesModule */,
-				C313EC132B501944009DF825 /* HistoryModule */,
-				C313EC152B501944009DF825 /* MainModule */,
-				C313EC172B501944009DF825 /* OnboardingModule */,
-				C313EC192B501944009DF825 /* PasscodeModule */,
-				C313EC1B2B501944009DF825 /* SettingsModule */,
-				C313EC1D2B501944009DF825 /* WalletModule */,
+				C39560152B7380C5003303C7 /* App */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -4283,38 +4262,6 @@
 			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
 			productName = AnyFormatKit;
 		};
-		C313EC0F2B501944009DF825 /* AppModule */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = AppModule;
-		};
-		C313EC112B501944009DF825 /* CollectiblesModule */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = CollectiblesModule;
-		};
-		C313EC132B501944009DF825 /* HistoryModule */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = HistoryModule;
-		};
-		C313EC152B501944009DF825 /* MainModule */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = MainModule;
-		};
-		C313EC172B501944009DF825 /* OnboardingModule */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = OnboardingModule;
-		};
-		C313EC192B501944009DF825 /* PasscodeModule */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = PasscodeModule;
-		};
-		C313EC1B2B501944009DF825 /* SettingsModule */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = SettingsModule;
-		};
-		C313EC1D2B501944009DF825 /* WalletModule */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = WalletModule;
-		};
 		C318DC492B499C83008A2273 /* TKUIKitLegacy */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKUIKitLegacy;
@@ -4359,6 +4306,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C311FC842B3C68B700BE9022 /* XCRemoteSwiftPackageReference "core-swift" */;
 			productName = WalletCore;
+		};
+		C39560152B7380C5003303C7 /* App */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = App;
 		};
 		C3B4DAA22B500AE60050703B /* TKUIKit */ = {
 			isa = XCSwiftPackageProductDependency;

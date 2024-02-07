@@ -8,13 +8,13 @@
 import UIKit
 import TKCore
 import WalletCoreKeeper
-import AppModule
+import App
 import TKCoordinator
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   
   var window: UIWindow?
-  var appCoordinator: AppModule.AppCoordinator?
+  var appCoordinator: App.AppCoordinator?
   let appAssembly = AppAssembly()
 
   func scene(_ scene: UIScene,
@@ -24,7 +24,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     let window = UIWindow(windowScene: windowScene)
     
-    let coordinator = AppModule.AppCoordinator(router: TKCoordinator.WindowRouter(window: window))
+    let coordinator = App.AppCoordinator(router: TKCoordinator.WindowRouter(window: window))
     coordinator.start()
     window.makeKeyAndVisible()
     
