@@ -5,6 +5,7 @@ import KeeperCore
 
 protocol WalletContainerModuleOutput: AnyObject {
   var didTapWalletButton: (() -> Void)? { get set }
+  var didTapSettingsButton: (() -> Void)? { get set }
 }
 
 protocol WalletContainerViewModel: AnyObject {
@@ -23,6 +24,7 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   // MARK: - WalletContainerModuleOutput
   
   var didTapWalletButton: (() -> Void)?
+  var didTapSettingsButton: (() -> Void)?
   
   // MARK: - WalletContainerViewModel
   
@@ -75,12 +77,13 @@ private extension WalletContainerViewModelImplementation {
     let topBarViewModel = WalletContainerTopBarView.Model(
       walletButtonModel: walletButtonModel,
       walletButtonAppearance: walletButtonAppearance,
-      settingsButtonModel: settingsButtonModel,
       walletButtonAction: { [weak self] in
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         self?.didTapWalletButton?()
+      },
+      settingsButtonModel: settingsButtonModel) { [weak self] in
+        self?.didTapSettingsButton?()
       }
-    )
     
     return WalletContainerView.Model(
       topBarViewModel: topBarViewModel

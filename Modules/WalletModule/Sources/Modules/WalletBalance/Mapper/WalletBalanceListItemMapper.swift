@@ -65,7 +65,16 @@ struct WalletBalanceListItemMapper {
     case .ton:
       image = .image(.TKCore.Icons.Size44.tonLogo)
     case .url(let url):
-      image = .asyncImage(url)
+      image = .asyncImage(
+        TKCore.ImageDownloadTask(
+          closure: {
+            [imageLoader] imageView,
+            size,
+            cornerRadius in
+            return imageLoader.loadImage(url: url, imageView: imageView, size: size, cornerRadius: cornerRadius)
+          }
+        )
+      )
     }
     
     let iconModel = TKListItemIconImageView.Model(

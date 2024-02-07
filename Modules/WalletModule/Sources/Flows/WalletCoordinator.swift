@@ -4,6 +4,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import AddWalletModule
+import SettingsModule
 
 public final class WalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
   private let coreAssembly: TKCore.CoreAssembly
@@ -35,6 +36,10 @@ private extension WalletCoordinator {
       self?.openWalletPicker()
     }
     
+    module.output.didTapSettingsButton = { [weak self] in
+      self?.openSettings()
+    }
+    
     router.push(viewController: module.view, animated: false)
   }
   
@@ -64,8 +69,21 @@ private extension WalletCoordinator {
     )
     
     let coordinator = module.createAddWalletCoordinator(router: router)
-    coordinator.didAddWallets = { [weak router] in
+    coordinator.didAddWallets = {
       onAddWallets()
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
+  func openSettings() {
+    let module = SettingsModule()
+    
+    let coordinator = module.createSettingsCoordinator(router: router)
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
     }
     
     addChild(coordinator)

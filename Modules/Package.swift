@@ -86,8 +86,7 @@ let package = Package(
         .product(name: "TKCoordinator", package: "TKCoordinator"),
         .target(name: "WalletModule"),
         .target(name: "HistoryModule"),
-        .target(name: "CollectiblesModule"),
-        .target(name: "SettingsModule")
+        .target(name: "CollectiblesModule")
       ],
       path: "MainModule",
       sources: ["Sources"]
@@ -98,7 +97,8 @@ let package = Package(
         .product(name: "TKUIKit", package: "tkuikit-ios"),
         .product(name: "TKCoordinator", package: "TKCoordinator"),
         .product(name: "WalletCore", package: "core-swift"),
-        .target(name: "AddWalletModule")
+        .target(name: "AddWalletModule"),
+        .target(name: "SettingsModule")
       ],
       path: "WalletModule",
       sources: ["Sources"]
@@ -125,7 +125,8 @@ let package = Package(
       name: "SettingsModule",
       dependencies: [
         .product(name: "TKUIKit", package: "tkuikit-ios"),
-        .product(name: "TKCoordinator", package: "TKCoordinator")
+        .product(name: "TKCoordinator", package: "TKCoordinator"),
+        .product(name: "WalletCore", package: "core-swift"),
       ],
       path: "SettingsModule",
       sources: ["Sources"]
