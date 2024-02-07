@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-public final class SettingsRootView: UIView {
+public final class SettingsListView: UIView {
   let navigationBar = UINavigationBar()
 //  let navigationBar = NavigationBarView()
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
@@ -16,7 +16,7 @@ public final class SettingsRootView: UIView {
   }
 }
 
-private extension SettingsRootView {
+private extension SettingsListView {
   func setup() {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
@@ -47,7 +47,7 @@ private extension SettingsRootView {
   }
 }
 
-extension SettingsRootView: UINavigationBarDelegate {
+extension SettingsListView: UINavigationBarDelegate {
   public func position(for bar: UIBarPositioning) -> UIBarPosition {
     return .topAttached
   }

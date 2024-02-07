@@ -34,8 +34,8 @@ public struct AddWalletModule {
     return coordinator
   }
   
-  public func createCustomizeWalletModule() -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
-    return CustomizeWalletAssembly.module()
+  public func createCustomizeWalletModule(wallet: Wallet? = nil) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
+    return CustomizeWalletAssembly.module(wallet: wallet)
   }
   
   public func createRecoveryPhraseCoordinator(router: NavigationControllerRouter) -> RecoveryPhraseCoordinator {

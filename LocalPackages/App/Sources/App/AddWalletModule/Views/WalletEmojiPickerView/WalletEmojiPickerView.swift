@@ -30,7 +30,6 @@ final class WalletEmojiPickerView: UIView, ConfigurableView {
   struct Model {
     struct Item {
       let emoji: EmojisDataSource.Emoji
-      let initialSelectedIndex: Int?
       let selectHandler: (() -> Void)?
     }
     

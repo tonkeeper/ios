@@ -3,75 +3,107 @@ import TKUIKit
 import TKCore
 import KeeperCore
 
-public protocol SettingsRootModuleOutput: AnyObject {
+final class SettingsRootListItemsProvider: SettingsListItemsProvider {
+  typealias WalletCellRegistration = UICollectionView.CellRegistration<WalletsListWalletCell, WalletsListWalletCell.Model>
   
-}
-
-protocol SettingsRootViewModel: AnyObject {
-  var didUpdateSettingsSections: (([SettingsSection]) -> Void)? { get set }
-  var didShowAlert: ((String, String?, [UIAlertAction]) -> Void)? { get set }
+  var didTapEditWallet: ((Wallet) -> Void)?
+  var didTapCurrency: (() -> Void)?
   
-  func viewDidLoad()
-  func selectItem(section: SettingsSection, index: Int)
-}
-
-final class SettingsRootViewModelImplementation: SettingsRootViewModel, SettingsRootModuleOutput {
+  private let walletCellRegistration: WalletCellRegistration
   
-  // MARK: - SettingsRootModuleOutput
+  private let settingsController: SettingsController
+  private let urlOpener: URLOpener
+  private let appStoreReviewer: AppStoreReviewer
   
-  
-  // MARK: - SettingsRootViewModel
-  
-  var didUpdateSettingsSections: (([SettingsSection]) -> Void)?
-  var didShowAlert: ((String, String?, [UIAlertAction]) -> Void)?
-
-  func viewDidLoad() {
-    didUpdateSettingsSections?(setupSettingsSections())
-  }
-  
-  func selectItem(section: SettingsSection, index: Int) {
-    switch section {
-    case .wallet(let item):
-      item.selectionHandler?()
-    case .settingsItems(let items):
-      items[index].selectionHandler?()
+  init(settingsController: SettingsController,
+       urlOpener: URLOpener,
+       appStoreReviewer: AppStoreReviewer) {
+    self.settingsController = settingsController
+    self.appStoreReviewer = appStoreReviewer
+    self.urlOpener = urlOpener
+    let walletCellRegistration = WalletCellRegistration { cell, indexPath, itemIdentifier in
+      cell.configure(model: itemIdentifier)
+    }
+    self.walletCellRegistration = walletCellRegistration
+    
+    settingsController.didUpdateActiveWallet = { [weak self] in
+      self?.didUpdateSections?()
+    }
+    
+    settingsController.didUpdateActiveCurrency = { [weak self] in
+      self?.didUpdateSections?()
     }
   }
   
-//  private let settingsController: SettingsController
-//  
-//  init(settingsController: SettingsController) {
-//    self.settingsController = settingsController
-//  }
+  var didUpdateSections: (() -> Void)?
+  
+  var title: String { "Settings" }
+  
+  func getSections() -> [SettingsListSection] {
+    setupSettingsSections()
+  }
+  
+  func selectItem(section: SettingsListSection, index: Int) {
+    switch section.items[index] {
+    case let walletModel as WalletsListWalletCell.Model:
+      walletModel.selectionHandler?()
+    default:
+      break
+    }
+  }
+  
+  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> TKCollectionViewCell? {
+    switch itemIdentifier {
+    case let model as WalletsListWalletCell.Model:
+      let cell = collectionView.dequeueConfiguredReusableCell(using: walletCellRegistration, for: indexPath, item: model)
+      return cell
+    default: return nil
+    }
+  }
 }
 
-private extension SettingsRootViewModelImplementation {
-  func setupSettingsSections() -> [SettingsSection] {
-    [
-      setupWalletSection(),
-      setupSecuritySection(),
-      setupSocialLinksSection(),
-      setupLogoutSection()
+private extension SettingsRootListItemsProvider {
+  func setupSettingsSections() -> [SettingsListSection] {
+    [setupWalletSection(),
+     SettingsListSection(items: [
+      setupSecurityItem(),
+      setupBackupItem()
+     ]),
+     SettingsListSection(items: [
+      setupCurrencyItem()
+     ]),
+     SettingsListSection(items: [
+      setupSupportItem(),
+      setupTonkeeperNewsItem(),
+      setupContactUsItem(),
+      setupRateItem(),
+      setupDeleteAccountItem()
+     ]),
+     SettingsListSection(items: [
+      setupLogoutItem()
+     ])
     ]
   }
   
-  func setupWalletSection() -> SettingsSection {
+  func setupWalletSection() -> SettingsListSection {
+    let walletModel = settingsController.activeWalletModel()
     let cellContentModel = WalletsListWalletCellContentView.Model(
-      emoji: "👹",
-      backgroundColor: .blue,
-      walletName: "Wallet hello",
+      emoji: walletModel.emoji,
+      backgroundColor: .Tint.color(with: walletModel.colorIdentifier),
+      walletName: walletModel.title,
       balance: "Edit name and color"
     )
     
     let cellModel = WalletsListWalletCell.Model(
       identifier: "wallet",
-      selectionHandler: {
-        
+      selectionHandler: { [weak self] in
+        guard let self = self else { return }
+        self.didTapEditWallet?(self.settingsController.activeWallet())
       },
       cellContentModel: cellContentModel
     )
     
-    return .wallet(item: cellModel)
+    return SettingsListSection(items: [cellModel])
   }
   
   func setupSecuritySection() -> SettingsSection {
@@ -109,6 +141,19 @@ private extension SettingsRootViewModelImplementation {
     )
   }
   
+  func setupCurrencyItem() -> SettingsCell.Model {
+    SettingsCell.Model(
+      identifier: .currencyItemTitle,
+      selectionHandler: { [weak self] in
+        self?.didTapCurrency?()
+      },
+      cellContentModel: SettingsCellContentView.Model(
+        title: .currencyItemTitle,
+        value: settingsController.activeCurrency().code
+      )
+    )
+  }
+  
   func setupSocialLinksSection() -> SettingsSection {
     SettingsSection.settingsItems(items: [
       setupSupportItem(),
@@ -122,8 +167,14 @@ private extension SettingsRootViewModelImplementation {
   func setupSupportItem() -> SettingsCell.Model {
     SettingsCell.Model(
       identifier: .logoutItemTitle,
-      selectionHandler: {
-        print("Log out")
+      selectionHandler: { [weak self] in
+        guard let self = self else { return }
+        Task {
+          guard let url = try await self.settingsController.supportURL else { return }
+          await MainActor.run {
+            self.urlOpener.open(url: url)
+          }
+        }
       },
       cellContentModel: SettingsCellContentView.Model(
         title: .supportTitle,
@@ -136,8 +187,14 @@ private extension SettingsRootViewModelImplementation {
   func setupTonkeeperNewsItem() -> SettingsCell.Model {
     SettingsCell.Model(
       identifier: .tonkeeperNewsTitle,
-      selectionHandler: {
-        print("Log out")
+      selectionHandler: { [weak self] in
+        guard let self = self else { return }
+        Task {
+          guard let url = try await self.settingsController.tonkeeperNewsURL else { return }
+          await MainActor.run {
+            self.urlOpener.open(url: url)
+          }
+        }
       },
       cellContentModel: SettingsCellContentView.Model(
         title: .tonkeeperNewsTitle,
@@ -150,8 +207,14 @@ private extension SettingsRootViewModelImplementation {
   func setupContactUsItem() -> SettingsCell.Model {
     SettingsCell.Model(
       identifier: .contactUsTitle,
-      selectionHandler: {
-        print("Log out")
+      selectionHandler: {  [weak self] in
+        guard let self = self else { return }
+        Task {
+          guard let url = try await self.settingsController.contactUsURL else { return }
+          await MainActor.run {
+            self.urlOpener.open(url: url)
+          }
+        }
       },
       cellContentModel: SettingsCellContentView.Model(
         title: .contactUsTitle,
@@ -164,8 +227,8 @@ private extension SettingsRootViewModelImplementation {
   func setupRateItem() -> SettingsCell.Model {
     SettingsCell.Model(
       identifier: .rateTonkeeperXTitle,
-      selectionHandler: {
-        print("Log out")
+      selectionHandler: { [weak self] in
+        self?.appStoreReviewer.requestReview()
       },
       cellContentModel: SettingsCellContentView.Model(
         title: .rateTonkeeperXTitle,
@@ -187,7 +250,7 @@ private extension SettingsRootViewModelImplementation {
           UIAlertAction(title: .deleteCancelButtonTitle, style: .cancel)
         ]
         
-        self.didShowAlert?(.deleteTitle, .deleteDescription, actions)
+//        self.didShowAlert?(.deleteTitle, .deleteDescription, actions)
       },
       cellContentModel: SettingsCellContentView.Model(
         title: .deleteItemTitle,
@@ -222,6 +285,8 @@ private extension String {
   static let securityItemTitle = "Security"
   
   static let backupItemTitle = "Backup"
+  
+  static let currencyItemTitle = "Currency"
   
   static let logoutItemTitle = "Sign Out"
   static let logoutTitle = "Log out?"

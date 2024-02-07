@@ -1,6 +1,7 @@
 import Foundation
 import TKUIKit
 import TKCore
+import KeeperCore
 
 public struct CustomizeWalletModel {
   public let name: String
@@ -40,8 +41,7 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
       let items = await createEmojiPickerItems()
       guard !items.isEmpty else { return }
       await MainActor.run {
-        selectedEmoji = items[0].emoji.emoji
-        didSelectEmoji?(items[0].emoji)
+        didSelectEmoji?(items.first(where: { $0.emoji.emoji == selectedEmoji })?.emoji ?? items[0].emoji)
         didUpdateModel?(createModel(emojiPickerItems: items))
       }
     }
@@ -58,9 +58,17 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
   
   // MARK: - State
   
-  private var walletName: String = .defaultWalletName
-  private var selectedColorIdentifier: String = .defaultColorIdentifier
-  private var selectedEmoji: String = .defaultEmoji
+  private lazy var walletName: String = wallet?.metaData.label ?? .defaultWalletName
+  private lazy var selectedColorIdentifier: String = wallet?.metaData.colorIdentifier ?? .defaultColorIdentifier
+  private lazy var selectedEmoji: String = wallet?.metaData.emoji ?? .defaultEmoji
+  
+  // MARK: - Dependencies
+  
+  private let wallet: Wallet?
+  
+  init(wallet: Wallet? = nil) {
+    self.wallet = wallet
+  }
 }
 
 private extension CustomizeWalletViewModelImplementation {
@@ -113,7 +121,6 @@ private extension CustomizeWalletViewModelImplementation {
     let items = emojis.map { emoji in
       WalletEmojiPickerView.Model.Item(
         emoji: emoji,
-        initialSelectedIndex: 0,
         selectHandler: { [weak self] in
           self?.selectedEmoji = emoji.emoji
           self?.didSelectEmoji?(emoji)

@@ -1,11 +1,33 @@
 import TKUIKit
 import TKCoordinator
+import TKCore
+import KeeperCore
 
-public struct SettingsModule {
-  public init() {}
+struct SettingsModule {
+  private let dependencies: Dependencies
+  init(dependencies: Dependencies) {
+    self.dependencies = dependencies
+  }
   
-  public func createSettingsCoordinator(router: NavigationControllerRouter) -> SettingsCoordinator {
-    let coordinator = SettingsCoordinator(router: router)
+  func createSettingsCoordinator(router: NavigationControllerRouter) -> SettingsCoordinator {
+    let coordinator = SettingsCoordinator(
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      coreAssembly: dependencies.coreAssembly,
+      router: router
+    )
     return coordinator
+  }
+}
+
+extension SettingsModule {
+  struct Dependencies {
+    let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    let coreAssembly: TKCore.CoreAssembly
+    
+    init(keeperCoreMainAssembly: KeeperCore.MainAssembly,
+         coreAssembly: TKCore.CoreAssembly) {
+      self.keeperCoreMainAssembly = keeperCoreMainAssembly
+      self.coreAssembly = coreAssembly
+    }
   }
 }

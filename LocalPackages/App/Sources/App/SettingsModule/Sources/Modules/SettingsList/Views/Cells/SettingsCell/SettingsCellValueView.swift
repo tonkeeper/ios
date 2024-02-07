@@ -2,19 +2,8 @@ import UIKit
 import TKUIKit
 
 final class SettingsCellValueView: UIView, ConfigurableView, ReusableView {
-  
-//  private let valueContainer = UIView()
   private var contentView: ReusableView?
-  
-  public override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-  
-  required public  init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
+
   public override func layoutSubviews() {
     super.layoutSubviews()
     
@@ -30,12 +19,18 @@ final class SettingsCellValueView: UIView, ConfigurableView, ReusableView {
   }
 
   public enum Model {
+    case text(SettingsCellTextValueView.Model)
     case icon(SettingsCellIconValueView.Model)
   }
   
   public func configure(model: Model) {
     contentView?.removeFromSuperview()
     switch model {
+    case .text(let model):
+      let view = SettingsCellTextValueView()
+      view.configure(model: model)
+      addSubview(view)
+      contentView = view
     case .icon(let model):
       let view = SettingsCellIconValueView()
       view.configure(model: model)
@@ -44,10 +39,3 @@ final class SettingsCellValueView: UIView, ConfigurableView, ReusableView {
     }
   }
 }
-
-private extension SettingsCellValueView {
-  func setup() {
-//    addSubview(valueContainer)
-  }
-}
-

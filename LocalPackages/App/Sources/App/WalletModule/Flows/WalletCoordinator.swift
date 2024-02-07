@@ -76,7 +76,12 @@ private extension WalletCoordinator {
   }
   
   func openSettings() {
-    let module = SettingsModule()
+    let module = SettingsModule(
+      dependencies: SettingsModule.Dependencies(
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly
+      )
+    )
     
     let coordinator = module.createSettingsCoordinator(router: router)
     coordinator.didFinish = { [weak self, weak coordinator] in

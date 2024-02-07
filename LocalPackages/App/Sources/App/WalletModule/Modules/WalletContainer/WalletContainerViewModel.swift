@@ -38,6 +38,13 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
         self.didUpdateActiveWallet()
       }
     }
+    walletMainController.didUpdateActiveWalletMetaData = { [weak self] in
+      guard let self = self else { return }
+      Task { @MainActor in
+        self.didUpdateActiveWalletMetaData()
+      }
+    }
+    
     didUpdateActiveWallet()
     walletMainController.loadBalances()
   }
@@ -59,6 +66,11 @@ private extension WalletContainerViewModelImplementation {
     let model = walletMainController.getActiveWalletModel()
     didUpdateModel?(createModel(walletModel: model))
     setupWalletBalance(animated: false)
+  }
+  
+  func didUpdateActiveWalletMetaData() {
+    let model = walletMainController.getActiveWalletModel()
+    didUpdateModel?(createModel(walletModel: model))
   }
   
   func createModel(walletModel: WalletMainController.WalletModel) -> WalletContainerView.Model {

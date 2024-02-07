@@ -40,7 +40,7 @@ final class SettingsCellContentView: UIView, ConfigurableView, TKCollectionViewC
   
   struct Model {
     let contentModel: TKListItemContentView.Model
-    let valueModel: SettingsCellValueView.Model
+    let valueModel: SettingsCellValueView.Model?
     
     init(title: String,
          subtitle: String? = nil,
@@ -76,11 +76,84 @@ final class SettingsCellContentView: UIView, ConfigurableView, TKCollectionViewC
         )
       )
     }
+    
+    init(title: String,
+         subtitle: String? = nil,
+         value: String) {
+      self.contentModel = TKListItemContentView.Model(
+        leftContentStackViewModel: TKListItemContentStackView.Model(
+          titleSubtitleModel: TKListItemTitleSubtitleView.Model(
+            title: title.withTextStyle(
+              .label1,
+              color: .Text.primary,
+              alignment: .left,
+              lineBreakMode: .byTruncatingTail
+            ),
+            subtitle: subtitle?.withTextStyle(
+              .body2,
+              color: .Text.secondary,
+              alignment: .left,
+              lineBreakMode: .byTruncatingTail
+            )
+          ),
+          description: nil
+        ),
+        rightContentStackViewModel: nil
+      )
+      
+      valueModel = .text(SettingsCellTextValueView.Model(text: value))
+    }
+    
+    init(title: String,
+         subtitle: String? = nil) {
+      self.contentModel = TKListItemContentView.Model(
+        leftContentStackViewModel: TKListItemContentStackView.Model(
+          titleSubtitleModel: TKListItemTitleSubtitleView.Model(
+            title: title.withTextStyle(
+              .label1,
+              color: .Text.primary,
+              alignment: .left,
+              lineBreakMode: .byTruncatingTail
+            ),
+            subtitle: subtitle?.withTextStyle(
+              .body2,
+              color: .Text.secondary,
+              alignment: .left,
+              lineBreakMode: .byTruncatingTail
+            )
+          ),
+          description: nil
+        ),
+        rightContentStackViewModel: nil
+      )
+      
+      valueModel = nil
+    }
+    
+    init(title: NSAttributedString) {
+      self.contentModel = TKListItemContentView.Model(
+        leftContentStackViewModel: TKListItemContentStackView.Model(
+          titleSubtitleModel: TKListItemTitleSubtitleView.Model(
+            title: title,
+            subtitle: nil
+          ),
+          description: nil
+        ),
+        rightContentStackViewModel: nil
+      )
+      
+      valueModel = nil
+    }
   }
   
   func configure(model: Model) {
     contentView.configure(model: model.contentModel)
-    valueView.configure(model: model.valueModel)
+    if let valueModel = model.valueModel {
+      valueView.configure(model: valueModel)
+      valueView.isHidden = false
+    } else {
+      valueView.isHidden = true
+    }
   }
   
   func prepareForReuse() {
