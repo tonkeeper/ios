@@ -1,8 +1,11 @@
-//
-//  File.swift
-//  
-//
-//  Created by Grigory Serebryanyy on 11.01.2024.
-//
+import TKUIKit
+import TKCoordinator
 
-import Foundation
+public struct SettingsModule {
+  public init() {}
+  
+  public func createSettingsCoordinator(router: NavigationControllerRouter) -> SettingsCoordinator {
+    let coordinator = SettingsCoordinator(router: router)
+    return coordinator
+  }
+}
