@@ -92,12 +92,29 @@ private extension WalletCoordinator {
     addChild(coordinator)
     coordinator.start()
   }
+  
+  func openTonDetails() {
+    
+  }
+  
+  func openJettonDetails(jettonInfo: JettonInfo) {
+    
+  }
 }
 
 extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
   func getWalletBalanceModuleView(wallet: Wallet) -> UIViewController {
     let walletBalanceController = keeperCoreMainAssembly.walletBalanceController(wallet: wallet)
     let module = WalletBalanceAssembly.module(walletBalanceController: walletBalanceController)
+    
+    module.output.didSelectTon = { [weak self] in
+      self?.openTonDetails()
+    }
+    
+    module.output.didSelectJetton = { [weak self] jettonInfo in
+      self?.openJettonDetails(jettonInfo: jettonInfo)
+    }
+    
     return module.view
   }
 }

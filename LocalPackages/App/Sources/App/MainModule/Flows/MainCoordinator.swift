@@ -29,7 +29,12 @@ public final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
     )
-    self.historyModule = HistoryModule()
+    self.historyModule = HistoryModule(
+      dependencies: HistoryModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    )
     self.collectiblesModule = CollectiblesModule()
     super.init(router: router)
   }

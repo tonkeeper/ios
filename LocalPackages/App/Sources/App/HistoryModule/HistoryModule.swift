@@ -1,14 +1,38 @@
 import TKUIKit
 import TKCoordinator
+import TKCore
+import KeeperCore
 
-public struct HistoryModule {
-  public init() {}
+struct HistoryModule {
+  private let dependencies: Dependencies
+  init(dependencies: Dependencies) {
+    self.dependencies = dependencies
+  }
   
-  public func createHistoryCoordinator() -> HistoryCoordinator {
+  func createHistoryCoordinator() -> HistoryCoordinator {
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
-    let coordinator = HistoryCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+    let coordinator = HistoryCoordinator(
+      router: NavigationControllerRouter(
+        rootViewController: navigationController
+      ),
+      coreAssembly: dependencies.coreAssembly,
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
+    )
     return coordinator
+  }
+}
+
+extension HistoryModule {
+  struct Dependencies {
+    let coreAssembly: TKCore.CoreAssembly
+    let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    
+    public init(coreAssembly: TKCore.CoreAssembly,
+                keeperCoreMainAssembly: KeeperCore.MainAssembly) {
+      self.coreAssembly = coreAssembly
+      self.keeperCoreMainAssembly = keeperCoreMainAssembly
+    }
   }
 }

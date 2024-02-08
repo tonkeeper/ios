@@ -3,7 +3,8 @@ import TKUIKit
 import KeeperCore
 
 protocol WalletBalanceModuleOutput: AnyObject {
-  
+  var didSelectTon: (() -> Void)? { get set }
+  var didSelectJetton: ((JettonInfo) -> Void)? { get set }
 }
 
 protocol WalletBalanceViewModel: AnyObject {
@@ -17,6 +18,9 @@ protocol WalletBalanceViewModel: AnyObject {
 final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput {
   
   // MARK: - WalletBalanceModuleOutput
+  
+  var didSelectTon: (() -> Void)?
+  var didSelectJetton: ((JettonInfo) -> Void)?
   
   // MARK: - WalletBalanceViewModel
   
@@ -62,8 +66,13 @@ private extension WalletBalanceViewModelImplementation {
   func updateBalance(balanceModel: WalletBalanceModel) {
     let headerModel = createHeaderModel(balanceModel: balanceModel)
     let balanceItems = balanceModel.items.map { item in
-      listItemMapper.mapBalanceItems(item) {
-        print("Did tap balance item")
+      listItemMapper.mapBalanceItems(item) { [weak self] in
+        switch item.token {
+        case .ton:
+          self?.didSelectTon?()
+        case .jetton(let jettonInfo):
+          self?.didSelectJetton?(jettonInfo)
+        }
       }
     }
     
