@@ -32,6 +32,10 @@ private extension HistoryListViewController {
       collectionController?.setSections(sections)
     }
     
+    viewModel.didStartPagination = { [weak collectionController] pagination in
+      collectionController?.showPagination(pagination)
+    }
+    
     collectionController.loadNextPage = { [weak viewModel] in 
       viewModel?.loadNext()
     }

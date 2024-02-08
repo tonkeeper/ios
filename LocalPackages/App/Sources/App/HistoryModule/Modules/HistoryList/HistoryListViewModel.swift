@@ -3,7 +3,8 @@ import TKUIKit
 import KeeperCore
 
 protocol HistoryListModuleOutput: AnyObject {
-  
+  var noEvents: (() -> Void)? { get set }
+  var hasEvents: (() -> Void)? { get set }
 }
 
 protocol HistoryListModuleInput: AnyObject {
@@ -12,6 +13,7 @@ protocol HistoryListModuleInput: AnyObject {
 
 protocol HistoryListViewModel: AnyObject {
   var didUpdateHistory: (([HistoryListSection]) -> Void)? { get set }
+  var didStartPagination: ((HistoryListSection.Pagination) -> Void)? { get set }
   
   func viewDidLoad()
   func loadNext()
@@ -21,11 +23,15 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   // MARK: - HistoryListModuleOutput
   
+  var noEvents: (() -> Void)?
+  var hasEvents: (() -> Void)?
+  
   // MARK: - HistoryListModuleInput
   
   // MARK: - HistoryListViewModel
   
   var didUpdateHistory: (([HistoryListSection]) -> Void)?
+  var didStartPagination: ((HistoryListSection.Pagination) -> Void)?
   
   func viewDidLoad() {
     historyListController.didSendEvent = { [weak self] event in
@@ -59,10 +65,24 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
 private extension HistoryListViewModelImplementation {
   func handleEvent(_ event: HistoryListController.Event) {
     switch event {
-    case .didLoadEvents(let sections):
-      handleLoadedEvents(sections)
-    case .didReset:
+    case .reset:
       cachedEventsModels = [:]
+    case .loadingStart:
+      break
+    case .noEvents:
+      Task { @MainActor in
+        noEvents?()
+      }
+    case .events(let sections):
+      handleLoadedEvents(sections)
+    case .paginationStart:
+      Task { @MainActor in
+        didStartPagination?(.loading)
+      }
+    case .paginationFailed:
+      Task { @MainActor in
+        didStartPagination?(.error(title: "Failed to load"))
+      }
     }
   }
   
@@ -80,6 +100,7 @@ private extension HistoryListViewModelImplementation {
     }
     Task { @MainActor in
       didUpdateHistory?(sectionsModels)
+      hasEvents?()
     }
   }
   

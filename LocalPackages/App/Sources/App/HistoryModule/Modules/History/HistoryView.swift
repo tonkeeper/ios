@@ -2,6 +2,8 @@ import UIKit
 import TKUIKit
 
 final class HistoryView: UIView {
+  let navigationBarView = NavigationBarView()
+  let largeTitleView = ActivityLargeTitleView()
   
   let listContainer = UIView()
   let emptyContainer = UIView()
@@ -58,10 +60,18 @@ private extension HistoryView {
     
     addSubview(listContainer)
     addSubview(emptyContainer)
+    addSubview(navigationBarView)
+    
+    navigationBarView.largeBarContentView = largeTitleView
     
     emptyContainer.translatesAutoresizingMaskIntoConstraints = false
     listContainer.translatesAutoresizingMaskIntoConstraints = false
+    navigationBarView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
+      navigationBarView.topAnchor.constraint(equalTo: topAnchor),
+      navigationBarView.leftAnchor.constraint(equalTo: leftAnchor),
+      navigationBarView.rightAnchor.constraint(equalTo: rightAnchor),
+      
       emptyContainer.topAnchor.constraint(equalTo: topAnchor),
       emptyContainer.leftAnchor.constraint(equalTo: leftAnchor),
       emptyContainer.bottomAnchor.constraint(equalTo: bottomAnchor),

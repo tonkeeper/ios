@@ -5,7 +5,7 @@ final class HistoryViewController: GenericViewViewController<HistoryView> {
   private let viewModel: HistoryViewModel
   
   private var emptyViewController: UIViewController?
-  private var listViewController: UIViewController?
+  private var listViewController: HistoryListViewController?
   
   init(viewModel: HistoryViewModel) {
     self.viewModel = viewModel
@@ -19,16 +19,30 @@ final class HistoryViewController: GenericViewViewController<HistoryView> {
   override func viewDidLoad() {
     super.viewDidLoad()
     
+    setup()
     setupBindings()
     viewModel.viewDidLoad()
     
     customView.showList()
+  }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    listViewController?.customView.collectionView.contentInset.top = customView.navigationBarView.additionalInset
+    listViewController?.customView.collectionView.verticalScrollIndicatorInsets.top = customView.navigationBarView.additionalInset
   }
 }
 
 // MARK: - Private
 
 private extension HistoryViewController {
+  func setup() {
+    navigationController?.setNavigationBarHidden(true, animated: false)
+    
+    customView.navigationBarView.title = "History"
+    customView.largeTitleView.title = "History"
+  }
+  
   func setupBindings() {
     viewModel.didUpdateEmptyViewController = { [weak self] viewController in
       self?.setupEmptyViewController(viewController: viewController)
@@ -36,6 +50,10 @@ private extension HistoryViewController {
     
     viewModel.didUpdateListViewController = { [weak self] viewController in
       self?.setupListViewController(viewController: viewController)
+    }
+    
+    viewModel.didUpdateIsEmpty = { [weak self] isEmpty in
+      isEmpty ? self?.customView.showEmptyState() : self?.customView.showList()
     }
   }
   
@@ -47,12 +65,14 @@ private extension HistoryViewController {
     viewController.didMove(toParent: self)
   }
   
-  func setupListViewController(viewController: UIViewController) {
+  func setupListViewController(viewController: HistoryListViewController) {
     self.listViewController?.removeFromParent()
     self.listViewController = viewController
     addChild(viewController)
     customView.addListContentView(view: viewController.view)
     viewController.didMove(toParent: self)
+    
+    customView.navigationBarView.scrollView = listViewController?.customView.collectionView
   }
 }
 

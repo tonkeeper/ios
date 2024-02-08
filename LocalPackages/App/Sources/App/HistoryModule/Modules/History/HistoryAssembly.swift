@@ -5,7 +5,7 @@ import KeeperCore
 struct HistoryAssembly {
   private init() {}
   static func module(historyController: HistoryController,
-                     listModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryListViewController, HistoryListViewModel, HistoryListModuleInput>,
+                     listModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput>,
                      emptyModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryEmptyViewController, HistoryEmptyViewModel, Void>)
   -> MVVMModule<HistoryViewController, HistoryModuleOutput, Void> {
 

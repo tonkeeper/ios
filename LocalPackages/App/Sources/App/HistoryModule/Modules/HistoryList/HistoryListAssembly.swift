@@ -5,7 +5,7 @@ import KeeperCore
 struct HistoryListAssembly {
   private init() {}
   static func module(historyListController: HistoryListController,
-                     historyEventMapper: HistoryEventMapper) -> MVVMModule<HistoryListViewController, HistoryListViewModel, HistoryListModuleInput> {
+                     historyEventMapper: HistoryEventMapper) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
     let viewModel = HistoryListViewModelImplementation(
       historyListController: historyListController,
       historyEventMapper: historyEventMapper

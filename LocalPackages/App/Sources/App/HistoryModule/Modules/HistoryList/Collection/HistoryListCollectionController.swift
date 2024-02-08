@@ -3,13 +3,18 @@ import TKUIKit
 
 final class HistoryListCollectionController: NSObject {
   typealias DataSource = UICollectionViewDiffableDataSource<HistoryListSection, AnyHashable>
+  typealias SectionHeaderView = TKCollectionViewSupplementaryContainerView<TKListTitleView>
+  typealias FooterView = TKCollectionViewSupplementaryContainerView<HistoryListFooterView>
   
   typealias HistoryCellRegistration = UICollectionView.CellRegistration<HistoryEventCell, HistoryEventCell.Model>
   
   var loadNextPage: (() -> Void)?
   
+  private var paginationSection: HistoryListSection?
+  
   private let collectionView: UICollectionView
   private let dataSource: DataSource
+  
   private let historyCellRegistration: HistoryCellRegistration
   
   init(collectionView: UICollectionView) {
@@ -18,7 +23,7 @@ final class HistoryListCollectionController: NSObject {
     let historyCellRegistration = HistoryCellRegistration(handler: { cell, indexPath, itemIdentifier in
       cell.configure(model: itemIdentifier)
     })
-    
+
     let dataSource = DataSource(
       collectionView: collectionView,
       cellProvider: { collectionView, indexPath, itemIdentifier in
@@ -33,10 +38,15 @@ final class HistoryListCollectionController: NSObject {
         }
       }
     )
+    
     self.dataSource = dataSource
     self.historyCellRegistration = historyCellRegistration
     
     super.init()
+    
+    dataSource.supplementaryViewProvider = { [weak self] collectionView, kind, indexPath in
+      self?.dequeueSupplementaryView(collectionView: collectionView, kind: kind, indexPath: indexPath)
+    }
     
     let layout = HistoryListCollectionLayout.layout { sectionIndex in
       return dataSource.snapshot().sectionIdentifiers[sectionIndex]
@@ -45,6 +55,17 @@ final class HistoryListCollectionController: NSObject {
     collectionView.setCollectionViewLayout(layout, animated: false)
     
     collectionView.delegate = self
+    
+    collectionView.register(
+      SectionHeaderView.self,
+      forSupplementaryViewOfKind: HistoryListSupplementaryItem.sectionHeader.rawValue,
+      withReuseIdentifier: SectionHeaderView.reuseIdentifier
+    )
+    collectionView.register(
+      FooterView.self,
+      forSupplementaryViewOfKind: HistoryListSupplementaryItem.footer.rawValue,
+      withReuseIdentifier: FooterView.reuseIdentifier
+    )
   }
   
   func setSections(_ sections: [HistoryListSection]) {
@@ -55,8 +76,23 @@ final class HistoryListCollectionController: NSObject {
       switch section {
       case .events(let sectionModel):
         snapshot.appendItems(sectionModel.events, toSection: section)
+      case .pagination:
+        continue
       }
     }
+    UIView.performWithoutAnimation {
+      dataSource.apply(snapshot)
+    }
+  }
+  
+  func showPagination(_ pagination: HistoryListSection.Pagination) {
+    var snapshot = dataSource.snapshot()
+    if let paginationSection = paginationSection {
+      snapshot.deleteSections([paginationSection])
+    }
+    let updatedPagination = HistoryListSection.pagination(pagination)
+    self.paginationSection = updatedPagination
+    snapshot.appendSections([updatedPagination])
     UIView.performWithoutAnimation {
       dataSource.apply(snapshot)
     }
@@ -69,6 +105,40 @@ private extension HistoryListCollectionController {
     let numberOfItems = collectionView.numberOfItems(inSection: numberOfSections - 1)
     guard (indexPath.section == numberOfSections - 1) && (indexPath.item == numberOfItems - 1) else { return }
     loadNextPage?()
+  }
+  
+  func dequeueSupplementaryView(collectionView: UICollectionView, 
+                                kind: String,
+                                indexPath: IndexPath) -> UICollectionReusableView? {
+    let snapshot = self.dataSource.snapshot()
+    let section = snapshot.sectionIdentifiers[indexPath.section]
+    switch section {
+    case .events(let model):
+      let sectionHeaderView = collectionView.dequeueReusableSupplementaryView(
+        ofKind: kind,
+        withReuseIdentifier: SectionHeaderView.reuseIdentifier,
+        for: indexPath
+      )
+      (sectionHeaderView as? SectionHeaderView)?.configure(model: TKListTitleView.Model(title: model.title))
+      return sectionHeaderView
+    case .pagination(let pagination):
+      let footerView = collectionView.dequeueReusableSupplementaryView(
+        ofKind: kind,
+        withReuseIdentifier: FooterView.reuseIdentifier,
+        for: indexPath
+      )
+      let state: HistoryListFooterView.State
+      switch pagination {
+      case .loading:
+        state = .loading
+      case .error(let title):
+        state = .error(title: title, retryButtonAction: { [weak self] in
+          self?.loadNextPage?()
+        })
+      }
+      (footerView as? FooterView)?.configure(model: HistoryListFooterView.Model(state: state))
+      return footerView
+    }
   }
 }
 
