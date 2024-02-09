@@ -108,7 +108,9 @@ private extension HistoryListViewModelImplementation {
     if let eventModel = cachedEventsModels[event.eventId] {
       return eventModel
     } else {
-      let eventModel = historyEventMapper.mapEvent(event)
+      let eventModel = historyEventMapper.mapEvent(event) { nft in
+        print("open \(nft)")
+      }
       cachedEventsModels[event.eventId] = eventModel
       return eventModel
     }

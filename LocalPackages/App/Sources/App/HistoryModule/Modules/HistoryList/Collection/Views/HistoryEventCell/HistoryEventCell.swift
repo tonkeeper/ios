@@ -1,9 +1,7 @@
 import UIKit
 import TKUIKit
 
-class HistoryEventCell: TKCollectionViewContainerCell<HistoryEventCellContentView> {
-  
-}
+class HistoryEventCell: TKCollectionViewContainerCell<HistoryEventCellContentView> {}
 
 final class HistoryEventCellContentView: UIView, ConfigurableView, TKCollectionViewCellContentView, ReusableView {
   var padding: UIEdgeInsets = .zero
@@ -39,6 +37,10 @@ final class HistoryEventCellContentView: UIView, ConfigurableView, TKCollectionV
     return CGSize(width: size.width, height: height)
   }
   
+  func prepareForReuse() {
+    actionViews.forEach { $0.prepareForReuse() }
+  }
+  
   struct Model {
     let actionModels: [HistoryEventActionView.Model]
   }
@@ -61,6 +63,7 @@ final class HistoryEventCellContentView: UIView, ConfigurableView, TKCollectionV
         actionViews.append(view)
         addSubview(view)
       }
+      view.isSeparatorVisible = index < model.actionModels.count - 1
       view.configure(model: actionView)
     }
     self.actionViews = actionViews

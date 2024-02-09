@@ -1,18 +1,20 @@
 import UIKit
 import TKUIKit
 import KeeperCore
+import TKCore
 
 struct HistoryEventMapper {
   
+  let imageLoader = ImageLoader()
   let accountEventActionContentProvider: AccountEventActionContentProvider
   
   init(accountEventActionContentProvider: AccountEventActionContentProvider) {
     self.accountEventActionContentProvider = accountEventActionContentProvider
   }
   
-  func mapEvent(_ event: HistoryListEvent) -> HistoryEventCell.Model {
+  func mapEvent(_ event: HistoryListEvent, nftAction: @escaping (NFT) -> Void) -> HistoryEventCell.Model {
     let actionModels = event.actions.map { action in
-      mapAction(action)
+      mapAction(action, nftAction: nftAction)
     }
     return HistoryEventCell.Model(
       identifier: event.eventId,
@@ -22,7 +24,7 @@ struct HistoryEventMapper {
     )
   }
   
-  func mapAction(_ action: HistoryListEvent.Action) -> HistoryEventActionView.Model {
+  func mapAction(_ action: HistoryListEvent.Action, nftAction: @escaping (NFT) -> Void) -> HistoryEventActionView.Model {
     let value = action.amount?.withTextStyle(
       .label1,
       color: action.eventType.amountColor,
@@ -46,8 +48,53 @@ struct HistoryEventMapper {
       date: action.rightTopDescription
     )
     
+    let statusModel = HistoryEventActionView.StatusView.Model(
+      status: action.status?.withTextStyle(
+        .body2,
+        color: .Accent.orange,
+        alignment: .left,
+        lineBreakMode: .byTruncatingTail
+      )
+    )
+    
+    var commentModel: HistoryEventActionView.CommentView.Model?
+    if let comment = action.comment {
+      commentModel = HistoryEventActionView.CommentView.Model(comment: comment.withTextStyle(.body2, color: .Text.primary))
+    }
+    
+    var descriptionModel: HistoryEventActionView.CommentView.Model?
+    if let description = action.description {
+      descriptionModel = HistoryEventActionView.CommentView.Model(comment: description.withTextStyle(.body2, color: .Text.primary))
+    }
+    
+    var nftModel: HistoryEventActionView.NFTView.Model?
+    if let nft = action.nft {
+      nftModel = HistoryEventActionView.NFTView.Model(
+        imageDownloadTask: TKCore.ImageDownloadTask(closure: {
+          [imageLoader] imageView,
+          size,
+          cornerRadius in
+          imageLoader.loadImage(
+            url: nft.image,
+            imageView: imageView,
+            size: size,
+            cornerRadius: cornerRadius
+          )
+        }),
+        name: nft.name,
+        collectionName: nft.collectionName,
+        action: {
+          nftAction(nft.nft)
+        }
+      )
+    }
+
     return HistoryEventActionView.Model(
-      listItemModel: listItemModel
+      listItemModel: listItemModel,
+      statusModel: statusModel,
+      commentModel: commentModel,
+      descriptionModel: descriptionModel,
+      nftModel: nftModel
     )
   }
 }
