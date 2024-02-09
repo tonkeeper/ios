@@ -14,6 +14,7 @@ protocol HistoryListModuleInput: AnyObject {
 protocol HistoryListViewModel: AnyObject {
   var didUpdateHistory: (([HistoryListSection]) -> Void)? { get set }
   var didStartPagination: ((HistoryListSection.Pagination) -> Void)? { get set }
+  var didStartLoading: (() -> Void)? { get set }
   
   func viewDidLoad()
   func loadNext()
@@ -32,6 +33,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   var didUpdateHistory: (([HistoryListSection]) -> Void)?
   var didStartPagination: ((HistoryListSection.Pagination) -> Void)?
+  var didStartLoading: (() -> Void)?
   
   func viewDidLoad() {
     historyListController.didSendEvent = { [weak self] event in
@@ -68,7 +70,9 @@ private extension HistoryListViewModelImplementation {
     case .reset:
       cachedEventsModels = [:]
     case .loadingStart:
-      break
+      Task { @MainActor in
+        didStartLoading?()
+      }
     case .noEvents:
       Task { @MainActor in
         noEvents?()

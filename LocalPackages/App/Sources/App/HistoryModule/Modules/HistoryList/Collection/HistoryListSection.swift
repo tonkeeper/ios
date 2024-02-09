@@ -3,7 +3,7 @@ import Foundation
 enum HistoryListSection: Hashable {
   case events(HistoryListEventsSection)
   case pagination(Pagination)
-//  case shimmer(shimmers: [String])
+  case shimmer
   
   enum Pagination: Hashable {
     case loading

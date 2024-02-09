@@ -7,11 +7,7 @@ final class NavigationBarView: UIView {
     bounds.height - safeAreaInsets.top
   }
   
-  var isLarge = true {
-    didSet {
-      didChangeIsLarge()
-    }
-  }
+  private var isLarge = true
   
   let backgroundView: UIView = {
     let view = UIView()
@@ -76,6 +72,11 @@ final class NavigationBarView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  func setIsLarge(_ isLarge: Bool, animated: Bool) {
+    self.isLarge = isLarge
+    didChangeIsLarge(animated: animated)
+  }
 }
 
 private extension NavigationBarView {
@@ -130,7 +131,8 @@ private extension NavigationBarView {
       contentOffsetToken = scrollView.observe(\.contentOffset) { [weak self] scrollView, _ in
         let offset = scrollView.contentOffset.y + scrollView.adjustedContentInset.top
         self?.largeBarView.transform = CGAffineTransform(translationX: 0, y: -offset)
-        self?.isLarge = offset <= .largeBarHeight - 20
+        let isLarge = offset <= .largeBarHeight - 20
+        self?.setIsLarge(isLarge, animated: scrollView.isTracking)
         self?.separatorView.isHidden = offset < .largeBarHeight
       }
     } else {
@@ -139,7 +141,7 @@ private extension NavigationBarView {
     }
   }
   
-  func didChangeIsLarge(animated: Bool = true) {
+  func didChangeIsLarge(animated: Bool = false) {
     let duration: TimeInterval = animated ? 0.2 : 0
     let titleAlpha: CGFloat = isLarge ? 0 : 1
     let largeBarContentViewAlpha: CGFloat = isLarge ? 1 : 0

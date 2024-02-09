@@ -5,6 +5,7 @@ final class HistoryListCollectionController: NSObject {
   typealias DataSource = UICollectionViewDiffableDataSource<HistoryListSection, AnyHashable>
   typealias SectionHeaderView = TKCollectionViewSupplementaryContainerView<TKListTitleView>
   typealias FooterView = TKCollectionViewSupplementaryContainerView<HistoryListFooterView>
+  typealias ListShimmerView = TKCollectionViewSupplementaryContainerView<HistoryListShimmerView>
   
   typealias HistoryCellRegistration = UICollectionView.CellRegistration<HistoryEventCell, HistoryEventCell.Model>
   
@@ -74,6 +75,11 @@ final class HistoryListCollectionController: NSObject {
       forSupplementaryViewOfKind: HistoryListSupplementaryItem.header.rawValue,
       withReuseIdentifier: CollectionViewSupplementaryContainerView.reuseIdentifier
     )
+    collectionView.register(
+      ListShimmerView.self,
+      forSupplementaryViewOfKind: HistoryListSupplementaryItem.shimmer.rawValue,
+      withReuseIdentifier: ListShimmerView.reuseIdentifier
+    )
   }
   
   func setSections(_ sections: [HistoryListSection]) {
@@ -84,6 +90,8 @@ final class HistoryListCollectionController: NSObject {
       switch section {
       case .events(let sectionModel):
         snapshot.appendItems(sectionModel.events, toSection: section)
+      case .shimmer:
+        continue
       case .pagination:
         continue
       }
@@ -101,6 +109,14 @@ final class HistoryListCollectionController: NSObject {
     let updatedPagination = HistoryListSection.pagination(pagination)
     self.paginationSection = updatedPagination
     snapshot.appendSections([updatedPagination])
+    UIView.performWithoutAnimation {
+      dataSource.apply(snapshot)
+    }
+  }
+  
+  func showShimmer() {
+    var snapshot = NSDiffableDataSourceSnapshot<HistoryListSection, AnyHashable>()
+    snapshot.appendSections([.shimmer])
     UIView.performWithoutAnimation {
       dataSource.apply(snapshot)
     }
@@ -155,6 +171,14 @@ private extension HistoryListCollectionController {
       }
       (footerView as? FooterView)?.configure(model: HistoryListFooterView.Model(state: state))
       return footerView
+    case .shimmer:
+      let shimmerView = collectionView.dequeueReusableSupplementaryView(
+        ofKind: kind,
+        withReuseIdentifier: ListShimmerView.reuseIdentifier,
+        for: indexPath
+      )
+      (shimmerView as? ListShimmerView)?.contentView.startAnimation()
+      return shimmerView
     }
   }
 }

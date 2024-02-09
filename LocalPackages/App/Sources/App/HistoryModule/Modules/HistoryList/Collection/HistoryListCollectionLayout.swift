@@ -23,6 +23,8 @@ struct HistoryListCollectionLayout {
       createEventsSection()
     case .pagination:
       createPaginationSection()
+    case .shimmer:
+     createShimmerSection()
     }
   }
   
@@ -77,6 +79,29 @@ struct HistoryListCollectionLayout {
     let footer = NSCollectionLayoutBoundarySupplementaryItem(
       layoutSize: footerSize,
       elementKind: HistoryListSupplementaryItem.footer.rawValue,
+      alignment: .bottom
+    )
+    section.boundarySupplementaryItems = [footer]
+    
+    return section
+  }
+  
+  static func createShimmerSection() -> NSCollectionLayoutSection {
+    let item = NSCollectionLayoutItem(layoutSize: .init(widthDimension: .fractionalWidth(1.0),
+                                                        heightDimension: .absolute(10)))
+    let group = NSCollectionLayoutGroup.vertical(
+      layoutSize: .init(widthDimension: .fractionalWidth(1.0),
+                        heightDimension: .absolute(10)),
+      subitems: [item]
+    )
+    let section = NSCollectionLayoutSection(group: group)
+    let footerSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(100)
+    )
+    let footer = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: footerSize,
+      elementKind: HistoryListSupplementaryItem.shimmer.rawValue,
       alignment: .bottom
     )
     section.boundarySupplementaryItems = [footer]
