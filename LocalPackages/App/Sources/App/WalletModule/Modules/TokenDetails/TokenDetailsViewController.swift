@@ -38,6 +38,10 @@ private extension TokenDetailsViewController {
       self?.headerViewController.informationView.configure(model: model)
     }
     
+    viewModel.didUpdateButtonsView = { [weak self] model in
+      self?.headerViewController.buttonsView.configure(model: model)
+    }
+    
     viewModel.didUpdateChartViewController = { [weak self] viewController in
       self?.headerViewController.embedChartViewController(viewController)
     }

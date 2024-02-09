@@ -5,12 +5,15 @@ import KeeperCore
 import TKCore
 
 protocol TokenDetailsModuleOutput: AnyObject {
-  
+  var didTapSend: ((KeeperCore.Token) -> Void)? { get set }
+  var didTapReceive: ((KeeperCore.Token) -> Void)? { get set }
+  var didTapBuyOrSell: (() -> Void)? { get set }
 }
 
 protocol TokenDetailsViewModel: AnyObject {
   var didUpdateTitleView: ((TokenDetailsTitleView.Model) -> Void)? { get set }
   var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)? { get set }
+  var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)? { get set }
   var didUpdateChartViewController: ((UIViewController) -> Void)? { get set }
   
   func viewDidLoad()
@@ -20,11 +23,15 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   
   // MARK: - TokenDetailsModuleOutput
   
+  var didTapSend: ((KeeperCore.Token) -> Void)?
+  var didTapReceive: ((KeeperCore.Token) -> Void)?
+  var didTapBuyOrSell: (() -> Void)?
   
   // MARK: - TokenDetailsViewModel
   
   var didUpdateTitleView: ((TokenDetailsTitleView.Model) -> Void)?
   var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)?
+  var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)?
   var didUpdateChartViewController: ((UIViewController) -> Void)?
   
   func viewDidLoad() {
@@ -61,6 +68,7 @@ private extension TokenDetailsViewModelImplementation {
   func didUpdateTokenModel(model: TokenDetailsController.TokenModel) {
     setupTitleView(model: model)
     setupInformationView(model: model)
+    setupButtonsView(model: model)
   }
   
   func setupTitleView(model: TokenDetailsController.TokenModel) {
@@ -70,6 +78,29 @@ private extension TokenDetailsViewModelImplementation {
         warning: model.tokenSubtitle
       )
     )
+  }
+  
+  func setupButtonsView(model: TokenDetailsController.TokenModel) {
+    let mapper = IconButtonModelMapper()
+    let buttons = model.buttons.map { buttonModel in
+      TokenDetailsHeaderButtonsView.Model.Button(
+        configuration: mapper.mapButton(model: buttonModel),
+        action: { [weak self] in
+          switch buttonModel {
+          case .send(let token):
+            self?.didTapSend?(token)
+          case .receive(let token):
+            self?.didTapReceive?(token)
+          case .buySell:
+            self?.didTapBuyOrSell?()
+          default:
+            break
+          }
+        }
+      )
+    }
+    let model = TokenDetailsHeaderButtonsView.Model(buttons: buttons)
+    didUpdateButtonsView?(model)
   }
   
   func setupInformationView(model: TokenDetailsController.TokenModel) {

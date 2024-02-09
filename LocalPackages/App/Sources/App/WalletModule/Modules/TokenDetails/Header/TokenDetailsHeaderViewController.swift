@@ -4,15 +4,18 @@ import TKUIKit
 final class TokenDetailsHeaderViewController: UIViewController {
   
   let informationView = TokenDetailsInformationView()
+  let buttonsView = TokenDetailsHeaderButtonsView()
   let chartContainer = UIView()
   
   override func viewDidLoad() {
     super.viewDidLoad()
     
     view.addSubview(informationView)
+    view.addSubview(buttonsView)
     view.addSubview(chartContainer)
     
     informationView.translatesAutoresizingMaskIntoConstraints = false
+    buttonsView.translatesAutoresizingMaskIntoConstraints = false
     chartContainer.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
@@ -20,7 +23,11 @@ final class TokenDetailsHeaderViewController: UIViewController {
       informationView.leftAnchor.constraint(equalTo: view.leftAnchor),
       informationView.rightAnchor.constraint(equalTo: view.rightAnchor),
       
-      chartContainer.topAnchor.constraint(equalTo: informationView.bottomAnchor),
+      buttonsView.topAnchor.constraint(equalTo: informationView.bottomAnchor),
+      buttonsView.leftAnchor.constraint(equalTo: view.leftAnchor),
+      buttonsView.rightAnchor.constraint(equalTo: view.rightAnchor),
+      
+      chartContainer.topAnchor.constraint(equalTo: buttonsView.bottomAnchor),
       chartContainer.leftAnchor.constraint(equalTo: view.leftAnchor),
       chartContainer.bottomAnchor.constraint(equalTo: view.bottomAnchor),
       chartContainer.rightAnchor.constraint(equalTo: view.rightAnchor)
