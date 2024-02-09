@@ -2,8 +2,9 @@ import UIKit
 import TKUIKit
 
 final class HistoryListViewController: GenericViewViewController<HistoryListView> {
-  
+
   private var collectionController: HistoryListCollectionController!
+  private var headerViewController: UIViewController?
   
   private let viewModel: HistoryListViewModel
   
@@ -19,10 +20,24 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    collectionController = HistoryListCollectionController(collectionView: customView.collectionView)
+    collectionController = HistoryListCollectionController(collectionView: customView.collectionView, headerViewProvider: { [weak self] in
+      self?.headerViewController?.view
+    })
     
     setupBindings()
     viewModel.viewDidLoad()
+  }
+  
+  func setHeaderViewController(_ headerViewController: UIViewController?) {
+    self.headerViewController?.willMove(toParent: nil)
+    self.headerViewController?.removeFromParent()
+    self.headerViewController?.didMove(toParent: nil)
+    self.headerViewController = headerViewController
+    if let headerViewController = headerViewController {
+      addChild(headerViewController)
+    }
+    headerViewController?.didMove(toParent: self)
+    customView.collectionView.reloadData()
   }
 }
 

@@ -22,6 +22,26 @@ struct HistoryModule {
     )
     return coordinator
   }
+  
+  func createTonHistoryListModule() -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+    HistoryListAssembly.module(
+      historyListController: dependencies.keeperCoreMainAssembly.tonEventsHistoryListController(),
+      historyEventMapper: HistoryEventMapper(
+        accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()
+      )
+    )
+  }
+  
+  func createJettonHistoryListModule(
+    jettonInfo: JettonInfo
+  ) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+    HistoryListAssembly.module(
+      historyListController: dependencies.keeperCoreMainAssembly.jettonEventsHistoryListController(jettonInfo: jettonInfo),
+      historyEventMapper: HistoryEventMapper(
+        accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()
+      )
+    )
+  }
 }
 
 extension HistoryModule {

@@ -3,7 +3,6 @@ import TKUIKit
 
 public final class SettingsListView: UIView {
   let navigationBar = UINavigationBar()
-//  let navigationBar = NavigationBarView()
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
   
   override init(frame: CGRect) {

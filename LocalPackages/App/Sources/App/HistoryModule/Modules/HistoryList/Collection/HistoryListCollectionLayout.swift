@@ -2,8 +2,11 @@ import UIKit
 
 struct HistoryListCollectionLayout {
   static func layout(sectionProvider: @escaping (_ sectionIndex: Int) -> HistoryListSection?) -> UICollectionViewLayout {
+    let header = createHeaderSupplementaryItem()
+    
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
     configuration.scrollDirection = .vertical
+    configuration.boundarySupplementaryItems = [header]
     
     return UICollectionViewCompositionalLayout(
       sectionProvider: { sectionIndex, _ in
@@ -79,5 +82,18 @@ struct HistoryListCollectionLayout {
     section.boundarySupplementaryItems = [footer]
     
     return section
+  }
+  
+  static func createHeaderSupplementaryItem() -> NSCollectionLayoutBoundarySupplementaryItem {
+    let size = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(0)
+    )
+    let header = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: size,
+      elementKind: HistoryListSupplementaryItem.header.rawValue,
+      alignment: .top
+    )
+    return header
   }
 }

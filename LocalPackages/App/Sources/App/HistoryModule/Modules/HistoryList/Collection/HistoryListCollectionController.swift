@@ -13,12 +13,15 @@ final class HistoryListCollectionController: NSObject {
   private var paginationSection: HistoryListSection?
   
   private let collectionView: UICollectionView
+  private let headerViewProvider: () -> UIView?
   private let dataSource: DataSource
   
   private let historyCellRegistration: HistoryCellRegistration
   
-  init(collectionView: UICollectionView) {
+  init(collectionView: UICollectionView,
+       headerViewProvider: @escaping () -> UIView?) {
     self.collectionView = collectionView
+    self.headerViewProvider = headerViewProvider
     
     let historyCellRegistration = HistoryCellRegistration(handler: { cell, indexPath, itemIdentifier in
       cell.configure(model: itemIdentifier)
@@ -66,6 +69,11 @@ final class HistoryListCollectionController: NSObject {
       forSupplementaryViewOfKind: HistoryListSupplementaryItem.footer.rawValue,
       withReuseIdentifier: FooterView.reuseIdentifier
     )
+    collectionView.register(
+      CollectionViewSupplementaryContainerView.self,
+      forSupplementaryViewOfKind: HistoryListSupplementaryItem.header.rawValue,
+      withReuseIdentifier: CollectionViewSupplementaryContainerView.reuseIdentifier
+    )
   }
   
   func setSections(_ sections: [HistoryListSection]) {
@@ -110,6 +118,15 @@ private extension HistoryListCollectionController {
   func dequeueSupplementaryView(collectionView: UICollectionView, 
                                 kind: String,
                                 indexPath: IndexPath) -> UICollectionReusableView? {
+    if HistoryListSupplementaryItem(rawValue: kind) == .header {
+      let headerView = collectionView.dequeueReusableSupplementaryView(
+        ofKind: kind,
+        withReuseIdentifier: CollectionViewSupplementaryContainerView.reuseIdentifier,
+        for: indexPath
+      )
+      (headerView as? CollectionViewSupplementaryContainerView)?.setContentView(headerViewProvider())
+      return headerView
+    }
     let snapshot = self.dataSource.snapshot()
     let section = snapshot.sectionIdentifiers[indexPath.section]
     switch section {

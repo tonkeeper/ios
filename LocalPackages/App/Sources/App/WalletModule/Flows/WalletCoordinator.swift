@@ -94,11 +94,41 @@ private extension WalletCoordinator {
   }
   
   func openTonDetails() {
+    let historyListModule = HistoryModule(
+      dependencies: HistoryModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createTonHistoryListModule()
     
+    let module = TokenDetailsAssembly.module(
+      tokenDetailsListContentViewController: historyListModule.view,
+      tokenDetailsController: keeperCoreMainAssembly.tonTokenDetailsController(),
+      chartViewControllerProvider: { [keeperCoreMainAssembly] in
+        TonChartAssembly.module(chartController: keeperCoreMainAssembly.chartController()).view
+      },
+      hasAbout: true
+    )
+    
+    router.push(viewController: module.view)
   }
   
   func openJettonDetails(jettonInfo: JettonInfo) {
+    let historyListModule = HistoryModule(
+      dependencies: HistoryModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createJettonHistoryListModule(jettonInfo: jettonInfo)
     
+    let module = TokenDetailsAssembly.module(
+      tokenDetailsListContentViewController: historyListModule.view,
+      tokenDetailsController: keeperCoreMainAssembly.jettonTokenDetailsController(jettonInfo: jettonInfo),
+      chartViewControllerProvider: nil,
+      hasAbout: false
+    )
+    
+    router.push(viewController: module.view)
   }
 }
 
