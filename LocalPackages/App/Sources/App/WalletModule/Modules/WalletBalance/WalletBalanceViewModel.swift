@@ -12,6 +12,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
 protocol WalletBalanceViewModel: AnyObject {
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)? { get set }
   var didUpdateBalanceItems: (([WalletBalanceBalanceItemCell.Model]) -> Void)? { get set }
+  var didTapCopy: ((String?) -> Void)? { get set }
   
   func viewDidLoad()
   func didTapBalanceItem(at index: Int)
@@ -30,6 +31,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)?
   var didUpdateBalanceItems: (([WalletBalanceBalanceItemCell.Model]) -> Void)?
+  var didTapCopy: ((String?) -> Void)?
   
   func viewDidLoad() {
     walletBalanceController.didUpdateBalance = { [weak self] balanceModel in
@@ -91,7 +93,9 @@ private extension WalletBalanceViewModelImplementation {
     let balanceViewModel = WalletBalanceHeaderBalanceView.Model(
       balance: balanceModel.total,
       address: walletBalanceController.address,
-      addressAction: {}
+      addressAction: { [weak self] in
+        self?.didTapCopy?(self?.walletBalanceController.fullAddress)
+      }
     )
     
     return WalletBalanceHeaderView.Model(

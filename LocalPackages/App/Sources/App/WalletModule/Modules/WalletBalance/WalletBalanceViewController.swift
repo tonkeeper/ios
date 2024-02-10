@@ -38,6 +38,12 @@ private extension WalletBalanceViewController {
       collectionController?.setBalanceItems(items)
     }
     
+    viewModel.didTapCopy = { address in
+      UINotificationFeedbackGenerator().notificationOccurred(.warning)
+      UIPasteboard.general.string = address
+      ToastPresenter.showToast(configuration: .copied)
+    }
+    
     collectionController?.didSelect = { [weak viewModel] section, index in
       switch section {
       case .balanceItems:
