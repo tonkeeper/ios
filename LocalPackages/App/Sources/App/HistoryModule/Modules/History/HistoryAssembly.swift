@@ -6,7 +6,7 @@ struct HistoryAssembly {
   private init() {}
   static func module(historyController: HistoryController,
                      listModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput>,
-                     emptyModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryEmptyViewController, HistoryEmptyViewModel, Void>)
+                     emptyModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryEmptyViewController, HistoryEmptyModuleOutput, Void>)
   -> MVVMModule<HistoryViewController, HistoryModuleOutput, Void> {
 
     let viewModel = HistoryViewModelImplementation(

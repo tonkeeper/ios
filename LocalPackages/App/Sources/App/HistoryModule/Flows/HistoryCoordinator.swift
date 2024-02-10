@@ -38,6 +38,27 @@ private extension HistoryCoordinator {
       }
     )
     
+    module.output.didTapReceive = { [weak self] in
+      self?.openReceive()
+    }
+    
     router.push(viewController: module.view, animated: false)
+  }
+  
+  func openReceive() {
+    let module = ReceiveModule(
+      dependencies: ReceiveModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).receiveModule(token: .ton)
+    
+    module.view.setupSwipeDownButton()
+    
+    let navigationController = TKNavigationController(rootViewController: module.view)
+    navigationController.configureTransparentAppearance()
+    
+    
+    router.present(navigationController)
   }
 }

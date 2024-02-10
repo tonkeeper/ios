@@ -110,6 +110,10 @@ private extension WalletCoordinator {
       hasAbout: true
     )
     
+    module.output.didTapReceive = { [weak self] token in
+      self?.openReceive(token: token)
+    }
+    
     router.push(viewController: module.view)
   }
   
@@ -128,7 +132,28 @@ private extension WalletCoordinator {
       hasAbout: false
     )
     
+    module.output.didTapReceive = { [weak self] token in
+      self?.openReceive(token: token)
+    }
+    
     router.push(viewController: module.view)
+  }
+  
+  func openReceive(token: Token) {
+    let module = ReceiveModule(
+      dependencies: ReceiveModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).receiveModule(token: token)
+    
+    module.view.setupSwipeDownButton()
+    
+    let navigationController = TKNavigationController(rootViewController: module.view)
+    navigationController.configureTransparentAppearance()
+    
+    
+    router.present(navigationController)
   }
 }
 
@@ -143,6 +168,10 @@ extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
     
     module.output.didSelectJetton = { [weak self] jettonInfo in
       self?.openJettonDetails(jettonInfo: jettonInfo)
+    }
+    
+    module.output.didTapReceive = { [weak self] in
+      self?.openReceive(token: .ton)
     }
     
     return module.view

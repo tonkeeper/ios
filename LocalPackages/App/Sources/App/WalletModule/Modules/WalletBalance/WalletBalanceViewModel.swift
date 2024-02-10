@@ -5,6 +5,8 @@ import KeeperCore
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: (() -> Void)? { get set }
   var didSelectJetton: ((JettonInfo) -> Void)? { get set }
+  
+  var didTapReceive: (() -> Void)? { get set }
 }
 
 protocol WalletBalanceViewModel: AnyObject {
@@ -21,6 +23,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   var didSelectTon: (() -> Void)?
   var didSelectJetton: ((JettonInfo) -> Void)?
+  
+  var didTapReceive: (() -> Void)?
   
   // MARK: - WalletBalanceViewModel
   
@@ -104,7 +108,9 @@ private extension WalletBalanceViewModelImplementation {
       ),
       WalletBalanceHeaderButtonsView.Model.Button(
         configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.arrowDownOutline, title: "Receive"),
-        action: {}
+        action: { [weak self] in
+          self?.didTapReceive?()
+        }
       ),
       WalletBalanceHeaderButtonsView.Model.Button(
         configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.qrViewFinderThin, title: "Scan"),

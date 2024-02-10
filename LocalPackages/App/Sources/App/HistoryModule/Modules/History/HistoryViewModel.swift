@@ -4,7 +4,7 @@ import KeeperCore
 import TKCore
 
 protocol HistoryModuleOutput: AnyObject {
-  
+  var didTapReceive: (() -> Void)? { get set }
 }
 
 protocol HistoryViewModel: AnyObject {
@@ -18,6 +18,8 @@ protocol HistoryViewModel: AnyObject {
 final class HistoryViewModelImplementation: HistoryViewModel, HistoryModuleOutput {
   
   // MARK: - HistoryModuleOutput
+  
+  var didTapReceive: (() -> Void)?
   
   // MARK: - HistoryViewModel
   
@@ -40,13 +42,13 @@ final class HistoryViewModelImplementation: HistoryViewModel, HistoryModuleOutpu
   
   private let historyController: HistoryController
   private let listModuleProvider: (Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput>
-  private let emptyModuleProvider: (Wallet) -> MVVMModule<HistoryEmptyViewController, HistoryEmptyViewModel, Void>
+  private let emptyModuleProvider: (Wallet) -> MVVMModule<HistoryEmptyViewController, HistoryEmptyModuleOutput, Void>
   
   // MARK: - Init
   
   init(historyController: HistoryController,
        listModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput>,
-       emptyModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryEmptyViewController, HistoryEmptyViewModel, Void>) {
+       emptyModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryEmptyViewController, HistoryEmptyModuleOutput, Void>) {
     self.historyController = historyController
     self.listModuleProvider = listModuleProvider
     self.emptyModuleProvider = emptyModuleProvider
@@ -68,6 +70,11 @@ private extension HistoryViewModelImplementation {
     }
     
     let emptyModule = emptyModuleProvider(historyController.wallet)
+    
+    emptyModule.output.didTapReceive = { [weak self] in
+      self?.didTapReceive?()
+    }
+    
     didUpdateEmptyViewController?(emptyModule.view)
   }
 }
