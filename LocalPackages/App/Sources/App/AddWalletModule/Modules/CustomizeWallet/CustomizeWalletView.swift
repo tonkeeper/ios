@@ -2,14 +2,6 @@ import UIKit
 import TKUIKit
 
 final class CustomizeWalletView: UIView, ConfigurableView {
-  
-  let containerStackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .horizontal
-    stackView.alignment = .top
-    return stackView
-  }()
-  
   let contentStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
