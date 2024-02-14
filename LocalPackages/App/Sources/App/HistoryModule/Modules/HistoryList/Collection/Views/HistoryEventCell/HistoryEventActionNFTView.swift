@@ -78,13 +78,13 @@ extension HistoryEventActionView {
            action: @escaping () -> Void) {
         self.imageDownloadTask = imageDownloadTask
         self.name = name?.withTextStyle(
-          .label2,
+          .body2,
           color: .Text.primary,
           alignment: .left,
           lineBreakMode: .byTruncatingTail
         )
         self.collectionName = collectionName?.withTextStyle(
-          .body3,
+          .body2,
           color: .Text.secondary,
           alignment: .left,
           lineBreakMode: .byTruncatingTail
