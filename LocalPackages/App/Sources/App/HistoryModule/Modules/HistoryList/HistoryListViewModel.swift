@@ -5,6 +5,7 @@ import KeeperCore
 protocol HistoryListModuleOutput: AnyObject {
   var noEvents: (() -> Void)? { get set }
   var hasEvents: (() -> Void)? { get set }
+  var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
 }
 
 protocol HistoryListModuleInput: AnyObject {
@@ -26,6 +27,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   var noEvents: (() -> Void)?
   var hasEvents: (() -> Void)?
+  var didSelectEvent: ((AccountEventDetailsEvent) -> Void)?
   
   // MARK: - HistoryListModuleInput
   
@@ -92,7 +94,7 @@ private extension HistoryListViewModelImplementation {
   
   func handleLoadedEvents(_ loadedSections: [KeeperCore.HistoryListSection]) {
     let sectionsModels = loadedSections.map { section in
-      let eventsModels = section.events.map { event in
+      let eventsModels = section.events.enumerated().map { index, event in
         mapEvent(event)
       }
       let section = HistoryListEventsSection(
@@ -112,9 +114,15 @@ private extension HistoryListViewModelImplementation {
     if let eventModel = cachedEventsModels[event.eventId] {
       return eventModel
     } else {
-      let eventModel = historyEventMapper.mapEvent(event) { nft in
-        print("open \(nft)")
-      }
+      let eventModel = historyEventMapper.mapEvent(
+        event,
+        nftAction: { nft in
+          
+        },
+        tapAction: { [weak self] accountEventDetailsEvent in
+          self?.didSelectEvent?(accountEventDetailsEvent)
+        }
+      )
       cachedEventsModels[event.eventId] = eventModel
       return eventModel
     }

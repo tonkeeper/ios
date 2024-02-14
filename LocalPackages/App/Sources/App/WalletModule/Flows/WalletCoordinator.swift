@@ -101,6 +101,10 @@ private extension WalletCoordinator {
       )
     ).createTonHistoryListModule()
     
+    historyListModule.output.didSelectEvent = { [weak self] event in
+      self?.openHistoryEventDetails(event: event)
+    }
+    
     let module = TokenDetailsAssembly.module(
       tokenDetailsListContentViewController: historyListModule.view,
       tokenDetailsController: keeperCoreMainAssembly.tonTokenDetailsController(),
@@ -124,6 +128,10 @@ private extension WalletCoordinator {
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
     ).createJettonHistoryListModule(jettonInfo: jettonInfo)
+    
+    historyListModule.output.didSelectEvent = { [weak self] event in
+      self?.openHistoryEventDetails(event: event)
+    }
     
     let module = TokenDetailsAssembly.module(
       tokenDetailsListContentViewController: historyListModule.view,
@@ -154,6 +162,16 @@ private extension WalletCoordinator {
     
     
     router.present(navigationController)
+  }
+  
+  func openHistoryEventDetails(event: AccountEventDetailsEvent) {
+    let module = HistoryEventDetailsAssembly.module(
+      historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(event: event),
+      urlOpener: coreAssembly.urlOpener()
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
 }
 

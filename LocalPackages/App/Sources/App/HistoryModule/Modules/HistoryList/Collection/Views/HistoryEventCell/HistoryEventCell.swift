@@ -42,19 +42,23 @@ final class HistoryEventCellContentView: UIView, ConfigurableView, TKCollectionV
   }
   
   struct Model {
-    let actionModels: [HistoryEventActionView.Model]
+    struct Action {
+      let model: HistoryEventActionView.Model
+      let action: () -> Void
+    }
+    let actions: [Action]
   }
   
   func configure(model: Model) {
     var actionViews = [HistoryEventActionView]()
     for (index, actionView) in self.actionViews.enumerated() {
-      guard index < model.actionModels.count else {
+      guard index < model.actions.count else {
         actionView.removeFromSuperview()
         continue
       }
       actionViews.append(actionView)
     }
-    model.actionModels.enumerated().forEach { index, actionView in
+    model.actions.enumerated().forEach { index, action in
       let view: HistoryEventActionView
       if index < actionViews.count {
         view = actionViews[index]
@@ -63,8 +67,16 @@ final class HistoryEventCellContentView: UIView, ConfigurableView, TKCollectionV
         actionViews.append(view)
         addSubview(view)
       }
-      view.isSeparatorVisible = index < model.actionModels.count - 1
-      view.configure(model: actionView)
+      view.isSeparatorVisible = index < model.actions.count - 1
+      view.configure(model: action.model)
+      view.enumerateEventHandlers { action, targetAction, event, stop in
+        if let action = action {
+          view.removeAction(action, for: event)
+        }
+      }
+      view.addAction(UIAction(handler: { _ in
+        action.action()
+      }), for: .touchUpInside)
     }
     self.actionViews = actionViews
     setNeedsLayout()

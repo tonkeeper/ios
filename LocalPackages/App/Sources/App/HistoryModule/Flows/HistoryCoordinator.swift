@@ -42,6 +42,10 @@ private extension HistoryCoordinator {
       self?.openReceive()
     }
     
+    module.output.didSelectEvent = { [weak self] event in
+      self?.openEventDetails(event: event)
+    }
+    
     router.push(viewController: module.view, animated: false)
   }
   
@@ -58,7 +62,16 @@ private extension HistoryCoordinator {
     let navigationController = TKNavigationController(rootViewController: module.view)
     navigationController.configureTransparentAppearance()
     
-    
     router.present(navigationController)
+  }
+  
+  func openEventDetails(event: AccountEventDetailsEvent) {
+    let module = HistoryEventDetailsAssembly.module(
+      historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(event: event),
+      urlOpener: coreAssembly.urlOpener()
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
 }
