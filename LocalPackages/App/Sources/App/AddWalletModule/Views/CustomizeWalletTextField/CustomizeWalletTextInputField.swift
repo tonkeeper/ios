@@ -5,10 +5,19 @@ import TKCore
 public extension TKTextInputField where InputControl == CustomizeWalletInputControl {
   var emoji: String {
     get {
-      self.inputControl.emoji
+      inputControl.emoji
     }
     set {
       inputControl.emoji = newValue
+    }
+  }
+  
+  var walletTintColor: UIColor? {
+    get {
+      inputControl.walletTintColor
+    }
+    set {
+      inputControl.walletTintColor = newValue
     }
   }
   

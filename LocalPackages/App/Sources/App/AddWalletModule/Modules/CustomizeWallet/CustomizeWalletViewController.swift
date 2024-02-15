@@ -60,16 +60,20 @@ final class CustomizeWalletViewController: GenericViewViewController<CustomizeWa
 
 private extension CustomizeWalletViewController {
   func setupBindings() {
-    viewModel.didUpdateModel = { [customView] model in
-      customView.configure(model: model)
+    viewModel.didUpdateModel = { [weak customView] model in
+      customView?.configure(model: model)
     }
     
-    viewModel.didSelectEmoji = { [customView] emoji in
-      customView.walletNameTextField.emoji = emoji.emoji
+    viewModel.didSelectEmoji = { [weak customView] emoji in
+      customView?.walletNameTextField.emoji = emoji.emoji
     }
     
-    viewModel.didUpdateContinueButtonIsEnabled = { [customView] isEnabled in
-      customView.continueButton.isEnabled = isEnabled
+    viewModel.didSelectColor = { [weak customView] color in
+      customView?.walletNameTextField.walletTintColor = color
+    }
+    
+    viewModel.didUpdateContinueButtonIsEnabled = { [weak customView] isEnabled in
+      customView?.continueButton.isEnabled = isEnabled
     }
   }
   

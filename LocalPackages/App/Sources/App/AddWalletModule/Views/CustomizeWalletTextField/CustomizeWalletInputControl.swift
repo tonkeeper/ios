@@ -34,6 +34,12 @@ public final class CustomizeWalletInputControl: UIView, TKTextInputFieldInputCon
     }
   }
   
+  public var walletTintColor: UIColor? {
+    didSet {
+      colorTintView.backgroundColor = walletTintColor
+    }
+  }
+  
   public var placeholder = "" {
     didSet {
       inputControl.placeholder = placeholder
@@ -47,6 +53,12 @@ public final class CustomizeWalletInputControl: UIView, TKTextInputFieldInputCon
     label.textAlignment = .right
     label.isUserInteractionEnabled = false
     return label
+  }()
+  private let colorTintView: UIView = {
+    let view = UIView()
+    view.backgroundColor = .green
+    view.layer.cornerRadius = 8
+    return view
   }()
   
   init(inputControl: TKTextInputFieldPlaceholderInputControl) {
@@ -77,6 +89,7 @@ public final class CustomizeWalletInputControl: UIView, TKTextInputFieldInputCon
 private extension CustomizeWalletInputControl {
   func setup() {
     addSubview(inputControl)
+    addSubview(colorTintView)
     addSubview(emojiLabel)
     
     setupTextInputViewEvents()
@@ -101,6 +114,7 @@ private extension CustomizeWalletInputControl {
   func setupConstraints() {
     inputControl.translatesAutoresizingMaskIntoConstraints = false
     emojiLabel.translatesAutoresizingMaskIntoConstraints = false
+    colorTintView.translatesAutoresizingMaskIntoConstraints = false
     
     emojiLabel.setContentHuggingPriority(.required, for: .horizontal)
     emojiLabel.setContentCompressionResistancePriority(.required, for: .horizontal)
@@ -111,8 +125,13 @@ private extension CustomizeWalletInputControl {
       inputControl.bottomAnchor.constraint(equalTo: bottomAnchor),
       inputControl.rightAnchor.constraint(equalTo: emojiLabel.leftAnchor, constant: -8),
       
-      emojiLabel.rightAnchor.constraint(equalTo: rightAnchor),
-      emojiLabel.centerYAnchor.constraint(equalTo: inputControl.centerYAnchor)
+      colorTintView.rightAnchor.constraint(equalTo: rightAnchor, constant: 8).withPriority(.defaultHigh),
+      colorTintView.centerYAnchor.constraint(equalTo: centerYAnchor),
+      colorTintView.widthAnchor.constraint(equalToConstant: .colorTintSide),
+      colorTintView.heightAnchor.constraint(equalToConstant: .colorTintSide),
+      
+      emojiLabel.centerXAnchor.constraint(equalTo: colorTintView.centerXAnchor),
+      emojiLabel.centerYAnchor.constraint(equalTo: colorTintView.centerYAnchor)
     ])
   }
   
@@ -139,4 +158,5 @@ private extension CustomizeWalletInputControl {
 
 private extension CGFloat {
   static let emojiLabelSide: CGFloat = 36
+  static let colorTintSide: CGFloat = 48
 }

@@ -1,4 +1,4 @@
-import Foundation
+import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
@@ -16,6 +16,7 @@ public protocol CustomizeWalletModuleOutput: AnyObject {
 protocol CustomizeWalletViewModel: AnyObject {
   var didUpdateModel: ((CustomizeWalletView.Model) -> Void)? { get set }
   var didSelectEmoji: ((EmojisDataSource.Emoji) -> Void)? { get set }
+  var didSelectColor: ((UIColor) -> Void)? { get set }
   var didUpdateContinueButtonIsEnabled: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
@@ -32,6 +33,7 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
   
   var didUpdateModel: ((CustomizeWalletView.Model) -> Void)?
   var didSelectEmoji: ((EmojisDataSource.Emoji) -> Void)?
+  var didSelectColor: ((UIColor) -> Void)?
   var didUpdateContinueButtonIsEnabled: ((Bool) -> Void)?
   
   func viewDidLoad() {
@@ -43,6 +45,7 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
       await MainActor.run {
         didSelectEmoji?(items.first(where: { $0.emoji.emoji == selectedEmoji })?.emoji ?? items[0].emoji)
         didUpdateModel?(createModel(emojiPickerItems: items))
+        didSelectColor?(.Tint.color(with: selectedColorIdentifier))
       }
     }
   }
@@ -101,6 +104,7 @@ private extension CustomizeWalletViewModelImplementation {
       .map {
         let identifier = "Color\($0)"
         let selectHandler: () -> Void = { [weak self] in
+          self?.didSelectColor?(.Tint.color(with: identifier))
           self?.selectedColorIdentifier = identifier
         }
         return WalletColorPickerView.Model.ColorItem(
