@@ -37,10 +37,7 @@ final class HistoryViewController: GenericViewViewController<HistoryView> {
 
 private extension HistoryViewController {
   func setup() {
-    navigationController?.setNavigationBarHidden(true, animated: false)
-    
     customView.navigationBarView.title = "History"
-    customView.largeTitleView.title = "History"
   }
   
   func setupBindings() {

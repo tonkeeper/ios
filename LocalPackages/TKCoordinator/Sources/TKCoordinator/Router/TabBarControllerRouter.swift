@@ -30,6 +30,15 @@ public final class TabBarControllerRouter: ContainerViewControllerRouter<UITabBa
       completion: completion
     )
   }
+  
+  public func insert(viewController: UIViewController, at index: Int) {
+    rootViewController.viewControllers?.insert(viewController, at: index)
+  }
+  
+  public func remove(viewController: UIViewController) {
+    guard let index = rootViewController.viewControllers?.firstIndex(of: viewController) else { return }
+    rootViewController.viewControllers?.remove(at: index)
+  }
 }
 
 extension TabBarControllerRouter: UITabBarControllerDelegate {

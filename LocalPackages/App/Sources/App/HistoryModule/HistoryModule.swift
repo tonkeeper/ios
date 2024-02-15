@@ -12,6 +12,7 @@ struct HistoryModule {
   func createHistoryCoordinator() -> HistoryCoordinator {
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = HistoryCoordinator(
       router: NavigationControllerRouter(
