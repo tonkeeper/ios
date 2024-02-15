@@ -96,6 +96,7 @@ private extension SettingsRootListItemsProvider {
     
     let cellModel = WalletsListWalletCell.Model(
       identifier: "wallet",
+      accessoryType: .disclosureIndicator,
       selectionHandler: { [weak self] in
         guard let self = self else { return }
         self.didTapEditWallet?(self.settingsController.activeWallet())

@@ -113,6 +113,7 @@ private extension AddWalletOptionPickerViewModelImplementation {
       
       let model = AddWalletOptionPickerCell.Model(
         identifier: option.rawValue,
+        accessoryType: .disclosureIndicator,
         selectionHandler: { [weak self] in
           self?.didSelectOption?(option)
         },
