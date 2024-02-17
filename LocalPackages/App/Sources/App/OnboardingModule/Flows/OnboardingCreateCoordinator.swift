@@ -30,7 +30,11 @@ public final class OnboardingCreateCoordinator: RouterCoordinator<NavigationCont
 
 private extension OnboardingCreateCoordinator {
   func openCreatePasscode() {
-    let coordinator = PasscodeModule().createCreatePasscodeCoordinator(router: router)
+    let coordinator = PasscodeModule(
+      dependencies: PasscodeModule.Dependencies(
+        passcodeAssembly: assembly.passcodeAssembly
+      )
+    ).createCreatePasscodeCoordinator(router: router)
     
     coordinator.didCancel = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
@@ -59,16 +63,18 @@ private extension OnboardingCreateCoordinator {
   }
   
   func createWallet(model: CustomizeWalletModel, passcode: String) {
+    let createPasscodeController = assembly.passcodeAssembly.passcodeCreateController()
     let addController = assembly.walletsUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
       label: model.name,
       colorIdentifier: model.colorIdentifier,
       emoji: model.emoji)
     do {
+      try createPasscodeController.createPasscode(passcode)
       try addController.createWallet(metaData: metaData)
       didCreateWallet?()
     } catch {
-      print("Log: Wallet creation failed")
+      print("Log: Wallet creation failed, error \(error)")
     }
   }
 }

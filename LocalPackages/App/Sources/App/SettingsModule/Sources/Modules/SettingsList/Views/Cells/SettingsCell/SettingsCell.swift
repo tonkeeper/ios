@@ -13,7 +13,7 @@ final class SettingsCell: TKCollectionViewContainerCell<SettingsCellContentView>
 }
 
 final class SettingsCellContentView: UIView, ConfigurableView, TKCollectionViewCellContentView, ReusableView {
-  var padding: UIEdgeInsets { .init(top: 16, left: 16, bottom: 16, right: 16) }
+  var padding: UIEdgeInsets { .init(top: 14, left: 16, bottom: 14, right: 16) }
   
   let contentView = TKListItemContentView()
   let valueView = SettingsCellValueView()

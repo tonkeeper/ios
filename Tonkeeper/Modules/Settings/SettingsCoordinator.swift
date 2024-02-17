@@ -87,24 +87,7 @@ extension SettingsCoordinator: SettingsListModuleOutput {
     router.push(presentable: module.view)
   }
   
-  func settingsListDidSelectBackupSetting(_ settingsList: SettingsListModuleInput) {
-    let module = SettingsBackupAssembly.module()
-    
-    module.1.didTapShowRecoveryPhrase = { [weak self] in
-      self?.settingsSecurityDidSelectShowRecoveryPhrase()
-    }
-    
-    module.1.didTapBackupManually = { [weak self] in
-      self?.openManuallyBackup()
-    }
-    
-    module.1.confirmation = { [weak self] in
-      await self?.settingsSecurityConfirmation() ?? false
-    }
-    
-    module.0.setupBackButton()
-    router.push(presentable: module.0)
-  }
+  func settingsListDidSelectBackupSetting(_ settingsList: SettingsListModuleInput) {}
   
   func settingsListDidLogout(_ settingsList: SettingsListModuleInput) {
     output?.settingsCoordinatorDidLogout(self)

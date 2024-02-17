@@ -7,15 +7,19 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectJetton: ((JettonInfo) -> Void)? { get set }
   
   var didTapReceive: (() -> Void)? { get set }
+  
+  var didTapBackup: (() -> Void)? { get set }
 }
 
 protocol WalletBalanceViewModel: AnyObject {
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)? { get set }
   var didUpdateBalanceItems: (([WalletBalanceBalanceItemCell.Model]) -> Void)? { get set }
+  var didUpdateFinishSetupItems: (([AnyHashable]) -> Void)? { get set }
   var didTapCopy: ((String?) -> Void)? { get set }
   
   func viewDidLoad()
   func didTapBalanceItem(at index: Int)
+  func didTapFinishSetupItem(at index: Int)
 }
 
 final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput {
@@ -27,22 +31,37 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   var didTapReceive: (() -> Void)?
   
+  var didTapBackup: (() -> Void)?
+  
   // MARK: - WalletBalanceViewModel
   
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)?
   var didUpdateBalanceItems: (([WalletBalanceBalanceItemCell.Model]) -> Void)?
+  var didUpdateFinishSetupItems: (([AnyHashable]) -> Void)?
   var didTapCopy: ((String?) -> Void)?
   
   func viewDidLoad() {
     walletBalanceController.didUpdateBalance = { [weak self] balanceModel in
-      guard let self = self else { return }
-      self.updateBalance(balanceModel: balanceModel)
+      self?.updateBalance(balanceModel: balanceModel)
     }
+    
+    walletBalanceController.didUpdateFinishSetup = { [weak self] model in
+      self?.updateFinishSetup(model: model)
+    }
+    
     walletBalanceController.loadBalance()
   }
   
   func didTapBalanceItem(at index: Int) {
     balanceItems[index].selectionHandler?()
+  }
+  
+  func didTapFinishSetupItem(at index: Int) {
+    switch finishSetupItems[index] {
+    case let item as WalletBalanceBalanceItemCell.Model:
+      item.selectionHandler?()
+    default: break
+    }
   }
   
   // MARK: - State
@@ -52,6 +71,12 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private var balanceItems = [WalletBalanceBalanceItemCell.Model]() {
     didSet {
       didUpdateBalanceItems?(balanceItems)
+    }
+  }
+  
+  private var finishSetupItems = [AnyHashable]() {
+    didSet {
+      didUpdateFinishSetupItems?(finishSetupItems)
     }
   }
   
@@ -133,5 +158,14 @@ private extension WalletBalanceViewModelImplementation {
         action: {}
       )
     ])
+  }
+  
+  func updateFinishSetup(model: WalletBalanceSetupModel) {
+    finishSetupItems = listItemMapper.mapFinishSetup(
+      model: model,
+      backupHandler: { [weak self] in
+        self?.didTapBackup?()
+      }
+    )
   }
 }

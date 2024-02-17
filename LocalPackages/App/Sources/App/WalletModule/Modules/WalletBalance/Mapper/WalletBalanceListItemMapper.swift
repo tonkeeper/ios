@@ -95,6 +95,45 @@ struct WalletBalanceListItemMapper {
     )
     return cellModel
   }
+  
+  func mapFinishSetup(model: WalletBalanceSetupModel,
+                      backupHandler: @escaping () -> Void) -> [AnyHashable] {
+    var items = [AnyHashable]()
+    if !model.didBackup {
+      let item =  WalletBalanceBalanceItemCell.Model(
+        identifier: .backupItemIdentifier,
+        accessoryType: .disclosureIndicator,
+        selectionHandler: {
+          backupHandler()
+        },
+        cellContentModel: WalletBalanceBalanceItemCellContentView.Model(
+          iconModel: TKListItemIconImageView.Model(
+            image: .image(.TKUIKit.Icons.Size28.key),
+            tintColor: .Icon.primary,
+            backgroundColor: .Background.contentTint,
+            size: .iconSize
+          ),
+          contentModel: TKListItemContentView.Model(
+            leftContentStackViewModel: TKListItemContentStackView.Model(
+              titleSubtitleModel: TKListItemTitleSubtitleView.Model(
+                title: nil,
+                subtitle: nil
+              ),
+              description: String.backupDescription.withTextStyle(
+                .body2,
+                color: .Text.primary,
+                alignment: .left,
+                lineBreakMode: .byWordWrapping
+              )
+            ),
+            rightContentStackViewModel: nil
+          )
+        )
+      )
+      items.append(item)
+    }
+    return items
+  }
 }
 
 private extension CGSize {
@@ -103,4 +142,9 @@ private extension CGSize {
 
 private extension CGFloat {
   static let iconCornerRadius: CGFloat = 22
+}
+
+private extension String {
+  static let backupItemIdentifier = "BackupItem"
+  static let backupDescription = "Back up the wallet recovery phrase"
 }

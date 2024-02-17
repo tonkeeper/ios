@@ -47,7 +47,9 @@ private extension OnboardingImportCoordinator {
   }
   
   func openCreatePasscode(phrase: [String], revisions: [WalletContractVersion]) {
-    let coordinator = PasscodeModule().createCreatePasscodeCoordinator(router: router)
+    let coordinator = PasscodeModule(
+      dependencies: PasscodeModule.Dependencies(passcodeAssembly: assembly.passcodeAssembly)
+    ).createCreatePasscodeCoordinator(router: router)
     
     coordinator.didCancel = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
@@ -78,20 +80,21 @@ private extension OnboardingImportCoordinator {
                     revisions: [WalletContractVersion],
                     passcode: String,
                     model: CustomizeWalletModel) {
-    
+    let createPasscodeController = assembly.passcodeAssembly.passcodeCreateController()
     let addController = assembly.walletsUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
       label: model.name,
       colorIdentifier: model.colorIdentifier,
       emoji: model.emoji)
     do {
+      try createPasscodeController.createPasscode(passcode)
       try addController.importWallets(
         phrase: phrase,
         revisions: revisions,
         metaData: metaData)
       didImportWallets?()
     } catch {
-      print("Log: Wallet import failed")
+      print("Log: Wallet import failed, error \(error)")
     }
   }
 }

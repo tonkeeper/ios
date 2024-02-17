@@ -35,6 +35,9 @@ public enum PasscodeInputBiometryProviderState {
 }
 
 public protocol PasscodeInputBiometryProvider {
+  var didSuccessBiometry: (() -> Void)? { get set }
+  var didFailedBiometry: (() -> Void)? { get set }
+  
   func checkBiometryStatus() -> PasscodeInputBiometryProviderState
   func evaluateBiometry()
 }

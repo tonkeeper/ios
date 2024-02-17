@@ -15,7 +15,7 @@ protocol SettingsListViewModel: AnyObject {
   
   func viewDidLoad()
   func selectItem(section: SettingsListSection, index: Int)
-  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> TKCollectionViewCell?
+  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell?
 }
 
 protocol SettingsListItemsProvider: AnyObject {
@@ -25,7 +25,7 @@ protocol SettingsListItemsProvider: AnyObject {
   
   func getSections() -> [SettingsListSection]
   func selectItem(section: SettingsListSection, index: Int)
-  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> TKCollectionViewCell?
+  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell?
   func initialSelectedIndexPath() -> IndexPath?
 }
 
@@ -63,12 +63,14 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     switch section.items[index] {
     case let item as SettingsCell.Model:
       item.selectionHandler?()
+    case let item as SettingsTextCell.Model:
+      break
     default:
       itemsProvider.selectItem(section: section, index: index)
     }
   }
   
-  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> TKCollectionViewCell? {
+  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell? {
     itemsProvider.cell(collectionView: collectionView, indexPath: indexPath, itemIdentifier: itemIdentifier)
   }
   

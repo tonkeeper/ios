@@ -81,6 +81,9 @@ private struct ReenterPasscodeInputValidator: PasscodeInputValidator {
 }
 
 private struct BiometryProvider: PasscodeInputBiometryProvider {
+  var didSuccessBiometry: (() -> Void)?
+  var didFailedBiometry: (() -> Void)?
+  
   func checkBiometryStatus() -> PasscodeInputBiometryProviderState {
     .none
   }

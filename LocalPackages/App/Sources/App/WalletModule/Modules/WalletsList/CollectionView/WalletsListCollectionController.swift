@@ -43,13 +43,13 @@ final class WalletsListCollectionController: TKCollectionController<WalletsListS
   }
   
   func setWallets(_ wallets: [WalletsListWalletCell.Model]) {
-    var snapshot = dataSource!.snapshot()
+    var snapshot = dataSource.snapshot()
     snapshot.deleteSections([.wallets])
     snapshot.appendSections([.wallets])
     snapshot.appendItems(wallets, toSection: .wallets)
     snapshot.reloadSections([.wallets])
     UIView.performWithoutAnimation {
-      dataSource?.apply(snapshot, animatingDifferences: true)
+      dataSource.apply(snapshot, animatingDifferences: true)
     }
   }
 }

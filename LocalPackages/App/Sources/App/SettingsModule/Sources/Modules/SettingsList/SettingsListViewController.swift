@@ -29,12 +29,16 @@ public final class SettingsListViewController: GenericViewViewController<Setting
     setupBindings()
     viewModel.viewDidLoad()
   }
+  
+  public override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    
+    navigationController?.setNavigationBarHidden(false, animated: true)
+  }
 }
 
 private extension SettingsListViewController {
   func setup() {
-    customView.navigationBar.setItems([navigationItem], animated: false)
-    
     navigationItem.setupBackButton { [weak self] in
       self?.navigationController?.popViewController(animated: true)
     }

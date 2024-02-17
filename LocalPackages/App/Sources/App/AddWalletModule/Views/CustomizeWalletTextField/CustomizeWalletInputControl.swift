@@ -9,6 +9,7 @@ public final class CustomizeWalletInputControl: UIView, TKTextInputFieldInputCon
   public var didBeginEditing: (() -> Void)?
   public var didEndEditing: (() -> Void)?
   public var shouldPaste: ((String) -> Bool)?
+  public var shouldReturn: (() -> Bool)?
   public var text: String {
     get {
       inputControl.text

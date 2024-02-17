@@ -11,7 +11,7 @@ public struct WalletModule {
 
   public func createWalletCoordinator() -> WalletCoordinator {
     let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
+    navigationController.configureDefaultAppearance()
     
     let coordinator = WalletCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),

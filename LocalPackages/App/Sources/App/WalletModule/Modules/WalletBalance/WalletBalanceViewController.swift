@@ -38,6 +38,10 @@ private extension WalletBalanceViewController {
       collectionController?.setBalanceItems(items)
     }
     
+    viewModel.didUpdateFinishSetupItems = { [weak collectionController] items in
+      collectionController?.setFinishSetupItems(items)
+    }
+    
     viewModel.didTapCopy = { address in
       UINotificationFeedbackGenerator().notificationOccurred(.warning)
       UIPasteboard.general.string = address
@@ -48,6 +52,8 @@ private extension WalletBalanceViewController {
       switch section {
       case .balanceItems:
         viewModel?.didTapBalanceItem(at: index)
+      case .finishSetup:
+        viewModel?.didTapFinishSetupItem(at: index)
       }
     }
   }

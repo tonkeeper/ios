@@ -45,7 +45,7 @@ final class AddWalletOptionPickerCollectionController: TKCollectionController<Ad
   }
   
   func setOptionSections(_ sections: [AddWalletOptionPickerSection]) {
-    var snapshot = dataSource!.snapshot()
+    var snapshot = dataSource.snapshot()
     snapshot.deleteAllItems()
     for section in sections {
       switch section {

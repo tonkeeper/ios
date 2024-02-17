@@ -8,6 +8,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   
   var didTapEditWallet: ((Wallet) -> Void)?
   var didTapCurrency: (() -> Void)?
+  var didTapBackup: ((Wallet) -> Void)?
   
   private let walletCellRegistration: WalletCellRegistration
   
@@ -52,7 +53,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
     }
   }
   
-  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> TKCollectionViewCell? {
+  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell? {
     switch itemIdentifier {
     case let model as WalletsListWalletCell.Model:
       let cell = collectionView.dequeueConfiguredReusableCell(using: walletCellRegistration, for: indexPath, item: model)
@@ -65,23 +66,35 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
 private extension SettingsRootListItemsProvider {
   func setupSettingsSections() -> [SettingsListSection] {
     [setupWalletSection(),
-     SettingsListSection(items: [
-      setupSecurityItem(),
-      setupBackupItem()
-     ]),
-     SettingsListSection(items: [
-      setupCurrencyItem()
-     ]),
-     SettingsListSection(items: [
-      setupSupportItem(),
-      setupTonkeeperNewsItem(),
-      setupContactUsItem(),
-      setupRateItem(),
-      setupDeleteAccountItem()
-     ]),
-     SettingsListSection(items: [
-      setupLogoutItem()
-     ])
+     SettingsListSection(
+      padding: .sectionPadding,
+      items: [
+        setupSecurityItem(),
+        setupBackupItem()
+      ]
+     ),
+     SettingsListSection(
+      padding: .sectionPadding,
+      items: [
+        setupCurrencyItem()
+      ]
+     ),
+     SettingsListSection(
+      padding: .sectionPadding,
+      items: [
+        setupSupportItem(),
+        setupTonkeeperNewsItem(),
+        setupContactUsItem(),
+        setupRateItem(),
+        setupDeleteAccountItem()
+      ]
+     ),
+     SettingsListSection(
+      padding: .sectionPadding,
+      items: [
+        setupLogoutItem()
+      ]
+     )
     ]
   }
   
@@ -104,7 +117,10 @@ private extension SettingsRootListItemsProvider {
       cellContentModel: cellContentModel
     )
     
-    return SettingsListSection(items: [cellModel])
+    return SettingsListSection(
+      padding: NSDirectionalEdgeInsets(top: 14, leading: 16, bottom: 16, trailing: 16),
+      items: [cellModel]
+    )
   }
   
   func setupSecuritySection() -> SettingsSection {
@@ -131,8 +147,9 @@ private extension SettingsRootListItemsProvider {
   func setupBackupItem() -> SettingsCell.Model {
     SettingsCell.Model(
       identifier: .backupItemTitle,
-      selectionHandler: {
-        print("Log out")
+      selectionHandler: { [weak self] in
+        guard let self = self else { return }
+        self.didTapBackup?(self.settingsController.activeWallet())
       },
       cellContentModel: SettingsCellContentView.Model(
         title: .backupItemTitle,
@@ -306,4 +323,13 @@ private extension String {
   static let deleteDescription = "This action will delete your account and all data from this application."
   static let deleteDeleteButtonTitle = "Delete account and data"
   static let deleteCancelButtonTitle = "Cancel"
+}
+
+private extension NSDirectionalEdgeInsets {
+  static let sectionPadding = NSDirectionalEdgeInsets(
+    top: 16,
+    leading: 16,
+    bottom: 16,
+    trailing: 16
+  )
 }

@@ -27,7 +27,7 @@ final class SettingsCurrencyPickerListItemsProvider: SettingsListItemsProvider {
     }
   }
   
-  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> TKCollectionViewCell? {
+  func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell? {
     nil
   }
   
@@ -73,6 +73,16 @@ private extension SettingsCurrencyPickerListItemsProvider {
         )
       )
     }
-    return SettingsListSection(items: items)
+    return SettingsListSection(padding: .sectionPadding,
+                               items: items)
   }
+}
+
+private extension NSDirectionalEdgeInsets {
+  static let sectionPadding = NSDirectionalEdgeInsets(
+    top: 16,
+    leading: 16,
+    bottom: 16,
+    trailing: 16
+  )
 }

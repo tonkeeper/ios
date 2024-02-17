@@ -173,6 +173,26 @@ private extension WalletCoordinator {
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
+  
+  func openBackup(wallet: Wallet) {
+    let coordinator = BackupModule(
+      dependencies: BackupModule.Dependencies(
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly
+      )
+    ).createBackupCoordinator(
+      router: router,
+      wallet: wallet
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
 }
 
 extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
@@ -190,6 +210,10 @@ extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
     
     module.output.didTapReceive = { [weak self] in
       self?.openReceive(token: .ton)
+    }
+    
+    module.output.didTapBackup = { [weak self] in
+      self?.openBackup(wallet: wallet)
     }
     
     return module.view

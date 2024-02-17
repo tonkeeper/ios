@@ -39,6 +39,10 @@ private extension SettingsCoordinator {
     itemsProvider.didTapCurrency = { [weak self] in
       self?.openCurrencyPicker()
     }
+    
+    itemsProvider.didTapBackup = { [weak self] wallet in
+      self?.openBackup(wallet: wallet)
+    }
 
     router.push(viewController: module.viewController,
                 onPopClosures: { [weak self] in
@@ -87,5 +91,60 @@ private extension SettingsCoordinator {
     let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
     
     router.push(viewController: module.viewController)
+  }
+  
+  func openBackup(wallet: Wallet) {
+    let itemsProvider = SettingsBackupListItemsProvider(
+      backupController: keeperCoreMainAssembly.backupController(wallet: wallet)
+    )
+    
+    itemsProvider.didTapBackupManually = { [weak self] in
+      self?.openManuallyBackup(wallet: wallet)
+    }
+    
+    itemsProvider.didTapShowRecoveryPhrase = { [weak self] in
+      self?.openRecoveryPhrase(wallet: wallet)
+    }
+    
+    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
+    
+    router.push(viewController: module.viewController)
+  }
+  
+  func openRecoveryPhrase(wallet: Wallet) {
+    let coordinator = SettingsRecoveryPhraseCoordinator(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: router
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
+  func openManuallyBackup(wallet: Wallet) {
+    let coordinator = BackupModule(
+      dependencies: BackupModule.Dependencies(
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly
+      )
+    ).createBackupCoordinator(
+      router: router,
+      wallet: wallet
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
   }
 }
