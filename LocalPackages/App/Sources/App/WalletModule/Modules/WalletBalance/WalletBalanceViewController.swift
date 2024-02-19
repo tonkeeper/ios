@@ -23,6 +23,10 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
       headerViewProvider: { [customView] in customView.headerView }
     )
     
+    collectionController?.isHighlightable = { [weak viewModel] section, index in
+      viewModel?.isHighlightableItem(section: section, index: index) ?? true
+    }
+    
     setupBindings()
     viewModel.viewDidLoad()
   }
@@ -38,8 +42,8 @@ private extension WalletBalanceViewController {
       collectionController?.setBalanceItems(items)
     }
     
-    viewModel.didUpdateFinishSetupItems = { [weak collectionController] items in
-      collectionController?.setFinishSetupItems(items)
+    viewModel.didUpdateFinishSetupItems = { [weak collectionController] items, headerModel in
+      collectionController?.setFinishSetupSection(items, headerModel: headerModel)
     }
     
     viewModel.didTapCopy = { address in
@@ -55,6 +59,10 @@ private extension WalletBalanceViewController {
       case .finishSetup:
         viewModel?.didTapFinishSetupItem(at: index)
       }
+    }
+    
+    collectionController?.didTapSectionHeaderButton = { [weak viewModel] section in
+      viewModel?.didTapSectionHeaderButton(section: section)
     }
   }
 }

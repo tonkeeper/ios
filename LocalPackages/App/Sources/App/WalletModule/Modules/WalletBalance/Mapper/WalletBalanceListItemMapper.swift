@@ -97,42 +97,107 @@ struct WalletBalanceListItemMapper {
   }
   
   func mapFinishSetup(model: WalletBalanceSetupModel,
-                      backupHandler: @escaping () -> Void) -> [AnyHashable] {
+                      biometryAuthentificator: BiometryAuthentificator,
+                      backupHandler: @escaping () -> Void,
+                      biometryHandler: @escaping (Bool) async -> Bool) -> [AnyHashable] {
     var items = [AnyHashable]()
     if !model.didBackup {
-      let item =  WalletBalanceBalanceItemCell.Model(
-        identifier: .backupItemIdentifier,
-        accessoryType: .disclosureIndicator,
-        selectionHandler: {
-          backupHandler()
-        },
-        cellContentModel: WalletBalanceBalanceItemCellContentView.Model(
-          iconModel: TKListItemIconImageView.Model(
-            image: .image(.TKUIKit.Icons.Size28.key),
-            tintColor: .Icon.primary,
-            backgroundColor: .Background.contentTint,
-            size: .iconSize
-          ),
-          contentModel: TKListItemContentView.Model(
-            leftContentStackViewModel: TKListItemContentStackView.Model(
-              titleSubtitleModel: TKListItemTitleSubtitleView.Model(
-                title: nil,
-                subtitle: nil
-              ),
-              description: String.backupDescription.withTextStyle(
-                .body2,
-                color: .Text.primary,
-                alignment: .left,
-                lineBreakMode: .byWordWrapping
-              )
-            ),
-            rightContentStackViewModel: nil
-          )
+      items.append(createBackupItem(backupHandler: backupHandler))
+    }
+    if model.biometry.isRequired {
+      items.append(
+        createBiometryItem(
+          biometry: model.biometry,
+          biometryAuthentificator: biometryAuthentificator,
+          biometryHandler: biometryHandler
         )
       )
-      items.append(item)
     }
+    
     return items
+  }
+  
+  func mapFinishSetupSectionHeaderModel(model: WalletBalanceSetupModel) -> WalletBalanceCollectionController.SectionHeaderView.Model {
+    let title = "Finish setting up"
+    var button: TKButton.Model?
+    if model.isFinishSetupAvailable {
+      button = TKHeaderButton.Model(title: "Done")
+    }
+    return WalletBalanceCollectionController.SectionHeaderView.Model(title: title, buttonModel: button)
+  }
+  
+  func createBackupItem(backupHandler: @escaping () -> Void) -> WalletBalanceSetupPlainItemCell.Model {
+    WalletBalanceSetupPlainItemCell.Model(
+      identifier: .backupItemIdentifier,
+      accessoryType: .disclosureIndicator,
+      selectionHandler: {
+        backupHandler()
+      },
+      cellContentModel: WalletBalanceSetupPlainItemCellContentView.Model(
+        iconModel: TKListItemIconImageView.Model(
+          image: .image(.TKUIKit.Icons.Size28.key),
+          tintColor: .Icon.primary,
+          backgroundColor: .Background.contentTint,
+          size: .iconSize
+        ),
+        contentModel: WalletBalanceSetupContentView.Model(title: .backupDescription)
+      )
+    )
+  }
+  
+  func createBiometryItem(
+    biometry: WalletBalanceSetupModel.Biometry,
+    biometryAuthentificator: BiometryAuthentificator,
+    biometryHandler: @escaping (Bool) async -> Bool
+  ) -> WalletBalanceSetupSwitchItemCell.Model {
+    
+      let switchModel: TKListItemSwitchView.Model = {
+        let isOn: Bool
+        let isEnabled: Bool
+    
+        let result = biometryAuthentificator.canEvaluate(policy: .deviceOwnerAuthenticationWithBiometrics)
+        switch result {
+        case .success:
+          isOn = biometry.isBiometryEnabled
+          isEnabled = true
+        case .failure:
+          isOn = false
+          isEnabled = false
+        }
+        return TKListItemSwitchView.Model(
+          isOn: isOn,
+          isEnabled: isEnabled,
+          action: { isOn in
+            return await biometryHandler(isOn)
+          }
+        )
+      }()
+    
+      let title: String
+      switch biometryAuthentificator.biometryType {
+      case .touchID:
+        title = .use + " " + .touchId + " " + .approveTransactions
+      case .faceID:
+        title = .use + " " + .faceId + " " + .approveTransactions
+      default:
+        title = .biometryUnavailable
+      }
+    
+    
+    return WalletBalanceSetupSwitchItemCell.Model(
+      identifier: .biometryItemIdentifier,
+      isHighlightable: false,
+      cellContentModel: WalletBalanceSetupSwitchItemCellContentView.Model(
+        iconModel: TKListItemIconImageView.Model(
+          image: .image(.TKUIKit.Icons.Size28.faceId),
+          tintColor: .Icon.primary,
+          backgroundColor: .Background.contentTint,
+          size: .iconSize
+        ),
+        contentModel: WalletBalanceSetupContentView.Model(title: title),
+        valueModel: switchModel
+      )
+    )
   }
 }
 
@@ -147,4 +212,11 @@ private extension CGFloat {
 private extension String {
   static let backupItemIdentifier = "BackupItem"
   static let backupDescription = "Back up the wallet recovery phrase"
+  static let biometryItemIdentifier = "BiometryItem"
+  static let use = "Use"
+  static let faceId = "Face ID"
+  static let touchId = "Touch ID"
+  static let approveTransactions = "to approve transactions"
+  static let biometryUnavailable = "Biometry unavailable"
 }
+

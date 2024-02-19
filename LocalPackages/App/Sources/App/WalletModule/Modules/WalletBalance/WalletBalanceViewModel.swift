@@ -9,17 +9,21 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapReceive: (() -> Void)? { get set }
   
   var didTapBackup: (() -> Void)? { get set }
+  
+  var didRequireConfirmation: (() async -> Bool)? { get set }
 }
 
 protocol WalletBalanceViewModel: AnyObject {
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)? { get set }
   var didUpdateBalanceItems: (([WalletBalanceBalanceItemCell.Model]) -> Void)? { get set }
-  var didUpdateFinishSetupItems: (([AnyHashable]) -> Void)? { get set }
+  var didUpdateFinishSetupItems: (([AnyHashable], WalletBalanceCollectionController.SectionHeaderView.Model) -> Void)? { get set }
   var didTapCopy: ((String?) -> Void)? { get set }
   
   func viewDidLoad()
   func didTapBalanceItem(at index: Int)
   func didTapFinishSetupItem(at index: Int)
+  func isHighlightableItem(section: WalletBalanceSection, index: Int) -> Bool
+  func didTapSectionHeaderButton(section: WalletBalanceSection)
 }
 
 final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput {
@@ -33,11 +37,13 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   var didTapBackup: (() -> Void)?
   
+  var didRequireConfirmation: (() async -> Bool)?
+  
   // MARK: - WalletBalanceViewModel
   
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)?
   var didUpdateBalanceItems: (([WalletBalanceBalanceItemCell.Model]) -> Void)?
-  var didUpdateFinishSetupItems: (([AnyHashable]) -> Void)?
+  var didUpdateFinishSetupItems: (([AnyHashable], WalletBalanceCollectionController.SectionHeaderView.Model) -> Void)?
   var didTapCopy: ((String?) -> Void)?
   
   func viewDidLoad() {
@@ -58,9 +64,33 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   func didTapFinishSetupItem(at index: Int) {
     switch finishSetupItems[index] {
-    case let item as WalletBalanceBalanceItemCell.Model:
+    case let item as WalletBalanceSetupPlainItemCell.Model:
       item.selectionHandler?()
     default: break
+    }
+  }
+  
+  func isHighlightableItem(section: WalletBalanceSection, index: Int) -> Bool {
+    switch section {
+    case .balanceItems:
+      return true
+    case .finishSetup:
+      switch finishSetupItems[index] {
+      case let item as WalletBalanceSetupPlainItemCell.Model:
+        return item.isHighlightable
+      case let item as WalletBalanceSetupSwitchItemCell.Model:
+        return item.isHighlightable
+      default: return false
+      }
+    }
+  }
+  
+  func didTapSectionHeaderButton(section: WalletBalanceSection) {
+    switch section {
+    case .balanceItems:
+      break
+    case .finishSetup:
+      walletBalanceController.finishSetup()
     }
   }
   
@@ -74,11 +104,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }
   }
   
-  private var finishSetupItems = [AnyHashable]() {
-    didSet {
-      didUpdateFinishSetupItems?(finishSetupItems)
-    }
-  }
+  private var finishSetupItems = [AnyHashable]()
   
   // MARK: - Mapper
   
@@ -161,11 +187,21 @@ private extension WalletBalanceViewModelImplementation {
   }
   
   func updateFinishSetup(model: WalletBalanceSetupModel) {
+    let headerModel = listItemMapper.mapFinishSetupSectionHeaderModel(model: model)
     finishSetupItems = listItemMapper.mapFinishSetup(
       model: model,
+      biometryAuthentificator: BiometryAuthentificator(),
       backupHandler: { [weak self] in
         self?.didTapBackup?()
+      }, biometryHandler: { [weak self] isOn in
+        guard let self = self else { return !isOn }
+        let didConfirm = await self.didRequireConfirmation?() ?? false
+        guard didConfirm else { return !isOn }
+        return await Task { @MainActor in
+          return self.walletBalanceController.setIsBiometryEnabled(isOn)
+        }.value
       }
     )
+    didUpdateFinishSetupItems?(finishSetupItems, headerModel)
   }
 }

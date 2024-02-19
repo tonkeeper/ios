@@ -404,17 +404,12 @@
 		C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C81CE487C82E845B444588 /* EnterMnemonicPresenter.swift */; };
 		C3388B1B2B3C6913000FE225 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C3388B1A2B3C6913000FE225 /* WalletCore */; };
 		C3388B1E2B3C691B000FE225 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C3388B1D2B3C691B000FE225 /* WalletCore */; };
-		C33B7A3E2B4BA43000BE7E60 /* SettingsBackupViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A3D2B4BA43000BE7E60 /* SettingsBackupViewController.swift */; };
-		C33B7A402B4BA43C00BE7E60 /* SettingsBackupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A3F2B4BA43C00BE7E60 /* SettingsBackupView.swift */; };
-		C33B7A422B4BA44200BE7E60 /* SettingsBackupViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A412B4BA44200BE7E60 /* SettingsBackupViewModel.swift */; };
-		C33B7A442B4BA44E00BE7E60 /* SettingsBackupAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A432B4BA44E00BE7E60 /* SettingsBackupAssembly.swift */; };
 		C33B7A472B4BB07A00BE7E60 /* SettingsManuallyBackupCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A462B4BB07A00BE7E60 /* SettingsManuallyBackupCoordinator.swift */; };
 		C33B7A502B4BBE3E00BE7E60 /* BackupCheckPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A492B4BBE3E00BE7E60 /* BackupCheckPresenter.swift */; };
 		C33B7A512B4BBE3E00BE7E60 /* BackupCheckProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A4A2B4BBE3E00BE7E60 /* BackupCheckProtocols.swift */; };
 		C33B7A522B4BBE3E00BE7E60 /* BackupCheckView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A4B2B4BBE3E00BE7E60 /* BackupCheckView.swift */; };
 		C33B7A532B4BBE3E00BE7E60 /* BackupCheckViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A4C2B4BBE3E00BE7E60 /* BackupCheckViewController.swift */; };
 		C33B7A542B4BBE3E00BE7E60 /* BackupCheckAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A4D2B4BBE3E00BE7E60 /* BackupCheckAssembly.swift */; };
-		C33B7A582B4BC91B00BE7E60 /* SettingsBackupDateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A572B4BC91B00BE7E60 /* SettingsBackupDateView.swift */; };
 		C33F72462AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33F72452AF27E3E00E61F72 /* TonConnectHeaderWalletAnimationView.swift */; };
 		C35684112AEBFD810064DD0A /* AuthEventsDaemon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684102AEBFD810064DD0A /* AuthEventsDaemon.swift */; };
 		C35684152AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C35684142AEC37CA0064DD0A /* TonConnectConfirmationCoordinator.swift */; };
@@ -3396,7 +3391,6 @@
 				7D527BC02A2A913400A2D29A /* ModalContentViewController+Configuration.swift in Sources */,
 				7D9292972A25EB16005B83DF /* PageSegmentControlTab.swift in Sources */,
 				7D5928472A1F578A006B0A8A /* WalletHeaderViewController.swift in Sources */,
-				C33B7A582B4BC91B00BE7E60 /* SettingsBackupDateView.swift in Sources */,
 				7D9292992A25EC70005B83DF /* PagingContentHeaderView.swift in Sources */,
 				7DDF05122A695AAA003E9F13 /* ActivityTransactionDetailsAssembly.swift in Sources */,
 				7D68362C2A1CE874002DBBC7 /* UINavigationController+Completion.swift in Sources */,
@@ -3416,7 +3410,6 @@
 				7D3BCFDE2A4DB8CE00BE6AD9 /* ReenterPasscodeConfigurator.swift in Sources */,
 				7D3D651B2ACAE59D00E64537 /* SettingsListCellAccessoryView.swift in Sources */,
 				7D49346A2A5C623900F4BCA2 /* PasscodeAuthConfigurator.swift in Sources */,
-				C33B7A422B4BA44200BE7E60 /* SettingsBackupViewModel.swift in Sources */,
 				C37D0C4F2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift in Sources */,
 				7D5928592A1F8092006B0A8A /* Button.Configuration+Plain.swift in Sources */,
 				7D92929D2A2608A0005B83DF /* WalletHeaderTitleView.swift in Sources */,
@@ -3540,7 +3533,6 @@
 				7D6836602A1D69A3002DBBC7 /* GenericViewController.swift in Sources */,
 				7D3D651D2ACAE60000E64537 /* SettingsListCellTextAccessoryView.swift in Sources */,
 				7D6836292A1CD2E9002DBBC7 /* RouteOptions.swift in Sources */,
-				C33B7A402B4BA43C00BE7E60 /* SettingsBackupView.swift in Sources */,
 				7DB17F452A4C2D90007C6154 /* OnboardingCoordinator.swift in Sources */,
 				7D3D650F2ACAB6A400E64537 /* SettingsListCollectionLayoutConfigurator.swift in Sources */,
 				7D3E43862A3395FF00C23A75 /* BuyListCollectionLayoutConfigurator.swift in Sources */,
@@ -3645,7 +3637,6 @@
 				7D9292DE2A28A1DF005B83DF /* EnterAmountViewController.swift in Sources */,
 				7D5141CE2A53454400EC7F59 /* Image.swift in Sources */,
 				FC58CA56982D098FE4E85989 /* TokensListProtocols.swift in Sources */,
-				C33B7A3E2B4BA43000BE7E60 /* SettingsBackupViewController.swift in Sources */,
 				7D8EB7222A4ED873005BE1B0 /* CreateWalletAssembly.swift in Sources */,
 				D97B981CF3DBE823EDA9A091 /* WalletContentViewController.swift in Sources */,
 				B2DC87224B8264B43A27920C /* WalletContentView.swift in Sources */,
@@ -3669,7 +3660,6 @@
 				8C76B9F74015C07191531473 /* SendConfirmationViewController.swift in Sources */,
 				7D5823397229401915615466 /* SendConfirmationView.swift in Sources */,
 				7D3D65012ACAB01300E64537 /* SettingsCoordinator.swift in Sources */,
-				C33B7A442B4BA44E00BE7E60 /* SettingsBackupAssembly.swift in Sources */,
 				0A919C70A2EDEAA0AB313C6C /* SendConfirmationPresenter.swift in Sources */,
 				795522365A03D6A882263ECB /* SendConfirmationProtocols.swift in Sources */,
 				3C01D6946E22BFB97B2E82A6 /* ReceiveRootViewController.swift in Sources */,

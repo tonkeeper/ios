@@ -43,6 +43,10 @@ private extension SettingsCoordinator {
     itemsProvider.didTapBackup = { [weak self] wallet in
       self?.openBackup(wallet: wallet)
     }
+    
+    itemsProvider.didTapSecurity = { [weak self] in
+      self?.openSecurity()
+    }
 
     router.push(viewController: module.viewController,
                 onPopClosures: { [weak self] in
@@ -111,6 +115,21 @@ private extension SettingsCoordinator {
     router.push(viewController: module.viewController)
   }
   
+  func openSecurity() {
+    let itemsProvider = SettingsSecurityListItemsProvider(
+      settingsSecurityController: keeperCoreMainAssembly.settingsSecurityController(),
+      biometryAuthentificator: BiometryAuthentificator()
+    )
+    
+    itemsProvider.didRequireConfirmation = { [weak self] in
+      return (await self?.openConfirmation()) ?? false
+    }
+    
+    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
+    
+    router.push(viewController: module.viewController)
+  }
+  
   func openRecoveryPhrase(wallet: Wallet) {
     let coordinator = SettingsRecoveryPhraseCoordinator(
       wallet: wallet,
@@ -146,5 +165,39 @@ private extension SettingsCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+  }
+  
+  func openConfirmation() async -> Bool {
+    return await Task<Bool, Never> { @MainActor in
+      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
+        guard let self = self else { return }
+        let coordinator = PasscodeModule(
+          dependencies: PasscodeModule.Dependencies(
+            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+          )
+        ).passcodeConfirmationCoordinator()
+        
+        coordinator.didCancel = { [weak self, weak coordinator] in
+          continuation.resume(returning: false)
+          coordinator?.router.dismiss(completion: {
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+          })
+        }
+        
+        coordinator.didConfirm = { [weak self, weak coordinator] in
+          continuation.resume(returning: true)
+          coordinator?.router.dismiss(completion: {
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+          })
+        }
+        
+        self.addChild(coordinator)
+        coordinator.start()
+        
+        self.router.present(coordinator.router.rootViewController)
+      }
+    }.value
   }
 }

@@ -21,6 +21,7 @@ final class SettingsCellValueView: UIView, ConfigurableView, ReusableView {
   public enum Model {
     case text(SettingsCellTextValueView.Model)
     case icon(SettingsCellIconValueView.Model)
+    case `switch`(TKListItemSwitchView.Model)
   }
   
   public func configure(model: Model) {
@@ -33,6 +34,11 @@ final class SettingsCellValueView: UIView, ConfigurableView, ReusableView {
       contentView = view
     case .icon(let model):
       let view = SettingsCellIconValueView()
+      view.configure(model: model)
+      addSubview(view)
+      contentView = view
+    case .switch(let model):
+      let view = TKListItemSwitchView()
       view.configure(model: model)
       addSubview(view)
       contentView = view

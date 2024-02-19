@@ -16,6 +16,7 @@ protocol SettingsListViewModel: AnyObject {
   func viewDidLoad()
   func selectItem(section: SettingsListSection, index: Int)
   func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell?
+  func isHighlightableItem(section: SettingsListSection, index: Int) -> Bool
 }
 
 protocol SettingsListItemsProvider: AnyObject {
@@ -63,10 +64,19 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     switch section.items[index] {
     case let item as SettingsCell.Model:
       item.selectionHandler?()
-    case let item as SettingsTextCell.Model:
+    case _ as SettingsTextCell.Model:
       break
     default:
       itemsProvider.selectItem(section: section, index: index)
+    }
+  }
+  
+  func isHighlightableItem(section: SettingsListSection, index: Int) -> Bool {
+    switch section.items[index] {
+    case let item as SettingsCell.Model:
+      return item.isHighlightable
+    default:
+      return true
     }
   }
   

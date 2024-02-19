@@ -8,8 +8,6 @@
 import UIKit
 import TKUIKitLegacy
 
-extension UIControl.State: Hashable {}
-
 final class TKButton: UIControlClosure {
   
   enum `Type` {

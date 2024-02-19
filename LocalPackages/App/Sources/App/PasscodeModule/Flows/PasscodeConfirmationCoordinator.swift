@@ -25,7 +25,10 @@ public final class PasscodeConfirmationCoordinator: RouterCoordinator<Navigation
 
 private extension PasscodeConfirmationCoordinator {
   func openInputPasscode() {
-    var biometryProvider = PasscodeConfirmationBiometryProvider(biometryAuthentificator: BiometryAuthentificator())
+    var biometryProvider = PasscodeConfirmationBiometryProvider(
+      biometryAuthentificator: BiometryAuthentificator(),
+      isBiometryEnabled: passcodeConfirmationController.isBiometryEnabled
+    )
     
     biometryProvider.didSuccessBiometry = { [weak self] in
       self?.didConfirm?()
@@ -76,15 +79,19 @@ private struct PasscodeConfirmationInputValidator: PasscodeInputValidator {
 private struct PasscodeConfirmationBiometryProvider: PasscodeInputBiometryProvider {
   
   private let biometryAuthentificator: BiometryAuthentificator
+  private let isBiometryEnabled: Bool
   
-  init(biometryAuthentificator: BiometryAuthentificator) {
+  init(biometryAuthentificator: BiometryAuthentificator,
+       isBiometryEnabled: Bool) {
     self.biometryAuthentificator = biometryAuthentificator
+    self.isBiometryEnabled = isBiometryEnabled
   }
   
   var didSuccessBiometry: (() -> Void)?
   var didFailedBiometry: (() -> Void)?
   
   func checkBiometryStatus() -> PasscodeInputBiometryProviderState {
+    guard isBiometryEnabled else { return .none }
     switch biometryAuthentificator.biometryType {
     case .faceID:
       return .faceId

@@ -71,5 +71,10 @@ private extension SettingsListViewController {
     collectionController?.didSelect = { [weak viewModel] section, index in
       viewModel?.selectItem(section: section, index: index)
     }
+    
+    collectionController?.isHighlightable = { [weak viewModel] section, index in
+      guard let viewModel = viewModel else { return false }
+      return viewModel.isHighlightableItem(section: section, index: index)
+    }
   }
 }

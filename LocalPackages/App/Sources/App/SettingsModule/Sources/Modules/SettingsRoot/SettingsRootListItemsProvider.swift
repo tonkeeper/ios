@@ -9,6 +9,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   var didTapEditWallet: ((Wallet) -> Void)?
   var didTapCurrency: (() -> Void)?
   var didTapBackup: ((Wallet) -> Void)?
+  var didTapSecurity: (() -> Void)?
   
   private let walletCellRegistration: WalletCellRegistration
   
@@ -133,8 +134,8 @@ private extension SettingsRootListItemsProvider {
   func setupSecurityItem() -> SettingsCell.Model {
     SettingsCell.Model(
       identifier: .securityItemTitle,
-      selectionHandler: {
-        print("Log out")
+      selectionHandler: { [weak self] in
+        self?.didTapSecurity?()
       },
       cellContentModel: SettingsCellContentView.Model(
         title: .securityItemTitle,

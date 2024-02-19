@@ -105,6 +105,27 @@ final class SettingsCellContentView: UIView, ConfigurableView, TKCollectionViewC
     }
     
     init(title: String,
+         switchValue: TKListItemSwitchView.Model) {
+      self.contentModel = TKListItemContentView.Model(
+        leftContentStackViewModel: TKListItemContentStackView.Model(
+          titleSubtitleModel: TKListItemTitleSubtitleView.Model(
+            title: title.withTextStyle(
+              .label1,
+              color: .Text.primary,
+              alignment: .left,
+              lineBreakMode: .byTruncatingTail
+            ),
+            subtitle: nil
+          ),
+          description: nil
+        ),
+        rightContentStackViewModel: nil
+      )
+      
+      valueModel = .switch(switchValue)
+    }
+    
+    init(title: String,
          subtitle: String? = nil) {
       self.contentModel = TKListItemContentView.Model(
         leftContentStackViewModel: TKListItemContentStackView.Model(

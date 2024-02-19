@@ -57,6 +57,10 @@ final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, Passco
   
   func viewDidLoad() {
     didUpdateModel?(createModel())
+    switch biometryProvider.checkBiometryStatus() {
+    case .faceId, .touchId: biometryProvider.evaluateBiometry()
+    case .none: break
+    }
   }
   
   func viewDidDisappear() {

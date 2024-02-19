@@ -4,9 +4,16 @@ import TKUIKit
 final class WalletBalanceCollectionController: TKCollectionController<WalletBalanceSection, AnyHashable> {
   
   typealias BalanceCellRegistration = UICollectionView.CellRegistration<WalletBalanceBalanceItemCell, WalletBalanceBalanceItemCell.Model>
+  typealias SetupSwitchCellRegistration = UICollectionView.CellRegistration<WalletBalanceSetupSwitchItemCell, WalletBalanceSetupSwitchItemCell.Model>
+  typealias SetupPlainCellRegistration = UICollectionView.CellRegistration<WalletBalanceSetupPlainItemCell, WalletBalanceSetupPlainItemCell.Model>
   typealias SectionHeaderView = TKCollectionViewSupplementaryContainerView<TKListTitleView>
   
-  private let balanceCellRegistration: BalanceCellRegistration
+//  private let balanceCellRegistration: BalanceCellRegistration
+//  private let switchCellRegistration: SwitchCellRegistration
+  
+  var finishSetupSectionHeaderModel: SectionHeaderView.Model?
+  
+  var didTapSectionHeaderButton: ((WalletBalanceSection) -> Void?)?
   
   init(collectionView: UICollectionView,
        headerViewProvider: (() -> UIView)? = nil, 
@@ -14,13 +21,38 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
     let balanceCellRegistration = BalanceCellRegistration { cell, indexPath, itemIdentifier in
       cell.configure(model: itemIdentifier)
     }
-    self.balanceCellRegistration = balanceCellRegistration
+//    self.balanceCellRegistration = balanceCellRegistration
+    
+    let setupSwitchCellRegistration = SetupSwitchCellRegistration { cell, indexPath, itemIdentifier in
+      cell.configure(model: itemIdentifier)
+    }
+    let setupPlainCellRegistration = SetupPlainCellRegistration { cell, indexPath, itemIdentifier in
+      cell.configure(model: itemIdentifier)
+    }
+    
+//    self.
     
     super.init(
       collectionView: collectionView, cellProvider: { collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
         case let model as WalletBalanceBalanceItemCell.Model:
           let cell = collectionView.dequeueConfiguredReusableCell(using: balanceCellRegistration, for: indexPath, item: model)
+          cell.isFirstInSection = { return $0.item == 0 }
+          cell.isLastInSection = { [unowned collectionView] in
+            let numberOfItems = collectionView.numberOfItems(inSection: $0.section)
+            return $0.item == numberOfItems - 1
+          }
+          return cell
+        case let model as WalletBalanceSetupPlainItemCell.Model:
+          let cell = collectionView.dequeueConfiguredReusableCell(using: setupPlainCellRegistration, for: indexPath, item: model)
+          cell.isFirstInSection = { return $0.item == 0 }
+          cell.isLastInSection = { [unowned collectionView] in
+            let numberOfItems = collectionView.numberOfItems(inSection: $0.section)
+            return $0.item == numberOfItems - 1
+          }
+          return cell
+        case let model as WalletBalanceSetupSwitchItemCell.Model:
+          let cell = collectionView.dequeueConfiguredReusableCell(using: setupSwitchCellRegistration, for: indexPath, item: model)
           cell.isFirstInSection = { return $0.item == 0 }
           cell.isLastInSection = { [unowned collectionView] in
             let numberOfItems = collectionView.numberOfItems(inSection: $0.section)
@@ -43,7 +75,8 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
       }
     }), animated: false)
     
-    supplementaryViewProvider = { collectionView, kind, indexPath in
+    supplementaryViewProvider = { [weak self] collectionView, kind, indexPath in
+      guard let self = self else { return nil}
       switch WalletBalanceCollectionSupplementaryItem(rawValue: kind) {
       case .sectionHeader:
         let snapshot = self.dataSource.snapshot()
@@ -52,8 +85,14 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
           ofKind: kind,
           withReuseIdentifier: SectionHeaderView.reuseIdentifier,
           for: indexPath
-        )
-        (sectionHeaderView as? SectionHeaderView)?.configure(model: TKListTitleView.Model(title: section.title))
+        ) as? SectionHeaderView
+        
+        if let model = self.finishSetupSectionHeaderModel {
+          sectionHeaderView?.configure(model: model)
+        }
+        sectionHeaderView?.contentView.didTapButton = { [weak self] in
+          self?.didTapSectionHeaderButton?(section)
+        }
         return sectionHeaderView
       case .none: return nil
       }
@@ -82,7 +121,9 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
     }
   }
   
-  func setFinishSetupItems(_ items: [AnyHashable]) {
+  func setFinishSetupSection(_ items: [AnyHashable],
+                             headerModel: SectionHeaderView.Model) {
+    self.finishSetupSectionHeaderModel = headerModel
     var snapshot = dataSource.snapshot()
     snapshot.deleteSections([.finishSetup])
     if !items.isEmpty {
@@ -102,64 +143,17 @@ private extension WalletBalanceCollectionController {
                                 indexPath: IndexPath) -> UICollectionReusableView? {
     switch WalletBalanceCollectionSupplementaryItem(rawValue: kind) {
     case .sectionHeader:
-      let snapshot = self.dataSource.snapshot()
-      let section = snapshot.sectionIdentifiers[indexPath.section]
       let sectionHeaderView = collectionView.dequeueReusableSupplementaryView(
         ofKind: kind,
         withReuseIdentifier: SectionHeaderView.reuseIdentifier,
         for: indexPath
       )
-      (sectionHeaderView as? SectionHeaderView)?.configure(model: TKListTitleView.Model(title: section.title))
+      guard let model = finishSetupSectionHeaderModel else { return nil }
+      (sectionHeaderView as? SectionHeaderView)?.configure(model: model)
       return sectionHeaderView
 
     case .none: return nil
     }
-//    if HistoryListSupplementaryItem(rawValue: kind) == .header {
-//      let headerView = collectionView.dequeueReusableSupplementaryView(
-//        ofKind: kind,
-//        withReuseIdentifier: CollectionViewSupplementaryContainerView.reuseIdentifier,
-//        for: indexPath
-//      )
-//      (headerView as? CollectionViewSupplementaryContainerView)?.setContentView(headerViewProvider())
-//      return headerView
-//    }
-//    let snapshot = self.dataSource.snapshot()
-//    let section = snapshot.sectionIdentifiers[indexPath.section]
-//    switch section {
-//    case .events(let model):
-//      let sectionHeaderView = collectionView.dequeueReusableSupplementaryView(
-//        ofKind: kind,
-//        withReuseIdentifier: SectionHeaderView.reuseIdentifier,
-//        for: indexPath
-//      )
-//      (sectionHeaderView as? SectionHeaderView)?.configure(model: TKListTitleView.Model(title: model.title))
-//      return sectionHeaderView
-//    case .pagination(let pagination):
-//      let footerView = collectionView.dequeueReusableSupplementaryView(
-//        ofKind: kind,
-//        withReuseIdentifier: FooterView.reuseIdentifier,
-//        for: indexPath
-//      )
-//      let state: HistoryListFooterView.State
-//      switch pagination {
-//      case .loading:
-//        state = .loading
-//      case .error(let title):
-//        state = .error(title: title, retryButtonAction: { [weak self] in
-//          self?.loadNextPage?()
-//        })
-//      }
-//      (footerView as? FooterView)?.configure(model: HistoryListFooterView.Model(state: state))
-//      return footerView
-//    case .shimmer:
-//      let shimmerView = collectionView.dequeueReusableSupplementaryView(
-//        ofKind: kind,
-//        withReuseIdentifier: ListShimmerView.reuseIdentifier,
-//        for: indexPath
-//      )
-//      (shimmerView as? ListShimmerView)?.contentView.startAnimation()
-//      return shimmerView
-//    }
   }
   
   func balanceItemsSectionLayout() -> NSCollectionLayoutSection {
