@@ -9,6 +9,7 @@ protocol CollectiblesModuleOutput: AnyObject {
 
 protocol CollectiblesViewModel: AnyObject {
   var didUpdateListViewController: ((CollectiblesListViewController) -> Void)? { get set }
+  var didUpdateIsConnecting: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -21,8 +22,19 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   
   // MARK: - CollectiblesViewModel
   
+  var didUpdateIsConnecting: ((Bool) -> Void)?
+  
   func viewDidLoad() {
     setupChildren()
+    
+    collectiblesController.didUpdateIsConnecting = { [weak self] isConnecting in
+      guard let self = self else { return }
+      Task { @MainActor in
+        self.didUpdateIsConnecting?(isConnecting)
+      }
+    }
+    
+    collectiblesController.updateConnectingState()
   }
   
   // MARK: Dependencies

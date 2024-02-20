@@ -47,12 +47,16 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapCopy: ((String?) -> Void)?
   
   func viewDidLoad() {
-    walletBalanceController.didUpdateBalance = { [weak self] balanceModel in
-      self?.updateBalance(balanceModel: balanceModel)
+    walletBalanceController.didUpdateBalance = { [weak self] in
+      self?.updateBalance()
     }
     
     walletBalanceController.didUpdateFinishSetup = { [weak self] model in
       self?.updateFinishSetup(model: model)
+    }
+    
+    walletBalanceController.didUpdateBackgroundUpdateState = { [weak self] state in
+      self?.updateBalance()
     }
     
     walletBalanceController.loadBalance()
@@ -120,33 +124,72 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
 }
 
 private extension WalletBalanceViewModelImplementation {
-  func updateBalance(balanceModel: WalletBalanceModel) {
-    let headerModel = createHeaderModel(balanceModel: balanceModel)
-    let balanceItems = balanceModel.items.map { item in
-      listItemMapper.mapBalanceItems(item) { [weak self] in
-        switch item.token {
-        case .ton:
-          self?.didSelectTon?()
-        case .jetton(let jettonInfo):
-          self?.didSelectJetton?(jettonInfo)
+  func updateBalance() {
+    Task {
+      async let balanceModelTask =  walletBalanceController.walletBalanceModel
+      async let backgroundUpdateStateTask = walletBalanceController.backgroundUpdateState
+      
+      let balanceModel = await balanceModelTask
+      let backgroundUpdateState = await backgroundUpdateStateTask
+      
+      let headerModel = createHeaderModel(
+        balanceModel: balanceModel,
+        backgroundUpdateState: backgroundUpdateState
+      )
+      let balanceItems = balanceModel.items.map { item in
+        listItemMapper.mapBalanceItems(item) { [weak self] in
+          switch item.token {
+          case .ton:
+            self?.didSelectTon?()
+          case .jetton(let jettonInfo):
+            self?.didSelectJetton?(jettonInfo)
+          }
         }
       }
-    }
-    
-    Task { @MainActor in
-      self.balanceModel = balanceModel
-      didUpdateHeader?(headerModel)
-      self.balanceItems = balanceItems
+      
+      Task { @MainActor in
+        self.balanceModel = balanceModel
+        didUpdateHeader?(headerModel)
+        self.balanceItems = balanceItems
+      }
     }
   }
   
-  func createHeaderModel(balanceModel: WalletBalanceModel) -> WalletBalanceHeaderView.Model {
+  func createHeaderModel(balanceModel: WalletBalanceModel,
+                         backgroundUpdateState: BackgroundUpdateStore.State) -> WalletBalanceHeaderView.Model {
+    
+    let connectionStatusModel: ConnectionStatusView.Model?
+    switch backgroundUpdateState {
+    case .connecting:
+      connectionStatusModel = ConnectionStatusView.Model(
+        title: "Updating",
+        titleColor: .Text.secondary,
+        isLoading: true
+      )
+    case .connected:
+      connectionStatusModel = nil
+    case .disconnected:
+      connectionStatusModel = ConnectionStatusView.Model(
+        title: "Updating",
+        titleColor: .Text.secondary,
+        isLoading: true
+      )
+    case .noConnection:
+      connectionStatusModel = ConnectionStatusView.Model(
+        title: "No Internet connection",
+        titleColor: .Accent.orange,
+        isLoading: false
+      )
+    }
+    
     let balanceViewModel = WalletBalanceHeaderBalanceView.Model(
       balance: balanceModel.total,
       address: walletBalanceController.address,
-      addressAction: { [weak self] in
+      addressAction: {
+        [weak self] in
         self?.didTapCopy?(self?.walletBalanceController.fullAddress)
-      }
+      },
+      connectionStatusModel: connectionStatusModel
     )
     
     return WalletBalanceHeaderView.Model(

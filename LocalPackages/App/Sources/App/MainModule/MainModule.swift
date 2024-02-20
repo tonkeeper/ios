@@ -3,13 +3,13 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
-public struct MainModule {
+struct MainModule {
   private let dependencies: Dependencies
-  public init(dependencies: Dependencies) {
+  init(dependencies: Dependencies) {
     self.dependencies = dependencies
   }
   
-  public func createMainCoordinator() -> MainCoordinator {
+  func createMainCoordinator() -> MainCoordinator {
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
@@ -19,13 +19,15 @@ public struct MainModule {
     let coordinator = MainCoordinator(
       router: TabBarControllerRouter(rootViewController: tabBarController),
       coreAssembly: dependencies.coreAssembly,
-      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      appStateTracker: dependencies.coreAssembly.appStateTracker,
+      reachabilityTracker: dependencies.coreAssembly.reachabilityTracker
     )
     return coordinator
   }
 }
 
-public extension MainModule {
+extension MainModule {
   struct Dependencies {
     let coreAssembly: TKCore.CoreAssembly
     let keeperCoreMainAssembly: KeeperCore.MainAssembly

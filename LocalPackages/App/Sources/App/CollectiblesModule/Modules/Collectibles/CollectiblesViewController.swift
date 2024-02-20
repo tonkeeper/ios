@@ -35,6 +35,10 @@ private extension CollectiblesViewController {
     viewModel.didUpdateListViewController = { [weak self] viewController in
       self?.setupListViewController(viewController: viewController)
     }
+    
+    viewModel.didUpdateIsConnecting = { [weak self] isConnecting in
+      self?.customView.navigationBarView.isConnecting = isConnecting
+    }
   }
   
   func setup() {

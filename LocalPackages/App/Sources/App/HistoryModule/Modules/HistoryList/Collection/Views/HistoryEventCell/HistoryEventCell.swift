@@ -1,7 +1,16 @@
 import UIKit
 import TKUIKit
 
-class HistoryEventCell: TKCollectionViewContainerCell<HistoryEventCellContentView> {}
+class HistoryEventCell: TKCollectionViewContainerCell<HistoryEventCellContentView> {
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    isSeparatorEnabled = false
+  }
+  
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+}
 
 final class HistoryEventCellContentView: UIView, ConfigurableView, TKCollectionViewCellContentView, ReusableView {
   var padding: UIEdgeInsets = .zero

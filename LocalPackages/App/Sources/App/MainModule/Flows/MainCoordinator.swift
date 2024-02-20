@@ -4,7 +4,7 @@ import TKUIKit
 import KeeperCore
 import TKCore
 
-public final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
+final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
@@ -18,9 +18,14 @@ public final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private var historyCoordinator: HistoryCoordinator?
   private var collectiblesCoordinator: CollectiblesCoordinator?
   
+  private let appStateTracker: AppStateTracker
+  private let reachabilityTracker: ReachabilityTracker
+  
   init(router: TabBarControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
-       keeperCoreMainAssembly: KeeperCore.MainAssembly) {
+       keeperCoreMainAssembly: KeeperCore.MainAssembly,
+       appStateTracker: AppStateTracker,
+       reachabilityTracker: ReachabilityTracker) {
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.mainController = keeperCoreMainAssembly.mainController()
@@ -42,6 +47,9 @@ public final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
     )
+    self.appStateTracker = appStateTracker
+    self.reachabilityTracker = reachabilityTracker
+    
     super.init(router: router)
     
     mainController.didUpdateNftsAvailability = { [weak self] isAvailable in
@@ -54,11 +62,15 @@ public final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         }
       }
     }
+    
+    appStateTracker.addObserver(self)
+    reachabilityTracker.addObserver(self)
   }
   
   public override func start() {
     setupChildCoordinators()
     mainController.loadNftsState()
+    mainController.startBackgroundUpdate()
   }
 }
 
@@ -97,5 +109,32 @@ private extension MainCoordinator {
     removeChild(collectiblesCoordinator)
     self.collectiblesCoordinator = nil
     router.remove(viewController: collectiblesCoordinator.router.rootViewController)
+  }
+}
+
+// MARK: - AppStateTrackerObserver
+
+extension MainCoordinator: AppStateTrackerObserver {
+  func didUpdateState(_ state: TKCore.AppStateTracker.State) {
+    switch (appStateTracker.state, reachabilityTracker.state) {
+    case (.active, .connected):
+      mainController.startBackgroundUpdate()
+    case (.background, _):
+      mainController.stopBackgroundUpdate()
+    default: return
+    }
+  }
+}
+
+// MARK: - ReachabilityTrackerObserver
+
+extension MainCoordinator: ReachabilityTrackerObserver {
+  func didUpdateState(_ state: TKCore.ReachabilityTracker.State) {
+    switch reachabilityTracker.state {
+    case .connected:
+      mainController.startBackgroundUpdate()
+    default:
+      return
+    }
   }
 }

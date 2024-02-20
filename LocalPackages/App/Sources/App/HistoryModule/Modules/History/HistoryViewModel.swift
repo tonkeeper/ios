@@ -12,6 +12,7 @@ protocol HistoryViewModel: AnyObject {
   var didUpdateListViewController: ((HistoryListViewController) -> Void)? { get set }
   var didUpdateEmptyViewController: ((UIViewController) -> Void)? { get set }
   var didUpdateIsEmpty: ((Bool) -> Void)? { get set }
+  var didUpdateIsConnecting: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -28,11 +29,21 @@ final class HistoryViewModelImplementation: HistoryViewModel, HistoryModuleOutpu
   var didUpdateListViewController: ((HistoryListViewController) -> Void)?
   var didUpdateEmptyViewController: ((UIViewController) -> Void)?
   var didUpdateIsEmpty: ((Bool) -> Void)?
+  var didUpdateIsConnecting: ((Bool) -> Void)?
   
   func viewDidLoad() {
     historyController.didUpdateWallet = { [weak self] in
       self?.setupChildren()
     }
+    historyController.didUpdateIsConnecting = { [weak self] isConnecting in
+      guard let self = self else { return }
+      Task { @MainActor in
+        self.didUpdateIsConnecting?(isConnecting)
+      }
+    }
+    
+    historyController.updateConnectingState()
+    
     setupChildren()
   }
   

@@ -4,6 +4,7 @@ import TKUIKit
 final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
   
   let balanceLabel = UILabel()
+  let connectionStatusView = ConnectionStatusView()
   let addressLabel = UIButton(type: .custom)
   
   private let stackView: UIStackView = {
@@ -33,6 +34,7 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
     let balance: String
     let address: String
     let addressAction: () -> Void
+    let connectionStatusModel: ConnectionStatusView.Model?
   }
   
   func configure(model: Model) {
@@ -53,6 +55,15 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
     addressLabel.addAction(UIAction(handler: { _ in
       model.addressAction()
     }), for: .touchUpInside)
+    
+    if let connectionStatusModel = model.connectionStatusModel {
+      connectionStatusView.configure(model: connectionStatusModel)
+      connectionStatusView.isHidden = false
+      addressLabel.isHidden = true
+    } else {
+      connectionStatusView.isHidden = true
+      addressLabel.isHidden = false
+    }
   }
 }
 
@@ -62,18 +73,25 @@ private extension WalletBalanceHeaderBalanceView {
     stackView.addArrangedSubview(balanceLabel)
     stackView.addArrangedSubview(addressStatusStackView)
     addressStatusStackView.addArrangedSubview(addressLabel)
+    addressStatusStackView.addArrangedSubview(connectionStatusView)
     
     setupConstraints()
   }
   
   func setupConstraints() {
     stackView.translatesAutoresizingMaskIntoConstraints = false
+    connectionStatusView.translatesAutoresizingMaskIntoConstraints = false
+    addressLabel.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       stackView.topAnchor.constraint(equalTo: topAnchor),
       stackView.leftAnchor.constraint(equalTo: leftAnchor),
       stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      stackView.rightAnchor.constraint(equalTo: rightAnchor)
+      stackView.rightAnchor.constraint(equalTo: rightAnchor),
+      
+      connectionStatusView.heightAnchor.constraint(equalToConstant: 32),
+      
+      addressLabel.heightAnchor.constraint(equalToConstant: 32)
     ])
   }
 }

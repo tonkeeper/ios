@@ -52,6 +52,10 @@ private extension HistoryViewController {
     viewModel.didUpdateIsEmpty = { [weak self] isEmpty in
       isEmpty ? self?.customView.showEmptyState() : self?.customView.showList()
     }
+    
+    viewModel.didUpdateIsConnecting = { [weak self] isConnecting in
+      self?.customView.navigationBarView.isConnecting = isConnecting
+    }
   }
   
   func setupEmptyViewController(viewController: UIViewController) {
