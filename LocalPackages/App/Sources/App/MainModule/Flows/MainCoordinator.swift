@@ -77,6 +77,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 private extension MainCoordinator {
   func setupChildCoordinators() {
     let walletCoordinator = walletModule.createWalletCoordinator()
+    walletCoordinator.didTapScan = { [weak self] in
+      self?.openScan()
+    }
+    
     let historyCoordinator = historyModule.createHistoryCoordinator()
     
     self.walletCoordinator = walletCoordinator
@@ -109,6 +113,30 @@ private extension MainCoordinator {
     removeChild(collectiblesCoordinator)
     self.collectiblesCoordinator = nil
     router.remove(viewController: collectiblesCoordinator.router.rootViewController)
+  }
+  
+  func openScan() {
+    let scanModule = ScannerModule(
+      dependencies: ScannerModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createScannerModule()
+    
+    let navigationController = TKNavigationController(rootViewController: scanModule.view)
+    navigationController.configureTransparentAppearance()
+    
+    scanModule.output.didScanDeeplink = { [weak self] deeplink in
+      self?.router.dismiss(completion: {
+        self?.handleDeeplink(deeplink)
+      })
+    }
+    
+    router.present(navigationController)
+  }
+  
+  func handleDeeplink(_ deeplink: Deeplink) {
+    
   }
 }
 

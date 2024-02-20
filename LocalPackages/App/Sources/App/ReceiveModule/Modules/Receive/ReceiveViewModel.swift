@@ -40,7 +40,7 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
   func generateQRCode(size: CGSize) {
     Task {
       let image = await qrCodeGenerator.generate(
-        string: "ton://transfer/UQAlYD9tfTocb5gfAiN8kXFQpvKvlx6D3Z4ZYF-lel1bAPZq",
+        string: receiveController.qrCodeString(),
         size: size
       )
       await MainActor.run {

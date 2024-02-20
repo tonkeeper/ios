@@ -23,7 +23,7 @@ struct NoCameraPermissionView: View {
             .foregroundColor(Color(UIColor.Accent.blue))
           Text("Enable access to your camera in order to can scan QR codes")
             .foregroundColor(Color(UIColor.Text.primary))
-            .textStyle(.h2)
+            .textStyle(TextStyle.h2)
             .multilineTextAlignment(.center)
         }
         .padding([.leading, .trailing], 42)

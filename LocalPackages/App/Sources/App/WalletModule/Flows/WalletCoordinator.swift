@@ -5,6 +5,9 @@ import TKCore
 import KeeperCore
 
 public final class WalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
+  
+  var didTapScan: (() -> Void)?
+  
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   
@@ -244,6 +247,10 @@ extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
     
     module.output.didTapReceive = { [weak self] in
       self?.openReceive(token: .ton)
+    }
+    
+    module.output.didTapScan = { [weak self] in
+      self?.didTapScan?()
     }
     
     module.output.didTapBackup = { [weak self] in
