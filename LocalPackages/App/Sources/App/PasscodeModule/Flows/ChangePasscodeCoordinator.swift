@@ -1,19 +1,28 @@
 import UIKit
 import TKCoordinator
 import TKUIKit
+import KeeperCore
 
-public final class CreatePasscodeCoordinator: RouterCoordinator<NavigationControllerRouter> {
+public final class ChangePasscodeCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   public var didCancel: (() -> Void)?
-  public var didCreatePasscode: ((String) -> Void)?
+  public var didChangePasscode: ((String) -> Void)?
+  
+  private let passcodeConfirmationController: PasscodeConfirmationController
+  
+  public init(router: NavigationControllerRouter,
+              passcodeConfirmationController: PasscodeConfirmationController) {
+    self.passcodeConfirmationController = passcodeConfirmationController
+    super.init(router: router)
+  }
   
   public override func start() {
-    openCreatePasscode()
+    openChangePasscode()
   }
 }
 
-private extension CreatePasscodeCoordinator {
-  func openCreatePasscode() {
+private extension ChangePasscodeCoordinator {
+  func openChangePasscode() {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
     navigationController.interactivePopGestureEnabled = false
@@ -23,8 +32,9 @@ private extension CreatePasscodeCoordinator {
       biometryProvider: BiometryProvider()
     )
     
-    let coordinator = CreatePasscodeChildCoordinator(
+    let coordinator = ChangePasscodeChildCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
+      passcodeConfirmationController: passcodeConfirmationController,
       passcodeOutput: module.output
     )
     
@@ -32,8 +42,8 @@ private extension CreatePasscodeCoordinator {
       self?.didCancel?()
     }
     
-    coordinator.didCreatePasscode = { [weak self] passcode in
-      self?.didCreatePasscode?(passcode)
+    coordinator.didChangePasscode = { [weak self] passcode in
+      self?.didChangePasscode?(passcode)
     }
     
     if router.rootViewController.viewControllers.isEmpty {
@@ -57,16 +67,20 @@ private extension CreatePasscodeCoordinator {
   }
 }
 
-public final class CreatePasscodeChildCoordinator: RouterCoordinator<NavigationControllerRouter> {
+public final class ChangePasscodeChildCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   public var didCancel: (() -> Void)?
-  public var didCreatePasscode: ((String) -> Void)?
+  public var didChangePasscode: ((String) -> Void)?
   
+  private let passcodeConfirmationController: PasscodeConfirmationController
   private weak var passcodeOutput: PasscodeModuleOutput?
   
   private var passcodeInputModuleInputs = [PasscodeInputModuleInput]()
 
-  public init(router: NavigationControllerRouter, passcodeOutput: PasscodeModuleOutput) {
+  public init(router: NavigationControllerRouter, 
+              passcodeConfirmationController: PasscodeConfirmationController,
+              passcodeOutput: PasscodeModuleOutput) {
+    self.passcodeConfirmationController = passcodeConfirmationController
     self.passcodeOutput = passcodeOutput
     super.init(router: router)
     
@@ -84,27 +98,26 @@ public final class CreatePasscodeChildCoordinator: RouterCoordinator<NavigationC
     
     passcodeOutput.didReset = { [weak self] in
       self?.router.popToRoot()
-      _ = self?.passcodeInputModuleInputs.popLast()
     }
   }
   
   public override func start() {
-    openCreatePasscode()
+    openChangePasscode()
   }
 }
 
-private extension CreatePasscodeChildCoordinator {
-  func openCreatePasscode() {
+private extension ChangePasscodeChildCoordinator {
+  func openChangePasscode() {
     let passcodeInput = PasscodeInputAssembly.module(
-      title: "Create passcode",
-      validator: CreatePasscodeInputValidator(),
+      title: "Enter current passcode",
+      validator: EnterCurrentPasscodeInputValidator(passcodeConfirmationController: passcodeConfirmationController),
       biometryProvider: BiometryProvider()
     )
     
     passcodeInputModuleInputs.append(passcodeInput.input)
     
-    passcodeInput.output.didInputPasscode = { [weak self] passcode in
-      self?.openReenterPasscode(createdPasscode: passcode)
+    passcodeInput.output.didInputPasscode = { [weak self] _ in
+      self?.openCreateNewPasscode()
     }
         
     if router.rootViewController.viewControllers.isEmpty {
@@ -124,17 +137,17 @@ private extension CreatePasscodeChildCoordinator {
       completion: nil)
   }
 
-  func openReenterPasscode(createdPasscode: String) {
+  func openCreateNewPasscode() {
     let passcodeInput = PasscodeInputAssembly.module(
-      title: "Re-enter passcode",
-      validator: ReenterPasscodeInputValidator(createdPasscode: createdPasscode),
+      title: "Create new passcode",
+      validator: CreatePasscodeInputValidator(),
       biometryProvider: BiometryProvider()
     )
     
     passcodeInputModuleInputs.append(passcodeInput.input)
     
     passcodeInput.output.didInputPasscode = { [weak self] passcode in
-      self?.didCreatePasscode?(passcode)
+      self?.openReenterPasscode(createdPasscode: passcode)
     }
     
     passcodeInput.output.didFailed = { [weak self] in
@@ -150,6 +163,46 @@ private extension CreatePasscodeChildCoordinator {
         _ = self?.passcodeInputModuleInputs.popLast()
       },
       completion: nil)
+  }
+  
+  func openReenterPasscode(createdPasscode: String) {
+    let passcodeInput = PasscodeInputAssembly.module(
+      title: "Re-enter passcode",
+      validator: ReenterPasscodeInputValidator(createdPasscode: createdPasscode),
+      biometryProvider: BiometryProvider()
+    )
+    
+    passcodeInputModuleInputs.append(passcodeInput.input)
+    
+    passcodeInput.output.didInputPasscode = { [weak self] passcode in
+      self?.didChangePasscode?(passcode)
+    }
+    
+    passcodeInput.output.didFailed = { [weak self] in
+      self?.router.pop()
+    }
+    
+    passcodeInput.viewController.setupBackButton()
+    
+    router.push(
+      viewController: passcodeInput.viewController,
+      animated: true,
+      onPopClosures: { [weak self] in
+        _ = self?.passcodeInputModuleInputs.popLast()
+      },
+      completion: nil)
+  }
+}
+
+private struct EnterCurrentPasscodeInputValidator: PasscodeInputValidator {
+  private let passcodeConfirmationController: PasscodeConfirmationController
+  
+  init(passcodeConfirmationController: PasscodeConfirmationController) {
+    self.passcodeConfirmationController = passcodeConfirmationController
+  }
+  
+  func validatePasscodeInput(_ input: String) -> PasscodeInputValidatorResult {
+    passcodeConfirmationController.validatePasscodeInput(input) ? .success : .failed
   }
 }
 

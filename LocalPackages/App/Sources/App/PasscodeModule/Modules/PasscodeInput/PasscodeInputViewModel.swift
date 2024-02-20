@@ -6,6 +6,12 @@ public protocol PasscodeInputModuleOutput: AnyObject {
   var didFailed: (() -> Void)? { get set }
 }
 
+public protocol PasscodeInputModuleInput: AnyObject {
+  func didTapDigit(_ digit: Int)
+  func didTapBackspace()
+  func didTapBiometry()
+}
+
 protocol PasscodeInputViewModel: AnyObject {
   var didUpdateModel: ((PasscodeInputView.Model) -> Void)? { get set }
   var didUpdatePasscodeInputState: ((PasscodeDotRowView.InputState) -> Void)? { get set }
@@ -13,9 +19,6 @@ protocol PasscodeInputViewModel: AnyObject {
   
   func viewDidLoad()
   func viewDidDisappear()
-  func didTapDigit(_ digit: Int)
-  func didTapBackspace()
-  func didTapBiometry()
 }
 
 public enum PasscodeInputValidatorResult {
@@ -42,7 +45,7 @@ public protocol PasscodeInputBiometryProvider {
   func evaluateBiometry()
 }
 
-final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, PasscodeInputModuleOutput {
+final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, PasscodeInputModuleOutput, PasscodeInputModuleInput {
   
   // MARK: - PasscodeInputModuleOutput
   
@@ -77,6 +80,10 @@ final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, Passco
   
   func didTapBiometry() {
     biometryProvider.evaluateBiometry()
+  }
+  
+  func reset() {
+    input = ""
   }
   
   // MARK: - State
@@ -149,10 +156,6 @@ private extension PasscodeInputViewModelImplementation {
     default:
       break
     }
-  }
-  
-  func reset() {
-    input = ""
   }
 }
 

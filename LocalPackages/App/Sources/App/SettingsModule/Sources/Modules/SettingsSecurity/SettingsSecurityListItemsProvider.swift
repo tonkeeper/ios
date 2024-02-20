@@ -6,6 +6,7 @@ import KeeperCore
 final class SettingsSecurityListItemsProvider: SettingsListItemsProvider {
   
   var didRequireConfirmation: (() async -> Bool)?
+  var didTapChangePasscode: (() -> Void)?
   
   private let settingsSecurityController: SettingsSecurityController
   private let biometryAuthentificator: BiometryAuthentificator
@@ -120,6 +121,9 @@ private extension SettingsSecurityListItemsProvider {
       items: [
         SettingsCell.Model(
           identifier: "change_passcode",
+          selectionHandler: { [weak self] in
+            self?.didTapChangePasscode?()
+          },
           cellContentModel: SettingsCellContentView.Model(
             title: .changePasscodeTitle,
             icon: .TKUIKit.Icons.Size28.lock,

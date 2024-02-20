@@ -17,7 +17,6 @@ public final class PasscodeInputViewController: GenericViewViewController<Passco
     super.viewDidLoad()
     
     setupBindings()
-    setupActions()
     viewModel.viewDidLoad()
   }
   
@@ -57,20 +56,6 @@ private extension PasscodeInputViewController {
         }
       case .none: break
       }
-    }
-  }
-  
-  func setupActions() {
-    customView.keyboardView.didTapDigit = { [viewModel] digit in
-      viewModel.didTapDigit(digit)
-    }
-    
-    customView.keyboardView.didTapBackspace = { [viewModel] in
-      viewModel.didTapBackspace()
-    }
-    
-    customView.keyboardView.didTapBiometry = { [viewModel] in
-      viewModel.didTapBiometry()
     }
   }
   

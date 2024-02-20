@@ -3,7 +3,6 @@ import TKUIKit
 
 public final class PasscodeInputView: UIView, ConfigurableView {
   
-  let keyboardView = TKKeyboardView(configuration: .passcodeConfiguration(biometry: nil))
   let passcodeView = PasscodeDotRowView()
   let titleLabel = UILabel()
   let topContainer = UIView()
@@ -28,7 +27,6 @@ public final class PasscodeInputView: UIView, ConfigurableView {
       .h3,
       color: .Text.primary
     )
-    keyboardView.configuration = model.keyboardConfiguration
   }
 }
 
@@ -40,7 +38,6 @@ private extension PasscodeInputView {
     stackView.alignment = .center
     stackView.spacing = .titleBottomSpace
     
-    addSubview(keyboardView)
     addSubview(topContainer)
     topContainer.addSubview(stackView)
     stackView.addArrangedSubview(titleLabel)
@@ -50,18 +47,13 @@ private extension PasscodeInputView {
   }
   
   func setupConstraints() {
-    keyboardView.translatesAutoresizingMaskIntoConstraints = false
     topContainer.translatesAutoresizingMaskIntoConstraints = false
     stackView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      keyboardView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
-      keyboardView.leftAnchor.constraint(equalTo: leftAnchor),
-      keyboardView.rightAnchor.constraint(equalTo: rightAnchor),
-      
       topContainer.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
       topContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      topContainer.bottomAnchor.constraint(equalTo: keyboardView.topAnchor),
+      topContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
       topContainer.rightAnchor.constraint(equalTo: rightAnchor),
       
       stackView.centerXAnchor.constraint(equalTo: topContainer.centerXAnchor),

@@ -1,50 +1,22 @@
 import UIKit
 import TKUIKit
 
-final class TonChartButton: TKUIButton<TKUIButtonTitleIconContentView, TKUIButtonDefaultBackgroundView> {
+final class TonChartButton: TKButton {
   
-  override var isSelected: Bool {
-    didSet {
-      guard isSelected != oldValue else { return }
-      didUpdateIsSelected()
-    }
+  override init(frame: CGRect) {
+    super.init(frame: frame)
+    backgroundColors = [.selected: TKUIActionButtonCategory.secondary.backgroundColor,
+                        .normal: .clear]
+    foregroundColors = [
+      .normal: .Button.primaryForeground,
+      .highlighted: .Button.primaryForeground.withAlphaComponent(0.48)
+    ]
+    textStyle = TKUIActionButtonSize.small.textStyle
+    cornerRadius = TKUIActionButtonSize.small.cornerRadius
+    contentPadding = TKUIActionButtonSize.small.padding
   }
   
-  init() {
-    super.init(
-      contentView: TKUIButtonTitleIconContentView(
-        textStyle: TKUIActionButtonSize.small.textStyle,
-        foregroundColor: TKUIActionButtonCategory.secondary.titleColor),
-      backgroundView: TKUIButtonDefaultBackgroundView(cornerRadius: TKUIActionButtonSize.small.cornerRadius),
-      contentHorizontalPadding: TKUIActionButtonSize.small.padding.left
-    )
-  }
-  
-  required public init?(coder: NSCoder) {
+  required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
-  }
-  
-  public override var intrinsicContentSize: CGSize {
-    CGSize(
-      width: UIView.noIntrinsicMetric,
-      height: TKUIActionButtonSize.small.height
-    )
-  }
-  
-  public override func setupButtonState() {
-    let category = TKUIActionButtonCategory.secondary
-    switch buttonState {
-    case .disabled:
-      buttonContentView.setForegroundColor(category.disabledTitleColor)
-    case .highlighted:
-      buttonContentView.setForegroundColor(category.titleColor)
-    case .normal:
-      buttonContentView.setForegroundColor(category.titleColor)
-    }
-  }
-  
-  private func didUpdateIsSelected() {
-    let color = isSelected ? TKUIActionButtonCategory.secondary.backgroundColor : .clear
-    backgroundView.setBackgroundColor(color)
   }
 }

@@ -125,6 +125,10 @@ private extension SettingsCoordinator {
       return (await self?.openConfirmation()) ?? false
     }
     
+    itemsProvider.didTapChangePasscode = { [weak self] in
+      self?.openChangePasscode()
+    }
+    
     let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
     
     router.push(viewController: module.viewController)
@@ -165,6 +169,40 @@ private extension SettingsCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+  }
+  
+  func openChangePasscode() {
+    let coordinator = PasscodeModule(
+      dependencies: PasscodeModule.Dependencies(
+        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+      )
+    ).changePasscodeCoordinator()
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+      self?.router.dismiss(animated: true)
+    }
+    
+    coordinator.didChangePasscode = { [weak self, weak coordinator, keeperCoreMainAssembly] passcode in
+      do {
+        try keeperCoreMainAssembly.passcodeAssembly.passcodeCreateController().createPasscode(passcode)
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+        self?.router.dismiss(animated: true)
+      } catch {
+        print("Log: Passcode change failed")
+      }
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+    
+    router.present(coordinator.router.rootViewController, 
+                   onDismiss: { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    })
   }
   
   func openConfirmation() async -> Bool {

@@ -26,6 +26,19 @@ public struct PasscodeModule {
     )
     return coordinator
   }
+  
+  public func changePasscodeCoordinator() -> ChangePasscodeCoordinator {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    let coordinator = ChangePasscodeCoordinator(
+      router: NavigationControllerRouter(
+        rootViewController: navigationController
+      ),
+      passcodeConfirmationController: dependencies.passcodeAssembly.passcodeConfirmationController()
+    )
+    return coordinator
+  }
 }
 
 extension PasscodeModule {

@@ -36,11 +36,11 @@ private extension OnboardingRootViewModelImplementation {
       bottomDescription: "Create a new wallet or add an existing one"
     )
     
-    let createButtonModel = TKUIActionButton.Model(
+    let createButtonModel = TKActionButton.Model(
       title: "Create New Wallet"
     )
     
-    let importButtonModel = TKUIActionButton.Model(
+    let importButtonModel = TKActionButton.Model(
       title: "Import Existing Wallet"
     )
     

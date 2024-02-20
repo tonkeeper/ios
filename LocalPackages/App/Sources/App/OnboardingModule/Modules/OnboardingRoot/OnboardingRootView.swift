@@ -17,8 +17,8 @@ final class OnboardingRootView: UIView, ConfigurableView {
     return view
   }()
   
-  let createButton = TKUIActionButton(category: .primary, size: .large)
-  let importButton = TKUIActionButton(category: .secondary, size: .large)
+  let createButton = TKActionButton(category: .primary, size: .large)
+  let importButton = TKActionButton(category: .secondary, size: .large)
   let coverImageView: UIImageView = {
     let imageView = UIImageView()
     imageView.image = .Onboarding.cover
@@ -37,8 +37,8 @@ final class OnboardingRootView: UIView, ConfigurableView {
   
   struct Model {
     let titleDescriptionModel: TKTitleDescriptionView.Model
-    let createButtonModel: TKUIActionButton.Model
-    let importButtonModel: TKUIActionButton.Model
+    let createButtonModel: TKActionButton.Model
+    let importButtonModel: TKActionButton.Model
     let createButtonAction: (() -> Void)?
     let importButtonAction: (() -> Void)?
   }
@@ -46,11 +46,11 @@ final class OnboardingRootView: UIView, ConfigurableView {
   func configure(model: Model) {
     titleDescriptionView.configure(model: model.titleDescriptionModel)
     createButton.configure(model: model.createButtonModel)
-    createButton.addTapAction {
+    createButton.setTapAction {
       model.createButtonAction?()
     }
     importButton.configure(model: model.importButtonModel)
-    importButton.addTapAction {
+    importButton.setTapAction {
       model.importButtonAction?()
     }
   }

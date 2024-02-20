@@ -40,7 +40,7 @@ final class TonChartButtonsView: UIView, ConfigurableView {
     model.buttons.forEach { buttonModel in
       let button = TonChartButton()
       button.configure(model: buttonModel.model)
-      button.addTapAction(buttonModel.action)
+      button.setTapAction(buttonModel.action)
       buttons.append(button)
       stackView.addArrangedSubview(button)
     }
