@@ -10,6 +10,9 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     let keeperCoreRootAssembly: KeeperCore.RootAssembly
   }
   
+  private weak var onboardingCoordinator: OnboardingCoordinator?
+  private weak var mainCoordinator: MainCoordinator?
+  
   private let dependencies: Dependencies
   private let rootController: RootController
 
@@ -21,14 +24,19 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     router.rootViewController.setNavigationBarHidden(true, animated: false)
   }
   
-  override func start() {
+  override func start(deeplink: CoordinatorDeeplink? = nil) {
     rootController.loadConfiguration()
     switch rootController.getState() {
     case .onboarding:
       openOnboarding()
     case let .main(wallets, activeWallet):
-      openMain(wallets: wallets, activeWallet: activeWallet)
+      openMain(wallets: wallets, activeWallet: activeWallet, deeplink: deeplink)
     }
+  }
+  
+  override func handleDeeplink(deeplink: CoordinatorDeeplink?) {
+    let coreDeeplink = try? rootController.parseDeeplink(string: deeplink?.string)
+    mainCoordinator?.handleDeeplink(deeplink: coreDeeplink)
   }
 }
 
@@ -54,7 +62,7 @@ private extension RootCoordinator {
     showViewController(coordinator.router.rootViewController, animated: true)
   }
   
-  func openMain(wallets: [Wallet], activeWallet: Wallet) {
+  func openMain(wallets: [Wallet], activeWallet: Wallet, deeplink: CoordinatorDeeplink?) {
     let mainAssemblyDependencies = MainAssembly.Dependencies(
       wallets: wallets, 
       activeWallet: activeWallet
@@ -68,9 +76,10 @@ private extension RootCoordinator {
       )
     )
     let coordinator = module.createMainCoordinator()
+    self.mainCoordinator = coordinator
     
     addChild(coordinator)
-    coordinator.start()
+    coordinator.start(deeplink: deeplink)
     
     showViewController(coordinator.router.rootViewController, animated: true)
   }
@@ -91,3 +100,5 @@ private extension RootCoordinator {
     router.setViewControllers([(containerViewController , nil)])
   }
 }
+
+extension KeeperCore.Deeplink: TKCoordinator.CoordinatorDeeplink {}

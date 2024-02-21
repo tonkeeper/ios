@@ -975,6 +975,8 @@
 		C35684182AEC39C30064DD0A /* TonConnectConfirmationViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationViewController.swift; sourceTree = "<group>"; };
 		C356841A2AEC3A1B0064DD0A /* TonConnectConfirmationPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationPresenter.swift; sourceTree = "<group>"; };
 		C356841C2AEC3A780064DD0A /* TonConnectConfirmationAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationAssembly.swift; sourceTree = "<group>"; };
+		C36B5E772B83EEBB00C09E3E /* tkuikit-ios */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "tkuikit-ios"; path = "../tkuikit-ios"; sourceTree = "<group>"; };
+		C36B5E982B84D06400C09E3E /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "core-swift"; path = "../core-swift"; sourceTree = "<group>"; };
 		C3774EFF2B340F0600B15B78 /* SwapHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwapHeaderImageView.swift; sourceTree = "<group>"; };
 		C3774F012B34130D00B15B78 /* ActionDetailsTokenHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionDetailsTokenHeaderImageView.swift; sourceTree = "<group>"; };
 		C3774F032B34153E00B15B78 /* ActionDetailsNFTHeaderImageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionDetailsNFTHeaderImageView.swift; sourceTree = "<group>"; };
@@ -2636,6 +2638,8 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
+				C36B5E982B84D06400C09E3E /* core-swift */,
+				C36B5E772B83EEBB00C09E3E /* tkuikit-ios */,
 				C313EC0A2B50138D009DF825 /* LocalPackages */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,

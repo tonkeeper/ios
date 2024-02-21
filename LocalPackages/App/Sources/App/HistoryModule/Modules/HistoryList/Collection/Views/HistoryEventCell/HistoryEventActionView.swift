@@ -37,6 +37,18 @@ final class HistoryEventActionView: UIControl, ConfigurableView, ReusableView {
     fatalError("init(coder:) has not been implemented")
   }
   
+//  override var intrinsicContentSize: CGSize {
+//    
+//  }
+  
+  override func systemLayoutSizeFitting(_ targetSize: CGSize) -> CGSize {
+    super.systemLayoutSizeFitting(targetSize)
+  }
+  
+  override func systemLayoutSizeFitting(_ targetSize: CGSize, withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority, verticalFittingPriority: UILayoutPriority) -> CGSize {
+    super.systemLayoutSizeFitting(targetSize, withHorizontalFittingPriority: horizontalFittingPriority, verticalFittingPriority: verticalFittingPriority)
+  }
+  
   override func layoutSubviews() {
     super.layoutSubviews()
     highlightView.frame = bounds

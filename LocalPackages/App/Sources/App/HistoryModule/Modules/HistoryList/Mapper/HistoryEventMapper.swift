@@ -15,6 +15,15 @@ struct HistoryEventMapper {
   func mapEvent(_ event: HistoryListEvent, 
                 nftAction: @escaping (NFT) -> Void,
                 tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryEventCell.Model {
+    return HistoryEventCell.Model(
+      identifier: event.eventId,
+      cellContentModel: mapEventToView(event, nftAction: nftAction, tapAction: tapAction)
+    )
+  }
+  
+  func mapEventToView(_ event: HistoryListEvent,
+                      nftAction: @escaping (NFT) -> Void,
+                      tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryEventCellContentView.Model {
     let actions = event.actions.enumerated().map { index, action in
       let model = mapAction(action, nftAction: nftAction)
       return HistoryEventCellContentView.Model.Action(
@@ -25,12 +34,7 @@ struct HistoryEventMapper {
       )
     }
     
-    return HistoryEventCell.Model(
-      identifier: event.eventId,
-      cellContentModel: HistoryEventCellContentView.Model(
-        actions: actions
-      )
-    )
+    return HistoryEventCellContentView.Model(actions: actions)
   }
   
   func mapAction(_ action: HistoryListEvent.Action, nftAction: @escaping (NFT) -> Void) -> HistoryEventActionView.Model {

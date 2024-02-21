@@ -63,14 +63,28 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       }
     }
     
+    mainController.didReceiveTonConnectRequest = { [weak self] request, wallet, app in
+      self?.handleTonConnectRequest(request, wallet: wallet, app: app)
+    }
+    
     appStateTracker.addObserver(self)
     reachabilityTracker.addObserver(self)
   }
   
-  public override func start() {
+  override func start(deeplink: CoordinatorDeeplink? = nil) {
     setupChildCoordinators()
     mainController.loadNftsState()
     mainController.startBackgroundUpdate()
+    handleDeeplink(deeplink: deeplink)
+  }
+
+  override func handleDeeplink(deeplink: CoordinatorDeeplink?) {
+    do {
+      let deeplink = try mainController.parseDeeplink(deeplink: deeplink?.string)
+      handleCoreDeeplink(deeplink)
+    } catch {
+      return
+    }
   }
 }
 
@@ -128,7 +142,7 @@ private extension MainCoordinator {
     
     scanModule.output.didScanDeeplink = { [weak self] deeplink in
       self?.router.dismiss(completion: {
-        self?.handleDeeplink(deeplink)
+        self?.handleCoreDeeplink(deeplink)
       })
     }
     
@@ -139,7 +153,7 @@ private extension MainCoordinator {
 // MARK: - Deeplinks
 
 private extension MainCoordinator {
-  func handleDeeplink(_ deeplink: Deeplink) {
+  func handleCoreDeeplink(_ deeplink: KeeperCore.Deeplink) {
     switch deeplink {
     case .ton(let tonDeeplink):
       handleTonDeeplink(tonDeeplink)
@@ -165,7 +179,7 @@ private extension MainCoordinator {
               coreAssembly: coreAssembly,
               keeperCoreMainAssembly: keeperCoreMainAssembly
             )
-          ).createConfirmationCoordinator(
+          ).createConnectCoordinator(
             router: ViewControllerRouter(rootViewController: router.rootViewController),
             parameters: parameters,
             manifest: manifest
@@ -190,6 +204,36 @@ private extension MainCoordinator {
         }
       }
     }
+  }
+}
+
+// MARK: - Ton Connect
+
+private extension MainCoordinator {
+  func handleTonConnectRequest(_ request: TonConnect.AppRequest,
+                               wallet: Wallet,
+                               app: TonConnectApp) {
+    guard let windowScene = UIApplication.keyWindowScene else { return }
+    let window = UIWindow(windowScene: windowScene)
+    let coordinator = TonConnectModule(
+      dependencies: TonConnectModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createConfirmationCoordinator(window: window, wallet: wallet, appRequest: request, app: app)
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didConfirm = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
   }
 }
 

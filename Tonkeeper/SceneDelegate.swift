@@ -25,7 +25,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     let window = UIWindow(windowScene: windowScene)
     
     let coordinator = App.AppCoordinator(router: TKCoordinator.WindowRouter(window: window))
-    coordinator.start()
+    
+    if let deeplink = connectionOptions.urlContexts.first?.url.absoluteString {
+      coordinator.start(deeplink: deeplink)
+    } else if let universalLink = connectionOptions.userActivities.first(where: { $0.webpageURL != nil })?.webpageURL {
+      coordinator.start(deeplink: universalLink.absoluteString)
+    } else {
+      coordinator.start(deeplink: nil)
+    }
+    
     window.makeKeyAndVisible()
     
     self.appCoordinator = coordinator
@@ -33,13 +41,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   }
   
   func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
-//    guard let deeplink = getDeeplink(urlContexts: URLContexts) else { return }
-//    appCoordinator?.handleDeeplink(deeplink)
+    guard let url = URLContexts.first?.url else { return }
+    appCoordinator?.handleDeeplink(deeplink: url.absoluteString)
   }
   
   func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
-//    guard let deeplink = getDeeplink(url: userActivity.webpageURL) else { return }
-//    appCoordinator?.handleDeeplink(deeplink)
+    guard let url = userActivity.webpageURL else { return }
+    appCoordinator?.handleDeeplink(deeplink: url.absoluteString)
   }
 }
 

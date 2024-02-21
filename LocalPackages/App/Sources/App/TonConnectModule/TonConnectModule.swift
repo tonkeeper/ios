@@ -1,3 +1,4 @@
+import UIKit
 import TKUIKit
 import TKCoordinator
 import TKCore
@@ -9,7 +10,7 @@ struct TonConnectModule {
     self.dependencies = dependencies
   }
   
-  func createConfirmationCoordinator(router: ViewControllerRouter,
+  func createConnectCoordinator(router: ViewControllerRouter,
                                      parameters: TonConnectParameters,
                                      manifest: TonConnectManifest) -> TonConnectConnectCoordinator {
     TonConnectConnectCoordinator(
@@ -18,6 +19,24 @@ struct TonConnectModule {
       manifest: manifest,
       coreAssembly: dependencies.coreAssembly,
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
+    )
+  }
+  
+  func createConfirmationCoordinator(
+    window: UIWindow,
+    wallet: Wallet,
+    appRequest: TonConnect.AppRequest,
+    app: TonConnectApp
+  ) -> TonConnectConfirmationCoordinator {
+    TonConnectConfirmationCoordinator(
+      router: WindowRouter(window: window),
+      tonConnectConfirmationController: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmationController(
+        wallet: wallet,
+        appRequest: appRequest,
+        app: app
+      ),
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      coreAssembly: dependencies.coreAssembly
     )
   }
 }

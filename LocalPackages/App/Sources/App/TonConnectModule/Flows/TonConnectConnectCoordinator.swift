@@ -45,7 +45,8 @@ private extension TonConnectConnectCoordinator {
       contentViewController: module.view
     )
     
-    module.output.didRequireConfirmation = { [weak self] in
+    module.output.didRequireConfirmation = { [weak self, weak bottomSheetViewController] in
+      guard let bottomSheetViewController else { return false }
       return (await self?.openConfirmation(fromViewController: bottomSheetViewController)) ?? false
     }
     

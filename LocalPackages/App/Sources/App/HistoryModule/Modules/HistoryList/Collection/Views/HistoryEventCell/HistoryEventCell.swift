@@ -36,6 +36,8 @@ final class HistoryEventCellContentView: UIView, ConfigurableView, TKCollectionV
       view.frame.size = size
       originY = view.frame.maxY
     }
+    
+    invalidateIntrinsicContentSize()
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
@@ -44,6 +46,10 @@ final class HistoryEventCellContentView: UIView, ConfigurableView, TKCollectionV
       
     }
     return CGSize(width: size.width, height: height)
+  }
+  
+  override var intrinsicContentSize: CGSize {
+    return CGSize(width: UIView.noIntrinsicMetric, height: sizeThatFits(.init(width: bounds.width, height: 0)).height)
   }
   
   func prepareForReuse() {
