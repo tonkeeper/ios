@@ -33,6 +33,9 @@ final class AddWalletOptionPickerViewController: GenericViewViewController<AddWa
   var didUpdateHeight: (() -> Void)?
   var didUpdatePullCardHeaderItem: ((TKPullCardHeaderItem) -> Void)?
   var headerItem: TKUIKit.TKPullCardHeaderItem?
+  func calculateHeight(withWidth width: CGFloat) -> CGFloat {
+    scrollView.contentSize.height
+  }
 }
 
 private extension AddWalletOptionPickerViewController {

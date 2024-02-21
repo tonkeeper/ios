@@ -134,9 +134,62 @@ private extension MainCoordinator {
     
     router.present(navigationController)
   }
-  
+}
+
+// MARK: - Deeplinks
+
+private extension MainCoordinator {
   func handleDeeplink(_ deeplink: Deeplink) {
+    switch deeplink {
+    case .ton(let tonDeeplink):
+      handleTonDeeplink(tonDeeplink)
+    case .tonConnect(let tonConnectDeeplink):
+      handleTonConnectDeeplink(tonConnectDeeplink)
+    }
+  }
+  
+  func handleTonDeeplink(_ deeplink: TonDeeplink) {
     
+  }
+  
+  func handleTonConnectDeeplink(_ deeplink: TonConnectDeeplink) {
+    ToastPresenter.hideAll()
+    ToastPresenter.showToast(configuration: .loading)
+    Task {
+      do {
+        let (parameters, manifest) = try await mainController.handleTonConnectDeeplink(deeplink)
+        await MainActor.run {
+          ToastPresenter.hideToast()
+          let coordinator = TonConnectModule(
+            dependencies: TonConnectModule.Dependencies(
+              coreAssembly: coreAssembly,
+              keeperCoreMainAssembly: keeperCoreMainAssembly
+            )
+          ).createConfirmationCoordinator(
+            router: ViewControllerRouter(rootViewController: router.rootViewController),
+            parameters: parameters,
+            manifest: manifest
+          )
+          
+          coordinator.didCancel = { [weak self, weak coordinator] in
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+          }
+          
+          coordinator.didConnect = { [weak self, weak coordinator] in
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+          }
+          
+          addChild(coordinator)
+          coordinator.start()
+        }
+      } catch {
+        await MainActor.run {
+          ToastPresenter.hideAll()
+        }
+      }
+    }
   }
 }
 

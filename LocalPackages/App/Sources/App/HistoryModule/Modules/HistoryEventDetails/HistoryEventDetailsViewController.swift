@@ -12,6 +12,10 @@ final class HistoryEventDetailsViewController: GenericViewViewController<History
   
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?
   
+  func calculateHeight(withWidth width: CGFloat) -> CGFloat {
+    modalCardViewController.calculateHeight(withWidth: width)
+  }
+
   private let viewModel: HistoryEventDetailsViewModel
   
   private let modalCardViewController = TKModalCardViewController()
@@ -48,8 +52,5 @@ private extension HistoryEventDetailsViewController {
   
   func setupModalContent() {
     customView.embedContent(modalCardViewController.view)
-//    modalCardViewController.didUpdateHeight = { [weak self] in
-////      self?.didUpdateHeight?()
-//    }
   }
 }

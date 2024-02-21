@@ -103,8 +103,6 @@ public final class PasscodeConfirmationChildCoordinator: RouterCoordinator<Navig
               passcodeConfirmationController: PasscodeConfirmationController) {
     self.passcodeConfirmationController = passcodeConfirmationController
     super.init(router: router)
-    router.rootViewController.modalPresentationStyle = .fullScreen
-    router.rootViewController.modalTransitionStyle = .crossDissolve
   }
   
   public override func start() {
