@@ -204,6 +204,7 @@ private extension WalletBalanceViewModelImplementation {
     WalletBalanceHeaderButtonsView.Model(buttons: [
       WalletBalanceHeaderButtonsView.Model.Button(
         configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.arrowUpOutline, title: "Send"),
+        isEnabled: false,
         action: {}
       ),
       WalletBalanceHeaderButtonsView.Model.Button(
@@ -220,14 +221,17 @@ private extension WalletBalanceViewModelImplementation {
       ),
       WalletBalanceHeaderButtonsView.Model.Button(
         configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.swapHorizontalOutline, title: "Swap"),
+        isEnabled: false,
         action: {}
       ),
       WalletBalanceHeaderButtonsView.Model.Button(
         configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.usd, title: "Buy or Sell"),
+        isEnabled: false,
         action: {}
       ),
       WalletBalanceHeaderButtonsView.Model.Button(
         configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.stakingOutline, title: "Stake"),
+        isEnabled: false,
         action: {}
       )
     ])
