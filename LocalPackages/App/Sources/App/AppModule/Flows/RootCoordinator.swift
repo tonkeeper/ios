@@ -25,6 +25,11 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
+    KeeperInfoMigration(
+      keeperInfoDirectory: dependencies.coreAssembly.sharedCacheURL,
+      sharedKeychainGroup: dependencies.coreAssembly.keychainAccessGroupIdentifier
+    ).migrateKeeperInfoIfNeeded()
+    
     rootController.loadConfiguration()
     switch rootController.getState() {
     case .onboarding:
