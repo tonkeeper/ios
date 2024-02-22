@@ -62,15 +62,17 @@ private extension AddWalletCoordinator {
     coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      navigationController?.dismiss(animated: true)
-      self?.didCancel?()
+      navigationController?.dismiss(animated: true, completion: {
+        self?.didCancel?()
+      })
     }
     
     coordinator.didCreateWallet = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      navigationController?.dismiss(animated: true)
-      self?.didAddWallets?()
+      navigationController?.dismiss(animated: true, completion: {
+        self?.didAddWallets?()
+      })
     }
     
     addChild(coordinator)

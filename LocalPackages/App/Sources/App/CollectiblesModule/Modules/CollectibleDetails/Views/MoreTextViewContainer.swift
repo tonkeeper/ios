@@ -36,6 +36,7 @@ final class MoreTextViewContainer: UIView {
         alignment: .left,
         lineBreakMode: .byWordWrapping
       )
+      setNeedsLayout()
     }
   }
   
@@ -103,12 +104,13 @@ private extension MoreTextViewContainer {
       return
     }
     
+    let constraintRect = CGSize(width: bounds.width, height: .greatestFiniteMagnitude)
+    let boundingBox = textView.attributedText.boundingRect(with: constraintRect, options: .usesLineFragmentOrigin, context: nil)
     let lineHeight = TKTextStyle.body2.lineHeight - TKTextStyle.body2.adjustment
     let maximumHeight = lineHeight * CGFloat(numberOfLinesInCollapsed)
-    let textHeight = textView.sizeThatFits(.init(width: bounds.width, height: 0)).height.rounded(.down)
+    let textHeight = boundingBox.height.rounded(.down)
     
     moreButton.isHidden = textHeight <= maximumHeight
-    
     textViewHeightConstraint?.constant = min(maximumHeight, textHeight)
   }
 }
@@ -117,7 +119,7 @@ private final class MoreButton: UIControl {
   let button: UIButton = {
     let button = UIButton(type: .system)
     button.setTitleColor(.Text.accent, for: .normal)
-    button.titleLabel?.applyTextStyleFont(.body2)
+    button.titleLabel?.font = TKTextStyle.body2.font
     button.setTitle("More", for: .normal)
     button.titleEdgeInsets = .zero
     button.contentEdgeInsets = .zero

@@ -38,8 +38,12 @@ private extension WalletBalanceViewController {
       customView?.headerView.configure(model: model)
     }
     
-    viewModel.didUpdateBalanceItems = { [weak collectionController] items in
-      collectionController?.setBalanceItems(items)
+    viewModel.didUpdateTonItems = { [weak collectionController] items in
+      collectionController?.setTonItems(items)
+    }
+    
+    viewModel.didUpdateJettonsItems = { [weak collectionController] items in
+      collectionController?.setJettonsItems(items)
     }
     
     viewModel.didUpdateFinishSetupItems = { [weak collectionController] items, headerModel in
@@ -54,8 +58,10 @@ private extension WalletBalanceViewController {
     
     collectionController?.didSelect = { [weak viewModel] section, index in
       switch section {
-      case .balanceItems:
-        viewModel?.didTapBalanceItem(at: index)
+      case .tonItems:
+        viewModel?.didTapTonItem(at: index)
+      case .jettonsItems:
+        viewModel?.didTapJettonItem(at: index)
       case .finishSetup:
         viewModel?.didTapFinishSetupItem(at: index)
       }

@@ -8,9 +8,6 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
   typealias SetupPlainCellRegistration = UICollectionView.CellRegistration<WalletBalanceSetupPlainItemCell, WalletBalanceSetupPlainItemCell.Model>
   typealias SectionHeaderView = TKCollectionViewSupplementaryContainerView<TKListTitleView>
   
-//  private let balanceCellRegistration: BalanceCellRegistration
-//  private let switchCellRegistration: SwitchCellRegistration
-  
   var finishSetupSectionHeaderModel: SectionHeaderView.Model?
   
   var didTapSectionHeaderButton: ((WalletBalanceSection) -> Void?)?
@@ -21,16 +18,13 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
     let balanceCellRegistration = BalanceCellRegistration { cell, indexPath, itemIdentifier in
       cell.configure(model: itemIdentifier)
     }
-//    self.balanceCellRegistration = balanceCellRegistration
-    
+
     let setupSwitchCellRegistration = SetupSwitchCellRegistration { cell, indexPath, itemIdentifier in
       cell.configure(model: itemIdentifier)
     }
     let setupPlainCellRegistration = SetupPlainCellRegistration { cell, indexPath, itemIdentifier in
       cell.configure(model: itemIdentifier)
     }
-    
-//    self.
     
     super.init(
       collectionView: collectionView, cellProvider: { collectionView, indexPath, itemIdentifier in
@@ -68,7 +62,9 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
       guard let self = self else { return nil }
       let section = dataSource.snapshot().sectionIdentifiers[sectionIndex]
       switch section {
-      case .balanceItems:
+      case .tonItems:
+        return balanceItemsSectionLayout()
+      case .jettonsItems:
         return balanceItemsSectionLayout()
       case .finishSetup:
         return finishSetupSectionLayout()
@@ -90,6 +86,7 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
         if let model = self.finishSetupSectionHeaderModel {
           sectionHeaderView?.configure(model: model)
         }
+        sectionHeaderView?.contentView.titleLabel.font = TKTextStyle.label1.font
         sectionHeaderView?.contentView.didTapButton = { [weak self] in
           self?.didTapSectionHeaderButton?(section)
         }
@@ -97,9 +94,7 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
       case .none: return nil
       }
     }
-    
-    collectionView.contentInset.bottom = 16
-    
+        
     collectionView.register(
       SectionHeaderView.self,
       forSupplementaryViewOfKind: WalletBalanceCollectionSupplementaryItem.sectionHeader.rawValue,
@@ -107,17 +102,29 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
     )
     
     var snapshot = dataSource.snapshot()
-    snapshot.appendSections([.balanceItems])
-    dataSource.apply(snapshot, animatingDifferences: false)
+    snapshot.appendSections([.tonItems, .jettonsItems])
+    UIView.performWithoutAnimation {
+      dataSource.apply(snapshot, animatingDifferences: false)
+    }
   }
   
-  func setBalanceItems(_ items: [AnyHashable]) {
+  func setTonItems(_ items: [AnyHashable]) {
     var snapshot = dataSource.snapshot()
-    snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .balanceItems))
-    snapshot.appendItems(items, toSection: .balanceItems)
-    snapshot.reloadSections([.balanceItems])
+    snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .tonItems))
+    snapshot.appendItems(items, toSection: .tonItems)
+    snapshot.reloadSections([.tonItems])
     UIView.performWithoutAnimation {
-      dataSource.apply(snapshot, animatingDifferences: true)
+      dataSource.apply(snapshot, animatingDifferences: false)
+    }
+  }
+  
+  func setJettonsItems(_ items: [AnyHashable]) {
+    var snapshot = dataSource.snapshot()
+    snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .jettonsItems))
+    snapshot.appendItems(items, toSection: .jettonsItems)
+    snapshot.reloadSections([.jettonsItems])
+    UIView.performWithoutAnimation {
+      dataSource.apply(snapshot, animatingDifferences: false)
     }
   }
   
@@ -127,13 +134,11 @@ final class WalletBalanceCollectionController: TKCollectionController<WalletBala
     var snapshot = dataSource.snapshot()
     snapshot.deleteSections([.finishSetup])
     if !items.isEmpty {
-      snapshot.appendSections([.finishSetup])
+      snapshot.insertSections([.finishSetup], afterSection: .tonItems)
       snapshot.appendItems(items, toSection: .finishSetup)
       snapshot.reloadSections([.finishSetup])
     }
-    UIView.performWithoutAnimation {
-      dataSource.apply(snapshot, animatingDifferences: true)
-    }
+    dataSource.apply(snapshot, animatingDifferences: true)
   }
 }
 
@@ -164,12 +169,12 @@ private extension WalletBalanceCollectionController {
   
   func finishSetupSectionLayout() -> NSCollectionLayoutSection {
     let section = TKCollectionLayout.listSectionLayout(
-      padding: NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16),
+      padding: NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 32, trailing: 16),
       heightDimension: .absolute(76))
     
     let headerSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .absolute(56)
+      heightDimension: .absolute(48)
     )
     let header = NSCollectionLayoutBoundarySupplementaryItem(
       layoutSize: headerSize,

@@ -58,7 +58,7 @@ private extension RootCoordinator {
     coordinator.didFinishOnboarding = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      self?.start()
+      self?.start(deeplink: nil)
     }
     
     addChild(coordinator)
