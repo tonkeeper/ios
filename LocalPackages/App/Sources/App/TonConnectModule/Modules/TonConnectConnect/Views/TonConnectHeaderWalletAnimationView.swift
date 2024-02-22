@@ -48,11 +48,6 @@ final class TonConnectHeaderWalletAnimationView: UIView, ConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  override func didMoveToSuperview() {
-    super.didMoveToSuperview()
-    print("")
-  }
-  
   // MARK: - Layout
   
   override func layoutSubviews() {

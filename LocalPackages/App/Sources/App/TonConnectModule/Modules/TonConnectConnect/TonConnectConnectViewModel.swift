@@ -8,27 +8,40 @@ import TKUIKit
 protocol TonConnectConnectViewModuleOutput: AnyObject {
   var didRequireConfirmation: (() async -> Bool)? { get set }
   var didConnect: (() -> Void)? { get set }
+  var didTapWalletPicker: ((Wallet) -> Void)? { get set }
+}
+
+protocol TonConnectConnectModuleInput: AnyObject {
+  func setWallet(_ wallet: Wallet)
 }
 
 protocol TonConnectConnectViewModel: AnyObject {
   var headerView: ((String?, URL?) -> UIView)? { get set }
-  var walletPickerView: ((TonConnectConnectModel.Wallet) -> UIView)? { get set }
+  var walletPickerView: ((TonConnectConnectModel.Wallet) -> UIControl)? { get set }
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)? { get set }
   
   func viewDidLoad()
 }
 
-final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnectViewModel, TonConnectConnectViewModuleOutput {
+final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnectViewModel, TonConnectConnectViewModuleOutput, TonConnectConnectModuleInput {
   
   // MARK: - TonConnectConnectViewModuleOutput
   
   var didRequireConfirmation: (() async -> Bool)?
   var didConnect: (() -> Void)?
+  var didTapWalletPicker: ((Wallet) -> Void)?
+  
+  // MARK: - TonConnectConnectModuleInput
+  
+  func setWallet(_ wallet: Wallet) {
+    tonConnectConnectController.setWallet(wallet)
+    prepareContent()
+  }
   
   // MARK: - TonConnectConnectViewModel
   
   var headerView: ((String?, URL?) -> UIView)?
-  var walletPickerView: ((TonConnectConnectModel.Wallet) -> UIView)?
+  var walletPickerView: ((TonConnectConnectModel.Wallet) -> UIControl)?
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)?
  
   func viewDidLoad() {
@@ -104,7 +117,10 @@ private extension TonConnectConnectViewModelImplementation {
     )
     
     if tonConnectConnectController.needToShowWalletPicker(),
-        let walletPickerView = walletPickerView?(model.wallet) {
+       let walletPickerView = walletPickerView?(model.wallet) {
+      walletPickerView.addAction(UIAction(handler: { [weak self, tonConnectConnectController] _ in
+        self?.didTapWalletPicker?(tonConnectConnectController.selectedWallet)
+      }), for: .touchUpInside)
       headerItems.append(.customView(walletPickerView, bottomSpacing: 16))
     }
     

@@ -46,7 +46,7 @@ private extension WalletCoordinator {
   
   func openWalletPicker() {
     let module = WalletsListAssembly.module(
-      walletListController: keeperCoreMainAssembly.walletListController()
+      walletListController: keeperCoreMainAssembly.walletStoreWalletListController()
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)

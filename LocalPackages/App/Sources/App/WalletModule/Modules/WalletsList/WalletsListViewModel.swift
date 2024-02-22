@@ -91,7 +91,7 @@ private extension WalletsListViewModelImplementation {
   
   func createHeaderItem() -> TKPullCardHeaderItem {
     var leftButton: TKPullCardHeaderItem.LeftButton?
-    if walletListController.walletsModels.count > 1 {
+    if walletListController.isEditable {
       let leftButtonModel = TKUIHeaderTitleIconButton.Model(title: isEditing ? "Done": "Edit")
       leftButton = TKPullCardHeaderItem.LeftButton(
         model: leftButtonModel) { [weak self] in

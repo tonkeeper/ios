@@ -56,6 +56,17 @@ private extension TonConnectConnectCoordinator {
       }
     }
     
+    module.output.didTapWalletPicker = { [weak self, weak bottomSheetViewController] wallet in
+      guard let bottomSheetViewController else { return }
+      self?.openWalletPicker(
+        wallet: wallet,
+        fromViewController: bottomSheetViewController,
+        didSelectWallet: { [weak input = module.input] wallet in
+          input?.setWallet(wallet)
+        }
+      )
+    }
+    
     bottomSheetViewController.didClose = { [weak self] isInteractivly in
       guard isInteractivly else { return }
       self?.didCancel?()
@@ -96,5 +107,44 @@ private extension TonConnectConnectCoordinator {
         fromViewController.present(coordinator.router.rootViewController, animated: true)
       }
     }.value
+  }
+  
+  func openWalletPicker(wallet: Wallet, fromViewController: UIViewController, didSelectWallet: @escaping (Wallet) -> Void) {
+    let module = WalletsListAssembly.module(
+      walletListController: keeperCoreMainAssembly.walletSelectWalletLisController(
+        selectedWallet: wallet,
+        didSelectWallet: { wallet in
+          didSelectWallet(wallet)
+        }
+      )
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    module.output.didTapAddWalletButton = { [weak self, unowned bottomSheetViewController] in
+      self?.openAddWallet(router: ViewControllerRouter(rootViewController: bottomSheetViewController)) {
+//        bottomSheetViewController.dismiss()
+      }
+    }
+    
+    module.output.didSelectWallet = { [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
+    
+    bottomSheetViewController.present(fromViewController: fromViewController)
+  }
+  
+  func openAddWallet(router: ViewControllerRouter, onAddWallets: @escaping () -> Void) {
+    let module = AddWalletModule(dependencies: AddWalletModule.Dependencies(
+      walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly)
+    )
+    
+    let coordinator = module.createAddWalletCoordinator(router: router)
+    coordinator.didAddWallets = {
+      onAddWallets()
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
   }
 }
