@@ -46,6 +46,10 @@ private extension HistoryCoordinator {
       self?.openEventDetails(event: event)
     }
     
+    module.output.didSelectNFT = { [weak self] nft in
+      self?.openNFTDetails(nft: nft)
+    }
+    
     router.push(viewController: module.view, animated: false)
   }
   
@@ -73,5 +77,17 @@ private extension HistoryCoordinator {
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func openNFTDetails(nft: NFT) {
+    let module = CollectibleDetailsAssembly.module(
+      collectibleDetailsController: keeperCoreMainAssembly.collectibleDetailsController(address: nft.address),
+      urlOpener: coreAssembly.urlOpener(),
+      output: nil
+    )
+    
+    let navigationController = TKNavigationController(rootViewController: module.0)
+    navigationController.configureDefaultAppearance()
+    router.present(navigationController)
   }
 }

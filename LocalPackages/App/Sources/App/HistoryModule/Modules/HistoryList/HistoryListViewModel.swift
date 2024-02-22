@@ -6,6 +6,7 @@ protocol HistoryListModuleOutput: AnyObject {
   var noEvents: (() -> Void)? { get set }
   var hasEvents: (() -> Void)? { get set }
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
+  var didSelectNFT: ((NFT) -> Void)? { get set }
 }
 
 protocol HistoryListModuleInput: AnyObject {
@@ -28,6 +29,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   var noEvents: (() -> Void)?
   var hasEvents: (() -> Void)?
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)?
+  var didSelectNFT: ((NFT) -> Void)?
   
   // MARK: - HistoryListModuleInput
   
@@ -116,8 +118,8 @@ private extension HistoryListViewModelImplementation {
     } else {
       let eventModel = historyEventMapper.mapEvent(
         event,
-        nftAction: { nft in
-          
+        nftAction: { [weak self] nft in
+          self?.didSelectNFT?(nft)
         },
         tapAction: { [weak self] accountEventDetailsEvent in
           self?.didSelectEvent?(accountEventDetailsEvent)

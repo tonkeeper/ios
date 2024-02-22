@@ -2,9 +2,10 @@ import Foundation
 import TKCore
 import TKUIKit
 import KeeperCore
+import TonSwift
 
 protocol CollectiblesModuleOutput: AnyObject {
-  
+  var didSelectNFT: ((Address) -> Void)? { get set }
 }
 
 protocol CollectiblesViewModel: AnyObject {
@@ -17,6 +18,8 @@ protocol CollectiblesViewModel: AnyObject {
 final class CollectiblesViewModelImplementation: CollectiblesViewModel, CollectiblesModuleOutput {
   
   // MARK: - CollectiblesModuleOutput
+  
+  var didSelectNFT: ((Address) -> Void)?
   
   var didUpdateListViewController: ((CollectiblesListViewController) -> Void)?
   
@@ -52,6 +55,9 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
 private extension CollectiblesViewModelImplementation {
   func setupChildren() {
     let listModule = listModuleProvider(collectiblesController.wallet)
+    listModule.output.didSelectNFT = { [weak self] address in
+      self?.didSelectNFT?(address)
+    }
     didUpdateListViewController?(listModule.view)
   }
 }

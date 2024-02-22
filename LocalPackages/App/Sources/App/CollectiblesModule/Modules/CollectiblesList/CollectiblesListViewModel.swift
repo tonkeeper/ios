@@ -1,9 +1,10 @@
 import Foundation
 import TKUIKit
 import KeeperCore
+import TonSwift
 
 protocol CollectiblesListModuleOutput: AnyObject {
-  
+  var didSelectNFT: ((Address) -> Void)? { get set }
 }
 
 protocol CollectiblesListViewModel: AnyObject {
@@ -11,11 +12,14 @@ protocol CollectiblesListViewModel: AnyObject {
   
   func viewDidLoad()
   func loadNext()
+  func didSelectNftAt(index: Int)
 }
 
 final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, CollectiblesListModuleOutput {
   
   // MARK: - CollectiblesListModuleOutput
+  
+  var didSelectNFT: ((Address) -> Void)?
   
   // MARK: - CollectiblesListViewModel
   
@@ -38,6 +42,15 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   func loadNext() {
     Task {
      await collectiblesListController.loadNext()
+    }
+  }
+  
+  func didSelectNftAt(index: Int) {
+    Task {
+      let model = await collectiblesListController.modelAt(index: index)
+      await MainActor.run(body: {
+        didSelectNFT?(model.address)
+      })
     }
   }
   

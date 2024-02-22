@@ -3,6 +3,7 @@ import TKCoordinator
 import TKUIKit
 import TKCore
 import KeeperCore
+import TonSwift
 
 public final class CollectiblesCoordinator: RouterCoordinator<NavigationControllerRouter> {
   private let coreAssembly: TKCore.CoreAssembly
@@ -32,6 +33,22 @@ private extension CollectiblesCoordinator {
         )
       }
     
+    module.output.didSelectNFT = { [weak self] address in
+      self?.openNFTDetails(address: address)
+    }
+    
     router.push(viewController: module.view, animated: false)
+  }
+  
+  func openNFTDetails(address: Address) {
+    let module = CollectibleDetailsAssembly.module(
+      collectibleDetailsController: keeperCoreMainAssembly.collectibleDetailsController(address: address),
+      urlOpener: coreAssembly.urlOpener(),
+      output: nil
+    )
+    
+    let navigationController = TKNavigationController(rootViewController: module.0)
+    navigationController.configureDefaultAppearance()
+    router.present(navigationController)
   }
 }

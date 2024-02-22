@@ -6,6 +6,8 @@ final class CollectiblesListCollectionController: NSObject {
   
   var loadNextPage: (() -> Void)?
   
+  var didSelectNFT: ((IndexPath) -> Void)?
+  
   private let collectionView: UICollectionView
   private let dataSource: DataSource
   
@@ -64,5 +66,9 @@ extension CollectiblesListCollectionController: UICollectionViewDelegate {
                       willDisplay cell: UICollectionViewCell,
                       forItemAt indexPath: IndexPath) {
     fetchNextIfNeeded(collectionView: collectionView, indexPath: indexPath)
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    didSelectNFT?(indexPath)
   }
 }

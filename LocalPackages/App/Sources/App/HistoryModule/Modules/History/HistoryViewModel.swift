@@ -6,6 +6,7 @@ import TKCore
 protocol HistoryModuleOutput: AnyObject {
   var didTapReceive: (() -> Void)? { get set }
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
+  var didSelectNFT: ((NFT) -> Void)? { get set }
 }
 
 protocol HistoryViewModel: AnyObject {
@@ -23,6 +24,7 @@ final class HistoryViewModelImplementation: HistoryViewModel, HistoryModuleOutpu
   
   var didTapReceive: (() -> Void)?
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)?
+  var didSelectNFT: ((NFT) -> Void)?
   
   // MARK: - HistoryViewModel
   
@@ -84,6 +86,10 @@ private extension HistoryViewModelImplementation {
     
     listModule.output.didSelectEvent = { [weak self] event in
       self?.didSelectEvent?(event)
+    }
+    
+    listModule.output.didSelectNFT = { [weak self] nft in
+      self?.didSelectNFT?(nft)
     }
     
     let emptyModule = emptyModuleProvider(historyController.wallet)

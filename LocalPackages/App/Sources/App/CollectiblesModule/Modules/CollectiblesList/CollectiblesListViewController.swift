@@ -37,5 +37,9 @@ private extension CollectiblesListViewController {
     collectionController.loadNextPage = { [weak viewModel] in
       viewModel?.loadNext()
     }
+    
+    collectionController.didSelectNFT = { [weak viewModel] indexPath in
+      viewModel?.didSelectNftAt(index: indexPath.item)
+    }
   }
 }
