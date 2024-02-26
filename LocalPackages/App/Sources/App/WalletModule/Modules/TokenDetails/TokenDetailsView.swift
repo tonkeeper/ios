@@ -2,7 +2,6 @@ import UIKit
 import TKUIKit
 
 final class TokenDetailsView: UIView, ConfigurableView {
-  let navigationBar = UINavigationBar()
   let listContainer = UIView()
   
   override init(frame: CGRect) {
@@ -38,26 +37,16 @@ final class TokenDetailsView: UIView, ConfigurableView {
 private extension TokenDetailsView {
   func setup() {
     backgroundColor = .Background.page
-    
-    navigationBar.delegate = self
-    navigationBar.configureDefaultAppearance()
-    
+
     addSubview(listContainer)
-    addSubview(navigationBar)
-    
     setupConstraints()
   }
   
   func setupConstraints() {
     listContainer.translatesAutoresizingMaskIntoConstraints = false
-    navigationBar.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
-      navigationBar.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
-      navigationBar.leftAnchor.constraint(equalTo: leftAnchor),
-      navigationBar.rightAnchor.constraint(equalTo: rightAnchor),
-      
-      listContainer.topAnchor.constraint(equalTo: navigationBar.bottomAnchor),
+      listContainer.topAnchor.constraint(equalTo: topAnchor),
       listContainer.leftAnchor.constraint(equalTo: leftAnchor),
       listContainer.rightAnchor.constraint(equalTo: rightAnchor),
       listContainer.bottomAnchor.constraint(equalTo: bottomAnchor),

@@ -26,6 +26,12 @@ final class TokenDetailsViewController: GenericViewViewController<TokenDetailsVi
     setupBindings()
     viewModel.viewDidLoad()
   }
+  
+  public override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    
+    navigationController?.setNavigationBarHidden(false, animated: true)
+  }
 }
 
 private extension TokenDetailsViewController {
@@ -48,8 +54,7 @@ private extension TokenDetailsViewController {
   }
   
   func setup() {
-    customView.navigationBar.setItems([navigationItem], animated: false)
-    customView.navigationBar.topItem?.titleView = titleView
+    navigationItem.titleView = titleView
     navigationItem.setupBackButton { [weak self] in
       self?.navigationController?.popViewController(animated: true)
     }
