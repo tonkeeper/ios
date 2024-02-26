@@ -11,11 +11,12 @@ protocol WalletsListModuleOutput: AnyObject {
 protocol WalletsListViewModel: AnyObject {
   var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)? { get set }
   var didUpdateItems: (([WalletsListWalletCell.Model]) -> Void)? { get set }
-  var didUpdateSelectedItem: ((Int?, Bool) -> Void)? { get set }
+  var didUpdateSelectedItem: ((Int?, Bool, Bool) -> Void)? { get set }
   var didUpdateFooterModel: ((WalletsListFooterView.Model) -> Void)? { get set }
   var didUpdateIsEditing: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
+  func viewWillAppear()
   func moveWallet(fromIndex: Int, toIndex: Int)
   func didSelectWallet(at index: Int)
 }
@@ -31,7 +32,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   
   var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)?
   var didUpdateItems: (([WalletsListWalletCell.Model]) -> Void)?
-  var didUpdateSelectedItem: ((Int?, Bool) -> Void)?
+  var didUpdateSelectedItem: ((Int?, Bool, Bool) -> Void)?
   var didUpdateFooterModel: ((WalletsListFooterView.Model) -> Void)?
   var didUpdateIsEditing: ((Bool) -> Void)?
   
@@ -40,6 +41,10 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
     didUpdateFooterModel?(createFooterModel())
     didUpdateHeaderItem?(createHeaderItem())
     walletItems = self.createListItems()
+  }
+  
+  func viewWillAppear() {
+    didUpdateSelectedItem?(getSelectedItemIndex(), true, true)
   }
   
   func moveWallet(fromIndex: Int, toIndex: Int) {
@@ -57,7 +62,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
       didUpdateIsEditing?(isEditing)
       didUpdateHeaderItem?(createHeaderItem())
       if !isEditing {
-        didUpdateSelectedItem?(getSelectedItemIndex(), true)
+        didUpdateSelectedItem?(getSelectedItemIndex(), true, false)
       }
     }
   }
@@ -65,7 +70,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   private var walletItems = [WalletsListWalletCell.Model]() {
     didSet {
       didUpdateItems?(walletItems)
-      didUpdateSelectedItem?(getSelectedItemIndex(), false)
+      didUpdateSelectedItem?(getSelectedItemIndex(), false, false)
     }
   }
 

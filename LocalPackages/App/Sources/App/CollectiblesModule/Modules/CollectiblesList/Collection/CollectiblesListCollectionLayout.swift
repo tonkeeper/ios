@@ -36,6 +36,7 @@ struct CollectiblesListCollectionLayout {
       bottom: 0,
       trailing: 16
     )
+    section.contentInsets.bottom = 16
     section.interGroupSpacing = 8
     return section
   }

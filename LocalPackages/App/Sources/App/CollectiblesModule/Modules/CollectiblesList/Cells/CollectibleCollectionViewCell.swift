@@ -87,6 +87,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
   
   override func prepareForReuse() {
     super.prepareForReuse()
+    imageView.image = nil
     imageDownloadTask?.cancel()
     imageDownloadTask = nil
   }

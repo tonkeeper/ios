@@ -38,10 +38,6 @@ final class TonConnectConfirmationViewModelImplementation: TonConnectConfirmatio
       "Wallet: \(model.walletName)"
     )
     prepareContent()
-    
-//    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-//      self.didConfirm?()
-//    }
   }
   
   // MARK: - Dependencies
@@ -109,8 +105,6 @@ private extension TonConnectConfirmationViewModelImplementation {
       isActivity: false,
       tapAction: { [weak self] _, _ in
         self?.didTapCancelButton?()
-//        isActivityClosure(false)
-//        isSuccessClosure(true)
       },
       completionAction: { [weak self] _ in
         self?.didTapCancelButton?()

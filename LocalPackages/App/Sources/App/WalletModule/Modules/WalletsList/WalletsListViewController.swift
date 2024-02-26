@@ -26,6 +26,11 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
     viewModel.viewDidLoad()
   }
   
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    viewModel.viewWillAppear()
+  }
+  
   // MARK: - TKPullCardScrollableContent
   
   var scrollView: UIScrollView {
@@ -46,32 +51,36 @@ private extension WalletsListViewController {
       self?.didUpdatePullCardHeaderItem?($0)
     }
     
-    viewModel.didUpdateIsEditing = { [collectionController] isEditing in
+    viewModel.didUpdateIsEditing = { [weak collectionController] isEditing in
       UIView.animate(withDuration: 0.2) {
-        collectionController.isEditing = isEditing
+        collectionController?.isEditing = isEditing
       }
     }
     
-    viewModel.didUpdateItems = { [weak self, collectionController] items in
-      collectionController.setWallets(items)
+    viewModel.didUpdateItems = { [weak self, weak collectionController] items in
+      collectionController?.setWallets(items)
       self?.didUpdateHeight?()
     }
     
-    viewModel.didUpdateFooterModel = { [customView] in
-      customView.footerView.configure(model: $0)
+    viewModel.didUpdateFooterModel = { [weak customView] in
+      customView?.footerView.configure(model: $0)
     }
     
-    viewModel.didUpdateSelectedItem = { [customView] index, animated in
+    viewModel.didUpdateSelectedItem = { [weak customView] index, animated, isScrollToItem in
       guard let index = index else {
         return
       }
-      customView.collectionView.selectItem(at: IndexPath(item: index, section: 0), animated: animated, scrollPosition: [])
+      let indexPath = IndexPath(item: index, section: 0)
+      let scrollPosition: UICollectionView.ScrollPosition = isScrollToItem ? [.bottom] : []
+      DispatchQueue.main.async {
+        customView?.collectionView.selectItem(at: indexPath, animated: animated, scrollPosition: scrollPosition)
+      }
     }
   }
   
   func setupCollectionController() {
-    collectionController.didSelect = { [viewModel] _, index in
-      viewModel.didSelectWallet(at: index)
+    collectionController.didSelect = { [weak viewModel] _, index in
+      viewModel?.didSelectWallet(at: index)
     }
     collectionController.didReorder = { [weak self] difference in
       var deletes = [Int]()

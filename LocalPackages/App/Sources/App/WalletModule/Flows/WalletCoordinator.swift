@@ -52,8 +52,9 @@ private extension WalletCoordinator {
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
     module.output.didTapAddWalletButton = { [weak self, unowned bottomSheetViewController] in
-      self?.openAddWallet(router: ViewControllerRouter(rootViewController: bottomSheetViewController)) {
-        bottomSheetViewController.dismiss()
+      bottomSheetViewController.dismiss {
+        guard let self else { return }
+        self.openAddWallet(router: ViewControllerRouter(rootViewController: self.router.rootViewController))
       }
     }
     
@@ -64,14 +65,19 @@ private extension WalletCoordinator {
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func openAddWallet(router: ViewControllerRouter, onAddWallets: @escaping () -> Void) {
+  func openAddWallet(router: ViewControllerRouter) {
     let module = AddWalletModule(dependencies: AddWalletModule.Dependencies(
       walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly)
     )
     
     let coordinator = module.createAddWalletCoordinator(router: router)
-    coordinator.didAddWallets = {
-      onAddWallets()
+    coordinator.didAddWallets = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
     }
     
     addChild(coordinator)

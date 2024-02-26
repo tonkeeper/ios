@@ -62,6 +62,10 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       self?.didUpdateBalance()
     }
     
+    walletBalanceController.didUpdateTotalBalance = { [weak self] in
+      self?.didUpdateTotalBalance()
+    }
+    
     walletBalanceController.didUpdateFinishSetup = { [weak self] model in
       self?.updateFinishSetup(model: model)
     }
@@ -151,20 +155,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
 
 private extension WalletBalanceViewModelImplementation {
   func updateBalance() {
-    //    Task {
-    //      async let balanceModelTask = walletBalanceController.walletBalanceModel
-    //      async let backgroundUpdateStateTask = walletBalanceController.backgroundUpdateState
-    
     let balanceModel = walletBalanceController.walletBalanceModel
-    //      let backgroundUpdateState = await backgroundUpdateStateTask
-    
-//    let headerModel = createHeaderModel(
-//      balanceModel: balanceModel,
-//      backgroundUpdateState: backgroundUpdateState
-//    )
-//    
-//    didUpdateHeader?(headerModel)
-    
     let tonItems = balanceModel.tonItems.map { item in
       listItemMapper.mapBalanceItems(item) { [weak self] in
         switch item.token {
@@ -186,24 +177,18 @@ private extension WalletBalanceViewModelImplementation {
         }
       }
     }
-    
-//    self.balanceModel = balanceModel
-    
     self.tonItems = tonItems
     self.jettonsItems = jettonsItems
   }
   
   func updateHeader() {
-    let balanceModel = walletBalanceController.walletBalanceModel
     let headerModel = createHeaderModel(
-      balanceModel: balanceModel,
       backgroundUpdateState: backgroundUpdateState
     )
     didUpdateHeader?(headerModel)
   }
   
-  func createHeaderModel(balanceModel: WalletBalanceModel,
-                         backgroundUpdateState: BackgroundUpdateState) -> WalletBalanceHeaderView.Model {
+  func createHeaderModel(backgroundUpdateState: BackgroundUpdateState) -> WalletBalanceHeaderView.Model {
     
     let connectionStatusModel: ConnectionStatusView.Model?
     switch backgroundUpdateState {
@@ -230,7 +215,7 @@ private extension WalletBalanceViewModelImplementation {
     }
     
     let balanceViewModel = WalletBalanceHeaderBalanceView.Model(
-      balance: balanceModel.total,
+      balance: walletBalanceController.totalBalanceFormatted,
       address: walletBalanceController.address,
       addressAction: {
         [weak self] in
@@ -301,6 +286,12 @@ private extension WalletBalanceViewModelImplementation {
     didUpdateFinishSetupItems?(finishSetupItems, headerModel)
   }
   
+  func didUpdateTotalBalance() {
+    Task { @MainActor in
+      self.updateHeader()
+    }
+  }
+  
   func didUpdateBackgroundUpdateState(state: BackgroundUpdateStore.State) {
     Task { @MainActor in
       self.backgroundUpdateState = BackgroundUpdateState(state: state)
@@ -310,7 +301,6 @@ private extension WalletBalanceViewModelImplementation {
   func didUpdateBalance() {
     Task { @MainActor in
       self.updateBalance()
-      self.updateHeader()
     }
   }
 }
