@@ -31,6 +31,7 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     ).migrateKeeperInfoIfNeeded()
     
     rootController.loadConfiguration()
+    rootController.loadKnownAccounts()
     switch rootController.getState() {
     case .onboarding:
       openOnboarding()

@@ -7,6 +7,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectJetton: ((JettonInfo) -> Void)? { get set }
   
   var didTapReceive: (() -> Void)? { get set }
+  var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
   
   var didTapBackup: (() -> Void)? { get set }
@@ -37,6 +38,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didSelectJetton: ((JettonInfo) -> Void)?
   
   var didTapReceive: (() -> Void)?
+  var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
   
   var didTapBackup: (() -> Void)?
@@ -234,8 +236,10 @@ private extension WalletBalanceViewModelImplementation {
     WalletBalanceHeaderButtonsView.Model(buttons: [
       WalletBalanceHeaderButtonsView.Model.Button(
         configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.arrowUpOutline, title: "Send"),
-        isEnabled: false,
-        action: {}
+        isEnabled: true,
+        action: { [weak self] in
+          self?.didTapSend?()
+        }
       ),
       WalletBalanceHeaderButtonsView.Model.Button(
         configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.arrowDownOutline, title: "Receive"),

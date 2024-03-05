@@ -51,7 +51,7 @@
       "location" : "https://github.com/tonkeeper/core-swift",
       "state" : {
         "branch" : "feature/refact",
-        "revision" : "ba9ce8b14de206970532a5fd569e984f58638957"
+        "revision" : "69fa21e9d1fcba33ce4192fed2546b1124cb1293"
       }
     },
     {
@@ -163,6 +163,15 @@
       }
     },
     {
+      "identity" : "snapkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SnapKit/SnapKit.git",
+      "state" : {
+        "revision" : "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
+        "version" : "5.7.1"
+      }
+    },
+    {
       "identity" : "swift-http-types",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-http-types",
@@ -195,7 +204,7 @@
       "location" : "https://github.com/tonkeeper/tkuikit-ios.git",
       "state" : {
         "branch" : "main",
-        "revision" : "7eb5b9217a7a4d365056bcd45b5c728e7d3794b5"
+        "revision" : "25f458527331736d0664f33028f3d89c3ce23129"
       }
     },
     {

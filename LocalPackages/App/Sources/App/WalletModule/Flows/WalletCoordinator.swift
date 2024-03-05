@@ -127,6 +127,10 @@ private extension WalletCoordinator {
       self?.openReceive(token: token)
     }
     
+    module.output.didTapSend = { [weak self] token in
+      self?.openSend(token: token)
+    }
+    
     router.push(viewController: module.view)
   }
   
@@ -153,7 +157,36 @@ private extension WalletCoordinator {
       self?.openReceive(token: token)
     }
     
+    module.output.didTapSend = { [weak self] token in
+      self?.openSend(token: token)
+    }
+    
     router.push(viewController: module.view)
+  }
+  
+  func openSend(token: Token) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
+    let sendTokenCoordinator = SendModule(
+      dependencies: SendModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createSendTokenCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      token: token
+    )
+    
+    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator] in
+      guard let sendTokenCoordinator else { return }
+      self?.removeChild(sendTokenCoordinator)
+    }
+    
+    addChild(sendTokenCoordinator)
+    sendTokenCoordinator.start()
+    
+    self.router.present(navigationController)
   }
   
   func openReceive(token: Token) {
@@ -167,8 +200,7 @@ private extension WalletCoordinator {
     module.view.setupSwipeDownButton()
     
     let navigationController = TKNavigationController(rootViewController: module.view)
-    navigationController.configureTransparentAppearance()
-    
+    navigationController.configureDefaultAppearance()
     
     router.present(navigationController)
   }
@@ -249,6 +281,10 @@ extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
     
     module.output.didSelectJetton = { [weak self] jettonInfo in
       self?.openJettonDetails(jettonInfo: jettonInfo)
+    }
+    
+    module.output.didTapSend = { [weak self] in
+      self?.openSend(token: .ton)
     }
     
     module.output.didTapReceive = { [weak self] in
