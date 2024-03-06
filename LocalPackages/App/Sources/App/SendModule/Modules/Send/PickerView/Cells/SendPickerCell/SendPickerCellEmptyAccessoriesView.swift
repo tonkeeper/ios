@@ -5,8 +5,6 @@ import SnapKit
 extension SendPickerCell {
   final class EmptyAccessoriesView: UIView, ConfigurableView {
     
-    private let pasteButton = TKHeaderButton(category: .tertiary)
-    
     private let stackView: UIStackView = {
       let stackView = UIStackView()
       return stackView
@@ -22,18 +20,22 @@ extension SendPickerCell {
     }
     
     struct Model {
-      let pasteButtonAction: () -> Void
+      struct Button {
+        let model: TKHeaderButton.Model
+        let action: (() -> Void)
+      }
+      let buttons: [Button]
     }
     
     func configure(model: Model) {
-      pasteButton.enumerateEventHandlers { action, targetAction, event, stop in
-        if let action = action {
-          pasteButton.removeAction(action, for: event)
-        }
+      stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+      model.buttons.forEach {
+        let button = TKHeaderButton(category: .tertiary)
+        button.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+        button.configure(model: $0.model)
+        button.setTapAction($0.action)
+        stackView.addArrangedSubview(button)
       }
-      pasteButton.addAction(UIAction(handler: { _ in
-        model.pasteButtonAction()
-      }), for: .touchUpInside)
     }
   }
 }
@@ -41,16 +43,12 @@ extension SendPickerCell {
 private extension SendPickerCell.EmptyAccessoriesView {
   func setup() {
     addSubview(stackView)
-    stackView.addArrangedSubview(pasteButton)
-    
-    pasteButton.configure(model: TKButton.Model(title: "Paste"))
-    
+
     setupConstraints()
   }
   
   func setupConstraints() {
     setContentHuggingPriority(.defaultHigh, for: .horizontal)
-    pasteButton.setContentHuggingPriority(.defaultHigh, for: .horizontal)
     stackView.setContentHuggingPriority(.defaultHigh, for: .horizontal)
     
     stackView.snp.makeConstraints { make in

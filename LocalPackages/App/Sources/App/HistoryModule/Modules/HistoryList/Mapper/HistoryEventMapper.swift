@@ -80,9 +80,9 @@ struct HistoryEventMapper {
       descriptionModel = HistoryEventActionView.CommentView.Model(comment: description.withTextStyle(.body2, color: .Text.primary))
     }
     
-    var nftModel: HistoryEventActionView.NFTView.Model?
+    var nftModel: NFTView.Model?
     if let nft = action.nft {
-      nftModel = HistoryEventActionView.NFTView.Model(
+      nftModel = NFTView.Model(
         imageDownloadTask: TKCore.ImageDownloadTask(closure: {
           [imageLoader] imageView,
           size,

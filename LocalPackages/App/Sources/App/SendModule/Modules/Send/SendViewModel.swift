@@ -1,14 +1,17 @@
 import UIKit
 import KeeperCore
+import TKCore
+import TKUIKit
 
 protocol SendModuleOutput: AnyObject {
-  var didTapRecipientItemButton: ((SendTokenModel) -> Void)? { get set }
-  var didTapAmountInputButton: ((SendTokenModel) -> Void)? { get set }
-  var didTapCommentInputButton: ((SendTokenModel) -> Void)? { get set }
+  var didTapRecipientItemButton: ((SendModel) -> Void)? { get set }
+  var didTapAmountInputButton: ((SendModel) -> Void)? { get set }
+  var didTapCommentInputButton: ((SendModel) -> Void)? { get set }
+  var didContinueSend: ((SendModel) -> Void)? { get set }
 }
 
 protocol SendModuleInput: AnyObject {
-  func updateWithSendModel(_ sendModel: SendTokenModel)
+  func updateWithSendModel(_ sendModel: SendModel)
 }
 
 protocol SendViewModel: AnyObject {
@@ -17,8 +20,8 @@ protocol SendViewModel: AnyObject {
   var didUpdateRecipientPickerItems: (([SendPickerCell.Model]) -> Void)? { get set }
   var didUpdateContinueButtonIsEnabled: ((Bool) -> Void)? { get set }
   var didUpdateRecipient: (([SendPickerCell.Model]) -> Void)? { get set }
-  var didUpdateAmount: ((SendAmountInputView.Model) -> Void)? { get set }
   var didUpdateComment: ((String?) -> Void)? { get set }
+  var didUpdateSendItem: ((SendItemViewModel) -> Void)? { get set }
   
   func viewDidLoad()
   func didSelectFromWalletAtIndex(_ index: Int)
@@ -26,22 +29,32 @@ protocol SendViewModel: AnyObject {
   func didTapRecipientItem()
   func didTapAmountButton()
   func didTapCommentButton()
+  func didTapContinueButton()
+}
+
+enum SendItemViewModel {
+  case token(value: String)
+  case nft(nftModel: NFTView.Model)
 }
 
 final class SendViewModelImplementation: SendViewModel, SendModuleOutput, SendModuleInput {
   
   // MARK: - SendModuleOutput
   
-  var didTapRecipientItemButton: ((SendTokenModel) -> Void)?
-  var didTapAmountInputButton: ((SendTokenModel) -> Void)?
-  var didTapCommentInputButton: ((SendTokenModel) -> Void)?
+  var didTapRecipientItemButton: ((SendModel) -> Void)?
+  var didTapAmountInputButton: ((SendModel) -> Void)?
+  var didTapCommentInputButton: ((SendModel) -> Void)?
+  var didContinueSend: ((SendModel) -> Void)?
   
   // MARK: - SendModuleInput
   
-  func updateWithSendModel(_ sendModel: SendTokenModel) {
+  func updateWithSendModel(_ sendModel: SendModel) {
     sendController.setInputRecipient(sendModel.recipient)
-    sendController.setToken(sendModel.token, amount: sendModel.amount)
+    sendController.setSendItem(sendModel.sendItem)
     sendController.setComment(sendModel.comment)
+    if sendController.isSendAvailable {
+      didContinueSend?(sendModel)
+    }
   }
   
   // MARK: - SendViewModel
@@ -51,8 +64,8 @@ final class SendViewModelImplementation: SendViewModel, SendModuleOutput, SendMo
   var didUpdateRecipientPickerItems: (([SendPickerCell.Model]) -> Void)?
   var didUpdateRecipient: (([SendPickerCell.Model]) -> Void)?
   var didUpdateContinueButtonIsEnabled: ((Bool) -> Void)?
-  var didUpdateAmount: ((SendAmountInputView.Model) -> Void)?
   var didUpdateComment: ((String?) -> Void)?
+  var didUpdateSendItem: ((SendItemViewModel) -> Void)?
   
   func viewDidLoad() {
     bindControllerEvents()
@@ -60,39 +73,45 @@ final class SendViewModelImplementation: SendViewModel, SendModuleOutput, SendMo
   }
   
   func didTapRecipientItem() {
-    guard let selectedWallet = sendController.selectedWallet else { return }
-    let sendTokenModel = SendTokenModel(
-      wallet: selectedWallet,
+    let sendTokenModel = SendModel(
+      wallet: sendController.selectedFromWallet,
       recipient: sendController.inputRecipient,
-      amount: sendController.amount,
-      token: sendController.token,
+      sendItem: sendController.sendItem,
       comment: sendController.comment
     )
     didTapRecipientItemButton?(sendTokenModel)
   }
   
   func didTapAmountButton() {
-    guard let selectedWallet = sendController.selectedWallet else { return }
-    let sendTokenModel = SendTokenModel(
-      wallet: selectedWallet,
+    let sendTokenModel = SendModel(
+      wallet: sendController.selectedFromWallet,
       recipient: sendController.inputRecipient,
-      amount: sendController.amount,
-      token: sendController.token,
+      sendItem: sendController.sendItem,
       comment: sendController.comment
     )
     self.didTapAmountInputButton?(sendTokenModel)
   }
   
   func didTapCommentButton() {
-    guard let selectedWallet = sendController.selectedWallet else { return }
-    let sendTokenModel = SendTokenModel(
-      wallet: selectedWallet,
+    let sendTokenModel = SendModel(
+      wallet: sendController.selectedFromWallet,
       recipient: sendController.inputRecipient,
-      amount: sendController.amount,
-      token: sendController.token,
+      sendItem: sendController.sendItem,
       comment: sendController.comment
     )
     self.didTapCommentInputButton?(sendTokenModel)
+  }
+  
+  func didTapContinueButton() {
+    guard let recipient = sendController.selectedRecipient else { return }
+    didContinueSend?(
+      SendModel(
+        wallet: sendController.selectedFromWallet,
+        recipient: recipient,
+        sendItem: sendController.sendItem,
+        comment: sendController.comment
+      )
+    )
   }
   
   func didSelectFromWalletAtIndex(_ index: Int) {
@@ -106,6 +125,15 @@ final class SendViewModelImplementation: SendViewModel, SendModuleOutput, SendMo
       sendController.setWalletSelectedRecipient(index: index)
     }
   }
+  
+  // MARK: - State
+  
+  private var toWalletsModels = [SendPickerCell.Model]()
+  private var recipientModel: SendPickerCell.Model?
+  
+  // MARK: - Image
+  
+  private let imageLoader = ImageLoader()
 
   // MARK: - Dependencies
   
@@ -120,9 +148,8 @@ final class SendViewModelImplementation: SendViewModel, SendModuleOutput, SendMo
 
 private extension SendViewModelImplementation {
   func bindControllerEvents() {
-    sendController.didUpdateFromWallets = { [weak self] in
+    sendController.didUpdateFromWallets = { [weak self] models in
       guard let self = self else { return }
-      let models = self.sendController.getFromWalletsModels()
       let items = self.mapFromWallets(models: models)
       didUpdateWalletPickerItems?(items)
     }
@@ -133,17 +160,23 @@ private extension SendViewModelImplementation {
     
     sendController.didUpdateToWallets = { [weak self] in
       guard let self = self else { return }
-      let recipientModel = self.sendController.getInputRecipientModel()
-      let walletModels = self.sendController.getToWalletsModels()
-      let items = CollectionOfOne(mapRecipient(recipientModel)) + mapToWallets(models: walletModels)
+      self.toWalletsModels = mapToWallets(models: $0)
+      var items = [SendPickerCell.Model]()
+      if let recipientModel {
+        items.append(recipientModel)
+      }
+      items.append(contentsOf: toWalletsModels)
       didUpdateRecipientPickerItems?(items)
     }
     
     sendController.didUpdateInputRecipient = { [weak self] in
       guard let self = self else { return }
-      let recipientModel = self.sendController.getInputRecipientModel()
-      let walletModels = self.sendController.getToWalletsModels()
-      let items = CollectionOfOne(mapRecipient(recipientModel)) + mapToWallets(models: walletModels)
+      self.recipientModel = mapRecipient($0)
+      var items = [SendPickerCell.Model]()
+      if let recipientModel {
+        items.append(recipientModel)
+      }
+      items.append(contentsOf: toWalletsModels)
       didUpdateRecipientPickerItems?(items)
     }
     
@@ -151,10 +184,11 @@ private extension SendViewModelImplementation {
       self?.didUpdateContinueButtonIsEnabled?(isAvailable)
     }
     
-    sendController.didUpdateAmount = { [weak self] in
-      guard let self = self else { return }
-      let amount = self.sendController.getAmountValue()
-      self.didUpdateAmount?(SendAmountInputView.Model(amount: amount))
+    sendController.didUpdateSendItem = { [weak self] in
+      guard let self else { return }
+      let model = self.sendController.getSendItemModel()
+      let viewModel = self.mapSendItemViewModel(sendItemModel: model)
+      self.didUpdateSendItem?(viewModel)
     }
     
     sendController.didUpdateComment = { [weak self] in
@@ -165,36 +199,50 @@ private extension SendViewModelImplementation {
   
   func mapFromWallets(models: [SendController.SendWalletModel]) -> [SendPickerCell.Model] {
     models.map { model in
-      SendPickerCell.Model(
+      let rightView: SendPickerCell.RightView.Model
+      if let balance = model.balance {
+        rightView = .amount(
+          SendPickerCell.AmountView.Model(
+            amount: balance.withTextStyle(.body1, color: .Text.primary, alignment: .left),
+            isPickEnable: model.isPickerEnabled
+          )
+        )
+      } else {
+        rightView = .empty(SendPickerCell.EmptyAccessoriesView.Model(buttons: []))
+      }
+    
+      return SendPickerCell.Model(
         id: model.id,
         informationModel: SendPickerCell.InformationView.Model(
           topText: "From:".withTextStyle(.body1, color: .Text.secondary, alignment: .left),
           bottomText: model.name.withTextStyle(.body1, color: .Text.primary, alignment: .left)
         ),
-        rightView: .amount(
-          SendPickerCell.AmountView.Model(
-            amount: model.balance.withTextStyle(.body1, color: .Text.primary, alignment: .left),
-            isPickEnable: model.isPickerEnabled
-          )
-        )
+        rightView: rightView
       )
     }
   }
   
   func mapToWallets(models: [SendController.SendWalletModel]) -> [SendPickerCell.Model] {
     models.map { model in
-      SendPickerCell.Model(
+      let rightView: SendPickerCell.RightView.Model
+      if let balance = model.balance {
+        rightView = .amount(
+          SendPickerCell.AmountView.Model(
+            amount: balance.withTextStyle(.body1, color: .Text.primary, alignment: .left),
+            isPickEnable: model.isPickerEnabled
+          )
+        )
+      } else {
+        rightView = .empty(SendPickerCell.EmptyAccessoriesView.Model(buttons: []))
+      }
+      
+      return SendPickerCell.Model(
         id: model.id,
         informationModel: SendPickerCell.InformationView.Model(
           topText: "To:".withTextStyle(.body1, color: .Text.secondary, alignment: .left),
           bottomText: model.name.withTextStyle(.body1, color: .Text.primary, alignment: .left)
         ),
-        rightView: .amount(
-          SendPickerCell.AmountView.Model(
-            amount: model.balance.withTextStyle(.body1, color: .Text.primary, alignment: .left),
-            isPickEnable: false
-          )
-        )
+        rightView: rightView
       )
     }
   }
@@ -202,10 +250,19 @@ private extension SendViewModelImplementation {
   func mapRecipient(_ recipient: SendController.SendRecipientModel) -> SendPickerCell.Model {
     let rightView: SendPickerCell.RightView.Model
     if recipient.isEmpty {
-      rightView = .empty(SendPickerCell.EmptyAccessoriesView.Model(pasteButtonAction: { [weak self] in
-        guard let pasteboardString = UIPasteboard.general.string else { return }
-        self?.sendController.setInputRecipient(with: pasteboardString)
-      }))
+      rightView = .empty(
+        SendPickerCell.EmptyAccessoriesView.Model(
+          buttons: [
+            SendPickerCell.EmptyAccessoriesView.Model.Button(
+              model: TKHeaderButton.Model(title: "Paste"),
+              action: { [weak self] in
+                guard let pasteboardString = UIPasteboard.general.string else { return }
+                self?.sendController.setInputRecipient(with: pasteboardString)
+              }
+            )
+          ]
+        )
+      )
     } else {
       rightView = .none
     }
@@ -223,5 +280,31 @@ private extension SendViewModelImplementation {
       ),
       rightView: rightView
     )
+  }
+  
+  func mapSendItemViewModel(sendItemModel: KeeperCore.SendController.SendItemModel) -> SendItemViewModel {
+    switch sendItemModel {
+    case .token(let value):
+      return .token(value: value)
+    case .nft(let nft):
+      let nftModel = NFTView.Model(
+        imageDownloadTask: TKCore.ImageDownloadTask(closure: {
+          [imageLoader] imageView,
+          size,
+          cornerRadius in
+          imageLoader.loadImage(
+            url: nft.imageUrl,
+            imageView: imageView,
+            size: size,
+            cornerRadius: cornerRadius
+          )
+        }),
+        name: nft.name,
+        collectionName: nft.collectionName,
+        action: {}
+      )
+      
+      return .nft(nftModel: nftModel)
+    }
   }
 }

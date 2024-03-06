@@ -175,7 +175,7 @@ private extension WalletCoordinator {
       )
     ).createSendTokenCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
-      token: token
+      sendItem: .token(token, amount: 0)
     )
     
     sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator] in

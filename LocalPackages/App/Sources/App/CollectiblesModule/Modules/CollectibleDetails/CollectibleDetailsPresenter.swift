@@ -220,10 +220,10 @@ private extension CollectibleDetailsPresenter {
       size: .large,
       isEnabled: model.isTransferEnable,
       isLoading: false, tapAction: { [weak self] in
-        guard let self = self else { return }
+        guard let self = self, let nft = self.collectibleDetailsController.nft else { return }
         self.output?.collectibleDetails(
           self,
-          transferNFT: self.collectibleDetailsController.collectibleAddress)
+          transferNFT: nft)
       }, description: transferButtonDescription
     )
     return buttonModel

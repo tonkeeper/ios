@@ -46,8 +46,8 @@ private extension SendViewController {
       self?.customView.continueButton.isEnabled = isEnabled
     }
     
-    viewModel.didUpdateAmount = { [weak self] model in
-      self?.customView.amountView.configure(model: model)
+    viewModel.didUpdateSendItem = { [weak self] sendItemModel in
+      self?.customView.updateSendItemView(with: sendItemModel)
     }
     
     viewModel.didUpdateComment = { [weak self] in
@@ -71,12 +71,16 @@ private extension SendViewController {
       indexPath.item == 0
     }
     
-    customView.amountView.didTap = { [weak self] in
+    customView.didTapAmount = { [weak self] in
       self?.viewModel.didTapAmountButton()
     }
     
     customView.didTapComment = { [weak self] in
       self?.viewModel.didTapCommentButton()
+    }
+    
+    customView.continueButton.setTapAction { [weak self] in
+      self?.viewModel.didTapContinueButton()
     }
   }
 }

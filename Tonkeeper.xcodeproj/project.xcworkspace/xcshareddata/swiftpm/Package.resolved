@@ -46,15 +46,6 @@
       }
     },
     {
-      "identity" : "core-swift",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tonkeeper/core-swift",
-      "state" : {
-        "branch" : "feature/refact",
-        "revision" : "69fa21e9d1fcba33ce4192fed2546b1124cb1293"
-      }
-    },
-    {
       "identity" : "firebase-ios-sdk",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk",
@@ -196,15 +187,6 @@
       "state" : {
         "revision" : "65e8f29b2d63c4e38e736b25c27b83e012159be8",
         "version" : "1.25.2"
-      }
-    },
-    {
-      "identity" : "tkuikit-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tonkeeper/tkuikit-ios.git",
-      "state" : {
-        "branch" : "main",
-        "revision" : "25f458527331736d0664f33028f3d89c3ce23129"
       }
     },
     {

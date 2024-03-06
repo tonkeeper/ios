@@ -2,22 +2,19 @@ import Foundation
 import BigInt
 import KeeperCore
 
-struct SendTokenModel {
+struct SendModel {
   let wallet: Wallet
   let recipient: Recipient?
-  let amount: BigUInt
-  let token: Token
+  let sendItem: SendItem
   let comment: String?
   
   init(wallet: Wallet,
        recipient: Recipient?,
-       amount: BigUInt,
-       token: Token,
+       sendItem: SendItem,
        comment: String?) {
     self.wallet = wallet
     self.recipient = recipient
-    self.amount = amount
-    self.token = token
+    self.sendItem = sendItem
     self.comment = comment
   }
 }

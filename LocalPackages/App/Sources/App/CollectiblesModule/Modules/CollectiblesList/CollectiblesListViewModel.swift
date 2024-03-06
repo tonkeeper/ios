@@ -70,7 +70,7 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
 }
 
 private extension CollectiblesListViewModelImplementation {
-  func handleUpdatedNFTs(nfts: [CollectiblesListController.NFTModel]) {
+  func handleUpdatedNFTs(nfts: [NFTModel]) {
     let models = collectiblesListMapper.map(nftModels: nfts)
     let section = CollectiblesListSection.collectibles(items: models)
     Task { @MainActor in

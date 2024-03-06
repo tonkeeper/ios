@@ -44,11 +44,42 @@ private extension CollectiblesCoordinator {
     let module = CollectibleDetailsAssembly.module(
       collectibleDetailsController: keeperCoreMainAssembly.collectibleDetailsController(address: address),
       urlOpener: coreAssembly.urlOpener(),
-      output: nil
+      output: self
     )
     
     let navigationController = TKNavigationController(rootViewController: module.0)
     navigationController.configureDefaultAppearance()
     router.present(navigationController)
+  }
+}
+
+extension CollectiblesCoordinator: CollectibleDetailsModuleOutput {
+  func collectibleDetailsDidFinish(_ collectibleDetails: CollectibleDetailsModuleInput) {
+    
+  }
+  
+  func collectibleDetails(_ collectibleDetails: CollectibleDetailsModuleInput, transferNFT nft: NFT) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
+    let sendTokenCoordinator = SendModule(
+      dependencies: SendModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createSendTokenCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      sendItem: .nft(nft)
+    )
+    
+    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator] in
+      guard let sendTokenCoordinator else { return }
+      self?.removeChild(sendTokenCoordinator)
+    }
+    
+    addChild(sendTokenCoordinator)
+    sendTokenCoordinator.start()
+    
+    self.router.rootViewController.presentedViewController?.present(navigationController, animated: true)
   }
 }

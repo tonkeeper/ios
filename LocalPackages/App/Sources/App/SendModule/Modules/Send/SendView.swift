@@ -5,6 +5,7 @@ import SnapKit
 final class SendView: UIView {
   
   var didTapComment: (() -> Void)?
+  var didTapAmount: (() -> Void)?
   
   let scrollView = TKUIScrollView()
   let stackView: UIStackView = {
@@ -23,12 +24,13 @@ final class SendView: UIView {
   let walletPickerView = SendPickerView()
   let recipientPickerView = SendPickerView()
   let continueButton = TKActionButton(category: .primary, size: .large)
-  let amountView = SendAmountInputView()
   let commentView: TKTextView = {
     let view = TKTextView()
     view.isHighlightable = true
     return view
   }()
+  
+  private var sendItemView: UIView?
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -38,7 +40,6 @@ final class SendView: UIView {
     
     scrollView.addSubview(walletPickerView)
     scrollView.addSubview(recipientPickerView)
-    stackView.addArrangedSubview(amountView)
     stackView.addArrangedSubview(commentView)
     stackView.addArrangedSubview(continueButton)
     
@@ -79,6 +80,27 @@ final class SendView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  func updateSendItemView(with viewModel: SendItemViewModel) {
+    sendItemView?.removeFromSuperview()
+    let view: UIView
+    switch viewModel {
+    case .token(let value):
+      let amountView = SendAmountInputView()
+      amountView.configure(model: SendAmountInputView.Model(amount: value))
+      amountView.addAction(UIAction(handler: { [weak self] _ in
+        self?.didTapAmount?()
+      }), for: .touchUpInside)
+      view = amountView
+    case .nft(let nftModel):
+      let nftView = SendNFTView()
+      nftView.configure(model: SendNFTView.Model(nftViewModel: nftModel))
+      view = nftView
+    }
+    
+    stackView.insertArrangedSubview(view, at: 0)
+    sendItemView = view
   }
 }
 

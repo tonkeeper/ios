@@ -14,7 +14,7 @@ final class SendTokenEditCoordinator: RouterCoordinator<NavigationControllerRout
   }
   
   var didFinish: (() -> Void)?
-  var didUpdateSendModel: ((SendTokenModel) -> Void)?
+  var didUpdateSendModel: ((SendModel) -> Void)?
   
   private weak var recipientModuleInput: SendRecipientModuleInput?
   private weak var amountModuleInput: SendAmountModuleInput?
@@ -25,12 +25,12 @@ final class SendTokenEditCoordinator: RouterCoordinator<NavigationControllerRout
   private var step: Step
   private var currentStep: Step
   
-  private let sendModel: SendTokenModel
+  private let sendModel: SendModel
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   
   init(step: Step,
-       sendModel: SendTokenModel,
+       sendModel: SendModel,
        router: NavigationControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly) {
@@ -86,16 +86,20 @@ private extension SendTokenEditCoordinator {
     case .recipient:
       openRecipient(recipient: sendModel.recipient)
     case .amount:
-      openAmount(
-        recipient: sendModel.recipient,
-        token: sendModel.token,
-        amount: sendModel.amount
-      )
+      switch sendModel.sendItem {
+      case .token(let token, let amount):
+        openAmount(
+          recipient: sendModel.recipient,
+          token: token,
+          amount: amount
+        )
+      case .nft:
+        break
+      }
     case .comment:
       openComment(
         recipient: sendModel.recipient,
-        token: sendModel.token,
-        amount: sendModel.amount,
+        sendItem: sendModel.sendItem,
         comment: sendModel.comment
       )
     }
@@ -117,8 +121,18 @@ private extension SendTokenEditCoordinator {
     }
 
     module.output.didFinish = { [weak self, sendModel] recipient in
-      self?.currentStep = .amount
-      self?.openAmount(recipient: recipient, token: sendModel.token, amount: sendModel.amount)
+      switch sendModel.sendItem {
+      case .token(let token, let amount):
+        self?.currentStep = .amount
+        self?.openAmount(recipient: recipient, token: token, amount: amount)
+      case .nft:
+        self?.currentStep = .comment
+        self?.openComment(
+          recipient: recipient,
+          sendItem: sendModel.sendItem,
+          comment: sendModel.comment
+        )
+      }
     }
     
     recipientModuleInput = module.input
@@ -145,7 +159,9 @@ private extension SendTokenEditCoordinator {
     
     module.output.didFinish = { [weak self, sendModel] token, amount in
       self?.currentStep = .comment
-      self?.openComment(recipient: recipient, token: token, amount: amount, comment: sendModel.comment)
+      self?.openComment(recipient: recipient,
+                        sendItem: SendItem.token(token, amount: amount),
+                        comment: sendModel.comment)
     }
 
     self.amountModuleInput = module.input
@@ -153,7 +169,7 @@ private extension SendTokenEditCoordinator {
     flowViewController.flowNavigationController.pushViewController(module.view, animated: true)
   }
   
-  func openComment(recipient: Recipient?, token: Token, amount: BigUInt, comment: String?) {
+  func openComment(recipient: Recipient?, sendItem: SendItem, comment: String?) {
     let module = SendCommentAssembly.module(
       sendCommentController: keeperCoreMainAssembly.sendCommentController(
         isCommentRequired: recipient?.isKnownAccount ?? false,
@@ -164,18 +180,17 @@ private extension SendTokenEditCoordinator {
     module.view.setupLeftCloseButton { [weak self] in
       self?.didFinish?()
     }
-    
+  
     module.output.didUpdateIsContinueEnable = { [weak self] isEnable in
       self?.flowViewController.setIsNextAvailable(isEnable)
     }
     
     module.output.didFinish = { [weak self, sendModel] in
       self?.didUpdateSendModel?(
-        SendTokenModel(
+        SendModel(
           wallet: sendModel.wallet,
           recipient: recipient,
-          amount: amount,
-          token: token,
+          sendItem: sendItem,
           comment: $0
         )
       )

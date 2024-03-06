@@ -1002,6 +1002,8 @@
 		C38957862AF168F70083B98A /* Deeplink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Deeplink.swift; sourceTree = "<group>"; };
 		C39560142B737F12003303C7 /* App */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = App; sourceTree = "<group>"; };
 		C3A337BB2AE340BD00E315F5 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
+		C3CEC3DD2B986CA1007CEC45 /* tkuikit-ios */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "tkuikit-ios"; path = "../tkuikit-ios"; sourceTree = "<group>"; };
+		C3CEC3DE2B986CA1007CEC45 /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "core-swift"; path = "../core-swift"; sourceTree = "<group>"; };
 		C3E4C9A02B30FFCD005526DA /* TitleConnectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleConnectionView.swift; sourceTree = "<group>"; };
 		C3E4C9AA2B31C85C005526DA /* NavigationBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationBarView.swift; sourceTree = "<group>"; };
 		C3E4C9AD2B31FABA005526DA /* ActivityLargeTitleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityLargeTitleView.swift; sourceTree = "<group>"; };
@@ -2636,6 +2638,8 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
+				C3CEC3DE2B986CA1007CEC45 /* core-swift */,
+				C3CEC3DD2B986CA1007CEC45 /* tkuikit-ios */,
 				C313EC0A2B50138D009DF825 /* LocalPackages */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,

@@ -4,7 +4,7 @@ import TKCore
 
 struct CollectiblesListMapper {
   let imageLoader = ImageLoader()
-  func map(nftModels: [CollectiblesListController.NFTModel]) -> [CollectibleCollectionViewCell.Model] {
+  func map(nftModels: [NFTModel]) -> [CollectibleCollectionViewCell.Model] {
     nftModels.map { model in
       CollectibleCollectionViewCell.Model(
         identifier: model.address.toRaw(),
