@@ -67,5 +67,9 @@ private extension SendCommentViewController {
     customView.commentTextField.didEditText = { [weak viewModel] text in
       viewModel?.didEditComment(text ?? "")
     }
+    
+    customView.pasteButton.setTapAction { [weak self] in
+      self?.viewModel.didTapPasteButton()
+    }
   }
 }

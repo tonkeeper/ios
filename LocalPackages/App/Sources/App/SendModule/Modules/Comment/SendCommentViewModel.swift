@@ -20,6 +20,7 @@ protocol SendCommentViewModel: AnyObject {
   func viewDidAppear()
   func viewWillDisappear()
   func didEditComment(_ comment: String)
+  func didTapPasteButton()
 }
 
 final class SendCommentViewModelImplementation: SendCommentViewModel, SendCommentModuleOutput, SendCommentModuleInput {
@@ -92,6 +93,12 @@ final class SendCommentViewModelImplementation: SendCommentViewModel, SendCommen
   
   func didEditComment(_ comment: String) {
     sendCommentController.setCommentInput(comment)
+  }
+  
+  func didTapPasteButton() {
+    guard let pasteboardString = UIPasteboard.general.string else { return }
+    sendCommentController.setCommentInput(pasteboardString)
+    didUpdateComment?(pasteboardString)
   }
   
   // MARK: - State

@@ -31,7 +31,7 @@ private extension SendRecipientView {
   
   func setupConstraints() {
     recipientTextField.snp.makeConstraints { make in
-      make.top.equalTo(safeAreaLayoutGuide)
+      make.top.equalTo(safeAreaLayoutGuide).inset(16)
       make.left.right.equalTo(self).inset(16).priority(999)
     }
   }

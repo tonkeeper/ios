@@ -6,11 +6,6 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
   private let contentContainerView = UIView()
   private let walletButton = WalletContainerWalletButton()
   private let settingsButton = TKUIHeaderAccentIconButton()
-  private let blurView: UIVisualEffectView = {
-    let blurEffect = UIBlurEffect(style: .systemChromeMaterialDark)
-    let blurView = UIVisualEffectView(effect: blurEffect)
-    return blurView
-  }()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -44,7 +39,8 @@ private extension WalletContainerTopBarView {
     settingsButton.foregroundColor = .Icon.secondary
     settingsButton.padding = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
 
-    addSubview(blurView)
+    backgroundColor = .Background.page
+    
     addSubview(contentContainerView)
     contentContainerView.addSubview(settingsButton)
     contentContainerView.addSubview(walletButton)
@@ -71,10 +67,6 @@ private extension WalletContainerTopBarView {
       walletButton.centerXAnchor.constraint(equalTo: contentContainerView.centerXAnchor),
       walletButton.widthAnchor.constraint(lessThanOrEqualToConstant: .walletButtonMaxWidth)
     ])
-    
-    blurView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
-    }
   }
 }
 

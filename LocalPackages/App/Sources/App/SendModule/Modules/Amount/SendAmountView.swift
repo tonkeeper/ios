@@ -48,7 +48,8 @@ private extension SendAmountView {
   
   func setupConstraints() {
     container.snp.makeConstraints { make in
-      make.top.bottom.equalTo(safeAreaLayoutGuide)
+      make.top.equalTo(safeAreaLayoutGuide).inset(16)
+      make.bottom.equalTo(safeAreaLayoutGuide)
       make.left.right.equalTo(self)
     }
     

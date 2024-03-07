@@ -178,7 +178,8 @@ private extension WalletCoordinator {
       sendItem: .token(token, amount: 0)
     )
     
-    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator] in
+    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
       guard let sendTokenCoordinator else { return }
       self?.removeChild(sendTokenCoordinator)
     }

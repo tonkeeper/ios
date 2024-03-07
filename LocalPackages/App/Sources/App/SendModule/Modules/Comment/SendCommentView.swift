@@ -58,8 +58,9 @@ private extension SendCommentView {
     }
     
     stackView.snp.makeConstraints { make in
+      make.top.equalTo(scrollView).inset(16).priority(.high)
       make.left.right.bottom.equalTo(scrollView).priority(.high)
-      make.width.top.equalTo(scrollView).priority(.high)
+      make.width.equalTo(scrollView).priority(.high)
     }
   }
 }

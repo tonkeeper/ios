@@ -25,7 +25,9 @@ final class SendPickerView: UIView {
       snapshot.appendSections([.items])
       snapshot.appendItems(newValue, toSection: .items)
       snapshot.reloadItems(newValue)
-      dataSource.apply(snapshot)
+      UIView.performWithoutAnimation {
+        dataSource.apply(snapshot)
+      }
       
       pageControl.numberOfPages = items.count
     }
