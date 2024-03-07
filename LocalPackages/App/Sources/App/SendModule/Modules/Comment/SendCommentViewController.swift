@@ -46,8 +46,10 @@ private extension SendCommentViewController {
   }
   
   func setupBindings() {
-    viewModel.didUpdateComment = { [weak customView] in
-      customView?.commentTextField.text = $0
+    viewModel.didUpdateComment = { [weak self] text in
+      DispatchQueue.main.async {
+        self?.customView.commentTextField.text = text
+      }
     }
     
     viewModel.didUpdatePlaceholder = { [weak customView] in
@@ -64,7 +66,7 @@ private extension SendCommentViewController {
   }
   
   func setupViewEventsBinding() {
-    customView.commentTextField.didEditText = { [weak viewModel] text in
+    customView.commentTextField.didEditText = { [weak self, weak viewModel] text in
       viewModel?.didEditComment(text ?? "")
     }
     

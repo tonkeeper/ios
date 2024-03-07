@@ -87,7 +87,7 @@ final class SendAmountViewModelImplementation: SendAmountViewModel, SendAmountMo
       switch remaining {
       case .remaining(let value):
         self?.didUpdateRemaining?(
-          value.withTextStyle(
+          "Remaining: \(value)".withTextStyle(
             .body2,
             color: .Text.secondary,
             alignment: .right,
