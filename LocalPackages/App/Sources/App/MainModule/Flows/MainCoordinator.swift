@@ -3,6 +3,7 @@ import TKCoordinator
 import TKUIKit
 import KeeperCore
 import TKCore
+import TonSwift
 
 final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
@@ -148,6 +149,57 @@ private extension MainCoordinator {
     
     router.present(navigationController)
   }
+  
+  func openSend(token: Token, recipient: Recipient) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
+    let sendTokenCoordinator = SendModule(
+      dependencies: SendModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createSendTokenCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      sendItem: .token(token, amount: 0),
+      recipient: recipient
+    )
+    
+    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let sendTokenCoordinator else { return }
+      self?.removeChild(sendTokenCoordinator)
+    }
+    
+    addChild(sendTokenCoordinator)
+    sendTokenCoordinator.start()
+    
+    self.router.present(navigationController)
+  }
+  
+  func openSend(recipient: String, jettonAddress: Address?) {
+    ToastPresenter.showToast(configuration: .loading)
+    Task {
+      guard let resolvedRecipient = await mainController.resolveRecipient(recipient) else {
+        await MainActor.run {
+          ToastPresenter.hideAll()
+          ToastPresenter.showToast(configuration: .failed)
+        }
+        return
+      }
+      let token: Token
+      if let jettonAddress, let jettonItem = await mainController.resolveJetton(jettonAddress: jettonAddress) {
+        token = .jetton(jettonItem)
+      } else {
+        token = .ton
+      }
+      
+      await MainActor.run {
+        ToastPresenter.hideAll()
+        self.openSend(token: token, recipient: resolvedRecipient)
+      }
+    }
+  }
 }
 
 // MARK: - Deeplinks
@@ -163,7 +215,10 @@ private extension MainCoordinator {
   }
   
   func handleTonDeeplink(_ deeplink: TonDeeplink) {
-    
+    switch deeplink {
+    case .transfer(let recipient, let jettonAddress):
+      openSend(recipient: recipient, jettonAddress: jettonAddress)
+    }
   }
   
   func handleTonConnectDeeplink(_ deeplink: TonConnectDeeplink) {

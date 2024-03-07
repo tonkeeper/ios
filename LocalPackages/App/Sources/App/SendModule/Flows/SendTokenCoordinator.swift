@@ -11,14 +11,17 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let sendItem: SendItem
+  private let recipient: Recipient?
   
   init(router: NavigationControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
-       sendItem: SendItem) {
+       sendItem: SendItem,
+       recipient: Recipient? = nil ) {
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.sendItem = sendItem
+    self.recipient = recipient
     super.init(router: router)
   }
   
@@ -29,7 +32,7 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
 
 private extension SendTokenCoordinator {
   func openSend() {
-    let module = SendAssembly.module(sendController: keeperCoreMainAssembly.sendController(sendItem: sendItem))
+    let module = SendAssembly.module(sendController: keeperCoreMainAssembly.sendController(sendItem: sendItem, recipient: recipient))
     
     module.output.didTapRecipientItemButton = { [weak self, weak input = module.input] sendModel in
       self?.openRecipientInput(sendModel: sendModel,
