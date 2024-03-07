@@ -84,5 +84,9 @@ private extension SendAmountViewController {
     amountInputViewController.didToggle = { [weak viewModel] in
       viewModel?.toggleInputMode()
     }
+    
+    amountInputViewController.didTapTokenPickerButton = { [weak viewModel] in
+      viewModel?.didTapTokenPickerButton()
+    }
   }
 }

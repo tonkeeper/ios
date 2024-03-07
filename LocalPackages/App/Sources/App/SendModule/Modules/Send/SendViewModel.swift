@@ -8,10 +8,12 @@ protocol SendModuleOutput: AnyObject {
   var didTapAmountInputButton: ((SendModel) -> Void)? { get set }
   var didTapCommentInputButton: ((SendModel) -> Void)? { get set }
   var didContinueSend: ((SendModel) -> Void)? { get set }
+  var didTapPicker: ((Wallet, Token) -> Void)? { get set }
 }
 
 protocol SendModuleInput: AnyObject {
   func updateWithSendModel(_ sendModel: SendModel)
+  func updateWithToken(_ token: Token)
 }
 
 protocol SendViewModel: AnyObject {
@@ -27,6 +29,7 @@ protocol SendViewModel: AnyObject {
   func didSelectFromWalletAtIndex(_ index: Int)
   func didSelectRecipientAtIndex(_ index: Int)
   func didTapRecipientItem()
+  func didTapWalletTokenPicker(index: Int)
   func didTapAmountButton()
   func didTapCommentButton()
   func didTapContinueButton()
@@ -45,6 +48,7 @@ final class SendViewModelImplementation: SendViewModel, SendModuleOutput, SendMo
   var didTapAmountInputButton: ((SendModel) -> Void)?
   var didTapCommentInputButton: ((SendModel) -> Void)?
   var didContinueSend: ((SendModel) -> Void)?
+  var didTapPicker: ((Wallet, Token) -> Void)?
   
   // MARK: - SendModuleInput
   
@@ -55,6 +59,10 @@ final class SendViewModelImplementation: SendViewModel, SendModuleOutput, SendMo
     if sendController.isSendAvailable {
       didContinueSend?(sendModel)
     }
+  }
+  
+  func updateWithToken(_ token: Token) {
+    sendController.setSendItem(SendItem.token(token, amount: 0))
   }
   
   // MARK: - SendViewModel
@@ -80,6 +88,14 @@ final class SendViewModelImplementation: SendViewModel, SendModuleOutput, SendMo
       comment: sendController.comment
     )
     didTapRecipientItemButton?(sendTokenModel)
+  }
+  
+  func didTapWalletTokenPicker(index: Int) {
+    switch sendController.sendItem {
+    case .nft: break
+    case .token(let token, _):
+      didTapPicker?(sendController.selectedFromWallet, token)
+    }
   }
   
   func didTapAmountButton() {

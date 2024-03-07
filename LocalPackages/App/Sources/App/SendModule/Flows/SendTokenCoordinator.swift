@@ -56,6 +56,17 @@ private extension SendTokenCoordinator {
       self?.openSendConfirmation(sendModel: sendModel)
     }
     
+    module.output.didTapPicker = { [weak self] wallet, token in
+      guard let self else { return }
+      self.openTokenPicker(
+        wallet: wallet,
+        token: token,
+        sourceViewController: self.router.rootViewController,
+        completion: { token in
+        module.input.updateWithToken(token)
+      })
+    }
+
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
@@ -173,5 +184,26 @@ private extension SendTokenCoordinator {
         fromViewController.present(coordinator.router.rootViewController, animated: true)
       }
     }.value
+  }
+  
+  func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
+    let module = TokenPickerAssembly.module(
+      tokenPickerController: keeperCoreMainAssembly.tokenPickerController(
+        wallet: wallet,
+        selectedToken: token
+      )
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    module.output.didSelectToken = { token in
+      completion(token)
+    }
+    
+    module.output.didFinish = {  [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
+    
+    bottomSheetViewController.present(fromViewController: sourceViewController)
   }
 }

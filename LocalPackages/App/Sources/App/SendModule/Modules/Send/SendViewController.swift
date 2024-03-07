@@ -67,6 +67,10 @@ private extension SendViewController {
       self?.viewModel.didTapRecipientItem()
     }
     
+    customView.walletPickerView.didTapAmount = { [weak self] indexPath in
+      self?.viewModel.didTapWalletTokenPicker(index: indexPath.item)
+    }
+    
     customView.recipientPickerView.shouldHighlightItem = { indexPath in
       indexPath.item == 0
     }

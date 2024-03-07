@@ -157,6 +157,13 @@ private extension SendTokenEditCoordinator {
       self?.flowViewController.setIsNextAvailable(isEnable)
     }
     
+    module.output.didTapTokenPicker = { [weak self] wallet, token in
+      guard let self else { return }
+      self.openTokenPicker(wallet: wallet, token: token, sourceViewController: router.rootViewController, completion: { token in
+        module.input.setToken(token: token)
+      })
+    }
+    
     module.output.didFinish = { [weak self, sendModel] token, amount in
       self?.currentStep = .comment
       self?.openComment(recipient: recipient,
@@ -172,7 +179,7 @@ private extension SendTokenEditCoordinator {
   func openComment(recipient: Recipient?, sendItem: SendItem, comment: String?) {
     let module = SendCommentAssembly.module(
       sendCommentController: keeperCoreMainAssembly.sendCommentController(
-        isCommentRequired: recipient?.isKnownAccount ?? false,
+        isCommentRequired: recipient?.isMemoRequired ?? false,
         comment: comment
       )
     )
@@ -207,5 +214,26 @@ private extension SendTokenEditCoordinator {
     } else {
       didFinish?()
     }
+  }
+  
+  func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
+    let module = TokenPickerAssembly.module(
+      tokenPickerController: keeperCoreMainAssembly.tokenPickerController(
+        wallet: wallet,
+        selectedToken: token
+      )
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    module.output.didSelectToken = { token in
+      completion(token)
+    }
+    
+    module.output.didFinish = {  [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
+    
+    bottomSheetViewController.present(fromViewController: sourceViewController)
   }
 }

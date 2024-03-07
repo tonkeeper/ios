@@ -5,6 +5,7 @@ final class AmountInputViewController: GenericViewViewController<AmountInputView
   
   var didUpdateText: ((String?) -> Void)?
   var didToggle: (() -> Void)?
+  var didTapTokenPickerButton: (() -> Void)?
   
   var inputSymbol = "" {
     didSet {
@@ -74,6 +75,10 @@ private extension AmountInputViewController {
     
     customView.convertedButton.addAction(UIAction(handler: { [weak self] _ in
       self?.didToggle?()
+    }), for: .touchUpInside)
+    
+    customView.inputControl.tokenPickerButton.addAction(UIAction(handler: { [weak self] _ in
+      self?.didTapTokenPickerButton?()
     }), for: .touchUpInside)
   }
   

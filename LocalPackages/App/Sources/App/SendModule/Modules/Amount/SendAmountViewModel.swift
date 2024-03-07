@@ -5,10 +5,12 @@ import BigInt
 protocol SendAmountModuleOutput: AnyObject {
   var didUpdateIsContinueEnable: ((Bool) -> Void)? { get set }
   var didFinish: ((Token, BigUInt) -> Void)? { get set }
+  var didTapTokenPicker: ((Wallet, Token) -> Void)? { get set }
 }
 
 protocol SendAmountModuleInput: AnyObject {
   func finish()
+  func setToken(token: Token)
 }
 
 protocol SendAmountViewModel: AnyObject {
@@ -26,6 +28,7 @@ protocol SendAmountViewModel: AnyObject {
   func didEditInput(_ input: String?)
   func toggleInputMode()
   func toggleMax()
+  func didTapTokenPickerButton()
 }
 
 final class SendAmountViewModelImplementation: SendAmountViewModel, SendAmountModuleOutput, SendAmountModuleInput {
@@ -34,11 +37,16 @@ final class SendAmountViewModelImplementation: SendAmountViewModel, SendAmountMo
   
   var didUpdateIsContinueEnable: ((Bool) -> Void)?
   var didFinish: ((Token, BigUInt) -> Void)?
+  var didTapTokenPicker: ((Wallet, Token) -> Void)?
   
   // MARK: - SendAmountModuleInput
   
   func finish() {
     didFinish?(sendAmountController.getToken(), sendAmountController.getTokenAmount())
+  }
+  
+  func setToken(token: Token) {
+    sendAmountController.setToken(token)
   }
   
   // MARK: - SendAmountViewModel
@@ -119,6 +127,10 @@ final class SendAmountViewModelImplementation: SendAmountViewModel, SendAmountMo
   
   func toggleMax() {
     sendAmountController.toggleMax()
+  }
+  
+  func didTapTokenPickerButton() {
+    didTapTokenPicker?(sendAmountController.wallet, sendAmountController.token)
   }
   
   // MARK: - State
