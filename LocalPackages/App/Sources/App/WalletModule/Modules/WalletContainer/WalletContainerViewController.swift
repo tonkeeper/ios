@@ -26,6 +26,11 @@ final class WalletContainerViewController: GenericViewViewController<WalletConta
     super.viewWillAppear(animated)
     navigationController?.setNavigationBarHidden(true, animated: true)
   }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    additionalSafeAreaInsets.top = customView.topBarView.frame.height - customView.safeAreaInsets.top
+  }
 }
 
 private extension WalletContainerViewController {

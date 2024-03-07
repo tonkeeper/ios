@@ -28,8 +28,8 @@ private extension WalletContainerView {
   func setup() {
     backgroundColor = .Background.page
     
-    addSubview(topBarView)
     addSubview(walletBalanceContainerView)
+    addSubview(topBarView)
     
     setupConstraints()
   }
@@ -43,7 +43,7 @@ private extension WalletContainerView {
       topBarView.leftAnchor.constraint(equalTo: leftAnchor),
       topBarView.rightAnchor.constraint(equalTo: rightAnchor),
       
-      walletBalanceContainerView.topAnchor.constraint(equalTo: topBarView.bottomAnchor),
+      walletBalanceContainerView.topAnchor.constraint(equalTo: topAnchor),
       walletBalanceContainerView.leftAnchor.constraint(equalTo: leftAnchor),
       walletBalanceContainerView.bottomAnchor.constraint(equalTo: bottomAnchor),
       walletBalanceContainerView.rightAnchor.constraint(equalTo: rightAnchor)
