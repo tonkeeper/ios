@@ -1,7 +1,8 @@
 import UIKit
 import TKUIKit
+import TKCoordinator
 
-final class WalletContainerViewController: GenericViewViewController<WalletContainerView> {
+final class WalletContainerViewController: GenericViewViewController<WalletContainerView>, ScrollViewController {
   private let viewModel: WalletContainerViewModel
   
   private var walletBalanceViewController: UIViewController?
@@ -30,6 +31,10 @@ final class WalletContainerViewController: GenericViewViewController<WalletConta
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
     additionalSafeAreaInsets.top = customView.topBarView.frame.height - customView.safeAreaInsets.top
+  }
+  
+  func scrollToTop() {
+    (walletBalanceViewController as? ScrollViewController)?.scrollToTop()
   }
 }
 

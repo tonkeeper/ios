@@ -1,7 +1,8 @@
 import UIKit
 import TKUIKit
+import TKCoordinator
 
-final class HistoryListViewController: GenericViewViewController<HistoryListView> {
+final class HistoryListViewController: GenericViewViewController<HistoryListView>, ScrollViewController {
 
   private var collectionController: HistoryListCollectionController!
   private var headerViewController: UIViewController?
@@ -38,6 +39,15 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
     }
     headerViewController?.didMove(toParent: self)
     customView.collectionView.reloadData()
+  }
+  
+  func scrollToTop() {
+    guard scrollView.contentOffset.y > scrollView.adjustedContentInset.top else { return }
+    scrollView.setContentOffset(
+      CGPoint(x: 0,
+              y: -scrollView.adjustedContentInset.top),
+      animated: true
+    )
   }
 }
 

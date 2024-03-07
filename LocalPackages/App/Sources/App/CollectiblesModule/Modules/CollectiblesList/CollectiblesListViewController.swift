@@ -1,7 +1,8 @@
 import UIKit
 import TKUIKit
+import TKCoordinator
 
-final class CollectiblesListViewController: GenericViewViewController<CollectiblesListView> {
+final class CollectiblesListViewController: GenericViewViewController<CollectiblesListView>, ScrollViewController {
   
   private var collectionController: CollectiblesListCollectionController!
   
@@ -25,6 +26,15 @@ final class CollectiblesListViewController: GenericViewViewController<Collectibl
     
     setupBindings()
     viewModel.viewDidLoad()
+  }
+  
+  func scrollToTop() {
+    guard customView.collectionView.contentOffset.y > customView.collectionView.adjustedContentInset.top else { return }
+    customView.collectionView.setContentOffset(
+      CGPoint(x: 0,
+              y: -customView.collectionView.adjustedContentInset.top),
+      animated: true
+    )
   }
 }
 

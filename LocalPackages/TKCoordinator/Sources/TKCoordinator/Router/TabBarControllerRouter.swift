@@ -51,12 +51,12 @@ extension TabBarControllerRouter: UITabBarControllerDelegate {
   }
 }
 
-protocol ScrollViewController: UIViewController {
+public protocol ScrollViewController: UIViewController {
   func scrollToTop()
 }
 
 extension UINavigationController: ScrollViewController {
-  func scrollToTop() {
+  public func scrollToTop() {
     (topViewController as? ScrollViewController)?.scrollToTop()
   }
 }

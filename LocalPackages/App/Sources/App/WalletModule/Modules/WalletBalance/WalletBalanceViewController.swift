@@ -1,7 +1,8 @@
 import UIKit
 import TKUIKit
+import TKCoordinator
 
-final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView> {
+final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView>, ScrollViewController {
   private let viewModel: WalletBalanceViewModel
 
   var collectionController: WalletBalanceCollectionController?
@@ -29,6 +30,15 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
     
     setupBindings()
     viewModel.viewDidLoad()
+  }
+  
+  func scrollToTop() {
+    guard customView.collectionView.contentOffset.y > customView.collectionView.adjustedContentInset.top else { return }
+    customView.collectionView.setContentOffset(
+      CGPoint(x: 0,
+              y: -customView.collectionView.adjustedContentInset.top),
+      animated: true
+    )
   }
 }
 

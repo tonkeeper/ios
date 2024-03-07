@@ -1,7 +1,8 @@
 import UIKit
 import TKUIKit
+import TKCoordinator
 
-final class CollectiblesViewController: GenericViewViewController<CollectiblesView> {
+final class CollectiblesViewController: GenericViewViewController<CollectiblesView>, ScrollViewController {
   private let viewModel: CollectiblesViewModel
   
   private var listViewController: CollectiblesListViewController?
@@ -27,6 +28,10 @@ final class CollectiblesViewController: GenericViewViewController<CollectiblesVi
     super.viewDidLayoutSubviews()
     listViewController?.customView.collectionView.contentInset.top = customView.navigationBarView.additionalInset
     listViewController?.customView.collectionView.verticalScrollIndicatorInsets.top = customView.navigationBarView.additionalInset
+  }
+  
+  func scrollToTop() {
+    listViewController?.scrollToTop()
   }
 }
 
