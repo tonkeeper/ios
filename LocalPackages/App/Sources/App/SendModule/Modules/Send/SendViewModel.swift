@@ -122,7 +122,7 @@ final class SendViewModelImplementation: SendViewModel, SendModuleOutput, SendMo
     if index == 0 {
       sendController.setInputRecipientSelectedRecipient()
     } else {
-      sendController.setWalletSelectedRecipient(index: index)
+      sendController.setWalletSelectedRecipient(index: index - 1)
     }
   }
   

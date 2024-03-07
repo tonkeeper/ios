@@ -4,7 +4,7 @@ import KeeperCore
 
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: (() -> Void)? { get set }
-  var didSelectJetton: ((JettonInfo) -> Void)? { get set }
+  var didSelectJetton: ((JettonItem) -> Void)? { get set }
   
   var didTapReceive: (() -> Void)? { get set }
   var didTapSend: (() -> Void)? { get set }
@@ -35,7 +35,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   // MARK: - WalletBalanceModuleOutput
   
   var didSelectTon: (() -> Void)?
-  var didSelectJetton: ((JettonInfo) -> Void)?
+  var didSelectJetton: ((JettonItem) -> Void)?
   
   var didTapReceive: (() -> Void)?
   var didTapSend: (() -> Void)?

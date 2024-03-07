@@ -118,11 +118,60 @@ private extension SendTokenCoordinator {
     guard let recipient = sendModel.recipient else { return }
     let module = SendConfirmationAssembly.module(
       sendConfirmationController: keeperCoreMainAssembly.sendConfirmationController(
+        wallet: sendModel.wallet,
         recipient: recipient,
         sendItem: sendModel.sendItem,
         comment: sendModel.comment
       )
     )
-    router.present(module.view)
+    
+    module.output.didRequireConfirmation = { [weak self] in
+      guard let self else { return false }
+      return await self.openConfirmation(fromViewController: self.router.rootViewController)
+    }
+    
+    module.output.didSendTransaction = { [weak self] in
+      self?.router.dismiss(completion: {
+        self?.didFinish?()
+      })
+    }
+    
+    module.view.setupBackButton()
+    
+    router.push(viewController: module.view)
+  }
+  
+  func openConfirmation(fromViewController: UIViewController) async -> Bool {
+    return await Task<Bool, Never> { @MainActor in
+      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
+        guard let self = self else { return }
+        let coordinator = PasscodeModule(
+          dependencies: PasscodeModule.Dependencies(
+            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+          )
+        ).passcodeConfirmationCoordinator()
+        
+        coordinator.didCancel = { [weak self, weak coordinator] in
+          continuation.resume(returning: false)
+          coordinator?.router.dismiss(completion: {
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+          })
+        }
+        
+        coordinator.didConfirm = { [weak self, weak coordinator] in
+          continuation.resume(returning: true)
+          coordinator?.router.dismiss(completion: {
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+          })
+        }
+        
+        self.addChild(coordinator)
+        coordinator.start()
+        
+        fromViewController.present(coordinator.router.rootViewController, animated: true)
+      }
+    }.value
   }
 }

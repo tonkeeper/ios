@@ -34,10 +34,10 @@ struct HistoryModule {
   }
   
   func createJettonHistoryListModule(
-    jettonInfo: JettonInfo
+    jettonItem: JettonItem
   ) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
     HistoryListAssembly.module(
-      historyListController: dependencies.keeperCoreMainAssembly.jettonEventsHistoryListController(jettonInfo: jettonInfo),
+      historyListController: dependencies.keeperCoreMainAssembly.jettonEventsHistoryListController(jettonItem: jettonItem),
       historyEventMapper: HistoryEventMapper(
         accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()
       )

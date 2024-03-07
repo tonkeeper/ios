@@ -134,13 +134,13 @@ private extension WalletCoordinator {
     router.push(viewController: module.view)
   }
   
-  func openJettonDetails(jettonInfo: JettonInfo) {
+  func openJettonDetails(jettonItem: JettonItem) {
     let historyListModule = HistoryModule(
       dependencies: HistoryModule.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
-    ).createJettonHistoryListModule(jettonInfo: jettonInfo)
+    ).createJettonHistoryListModule(jettonItem: jettonItem)
     
     historyListModule.output.didSelectEvent = { [weak self] event in
       self?.openHistoryEventDetails(event: event)
@@ -148,7 +148,7 @@ private extension WalletCoordinator {
     
     let module = TokenDetailsAssembly.module(
       tokenDetailsListContentViewController: historyListModule.view,
-      tokenDetailsController: keeperCoreMainAssembly.jettonTokenDetailsController(jettonInfo: jettonInfo),
+      tokenDetailsController: keeperCoreMainAssembly.jettonTokenDetailsController(jettonItem: jettonItem),
       chartViewControllerProvider: nil,
       hasAbout: false
     )
@@ -279,8 +279,8 @@ extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
       self?.openTonDetails()
     }
     
-    module.output.didSelectJetton = { [weak self] jettonInfo in
-      self?.openJettonDetails(jettonInfo: jettonInfo)
+    module.output.didSelectJetton = { [weak self] jettonItem in
+      self?.openJettonDetails(jettonItem: jettonItem)
     }
     
     module.output.didTapSend = { [weak self] in

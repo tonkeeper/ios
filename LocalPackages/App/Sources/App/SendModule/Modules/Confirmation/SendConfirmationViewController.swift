@@ -4,6 +4,8 @@ import TKUIKit
 final class SendConfirmationViewController: GenericViewViewController<SendConfirmationView> {
   private let viewModel: SendConfirmationViewModel
   
+  private let modalCardViewController = TKModalCardViewController()
+  
   init(viewModel: SendConfirmationViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
@@ -40,11 +42,15 @@ final class SendConfirmationViewController: GenericViewViewController<SendConfir
 
 private extension SendConfirmationViewController {
   func setup() {
-  
+    addChild(modalCardViewController)
+    customView.embedContent(modalCardViewController.view)
+    modalCardViewController.didMove(toParent: self)
   }
   
   func setupBindings() {
-   
+    viewModel.didUpdateConfiguration = { [weak modalCardViewController] configuration in
+      modalCardViewController?.configuration = configuration
+    }
   }
   
   func setupViewEventsBinding() {
