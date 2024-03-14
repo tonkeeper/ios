@@ -51,8 +51,10 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
   }
   
   func setWalletName(_ name: String) {
-    walletName = name
-    didUpdateContinueButtonIsEnabled?(!name.isEmpty)
+    let isNameValid = !name.isEmpty
+    walletName = isNameValid ? name : .defaultWalletName
+    didUpdateContinueButtonIsEnabled?(isNameValid)
+    configurator.didEditName()
   }
   
   // MARK: - Data Source
@@ -68,9 +70,16 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
   // MARK: - Dependencies
   
   private let wallet: Wallet?
+  private let configurator: CustomizeWalletViewModelConfigurator
   
-  init(wallet: Wallet? = nil) {
+  init(wallet: Wallet? = nil,
+       configurator: CustomizeWalletViewModelConfigurator) {
     self.wallet = wallet
+    self.configurator = configurator
+    
+    configurator.didCustomizeWallet = { [weak self] in
+      self?.didFinishCustomization()
+    }
   }
 }
 
@@ -86,7 +95,16 @@ private extension CustomizeWalletViewModelImplementation {
     let colorPickerModel = createColorPickerModel()
     let emojiPicketModel = WalletEmojiPickerView.Model(items: emojiPickerItems)
     
-    let continueButtonModel = TKUIActionButton.Model(title: "Continue")
+    let continueButton: CustomizeWalletView.Model.ContinueButton?
+    switch configurator.continueButtonMode {
+    case .hidden:
+      continueButton = nil
+    case .visible(let title, let action):
+      continueButton = CustomizeWalletView.Model.ContinueButton(
+        model: TKUIActionButton.Model(title: title),
+        action: action
+      )
+    }
     
     return CustomizeWalletView.Model(
       titleDescriptionModel: titleDescriptionModel,
@@ -94,9 +112,8 @@ private extension CustomizeWalletViewModelImplementation {
       walletNameDefaultValue: walletName,
       colorPickerModel: colorPickerModel,
       emojiPicketModel: emojiPicketModel,
-      continueButtonModel: continueButtonModel) { [weak self] in
-        self?.didFinishCustomization()
-      }
+      continueButtonModel: continueButton
+      )
   }
   
   func createColorPickerModel() -> WalletColorPickerView.Model {
@@ -106,6 +123,7 @@ private extension CustomizeWalletViewModelImplementation {
         let selectHandler: () -> Void = { [weak self] in
           self?.didSelectColor?(.Tint.color(with: identifier))
           self?.selectedColorIdentifier = identifier
+          self?.configurator.didSelectColor()
         }
         return WalletColorPickerView.Model.ColorItem(
           identifier: identifier, 
@@ -128,6 +146,7 @@ private extension CustomizeWalletViewModelImplementation {
         selectHandler: { [weak self] in
           self?.selectedEmoji = emoji.emoji
           self?.didSelectEmoji?(emoji)
+          self?.configurator.didSelectColor()
         }
       )
     }

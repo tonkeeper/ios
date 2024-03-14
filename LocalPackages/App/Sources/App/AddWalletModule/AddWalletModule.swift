@@ -4,13 +4,13 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
-public struct AddWalletModule {
+struct AddWalletModule {
   private let dependencies: Dependencies
-  public init(dependencies: Dependencies) {
+  init(dependencies: Dependencies) {
     self.dependencies = dependencies
   }
   
-  public func createAddWalletCoordinator(router: ViewControllerRouter) -> AddWalletCoordinator {
+  func createAddWalletCoordinator(router: ViewControllerRouter) -> AddWalletCoordinator {
     let coordinator = AddWalletCoordinator(
       router: router,
       walletAddController: dependencies.walletsUpdateAssembly.walletAddController(),
@@ -24,18 +24,24 @@ public struct AddWalletModule {
     return coordinator
   }
   
-  public func createImportWalletCoordinator(router: NavigationControllerRouter) -> ImportWalletCoordinator {
+  func createImportWalletCoordinator(router: NavigationControllerRouter) -> ImportWalletCoordinator {
     let coordinator = ImportWalletCoordinator(
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
-      customizeWalletModule: { self.createCustomizeWalletModule() }
+      customizeWalletModule: {
+        self.createCustomizeWalletModule(configurator: AddWalletCustomizeWalletViewModelConfigurator())
+      }
     )
     
     return coordinator
   }
   
-  public func createCustomizeWalletModule(wallet: Wallet? = nil) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
-    return CustomizeWalletAssembly.module(wallet: wallet)
+  func createCustomizeWalletModule(wallet: Wallet? = nil,
+                                          configurator: CustomizeWalletViewModelConfigurator) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
+    return CustomizeWalletAssembly.module(
+      wallet: wallet,
+      configurator: configurator
+    )
   }
   
   public func createRecoveryPhraseCoordinator(router: NavigationControllerRouter) -> RecoveryPhraseCoordinator {
@@ -54,7 +60,9 @@ private extension AddWalletModule {
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
       customizeWalletModule: {
-        self.createCustomizeWalletModule()
+        self.createCustomizeWalletModule(
+          configurator: AddWalletCustomizeWalletViewModelConfigurator()
+        )
       }
     )
     
@@ -62,7 +70,7 @@ private extension AddWalletModule {
   }
 }
 
-public extension AddWalletModule {
+extension AddWalletModule {
   struct Dependencies {
     let walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly
     

@@ -61,11 +61,13 @@ private extension SettingsCoordinator {
       )
     )
     
-    let module = addWalletModuleModule.createCustomizeWalletModule(wallet: wallet)
+    let module = addWalletModuleModule.createCustomizeWalletModule(
+      wallet: wallet,
+      configurator: EditWalletCustomizeWalletViewModelConfigurator()
+    )
     
     module.output.didCustomizeWallet = { [weak self] model in
       self?.updateWallet(wallet: wallet, model: model)
-      module.view.dismiss(animated: true)
     }
     
     let navigationController = TKNavigationController(rootViewController: module.view)

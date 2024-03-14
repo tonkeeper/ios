@@ -65,7 +65,7 @@ private extension OnboardingImportCoordinator {
   }
   
   func openCustomizeWallet(phrase: [String], revisions: [WalletContractVersion], passcode: String) {
-    let module = addWalletModule.createCustomizeWalletModule()
+    let module = addWalletModule.createCustomizeWalletModule(configurator: AddWalletCustomizeWalletViewModelConfigurator())
     
     module.output.didCustomizeWallet = { [weak self] model in
       self?.importWallet(phrase: phrase, revisions: revisions, passcode: passcode, model: model)

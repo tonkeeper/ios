@@ -58,13 +58,16 @@ final class CustomizeWalletView: UIView, ConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   struct Model {
-    public let titleDescriptionModel: TKTitleDescriptionView.Model
-    public let walletNameTextFieldPlaceholder: String
-    public let walletNameDefaultValue: String
-    public let colorPickerModel: WalletColorPickerView.Model
-    public let emojiPicketModel: WalletEmojiPickerView.Model
-    public let continueButtonModel: TKUIActionButton.Model
-    public let continueButtonAction: () -> Void
+    struct ContinueButton {
+      let model: TKUIActionButton.Model
+      let action: () -> Void
+    }
+    let titleDescriptionModel: TKTitleDescriptionView.Model
+    let walletNameTextFieldPlaceholder: String
+    let walletNameDefaultValue: String
+    let colorPickerModel: WalletColorPickerView.Model
+    let emojiPicketModel: WalletEmojiPickerView.Model
+    let continueButtonModel: ContinueButton?
   }
   
   func configure(model: Model) {
@@ -73,8 +76,13 @@ final class CustomizeWalletView: UIView, ConfigurableView {
     walletNameTextField.text = model.walletNameDefaultValue
     colorPickerView.configure(model: model.colorPickerModel)
     emojiPickerView.configure(model: model.emojiPicketModel)
-    continueButton.configure(model: model.continueButtonModel)
-    continueButton.addTapAction(model.continueButtonAction)
+    if let continueButtonModel = model.continueButtonModel {
+      continueButton.configure(model: continueButtonModel.model)
+      continueButton.addTapAction(continueButtonModel.action)
+      continueButton.isHidden = false
+    } else {
+      continueButton.isHidden = true
+    }
   }
 }
 
