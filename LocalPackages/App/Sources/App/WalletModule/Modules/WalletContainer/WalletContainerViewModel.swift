@@ -73,14 +73,14 @@ private extension WalletContainerViewModelImplementation {
     didUpdateModel?(createModel(walletModel: model))
   }
   
-  func createModel(walletModel: WalletMainController.WalletModel) -> WalletContainerView.Model {
+  func createModel(walletModel: WalletModel) -> WalletContainerView.Model {
     let walletButtonModel = WalletContainerWalletButton.Model(
-      title: walletModel.name,
+      title: walletModel.emojiLabel,
       icon: .init(icon: .TKUIKit.Icons.Size16.chevronDown, position: .right)
     )
     
     let walletButtonAppearance = WalletContainerWalletButton.Appearance(
-      backgroundColor: .Tint.color(with: walletModel.colorIdentifier),
+      backgroundColor: walletModel.tintColor.uiColor,
       foregroundColor: .Icon.primary
     )
     

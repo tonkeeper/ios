@@ -103,8 +103,8 @@ private extension SettingsRootListItemsProvider {
     let walletModel = settingsController.activeWalletModel()
     let cellContentModel = WalletsListWalletCellContentView.Model(
       emoji: walletModel.emoji,
-      backgroundColor: .Tint.color(with: walletModel.colorIdentifier),
-      walletName: walletModel.title,
+      backgroundColor: walletModel.tintColor.uiColor,
+      walletName: walletModel.label,
       balance: "Edit name and color"
     )
     

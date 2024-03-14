@@ -38,8 +38,7 @@ final class WalletColorPickerViewCell: UICollectionViewCell, ConfigurableView {
   }
 
   func configure(model: WalletColorPickerView.Model.ColorItem) {
-    let color: UIColor = .Tint.color(with: model.identifier)
-    colorView.color = color
+    colorView.color = model.color
   }
 }
 

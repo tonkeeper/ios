@@ -230,10 +230,11 @@ private extension SendViewModelImplementation {
       return SendPickerCell.Model(
         id: model.id,
         informationModel: SendPickerCell.InformationView.Model(
-          topText: "From:".withTextStyle(.body1, color: .Text.secondary, alignment: .left),
+          topText: "From:".withTextStyle(.body1, color: .Text.primary.withAlphaComponent(.secondaryTextOpacity), alignment: .left),
           bottomText: model.name.withTextStyle(.body1, color: .Text.primary, alignment: .left)
         ),
-        rightView: rightView
+        rightView: rightView,
+        backgroundColor: model.tintColor.uiColor.withAlphaComponent(.walletBackgroundColorOpacity)
       )
     }
   }
@@ -255,10 +256,11 @@ private extension SendViewModelImplementation {
       return SendPickerCell.Model(
         id: model.id,
         informationModel: SendPickerCell.InformationView.Model(
-          topText: "To:".withTextStyle(.body1, color: .Text.secondary, alignment: .left),
+          topText: "To your wallet:".withTextStyle(.body1, color: .Text.primary.withAlphaComponent(.secondaryTextOpacity), alignment: .left),
           bottomText: model.name.withTextStyle(.body1, color: .Text.primary, alignment: .left)
         ),
-        rightView: rightView
+        rightView: rightView,
+        backgroundColor: model.tintColor.uiColor.withAlphaComponent(.walletBackgroundColorOpacity)
       )
     }
   }
@@ -294,7 +296,8 @@ private extension SendViewModelImplementation {
           lineBreakMode: .byTruncatingMiddle
         )
       ),
-      rightView: rightView
+      rightView: rightView,
+      backgroundColor: .Background.content
     )
   }
   
@@ -323,4 +326,9 @@ private extension SendViewModelImplementation {
       return .nft(nftModel: nftModel)
     }
   }
+}
+
+private extension CGFloat {
+  static let secondaryTextOpacity: CGFloat = 0.64
+  static let walletBackgroundColorOpacity: CGFloat = 0.88
 }

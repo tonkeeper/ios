@@ -27,6 +27,7 @@ final class SendPickerCell: UICollectionViewCell, ReusableView, ConfigurableView
     let id: String
     let informationModel: InformationView.Model
     let rightView: RightView.Model
+    let backgroundColor: UIColor
     
     func hash(into hasher: inout Hasher) {
       hasher.combine(id)
@@ -40,6 +41,7 @@ final class SendPickerCell: UICollectionViewCell, ReusableView, ConfigurableView
   func configure(model: Model) {
     informationView.configure(model: model.informationModel)
     rightView.configure(model: model.rightView)
+    backgroundColor = model.backgroundColor
   }
   
   private func setup() {

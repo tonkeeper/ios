@@ -74,7 +74,7 @@ private extension TonConnectConnectViewController {
       view.contentView.configure(
         model: TonConnectConnectWalletButtonContentView.Model(
           emoji: walletModel.emoji,
-          backgroundColor: .Tint.color(with: walletModel.colorIdentifier),
+          backgroundColor: walletModel.tintColor.uiColor,
           walletName: walletModel.name,
           address: walletModel.address
         )

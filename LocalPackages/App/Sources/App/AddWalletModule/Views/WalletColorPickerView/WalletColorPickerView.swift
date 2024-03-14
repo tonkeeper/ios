@@ -7,7 +7,7 @@ final class WalletColorPickerView: UIView, ConfigurableView {
     return collectionView
   }()
   
-  var model = Model(items: [], initialSelectedIdentifier: nil)
+  var model = Model(items: [], intitialSelectedIndex: nil)
   
   private let cellConfig = UICollectionView.CellRegistration<WalletColorPickerViewCell, Model.ColorItem> { cell, indexPath, itemIdentifier in
     cell.configure(model: itemIdentifier)
@@ -28,20 +28,19 @@ final class WalletColorPickerView: UIView, ConfigurableView {
   
   struct Model {
     struct ColorItem {
-      let identifier: String
+      let color: UIColor
       let selectHandler: (() -> Void)?
     }
     let items: [ColorItem]
-    let initialSelectedIdentifier: String?
+    let intitialSelectedIndex: Int?
   }
   
   func configure(model: Model) {
     self.model = model
     collectionView.reloadData()
-    if let initialSelectedIdentifier = model.initialSelectedIdentifier,
-       let selectedIndex = model.items.firstIndex(where: { $0.identifier == initialSelectedIdentifier }) {
+    if let intitialSelectedIndex = model.intitialSelectedIndex {
       collectionView.selectItem(
-        at: IndexPath(item: selectedIndex, section: 0),
+        at: IndexPath(item: intitialSelectedIndex, section: 0),
         animated: false,
         scrollPosition: .centeredHorizontally)
     }

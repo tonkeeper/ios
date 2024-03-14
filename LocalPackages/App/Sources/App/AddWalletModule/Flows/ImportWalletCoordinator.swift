@@ -74,7 +74,7 @@ private extension ImportWalletCoordinator {
     let addController = walletsUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
       label: model.name,
-      colorIdentifier: model.colorIdentifier,
+      tintColor: model.tintColor,
       emoji: model.emoji)
     do {
       try addController.importWallets(

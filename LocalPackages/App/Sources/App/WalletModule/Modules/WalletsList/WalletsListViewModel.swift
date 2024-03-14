@@ -116,24 +116,24 @@ private extension WalletsListViewModelImplementation {
       .enumerated()
       .map {
         index,
-        walletModel in
+        model in
         
         let contentModel = WalletsListWalletCellContentView.Model(
-          emoji: walletModel.emoji,
-          backgroundColor: .Tint.color(with: walletModel.colorIdentifier),
-          walletName: walletModel.name,
-          balance: walletModel.balance
+          emoji: model.walletModel.emoji,
+          backgroundColor: model.walletModel.tintColor.uiColor,
+          walletName: model.walletModel.label,
+          balance: model.balance
         )
         
         return WalletsListWalletCell.Model(
-          identifier: walletModel.identifier,
+          identifier: model.walletModel.identifier,
           isHighlightable: isHighlightable,
           isSelectable: isSelectable,
           selectionHandler: { [weak self] in
             guard isSelectable else { return }
             UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
             self?.didSelectWallet?()
-            self?.walletListController.setWalletActive(with: walletModel.identifier)
+            self?.walletListController.setWalletActive(with: model.walletModel.identifier)
           },
           cellContentModel: contentModel
         )

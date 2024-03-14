@@ -84,7 +84,7 @@ private extension OnboardingImportCoordinator {
     let addController = assembly.walletsUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
       label: model.name,
-      colorIdentifier: model.colorIdentifier,
+      tintColor: model.tintColor,
       emoji: model.emoji)
     do {
       try createPasscodeController.createPasscode(passcode)

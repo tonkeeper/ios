@@ -83,7 +83,7 @@ private extension SettingsCoordinator {
     let controller = keeperCoreMainAssembly.walletUpdateAssembly.walletUpdateController()
     let metaData = WalletMetaData(
       label: model.name,
-      colorIdentifier: model.colorIdentifier,
+      tintColor: model.tintColor,
       emoji: model.emoji)
     do {
       try controller.updateWallet(wallet: wallet, metaData: metaData)

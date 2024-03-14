@@ -5,7 +5,7 @@ import KeeperCore
 
 public struct CustomizeWalletModel {
   public let name: String
-  public let colorIdentifier: String
+  public let tintColor: WalletTintColor
   public let emoji: String
 }
 
@@ -45,7 +45,7 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
       await MainActor.run {
         didSelectEmoji?(items.first(where: { $0.emoji.emoji == selectedEmoji })?.emoji ?? items[0].emoji)
         didUpdateModel?(createModel(emojiPickerItems: items))
-        didSelectColor?(.Tint.color(with: selectedColorIdentifier))
+        didSelectColor?(selectedTintColor.uiColor)
       }
     }
   }
@@ -64,7 +64,7 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
   // MARK: - State
   
   private lazy var walletName: String = wallet?.metaData.label ?? .defaultWalletName
-  private lazy var selectedColorIdentifier: String = wallet?.metaData.colorIdentifier ?? .defaultColorIdentifier
+  private lazy var selectedTintColor: WalletTintColor = wallet?.metaData.tintColor ?? .defaultColor
   private lazy var selectedEmoji: String = wallet?.metaData.emoji ?? .defaultEmoji
   
   // MARK: - Dependencies
@@ -117,23 +117,23 @@ private extension CustomizeWalletViewModelImplementation {
   }
   
   func createColorPickerModel() -> WalletColorPickerView.Model {
-    let items = (1...Int.colorsCount)
-      .map {
-        let identifier = "Color\($0)"
-        let selectHandler: () -> Void = { [weak self] in
-          self?.didSelectColor?(.Tint.color(with: identifier))
-          self?.selectedColorIdentifier = identifier
+    var colorItems = [WalletColorPickerView.Model.ColorItem]()
+    var initialSelectedIndex: Int?
+    for (index, color) in WalletTintColor.allCases.enumerated() {
+      let colorItem = WalletColorPickerView.Model.ColorItem(
+        color: color.uiColor) { [weak self] in
+          self?.didSelectColor?(color.uiColor)
+          self?.selectedTintColor = color
           self?.configurator.didSelectColor()
         }
-        return WalletColorPickerView.Model.ColorItem(
-          identifier: identifier, 
-          selectHandler: selectHandler
-        )
+      colorItems.append(colorItem)
+      if selectedTintColor == color {
+        initialSelectedIndex = index
       }
-    
+    }
     return WalletColorPickerView.Model(
-      items: items,
-      initialSelectedIdentifier: selectedColorIdentifier
+      items: colorItems,
+      intitialSelectedIndex: initialSelectedIndex
     )
   }
   
@@ -156,7 +156,7 @@ private extension CustomizeWalletViewModelImplementation {
   func didFinishCustomization() {
     let model = CustomizeWalletModel(
       name: walletName,
-      colorIdentifier: selectedColorIdentifier,
+      tintColor: selectedTintColor,
       emoji: selectedEmoji
     )
     didCustomizeWallet?(model)
@@ -169,6 +169,5 @@ private extension Int {
 
 private extension String {
   static let defaultWalletName = "Wallet"
-  static let defaultColorIdentifier = "Color1"
   static let defaultEmoji = "😀"
 }
