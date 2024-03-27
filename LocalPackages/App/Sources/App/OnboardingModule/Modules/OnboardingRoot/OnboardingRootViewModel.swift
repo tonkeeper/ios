@@ -36,24 +36,22 @@ private extension OnboardingRootViewModelImplementation {
       bottomDescription: "Create a new wallet or add an existing one"
     )
     
-    let createButtonModel = TKActionButton.Model(
-      title: "Create New Wallet"
-    )
+    var createButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
+    createButtonConfiguration.content.title = .plainString("Create New Wallet")
+    createButtonConfiguration.action = { [weak self] in
+      self?.didTapCreateButton?()
+    }
     
-    let importButtonModel = TKActionButton.Model(
-      title: "Import Existing Wallet"
-    )
-    
+    var importButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    importButtonConfiguration.content.title = .plainString("Import Existing Wallet")
+    importButtonConfiguration.action = { [weak self] in
+      self?.didTapImportButton?()
+    }
+      
     return OnboardingRootView.Model(
       titleDescriptionModel: titleDescriptionModel,
-      createButtonModel: createButtonModel,
-      importButtonModel: importButtonModel,
-      createButtonAction: { [weak self] in
-        self?.didTapCreateButton?()
-      },
-      importButtonAction: { [weak self] in
-        self?.didTapImportButton?()
-      }
+      createButtonConfiguration: createButtonConfiguration,
+      importButtonConfiguration: importButtonConfiguration
     )
   }
 }

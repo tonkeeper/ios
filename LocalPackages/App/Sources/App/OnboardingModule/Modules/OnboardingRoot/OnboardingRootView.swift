@@ -16,9 +16,9 @@ final class OnboardingRootView: UIView, ConfigurableView {
     view.spacing = TKPaddingContainerView.buttonsContainerSpacing
     return view
   }()
-  
-  let createButton = TKActionButton(category: .primary, size: .large)
-  let importButton = TKActionButton(category: .secondary, size: .large)
+
+  let createButton = TKButton()
+  let importButton = TKButton()
   let coverImageView: UIImageView = {
     let imageView = UIImageView()
     imageView.image = .Onboarding.cover
@@ -37,22 +37,14 @@ final class OnboardingRootView: UIView, ConfigurableView {
   
   struct Model {
     let titleDescriptionModel: TKTitleDescriptionView.Model
-    let createButtonModel: TKActionButton.Model
-    let importButtonModel: TKActionButton.Model
-    let createButtonAction: (() -> Void)?
-    let importButtonAction: (() -> Void)?
+    let createButtonConfiguration: TKButton.Configuration
+    let importButtonConfiguration: TKButton.Configuration
   }
   
   func configure(model: Model) {
     titleDescriptionView.configure(model: model.titleDescriptionModel)
-    createButton.configure(model: model.createButtonModel)
-    createButton.setTapAction {
-      model.createButtonAction?()
-    }
-    importButton.configure(model: model.importButtonModel)
-    importButton.setTapAction {
-      model.importButtonAction?()
-    }
+    createButton.configuration = model.createButtonConfiguration
+    importButton.configuration = model.importButtonConfiguration
   }
 }
 

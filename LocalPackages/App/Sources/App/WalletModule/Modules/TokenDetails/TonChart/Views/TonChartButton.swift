@@ -3,17 +3,17 @@ import TKUIKit
 
 final class TonChartButton: TKButton {
   
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    backgroundColors = [.selected: TKUIActionButtonCategory.secondary.backgroundColor,
-                        .normal: .clear]
-    foregroundColors = [
-      .normal: .Button.primaryForeground,
-      .highlighted: .Button.primaryForeground.withAlphaComponent(0.48)
-    ]
-    textStyle = TKUIActionButtonSize.small.textStyle
-    cornerRadius = TKUIActionButtonSize.small.cornerRadius
-    contentPadding = TKUIActionButtonSize.small.padding
+  init() {
+    var configuration = TKButton.Configuration.actionButtonConfiguration(
+      category: .secondary,
+      size: .small
+    )
+    configuration.backgroundColors = [.normal: .clear,
+                                      .selected: TKActionButtonCategory.secondary.backgroundColor]
+    configuration.textColor = .Button.primaryForeground
+    configuration.contentAlpha = [.normal: 1,
+                                  .highlighted: 0.48]
+    super.init(configuration: configuration)
   }
   
   required init?(coder: NSCoder) {

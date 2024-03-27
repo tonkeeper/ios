@@ -7,7 +7,7 @@ final class SendAmountView: UIView {
   let container = UIView()
   let amountInputContainer = UIView()
   let remainingLabel = UILabel()
-  let maxButton = TKHeaderButton()
+  let maxButton = TKButton()
   let bottomStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.alignment = .center
@@ -35,7 +35,7 @@ private extension SendAmountView {
   func setup() {
     backgroundColor = .Background.page
     
-    maxButton.backgroundColors[.selected] = .Button.primaryBackground
+    maxButton.setContentHuggingPriority(.required, for: .horizontal)
     
     addSubview(container)
     container.addSubview(amountInputContainer)

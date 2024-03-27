@@ -45,8 +45,14 @@ final class SendEditFlowViewController: UIViewController, KeyboardObserving {
     }
     buttonsViewViewBottomConstraint?.deactivate()
     
-    buttonsView.backButton.configure(model: TKButton.Model(title: "Back"))
-    buttonsView.nextButton.configure(model: TKButton.Model(title: "Next"))
+    var backButtonConfiguration = buttonsView.backButton.configuration
+    backButtonConfiguration.content.title = .plainString("Back")
+    
+    var nextButtonConfiguration = buttonsView.nextButton.configuration
+    nextButtonConfiguration.content.title = .plainString("Next")
+    
+    buttonsView.backButton.configuration = backButtonConfiguration
+    buttonsView.nextButton.configuration = nextButtonConfiguration
   }
   
   override func viewWillAppear(_ animated: Bool) {

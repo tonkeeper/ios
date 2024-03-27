@@ -5,9 +5,9 @@ import SnapKit
 final class SendCommentView: UIView {
   
   let scrollView = TKUIScrollView()
-  let commentTextField = TKTextView()
+  let commentTextField = TKTextField(textFieldInputView: TKTextFieldInputView(textInputControl: TKTextInputTextViewControl()))
   let descriptionLabel = UILabel()
-  let pasteButton = TKHeaderButton(category: .tertiary)
+  let pasteButton = TKButton()
   
   private let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -36,9 +36,8 @@ private extension SendCommentView {
   func setup() {
     backgroundColor = .Background.page
     
-    pasteButton.configure(model: TKButton.Model(title: "Paste"))
-    commentTextField.rightItemsViews = [pasteButton]
-    
+    commentTextField.rightItems = [TKTextField.RightItem(view: pasteButton, mode: .empty)]
+
     descriptionLabel.numberOfLines = 0
     
     addSubview(scrollView)

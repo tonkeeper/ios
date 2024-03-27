@@ -22,7 +22,7 @@ final class SettingsTextCell: UICollectionViewCell {
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
     let width = size.width - padding.left - padding.right
-    let textSize = textLabel.tkSizeThatFits(CGSize(width: width, height: 0))
+    let textSize = textLabel.tkSizeThatFits(width)
     return CGSize(
       width: size.width,
       height: textSize.height + padding.top + padding.bottom

@@ -35,7 +35,7 @@ extension HistoryEventActionView {
       super.layoutSubviews()
       
       let textAvailableWidth = bounds.width - .textHorizontalSpacing * 2
-      let textSize = textLabel.tkSizeThatFits(.init(width: textAvailableWidth, height: 0))
+      let textSize = textLabel.tkSizeThatFits(textAvailableWidth)
       
       textBackground.frame = .init(x: 0,
                                    y: .topSpace,
@@ -51,7 +51,7 @@ extension HistoryEventActionView {
     override func sizeThatFits(_ size: CGSize) -> CGSize {
       guard let text = textLabel.text, !text.isEmpty else { return .zero }
       let textWidth = size.width - .textHorizontalSpacing * 2
-      let textSize = textLabel.tkSizeThatFits(.init(width: textWidth, height: 0))
+      let textSize = textLabel.tkSizeThatFits(textWidth)
       return .init(width: textSize.width + .textHorizontalSpacing * 2,
                    height: textSize.height + .textTopSpacing + .textBottomSpacing + .topSpace)
     }

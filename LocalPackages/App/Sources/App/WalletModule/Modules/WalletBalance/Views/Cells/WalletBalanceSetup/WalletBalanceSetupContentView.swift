@@ -24,7 +24,7 @@ final class WalletBalanceSetupContentView: UIView, ConfigurableView, ReusableVie
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
-    titleLabel.tkSizeThatFits(size)
+    titleLabel.tkSizeThatFits(size.width)
   }
   
   struct Model {

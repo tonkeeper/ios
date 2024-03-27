@@ -60,10 +60,6 @@ extension TonChartViewController: TonChartViewInput {
 
 private extension TonChartViewController {
   func setup() {
-    customView.buttonsView.didTapButton = { [weak self] index in
-      self?.presenter.didSelectButton(at: index)
-    }
-    
     customView.chartView.delegate = self
   }
 }

@@ -2,16 +2,13 @@ import UIKit
 import TKUIKit
 
 final class TonChartButtonsView: UIView, ConfigurableView {
-  
-  var didTapButton: ((_ index: Int) -> Void)?
-  
   private let stackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .horizontal
     stackView.distribution = .fillEqually
     return stackView
   }()
-  private var buttons = [TonChartButton]()
+  private var buttons = [TKButton]()
   
   // MARK: - Init
   
@@ -27,22 +24,16 @@ final class TonChartButtonsView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   struct Model {
-    struct Button {
-      let model: TonChartButton.Model
-      let action: () -> Void
-    }
-    let buttons: [Button]
+    let buttons: [TKButton.Configuration]
   }
   
   func configure(model: Model) {
     buttons.forEach { $0.removeFromSuperview() }
     buttons = []
-    model.buttons.forEach { buttonModel in
-      let button = TonChartButton()
-      button.configure(model: buttonModel.model)
-      button.setTapAction(buttonModel.action)
-      buttons.append(button)
+    model.buttons.forEach { configuration in
+      let button = TKButton(configuration: configuration)
       stackView.addArrangedSubview(button)
+      buttons.append(button)
     }
   }
   

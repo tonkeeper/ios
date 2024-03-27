@@ -4,8 +4,8 @@ import TKUIKit
 final class WalletContainerTopBarView: UIView, ConfigurableView {
   
   private let contentContainerView = UIView()
-  private let walletButton = WalletContainerWalletButton()
-  private let settingsButton = TKUIHeaderAccentIconButton()
+  private let walletButton = TKButton()
+  private let settingsButton = TKButton()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -17,28 +17,18 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
   }
   
   struct Model {
-    let walletButtonModel: WalletContainerWalletButton.Model
-    let walletButtonAppearance: WalletContainerWalletButton.Appearance
-    let walletButtonAction: () -> Void
-    let settingsButtonModel: TKUIHeaderAccentIconButton.Model
-    let settingsButtonAction: () -> Void
+    let walletButtonConfiguration: TKButton.Configuration
+    let settingButtonConfiguration: TKButton.Configuration
   }
   
   func configure(model: Model) {
-    walletButton.configure(model: model.walletButtonModel)
-    walletButton.appearance = model.walletButtonAppearance
-    settingsButton.configure(model: model.settingsButtonModel)
-    
-    walletButton.addTapAction(model.walletButtonAction)
-    settingsButton.addTapAction(model.settingsButtonAction)
+    walletButton.configuration = model.walletButtonConfiguration
+    settingsButton.configuration = model.settingButtonConfiguration
   }
 }
 
 private extension WalletContainerTopBarView {
   func setup() {
-    settingsButton.foregroundColor = .Icon.secondary
-    settingsButton.padding = UIEdgeInsets(top: 10, left: 10, bottom: 10, right: 10)
-
     backgroundColor = .Background.page
     
     addSubview(contentContainerView)

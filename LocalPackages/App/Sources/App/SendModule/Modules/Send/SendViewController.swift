@@ -27,6 +27,16 @@ final class SendViewController: GenericViewViewController<SendView> {
 private extension SendViewController {
   func setup() {
     customView.commentView.placeholder = "Comment"
+    
+    var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
+      category: .primary,
+      size: .large
+    )
+    continueButtonConfiguration.content.title = .plainString("Continue")
+    continueButtonConfiguration.action = { [weak viewModel] in
+      viewModel?.didTapContinueButton()
+    }
+    customView.continueButton.configuration = continueButtonConfiguration
   }
   
   func setupBindings() {
@@ -81,10 +91,6 @@ private extension SendViewController {
     
     customView.didTapComment = { [weak self] in
       self?.viewModel.didTapCommentButton()
-    }
-    
-    customView.continueButton.setTapAction { [weak self] in
-      self?.viewModel.didTapContinueButton()
     }
   }
 }

@@ -42,25 +42,31 @@ struct NoCameraPermissionView_Previews: PreviewProvider {
 
 struct TKButtonView: UIViewRepresentable {
   
-  var category: TKUIActionButtonCategory
-  var size: TKUIActionButtonSize
+  var category: TKActionButtonCategory
+  var size: TKActionButtonSize
   var title: String?
   var action: (() -> Void)
   
-  func makeUIView(context: Context) -> TKActionButton {
-    let button = TKActionButton(
+  func makeUIView(context: Context) -> TKButton {
+    var configuration = TKButton.Configuration.actionButtonConfiguration(
       category: category,
       size: size
     )
-    button.configure(model: TKButton.Model(title: title))
-    button.setTapAction(action)
+    configuration.content.title = .plainString(title ?? "")
+    configuration.action = action
+    let button = TKButton(
+      configuration: configuration
+    )
     return button
   }
   
-  func updateUIView(_ uiView: TKActionButton, context: Context) {
-    uiView.category = category
-    uiView.size = size
-    uiView.configure(model: TKButton.Model(title: title))
-    uiView.setTapAction(action)
+  func updateUIView(_ uiView: TKButton, context: Context) {
+    var configuration = TKButton.Configuration.actionButtonConfiguration(
+      category: category,
+      size: size
+    )
+    configuration.content.title = .plainString(title ?? "")
+    configuration.action = action
+    uiView.configuration = configuration
   }
 }

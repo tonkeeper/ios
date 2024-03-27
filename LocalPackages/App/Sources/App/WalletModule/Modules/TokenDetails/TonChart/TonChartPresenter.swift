@@ -1,5 +1,5 @@
 import UIKit
-import TKUIKitLegacy
+import TKUIKit
 import TKChart
 import KeeperCore
 
@@ -64,19 +64,17 @@ extension TonChartPresenter: TonChartModuleInput {
 
 private extension TonChartPresenter {
   func setupButtons() {
-    let buttons: [TonChartButtonsView.Model.Button] = KeeperCore.Period
-      .allCases
-      .enumerated()
-      .map { index, period in
-        TonChartButtonsView.Model.Button(
-          model: TonChartButton.Model(
-            title: period.title
-          )) { [weak self] in
-            self?.viewInput?.selectButton(at: index)
-            self?.selectedPeriod = KeeperCore.Period.allCases[index]
-            self?.reloadChartDataAndHeader()
-          }
+    let buttons: [TKButton.Configuration] = KeeperCore.Period.allCases.enumerated().map { index, period in
+      var configuration = TKButton.Configuration.chartButtonConfiguration
+      configuration.content.title = .plainString(period.title)
+      configuration.action = { [weak self] in
+        self?.viewInput?.selectButton(at: index)
+        self?.selectedPeriod = KeeperCore.Period.allCases[index]
+        self?.reloadChartDataAndHeader()
       }
+      return configuration
+    }
+    
     let model = TonChartButtonsView.Model(buttons: buttons)
     viewInput?.updateButtons(with: model)
     viewInput?.selectButton(at: KeeperCore.Period.allCases.firstIndex(of: selectedPeriod) ?? 0)
@@ -140,16 +138,15 @@ private extension TonChartPresenter {
 
   func prepareHeaderModel(pointInformation: ChartPointInformationModel,
                           date: String) -> TonChartHeaderView.Model {
-    let amount = pointInformation.amount.attributed(
-      with: .amountTextStyle,
-      color: .Text.primary
-    )
-
-    let date = date.attributed(
-      with: .otherTextStyle,
+    let amount = pointInformation.amount.withTextStyle(
+      .amountTextStyle,
+      color: .Text.primary)
+    
+    let date = date.withTextStyle(
+      .otherTextStyle,
       color: .Text.secondary
     )
-
+    
     let diffColor: UIColor
     switch pointInformation.diff.direction {
     case .down: diffColor = .Accent.red
@@ -158,19 +155,12 @@ private extension TonChartPresenter {
     }
 
     let percentDiff = pointInformation
-        .diff
-        .percent
-        .attributed(
-          with: .otherTextStyle,
-          color: diffColor)
+      .diff.percent.withTextStyle(.otherTextStyle, color: diffColor)
+    
     let fiatDiff = pointInformation
-        .diff
-        .fiat
-        .attributed(
-          with: .otherTextStyle,
-          color: diffColor.withAlphaComponent(0.44))
-
-      return .init(amount: amount, percentDiff: percentDiff, fiatDiff: fiatDiff, date: date)
+      .diff.fiat.withTextStyle(.otherTextStyle, color: diffColor.withAlphaComponent(0.44))
+    
+    return .init(amount: amount, percentDiff: percentDiff, fiatDiff: fiatDiff, date: date)
   }
 
   @MainActor
@@ -186,41 +176,68 @@ private extension TonChartPresenter {
 
   @MainActor
   func showErrorHeader() {
-    let amount = "0".attributed(
-      with: .amountTextStyle,
-      color: .Text.primary
+    let amount = "0".withTextStyle(
+      .amountTextStyle,
+      color: .Text.primary,
+      alignment: .left,
+      lineBreakMode: .byWordWrapping
+    )
+    
+    let date = "Price".withTextStyle(
+      .otherTextStyle,
+      color: .Text.secondary,
+      alignment: .left,
+      lineBreakMode: .byWordWrapping
     )
 
-    let date = "Price".attributed(
-      with: .otherTextStyle,
-      color: .Text.secondary
+    let percentDiff = "0%".withTextStyle(
+      .otherTextStyle,
+      color: .Text.secondary,
+      alignment: .left,
+      lineBreakMode: .byWordWrapping
     )
-
-    let percentDiff = "0%"
-        .attributed(
-          with: .otherTextStyle,
-          color: .Text.secondary)
-    let fiatDiff = "0,00"
-        .attributed(
-          with: .otherTextStyle,
-          color: .Text.secondary.withAlphaComponent(0.44))
-
-
+    
+    let fiatDiff = "0,00".withTextStyle(
+      .otherTextStyle,
+      color: .Text.secondary.withAlphaComponent(0.44),
+      alignment: .left,
+      lineBreakMode: .byWordWrapping
+    )
+  
     let headerModel = TonChartHeaderView.Model.init(amount: amount, percentDiff: percentDiff, fiatDiff: fiatDiff, date: date)
     viewInput?.updateHeader(with: headerModel)
   }
 }
 
-private extension TextStyle {
-  static var amountTextStyle: TextStyle {
-    TextStyle(font: .monospacedSystemFont(ofSize: 20, weight: .bold),
-                    lineHeight: 28)
+private extension TKTextStyle {
+  static var amountTextStyle: TKTextStyle {
+    TKTextStyle(
+      font: .monospacedSystemFont(ofSize: 20, weight: .bold),
+      lineHeight: 28
+    )
   }
   
-  static var otherTextStyle: TextStyle {
-    TextStyle(font: .monospacedSystemFont(ofSize: 14, weight: .medium),
-                    lineHeight: 20)
+  static var otherTextStyle: TKTextStyle {
+    TKTextStyle(
+      font: .monospacedSystemFont(ofSize: 14, weight: .bold),
+      lineHeight: 20
+    )
   }
 }
 
 extension KeeperCore.Coordinate: TKChart.Coordinate {}
+
+private extension TKButton.Configuration {
+  static var chartButtonConfiguration: TKButton.Configuration {
+    var configuration = TKButton.Configuration.actionButtonConfiguration(
+      category: .secondary,
+      size: .small
+    )
+    configuration.backgroundColors = [.normal: .clear,
+                                      .selected: TKActionButtonCategory.secondary.backgroundColor]
+    configuration.textColor = .Button.primaryForeground
+    configuration.contentAlpha = [.normal: 1,
+                                  .highlighted: 0.48]
+    return configuration
+  }
+}

@@ -6,8 +6,26 @@ final class SendEditButtonsView: UIView {
   var didTapBackButton: (() -> Void)?
   var didTapNextButton: (() -> Void)?
   
-  let backButton = TKActionButton(category: .tertiary, size: .large)
-  let nextButton = TKActionButton(category: .primary, size: .large)
+  lazy var backButton: TKButton = {
+    var configuration = TKButton.Configuration.actionButtonConfiguration(
+      category: .tertiary,
+      size: .large
+    )
+    configuration.action = { [weak self] in
+      self?.didTapBackButton?()
+    }
+    return TKButton(configuration: configuration)
+  }()
+  lazy var nextButton: TKButton = {
+    var configuration = TKButton.Configuration.actionButtonConfiguration(
+      category: .primary,
+      size: .large
+    )
+    configuration.action = { [weak self] in
+      self?.didTapNextButton?()
+    }
+    return TKButton(configuration: configuration)
+  }()
   private let stackView = UIStackView()
   
   override init(frame: CGRect) {
@@ -40,14 +58,6 @@ final class SendEditButtonsView: UIView {
       trailing: 16
     )
     stackView.distribution = .fillEqually
-    
-    backButton.addAction(UIAction(handler: { [weak self] _ in
-      self?.didTapBackButton?()
-    }), for: .touchUpInside)
-
-    nextButton.addAction(UIAction(handler: { [weak self] _ in
-      self?.didTapNextButton?()
-    }), for: .touchUpInside)
     
     addSubview(stackView)
     stackView.addArrangedSubview(backButton)

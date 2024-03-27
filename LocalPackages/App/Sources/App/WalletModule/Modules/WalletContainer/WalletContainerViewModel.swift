@@ -74,29 +74,42 @@ private extension WalletContainerViewModelImplementation {
   }
   
   func createModel(walletModel: WalletModel) -> WalletContainerView.Model {
-    let walletButtonModel = WalletContainerWalletButton.Model(
-      title: walletModel.emojiLabel,
-      icon: .init(icon: .TKUIKit.Icons.Size16.chevronDown, position: .right)
-    )
-    
-    let walletButtonAppearance = WalletContainerWalletButton.Appearance(
-      backgroundColor: walletModel.tintColor.uiColor,
-      foregroundColor: .Icon.primary
-    )
-    
-    let settingsButtonModel = TKUIHeaderAccentIconButton.Model(image: .TKUIKit.Icons.Size28.gear)
-    
-    let topBarViewModel = WalletContainerTopBarView.Model(
-      walletButtonModel: walletButtonModel,
-      walletButtonAppearance: walletButtonAppearance,
-      walletButtonAction: { [weak self] in
+    let walletButtonConfiguration = TKButton.Configuration(
+      content: TKButton.Configuration.Content(title: .plainString(walletModel.emojiLabel),
+                                              icon: .TKUIKit.Icons.Size16.chevronDown),
+      contentPadding: UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12),
+      padding: .zero,
+      spacing: 6,
+      textStyle: .label2,
+      textColor: .Button.primaryForeground,
+      iconPosition: .right,
+      iconTintColor: .Button.primaryForeground,
+      backgroundColors: [.normal: walletModel.tintColor.uiColor,
+                         .highlighted: walletModel.tintColor.uiColor.withAlphaComponent(0.88)],
+      contentAlpha: [.normal: 1],
+      cornerRadius: 20) { [weak self] in
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
         self?.didTapWalletButton?()
-      },
-      settingsButtonModel: settingsButtonModel) { [weak self] in
-        self?.didTapSettingsButton?()
       }
     
+    var settingsButtonConfiguration = TKButton.Configuration.accentButtonConfiguration(
+      padding: UIEdgeInsets(
+        top: 10,
+        left: 10,
+        bottom: 10,
+        right: 10
+      )
+    )
+    settingsButtonConfiguration.content.icon = .TKUIKit.Icons.Size28.gearOutline
+    settingsButtonConfiguration.iconTintColor = .Icon.secondary
+    settingsButtonConfiguration.action = { [weak self] in
+      self?.didTapSettingsButton?()
+    }
+
+    let topBarViewModel = WalletContainerTopBarView.Model(
+      walletButtonConfiguration: walletButtonConfiguration,
+      settingButtonConfiguration: settingsButtonConfiguration
+    )
     return WalletContainerView.Model(
       topBarViewModel: topBarViewModel
     )

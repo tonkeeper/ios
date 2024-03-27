@@ -44,6 +44,13 @@ final class SendRecipientViewController: GenericViewViewController<SendRecipient
 private extension SendRecipientViewController {
   func setup() {
     customView.recipientTextField.placeholder = "Address or name"
+    
+    var pasteButtonConfiguration = TKButton.Configuration.titleHeaderButtonConfiguration(category: .tertiary)
+    pasteButtonConfiguration.content.title = .plainString("Paste")
+    pasteButtonConfiguration.action = { [weak self] in
+      self?.viewModel.didTapPasteButton()
+    }
+    customView.pasteButton.configuration = pasteButtonConfiguration
   }
   
   func setupBindings() {
@@ -65,12 +72,8 @@ private extension SendRecipientViewController {
   }
   
   func setupViewEventsBinding() {
-    customView.recipientTextField.didEditText = { [weak self] text in
-      self?.viewModel.didEditRecipient(input: text ?? "")
-    }
-    
-    customView.pasteButton.setTapAction { [weak self] in
-      self?.viewModel.didTapPasteButton()
+    customView.recipientTextField.didUpdateText = { [weak self] text in
+      self?.viewModel.didEditRecipient(input: text)
     }
   }
 }

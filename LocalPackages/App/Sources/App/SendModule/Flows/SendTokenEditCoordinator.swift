@@ -48,7 +48,7 @@ final class SendTokenEditCoordinator: RouterCoordinator<NavigationControllerRout
     
     openFirst()
     
-    flowViewController.buttonsView.nextButton.setTapAction { [weak self] in
+    flowViewController.buttonsView.nextButton.configuration.action = { [weak self] in
       guard let self else { return }
       switch self.currentStep {
       case .recipient:
@@ -60,7 +60,7 @@ final class SendTokenEditCoordinator: RouterCoordinator<NavigationControllerRout
       }
     }
     
-    flowViewController.buttonsView.backButton.setTapAction { [weak self] in
+    flowViewController.buttonsView.backButton.configuration.action = { [weak self] in
       guard let self else { return }
       guard currentStep != step else {
         self.didFinish?()

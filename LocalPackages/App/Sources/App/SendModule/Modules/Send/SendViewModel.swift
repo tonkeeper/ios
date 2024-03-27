@@ -268,16 +268,16 @@ private extension SendViewModelImplementation {
   func mapRecipient(_ recipient: SendController.SendRecipientModel) -> SendPickerCell.Model {
     let rightView: SendPickerCell.RightView.Model
     if recipient.isEmpty {
+      var pasteButtonConfiguration = TKButton.Configuration.titleHeaderButtonConfiguration(category: .tertiary)
+      pasteButtonConfiguration.content.title = .plainString("Paste")
+      pasteButtonConfiguration.action = { [weak self] in
+        guard let pasteboardString = UIPasteboard.general.string else { return }
+        self?.sendController.setInputRecipient(with: pasteboardString)
+      }
       rightView = .empty(
         SendPickerCell.EmptyAccessoriesView.Model(
           buttons: [
-            SendPickerCell.EmptyAccessoriesView.Model.Button(
-              model: TKHeaderButton.Model(title: "Paste"),
-              action: { [weak self] in
-                guard let pasteboardString = UIPasteboard.general.string else { return }
-                self?.sendController.setInputRecipient(with: pasteboardString)
-              }
-            )
+            pasteButtonConfiguration
           ]
         )
       )

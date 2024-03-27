@@ -20,20 +20,14 @@ extension SendPickerCell {
     }
     
     struct Model {
-      struct Button {
-        let model: TKHeaderButton.Model
-        let action: (() -> Void)
-      }
-      let buttons: [Button]
+      let buttons: [TKButton.Configuration]
     }
     
     func configure(model: Model) {
       stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
       model.buttons.forEach {
-        let button = TKHeaderButton(category: .tertiary)
-        button.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-        button.configure(model: $0.model)
-        button.setTapAction($0.action)
+        let button = TKButton(configuration: $0)
+        button.setContentHuggingPriority(.required, for: .horizontal)
         stackView.addArrangedSubview(button)
       }
     }

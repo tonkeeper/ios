@@ -42,7 +42,12 @@ final class SendCommentViewController: GenericViewViewController<SendCommentView
 
 private extension SendCommentViewController {
   func setup() {
-  
+    var configuration = TKButton.Configuration.titleHeaderButtonConfiguration(category: .tertiary)
+    configuration.content.title = .plainString("Paste")
+    configuration.action = { [weak viewModel] in
+      viewModel?.didTapPasteButton()
+    }
+    customView.pasteButton.configuration = configuration
   }
   
   func setupBindings() {
@@ -66,12 +71,8 @@ private extension SendCommentViewController {
   }
   
   func setupViewEventsBinding() {
-    customView.commentTextField.didEditText = { [weak self, weak viewModel] text in
-      viewModel?.didEditComment(text ?? "")
-    }
-    
-    customView.pasteButton.setTapAction { [weak self] in
-      self?.viewModel.didTapPasteButton()
+    customView.commentTextField.didUpdateText = { [weak viewModel] text in
+      viewModel?.didEditComment(text)
     }
   }
 }

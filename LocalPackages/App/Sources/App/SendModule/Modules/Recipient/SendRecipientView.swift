@@ -3,9 +3,8 @@ import TKUIKit
 import SnapKit
 
 final class SendRecipientView: UIView {
-
-  let recipientTextField = TKTextView()
-  let pasteButton = TKHeaderButton(category: .tertiary)
+  let recipientTextField = TKTextField(textFieldInputView: TKTextFieldInputView(textInputControl: TKTextInputTextViewControl()) )
+  let pasteButton = TKButton()
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -21,10 +20,8 @@ private extension SendRecipientView {
   func setup() {
     backgroundColor = .Background.page
     
-    pasteButton.configure(model: TKButton.Model(title: "Paste"))
-    
     addSubview(recipientTextField)
-    recipientTextField.rightItemsViews = [pasteButton]
+    recipientTextField.rightItems = [TKTextField.RightItem(view: pasteButton, mode: .empty)]
     
     setupConstraints()
   }

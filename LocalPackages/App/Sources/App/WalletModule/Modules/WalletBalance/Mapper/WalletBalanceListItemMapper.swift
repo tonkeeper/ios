@@ -119,11 +119,11 @@ struct WalletBalanceListItemMapper {
   
   func mapFinishSetupSectionHeaderModel(model: WalletBalanceSetupModel) -> WalletBalanceCollectionController.SectionHeaderView.Model {
     let title = "Finish setting up"
-    var button: TKButton.Model?
+    var buttonContent: TKButton.Configuration.Content?
     if model.isFinishSetupAvailable {
-      button = TKHeaderButton.Model(title: "Done")
+      buttonContent = TKButton.Configuration.Content(title: .plainString("Done"))
     }
-    return WalletBalanceCollectionController.SectionHeaderView.Model(title: title, buttonModel: button)
+    return WalletBalanceCollectionController.SectionHeaderView.Model(title: title, buttonContent: buttonContent)
   }
   
   func createBackupItem(backupHandler: @escaping () -> Void) -> WalletBalanceSetupPlainItemCell.Model {

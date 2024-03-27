@@ -43,11 +43,14 @@ private extension SendAmountViewController {
     customView.embedAmountInputView(amountInputViewController.view)
     amountInputViewController.didMove(toParent: self)
     
-    customView.maxButton.configure(model: TKButton.Model(title: "MAX"))
-    customView.maxButton.addAction(UIAction(handler: { [weak customView, weak viewModel] _ in
+    var maxButtonConfiguration = TKButton.Configuration.titleHeaderButtonConfiguration(category: .secondary)
+    maxButtonConfiguration.backgroundColors[.selected] = .Button.primaryBackground
+    maxButtonConfiguration.content.title = .plainString("MAX")
+    maxButtonConfiguration.action = { [weak customView, weak viewModel] in
       customView?.maxButton.isSelected.toggle()
       viewModel?.toggleMax()
-    }), for: .touchUpInside)
+    }
+    customView.maxButton.configuration = maxButtonConfiguration
   }
   
   func setupBindings() {

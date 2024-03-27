@@ -315,3 +315,5 @@ extension TKButton: ActivityViewContainerView {
     iconImageView.isHidden = true
   }
 }
+
+extension UIControl.State: Hashable {}

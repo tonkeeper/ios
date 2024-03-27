@@ -35,9 +35,9 @@ final class NFTView: UIControl, ConfigurableView, ReusableView {
       size: CGSize(width: .imageSize, height: .imageSize)
     )
     
-    let textSize = CGSize(width: bounds.width - .imageSize - UIEdgeInsets.textContentPadding.left - UIEdgeInsets.textContentPadding.right, height: 0)
+    let textWidth = bounds.width - .imageSize - UIEdgeInsets.textContentPadding.left - UIEdgeInsets.textContentPadding.right
     
-    let nameSize = nameLabel.tkSizeThatFits(textSize)
+    let nameSize = nameLabel.tkSizeThatFits(textWidth)
     nameLabel.frame = CGRect(
       origin: CGPoint(
         x: imageView.frame.maxX + UIEdgeInsets.textContentPadding.left,
@@ -46,7 +46,7 @@ final class NFTView: UIControl, ConfigurableView, ReusableView {
       size: nameSize
     )
     
-    let collectionNameSize = collectiomNameLabel.tkSizeThatFits(textSize)
+    let collectionNameSize = collectiomNameLabel.tkSizeThatFits(textWidth)
     collectiomNameLabel.frame = CGRect(
       origin: CGPoint(
         x: imageView.frame.maxX + UIEdgeInsets.textContentPadding.left,
@@ -58,7 +58,7 @@ final class NFTView: UIControl, ConfigurableView, ReusableView {
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
     let textWidth = size.width - .imageSize - UIEdgeInsets.textContentPadding.left - UIEdgeInsets.textContentPadding.right
-    let nameSize = nameLabel.tkSizeThatFits(CGSize(width: textWidth, height: 0))
+    let nameSize = nameLabel.tkSizeThatFits(textWidth)
     let collectionNameSize = collectiomNameLabel.tkSizeThatFits(CGSize(width: textWidth, height: 0))
     let width = ([nameSize.width, collectionNameSize.width].max() ?? 0) + .imageSize + UIEdgeInsets.textContentPadding.left + UIEdgeInsets.textContentPadding.right
     return CGSize(width: width, height: .height)
