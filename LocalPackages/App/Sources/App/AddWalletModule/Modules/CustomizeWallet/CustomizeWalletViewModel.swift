@@ -95,25 +95,27 @@ private extension CustomizeWalletViewModelImplementation {
     let colorPickerModel = createColorPickerModel()
     let emojiPicketModel = WalletEmojiPickerView.Model(items: emojiPickerItems)
     
-    let continueButton: CustomizeWalletView.Model.ContinueButton?
+    var continueButtonConfiguration: TKButton.Configuration?
     switch configurator.continueButtonMode {
     case .hidden:
-      continueButton = nil
+      continueButtonConfiguration = nil
     case .visible(let title, let action):
-      continueButton = CustomizeWalletView.Model.ContinueButton(
-        model: TKUIActionButton.Model(title: title),
-        action: action
+      continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
+        category: .primary,
+        size: .large
       )
+      continueButtonConfiguration?.content.title = .plainString(title)
+      continueButtonConfiguration?.action = action
     }
-    
+  
     return CustomizeWalletView.Model(
       titleDescriptionModel: titleDescriptionModel,
+      continueButtonConfiguration: continueButtonConfiguration,
       walletNameTextFieldPlaceholder: walletNameTextFieldPlaceholder,
       walletNameDefaultValue: walletName,
       colorPickerModel: colorPickerModel,
-      emojiPicketModel: emojiPicketModel,
-      continueButtonModel: continueButton
-      )
+      emojiPicketModel: emojiPicketModel
+    )
   }
   
   func createColorPickerModel() -> WalletColorPickerView.Model {

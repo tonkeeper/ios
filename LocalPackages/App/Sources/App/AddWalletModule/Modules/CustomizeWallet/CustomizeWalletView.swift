@@ -14,12 +14,22 @@ final class CustomizeWalletView: UIView, ConfigurableView {
     return view
   }()
   
-  let walletNameTextField = CustomizeWalletTextInputField()
+  lazy var walletNameTextField: TKTextField = {
+    let textFieldInputView = TKTextFieldInputView(
+      textInputControl: TKTextInputTextFieldControl()
+    )
+    textFieldInputView.clearButtonMode = .never
+    return TKTextField(
+      textFieldInputView: textFieldInputView
+    )
+  }()
   let walletNameTextFieldContainer: TKPaddingContainerView = {
     let container = TKPaddingContainerView()
     container.padding = .walletNameTextFieldPadding
     return container
   }()
+  
+  let badgeView = WalletColorEmojiBadgeView()
   
   let colorPickerView = WalletColorPickerView()
   
@@ -30,7 +40,7 @@ final class CustomizeWalletView: UIView, ConfigurableView {
     return container
   }()
   
-  let continueButton = TKUIActionButton(category: .primary, size: .large)
+  let continueButton = TKButton()
   let continueButtonContainer: TKPaddingContainerView = {
     let container = TKPaddingContainerView()
     container.backgroundView = TKGradientView(color: .Background.page, direction: .bottomToTop)
@@ -58,16 +68,12 @@ final class CustomizeWalletView: UIView, ConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   struct Model {
-    struct ContinueButton {
-      let model: TKUIActionButton.Model
-      let action: () -> Void
-    }
     let titleDescriptionModel: TKTitleDescriptionView.Model
+    let continueButtonConfiguration: TKButton.Configuration?
     let walletNameTextFieldPlaceholder: String
     let walletNameDefaultValue: String
     let colorPickerModel: WalletColorPickerView.Model
     let emojiPicketModel: WalletEmojiPickerView.Model
-    let continueButtonModel: ContinueButton?
   }
   
   func configure(model: Model) {
@@ -76,9 +82,8 @@ final class CustomizeWalletView: UIView, ConfigurableView {
     walletNameTextField.text = model.walletNameDefaultValue
     colorPickerView.configure(model: model.colorPickerModel)
     emojiPickerView.configure(model: model.emojiPicketModel)
-    if let continueButtonModel = model.continueButtonModel {
-      continueButton.configure(model: continueButtonModel.model)
-      continueButton.addTapAction(continueButtonModel.action)
+    if let continueButtonConfiguration = model.continueButtonConfiguration {
+      continueButton.configuration = continueButtonConfiguration
       continueButton.isHidden = false
     } else {
       continueButton.isHidden = true
@@ -94,12 +99,25 @@ private extension CustomizeWalletView {
     
     colorPickerView.collectionView.contentInset = .colorPickerViewContentInsets
     
+    badgeView.padding = UIEdgeInsets(
+      top: 8,
+      left: 8,
+      bottom: 8,
+      right: 8
+    )
+    
     addSubview(contentStackView)
     addSubview(continueButtonContainer)
     contentStackView.addArrangedSubview(titleDescriptionView)
     contentStackView.addArrangedSubview(walletNameTextFieldContainer)
     contentStackView.addArrangedSubview(colorPickerView)
     contentStackView.addArrangedSubview(emojiPicketContainer)
+    
+    
+    walletNameTextField.rightItems = [TKTextField.RightItem(
+      view: badgeView,
+      mode: .always
+    )]
     
     walletNameTextFieldContainer.setViews([walletNameTextField])
     emojiPicketContainer.setViews([emojiPickerView])

@@ -65,11 +65,11 @@ private extension CustomizeWalletViewController {
     }
     
     viewModel.didSelectEmoji = { [weak customView] emoji in
-      customView?.walletNameTextField.emoji = emoji.emoji
+      customView?.badgeView.emoji = emoji.emoji
     }
     
     viewModel.didSelectColor = { [weak customView] color in
-      customView?.walletNameTextField.walletTintColor = color
+      customView?.badgeView.color = color
     }
     
     viewModel.didUpdateContinueButtonIsEnabled = { [weak customView] isEnabled in
@@ -94,7 +94,7 @@ private extension CustomizeWalletViewController {
       self?.tapGestureRecognizer.isEnabled = false
     }
     
-    customView.walletNameTextField.didEditText = { [weak self] in
+    customView.walletNameTextField.didUpdateText = { [weak self] in
       self?.viewModel.setWalletName($0)
     }
   }

@@ -24,13 +24,11 @@ final class SendView: UIView {
   let walletPickerView = SendPickerView()
   let recipientPickerView = SendPickerView()
   let continueButton = TKButton()
-//  let continueButton = TKActionButton(category: .primary, size: .large)
-  let commentView: TKTextView = {
-    let view = TKTextView()
-    view.isHighlightable = true
-    return view
-  }()
-  
+  let commentView = TKTextField(
+    textFieldInputView: TKTextFieldInputView(
+      textInputControl: TKTextInputTextViewControl()
+    )
+  )
   private var sendItemView: UIView?
   
   override init(frame: CGRect) {
@@ -54,7 +52,6 @@ final class SendView: UIView {
       self?.didTapComment?()
     }), for: .touchUpInside)
     
-//    continueButton.configure(model: TKButton.Model(title: "Continue"))
     continueButton.isEnabled = false
     
     scrollView.snp.makeConstraints { make in
