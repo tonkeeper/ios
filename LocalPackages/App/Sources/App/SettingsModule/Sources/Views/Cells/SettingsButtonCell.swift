@@ -41,15 +41,9 @@ final class SettingsButtonCell: UICollectionViewCell {
   }
   
   struct Model: Identifiable, Hashable {
-    struct Button {
-      let category: TKUIActionButtonCategory
-      let size: TKUIActionButtonSize
-      let model: TKUIActionButton.Model
-      let action: () -> Void
-    }
     let id: String
     let padding: UIEdgeInsets
-    let buttons: [Button]
+    let buttons: [TKButton.Configuration]
     
     func hash(into hasher: inout Hasher) {
       hasher.combine(id)
@@ -63,13 +57,9 @@ final class SettingsButtonCell: UICollectionViewCell {
   func configure(model: Model) {
     self.padding = model.padding
     stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-    model.buttons.forEach { buttonModel in
-      let button = TKUIActionButton(
-        category: buttonModel.category,
-        size: buttonModel.size
-      )
-      button.configure(model: buttonModel.model)
-      button.addTapAction(buttonModel.action)
+    model.buttons.forEach { configuration in
+      let button = TKButton()
+      button.configuration = configuration
       stackView.addArrangedSubview(button)
     }
     setNeedsLayout()

@@ -15,7 +15,7 @@ final class HistoryListFooterView: UICollectionReusableView, ReusableView, TKCol
   }
 
   private let loaderView = TKLoaderView(size: .medium, style: .primary)
-  private let retryButton = TKUIActionButton(category: .tertiary, size: .small)
+  private let retryButton = TKButton(configuration: .actionButtonConfiguration(category: .tertiary, size: .small))
     
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -74,8 +74,8 @@ private extension HistoryListFooterView {
       loaderView.isLoading = false
       loaderView.isHidden = true
       retryButton.isHidden = false
-      retryButton.configure(model: TKUIButtonTitleIconContentView.Model(title: title))
-      retryButton.addTapAction(retryButtonAction)
+      retryButton.configuration.content.title = .plainString(title ?? "")
+      retryButton.configuration.action = retryButtonAction
     }
     setNeedsLayout()
   }

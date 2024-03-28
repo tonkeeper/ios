@@ -88,19 +88,20 @@ private extension SettingsBackupListItemsProvider {
     
     switch model.backupState {
     case .notBackedUp:
+      var backupButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
+        category: .secondary,
+        size: .large
+      )
+      backupButtonConfiguration.content.title = .plainString(.backupManualyButtonTitle)
+      backupButtonConfiguration.action = { [weak self] in
+        self?.didTapBackupManually?()
+      }
       items.append(
         SettingsButtonCell.Model(
           id: .backupManualyButtonTitle,
           padding: UIEdgeInsets(top: 0, left: 0, bottom: 16, right: 0),
           buttons: [
-            SettingsButtonCell.Model.Button(
-              category: .secondary,
-              size: .large,
-              model: TKUIActionButton.Model(title: .backupManualyButtonTitle),
-              action: { [weak self] in
-                self?.didTapBackupManually?()
-              }
-            )
+            backupButtonConfiguration
           ]
         )
       )
