@@ -43,16 +43,16 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
       let items = await createEmojiPickerItems()
       guard !items.isEmpty else { return }
       await MainActor.run {
-        didSelectEmoji?(items.first(where: { $0.emoji.emoji == selectedEmoji })?.emoji ?? items[0].emoji)
+        didSelectEmoji?(items.first(where: { $0.emoji.emoji == self.emoji })?.emoji ?? items[0].emoji)
         didUpdateModel?(createModel(emojiPickerItems: items))
-        didSelectColor?(selectedTintColor.uiColor)
+        didSelectColor?(self.tintColor.uiColor)
       }
     }
   }
   
   func setWalletName(_ name: String) {
     let isNameValid = !name.isEmpty
-    walletName = isNameValid ? name : .defaultWalletName
+    self.name = isNameValid ? name : .defaultWalletName
     didUpdateContinueButtonIsEnabled?(isNameValid)
     configurator.didEditName()
   }
@@ -63,18 +63,27 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
   
   // MARK: - State
   
-  private lazy var walletName: String = wallet?.metaData.label ?? .defaultWalletName
-  private lazy var selectedTintColor: WalletTintColor = wallet?.metaData.tintColor ?? .defaultColor
-  private lazy var selectedEmoji: String = wallet?.metaData.emoji ?? .defaultEmoji
+//  private lazy var walletName: String = wallet?.metaData.label ?? .defaultWalletName
+//  private lazy var selectedTintColor: WalletTintColor = wallet?.metaData.tintColor ?? .defaultColor
+//  private lazy var selectedEmoji: String = wallet?.metaData.emoji ?? .defaultEmoji
+  
   
   // MARK: - Dependencies
   
-  private let wallet: Wallet?
+//  private let wallet: Wallet?
+  private var name: String
+  private var tintColor: WalletTintColor
+  private var emoji: String
   private let configurator: CustomizeWalletViewModelConfigurator
   
-  init(wallet: Wallet? = nil,
+  
+  init(name: String? = nil,
+       tintColor: WalletTintColor? = nil,
+       emoji: String? = nil,
        configurator: CustomizeWalletViewModelConfigurator) {
-    self.wallet = wallet
+    self.name = name ?? .defaultWalletName
+    self.tintColor = tintColor ?? .defaultColor
+    self.emoji = emoji ?? .defaultEmoji
     self.configurator = configurator
     
     configurator.didCustomizeWallet = { [weak self] in
@@ -112,7 +121,7 @@ private extension CustomizeWalletViewModelImplementation {
       titleDescriptionModel: titleDescriptionModel,
       continueButtonConfiguration: continueButtonConfiguration,
       walletNameTextFieldPlaceholder: walletNameTextFieldPlaceholder,
-      walletNameDefaultValue: walletName,
+      walletNameDefaultValue: name,
       colorPickerModel: colorPickerModel,
       emojiPicketModel: emojiPicketModel
     )
@@ -125,11 +134,11 @@ private extension CustomizeWalletViewModelImplementation {
       let colorItem = WalletColorPickerView.Model.ColorItem(
         color: color.uiColor) { [weak self] in
           self?.didSelectColor?(color.uiColor)
-          self?.selectedTintColor = color
+          self?.tintColor = color
           self?.configurator.didSelectColor()
         }
       colorItems.append(colorItem)
-      if selectedTintColor == color {
+      if tintColor == color {
         initialSelectedIndex = index
       }
     }
@@ -146,7 +155,7 @@ private extension CustomizeWalletViewModelImplementation {
       WalletEmojiPickerView.Model.Item(
         emoji: emoji,
         selectHandler: { [weak self] in
-          self?.selectedEmoji = emoji.emoji
+          self?.emoji = emoji.emoji
           self?.didSelectEmoji?(emoji)
           self?.configurator.didSelectColor()
         }
@@ -157,9 +166,9 @@ private extension CustomizeWalletViewModelImplementation {
   
   func didFinishCustomization() {
     let model = CustomizeWalletModel(
-      name: walletName,
-      tintColor: selectedTintColor,
-      emoji: selectedEmoji
+      name: name,
+      tintColor: tintColor,
+      emoji: emoji
     )
     didCustomizeWallet?(model)
   }

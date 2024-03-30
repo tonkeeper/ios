@@ -11,14 +11,17 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
   private let walletAddController: WalletAddController
   private let createWalletCoordinatorProvider: (NavigationControllerRouter) -> CreateWalletCoordinator
   private let importWalletCoordinatorProvider: (NavigationControllerRouter) -> ImportWalletCoordinator
+  private let importWatchOnlyWalletCoordinatorProvider: (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator
   
   init(router: ViewControllerRouter,
        walletAddController: WalletAddController,
        createWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> CreateWalletCoordinator,
-       importWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWalletCoordinator) {
+       importWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWalletCoordinator,
+       importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator) {
     self.walletAddController = walletAddController
     self.createWalletCoordinatorProvider = createWalletCoordinatorProvider
     self.importWalletCoordinatorProvider = importWalletCoordinatorProvider
+    self.importWatchOnlyWalletCoordinatorProvider = importWatchOnlyWalletCoordinatorProvider
     super.init(router: router)
   }
   
@@ -29,7 +32,13 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
 
 private extension AddWalletCoordinator {
   func openAddWalletOptionPicker() {
-    let module = AddWalletOptionPickerAssembly.module(options: [.createRegular, .importRegular])
+    let module = AddWalletOptionPickerAssembly.module(
+      options: [
+        .createRegular,
+        .importRegular,
+        .importWatchOnly
+      ]
+    )
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
     module.output.didSelectOption = { [weak self, unowned bottomSheetViewController] option in
@@ -37,6 +46,7 @@ private extension AddWalletCoordinator {
         switch option {
         case .createRegular: self?.openCreateRegularWallet()
         case .importRegular: self?.openAddRegularWallet()
+        case .importWatchOnly: self?.openAddWatchOnlyWallet()
         case .importTestnet: break
         }
       }
@@ -83,6 +93,36 @@ private extension AddWalletCoordinator {
   
   func openAddRegularWallet() {
     openAddWallet()
+  }
+  
+  func openAddWatchOnlyWallet() {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    let coordinator = importWatchOnlyWalletCoordinatorProvider(
+      NavigationControllerRouter(rootViewController: navigationController)
+    )
+    
+    coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+      navigationController?.dismiss(animated: true, completion: {
+        self?.didCancel?()
+      })
+    }
+    
+    coordinator.didImportWallet = { [weak self, weak coordinator, weak navigationController] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+      navigationController?.dismiss(animated: true, completion: {
+        self?.didAddWallets?()
+      })
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+    
+    router.present(navigationController)
   }
 
   func openAddWallet() {

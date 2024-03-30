@@ -51,7 +51,9 @@ private extension OnboardingCreateCoordinator {
   }
   
   func openCustomizeWallet(passcode: String) {
-    let module = addWalletModule.createCustomizeWalletModule(configurator: AddWalletCustomizeWalletViewModelConfigurator())
+    let module = addWalletModule.createCustomizeWalletModule(
+      configurator: AddWalletCustomizeWalletViewModelConfigurator()
+    )
     
     module.output.didCustomizeWallet = { [weak self] model in
       self?.createWallet(model: model, passcode: passcode)

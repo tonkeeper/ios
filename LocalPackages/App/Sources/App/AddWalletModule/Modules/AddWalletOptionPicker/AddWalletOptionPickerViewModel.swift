@@ -21,6 +21,7 @@ struct AddWalletModel {
 enum AddWalletOption: String {
   case createRegular
   case importRegular
+  case importWatchOnly
   case importTestnet
   
   var title: String {
@@ -29,6 +30,8 @@ enum AddWalletOption: String {
       return "New Wallet"
     case .importRegular:
       return "Existing Wallet"
+    case .importWatchOnly:
+      return "Watch Account"
     case .importTestnet:
       return "Testnet Account"
     }
@@ -40,6 +43,8 @@ enum AddWalletOption: String {
       return "Create new wallet"
     case .importRegular:
       return "Import wallet with a 24 secret recovery words"
+    case .importWatchOnly:
+      return "For monitor wallet activity without recovery phrase"
     case .importTestnet:
       return "Import wallet with a 24 secret recovery words to Testnet"
     }
@@ -51,6 +56,8 @@ enum AddWalletOption: String {
       return .TKUIKit.Icons.Size28.plusCircle
     case .importRegular:
       return .TKUIKit.Icons.Size28.key
+    case .importWatchOnly:
+      return .TKUIKit.Icons.Size28.magnifyingGlass
     case .importTestnet:
       return .TKUIKit.Icons.Size28.testnet
     }

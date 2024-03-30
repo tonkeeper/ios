@@ -19,7 +19,11 @@ struct AddWalletModule {
       },
       importWalletCoordinatorProvider: { router in
         return createImportWalletCoordinator(router: router)
-      })
+      },
+      importWatchOnlyWalletCoordinatorProvider: { router in
+        return createImportWatchOnlyWalletCoordinator(router: router)
+      }
+    )
     
     return coordinator
   }
@@ -29,17 +33,26 @@ struct AddWalletModule {
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
       customizeWalletModule: {
-        self.createCustomizeWalletModule(configurator: AddWalletCustomizeWalletViewModelConfigurator())
+        self.createCustomizeWalletModule(
+          name: nil,
+          tintColor: nil,
+          emoji: nil,
+          configurator: AddWalletCustomizeWalletViewModelConfigurator()
+        )
       }
     )
     
     return coordinator
   }
   
-  func createCustomizeWalletModule(wallet: Wallet? = nil,
-                                          configurator: CustomizeWalletViewModelConfigurator) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
+  func createCustomizeWalletModule(name: String? = nil,
+                                   tintColor: WalletTintColor? = nil,
+                                   emoji: String? = nil,
+                                   configurator: CustomizeWalletViewModelConfigurator) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
     return CustomizeWalletAssembly.module(
-      wallet: wallet,
+      name: name,
+      tintColor: tintColor,
+      emoji: emoji,
       configurator: configurator
     )
   }
@@ -61,6 +74,26 @@ private extension AddWalletModule {
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
       customizeWalletModule: {
         self.createCustomizeWalletModule(
+          name: nil,
+          tintColor: nil,
+          emoji: nil,
+          configurator: AddWalletCustomizeWalletViewModelConfigurator()
+        )
+      }
+    )
+    
+    return coordinator
+  }
+  
+  func createImportWatchOnlyWalletCoordinator(router: NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator {
+    let coordinator = ImportWatchOnlyWalletCoordinator(
+      router: router,
+      walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      customizeWalletModule: { name in
+        self.createCustomizeWalletModule(
+          name: name,
+          tintColor: nil,
+          emoji: nil,
           configurator: AddWalletCustomizeWalletViewModelConfigurator()
         )
       }

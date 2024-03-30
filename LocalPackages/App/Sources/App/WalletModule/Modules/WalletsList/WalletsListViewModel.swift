@@ -122,6 +122,7 @@ private extension WalletsListViewModelImplementation {
           emoji: model.walletModel.emoji,
           backgroundColor: model.walletModel.tintColor.uiColor,
           walletName: model.walletModel.label,
+          walletTag: model.walletModel.tag,
           balance: model.balance
         )
         

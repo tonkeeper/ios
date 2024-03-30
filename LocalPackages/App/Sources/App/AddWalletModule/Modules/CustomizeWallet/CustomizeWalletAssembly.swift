@@ -5,9 +5,14 @@ import KeeperCore
 
 struct CustomizeWalletAssembly {
   private init() {}
-  static func module(wallet: Wallet? = nil, configurator: CustomizeWalletViewModelConfigurator) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
+  static func module(name: String?,
+                     tintColor: WalletTintColor?,
+                     emoji: String?,
+                     configurator: CustomizeWalletViewModelConfigurator) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
     let viewModel = CustomizeWalletViewModelImplementation(
-      wallet: wallet,
+      name: name,
+      tintColor: tintColor,
+      emoji: emoji,
       configurator: configurator
     )
     let viewController = CustomizeWalletViewController(viewModel: viewModel)

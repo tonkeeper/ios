@@ -45,11 +45,24 @@ final class WalletsListWalletCellContentView: UIView, ConfigurableView, TKCollec
     init(emoji: String,
          backgroundColor: UIColor,
          walletName: String,
+         walletTag: String?,
          balance: String) {
       iconModel = TKListItemIconEmojiView.Model(
         emoji: emoji,
         backgroundColor: backgroundColor
       )
+      
+      var tagModel: TKTagView.Model?
+      if let walletTag {
+        tagModel = TKTagView.Model(
+          title: walletTag.withTextStyle(
+            .body4,
+            color: .Text.secondary,
+            alignment: .center,
+            lineBreakMode: .byWordWrapping
+          )
+        )
+      }
       
       let leftContentStackViewModel = TKListItemContentStackView.Model(
         titleSubtitleModel: TKListItemTitleSubtitleView.Model(
@@ -59,6 +72,7 @@ final class WalletsListWalletCellContentView: UIView, ConfigurableView, TKCollec
             alignment: .left,
             lineBreakMode: .byTruncatingTail
           ),
+          tagModel: tagModel,
           subtitle: balance.withTextStyle(
             .body2,
             color: .Text.secondary,

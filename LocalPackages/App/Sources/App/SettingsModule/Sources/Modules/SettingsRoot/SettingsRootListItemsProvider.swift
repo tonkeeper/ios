@@ -105,6 +105,7 @@ private extension SettingsRootListItemsProvider {
       emoji: walletModel.emoji,
       backgroundColor: walletModel.tintColor.uiColor,
       walletName: walletModel.label,
+      walletTag: walletModel.tag,
       balance: "Edit name and color"
     )
     
