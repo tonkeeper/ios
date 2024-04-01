@@ -42,7 +42,10 @@ private extension ReceiveViewController {
     viewModel.didTapCopy = { address in
       UINotificationFeedbackGenerator().notificationOccurred(.warning)
       UIPasteboard.general.string = address
-      ToastPresenter.showToast(configuration: .copied)
+    }
+    
+    viewModel.showToast = { configuration in
+      ToastPresenter.showToast(configuration: configuration)
     }
     
     viewModel.didTapShare = { [weak self] address in

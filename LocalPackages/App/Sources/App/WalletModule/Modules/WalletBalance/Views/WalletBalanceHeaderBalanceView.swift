@@ -6,6 +6,7 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
   let balanceLabel = UILabel()
   let connectionStatusView = ConnectionStatusView()
   let addressLabel = UIButton(type: .custom)
+  let walletTagView = TKUITagView()
   
   private let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -18,6 +19,12 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
   private let addressStatusStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
+    stackView.alignment = .center
+    return stackView
+  }()
+  private let addressTagStackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.alignment = .center
     return stackView
   }()
   
@@ -35,6 +42,7 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
     let address: String
     let addressAction: () -> Void
     let connectionStatusModel: ConnectionStatusView.Model?
+    let tagConfiguration: TKUITagView.Configuration?
   }
   
   func configure(model: Model) {
@@ -59,10 +67,17 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
     if let connectionStatusModel = model.connectionStatusModel {
       connectionStatusView.configure(model: connectionStatusModel)
       connectionStatusView.isHidden = false
-      addressLabel.isHidden = true
+      addressTagStackView.isHidden = true
     } else {
       connectionStatusView.isHidden = true
-      addressLabel.isHidden = false
+      addressTagStackView.isHidden = false
+    }
+    
+    if let tagConfiguration = model.tagConfiguration {
+      walletTagView.configure(configuration: tagConfiguration)
+      walletTagView.isHidden = false
+    } else {
+      walletTagView.isHidden = true
     }
   }
 }
@@ -72,7 +87,9 @@ private extension WalletBalanceHeaderBalanceView {
     addSubview(stackView)
     stackView.addArrangedSubview(balanceLabel)
     stackView.addArrangedSubview(addressStatusStackView)
-    addressStatusStackView.addArrangedSubview(addressLabel)
+    addressTagStackView.addArrangedSubview(addressLabel)
+    addressTagStackView.addArrangedSubview(walletTagView)
+    addressStatusStackView.addArrangedSubview(addressTagStackView)
     addressStatusStackView.addArrangedSubview(connectionStatusView)
     
     setupConstraints()

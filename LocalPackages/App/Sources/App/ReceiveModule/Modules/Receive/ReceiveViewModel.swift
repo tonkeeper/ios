@@ -14,6 +14,8 @@ protocol ReceiveViewModel: AnyObject {
   var didTapShare: ((String?) -> Void)? { get set }
   var didTapCopy: ((String?) -> Void)? { get set }
   
+  var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
+  
   func viewDidLoad()
   func generateQRCode(size: CGSize)
 }
@@ -28,6 +30,8 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
   var didGenerateQRCode: ((UIImage?) -> Void)?
   var didTapShare: ((String?) -> Void)?
   var didTapCopy: ((String?) -> Void)?
+  
+  var showToast: ((ToastPresenter.Configuration) -> Void)?
   
   func viewDidLoad() {
     receiveController.didUpdateModel = { [weak self] model in
@@ -79,8 +83,12 @@ private extension ReceiveViewModelImplementation {
           position: .left
         )
       ),
-      copyButtonAction: { [weak self] in
+      copyButtonAction: {
+        [weak self, isRegular = receiveController.isRegularWallet] in
         self?.didTapCopy?(model.address)
+        var configuration = ToastPresenter.Configuration.copied
+        configuration.backgroundColor = isRegular ? .Background.contentTint : .Accent.orange
+        self?.showToast?(configuration)
       },
       shareButtonModel: TKUIActionButton.Model(
         icon: TKUIButtonTitleIconContentView.Model.Icon(
@@ -110,7 +118,8 @@ private extension ReceiveViewModelImplementation {
       addressButtonAction: { [weak self] in
         self?.didTapCopy?(model.address)
       },
-      image: image
+      image: image,
+      tag: model.tag
     )
     
     didUpdateModel?(receiveModel)

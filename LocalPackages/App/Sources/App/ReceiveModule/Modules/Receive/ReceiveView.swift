@@ -45,6 +45,7 @@ final class ReceiveView: UIView, ConfigurableView {
     public let address: String?
     public let addressButtonAction: () -> Void
     public let image: Image
+    public let tag: String?
   }
   
   func configure(model: Model) {
@@ -63,6 +64,7 @@ final class ReceiveView: UIView, ConfigurableView {
     qrCodeView.addressButton.addAction(UIAction(handler: { _ in
       model.addressButtonAction()
     }), for: .touchUpInside)
+    qrCodeView.tagString = model.tag
     qrCodeView.addressButton.setTitle(model.address, for: .normal)
     qrCodeView.sizeToFit()
     setNeedsLayout()

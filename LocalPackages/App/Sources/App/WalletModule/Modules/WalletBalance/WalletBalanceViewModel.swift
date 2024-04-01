@@ -1,6 +1,7 @@
 import Foundation
 import TKUIKit
 import KeeperCore
+import UIKit
 
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: (() -> Void)? { get set }
@@ -21,6 +22,7 @@ protocol WalletBalanceViewModel: AnyObject {
   var didUpdateJettonsItems: (([WalletBalanceBalanceItemCell.Model]) -> Void)? { get set }
   var didUpdateFinishSetupItems: (([AnyHashable], WalletBalanceCollectionController.SectionHeaderView.Model) -> Void)? { get set }
   var didTapCopy: ((String?) -> Void)? { get set }
+  var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
   
   func viewDidLoad()
   func didTapTonItem(at index: Int)
@@ -52,6 +54,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didUpdateJettonsItems: (([TKCollectionViewContainerCell<WalletBalanceBalanceItemCellContentView>.Model]) -> Void)?
   var didUpdateFinishSetupItems: (([AnyHashable], WalletBalanceCollectionController.SectionHeaderView.Model) -> Void)?
   var didTapCopy: ((String?) -> Void)?
+  var showToast: ((ToastPresenter.Configuration) -> Void)?
   
   func viewDidLoad() {
     updateHeader()
@@ -216,14 +219,27 @@ private extension WalletBalanceViewModelImplementation {
       )
     }
     
+    var tagConfiguration: TKUITagView.Configuration?
+    if let tag = walletBalanceController.walletTag {
+      tagConfiguration = TKUITagView.Configuration(
+        text: tag,
+        textColor: .Accent.orange,
+        backgroundColor: UIColor.init(hex: "332d24")
+      )
+    }
+    
     let balanceViewModel = WalletBalanceHeaderBalanceView.Model(
       balance: walletBalanceController.totalBalanceFormatted,
       address: walletBalanceController.address,
       addressAction: {
-        [weak self] in
+        [weak self, isRegular = walletBalanceController.isRegular] in
         self?.didTapCopy?(self?.walletBalanceController.fullAddress)
+        var configuration = ToastPresenter.Configuration.copied
+        configuration.backgroundColor = isRegular ? .Background.contentTint : .Accent.orange
+        self?.showToast?(configuration)
       },
-      connectionStatusModel: connectionStatusModel
+      connectionStatusModel: connectionStatusModel,
+      tagConfiguration: tagConfiguration
     )
     
     return WalletBalanceHeaderView.Model(
@@ -233,7 +249,18 @@ private extension WalletBalanceViewModelImplementation {
   }
 
   func createButtonsViewModel() -> WalletBalanceHeaderButtonsView.Model {
-    WalletBalanceHeaderButtonsView.Model(buttons: [
+    var buttons = [WalletBalanceHeaderButtonsView.Model.Button]()
+    if walletBalanceController.wallet.isRegular {
+      buttons = regularWalletButtons()
+    }
+    if walletBalanceController.wallet.isWatchonly {
+      buttons = watchOnlyWalletButtons()
+    }
+    return WalletBalanceHeaderButtonsView.Model(buttons: buttons)
+  }
+  
+  func regularWalletButtons() -> [WalletBalanceHeaderButtonsView.Model.Button] {
+    [
       WalletBalanceHeaderButtonsView.Model.Button(
         configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.arrowUpOutline, title: "Send"),
         isEnabled: true,
@@ -268,7 +295,47 @@ private extension WalletBalanceViewModelImplementation {
         isEnabled: false,
         action: {}
       )
-    ])
+    ]
+  }
+  
+  func watchOnlyWalletButtons() -> [WalletBalanceHeaderButtonsView.Model.Button] {
+    [
+      WalletBalanceHeaderButtonsView.Model.Button(
+        configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.arrowUpOutline, title: "Send"),
+        isEnabled: false,
+        action: { [weak self] in
+          self?.didTapSend?()
+        }
+      ),
+      WalletBalanceHeaderButtonsView.Model.Button(
+        configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.arrowDownOutline, title: "Receive"),
+        action: { [weak self] in
+          self?.didTapReceive?()
+        }
+      ),
+      WalletBalanceHeaderButtonsView.Model.Button(
+        configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.qrViewFinderThin, title: "Scan"),
+        isEnabled: false,
+        action: { [weak self] in
+          self?.didTapScan?()
+        }
+      ),
+      WalletBalanceHeaderButtonsView.Model.Button(
+        configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.swapHorizontalOutline, title: "Swap"),
+        isEnabled: false,
+        action: {}
+      ),
+      WalletBalanceHeaderButtonsView.Model.Button(
+        configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.usd, title: "Buy or Sell"),
+        isEnabled: false,
+        action: {}
+      ),
+      WalletBalanceHeaderButtonsView.Model.Button(
+        configuration: TKUIIconButton.Model(image: .TKUIKit.Icons.Size28.stakingOutline, title: "Stake"),
+        isEnabled: false,
+        action: {}
+      )
+    ]
   }
   
   func updateFinishSetup(model: WalletBalanceSetupModel) {

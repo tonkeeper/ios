@@ -3,10 +3,37 @@ import TKUIKit
 
 final class ReceiveQRCodeView: UIView {
   
+  var tagString: String? {
+    didSet {
+      if let tagString {
+        tagView.configure(
+          configuration: TKUITagView.Configuration(
+            text: tagString,
+            textColor: .black,
+            backgroundColor: .Accent.orange
+          )
+        )
+        addressButtonBottomConstraint.isActive = false
+        addressButtonBottomTagConstraint.isActive = true
+      } else {
+        addressButtonBottomTagConstraint.isActive = false
+        addressButtonBottomConstraint.isActive = true
+      }
+    }
+  }
+  
   let contentContainer = UIView()
   let qrCodeImageView = UIImageView()
   let addressButton = UIButton(type: .custom)
   let tokenImageView = UIImageView()
+  let tagView = TKUITagView()
+  
+  private lazy var addressButtonBottomConstraint: NSLayoutConstraint = {
+    addressButton.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor)
+  }()
+  private lazy var addressButtonBottomTagConstraint: NSLayoutConstraint = {
+    addressButton.bottomAnchor.constraint(equalTo: tagView.topAnchor, constant: -12)
+  }()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -39,6 +66,7 @@ private extension ReceiveQRCodeView {
     addSubview(contentContainer)
     contentContainer.addSubview(qrCodeImageView)
     contentContainer.addSubview(addressButton)
+    contentContainer.addSubview(tagView)
     qrCodeImageView.addSubview(tokenImageView)
     
     setupConstraints()
@@ -49,6 +77,7 @@ private extension ReceiveQRCodeView {
     qrCodeImageView.translatesAutoresizingMaskIntoConstraints = false
     addressButton.translatesAutoresizingMaskIntoConstraints = false
     tokenImageView.translatesAutoresizingMaskIntoConstraints = false
+    tagView.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       contentContainer.topAnchor.constraint(equalTo: topAnchor, constant: .containerPadding),
@@ -56,7 +85,9 @@ private extension ReceiveQRCodeView {
       contentContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -.containerPadding),
       contentContainer.rightAnchor.constraint(equalTo: rightAnchor, constant: -.containerPadding),
       
-      addressButton.bottomAnchor.constraint(equalTo: contentContainer.bottomAnchor),
+      tagView.centerXAnchor.constraint(equalTo: centerXAnchor),
+      tagView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -24),
+      
       addressButton.leftAnchor.constraint(equalTo: contentContainer.leftAnchor).withPriority(.defaultHigh),
       addressButton.rightAnchor.constraint(equalTo: contentContainer.rightAnchor).withPriority(.defaultHigh),
       addressButton.topAnchor.constraint(equalTo: qrCodeImageView.bottomAnchor, constant: .addressTopInset),

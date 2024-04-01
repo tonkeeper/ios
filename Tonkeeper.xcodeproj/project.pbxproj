@@ -452,8 +452,6 @@
 		C3B0B5825AC3A498E32D39AF /* TokensListPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 747250C25A1B5F6992EA7E52 /* TokensListPresenter.swift */; };
 		C3B4DAA32B500AE60050703B /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAA22B500AE60050703B /* TKUIKit */; };
 		C3B4DAA52B500AF20050703B /* TKScreenKit in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAA42B500AF20050703B /* TKScreenKit */; };
-		C3B4DABA2B500BFB0050703B /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAB92B500BFB0050703B /* TKChart */; };
-		C3B4DABB2B500BFB0050703B /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DAB92B500BFB0050703B /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C3B4DABD2B500BFB0050703B /* TKCoordinator in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DABC2B500BFB0050703B /* TKCoordinator */; };
 		C3E4C9A12B30FFCD005526DA /* TitleConnectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9A02B30FFCD005526DA /* TitleConnectionView.swift */; };
 		C3E4C9AB2B31C85C005526DA /* NavigationBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9AA2B31C85C005526DA /* NavigationBarView.swift */; };
@@ -467,6 +465,8 @@
 		C3E4C9E52B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E42B33AF2D005526DA /* OpenTransactionTKButtonContentView.swift */; };
 		C3E4C9E72B33CAD4005526DA /* ModalCardListItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E62B33CAD4005526DA /* ModalCardListItemView.swift */; };
 		C3E4C9E92B33CB14005526DA /* ModalCardListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E4C9E82B33CB14005526DA /* ModalCardListView.swift */; };
+		C3FC243B2BB4DA980005E952 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C3FC243A2BB4DA980005E952 /* TKChart */; };
+		C3FC243C2BB4DA980005E952 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C3FC243A2BB4DA980005E952 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C47C4B7F4F1DE6D249EC9503 /* WelcomePresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59FE6CA4EE434A0D5A808E23 /* WelcomePresenter.swift */; };
 		C66B40FEF5B9FA11EE482612 /* InAppBrowserMainProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63E1770C8CEAAC7E5196ACB6 /* InAppBrowserMainProtocols.swift */; };
 		C8C8146A655C693012C56BBB /* SetupWalletPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47434FDA8878AC2C6E9D4C24 /* SetupWalletPresenter.swift */; };
@@ -518,7 +518,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				C3B4DABB2B500BFB0050703B /* TKChart in Embed Frameworks */,
+				C3FC243C2BB4DA980005E952 /* TKChart in Embed Frameworks */,
 				C37E2AE62B499D9B00EDFB9C /* WalletCore in Embed Frameworks */,
 				C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */,
 				C318DC4B2B499C83008A2273 /* TKUIKitLegacy in Embed Frameworks */,
@@ -1048,10 +1048,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C3FC243B2BB4DA980005E952 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				C3B4DAA52B500AF20050703B /* TKScreenKit in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
-				C3B4DABA2B500BFB0050703B /* TKChart in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
 				C3B4DABD2B500BFB0050703B /* TKCoordinator in Frameworks */,
 				C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */,
@@ -3165,9 +3165,9 @@
 				C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */,
 				C3B4DAA22B500AE60050703B /* TKUIKit */,
 				C3B4DAA42B500AF20050703B /* TKScreenKit */,
-				C3B4DAB92B500BFB0050703B /* TKChart */,
 				C3B4DABC2B500BFB0050703B /* TKCoordinator */,
 				C39560152B7380C5003303C7 /* App */,
+				C3FC243A2BB4DA980005E952 /* TKChart */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -4311,13 +4311,13 @@
 			package = C3B4DAA12B500AE60050703B /* XCRemoteSwiftPackageReference "tkuikit-ios" */;
 			productName = TKScreenKit;
 		};
-		C3B4DAB92B500BFB0050703B /* TKChart */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKChart;
-		};
 		C3B4DABC2B500BFB0050703B /* TKCoordinator */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKCoordinator;
+		};
+		C3FC243A2BB4DA980005E952 /* TKChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKChart;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
