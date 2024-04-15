@@ -24,7 +24,7 @@ protocol SettingsListItemsProvider: AnyObject {
   
   var title: String { get }
   
-  func getSections() -> [SettingsListSection]
+  func getSections() async -> [SettingsListSection]
   func selectItem(section: SettingsListSection, index: Int)
   func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell?
   func initialSelectedIndexPath() -> IndexPath?
@@ -51,10 +51,20 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     
     itemsProvider.didUpdateSections = { [weak self] in
       guard let self = self else { return }
-      self.didUpdateSettingsSections?(self.itemsProvider.getSections())
+      Task {
+        let sections = await self.itemsProvider.getSections()
+        await MainActor.run {
+          self.didUpdateSettingsSections?(sections)
+        }
+      }
     }
     
-    didUpdateSettingsSections?(itemsProvider.getSections())
+    Task {
+      let sections = await itemsProvider.getSections()
+      await MainActor.run {
+        didUpdateSettingsSections?(sections)
+      }
+    }
     if let initialSelectedIndexPath = itemsProvider.initialSelectedIndexPath() {
       didSelectItem?(initialSelectedIndexPath)
     }

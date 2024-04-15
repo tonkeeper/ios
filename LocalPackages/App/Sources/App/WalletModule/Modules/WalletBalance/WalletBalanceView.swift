@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import SnapKit
 
 final class WalletBalanceView: UIView, ConfigurableView {
   
@@ -20,11 +21,11 @@ final class WalletBalanceView: UIView, ConfigurableView {
   }
   
   struct Model {
-    let headerViewModel: WalletBalanceHeaderView.Model
+//    let headerViewModel: WalletBalanceHeaderView.Model
   }
   
   func configure(model: Model) {
-    headerView.configure(model: model.headerViewModel)
+//    headerView.configure(model: model.headerViewModel)
   }
 }
 
@@ -33,19 +34,29 @@ private extension WalletBalanceView {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
     
+//    addSubview(headerView)
     addSubview(collectionView)
     
     setupConstraints()
   }
   
   func setupConstraints() {
-    collectionView.translatesAutoresizingMaskIntoConstraints = false
+//    headerView.snp.makeConstraints { make in
+//      make.left.right.equalTo(self)
+//      make.top.equalTo(safeAreaLayoutGuide)
+//    }
     
-    NSLayoutConstraint.activate([
-      collectionView.topAnchor.constraint(equalTo: topAnchor),
-      collectionView.leftAnchor.constraint(equalTo: leftAnchor),
-      collectionView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      collectionView.rightAnchor.constraint(equalTo: rightAnchor)
-    ])
+    collectionView.snp.makeConstraints { make in
+      make.edges.equalTo(self)
+    }
+    
+//    collectionView.translatesAutoresizingMaskIntoConstraints = false
+//    
+//    NSLayoutConstraint.activate([
+//      collectionView.topAnchor.constraint(equalTo: topAnchor),
+//      collectionView.leftAnchor.constraint(equalTo: leftAnchor),
+//      collectionView.bottomAnchor.constraint(equalTo: bottomAnchor),
+//      collectionView.rightAnchor.constraint(equalTo: rightAnchor)
+//    ])
   }
 }

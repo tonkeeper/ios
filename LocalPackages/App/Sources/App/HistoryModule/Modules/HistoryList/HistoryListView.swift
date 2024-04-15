@@ -22,6 +22,7 @@ private extension HistoryListView {
   func setup() {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
+    collectionView.showsVerticalScrollIndicator = false
     
     addSubview(collectionView)
     

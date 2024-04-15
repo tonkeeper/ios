@@ -121,6 +121,7 @@ private extension TokenPickerViewController {
     snapshot.appendItems(tokenItems, toSection: .tokens)
     snapshot.reloadItems(tokenItems)
     dataSource.apply(snapshot)
+    didUpdateHeight?()
   }
 }
 

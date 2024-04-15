@@ -28,13 +28,22 @@ final class TonChartPresenter {
 extension TonChartPresenter: TonChartPresenterInput {
   func viewDidLoad() {
     setupButtons()
-    reloadChartDataAndHeader()
+    Task {
+      chartController.didUpdateChartData = { [weak self] in
+        guard let self else { return }
+        Task { await self.reloadChartDataAndHeader() }
+      }
+      await chartController.start()
+      await reloadChartDataAndHeader()
+    }
   }
   
   func didSelectButton(at index: Int) {
     viewInput?.selectButton(at: index)
     selectedPeriod = Period.allCases[index]
-    reloadChartDataAndHeader()
+    Task {
+      await reloadChartDataAndHeader()
+    }
   }
   
   func didSelectChartValue(at index: Int) {
@@ -55,7 +64,7 @@ extension TonChartPresenter: TonChartPresenterInput {
 extension TonChartPresenter: TonChartModuleInput {
   func reload() {
     Task {
-      reloadChartDataAndHeader()
+      await reloadChartDataAndHeader()
     }
   }
 }
@@ -68,9 +77,12 @@ private extension TonChartPresenter {
       var configuration = TKButton.Configuration.chartButtonConfiguration
       configuration.content.title = .plainString(period.title)
       configuration.action = { [weak self] in
-        self?.viewInput?.selectButton(at: index)
-        self?.selectedPeriod = KeeperCore.Period.allCases[index]
-        self?.reloadChartDataAndHeader()
+        guard let self else { return }
+        self.viewInput?.selectButton(at: index)
+        self.selectedPeriod = KeeperCore.Period.allCases[index]
+        Task {
+          await self.reloadChartDataAndHeader()
+        }
       }
       return configuration
     }
@@ -80,15 +92,13 @@ private extension TonChartPresenter {
     viewInput?.selectButton(at: KeeperCore.Period.allCases.firstIndex(of: selectedPeriod) ?? 0)
   }
   
-  func reloadChartDataAndHeader() {
-    Task {
-      do {
-        try await reloadChartData()
-        await showUnselectedHeader()
-      } catch {
-        await showError(error: error)
-        await showErrorHeader()
-      }
+  func reloadChartDataAndHeader() async {
+    do {
+      try await reloadChartData()
+      await showUnselectedHeader()
+    } catch {
+      await showError(error: error)
+      await showErrorHeader()
     }
   }
   
@@ -102,25 +112,27 @@ private extension TonChartPresenter {
     }
   }
   
-  @MainActor
-  func showUnselectedHeader() {
+  func showUnselectedHeader() async {
     guard !chartController.coordinates.isEmpty else { return }
-    let pointInformation = chartController.getInformation(
+    let pointInformation = await chartController.getInformation(
       at: chartController.coordinates.count - 1,
       period: selectedPeriod
     )
     let headerModel = prepareHeaderModel(pointInformation: pointInformation, date: "Price")
-    viewInput?.updateHeader(with: headerModel)
+    await MainActor.run {
+      viewInput?.updateHeader(with: headerModel)
+    }
   }
   
-  @MainActor
-  func showSelectedHeader(index: Int) {
-    let pointInformation = chartController.getInformation(
+  func showSelectedHeader(index: Int) async {
+    let pointInformation = await chartController.getInformation(
       at: index,
       period: selectedPeriod
     )
     let headerModel = prepareHeaderModel(pointInformation: pointInformation, date: pointInformation.date)
-    viewInput?.updateHeader(with: headerModel)
+    await MainActor.run {
+      viewInput?.updateHeader(with: headerModel)
+    }
   }
 
   func prepareChartData(coordinates: [TKChart.Coordinate],

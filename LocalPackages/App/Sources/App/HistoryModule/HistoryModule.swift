@@ -24,9 +24,9 @@ struct HistoryModule {
     return coordinator
   }
   
-  func createTonHistoryListModule() -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+  func createTonHistoryListModule(wallet: Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
     HistoryListAssembly.module(
-      historyListController: dependencies.keeperCoreMainAssembly.tonEventsHistoryListController(),
+      historyListController: dependencies.keeperCoreMainAssembly.tonEventsHistoryListController(wallet: wallet),
       historyEventMapper: HistoryEventMapper(
         accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()
       )
@@ -34,10 +34,14 @@ struct HistoryModule {
   }
   
   func createJettonHistoryListModule(
-    jettonItem: JettonItem
+    jettonItem: JettonItem,
+    wallet: Wallet
   ) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
     HistoryListAssembly.module(
-      historyListController: dependencies.keeperCoreMainAssembly.jettonEventsHistoryListController(jettonItem: jettonItem),
+      historyListController: dependencies.keeperCoreMainAssembly.jettonEventsHistoryListController(
+        jettonItem: jettonItem,
+        wallet: wallet
+      ),
       historyEventMapper: HistoryEventMapper(
         accountEventActionContentProvider: HistoryListAccountEventActionContentProvider()
       )

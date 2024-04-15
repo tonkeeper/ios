@@ -21,8 +21,8 @@ final class SettingsSecurityListItemsProvider: SettingsListItemsProvider {
   
   var title: String { .title }
   
-  func getSections() -> [SettingsListSection] {
-    setupSettingsSections()
+  func getSections() async -> [SettingsListSection] {
+    await setupSettingsSections()
   }
   
   func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell? {
@@ -33,16 +33,16 @@ final class SettingsSecurityListItemsProvider: SettingsListItemsProvider {
 }
 
 private extension SettingsSecurityListItemsProvider {
-  func setupSettingsSections() -> [SettingsListSection] {
+  func setupSettingsSections() async -> [SettingsListSection] {
     [
-      createBiometrySection(),
+      await createBiometrySection(),
       createBiometryDescriptionSection(),
       createPasscodeSection()
     ]
   }
   
-  func createBiometrySection() -> SettingsListSection {
-    let isBiometryEnabled = settingsSecurityController.isBiometryEnabled
+  func createBiometrySection() async -> SettingsListSection {
+    let isBiometryEnabled = await settingsSecurityController.isBiometryEnabled
     
     let switchModel: TKListItemSwitchView.Model = {
       let isOn: Bool
@@ -66,7 +66,7 @@ private extension SettingsSecurityListItemsProvider {
             let isConfirmed = (await self.didRequireConfirmation?()) ?? false
             guard isConfirmed else { return !isOn }
           }
-          return settingsSecurityController.setIsBiometryEnabled(isOn)
+          return await settingsSecurityController.setIsBiometryEnabled(isOn)
         }
       )
     }()

@@ -31,7 +31,14 @@ final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOu
   
   var didUpdateModel: ((PasscodeView.Model) -> Void)?
   
-  func viewDidLoad() {}
+  func viewDidLoad() {
+    Task {
+      let model = await createModel()
+      await MainActor.run {
+        didUpdateModel?(model)
+      }
+    }
+  }
   
   func viewDidDisappear() {
     didReset?()
@@ -67,10 +74,10 @@ final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOu
 }
 
 private extension PasscodeViewModelImplementation {
-  func createModel() -> PasscodeView.Model {
+  func createModel() async -> PasscodeView.Model {
     
     let biometry: TKKeyboardView.Configuration.Biometry?
-    switch biometryProvider.checkBiometryStatus() {
+    switch await biometryProvider.checkBiometryStatus() {
     case .touchId:
       biometry = .touchId
     case .faceId:

@@ -1,11 +1,11 @@
 import KeeperCore
 
 protocol AccountEventActionContentProvider {
-  func title(actionType: HistoryListEvent.Action.ActionType) -> String?
+  func title(actionType: HistoryEvent.Action.ActionType) -> String?
 }
 
 struct HistoryListAccountEventActionContentProvider: AccountEventActionContentProvider {
-  func title(actionType: HistoryListEvent.Action.ActionType) -> String? {
+  func title(actionType: HistoryEvent.Action.ActionType) -> String? {
     switch actionType {
     case .sent:
       return "Sent"
@@ -60,7 +60,7 @@ struct HistoryListAccountEventActionContentProvider: AccountEventActionContentPr
 }
 
 struct TonConnectConfirmationAccountEventActionContentProvider: AccountEventActionContentProvider {
-  func title(actionType: HistoryListEvent.Action.ActionType) -> String? {
+  func title(actionType: HistoryEvent.Action.ActionType) -> String? {
     switch actionType {
     case .sent:
       return "Send"

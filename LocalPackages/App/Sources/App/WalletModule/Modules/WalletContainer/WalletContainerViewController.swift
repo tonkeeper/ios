@@ -30,7 +30,8 @@ final class WalletContainerViewController: GenericViewViewController<WalletConta
   
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
-    additionalSafeAreaInsets.top = customView.topBarView.frame.height - customView.safeAreaInsets.top
+    customView.layoutIfNeeded()
+    walletBalanceViewController?.additionalSafeAreaInsets.top = customView.topBarView.frame.height - customView.safeAreaInsets.top
   }
   
   func scrollToTop() {
@@ -71,7 +72,7 @@ private extension WalletContainerViewController {
     UIView.transition(
       with: customView.walletBalanceContainerView,
       duration: 0.4,
-      options: [.transitionCrossDissolve],
+      options: [.transitionCrossDissolve, .allowUserInteraction],
       animations: nil,
       completion: { _ in
         previousViewController?.didMove(toParent: nil)

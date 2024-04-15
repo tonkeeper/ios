@@ -7,11 +7,23 @@ struct WalletBalanceListItemMapper {
   
   let imageLoader = ImageLoader()
   
-  func mapBalanceItems(_ item: WalletBalanceModel.Item,
-                       selectionHandler: @escaping () -> Void) -> WalletBalanceBalanceItemCell.Model {
+  func mapBalanceItem(_ item: WalletBalanceItemsModel.Item, selectionClosure: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+    let id: String
+    switch item.token {
+    case .ton:
+      id = "ton"
+    case .jetton(let jettonItem):
+      id = jettonItem.jettonInfo.address.toRaw()
+    }
+    
+    let title = item.title.withTextStyle(
+      .label1,
+      color: .white,
+      alignment: .left,
+      lineBreakMode: .byTruncatingTail
+    )
     
     let subtitle = NSMutableAttributedString()
-    
     switch item.verification {
     case .none:
       subtitle.append("Unverified Token".withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
@@ -39,70 +51,86 @@ struct WalletBalanceListItemMapper {
       subtitle.append("Unverified Token".withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
     }
     
-    let contentViewModel = TKListItemContentStackView.Model(
-      titleSubtitleModel: TKListItemTitleSubtitleView.Model(
-        title: item.title.withTextStyle(.label1, color: .white, alignment: .left, lineBreakMode: .byTruncatingTail),
-        subtitle: subtitle
-      ),
-      description: nil
+    let value = item.amount?.withTextStyle(
+      .label1,
+      color: .white,
+      alignment: .right,
+      lineBreakMode: .byTruncatingTail
     )
-
-    let rightContentViewModel = TKListItemContentStackView.Model(
-      titleSubtitleModel: TKListItemTitleSubtitleView.Model(
-        title: item.amount?.withTextStyle(.label1, color: .white, alignment: .right, lineBreakMode: .byTruncatingTail),
-        subtitle: item.convertedAmount?.withTextStyle(.body2, color: .Text.secondary, alignment: .right, lineBreakMode: .byTruncatingTail)
-      ),
-      description: nil
+    let valueSubtitle = item.convertedAmount?.withTextStyle(
+      .body2,
+      color: .Text.secondary,
+      alignment: .right,
+      lineBreakMode: .byTruncatingTail
     )
     
-    let contentModel = TKListItemContentView.Model(
-      leftContentStackViewModel: contentViewModel,
-      rightContentStackViewModel: rightContentViewModel
-    )
-    
-    let image: TKListItemIconImageView.Model.Image
+    let iconConfigurationImage: TKUIListItemImageIconView.Configuration.Image
     switch item.image {
     case .ton:
-      image = .image(.TKCore.Icons.Size44.tonLogo)
+      iconConfigurationImage = .image(.TKCore.Icons.Size44.tonLogo)
     case .url(let url):
-      image = .asyncImage(
+      iconConfigurationImage = .asyncImage(
+        url,
         TKCore.ImageDownloadTask(
           closure: {
             [imageLoader] imageView,
             size,
             cornerRadius in
-            return imageLoader.loadImage(url: url, imageView: imageView, size: size, cornerRadius: cornerRadius)
+            return imageLoader.loadImage(
+              url: url,
+              imageView: imageView,
+              size: size,
+              cornerRadius: cornerRadius
+            )
           }
         )
       )
     }
     
-    let iconModel = TKListItemIconImageView.Model(
-      image: image,
-      tintColor: .clear,
-      backgroundColor: .clear,
-      size: CGSize(width: 44, height: 44)
+    let iconConfiguration = TKUIListItemIconView.Configuration(
+      iconConfiguration: .image(
+        TKUIListItemImageIconView.Configuration(
+          image: iconConfigurationImage,
+          tintColor: .Icon.primary,
+          backgroundColor: .Background.contentTint,
+          size: .iconSize
+        )
+      ),
+      alignment: .center
     )
-
-    let cellModel = WalletBalanceBalanceItemCell.Model(
-      identifier: item.identifier,
-      isSelectable: false,
-      selectionHandler: selectionHandler,
-      cellContentModel: WalletBalanceBalanceItemCellContentView.Model(
-        iconModel: iconModel,
-        contentModel: contentModel
-      )
+    
+    let listItemConfiguration = TKUIListItemView.Configuration(
+      iconConfiguration: iconConfiguration,
+      contentConfiguration: TKUIListItemContentView.Configuration(
+        leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
+          title: title,
+          tagViewModel: nil,
+          subtitle: subtitle,
+          description: nil
+        ),
+        rightItemConfiguration: TKUIListItemContentRightItem.Configuration(
+          value: value,
+          subtitle: valueSubtitle,
+          description: nil
+        )
+      ),
+      accessoryConfiguration: .none
     )
-    return cellModel
+    
+    return TKUIListItemCell.Configuration(
+      id: id,
+      listItemConfiguration: listItemConfiguration,
+      selectionClosure: selectionClosure
+    )
   }
   
   func mapFinishSetup(model: WalletBalanceSetupModel,
                       biometryAuthentificator: BiometryAuthentificator,
                       backupHandler: @escaping () -> Void,
-                      biometryHandler: @escaping (Bool) async -> Bool) -> [AnyHashable] {
-    var items = [AnyHashable]()
+                      biometryHandler: @escaping (Bool) async -> Bool) -> [TKUIListItemCell.Configuration] {
+    var items = [TKUIListItemCell.Configuration]()
     if !model.didBackup {
-      items.append(createBackupItem(backupHandler: backupHandler))
+      items.append(createBackupItem(selectionClosure: backupHandler))
     }
     if model.biometry.isRequired {
       items.append(
@@ -117,31 +145,52 @@ struct WalletBalanceListItemMapper {
     return items
   }
   
-  func mapFinishSetupSectionHeaderModel(model: WalletBalanceSetupModel) -> WalletBalanceCollectionController.SectionHeaderView.Model {
-    let title = "Finish setting up"
-    var buttonContent: TKButton.Configuration.Content?
-    if model.isFinishSetupAvailable {
-      buttonContent = TKButton.Configuration.Content(title: .plainString("Done"))
-    }
-    return WalletBalanceCollectionController.SectionHeaderView.Model(title: title, buttonContent: buttonContent)
-  }
-  
-  func createBackupItem(backupHandler: @escaping () -> Void) -> WalletBalanceSetupPlainItemCell.Model {
-    WalletBalanceSetupPlainItemCell.Model(
-      identifier: .backupItemIdentifier,
-      accessoryType: .disclosureIndicator,
-      selectionHandler: {
-        backupHandler()
-      },
-      cellContentModel: WalletBalanceSetupPlainItemCellContentView.Model(
-        iconModel: TKListItemIconImageView.Model(
-          image: .image(.TKUIKit.Icons.Size28.key),
-          tintColor: .Icon.primary,
-          backgroundColor: .Background.contentTint,
-          size: .iconSize
-        ),
-        contentModel: WalletBalanceSetupContentView.Model(title: .backupDescription)
+  func createBackupItem(selectionClosure: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+    
+    let leftItemConfiguration = TKUIListItemContentLeftItem.Configuration(
+      title: nil,
+      tagViewModel: nil,
+      subtitle: nil,
+      description: String.backupDescription.withTextStyle(
+        .body2,
+        color: .Text.primary,
+        alignment: .left,
+        lineBreakMode: .byWordWrapping
       )
+    )
+    
+    let contentConfiguration = TKUIListItemContentView.Configuration(
+      leftItemConfiguration: leftItemConfiguration,
+      rightItemConfiguration: nil
+    )
+    
+    let listItemConfiguration = TKUIListItemView.Configuration(
+      iconConfiguration: TKUIListItemIconView.Configuration(
+        iconConfiguration: .image(
+          TKUIListItemImageIconView.Configuration(
+            image: .image(.TKUIKit.Icons.Size28.key),
+            tintColor: .Icon.primary,
+            backgroundColor: .Background.contentTint,
+            size: .iconSize
+          )
+        ),
+        alignment: .center
+      ),
+      contentConfiguration: contentConfiguration,
+      accessoryConfiguration: .image(
+        .init(
+          image: .TKUIKit.Icons.Size16.chevronRight,
+          tintColor: .Text.tertiary,
+          padding: .zero
+        )
+      )
+    )
+    
+    return TKUIListItemCell.Configuration(
+      id: .backupItemIdentifier,
+      listItemConfiguration: listItemConfiguration,
+      isHighlightable: true,
+      selectionClosure: selectionClosure
     )
   }
   
@@ -149,54 +198,81 @@ struct WalletBalanceListItemMapper {
     biometry: WalletBalanceSetupModel.Biometry,
     biometryAuthentificator: BiometryAuthentificator,
     biometryHandler: @escaping (Bool) async -> Bool
-  ) -> WalletBalanceSetupSwitchItemCell.Model {
+  ) -> TKUIListItemCell.Configuration {
     
-      let switchModel: TKListItemSwitchView.Model = {
-        let isOn: Bool
-        let isEnabled: Bool
-    
-        let result = biometryAuthentificator.canEvaluate(policy: .deviceOwnerAuthenticationWithBiometrics)
-        switch result {
-        case .success:
-          isOn = biometry.isBiometryEnabled
-          isEnabled = true
-        case .failure:
-          isOn = false
-          isEnabled = false
-        }
-        return TKListItemSwitchView.Model(
-          isOn: isOn,
-          isEnabled: isEnabled,
-          action: { isOn in
-            return await biometryHandler(isOn)
-          }
-        )
-      }()
-    
-      let title: String
-      switch biometryAuthentificator.biometryType {
-      case .touchID:
-        title = .use + " " + .touchId + " " + .approveTransactions
-      case .faceID:
-        title = .use + " " + .faceId + " " + .approveTransactions
-      default:
-        title = .biometryUnavailable
+    let switchAccessoryConfiguration: TKUIListItemSwitchAccessoryView.Configuration = {
+      let isOn: Bool
+      let isEnabled: Bool
+      
+      let result = biometryAuthentificator.canEvaluate(policy: .deviceOwnerAuthenticationWithBiometrics)
+      switch result {
+      case .success:
+        isOn = biometry.isBiometryEnabled
+        isEnabled = true
+      case .failure:
+        isOn = false
+        isEnabled = false
       }
+      return TKUIListItemSwitchAccessoryView.Configuration(
+        isOn: isOn) { isOn in
+          return await biometryHandler(isOn)
+        }
+    }()
+
+    let title: String
+    let image: UIImage
+    switch biometryAuthentificator.biometryType {
+    case .touchID:
+      title = .use + " " + .touchId + " " + .approveTransactions
+      image = .TKUIKit.Icons.Size28.faceId
+    case .faceID:
+      title = .use + " " + .faceId + " " + .approveTransactions
+      image = .TKUIKit.Icons.Size28.faceId
+    default:
+      title = .biometryUnavailable
+      image = .TKUIKit.Icons.Size28.faceId
+    }
     
+    let leftItemConfiguration = TKUIListItemContentLeftItem.Configuration(
+      title: nil,
+      tagViewModel: nil,
+      subtitle: nil,
+      description: title.withTextStyle(
+        .body2,
+        color: .Text.primary,
+        alignment: .left,
+        lineBreakMode: .byWordWrapping
+      )
+    )
     
-    return WalletBalanceSetupSwitchItemCell.Model(
-      identifier: .biometryItemIdentifier,
-      isHighlightable: false,
-      cellContentModel: WalletBalanceSetupSwitchItemCellContentView.Model(
-        iconModel: TKListItemIconImageView.Model(
-          image: .image(.TKUIKit.Icons.Size28.faceId),
+    let contentConfiguration = TKUIListItemContentView.Configuration(
+      leftItemConfiguration: leftItemConfiguration,
+      rightItemConfiguration: nil
+    )
+    
+    let iconConfiguration = TKUIListItemIconView.Configuration(
+      iconConfiguration: .image(
+        TKUIListItemImageIconView.Configuration(
+          image: .image(image),
           tintColor: .Icon.primary,
           backgroundColor: .Background.contentTint,
           size: .iconSize
-        ),
-        contentModel: WalletBalanceSetupContentView.Model(title: title),
-        valueModel: switchModel
-      )
+        )
+      ),
+      alignment: .center
+    )
+    
+    let listItemConfiguration = TKUIListItemView.Configuration(
+      iconConfiguration: iconConfiguration,
+      contentConfiguration: contentConfiguration,
+      accessoryConfiguration: .switchControl(switchAccessoryConfiguration)
+    )
+    
+    return TKUIListItemCell.Configuration(
+      id: .biometryItemIdentifier,
+      listItemConfiguration: listItemConfiguration,
+      isHighlightable: false,
+      selectionClosure: nil
     )
   }
 }

@@ -35,7 +35,9 @@ final class SendConfirmationViewModelImplementation: SendConfirmationViewModel, 
   
   func viewDidLoad() {
     setupControllerBindings()
-    sendConfirmationController.start()
+    Task {
+      await sendConfirmationController.start()
+    }
   }
   
   func viewDidAppear() {

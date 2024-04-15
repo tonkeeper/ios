@@ -17,12 +17,25 @@ protocol HistoryListViewModel: AnyObject {
   var didUpdateHistory: (([HistoryListSection]) -> Void)? { get set }
   var didStartPagination: ((HistoryListSection.Pagination) -> Void)? { get set }
   var didStartLoading: (() -> Void)? { get set }
+  var reloadEvent: (() -> Void)? { get set }
   
   func viewDidLoad()
   func loadNext()
 }
 
 final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryListModuleOutput, HistoryListModuleInput {
+  
+  actor CachedModels {
+    var models = [String: HistoryCell.Configuration]()
+    
+    func setModel(_ model: HistoryCell.Configuration, id: String) {
+      models[id] = model
+    }
+    
+    func reset() {
+      models.removeAll()
+    }
+  }
   
   // MARK: - HistoryListModuleOutput
   
@@ -38,22 +51,27 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   var didUpdateHistory: (([HistoryListSection]) -> Void)?
   var didStartPagination: ((HistoryListSection.Pagination) -> Void)?
   var didStartLoading: (() -> Void)?
+  var reloadEvent: (() -> Void)?
   
   func viewDidLoad() {
-    historyListController.didSendEvent = { [weak self] event in
-      self?.handleEvent(event)
+    Task {
+      historyListController.didGetEvent = { [weak self] event in
+        self?.handleEvent(event)
+      }
+      await historyListController.start()
     }
-    historyListController.start()
   }
   
   func loadNext() {
-    historyListController.loadNext()
+    Task {
+      await historyListController.loadNext()
+    }
   }
   
   // MARK: - State
   
-  private var cachedEventsModels = [String: HistoryEventCell.Model]()
-  
+  private var cachedModels = CachedModels()
+    
   // MARK: - Dependencies
   
   private let historyListController: HistoryListController
@@ -69,64 +87,72 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
 }
 
 private extension HistoryListViewModelImplementation {
-  func handleEvent(_ event: HistoryListController.Event) {
-    switch event {
-    case .reset:
-      cachedEventsModels = [:]
-    case .loadingStart:
-      Task { @MainActor in
-        didStartLoading?()
-      }
-    case .noEvents:
-      Task { @MainActor in
-        noEvents?()
-      }
-    case .events(let sections):
-      handleLoadedEvents(sections)
-    case .paginationStart:
-      Task { @MainActor in
-        didStartPagination?(.loading)
-      }
-    case .paginationFailed:
-      Task { @MainActor in
-        didStartPagination?(.error(title: "Failed to load"))
+  func handleEvent(_ event: PaginationEvent<KeeperCore.HistoryListSection>) {
+    Task {
+      switch event {
+      case .cached(let updatedSections):
+        await handleUpdatedSections(updatedSections)
+      case .loading:
+        await MainActor.run {
+          didStartLoading?()
+        }
+      case .empty:
+        await MainActor.run {
+          noEvents?()
+        }
+      case .loaded(let updatedSections):
+        await cachedModels.reset()
+        await handleUpdatedSections(updatedSections)
+      case .nextPage(let updatedSections):
+        await handleUpdatedSections(updatedSections)
+      case .pageLoading:
+        await MainActor.run {
+          didStartPagination?(.loading)
+        }
+      case .pageLoadingFailed:
+        await MainActor.run {
+          didStartPagination?(.error(title: "Failed to load"))
+        }
       }
     }
   }
   
-  func handleLoadedEvents(_ loadedSections: [KeeperCore.HistoryListSection]) {
-    let sectionsModels = loadedSections.map { section in
-      let eventsModels = section.events.enumerated().map { index, event in
-        mapEvent(event)
+  func handleUpdatedSections(_ updatedSections: [KeeperCore.HistoryListSection]) async {
+    var sections = [HistoryListSection]()
+    for updatedSection in updatedSections {
+      var eventModels = [HistoryCell.Configuration]()
+      for event in updatedSection.events {
+        await eventModels.append(mapEvent(event))
       }
       let section = HistoryListEventsSection(
-        date: section.date,
-        title: section.title,
-        events: eventsModels
+        date: updatedSection.date,
+        title: updatedSection.title,
+        events: eventModels
       )
-      return HistoryListSection.events(section)
+      sections.append(HistoryListSection.events(section))
     }
-    Task { @MainActor in
-      didUpdateHistory?(sectionsModels)
+    let resultSections = sections
+    await MainActor.run {
       hasEvents?()
+      didUpdateHistory?(resultSections)
     }
   }
   
-  func mapEvent(_ event: HistoryListEvent) -> HistoryEventCell.Model {
-    if let eventModel = cachedEventsModels[event.eventId] {
-      return eventModel
+  func mapEvent(_ event: HistoryEvent) async -> HistoryCell.Configuration {
+    if let cachedModel = await cachedModels.models[event.eventId] {
+      return cachedModel
     } else {
-      let eventModel = historyEventMapper.mapEvent(
-        event,
-        nftAction: { [weak self] nft in
-          self?.didSelectNFT?(nft)
-        },
-        tapAction: { [weak self] accountEventDetailsEvent in
-          self?.didSelectEvent?(accountEventDetailsEvent)
-        }
-      )
-      cachedEventsModels[event.eventId] = eventModel
-      return eventModel
+      let model = historyEventMapper.mapEvent(event) { [weak self] nft in
+        self?.didSelectNft(nft)
+      } tapAction: { [weak self] accountEventDetailsEvent in
+        self?.didSelectEvent?(accountEventDetailsEvent)
+      }
+      await cachedModels.setModel(model, id: event.eventId)
+      return model
     }
+  }
+  
+  func didSelectNft(_ nft: NFT) {
+    didSelectNFT?(nft)
   }
 }

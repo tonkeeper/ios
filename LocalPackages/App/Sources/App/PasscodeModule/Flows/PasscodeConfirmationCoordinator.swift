@@ -32,7 +32,7 @@ private extension PasscodeConfirmationCoordinator {
       navigationController: navigationController,
       biometryProvider: PasscodeConfirmationBiometryProvider(
         biometryAuthentificator: BiometryAuthentificator(),
-        isBiometryEnabled: passcodeConfirmationController.isBiometryEnabled
+        passcodeConfirmationController: passcodeConfirmationController
       )
     )
     
@@ -114,7 +114,7 @@ private extension PasscodeConfirmationChildCoordinator {
   func openInputPasscode() {
     var biometryProvider = PasscodeConfirmationBiometryProvider(
       biometryAuthentificator: BiometryAuthentificator(),
-      isBiometryEnabled: passcodeConfirmationController.isBiometryEnabled
+      passcodeConfirmationController: passcodeConfirmationController
     )
     
     biometryProvider.didSuccessBiometry = { [weak self] in
@@ -168,25 +168,31 @@ private struct PasscodeConfirmationInputValidator: PasscodeInputValidator {
 private struct PasscodeConfirmationBiometryProvider: PasscodeInputBiometryProvider {
   
   private let biometryAuthentificator: BiometryAuthentificator
-  private let isBiometryEnabled: Bool
+  private let passcodeConfirmationController: PasscodeConfirmationController
   
   init(biometryAuthentificator: BiometryAuthentificator,
-       isBiometryEnabled: Bool) {
+       passcodeConfirmationController: PasscodeConfirmationController) {
     self.biometryAuthentificator = biometryAuthentificator
-    self.isBiometryEnabled = isBiometryEnabled
+    self.passcodeConfirmationController = passcodeConfirmationController
   }
   
   var didSuccessBiometry: (() -> Void)?
   var didFailedBiometry: (() -> Void)?
   
-  func checkBiometryStatus() -> PasscodeInputBiometryProviderState {
-    guard isBiometryEnabled else { return .none }
-    switch biometryAuthentificator.biometryType {
-    case .faceID:
-      return .faceId
-    case .touchID:
-      return .touchId
-    case .none, .unknown:
+  func checkBiometryStatus() async -> PasscodeInputBiometryProviderState {
+    guard await passcodeConfirmationController.isBiometryEnabled else { return .none }
+    let result = biometryAuthentificator.canEvaluate(policy: .deviceOwnerAuthenticationWithBiometrics)
+    switch result {
+    case .success:
+      switch biometryAuthentificator.biometryType {
+      case .faceID:
+        return .faceId
+      case .touchID:
+        return .touchId
+      case .none, .unknown:
+        return .none
+      }
+    case .failure:
       return .none
     }
   }

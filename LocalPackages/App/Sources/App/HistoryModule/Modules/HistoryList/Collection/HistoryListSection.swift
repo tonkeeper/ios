@@ -16,7 +16,7 @@ enum HistoryListSection: Hashable {
 struct HistoryListEventsSection: Hashable {
   let date: Date
   let title: String?
-  let events: [HistoryEventCell.Model]
+  let events: [HistoryCell.Configuration]
   
   func hash(into hasher: inout Hasher) {
     hasher.combine(date)

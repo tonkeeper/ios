@@ -4,11 +4,12 @@ import KeeperCore
 import TonSwift
 
 protocol CollectiblesListModuleOutput: AnyObject {
-  var didSelectNFT: ((Address) -> Void)? { get set }
+  var didSelectNFT: ((NFT) -> Void)? { get set }
 }
 
 protocol CollectiblesListViewModel: AnyObject {
-  var didUpdateSections: (([CollectiblesListSection]) -> Void)? { get set }
+  var didRestartList: (() -> Void)? { get set }
+  var didLoadNFTs: (([CollectibleCollectionViewCell.Model]) -> Void)? { get set }
   
   func viewDidLoad()
   func loadNext()
@@ -19,22 +20,27 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   
   // MARK: - CollectiblesListModuleOutput
   
-  var didSelectNFT: ((Address) -> Void)?
+  var didSelectNFT: ((NFT) -> Void)?
   
   // MARK: - CollectiblesListViewModel
   
-  var didUpdateSections: (([CollectiblesListSection]) -> Void)?
+  var didRestartList: (() -> Void)?
+  var didLoadNFTs: (([CollectibleCollectionViewCell.Model]) -> Void)?
   
   func viewDidLoad() {
     Task {
-      let handler: (CollectiblesListController.Event) -> Void = { [weak self] event in
-        guard let self = self else { return }
+      collectiblesListController.setDidGetEventHandler({ [weak self] event in
         switch event {
-        case .updateNFTs(let nfts):
-          self.handleUpdatedNFTs(nfts: nfts)
+        case .cached(let nfts):
+          self?.didGetCachedNFTs(nfts)
+        case .loaded(let nfts):
+          self?.didLoadedNfts(nfts)
+        case .nextPage(let nfts):
+          self?.didLoadedNextPage(nfts)
+        default:
+          break
         }
-      }
-      await collectiblesListController.setDidSendEventHandler(handler)
+      })
       await collectiblesListController.start()
     }
   }
@@ -47,10 +53,10 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   
   func didSelectNftAt(index: Int) {
     Task {
-      let model = await collectiblesListController.modelAt(index: index)
-      await MainActor.run(body: {
-        didSelectNFT?(model.address)
-      })
+      let nft = await collectiblesListController.nftAt(index: index)
+      await MainActor.run {
+        didSelectNFT?(nft)
+      }
     }
   }
   
@@ -70,11 +76,26 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
 }
 
 private extension CollectiblesListViewModelImplementation {
-  func handleUpdatedNFTs(nfts: [NFTModel]) {
-    let models = collectiblesListMapper.map(nftModels: nfts)
-    let section = CollectiblesListSection.collectibles(items: models)
+  func didGetCachedNFTs(_ nfts: [NFT]) {
+    let models = collectiblesListMapper.map(nfts: nfts)
     Task { @MainActor in
-      didUpdateSections?([section])
+      didRestartList?()
+      didLoadNFTs?(models)
+    }
+  }
+  
+  func didLoadedNfts(_ nfts: [NFT]) {
+    let models = collectiblesListMapper.map(nfts: nfts)
+    Task { @MainActor in
+      didRestartList?()
+      didLoadNFTs?(models)
+    }
+  }
+  
+  func didLoadedNextPage(_ nfts: [NFT]) {
+    let models = collectiblesListMapper.map(nfts: nfts)
+    Task { @MainActor in
+      didLoadNFTs?(models)
     }
   }
 }

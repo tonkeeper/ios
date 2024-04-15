@@ -1,33 +1,19 @@
 import UIKit
 import TKUIKit
+import SnapKit
 
 final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
   
-  let balanceLabel = UILabel()
-  let connectionStatusView = ConnectionStatusView()
-  let addressLabel = UIButton(type: .custom)
-  let walletTagView = TKUITagView()
+  private let balanceLabel = UILabel()
+  private let statusView = ConnectionStatusView()
+  private let addressButton = TKButton()
+  private let tagView = TKUITagView()
+  private let stateDateLabel = UILabel()
   
-  private let stackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .vertical
-    stackView.isLayoutMarginsRelativeArrangement = true
-    stackView.directionalLayoutMargins.top = .topInset
-    stackView.directionalLayoutMargins.bottom = .bottomInset
-    return stackView
-  }()
-  private let addressStatusStackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .vertical
-    stackView.alignment = .center
-    return stackView
-  }()
-  private let addressTagStackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.alignment = .center
-    return stackView
-  }()
-  
+  private let stackView = UIStackView()
+  private let addressTagContainer = UIStackView()
+  private let addressTagStatusContainer = UIStackView()
+
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -39,81 +25,77 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
 
   struct Model {
     let balance: String
-    let address: String
-    let addressAction: () -> Void
+    let addressButtonConfiguration: TKButton.Configuration
     let connectionStatusModel: ConnectionStatusView.Model?
     let tagConfiguration: TKUITagView.Configuration?
+    let stateDate: String?
   }
   
   func configure(model: Model) {
-    balanceLabel.attributedText = model.balance.withTextStyle(
-      .balance,
-      color: .Text.primary,
-      alignment: .center
-    )
-    addressLabel.setAttributedTitle(
-      model.address.withTextStyle(.body2, color: .Text.secondary), 
-      for: .normal
-    )
-    addressLabel.setAttributedTitle(
-      model.address.withTextStyle(.body2, color: .Text.secondary.withAlphaComponent(0.48)),
-      for: .highlighted
-    )
-    addressLabel.removeTarget(nil, action: nil, for: .touchUpInside)
-    addressLabel.addAction(UIAction(handler: { _ in
-      model.addressAction()
-    }), for: .touchUpInside)
-    
-    if let connectionStatusModel = model.connectionStatusModel {
-      connectionStatusView.configure(model: connectionStatusModel)
-      connectionStatusView.isHidden = false
-      addressTagStackView.isHidden = true
-    } else {
-      connectionStatusView.isHidden = true
-      addressTagStackView.isHidden = false
-    }
+    balanceLabel.attributedText = model.balance.withTextStyle(.balance, color: .Text.primary, alignment: .center)
+    addressButton.configuration = model.addressButtonConfiguration
+    stateDateLabel.attributedText = model.stateDate?.withTextStyle(.body2, color: .Text.secondary, alignment: .center)
     
     if let tagConfiguration = model.tagConfiguration {
-      walletTagView.configure(configuration: tagConfiguration)
-      walletTagView.isHidden = false
-    } else {
-      walletTagView.isHidden = true
+      tagView.configure(configuration: tagConfiguration)
     }
+    
+    if let connectionStatusModel = model.connectionStatusModel {
+      statusView.configure(model: connectionStatusModel)
+    }
+    
+    addressTagContainer.isHidden = model.connectionStatusModel != nil || model.stateDate != nil
+    statusView.isHidden = model.connectionStatusModel == nil
+    tagView.isHidden = model.tagConfiguration == nil
+    stateDateLabel.isHidden = model.stateDate == nil || model.connectionStatusModel != nil
   }
 }
 
 private extension WalletBalanceHeaderBalanceView {
   func setup() {
+    stackView.axis = .vertical
+    
+    addressTagStatusContainer.axis = .vertical
+    addressTagStatusContainer.alignment = .center
+    addressTagStatusContainer.isLayoutMarginsRelativeArrangement = true
+    addressTagStatusContainer.directionalLayoutMargins = .addressTagContainerPadding
+    
+    addressTagContainer.axis = .horizontal
+    addressTagContainer.alignment = .center
+    
     addSubview(stackView)
     stackView.addArrangedSubview(balanceLabel)
-    stackView.addArrangedSubview(addressStatusStackView)
-    addressTagStackView.addArrangedSubview(addressLabel)
-    addressTagStackView.addArrangedSubview(walletTagView)
-    addressStatusStackView.addArrangedSubview(addressTagStackView)
-    addressStatusStackView.addArrangedSubview(connectionStatusView)
-    
+    stackView.addArrangedSubview(addressTagStatusContainer)
+    addressTagContainer.addArrangedSubview(addressButton)
+    addressTagContainer.addArrangedSubview(tagView)
+    addressTagStatusContainer.addArrangedSubview(addressTagContainer)
+    addressTagStatusContainer.addArrangedSubview(statusView)
+    addressTagStatusContainer.addArrangedSubview(stateDateLabel)
+
     setupConstraints()
   }
   
   func setupConstraints() {
-    stackView.translatesAutoresizingMaskIntoConstraints = false
-    connectionStatusView.translatesAutoresizingMaskIntoConstraints = false
-    addressLabel.translatesAutoresizingMaskIntoConstraints = false
+    balanceLabel.snp.makeConstraints { make in
+      make.height.equalTo(CGFloat.balanceLabelHeight)
+    }
     
-    NSLayoutConstraint.activate([
-      stackView.topAnchor.constraint(equalTo: topAnchor),
-      stackView.leftAnchor.constraint(equalTo: leftAnchor),
-      stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      stackView.rightAnchor.constraint(equalTo: rightAnchor),
-      
-      connectionStatusView.heightAnchor.constraint(equalToConstant: 32),
-      
-      addressLabel.heightAnchor.constraint(equalToConstant: 32)
-    ])
+    stackView.snp.makeConstraints { make in
+      make.edges.equalTo(self).inset(UIEdgeInsets.stackViewPadding)
+    }
   }
 }
 
 private extension CGFloat {
-  static let topInset: CGFloat = 28
-  static let bottomInset: CGFloat = 16
+  static let balanceLabelHeight: CGFloat = 56
+  static let addressTagStatusHeight: CGFloat = 32
+}
+
+private extension UIEdgeInsets {
+  static var stackViewPadding = UIEdgeInsets(top: 28, left: 16, bottom: 16, right: 16)
+  
+}
+
+private extension NSDirectionalEdgeInsets {
+  static var addressTagContainerPadding = NSDirectionalEdgeInsets(top: 4, leading: 0, bottom: 8, trailing: 0)
 }

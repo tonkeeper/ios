@@ -30,7 +30,10 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
   
   func viewDidLoad() {
     setupControllerBindings()
-    tokenPickerController.start()
+    
+    Task {
+      await tokenPickerController.start()
+    }
   }
   
   func didSelectItemAt(index: Int) {

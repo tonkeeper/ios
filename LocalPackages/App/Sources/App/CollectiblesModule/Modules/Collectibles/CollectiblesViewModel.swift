@@ -5,7 +5,7 @@ import KeeperCore
 import TonSwift
 
 protocol CollectiblesModuleOutput: AnyObject {
-  var didSelectNFT: ((Address) -> Void)? { get set }
+  var didSelectNFT: ((NFT) -> Void)? { get set }
 }
 
 protocol CollectiblesViewModel: AnyObject {
@@ -19,7 +19,7 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   
   // MARK: - CollectiblesModuleOutput
   
-  var didSelectNFT: ((Address) -> Void)?
+  var didSelectNFT: ((NFT) -> Void)?
   
   var didUpdateListViewController: ((CollectiblesListViewController) -> Void)?
   
@@ -30,14 +30,23 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   func viewDidLoad() {
     setupChildren()
     
-    collectiblesController.didUpdateIsConnecting = { [weak self] isConnecting in
-      guard let self = self else { return }
-      Task { @MainActor in
-        self.didUpdateIsConnecting?(isConnecting)
+    Task {
+      collectiblesController.didUpdateIsConnecting = { [weak self] isConnecting in
+        guard let self = self else { return }
+        Task { @MainActor in
+          self.didUpdateIsConnecting?(isConnecting)
+        }
       }
+      
+      collectiblesController.didUpdateActiveWallet = { [weak self] in
+        guard let self = self else { return }
+        Task { @MainActor in
+          self.setupChildren()
+        }
+      }
+      await collectiblesController.start()
+      await collectiblesController.updateConnectingState()
     }
-    
-    collectiblesController.updateConnectingState()
   }
   
   // MARK: Dependencies
@@ -55,8 +64,8 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
 private extension CollectiblesViewModelImplementation {
   func setupChildren() {
     let listModule = listModuleProvider(collectiblesController.wallet)
-    listModule.output.didSelectNFT = { [weak self] address in
-      self?.didSelectNFT?(address)
+    listModule.output.didSelectNFT = { [weak self] nft in
+      self?.didSelectNFT?(nft)
     }
     didUpdateListViewController?(listModule.view)
   }

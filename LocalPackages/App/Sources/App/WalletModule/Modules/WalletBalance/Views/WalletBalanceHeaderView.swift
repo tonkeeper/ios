@@ -1,10 +1,11 @@
 import UIKit
 import TKUIKit
+import SnapKit
 
 final class WalletBalanceHeaderView: UIView, ConfigurableView {
   
-  let balanceView = WalletBalanceHeaderBalanceView()
-  let buttonsView = WalletBalanceHeaderButtonsView()
+  private let balanceView = WalletBalanceHeaderBalanceView()
+  private let buttonsView = WalletBalanceHeaderButtonsView()
   
   private let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -22,12 +23,12 @@ final class WalletBalanceHeaderView: UIView, ConfigurableView {
   }
   
   struct Model {
-    let balanceViewModel: WalletBalanceHeaderBalanceView.Model
+    let balanceModel: WalletBalanceHeaderBalanceView.Model
     let buttonsViewModel: WalletBalanceHeaderButtonsView.Model
   }
   
   func configure(model: Model) {
-    balanceView.configure(model: model.balanceViewModel)
+    balanceView.configure(model: model.balanceModel)
     buttonsView.configure(model: model.buttonsViewModel)
   }
 }
@@ -42,13 +43,22 @@ private extension WalletBalanceHeaderView {
   }
   
   func setupConstraints() {
-    stackView.translatesAutoresizingMaskIntoConstraints = false
+//    balanceView.snp.makeConstraints { make in
+//      make.top.left.right.bottom.equalTo(self)
+//    }
     
-    NSLayoutConstraint.activate([
-      stackView.topAnchor.constraint(equalTo: topAnchor),
-      stackView.leftAnchor.constraint(equalTo: leftAnchor),
-      stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      stackView.rightAnchor.constraint(equalTo: rightAnchor)
-    ])
+    stackView.snp.makeConstraints { make in
+      make.edges.equalTo(self)
+    }
+    
+    
+//    stackView.translatesAutoresizingMaskIntoConstraints = false
+//    
+//    NSLayoutConstraint.activate([
+//      stackView.topAnchor.constraint(equalTo: topAnchor),
+//      stackView.leftAnchor.constraint(equalTo: leftAnchor),
+//      stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
+//      stackView.rightAnchor.constraint(equalTo: rightAnchor)
+//    ])
   }
 }

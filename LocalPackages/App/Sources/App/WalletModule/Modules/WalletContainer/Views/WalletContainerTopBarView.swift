@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import SnapKit
 
 final class WalletContainerTopBarView: UIView, ConfigurableView {
   
@@ -39,24 +40,22 @@ private extension WalletContainerTopBarView {
   }
   
   func setupConstraints() {
-    contentContainerView.translatesAutoresizingMaskIntoConstraints = false
-    walletButton.translatesAutoresizingMaskIntoConstraints = false
-    settingsButton.translatesAutoresizingMaskIntoConstraints = false
+    walletButton.snp.makeConstraints { make in
+      make.top.equalTo(contentContainerView).inset(CGFloat.walletButtonTopInset)
+      make.bottom.equalTo(contentContainerView).inset(CGFloat.walletButtonBottomInset)
+      make.centerX.equalTo(contentContainerView)
+      make.width.lessThanOrEqualTo(CGFloat.walletButtonMaxWidth)
+    }
     
-    NSLayoutConstraint.activate([
-      contentContainerView.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
-      contentContainerView.leftAnchor.constraint(equalTo: leftAnchor),
-      contentContainerView.rightAnchor.constraint(equalTo: rightAnchor),
-      contentContainerView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      
-      settingsButton.rightAnchor.constraint(equalTo: contentContainerView.rightAnchor, constant: -.settingsButtonRightInset),
-      settingsButton.centerYAnchor.constraint(equalTo: contentContainerView.centerYAnchor),
-      
-      walletButton.topAnchor.constraint(equalTo: contentContainerView.topAnchor, constant: .walletButtonTopInset),
-      walletButton.bottomAnchor.constraint(equalTo: contentContainerView.bottomAnchor, constant: -.walletButtonBottomInset),
-      walletButton.centerXAnchor.constraint(equalTo: contentContainerView.centerXAnchor),
-      walletButton.widthAnchor.constraint(lessThanOrEqualToConstant: .walletButtonMaxWidth)
-    ])
+    contentContainerView.snp.makeConstraints { make in
+      make.top.equalTo(safeAreaLayoutGuide)
+      make.left.right.bottom.equalTo(self)
+    }
+    
+    settingsButton.snp.makeConstraints { make in
+      make.right.equalTo(contentContainerView).inset(CGFloat.settingsButtonRightInset)
+      make.centerY.equalTo(contentContainerView)
+    }
   }
 }
 

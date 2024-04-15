@@ -35,7 +35,12 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   var didUpdateChartViewController: ((UIViewController) -> Void)?
   
   func viewDidLoad() {
-    tokenDetailsController.reloadTokenModel()
+    Task {
+      tokenDetailsController.didUpdate = { [weak self] model in
+        self?.didUpdateTokenModel(model: model)
+      }
+      await tokenDetailsController.start()
+    }
     setupChart()
   }
   
@@ -54,21 +59,16 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
        chartViewControllerProvider: (() -> UIViewController?)?) {
     self.tokenDetailsController = tokenDetailsController
     self.chartViewControllerProvider = chartViewControllerProvider
-    tokenDetailsController.didUpdateTokenModel = { [weak self] model in
-      guard let self = self else { return }
-      Task {
-        await self.didUpdateTokenModel(model: model)
-      }
-    }
   }
 }
 
 private extension TokenDetailsViewModelImplementation {
-  @MainActor
   func didUpdateTokenModel(model: TokenDetailsController.TokenModel) {
-    setupTitleView(model: model)
-    setupInformationView(model: model)
-    setupButtonsView(model: model)
+    Task { @MainActor in
+      setupTitleView(model: model)
+      setupInformationView(model: model)
+      setupButtonsView(model: model)
+    }
   }
   
   func setupTitleView(model: TokenDetailsController.TokenModel) {

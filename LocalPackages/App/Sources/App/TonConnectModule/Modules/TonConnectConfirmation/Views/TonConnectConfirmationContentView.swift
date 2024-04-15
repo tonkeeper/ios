@@ -6,7 +6,7 @@ final class TonConnectConfirmationContentView: UIView, ConfigurableView {
   
   let imageLoader = ImageLoader()
   
-  private let actionsView = HistoryEventCellContentView()
+  private let actionsView = HistoryCellContentView()
   private let feeView = TonConnectConfirmationFeeView()
   
   // MARK: - Init
@@ -23,12 +23,12 @@ final class TonConnectConfirmationContentView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   struct Model {
-    let actionsModel: HistoryEventCellContentView.Model
+    let actionsConfiguration: HistoryCellContentView.Configuration
     let feeModel: TonConnectConfirmationFeeView.Model
   }
   
   func configure(model: Model) {
-    actionsView.configure(model: model.actionsModel)
+    actionsView.configure(configuration: model.actionsConfiguration)
     feeView.configure(model: model.feeModel)
   }
 }

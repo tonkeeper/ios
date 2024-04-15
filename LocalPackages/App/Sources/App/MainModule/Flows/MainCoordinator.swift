@@ -74,9 +74,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
     setupChildCoordinators()
-    mainController.loadNftsState()
-    mainController.startBackgroundUpdate()
-    handleDeeplink(deeplink: deeplink)
+    Task {
+      await mainController.start()
+      await MainActor.run {
+        handleDeeplink(deeplink: deeplink)
+      }
+    }
+//    mainController.loadNftsState()
+//    mainController.startBackgroundUpdate()
+    
   }
 
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) {
@@ -298,9 +304,9 @@ extension MainCoordinator: AppStateTrackerObserver {
   func didUpdateState(_ state: TKCore.AppStateTracker.State) {
     switch (appStateTracker.state, reachabilityTracker.state) {
     case (.active, .connected):
-      mainController.startBackgroundUpdate()
+      Task { await mainController.startBackgroundUpdate() }
     case (.background, _):
-      mainController.stopBackgroundUpdate()
+      Task { await mainController.stopBackgroundUpdate() }
     default: return
     }
   }
@@ -312,7 +318,7 @@ extension MainCoordinator: ReachabilityTrackerObserver {
   func didUpdateState(_ state: TKCore.ReachabilityTracker.State) {
     switch reachabilityTracker.state {
     case .connected:
-      mainController.startBackgroundUpdate()
+      Task { await mainController.startBackgroundUpdate() }
     default:
       return
     }

@@ -33,16 +33,16 @@ private extension CollectiblesCoordinator {
         )
       }
     
-    module.output.didSelectNFT = { [weak self] address in
-      self?.openNFTDetails(address: address)
+    module.output.didSelectNFT = { [weak self] nft in
+      self?.openNFTDetails(nft: nft)
     }
     
     router.push(viewController: module.view, animated: false)
   }
   
-  func openNFTDetails(address: Address) {
+  func openNFTDetails(nft: NFT) {
     let module = CollectibleDetailsAssembly.module(
-      collectibleDetailsController: keeperCoreMainAssembly.collectibleDetailsController(address: address),
+      collectibleDetailsController: keeperCoreMainAssembly.collectibleDetailsController(nft: nft),
       urlOpener: coreAssembly.urlOpener(),
       output: self
     )

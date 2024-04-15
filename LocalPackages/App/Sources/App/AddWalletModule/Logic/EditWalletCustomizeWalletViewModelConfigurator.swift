@@ -1,4 +1,5 @@
 import Foundation
+import KeeperCore
 
 final class EditWalletCustomizeWalletViewModelConfigurator: CustomizeWalletViewModelConfigurator {
   var didCustomizeWallet: (() -> Void)?

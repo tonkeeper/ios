@@ -12,77 +12,123 @@ struct HistoryEventMapper {
     self.accountEventActionContentProvider = accountEventActionContentProvider
   }
   
-  func mapEvent(_ event: HistoryListEvent, 
+  func mapEvent(_ event: HistoryEvent, 
                 nftAction: @escaping (NFT) -> Void,
-                tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryEventCell.Model {
-    return HistoryEventCell.Model(
-      identifier: event.eventId,
-      cellContentModel: mapEventToView(event, nftAction: nftAction, tapAction: tapAction)
+                tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCell.Configuration {
+    return HistoryCell.Configuration(
+      id: event.eventId,
+      historyContentConfiguration: mapEventContentConfiguration(
+        event,
+        nftAction: nftAction,
+        tapAction: tapAction
+      )
     )
   }
   
-  func mapEventToView(_ event: HistoryListEvent,
-                      nftAction: @escaping (NFT) -> Void,
-                      tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryEventCellContentView.Model {
+  func mapEventContentConfiguration(_ event: HistoryEvent,
+                                   nftAction: @escaping (NFT) -> Void,
+                                   tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCellContentView.Configuration {
     let actions = event.actions.enumerated().map { index, action in
-      let model = mapAction(action, nftAction: nftAction)
-      return HistoryEventCellContentView.Model.Action(
-        model: model,
+      HistoryCellContentView.Configuration.Action(
+        configuration: mapAction(action, nftAction: nftAction),
         action: {
           tapAction(AccountEventDetailsEvent(accountEvent: event.accountEvent, action: event.accountEvent.actions[index]))
         }
       )
     }
-    
-    return HistoryEventCellContentView.Model(actions: actions)
+    return HistoryCellContentView.Configuration(actions: actions)
   }
-  
-  func mapAction(_ action: HistoryListEvent.Action, nftAction: @escaping (NFT) -> Void) -> HistoryEventActionView.Model {
-    let value = action.amount?.withTextStyle(
-      .label1,
-      color: action.eventType.amountColor,
-      alignment: .right,
-      lineBreakMode: .byTruncatingTail
+
+  func mapAction(_ action: HistoryEvent.Action, nftAction: @escaping (NFT) -> Void) -> HistoryCellActionView.Configuration {
+    let imageModel = TKUIListItemImageIconView.Configuration(
+      image: .image(action.eventType.icon),
+      tintColor: .Icon.secondary,
+      backgroundColor: .Background.contentTint,
+      size: CGSize(width: 44, height: 44)
     )
-    let subvalue = action.subamount?.withTextStyle(
+    let iconConfiguration = HistoryCellIconView.Configuration(
+      imageModel: imageModel,
+      isInProgress: false
+    )
+
+    let title = accountEventActionContentProvider.title(actionType: action.eventType)?.withTextStyle(
       .label1,
-      color: action.eventType.subamountColor,
-      alignment: .right,
+      color: .Text.primary,
+      alignment: .left,
       lineBreakMode: .byTruncatingTail
     )
     
-    let listItemModel = HistoryEventActionListItemView.Model(
-      image: action.eventType.icon,
-      isInProgress: false,
-      title: accountEventActionContentProvider.title(actionType: action.eventType),
-      subtitle: action.leftTopDescription,
-      value: value,
-      subvalue: subvalue,
-      date: action.rightTopDescription
+    let subtitle = action.leftTopDescription?.withTextStyle(
+      .body2,
+      color: .Text.secondary,
+      alignment: .left,
+      lineBreakMode: .byTruncatingTail
     )
     
-    let statusModel = HistoryEventActionView.StatusView.Model(
-      status: action.status?.withTextStyle(
-        .body2,
-        color: .Accent.orange,
-        alignment: .left,
-        lineBreakMode: .byTruncatingTail
+    let date = action.rightTopDescription?.withTextStyle(.body2, color: .Text.secondary, alignment: .right)
+    
+    let valueTextStyle = TKTextStyle(
+      font: .montserratSemiBold(size: 16),
+      lineHeight: 22
+    )
+    
+    let valueResult = NSMutableAttributedString()
+    if let amount = action.amount {
+      valueResult.append(
+        amount.withTextStyle(
+          valueTextStyle,
+          color: action.eventType.amountColor,
+          alignment: .right,
+          lineBreakMode: .byTruncatingTail
+        )
       )
+      if let subamount = action.subamount {
+        valueResult.append(NSAttributedString(string: "\n"))
+        valueResult.append(
+          subamount.withTextStyle(
+            valueTextStyle,
+            color: action.eventType.subamountColor,
+            alignment: .right,
+            lineBreakMode: .byTruncatingTail
+          )
+        )
+      }
+    }
+    
+    let status = action.status?.withTextStyle(
+      .body2,
+      color: .Accent.orange,
+      alignment: .left,
+      lineBreakMode: .byTruncatingTail
     )
     
-    var commentModel: HistoryEventActionView.CommentView.Model?
+    let leftItemConfiguration = TKUIListItemContentLeftItem.Configuration(
+      title: title,
+      tagViewModel: nil,
+      subtitle: subtitle,
+      description: status,
+      descriptionNumberOfLines: 1
+    )
+    let rightItemConfiguration = TKUIListItemContentRightItem.Configuration(
+      value: valueResult,
+      valueNumberOfLines: 0,
+      subtitle: date,
+      description: nil
+    )
+    
+    let contentConfiguration = TKUIListItemContentView.Configuration(
+      leftItemConfiguration: leftItemConfiguration,
+      rightItemConfiguration: rightItemConfiguration
+    )
+
+    var commentConfiguration: HistoryCellActionView.CommentView.Configuration?
     if let comment = action.comment {
-      commentModel = HistoryEventActionView.CommentView.Model(comment: comment.withTextStyle(.body2, color: .Text.primary))
+      commentConfiguration = HistoryCellActionView.CommentView.Configuration(comment: comment.withTextStyle(.body2, color: .Text.primary))
     }
     
-    var descriptionModel: HistoryEventActionView.CommentView.Model?
-    if let description = action.description {
-      descriptionModel = HistoryEventActionView.CommentView.Model(comment: description.withTextStyle(.body2, color: .Text.primary))
-    }
-    
-    var nftModel: NFTView.Model?
+    var nftConfiguration: HistoryCellActionView.NFTView.Configuration?
     if let nft = action.nft {
-      nftModel = NFTView.Model(
+      nftConfiguration = HistoryCellActionView.NFTView.Configuration(
         imageDownloadTask: TKCore.ImageDownloadTask(closure: {
           [imageLoader] imageView,
           size,
@@ -94,6 +140,7 @@ struct HistoryEventMapper {
             cornerRadius: cornerRadius
           )
         }),
+        imageUrl: nft.image,
         name: nft.name,
         collectionName: nft.collectionName,
         action: {
@@ -101,18 +148,17 @@ struct HistoryEventMapper {
         }
       )
     }
-
-    return HistoryEventActionView.Model(
-      listItemModel: listItemModel,
-      statusModel: statusModel,
-      commentModel: commentModel,
-      descriptionModel: descriptionModel,
-      nftModel: nftModel
+    
+    return HistoryCellActionView.Configuration(
+      iconConfiguration: iconConfiguration,
+      contentConfiguration: contentConfiguration,
+      commentConfiguration: commentConfiguration,
+      nftConfiguration: nftConfiguration
     )
   }
 }
 
-extension HistoryListEvent.Action.ActionType {
+extension HistoryEvent.Action.ActionType {
   var icon: UIImage? {
     switch self {
     case .sent:

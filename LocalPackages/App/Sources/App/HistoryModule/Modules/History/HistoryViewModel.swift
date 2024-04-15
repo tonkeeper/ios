@@ -35,7 +35,10 @@ final class HistoryViewModelImplementation: HistoryViewModel, HistoryModuleOutpu
   
   func viewDidLoad() {
     historyController.didUpdateWallet = { [weak self] in
-      self?.setupChildren()
+      guard let self else { return }
+      Task { @MainActor in
+        self.setupChildren()
+      }
     }
     historyController.didUpdateIsConnecting = { [weak self] isConnecting in
       guard let self = self else { return }

@@ -29,7 +29,7 @@ private extension HistoryCoordinator {
       historyController: keeperCoreMainAssembly.historyController(),
       listModuleProvider: { [keeperCoreMainAssembly] wallet in
         HistoryListAssembly.module(
-          historyListController: keeperCoreMainAssembly.historyListController(),
+          historyListController: keeperCoreMainAssembly.historyListController(wallet: wallet),
           historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
         )
       },
@@ -81,13 +81,43 @@ private extension HistoryCoordinator {
   
   func openNFTDetails(nft: NFT) {
     let module = CollectibleDetailsAssembly.module(
-      collectibleDetailsController: keeperCoreMainAssembly.collectibleDetailsController(address: nft.address),
+      collectibleDetailsController: keeperCoreMainAssembly.collectibleDetailsController(nft: nft),
       urlOpener: coreAssembly.urlOpener(),
-      output: nil
+      output: self
     )
     
     let navigationController = TKNavigationController(rootViewController: module.0)
     navigationController.configureDefaultAppearance()
     router.present(navigationController)
+  }
+}
+
+extension HistoryCoordinator: CollectibleDetailsModuleOutput {
+  func collectibleDetailsDidFinish(_ collectibleDetails: CollectibleDetailsModuleInput) {}
+  
+  func collectibleDetails(_ collectibleDetails: CollectibleDetailsModuleInput, transferNFT nft: KeeperCore.NFT) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
+    let sendTokenCoordinator = SendModule(
+      dependencies: SendModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createSendTokenCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      sendItem: .nft(nft)
+    )
+    
+    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let sendTokenCoordinator else { return }
+      self?.removeChild(sendTokenCoordinator)
+    }
+    
+    addChild(sendTokenCoordinator)
+    sendTokenCoordinator.start()
+    
+    self.router.rootViewController.presentedViewController?.present(navigationController, animated: true)
   }
 }

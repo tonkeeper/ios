@@ -41,8 +41,8 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   
   var title: String { "Settings" }
   
-  func getSections() -> [SettingsListSection] {
-    setupSettingsSections()
+  func getSections() async -> [SettingsListSection] {
+    await setupSettingsSections()
   }
   
   func selectItem(section: SettingsListSection, index: Int) {
@@ -65,7 +65,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
 }
 
 private extension SettingsRootListItemsProvider {
-  func setupSettingsSections() -> [SettingsListSection] {
+  func setupSettingsSections() async -> [SettingsListSection] {
     [setupWalletSection(),
      SettingsListSection(
       padding: .sectionPadding,
@@ -77,7 +77,7 @@ private extension SettingsRootListItemsProvider {
      SettingsListSection(
       padding: .sectionPadding,
       items: [
-        setupCurrencyItem()
+        await setupCurrencyItem()
       ]
      ),
      SettingsListSection(
@@ -161,13 +161,13 @@ private extension SettingsRootListItemsProvider {
     )
   }
   
-  func setupCurrencyItem() -> SettingsCell.Model {
+  func setupCurrencyItem() async -> SettingsCell.Model {
     SettingsCell.Model(
       identifier: .currencyItemTitle,
       selectionHandler: { [weak self] in
         self?.didTapCurrency?()
       },
-      cellContentModel: SettingsCellContentView.Model(
+      cellContentModel: await SettingsCellContentView.Model(
         title: .currencyItemTitle,
         value: settingsController.activeCurrency().code
       )

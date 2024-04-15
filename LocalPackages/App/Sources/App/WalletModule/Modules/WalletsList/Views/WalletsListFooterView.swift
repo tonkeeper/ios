@@ -3,7 +3,15 @@ import TKUIKit
 
 final class WalletsListFooterView: UIView, ConfigurableView {
   
-  let addWalletButton = TKUIHeaderTitleIconButton()
+  private let addWalletButton: TKButton = {
+    var configuration = TKButton.Configuration.actionButtonConfiguration(
+      category: .secondary,
+      size: .small
+    )
+    configuration.padding.top = 16
+    configuration.padding.bottom = 16
+    return TKButton(configuration: configuration)
+  }()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -15,34 +23,26 @@ final class WalletsListFooterView: UIView, ConfigurableView {
   }
   
   struct Model {
-    let addWalletButtonModel: TKUIHeaderTitleIconButton.Model
-    let addWalletButtonAction: () -> Void
+    let content: TKButton.Configuration.Content
+    let action: () -> Void
   }
   
   func configure(model: Model) {
-    addWalletButton.configure(model: model.addWalletButtonModel)
-    addWalletButton.addTapAction(model.addWalletButtonAction)
+    addWalletButton.configuration.content = model.content
+    addWalletButton.configuration.action = model.action
   }
 }
 
 private extension WalletsListFooterView {
   func setup() {
-    addWalletButton.padding.top = 16
-    addWalletButton.padding.bottom = 16
-    
     addSubview(addWalletButton)
     setupConstraints()
   }
   
   func setupConstraints() {
-    addWalletButton.translatesAutoresizingMaskIntoConstraints = false
-    
-    NSLayoutConstraint.activate([
-      addWalletButton.topAnchor.constraint(equalTo: topAnchor),
-      addWalletButton.leftAnchor.constraint(greaterThanOrEqualTo: leftAnchor),
-      addWalletButton.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
-      addWalletButton.rightAnchor.constraint(lessThanOrEqualTo: rightAnchor).withPriority(.defaultHigh),
-      addWalletButton.centerXAnchor.constraint(equalTo: centerXAnchor)
-    ])
+    addWalletButton.snp.makeConstraints { make in
+      make.edges.equalTo(self).priority(.low)
+      make.centerX.equalTo(self)
+    }
   }
 }

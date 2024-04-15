@@ -40,8 +40,19 @@ final class CollectiblesListViewController: GenericViewViewController<Collectibl
 
 private extension CollectiblesListViewController {
   func setupBindings() {
-    viewModel.didUpdateSections = { [weak collectionController] sections in
-      collectionController?.setSections(sections)
+    viewModel.didRestartList = { [weak dataSource = collectionController.dataSource] in
+      guard let dataSource else { return }
+      var snapshot = dataSource.snapshot()
+      snapshot.deleteAllItems()
+      snapshot.appendSections([.collectibles])
+      dataSource.apply(snapshot, animatingDifferences: false)
+    }
+    
+    viewModel.didLoadNFTs = { [weak dataSource = collectionController.dataSource] nfts in
+      guard let dataSource else { return }
+      var snapshot = dataSource.snapshot()
+      snapshot.appendItems(nfts, toSection: .collectibles)
+      dataSource.apply(snapshot, animatingDifferences: false)
     }
     
     collectionController.loadNextPage = { [weak viewModel] in

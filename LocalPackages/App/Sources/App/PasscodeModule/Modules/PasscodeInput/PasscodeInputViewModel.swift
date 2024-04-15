@@ -41,7 +41,7 @@ public protocol PasscodeInputBiometryProvider {
   var didSuccessBiometry: (() -> Void)? { get set }
   var didFailedBiometry: (() -> Void)? { get set }
   
-  func checkBiometryStatus() -> PasscodeInputBiometryProviderState
+  func checkBiometryStatus() async -> PasscodeInputBiometryProviderState
   func evaluateBiometry()
 }
 
@@ -59,10 +59,15 @@ final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, Passco
   var didUpdatePasscodeValidationState: ((PasscodeDotRowView.ValidationState, (() -> Void)?) -> Void)?
   
   func viewDidLoad() {
-    didUpdateModel?(createModel())
-    switch biometryProvider.checkBiometryStatus() {
-    case .faceId, .touchId: biometryProvider.evaluateBiometry()
-    case .none: break
+    Task {
+      let model = await createModel()
+      await MainActor.run {
+        didUpdateModel?(model)
+      }
+      switch await biometryProvider.checkBiometryStatus() {
+      case .faceId, .touchId: biometryProvider.evaluateBiometry()
+      case .none: break
+      }
     }
   }
   
@@ -112,10 +117,10 @@ final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, Passco
 }
 
 private extension PasscodeInputViewModelImplementation {
-  func createModel() -> PasscodeInputView.Model {
+  func createModel() async -> PasscodeInputView.Model {
     
     let biometry: TKKeyboardView.Configuration.Biometry?
-    switch biometryProvider.checkBiometryStatus() {
+    switch await biometryProvider.checkBiometryStatus() {
     case .touchId:
       biometry = .touchId
     case .faceId:

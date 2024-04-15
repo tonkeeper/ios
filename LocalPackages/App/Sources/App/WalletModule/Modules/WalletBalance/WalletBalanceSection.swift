@@ -1,5 +1,4 @@
 import Foundation
-import TKUIKit
 
 enum WalletBalanceSection: Hashable {
   case tonItems

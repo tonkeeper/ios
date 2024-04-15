@@ -1,8 +1,8 @@
 import UIKit
 import TKUIKit
 
-extension HistoryEventActionView {
-  final class CommentView: UIView, ConfigurableView, ReusableView {
+extension HistoryCellActionView {
+  final class CommentView: UIView, TKConfigurableView, ReusableView {
     
     let textBackground: UIView = {
       let view = UIView()
@@ -18,7 +18,7 @@ extension HistoryEventActionView {
       return label
     }()
     
-    struct Model {
+    struct Configuration: Hashable {
       let comment: NSAttributedString
     }
     
@@ -56,8 +56,8 @@ extension HistoryEventActionView {
                    height: textSize.height + .textTopSpacing + .textBottomSpacing + .topSpace)
     }
     
-    func configure(model: Model) {
-      textLabel.attributedText = model.comment
+    func configure(configuration: Configuration) {
+      textLabel.attributedText = configuration.comment
       setNeedsLayout()
     }
     
@@ -67,7 +67,7 @@ extension HistoryEventActionView {
   }
 }
 
-private extension HistoryEventActionView.CommentView {
+private extension HistoryCellActionView.CommentView {
   func setup() {
     addSubview(textBackground)
     textBackground.addSubview(textLabel)

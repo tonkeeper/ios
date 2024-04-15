@@ -60,17 +60,9 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
   // MARK: - Data Source
   
   private var emojiDataSource = EmojisDataSource()
-  
-  // MARK: - State
-  
-//  private lazy var walletName: String = wallet?.metaData.label ?? .defaultWalletName
-//  private lazy var selectedTintColor: WalletTintColor = wallet?.metaData.tintColor ?? .defaultColor
-//  private lazy var selectedEmoji: String = wallet?.metaData.emoji ?? .defaultEmoji
-  
-  
+
   // MARK: - Dependencies
   
-//  private let wallet: Wallet?
   private var name: String
   private var tintColor: WalletTintColor
   private var emoji: String

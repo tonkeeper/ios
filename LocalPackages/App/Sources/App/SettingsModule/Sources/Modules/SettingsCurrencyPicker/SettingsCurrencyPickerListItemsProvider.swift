@@ -31,8 +31,8 @@ final class SettingsCurrencyPickerListItemsProvider: SettingsListItemsProvider {
     nil
   }
   
-  func initialSelectedIndexPath() -> IndexPath? {
-    guard let index = settingsController.getAvailableCurrencies().firstIndex(of: settingsController.activeCurrency()) else {
+  func initialSelectedIndexPath() async -> IndexPath? {
+    guard let index = settingsController.getAvailableCurrencies().firstIndex(of: await settingsController.activeCurrency()) else {
       return nil
     }
     return IndexPath(row: index, section: 0)
@@ -66,7 +66,10 @@ private extension SettingsCurrencyPickerListItemsProvider {
         identifier: currency.title,
         isSelectable: true,
         selectionHandler: { [weak self] in
-          self?.settingsController.setCurrency(currency)
+          guard let self else { return }
+          Task {
+            await self.settingsController.setCurrency(currency)
+          }
         },
         cellContentModel: SettingsCellContentView.Model(
           title: title

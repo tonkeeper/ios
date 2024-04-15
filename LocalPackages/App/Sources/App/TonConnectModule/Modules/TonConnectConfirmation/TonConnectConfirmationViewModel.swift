@@ -113,14 +113,14 @@ private extension TonConnectConfirmationViewModelImplementation {
   
   func contentItem() -> TKModalCardViewController.Configuration.Item? {
     let model = TonConnectConfirmationContentView.Model(
-      actionsModel: mapEvent(model.event),
+      actionsConfiguration: mapEvent(model.event),
       feeModel: .init(title: "Network fee", fee: model.fee)
     )
     guard let view = contentView?(model) else { return nil }
     return .customView(view, bottomSpacing: 32)
   }
   
-  func mapEvent(_ event: HistoryListEvent) -> HistoryEventCellContentView.Model {
-    return historyEventMapper.mapEventToView(event, nftAction: { _ in }, tapAction: { _ in })
+  func mapEvent(_ event: HistoryEvent) -> HistoryCellContentView.Configuration {
+    return historyEventMapper.mapEventContentConfiguration(event, nftAction: { _ in }, tapAction: { _ in })
   }
 }

@@ -32,21 +32,30 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   var didUpdateWalletBalanceViewController: ((_ viewController: UIViewController, _ animated: Bool) -> Void)?
   
   func viewDidLoad() {
-    walletMainController.didUpdateActiveWallet = { [weak self] in
-      guard let self = self else { return }
-      Task { @MainActor in
-        self.didUpdateActiveWallet()
-      }
+    Task {
+      await walletMainController.start(didUpdateActiveWallet: { [weak self] wallet in
+        self?.didUpdateActiveWallet(wallet: wallet)
+      }, didUpdateWalletMetaData: { [weak self] walletModel in
+        self?.didUpdateActiveWalletMetaData(walletModel: walletModel)
+      })
     }
-    walletMainController.didUpdateActiveWalletMetaData = { [weak self] in
-      guard let self = self else { return }
-      Task { @MainActor in
-        self.didUpdateActiveWalletMetaData()
-      }
-    }
-    
-    didUpdateActiveWallet()
-    walletMainController.loadBalances()
+//    walletMainController.didUpdateActiveWallet = { [weak self] in
+//      guard let self = self else { return }
+//      Task { @MainActor in
+//        self.didUpdateActiveWallet()
+//      }
+//    }
+//    walletMainController.didUpdateActiveWalletMetaData = { [weak self] in
+//      guard let self = self else { return }
+//      Task { @MainActor in
+//        self.didUpdateActiveWalletMetaData()
+//      }
+//    }
+//    
+//    didUpdateActiveWallet()
+//    Task {
+//      await walletMainController.start()
+//    }
   }
 
   // MARK: - Dependencies
@@ -62,15 +71,16 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 }
 
 private extension WalletContainerViewModelImplementation {
-  func didUpdateActiveWallet() {
-    let model = walletMainController.getActiveWalletModel()
-    didUpdateModel?(createModel(walletModel: model))
-    setupWalletBalance(animated: false)
+  func didUpdateActiveWallet(wallet: Wallet) {
+    Task { @MainActor in
+      setupWalletBalance(wallet: wallet, animated: true)
+    }
   }
   
-  func didUpdateActiveWalletMetaData() {
-    let model = walletMainController.getActiveWalletModel()
-    didUpdateModel?(createModel(walletModel: model))
+  func didUpdateActiveWalletMetaData(walletModel: WalletModel) {
+    Task { @MainActor in
+      didUpdateModel?(createModel(walletModel: walletModel))
+    }
   }
   
   func createModel(walletModel: WalletModel) -> WalletContainerView.Model {
@@ -115,8 +125,7 @@ private extension WalletContainerViewModelImplementation {
     )
   }
   
-  func setupWalletBalance(animated: Bool) {
-    let wallet = walletMainController.getActiveWallet()
+  func setupWalletBalance(wallet: Wallet, animated: Bool) {
     let viewController = childModuleProvider.getWalletBalanceModuleView(wallet: wallet)
     didUpdateWalletBalanceViewController?(viewController, animated)
   }
