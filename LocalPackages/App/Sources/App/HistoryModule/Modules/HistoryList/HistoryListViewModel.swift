@@ -14,6 +14,7 @@ protocol HistoryListModuleInput: AnyObject {
 }
 
 protocol HistoryListViewModel: AnyObject {
+  var didResetList: (() -> Void)? { get set }
   var didUpdateHistory: (([HistoryListSection]) -> Void)? { get set }
   var didStartPagination: ((HistoryListSection.Pagination) -> Void)? { get set }
   var didStartLoading: (() -> Void)? { get set }
@@ -48,6 +49,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   // MARK: - HistoryListViewModel
   
+  var didResetList: (() -> Void)?
   var didUpdateHistory: (([HistoryListSection]) -> Void)?
   var didStartPagination: ((HistoryListSection.Pagination) -> Void)?
   var didStartLoading: (() -> Void)?
@@ -91,6 +93,10 @@ private extension HistoryListViewModelImplementation {
     Task {
       switch event {
       case .cached(let updatedSections):
+        await cachedModels.reset()
+        await MainActor.run {
+          didResetList?()
+        }
         await handleUpdatedSections(updatedSections)
       case .loading:
         await MainActor.run {
@@ -102,6 +108,9 @@ private extension HistoryListViewModelImplementation {
         }
       case .loaded(let updatedSections):
         await cachedModels.reset()
+        await MainActor.run {
+          didResetList?()
+        }
         await handleUpdatedSections(updatedSections)
       case .nextPage(let updatedSections):
         await handleUpdatedSections(updatedSections)

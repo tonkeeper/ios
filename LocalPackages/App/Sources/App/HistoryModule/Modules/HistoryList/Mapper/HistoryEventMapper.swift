@@ -30,7 +30,7 @@ struct HistoryEventMapper {
                                    tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCellContentView.Configuration {
     let actions = event.actions.enumerated().map { index, action in
       HistoryCellContentView.Configuration.Action(
-        configuration: mapAction(action, nftAction: nftAction),
+        configuration: mapAction(action, isInProgress: event.accountEvent.isInProgress, nftAction: nftAction),
         action: {
           tapAction(AccountEventDetailsEvent(accountEvent: event.accountEvent, action: event.accountEvent.actions[index]))
         }
@@ -39,7 +39,7 @@ struct HistoryEventMapper {
     return HistoryCellContentView.Configuration(actions: actions)
   }
 
-  func mapAction(_ action: HistoryEvent.Action, nftAction: @escaping (NFT) -> Void) -> HistoryCellActionView.Configuration {
+  func mapAction(_ action: HistoryEvent.Action, isInProgress: Bool, nftAction: @escaping (NFT) -> Void) -> HistoryCellActionView.Configuration {
     let imageModel = TKUIListItemImageIconView.Configuration(
       image: .image(action.eventType.icon),
       tintColor: .Icon.secondary,
@@ -47,8 +47,7 @@ struct HistoryEventMapper {
       size: CGSize(width: 44, height: 44)
     )
     let iconConfiguration = HistoryCellIconView.Configuration(
-      imageModel: imageModel,
-      isInProgress: false
+      imageModel: imageModel
     )
 
     let title = accountEventActionContentProvider.title(actionType: action.eventType)?.withTextStyle(
@@ -153,7 +152,8 @@ struct HistoryEventMapper {
       iconConfiguration: iconConfiguration,
       contentConfiguration: contentConfiguration,
       commentConfiguration: commentConfiguration,
-      nftConfiguration: nftConfiguration
+      nftConfiguration: nftConfiguration,
+      isInProgress: isInProgress
     )
   }
 }

@@ -15,6 +15,7 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
   let commentView = CommentView()
   let nftView = NFTView()
   let separatorView = UIView()
+  let inProgressLoaderView = HistoryCellLoaderView()
   
   override var isHighlighted: Bool {
     didSet {
@@ -37,6 +38,7 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
     let contentConfiguration: TKUIListItemContentView.Configuration
     let commentConfiguration: CommentView.Configuration?
     let nftConfiguration: NFTView.Configuration?
+    let isInProgress: Bool
   }
   
   func configure(configuration: Configuration) {
@@ -54,6 +56,14 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
       nftView.configure(configuration: nftConfiguration)
     } else {
       nftView.isHidden = true
+    }
+    
+    if configuration.isInProgress {
+      inProgressLoaderView.isHidden = false
+      inProgressLoaderView.startAnimation()
+    } else {
+      inProgressLoaderView.isHidden = true
+      inProgressLoaderView.stopAnimation()
     }
     
     setNeedsLayout()
@@ -133,6 +143,12 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
       width: bounds.width - UIEdgeInsets.contentPadding.left,
       height: 0.5
     )
+    
+    inProgressLoaderView.sizeToFit()
+    inProgressLoaderView.frame.origin = CGPoint(
+      x: iconView.frame.minX - 3,
+      y: iconView.frame.minY - 3
+    )
   }
   
   func prepareForReuse() {
@@ -160,6 +176,7 @@ private extension HistoryCellActionView {
     contentContainer.addSubview(contentView)
     contentContainer.addSubview(commentView)
     contentContainer.addSubview(nftView)
+    contentContainer.addSubview(inProgressLoaderView)
     addSubview(separatorView)
   }
 }

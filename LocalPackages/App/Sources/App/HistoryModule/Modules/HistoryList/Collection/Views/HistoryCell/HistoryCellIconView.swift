@@ -3,7 +3,7 @@ import TKUIKit
 
 final class HistoryCellIconView: UIView, TKConfigurableView {
   private let imageView = TKUIListItemImageIconView()
-  
+    
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -15,7 +15,6 @@ final class HistoryCellIconView: UIView, TKConfigurableView {
   
   struct Configuration: Hashable {
     let imageModel: TKUIListItemImageIconView.Configuration
-    let isInProgress: Bool
   }
   
   func configure(configuration: Configuration) {

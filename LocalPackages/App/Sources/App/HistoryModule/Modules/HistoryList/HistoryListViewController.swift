@@ -152,6 +152,13 @@ private extension HistoryListViewController {
       snapshot.appendSections([.shimmer])
       dataSource.apply(snapshot)
     }
+    
+    viewModel.didResetList = {  [weak dataSource] in
+      guard let dataSource else { return }
+      var snapshot = dataSource.snapshot()
+      snapshot.deleteAllItems()
+      dataSource.apply(snapshot)
+    }
   }
   
   func createDataSource() -> UICollectionViewDiffableDataSource<HistoryListSection, AnyHashable> {
