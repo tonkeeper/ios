@@ -10,6 +10,8 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   var didTapCurrency: (() -> Void)?
   var didTapBackup: ((Wallet) -> Void)?
   var didTapSecurity: (() -> Void)?
+  var didShowAlert: ((_ title: String, _ description: String?, _ actions: [UIAlertAction]) -> Void)?
+  var didTapLogout: (() -> Void)?
   
   private let walletCellRegistration: WalletCellRegistration
   
@@ -265,12 +267,13 @@ private extension SettingsRootListItemsProvider {
         guard let self = self else { return }
         
         let actions = [
-          UIAlertAction(title: .deleteDeleteButtonTitle, style: .destructive, handler: { _ in
+          UIAlertAction(title: .deleteDeleteButtonTitle, style: .destructive, handler: { [weak self] _ in
+            self?.didTapLogout?()
           }),
           UIAlertAction(title: .deleteCancelButtonTitle, style: .cancel)
         ]
         
-//        self.didShowAlert?(.deleteTitle, .deleteDescription, actions)
+        self.didShowAlert?(.deleteTitle, .deleteDescription, actions)
       },
       cellContentModel: SettingsCellContentView.Model(
         title: .deleteItemTitle,
@@ -289,8 +292,17 @@ private extension SettingsRootListItemsProvider {
   func setupLogoutItem() -> SettingsCell.Model {
     SettingsCell.Model(
       identifier: .logoutItemTitle,
-      selectionHandler: {
-        print("Log out")
+      selectionHandler: { [weak self] in
+        guard let self = self else { return }
+        
+        let actions = [
+          UIAlertAction(title: .deleteDeleteButtonTitle, style: .destructive, handler: { [weak self] _ in
+            self?.didTapLogout?()
+          }),
+          UIAlertAction(title: .deleteCancelButtonTitle, style: .cancel)
+        ]
+        
+        self.didShowAlert?(.logoutTitle, .logoutDescription, actions)
       },
       cellContentModel: SettingsCellContentView.Model(
         title: .logoutItemTitle,
@@ -310,7 +322,7 @@ private extension String {
   
   static let logoutItemTitle = "Sign Out"
   static let logoutTitle = "Log out?"
-  static let logoutDescription = "This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase."
+  static let logoutDescription = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases."
   static let logoutCancelButtonTitle = "Cancel"
   static let logoutLogoutButtonTitle = "Log out"
   

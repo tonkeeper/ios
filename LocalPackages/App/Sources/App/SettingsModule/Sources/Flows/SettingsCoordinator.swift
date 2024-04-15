@@ -6,6 +6,7 @@ import KeeperCore
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
+  var didLogout: (() -> Void)?
   
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
@@ -46,6 +47,16 @@ private extension SettingsCoordinator {
     
     itemsProvider.didTapSecurity = { [weak self] in
       self?.openSecurity()
+    }
+    
+    itemsProvider.didShowAlert = { [weak self] title, description, actions in
+      let alertController = UIAlertController(title: title, message: description, preferredStyle: .alert)
+      actions.forEach { action in alertController.addAction(action) }
+      self?.router.rootViewController.present(alertController, animated: true)
+    }
+    
+    itemsProvider.didTapLogout = { [weak self] in
+      self?.didLogout?()
     }
 
     router.push(viewController: module.viewController,

@@ -7,6 +7,8 @@ import TonSwift
 
 final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
+  var didLogout: (() -> Void)?
+  
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   private let mainController: KeeperCore.MainController
@@ -80,9 +82,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         handleDeeplink(deeplink: deeplink)
       }
     }
-//    mainController.loadNftsState()
-//    mainController.startBackgroundUpdate()
-    
   }
 
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) {
@@ -100,6 +99,9 @@ private extension MainCoordinator {
     let walletCoordinator = walletModule.createWalletCoordinator()
     walletCoordinator.didTapScan = { [weak self] in
       self?.openScan()
+    }
+    walletCoordinator.didLogout = { [weak self] in
+      self?.didLogout?()
     }
     
     let historyCoordinator = historyModule.createHistoryCoordinator()

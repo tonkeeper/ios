@@ -7,6 +7,7 @@ import KeeperCore
 public final class WalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didTapScan: (() -> Void)?
+  var didLogout: (() -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -100,6 +101,11 @@ private extension WalletCoordinator {
     coordinator.didFinish = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
+    }
+    coordinator.didLogout = { [weak self, weak coordinator] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+      self?.didLogout?()
     }
     
     addChild(coordinator)
