@@ -1,12 +1,5 @@
-//
-//  BalanceWidgetEntry.swift
-//  TonkeeperWidgetExtension
-//
-//  Created by Grigory on 26.9.23..
-//
-
 import WidgetKit
-import WalletCoreKeeper
+import KeeperCore
 
 struct BalanceWidgetEntry: TimelineEntry {
   let date: Date

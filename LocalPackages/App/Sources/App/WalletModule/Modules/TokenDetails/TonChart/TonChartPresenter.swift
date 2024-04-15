@@ -35,6 +35,8 @@ extension TonChartPresenter: TonChartPresenterInput {
       }
       await chartController.start()
       await reloadChartDataAndHeader()
+      
+      startChartReloadTimer()
     }
   }
   
@@ -55,6 +57,14 @@ extension TonChartPresenter: TonChartPresenterInput {
   func didDeselectChartValue() {
     Task {
       await showUnselectedHeader()
+    }
+  }
+  
+  func startChartReloadTimer() {
+    reloadTask = Task {
+      try? await Task.sleep(nanoseconds: 60_000_000_000)
+      reload()
+      startChartReloadTimer()
     }
   }
 }

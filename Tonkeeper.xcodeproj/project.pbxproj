@@ -402,6 +402,7 @@
 		C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */; };
 		C327C6322B4F682B00AAFB43 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */; };
 		C32B4B224AA4E9AC942EAC40 /* EnterMnemonicPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C81CE487C82E845B444588 /* EnterMnemonicPresenter.swift */; };
+		C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C32C7C462BCD0D8E00785B6A /* TKCore */; };
 		C3388B1B2B3C6913000FE225 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C3388B1A2B3C6913000FE225 /* WalletCore */; };
 		C3388B1E2B3C691B000FE225 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C3388B1D2B3C691B000FE225 /* WalletCore */; };
 		C33B7A472B4BB07A00BE7E60 /* SettingsManuallyBackupCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C33B7A462B4BB07A00BE7E60 /* SettingsManuallyBackupCoordinator.swift */; };
@@ -957,6 +958,7 @@
 		C313EC0C2B50138D009DF825 /* TKUIKitLegacy */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKitLegacy; sourceTree = "<group>"; };
 		C313EC0D2B50138D009DF825 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
 		C313EC0E2B50138D009DF825 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
+		C32C7C492BCD111100785B6A /* TonkeeperIntents.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperIntents.entitlements; sourceTree = "<group>"; };
 		C33B7A3D2B4BA43000BE7E60 /* SettingsBackupViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupViewController.swift; sourceTree = "<group>"; };
 		C33B7A3F2B4BA43C00BE7E60 /* SettingsBackupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupView.swift; sourceTree = "<group>"; };
 		C33B7A412B4BA44200BE7E60 /* SettingsBackupViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsBackupViewModel.swift; sourceTree = "<group>"; };
@@ -1070,6 +1072,7 @@
 			files = (
 				C3388B1E2B3C691B000FE225 /* WalletCore in Frameworks */,
 				7DDBBFED2ACCA10E00F811A5 /* Intents.framework in Frameworks */,
+				C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2742,6 +2745,7 @@
 		7DDBBFEE2ACCA10E00F811A5 /* TonkeeperIntents */ = {
 			isa = PBXGroup;
 			children = (
+				C32C7C492BCD111100785B6A /* TonkeeperIntents.entitlements */,
 				7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */,
 				7DDBBFF12ACCA10E00F811A5 /* Info.plist */,
 			);
@@ -3189,6 +3193,7 @@
 			name = TonkeeperIntents;
 			packageProductDependencies = (
 				C3388B1D2B3C691B000FE225 /* WalletCore */,
+				C32C7C462BCD0D8E00785B6A /* TKCore */,
 			);
 			productName = TonkeeperIntents;
 			productReference = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */;
@@ -4082,6 +4087,7 @@
 			baseConfigurationReference = 7DDBC0022ACCAFEF00F811A5 /* IntentsDebug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = TonkeeperIntents/TonkeeperIntents.entitlements;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
@@ -4116,6 +4122,7 @@
 			baseConfigurationReference = 7DDBC0032ACCAFF700F811A5 /* IntentsRelease.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = TonkeeperIntents/TonkeeperIntents.entitlements;
 				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
 				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
@@ -4273,6 +4280,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCrashlytics;
+		};
+		C32C7C462BCD0D8E00785B6A /* TKCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKCore;
 		};
 		C3388B1A2B3C6913000FE225 /* WalletCore */ = {
 			isa = XCSwiftPackageProductDependency;

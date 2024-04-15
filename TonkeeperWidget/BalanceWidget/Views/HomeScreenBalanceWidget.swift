@@ -1,13 +1,6 @@
-//
-//  HomeScreenBalanceWidget.swift
-//  TonkeeperWidgetExtension
-//
-//  Created by Grigory on 30.9.23..
-//
-
 import SwiftUI
 import WidgetKit
-import WalletCoreKeeper
+import KeeperCore
 
 struct HomeScreenBalanceWidget<Content: View>: View {
   let entry: BalanceWidgetEntry

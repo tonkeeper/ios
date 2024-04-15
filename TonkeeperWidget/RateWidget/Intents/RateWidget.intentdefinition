@@ -93,11 +93,11 @@
 	<key>INIntentDefinitionNamespace</key>
 	<string>8sGcd5</string>
 	<key>INIntentDefinitionSystemVersion</key>
-	<string>23A344</string>
+	<string>23E224</string>
 	<key>INIntentDefinitionToolsBuildVersion</key>
-	<string>15A240d</string>
+	<string>15C500b</string>
 	<key>INIntentDefinitionToolsVersion</key>
-	<string>15.0</string>
+	<string>15.2</string>
 	<key>INIntents</key>
 	<array>
 		<dict>
@@ -206,26 +206,6 @@
 							<key>INIntentParameterPromptDialogType</key>
 							<string>Primary</string>
 						</dict>
-						<dict>
-							<key>INIntentParameterPromptDialogCustom</key>
-							<true/>
-							<key>INIntentParameterPromptDialogFormatString</key>
-							<string>There are ${count} options matching ‘${currency}’.</string>
-							<key>INIntentParameterPromptDialogFormatStringID</key>
-							<string>2K5Xoa</string>
-							<key>INIntentParameterPromptDialogType</key>
-							<string>DisambiguationIntroduction</string>
-						</dict>
-						<dict>
-							<key>INIntentParameterPromptDialogCustom</key>
-							<true/>
-							<key>INIntentParameterPromptDialogFormatString</key>
-							<string>Just to confirm, you wanted ‘${currency}’?</string>
-							<key>INIntentParameterPromptDialogFormatStringID</key>
-							<string>U5T2gv</string>
-							<key>INIntentParameterPromptDialogType</key>
-							<string>Confirmation</string>
-						</dict>
 					</array>
 					<key>INIntentParameterSupportsDynamicEnumeration</key>
 					<true/>
@@ -272,7 +252,7 @@
 			<key>INIntentIneligibleForSuggestions</key>
 			<true/>
 			<key>INIntentLastParameterTag</key>
-			<integer>2</integer>
+			<integer>4</integer>
 			<key>INIntentName</key>
 			<string>BalanceWidget</string>
 			<key>INIntentParameters</key>
@@ -306,13 +286,50 @@
 							<key>INIntentParameterPromptDialogType</key>
 							<string>Primary</string>
 						</dict>
+					</array>
+					<key>INIntentParameterSupportsDynamicEnumeration</key>
+					<true/>
+					<key>INIntentParameterTag</key>
+					<integer>2</integer>
+					<key>INIntentParameterType</key>
+					<string>Object</string>
+				</dict>
+				<dict>
+					<key>INIntentParameterConfigurable</key>
+					<true/>
+					<key>INIntentParameterDisplayName</key>
+					<string>Wallet</string>
+					<key>INIntentParameterDisplayNameID</key>
+					<string>yZnBBJ</string>
+					<key>INIntentParameterDisplayPriority</key>
+					<integer>2</integer>
+					<key>INIntentParameterName</key>
+					<string>wallet</string>
+					<key>INIntentParameterObjectType</key>
+					<string>WidgetWallet</string>
+					<key>INIntentParameterObjectTypeNamespace</key>
+					<string>8sGcd5</string>
+					<key>INIntentParameterPromptDialogs</key>
+					<array>
+						<dict>
+							<key>INIntentParameterPromptDialogCustom</key>
+							<true/>
+							<key>INIntentParameterPromptDialogType</key>
+							<string>Configuration</string>
+						</dict>
+						<dict>
+							<key>INIntentParameterPromptDialogCustom</key>
+							<true/>
+							<key>INIntentParameterPromptDialogType</key>
+							<string>Primary</string>
+						</dict>
 						<dict>
 							<key>INIntentParameterPromptDialogCustom</key>
 							<true/>
 							<key>INIntentParameterPromptDialogFormatString</key>
-							<string>There are ${count} options matching ‘${currency}’.</string>
+							<string>There are ${count} options matching ‘${wallet}’.</string>
 							<key>INIntentParameterPromptDialogFormatStringID</key>
-							<string>kVI50i</string>
+							<string>URWvPE</string>
 							<key>INIntentParameterPromptDialogType</key>
 							<string>DisambiguationIntroduction</string>
 						</dict>
@@ -320,9 +337,9 @@
 							<key>INIntentParameterPromptDialogCustom</key>
 							<true/>
 							<key>INIntentParameterPromptDialogFormatString</key>
-							<string>Just to confirm, you wanted ‘${currency}’?</string>
+							<string>Just to confirm, you wanted ‘${wallet}’?</string>
 							<key>INIntentParameterPromptDialogFormatStringID</key>
-							<string>afRmO1</string>
+							<string>FztAeY</string>
 							<key>INIntentParameterPromptDialogType</key>
 							<string>Confirmation</string>
 						</dict>
@@ -330,7 +347,7 @@
 					<key>INIntentParameterSupportsDynamicEnumeration</key>
 					<true/>
 					<key>INIntentParameterTag</key>
-					<integer>2</integer>
+					<integer>4</integer>
 					<key>INIntentParameterType</key>
 					<string>Object</string>
 				</dict>
@@ -372,6 +389,69 @@
 			<integer>99</integer>
 			<key>INTypeName</key>
 			<string>WidgetCurrency</string>
+			<key>INTypeProperties</key>
+			<array>
+				<dict>
+					<key>INTypePropertyDefault</key>
+					<true/>
+					<key>INTypePropertyDisplayPriority</key>
+					<integer>1</integer>
+					<key>INTypePropertyName</key>
+					<string>identifier</string>
+					<key>INTypePropertyTag</key>
+					<integer>1</integer>
+					<key>INTypePropertyType</key>
+					<string>String</string>
+				</dict>
+				<dict>
+					<key>INTypePropertyDefault</key>
+					<true/>
+					<key>INTypePropertyDisplayPriority</key>
+					<integer>2</integer>
+					<key>INTypePropertyName</key>
+					<string>displayString</string>
+					<key>INTypePropertyTag</key>
+					<integer>2</integer>
+					<key>INTypePropertyType</key>
+					<string>String</string>
+				</dict>
+				<dict>
+					<key>INTypePropertyDefault</key>
+					<true/>
+					<key>INTypePropertyDisplayPriority</key>
+					<integer>3</integer>
+					<key>INTypePropertyName</key>
+					<string>pronunciationHint</string>
+					<key>INTypePropertyTag</key>
+					<integer>3</integer>
+					<key>INTypePropertyType</key>
+					<string>String</string>
+				</dict>
+				<dict>
+					<key>INTypePropertyDefault</key>
+					<true/>
+					<key>INTypePropertyDisplayPriority</key>
+					<integer>4</integer>
+					<key>INTypePropertyName</key>
+					<string>alternativeSpeakableMatches</string>
+					<key>INTypePropertySupportsMultipleValues</key>
+					<true/>
+					<key>INTypePropertyTag</key>
+					<integer>4</integer>
+					<key>INTypePropertyType</key>
+					<string>SpeakableString</string>
+				</dict>
+			</array>
+		</dict>
+		<dict>
+			<key>INTypeDisplayName</key>
+			<string>Widget Wallet</string>
+			<key>INTypeDisplayNameID</key>
+			<string>pNqZLK</string>
+			<key>INTypeLastPropertyTag</key>
+			<integer>99</integer>
+			<key>INTypeName</key>
+			<string>WidgetWallet</string>
 			<key>INTypeProperties</key>
 			<array>
 				<dict>

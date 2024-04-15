@@ -1,14 +1,6 @@
-//
-//  BalanceWidgetTimelineProvider.swift
-//  TonkeeperWidgetExtension
-//
-//  Created by Grigory on 26.9.23..
-//
-
 import WidgetKit
 import TKCore
-import WalletCoreKeeper
-import WalletCoreCore
+import KeeperCore
 
 struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
   func placeholder(in context: Context) -> BalanceWidgetEntry {
@@ -24,15 +16,16 @@ struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
   func getTimeline(for configuration: BalanceWidgetIntent,
                    in context: Context,
                    completion: @escaping (Timeline<BalanceWidgetEntry>) -> Void) {
-    let coreAssembly = CoreAssembly()
-    let walletCoreContainer = WalletCoreKeeper.Assembly(dependencies: Dependencies(
-      cacheURL: coreAssembly.cacheURL,
-      sharedCacheURL: coreAssembly.sharedCacheURL,
-      sharedKeychainGroup: coreAssembly.keychainAccessGroupIdentifier,
-      oldSharedCacheURL: coreAssembly.oldSharedCacheURL,
-      oldSharedKeychainGroup: coreAssembly.oldKeychainAccessGroupIdentifier)
+    let coreAssembly = TKCore.CoreAssembly()
+    let keeperCoreAssembly = KeeperCore.Assembly(
+      dependencies: Assembly.Dependencies(
+        cacheURL: coreAssembly.cacheURL,
+        sharedCacheURL: coreAssembly.sharedCacheURL
+      )
     )
-    let balanceWidgetController = walletCoreContainer.balanceWidgetController()
+    
+    let widgetAssembly = keeperCoreAssembly.widgetAssembly()
+    let balanceWidgetController = widgetAssembly.balanceWidgetController()
     let currency: Currency
     if let configurationCurrencyIdentifier = configuration.currency?.identifier,
        let configurationCurrency = Currency(rawValue: configurationCurrencyIdentifier) {
@@ -40,10 +33,14 @@ struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
     } else {
       currency = .USD
     }
+    
     Task {
       let entry: BalanceWidgetEntry
       do {
-        let model = try await balanceWidgetController.loadBalance(currency: currency)
+        let model = try await balanceWidgetController.loadBalance(
+          walletIdentifier: configuration.wallet?.identifier,
+          currency: currency
+        )
         entry = BalanceWidgetEntry(date: Date(),
                                    loadResult: .success(model))
       } catch let error as BalanceWidgetController.Error {
