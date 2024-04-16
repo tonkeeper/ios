@@ -29,7 +29,10 @@ public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
 private extension BuyCoordinator {
   func openBuyList() {
     let module = BuyListAssembly.module(
-      buyListController: keeperCoreMainAssembly.buyListController(wallet: wallet)
+      buyListController: keeperCoreMainAssembly.buyListController(
+        wallet: wallet,
+        isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
+      )
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)

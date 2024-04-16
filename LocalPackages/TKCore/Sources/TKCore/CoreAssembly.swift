@@ -11,6 +11,11 @@ public struct CoreAssembly {
   
   public let appStateTracker = AppStateTracker()
   public let reachabilityTracker = ReachabilityTracker()
+  public let featureFlagsProvider: FeatureFlagsProvider
+  
+  public init(featureFlagsProvider: FeatureFlagsProvider = FeatureFlagsProvider()) {
+    self.featureFlagsProvider = featureFlagsProvider
+  }
   
   public var infoProvider: InfoProvider {
     InfoProviderImplemenetation()
@@ -75,6 +80,4 @@ public struct CoreAssembly {
   public func appStoreReviewer() -> AppStoreReviewer {
     UIApplication.shared
   }
-  
-  public init() {}
 }

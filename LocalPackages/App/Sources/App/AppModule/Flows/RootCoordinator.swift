@@ -32,6 +32,7 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     
     rootController.loadConfiguration()
     rootController.loadKnownAccounts()
+    rootController.loadBuySellMethods()
     switch rootController.getState() {
     case .onboarding:
       openOnboarding()

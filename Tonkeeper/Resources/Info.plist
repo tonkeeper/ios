@@ -31,11 +31,21 @@
 	<false/>
 	<key>KEYCHAIN_ACCESS_GROUP</key>
 	<string>$(KEYCHAIN_ACCESS_GROUP)</string>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
-		<true/>
-	</dict>
+  <key>NSAppTransportSecurity</key>
+  <dict>
+    <key>NSAllowsArbitraryLoadsInWebContent</key>
+    <true/>
+    <key>NSExceptionDomains</key>
+    <dict>
+      <key>ip-api.com</key>
+      <dict>
+        <key>NSExceptionAllowsInsecureHTTPLoads</key>
+        <true/>
+        <key>NSIncludesSubdomains</key>
+        <true/>
+      </dict>
+    </dict>
+  </dict>
 	<key>NSUserActivityTypes</key>
 	<array>
 		<string>BalanceWidgetIntent</string>

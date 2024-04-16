@@ -9,7 +9,13 @@ import UIKit
 import TKCore
 
 final class AppAssembly {
-  let coreAssembly = CoreAssembly()
+  let coreAssembly = CoreAssembly(
+    featureFlagsProvider: FeatureFlagsProvider(
+      isMarketRegionPickerAvailable: {
+        FirebaseConfigurator.configurator.isMarketRegionPickerAvailable
+      }
+    )
+  )
   lazy var walletCoreAssembly = WalletCoreAssembly(coreAssembly: coreAssembly)
   
   func rootCoordinator() -> RootCoordinator {

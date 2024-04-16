@@ -431,6 +431,9 @@
 		C3774F182B35C30400B15B78 /* WalletHeaderBanneModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3774F172B35C30400B15B78 /* WalletHeaderBanneModel.swift */; };
 		C37D0C4D2AEF6A110003C5CE /* TonConnectConfirmationContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37D0C4C2AEF6A110003C5CE /* TonConnectConfirmationContentView.swift */; };
 		C37D0C4F2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */; };
+		C37DDDB82BCEA5AB002A486E /* FirebaseConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */; };
+		C37DDDBA2BCEA7B4002A486E /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = C37DDDB92BCEA7B4002A486E /* FirebaseRemoteConfig */; };
+		C37DDDBC2BCEA7BE002A486E /* FirebaseRemoteConfigSwift in Frameworks */ = {isa = PBXBuildFile; productRef = C37DDDBB2BCEA7BE002A486E /* FirebaseRemoteConfigSwift */; };
 		C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE42B499D9B00EDFB9C /* WalletCore */; };
 		C37E2AE62B499D9B00EDFB9C /* WalletCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C37E2AE42B499D9B00EDFB9C /* WalletCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C384B3AF2AE96AD2009CD062 /* ModalCardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */; };
@@ -987,6 +990,7 @@
 		C3774F172B35C30400B15B78 /* WalletHeaderBanneModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WalletHeaderBanneModel.swift; sourceTree = "<group>"; };
 		C37D0C4C2AEF6A110003C5CE /* TonConnectConfirmationContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationContentView.swift; sourceTree = "<group>"; };
 		C37D0C4E2AEF6AF00003C5CE /* TonConnectConfirmationFeeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationFeeView.swift; sourceTree = "<group>"; };
+		C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseConfigurator.swift; sourceTree = "<group>"; };
 		C384B3AE2AE96AD2009CD062 /* ModalCardViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewController.swift; sourceTree = "<group>"; };
 		C384B3B02AE96ADB009CD062 /* ModalCardViewBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModalCardViewBuilder.swift; sourceTree = "<group>"; };
 		C384B3B22AE96AE8009CD062 /* ModalCardViewController+HeaderView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModalCardViewController+HeaderView.swift"; sourceTree = "<group>"; };
@@ -1053,6 +1057,7 @@
 				C3FC243B2BB4DA980005E952 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				C3B4DAA52B500AF20050703B /* TKScreenKit in Frameworks */,
+				C37DDDBA2BCEA7B4002A486E /* FirebaseRemoteConfig in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
 				C3B4DABD2B500BFB0050703B /* TKCoordinator in Frameworks */,
@@ -1061,6 +1066,7 @@
 				C37E2AE52B499D9B00EDFB9C /* WalletCore in Frameworks */,
 				C318DC4A2B499C83008A2273 /* TKUIKitLegacy in Frameworks */,
 				C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
+				C37DDDBC2BCEA7BE002A486E /* FirebaseRemoteConfigSwift in Frameworks */,
 				C39560162B7380C5003303C7 /* App in Frameworks */,
 				C327C6322B4F682B00AAFB43 /* FirebaseCrashlytics in Frameworks */,
 			);
@@ -2673,6 +2679,7 @@
 				7D6836152A1CAEAA002DBBC7 /* Library */,
 				7D68361E2A1CD1B8002DBBC7 /* Core */,
 				7DB8FB792A1BCFCD005B4B11 /* Resources */,
+				C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */,
 			);
 			path = Tonkeeper;
 			sourceTree = "<group>";
@@ -3172,6 +3179,8 @@
 				C3B4DABC2B500BFB0050703B /* TKCoordinator */,
 				C39560152B7380C5003303C7 /* App */,
 				C3FC243A2BB4DA980005E952 /* TKChart */,
+				C37DDDB92BCEA7B4002A486E /* FirebaseRemoteConfig */,
+				C37DDDBB2BCEA7BE002A486E /* FirebaseRemoteConfigSwift */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -3726,6 +3735,7 @@
 				0BD4049EC87EC6C963E6CFD4 /* SetupWalletViewController.swift in Sources */,
 				9E942CD15F5FF5F4FFE029AC /* SetupWalletView.swift in Sources */,
 				C8C8146A655C693012C56BBB /* SetupWalletPresenter.swift in Sources */,
+				C37DDDB82BCEA5AB002A486E /* FirebaseConfigurator.swift in Sources */,
 				CA74A7FB85A60A6A7A11D37C /* SetupWalletProtocols.swift in Sources */,
 				C3774F002B340F0600B15B78 /* SwapHeaderImageView.swift in Sources */,
 				49D41F7981620397A6533318 /* EnterMnemonicViewController.swift in Sources */,
@@ -4304,6 +4314,16 @@
 		C35E6C432ADFCA0500F8B524 /* TKCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKCore;
+		};
+		C37DDDB92BCEA7B4002A486E /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
+		};
+		C37DDDBB2BCEA7BE002A486E /* FirebaseRemoteConfigSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfigSwift;
 		};
 		C37E2AE42B499D9B00EDFB9C /* WalletCore */ = {
 			isa = XCSwiftPackageProductDependency;

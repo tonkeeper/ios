@@ -11,8 +11,9 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
   
   private weak var rootCoordinator: RootCoordinator?
   
-  public override init(router: WindowRouter) {
-    self.coreAssembly = TKCore.CoreAssembly()
+  public init(router: WindowRouter,
+              coreAssembly: TKCore.CoreAssembly) {
+    self.coreAssembly = coreAssembly
     self.keeperCoreAssembly = KeeperCore.Assembly(
       dependencies: Assembly.Dependencies(
         cacheURL: coreAssembly.cacheURL,
