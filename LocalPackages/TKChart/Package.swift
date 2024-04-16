@@ -6,7 +6,7 @@ import PackageDescription
 let package = Package(
   name: "TKChart",
   platforms: [
-    .macOS(.v12), .iOS(.v13)
+    .macOS(.v12), .iOS(.v14)
   ],
   products: [
     // Products define the executables and libraries a package produces, making them visible to other packages.
@@ -16,7 +16,7 @@ let package = Package(
       targets: ["TKChart"]),
   ],
   dependencies: [
-    .package(path: "../TKUIKitLegacy"),
+    .package(url: "https://github.com/tonkeeper/tkuikit-ios.git", branch: "main"),
     .package(url: "https://github.com/danielgindi/Charts", .upToNextMajor(from: "5.0.0"))
   ],
   targets: [
@@ -24,8 +24,10 @@ let package = Package(
     // Targets can depend on other targets in this package and products from dependencies.
     .target(
       name: "TKChart",
-      dependencies: [.product(name: "TKUIKitLegacy", package: "TKUIKitLegacy"),
-                     .product(name: "DGCharts", package: "Charts")]),
+      dependencies: [
+        .product(name: "TKUIKit", package: "tkuikit-ios"),
+        .product(name: "DGCharts", package: "Charts")
+      ]),
     .testTarget(
             name: "TKChartTests",
             dependencies: ["TKChart"]),

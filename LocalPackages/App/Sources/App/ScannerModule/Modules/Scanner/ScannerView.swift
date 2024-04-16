@@ -110,7 +110,7 @@ private extension ScannerView {
       .Icon.primaryAlternate,
       for: .selected
     )
-    flashlightButton.setImage(.Icons.Buttons.flashlight,
+    flashlightButton.setImage(.TKUIKit.Icons.Size56.flashlightOff,
                               for: .normal)
   }
   

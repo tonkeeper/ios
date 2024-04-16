@@ -19,7 +19,7 @@ struct RateWidgetChartView: View {
     if let image = chartView.getChartImage(transparent: false) {
       return .init(uiImage: image)
     }
-    return .init(uiImage: .Images.Mock.mercuryoLogo!)
+    return .init(uiImage: UIImage())
   }
   
   var body: some View {

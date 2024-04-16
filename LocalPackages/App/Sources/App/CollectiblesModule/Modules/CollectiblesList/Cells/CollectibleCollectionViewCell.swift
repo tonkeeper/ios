@@ -7,7 +7,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
   private let labelContainer = UIView()
   private let saleImageView: UIImageView = {
     let imageView = UIImageView()
-    imageView.image = .Icons.Collectible.sale
+    imageView.image = .TKUIKit.Icons.Size16.saleBadge
     imageView.tintColor = .white
     imageView.isHidden = true
     return imageView

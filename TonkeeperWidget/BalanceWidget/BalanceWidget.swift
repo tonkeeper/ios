@@ -17,7 +17,7 @@ struct BalanceWidget: Widget {
       intent: BalanceWidgetIntent.self,
       provider: BalanceWidgetTimelineProvider()) { entry in
         BalanceWidgetView(entry: entry)
-          .widgetBackground(backgroundView: Color(UIColor.Legacy.Background.page))
+          .widgetBackground(backgroundView: Color(UIColor.Background.page))
       }
       .configurationDisplayName("Wallet balance")
       .description("")

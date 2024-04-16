@@ -141,6 +141,10 @@ private extension WalletCoordinator {
       self?.openSend(token: token)
     }
     
+    module.output.didTapBuyOrSell = { [weak self] in
+      self?.openBuy(wallet: wallet)
+    }
+    
     router.push(viewController: module.view)
   }
   

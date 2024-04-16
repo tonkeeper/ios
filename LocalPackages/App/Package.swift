@@ -13,7 +13,6 @@ let package = Package(
   dependencies: [
     .package(url: "https://github.com/tonkeeper/tkuikit-ios.git", branch: "main"),
     .package(url: "https://github.com/tonkeeper/core-swift", branch: "feature/refact"),
-    .package(url: "https://github.com/SnapKit/SnapKit.git", .upToNextMajor(from: "5.0.1")),
     .package(url: "https://github.com/luximetr/AnyFormatKit.git", .upToNextMajor(from: "2.5.2")),
     .package(path: "../TKCore"),
     .package(path: "../TKCoordinator")
@@ -22,7 +21,6 @@ let package = Package(
     .target(
       name: "App",
       dependencies: [
-        .product(name: "SnapKit-Dynamic", package: "SnapKit"),
         .product(name: "AnyFormatKit", package: "AnyFormatKit"),
         .product(name: "TKUIKit", package: "tkuikit-ios"),
         .product(name: "TKScreenKit", package: "tkuikit-ios"),

@@ -21,7 +21,7 @@ struct RateChartWidget: Widget {
       intent: RateWidgetIntent.self,
       provider: RateWidgetTimelineProvider()) { entry in
         RateChartWidgetView(entry: entry)
-          .widgetBackground(backgroundView: Color(UIColor.Legacy.Background.page))
+          .widgetBackground(backgroundView: Color(UIColor.Background.page))
       }
       .configurationDisplayName("Rate with chart")
       .description("")

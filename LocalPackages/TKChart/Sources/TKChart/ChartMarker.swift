@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import TKUIKit
 import DGCharts
 
 class ChartMarker: Marker {
@@ -30,11 +31,11 @@ class ChartMarker: Marker {
       width: .smallDiameter,
       height: .smallDiameter))
     
-    UIColor.Legacy.Accent.blue.withAlphaComponent(.bigCircleAlpha).setFill()
+    UIColor.Accent.blue.withAlphaComponent(.bigCircleAlpha).setFill()
     bigCircle.fill()
     bigCircle.stroke()
     
-    UIColor.Legacy.Accent.blue.setFill()
+    UIColor.Accent.blue.setFill()
     smallCircle.fill()
     smallCircle.stroke()
   }

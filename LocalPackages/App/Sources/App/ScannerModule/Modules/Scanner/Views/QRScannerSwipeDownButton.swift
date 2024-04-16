@@ -67,7 +67,7 @@ private extension QRScannerSwipeDownButton {
   func setup() {
     layer.masksToBounds = true
     backgroundColor = .clear
-    setImage(.Icons.Buttons.Header.swipe, for: .normal)
+    setImage(.TKUIKit.Icons.Size16.chevronDown, for: .normal)
     tintColor = .Button.primaryForeground
     insertSubview(blurView, at: 0)
     insertSubview(highlightedBlurView, at: 0)

@@ -12,7 +12,7 @@ final class TonChartErrorView: UIView, ConfigurableView {
     label.numberOfLines = 0
     label.textColor = .Text.primary
     label.textAlignment = .center
-    label.applyTextStyleFont(.label1)
+    label.font = TKTextStyle.label1.font
     return label
   }()
   let subtitleLabel: UILabel = {
@@ -20,7 +20,7 @@ final class TonChartErrorView: UIView, ConfigurableView {
     label.numberOfLines = 0
     label.textColor = .Text.secondary
     label.textAlignment = .center
-    label.applyTextStyleFont(.body2)
+    label.font = TKTextStyle.body2.font
     return label
   }()
   
