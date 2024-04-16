@@ -93,7 +93,8 @@ struct WalletBalanceListItemMapper {
           image: iconConfigurationImage,
           tintColor: .Icon.primary,
           backgroundColor: .Background.contentTint,
-          size: .iconSize
+          size: .iconSize,
+          cornerRadius: CGSize.iconSize.height/2
         )
       ),
       alignment: .center
@@ -171,7 +172,8 @@ struct WalletBalanceListItemMapper {
             image: .image(.TKUIKit.Icons.Size28.key),
             tintColor: .Icon.primary,
             backgroundColor: .Background.contentTint,
-            size: .iconSize
+            size: .iconSize,
+            cornerRadius: CGSize.iconSize.height/2
           )
         ),
         alignment: .center
@@ -256,7 +258,8 @@ struct WalletBalanceListItemMapper {
           image: .image(image),
           tintColor: .Icon.primary,
           backgroundColor: .Background.contentTint,
-          size: .iconSize
+          size: .iconSize,
+          cornerRadius: CGSize.iconSize.height/2
         )
       ),
       alignment: .center

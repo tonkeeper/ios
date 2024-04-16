@@ -44,7 +44,8 @@ struct HistoryEventMapper {
       image: .image(action.eventType.icon),
       tintColor: .Icon.secondary,
       backgroundColor: .Background.contentTint,
-      size: CGSize(width: 44, height: 44)
+      size: CGSize(width: 44, height: 44),
+      cornerRadius: 22
     )
     let iconConfiguration = HistoryCellIconView.Configuration(
       imageModel: imageModel

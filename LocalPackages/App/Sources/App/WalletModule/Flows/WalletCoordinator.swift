@@ -216,6 +216,18 @@ private extension WalletCoordinator {
     router.present(navigationController)
   }
   
+  func openBuy(wallet: Wallet) {
+    let coordinator = BuyCoordinator(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: ViewControllerRouter(rootViewController: self.router.rootViewController)
+    )
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
   func openHistoryEventDetails(event: AccountEventDetailsEvent) {
     let module = HistoryEventDetailsAssembly.module(
       historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(event: event),
@@ -344,6 +356,10 @@ extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
     
     module.output.didTapScan = { [weak self] in
       self?.didTapScan?()
+    }
+    
+    module.output.didTapBuy = { [weak self] in
+      self?.openBuy(wallet: wallet)
     }
     
     module.output.didTapBackup = { [weak self] in

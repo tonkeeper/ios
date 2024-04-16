@@ -42,6 +42,10 @@ private extension HistoryCoordinator {
       self?.openReceive()
     }
     
+    module.output.didTapBuy = { [weak self] wallet in
+      self?.openBuy(wallet: wallet)
+    }
+    
     module.output.didSelectEvent = { [weak self] event in
       self?.openEventDetails(event: event)
     }
@@ -67,6 +71,18 @@ private extension HistoryCoordinator {
     navigationController.configureTransparentAppearance()
     
     router.present(navigationController)
+  }
+  
+  func openBuy(wallet: Wallet) {
+    let coordinator = BuyCoordinator(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: ViewControllerRouter(rootViewController: self.router.rootViewController)
+    )
+    
+    addChild(coordinator)
+    coordinator.start()
   }
   
   func openEventDetails(event: AccountEventDetailsEvent) {

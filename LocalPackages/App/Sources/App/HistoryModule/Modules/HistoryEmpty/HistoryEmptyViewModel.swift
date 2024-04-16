@@ -3,6 +3,7 @@ import TKUIKit
 
 protocol HistoryEmptyModuleOutput: AnyObject {
   var didTapReceive: (() -> Void)? { get set }
+  var didTapBuy: (() -> Void)? { get set }
 }
 
 protocol HistoryEmptyViewModel: AnyObject {
@@ -16,6 +17,7 @@ final class HistoryEmptyViewModelImplementation: HistoryEmptyViewModel, HistoryE
   // MARK: - HistoryEmptyModuleOutput
   
   var didTapReceive: (() -> Void)?
+  var didTapBuy: (() -> Void)?
   
   // MARK: - HistoryEmptyViewModel
   
@@ -42,8 +44,8 @@ private extension HistoryEmptyViewModelImplementation {
     )
     
     let buyButtonModel = TKUIActionButton.Model(title: "Buy Toncoin")
-    let buyButtonAction: () -> Void = {
-      
+    let buyButtonAction: () -> Void = { [weak self] in
+      self?.didTapBuy?()
     }
     
     let receiveButtonModel = TKUIActionButton.Model(title: "Receive")
