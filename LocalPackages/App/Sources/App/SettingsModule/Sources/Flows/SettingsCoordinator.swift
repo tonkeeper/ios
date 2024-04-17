@@ -29,7 +29,8 @@ private extension SettingsCoordinator {
     let itemsProvider = SettingsRootListItemsProvider(
       settingsController: keeperCoreMainAssembly.settingsController,
       urlOpener: coreAssembly.urlOpener(),
-      appStoreReviewer: coreAssembly.appStoreReviewer()
+      appStoreReviewer: coreAssembly.appStoreReviewer(),
+      appSettings: coreAssembly.appSettings
     )
     let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
     
@@ -39,6 +40,10 @@ private extension SettingsCoordinator {
     
     itemsProvider.didTapCurrency = { [weak self] in
       self?.openCurrencyPicker()
+    }
+    
+    itemsProvider.didTapTheme = { [weak self] in
+      self?.openThemePicker()
     }
     
     itemsProvider.didTapBackup = { [weak self] wallet in
@@ -107,6 +112,13 @@ private extension SettingsCoordinator {
   
   func openCurrencyPicker() {
     let itemsProvider = SettingsCurrencyPickerListItemsProvider(settingsController: keeperCoreMainAssembly.settingsController)
+    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
+    
+    router.push(viewController: module.viewController)
+  }
+  
+  func openThemePicker() {
+    let itemsProvider = SettingsThemePickerListItemsProvider(appSettings: coreAssembly.appSettings)
     let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
     
     router.push(viewController: module.viewController)

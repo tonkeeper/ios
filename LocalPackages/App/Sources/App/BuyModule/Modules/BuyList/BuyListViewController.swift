@@ -73,18 +73,7 @@ class BuyListViewController: GenericViewViewController<BuyListView>, TKBottomShe
     setup()
     viewModel.viewDidLoad()
   }
-  
-//  // MARK: - ScrollableModalCardCont
-  
 }
-
-// MARK: - BuyListViewInput
-
-//extension BuyListViewController: BuyListViewInput {
-//  func updateSections(_ sections: [BuyListSection]) {
-//    collectionController.sections = sections
-//  }
-//}
 
 // MARK: - Private
 
@@ -154,13 +143,3 @@ private extension NSCollectionLayoutSection {
     return section
   }
 }
-
-
-//// MARK: - BuyListCollectionControllerDelegate
-//
-//extension BuyListViewController: BuyListCollectionControllerDelegate {
-//  func buyListCollectionController(_ collectionController: BuyListCollectionController, 
-//                                   didSelectServiceAt indexPath: IndexPath) {
-//    presenter.didSelectServiceAt(indexPath: indexPath)
-//  }
-//}

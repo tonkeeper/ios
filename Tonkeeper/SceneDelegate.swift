@@ -7,6 +7,7 @@
 
 import UIKit
 import TKCore
+import TKUIKit
 import App
 import TKCoordinator
 
@@ -21,8 +22,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
              options connectionOptions: UIScene.ConnectionOptions) {
     guard let windowScene = (scene as? UIWindowScene) else { return }
     
-    let window = UIWindow(windowScene: windowScene)
-    
+    let window = TKWindow(windowScene: windowScene)
     let coordinator = App.AppCoordinator(router: TKCoordinator.WindowRouter(window: window),
     coreAssembly: CoreAssembly(featureFlagsProvider: FeatureFlagsProvider(isMarketRegionPickerAvailable: {
       FirebaseConfigurator.configurator.isMarketRegionPickerAvailable

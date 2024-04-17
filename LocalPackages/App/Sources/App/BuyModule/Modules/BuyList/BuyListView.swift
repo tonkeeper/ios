@@ -1,11 +1,3 @@
-//
-//  BuyListView.swift
-//  Tonkeeper
-
-//  Tonkeeper
-//  Created by Grigory Serebryanyy on 09/06/2023.
-//
-
 import UIKit
 
 final class BuyListView: UIView {

@@ -8,6 +8,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   
   var didTapEditWallet: ((Wallet) -> Void)?
   var didTapCurrency: (() -> Void)?
+  var didTapTheme: (() -> Void)?
   var didTapBackup: ((Wallet) -> Void)?
   var didTapSecurity: (() -> Void)?
   var didShowAlert: ((_ title: String, _ description: String?, _ actions: [UIAlertAction]) -> Void)?
@@ -18,13 +19,17 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   private let settingsController: SettingsController
   private let urlOpener: URLOpener
   private let appStoreReviewer: AppStoreReviewer
+  private let appSettings: AppSettings
   
   init(settingsController: SettingsController,
        urlOpener: URLOpener,
-       appStoreReviewer: AppStoreReviewer) {
+       appStoreReviewer: AppStoreReviewer,
+       appSettings: AppSettings) {
     self.settingsController = settingsController
     self.appStoreReviewer = appStoreReviewer
     self.urlOpener = urlOpener
+    self.appSettings = appSettings
+    
     let walletCellRegistration = WalletCellRegistration { cell, indexPath, itemIdentifier in
       cell.configure(model: itemIdentifier)
     }
@@ -68,7 +73,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
 
 private extension SettingsRootListItemsProvider {
   func setupSettingsSections() async -> [SettingsListSection] {
-    [setupWalletSection(),
+    await [setupWalletSection(),
      SettingsListSection(
       padding: .sectionPadding,
       items: [
@@ -79,7 +84,8 @@ private extension SettingsRootListItemsProvider {
      SettingsListSection(
       padding: .sectionPadding,
       items: [
-        await setupCurrencyItem()
+        await setupCurrencyItem(),
+        setupThemeItem(),
       ]
      ),
      SettingsListSection(
@@ -172,6 +178,19 @@ private extension SettingsRootListItemsProvider {
       cellContentModel: await SettingsCellContentView.Model(
         title: .currencyItemTitle,
         value: settingsController.activeCurrency().code
+      )
+    )
+  }
+  
+  func setupThemeItem() async -> SettingsCell.Model {
+    SettingsCell.Model(
+      identifier: .themeItemTitle,
+      selectionHandler: { [weak self] in
+        self?.didTapTheme?()
+      },
+      cellContentModel: SettingsCellContentView.Model(
+        title: .themeItemTitle,
+        value: appSettings.themeMode().title
       )
     )
   }
@@ -319,6 +338,7 @@ private extension String {
   static let backupItemTitle = "Backup"
   
   static let currencyItemTitle = "Currency"
+  static let themeItemTitle = "Theme"
   
   static let logoutItemTitle = "Sign Out"
   static let logoutTitle = "Log out?"

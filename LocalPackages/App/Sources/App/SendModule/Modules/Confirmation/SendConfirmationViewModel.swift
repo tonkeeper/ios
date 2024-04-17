@@ -92,7 +92,7 @@ private extension SendConfirmationViewModelImplementation {
     case .nft(let url):
       let view = HistoryEventDetailsNFTHeaderImageView()
       view.imageLoader = ImageLoader()
-      view.configure(model: HistoryEventDetailsNFTHeaderImageView.Model(image: .url(url)))
+      view.configure(model: HistoryEventDetailsNFTHeaderImageView.Model(image: .url(url), size: CGSize(width: 96, height: 96)))
       headerView = view
     }
     

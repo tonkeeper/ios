@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import TKCore
+import SnapKit
 
 final class HistoryEventDetailsNFTHeaderImageView: UIView, ConfigurableView {
   
@@ -9,6 +10,13 @@ final class HistoryEventDetailsNFTHeaderImageView: UIView, ConfigurableView {
   let imageView = UIImageView()
   
   private let imageContainer = UIView()
+  private var imageSize: CGSize = .zero {
+    didSet {
+      imageView.snp.updateConstraints { make in
+        make.width.height.equalTo(imageSize)
+      }
+    }
+  }
   
   // MARK: - Init
   
@@ -25,16 +33,18 @@ final class HistoryEventDetailsNFTHeaderImageView: UIView, ConfigurableView {
   
   struct Model {
     let image: Image
+    let size: CGSize
   }
   
   func configure(model: Model) {
+    self.imageSize = model.size
     switch model.image {
     case .image(let image, let tintColor, let backgroundColor):
       imageView.image = image
       imageView.tintColor = tintColor
       imageView.backgroundColor = backgroundColor
     case .url(let url):
-      _ = imageLoader?.loadImage(url: url, imageView: imageView, size: .init(width: 96, height: 96))
+      _ = imageLoader?.loadImage(url: url, imageView: imageView, size: model.size)
     }
   }
 }
@@ -52,20 +62,13 @@ private extension HistoryEventDetailsNFTHeaderImageView {
   }
   
   func setupConstraints() {
-    imageContainer.translatesAutoresizingMaskIntoConstraints = false
-    imageView.translatesAutoresizingMaskIntoConstraints = false
+    imageContainer.snp.makeConstraints { make in
+      make.top.centerX.bottom.equalTo(self)
+    }
     
-    NSLayoutConstraint.activate([
-      imageContainer.topAnchor.constraint(equalTo: topAnchor),
-      imageContainer.centerXAnchor.constraint(equalTo: centerXAnchor),
-      imageContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
-      
-      imageView.widthAnchor.constraint(equalToConstant: 96),
-      imageView.heightAnchor.constraint(equalToConstant: 96),
-      imageView.leftAnchor.constraint(equalTo: imageContainer.leftAnchor),
-      imageView.topAnchor.constraint(equalTo: imageContainer.topAnchor),
-      imageView.bottomAnchor.constraint(equalTo: imageContainer.bottomAnchor),
-      imageView.rightAnchor.constraint(equalTo: imageContainer.rightAnchor),
-    ])
+    imageView.snp.makeConstraints { make in
+      make.width.height.equalTo(imageSize)
+      make.left.top.bottom.right.equalTo(imageContainer)
+    }
   }
 }

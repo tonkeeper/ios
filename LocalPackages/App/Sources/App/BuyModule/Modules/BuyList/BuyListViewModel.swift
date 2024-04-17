@@ -4,7 +4,8 @@ import TKCore
 import KeeperCore
 
 protocol BuyListModuleOutput: AnyObject {
-  var didSelectItem: ((URL) -> Void)? { get set }
+  var didSelectURL: ((URL) -> Void)? { get set }
+  var didSelectItem: ((BuySellItemModel) -> Void)? { get set }
 }
 
 protocol BuyListViewModel: AnyObject {
@@ -17,7 +18,8 @@ final class BuyListViewModelImplementation: BuyListViewModel, BuyListModuleOutpu
   
   // MARK: - BuyListModuleOutput
   
-  var didSelectItem: ((URL) -> Void)?
+  var didSelectURL: ((URL) -> Void)?
+  var didSelectItem: ((BuySellItemModel) -> Void)?
   
   // MARK: - BuyListViewModel
   
@@ -43,19 +45,18 @@ final class BuyListViewModelImplementation: BuyListViewModel, BuyListModuleOutpu
   // MARK: - Dependencies
   
   private let buyListController: BuyListController
-  
-//  private let fiatMethodsController: FiatMethodsController
-//  private let buyListServiceBuilder: BuyListServiceBuilder
-//  private let appSettings = AppSettings()
-  
-  init(buyListController: BuyListController) {
+  private let appSettings: AppSettings
+
+  init(buyListController: BuyListController,
+       appSettings: AppSettings) {
     self.buyListController = buyListController
+    self.appSettings = appSettings
   }
 }
 
 private extension BuyListViewModelImplementation {
   
-  func didUpdateMethods(_ methods: [[BuyListController.BuySellItem]]) {
+  func didUpdateMethods(_ methods: [[BuySellItemModel]]) {
     Task { @MainActor in
       let sections = methods.map { section in
         section.map { mapBuySellItem($0) }
@@ -69,7 +70,7 @@ private extension BuyListViewModelImplementation {
     }
   }
   
-  func mapBuySellItem(_ item: BuyListController.BuySellItem) -> TKUIListItemCell.Configuration {
+  func mapBuySellItem(_ item: BuySellItemModel) -> TKUIListItemCell.Configuration {
     let iconConfigurationImage: TKUIListItemImageIconView.Configuration.Image = .asyncImage(item.iconURL, TKCore.ImageDownloadTask(
       closure: {
         [imageLoader] imageView,
@@ -137,8 +138,14 @@ private extension BuyListViewModelImplementation {
       id: item.id,
       listItemConfiguration: listItemConfiguration,
       selectionClosure: { [weak self] in
-        guard let url = item.actionURL else { return }
-        self?.didSelectItem?(url)
+        guard let self,
+              let url = item.actionURL else { return }
+        
+        if appSettings.isBuySellItemMarkedDoNotShowWarning(item.id) {
+          self.didSelectURL?(url)
+        } else {
+          self.didSelectItem?(item)
+        }
       }
     )
   }

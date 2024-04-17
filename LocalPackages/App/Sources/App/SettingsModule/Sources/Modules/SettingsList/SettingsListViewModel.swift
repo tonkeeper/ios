@@ -27,11 +27,11 @@ protocol SettingsListItemsProvider: AnyObject {
   func getSections() async -> [SettingsListSection]
   func selectItem(section: SettingsListSection, index: Int)
   func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell?
-  func initialSelectedIndexPath() -> IndexPath?
+  func initialSelectedIndexPath() async -> IndexPath?
 }
 
 extension SettingsListItemsProvider {
-  func initialSelectedIndexPath() -> IndexPath? { nil }
+  func initialSelectedIndexPath() async -> IndexPath? { nil }
 }
 
 final class SettingsListViewModelImplementation: SettingsListViewModel, SettingsListModuleOutput {
@@ -61,12 +61,13 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     
     Task {
       let sections = await itemsProvider.getSections()
+      let initialSelectedIndexPath = await itemsProvider.initialSelectedIndexPath()
       await MainActor.run {
         didUpdateSettingsSections?(sections)
+        if let initialSelectedIndexPath = initialSelectedIndexPath {
+          didSelectItem?(initialSelectedIndexPath)
+        }
       }
-    }
-    if let initialSelectedIndexPath = itemsProvider.initialSelectedIndexPath() {
-      didSelectItem?(initialSelectedIndexPath)
     }
   }
   

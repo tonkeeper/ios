@@ -32,15 +32,22 @@ private extension BuyCoordinator {
       buyListController: keeperCoreMainAssembly.buyListController(
         wallet: wallet,
         isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
-      )
+      ),
+      appSettings: coreAssembly.appSettings
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
-    module.output.didSelectItem = { [weak self, weak bottomSheetViewController] url in
+    module.output.didSelectURL = { [weak self, weak bottomSheetViewController] url in
       guard let bottomSheetViewController else { return }
       self?.openWebView(url: url, fromViewController: bottomSheetViewController)
     }
+    
+    module.output.didSelectItem = { [weak self, weak bottomSheetViewController] item in
+      guard let bottomSheetViewController else { return }
+      self?.openWarning(item: item, fromViewController: bottomSheetViewController)
+    }
+    
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
@@ -51,67 +58,22 @@ private extension BuyCoordinator {
     navigationController.configureTransparentAppearance()
     fromViewController.present(navigationController, animated: true)
   }
+  
+  func openWarning(item: BuySellItemModel, fromViewController: UIViewController) {
+    let module = BuyListPopUpAssembly.module(
+      buySellItemModel: item,
+      appSettings: coreAssembly.appSettings,
+      urlOpener: coreAssembly.urlOpener()
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    bottomSheetViewController.present(fromViewController: fromViewController)
+    
+    module.output.didTapOpen = { [weak self, weak bottomSheetViewController] item in
+      guard let bottomSheetViewController, let actionURL = item.actionURL else { return }
+      bottomSheetViewController.dismiss {
+        self?.openWebView(url: actionURL, fromViewController: fromViewController)
+      }
+    }
+  }
 }
-
-//final class BuyCoordinator: Coordinator<Router<ModalCardContainerViewController>> {
-//
-//  private let walletCoreAssembly: WalletCoreAssembly
-//  
-//  init(router: Router<ModalCardContainerViewController>,
-//       walletCoreAssembly: WalletCoreAssembly) {
-//    self.walletCoreAssembly = walletCoreAssembly
-//    super.init(router: router)
-//  }
-//  
-//  override func start() {
-//    showBuyList()
-//  }
-//}
-//
-//private extension BuyCoordinator {
-//  func showBuyList() {
-//    let module = BuyListAssembly.module(
-//      fiatMethodsController: walletCoreAssembly.fiatMethodsController(), 
-//      output: self
-//    )
-//    router.rootViewController.content = module.view
-//  }
-//}
-//
-//// MARK: - BuyListModuleOutput
-//
-//extension BuyCoordinator: BuyListModuleOutput {
-//  func buyListModule(_ buyListModule: BuyListModuleInput,
-//                     showFiatMethodPopUp fiatMethod: FiatMethodViewModel) {
-//    let module = FiatMethodPopUpAssembly.module(fiatMethodItem: fiatMethod,
-//                                                fiatMethodsController: walletCoreAssembly.fiatMethodsController(),
-//                                                urlOpener: walletCoreAssembly.coreAssembly.urlOpener(),
-//                                                output: self)
-//    let modalCardContainerViewController = ModalCardContainerViewController(content: module.view)
-//    modalCardContainerViewController.headerSize = .small
-//    
-//    router.present(modalCardContainerViewController)
-//  }
-//  
-//  func buyListModule(_ buyListModule: BuyListModuleInput,
-//                     showWebView url: URL) {
-//    let webViewController = WebViewController(url: url)
-//    let navigationController = UINavigationController(rootViewController: webViewController)
-//    navigationController.modalPresentationStyle = .fullScreen
-//    navigationController.configureTransparentAppearance()
-//    router.present(navigationController)
-//  }
-//}
-//
-//extension BuyCoordinator: FiatMethodPopUpModuleOutput {
-//  func fiatMethodPopUpModule(_ module: FiatMethodPopUpModuleInput, 
-//                             openURL url: URL) {
-//    router.dismiss { [weak router] in
-//      let webViewController = WebViewController(url: url)
-//      let navigationController = UINavigationController(rootViewController: webViewController)
-//      navigationController.modalPresentationStyle = .fullScreen
-//      navigationController.configureTransparentAppearance()
-//      router?.present(navigationController)
-//    }
-//  }
-//}

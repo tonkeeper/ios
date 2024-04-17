@@ -17,11 +17,8 @@ final class SendConfirmationViewController: GenericViewViewController<SendConfir
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    view.backgroundColor = .Background.page
-    
     setup()
     setupBindings()
-    setupViewEventsBinding()
     viewModel.viewDidLoad()
   }
   
@@ -51,9 +48,5 @@ private extension SendConfirmationViewController {
     viewModel.didUpdateConfiguration = { [weak modalCardViewController] configuration in
       modalCardViewController?.configuration = configuration
     }
-  }
-  
-  func setupViewEventsBinding() {
-
   }
 }

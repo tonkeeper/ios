@@ -277,7 +277,7 @@ private extension MainCoordinator {
                                wallet: Wallet,
                                app: TonConnectApp) {
     guard let windowScene = UIApplication.keyWindowScene else { return }
-    let window = UIWindow(windowScene: windowScene)
+    let window = TKWindow(windowScene: windowScene)
     let coordinator = TonConnectModule(
       dependencies: TonConnectModule.Dependencies(
         coreAssembly: coreAssembly,

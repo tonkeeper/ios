@@ -24,6 +24,7 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
   }
   
   public override func start(deeplink: CoordinatorDeeplink? = nil) {
+    router.window.applyThemeMode(coreAssembly.appSettings.themeMode())
     openRoot(deeplink: deeplink)
   }
   

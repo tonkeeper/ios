@@ -80,4 +80,12 @@ public struct CoreAssembly {
   public func appStoreReviewer() -> AppStoreReviewer {
     UIApplication.shared
   }
+  
+  public var appSettings: AppSettings {
+    AppSettings(userDefaults: UserDefaults(suiteName: .appSettingsSuiteName) ?? .standard)
+  }
+}
+
+private extension String {
+  static let appSettingsSuiteName = "app_settings"
 }

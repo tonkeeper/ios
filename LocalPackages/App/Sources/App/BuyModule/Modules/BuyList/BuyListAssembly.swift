@@ -4,9 +4,11 @@ import KeeperCore
 
 struct BuyListAssembly {
   private init() {}
-  static func module(buyListController: BuyListController) -> MVVMModule<BuyListViewController, BuyListModuleOutput, Void> {
+  static func module(buyListController: BuyListController,
+                     appSettings: AppSettings) -> MVVMModule<BuyListViewController, BuyListModuleOutput, Void> {
     let viewModel = BuyListViewModelImplementation(
-      buyListController: buyListController
+      buyListController: buyListController,
+      appSettings: appSettings
     )
     
     let viewController = BuyListViewController(

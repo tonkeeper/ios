@@ -69,7 +69,8 @@ private extension HistoryEventDetailsViewModelImplementation {
             let view = HistoryEventDetailsNFTHeaderImageView()
             view.imageLoader = ImageLoader()
             view.configure(model: HistoryEventDetailsNFTHeaderImageView.Model(
-              image: .with(image: .url(image))
+              image: .with(image: .url(image)),
+              size: CGSize(width: 96, height: 96)
             ))
             headerItems.append(TKModalCardViewController.Configuration.Item.customView(view, bottomSpacing: 20))
           }
