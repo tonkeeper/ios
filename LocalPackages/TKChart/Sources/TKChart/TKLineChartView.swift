@@ -19,6 +19,13 @@ public protocol Coordinate {
   var y: Double { get }
 }
 
+private class ChartView: LineChartView {
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, 
+                         shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+    return true
+  }
+}
+
 public final class TKLineChartView: UIView {
   public enum Mode {
     case stepped
@@ -37,7 +44,7 @@ public final class TKLineChartView: UIView {
 
   public weak var delegate: TKLineChartViewDelegate?
   
-  private let chartView = LineChartView()
+  private let chartView = ChartView()
   
   public override init(frame: CGRect) {
     super.init(frame: frame)
@@ -90,7 +97,7 @@ private extension TKLineChartView {
       target: self,
       action: #selector(longPressGestureHandler(gestureRecognizer:))
     )
-    longTapGesture.minimumPressDuration = 0.5
+    longTapGesture.minimumPressDuration = 0.3
     addGestureRecognizer(longTapGesture)
     
     addSubview(chartView)
@@ -135,6 +142,7 @@ private extension TKLineChartView {
       delegate?.chartView(self, didSelectValueAt: index)
     case .cancelled, .ended, .failed:
       chartView.highlightValue(nil)
+      delegate?.chartViewDidDeselectValue(self)
     default: break
     }
   }
