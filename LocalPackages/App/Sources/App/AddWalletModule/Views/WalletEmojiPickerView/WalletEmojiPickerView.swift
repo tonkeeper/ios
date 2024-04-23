@@ -51,6 +51,7 @@ private extension WalletEmojiPickerView {
     collectionView.delegate = self
     collectionView.backgroundColor = .Background.page
     collectionView.showsHorizontalScrollIndicator = false
+    collectionView.showsVerticalScrollIndicator = false
     collectionView.contentInset.top = .contentTopPadding
     collectionView.contentInset.bottom = .contentBottomPadding
     
@@ -161,6 +162,6 @@ private extension NSCollectionLayoutSize {
 
 private extension CGFloat {
   static let itemSide: CGFloat = 48
-  static let contentTopPadding: CGFloat = 8
+  static let contentTopPadding: CGFloat = 28
   static let contentBottomPadding: CGFloat = 48
 }
