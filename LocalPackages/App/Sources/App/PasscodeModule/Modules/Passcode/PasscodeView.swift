@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import SnapKit
 
 public final class PasscodeView: UIView, ConfigurableView {
   let keyboardView = TKKeyboardView(configuration: .passcodeConfiguration(biometry: nil))
@@ -34,18 +35,15 @@ private extension PasscodeView {
   }
   
   func setupConstraints() {
-    keyboardView.translatesAutoresizingMaskIntoConstraints = false
-    topContainer.translatesAutoresizingMaskIntoConstraints = false
-
-    NSLayoutConstraint.activate([
-      keyboardView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
-      keyboardView.leftAnchor.constraint(equalTo: leftAnchor),
-      keyboardView.rightAnchor.constraint(equalTo: rightAnchor),
-      
-      topContainer.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
-      topContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      topContainer.bottomAnchor.constraint(equalTo: keyboardView.topAnchor),
-      topContainer.rightAnchor.constraint(equalTo: rightAnchor)
-    ])
+    keyboardView.snp.makeConstraints { make in
+      make.bottom.equalTo(safeAreaLayoutGuide).inset(16)
+      make.left.right.equalTo(self).inset(16)
+    }
+    
+    topContainer.snp.makeConstraints { make in
+      make.top.equalTo(safeAreaLayoutGuide)
+      make.left.right.equalTo(self)
+      make.bottom.equalTo(keyboardView.snp.top)
+    }
   }
 }
