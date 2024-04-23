@@ -128,7 +128,7 @@ private extension HistoryListViewController {
           continue
         }
       }
-      dataSource.apply(snapshot, animatingDifferences: true)
+      dataSource.apply(snapshot, animatingDifferences: false)
     }
     
     viewModel.didStartPagination = { [weak dataSource] pagination in

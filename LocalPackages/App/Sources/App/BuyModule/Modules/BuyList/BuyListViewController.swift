@@ -83,8 +83,9 @@ private extension BuyListViewController {
     customView.collectionView.delegate = self
     
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
-      self?.dataSource.apply(snapshot)
-      self?.didUpdateHeight?()
+      self?.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+        self?.didUpdateHeight?()
+      })
     }
   }
   

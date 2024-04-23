@@ -4,13 +4,16 @@ import KeeperCore
 
 struct WalletContainerAssembly {
   private init() {}
-  static func module(childModuleProvider: WalletContainerViewModelChildModuleProvider,
+  static func module(walletBalanceModule: WalletBalanceModule,
                      walletMainController: WalletMainController) -> MVVMModule<WalletContainerViewController, WalletContainerModuleOutput, Void> {
     let viewModel = WalletContainerViewModelImplementation(
-      childModuleProvider: childModuleProvider,
+      walletBalanceModuleInput: walletBalanceModule.input,
       walletMainController: walletMainController
     )
-    let viewController = WalletContainerViewController(viewModel: viewModel)
+    let viewController = WalletContainerViewController(
+      viewModel: viewModel,
+      walletBalanceViewController: walletBalanceModule.view
+    )
     return .init(view: viewController, output: viewModel, input: Void())
   }
 }

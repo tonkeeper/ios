@@ -75,12 +75,7 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
   }
   
   func scrollToTop() {
-    guard customView.collectionView.contentOffset.y > customView.collectionView.adjustedContentInset.top else { return }
-    customView.collectionView.setContentOffset(
-      CGPoint(x: 0,
-              y: -customView.collectionView.adjustedContentInset.top),
-      animated: true
-    )
+    scrollToTop(animated: true)
   }
 }
 
@@ -100,6 +95,10 @@ private extension WalletBalanceViewController {
   }
   
   func setupBindings() {
+    viewModel.didChangeWallet = { [weak self] in
+      self?.scrollToTop(animated: false)
+    }
+    
     viewModel.didUpdateHeader = { [weak customView] model in
       customView?.headerView.configure(model: model)
     }
@@ -107,19 +106,17 @@ private extension WalletBalanceViewController {
     viewModel.didUpdateTonItems = { [weak dataSource] tonItems in
       guard let dataSource else { return }
       var snapshot = dataSource.snapshot()
-      let animatingDifferences = !snapshot.itemIdentifiers(inSection: .tonItems).isEmpty
       snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .tonItems))
       snapshot.appendItems(tonItems, toSection: .tonItems)
-      dataSource.apply(snapshot,animatingDifferences: animatingDifferences)
+      dataSource.apply(snapshot,animatingDifferences: false)
     }
     
     viewModel.didUpdateJettonItems = { [weak dataSource] jettonItems in
       guard let dataSource else { return }
       var snapshot = dataSource.snapshot()
-      let animatingDifferences = !snapshot.itemIdentifiers(inSection: .jettonsItems).isEmpty
       snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .jettonsItems))
       snapshot.appendItems(jettonItems, toSection: .jettonsItems)
-      dataSource.apply(snapshot,animatingDifferences: animatingDifferences)
+      dataSource.apply(snapshot,animatingDifferences: false)
     }
     
     viewModel.didUpdateFinishSetupItems = { [weak dataSource] items in
@@ -127,17 +124,13 @@ private extension WalletBalanceViewController {
       var snapshot = dataSource.snapshot()
       snapshot.deleteSections([.finishSetup])
       
-      let animatingDifferences: Bool
       if !items.isEmpty {
         snapshot.insertSections([.finishSetup], afterSection: .tonItems)
         snapshot.appendItems(items, toSection: .finishSetup)
         snapshot.reloadSections([.finishSetup])
-        animatingDifferences = false
-      } else {
-        animatingDifferences = true
       }
       
-      dataSource.apply(snapshot,animatingDifferences: animatingDifferences)
+      dataSource.apply(snapshot,animatingDifferences: false)
     }
     
     viewModel.didCopy = { configuration in
@@ -172,6 +165,15 @@ private extension WalletBalanceViewController {
     }
     
     return dataSource
+  }
+  
+  func scrollToTop(animated: Bool = true) {
+    guard customView.collectionView.contentOffset.y > customView.collectionView.adjustedContentInset.top else { return }
+    customView.collectionView.setContentOffset(
+      CGPoint(x: 0,
+              y: -customView.collectionView.adjustedContentInset.top),
+      animated: animated
+    )
   }
 }
 

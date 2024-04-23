@@ -63,6 +63,10 @@ private extension SettingsCoordinator {
     itemsProvider.didTapLogout = { [weak self] in
       self?.didLogout?()
     }
+    
+    itemsProvider.didTapDeleteAccount = { [weak self] in
+      self?.router.pop()
+    }
 
     router.push(viewController: module.viewController,
                 onPopClosures: { [weak self] in

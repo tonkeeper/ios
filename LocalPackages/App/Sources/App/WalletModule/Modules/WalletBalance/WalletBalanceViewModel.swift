@@ -4,19 +4,22 @@ import KeeperCore
 import UIKit
 
 protocol WalletBalanceModuleOutput: AnyObject {
-  var didSelectTon: (() -> Void)? { get set }
-  var didSelectJetton: ((JettonItem) -> Void)? { get set }
+  var didSelectTon: ((Wallet) -> Void)? { get set }
+  var didSelectJetton: ((Wallet, JettonItem) -> Void)? { get set }
 
   var didTapReceive: (() -> Void)? { get set }
   var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
-  var didTapBuy: (() -> Void)? { get set }
+  var didTapBuy: ((Wallet) -> Void)? { get set }
   
-  var didTapBackup: (() -> Void)? { get set }
+  var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
 }
 
+protocol WalletBalanceModuleInput: AnyObject {}
+
 protocol WalletBalanceViewModel: AnyObject {
+  var didChangeWallet: (() -> Void)? { get set }
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)? { get set }
   var didUpdateTonItems: (([TKUIListItemCell.Configuration]) -> Void)? { get set }
   var didUpdateJettonItems: (([TKUIListItemCell.Configuration]) -> Void)? { get set }
@@ -29,24 +32,25 @@ protocol WalletBalanceViewModel: AnyObject {
   func didTapFinishSetupButton()
 }
 
-final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput {
+final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput, WalletBalanceModuleInput {
   
   // MARK: - WalletBalanceModuleOutput
   
-  var didSelectTon: (() -> Void)?
-  var didSelectJetton: ((JettonItem) -> Void)?
+  var didSelectTon: ((Wallet) -> Void)?
+  var didSelectJetton: ((Wallet, JettonItem) -> Void)?
   var didUpdateFinishSetupItems: (([TKUIListItemCell.Configuration]) -> Void)?
   
   var didTapReceive: (() -> Void)?
   var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
-  var didTapBuy: (() -> Void)?
+  var didTapBuy: ((Wallet) -> Void)?
   
-  var didTapBackup: (() -> Void)?
+  var didTapBackup: ((Wallet) -> Void)?
   var didRequireConfirmation: (() async -> Bool)?
   
   // MARK: - WalletBalanceViewModel
   
+  var didChangeWallet: (() -> Void)?
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)?
   var didUpdateTonItems: (([TKUIListItemCell.Configuration]) -> Void)?
   var didUpdateJettonItems: (([TKUIListItemCell.Configuration]) -> Void)?
@@ -56,6 +60,13 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
 
   func viewDidLoad() {
     Task {
+      walletBalanceController.didChangeWallet = { [weak self] in
+        guard let self else { return }
+        Task { @MainActor in
+          self.didChangeWallet?()
+        }
+      }
+      
       await walletBalanceController.start(didUpdateState: { [weak self] stateModel in
         self?.didUpdateStateModel(stateModel)
       }, didUpdateBalanceState: { [weak self] model in
@@ -96,22 +107,24 @@ private extension WalletBalanceViewModelImplementation {
   func didUpdateBalanceStateModel(_ model: WalletBalanceItemsModel) {
     let tonItems = model.tonItems.map { tonItem in
       listItemMapper.mapBalanceItem(tonItem) { [weak self] in
+        guard let wallet = self?.walletBalanceController.wallet else { return }
         switch tonItem.token {
         case .ton:
-          self?.didSelectTon?()
+          self?.didSelectTon?(wallet)
         case .jetton(let jettonInfo):
-          self?.didSelectJetton?(jettonInfo)
+          self?.didSelectJetton?(wallet, jettonInfo)
         }
       }
     }
     
     let jettonsItems = model.jettonsItems.map { jettonItem in
       listItemMapper.mapBalanceItem(jettonItem) { [weak self] in
+        guard let wallet = self?.walletBalanceController.wallet else { return }
         switch jettonItem.token {
         case .ton:
-          self?.didSelectTon?()
+          self?.didSelectTon?(wallet)
         case .jetton(let jettonInfo):
-          self?.didSelectJetton?(jettonInfo)
+          self?.didSelectJetton?(wallet, jettonInfo)
         }
       }
     }
@@ -134,7 +147,8 @@ private extension WalletBalanceViewModelImplementation {
       model: model,
       biometryAuthentificator: BiometryAuthentificator(),
       backupHandler: { [weak self] in
-        self?.didTapBackup?()
+        guard let wallet = self?.walletBalanceController.wallet else { return }
+        self?.didTapBackup?(wallet)
       },
       biometryHandler: { [weak self] isOn in
         guard let self = self else { return !isOn }
@@ -296,7 +310,9 @@ private extension WalletBalanceViewModelImplementation {
         title: "Buy TON",
         icon: .TKUIKit.Icons.Size28.usd,
         isEnabled: isBuyEnable,
-        action: { [weak self] in self?.didTapBuy?() }
+        action: { [weak self] in
+          guard let wallet = self?.walletBalanceController.wallet else { return }
+          self?.didTapBuy?(wallet) }
       ),
       stakeButton: WalletBalanceHeaderButtonsView.Model.Button(
         title: "Stake",

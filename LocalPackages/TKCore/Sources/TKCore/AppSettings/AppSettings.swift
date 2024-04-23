@@ -20,7 +20,7 @@ public final class AppSettings {
   
   public func themeMode() -> ThemeMode {
     guard let value = userDefaults.value(forKey: .themeModeKey) as? String,
-          let themeMode = ThemeMode(rawValue: value) else { return .system }
+          let themeMode = ThemeMode(rawValue: value) else { return .blue }
     return themeMode
   }
   

@@ -49,7 +49,7 @@ final class WalletsListCollectionController: TKCollectionController<WalletsListS
     snapshot.appendItems(wallets, toSection: .wallets)
     snapshot.reloadSections([.wallets])
     UIView.performWithoutAnimation {
-      dataSource.apply(snapshot, animatingDifferences: true)
+      dataSource.apply(snapshot, animatingDifferences: false)
     }
   }
 }

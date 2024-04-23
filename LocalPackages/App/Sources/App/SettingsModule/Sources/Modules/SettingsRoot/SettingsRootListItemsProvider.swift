@@ -13,6 +13,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   var didTapSecurity: (() -> Void)?
   var didShowAlert: ((_ title: String, _ description: String?, _ actions: [UIAlertAction]) -> Void)?
   var didTapLogout: (() -> Void)?
+  var didTapDeleteAccount: (() -> Void)?
   
   private let walletCellRegistration: WalletCellRegistration
   
@@ -41,6 +42,14 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
     
     settingsController.didUpdateActiveCurrency = { [weak self] in
       self?.didUpdateSections?()
+    }
+    
+    settingsController.didDeleteWallet = { [weak self] in
+      self?.didTapDeleteAccount?()
+    }
+    
+    settingsController.didDeleteLastWallet = { [weak self] in
+      self?.didTapLogout?()
     }
   }
   
@@ -73,7 +82,19 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
 
 private extension SettingsRootListItemsProvider {
   func setupSettingsSections() async -> [SettingsListSection] {
-    await [setupWalletSection(),
+    
+    var logoutSectionItems = [AnyHashable]()
+    switch settingsController.activeWallet().model.walletType {
+    case .watchOnly:
+//      break
+      logoutSectionItems.append(setupDeleteWatchOnlyAccount())
+    default:
+//      break
+      logoutSectionItems.append(setupDeleteAccountItem())
+    }
+    logoutSectionItems.append(setupLogoutItem())
+    
+    return await [setupWalletSection(),
      SettingsListSection(
       padding: .sectionPadding,
       items: [
@@ -95,14 +116,12 @@ private extension SettingsRootListItemsProvider {
         setupTonkeeperNewsItem(),
         setupContactUsItem(),
         setupRateItem(),
-        setupDeleteAccountItem()
       ]
      ),
      SettingsListSection(
       padding: .sectionPadding,
-      items: [
-        setupLogoutItem()
-      ]
+      items:
+        logoutSectionItems
      )
     ]
   }
@@ -287,7 +306,10 @@ private extension SettingsRootListItemsProvider {
         
         let actions = [
           UIAlertAction(title: .deleteDeleteButtonTitle, style: .destructive, handler: { [weak self] _ in
-            self?.didTapLogout?()
+            do {
+              try self?.settingsController.deleteAccount()
+              self?.didTapDeleteAccount?()
+            } catch {}
           }),
           UIAlertAction(title: .deleteCancelButtonTitle, style: .cancel)
         ]
@@ -306,6 +328,32 @@ private extension SettingsRootListItemsProvider {
     SettingsSection.settingsItems(items: [
       setupLogoutItem()
     ])
+  }
+  
+  func setupDeleteWatchOnlyAccount() -> SettingsCell.Model {
+    SettingsCell.Model(
+      identifier: .deleteWatchItemTitle,
+      selectionHandler: { [weak self] in
+        guard let self = self else { return }
+        
+        let actions = [
+          UIAlertAction(title: .deleteWatchTitle, style: .destructive, handler: { [weak self] _ in
+            do {
+              try self?.settingsController.deleteAccount()
+              self?.didTapDeleteAccount?()
+            } catch {}
+          }),
+          UIAlertAction(title: .deleteWatchCancelButtonTitle, style: .cancel)
+        ]
+        
+        self.didShowAlert?(.deleteWatchDeleteButtonTitle, .deleteDescription, actions)
+      },
+      cellContentModel: SettingsCellContentView.Model(
+        title: .deleteWatchItemTitle,
+        icon: .TKUIKit.Icons.Size28.trashBin,
+        tintColor: .Accent.blue
+      )
+    )
   }
   
   func setupLogoutItem() -> SettingsCell.Model {
@@ -357,6 +405,11 @@ private extension String {
   static let deleteDescription = "This action will delete your account and all data from this application."
   static let deleteDeleteButtonTitle = "Delete account and data"
   static let deleteCancelButtonTitle = "Cancel"
+  
+  static let deleteWatchItemTitle = "Delete Watch Account"
+  static let deleteWatchTitle = "Are you sure you want to delete Watch account?"
+  static let deleteWatchDeleteButtonTitle = "Delete"
+  static let deleteWatchCancelButtonTitle = "Cancel"
 }
 
 private extension NSDirectionalEdgeInsets {

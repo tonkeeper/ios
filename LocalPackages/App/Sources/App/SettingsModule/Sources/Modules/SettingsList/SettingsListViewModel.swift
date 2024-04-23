@@ -45,8 +45,25 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   var didUpdateSettingsSections: (([SettingsListSection]) -> Void)?
   var didShowAlert: ((String, String?, [UIAlertAction]) -> Void)?
   var didSelectItem: ((IndexPath) -> Void)?
-
+  
+  private var token: NSObjectProtocol?
+  
   func viewDidLoad() {
+    token = NotificationCenter.default.addObserver(forName: .didChangeThemeMode, object: nil, queue: .main, using: { [weak self] _ in
+      guard let self = self else { return }
+      Task {
+        //      self?.viewDidLoad()
+        let sections = await self.itemsProvider.getSections()
+        let initialSelectedIndexPath = await self.itemsProvider.initialSelectedIndexPath()
+        await MainActor.run {
+          self.didUpdateSettingsSections?(sections)
+          if let initialSelectedIndexPath = initialSelectedIndexPath {
+            self.didSelectItem?(initialSelectedIndexPath)
+          }
+        }
+      }
+    })
+    
     didUpdateTitle?(itemsProvider.title)
     
     itemsProvider.didUpdateSections = { [weak self] in

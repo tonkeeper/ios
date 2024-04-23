@@ -30,7 +30,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
 private extension WalletCoordinator {
   func openWalletContainer() {
     let module = WalletContainerAssembly.module(
-      childModuleProvider: self, 
+      walletBalanceModule: createWalletBalanceModule(),
       walletMainController: keeperCoreMainAssembly.walletMainController()
     )
     
@@ -335,18 +335,16 @@ private extension WalletCoordinator {
       print("Log: Wallet update failed")
     }
   }
-}
 
-extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
-  func getWalletBalanceModuleView(wallet: Wallet) -> UIViewController {
-    let walletBalanceController = keeperCoreMainAssembly.walletBalanceController(wallet: wallet)
+  func createWalletBalanceModule() -> WalletBalanceModule {
+    let walletBalanceController = keeperCoreMainAssembly.walletBalanceController()
     let module = WalletBalanceAssembly.module(walletBalanceController: walletBalanceController)
     
-    module.output.didSelectTon = { [weak self] in
+    module.output.didSelectTon = { [weak self] wallet in
       self?.openTonDetails(wallet: wallet)
     }
     
-    module.output.didSelectJetton = { [weak self] jettonItem in
+    module.output.didSelectJetton = { [weak self] wallet, jettonItem in
       self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet)
     }
     
@@ -362,11 +360,11 @@ extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
       self?.didTapScan?()
     }
     
-    module.output.didTapBuy = { [weak self] in
+    module.output.didTapBuy = { [weak self] wallet in
       self?.openBuy(wallet: wallet)
     }
     
-    module.output.didTapBackup = { [weak self] in
+    module.output.didTapBackup = { [weak self] wallet in
       self?.openBackup(wallet: wallet)
     }
     
@@ -374,6 +372,6 @@ extension WalletCoordinator: WalletContainerViewModelChildModuleProvider {
       return (await self?.openConfirmation()) ?? false
     }
     
-    return module.view
+    return module
   }
 }

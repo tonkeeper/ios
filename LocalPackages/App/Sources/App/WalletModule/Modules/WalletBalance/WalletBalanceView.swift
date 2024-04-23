@@ -6,7 +6,7 @@ final class WalletBalanceView: UIView, ConfigurableView {
   
   let headerView = WalletBalanceHeaderView()
   
-  let collectionView = UICollectionView(
+  let collectionView = TKUICollectionView(
     frame: .zero,
     collectionViewLayout: UICollectionViewLayout()
   )
