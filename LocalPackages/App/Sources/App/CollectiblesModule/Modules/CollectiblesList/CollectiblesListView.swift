@@ -3,7 +3,7 @@ import TKUIKit
 
 final class CollectiblesListView: UIView {
   
-  let collectionView = TKUICollectionView(
+  let collectionView = UICollectionView(
     frame: .zero,
     collectionViewLayout: UICollectionViewLayout()
   )

@@ -4,7 +4,7 @@ import TKCore
 
 final class WalletEmojiPickerView: UIView, ConfigurableView {
   lazy var collectionView: UICollectionView = {
-    let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: createLayout())
+    let collectionView = UICollectionView(frame: .zero, collectionViewLayout: createLayout())
     return collectionView
   }()
   

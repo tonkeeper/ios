@@ -35,7 +35,7 @@ final class SendPickerView: UIView {
   
   // Subviews
   
-  private let collectionView = TKUICollectionView(
+  private let collectionView = UICollectionView(
     frame: .zero,
     collectionViewLayout: UICollectionViewLayout()
   )

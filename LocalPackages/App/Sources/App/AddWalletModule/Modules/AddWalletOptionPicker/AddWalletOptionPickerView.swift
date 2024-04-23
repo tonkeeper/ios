@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 
 final class AddWalletOptionPickerView: UIView {
-  let collectionView = TKUICollectionView(
+  let collectionView = UICollectionView(
     frame: .zero,
     collectionViewLayout: UICollectionViewLayout()
   )
