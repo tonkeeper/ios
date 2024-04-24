@@ -56,7 +56,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didUpdateJettonItems: (([TKUIListItemCell.Configuration]) -> Void)?
   var didCopy: ((ToastPresenter.Configuration) -> Void)?
   
-  var finishSetupSectionHeaderModel = TKListTitleView.Model(title: "", buttonContent: nil)
+  var finishSetupSectionHeaderModel = TKListTitleView.Model(title: "", textStyle: .label1, buttonContent: nil)
 
   func viewDidLoad() {
     Task {
@@ -165,7 +165,7 @@ private extension WalletBalanceViewModelImplementation {
       if model.isFinishSetupAvailable {
         buttonContent = TKButton.Configuration.Content(title: .plainString("Done"))
       }
-      finishSetupSectionHeaderModel = TKListTitleView.Model(title: "Finish setting up", buttonContent: buttonContent)
+      finishSetupSectionHeaderModel = TKListTitleView.Model(title: "Finish setting up", textStyle: .label1, buttonContent: buttonContent)
       didUpdateFinishSetupItems?(finishSetupItems)
     }
   }

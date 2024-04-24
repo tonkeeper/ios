@@ -113,5 +113,5 @@ private extension UIEdgeInsets {
 private extension CGFloat {
   static let imageViewLeftPadding: CGFloat = 16
   static let imageViewSide: CGFloat = 64
-  static let separatorHeight: CGFloat = 0.5
+  static let separatorHeight: CGFloat = TKUIKit.Constants.separatorWidth
 }

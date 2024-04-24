@@ -192,7 +192,7 @@ private extension HistoryListViewController {
           withReuseIdentifier: SectionHeaderView.reuseIdentifier,
           for: indexPath
         )
-        (sectionHeaderView as? SectionHeaderView)?.configure(model: TKListTitleView.Model(title: model.title))
+        (sectionHeaderView as? SectionHeaderView)?.configure(model: TKListTitleView.Model(title: model.title, textStyle: .h3))
         return sectionHeaderView
       case .pagination(let pagination):
         let footerView = collectionView.dequeueReusableSupplementaryView(

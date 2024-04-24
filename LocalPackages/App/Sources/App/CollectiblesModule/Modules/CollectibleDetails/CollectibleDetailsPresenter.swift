@@ -60,7 +60,7 @@ private extension CollectibleDetailsPresenter {
     var propertiesModel: CollectibleDetailsPropertiesСarouselView.Model?
     if !model.properties.isEmpty {
       propertiesModel = CollectibleDetailsPropertiesСarouselView.Model(
-        titleModel: .init(title: "Properties"),
+        titleModel: .init(title: "Properties", textStyle: .h3),
         propertiesModels: model.properties.map { .init(title: $0.title, value: $0.value) }
       )
     }
@@ -83,7 +83,7 @@ private extension CollectibleDetailsPresenter {
     }
     
     let detailsModel = CollectibleDetailsDetailsView.Model(
-      titleViewModel: TKListTitleView.Model(title: "Details"),
+      titleViewModel: TKListTitleView.Model(title: "Details", textStyle: .h3),
       buttonTitle: "View in explorer",
       listViewModel: listViewModel
     )

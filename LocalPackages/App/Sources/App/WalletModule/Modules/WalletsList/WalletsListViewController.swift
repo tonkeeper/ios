@@ -33,6 +33,9 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
       },
       configuration: configuration
     )
+    
+    layout.register(WalletsListDecorationBackgroundView.self, forDecorationViewOfKind: WalletsListDecorationBackgroundView.reuseIdentifier)
+    
     return layout
   }()
 
@@ -219,6 +222,12 @@ private extension WalletsListViewController {
   @objc
   func handleReorderGesture(gesture: UIGestureRecognizer) {
     let collectionView = customView.collectionView
+
+    let sectionRect = CGRect(x: 0,
+                             y: 0,
+                             width: view.bounds.width,
+                             height: .walletItemCellHeight * CGFloat(collectionView.numberOfItems(inSection: 0)))
+    
     switch(gesture.state) {
     case .began:
       guard let selectedIndexPath = collectionView.indexPathForItem(at: gesture.location(in: collectionView)) else {
@@ -228,6 +237,14 @@ private extension WalletsListViewController {
     case .changed:
       var location = gesture.location(in: gesture.view!)
       location.x = collectionView.bounds.width/2
+
+      if location.y - .draggOffset <= sectionRect.minY {
+        location.y = sectionRect.minY + .draggOffset
+      }
+      if location.y + .draggOffset >= sectionRect.maxY {
+        location.y = sectionRect.maxY - .draggOffset
+      }
+      
       collectionView.updateInteractiveMovementTargetPosition(location)
     case .ended:
       collectionView.endInteractiveMovement()
@@ -283,13 +300,13 @@ private extension NSCollectionLayoutSection {
   static var walletsSection: NSCollectionLayoutSection {
     let itemLayoutSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .absolute(76)
+      heightDimension: .absolute(.walletItemCellHeight)
     )
     let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
     
     let groupLayoutSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .absolute(76)
+      heightDimension: .absolute(.walletItemCellHeight)
     )
     let group = NSCollectionLayoutGroup.horizontal(
       layoutSize: groupLayoutSize,
@@ -303,6 +320,15 @@ private extension NSCollectionLayoutSection {
       bottom: 0,
       trailing: 16
     )
+    section.decorationItems = [
+      NSCollectionLayoutDecorationItem.background(elementKind: WalletsListDecorationBackgroundView.reuseIdentifier)
+    ]
+    
     return section
   }
+}
+
+private extension CGFloat {
+  static let walletItemCellHeight: CGFloat = 76
+  static let draggOffset: CGFloat = .walletItemCellHeight / 2
 }
