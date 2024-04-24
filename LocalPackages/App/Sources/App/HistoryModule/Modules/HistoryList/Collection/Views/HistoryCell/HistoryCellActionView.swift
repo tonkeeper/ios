@@ -126,16 +126,28 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
     let contentSizeThatFits = contentView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
     
     contentView.frame = CGRect(x: contentViewX, y: 0, width: contentViewWidth, height: contentSizeThatFits.height)
-
-    commentView.frame = CGRect(
-      origin: CGPoint(x: contentViewX, y: contentView.frame.maxY),
-      size: commentView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
-    )
     
-    nftView.frame = CGRect(
-      origin: CGPoint(x: contentViewX, y: contentView.frame.maxY),
-      size: nftView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
-    )
+    if !nftView.isHidden {
+      nftView.frame = CGRect(
+        origin: CGPoint(x: contentViewX, y: contentView.frame.maxY),
+        size: nftView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
+      )
+    } else {
+      nftView.frame = CGRect(
+        origin: CGPoint(x: contentViewX, y: contentView.frame.maxY),
+        size: .zero)
+    }
+    
+    if !commentView.isHidden {
+      commentView.frame = CGRect(
+        origin: CGPoint(x: contentViewX, y: nftView.frame.maxY),
+        size: commentView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
+      )
+    } else {
+      commentView.frame = CGRect(
+        origin: CGPoint(x: contentViewX, y: nftView.frame.maxY),
+        size: .zero)
+    }
     
     separatorView.frame = CGRect(
       x: UIEdgeInsets.contentPadding.left,

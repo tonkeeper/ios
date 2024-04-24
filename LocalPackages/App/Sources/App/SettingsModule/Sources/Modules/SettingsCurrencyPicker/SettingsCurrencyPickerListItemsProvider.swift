@@ -53,7 +53,7 @@ private extension SettingsCurrencyPickerListItemsProvider {
       )
       
       let name = currency.title.withTextStyle(
-        .label1,
+        .body1,
         color: .Text.secondary,
         alignment: .left,
         lineBreakMode: .byTruncatingTail

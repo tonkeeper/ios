@@ -90,6 +90,7 @@ private extension WalletBalanceViewController {
       withReuseIdentifier: TKReusableContainerView.reuseIdentifier
     )
     customView.collectionView.delegate = self
+    customView.collectionView.showsVerticalScrollIndicator = false
     
     var snapshot = dataSource.snapshot()
     snapshot.appendSections([.tonItems, .jettonsItems])

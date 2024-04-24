@@ -52,6 +52,7 @@ final class SettingsListCollectionController: TKCollectionController<SettingsLis
     }), animated: false)
     
     collectionView.contentInset.bottom = 16
+    collectionView.contentInset.top = -16
   }
   
   func setSettingsSections(_ sections: [SettingsListSection]) {
