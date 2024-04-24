@@ -3,13 +3,17 @@ import TKUIKit
 import TKCoordinator
 import SnapKit
 
+protocol WalletContainerBalanceViewController: UIViewController {
+  var didScroll: ((CGFloat) -> Void)? { get set }
+}
+
 final class WalletContainerViewController: GenericViewViewController<WalletContainerView>, ScrollViewController {
   private let viewModel: WalletContainerViewModel
   
-  private var walletBalanceViewController: UIViewController
+  private var walletBalanceViewController: WalletContainerBalanceViewController
   
   init(viewModel: WalletContainerViewModel, 
-       walletBalanceViewController: UIViewController) {
+       walletBalanceViewController: WalletContainerBalanceViewController) {
     self.viewModel = viewModel
     self.walletBalanceViewController = walletBalanceViewController
     super.init(nibName: nil, bundle: nil)
@@ -31,6 +35,10 @@ final class WalletContainerViewController: GenericViewViewController<WalletConta
     
     walletBalanceViewController.view.snp.makeConstraints { make in
       make.edges.equalTo(customView.walletBalanceContainerView)
+    }
+    
+    walletBalanceViewController.didScroll = { [weak self] yOffset in
+      self?.customView.topBarView.isSeparatorHidden = yOffset <= 0
     }
   }
   

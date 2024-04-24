@@ -2,7 +2,9 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 
-final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView>, ScrollViewController {
+final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView>, ScrollViewController, WalletContainerBalanceViewController {
+  var didScroll: ((CGFloat) -> Void)?
+  
   private let viewModel: WalletBalanceViewModel
 
   private lazy var layout: UICollectionViewCompositionalLayout = {
@@ -188,6 +190,10 @@ extension WalletBalanceViewController: UICollectionViewDelegate {
     default:
       return
     }
+  }
+  
+  func scrollViewDidScroll(_ scrollView: UIScrollView) {
+    didScroll?(scrollView.contentOffset.y + scrollView.adjustedContentInset.top)
   }
 }
 

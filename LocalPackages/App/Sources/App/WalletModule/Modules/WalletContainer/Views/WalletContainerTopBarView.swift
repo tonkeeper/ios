@@ -4,6 +4,17 @@ import SnapKit
 
 final class WalletContainerTopBarView: UIView, ConfigurableView {
   
+  var isSeparatorHidden = true {
+    didSet { separatorView.isHidden = isSeparatorHidden }
+  }
+  
+  private let separatorView: UIView = {
+    let view = UIView()
+    view.backgroundColor = .Separator.common
+    view.isHidden = true
+    return view
+  }()
+  
   private let contentContainerView = UIView()
   private let walletButton = TKButton()
   private let settingsButton = TKButton()
@@ -33,6 +44,7 @@ private extension WalletContainerTopBarView {
     backgroundColor = .Background.page
     
     addSubview(contentContainerView)
+    addSubview(separatorView)
     contentContainerView.addSubview(settingsButton)
     contentContainerView.addSubview(walletButton)
     
@@ -55,6 +67,12 @@ private extension WalletContainerTopBarView {
     settingsButton.snp.makeConstraints { make in
       make.right.equalTo(contentContainerView).inset(CGFloat.settingsButtonRightInset)
       make.centerY.equalTo(contentContainerView)
+    }
+    
+    separatorView.snp.makeConstraints { make in
+      make.left.right.equalTo(self)
+      make.bottom.equalTo(self)
+      make.height.equalTo(TKUIKit.Constants.separatorWidth)
     }
   }
 }

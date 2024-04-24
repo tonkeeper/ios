@@ -43,22 +43,8 @@ private extension WalletBalanceHeaderView {
   }
   
   func setupConstraints() {
-//    balanceView.snp.makeConstraints { make in
-//      make.top.left.right.bottom.equalTo(self)
-//    }
-    
     stackView.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
-    
-    
-//    stackView.translatesAutoresizingMaskIntoConstraints = false
-//    
-//    NSLayoutConstraint.activate([
-//      stackView.topAnchor.constraint(equalTo: topAnchor),
-//      stackView.leftAnchor.constraint(equalTo: leftAnchor),
-//      stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
-//      stackView.rightAnchor.constraint(equalTo: rightAnchor)
-//    ])
   }
 }
