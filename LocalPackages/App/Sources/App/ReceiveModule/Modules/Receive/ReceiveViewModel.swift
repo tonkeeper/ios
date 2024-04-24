@@ -84,21 +84,20 @@ private extension ReceiveViewModelImplementation {
         )
       ),
       copyButtonAction: {
-        [weak self, isRegular = receiveController.isRegularWallet] in
-        self?.didTapCopy?(model.address)
-        var configuration = ToastPresenter.Configuration.copied
-        configuration.backgroundColor = isRegular ? .Background.contentTint : .Accent.orange
-        self?.showToast?(configuration)
+        [weak self] in
+        self?.copyButtonAction(string: model.address)
       },
-      shareButtonModel: TKUIActionButton.Model(
-        icon: TKUIButtonTitleIconContentView.Model.Icon(
-          icon: .TKUIKit.Icons.Size16.share,
-          position: .left
-        )
-      ),
-      shareButtonAction: { [weak self] in
-        self?.didTapShare?(model.address)
-      }
+      shareButtonConfiguration: TKButton.Configuration(
+        content: TKButton.Configuration.Content(icon: .TKUIKit.Icons.Size16.share),
+        contentPadding: UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16),
+        padding: .zero,
+        iconTintColor: .Button.secondaryForeground,
+        backgroundColors: [.normal: .Button.secondaryBackground, .highlighted: .Button.secondaryBackgroundHighlighted],
+        cornerRadius: 24,
+        action: { [weak self] in
+          self?.didTapShare?(model.address)
+        }
+      )
     )
     
     let image: ReceiveView.Model.Image
@@ -116,12 +115,19 @@ private extension ReceiveViewModelImplementation {
       buttonsModel: buttonsModel,
       address: model.address,
       addressButtonAction: { [weak self] in
-        self?.didTapCopy?(model.address)
+        self?.copyButtonAction(string: model.address)
       },
       image: image,
       tag: model.tag
     )
     
     didUpdateModel?(receiveModel)
+  }
+  
+  func copyButtonAction(string: String?) {
+    didTapCopy?(string)
+    var configuration = ToastPresenter.Configuration.copied
+    configuration.backgroundColor = receiveController.isRegularWallet ? .Background.contentTint : .Accent.orange
+    showToast?(configuration)
   }
 }

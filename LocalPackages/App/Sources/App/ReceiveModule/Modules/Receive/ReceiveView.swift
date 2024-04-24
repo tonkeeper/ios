@@ -61,11 +61,12 @@ final class ReceiveView: UIView, ConfigurableView {
         cornerRadius: 32
       )
     }
-    qrCodeView.addressButton.addAction(UIAction(handler: { _ in
-      model.addressButtonAction()
-    }), for: .touchUpInside)
+
     qrCodeView.tagString = model.tag
-    qrCodeView.addressButton.setTitle(model.address, for: .normal)
+    qrCodeView.addressButton.address = model.address
+    qrCodeView.addressButton.tapHandler = {
+      model.addressButtonAction()
+    }
     qrCodeView.sizeToFit()
     setNeedsLayout()
   }
@@ -74,6 +75,8 @@ final class ReceiveView: UIView, ConfigurableView {
 private extension ReceiveView {
   func setup() {
     backgroundColor = .Background.page
+    
+    scrollView.delaysContentTouches = false
     
     titleDescriptionView.setContentHuggingPriority(.required, for: .vertical)
     scrollView.contentInset.bottom = 32

@@ -24,7 +24,7 @@ final class ReceiveQRCodeView: UIView {
   
   let contentContainer = UIView()
   let qrCodeImageView = UIImageView()
-  let addressButton = UIButton(type: .custom)
+  let addressButton = ReceiveAddressButton()
   let tokenImageView = UIImageView()
   let tagView = TKUITagView()
   
@@ -53,16 +53,7 @@ private extension ReceiveQRCodeView {
     
     tokenImageView.backgroundColor = .white
     tokenImageView.contentMode = .center
-    
-    addressButton.titleLabel?.numberOfLines = 0
-    addressButton.titleLabel?.font = .monospacedSystemFont(ofSize: 16, weight: .medium)
-    addressButton.titleLabel?.lineBreakMode = .byWordWrapping
-    addressButton.titleLabel?.textAlignment = .center
-    addressButton.titleLabel?.minimumScaleFactor = 0.5
-    addressButton.titleLabel?.adjustsFontSizeToFitWidth = true
-    addressButton.setTitleColor(.black, for: .normal)
-    addressButton.setTitleColor(.black.withAlphaComponent(0.48), for: .highlighted)
-    
+
     addSubview(contentContainer)
     contentContainer.addSubview(qrCodeImageView)
     contentContainer.addSubview(addressButton)
@@ -88,10 +79,9 @@ private extension ReceiveQRCodeView {
       tagView.centerXAnchor.constraint(equalTo: centerXAnchor),
       tagView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -24),
       
-      addressButton.leftAnchor.constraint(equalTo: contentContainer.leftAnchor).withPriority(.defaultHigh),
-      addressButton.rightAnchor.constraint(equalTo: contentContainer.rightAnchor).withPriority(.defaultHigh),
+      addressButton.leftAnchor.constraint(equalTo: contentContainer.leftAnchor),
+      addressButton.rightAnchor.constraint(equalTo: contentContainer.rightAnchor),
       addressButton.topAnchor.constraint(equalTo: qrCodeImageView.bottomAnchor, constant: .addressTopInset),
-      addressButton.widthAnchor.constraint(equalToConstant: 240),
       
       qrCodeImageView.topAnchor.constraint(equalTo: contentContainer.topAnchor),
       qrCodeImageView.leftAnchor.constraint(equalTo: contentContainer.leftAnchor),

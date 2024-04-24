@@ -4,7 +4,7 @@ import TKUIKit
 final class ReceiveButtonsView: UIView, ConfigurableView {
   
   let copyButton = TKUIActionButton(category: .secondary, size: .medium)
-  let shareButton = TKUIActionButton(category: .secondary, size: .medium)
+  let shareButton = TKButton(configuration: .actionButtonConfiguration(category: .secondary, size: .medium))
   
   private let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -25,16 +25,14 @@ final class ReceiveButtonsView: UIView, ConfigurableView {
   struct Model {
     let copyButtonModel: TKUIActionButton.Model
     let copyButtonAction: () -> Void
-    let shareButtonModel: TKUIActionButton.Model
-    let shareButtonAction: () -> Void
+    let shareButtonConfiguration: TKButton.Configuration
   }
   
   func configure(model: Model) {
     copyButton.configure(model: model.copyButtonModel)
     copyButton.addTapAction(model.copyButtonAction)
     
-    shareButton.configure(model: model.shareButtonModel)
-    shareButton.addTapAction(model.shareButtonAction)
+    shareButton.configuration = model.shareButtonConfiguration
   }
 }
 
