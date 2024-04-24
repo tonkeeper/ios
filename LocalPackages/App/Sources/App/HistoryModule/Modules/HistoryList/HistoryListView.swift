@@ -3,7 +3,7 @@ import TKUIKit
 
 final class HistoryListView: UIView {
   
-  let collectionView = UICollectionView(
+  let collectionView = TKUICollectionView(
     frame: .zero, 
     collectionViewLayout: UICollectionViewLayout()
   )

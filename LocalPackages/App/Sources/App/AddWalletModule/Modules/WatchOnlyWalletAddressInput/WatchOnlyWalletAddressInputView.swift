@@ -3,7 +3,7 @@ import TKUIKit
 import SnapKit
 
 final class WatchOnlyWalletAddressInputView: UIView, ConfigurableView {
-  let scrollView = UIScrollView()
+  let scrollView = TKUIScrollView()
   
   let contentStackView: UIStackView = {
     let stackView = UIStackView()

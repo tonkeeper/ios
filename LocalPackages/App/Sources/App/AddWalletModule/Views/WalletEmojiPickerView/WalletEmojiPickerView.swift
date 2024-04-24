@@ -4,7 +4,7 @@ import TKCore
 
 final class WalletEmojiPickerView: UIView, ConfigurableView {
   lazy var collectionView: UICollectionView = {
-    let collectionView = UICollectionView(frame: .zero, collectionViewLayout: createLayout())
+    let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: createLayout())
     return collectionView
   }()
   
@@ -76,7 +76,7 @@ private extension WalletEmojiPickerView {
       topGradientView.topAnchor.constraint(equalTo: topAnchor),
       topGradientView.leftAnchor.constraint(equalTo: leftAnchor),
       topGradientView.rightAnchor.constraint(equalTo: rightAnchor),
-      topGradientView.heightAnchor.constraint(equalToConstant: .contentTopPadding),
+      topGradientView.heightAnchor.constraint(equalToConstant: .contentTopPadding * 2),
       
       bottomGradientView.bottomAnchor.constraint(equalTo: bottomAnchor),
       bottomGradientView.leftAnchor.constraint(equalTo: leftAnchor),
@@ -162,6 +162,6 @@ private extension NSCollectionLayoutSize {
 
 private extension CGFloat {
   static let itemSide: CGFloat = 48
-  static let contentTopPadding: CGFloat = 28
+  static let contentTopPadding: CGFloat = 8
   static let contentBottomPadding: CGFloat = 48
 }

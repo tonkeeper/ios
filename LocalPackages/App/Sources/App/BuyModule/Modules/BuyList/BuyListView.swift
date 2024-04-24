@@ -1,8 +1,9 @@
 import UIKit
+import TKUIKit
 
 final class BuyListView: UIView {
   
-  let collectionView = UICollectionView(frame: .zero, collectionViewLayout: .init())
+  let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
 
   // MARK: - Init
 

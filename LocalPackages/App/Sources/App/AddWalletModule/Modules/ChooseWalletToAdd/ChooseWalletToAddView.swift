@@ -11,7 +11,7 @@ final class ChooseWalletToAddView: UIView, ConfigurableView {
     return container
   }()
 
-  let collectionView = UICollectionView(
+  let collectionView = TKUICollectionView(
     frame: .zero,
     collectionViewLayout: UICollectionViewLayout()
   )

@@ -14,7 +14,7 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
   let contentView = TKUIListItemContentView()
   let commentView = CommentView()
   let nftView = NFTView()
-  let separatorView = UIView()
+  let separatorView = TKSeparatorView()
   let inProgressLoaderView = HistoryCellLoaderView()
   
   override var isHighlighted: Bool {
@@ -177,8 +177,9 @@ private extension HistoryCellActionView {
   func setup() {
     iconView.isUserInteractionEnabled = false
     contentView.isUserInteractionEnabled = false
+    commentView.isUserInteractionEnabled = false
     
-    separatorView.backgroundColor = .Separator.common
+    separatorView.color = .Separator.common
     backgroundColor = .Background.content
     isExclusiveTouch = true
     

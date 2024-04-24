@@ -65,8 +65,8 @@ final class ChooseWalletToAddCell: UICollectionViewCell, ConfigurableView {
   let cellContentView = ChooseWalletToAddCellContentView()
   let highlightView = TKHighlightView()
   let separatorView: UIView = {
-    let view = UIView()
-    view.backgroundColor = .Separator.common
+    let view = TKSeparatorView()
+    view.color = .Separator.common
     return view
   }()
   let tickView = TKTickView()
@@ -133,6 +133,7 @@ final class ChooseWalletToAddCell: UICollectionViewCell, ConfigurableView {
   override func updateConfiguration(using state: UICellConfigurationState) {
     highlightView.alpha = state.isHighlighted ? 1 : 0
     tickView.isSelected = state.isSelected
+    setupSeparator()
   }
 }
 
@@ -189,9 +190,9 @@ private extension ChooseWalletToAddCell {
   func layoutSeparator() {
     let contentFrame = contentView.bounds.inset(by: .contentPadding)
     let separatorViewFrame = CGRect(x: contentFrame.minX,
-                                    y: bounds.height - 0.5,
+                                    y: bounds.height - 1,
                                     width: contentFrame.width + UIEdgeInsets.contentPadding.right,
-                                    height: 0.5)
+                                    height: 1)
     separatorView.frame = separatorViewFrame
   }
   

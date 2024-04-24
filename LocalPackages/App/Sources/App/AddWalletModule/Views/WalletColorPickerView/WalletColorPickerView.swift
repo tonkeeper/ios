@@ -3,7 +3,7 @@ import TKUIKit
 
 final class WalletColorPickerView: UIView, ConfigurableView {
   lazy var collectionView: UICollectionView = {
-    let collectionView = UICollectionView(frame: .zero, collectionViewLayout: createLayout())
+    let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: createLayout())
     return collectionView
   }()
   

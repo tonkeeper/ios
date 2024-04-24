@@ -5,7 +5,7 @@ final class CollectibleDetailsPropertiesСarouselView: UIView, ConfigurableView 
   
   private let titleView = TKListTitleView()
   private let scrollView: UIScrollView = {
-    let scrollView = UIScrollView()
+    let scrollView = TKUIScrollView()
     scrollView.showsHorizontalScrollIndicator = false
     return scrollView
   }()

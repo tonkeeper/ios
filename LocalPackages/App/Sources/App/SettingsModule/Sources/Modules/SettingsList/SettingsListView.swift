@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 
 public final class SettingsListView: UIView {
-  let collectionView = UICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
+  let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
   
   override init(frame: CGRect) {
     super.init(frame: frame)

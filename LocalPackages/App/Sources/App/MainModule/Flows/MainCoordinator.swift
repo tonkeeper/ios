@@ -75,6 +75,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
+    setupTabBarTaps()
     setupChildCoordinators()
     Task {
       await mainController.start()
@@ -120,6 +121,13 @@ private extension MainCoordinator {
     }
     
     router.set(viewControllers: viewControllers, animated: false)
+  }
+  
+  func setupTabBarTaps() {
+    (router.rootViewController as? TKTabBarController)?.didLongPressTabBarItem = { [weak self] index in
+      guard index == 0 else { return }
+      self?.openWalletPicker()
+    }
   }
   
   func showCollectibles() {
@@ -266,6 +274,90 @@ private extension MainCoordinator {
           ToastPresenter.hideAll()
         }
       }
+    }
+  }
+  
+  func openWalletPicker() {
+    let module = WalletsListAssembly.module(
+      walletListController: keeperCoreMainAssembly.walletStoreWalletListController()
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    module.output.didTapAddWalletButton = { [weak self, unowned bottomSheetViewController] in
+      bottomSheetViewController.dismiss {
+        guard let self else { return }
+        self.openAddWallet(router: ViewControllerRouter(rootViewController: self.router.rootViewController))
+      }
+    }
+    
+    module.output.didTapEditWallet = { [weak self, unowned bottomSheetViewController] wallet in
+//      self?.openEditWallet(wallet: $0, fromViewController: bottomSheetViewController)
+    }
+    
+    module.output.didSelectWallet = { [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func openAddWallet(router: ViewControllerRouter) {
+    let module = AddWalletModule(dependencies: AddWalletModule.Dependencies(
+      walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly)
+    )
+    
+    let coordinator = module.createAddWalletCoordinator(router: router)
+    coordinator.didAddWallets = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
+  func openEditWallet(wallet: Wallet, fromViewController: UIViewController) {
+    let addWalletModuleModule = AddWalletModule(
+      dependencies: AddWalletModule.Dependencies(
+        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly
+      )
+    )
+    
+    let module = addWalletModuleModule.createCustomizeWalletModule(
+      name: wallet.metaData.label,
+      tintColor: wallet.metaData.tintColor,
+      emoji: wallet.metaData.emoji,
+      configurator: EditWalletCustomizeWalletViewModelConfigurator()
+    )
+    
+    module.output.didCustomizeWallet = { [weak self] model in
+      self?.updateWallet(wallet: wallet, model: model)
+    }
+    
+    let navigationController = TKNavigationController(rootViewController: module.view)
+    
+    module.view.setupRightCloseButton { [weak navigationController] in
+      navigationController?.dismiss(animated: true)
+    }
+    
+    fromViewController.present(navigationController, animated: true)
+  }
+  
+  func updateWallet(wallet: Wallet, model: CustomizeWalletModel) {
+    let controller = keeperCoreMainAssembly.walletUpdateAssembly.walletUpdateController()
+    let metaData = WalletMetaData(
+      label: model.name,
+      tintColor: model.tintColor,
+      emoji: model.emoji)
+    do {
+      try controller.updateWallet(wallet: wallet, metaData: metaData)
+    } catch {
+      print("Log: Wallet update failed")
     }
   }
 }

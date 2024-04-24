@@ -3,7 +3,7 @@ import TKUIKit
 
 final class WalletsListView: UIView, ConfigurableView {
   
-  let collectionView = UICollectionView(frame: .zero,
+  let collectionView = TKUICollectionView(frame: .zero,
                                         collectionViewLayout: UICollectionViewLayout())
   
   let footerView = WalletsListFooterView()
