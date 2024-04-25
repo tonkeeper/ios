@@ -55,17 +55,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     super.init(router: router)
     
-    mainController.didUpdateNftsAvailability = { [weak self] isAvailable in
-      guard let self = self else { return }
-      Task { @MainActor in
-        if isAvailable {
-          self.showCollectibles()
-        } else {
-          self.hideCollectibles()
-        }
-      }
-    }
-    
     mainController.didReceiveTonConnectRequest = { [weak self] request, wallet, app in
       self?.handleTonConnectRequest(request, wallet: wallet, app: app)
     }
@@ -106,13 +95,16 @@ private extension MainCoordinator {
     }
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
+    let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
     
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
+    self.collectiblesCoordinator = collectiblesCoordinator
 
     let coordinators = [
       walletCoordinator,
-      historyCoordinator
+      historyCoordinator,
+      collectiblesCoordinator
     ].compactMap { $0 }
     let viewControllers = coordinators.compactMap { $0.router.rootViewController }
     coordinators.forEach {
@@ -128,22 +120,6 @@ private extension MainCoordinator {
       guard index == 0 else { return }
       self?.openWalletPicker()
     }
-  }
-  
-  func showCollectibles() {
-    guard collectiblesCoordinator == nil else { return }
-    let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
-    self.collectiblesCoordinator = collectiblesCoordinator
-    addChild(collectiblesCoordinator)
-    router.insert(viewController: collectiblesCoordinator.router.rootViewController, at: 2)
-    collectiblesCoordinator.start()
-  }
-  
-  func hideCollectibles() {
-    guard let collectiblesCoordinator = collectiblesCoordinator else { return }
-    removeChild(collectiblesCoordinator)
-    self.collectiblesCoordinator = nil
-    router.remove(viewController: collectiblesCoordinator.router.rootViewController)
   }
   
   func openScan() {

@@ -6,11 +6,13 @@ struct CollectiblesAssembly {
   private init() {}
   static func module(
     collectiblesController: CollectiblesController,
-    listModuleProvider: @escaping (Wallet) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void>
+    listModuleProvider: @escaping (Wallet) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void>,
+    emptyModuleProvider: @escaping (Wallet) -> MVVMModule<CollectiblesEmptyViewController, CollectiblesEmptyModuleOutput, Void>
   ) -> MVVMModule<CollectiblesViewController, CollectiblesModuleOutput, Void> {
     let viewModel = CollectiblesViewModelImplementation(
       collectiblesController: collectiblesController,
-      listModuleProvider: listModuleProvider
+      listModuleProvider: listModuleProvider,
+      emptyModuleProvider: emptyModuleProvider
     )
     let viewController = CollectiblesViewController(
       viewModel: viewModel

@@ -56,6 +56,7 @@ private extension HistoryViewController {
     
     viewModel.didUpdateIsEmpty = { [weak self] isEmpty in
       isEmpty ? self?.customView.showEmptyState() : self?.customView.showList()
+      self?.customView.navigationBarView.isHidden = isEmpty
     }
     
     viewModel.didUpdateIsConnecting = { [weak self] isConnecting in
@@ -78,7 +79,9 @@ private extension HistoryViewController {
     customView.addListContentView(view: viewController.view)
     viewController.didMove(toParent: self)
     
-    customView.navigationBarView.scrollView = listViewController?.customView.collectionView
+    DispatchQueue.main.async {
+      self.customView.navigationBarView.scrollView = self.listViewController?.customView.collectionView
+    }
   }
 }
 

@@ -5,6 +5,7 @@ final class CollectiblesView: UIView {
   let navigationBarView = TKNavigationBar()
   
   let listContainer = UIView()
+  let emptyContainer = UIView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -15,8 +16,14 @@ final class CollectiblesView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
+  func showEmptyState() {
+    emptyContainer.isHidden = false
+    listContainer.isHidden = true
+  }
+  
   func showList() {
     listContainer.isHidden = false
+    emptyContainer.isHidden = true
   }
   
   func addListContentView(view: UIView) {
@@ -31,6 +38,19 @@ final class CollectiblesView: UIView {
       view.rightAnchor.constraint(equalTo: listContainer.rightAnchor)
     ])
   }
+  
+  func addEmptyContentView(view: UIView) {
+    emptyContainer.subviews.forEach { $0.removeFromSuperview() }
+    emptyContainer.addSubview(view)
+    view.translatesAutoresizingMaskIntoConstraints = false
+    
+    NSLayoutConstraint.activate([
+      view.topAnchor.constraint(equalTo: emptyContainer.topAnchor),
+      view.leftAnchor.constraint(equalTo: emptyContainer.leftAnchor),
+      view.bottomAnchor.constraint(equalTo: emptyContainer.bottomAnchor),
+      view.rightAnchor.constraint(equalTo: emptyContainer.rightAnchor)
+    ])
+  }
 }
 
 private extension CollectiblesView {
@@ -38,15 +58,22 @@ private extension CollectiblesView {
     backgroundColor = .Background.page
     
     addSubview(listContainer)
+    addSubview(emptyContainer)
     addSubview(navigationBarView)
 
+    emptyContainer.translatesAutoresizingMaskIntoConstraints = false
     listContainer.translatesAutoresizingMaskIntoConstraints = false
     navigationBarView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       navigationBarView.topAnchor.constraint(equalTo: topAnchor),
       navigationBarView.leftAnchor.constraint(equalTo: leftAnchor),
       navigationBarView.rightAnchor.constraint(equalTo: rightAnchor),
-
+      
+      emptyContainer.topAnchor.constraint(equalTo: topAnchor),
+      emptyContainer.leftAnchor.constraint(equalTo: leftAnchor),
+      emptyContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
+      emptyContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      
       listContainer.topAnchor.constraint(equalTo: topAnchor),
       listContainer.leftAnchor.constraint(equalTo: leftAnchor),
       listContainer.bottomAnchor.constraint(equalTo: bottomAnchor),

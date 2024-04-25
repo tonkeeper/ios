@@ -1,4 +1,4 @@
-import Foundation
+import UIKit
 import TKCore
 import TKUIKit
 import KeeperCore
@@ -10,6 +10,8 @@ protocol CollectiblesModuleOutput: AnyObject {
 
 protocol CollectiblesViewModel: AnyObject {
   var didUpdateListViewController: ((CollectiblesListViewController) -> Void)? { get set }
+  var didUpdateEmptyViewController: ((UIViewController) -> Void)? { get set }
+  var didUpdateIsEmpty: ((Bool) -> Void)? { get set }
   var didUpdateIsConnecting: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
@@ -20,12 +22,14 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   // MARK: - CollectiblesModuleOutput
   
   var didSelectNFT: ((NFT) -> Void)?
-  
-  var didUpdateListViewController: ((CollectiblesListViewController) -> Void)?
+
   
   // MARK: - CollectiblesViewModel
   
   var didUpdateIsConnecting: ((Bool) -> Void)?
+  var didUpdateListViewController: ((CollectiblesListViewController) -> Void)?
+  var didUpdateEmptyViewController: ((UIViewController) -> Void)?
+  var didUpdateIsEmpty: ((Bool) -> Void)?
   
   func viewDidLoad() {
     setupChildren()
@@ -44,6 +48,14 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
           self.setupChildren()
         }
       }
+      
+      collectiblesController.didUpdateIsEmpty = { [weak self] isEmpty in
+        guard let self = self else { return }
+        Task { @MainActor in
+          self.didUpdateIsEmpty?(isEmpty)
+        }
+      }
+      
       await collectiblesController.start()
       await collectiblesController.updateConnectingState()
     }
@@ -53,11 +65,14 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   
   private let collectiblesController: CollectiblesController
   private let listModuleProvider: (Wallet) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void>
+  private let emptyModuleProvider: (Wallet) -> MVVMModule<CollectiblesEmptyViewController, CollectiblesEmptyModuleOutput, Void>
   
   init(collectiblesController: CollectiblesController,
-       listModuleProvider: @escaping (Wallet) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void>) {
+       listModuleProvider: @escaping (Wallet) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void>,
+       emptyModuleProvider: @escaping (Wallet) -> MVVMModule<CollectiblesEmptyViewController, CollectiblesEmptyModuleOutput, Void>) {
     self.collectiblesController = collectiblesController
     self.listModuleProvider = listModuleProvider
+    self.emptyModuleProvider = emptyModuleProvider
   }
 }
 
@@ -68,5 +83,9 @@ private extension CollectiblesViewModelImplementation {
       self?.didSelectNFT?(nft)
     }
     didUpdateListViewController?(listModule.view)
+    
+    let emptyModule = emptyModuleProvider(collectiblesController.wallet)
+    
+    didUpdateEmptyViewController?(emptyModule.view)
   }
 }

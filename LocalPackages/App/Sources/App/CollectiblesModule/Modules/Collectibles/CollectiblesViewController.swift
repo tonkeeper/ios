@@ -5,6 +5,7 @@ import TKCoordinator
 final class CollectiblesViewController: GenericViewViewController<CollectiblesView>, ScrollViewController {
   private let viewModel: CollectiblesViewModel
   
+  private var emptyViewController: UIViewController?
   private var listViewController: CollectiblesListViewController?
   
   init(viewModel: CollectiblesViewModel) {
@@ -22,6 +23,8 @@ final class CollectiblesViewController: GenericViewViewController<CollectiblesVi
     setup()
     setupBindings()
     viewModel.viewDidLoad()
+    
+    customView.showList()
   }
   
   override func viewDidLayoutSubviews() {
@@ -41,8 +44,17 @@ private extension CollectiblesViewController {
       self?.setupListViewController(viewController: viewController)
     }
     
+    viewModel.didUpdateEmptyViewController = { [weak self] viewController in
+      self?.setupEmptyViewController(viewController: viewController)
+    }
+    
     viewModel.didUpdateIsConnecting = { [weak self] isConnecting in
       self?.customView.navigationBarView.isConnecting = isConnecting
+    }
+    
+    viewModel.didUpdateIsEmpty = { [weak self] isEmpty in
+      isEmpty ? self?.customView.showEmptyState() : self?.customView.showList()
+      self?.customView.navigationBarView.isHidden = isEmpty
     }
   }
   
@@ -57,6 +69,16 @@ private extension CollectiblesViewController {
     customView.addListContentView(view: viewController.view)
     viewController.didMove(toParent: self)
     
-    customView.navigationBarView.scrollView = listViewController?.customView.collectionView
+    DispatchQueue.main.async {
+      self.customView.navigationBarView.scrollView = self.listViewController?.customView.collectionView
+    }
+  }
+  
+  func setupEmptyViewController(viewController: UIViewController) {
+    self.emptyViewController?.removeFromParent()
+    self.emptyViewController = viewController
+    addChild(viewController)
+    customView.addEmptyContentView(view: viewController.view)
+    viewController.didMove(toParent: self)
   }
 }

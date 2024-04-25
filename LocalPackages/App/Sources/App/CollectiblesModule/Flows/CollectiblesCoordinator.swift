@@ -27,11 +27,13 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
 private extension CollectiblesCoordinator {
   func openCollectibles() {
     let module = CollectiblesAssembly.module(
-      collectiblesController: keeperCoreMainAssembly.collectiblesController()) { [keeperCoreMainAssembly] wallet in
+      collectiblesController: keeperCoreMainAssembly.collectiblesController(), listModuleProvider: { [keeperCoreMainAssembly] wallet in
         CollectiblesListAssembly.module(
           collectiblesListController: keeperCoreMainAssembly.collectiblesListController(wallet: wallet)
         )
-      }
+      }, emptyModuleProvider: { [keeperCoreMainAssembly] wallet in
+        CollectiblesEmptyAssembly.module()
+      })
     
     module.output.didSelectNFT = { [weak self] nft in
       self?.openNFTDetails(nft: nft)
