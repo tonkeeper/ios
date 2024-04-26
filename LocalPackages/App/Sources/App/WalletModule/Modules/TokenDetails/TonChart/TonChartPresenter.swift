@@ -113,13 +113,13 @@ private extension TonChartPresenter {
   }
   
   func reloadChartData() async throws {
-    let coordinates = try await chartController.getChartData(
-      period: selectedPeriod
-    )
-    let chartData = prepareChartData(coordinates: coordinates, period: selectedPeriod)
-    await MainActor.run {
-      viewInput?.updateChart(with: chartData)
-    }
+//    let coordinates = try await chartController.getChartData(
+//      period: selectedPeriod
+//    )
+//    let chartData = prepareChartData(coordinates: coordinates, period: selectedPeriod)
+//    await MainActor.run {
+//      viewInput?.updateChart(with: chartData)
+//    }
   }
   
   func showUnselectedHeader() async {

@@ -128,7 +128,7 @@ private extension WalletCoordinator {
       tokenDetailsListContentViewController: historyListModule.view,
       tokenDetailsController: keeperCoreMainAssembly.tonTokenDetailsController(),
       chartViewControllerProvider: { [keeperCoreMainAssembly] in
-        TonChartAssembly.module(chartController: keeperCoreMainAssembly.chartController()).view
+        ChartAssembly.module(chartController: keeperCoreMainAssembly.chartV2Controller(token: .ton)).view
       },
       hasAbout: true
     )
@@ -163,7 +163,9 @@ private extension WalletCoordinator {
     let module = TokenDetailsAssembly.module(
       tokenDetailsListContentViewController: historyListModule.view,
       tokenDetailsController: keeperCoreMainAssembly.jettonTokenDetailsController(jettonItem: jettonItem),
-      chartViewControllerProvider: nil,
+      chartViewControllerProvider: { [keeperCoreMainAssembly] in
+        ChartAssembly.module(chartController: keeperCoreMainAssembly.chartV2Controller(token: .jetton(jettonItem))).view
+      },
       hasAbout: false
     )
     

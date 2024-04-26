@@ -8,6 +8,24 @@
         "revision" : "0a229f8c914b0ec93798cee058cf75b339297513",
         "version" : "5.0.0"
       }
+    },
+    {
+      "identity" : "snapkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/SnapKit/SnapKit.git",
+      "state" : {
+        "revision" : "2842e6e84e82eb9a8dac0100ca90d9444b0307f4",
+        "version" : "5.7.1"
+      }
+    },
+    {
+      "identity" : "tkuikit-ios",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/tkuikit-ios.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "d8b673ce70c3e18d3e3e1c0a8ef2c14eeea69ae3"
+      }
     }
   ],
   "version" : 2

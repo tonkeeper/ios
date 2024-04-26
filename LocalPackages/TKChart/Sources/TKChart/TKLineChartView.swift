@@ -45,6 +45,7 @@ public final class TKLineChartView: UIView {
   public weak var delegate: TKLineChartViewDelegate?
   
   private let chartView = ChartView()
+  private let maxLabel = UILabel()
   
   public override init(frame: CGRect) {
     super.init(frame: frame)
@@ -73,6 +74,8 @@ public final class TKLineChartView: UIView {
     dataSet.drawHorizontalHighlightIndicatorEnabled = false
     dataSet.highlightColor = .Accent.blue
     dataSet.highlightLineWidth = 1
+
+//    maxLabel.text = "\(dataSet.yMax)"
     
     switch data.mode {
     case .linear:
@@ -82,6 +85,16 @@ public final class TKLineChartView: UIView {
     }
     
     chartView.data = LineChartData(dataSet: dataSet)
+    
+    
+    print(dataSet.entries[dataSet.entries.count/10].x)
+//    print(dataSet.entries[dataSet.entries.count/2].x)
+    
+//    let point = CGPoint(x: 100, y: 100)
+//    guard let entry = chartView.getEntryByTouchPoint(point: point),
+//          let highlight = chartView.getHighlightByTouchPoint(point),
+//          let dataSet = chartView.data?.dataSets[highlight.dataSetIndex] else { return }
+//    print("dsd")
   }
   
   public func getChartImage(transparent: Bool) -> UIImage? {
@@ -100,13 +113,25 @@ private extension TKLineChartView {
     longTapGesture.minimumPressDuration = 0.3
     addGestureRecognizer(longTapGesture)
     
+//    maxLabel.textColor = .white
+    
     addSubview(chartView)
+//    addSubview(maxLabel)
+    
+//    maxLabel.snp.makeConstraints { make in
+//      make.right.top.equalTo(chartView)
+//    }
+    
+    maxLabel.translatesAutoresizingMaskIntoConstraints = false
     chartView.translatesAutoresizingMaskIntoConstraints = false
     NSLayoutConstraint.activate([
       chartView.topAnchor.constraint(equalTo: topAnchor),
       chartView.leftAnchor.constraint(equalTo: leftAnchor),
       chartView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      chartView.rightAnchor.constraint(equalTo: rightAnchor)
+      chartView.rightAnchor.constraint(equalTo: rightAnchor),
+      
+//      maxLabel.topAnchor.constraint(equalTo: chartView.topAnchor),
+//      maxLabel.rightAnchor.constraint(equalTo: chartView.rightAnchor)
     ])
   }
   
@@ -134,9 +159,11 @@ private extension TKLineChartView {
     switch gestureRecognizer.state {
     case .began, .changed:
       let point = gestureRecognizer.location(in: gestureRecognizer.view)
+      print(point)
       guard let entry = chartView.getEntryByTouchPoint(point: point),
             let highlight = chartView.getHighlightByTouchPoint(point),
-            let dataSet = chartView.data?.dataSets[highlight.dataSetIndex]else { return }
+            let dataSet = chartView.data?.dataSets[highlight.dataSetIndex] else { return }
+      print(Date(timeIntervalSince1970: entry.x))
       let index = dataSet.entryIndex(entry: entry)
       chartView.highlightValue(highlight)
       delegate?.chartView(self, didSelectValueAt: index)
