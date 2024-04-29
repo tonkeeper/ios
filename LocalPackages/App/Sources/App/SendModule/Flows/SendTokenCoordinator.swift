@@ -32,28 +32,12 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
 
 private extension SendTokenCoordinator {
   func openSend() {
-    let module = SendAssembly.module(sendController: keeperCoreMainAssembly.sendController(sendItem: sendItem, recipient: recipient))
-    
-    module.output.didTapRecipientItemButton = { [weak self, weak input = module.input] sendModel in
-      self?.openRecipientInput(sendModel: sendModel,
-                               completion: { sendModel in
-        input?.updateWithSendModel(sendModel)
-      })
-    }
-    
-    module.output.didTapAmountInputButton = { [weak self, weak input = module.input] sendModel in
-      self?.openAmountInput(sendModel: sendModel,
-                               completion: { sendModel in
-        input?.updateWithSendModel(sendModel)
-      })
-    }
-    
-    module.output.didTapCommentInputButton = { [weak self, weak input = module.input] sendModel in
-      self?.openCommentInput(sendModel: sendModel,
-                               completion: { sendModel in
-        input?.updateWithSendModel(sendModel)
-      })
-    }
+    let module = SendV3Assembly.module(
+      sendItem: sendItem,
+      recipient: recipient,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
     
     module.output.didContinueSend = { [weak self] sendModel in
       self?.openSendConfirmation(sendModel: sendModel)
