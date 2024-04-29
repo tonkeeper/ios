@@ -11,11 +11,11 @@ import Foundation
 import TKChart
 
 struct RateWidgetChartMock {
-  static var data: TKLineChartView.Data {
+  static var data: TKLineChartView.ChartData {
     let jsonDecoder = JSONDecoder()
     let stringData = mockDataString.data(using: .utf8)!
     let model = try! jsonDecoder.decode(Data.self, from: stringData)
-    return TKLineChartView.Data(coordinates: model.data, mode: .linear)
+    return TKLineChartView.ChartData(mode: .linear, coordinates: model.data)
   }
   
   private struct Data: Decodable {

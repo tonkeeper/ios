@@ -52,7 +52,7 @@ struct RateWidgetEntry: TimelineEntry {
   }
   
   struct ChartData {
-    let data: TKLineChartView.Data
+    let data: TKLineChartView.ChartData
     let minimumValue: String
     let maximumValue: String
   }

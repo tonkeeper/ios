@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class TonChartErrorView: UIView, ConfigurableView {
+final class ChartErrorView: UIView, ConfigurableView {
   private let stackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
@@ -46,7 +46,7 @@ final class TonChartErrorView: UIView, ConfigurableView {
   }
 }
 
-private extension TonChartErrorView {
+private extension ChartErrorView {
   func setup() {
     addSubview(stackView)
     stackView.addArrangedSubview(titleLabel)

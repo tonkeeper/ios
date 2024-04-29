@@ -5,7 +5,7 @@ import UIKit
 
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: ((Wallet) -> Void)? { get set }
-  var didSelectJetton: ((Wallet, JettonItem) -> Void)? { get set }
+  var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)? { get set }
 
   var didTapReceive: (() -> Void)? { get set }
   var didTapSend: (() -> Void)? { get set }
@@ -37,7 +37,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   // MARK: - WalletBalanceModuleOutput
   
   var didSelectTon: ((Wallet) -> Void)?
-  var didSelectJetton: ((Wallet, JettonItem) -> Void)?
+  var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
   var didUpdateFinishSetupItems: (([TKUIListItemCell.Configuration]) -> Void)?
   
   var didTapReceive: (() -> Void)?
@@ -112,7 +112,7 @@ private extension WalletBalanceViewModelImplementation {
         case .ton:
           self?.didSelectTon?(wallet)
         case .jetton(let jettonInfo):
-          self?.didSelectJetton?(wallet, jettonInfo)
+          self?.didSelectJetton?(wallet, jettonInfo, false)
         }
       }
     }
@@ -124,7 +124,7 @@ private extension WalletBalanceViewModelImplementation {
         case .ton:
           self?.didSelectTon?(wallet)
         case .jetton(let jettonInfo):
-          self?.didSelectJetton?(wallet, jettonInfo)
+          self?.didSelectJetton?(wallet, jettonInfo, jettonItem.hasPrice)
         }
       }
     }

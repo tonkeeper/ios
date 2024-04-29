@@ -127,8 +127,10 @@ private extension WalletCoordinator {
     let module = TokenDetailsAssembly.module(
       tokenDetailsListContentViewController: historyListModule.view,
       tokenDetailsController: keeperCoreMainAssembly.tonTokenDetailsController(),
-      chartViewControllerProvider: { [keeperCoreMainAssembly] in
-        ChartAssembly.module(chartController: keeperCoreMainAssembly.chartV2Controller(token: .ton)).view
+      chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
+        ChartAssembly.module(token: .ton,
+                             coreAssembly: coreAssembly,
+                             keeperCoreMainAssembly: keeperCoreMainAssembly).view
       },
       hasAbout: true
     )
@@ -148,7 +150,7 @@ private extension WalletCoordinator {
     router.push(viewController: module.view)
   }
   
-  func openJettonDetails(jettonItem: JettonItem, wallet: Wallet) {
+  func openJettonDetails(jettonItem: JettonItem, wallet: Wallet, hasPrice: Bool) {
     let historyListModule = HistoryModule(
       dependencies: HistoryModule.Dependencies(
         coreAssembly: coreAssembly,
@@ -163,8 +165,11 @@ private extension WalletCoordinator {
     let module = TokenDetailsAssembly.module(
       tokenDetailsListContentViewController: historyListModule.view,
       tokenDetailsController: keeperCoreMainAssembly.jettonTokenDetailsController(jettonItem: jettonItem),
-      chartViewControllerProvider: { [keeperCoreMainAssembly] in
-        ChartAssembly.module(chartController: keeperCoreMainAssembly.chartV2Controller(token: .jetton(jettonItem))).view
+      chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
+        guard hasPrice else { return nil }
+        return ChartAssembly.module(token: .jetton(jettonItem),
+                                    coreAssembly: coreAssembly,
+                                    keeperCoreMainAssembly: keeperCoreMainAssembly).view
       },
       hasAbout: false
     )
@@ -346,8 +351,8 @@ private extension WalletCoordinator {
       self?.openTonDetails(wallet: wallet)
     }
     
-    module.output.didSelectJetton = { [weak self] wallet, jettonItem in
-      self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet)
+    module.output.didSelectJetton = { [weak self] wallet, jettonItem, hasPrice in
+      self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet, hasPrice: hasPrice)
     }
     
     module.output.didTapSend = { [weak self] in

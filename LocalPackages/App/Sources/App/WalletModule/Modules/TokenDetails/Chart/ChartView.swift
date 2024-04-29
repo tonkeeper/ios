@@ -8,7 +8,9 @@ final class ChartView: UIView {
   
   let headerView = ChartHeaderView()
   let buttonsView = ChartButtonsView()
-  let chartView = TKLineChartView()
+  let chartView = TKLineChartFullView()
+  let errorView = ChartErrorView()
+  let separatorView = TKSeparatorView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -22,7 +24,11 @@ final class ChartView: UIView {
   private func setup() {
     addSubview(headerView)
     addSubview(chartView)
+    addSubview(errorView)
     addSubview(buttonsView)
+    addSubview(separatorView)
+    
+    errorView.isHidden = true
     
     setupConstraints()
   }
@@ -35,12 +41,19 @@ final class ChartView: UIView {
     chartView.snp.makeConstraints { make in
       make.left.right.equalTo(self)
       make.top.equalTo(headerView.snp.bottom)
-      make.height.equalTo(220)
+    }
+    
+    errorView.snp.makeConstraints { make in
+      make.edges.equalTo(chartView)
     }
     
     buttonsView.snp.makeConstraints { make in
       make.top.equalTo(chartView.snp.bottom)
       make.left.bottom.right.equalTo(self)
+    }
+    
+    separatorView.snp.makeConstraints { make in
+      make.left.right.bottom.equalTo(self)
     }
   }
 }

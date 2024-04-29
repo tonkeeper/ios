@@ -49,7 +49,7 @@ final class ChartHeaderView: UIView, TKConfigurableView {
         color: .Text.primary,
         alignment: .left,
         lineBreakMode: .byTruncatingTail
-      )
+      ).replaceMonospaceSpaces()
       self.date = date.withTextStyle(
         .otherTextStyle,
         color: .Text.secondary,
@@ -72,14 +72,14 @@ final class ChartHeaderView: UIView, TKConfigurableView {
         color: diffColor,
         alignment: .left,
         lineBreakMode: .byTruncatingTail
-      )
+      ).replaceMonospaceSpaces()
       
       self.priceDiff = diff.priceDiff.withTextStyle(
         .otherTextStyle,
         color: diffColor.withAlphaComponent(0.44),
         alignment: .left,
         lineBreakMode: .byTruncatingTail
-      )
+      ).replaceMonospaceSpaces()
     }
   }
   
@@ -154,5 +154,22 @@ private extension TKTextStyle {
       font: .monospacedSystemFont(ofSize: 14, weight: .medium),
       lineHeight: 20
     )
+  }
+}
+
+extension NSAttributedString {
+  func replaceMonospaceSpaces() -> NSAttributedString {
+    let str = NSMutableAttributedString(attributedString: self)
+    let regex = try? NSRegularExpression(pattern: " ", options: [])
+    let range = NSMakeRange(0, str.string.count)
+    guard let matches = regex?.matches(in: str.string, range: range) else {
+      return str
+    }
+    
+    for match in matches.reversed() {
+      str.addAttributes([.font: UIFont.monospacedDigitSystemFont(ofSize: 10, weight: .regular)], range: match.range)
+    }
+    
+    return str
   }
 }

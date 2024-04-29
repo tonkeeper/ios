@@ -84,6 +84,10 @@ public struct CoreAssembly {
   public var appSettings: AppSettings {
     AppSettings(userDefaults: UserDefaults(suiteName: .appSettingsSuiteName) ?? .standard)
   }
+  
+  public var formattersAssembly: FormattersAssembly {
+    FormattersAssembly()
+  }
 }
 
 private extension String {

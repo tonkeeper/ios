@@ -15,8 +15,8 @@ struct RateWidgetChartView: View {
     let chartView = TKLineChartView()
     chartView.frame.size = size
     chartView.layoutIfNeeded()
-    chartView.setData(chartData.data)
-    if let image = chartView.getChartImage(transparent: false) {
+    chartView.setChartData(chartData.data)
+    if let image = chartView.getImage(transparent: true) {
       return .init(uiImage: image)
     }
     return .init(uiImage: UIImage())

@@ -22,8 +22,13 @@ final class ChartViewController: UIViewController {
     super.viewDidLoad()
     
     setupBindings()
+    setupViewEvents()
     
     viewModel.viewDidLoad()
+  }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
   }
   
   required init?(coder: NSCoder) {
@@ -36,10 +41,29 @@ final class ChartViewController: UIViewController {
     }
     
     viewModel.didUpdateChartData = { [weak customView] model in
-      customView?.chartView.setData(model)
+      customView?.chartView.configure(model: model)
+      customView?.errorView.isHidden = true
+      customView?.chartView.isHidden = false
+    }
+    
+    viewModel.didUpdateHeader = { [weak customView] model in
+      customView?.headerView.configure(configuration: model)
+    }
+    
+    viewModel.didFailedUpdateChartData = { [weak customView] model in
+      customView?.errorView.configure(model: model)
+      customView?.errorView.isHidden = false
+      customView?.chartView.isHidden = true
     }
   }
   
   private func setupViewEvents() {
+    customView.chartView.didSelectValue = { [weak viewModel] index in
+      viewModel?.didSelectChartPoint(at: index)
+    }
+    
+    customView.chartView.didDeselectValue = { [weak viewModel] in
+      viewModel?.didDeselectChartPoint()
+    }
   }
 }

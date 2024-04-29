@@ -67,7 +67,7 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
       let chartController = walletCoreContainer.chartController()
       Task {
         let period: WalletCoreKeeper.Period
-        let mode: TKLineChartView.Mode
+        let mode: TKLineChartView.ChartMode
         switch configuration.period {
         case .day:
           period = .day
@@ -96,12 +96,19 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
         let maximumValue = await chartController.getMaximumValue(currency: currency)
         let minimumValue = await chartController.getMinimumValue(currency: currency)
         let entryInformation = RateWidgetEntry.Information(chartPointInformationViewModel: information)
-        let entry = RateWidgetEntry(date: Date(),
-                                    period: period.title,
-                                    information: entryInformation,
-                                    chartData: .init(data: .init(coordinates: data, mode: mode),
-                                                     minimumValue: minimumValue,
-                                                     maximumValue: maximumValue))
+        let entry = RateWidgetEntry(
+          date: Date(),
+          period: period.title,
+          information: entryInformation,
+          chartData: .init(
+            data: TKLineChartView.ChartData(
+              mode: mode,
+              coordinates: data
+            ),
+            minimumValue: minimumValue,
+            maximumValue: maximumValue
+          )
+        )
         let nextUpdate = Calendar.current.date(byAdding: DateComponents(minute: 30), to: Date())!
         let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
         completion(timeline)
