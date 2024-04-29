@@ -59,6 +59,7 @@ final class ChartViewController: UIViewController {
   
   private func setupViewEvents() {
     customView.chartView.didSelectValue = { [weak viewModel] index in
+      UIImpactFeedbackGenerator(style: .soft).impactOccurred()
       viewModel?.didSelectChartPoint(at: index)
     }
     

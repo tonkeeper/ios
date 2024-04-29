@@ -14,7 +14,6 @@ protocol ChartViewModel: AnyObject {
   func viewDidLoad()
   func didSelectChartPoint(at index: Int)
   func didDeselectChartPoint()
-  func didUpdateWidth(_ width: CGFloat)
 }
 
 final class ChartViewModelImplementation: ChartViewModel, ChartModuleOutput {
@@ -68,10 +67,6 @@ final class ChartViewModelImplementation: ChartViewModel, ChartModuleOutput {
     }
   }
   
-  func didUpdateWidth(_ width: CGFloat) {
-    
-  }
-  
   actor State {
     var period: Period = .month
     var coordinates = [KeeperCore.Coordinate]()
@@ -88,6 +83,7 @@ final class ChartViewModelImplementation: ChartViewModel, ChartModuleOutput {
   // MARK: - State
   
   private var state = State()
+  private var pollingTask: Task<Void, Never>?
   
   // MARK: - Dependencies
   
@@ -108,6 +104,7 @@ final class ChartViewModelImplementation: ChartViewModel, ChartModuleOutput {
 
 private extension ChartViewModelImplementation {
   func didSelectPeriodButtonAt(index: Int) {
+    pollingTask?.cancel()
     Task {
       await state.setPeriod(Period.allCases[index])
       await updateChart()
@@ -133,6 +130,15 @@ private extension ChartViewModelImplementation {
   }
   
   func updateChart() async {
+    await cachedChartData()
+    await loadChartData()
+    
+    try? await Task.sleep(nanoseconds: 5_000_000_000)
+    guard !Task.isCancelled else { return }
+    await loadChartData()
+  }
+  
+  func cachedChartData() async {
     let currency = await currencyStore.getActiveCurrency()
     let period = await state.period
     let cachedCoordinates = chartController.getCachedChartData(period: period, currency: currency)
@@ -143,26 +149,34 @@ private extension ChartViewModelImplementation {
       didUpdateChartData?(cachedModel)
       didUpdateHeader?(lastPointModel)
     }
-    
-    do {
-      let loadedCoordinates = try await chartController.loadChartData(period: period, currency: currency)
-      await state.setCoordinates(loadedCoordinates)
-      let loadedModel = prepareChartModel(coordinates: loadedCoordinates, period: period, currency: currency)
-      let lastPointModel = prepareLastPointModel(coordinates: cachedCoordinates, currency: currency, period: period)
-      await MainActor.run {
-        didUpdateChartData?(loadedModel)
-        didUpdateHeader?(lastPointModel)
-      }
-    } catch {
-      let title = "Failed to load chart data"
-      let subtitle = "Please try again"
-      let model = ChartErrorView.Model(
-        title: title,
-        subtitle: subtitle
-      )
-      await MainActor.run {
-        didFailedUpdateChartData?(model)
-        didUpdateHeader?(emptyHeaderModel())
+  }
+  
+  func loadChartData() async {
+    pollingTask?.cancel()
+    pollingTask = Task {
+      let currency = await currencyStore.getActiveCurrency()
+      let period = await state.period
+      do {
+        let loadedCoordinates = try await chartController.loadChartData(period: period, currency: currency)
+        await state.setCoordinates(loadedCoordinates)
+        let loadedModel = prepareChartModel(coordinates: loadedCoordinates, period: period, currency: currency)
+        let lastPointModel = prepareLastPointModel(coordinates: loadedCoordinates, currency: currency, period: period)
+        await MainActor.run {
+          didUpdateChartData?(loadedModel)
+          didUpdateHeader?(lastPointModel)
+        }
+      } catch {
+        guard !error.isCancelledError else { return }
+        let title = "Failed to load chart data"
+        let subtitle = "Please try again"
+        let model = ChartErrorView.Model(
+          title: title,
+          subtitle: subtitle
+        )
+        await MainActor.run {
+          didFailedUpdateChartData?(model)
+          didUpdateHeader?(emptyHeaderModel())
+        }
       }
     }
   }
