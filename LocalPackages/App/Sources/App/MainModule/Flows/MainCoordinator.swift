@@ -24,6 +24,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
   
+  private var didSendTransactionToken: NSObjectProtocol?
+  
   init(router: TabBarControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
@@ -64,6 +66,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
+    didSendTransactionToken = NotificationCenter.default.addObserver(
+      forName: NSNotification.Name(
+        "DID SEND TRANSACTION"
+      ),
+      object: nil,
+      queue: .main) { [weak self] _ in
+        self?.router.rootViewController.selectedIndex = 1
+      }
     setupTabBarTaps()
     setupChildCoordinators()
     Task {

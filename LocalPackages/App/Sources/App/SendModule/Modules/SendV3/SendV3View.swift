@@ -34,6 +34,10 @@ final class SendV3View: UIView {
       size: .large
     )
   )
+  
+  let recipientPasteButton = TKButton()
+  let recipientScanButton = TKButton()
+  let commentPasteButton = TKButton()
     
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -45,6 +49,13 @@ final class SendV3View: UIView {
   }
   
   private func setup() {
+    
+    recipientTextField.rightItems = [
+      TKTextField.RightItem(view: recipientPasteButton, mode: .empty),
+      TKTextField.RightItem(view: recipientScanButton, mode: .empty)
+    ]
+    commentInputView.commentTextField.rightItems = [TKTextField.RightItem(view: commentPasteButton, mode: .empty)]
+    
     addSubview(scrollView)
     scrollView.addSubview(stackView)
     
@@ -61,7 +72,7 @@ final class SendV3View: UIView {
     stackView.snp.makeConstraints { make in
       make.top.equalTo(scrollView).offset(CGFloat.contentVerticalPadding)
       make.left.right.bottom.equalTo(scrollView).priority(.high)
-      make.width.equalTo(scrollView).priority(.high)
+      make.width.equalTo(scrollView)
     }
   }
 }

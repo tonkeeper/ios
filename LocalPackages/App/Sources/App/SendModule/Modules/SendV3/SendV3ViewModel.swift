@@ -6,10 +6,12 @@ import BigInt
 protocol SendV3ModuleOutput: AnyObject {
   var didContinueSend: ((SendModel) -> Void)? { get set }
   var didTapPicker: ((Wallet, Token) -> Void)? { get set }
+  var didTapScan: (() -> Void)? { get set }
 }
 
 protocol SendV3ModuleInput: AnyObject {
   func updateWithToken(_ token: Token)
+  func setRecipient(string: String)
 }
 
 protocol SendV3ViewModel: AnyObject {
@@ -23,6 +25,9 @@ protocol SendV3ViewModel: AnyObject {
   func didInputAmount(_ string: String)
   func didTapWalletTokenPicker()
   func didTapMax()
+  func didTapRecipientPasteButton()
+  func didTapCommentPasteButton()
+  func didTapRecipientScanButton()
 }
 
 struct Model {
@@ -84,6 +89,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   
   var didContinueSend: ((SendModel) -> Void)?
   var didTapPicker: ((Wallet, Token) -> Void)?
+  var didTapScan: (() -> Void)?
   
   // MARK: - SendV3ModuleInput
   
@@ -97,6 +103,10 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     updateConverted()
     updateRemaining()
     update()
+  }
+  
+  func setRecipient(string: String) {
+    didInputRecipient(string)
   }
   
   // MARK: - SendV3ViewModel
@@ -200,6 +210,20 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
         break
       }
     }
+  }
+  
+  func didTapRecipientPasteButton() {
+    guard let pasteboardString = UIPasteboard.general.string else { return }
+    didInputRecipient(pasteboardString)
+  }
+  
+  func didTapCommentPasteButton() {
+    guard let pasteboardString = UIPasteboard.general.string else { return }
+    didInputComment(pasteboardString)
+  }
+  
+  func didTapRecipientScanButton() {
+    didTapScan?()
   }
   
   // MARK: - State

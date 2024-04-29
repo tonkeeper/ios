@@ -53,6 +53,20 @@ private extension SendTokenCoordinator {
         module.input.updateWithToken(token)
       })
     }
+    
+    module.output.didTapScan = { [weak self] in
+      self?.openScan(completion: { deeplink in
+        switch deeplink {
+        case .ton(let tonDeeplink):
+          switch tonDeeplink {
+          case .transfer(let recipient, _):
+            module.input.setRecipient(string: recipient)
+          }
+        default:
+          break
+        }
+      })
+    }
 
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
@@ -129,6 +143,7 @@ private extension SendTokenCoordinator {
     }
     
     module.output.didSendTransaction = { [weak self] in
+      NotificationCenter.default.post(Notification(name: Notification.Name("DID SEND TRANSACTION")))
       self?.router.dismiss(completion: {
         self?.didFinish?()
       })
@@ -192,5 +207,25 @@ private extension SendTokenCoordinator {
     }
     
     bottomSheetViewController.present(fromViewController: sourceViewController)
+  }
+  
+  func openScan(completion: @escaping (KeeperCore.Deeplink) -> Void) {
+    let scanModule = ScannerModule(
+      dependencies: ScannerModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createScannerModule()
+    
+    let navigationController = TKNavigationController(rootViewController: scanModule.view)
+    navigationController.configureTransparentAppearance()
+    
+    scanModule.output.didScanDeeplink = { [weak self] deeplink in
+      self?.router.dismiss(completion: {
+        completion(deeplink)
+      })
+    }
+    
+    router.present(navigationController)
   }
 }

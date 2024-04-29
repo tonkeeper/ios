@@ -55,6 +55,27 @@ private extension SendV3ViewController {
     view.backgroundColor = .Background.page
     
     customView.amountInputView.textInputControl.delegate = viewModel.sendAmountTextFieldFormatter
+    
+    var configuration = TKButton.Configuration.titleHeaderButtonConfiguration(category: .tertiary)
+    configuration.content.title = .plainString("Paste")
+    configuration.action = { [weak viewModel] in
+      viewModel?.didTapRecipientPasteButton()
+    }
+    customView.recipientPasteButton.configuration = configuration
+    
+    configuration.action = { [weak viewModel] in
+      viewModel?.didTapCommentPasteButton()
+    }
+    customView.commentPasteButton.configuration = configuration
+    
+    var scanConfiguration = TKButton.Configuration.fieldAccentButtonConfiguration()
+    scanConfiguration.content.icon = .TKUIKit.Icons.Size28.qrViewFinderThin
+    scanConfiguration.padding.left = 8
+    scanConfiguration.padding.right = 16
+    scanConfiguration.action = { [weak viewModel] in
+      viewModel?.didTapRecipientScanButton()
+    }
+    customView.recipientScanButton.configuration = scanConfiguration
   }
   
   func setupBindings() {
