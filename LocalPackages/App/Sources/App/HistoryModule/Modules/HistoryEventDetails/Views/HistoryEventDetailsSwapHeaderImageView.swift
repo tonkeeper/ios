@@ -48,6 +48,12 @@ final class HistoryEventDetailsSwapHeaderImageView: UIView, ConfigurableView {
       _ = imageLoader?.loadImage(url: url, imageView: rightImageView, size: nil)
     }
   }
+  
+  override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+    if #available(iOS 17.0, *) {} else {
+      updateColors()
+    }
+  }
 }
 
 private extension HistoryEventDetailsSwapHeaderImageView {
@@ -55,16 +61,21 @@ private extension HistoryEventDetailsSwapHeaderImageView {
     leftImageView.layer.masksToBounds = true
     leftImageView.layer.cornerRadius = 38
     leftImageView.layer.borderWidth = 4
-    leftImageView.layer.borderColor = UIColor.Background.page.cgColor
     rightImageView.layer.masksToBounds = true
     rightImageView.layer.cornerRadius = 38
     rightImageView.layer.borderWidth = 4
-    rightImageView.layer.borderColor = UIColor.Background.page.cgColor
     
     addSubview(imageContainer)
     imageContainer.addSubview(leftImageView)
     imageContainer.addSubview(rightImageView)
     setupConstraints()
+    
+    if #available(iOS 17.0, *) {
+      registerForTraitChanges([UITraitUserInterfaceStyle.self]) {
+        (self: Self, previousTraitCollection: UITraitCollection) in
+        self.updateColors()
+      }
+    }
   }
   
   func setupConstraints() {
@@ -90,5 +101,10 @@ private extension HistoryEventDetailsSwapHeaderImageView {
       rightImageView.bottomAnchor.constraint(equalTo: imageContainer.bottomAnchor),
       rightImageView.leftAnchor.constraint(equalTo: leftImageView.rightAnchor, constant: -16)
     ])
+  }
+  
+  func updateColors() {
+    leftImageView.layer.borderColor = UIColor.Background.page.cgColor
+    rightImageView.layer.borderColor = UIColor.Background.page.cgColor
   }
 }
