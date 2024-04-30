@@ -278,7 +278,7 @@ private extension MainCoordinator {
     }
     
     module.output.didTapEditWallet = { [weak self, unowned bottomSheetViewController] wallet in
-//      self?.openEditWallet(wallet: $0, fromViewController: bottomSheetViewController)
+      self?.openEditWallet(wallet: wallet, fromViewController: bottomSheetViewController)
     }
     
     module.output.didSelectWallet = { [weak bottomSheetViewController] in

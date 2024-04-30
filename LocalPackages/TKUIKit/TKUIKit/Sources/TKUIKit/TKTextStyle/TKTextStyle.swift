@@ -39,14 +39,7 @@ public struct TKTextStyle: Hashable {
     paragraphStyle.maximumLineHeight = lineHeight
     paragraphStyle.alignment = alignment
     paragraphStyle.lineBreakMode = lineBreakMode
-    
-    let baselineOffsetDelimeter: CGFloat
-    if #available(iOS 16, *) {
-      baselineOffsetDelimeter = 2
-    } else {
-      baselineOffsetDelimeter = 4
-    }
-    
+
     let attributes: [NSAttributedString.Key: Any] = [
       .font: font,
       .foregroundColor: color,

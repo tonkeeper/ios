@@ -25,7 +25,7 @@ public enum WalletKind: Codable, Equatable, Identifiable {
     switch self {
     case .Regular(let publicKey, let walletContractVersion):
       return publicKey.hexString + walletContractVersion.rawValue
-    case .Lockup(let publicKey, let lockupConfig):
+    case .Lockup(let publicKey, _):
       return publicKey.hexString
     case .Watchonly(let resolvableAddress):
       return String(resolvableAddress.hashValue)

@@ -31,7 +31,7 @@ private extension CollectiblesCoordinator {
         CollectiblesListAssembly.module(
           collectiblesListController: keeperCoreMainAssembly.collectiblesListController(wallet: wallet)
         )
-      }, emptyModuleProvider: { [keeperCoreMainAssembly] wallet in
+      }, emptyModuleProvider: { wallet in
         CollectiblesEmptyAssembly.module()
       })
     

@@ -57,10 +57,6 @@ public final class ChartController {
     return self.coordinates
   }
   
-//  public func getChartData(period: Period) -> [Coordinate] {
-//    let currency = await currencyStore.getActiveCurrency()
-//  }
-  
   public func getInformation(at index: Int, period: Period) async -> ChartPointInformationModel {
     guard index < coordinates.count else {
       return ChartPointInformationModel(
@@ -73,8 +69,6 @@ public final class ChartController {
     
     let percentageValue = calculatePercentageDiff(at: index)
     let fiatValue = calculateFiatDiff(percentage: percentageValue)
-    
-    let tonRates = await tonRatesStore.getTonRates()
     
     let amount = decimalAmountFormatter.format(
       amount: Decimal(coordinate.y),

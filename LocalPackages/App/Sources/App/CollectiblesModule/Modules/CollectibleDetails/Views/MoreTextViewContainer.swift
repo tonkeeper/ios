@@ -99,7 +99,7 @@ private extension MoreTextViewContainer {
       return
     }
     
-    guard let text = text else {
+    guard let _ = text else {
       textViewHeightConstraint?.constant = 0
       return
     }

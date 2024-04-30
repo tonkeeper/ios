@@ -170,8 +170,6 @@
 		7D7CF6C52AC7045000EB0BFF /* WidgetRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetRelease.xcconfig; sourceTree = "<group>"; };
 		7D7CF6C72AC7050600EB0BFF /* SignDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SignDebug.xcconfig; sourceTree = "<group>"; };
 		7D7CF6C82AC7050D00EB0BFF /* SignRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SignRelease.xcconfig; sourceTree = "<group>"; };
-		7D7CF6C92AC7051700EB0BFF /* WidgetSignDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetSignDebug.xcconfig; sourceTree = "<group>"; };
-		7D7CF6CA2AC7051E00EB0BFF /* WidgetSignRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetSignRelease.xcconfig; sourceTree = "<group>"; };
 		7D8A50922AC709F800AA396C /* Tonkeeper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Tonkeeper.entitlements; sourceTree = "<group>"; };
 		7D8A50932AC709FF00AA396C /* TonkeeperWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperWidgetExtension.entitlements; sourceTree = "<group>"; };
 		7D8A50A12AC861AE00AA396C /* BalanceWidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceWidgetEntry.swift; sourceTree = "<group>"; };
@@ -201,8 +199,6 @@
 		7DDBC0012ACCAFE200F811A5 /* IntentsBase.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsBase.xcconfig; sourceTree = "<group>"; };
 		7DDBC0022ACCAFEF00F811A5 /* IntentsDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsDebug.xcconfig; sourceTree = "<group>"; };
 		7DDBC0032ACCAFF700F811A5 /* IntentsRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsRelease.xcconfig; sourceTree = "<group>"; };
-		7DDBC0042ACCB03900F811A5 /* IntentsSignDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsSignDebug.xcconfig; sourceTree = "<group>"; };
-		7DDBC0052ACCB04200F811A5 /* IntentsSignRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsSignRelease.xcconfig; sourceTree = "<group>"; };
 		C313EC0B2B50138D009DF825 /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
 		C313EC0D2B50138D009DF825 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
 		C313EC0E2B50138D009DF825 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
@@ -363,10 +359,6 @@
 			children = (
 				7D7CF6C72AC7050600EB0BFF /* SignDebug.xcconfig */,
 				7D7CF6C82AC7050D00EB0BFF /* SignRelease.xcconfig */,
-				7D7CF6C92AC7051700EB0BFF /* WidgetSignDebug.xcconfig */,
-				7D7CF6CA2AC7051E00EB0BFF /* WidgetSignRelease.xcconfig */,
-				7DDBC0042ACCB03900F811A5 /* IntentsSignDebug.xcconfig */,
-				7DDBC0052ACCB04200F811A5 /* IntentsSignRelease.xcconfig */,
 			);
 			path = Signing;
 			sourceTree = "<group>";

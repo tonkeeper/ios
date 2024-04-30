@@ -121,11 +121,6 @@ private extension WalletListController {
   
   func didUpdateTotalBalanceState(_ totalBalanceState: TotalBalanceState,
                                   walletAddress: TonSwift.Address) async {
-    let wallets = await state.wallets
-      .filter {
-        guard let address = try? $0.address else { return false }
-        return address == walletAddress
-      }
     await updateWalletModels()
   }
   

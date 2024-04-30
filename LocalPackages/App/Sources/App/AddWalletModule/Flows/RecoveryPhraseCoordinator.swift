@@ -89,8 +89,7 @@ private extension RecoveryPhraseCoordinator {
     router.push(
       viewController: module.view,
       animated: true,
-      onPopClosures: { [weak self] in
-      },
+      onPopClosures: {},
       completion: nil)
   }
 }
