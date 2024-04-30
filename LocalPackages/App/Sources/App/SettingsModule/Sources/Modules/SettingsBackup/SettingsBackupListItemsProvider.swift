@@ -29,7 +29,7 @@ final class SettingsBackupListItemsProvider: SettingsListItemsProvider {
   
   var didUpdateSections: (() -> Void)?
   
-  var title: String { "Backup" }
+  var title = TKLocales.Backup.title
   
   func getSections() -> [SettingsListSection] {
     setupSettingsSections()

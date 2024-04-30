@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class SendV3ViewController: GenericViewViewController<SendV3View>, KeyboardObserving {
   private let viewModel: SendV3ViewModel
@@ -51,13 +52,13 @@ final class SendV3ViewController: GenericViewViewController<SendV3View>, Keyboar
 
 private extension SendV3ViewController {
   func setup() {
-    title = "Send"
+    title = TKLocales.Send.title
     view.backgroundColor = .Background.page
     
     customView.amountInputView.textInputControl.delegate = viewModel.sendAmountTextFieldFormatter
     
     var configuration = TKButton.Configuration.titleHeaderButtonConfiguration(category: .tertiary)
-    configuration.content.title = .plainString("Paste")
+    configuration.content.title = .plainString(TKLocales.Actions.paste)
     configuration.action = { [weak viewModel] in
       viewModel?.didTapRecipientPasteButton()
     }

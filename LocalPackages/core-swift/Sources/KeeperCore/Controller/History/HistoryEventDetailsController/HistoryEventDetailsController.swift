@@ -117,7 +117,7 @@ private extension HistoryEventDetailsController {
       currency: .TON)
     let fiatFee = await tonFiatString(amount: BigUInt(abs(event.accountEvent.fee)))
     let feeListItem = Model.ListItem(
-      title: "Fee",
+      title: .feeLabel,
       topValue: fee,
       bottomValue: fiatFee)
     
@@ -911,6 +911,7 @@ private extension HistoryEventDetailsController {
 }
 
 private extension String {
+  static let feeLabel = "Fee"
   static let received = "Received"
   static let sent = "Sent"
   static let sender = "Sender"

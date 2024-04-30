@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import KeeperCore
+import TKLocalize
 
 final class SettingsCurrencyPickerListItemsProvider: SettingsListItemsProvider {
   private let settingsController: SettingsController
@@ -12,7 +13,7 @@ final class SettingsCurrencyPickerListItemsProvider: SettingsListItemsProvider {
   var didUpdateSections: (() -> Void)?
   var didSelectItem: ((SettingsListSection, Int) -> Void)?
   
-  var title: String { "Primary currency" }
+  var title = TKLocales.Currency.title
   
   func getSections() -> [SettingsListSection] {
     [createSection()]

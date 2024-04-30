@@ -134,7 +134,7 @@ private extension SettingsRootListItemsProvider {
       backgroundColor: walletModel.tintColor.uiColor,
       walletName: walletModel.label,
       walletTag: walletModel.tag,
-      balance: "Edit name and color"
+      balance: TKLocales.Settings.Items.setup_wallet_description
     )
     
     let cellModel = WalletsListWalletCell.Model(
