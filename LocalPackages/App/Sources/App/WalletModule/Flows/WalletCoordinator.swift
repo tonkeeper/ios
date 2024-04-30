@@ -3,6 +3,7 @@ import TKCoordinator
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 public final class WalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -18,7 +19,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
-    router.rootViewController.tabBarItem.title = "Wallet"
+      router.rootViewController.tabBarItem.title = TKLocales.Tabs.wallet
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.wallet
   }
   

@@ -1,0 +1,22 @@
+"tabs.wallet" = "Wallet";
+"tabs.history" = "History";
+"tabs.purchases" = "Purchases";
+
+"purchases.title" = "Purchases";
+
+"history.title" = "History";
+
+"settings.title" = "Settings";
+"settings.items.security" = "Security";
+
+"wallet_buttons.send" = "Send";
+"wallet_buttons.receive" = "Receive";
+"wallet_buttons.scan" = "Scan";
+"wallet_buttons.buy" = "Buy TON";
+"wallet_buttons.swap" = "Swap";
+"wallet_buttons.stake" = "Stake";
+
+"actions.copied" = "Copied";
+
+"connection_status.updating" = "Updating";
+"connection_status.no_internet" = "No Internet connection";

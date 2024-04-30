@@ -2,17 +2,22 @@ import Foundation
 
 let DEFAULT_LOCALE = "en"
 
-public func localize(_ key: String, comment: String = "", bundle: Bundle = Bundle.main) -> String {
-    let value = NSLocalizedString(key, bundle: bundle, comment: comment)
+public func localizeDefaultLocale(_ key: String) -> String {
+    guard
+        let path = Bundle.module.path(forResource: DEFAULT_LOCALE, ofType: "lproj"),
+        let bundle = Bundle(path: path)
+    else { return key }
+    
+    return bundle.localizedString(forKey: key, value: nil, table: nil)
+}
 
-    if value != key || NSLocale.autoupdatingCurrent.identifier == DEFAULT_LOCALE {
+public func localize(_ key: String, comment: String = "") -> String {
+    let bundle = Bundle.module
+    let value = bundle.localizedString(forKey: key, value: nil, table: nil)
+    
+    if value != key {
         return value
     }
-
-    // Fallback to default locale
-    guard
-        let path = bundle.path(forResource: DEFAULT_LOCALE, ofType: "lproj"),
-        let defaultLangBundle = Bundle(path: path)
-    else { return value }
-    return translate(key, bundle: defaultLangBundle)
+    
+    return localizeDefaultLocale(key)
 }

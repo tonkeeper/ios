@@ -1,0 +1,22 @@
+"tabs.wallet" = "Кошелёк";
+"tabs.history" = "История";
+"tabs.purchases" = "Покупки";
+
+"purchases.title" = "Покупки";
+
+"history.title" = "История";
+
+"settings.title" = "Настройки";
+"settings.items.security" = "Безопасность";
+
+"wallet_buttons.send" = "Отправить";
+"wallet_buttons.receive" = "Получить";
+"wallet_buttons.scan" = "Сканировать";
+"wallet_buttons.buy" = "Купить TON";
+"wallet_buttons.swap" = "Обменять";
+"wallet_buttons.stake" = "Застейкать";
+
+"actions.copied" = "Скопировано";
+
+"connection_status.updating" = "Обновляется";
+"connection_status.no_internet" = "Нет сети";

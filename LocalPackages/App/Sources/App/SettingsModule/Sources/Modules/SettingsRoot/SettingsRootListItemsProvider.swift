@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   typealias WalletCellRegistration = UICollectionView.CellRegistration<WalletsListWalletCell, WalletsListWalletCell.Model>
@@ -55,7 +56,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   
   var didUpdateSections: (() -> Void)?
   
-  var title: String { "Settings" }
+  var title: String { TKLocales.Tabs.history }
   
   func getSections() async -> [SettingsListSection] {
     await setupSettingsSections()
@@ -381,7 +382,7 @@ private extension SettingsRootListItemsProvider {
 }
 
 private extension String {
-  static let securityItemTitle = "Security"
+  static let securityItemTitle = TKLocales.Settings.Items.security
   
   static let backupItemTitle = "Backup"
   
