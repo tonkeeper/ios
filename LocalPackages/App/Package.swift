@@ -1,4 +1,4 @@
-// swift-tools-version: 5.7
+// swift-tools-version: 5.8
 
 import PackageDescription
 
@@ -12,8 +12,8 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/tonkeeper/tkuikit-ios.git", branch: "main"),
-    .package(url: "https://github.com/tonkeeper/core-swift", branch: "feature/move_preparation"),
     .package(url: "https://github.com/luximetr/AnyFormatKit.git", .upToNextMajor(from: "2.5.2")),
+    .package(path: "../core-swift"),
     .package(path: "../TKCore"),
     .package(path: "../TKCoordinator")
   ],

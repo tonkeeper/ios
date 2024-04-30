@@ -1,0 +1,59 @@
+{
+  "pins" : [
+    {
+      "identity" : "bigint",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/attaswift/BigInt",
+      "state" : {
+        "revision" : "0ed110f7555c34ff468e72e1686e59721f2b0da6",
+        "version" : "5.3.0"
+      }
+    },
+    {
+      "identity" : "swift-http-types",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-http-types",
+      "state" : {
+        "revision" : "99d066e29effa8845e4761dd3f2f831edfdf8925",
+        "version" : "1.0.0"
+      }
+    },
+    {
+      "identity" : "swift-openapi-runtime",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/apple/swift-openapi-runtime",
+      "state" : {
+        "revision" : "d5aa7ce0c1d7d0e90ea810189e9f9f0022aa069e",
+        "version" : "0.3.4"
+      }
+    },
+    {
+      "identity" : "ton-api-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/ton-api-swift",
+      "state" : {
+        "revision" : "1988939fe0ce6db6bc587cfe7c9d15dc3bca1d69",
+        "version" : "0.1.5"
+      }
+    },
+    {
+      "identity" : "ton-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/tonkeeper/ton-swift",
+      "state" : {
+        "revision" : "137125d643180071afc7c4cc0ec99377c61a18e3",
+        "version" : "1.0.6"
+      }
+    },
+    {
+      "identity" : "tweetnacl-swiftwrap",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/bitmark-inc/tweetnacl-swiftwrap",
+      "state" : {
+        "revision" : "f8fd111642bf2336b11ef9ea828510693106e954",
+        "version" : "1.1.0"
+      }
+    }
+  ],
+  "version" : 2
+}
