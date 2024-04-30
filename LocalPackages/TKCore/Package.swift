@@ -15,7 +15,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/onevcat/Kingfisher.git", from: Version(7, 0, 0)),
-    .package(url: "https://github.com/tonkeeper/tkuikit-ios.git", branch: "main"),
+    .package(path: "../TKUIKit"),
     .package(path: "../core-swift")
   ],
   targets: [
@@ -23,7 +23,7 @@ let package = Package(
       name: "TKCore",
       dependencies: [
         .byName(name: "Kingfisher"),
-        .product(name: "TKUIKit", package: "tkuikit-ios"),
+        .product(name: "TKUIKitDynamic", package: "TKUIKit"),
         .product(name: "WalletCore", package: "core-swift"),
       ],
       resources: [.process("Resources")]),

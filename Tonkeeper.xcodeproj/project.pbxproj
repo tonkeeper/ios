@@ -55,8 +55,6 @@
 		C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */; };
 		C327C6322B4F682B00AAFB43 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */; };
 		C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C32C7C462BCD0D8E00785B6A /* TKCore */; };
-		C33FC2342BCEC6420032F2D9 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C33FC2332BCEC6420032F2D9 /* TKUIKit */; };
-		C33FC2362BCEC64F0032F2D9 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C33FC2352BCEC64F0032F2D9 /* TKUIKit */; };
 		C34C70612BE1157200143AC8 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C34C70602BE1157200143AC8 /* WalletCore */; };
 		C34C70622BE1157200143AC8 /* WalletCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C34C70602BE1157200143AC8 /* WalletCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C34C70642BE1157A00143AC8 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C34C70632BE1157A00143AC8 /* WalletCore */; };
@@ -65,12 +63,15 @@
 		C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C3D2ADFC9F800F8B524 /* TKCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C432ADFCA0500F8B524 /* TKCore */; };
 		C365E2712BDA6944006D33B9 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C365E2702BDA6944006D33B9 /* TKChart */; };
-		C365E2722BDA6944006D33B9 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C365E2702BDA6944006D33B9 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C365E2742BDA695D006D33B9 /* App in Frameworks */ = {isa = PBXBuildFile; productRef = C365E2732BDA695D006D33B9 /* App */; };
 		C37DDDB82BCEA5AB002A486E /* FirebaseConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */; };
 		C37DDDBA2BCEA7B4002A486E /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = C37DDDB92BCEA7B4002A486E /* FirebaseRemoteConfig */; };
 		C37DDDBC2BCEA7BE002A486E /* FirebaseRemoteConfigSwift in Frameworks */ = {isa = PBXBuildFile; productRef = C37DDDBB2BCEA7BE002A486E /* FirebaseRemoteConfigSwift */; };
-		C3B4DABD2B500BFB0050703B /* TKCoordinator in Frameworks */ = {isa = PBXBuildFile; productRef = C3B4DABC2B500BFB0050703B /* TKCoordinator */; };
+		C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */ = {isa = PBXBuildFile; productRef = C3CC74412BE11EC6006022FE /* TKCoordinator */; };
+		C3CC74442BE11F08006022FE /* TKUIKitDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = C3CC74432BE11F08006022FE /* TKUIKitDynamic */; };
+		C3CC74452BE11F08006022FE /* TKUIKitDynamic in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C3CC74432BE11F08006022FE /* TKUIKitDynamic */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C3CC74472BE11F0F006022FE /* TKUIKitDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = C3CC74462BE11F0F006022FE /* TKUIKitDynamic */; };
+		C3FAB42D2BE11D4400C81547 /* TKScreenKit in Frameworks */ = {isa = PBXBuildFile; productRef = C3FAB42C2BE11D4400C81547 /* TKScreenKit */; };
 		C3FC243B2BB4DA980005E952 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C3FC243A2BB4DA980005E952 /* TKChart */; };
 		C3FC243C2BB4DA980005E952 /* TKChart in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C3FC243A2BB4DA980005E952 /* TKChart */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 /* End PBXBuildFile section */
@@ -111,6 +112,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				C3CC74452BE11F08006022FE /* TKUIKitDynamic in Embed Frameworks */,
 				C34C70622BE1157200143AC8 /* WalletCore in Embed Frameworks */,
 				C3FC243C2BB4DA980005E952 /* TKChart in Embed Frameworks */,
 				C35E6C3F2ADFC9F800F8B524 /* TKCore in Embed Frameworks */,
@@ -124,7 +126,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				C365E2722BDA6944006D33B9 /* TKChart in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -207,7 +208,9 @@
 		C313EC0E2B50138D009DF825 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
 		C32C7C492BCD111100785B6A /* TonkeeperIntents.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperIntents.entitlements; sourceTree = "<group>"; };
 		C34C705F2BE1151300143AC8 /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "core-swift"; sourceTree = "<group>"; };
+		C3777E962BE11C9C00DC3C92 /* TKScreenKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKScreenKit; sourceTree = "<group>"; };
 		C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseConfigurator.swift; sourceTree = "<group>"; };
+		C392CE022BE11B0300E0C473 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKit; sourceTree = "<group>"; };
 		C39560142B737F12003303C7 /* App */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = App; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -216,9 +219,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C3CC74472BE11F0F006022FE /* TKUIKitDynamic in Frameworks */,
 				C34C70642BE1157A00143AC8 /* WalletCore in Frameworks */,
 				C365E2712BDA6944006D33B9 /* TKChart in Frameworks */,
-				C33FC2342BCEC6420032F2D9 /* TKUIKit in Frameworks */,
 				C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */,
 				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
 				7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */,
@@ -229,15 +232,16 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */,
 				C3FC243B2BB4DA980005E952 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
 				C37DDDBA2BCEA7B4002A486E /* FirebaseRemoteConfig in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
+				C3FAB42D2BE11D4400C81547 /* TKScreenKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
-				C3B4DABD2B500BFB0050703B /* TKCoordinator in Frameworks */,
 				C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */,
+				C3CC74442BE11F08006022FE /* TKUIKitDynamic in Frameworks */,
 				C34C70612BE1157200143AC8 /* WalletCore in Frameworks */,
-				C33FC2362BCEC64F0032F2D9 /* TKUIKit in Frameworks */,
 				C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
 				C37DDDBC2BCEA7BE002A486E /* FirebaseRemoteConfigSwift in Frameworks */,
 				C365E2742BDA695D006D33B9 /* App in Frameworks */,
@@ -460,6 +464,8 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				C3777E962BE11C9C00DC3C92 /* TKScreenKit */,
+				C392CE022BE11B0300E0C473 /* TKUIKit */,
 				C34C705F2BE1151300143AC8 /* core-swift */,
 				C39560142B737F12003303C7 /* App */,
 				C313EC0B2B50138D009DF825 /* TKCoordinator */,
@@ -488,9 +494,9 @@
 			name = TonkeeperWidgetExtension;
 			packageProductDependencies = (
 				C35E6C432ADFCA0500F8B524 /* TKCore */,
-				C33FC2332BCEC6420032F2D9 /* TKUIKit */,
 				C365E2702BDA6944006D33B9 /* TKChart */,
 				C34C70632BE1157A00143AC8 /* WalletCore */,
+				C3CC74462BE11F0F006022FE /* TKUIKitDynamic */,
 			);
 			productName = TonkeeperWidgetExtension;
 			productReference = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */;
@@ -522,13 +528,14 @@
 				C35E6C3D2ADFC9F800F8B524 /* TKCore */,
 				C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */,
 				C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */,
-				C3B4DABC2B500BFB0050703B /* TKCoordinator */,
 				C3FC243A2BB4DA980005E952 /* TKChart */,
 				C37DDDB92BCEA7B4002A486E /* FirebaseRemoteConfig */,
 				C37DDDBB2BCEA7BE002A486E /* FirebaseRemoteConfigSwift */,
-				C33FC2352BCEC64F0032F2D9 /* TKUIKit */,
 				C365E2732BDA695D006D33B9 /* App */,
 				C34C70602BE1157200143AC8 /* WalletCore */,
+				C3FAB42C2BE11D4400C81547 /* TKScreenKit */,
+				C3CC74412BE11EC6006022FE /* TKCoordinator */,
+				C3CC74432BE11F08006022FE /* TKUIKitDynamic */,
 			);
 			productName = Tonkeeper;
 			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
@@ -591,7 +598,6 @@
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
-				C3B4DAA12B500AE60050703B /* XCRemoteSwiftPackageReference "tkuikit-ios" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -1177,14 +1183,6 @@
 				minimumVersion = 10.19.1;
 			};
 		};
-		C3B4DAA12B500AE60050703B /* XCRemoteSwiftPackageReference "tkuikit-ios" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/tonkeeper/tkuikit-ios.git";
-			requirement = {
-				branch = main;
-				kind = branch;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1216,16 +1214,6 @@
 		C32C7C462BCD0D8E00785B6A /* TKCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKCore;
-		};
-		C33FC2332BCEC6420032F2D9 /* TKUIKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C3B4DAA12B500AE60050703B /* XCRemoteSwiftPackageReference "tkuikit-ios" */;
-			productName = TKUIKit;
-		};
-		C33FC2352BCEC64F0032F2D9 /* TKUIKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C3B4DAA12B500AE60050703B /* XCRemoteSwiftPackageReference "tkuikit-ios" */;
-			productName = TKUIKit;
 		};
 		C34C70602BE1157200143AC8 /* WalletCore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1265,9 +1253,21 @@
 			package = C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseRemoteConfigSwift;
 		};
-		C3B4DABC2B500BFB0050703B /* TKCoordinator */ = {
+		C3CC74412BE11EC6006022FE /* TKCoordinator */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKCoordinator;
+		};
+		C3CC74432BE11F08006022FE /* TKUIKitDynamic */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKitDynamic;
+		};
+		C3CC74462BE11F0F006022FE /* TKUIKitDynamic */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKitDynamic;
+		};
+		C3FAB42C2BE11D4400C81547 /* TKScreenKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKScreenKit;
 		};
 		C3FC243A2BB4DA980005E952 /* TKChart */ = {
 			isa = XCSwiftPackageProductDependency;

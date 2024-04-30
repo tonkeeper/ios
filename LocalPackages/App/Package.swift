@@ -11,19 +11,20 @@ let package = Package(
       targets: ["App"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/tonkeeper/tkuikit-ios.git", branch: "main"),
     .package(url: "https://github.com/luximetr/AnyFormatKit.git", .upToNextMajor(from: "2.5.2")),
     .package(path: "../core-swift"),
     .package(path: "../TKCore"),
-    .package(path: "../TKCoordinator")
+    .package(path: "../TKCoordinator"),
+    .package(path: "../TKUIKit"),
+    .package(path: "../TKScreenKit")
   ],
   targets: [
     .target(
       name: "App",
       dependencies: [
         .product(name: "AnyFormatKit", package: "AnyFormatKit"),
-        .product(name: "TKUIKit", package: "tkuikit-ios"),
-        .product(name: "TKScreenKit", package: "tkuikit-ios"),
+        .product(name: "TKUIKitDynamic", package: "TKUIKit"),
+        .product(name: "TKScreenKit", package: "TKScreenKit"),
         .product(name: "TKCoordinator", package: "TKCoordinator"),
         .product(name: "TKCore", package: "TKCore"),
         .product(name: "WalletCore", package: "core-swift"),

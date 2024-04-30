@@ -14,14 +14,14 @@ let package = Package(
       targets: ["TKChart"]),
   ],
   dependencies: [
-    .package(url: "https://github.com/tonkeeper/tkuikit-ios.git", branch: "main"),
-    .package(url: "https://github.com/danielgindi/Charts", .upToNextMajor(from: "5.0.0"))
+    .package(url: "https://github.com/danielgindi/Charts", .upToNextMajor(from: "5.0.0")),
+    .package(path: "../TKUIKit")
   ],
   targets: [
     .target(
       name: "TKChart",
       dependencies: [
-        .product(name: "TKUIKit", package: "tkuikit-ios"),
+        .product(name: "TKUIKitDynamic", package: "TKUIKit"),
         .product(name: "DGCharts", package: "Charts")
       ]),
     .testTarget(
