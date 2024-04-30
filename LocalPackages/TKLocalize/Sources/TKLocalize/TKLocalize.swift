@@ -30,6 +30,14 @@ public enum TKLocales {
         localize("tabs.purchases")
     }
   }
+  public enum CameraPermission {
+    public static var title: String {
+        localize("camera_permission.title")
+    }
+    public static var button: String {
+        localize("camera_permission.button")
+    }
+  }
   public enum Purchases {
     public static var title: String {
         localize("purchases.title")

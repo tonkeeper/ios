@@ -9,6 +9,9 @@
 "tabs.history" = "История";
 "tabs.purchases" = "Покупки";
 
+"camera_permission.title" = "Разрешите доступ к камере, чтобы сканировать QR-коды";
+"camera_permission.button" = "Открыть настройки";
+
 "purchases.title" = "Покупки";
 
 "history.title" = "История";

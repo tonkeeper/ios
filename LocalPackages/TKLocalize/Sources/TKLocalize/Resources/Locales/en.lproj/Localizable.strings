@@ -9,6 +9,9 @@
 "tabs.history" = "History";
 "tabs.purchases" = "Purchases";
 
+"camera_permission.title" = "Enable access to your camera in order to can scan QR codes";
+"camera_permission.button" = "Open Settings";
+
 "purchases.title" = "Purchases";
 
 "history.title" = "History";
