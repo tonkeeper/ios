@@ -8,6 +8,7 @@
 
 "settings.title" = "Настройки";
 "settings.items.security" = "Безопасность";
+"settings.items.backup" = "Резервная копия";
 
 "wallet_buttons.send" = "Отправить";
 "wallet_buttons.receive" = "Получить";

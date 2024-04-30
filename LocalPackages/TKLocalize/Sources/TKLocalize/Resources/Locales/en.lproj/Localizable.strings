@@ -8,6 +8,7 @@
 
 "settings.title" = "Settings";
 "settings.items.security" = "Security";
+"settings.items.backup" = "Backup";
 
 "wallet_buttons.send" = "Send";
 "wallet_buttons.receive" = "Receive";
