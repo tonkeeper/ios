@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 final class SettingsBackupListItemsProvider: SettingsListItemsProvider {
   typealias BackupInformationCellRegistration = UICollectionView.CellRegistration<SettingsBackupStateCell, SettingsBackupStateCell.Model>
@@ -145,9 +146,9 @@ private extension SettingsBackupListItemsProvider {
 }
 
 private extension String {
-  static let backupInformationTitle = "Manual"
-  static let backupInformationSubtitle = "Back up your wallet manually by writing down the recovery phrase."
-  static let backupManualyButtonTitle = "Back Up Manually"
+  static let backupInformationTitle = TKLocales.Backup.Information.title
+  static let backupInformationSubtitle = TKLocales.Backup.Information.subtitle
+  static let backupManualyButtonTitle = TKLocales.Backup.Manually.button
   static let backupStateIdentifier = "BackupState"
-  static let showRecoveryPhraseItemTitle = "Show Recovery Phrase"
+  static let showRecoveryPhraseItemTitle = TKLocales.Backup.ShowPhrase.title
 }

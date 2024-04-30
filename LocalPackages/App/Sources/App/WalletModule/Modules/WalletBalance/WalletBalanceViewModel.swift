@@ -250,7 +250,7 @@ private extension WalletBalanceViewModelImplementation {
       )
     case .noConnection:
       return ConnectionStatusView.Model(
-        title: TKLocales.ConnectionStatus.noInternet,
+        title: TKLocales.ConnectionStatus.no_internet,
         titleColor: .Accent.orange,
         isLoading: false
       )

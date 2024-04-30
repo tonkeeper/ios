@@ -9,6 +9,27 @@
 "settings.title" = "Settings";
 "settings.items.security" = "Security";
 "settings.items.backup" = "Backup";
+"settings.items.currency" = "Currency";
+"settings.items.theme" = "Theme";
+"settings.items.logout" = "Sign out";
+"settings.items.support" = "Support";
+"settings.items.tk_news" = "Tonkeeper news";
+"settings.items.contact_us" = "Contact us";
+"settings.items.rate" = "Rate Tonkeeper X";
+"settings.items.legal" = "Legal";
+"settings.items.delete_account" = "Delete account";
+
+"backup.title" = "Backup";
+"backup.information.title" = "Manual";
+"backup.information.subtitle" = "Back up your wallet manually by writing down the recovery phrase.";
+"backup.manually.button" = "Back Up Manually";
+"backup.show_phrase.title" = "Show Recovery Phrase";
+
+"security.title" = "Security";
+"security.use" = "Use";
+"security.change_passcode" = "Change Passcode";
+"security.unavailable_error" = "Biometry unavailable";
+"security.use_biometry_description" = "You can always unlock your wallet with a passcode.";
 
 "wallet_buttons.send" = "Send";
 "wallet_buttons.receive" = "Receive";
@@ -18,6 +39,8 @@
 "wallet_buttons.stake" = "Stake";
 
 "actions.copied" = "Copied";
+"actions.delete" = "Delete";
+"actions.cancel" = "Cancel";
 
 "connection_status.updating" = "Updating";
 "connection_status.no_internet" = "No Internet connection";

@@ -384,33 +384,33 @@ private extension SettingsRootListItemsProvider {
 private extension String {
   static let securityItemTitle = TKLocales.Settings.Items.security
   
-  static let backupItemTitle = "Backup"
+  static let backupItemTitle = TKLocales.Settings.Items.backup
   
-  static let currencyItemTitle = "Currency"
-  static let themeItemTitle = "Theme"
+  static let currencyItemTitle = TKLocales.Settings.Items.currency
+  static let themeItemTitle = TKLocales.Settings.Items.theme
   
   static let logoutItemTitle = "Sign Out"
   static let logoutTitle = "Log out?"
   static let logoutDescription = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases."
-  static let logoutCancelButtonTitle = "Cancel"
-  static let logoutLogoutButtonTitle = "Log out"
+  static let logoutCancelButtonTitle = TKLocales.Actions.cancel
+  static let logoutLogoutButtonTitle = TKLocales.Settings.Items.logout
   
-  static let supportTitle = "Support"
-  static let tonkeeperNewsTitle = "Tonkeeper news"
-  static let contactUsTitle = "Contact us"
-  static let rateTonkeeperXTitle = "Rate Tonkeeper X"
-  static let legalTitle = "Legal"
+  static let supportTitle = TKLocales.Settings.Items.support
+  static let tonkeeperNewsTitle = TKLocales.Settings.Items.tk_news
+  static let contactUsTitle = TKLocales.Settings.Items.contact_us
+  static let rateTonkeeperXTitle = TKLocales.Settings.Items.rate
+  static let legalTitle = TKLocales.Settings.Items.legal
   
   static let deleteItemTitle = "Delete account"
   static let deleteTitle = "Are you sure you want to delete your account?"
   static let deleteDescription = "This action will delete your account and all data from this application."
   static let deleteDeleteButtonTitle = "Delete account and data"
-  static let deleteCancelButtonTitle = "Cancel"
+  static let deleteCancelButtonTitle = TKLocales.Actions.cancel
   
   static let deleteWatchItemTitle = "Delete Watch Account"
   static let deleteWatchTitle = "Are you sure you want to delete Watch account?"
-  static let deleteWatchDeleteButtonTitle = "Delete"
-  static let deleteWatchCancelButtonTitle = "Cancel"
+  static let deleteWatchDeleteButtonTitle = TKLocales.Actions.delete
+  static let deleteWatchCancelButtonTitle = TKLocales.Actions.cancel
 }
 
 private extension NSDirectionalEdgeInsets {

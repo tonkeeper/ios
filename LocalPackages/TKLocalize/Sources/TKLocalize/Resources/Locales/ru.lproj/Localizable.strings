@@ -9,6 +9,15 @@
 "settings.title" = "Настройки";
 "settings.items.security" = "Безопасность";
 "settings.items.backup" = "Резервная копия";
+"settings.items.currency" = "Валюта";
+"settings.items.theme" = "Тема";
+"settings.items.logout" = "Выйти";
+"settings.items.support" = "Поддержка";
+"settings.items.tk_news" = "Новости Tonkeeper";
+"settings.items.contact_us" = "Написать команде";
+"settings.items.rate" = "Оценить Tonkeeper X";
+"settings.items.legal" = "Юридические документы";
+"settings.items.delete_account" = "Удалить аккаунт";
 
 "wallet_buttons.send" = "Отправить";
 "wallet_buttons.receive" = "Получить";
@@ -18,6 +27,8 @@
 "wallet_buttons.stake" = "Застейкать";
 
 "actions.copied" = "Скопировано";
+"actions.delete" = "Удалить";
+"actions.cancel" = "Отмена";
 
 "connection_status.updating" = "Обновляется";
 "connection_status.no_internet" = "Нет сети";

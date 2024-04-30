@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 final class SettingsSecurityListItemsProvider: SettingsListItemsProvider {
   
@@ -136,13 +137,12 @@ private extension SettingsSecurityListItemsProvider {
 }
 
 private extension String {
-  static let title = "Security"
-  static let use = "Use"
+  static let title = TKLocales.Security.title
+  static let use = TKLocales.Security.use
   static let faceId = "Face ID"
   static let touchId = "Touch ID"
-  static let biometryUnavailable = "Biometry unavailable"
+  static let biometryUnavailable = TKLocales.Security.unavailable_error
+  static let biometryDescription = TKLocales.Security.use_biometry_description
   
-  static let biometryDescription = "You can always unlock your wallet with a passcode."
-  
-  static let changePasscodeTitle = "Change Passcode"
+  static let changePasscodeTitle = TKLocales.Security.change_passcode
 }
