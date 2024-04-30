@@ -6,7 +6,6 @@
 //
 
 import Intents
-import WalletCoreCore
 import KeeperCore
 import TKCore
 
@@ -33,7 +32,7 @@ class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentH
   
   func provideCurrencyOptionsCollection(for intent: BalanceWidgetIntent, 
                                         with completion: @escaping (INObjectCollection<WidgetCurrency>?, Error?) -> Void) {
-    let currencies: [WidgetCurrency] = WalletCoreCore.Currency.allCases.map { currency in
+    let currencies: [WidgetCurrency] = KeeperCore.Currency.allCases.map { currency in
       WidgetCurrency(identifier: currency.code, display: currency.code)
     }
     
@@ -44,7 +43,7 @@ class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentH
   func provideCurrencyOptionsCollection(for intent: RateWidgetIntent,
                                         with completion: @escaping (INObjectCollection<WidgetCurrency>?, Error?) -> Void) {
     
-    let currencies: [WidgetCurrency] = WalletCoreCore.Currency.allCases.map { currency in
+    let currencies: [WidgetCurrency] = KeeperCore.Currency.allCases.map { currency in
       WidgetCurrency(identifier: currency.code, display: currency.code)
     }
     

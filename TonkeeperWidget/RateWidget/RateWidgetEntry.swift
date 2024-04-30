@@ -6,7 +6,7 @@
 //
 
 import WidgetKit
-import WalletCoreKeeper
+import KeeperCore
 import TKChart
 
 struct RateWidgetEntry: TimelineEntry {
@@ -36,17 +36,17 @@ struct RateWidgetEntry: TimelineEntry {
       self.diffDirection = diffDirection
     }
     
-    init(chartPointInformationViewModel: ChartPointInformationViewModel) {
+    init(chartPointInformationModel: ChartPointInformationModel) {
       let diffDirection: Information.DiffDirection
-      switch chartPointInformationViewModel.diff.direction {
+      switch chartPointInformationModel.diff.direction {
       case .down: diffDirection = .down
       case .up: diffDirection = .up
       case .none: diffDirection = .none
       }
-      self.date = chartPointInformationViewModel.date
-      self.amount = chartPointInformationViewModel.amount
-      self.percentDiff = chartPointInformationViewModel.diff.percent
-      self.fiatDiff = chartPointInformationViewModel.diff.fiat
+      self.date = chartPointInformationModel.date
+      self.amount = chartPointInformationModel.amount
+      self.percentDiff = chartPointInformationModel.diff.percent
+      self.fiatDiff = chartPointInformationModel.diff.fiat
       self.diffDirection = diffDirection
     }
   }

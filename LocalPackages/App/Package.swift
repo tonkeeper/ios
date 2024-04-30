@@ -12,7 +12,7 @@ let package = Package(
   ],
   dependencies: [
     .package(url: "https://github.com/tonkeeper/tkuikit-ios.git", branch: "main"),
-    .package(url: "https://github.com/tonkeeper/core-swift", branch: "feature/refact"),
+    .package(url: "https://github.com/tonkeeper/core-swift", branch: "feature/move_preparation"),
     .package(url: "https://github.com/luximetr/AnyFormatKit.git", .upToNextMajor(from: "2.5.2")),
     .package(path: "../TKCore"),
     .package(path: "../TKCoordinator")

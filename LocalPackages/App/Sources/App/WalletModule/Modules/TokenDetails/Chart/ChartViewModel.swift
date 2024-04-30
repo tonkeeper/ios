@@ -223,7 +223,7 @@ private extension ChartViewModelImplementation {
                          coordinates: [KeeperCore.Coordinate],
                          currency: Currency,
                          date: String) -> ChartHeaderView.Configuration {
-    let calculatedDiff = calculateDiff(coordinates: coordinates, coordinate: coordinate)
+    let calculatedDiff = chartController.calculateDiff(coordinates: coordinates, coordinate: coordinate)
     
     let price = chartFormatter.formatValue(coordinate: coordinate, currency: currency)
     let formattedDiff = chartFormatter.formatDiff(diff: calculatedDiff.diff)
@@ -268,13 +268,6 @@ private extension ChartViewModelImplementation {
     let coordinate = coordinates[index]
     let date = chartFormatter.formatInformationTimeInterval(coordinate.x, period: period)
     return preparePointModel(coordinate: coordinate, coordinates: coordinates, currency: currency, date: date ?? "")
-  }
-  
-  func calculateDiff(coordinates: [KeeperCore.Coordinate], coordinate: KeeperCore.Coordinate) -> (diff: Double, currencyDiff: Double) {
-    guard let startCoordinate = coordinates.first else { return (0, 0) }
-    let diff = (coordinate.y / startCoordinate.y - 1) * 100
-    let currencyDiff = (coordinate.y - startCoordinate.y)
-    return (diff, currencyDiff)
   }
   
   func emptyHeaderModel() -> ChartHeaderView.Configuration {
