@@ -1,5 +1,6 @@
 import Foundation
 import BigInt
+import TKLocalize
 
 protocol TokenDetailsControllerConfigurator {
   func getTokenModel(balance: Balance, tonRates: [Rates.Rate], currency: Currency) -> TokenDetailsController.TokenModel
@@ -46,9 +47,9 @@ struct JettonTokenDetailsControllerConfigurator: TokenDetailsControllerConfigura
     case .whitelist:
       subtitle = nil
     case .none:
-      subtitle = "Unverified Token"
+      subtitle = TKLocales.Token.unverified
     case .blacklist:
-      subtitle = "Unverified Token"
+      subtitle = TKLocales.Token.unverified
     }
     
     let tokenAmount: String

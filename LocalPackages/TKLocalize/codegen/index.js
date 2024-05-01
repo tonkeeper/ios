@@ -45,7 +45,7 @@ function generateSwiftCode(parsed, parents = []) {
             swiftCode += `${indent}}\n`;
         } else {
             swiftCode += `${indent}public static var ${key}: String {\n`;
-            swiftCode += `${indent}    localize(\"${fullKey}\")\n`;
+            swiftCode += `${indent}  localize(\"${fullKey}\")\n`;
             swiftCode += `${indent}}\n`;
         }
     }

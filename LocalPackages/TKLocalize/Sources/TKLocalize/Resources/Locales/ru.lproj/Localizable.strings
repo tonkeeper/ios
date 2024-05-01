@@ -46,6 +46,20 @@
 
 "currency.title" = "Основная валюта";
 
+"currency.items.jpy" = "Японская йена";
+"currency.items.usd" = "Доллар США";
+"currency.items.eur" = "Евро";
+"currency.items.rub" = "Российский рубль";
+"currency.items.aed" = "Дирхам ОАЭ";
+"currency.items.kzt" = "Казахский тенге";
+"currency.items.uah" = "Украинская гривна";
+"currency.items.gbp" = "Фунт стерлингов";
+"currency.items.chf" = "Швейцарский франк";
+"currency.items.cny" = "Китайский юань";
+"currency.items.krw" = "Южнокорейская вона";
+"currency.items.idr" = "Индонезийская рупия";
+"currency.items.inr" = "Индийская рупия";
+
 "backup.title" = "Резервная копия";
 "backup.information.title" = "Вручную";
 "backup.information.subtitle" = "Создайте резервную копию своего кошелька вручную, записав секретный ключ.";
@@ -85,3 +99,9 @@
 
 "connection_status.updating" = "Обновляется";
 "connection_status.no_internet" = "Нет сети";
+
+"token.unverified" = "Непроверенный токен";
+
+"onboarding.caption" = "Создайте новый или подключите существующий кошелёк";
+"onboarding.buttons.create_new" = "Создать новый кошелёк";
+"onboarding.buttons.import_existing" = "Подключить существующий";

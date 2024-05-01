@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 struct WalletBalanceListItemMapper {
   
@@ -26,7 +27,7 @@ struct WalletBalanceListItemMapper {
     let subtitle = NSMutableAttributedString()
     switch item.verification {
     case .none:
-      subtitle.append("Unverified Token".withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
+      subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
     case .whitelist:
       if let price = item.price?.withTextStyle(
         .body2,
@@ -48,7 +49,7 @@ struct WalletBalanceListItemMapper {
         subtitle.append(diff.withTextStyle(.body2, color: color, alignment: .left))
       }
     case .blacklist:
-      subtitle.append("Unverified Token".withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
+      subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
     }
     
     let value = item.amount?.withTextStyle(

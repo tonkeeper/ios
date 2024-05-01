@@ -46,6 +46,20 @@
 
 "currency.title" = "Primary currency";
 
+"currency.items.jpy" = "Japanese Yen";
+"currency.items.usd" = "United States Dollar";
+"currency.items.eur" = "Euro";
+"currency.items.rub" = "Russian Ruble";
+"currency.items.aed" = "United Arab Emirates Dirham";
+"currency.items.kzt" = "Kazakhstani Tenge";
+"currency.items.uah" = "Ukrainian hryvnian";
+"currency.items.gbp" = "Great Britain Pound";
+"currency.items.chf" = "Swiss Franc";
+"currency.items.cny" = "China Yuan";
+"currency.items.krw" = "South Korean Won";
+"currency.items.idr" = "Indonesian Rupiah";
+"currency.items.inr" = "Indian Rupee";
+
 "backup.title" = "Backup";
 "backup.information.title" = "Manual";
 "backup.information.subtitle" = "Back up your wallet manually by writing down the recovery phrase.";
@@ -91,3 +105,9 @@
 
 "connection_status.updating" = "Updating";
 "connection_status.no_internet" = "No Internet connection";
+
+"token.unverified" = "Unverified token";
+
+"onboarding.caption" = "Create a new wallet or add an existing one";
+"onboarding.buttons.create_new" = "Create New Wallet";
+"onboarding.buttons.import_existing" = "Import Existing Wallet";

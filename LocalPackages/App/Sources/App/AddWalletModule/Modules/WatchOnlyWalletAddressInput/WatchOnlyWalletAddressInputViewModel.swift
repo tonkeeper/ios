@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 public protocol WatchOnlyWalletAddressInputModuleOutput: AnyObject {
   var didInputWallet: ((ResolvableAddress) -> Void)? { get set }
@@ -73,7 +74,7 @@ final class WatchOnlyWalletAddressInputViewModelImplementation: WatchOnlyWalletA
   init(controller: WatchOnlyWalletAddressInputController) {
     self.controller = controller
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    continueButtonConfiguration.content.title = .plainString("Continue")
+    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
     self.continueButtonConfiguration = continueButtonConfiguration
   }
 }
