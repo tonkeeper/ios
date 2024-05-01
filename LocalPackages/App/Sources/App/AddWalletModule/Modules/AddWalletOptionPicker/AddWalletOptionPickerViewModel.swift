@@ -82,7 +82,7 @@ final class AddWalletOptionPickerViewModelImplementation: AddWalletOptionPickerV
   func didSelectOption(in section: AddWalletOptionPickerSection) {
     switch section {
     case .options(let item):
-      item.selectionHandler?()
+      item.selectionClosure?()
     }
   }
   
@@ -112,22 +112,61 @@ private extension AddWalletOptionPickerViewModelImplementation {
   
   func createOptionItemSections() -> [AddWalletOptionPickerSection] {
     return options.map { option in
-      
-      let cellContentModel = AddWalletOptionPickerCellContentView.Model(
-        iconModel: .init(image: .image(option.icon), tintColor: .Accent.blue, backgroundColor: .clear, size: CGSize(width: 28, height: 28)),
-        title: option.title,
-        description: option.subtitle
+      let leftItemConfiguration = TKUIListItemContentLeftItem.Configuration(
+        title: option.title.withTextStyle(
+          .label1,
+          color: .Text.primary,
+          alignment: .left,
+          lineBreakMode: .byTruncatingTail
+        ),
+        tagViewModel: nil,
+        subtitle: nil,
+        description: option.subtitle.withTextStyle(
+          .body2,
+          color: .Text.secondary,
+          alignment: .left,
+          lineBreakMode: .byWordWrapping
+        )
       )
       
-      let model = AddWalletOptionPickerCell.Model(
-        identifier: option.rawValue,
-        accessoryType: .disclosureIndicator,
-        selectionHandler: { [weak self] in
+      let contentConfiguration = TKUIListItemContentView.Configuration(
+        leftItemConfiguration: leftItemConfiguration,
+        rightItemConfiguration: nil
+      )
+      
+      let listItemConfiguration = TKUIListItemView.Configuration(
+        iconConfiguration: TKUIListItemIconView.Configuration(
+          iconConfiguration: .image(
+            TKUIListItemImageIconView.Configuration(
+              image: .image(option.icon),
+              tintColor: .Accent.blue,
+              backgroundColor: .clear,
+              size: CGSize(width: 28, height: 28),
+              cornerRadius: .zero
+            )
+          ),
+          alignment: .center
+        ),
+        contentConfiguration: contentConfiguration,
+        accessoryConfiguration: .image(
+          .init(
+            image: .TKUIKit.Icons.Size16.chevronRight,
+            tintColor: .Text.tertiary,
+            padding: .zero
+          )
+        )
+      )
+      
+      let item = TKUIListItemCell.Configuration(
+        id: option.rawValue,
+        listItemConfiguration: listItemConfiguration,
+        isHighlightable: true,
+        selectionClosure: { [weak self] in
           self?.didSelectOption?(option)
-        },
-        cellContentModel: cellContentModel
+        }
       )
-      return AddWalletOptionPickerSection.options(item: model)
+      
+      return AddWalletOptionPickerSection.options(item: item)
     }
   }
 }
