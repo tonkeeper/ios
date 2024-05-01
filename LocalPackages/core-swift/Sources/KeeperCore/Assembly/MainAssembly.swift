@@ -62,8 +62,9 @@ public final class MainAssembly {
       tonConnectService: tonConnectAssembly.tonConnectService(),
       deeplinkParser: DefaultDeeplinkParser(
         parsers: [
+          TonkeeperDeeplinkParser(),
           TonConnectDeeplinkParser(),
-          TonDeeplinkParser()
+          TonDeeplinkParser(),
         ]
       ),
       api: apiAssembly.api
@@ -312,7 +313,8 @@ public final class MainAssembly {
     ScannerController(
       deeplinkParser: DefaultDeeplinkParser(
         parsers: [TonDeeplinkParser(),
-                 TonConnectDeeplinkParser()]
+                  TonConnectDeeplinkParser(),
+                  TonkeeperDeeplinkParser()]
       )
     )
   }

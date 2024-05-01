@@ -132,6 +132,12 @@ private extension WalletsListViewModelImplementation {
         textColor: .Text.secondary,
         backgroundColor: .Background.contentTint
       )
+    case .external:
+      tagModel = TKUITagView.Configuration(
+        text: "SIGNER",
+        textColor: .Text.secondary,
+        backgroundColor: .Background.contentTint
+      )
     }
     
     let contentConfiguration = TKUIListItemContentView.Configuration(

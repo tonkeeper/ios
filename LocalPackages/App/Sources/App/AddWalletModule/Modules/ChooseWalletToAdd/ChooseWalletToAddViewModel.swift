@@ -67,8 +67,8 @@ private extension ChooseWalletToAddViewModelImplementation {
       continueButtonModel: TKUIActionButton.Model(title: TKLocales.Actions.continue_action),
       continueButtonAction: { [weak self] in
         guard let self = self else { return }
-        let a = self.controller.revisions(indexes: Array(selectedIndexes.sorted(by: >)))
-        self.didSelectRevisions?(a)
+        let revisions = self.controller.revisions(indexes: Array(selectedIndexes.sorted(by: >)))
+        self.didSelectRevisions?(revisions)
       },
       isContinueButtonEnabled: !selectedIndexes.isEmpty
     )

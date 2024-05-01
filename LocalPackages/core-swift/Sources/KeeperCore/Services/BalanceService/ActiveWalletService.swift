@@ -11,7 +11,7 @@ public struct ActiveWalletModel {
 }
 
 protocol ActiveWalletsService {
-  func loadActiveWallets(mnemonic: CoreComponents.Mnemonic) async throws -> [ActiveWalletModel]
+  func loadActiveWallets(publicKey: TonSwift.PublicKey) async throws -> [ActiveWalletModel]
 }
 
 final class ActiveWalletsServiceImplementation: ActiveWalletsService {
@@ -31,16 +31,13 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
     self.currencyService = currencyService
   }
   
-  func loadActiveWallets(mnemonic: CoreComponents.Mnemonic) async throws -> [ActiveWalletModel] {
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
-      mnemonicArray: mnemonic.mnemonicWords
-    )
+  func loadActiveWallets(publicKey: TonSwift.PublicKey) async throws -> [ActiveWalletModel] {
     let revisions = WalletContractVersion.allCases
     
     let models = try await withThrowingTaskGroup(of: ActiveWalletModel.self, returning: [ActiveWalletModel].self) { [currencyService] taskGroup in
       for revision in revisions {
         let address = try createAddress(
-          publicKey: keyPair.publicKey,
+          publicKey: publicKey,
           revision: revision
         )
         taskGroup.addTask {

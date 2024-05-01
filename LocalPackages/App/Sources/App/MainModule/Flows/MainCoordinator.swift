@@ -85,11 +85,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
 
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) {
-    do {
-      let deeplink = try mainController.parseDeeplink(deeplink: deeplink?.string)
-      handleCoreDeeplink(deeplink)
-    } catch {
-      return
+    if let coreDeeplink = deeplink as? KeeperCore.Deeplink {
+      handleCoreDeeplink(coreDeeplink)
+    } else {
+      do {
+        let deeplink = try mainController.parseDeeplink(deeplink: deeplink?.string)
+        handleCoreDeeplink(deeplink)
+      } catch {
+        return
+      }
     }
   }
 }
@@ -213,6 +217,8 @@ private extension MainCoordinator {
       handleTonDeeplink(tonDeeplink)
     case .tonConnect(let tonConnectDeeplink):
       handleTonConnectDeeplink(tonConnectDeeplink)
+    case .tonkeeper(let tonkeeperDeeplink):
+      handleTonkeeperDeeplink(tonkeeperDeeplink)
     }
   }
   
@@ -260,6 +266,46 @@ private extension MainCoordinator {
           ToastPresenter.hideAll()
         }
       }
+    }
+  }
+  
+  func handleTonkeeperDeeplink(_ deeplink: TonkeeperDeeplink) {
+    switch deeplink {
+    case .signer(let signerDeeplink):
+      handleSignerDeeplink(signerDeeplink)
+    }
+  }
+  
+  func handleSignerDeeplink(_ deeplink: TonkeeperDeeplink.SignerDeeplink) {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    switch deeplink {
+    case .link(let publicKey, let name):
+      let coordinator = AddWalletModule(
+        dependencies: AddWalletModule.Dependencies(
+          walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly
+        )
+      ).createPairSignerImportCoordinator(
+        publicKey: publicKey,
+        name: name,
+        router: NavigationControllerRouter(
+          rootViewController: navigationController
+        )
+      )
+      
+      coordinator.didPrepareForPresent = { [weak router] in
+        router?.present(navigationController)
+      }
+      
+      coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
+        navigationController?.dismiss(animated: true)
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+      
+      addChild(coordinator)
+      coordinator.start()
     }
   }
   

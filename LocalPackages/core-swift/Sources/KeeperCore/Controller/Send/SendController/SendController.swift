@@ -253,6 +253,7 @@ private extension SendController {
           switch $0.model.walletType {
           case .regular: return true
           case .watchOnly: return false
+          case .external: return true
           }
         }
         .filter { wallet in

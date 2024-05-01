@@ -208,6 +208,8 @@ private extension WalletBalanceViewModelImplementation {
       return nil
     case .watchOnly(let tag):
       return TKUITagView.Configuration(text: tag, textColor: .Accent.orange, backgroundColor: UIColor.init(hex: "332d24"))
+    case .external:
+      return TKUITagView.Configuration(text: "SIGNER", textColor: .Text.primaryAlternate, backgroundColor: .Accent.green)
     }
   }
 
@@ -217,16 +219,22 @@ private extension WalletBalanceViewModelImplementation {
     UIPasteboard.general.string = walletAddress
     
     let backgroundColor: UIColor
+    let foregroundColor: UIColor
     switch walletType {
     case .regular:
       backgroundColor = .Background.contentTint
+      foregroundColor = .Text.primary
     case .watchOnly:
       backgroundColor = .Accent.orange
+      foregroundColor = .Text.primary
+    case .external:
+      backgroundColor = .Accent.green
+      foregroundColor = .Text.primaryAlternate
     }
     let configuration = ToastPresenter.Configuration(
       title: TKLocales.Actions.copied,
       backgroundColor: backgroundColor,
-      foregroundColor: .Text.primary,
+      foregroundColor: foregroundColor,
       dismissRule: .default
     )
     didCopy?(configuration)
@@ -277,6 +285,13 @@ private extension WalletBalanceViewModelImplementation {
       isSendEnable = false
       isReceiveEnable = true
       isScanEnable = false
+      isSwapEnable = false
+      isBuyEnable = true
+      isStakeEnable = false
+    case .external:
+      isSendEnable = true
+      isReceiveEnable = true
+      isScanEnable = true
       isSwapEnable = false
       isBuyEnable = true
       isStakeEnable = false

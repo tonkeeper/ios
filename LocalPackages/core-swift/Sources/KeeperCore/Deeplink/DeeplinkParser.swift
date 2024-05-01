@@ -103,3 +103,42 @@ struct TonConnectDeeplinkParser: DeeplinkParser {
   }
 }
 
+struct TonkeeperDeeplinkParser: DeeplinkParser {
+  func parse(string: String?) throws -> Deeplink {
+    guard let string,
+          let url = URL(string: string),
+          let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+          let scheme = components.scheme,
+          let host = components.host,
+          let queryItems = components.queryItems else {
+      throw DeeplinkParserError.unsupportedDeeplink(string: string)
+    }
+    
+    switch scheme {
+    case "tonkeeper":
+      switch host {
+      case "signer":
+        return try signerParse(string: string, host: host, path: components.path, queryItems: queryItems)
+      default:
+        throw DeeplinkParserError.unsupportedDeeplink(string: string)
+      }
+    default:
+      throw DeeplinkParserError.unsupportedDeeplink(string: string)
+    }
+  }
+  
+  func signerParse(string: String, host: String, path: String, queryItems: [URLQueryItem]) throws -> Deeplink {
+    switch path {
+    case "/link":
+      guard let pk = queryItems.first(where: { $0.name == "pk" })?.value,
+            let publicKeyData = Data(base64Encoded: pk),
+            let name = queryItems.first(where: { $0.name == "name" })?.value else {
+        throw DeeplinkParserError.unsupportedDeeplink(string: string)
+      }
+      let publicKey = TonSwift.PublicKey(data: publicKeyData)
+      return .tonkeeper(TonkeeperDeeplink.signer(.link(publicKey: publicKey, name: name)))
+    default:
+      throw DeeplinkParserError.unsupportedDeeplink(string: string)
+    }
+  }
+}

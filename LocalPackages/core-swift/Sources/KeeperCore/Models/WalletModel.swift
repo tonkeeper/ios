@@ -5,6 +5,7 @@ public struct WalletModel: Equatable {
   public enum WalletType {
     case regular
     case watchOnly(tag: String)
+    case external
   }
   
   public let identifier: String
@@ -35,7 +36,7 @@ extension Wallet {
     case .Watchonly:
       walletType = .watchOnly(tag: TKLocales.WalletTags.watch_only)
     case .External:
-      fatalError("")
+      walletType = .external
     }
 
     return WalletModel(

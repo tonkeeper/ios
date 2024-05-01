@@ -154,6 +154,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-faceid-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var globe: UIImage {
+          .imageWithName("Icons/28/ic-globe-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {

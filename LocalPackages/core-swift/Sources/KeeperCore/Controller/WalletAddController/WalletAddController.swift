@@ -80,4 +80,32 @@ public final class WalletAddController {
     try walletsStoreUpdate.addWallets([wallet])
     try walletsStoreUpdate.makeWalletActive(wallet)
   }
+  
+  public func importExternalWallet(publicKey: TonSwift.PublicKey, 
+                                   revisions: [WalletContractVersion],
+                                   metaData: WalletMetaData) throws {
+    let addPostfix = revisions.count > 1
+
+    let wallets = revisions.map { revision in
+      let label = addPostfix ? "\(metaData.label) \(revision.rawValue)" : metaData.label
+      let revisionMetaData = WalletMetaData(
+        label: label,
+        tintColor: metaData.tintColor,
+        emoji: metaData.emoji
+      )
+      
+      let walletIdentity = WalletIdentity(
+        network: .mainnet,
+        kind: .External(publicKey, revision)
+      )
+      
+      return Wallet(
+        identity: walletIdentity,
+        metaData: revisionMetaData,
+        setupSettings: WalletSetupSettings(backupDate: Date()))
+    }
+
+    try walletsStoreUpdate.addWallets(wallets)
+    try walletsStoreUpdate.makeWalletActive(wallets[0])
+  }
 }

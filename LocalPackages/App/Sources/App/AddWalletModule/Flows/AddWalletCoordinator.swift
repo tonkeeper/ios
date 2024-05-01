@@ -36,7 +36,8 @@ private extension AddWalletCoordinator {
       options: [
         .createRegular,
         .importRegular,
-        .importWatchOnly
+        .importWatchOnly,
+        .signer
       ]
     )
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
@@ -48,6 +49,7 @@ private extension AddWalletCoordinator {
         case .importRegular: self?.openAddRegularWallet()
         case .importWatchOnly: self?.openAddWatchOnlyWallet()
         case .importTestnet: break
+        case .signer: self?.openPairSigner()
         }
       }
     }
@@ -152,4 +154,7 @@ private extension AddWalletCoordinator {
     
     router.present(navigationController)
   }
+  
+  // TODO:
+  func openPairSigner() {}
 }

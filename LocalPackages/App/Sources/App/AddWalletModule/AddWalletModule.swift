@@ -3,6 +3,7 @@ import TKUIKit
 import TKCoordinator
 import TKCore
 import KeeperCore
+import TonSwift
 
 struct AddWalletModule {
   private let dependencies: Dependencies
@@ -64,6 +65,23 @@ struct AddWalletModule {
     )
     
     return coordinator
+  }
+  
+  public func createPairSignerImportCoordinator(publicKey: TonSwift.PublicKey, name: String, router: NavigationControllerRouter) -> PairSignerImportCoordinator {
+    PairSignerImportCoordinator(
+      publicKey: publicKey,
+      name: name,
+      router: router,
+      walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      customizeWalletModule: {
+        self.createCustomizeWalletModule(
+          name: name,
+          tintColor: nil,
+          emoji: nil,
+          configurator: AddWalletCustomizeWalletViewModelConfigurator()
+        )
+      }
+    )
   }
 }
 
