@@ -9,6 +9,7 @@ let package = Package(
   ],
   products: [
     .library(name: "WalletCore", type: .dynamic, targets: ["KeeperCore"]),
+    .library(name: "SignerCore", type: .dynamic, targets: ["SignerCore"]),
   ],
   dependencies: [
     .package(path: "../TKLocalize"),
@@ -54,6 +55,12 @@ let package = Package(
             ],
             path: "Packages/TonConnectAPI",
             sources: ["Sources"]
-           )
+           ),
+    .target(name: "SignerCore",
+            dependencies: [
+              .product(name: "TonSwift", package: "ton-swift"),
+              .target(name: "CoreComponents")
+            ],
+            path: "Sources/SignerCore"),
   ]
 )
