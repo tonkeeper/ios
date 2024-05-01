@@ -174,7 +174,7 @@ private extension WalletBalanceViewModelImplementation {
   func createHeaderModel(_ model: WalletBalanceController.StateModel) -> WalletBalanceHeaderView.Model {
     var stateDate: String?
     if let modelStateDate = model.stateDate {
-      stateDate = "Updated \(modelStateDate)"
+      stateDate = TKLocales.ConnectionStatus.updated_at(modelStateDate)
     }
 
     let balanceModel = WalletBalanceHeaderBalanceView.Model(

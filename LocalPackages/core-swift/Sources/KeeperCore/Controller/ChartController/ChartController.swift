@@ -141,7 +141,7 @@ private extension ChartController {
     }
     
     dateFormatter.dateFormat = dateFormat
-    dateFormatter.locale = NSLocale.autoupdatingCurrent
+    dateFormatter.locale = Locale.current
     
     return dateFormatter.string(from: Date(timeIntervalSince1970: timeInterval))
   }

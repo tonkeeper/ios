@@ -25,7 +25,7 @@ public final class FormattersAssembly {
   
   public var dateFormatter: DateFormatter {
     let dateFormatter = DateFormatter()
-    dateFormatter.locale = NSLocale.autoupdatingCurrent
+    dateFormatter.locale = Locale.current
     return dateFormatter
   }
 }

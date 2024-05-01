@@ -1,4 +1,5 @@
 import Foundation
+import TKLocalize
 import LocalAuthentication
 
 final class BiometryAuthentificator {
@@ -79,8 +80,8 @@ final class BiometryAuthentificator {
   
   func evaluate(policy: LAPolicy) async -> Result<Bool, Error> {
     do {
-      try await context.evaluatePolicy(policy, localizedReason: "Enter passcode")
-      let result = try await context.evaluatePolicy(policy, localizedReason: "Enter passcode")
+      try await context.evaluatePolicy(policy, localizedReason: TKLocales.Passcode.enter)
+      let result = try await context.evaluatePolicy(policy, localizedReason: TKLocales.Passcode.enter)
       return .success(result)
     } catch {
       return .failure(Error(nsError: error as NSError))

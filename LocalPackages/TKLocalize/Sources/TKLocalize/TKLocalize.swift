@@ -37,6 +37,16 @@ public enum TKLocales {
       localize("actions.copy")
     }
   }
+  public enum Dates {
+    /// Today
+    public static var today: String {
+      localize("dates.today")
+    }
+    /// Yesterday
+    public static var yesterday: String {
+      localize("dates.yesterday")
+    }
+  }
   public enum Tabs {
     /// Wallet
     public static var wallet: String {
@@ -106,25 +116,13 @@ public enum TKLocales {
     public static var sent: String {
       localize("event_details.sent")
     }
-    public enum Recipient {
-      /// Recipient
-      public static var title: String {
-        localize("event_details.recipient.title")
-      }
-      /// Recipient address
-      public static var address: String {
-        localize("event_details.recipient.address")
-      }
+    /// Recipient
+    public static var recipient: String {
+      localize("event_details.recipient")
     }
-    public enum Sender {
-      /// Sender
-      public static var title: String {
-        localize("event_details.sender.title")
-      }
-      /// Sender address
-      public static var address: String {
-        localize("event_details.sender.address")
-      }
+    /// Sender
+    public static var sender: String {
+      localize("event_details.sender")
     }
     /// Fee
     public static var fee: String {
@@ -133,6 +131,26 @@ public enum TKLocales {
     /// Comment
     public static var comment: String {
       localize("event_details.comment")
+    }
+    /// Sender address
+    public static var sender_address: String {
+      localize("event_details.sender_address")
+    }
+    /// Recipient address
+    public static var recipient_address: String {
+      localize("event_details.recipient_address")
+    }
+    /// Sent on %@
+    public static func sent_on(_ p0: Any) -> String {
+      return localizeWithArgs("event_details.sent_on", String(describing: p0))
+    }
+    /// Received on %@
+    public static func received_on(_ p0: Any) -> String {
+      return localizeWithArgs("event_details.received_on", String(describing: p0))
+    }
+    /// Transaction
+    public static var transaction: String {
+      localize("event_details.transaction")
     }
   }
   public enum Settings {
@@ -284,6 +302,16 @@ public enum TKLocales {
       /// Back up your wallet manually by writing down the recovery phrase.
       public static var subtitle: String {
         localize("backup.information.subtitle")
+      }
+    }
+    public enum Done {
+      /// Manual Backup On
+      public static var title: String {
+        localize("backup.done.title")
+      }
+      /// Last backup %@
+      public static func subtitle(_ p0: Any) -> String {
+        return localizeWithArgs("backup.done.subtitle", String(describing: p0))
       }
     }
     public enum Manually {
@@ -454,6 +482,10 @@ public enum TKLocales {
     public static var no_internet: String {
       localize("connection_status.no_internet")
     }
+    /// Updated %@
+    public static func updated_at(_ p0: Any) -> String {
+      return localizeWithArgs("connection_status.updated_at", String(describing: p0))
+    }
   }
   public enum Token {
     /// Unverified token
@@ -485,6 +517,10 @@ public enum TKLocales {
     /// Re-enter passcode
     public static var reenter: String {
       localize("passcode.reenter")
+    }
+    /// Enter passcode
+    public static var enter: String {
+      localize("passcode.enter")
     }
   }
   public enum ImportWallet {
@@ -637,6 +673,116 @@ public enum TKLocales {
     /// Send only %@ and tokens in TON network to this address, or you might lose your funds.
     public static func description(_ p0: Any) -> String {
       return localizeWithArgs("receive.description", String(describing: p0))
+    }
+  }
+  public enum WatchAccount {
+    /// Watch Account
+    public static var title: String {
+      localize("watch_account.title")
+    }
+    /// Monitor wallet activity without recovery phrase. You will be notified of any transactions from this wallet.
+    public static var description: String {
+      localize("watch_account.description")
+    }
+    /// Address or name
+    public static var placeholder: String {
+      localize("watch_account.placeholder")
+    }
+  }
+  public enum ActionTypes {
+    public enum Future {
+      /// Send
+      public static var send: String {
+        localize("action_types.future.send")
+      }
+      /// Receive
+      public static var receive: String {
+        localize("action_types.future.receive")
+      }
+    }
+    /// Sent
+    public static var sent: String {
+      localize("action_types.sent")
+    }
+    /// Received
+    public static var received: String {
+      localize("action_types.received")
+    }
+    /// Stake
+    public static var stake: String {
+      localize("action_types.stake")
+    }
+    /// Unstake
+    public static var unstake: String {
+      localize("action_types.unstake")
+    }
+    /// Unstake Request
+    public static var unstake_request: String {
+      localize("action_types.unstake_request")
+    }
+    /// Swap
+    public static var swap: String {
+      localize("action_types.swap")
+    }
+    /// Spam
+    public static var spam: String {
+      localize("action_types.spam")
+    }
+    /// Bounced
+    public static var bounced: String {
+      localize("action_types.bounced")
+    }
+    /// Subscribed
+    public static var subscribed: String {
+      localize("action_types.subscribed")
+    }
+    /// Unsubscribed
+    public static var unsubscribed: String {
+      localize("action_types.unsubscribed")
+    }
+    /// Call contract
+    public static var contract_exec: String {
+      localize("action_types.contract_exec")
+    }
+    /// NFT сollection creation
+    public static var nft_collection_deploy: String {
+      localize("action_types.nft_collection_deploy")
+    }
+    /// NFT creation
+    public static var nft_deploy: String {
+      localize("action_types.nft_deploy")
+    }
+    /// Removal from sale
+    public static var nft_sale_removal: String {
+      localize("action_types.nft_sale_removal")
+    }
+    /// NFT purchase
+    public static var nft_purchase: String {
+      localize("action_types.nft_purchase")
+    }
+    /// Bid
+    public static var bid: String {
+      localize("action_types.bid")
+    }
+    /// Put up for auction
+    public static var put_up_auction: String {
+      localize("action_types.put_up_auction")
+    }
+    /// End of auction
+    public static var end_auction: String {
+      localize("action_types.end_auction")
+    }
+    /// Renew Domain
+    public static var domain_renew: String {
+      localize("action_types.domain_renew")
+    }
+    /// Unknown
+    public static var unknown: String {
+      localize("action_types.unknown")
+    }
+    /// Wallet initialized
+    public static var wallet_initialize: String {
+      localize("action_types.wallet_initialize")
     }
   }
 }

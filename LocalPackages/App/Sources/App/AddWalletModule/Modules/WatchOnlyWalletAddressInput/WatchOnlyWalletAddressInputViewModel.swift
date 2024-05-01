@@ -82,11 +82,11 @@ final class WatchOnlyWalletAddressInputViewModelImplementation: WatchOnlyWalletA
 private extension WatchOnlyWalletAddressInputViewModelImplementation {
   func createModel() -> WatchOnlyWalletAddressInputView.Model {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: "Watch Account",
-      bottomDescription: "Monitor wallet activity without recovery phrase. You will be notified of any transactions from this wallet."
+      title: TKLocales.WatchAccount.title,
+      bottomDescription: TKLocales.WatchAccount.description
     )
     
-    let placeholder = "Address or name"
+    let placeholder = TKLocales.WatchAccount.placeholder
     
     return WatchOnlyWalletAddressInputView.Model(
       titleDescriptionModel: titleDescriptionModel,

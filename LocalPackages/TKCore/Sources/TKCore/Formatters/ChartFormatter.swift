@@ -7,7 +7,7 @@ public final class ChartFormatter {
   
   init(dateFormatter: DateFormatter, decimalAmountFormatter: DecimalAmountFormatter) {
     self.dateFormatter = dateFormatter
-    self.dateFormatter.locale = NSLocale.autoupdatingCurrent
+    self.dateFormatter.locale = Locale.current
     self.decimalAmountFormatter = decimalAmountFormatter
   }
   

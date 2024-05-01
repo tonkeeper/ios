@@ -8,6 +8,9 @@
 "actions.edit" = "Edit";
 "actions.copy" = "Copy";
 
+"dates.today" = "Today";
+"dates.yesterday" = "Yesterday";
+
 "tabs.wallet" = "Wallet";
 "tabs.history" = "History";
 "tabs.purchases" = "Purchases";
@@ -71,6 +74,9 @@
 "backup.title" = "Backup";
 "backup.information.title" = "Manual";
 "backup.information.subtitle" = "Back up your wallet manually by writing down the recovery phrase.";
+"backup.done.title" = "Manual Backup On";
+"backup.done.subtitle" = "Last backup %@";
+
 "backup.manually.button" = "Back Up Manually";
 "backup.show_phrase.title" = "Show Recovery Phrase";
 
@@ -114,6 +120,7 @@
 
 "connection_status.updating" = "Updating";
 "connection_status.no_internet" = "No Internet connection";
+"connection_status.updated_at" = "Updated %@";
 
 "token.unverified" = "Unverified token";
 
@@ -123,6 +130,7 @@
 
 "passcode.create" = "Create passcode";
 "passcode.reenter" = "Re-enter passcode";
+"passcode.enter" = "Enter passcode";
 
 "import_wallet.title" = "Enter recovery phrase";
 "import_wallet.description" = "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.";
@@ -167,3 +175,43 @@
 
 "receive.title" = "Receive %@";
 "receive.description" = "Send only %@ and tokens in TON network to this address, or you might lose your funds.";
+
+"watch_account.title" = "Watch Account";
+"watch_account.description" = "Monitor wallet activity without recovery phrase. You will be notified of any transactions from this wallet.";
+"watch_account.placeholder" = "Address or name";
+
+"event_details.sender_address" = "Sender address";
+"event_details.sender" = "Sender";
+"event_details.fee" = "Fee";
+"event_details.recipient" = "Recipient";
+"event_details.recipient_address" = "Recipient address";
+"event_details.comment" = "Comment";
+"event_details.sent_on" = "Sent on %@";
+"event_details.received_on" = "Received on %@";
+"event_details.received" = "Received";
+"event_details.sent" = "Sent";
+"event_details.transaction" = "Transaction";
+
+"action_types.future.send" = "Send";
+"action_types.future.receive" = "Receive";
+"action_types.sent" = "Sent";
+"action_types.received" = "Received";
+"action_types.stake" = "Stake";
+"action_types.unstake" = "Unstake";
+"action_types.unstake_request" = "Unstake Request";
+"action_types.swap" = "Swap";
+"action_types.spam" = "Spam";
+"action_types.bounced" = "Bounced";
+"action_types.subscribed" = "Subscribed";
+"action_types.unsubscribed" = "Unsubscribed";
+"action_types.contract_exec" = "Call contract";
+"action_types.nft_collection_deploy" = "NFT сollection creation";
+"action_types.nft_deploy" = "NFT creation";
+"action_types.nft_sale_removal" = "Removal from sale";
+"action_types.nft_purchase" = "NFT purchase";
+"action_types.bid" = "Bid";
+"action_types.put_up_auction" = "Put up for auction";
+"action_types.end_auction" = "End of auction";
+"action_types.domain_renew" = "Renew Domain";
+"action_types.unknown" = "Unknown";
+"action_types.wallet_initialize" = "Wallet initialized";

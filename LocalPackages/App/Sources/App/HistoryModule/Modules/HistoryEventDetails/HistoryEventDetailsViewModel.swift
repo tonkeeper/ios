@@ -3,6 +3,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 protocol HistoryEventDetailsModuleOutput: AnyObject {
   
@@ -152,7 +153,7 @@ private extension HistoryEventDetailsViewModelImplementation {
     ])
     
     let model = HistoryEventOpenTransactionButton.Model(
-      title: "Transaction ",
+      title: "\(TKLocales.EventDetails.transaction) ",
       transactionHash: historyEventDetailsController.transactionHash,
       image: .TKUIKit.Icons.Size16.globe
     )

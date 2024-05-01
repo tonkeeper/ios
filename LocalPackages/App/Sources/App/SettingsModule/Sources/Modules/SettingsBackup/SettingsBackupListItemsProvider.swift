@@ -109,8 +109,8 @@ private extension SettingsBackupListItemsProvider {
     case .backedUp(let date):
       items.append(
         SettingsBackupStateCell.Model(
-            title: "Manual Backup On",
-            subtitle: "Last backup \(date)"
+          title: TKLocales.Backup.Done.title,
+          subtitle: TKLocales.Backup.Done.subtitle(date)
         )
       )
     }
