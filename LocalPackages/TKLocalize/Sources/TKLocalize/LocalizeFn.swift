@@ -21,3 +21,14 @@ public func localize(_ key: String, comment: String = "") -> String {
     
     return localizeDefaultLocale(key)
 }
+
+public func localizeWithArgs(_ key: String, _ args: CVarArg...) -> String {
+  let format = localize(key)
+  let value = String(format: format, locale: Locale.current, arguments: args)
+    
+  if value != key {
+    return value
+  }
+    
+  return String.localizedStringWithFormat(localizeDefaultLocale(key), args)
+}

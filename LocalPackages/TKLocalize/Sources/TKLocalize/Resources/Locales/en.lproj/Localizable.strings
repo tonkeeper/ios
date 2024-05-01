@@ -75,7 +75,7 @@
 "backup.show_phrase.title" = "Show Recovery Phrase";
 
 "security.title" = "Security";
-"security.use" = "Use";
+"security.use" = "Use %@";
 "security.change_passcode" = "Change Passcode";
 "security.unavailable_error" = "Biometry unavailable";
 "security.use_biometry_description" = "You can always unlock your wallet with a passcode.";
@@ -98,6 +98,7 @@
 "send.required_comment.description" = "You must include the note from the exchange for transfer. Without it your funds will be lost.";
 
 "confirm_send.token_transfer.title" = "Confirm action";
+"confirm_send.token_transfer.transfer" = "Transfer %@";
 "confirm_send.fee" = "Fee";
 "confirm_send.wallet" = "Wallet";
 "confirm_send.amount" = "Amount";
@@ -131,6 +132,9 @@
 "choose_wallets.tokens" = "tokens";
 
 "finish_setup.title" = "Finish setting up";
+"finish_setup.setup_biometry" = "Use %@ to approve transactions";
+"finish_setup.biometry_unavailable" = "Biometry unavailable";
+"finish_setup.backup" = "Back up the wallet recovery phrase";
 
 "wallets_list.title" = "Wallets list";
 "wallets_list.add_wallet" = "Add Wallet";
@@ -158,3 +162,8 @@
 "periods.month" = "M";
 "periods.half_year" = "6M";
 "periods.year" = "Y";
+
+"wallet_tags.watch_only" = "Watch only";
+
+"receive.title" = "Receive %@";
+"receive.description" = "Send only %@ and tokens in TON network to this address, or you might lose your funds.";

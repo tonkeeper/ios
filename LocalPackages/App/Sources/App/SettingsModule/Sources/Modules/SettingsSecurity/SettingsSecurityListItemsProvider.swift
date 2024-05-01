@@ -75,9 +75,9 @@ private extension SettingsSecurityListItemsProvider {
     let title: String
     switch biometryAuthentificator.biometryType {
     case .touchID:
-      title = .use + " " + .touchId
+      title = TKLocales.Security.use(String.touchId)
     case .faceID:
-      title = .use + " " + .faceId
+      title = TKLocales.Security.use(String.faceId)
     default:
       title = .biometryUnavailable
     }

@@ -74,6 +74,13 @@
 "backup.manually.button" = "Сделать копию вручную";
 "backup.show_phrase.title" = "Показать секретный ключ";
 
+"security.title" = "Безопасность";
+"security.use" = "Использовать %@";
+"security.change_passcode" = "Поменять пин-код";
+"security.unavailable_error" = "Биометрия недоступна";
+"security.use_biometry_description" = "Вы всегда можете разблокировать кошелёк\nс помощью пин-кода";
+
+
 "wallet_buttons.send" = "Отправить";
 "wallet_buttons.receive" = "Получить";
 "wallet_buttons.scan" = "Сканировать";
@@ -92,6 +99,7 @@
 "send.required_comment.description" = "Обязательно укажите memo или тег при отправке на биржу.";
 
 "confirm_send.token_transfer.title" = "Подтвердить действие";
+"confirm_send.token_transfer.transfer" = "Отправка %@";
 "confirm_send.fee" = "Комиссия";
 "confirm_send.wallet" = "Кошелёк";
 "confirm_send.amount" = "Сумма";
@@ -125,6 +133,9 @@
 "choose_wallets.tokens" = "токены";
 
 "finish_setup.title" = "Завершить установку";
+"finish_setup.setup_biometry" = "Включите %@ для подтверждения транзакций";
+"finish_setup.biometry_unavailable" = "Биометрия недоступна";
+"finish_setup.backup" = "Создайте резервную копию секретного ключа кошелька";
 
 "wallets_list.title" = "Кошельки";
 "wallets_list.add_wallet" = "Добавить кошелёк";
@@ -152,3 +163,8 @@
 "periods.month" = "М";
 "periods.half_year" = "6М";
 "periods.year" = "Г";
+
+"wallet_tags.watch_only" = "Просмотр";
+
+"receive.title" = "Получить %@";
+"receive.description" = "Отправляйте на этот адрес только %@ и токены в сети TON, иначе вы можете потерять свои средства.";

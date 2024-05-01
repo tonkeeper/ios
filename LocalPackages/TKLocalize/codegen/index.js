@@ -44,9 +44,22 @@ function generateSwiftCode(parsed, parents = []) {
             swiftCode += generateSwiftCode(value,[...parents, key]);
             swiftCode += `${indent}}\n`;
         } else {
-            swiftCode += `${indent}public static var ${key}: String {\n`;
-            swiftCode += `${indent}  localize(\"${fullKey}\")\n`;
-            swiftCode += `${indent}}\n`;
+            const args = value.match(/%@/g);
+
+            if (!args) {
+                swiftCode += `${indent}/// ${value}\n`;
+                swiftCode += `${indent}public static var ${key}: String {\n`;
+                swiftCode += `${indent}  localize(\"${fullKey}\")\n`;
+                swiftCode += `${indent}}\n`;
+            } else {
+                const params = args.map((_, idx) => `_ p${idx}: Any`).join(', ');
+                const callParams = args.map((_, idx) => `String(describing: p${idx})`).join(', ');
+
+                swiftCode += `${indent}/// ${value}\n`;
+                swiftCode += `${indent}public static func ${key}(${params}) -> String {\n`;
+                swiftCode += `${indent}  return localizeWithArgs(\"${fullKey}\", ${callParams})\n`;
+                swiftCode += `${indent}}\n`;
+            }
         }
     }
 

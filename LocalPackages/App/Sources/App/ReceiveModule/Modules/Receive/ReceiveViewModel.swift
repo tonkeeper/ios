@@ -72,10 +72,10 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
 private extension ReceiveViewModelImplementation {
   func createModel(model: KeeperCore.ReceiveController.Model) {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: "Receive \(model.tokenName)",
-      bottomDescription: "Send only \(model.descriptionTokenName) and tokens in TON network to this address, or you might lose your funds."
+      title: TKLocales.Receive.title(model.tokenName),
+      bottomDescription: TKLocales.Receive.description(model.descriptionTokenName)
     )
-    
+        
     let buttonsModel = ReceiveButtonsView.Model(
       copyButtonModel: TKUIActionButton.Model(
         title: TKLocales.Actions.copy,

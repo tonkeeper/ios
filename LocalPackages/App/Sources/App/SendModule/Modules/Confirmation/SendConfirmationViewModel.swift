@@ -108,11 +108,11 @@ private extension SendConfirmationViewModelImplementation {
     let title: String
     switch sendConfirmationModel.titleType {
     case .ton:
-      title = "Transfer TON"
+      title = TKLocales.ConfirmSend.TokenTransfer.transfer("TON")
     case .jetton(let symbol):
-      title = "Transfer \(symbol)"
+      title = TKLocales.ConfirmSend.TokenTransfer.transfer(symbol)
     case .nft:
-      title = "Transfer NFT"
+      title = TKLocales.ConfirmSend.TokenTransfer.transfer("NFT")
     }
     
     let header = TKModalCardViewController.Configuration.Header(
