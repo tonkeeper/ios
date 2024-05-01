@@ -16,8 +16,13 @@
 "camera_permission.button" = "Открыть настройки";
 
 "purchases.title" = "Покупки";
+"purchases.empty_placeholder" = "Ваши покупки\nпоявятся здесь";
 
 "history.title" = "История";
+"history.placeholder.title" = "Ваша история\nбудет показана здесь";
+"history.placeholder.subtitle" = "Совершите первую транзакцию!";
+"history.placeholder.buttons.receive" = "Получить";
+"history.placeholder.buttons.buy" = "Купить Toncoin";
 
 "event_details.received" = "Получено";
 "event_details.sent" = "Отправлено";

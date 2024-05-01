@@ -51,8 +51,27 @@ public enum TKLocales {
     public static var title: String {
       localize("purchases.title")
     }
+    public static var empty_placeholder: String {
+      localize("purchases.empty_placeholder")
+    }
   }
   public enum History {
+    public enum Placeholder {
+      public static var title: String {
+        localize("history.placeholder.title")
+      }
+      public static var subtitle: String {
+        localize("history.placeholder.subtitle")
+      }
+      public enum Buttons {
+        public static var receive: String {
+          localize("history.placeholder.buttons.receive")
+        }
+        public static var buy: String {
+          localize("history.placeholder.buttons.buy")
+        }
+      }
+    }
     public static var title: String {
       localize("history.title")
     }

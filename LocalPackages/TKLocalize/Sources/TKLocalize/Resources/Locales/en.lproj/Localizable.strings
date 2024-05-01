@@ -16,6 +16,11 @@
 "camera_permission.button" = "Open Settings";
 
 "purchases.title" = "Purchases";
+"purchases.empty_placeholder" = "Your collectibles\nwill be shown here";
+"history.placeholder.title" = "Your history\nwill be shown here";
+"history.placeholder.subtitle" = "Make your first transaction!";
+"history.placeholder.buttons.receive" = "Receive";
+"history.placeholder.buttons.buy" = "Buy Toncoin";
 
 "history.title" = "History";
 

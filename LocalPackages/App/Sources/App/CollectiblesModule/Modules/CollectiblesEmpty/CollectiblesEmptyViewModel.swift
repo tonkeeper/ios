@@ -1,5 +1,6 @@
 import Foundation
 import TKUIKit
+import TKLocalize
 
 protocol CollectiblesEmptyModuleOutput: AnyObject {
   var didTapReceive: (() -> Void)? { get set }
@@ -30,7 +31,7 @@ final class CollectiblesEmptyViewModelImplementation: CollectiblesEmptyViewModel
 
 private extension CollectiblesEmptyViewModelImplementation {
   func createModel() -> CollectiblesEmptyView.Model {
-    let title = "Your collectibles\nwill be shown here".withTextStyle(
+    let title = TKLocales.Purchases.empty_placeholder.withTextStyle(
       .h2,
       color: .Text.primary,
       alignment: .center,
