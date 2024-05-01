@@ -400,5 +400,64 @@ public enum TKLocales {
     public static var description: String {
       localize("add_wallet.description")
     }
+    public enum Items {
+      public enum NewWallet {
+        public static var title: String {
+          localize("add_wallet.items.new_wallet.title")
+        }
+        public static var subtitle: String {
+          localize("add_wallet.items.new_wallet.subtitle")
+        }
+      }
+      public enum ExistingWallet {
+        public static var title: String {
+          localize("add_wallet.items.existing_wallet.title")
+        }
+        public static var subtitle: String {
+          localize("add_wallet.items.existing_wallet.subtitle")
+        }
+      }
+      public enum WatchOnly {
+        public static var title: String {
+          localize("add_wallet.items.watch_only.title")
+        }
+        public static var subtitle: String {
+          localize("add_wallet.items.watch_only.subtitle")
+        }
+      }
+      public enum Testnet {
+        public static var title: String {
+          localize("add_wallet.items.testnet.title")
+        }
+        public static var subtitle: String {
+          localize("add_wallet.items.testnet.subtitle")
+        }
+      }
+    }
+  }
+  public enum Chart {
+    public static var price: String {
+      localize("chart.price")
+    }
+  }
+  public enum Periods {
+    public static var hour: String {
+      localize("periods.hour")
+    }
+    public static var day: String {
+      localize("periods.day")
+    }
+    public static var week: String {
+      localize("periods.week")
+    }
+    public static var month: String {
+      localize("periods.month")
+    }
+    public static var half_year: String {
+      localize("periods.half_year")
+    }
+    public static var year: String {
+      localize("periods.year")
+    }
   }
 }

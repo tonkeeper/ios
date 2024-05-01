@@ -28,26 +28,26 @@ enum AddWalletOption: String {
   var title: String {
     switch self {
     case .createRegular:
-      return "New Wallet"
+      return TKLocales.AddWallet.Items.NewWallet.title
     case .importRegular:
-      return "Existing Wallet"
+      return TKLocales.AddWallet.Items.ExistingWallet.title
     case .importWatchOnly:
-      return "Watch Account"
+      return TKLocales.AddWallet.Items.WatchOnly.title
     case .importTestnet:
-      return "Testnet Account"
+      return TKLocales.AddWallet.Items.Testnet.title
     }
   }
   
   var subtitle: String {
     switch self {
     case .createRegular:
-      return "Create new wallet"
+      return TKLocales.AddWallet.Items.NewWallet.subtitle
     case .importRegular:
-      return "Import wallet with a 24 secret recovery words"
+      return TKLocales.AddWallet.Items.ExistingWallet.subtitle
     case .importWatchOnly:
-      return "For monitor wallet activity without recovery phrase"
+      return TKLocales.AddWallet.Items.WatchOnly.subtitle
     case .importTestnet:
-      return "Import wallet with a 24 secret recovery words to Testnet"
+      return TKLocales.AddWallet.Items.Testnet.subtitle
     }
   }
   

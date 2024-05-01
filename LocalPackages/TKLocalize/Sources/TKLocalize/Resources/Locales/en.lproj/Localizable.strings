@@ -132,3 +132,24 @@
 
 "add_wallet.title" = "Add Wallet";
 "add_wallet.description" = "Create a new wallet or add an existing one.";
+
+"add_wallet.items.new_wallet.title" = "New Wallet";
+"add_wallet.items.new_wallet.subtitle" = "Create new wallet";
+
+"add_wallet.items.existing_wallet.title" = "Existing Wallet";
+"add_wallet.items.existing_wallet.subtitle" = "Import wallet with a 24 secret recovery words";
+
+"add_wallet.items.watch_only.title" = "Watch Account";
+"add_wallet.items.watch_only.subtitle" = "For monitor wallet activity without recovery phrase";
+
+"add_wallet.items.testnet.title" = "Testnet Account";
+"add_wallet.items.testnet.subtitle" = "Import wallet with a 24 secret recovery words to Testnet";
+
+"chart.price" = "Price";
+
+"periods.hour" = "H";
+"periods.day" = "D";
+"periods.week" = "W";
+"periods.month" = "M";
+"periods.half_year" = "6M";
+"periods.year" = "Y";

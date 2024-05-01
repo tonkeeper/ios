@@ -126,3 +126,24 @@
 
 "add_wallet.title" = "Добавить кошелёк";
 "add_wallet.description" = "Создайте новый кошелёк или добавьте существующий.";
+
+"add_wallet.items.new_wallet.title" = "Новый кошелёк";
+"add_wallet.items.new_wallet.subtitle" = "Создать новый кошелёк";
+
+"add_wallet.items.existing_wallet.title" = "Существующий кошелёк";
+"add_wallet.items.existing_wallet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 24 слов";
+
+"add_wallet.items.watch_only.title" = "Аккаунт для просмотра";
+"add_wallet.items.watch_only.subtitle" = "Для отслеживания активности кошелька без ввода секретного ключа";
+
+"add_wallet.items.testnet.title" = "Аккаунт в Testnet";
+"add_wallet.items.testnet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 24 слов";
+
+"chart.price" = "Цена";
+
+"periods.hour" = "Ч";
+"periods.day" = "Д";
+"periods.week" = "Н";
+"periods.month" = "М";
+"periods.half_year" = "6М";
+"periods.year" = "Г";
