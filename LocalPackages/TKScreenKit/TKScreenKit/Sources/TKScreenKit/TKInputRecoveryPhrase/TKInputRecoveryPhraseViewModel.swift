@@ -87,8 +87,8 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
 private extension TKInputRecoveryPhraseViewModelImplementation {
   func createModel() -> TKInputRecoveryPhraseView.Model {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: "Enter recovery phrase",
-      bottomDescription: "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet."
+      title: TKLocales.ImportWallet.title,
+      bottomDescription: TKLocales.ImportWallet.description
     )
     
     let inputs: [TKInputRecoveryPhraseView.Model.InputModel] = (0..<Int.wordsCount)

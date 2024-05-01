@@ -3,6 +3,7 @@ import TKUIKit
 import TKCore
 import UIKit
 import KeeperCore
+import TKLocalize
 
 protocol ReceiveModuleOutput: AnyObject {
   
@@ -77,7 +78,7 @@ private extension ReceiveViewModelImplementation {
     
     let buttonsModel = ReceiveButtonsView.Model(
       copyButtonModel: TKUIActionButton.Model(
-        title: "Copy",
+        title: TKLocales.Actions.copy,
         icon: TKUIButtonTitleIconContentView.Model.Icon(
           icon: .TKUIKit.Icons.Size16.copy,
           position: .left

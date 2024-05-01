@@ -18,6 +18,15 @@ public enum TKLocales {
     public static var continue_action: String {
       localize("actions.continue_action")
     }
+    public static var done: String {
+      localize("actions.done")
+    }
+    public static var edit: String {
+      localize("actions.edit")
+    }
+    public static var copy: String {
+      localize("actions.copy")
+    }
   }
   public enum Tabs {
     public static var wallet: String {
@@ -342,6 +351,54 @@ public enum TKLocales {
       public static var import_existing: String {
         localize("onboarding.buttons.import_existing")
       }
+    }
+  }
+  public enum Passcode {
+    public static var create: String {
+      localize("passcode.create")
+    }
+    public static var reenter: String {
+      localize("passcode.reenter")
+    }
+  }
+  public enum ImportWallet {
+    public static var title: String {
+      localize("import_wallet.title")
+    }
+    public static var description: String {
+      localize("import_wallet.description")
+    }
+  }
+  public enum ChooseWallets {
+    public static var title: String {
+      localize("choose_wallets.title")
+    }
+    public static var description: String {
+      localize("choose_wallets.description")
+    }
+    public static var tokens: String {
+      localize("choose_wallets.tokens")
+    }
+  }
+  public enum FinishSetup {
+    public static var title: String {
+      localize("finish_setup.title")
+    }
+  }
+  public enum WalletsList {
+    public static var title: String {
+      localize("wallets_list.title")
+    }
+    public static var add_wallet: String {
+      localize("wallets_list.add_wallet")
+    }
+  }
+  public enum AddWallet {
+    public static var title: String {
+      localize("add_wallet.title")
+    }
+    public static var description: String {
+      localize("add_wallet.description")
     }
   }
 }

@@ -4,6 +4,9 @@
 "actions.save" = "Save";
 "actions.paste" = "Paste";
 "actions.continue_action" = "Continue";
+"actions.done" = "Done";
+"actions.edit" = "Edit";
+"actions.copy" = "Copy";
 
 "tabs.wallet" = "Wallet";
 "tabs.history" = "History";
@@ -111,3 +114,21 @@
 "onboarding.caption" = "Create a new wallet or add an existing one";
 "onboarding.buttons.create_new" = "Create New Wallet";
 "onboarding.buttons.import_existing" = "Import Existing Wallet";
+
+"passcode.create" = "Create passcode";
+"passcode.reenter" = "Re-enter passcode";
+
+"import_wallet.title" = "Enter recovery phrase";
+"import_wallet.description" = "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.";
+
+"choose_wallets.title" = "Choose Wallets";
+"choose_wallets.description" = "Choose wallets you want to add.";
+"choose_wallets.tokens" = "tokens";
+
+"finish_setup.title" = "Finish setting up";
+
+"wallets_list.title" = "Wallets list";
+"wallets_list.add_wallet" = "Add Wallet";
+
+"add_wallet.title" = "Add Wallet";
+"add_wallet.description" = "Create a new wallet or add an existing one.";

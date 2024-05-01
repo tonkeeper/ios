@@ -2,6 +2,7 @@ import Foundation
 import TKUIKit
 import UIKit
 import KeeperCore
+import TKLocalize
 
 protocol WalletsListModuleOutput: AnyObject {
   var didTapAddWalletButton: (() -> Void)? { get set }
@@ -175,20 +176,20 @@ private extension WalletsListViewModelImplementation {
   func createHeaderItem() -> TKPullCardHeaderItem {
     var leftButton: TKPullCardHeaderItem.LeftButton?
     if model.isEditable {
-      let leftButtonModel = TKUIHeaderTitleIconButton.Model(title: isEditing ? "Done": "Edit")
+      let leftButtonModel = TKUIHeaderTitleIconButton.Model(title: isEditing ? TKLocales.Actions.done: TKLocales.Actions.edit)
       leftButton = TKPullCardHeaderItem.LeftButton(
         model: leftButtonModel) { [weak self] in
           self?.isEditing.toggle()
         }
     }
     return TKPullCardHeaderItem(
-      title: "Wallets",
+      title: TKLocales.WalletsList.title,
       leftButton: leftButton)
   }
   
   func createFooterModel() -> WalletsListFooterView.Model {
     WalletsListFooterView.Model(
-      content: TKButton.Configuration.Content(title: .plainString("Add Wallet"))) { [weak self] in
+      content: TKButton.Configuration.Content(title: .plainString(TKLocales.WalletsList.add_wallet))) { [weak self] in
         self?.didTapAddWalletButton?()
       }
   }

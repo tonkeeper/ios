@@ -4,6 +4,9 @@
 "actions.save" = "Сохранить";
 "actions.paste" = "Вставить";
 "actions.continue_action" = "Продолжить";
+"actions.done" = "Готово";
+"actions.edit" = "Изменить";
+"actions.copy" = "Скопировать";
 
 "tabs.wallet" = "Кошелёк";
 "tabs.history" = "История";
@@ -105,3 +108,21 @@
 "onboarding.caption" = "Создайте новый или подключите существующий кошелёк";
 "onboarding.buttons.create_new" = "Создать новый кошелёк";
 "onboarding.buttons.import_existing" = "Подключить существующий";
+
+"passcode.create" = "Задайте новый пин-код";
+"passcode.reenter" = "Введите пин-код ещё раз";
+
+"import_wallet.title" = "Введите секретный ключ";
+"import_wallet.description" = "Чтобы восстановить доступ, введите 24 секретных слова, которые вы получили при создании кошелька.";
+
+"choose_wallets.title" = "Выберите кошельки";
+"choose_wallets.description" = "Выберите кошельки, которые вы хотите добавить.";
+"choose_wallets.tokens" = "токены";
+
+"finish_setup.title" = "Завершить установку";
+
+"wallets_list.title" = "Кошельки";
+"wallets_list.add_wallet" = "Добавить кошелёк";
+
+"add_wallet.title" = "Добавить кошелёк";
+"add_wallet.description" = "Создайте новый кошелёк или добавьте существующий.";

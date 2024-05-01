@@ -164,9 +164,9 @@ private extension WalletBalanceViewModelImplementation {
     Task { @MainActor in
       var buttonContent: TKButton.Configuration.Content?
       if model.isFinishSetupAvailable {
-        buttonContent = TKButton.Configuration.Content(title: .plainString("Done"))
+        buttonContent = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.done))
       }
-      finishSetupSectionHeaderModel = TKListTitleView.Model(title: "Finish setting up", textStyle: .label1, buttonContent: buttonContent)
+      finishSetupSectionHeaderModel = TKListTitleView.Model(title: TKLocales.FinishSetup.title, textStyle: .label1, buttonContent: buttonContent)
       didUpdateFinishSetupItems?(finishSetupItems)
     }
   }

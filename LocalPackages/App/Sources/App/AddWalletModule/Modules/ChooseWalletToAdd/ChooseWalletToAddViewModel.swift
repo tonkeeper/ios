@@ -81,8 +81,8 @@ private extension ChooseWalletToAddViewModelImplementation {
   
   func createTitleDescriptionModel() -> TKTitleDescriptionView.Model {
     TKTitleDescriptionView.Model(
-      title: "Choose Wallets",
-      bottomDescription: "Choose wallets you want to add."
+      title: TKLocales.ChooseWallets.title,
+      bottomDescription: TKLocales.ChooseWallets.description
     )
   }
   

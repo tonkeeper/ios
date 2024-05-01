@@ -1,6 +1,7 @@
 import Foundation
 import TKUIKit
 import UIKit
+import TKLocalize
 
 protocol AddWalletOptionPickerModuleOutput: AnyObject {
   var didSelectOption: ((AddWalletOption) -> Void)? { get set }
@@ -104,8 +105,8 @@ private extension AddWalletOptionPickerViewModelImplementation {
   
   func createTitleDescriptionModel() -> TKTitleDescriptionView.Model {
     TKTitleDescriptionView.Model(
-      title: "Add Wallet",
-      bottomDescription: "Create a new wallet or add an existing one."
+      title: TKLocales.AddWallet.title,
+      bottomDescription: TKLocales.AddWallet.description
     )
   }
   
