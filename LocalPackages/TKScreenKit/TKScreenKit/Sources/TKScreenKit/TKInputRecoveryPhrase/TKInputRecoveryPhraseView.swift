@@ -158,12 +158,9 @@ private extension TKInputRecoveryPhraseView {
       
       contentStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
       contentStackView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),
-      contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor)
-        .withPriority(.defaultHigh),
-      contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor)
-        .withPriority(.defaultHigh),
-      contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
-        .withPriority(.defaultHigh)
+      contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+      contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor),
+      contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
     ])
   }
 }

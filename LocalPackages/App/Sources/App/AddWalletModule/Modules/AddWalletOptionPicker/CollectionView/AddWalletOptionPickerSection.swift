@@ -2,5 +2,5 @@ import Foundation
 import TKUIKit
 
 enum AddWalletOptionPickerSection: Hashable {
-  case options(item: AddWalletOptionPickerCell.Model)
+  case options(item: TKUIListItemCell.Configuration)
 }

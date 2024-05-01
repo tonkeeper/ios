@@ -69,6 +69,7 @@ public final class TKUIListItemView: UIView, TKConfigurableView {
       y: bounds.height/2 - accessoryView.frame.height/2
     )
     iconView.sizeToFit()
+    iconView.frame.size = CGSize(width: iconView.bounds.width, height: bounds.height)
     iconView.frame.origin = CGPoint(
       x: 0,
       y: 0

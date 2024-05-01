@@ -3,21 +3,21 @@ import TKUIKit
 
 final class AddWalletOptionPickerCollectionController: TKCollectionController<AddWalletOptionPickerSection, AnyHashable> {
   
-  typealias OptionCellRegistration = UICollectionView.CellRegistration<AddWalletOptionPickerCell, AddWalletOptionPickerCell.Model>
+  typealias OptionCellRegistration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration>
   
   private let optionCellRegistration: OptionCellRegistration
   
   init(collectionView: UICollectionView,
        headerViewProvider: (() -> UIView)? = nil, footerViewProvider: (() -> UIView)? = nil) {
     let optionCellRegistration = OptionCellRegistration { cell, indexPath, itemIdentifier in
-      cell.configure(model: itemIdentifier)
+      cell.configure(configuration: itemIdentifier)
     }
     self.optionCellRegistration = optionCellRegistration
     
     super.init(
       collectionView: collectionView, cellProvider: { collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
-        case let model as AddWalletOptionPickerCell.Model:
+        case let model as TKUIListItemCell.Configuration:
           let cell = collectionView.dequeueConfiguredReusableCell(using: optionCellRegistration, for: indexPath, item: model)
           cell.isFirstInSection = { return $0.item == 0 }
           cell.isLastInSection = { [unowned collectionView] in

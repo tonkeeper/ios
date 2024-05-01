@@ -85,7 +85,7 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
     }
     
     titleLabel.attributedText = model.title
-      .withTextStyle(size.titleTextStyle, color: .Text.primary, alignment: .center)
+      .withTextStyle(size.titleTextStyle, color: .Text.primary, alignment: .center, lineBreakMode: .byWordWrapping)
     stackView.addArrangedSubview(titleLabel)
     
     if let bottomDescription = model.bottomDescription {
@@ -96,11 +96,15 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
       stackView.addArrangedSubview(bottomDescriptionLabel)
       stackView.setCustomSpacing(4, after: titleLabel)
     }
+    setNeedsLayout()
+    invalidateIntrinsicContentSize()
   }
 }
 
 private extension TKTitleDescriptionView {
   func setup() {
+    titleLabel.numberOfLines = 0
+    
     addSubview(stackView)
     setupConstraints()
   }
