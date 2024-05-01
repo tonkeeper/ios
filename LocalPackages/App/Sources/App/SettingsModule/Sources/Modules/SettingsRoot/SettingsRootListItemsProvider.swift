@@ -389,9 +389,9 @@ private extension String {
   static let currencyItemTitle = TKLocales.Settings.Items.currency
   static let themeItemTitle = TKLocales.Settings.Items.theme
   
-  static let logoutItemTitle = "Sign Out"
-  static let logoutTitle = "Log out?"
-  static let logoutDescription = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases."
+  static let logoutItemTitle = TKLocales.Settings.Items.logout
+  static let logoutTitle = TKLocales.Settings.Logout.title
+  static let logoutDescription = TKLocales.Settings.Logout.description
   static let logoutCancelButtonTitle = TKLocales.Actions.cancel
   static let logoutLogoutButtonTitle = TKLocales.Settings.Items.logout
   
@@ -401,7 +401,7 @@ private extension String {
   static let rateTonkeeperXTitle = TKLocales.Settings.Items.rate
   static let legalTitle = TKLocales.Settings.Items.legal
   
-  static let deleteItemTitle = "Delete account"
+  static let deleteItemTitle = TKLocales.Settings.Items.delete_account
   static let deleteTitle = "Are you sure you want to delete your account?"
   static let deleteDescription = "This action will delete your account and all data from this application."
   static let deleteDeleteButtonTitle = "Delete account and data"

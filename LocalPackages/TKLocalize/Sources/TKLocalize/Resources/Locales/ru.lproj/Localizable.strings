@@ -50,6 +50,9 @@
 "settings.items.delete_account" = "Удалить аккаунт";
 "settings.items.setup_wallet_description" = "Кастомизировать";
 
+"settings.logout.title" = "Выйти?";
+"settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
+
 "theme.title" = "Тема";
 "theme.options.system" = "Системная";
 "theme.options.dark" = "Тёмная";

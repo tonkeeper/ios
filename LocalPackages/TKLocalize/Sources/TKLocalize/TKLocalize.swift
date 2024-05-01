@@ -208,6 +208,16 @@ public enum TKLocales {
         localize("settings.items.setup_wallet_description")
       }
     }
+    public enum Logout {
+      /// Log out?
+      public static var title: String {
+        localize("settings.logout.title")
+      }
+      /// This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.
+      public static var description: String {
+        localize("settings.logout.description")
+      }
+    }
   }
   public enum Theme {
     /// Theme
