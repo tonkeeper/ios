@@ -40,7 +40,7 @@ struct WalletBalanceListItemMapper {
       
       if let diff = item.rateDiff {
         let color: UIColor
-        if diff.hasPrefix("-") {
+        if diff.hasPrefix("-") || diff.hasPrefix("−") {
           color = .Accent.red
         } else {
           color = .Accent.green
