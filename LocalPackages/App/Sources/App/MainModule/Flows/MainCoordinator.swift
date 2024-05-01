@@ -304,6 +304,12 @@ private extension MainCoordinator {
         self?.removeChild(coordinator)
       }
       
+      coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in 
+        navigationController?.dismiss(animated: true)
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+      
       addChild(coordinator)
       coordinator.start()
     }
