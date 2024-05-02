@@ -13,7 +13,7 @@ let package = Package(
     targets: [
         .target(
             name: "TKLocalize",
-            resources: [.process("Recources/Locales")]
+            resources: [.process("Resources/Locales")]
         )
     ]
 )
