@@ -23,6 +23,8 @@ struct AddWalletModule {
       },
       importWatchOnlyWalletCoordinatorProvider: { router in
         return createImportWatchOnlyWalletCoordinator(router: router)
+      }, pairSignerCoordinatorProvider: { router in
+        return createPairSignerCoordinator(router: router)
       }
     )
     
@@ -83,6 +85,18 @@ struct AddWalletModule {
       }
     )
   }
+  
+  public func createPairSignerCoordinator(router: NavigationControllerRouter) -> PairSignerCoordinator {
+    PairSignerCoordinator(
+      scannerAssembly: dependencies.scannerAssembly,
+      walletUpdateAssembly: dependencies.walletsUpdateAssembly,
+      coreAssembly: dependencies.coreAssembly,
+      router: router,
+      pairSignerImportCoordinatorProvider: { router, publicKey, name in
+        self.createPairSignerImportCoordinator(publicKey: publicKey, name: name, router: router)
+      }
+    )
+  }
 }
 
 private extension AddWalletModule {
@@ -124,9 +138,15 @@ private extension AddWalletModule {
 extension AddWalletModule {
   struct Dependencies {
     let walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly
+    let coreAssembly: TKCore.CoreAssembly
+    let scannerAssembly: KeeperCore.ScannerAssembly
     
-    public init(walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly) {
+    public init(walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
+                coreAssembly: TKCore.CoreAssembly,
+                scannerAssembly: KeeperCore.ScannerAssembly) {
       self.walletsUpdateAssembly = walletsUpdateAssembly
+      self.coreAssembly = coreAssembly
+      self.scannerAssembly = scannerAssembly
     }
   }
 }

@@ -1,16 +1,20 @@
 import UIKit
 import TKCoordinator
 import TKUIKit
+import TKCore
 import KeeperCore
 
 public final class OnboardingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
+  private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly
   
   public var didFinishOnboarding: (() -> Void)?
   
   init(router: NavigationControllerRouter,
+       coreAssembly: TKCore.CoreAssembly,
        keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly) {
+    self.coreAssembly = coreAssembly
     self.keeperCoreOnboardingAssembly = keeperCoreOnboardingAssembly
     super.init(router: router)
   }
@@ -42,7 +46,8 @@ private extension OnboardingCoordinator {
     
     let coordinator = OnboardingCreateCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
-      assembly: keeperCoreOnboardingAssembly
+      assembly: keeperCoreOnboardingAssembly,
+      coreAssembly: coreAssembly
     )
     coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
       guard let coordinator = coordinator else { return }
@@ -70,6 +75,7 @@ private extension OnboardingCoordinator {
     
     let coordinator = OnboardingImportCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
+      coreAssembly: coreAssembly,
       assembly: keeperCoreOnboardingAssembly
     )
     coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in

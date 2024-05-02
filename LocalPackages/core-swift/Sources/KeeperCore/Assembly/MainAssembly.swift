@@ -50,6 +50,10 @@ public final class MainAssembly {
     self.loadersAssembly = loadersAssembly
   }
   
+  public func scannerAssembly() -> ScannerAssembly {
+    ScannerAssembly()
+  }
+  
   public func mainController() -> MainController {
     MainController(
       walletsStore: walletAssembly.walletStore,
@@ -306,16 +310,6 @@ public final class MainAssembly {
   public func settingsSecurityController() -> SettingsSecurityController {
     SettingsSecurityController(
       securityStore: storesAssembly.securityStore
-    )
-  }
-  
-  public func scannerController() -> ScannerController {
-    ScannerController(
-      deeplinkParser: DefaultDeeplinkParser(
-        parsers: [TonDeeplinkParser(),
-                  TonConnectDeeplinkParser(),
-                  TonkeeperDeeplinkParser()]
-      )
     )
   }
   

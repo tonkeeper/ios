@@ -13,7 +13,7 @@ public struct DefaultDeeplinkParser: DeeplinkParser {
   
   private let parsers: [DeeplinkParser]
   
-  init(parsers: [DeeplinkParser]) {
+  public init(parsers: [DeeplinkParser]) {
     self.parsers = parsers
   }
   
@@ -27,8 +27,10 @@ public struct DefaultDeeplinkParser: DeeplinkParser {
   }
 }
 
-struct TonDeeplinkParser: DeeplinkParser {
-  func parse(string: String?) throws -> Deeplink {
+public struct TonDeeplinkParser: DeeplinkParser {
+  public init() {}
+  
+  public func parse(string: String?) throws -> Deeplink {
     guard let string else { throw DeeplinkParserError.unsupportedDeeplink(string: string) }
     guard let url = URL(string: string),
           let scheme = url.scheme,
@@ -59,8 +61,10 @@ struct TonDeeplinkParser: DeeplinkParser {
   }
 }
 
-struct TonConnectDeeplinkParser: DeeplinkParser {
-  func parse(string: String?) throws -> Deeplink {
+public struct TonConnectDeeplinkParser: DeeplinkParser {
+  public init() {}
+  
+  public func parse(string: String?) throws -> Deeplink {
     guard let string else { throw DeeplinkParserError.unsupportedDeeplink(string: string) }
     if let deeplink = try? parseTonConnectDeeplink(string: string) {
       return deeplink
@@ -103,8 +107,10 @@ struct TonConnectDeeplinkParser: DeeplinkParser {
   }
 }
 
-struct TonkeeperDeeplinkParser: DeeplinkParser {
-  func parse(string: String?) throws -> Deeplink {
+public struct TonkeeperDeeplinkParser: DeeplinkParser {
+  public init() {}
+  
+  public func parse(string: String?) throws -> Deeplink {
     guard let string,
           let url = URL(string: string),
           let components = URLComponents(url: url, resolvingAgainstBaseURL: true),

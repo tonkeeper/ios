@@ -43,7 +43,25 @@ public struct TonConnectDeeplink {
 public enum TonkeeperDeeplink {
   public enum SignerDeeplink {
     case link(publicKey: TonSwift.PublicKey, name: String)
+    
+    public var string: String { "" }
   }
   
   case signer(SignerDeeplink)
+  
+  public var string: String { "" }
+}
+
+public enum TonsignDeeplink {
+  case plain
+  
+  public var string: String {
+    let tonsign = "tonsign"
+    switch self {
+    case .plain:
+      var components = URLComponents()
+      components.scheme = tonsign
+      return components.string ?? ""
+    }
+  }
 }

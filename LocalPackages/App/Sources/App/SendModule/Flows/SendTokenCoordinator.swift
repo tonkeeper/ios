@@ -213,9 +213,9 @@ private extension SendTokenCoordinator {
     let scanModule = ScannerModule(
       dependencies: ScannerModule.Dependencies(
         coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
-    ).createScannerModule()
+    ).createScannerModule(configurator: DefaultScannerControllerConfigurator())
     
     let navigationController = TKNavigationController(rootViewController: scanModule.view)
     navigationController.configureTransparentAppearance()

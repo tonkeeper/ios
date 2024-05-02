@@ -77,7 +77,9 @@ private extension SettingsCoordinator {
   func openEditWallet(wallet: Wallet) {
     let addWalletModuleModule = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
-        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly
+        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        coreAssembly: coreAssembly,
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
     )
     

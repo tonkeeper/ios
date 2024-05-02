@@ -1,5 +1,6 @@
 import UIKit
 import KeeperCore
+import TKCore
 import TKCoordinator
 import TKUIKit
 import TKScreenKit
@@ -9,15 +10,20 @@ public final class OnboardingImportCoordinator: RouterCoordinator<NavigationCont
   public var didCancel: (() -> Void)?
   public var didImportWallets: (() -> Void)?
   
+  private let coreAssembly: TKCore.CoreAssembly
   private let assembly: KeeperCore.OnboardingAssembly
   private let addWalletModule: AddWalletModule
   
   init(router: NavigationControllerRouter,
+       coreAssembly: TKCore.CoreAssembly,
        assembly: KeeperCore.OnboardingAssembly) {
+    self.coreAssembly = coreAssembly
     self.assembly = assembly
     self.addWalletModule = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
-        walletsUpdateAssembly: assembly.walletsUpdateAssembly
+        walletsUpdateAssembly: assembly.walletsUpdateAssembly,
+        coreAssembly: coreAssembly,
+        scannerAssembly: assembly.scannerAssembly()
       )
     )
     super.init(router: router)

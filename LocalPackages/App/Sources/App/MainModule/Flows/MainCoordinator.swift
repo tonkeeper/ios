@@ -21,6 +21,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private var historyCoordinator: HistoryCoordinator?
   private var collectiblesCoordinator: CollectiblesCoordinator?
   
+  private var addWalletCoordinator: AddWalletCoordinator?
+  
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
   
@@ -79,20 +81,20 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     Task {
       await mainController.start()
       await MainActor.run {
-        handleDeeplink(deeplink: deeplink)
+        _ = handleDeeplink(deeplink: deeplink)
       }
     }
   }
 
-  override func handleDeeplink(deeplink: CoordinatorDeeplink?) {
+  override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
     if let coreDeeplink = deeplink as? KeeperCore.Deeplink {
-      handleCoreDeeplink(coreDeeplink)
+      return handleCoreDeeplink(coreDeeplink)
     } else {
       do {
         let deeplink = try mainController.parseDeeplink(deeplink: deeplink?.string)
-        handleCoreDeeplink(deeplink)
+        return handleCoreDeeplink(deeplink)
       } catch {
-        return
+        return false
       }
     }
   }
@@ -106,6 +108,10 @@ private extension MainCoordinator {
     }
     walletCoordinator.didLogout = { [weak self] in
       self?.didLogout?()
+    }
+    
+    walletCoordinator.didTapWalletButton = { [weak self] in
+      self?.openWalletPicker()
     }
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
@@ -140,16 +146,16 @@ private extension MainCoordinator {
     let scanModule = ScannerModule(
       dependencies: ScannerModule.Dependencies(
         coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
-    ).createScannerModule()
+    ).createScannerModule(configurator: DefaultScannerControllerConfigurator())
     
     let navigationController = TKNavigationController(rootViewController: scanModule.view)
     navigationController.configureTransparentAppearance()
     
     scanModule.output.didScanDeeplink = { [weak self] deeplink in
       self?.router.dismiss(completion: {
-        self?.handleCoreDeeplink(deeplink)
+        _ = self?.handleCoreDeeplink(deeplink)
       })
     }
     
@@ -211,25 +217,26 @@ private extension MainCoordinator {
 // MARK: - Deeplinks
 
 private extension MainCoordinator {
-  func handleCoreDeeplink(_ deeplink: KeeperCore.Deeplink) {
+  func handleCoreDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
     switch deeplink {
     case .ton(let tonDeeplink):
-      handleTonDeeplink(tonDeeplink)
+      return handleTonDeeplink(tonDeeplink)
     case .tonConnect(let tonConnectDeeplink):
-      handleTonConnectDeeplink(tonConnectDeeplink)
+      return handleTonConnectDeeplink(tonConnectDeeplink)
     case .tonkeeper(let tonkeeperDeeplink):
-      handleTonkeeperDeeplink(tonkeeperDeeplink)
+      return handleTonkeeperDeeplink(tonkeeperDeeplink)
     }
   }
   
-  func handleTonDeeplink(_ deeplink: TonDeeplink) {
+  func handleTonDeeplink(_ deeplink: TonDeeplink) -> Bool {
     switch deeplink {
     case .transfer(let recipient, let jettonAddress):
       openSend(recipient: recipient, jettonAddress: jettonAddress)
+      return true
     }
   }
   
-  func handleTonConnectDeeplink(_ deeplink: TonConnectDeeplink) {
+  func handleTonConnectDeeplink(_ deeplink: TonConnectDeeplink) -> Bool {
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
     Task {
@@ -267,16 +274,24 @@ private extension MainCoordinator {
         }
       }
     }
+    return true
   }
   
-  func handleTonkeeperDeeplink(_ deeplink: TonkeeperDeeplink) {
+  func handleTonkeeperDeeplink(_ deeplink: TonkeeperDeeplink) -> Bool {
     switch deeplink {
     case .signer(let signerDeeplink):
-      handleSignerDeeplink(signerDeeplink)
+      if let addWalletCoordinator {
+        return addWalletCoordinator.handleDeeplink(deeplink: deeplink)
+      }
+      router.dismiss(animated: true) { [weak self] in
+        self?.handleSignerDeeplink(signerDeeplink)
+      }
+      return true
     }
   }
   
   func handleSignerDeeplink(_ deeplink: TonkeeperDeeplink.SignerDeeplink) {
+
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
@@ -284,7 +299,9 @@ private extension MainCoordinator {
     case .link(let publicKey, let name):
       let coordinator = AddWalletModule(
         dependencies: AddWalletModule.Dependencies(
-          walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly
+          walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+          coreAssembly: coreAssembly,
+          scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
         )
       ).createPairSignerImportCoordinator(
         publicKey: publicKey,
@@ -341,19 +358,27 @@ private extension MainCoordinator {
   }
   
   func openAddWallet(router: ViewControllerRouter) {
-    let module = AddWalletModule(dependencies: AddWalletModule.Dependencies(
-      walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly)
+    let module = AddWalletModule(
+      dependencies: AddWalletModule.Dependencies(
+        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        coreAssembly: coreAssembly,
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+      )
     )
     
     let coordinator = module.createAddWalletCoordinator(router: router)
     coordinator.didAddWallets = { [weak self, weak coordinator] in
+      self?.addWalletCoordinator = nil
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
     coordinator.didCancel = { [weak self, weak coordinator] in
+      self?.addWalletCoordinator = nil
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
+    
+    addWalletCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start()
@@ -362,7 +387,9 @@ private extension MainCoordinator {
   func openEditWallet(wallet: Wallet, fromViewController: UIViewController) {
     let addWalletModuleModule = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
-        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly
+        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        coreAssembly: coreAssembly,
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
     )
     

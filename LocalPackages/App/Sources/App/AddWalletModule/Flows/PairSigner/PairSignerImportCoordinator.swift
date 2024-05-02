@@ -35,14 +35,20 @@ public final class PairSignerImportCoordinator: RouterCoordinator<NavigationCont
       do {
         let activeWalletModels = try await detectActiveWallets(publicKey: publicKey)
         await MainActor.run {
-          ToastPresenter.hideAll()
-          openChooseWalletToAdd(publicKey: publicKey, activeWalletModels: activeWalletModels)
-          didPrepareForPresent?()
+          if activeWalletModels.count > 1 {
+            ToastPresenter.hideAll()
+            openChooseWalletToAdd(publicKey: publicKey, activeWalletModels: activeWalletModels)
+            didPrepareForPresent?()
+          } else {
+            ToastPresenter.hideAll()
+            openCustomizeWallet(publicKey: publicKey, revisions: [.currentVersion], animated: true)
+            didPrepareForPresent?()
+          }
         }
       } catch {
         await MainActor.run {
           ToastPresenter.hideAll()
-          openCustomizeWallet(publicKey: publicKey, revisions: [.currentVersion], animated: false)
+          openCustomizeWallet(publicKey: publicKey, revisions: [.currentVersion], animated: true)
           didPrepareForPresent?()
         }
       }
@@ -63,14 +69,18 @@ private extension PairSignerImportCoordinator {
       self?.openCustomizeWallet(publicKey: publicKey, revisions: revisions, animated: true)
     }
     
-    module.view.setupLeftCloseButton { [weak self] in
-      self?.didCancel?()
+    if router.rootViewController.viewControllers.isEmpty {
+      module.view.setupLeftCloseButton { [weak self] in
+        self?.didCancel?()
+      }
+    } else {
+      module.view.setupBackButton()
     }
     
     router.push(
       viewController: module.view,
-      animated: false,
-      onPopClosures: {},
+      animated: true,
+      onPopClosures: { [weak self] in self?.didCancel?() },
       completion: nil)
   }
   

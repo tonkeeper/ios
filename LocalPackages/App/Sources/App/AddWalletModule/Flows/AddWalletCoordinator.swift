@@ -8,25 +8,40 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
   public var didCancel: (() -> Void)?
   public var didAddWallets: (() -> Void)?
   
+  private var pairSignerCoordinator: PairSignerCoordinator?
+  
   private let walletAddController: WalletAddController
   private let createWalletCoordinatorProvider: (NavigationControllerRouter) -> CreateWalletCoordinator
   private let importWalletCoordinatorProvider: (NavigationControllerRouter) -> ImportWalletCoordinator
   private let importWatchOnlyWalletCoordinatorProvider: (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator
+  private let pairSignerCoordinatorProvider: (NavigationControllerRouter) -> PairSignerCoordinator
   
   init(router: ViewControllerRouter,
        walletAddController: WalletAddController,
        createWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> CreateWalletCoordinator,
        importWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWalletCoordinator,
-       importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator) {
+       importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator,
+       pairSignerCoordinatorProvider: @escaping (NavigationControllerRouter) -> PairSignerCoordinator) {
     self.walletAddController = walletAddController
     self.createWalletCoordinatorProvider = createWalletCoordinatorProvider
     self.importWalletCoordinatorProvider = importWalletCoordinatorProvider
     self.importWatchOnlyWalletCoordinatorProvider = importWatchOnlyWalletCoordinatorProvider
+    self.pairSignerCoordinatorProvider = pairSignerCoordinatorProvider
     super.init(router: router)
   }
   
   public override func start() {
     openAddWalletOptionPicker()
+  }
+  
+  public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    guard let tonkeeperDeeplink = deeplink as? TonkeeperDeeplink else { return false }
+    
+    switch tonkeeperDeeplink {
+    case .signer(let signerDeeplink):
+      guard let pairSignerCoordinator else { return false }
+      return pairSignerCoordinator.handleDeeplink(deeplink: signerDeeplink)
+    }
   }
 }
 
@@ -90,7 +105,9 @@ private extension AddWalletCoordinator {
     addChild(coordinator)
     coordinator.start()
     
-    router.present(navigationController)
+    router.present(navigationController, onDismiss: { [weak self] in
+      self?.didCancel?()
+    })
   }
   
   func openAddRegularWallet() {
@@ -124,7 +141,9 @@ private extension AddWalletCoordinator {
     addChild(coordinator)
     coordinator.start()
     
-    router.present(navigationController)
+    router.present(navigationController, onDismiss: { [weak self] in
+      self?.didCancel?()
+    })
   }
 
   func openAddWallet() {
@@ -152,9 +171,42 @@ private extension AddWalletCoordinator {
     addChild(coordinator)
     coordinator.start()
     
-    router.present(navigationController)
+    router.present(navigationController, onDismiss: { [weak self] in
+      self?.didCancel?()
+    })
   }
   
-  // TODO:
-  func openPairSigner() {}
+  func openPairSigner() {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    let coordinator = pairSignerCoordinatorProvider(
+      NavigationControllerRouter(rootViewController: navigationController)
+    )
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      navigationController.dismiss(animated: true)
+      self?.didAddWallets?()
+      self?.pairSignerCoordinator = nil
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didPaired = {[weak self, weak coordinator] in
+      navigationController.dismiss(animated: true)
+      self?.didAddWallets?()
+      self?.pairSignerCoordinator = nil
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    self.pairSignerCoordinator = coordinator
+    
+    addChild(coordinator)
+    coordinator.start()
+    
+    router.present(navigationController, onDismiss: { [weak self] in
+      self?.didCancel?()
+    })
+  }
 }
