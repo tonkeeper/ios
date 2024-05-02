@@ -70,44 +70,63 @@ final class KeyDetailsViewModelImplementation: KeyDetailsViewModel, KeyDetailsMo
 private extension KeyDetailsViewModelImplementation {
   func createListSections() -> [KeyDetailsListSection] {
     return [
-      createAnotherDeviceExportSection(),
-      createSameDeviceExportSection(),
+      createAnotherDeviceLinkSection(),
+      createSameDeviceLinkSection(),
+      createWebLinkSection(),
       createActionSection(),
       createDeleteSection()
     ]
   }
   
-  func createAnotherDeviceExportSection() -> KeyDetailsListSection {
+  func createAnotherDeviceLinkSection() -> KeyDetailsListSection {
     let items = [
       KeyDetailsListKeyItem(
         id: UUID().uuidString,
         model: TwoLinesListItemView.Model(
-          title: "Export to another device",
+          title: "Link to another device",
           subtitle: "Open Tonkeeper » Import Existing Wallet » Pair Tonsign"
         ),
         isHighlightable: false
       ),
       KeyDetailsListKeyItem(
         id: UUID().uuidString,
-        model: KeyDetailsQRCodeItemView.Model(url: keyDetailsController.exportDeeplinkUrl()),
+        model: KeyDetailsQRCodeItemView.Model(url: keyDetailsController.appLinkDeeplinkUrl()),
         isHighlightable: false
       )
     ]
     return .anotherDeviceExport(items)
   }
   
-  func createSameDeviceExportSection() -> KeyDetailsListSection {
+  func createSameDeviceLinkSection() -> KeyDetailsListSection {
       let items = [
         KeyDetailsListKeyItem(
           id: UUID().uuidString,
           model: AccessoryListItemView<TwoLinesListItemView>.Model(
             contentViewModel: TwoLinesListItemView.Model(
-              title: "Export to Tonkeeper on this device",
+              title: "Link to Tonkeeper on this device",
               subtitle: "Tonkeeper must be installed"
             ),
             accessoryModel: .disclosure),
           action: { [weak self] in
-            self?.sameDeviceExportAction()
+            self?.sameDeviceLinkAction()
+          }
+        )
+      ]
+    return .sameDeviceExport(items)
+  }
+  
+  func createWebLinkSection() -> KeyDetailsListSection {
+      let items = [
+        KeyDetailsListKeyItem(
+          id: UUID().uuidString,
+          model: AccessoryListItemView<TwoLinesListItemView>.Model(
+            contentViewModel: TwoLinesListItemView.Model(
+              title: "Link to Tonkeeper Web",
+              subtitle: "wallet.tonkeeper.com"
+            ),
+            accessoryModel: .disclosure),
+          action: { [weak self] in
+            self?.webLinkAction()
           }
         )
       ]
@@ -174,8 +193,13 @@ private extension KeyDetailsViewModelImplementation {
     return .actions(items)
   }
   
-  private func sameDeviceExportAction() {
-    guard let url = keyDetailsController.exportDeeplinkUrl() else { return }
+  private func sameDeviceLinkAction() {
+    guard let url = keyDetailsController.appLinkDeeplinkUrl() else { return }
+    didOpenUrl?(url)
+  }
+  
+  private func webLinkAction() {
+    guard let url = keyDetailsController.webLinkDeeplinkUrl() else { return }
     didOpenUrl?(url)
   }
 }

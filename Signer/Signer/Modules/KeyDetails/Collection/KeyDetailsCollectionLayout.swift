@@ -20,6 +20,8 @@ struct KeyDetailsCollectionLayout {
       return createAnotherDeviceExportSectionLayout()
     case .sameDeviceExport:
       return createSameDeviceExportSectionLayout()
+    case .webExport:
+      return createWebExportSectionLayout()
     case .actions:
       return createActionsSectionLayout()
     }
@@ -53,7 +55,23 @@ struct KeyDetailsCollectionLayout {
       subitems: [item]
     )
     let section = NSCollectionLayoutSection(group: group)
-    section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 48, trailing: 16)
+    section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16)
+    return section
+  }
+  
+  private static func createWebExportSectionLayout() -> NSCollectionLayoutSection {
+    let item = NSCollectionLayoutItem(layoutSize: NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(50))
+    )
+    let group = NSCollectionLayoutGroup.vertical(
+      layoutSize: NSCollectionLayoutSize(
+        widthDimension: .fractionalWidth(1.0),
+        heightDimension: .estimated(50)),
+      subitems: [item]
+    )
+    let section = NSCollectionLayoutSection(group: group)
+    section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
     return section
   }
   
@@ -69,7 +87,7 @@ struct KeyDetailsCollectionLayout {
       subitems: [item]
     )
     let section = NSCollectionLayoutSection(group: group)
-    section.contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16)
+    section.contentInsets = NSDirectionalEdgeInsets(top: 48, leading: 16, bottom: 16, trailing: 16)
     return section
   }
 }

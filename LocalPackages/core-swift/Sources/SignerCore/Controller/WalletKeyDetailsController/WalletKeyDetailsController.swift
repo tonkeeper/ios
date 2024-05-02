@@ -26,8 +26,12 @@ public final class WalletKeyDetailsController {
     didUpdateWalletKey?(walletKey)
   }
   
-  public func exportDeeplinkUrl() -> URL? {
-    ExportDeeplinkGenerator().generateDeeplink(network: .ton, key: walletKey)
+  public func appLinkDeeplinkUrl() -> URL? {
+    LinkDeeplinkGenerator().generateAppDeeplink(network: .ton, key: walletKey)
+  }
+  
+  public func webLinkDeeplinkUrl() -> URL? {
+    LinkDeeplinkGenerator().generateWebDeeplink(network: .ton, key: walletKey)
   }
   
   public func deleteKey() throws {
