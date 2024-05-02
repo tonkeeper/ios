@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		50C356522BE39C0500539266 /* TKLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = 50C356512BE39C0500539266 /* TKLocalize */; };
 		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
@@ -223,6 +224,7 @@
 				C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */,
 				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
 				7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */,
+				50C356522BE39C0500539266 /* TKLocalize in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -492,6 +494,7 @@
 				C365E2702BDA6944006D33B9 /* TKChart */,
 				C34C70632BE1157A00143AC8 /* WalletCore */,
 				C3CC74462BE11F0F006022FE /* TKUIKitDynamic */,
+				50C356512BE39C0500539266 /* TKLocalize */,
 			);
 			productName = TonkeeperWidgetExtension;
 			productReference = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */;
@@ -1185,6 +1188,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		50C356512BE39C0500539266 /* TKLocalize */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKLocalize;
+		};
 		7D143C352A4EC0D300B5FCC0 /* Lottie */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */;
