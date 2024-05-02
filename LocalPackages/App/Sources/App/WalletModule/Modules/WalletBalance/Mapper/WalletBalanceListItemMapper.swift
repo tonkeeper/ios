@@ -42,8 +42,10 @@ struct WalletBalanceListItemMapper {
         let color: UIColor
         if diff.hasPrefix("-") || diff.hasPrefix("−") {
           color = .Accent.red
-        } else {
+        } else if diff.hasPrefix("+") {
           color = .Accent.green
+        } else {
+          color = .Text.tertiary
         }
         subtitle.append(diff.withTextStyle(.body2, color: color, alignment: .left))
       }
