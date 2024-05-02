@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 public protocol TKInputRecoveryPhraseModuleOutput: AnyObject {
   var didInputRecoveryPhrase: (([String], @escaping (() -> Void)) -> Void)? { get set }
@@ -78,7 +79,7 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
     self.validator = validator
     self.suggestsProvider = suggestsProvider
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    continueButtonConfiguration.content.title = .plainString("Continue")
+    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
     self.continueButtonConfiguration = continueButtonConfiguration
   }
 }
@@ -86,8 +87,8 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
 private extension TKInputRecoveryPhraseViewModelImplementation {
   func createModel() -> TKInputRecoveryPhraseView.Model {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: "Enter recovery phrase",
-      bottomDescription: "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet."
+      title: TKLocales.ImportWallet.title,
+      bottomDescription: TKLocales.ImportWallet.description
     )
     
     let inputs: [TKInputRecoveryPhraseView.Model.InputModel] = (0..<Int.wordsCount)

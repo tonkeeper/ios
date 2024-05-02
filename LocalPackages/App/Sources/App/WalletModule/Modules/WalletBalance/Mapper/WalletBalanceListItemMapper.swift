@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 struct WalletBalanceListItemMapper {
   
@@ -26,7 +27,7 @@ struct WalletBalanceListItemMapper {
     let subtitle = NSMutableAttributedString()
     switch item.verification {
     case .none:
-      subtitle.append("Unverified Token".withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
+      subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
     case .whitelist:
       if let price = item.price?.withTextStyle(
         .body2,
@@ -50,7 +51,7 @@ struct WalletBalanceListItemMapper {
         subtitle.append(diff.withTextStyle(.body2, color: color, alignment: .left))
       }
     case .blacklist:
-      subtitle.append("Unverified Token".withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
+      subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
     }
     
     let value = item.amount?.withTextStyle(
@@ -154,12 +155,13 @@ struct WalletBalanceListItemMapper {
       title: nil,
       tagViewModel: nil,
       subtitle: nil,
-      description: String.backupDescription.withTextStyle(
-        .body2,
-        color: .Text.primary,
-        alignment: .left,
-        lineBreakMode: .byWordWrapping
-      )
+      description: TKLocales.FinishSetup.backup
+        .withTextStyle(
+          .body2,
+          color: .Text.primary,
+          alignment: .left,
+          lineBreakMode: .byWordWrapping
+        )
     )
     
     let contentConfiguration = TKUIListItemContentView.Configuration(
@@ -227,13 +229,13 @@ struct WalletBalanceListItemMapper {
     let image: UIImage
     switch biometryAuthentificator.biometryType {
     case .touchID:
-      title = .use + " " + .touchId + " " + .approveTransactions
+      title = TKLocales.FinishSetup.setup_biometry("Touch ID")
       image = .TKUIKit.Icons.Size28.faceId
     case .faceID:
-      title = .use + " " + .faceId + " " + .approveTransactions
+      title = TKLocales.FinishSetup.setup_biometry("Face ID")
       image = .TKUIKit.Icons.Size28.faceId
     default:
-      title = .biometryUnavailable
+      title = TKLocales.FinishSetup.biometry_unavailable
       image = .TKUIKit.Icons.Size28.faceId
     }
     
@@ -292,12 +294,6 @@ private extension CGFloat {
 
 private extension String {
   static let backupItemIdentifier = "BackupItem"
-  static let backupDescription = "Back up the wallet recovery phrase"
   static let biometryItemIdentifier = "BiometryItem"
-  static let use = "Use"
-  static let faceId = "Face ID"
-  static let touchId = "Touch ID"
-  static let approveTransactions = "to approve transactions"
-  static let biometryUnavailable = "Biometry unavailable"
 }
 

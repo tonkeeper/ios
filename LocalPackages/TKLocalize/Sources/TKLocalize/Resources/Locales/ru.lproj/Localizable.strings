@@ -1,0 +1,220 @@
+"actions.copied" = "Скопировано";
+"actions.delete" = "Удалить";
+"actions.cancel" = "Отмена";
+"actions.save" = "Сохранить";
+"actions.paste" = "Вставить";
+"actions.continue_action" = "Продолжить";
+"actions.done" = "Готово";
+"actions.edit" = "Изменить";
+"actions.copy" = "Скопировать";
+
+"dates.today" = "Сегодня";
+"dates.yesterday" = "Вчера";
+
+"tabs.wallet" = "Кошелёк";
+"tabs.history" = "История";
+"tabs.purchases" = "Покупки";
+
+"camera_permission.title" = "Разрешите доступ к камере, чтобы сканировать QR-коды";
+"camera_permission.button" = "Открыть настройки";
+
+"purchases.title" = "Покупки";
+"purchases.empty_placeholder" = "Ваши покупки\nпоявятся здесь";
+
+"history.title" = "История";
+"history.placeholder.title" = "Ваша история\nбудет показана здесь";
+"history.placeholder.subtitle" = "Совершите первую транзакцию!";
+"history.placeholder.buttons.receive" = "Получить";
+"history.placeholder.buttons.buy" = "Купить Toncoin";
+
+"event_details.received" = "Получено";
+"event_details.sent" = "Отправлено";
+"event_details.recipient.title" = "Получатель";
+"event_details.recipient.address" = "Адрес получателя";
+"event_details.sender.title" = "Отправитель";
+"event_details.sender.address" = "Адрес отправителя";
+"event_details.fee" = "Комиссия";
+"event_details.comment" = "Комментарий";
+
+"settings.title" = "Настройки";
+"settings.items.security" = "Безопасность";
+"settings.items.backup" = "Резервная копия";
+"settings.items.currency" = "Валюта";
+"settings.items.theme" = "Тема";
+"settings.items.logout" = "Выйти";
+"settings.items.support" = "Поддержка";
+"settings.items.tk_news" = "Новости Tonkeeper";
+"settings.items.contact_us" = "Написать команде";
+"settings.items.rate" = "Оценить Tonkeeper X";
+"settings.items.legal" = "Юридические документы";
+"settings.items.delete_account" = "Удалить аккаунт";
+"settings.items.setup_wallet_description" = "Кастомизировать";
+
+"settings.logout.title" = "Выйти?";
+"settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
+
+"theme.title" = "Тема";
+"theme.options.system" = "Системная";
+"theme.options.dark" = "Тёмная";
+"theme.options.blue" = "Голубая";
+
+"currency.title" = "Основная валюта";
+
+"currency.items.jpy" = "Японская йена";
+"currency.items.usd" = "Доллар США";
+"currency.items.eur" = "Евро";
+"currency.items.rub" = "Российский рубль";
+"currency.items.aed" = "Дирхам ОАЭ";
+"currency.items.kzt" = "Казахский тенге";
+"currency.items.uah" = "Украинская гривна";
+"currency.items.gbp" = "Фунт стерлингов";
+"currency.items.chf" = "Швейцарский франк";
+"currency.items.cny" = "Китайский юань";
+"currency.items.krw" = "Южнокорейская вона";
+"currency.items.idr" = "Индонезийская рупия";
+"currency.items.inr" = "Индийская рупия";
+
+"backup.title" = "Резервная копия";
+"backup.information.title" = "Вручную";
+"backup.information.subtitle" = "Создайте резервную копию своего кошелька вручную, записав секретный ключ.";
+"backup.manually.button" = "Сделать копию вручную";
+"backup.show_phrase.title" = "Показать секретный ключ";
+"backup.done.title" = "Резервная копия сделана";
+"backup.done.subtitle" = "Последняя %@";
+
+"security.title" = "Безопасность";
+"security.use" = "Использовать %@";
+"security.change_passcode" = "Поменять пин-код";
+"security.unavailable_error" = "Биометрия недоступна";
+"security.use_biometry_description" = "Вы всегда можете разблокировать кошелёк\nс помощью пин-кода";
+
+
+"wallet_buttons.send" = "Отправить";
+"wallet_buttons.receive" = "Получить";
+"wallet_buttons.scan" = "Сканировать";
+"wallet_buttons.buy" = "Купить TON";
+"wallet_buttons.swap" = "Обменять";
+"wallet_buttons.stake" = "Застейкать";
+
+"send.title" = "Отправить";
+"send.recepient.placeholder" = "Адрес или имя";
+"send.amount.placeholder" = "Сумма";
+
+"send.comment.placeholder" = "Комментарий";
+"send.comment.description" = "Будет виден всем.";
+
+"send.required_comment.placeholder" = "Комментарий";
+"send.required_comment.description" = "Обязательно укажите memo или тег при отправке на биржу.";
+
+"confirm_send.token_transfer.title" = "Подтвердить действие";
+"confirm_send.token_transfer.transfer" = "Отправка %@";
+"confirm_send.fee" = "Комиссия";
+"confirm_send.wallet" = "Кошелёк";
+"confirm_send.amount" = "Сумма";
+"confirm_send.comment" = "Комментарий";
+"confirm_send.recipient.title" = "Получатель";
+"confirm_send.recipient.address" = "Адрес получателя";
+"confirm_send.confirm_button" = "Подтвердить и отправить";
+
+"customize_wallet.title" = "Кастомизируйте свой кошелёк";
+"customize_wallet.description" = "Имя и иконка кошелька хранятся локально на вашем устройстве.";
+"customize_wallet.input_placeholder" = "Имя кошелька";
+"customize_wallet.default_wallet_name" = "Кошелёк";
+
+"connection_status.updating" = "Обновление";
+"connection_status.no_internet" = "Нет сети";
+"connection_status.updated_at" = "Обновлено %@";
+
+"token.unverified" = "Непроверенный токен";
+
+"onboarding.caption" = "Создайте новый или подключите существующий кошелёк";
+"onboarding.buttons.create_new" = "Создать новый кошелёк";
+"onboarding.buttons.import_existing" = "Подключить существующий";
+
+"passcode.create" = "Задайте новый пин-код";
+"passcode.reenter" = "Введите пин-код ещё раз";
+"passcode.enter" = "Введите пин-код";
+
+"import_wallet.title" = "Введите секретный ключ";
+"import_wallet.description" = "Чтобы восстановить доступ, введите 24 секретных слова, которые вы получили при создании кошелька.";
+
+"choose_wallets.title" = "Выберите кошельки";
+"choose_wallets.description" = "Выберите кошельки, которые вы хотите добавить.";
+"choose_wallets.tokens" = "токены";
+
+"finish_setup.title" = "Завершить установку";
+"finish_setup.setup_biometry" = "Включите %@ для подтверждения транзакций";
+"finish_setup.biometry_unavailable" = "Биометрия недоступна";
+"finish_setup.backup" = "Создайте резервную копию секретного ключа кошелька";
+
+"wallets_list.title" = "Кошельки";
+"wallets_list.add_wallet" = "Добавить кошелёк";
+
+"add_wallet.title" = "Добавить кошелёк";
+"add_wallet.description" = "Создайте новый кошелёк или добавьте существующий.";
+
+"add_wallet.items.new_wallet.title" = "Новый кошелёк";
+"add_wallet.items.new_wallet.subtitle" = "Создать новый кошелёк";
+
+"add_wallet.items.existing_wallet.title" = "Существующий кошелёк";
+"add_wallet.items.existing_wallet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 24 слов";
+
+"add_wallet.items.watch_only.title" = "Аккаунт для просмотра";
+"add_wallet.items.watch_only.subtitle" = "Для отслеживания активности кошелька без ввода секретного ключа";
+
+"add_wallet.items.testnet.title" = "Аккаунт в Testnet";
+"add_wallet.items.testnet.subtitle" = "Добавить кошелёк с помощью секретного ключа из 24 слов";
+
+"chart.price" = "Цена";
+
+"periods.hour" = "Ч";
+"periods.day" = "Д";
+"periods.week" = "Н";
+"periods.month" = "М";
+"periods.half_year" = "6М";
+"periods.year" = "Г";
+
+"wallet_tags.watch_only" = "Просмотр";
+
+"receive.title" = "Получить %@";
+"receive.description" = "Отправляйте на этот адрес только %@ и токены в сети TON, иначе вы можете потерять свои средства.";
+
+"watch_account.title" = "Аккаунт для просмотра";
+"watch_account.description" = "Отслеживайте активность, получайте уведомления о транзакциях этого кошелька без ввода секретного ключа.";
+"watch_account.placeholder" = "Адрес или имя";
+
+"event_details.sender_address" = "Адрес отправителя";
+"event_details.sender" = "Отправитель";
+"event_details.fee" = "Комиссия";
+"event_details.recipient" = "Получатель";
+"event_details.recipient_address" = "Адрес получателя";
+"event_details.comment" = "Комментарий";
+"event_details.sent_on" = "Отправлено %@";
+"event_details.received_on" = "Получено %@";
+"event_details.received" = "Получено";
+"event_details.sent" = "Отправлено";
+"event_details.transaction" = "Транзакция";
+
+"action_types.future.send" = "Отправить";
+"action_types.future.receive" = "Получить";
+"action_types.sent" = "Отправлено";
+"action_types.received" = "Получено";
+"action_types.stake" = "Депозит";
+"action_types.unstake" = "Вывод";
+"action_types.unstake_request" = "Запрос на вывод";
+"action_types.swap" = "Обмен";
+"action_types.spam" = "Спам";
+"action_types.bounced" = "Возвращено";
+"action_types.subscribed" = "Подписка";
+"action_types.unsubscribed" = "Отмена подписки";
+"action_types.contract_exec" = "Вызов контракта";
+"action_types.nft_collection_deploy" = "Создание контракта";
+"action_types.nft_deploy" = "Создание контракта";
+"action_types.nft_sale_removal" = "Сбор с продажи";
+"action_types.nft_purchase" = "Покупка NFT";
+"action_types.bid" = "Ставка";
+"action_types.put_up_auction" = "Начало аукциона";
+"action_types.end_auction" = "Завершение аукциона";
+"action_types.domain_renew" = "Продление домена";
+"action_types.unknown" = "Неизвестно";
+"action_types.wallet_initialize" = "Кошелёк инициализирован";

@@ -4,6 +4,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import TonSwift
+import TKLocalize
 
 public final class CollectiblesCoordinator: RouterCoordinator<NavigationControllerRouter> {
   private let coreAssembly: TKCore.CoreAssembly
@@ -15,7 +16,7 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
-    router.rootViewController.tabBarItem.title = "Collectibles"
+    router.rootViewController.tabBarItem.title = TKLocales.Tabs.purchases
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.purchase
   }
   

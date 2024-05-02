@@ -1,5 +1,6 @@
 import Foundation
 import TonSwift
+import TKLocalize
 
 public struct Wallet: Codable, Hashable, Identifiable {
   /// Unique internal ID for this wallet
@@ -62,7 +63,7 @@ public struct Wallet: Codable, Hashable, Identifiable {
     case .Lockup:
       return nil
     case .Watchonly:
-      return "Watch only"
+      return TKLocales.WalletTags.watch_only
     case .External:
       return "Signer"
     }

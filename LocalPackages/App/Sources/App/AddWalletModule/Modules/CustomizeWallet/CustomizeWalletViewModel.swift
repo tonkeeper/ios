@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 public struct CustomizeWalletModel {
   public let name: String
@@ -87,11 +88,11 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
 private extension CustomizeWalletViewModelImplementation {
   func createModel(emojiPickerItems: [WalletEmojiPickerView.Model.Item]) -> CustomizeWalletView.Model {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: "Customize your Wallet",
-      bottomDescription: "Wallet name and icon are stored locally on your device."
+      title: TKLocales.CustomizeWallet.title,
+      bottomDescription: TKLocales.CustomizeWallet.description
     )
     
-    let walletNameTextFieldPlaceholder = "Wallet Name"
+    let walletNameTextFieldPlaceholder = TKLocales.CustomizeWallet.input_placeholder
     
     let colorPickerModel = createColorPickerModel()
     let emojiPicketModel = WalletEmojiPickerView.Model(items: emojiPickerItems)
@@ -171,6 +172,6 @@ private extension Int {
 }
 
 private extension String {
-  static let defaultWalletName = "Wallet"
+  static let defaultWalletName = TKLocales.CustomizeWallet.default_wallet_name
   static let defaultEmoji = "😀"
 }

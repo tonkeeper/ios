@@ -1,5 +1,6 @@
 import Foundation
 import TKUIKit
+import TKLocalize
 
 protocol OnboardingRootModuleOutput: AnyObject {
   var didTapCreateButton: (() -> Void)? { get set }
@@ -33,17 +34,17 @@ private extension OnboardingRootViewModelImplementation {
     
     let titleDescriptionModel = TKTitleDescriptionView.Model(
       title: "Tonkeeper",
-      bottomDescription: "Create a new wallet or add an existing one"
+      bottomDescription: TKLocales.Onboarding.caption
     )
     
     var createButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    createButtonConfiguration.content.title = .plainString("Create New Wallet")
+    createButtonConfiguration.content.title = .plainString(TKLocales.Onboarding.Buttons.create_new)
     createButtonConfiguration.action = { [weak self] in
       self?.didTapCreateButton?()
     }
     
     var importButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-    importButtonConfiguration.content.title = .plainString("Import Existing Wallet")
+    importButtonConfiguration.content.title = .plainString(TKLocales.Onboarding.Buttons.import_existing)
     importButtonConfiguration.action = { [weak self] in
       self?.didTapImportButton?()
     }

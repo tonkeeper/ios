@@ -1,6 +1,7 @@
 import Foundation
 import TonSwift
 import BigInt
+import TKLocalize
 
 public final class ChooseWalletsController {
   public struct WalletModel: Equatable {
@@ -50,11 +51,8 @@ private extension ChooseWalletsController {
     let identifier = activeWallet.address.toRaw()
     let address = activeWallet.address.toShortString(bounceable: false)
     var subtitle = "\(activeWallet.revision.rawValue) · \(tonAmount)"
-    if !activeWallet.balance.jettonsBalance.isEmpty {
-      subtitle.append(", tokens")
-    }
-    if !activeWallet.nfts.isEmpty {
-      subtitle.append(", NFTs")
+    if !activeWallet.balance.jettonsBalance.isEmpty || !activeWallet.nfts.isEmpty {
+      subtitle.append(", " + TKLocales.ChooseWallets.tokens)
     }
     
     let isSelected = activeWallet.revision == .currentVersion || !activeWallet.balance.isEmpty

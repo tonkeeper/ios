@@ -1,4 +1,5 @@
 import Foundation
+import TKLocalize
 
 public struct WalletModel: Equatable {
   public enum WalletType {
@@ -32,7 +33,7 @@ extension Wallet {
     case .Lockup:
       fatalError("")
     case .Watchonly:
-      walletType = .watchOnly(tag: "Watch only")
+      walletType = .watchOnly(tag: TKLocales.WalletTags.watch_only)
     case .External:
       fatalError("")
     }

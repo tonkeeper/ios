@@ -3,6 +3,7 @@ import TKUIKit
 import TKCore
 import UIKit
 import KeeperCore
+import TKLocalize
 
 protocol ReceiveModuleOutput: AnyObject {
   
@@ -71,13 +72,13 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
 private extension ReceiveViewModelImplementation {
   func createModel(model: KeeperCore.ReceiveController.Model) {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: "Receive \(model.tokenName)",
-      bottomDescription: "Send only \(model.descriptionTokenName) and tokens in TON network to this address, or you might lose your funds."
+      title: TKLocales.Receive.title(model.tokenName),
+      bottomDescription: TKLocales.Receive.description(model.descriptionTokenName)
     )
-    
+        
     let buttonsModel = ReceiveButtonsView.Model(
       copyButtonModel: TKUIActionButton.Model(
-        title: "Copy",
+        title: TKLocales.Actions.copy,
         icon: TKUIButtonTitleIconContentView.Model.Icon(
           icon: .TKUIKit.Icons.Size16.copy,
           position: .left

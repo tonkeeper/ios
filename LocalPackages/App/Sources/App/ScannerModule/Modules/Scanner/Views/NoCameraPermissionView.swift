@@ -1,5 +1,6 @@
 import SwiftUI
 import TKUIKit
+import TKLocalize
 
 struct NoCameraPermissionView: View {
   
@@ -14,7 +15,7 @@ struct NoCameraPermissionView: View {
         VStack {
           SwiftUI.Image.TKUIKit.Icons.Size84.camera
             .foregroundColor(Color(UIColor.Accent.blue))
-          Text("Enable access to your camera in order to can scan QR codes")
+          Text(TKLocales.CameraPermission.title)
             .foregroundColor(Color(UIColor.Text.primary))
             .textStyle(TKTextStyle.h2)
             .multilineTextAlignment(.center)
@@ -24,7 +25,7 @@ struct NoCameraPermissionView: View {
         TKButtonView(
           category: .primary,
           size: .large,
-          title: "Open Settings",
+          title: TKLocales.CameraPermission.button,
           action: buttonHandler
         )
         .frame(height: 56)

@@ -7,6 +7,7 @@ public final class ChartFormatter {
   
   init(dateFormatter: DateFormatter, decimalAmountFormatter: DecimalAmountFormatter) {
     self.dateFormatter = dateFormatter
+    self.dateFormatter.locale = Locale.current
     self.decimalAmountFormatter = decimalAmountFormatter
   }
   
@@ -23,7 +24,6 @@ public final class ChartFormatter {
     }
     
     dateFormatter.dateFormat = dateFormat
-    dateFormatter.locale = Locale.init(identifier: "EN")
     
     return dateFormatter.string(from: Date(timeIntervalSince1970: timeInterval))
   }
@@ -40,7 +40,6 @@ public final class ChartFormatter {
     }
     
     dateFormatter.dateFormat = dateFormat
-    dateFormatter.locale = Locale.init(identifier: "EN")
     
     return dateFormatter.string(from: Date(timeIntervalSince1970: timeInterval))
   }

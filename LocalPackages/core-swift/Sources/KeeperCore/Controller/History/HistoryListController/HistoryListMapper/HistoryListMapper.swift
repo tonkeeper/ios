@@ -1,5 +1,6 @@
 import Foundation
 import BigInt
+import TKLocalize
 
 struct HistoryListMapper {
   private let dateFormatter: DateFormatter
@@ -36,9 +37,9 @@ struct HistoryListMapper {
   func mapEventsSectionDate(_ date: Date) -> String? {
     let calendar = Calendar.current
     if calendar.isDateInToday(date) {
-      return "Today"
+      return TKLocales.Dates.today
     } else if calendar.isDateInYesterday(date) {
-      return "Yesterday"
+      return TKLocales.Dates.yesterday
     } else if calendar.isDate(date, equalTo: Date(), toGranularity: .month) {
       dateFormatter.dateFormat = "d MMMM"
     } else if calendar.isDate(date, equalTo: Date(), toGranularity: .year) {

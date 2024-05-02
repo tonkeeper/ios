@@ -11,6 +11,7 @@ let package = Package(
     .library(name: "WalletCore", type: .dynamic, targets: ["KeeperCore"]),
   ],
   dependencies: [
+    .package(path: "../TKLocalize"),
     .package(url: "https://github.com/tonkeeper/ton-swift", from: "1.0.6"),
     .package(url: "https://github.com/tonkeeper/ton-api-swift", from: "0.1.1"),
     .package(url: "https://github.com/apple/swift-openapi-runtime", .upToNextMinor(from: "0.3.0"))
@@ -26,6 +27,7 @@ let package = Package(
                 ]),
     .target(name: "KeeperCore",
             dependencies: [
+              .product(name: "TKLocalize", package: "TKLocalize"),
               .product(name: "TonSwift", package: "ton-swift"),
               .product(name: "TonAPI", package: "ton-api-swift"),
               .product(name: "TonStreamingAPI", package: "ton-api-swift"),

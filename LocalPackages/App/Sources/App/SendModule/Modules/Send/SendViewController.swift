@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class SendViewController: GenericViewViewController<SendView> {
   private let viewModel: SendViewModel
@@ -32,7 +33,7 @@ private extension SendViewController {
       category: .primary,
       size: .large
     )
-    continueButtonConfiguration.content.title = .plainString("Continue")
+    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
     continueButtonConfiguration.action = { [weak viewModel] in
       viewModel?.didTapContinueButton()
     }

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		50C356522BE39C0500539266 /* TKLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = 50C356512BE39C0500539266 /* TKLocalize */; };
 		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
@@ -143,6 +144,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		509051DD2BE1661E00B41894 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		50ADFE3C2BE160D3000E1C0A /* TKLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLocalize; sourceTree = "<group>"; };
 		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -221,6 +224,7 @@
 				C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */,
 				7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */,
 				7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */,
+				50C356522BE39C0500539266 /* TKLocalize in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -456,6 +460,7 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				50ADFE3C2BE160D3000E1C0A /* TKLocalize */,
 				C39560142B737F12003303C7 /* App */,
 				C34C705F2BE1151300143AC8 /* core-swift */,
 				C313EC0B2B50138D009DF825 /* TKCoordinator */,
@@ -489,6 +494,7 @@
 				C365E2702BDA6944006D33B9 /* TKChart */,
 				C34C70632BE1157A00143AC8 /* WalletCore */,
 				C3CC74462BE11F0F006022FE /* TKUIKitDynamic */,
+				50C356512BE39C0500539266 /* TKLocalize */,
 			);
 			productName = TonkeeperWidgetExtension;
 			productReference = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */;
@@ -583,6 +589,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ru,
 			);
 			mainGroup = 7DB8FB592A1BCC92005B4B11;
 			packageReferences = (
@@ -750,6 +757,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				7DB8FB712A1BCC92005B4B11 /* Base */,
+				509051DD2BE1661E00B41894 /* ru */,
 			);
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
@@ -835,6 +843,7 @@
 			baseConfigurationReference = 7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -897,6 +906,7 @@
 			baseConfigurationReference = 7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -1178,6 +1188,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		50C356512BE39C0500539266 /* TKLocalize */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKLocalize;
+		};
 		7D143C352A4EC0D300B5FCC0 /* Lottie */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */;
