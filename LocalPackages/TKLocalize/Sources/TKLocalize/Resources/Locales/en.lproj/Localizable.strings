@@ -165,6 +165,9 @@
 "add_wallet.items.testnet.title" = "Testnet Account";
 "add_wallet.items.testnet.subtitle" = "Import wallet with a 24 secret recovery words to Testnet";
 
+"add_wallet.items.pair_signer.title" = "Pair Signer";
+"add_wallet.items.pair_signer.subtitle" = "A higher level of control and security";
+
 "chart.price" = "Price";
 
 "periods.hour" = "H";

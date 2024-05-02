@@ -37,7 +37,7 @@ enum AddWalletOption: String {
     case .importTestnet:
       return TKLocales.AddWallet.Items.Testnet.title
 	case .signer:
-      return "A higher level of control and security"
+      return TKLocales.AddWallet.Items.PairSigner.title
     }
   }
   
@@ -52,7 +52,7 @@ enum AddWalletOption: String {
     case .importTestnet:
       return TKLocales.AddWallet.Items.Testnet.subtitle
 	case .signer:
-      return "A higher level of control and security"
+      return TKLocales.AddWallet.Items.PairSigner.subtitle
     }
   }
   

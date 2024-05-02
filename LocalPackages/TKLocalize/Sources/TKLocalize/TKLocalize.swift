@@ -635,6 +635,16 @@ public enum TKLocales {
           localize("add_wallet.items.testnet.subtitle")
         }
       }
+      public enum PairSigner {
+        /// Pair Signer
+        public static var title: String {
+          localize("add_wallet.items.pair_signer.title")
+        }
+        /// A higher level of control and security
+        public static var subtitle: String {
+          localize("add_wallet.items.pair_signer.subtitle")
+        }
+      }
     }
   }
   public enum Chart {
