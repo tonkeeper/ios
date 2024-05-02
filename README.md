@@ -16,7 +16,7 @@
 
 #### Build
 - create you own GoogleService-Info.plist ([Steps 1-3](https://firebase.google.com/docs/ios/setup))
-- put created GoogleService-Info.plist `/Tonkeeper/Resources/Firebase/Debug/`
+- put created GoogleService-Info.plist `/Tonkeeper/Resources/Firebase/Debug/` and `/Tonkeeper/Resources/Firebase/Release/`
 
 #### Device debug
 
