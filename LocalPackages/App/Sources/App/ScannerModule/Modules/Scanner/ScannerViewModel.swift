@@ -10,6 +10,8 @@ protocol ScannerViewModuleOutput: AnyObject {
 
 protocol ScannerViewModel: AnyObject {
   
+  var didUpdateTitle: ((NSAttributedString?) -> Void)? { get set }
+  var didUpdateSubtitle: ((NSAttributedString?) -> Void)? { get set }
   var didUpdateState: ((ScannerState) -> Void)? { get set }
   
   func viewDidLoad()
@@ -43,6 +45,8 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   
   // MARK: - ScannerViewModel
   
+  var didUpdateTitle: ((NSAttributedString?) -> Void)?
+  var didUpdateSubtitle: ((NSAttributedString?) -> Void)?
   var didUpdateState: ((ScannerState) -> Void)?
  
   func viewDidLoad() {
@@ -82,18 +86,42 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   
   private let urlOpener: URLOpener
   private let scannerController: ScannerController
+  private let title: String?
+  private let subtitle: String?
   
   // MARK: - Init
   
   init(urlOpener: URLOpener,
-       scannerController: ScannerController) {
+       scannerController: ScannerController,
+       title: String?,
+       subtitle: String?) {
     self.urlOpener = urlOpener
     self.scannerController = scannerController
+    self.title = title
+    self.subtitle = subtitle
   }
 }
 
 private extension ScannerViewModelImplementation {
   func setup() {
+    didUpdateTitle?(
+      title?.withTextStyle(
+        .h2,
+        color: .Text.primary,
+        alignment: .center,
+        lineBreakMode: .byTruncatingTail
+      )
+    )
+    
+    didUpdateSubtitle?(
+      subtitle?.withTextStyle(
+        .body1,
+        color: .white,
+        alignment: .center,
+        lineBreakMode: .byWordWrapping
+      )
+    )
+    
     let status = AVCaptureDevice.authorizationStatus(for: .video)
     switch status {
     case .authorized:

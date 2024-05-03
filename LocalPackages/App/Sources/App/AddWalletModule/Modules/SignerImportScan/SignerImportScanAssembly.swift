@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 struct SignerImportScanAssembly {
   private init() {}
@@ -11,7 +12,9 @@ struct SignerImportScanAssembly {
       scannerController: scannerAssembly.scannerController(
         configurator: SignerScannerControllerConfigurator()
       ),
-      urlOpener: coreAssembly.urlOpener()
+      urlOpener: coreAssembly.urlOpener(),
+      title: TKLocales.Scanner.title,
+      subtitle: TKLocales.Signer.Scan.subtitle
     )
     
     let viewModel = SignerImportScanViewModelImplementation(

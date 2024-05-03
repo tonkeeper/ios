@@ -1,6 +1,7 @@
 import TKUIKit
 import TKCoordinator
 import TKCore
+import TKLocalize
 import KeeperCore
 
 struct ScannerModule {
@@ -12,7 +13,8 @@ struct ScannerModule {
   func createScannerModule(configurator: ScannerControllerConfigurator) -> MVVMModule<ScannerViewController, ScannerViewModuleOutput, Void> {
     ScannerAssembly.module(
       scannerController: dependencies.scannerAssembly.scannerController(configurator: configurator),
-      urlOpener: dependencies.coreAssembly.urlOpener()
+      urlOpener: dependencies.coreAssembly.urlOpener(),
+      title: TKLocales.Scanner.title
     )
   }
 }

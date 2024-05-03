@@ -165,6 +165,11 @@
 "add_wallet.items.pair_signer.title" = "Пара для Signer";
 "add_wallet.items.pair_signer.subtitle" = "Более высокий уровень контроля и безопасности";
 
+"scanner.title" = "Отсканируйте QR-код";
+
+"signer.scan.subtitle" = "Откройте Signer » Выберите нужный ключ » Отсканируйте QR-код";
+"signer.scan.open_signer_button" = "Открыть Signer на этом устройстве";
+
 "chart.price" = "Цена";
 
 "periods.hour" = "Ч";

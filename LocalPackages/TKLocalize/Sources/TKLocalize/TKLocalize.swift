@@ -647,6 +647,24 @@ public enum TKLocales {
       }
     }
   }
+  public enum Scanner {
+    /// Scan QR code
+    public static var title: String {
+      localize("scanner.title")
+    }
+  }
+  public enum Signer {
+    public enum Scan {
+      /// Open Signer » Select the required key » Scan QR code
+      public static var subtitle: String {
+        localize("signer.scan.subtitle")
+      }
+      /// Open Signer on this device
+      public static var open_signer_button: String {
+        localize("signer.scan.open_signer_button")
+      }
+    }
+  }
   public enum Chart {
     /// Price
     public static var price: String {

@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import TKCore
+import TKLocalize
 import KeeperCore
 import TonSwift
 
@@ -35,7 +36,7 @@ final class SignerImportScanViewModelImplementation: SignerImportScanViewModel, 
       self?.didScanLinkQRCode?(publicKey, name)
     }
     
-    didUpdateOpenSignerButtonContent?(TKButton.Configuration.Content(title: .plainString("Open Signer on this device")))
+    didUpdateOpenSignerButtonContent?(TKButton.Configuration.Content(title: .plainString(TKLocales.Signer.Scan.open_signer_button)))
   }
   
   func didTapOpenSigner() {

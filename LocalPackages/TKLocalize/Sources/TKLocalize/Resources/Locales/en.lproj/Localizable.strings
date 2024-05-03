@@ -168,6 +168,11 @@
 "add_wallet.items.pair_signer.title" = "Pair Signer";
 "add_wallet.items.pair_signer.subtitle" = "A higher level of control and security";
 
+"scanner.title" = "Scan QR code";
+
+"signer.scan.subtitle" = "Open Signer » Select the required key » Scan QR code";
+"signer.scan.open_signer_button" = "Open Signer on this device";
+
 "chart.price" = "Price";
 
 "periods.hour" = "H";

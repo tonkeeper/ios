@@ -24,7 +24,6 @@ final class SignerImportScanView: UIView {
   }()
   let openSignerButtonContainer: TKPaddingContainerView = {
     let container = TKPaddingContainerView()
-    container.backgroundView = TKGradientView(color: .Background.page, direction: .bottomToTop)
     container.padding = .openSignerButtonPadding
     return container
   }()
