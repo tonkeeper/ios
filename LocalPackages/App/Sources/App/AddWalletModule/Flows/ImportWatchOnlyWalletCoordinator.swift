@@ -33,7 +33,17 @@ private extension ImportWatchOnlyWalletCoordinator {
       self?.openCustomizeWallet(resolvableAddress: resolvableAddress)
     }
     
-    router.push(viewController: module.view)
+    if router.rootViewController.viewControllers.isEmpty {
+      module.view.setupSwipeDownButton { [weak self] in
+        self?.didCancel?()
+      }
+    } else {
+      module.view.setupBackButton()
+    }
+    
+    router.push(viewController: module.view, onPopClosures: { [weak self] in
+      self?.didCancel?()
+    })
   }
   
   func openCustomizeWallet(resolvableAddress: ResolvableAddress) {

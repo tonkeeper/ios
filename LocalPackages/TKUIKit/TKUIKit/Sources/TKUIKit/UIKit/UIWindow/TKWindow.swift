@@ -25,6 +25,7 @@ open class TKWindow: UIWindow {
 
 private extension TKWindow {
   func setup() {
+    layer.speed = 1.1
     token = NotificationCenter.default.addObserver(
       forName: Notification.Name.didChangeThemeMode,
       object: nil,

@@ -11,9 +11,24 @@ struct AddWalletModule {
     self.dependencies = dependencies
   }
   
-  func createAddWalletCoordinator(router: ViewControllerRouter) -> AddWalletCoordinator {
+  func createAddWalletCoordinator(options: [AddWalletOption],
+                                  createPasscode: Bool = false,
+                                  router: ViewControllerRouter) -> AddWalletCoordinator {
+    
+    var createPasscodeCoordinatorProvider: ((NavigationControllerRouter) -> CreatePasscodeCoordinator)?
+    if createPasscode {
+      createPasscodeCoordinatorProvider = { router in
+        PasscodeModule(
+          dependencies: PasscodeModule.Dependencies(
+            passcodeAssembly: dependencies.passcodeAssembly
+          )
+        ).createCreatePasscodeCoordinator(router: router)
+      }
+    }
+    
     let coordinator = AddWalletCoordinator(
       router: router,
+      options: options,
       walletAddController: dependencies.walletsUpdateAssembly.walletAddController(),
       createWalletCoordinatorProvider:  { router in
         return createCreateWalletCoordinator(router: router)
@@ -25,7 +40,7 @@ struct AddWalletModule {
         return createImportWatchOnlyWalletCoordinator(router: router)
       }, pairSignerCoordinatorProvider: { router in
         return createPairSignerCoordinator(router: router)
-      }
+      }, createPasscodeCoordinatorProvider: createPasscodeCoordinatorProvider
     )
     
     return coordinator
@@ -140,13 +155,16 @@ extension AddWalletModule {
     let walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly
     let coreAssembly: TKCore.CoreAssembly
     let scannerAssembly: KeeperCore.ScannerAssembly
+    let passcodeAssembly: KeeperCore.PasscodeAssembly
     
     public init(walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
                 coreAssembly: TKCore.CoreAssembly,
-                scannerAssembly: KeeperCore.ScannerAssembly) {
+                scannerAssembly: KeeperCore.ScannerAssembly,
+                passcodeAssembly: KeeperCore.PasscodeAssembly) {
       self.walletsUpdateAssembly = walletsUpdateAssembly
       self.coreAssembly = coreAssembly
       self.scannerAssembly = scannerAssembly
+      self.passcodeAssembly = passcodeAssembly
     }
   }
 }

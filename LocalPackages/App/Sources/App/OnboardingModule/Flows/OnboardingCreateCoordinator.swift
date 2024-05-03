@@ -21,7 +21,8 @@ public final class OnboardingCreateCoordinator: RouterCoordinator<NavigationCont
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: assembly.walletsUpdateAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: assembly.scannerAssembly()
+        scannerAssembly: assembly.scannerAssembly(),
+        passcodeAssembly: assembly.passcodeAssembly
       )
     )
     super.init(router: router)

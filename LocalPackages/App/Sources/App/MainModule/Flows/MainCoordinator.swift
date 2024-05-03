@@ -280,8 +280,8 @@ private extension MainCoordinator {
   func handleTonkeeperDeeplink(_ deeplink: TonkeeperDeeplink) -> Bool {
     switch deeplink {
     case .signer(let signerDeeplink):
-      if let addWalletCoordinator {
-        return addWalletCoordinator.handleDeeplink(deeplink: deeplink)
+      if let addWalletCoordinator, addWalletCoordinator.handleDeeplink(deeplink: deeplink) {
+        return true
       }
       router.dismiss(animated: true) { [weak self] in
         self?.handleSignerDeeplink(signerDeeplink)
@@ -301,7 +301,8 @@ private extension MainCoordinator {
         dependencies: AddWalletModule.Dependencies(
           walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
           coreAssembly: coreAssembly,
-          scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+          scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+          passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
         )
       ).createPairSignerImportCoordinator(
         publicKey: publicKey,
@@ -362,11 +363,13 @@ private extension MainCoordinator {
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
       )
     )
     
-    let coordinator = module.createAddWalletCoordinator(router: router)
+    let coordinator = module.createAddWalletCoordinator(options: [.createRegular, .importRegular, .importWatchOnly, .signer],
+                                                        router: router)
     coordinator.didAddWallets = { [weak self, weak coordinator] in
       self?.addWalletCoordinator = nil
       guard let coordinator else { return }
@@ -389,7 +392,8 @@ private extension MainCoordinator {
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
       )
     )
     

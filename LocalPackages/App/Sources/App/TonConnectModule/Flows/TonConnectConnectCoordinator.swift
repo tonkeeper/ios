@@ -138,11 +138,15 @@ private extension TonConnectConnectCoordinator {
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
       )
     )
     
-    let coordinator = module.createAddWalletCoordinator(router: router)
+    let coordinator = module.createAddWalletCoordinator(
+      options: [.createRegular, .importRegular, .importWatchOnly, .signer],
+      router: router
+    )
     coordinator.didAddWallets = {
       onAddWallets()
     }

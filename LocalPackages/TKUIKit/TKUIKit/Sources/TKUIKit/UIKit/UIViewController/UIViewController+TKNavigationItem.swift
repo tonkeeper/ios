@@ -13,6 +13,12 @@ public extension UIViewController {
     }
   }
   
+  func setupSwipeDownButton(_ action: @escaping () -> Void) {
+    navigationItem.setupSwipeDown {
+      action()
+    }
+  }
+  
   func setupLeftCloseButton(_ action: @escaping () -> Void) {
     let closeButton = createCloseButton(action)
     navigationItem.leftBarButtonItem = UIBarButtonItem(customView: closeButton)

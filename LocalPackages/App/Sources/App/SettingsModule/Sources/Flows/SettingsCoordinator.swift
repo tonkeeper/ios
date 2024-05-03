@@ -79,7 +79,8 @@ private extension SettingsCoordinator {
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
       )
     )
     

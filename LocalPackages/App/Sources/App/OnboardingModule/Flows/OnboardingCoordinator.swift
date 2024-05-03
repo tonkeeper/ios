@@ -6,6 +6,8 @@ import KeeperCore
 
 public final class OnboardingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
+  private weak var addWalletCoordinator: AddWalletCoordinator?
+  
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreOnboardingAssembly: KeeperCore.OnboardingAssembly
   
@@ -19,8 +21,14 @@ public final class OnboardingCoordinator: RouterCoordinator<NavigationController
     super.init(router: router)
   }
   
-  public override func start() {
+  public override func start(deeplink: CoordinatorDeeplink? = nil) {
     openOnboardingStart()
+    _ = handleDeeplink(deeplink: deeplink)
+  }
+  
+  public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    guard let coreDeeplink = deeplink as? KeeperCore.Deeplink else { return false }
+    return handleCoreDeeplink(coreDeeplink)
   }
 }
 
@@ -33,7 +41,8 @@ private extension OnboardingCoordinator {
     }
     
     module.output.didTapImportButton = { [weak self] in
-      self?.openImport()
+      guard let self else { return }
+      self.openAddWallet(router: ViewControllerRouter(rootViewController: self.router.rootViewController))
     }
     
     router.push(viewController: module.view, animated: false)
@@ -68,32 +77,99 @@ private extension OnboardingCoordinator {
     router.present(navigationController)
   }
   
-  func openImport() {
-    let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
-    navigationController.isModalInPresentation = true
-    
-    let coordinator = OnboardingImportCoordinator(
-      router: NavigationControllerRouter(rootViewController: navigationController),
-      coreAssembly: coreAssembly,
-      assembly: keeperCoreOnboardingAssembly
+  func openAddWallet(router: ViewControllerRouter) {
+    let module = AddWalletModule(
+      dependencies: AddWalletModule.Dependencies(
+        walletsUpdateAssembly: keeperCoreOnboardingAssembly.walletsUpdateAssembly,
+        coreAssembly: coreAssembly,
+        scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly(),
+        passcodeAssembly: keeperCoreOnboardingAssembly.passcodeAssembly
+      )
     )
-    coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
-      guard let coordinator = coordinator else { return }
+    
+    let coordinator = module.createAddWalletCoordinator(options: [.importRegular, .importWatchOnly, .signer],
+                                                        createPasscode: true,
+                                                        router: router)
+    coordinator.didAddWallets = { [weak self, weak coordinator] in
+      self?.didFinishOnboarding?()
+      guard let coordinator else { return }
       self?.removeChild(coordinator)
-      navigationController?.dismiss(animated: true)
+    }
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
     }
     
-    coordinator.didImportWallets = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
-      self?.didFinishOnboarding?()
-      navigationController.dismiss(animated: true)
-    }
+    addWalletCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start()
+  }
+  
+  func handleCoreDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
+    switch deeplink {
+    case .tonkeeper(let tonkeeperDeeplink):
+      return handleTonkeeperDeeplink(tonkeeperDeeplink)
+    default:
+      return false
+    }
+  }
+  
+  func handleTonkeeperDeeplink(_ deeplink: TonkeeperDeeplink) -> Bool {
+    switch deeplink {
+    case .signer(let signerDeeplink):
+      if let addWalletCoordinator, addWalletCoordinator.handleDeeplink(deeplink: deeplink) {
+        return true
+      }
+      router.dismiss(animated: true) { [weak self] in
+        self?.handleSignerDeeplink(signerDeeplink)
+      }
+      return true
+    }
+  }
+  
+  func handleSignerDeeplink(_ deeplink: TonkeeperDeeplink.SignerDeeplink) {
+
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
     
-    router.present(navigationController)
+    switch deeplink {
+    case .link(let publicKey, let name):
+      let coordinator = AddWalletModule(
+        dependencies: AddWalletModule.Dependencies(
+          walletsUpdateAssembly: keeperCoreOnboardingAssembly.walletsUpdateAssembly,
+          coreAssembly: coreAssembly,
+          scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly(),
+          passcodeAssembly: keeperCoreOnboardingAssembly.passcodeAssembly
+        )
+      ).createPairSignerImportCoordinator(
+        publicKey: publicKey,
+        name: name,
+        router: NavigationControllerRouter(
+          rootViewController: navigationController
+        )
+      )
+      
+      coordinator.didPrepareForPresent = { [weak router] in
+        router?.present(navigationController)
+      }
+      
+      coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
+        navigationController?.dismiss(animated: true)
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+      
+      coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in
+        navigationController?.dismiss(animated: true, completion: {
+          self?.didFinishOnboarding?()
+        })
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+      
+      addChild(coordinator)
+      coordinator.start()
+    }
   }
 }

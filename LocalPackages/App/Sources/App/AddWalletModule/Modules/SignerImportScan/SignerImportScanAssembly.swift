@@ -16,7 +16,8 @@ struct SignerImportScanAssembly {
     
     let viewModel = SignerImportScanViewModelImplementation(
       urlOpener: coreAssembly.urlOpener(),
-      signerScanController: scannerAssembly.signerScanController()
+      signerScanController: scannerAssembly.signerScanController(),
+      scannerViewModuleOutput: scannerModule.output
     )
     let viewController = SignerImportScanViewController(viewModel: viewModel, scannerViewController: scannerModule.view)
     return .init(view: viewController, output: viewModel, input: Void())

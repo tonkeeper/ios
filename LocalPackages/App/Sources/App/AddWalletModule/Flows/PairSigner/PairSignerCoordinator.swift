@@ -49,6 +49,18 @@ private extension PairSignerCoordinator {
       coreAssembly: coreAssembly
     )
     
+    module.output.didScanLinkQRCode = { [weak self] publicKey, name in
+      self?.openImportCoordinator(publicKey: publicKey, name: name)
+    }
+    
+    if router.rootViewController.viewControllers.isEmpty {
+      module.view.setupSwipeDownButton() { [weak self] in
+        self?.didCancel?()
+      }
+    } else {
+      module.view.setupBackButton()
+    }
+    
     router.push(viewController: module.view, animated: false)
   }
   

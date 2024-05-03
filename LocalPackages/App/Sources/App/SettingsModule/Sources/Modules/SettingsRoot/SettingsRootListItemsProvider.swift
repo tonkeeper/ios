@@ -87,21 +87,23 @@ private extension SettingsRootListItemsProvider {
     var logoutSectionItems = [AnyHashable]()
     switch settingsController.activeWallet().model.walletType {
     case .watchOnly:
-//      break
       logoutSectionItems.append(setupDeleteWatchOnlyAccount())
     default:
-//      break
       logoutSectionItems.append(setupDeleteAccountItem())
     }
     logoutSectionItems.append(setupLogoutItem())
     
+    var securitySectionItems = [setupSecurityItem()]
+    switch settingsController.activeWallet().model.walletType {
+    case .regular:
+      securitySectionItems.append(setupBackupItem())
+    default: break
+    }
+    
     return await [setupWalletSection(),
      SettingsListSection(
       padding: .sectionPadding,
-      items: [
-        setupSecurityItem(),
-        setupBackupItem()
-      ]
+      items: securitySectionItems
      ),
      SettingsListSection(
       padding: .sectionPadding,
