@@ -57,8 +57,8 @@ private extension PasswordInputViewController {
     viewModel.didUpdateTitle = { [customView] model in
       customView.titleDescriptionView.configure(model: model)
     }
-    viewModel.didUpdateContinueButton = { [customView] model in
-      customView.continueButton.configure(model: model)
+    viewModel.didUpdateContinueButton = { [customView] configuration in
+      customView.continueButton.configuration = configuration
     }
     viewModel.didUpdateIsContinueButtonEnabled = { [customView] isEnabled in
       customView.continueButton.isEnabled = isEnabled

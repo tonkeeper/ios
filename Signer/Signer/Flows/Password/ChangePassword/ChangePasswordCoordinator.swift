@@ -27,7 +27,7 @@ private extension ChangePasswordCoordinator {
       self?.openSetNewPassword()
     }
     
-    module.view.setCloseButton { [weak self, weak view = module.view] in
+    module.view.setupLeftCloseButton { [weak self, weak view = module.view] in
       view?.dismiss(animated: true) { [weak self] in
         self?.didFinish?()
       }
@@ -58,7 +58,7 @@ private extension ChangePasswordCoordinator {
     do {
       try createPasswordController.createPassword(newPassword)
       didFinish?()
-      ToastPresenter.showToast(configuration: .init(title: "Password changed"))
+//      ToastPresenter.showToast(configuration: .init(title: "Password changed"))
     } catch {}
   }
 }

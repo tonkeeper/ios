@@ -30,7 +30,7 @@ private extension CreatePasswordCoordinator {
     }
     
     if showAsRoot {
-      module.view.setCloseButton { [weak self, weak view = module.view] in
+      module.view.setupLeftCloseButton { [weak self, weak view = module.view] in
         view?.dismiss(animated: true, completion: { [weak self] in
           self?.didFinish?()
         })

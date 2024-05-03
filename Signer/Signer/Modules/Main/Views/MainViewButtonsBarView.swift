@@ -1,18 +1,20 @@
 import UIKit
 import TKUIKit
 
-final class MainViewButtonsBarView: UIView, ConfigurableView {
+final class MainHeaderButtonsView: UIView, ConfigurableView {
   
+  private let dividerView = TKDividerBackgroundView()
   private let stackView: UIStackView = {
     let stackView = UIStackView()
-    stackView.axis = .horizontal
-    stackView.distribution = .fillEqually
-    stackView.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 20, leading: 16, bottom: 36, trailing: 16)
+    stackView.axis = .vertical
     stackView.isLayoutMarginsRelativeArrangement = true
+    stackView.directionalLayoutMargins = .padding
     return stackView
   }()
   
-  // MARK: - Init
+  private let scanButton = TKUIIconButton()
+  private let addKeyButton = TKUIIconButton()
+  private let settingsButton = TKUIIconButton()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -23,39 +25,65 @@ final class MainViewButtonsBarView: UIView, ConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  // MARK: - ConfigurableView
-  
   struct Model {
-    let buttons: [TKFlatButtonControl<TKFlatButtonTitleIconContent>.Model]
+    struct Button {
+      let title: String
+      let icon: UIImage
+      let isEnabled: Bool
+      let action: () -> Void
+    }
+    
+    let scanButton: Button
+    let addKeyButton: Button
+    let settingsButton: Button
   }
   
   func configure(model: Model) {
-    stackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-    model.buttons.forEach { buttonModel in
-      let button = TKButton.flatIconTitleButton()
-      button.backgroundColor = .Background.page
-      button.configure(model: buttonModel)
-      stackView.addArrangedSubview(button)
-    }
+    configureButton(button: scanButton, model: model.scanButton)
+    configureButton(button: addKeyButton, model: model.addKeyButton)
+    configureButton(button: settingsButton, model: model.settingsButton)
   }
 }
 
-private extension MainViewButtonsBarView {
+private extension MainHeaderButtonsView {
   func setup() {
+    dividerView.numberOfRows = 1
+    
+    let topRowStackView = UIStackView()
+    topRowStackView.axis = .horizontal
+    topRowStackView.distribution = .fillEqually
+    stackView.addArrangedSubview(topRowStackView)
+    
+    topRowStackView.addArrangedSubview(scanButton)
+    topRowStackView.addArrangedSubview(addKeyButton)
+    topRowStackView.addArrangedSubview(settingsButton)
+    
+    addSubview(dividerView)
     addSubview(stackView)
     setupConstraints()
   }
   
   func setupConstraints() {
-    stackView.translatesAutoresizingMaskIntoConstraints = false
+    stackView.snp.makeConstraints { make in
+      make.edges.equalTo(self)
+    }
     
-    NSLayoutConstraint.activate([
-      stackView.topAnchor.constraint(equalTo: topAnchor),
-      stackView.rightAnchor.constraint(equalTo: rightAnchor),
-      stackView.leftAnchor.constraint(equalTo: leftAnchor)
-        .withPriority(.defaultHigh),
-      stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
-        .withPriority(.defaultHigh)
-    ])
+    dividerView.snp.makeConstraints { make in
+      make.edges.equalTo(self).inset(NSDirectionalEdgeInsets.padding)
+    }
   }
+  
+  private func configureButton(button: TKUIIconButton, model: Model.Button) {
+    button.configure(model: TKUIIconButton.Model(image: model.icon, title: model.title))
+    button.isEnabled = model.isEnabled
+    button.addTapAction(model.action)
+  }
+}
+
+private extension NSDirectionalEdgeInsets {
+  static var padding = NSDirectionalEdgeInsets(
+    top: 0,
+    leading: 16,
+    bottom: 20,
+    trailing: 16)
 }

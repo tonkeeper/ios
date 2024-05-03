@@ -8,10 +8,33 @@
 
 /* Begin PBXBuildFile section */
 		C30A3AF72BE23EC300D82A0B /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30A3AF62BE23EC300D82A0B /* QRCodeGenerator.swift */; };
+		C30B6CB12BE4DEBF00737397 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CA82BE4DEBF00737397 /* NoCameraPermissionView.swift */; };
+		C30B6CB22BE4DEBF00737397 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CA92BE4DEBF00737397 /* QRScannerSwipeDownButton.swift */; };
+		C30B6CB32BE4DEBF00737397 /* ToggleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CAA2BE4DEBF00737397 /* ToggleButton.swift */; };
+		C30B6CB42BE4DEBF00737397 /* ScannerAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CAC2BE4DEBF00737397 /* ScannerAssembly.swift */; };
+		C30B6CB52BE4DEBF00737397 /* ScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CAD2BE4DEBF00737397 /* ScannerView.swift */; };
+		C30B6CB62BE4DEBF00737397 /* ScannerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CAE2BE4DEBF00737397 /* ScannerViewController.swift */; };
+		C30B6CB72BE4DEBF00737397 /* ScannerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CAF2BE4DEBF00737397 /* ScannerViewModel.swift */; };
+		C30B6CBA2BE4E12000737397 /* URLOpener.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CB92BE4E12000737397 /* URLOpener.swift */; };
+		C30B6CC82BE4F88100737397 /* TonConnectConfirmationContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CC12BE4F88100737397 /* TonConnectConfirmationContentView.swift */; };
+		C30B6CC92BE4F88100737397 /* TonConnectConfirmationFeeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CC22BE4F88100737397 /* TonConnectConfirmationFeeView.swift */; };
+		C30B6CCA2BE4F88100737397 /* TonConnectConfirmationAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CC42BE4F88100737397 /* TonConnectConfirmationAssembly.swift */; };
+		C30B6CCB2BE4F88100737397 /* TonConnectConfirmationViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CC52BE4F88100737397 /* TonConnectConfirmationViewController.swift */; };
+		C30B6CCC2BE4F88100737397 /* TonConnectConfirmationViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CC62BE4F88100737397 /* TonConnectConfirmationViewModel.swift */; };
+		C30F68182BE51A1D00F1FC52 /* SnapKit-Dynamic in Frameworks */ = {isa = PBXBuildFile; productRef = C30F68172BE51A1D00F1FC52 /* SnapKit-Dynamic */; };
+		C30F68192BE51A1D00F1FC52 /* SnapKit-Dynamic in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C30F68172BE51A1D00F1FC52 /* SnapKit-Dynamic */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C30F681F2BE51CCE00F1FC52 /* TKScreenKit in Frameworks */ = {isa = PBXBuildFile; productRef = C30F681E2BE51CCE00F1FC52 /* TKScreenKit */; };
+		C30F68212BE523D400F1FC52 /* InputRecoveryPhraseValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30F68202BE523D400F1FC52 /* InputRecoveryPhraseValidator.swift */; };
+		C30F68232BE523E800F1FC52 /* InputRecoveryPhraseSuggestsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30F68222BE523E800F1FC52 /* InputRecoveryPhraseSuggestsProvider.swift */; };
+		C30F68252BE5273000F1FC52 /* MainViewKeyItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30F68242BE5273000F1FC52 /* MainViewKeyItemCell.swift */; };
+		C30F68272BE52C4A00F1FC52 /* RecoveryPhraseDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30F68262BE52C4A00F1FC52 /* RecoveryPhraseDataProvider.swift */; };
+		C30F68292BE5559800F1FC52 /* TKUIKitDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = C30F68282BE5559800F1FC52 /* TKUIKitDynamic */; };
+		C30F682A2BE5559800F1FC52 /* TKUIKitDynamic in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C30F68282BE5559800F1FC52 /* TKUIKitDynamic */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		C30F682C2BE560FC00F1FC52 /* KeyDetailsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30F682B2BE560FC00F1FC52 /* KeyDetailsSection.swift */; };
+		C30F682E2BE56AF900F1FC52 /* KeyDetailsQRCodeCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30F682D2BE56AF900F1FC52 /* KeyDetailsQRCodeCell.swift */; };
+		C30F68302BE5749000F1FC52 /* SettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30F682F2BE5749000F1FC52 /* SettingsSection.swift */; };
 		C30FD8F92B21E0060045B58D /* UIImage+Tonsign.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD8F82B21E0060045B58D /* UIImage+Tonsign.swift */; };
-		C30FD8FB2B21EAB00045B58D /* OnboardingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD8FA2B21EAB00045B58D /* OnboardingViewModel.swift */; };
 		C30FD8FE2B21F14C0045B58D /* Module.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD8FD2B21F14C0045B58D /* Module.swift */; };
-		C30FD9002B21F19B0045B58D /* OnboardingModuleAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD8FF2B21F19B0045B58D /* OnboardingModuleAssembly.swift */; };
 		C30FD9042B22011E0045B58D /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9032B22011E0045B58D /* Router.swift */; };
 		C30FD9062B2201FB0045B58D /* ContainerViewControllerRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9052B2201FB0045B58D /* ContainerViewControllerRouter.swift */; };
 		C30FD9082B2202390045B58D /* NavigationControllerRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9072B2202390045B58D /* NavigationControllerRouter.swift */; };
@@ -35,10 +58,6 @@
 		C30FD95D2B223AB00045B58D /* EditWalletNameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD95C2B223AB00045B58D /* EditWalletNameViewModel.swift */; };
 		C30FD95F2B223B580045B58D /* EditWalletNameModuleAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD95E2B223B580045B58D /* EditWalletNameModuleAssembly.swift */; };
 		C30FD9622B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9612B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift */; };
-		C30FD9642B2343090045B58D /* TKScreenKIt in Frameworks */ = {isa = PBXBuildFile; productRef = C30FD9632B2343090045B58D /* TKScreenKIt */; };
-		C30FD9672B23436F0045B58D /* InputRecoveryPhraseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9662B23436F0045B58D /* InputRecoveryPhraseViewController.swift */; };
-		C30FD9692B2343AB0045B58D /* InputRecoveryPhraseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9682B2343AB0045B58D /* InputRecoveryPhraseViewModel.swift */; };
-		C30FD96B2B2344A90045B58D /* InputRecoveryPhraseModuleAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD96A2B2344A90045B58D /* InputRecoveryPhraseModuleAssembly.swift */; };
 		C32395242B29215F00C4F954 /* SettingsListFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395232B29215F00C4F954 /* SettingsListFooterView.swift */; };
 		C32395272B29289D00C4F954 /* ChangePasswordCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395262B29289D00C4F954 /* ChangePasswordCoordinator.swift */; };
 		C323952A2B29292F00C4F954 /* SettingsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395292B29292F00C4F954 /* SettingsCoordinator.swift */; };
@@ -62,17 +81,12 @@
 		C34C447A2B27A80000D50343 /* KeyDetailsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44792B27A80000D50343 /* KeyDetailsView.swift */; };
 		C34C447C2B27A84100D50343 /* KeyDetailsModuleAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C447B2B27A84100D50343 /* KeyDetailsModuleAssembly.swift */; };
 		C34C447E2B27A8AD00D50343 /* KeyDetailsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C447D2B27A8AD00D50343 /* KeyDetailsViewModel.swift */; };
-		C34C44812B27AAAF00D50343 /* KeyDetailsCollectionLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44802B27AAAF00D50343 /* KeyDetailsCollectionLayout.swift */; };
-		C34C44832B27AACC00D50343 /* KeyDetailsCollectionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44822B27AACC00D50343 /* KeyDetailsCollectionController.swift */; };
 		C34C44862B27B6B000D50343 /* KeyDetailsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44852B27B6B000D50343 /* KeyDetailsCoordinator.swift */; };
 		C34C44892B27C12500D50343 /* ShowRecoveryPhraseCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44882B27C12500D50343 /* ShowRecoveryPhraseCoordinator.swift */; };
 		C34C448C2B28732700D50343 /* EditWalletNameViewModelConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C448B2B28732700D50343 /* EditWalletNameViewModelConfigurator.swift */; };
 		C34C448F2B288F3100D50343 /* ShowRecoveryPhraseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C448E2B288F3100D50343 /* ShowRecoveryPhraseViewController.swift */; };
 		C34C44912B288F7300D50343 /* ShowRecoveryPhraseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44902B288F7300D50343 /* ShowRecoveryPhraseViewModel.swift */; };
 		C34C44932B288F7D00D50343 /* ShowRecoveryPhraseModuleAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44922B288F7D00D50343 /* ShowRecoveryPhraseModuleAssembly.swift */; };
-		C34C449B2B28B31000D50343 /* KeyDetailsQRCodeItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C449A2B28B31000D50343 /* KeyDetailsQRCodeItemView.swift */; };
-		C34C449D2B28CC0300D50343 /* KeyDetailsListSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C449C2B28CC0300D50343 /* KeyDetailsListSection.swift */; };
-		C34C449F2B28CC1B00D50343 /* KeyDetailsListKeyItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C449E2B28CC1B00D50343 /* KeyDetailsListKeyItem.swift */; };
 		C34C44A22B28CCFC00D50343 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44A12B28CCFC00D50343 /* SettingsView.swift */; };
 		C34C44A42B28CD0300D50343 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44A32B28CD0300D50343 /* SettingsViewController.swift */; };
 		C34C44A62B28CD0A00D50343 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44A52B28CD0A00D50343 /* SettingsViewModel.swift */; };
@@ -88,9 +102,6 @@
 		C3E6DE5B2B1F40DB005AA291 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E6DE5A2B1F40DB005AA291 /* ViewController.swift */; };
 		C3E6DE602B1F40DB005AA291 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C3E6DE5F2B1F40DB005AA291 /* Assets.xcassets */; };
 		C3E6DE632B1F40DB005AA291 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C3E6DE612B1F40DB005AA291 /* LaunchScreen.storyboard */; };
-		C3E6DE9A2B20E9DE005AA291 /* OnboardingViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E6DE992B20E9DE005AA291 /* OnboardingViewController.swift */; };
-		C3E6DE9C2B20EA4B005AA291 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E6DE9B2B20EA4B005AA291 /* OnboardingView.swift */; };
-		C3E6DE9F2B20EA81005AA291 /* TKUIKit in Frameworks */ = {isa = PBXBuildFile; productRef = C3E6DE9E2B20EA81005AA291 /* TKUIKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -100,7 +111,9 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				C30F682A2BE5559800F1FC52 /* TKUIKitDynamic in Embed Frameworks */,
 				C360CC3C2BE20F49007F62BA /* SignerCore in Embed Frameworks */,
+				C30F68192BE51A1D00F1FC52 /* SnapKit-Dynamic in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -109,10 +122,30 @@
 
 /* Begin PBXFileReference section */
 		C30A3AF62BE23EC300D82A0B /* QRCodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeGenerator.swift; sourceTree = "<group>"; };
+		C30B6CA82BE4DEBF00737397 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
+		C30B6CA92BE4DEBF00737397 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
+		C30B6CAA2BE4DEBF00737397 /* ToggleButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ToggleButton.swift; sourceTree = "<group>"; };
+		C30B6CAC2BE4DEBF00737397 /* ScannerAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScannerAssembly.swift; sourceTree = "<group>"; };
+		C30B6CAD2BE4DEBF00737397 /* ScannerView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScannerView.swift; sourceTree = "<group>"; };
+		C30B6CAE2BE4DEBF00737397 /* ScannerViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScannerViewController.swift; sourceTree = "<group>"; };
+		C30B6CAF2BE4DEBF00737397 /* ScannerViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ScannerViewModel.swift; sourceTree = "<group>"; };
+		C30B6CB92BE4E12000737397 /* URLOpener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLOpener.swift; sourceTree = "<group>"; };
+		C30B6CC12BE4F88100737397 /* TonConnectConfirmationContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationContentView.swift; sourceTree = "<group>"; };
+		C30B6CC22BE4F88100737397 /* TonConnectConfirmationFeeView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationFeeView.swift; sourceTree = "<group>"; };
+		C30B6CC42BE4F88100737397 /* TonConnectConfirmationAssembly.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationAssembly.swift; sourceTree = "<group>"; };
+		C30B6CC52BE4F88100737397 /* TonConnectConfirmationViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationViewController.swift; sourceTree = "<group>"; };
+		C30B6CC62BE4F88100737397 /* TonConnectConfirmationViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TonConnectConfirmationViewModel.swift; sourceTree = "<group>"; };
+		C30F681A2BE51C5200F1FC52 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKUIKit; path = ../LocalPackages/TKUIKit; sourceTree = "<group>"; };
+		C30F681D2BE51C7F00F1FC52 /* TKScreenKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKScreenKit; path = ../LocalPackages/TKScreenKit; sourceTree = "<group>"; };
+		C30F68202BE523D400F1FC52 /* InputRecoveryPhraseValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputRecoveryPhraseValidator.swift; sourceTree = "<group>"; };
+		C30F68222BE523E800F1FC52 /* InputRecoveryPhraseSuggestsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputRecoveryPhraseSuggestsProvider.swift; sourceTree = "<group>"; };
+		C30F68242BE5273000F1FC52 /* MainViewKeyItemCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewKeyItemCell.swift; sourceTree = "<group>"; };
+		C30F68262BE52C4A00F1FC52 /* RecoveryPhraseDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecoveryPhraseDataProvider.swift; sourceTree = "<group>"; };
+		C30F682B2BE560FC00F1FC52 /* KeyDetailsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsSection.swift; sourceTree = "<group>"; };
+		C30F682D2BE56AF900F1FC52 /* KeyDetailsQRCodeCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsQRCodeCell.swift; sourceTree = "<group>"; };
+		C30F682F2BE5749000F1FC52 /* SettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSection.swift; sourceTree = "<group>"; };
 		C30FD8F82B21E0060045B58D /* UIImage+Tonsign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Tonsign.swift"; sourceTree = "<group>"; };
-		C30FD8FA2B21EAB00045B58D /* OnboardingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewModel.swift; sourceTree = "<group>"; };
 		C30FD8FD2B21F14C0045B58D /* Module.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Module.swift; sourceTree = "<group>"; };
-		C30FD8FF2B21F19B0045B58D /* OnboardingModuleAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingModuleAssembly.swift; sourceTree = "<group>"; };
 		C30FD9032B22011E0045B58D /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
 		C30FD9052B2201FB0045B58D /* ContainerViewControllerRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerViewControllerRouter.swift; sourceTree = "<group>"; };
 		C30FD9072B2202390045B58D /* NavigationControllerRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationControllerRouter.swift; sourceTree = "<group>"; };
@@ -136,9 +169,6 @@
 		C30FD95C2B223AB00045B58D /* EditWalletNameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWalletNameViewModel.swift; sourceTree = "<group>"; };
 		C30FD95E2B223B580045B58D /* EditWalletNameModuleAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWalletNameModuleAssembly.swift; sourceTree = "<group>"; };
 		C30FD9612B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingImportKeyCoordinator.swift; sourceTree = "<group>"; };
-		C30FD9662B23436F0045B58D /* InputRecoveryPhraseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputRecoveryPhraseViewController.swift; sourceTree = "<group>"; };
-		C30FD9682B2343AB0045B58D /* InputRecoveryPhraseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputRecoveryPhraseViewModel.swift; sourceTree = "<group>"; };
-		C30FD96A2B2344A90045B58D /* InputRecoveryPhraseModuleAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InputRecoveryPhraseModuleAssembly.swift; sourceTree = "<group>"; };
 		C32395232B29215F00C4F954 /* SettingsListFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListFooterView.swift; sourceTree = "<group>"; };
 		C32395262B29289D00C4F954 /* ChangePasswordCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordCoordinator.swift; sourceTree = "<group>"; };
 		C32395292B29292F00C4F954 /* SettingsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCoordinator.swift; sourceTree = "<group>"; };
@@ -162,17 +192,12 @@
 		C34C44792B27A80000D50343 /* KeyDetailsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsView.swift; sourceTree = "<group>"; };
 		C34C447B2B27A84100D50343 /* KeyDetailsModuleAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsModuleAssembly.swift; sourceTree = "<group>"; };
 		C34C447D2B27A8AD00D50343 /* KeyDetailsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsViewModel.swift; sourceTree = "<group>"; };
-		C34C44802B27AAAF00D50343 /* KeyDetailsCollectionLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsCollectionLayout.swift; sourceTree = "<group>"; };
-		C34C44822B27AACC00D50343 /* KeyDetailsCollectionController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsCollectionController.swift; sourceTree = "<group>"; };
 		C34C44852B27B6B000D50343 /* KeyDetailsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsCoordinator.swift; sourceTree = "<group>"; };
 		C34C44882B27C12500D50343 /* ShowRecoveryPhraseCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowRecoveryPhraseCoordinator.swift; sourceTree = "<group>"; };
 		C34C448B2B28732700D50343 /* EditWalletNameViewModelConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWalletNameViewModelConfigurator.swift; sourceTree = "<group>"; };
 		C34C448E2B288F3100D50343 /* ShowRecoveryPhraseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowRecoveryPhraseViewController.swift; sourceTree = "<group>"; };
 		C34C44902B288F7300D50343 /* ShowRecoveryPhraseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowRecoveryPhraseViewModel.swift; sourceTree = "<group>"; };
 		C34C44922B288F7D00D50343 /* ShowRecoveryPhraseModuleAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowRecoveryPhraseModuleAssembly.swift; sourceTree = "<group>"; };
-		C34C449A2B28B31000D50343 /* KeyDetailsQRCodeItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsQRCodeItemView.swift; sourceTree = "<group>"; };
-		C34C449C2B28CC0300D50343 /* KeyDetailsListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsListSection.swift; sourceTree = "<group>"; };
-		C34C449E2B28CC1B00D50343 /* KeyDetailsListKeyItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsListKeyItem.swift; sourceTree = "<group>"; };
 		C34C44A12B28CCFC00D50343 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C34C44A32B28CD0300D50343 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		C34C44A52B28CD0A00D50343 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
@@ -189,9 +214,6 @@
 		C3E6DE5F2B1F40DB005AA291 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C3E6DE622B1F40DB005AA291 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C3E6DE642B1F40DB005AA291 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		C3E6DE6B2B1F41C3005AA291 /* tkuikit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = tkuikit; path = Packages/tkuikit; sourceTree = "<group>"; };
-		C3E6DE992B20E9DE005AA291 /* OnboardingViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingViewController.swift; sourceTree = "<group>"; };
-		C3E6DE9B2B20EA4B005AA291 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -199,9 +221,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C30F68292BE5559800F1FC52 /* TKUIKitDynamic in Frameworks */,
+				C30F68182BE51A1D00F1FC52 /* SnapKit-Dynamic in Frameworks */,
+				C30F681F2BE51CCE00F1FC52 /* TKScreenKit in Frameworks */,
 				C360CC3B2BE20F49007F62BA /* SignerCore in Frameworks */,
-				C30FD9642B2343090045B58D /* TKScreenKIt in Frameworks */,
-				C3E6DE9F2B20EA81005AA291 /* TKUIKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,9 +239,75 @@
 			path = QRCoreGenerator;
 			sourceTree = "<group>";
 		};
+		C30B6CAB2BE4DEBF00737397 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C30B6CA82BE4DEBF00737397 /* NoCameraPermissionView.swift */,
+				C30B6CA92BE4DEBF00737397 /* QRScannerSwipeDownButton.swift */,
+				C30B6CAA2BE4DEBF00737397 /* ToggleButton.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C30B6CB02BE4DEBF00737397 /* Scanner */ = {
+			isa = PBXGroup;
+			children = (
+				C30B6CAB2BE4DEBF00737397 /* Views */,
+				C30B6CAC2BE4DEBF00737397 /* ScannerAssembly.swift */,
+				C30B6CAD2BE4DEBF00737397 /* ScannerView.swift */,
+				C30B6CAE2BE4DEBF00737397 /* ScannerViewController.swift */,
+				C30B6CAF2BE4DEBF00737397 /* ScannerViewModel.swift */,
+			);
+			path = Scanner;
+			sourceTree = "<group>";
+		};
+		C30B6CB82BE4E11A00737397 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				C30B6CB92BE4E12000737397 /* URLOpener.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		C30B6CBB2BE4E9FA00737397 /* Sign */ = {
+			isa = PBXGroup;
+			children = (
+				C30B6CC72BE4F88100737397 /* TonConnectConfirmation */,
+			);
+			path = Sign;
+			sourceTree = "<group>";
+		};
+		C30B6CBC2BE4EA4600737397 /* Sign */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Sign;
+			sourceTree = "<group>";
+		};
+		C30B6CC32BE4F88100737397 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				C30B6CC12BE4F88100737397 /* TonConnectConfirmationContentView.swift */,
+				C30B6CC22BE4F88100737397 /* TonConnectConfirmationFeeView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		C30B6CC72BE4F88100737397 /* TonConnectConfirmation */ = {
+			isa = PBXGroup;
+			children = (
+				C30B6CC32BE4F88100737397 /* Views */,
+				C30B6CC42BE4F88100737397 /* TonConnectConfirmationAssembly.swift */,
+				C30B6CC52BE4F88100737397 /* TonConnectConfirmationViewController.swift */,
+				C30B6CC62BE4F88100737397 /* TonConnectConfirmationViewModel.swift */,
+			);
+			path = TonConnectConfirmation;
+			sourceTree = "<group>";
+		};
 		C30FD8F52B21DFE80045B58D /* Common */ = {
 			isa = PBXGroup;
 			children = (
+				C30B6CB82BE4E11A00737397 /* Core */,
 				C30FD9302B2214D90045B58D /* Foundation */,
 				C30FD9012B2200EA0045B58D /* Coordinator */,
 				C30FD8FC2B21F1460045B58D /* Module */,
@@ -284,6 +373,7 @@
 		C30FD90F2B2204760045B58D /* Flows */ = {
 			isa = PBXGroup;
 			children = (
+				C30B6CBB2BE4E9FA00737397 /* Sign */,
 				C32395282B29292700C4F954 /* Settings */,
 				C34C44872B27C10D00D50343 /* ShowRecoveryPhrase */,
 				C34C44842B27B6A500D50343 /* KeyDetails */,
@@ -408,18 +498,10 @@
 			isa = PBXGroup;
 			children = (
 				C30FD9612B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift */,
+				C30F68202BE523D400F1FC52 /* InputRecoveryPhraseValidator.swift */,
+				C30F68222BE523E800F1FC52 /* InputRecoveryPhraseSuggestsProvider.swift */,
 			);
 			path = ImportWallet;
-			sourceTree = "<group>";
-		};
-		C30FD9652B23435C0045B58D /* InputRecoveryPhrase */ = {
-			isa = PBXGroup;
-			children = (
-				C30FD9662B23436F0045B58D /* InputRecoveryPhraseViewController.swift */,
-				C30FD9682B2343AB0045B58D /* InputRecoveryPhraseViewModel.swift */,
-				C30FD96A2B2344A90045B58D /* InputRecoveryPhraseModuleAssembly.swift */,
-			);
-			path = InputRecoveryPhrase;
 			sourceTree = "<group>";
 		};
 		C32395222B29215700C4F954 /* Views */ = {
@@ -498,6 +580,7 @@
 			isa = PBXGroup;
 			children = (
 				C34C44232B24C9B400D50343 /* MainViewButtonsBarView.swift */,
+				C30F68242BE5273000F1FC52 /* MainViewKeyItemCell.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -550,24 +633,13 @@
 			isa = PBXGroup;
 			children = (
 				C34C44942B289DEE00D50343 /* Views */,
-				C34C447F2B27AA9F00D50343 /* Collection */,
 				C34C44792B27A80000D50343 /* KeyDetailsView.swift */,
 				C34C44772B27A7F600D50343 /* KeyDetailsViewController.swift */,
 				C34C447D2B27A8AD00D50343 /* KeyDetailsViewModel.swift */,
 				C34C447B2B27A84100D50343 /* KeyDetailsModuleAssembly.swift */,
+				C30F682B2BE560FC00F1FC52 /* KeyDetailsSection.swift */,
 			);
 			path = KeyDetails;
-			sourceTree = "<group>";
-		};
-		C34C447F2B27AA9F00D50343 /* Collection */ = {
-			isa = PBXGroup;
-			children = (
-				C34C44822B27AACC00D50343 /* KeyDetailsCollectionController.swift */,
-				C34C44802B27AAAF00D50343 /* KeyDetailsCollectionLayout.swift */,
-				C34C449C2B28CC0300D50343 /* KeyDetailsListSection.swift */,
-				C34C449E2B28CC1B00D50343 /* KeyDetailsListKeyItem.swift */,
-			);
-			path = Collection;
 			sourceTree = "<group>";
 		};
 		C34C44842B27B6A500D50343 /* KeyDetails */ = {
@@ -582,6 +654,7 @@
 			isa = PBXGroup;
 			children = (
 				C34C44882B27C12500D50343 /* ShowRecoveryPhraseCoordinator.swift */,
+				C30F68262BE52C4A00F1FC52 /* RecoveryPhraseDataProvider.swift */,
 			);
 			path = ShowRecoveryPhrase;
 			sourceTree = "<group>";
@@ -607,7 +680,7 @@
 		C34C44942B289DEE00D50343 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				C34C449A2B28B31000D50343 /* KeyDetailsQRCodeItemView.swift */,
+				C30F682D2BE56AF900F1FC52 /* KeyDetailsQRCodeCell.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -618,6 +691,7 @@
 				C32395222B29215700C4F954 /* Views */,
 				C34C44A92B290E6900D50343 /* Collection */,
 				C34C44A12B28CCFC00D50343 /* SettingsView.swift */,
+				C30F682F2BE5749000F1FC52 /* SettingsSection.swift */,
 				C34C44A32B28CD0300D50343 /* SettingsViewController.swift */,
 				C34C44A52B28CD0A00D50343 /* SettingsViewModel.swift */,
 				C34C44A72B28CD1300D50343 /* SettingsModuleAssembly.swift */,
@@ -674,8 +748,9 @@
 		C3E6DE6A2B1F41C3005AA291 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				C30F681D2BE51C7F00F1FC52 /* TKScreenKit */,
+				C30F681A2BE51C5200F1FC52 /* TKUIKit */,
 				C360CC392BE20DE4007F62BA /* core-swift */,
-				C3E6DE6B2B1F41C3005AA291 /* tkuikit */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -683,28 +758,17 @@
 		C3E6DE972B20E9A1005AA291 /* Modules */ = {
 			isa = PBXGroup;
 			children = (
+				C30B6CBC2BE4EA4600737397 /* Sign */,
+				C30B6CB02BE4DEBF00737397 /* Scanner */,
 				C323954B2B2A1D5100C4F954 /* AddKey */,
 				C34C44A02B28CCE900D50343 /* Settings */,
 				C34C448D2B288F1700D50343 /* ShowRecoveryPhrase */,
 				C34C44762B27A7E900D50343 /* KeyDetails */,
 				C34C441D2B24B52900D50343 /* Main */,
-				C30FD9652B23435C0045B58D /* InputRecoveryPhrase */,
 				C30FD9572B223A790045B58D /* EditWalletName */,
 				C30FD9222B2209B00045B58D /* PasswordInput */,
-				C3E6DE982B20E9C9005AA291 /* Onboarding */,
 			);
 			path = Modules;
-			sourceTree = "<group>";
-		};
-		C3E6DE982B20E9C9005AA291 /* Onboarding */ = {
-			isa = PBXGroup;
-			children = (
-				C3E6DE992B20E9DE005AA291 /* OnboardingViewController.swift */,
-				C3E6DE9B2B20EA4B005AA291 /* OnboardingView.swift */,
-				C30FD8FA2B21EAB00045B58D /* OnboardingViewModel.swift */,
-				C30FD8FF2B21F19B0045B58D /* OnboardingModuleAssembly.swift */,
-			);
-			path = Onboarding;
 			sourceTree = "<group>";
 		};
 		C3E6DE9D2B20EA81005AA291 /* Frameworks */ = {
@@ -732,9 +796,10 @@
 			);
 			name = Signer;
 			packageProductDependencies = (
-				C3E6DE9E2B20EA81005AA291 /* TKUIKit */,
-				C30FD9632B2343090045B58D /* TKScreenKIt */,
 				C360CC3A2BE20F49007F62BA /* SignerCore */,
+				C30F68172BE51A1D00F1FC52 /* SnapKit-Dynamic */,
+				C30F681E2BE51CCE00F1FC52 /* TKScreenKit */,
+				C30F68282BE5559800F1FC52 /* TKUIKitDynamic */,
 			);
 			productName = Signer;
 			productReference = C3E6DE532B1F40DB005AA291 /* Signer.app */;
@@ -764,6 +829,9 @@
 				Base,
 			);
 			mainGroup = C3E6DE4A2B1F40DB005AA291;
+			packageReferences = (
+				C30F680F2BE4FE8D00F1FC52 /* XCRemoteSwiftPackageReference "SnapKit" */,
+			);
 			productRefGroup = C3E6DE542B1F40DB005AA291 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -790,12 +858,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C34C44812B27AAAF00D50343 /* KeyDetailsCollectionLayout.swift in Sources */,
 				C34C44722B275B6E00D50343 /* ListItemAccessoryView.swift in Sources */,
 				C30FD9622B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift in Sources */,
 				C34C447E2B27A8AD00D50343 /* KeyDetailsViewModel.swift in Sources */,
+				C30B6CB32BE4DEBF00737397 /* ToggleButton.swift in Sources */,
 				C30FD9152B2205230045B58D /* Coordinator.swift in Sources */,
 				C30FD92F2B22144E0045B58D /* UIViewController+Keyboard.swift in Sources */,
+				C30F682E2BE56AF900F1FC52 /* KeyDetailsQRCodeCell.swift in Sources */,
+				C30B6CB62BE4DEBF00737397 /* ScannerViewController.swift in Sources */,
 				C30FD9082B2202390045B58D /* NavigationControllerRouter.swift in Sources */,
 				C34C44A42B28CD0300D50343 /* SettingsViewController.swift in Sources */,
 				C34C44862B27B6B000D50343 /* KeyDetailsCoordinator.swift in Sources */,
@@ -805,12 +875,14 @@
 				C30FD9282B220A050045B58D /* PasswordInputViewModel.swift in Sources */,
 				C34C44912B288F7300D50343 /* ShowRecoveryPhraseViewModel.swift in Sources */,
 				C30FD9062B2201FB0045B58D /* ContainerViewControllerRouter.swift in Sources */,
-				C34C449F2B28CC1B00D50343 /* KeyDetailsListKeyItem.swift in Sources */,
 				C30FD90B2B2202C00045B58D /* UINavigationController+Completion.swift in Sources */,
 				C3E6DE5B2B1F40DB005AA291 /* ViewController.swift in Sources */,
-				C30FD96B2B2344A90045B58D /* InputRecoveryPhraseModuleAssembly.swift in Sources */,
+				C30B6CB72BE4DEBF00737397 /* ScannerViewModel.swift in Sources */,
+				C30B6CB12BE4DEBF00737397 /* NoCameraPermissionView.swift in Sources */,
+				C30F68272BE52C4A00F1FC52 /* RecoveryPhraseDataProvider.swift in Sources */,
 				C30FD92A2B220A760045B58D /* PasswordInputModuleAssembly.swift in Sources */,
 				C34C44452B272FCC00D50343 /* MainCollectionController.swift in Sources */,
+				C30F68252BE5273000F1FC52 /* MainViewKeyItemCell.swift in Sources */,
 				C30FD9212B22094E0045B58D /* OnboardingCreateKeyCoordinator.swift in Sources */,
 				C30FD9592B223AA10045B58D /* EditWalletNameView.swift in Sources */,
 				C34C44A22B28CCFC00D50343 /* SettingsView.swift in Sources */,
@@ -822,36 +894,37 @@
 				C34C44932B288F7D00D50343 /* ShowRecoveryPhraseModuleAssembly.swift in Sources */,
 				C30FD9552B2238F60045B58D /* CreatePasswordCoordinator.swift in Sources */,
 				C32395272B29289D00C4F954 /* ChangePasswordCoordinator.swift in Sources */,
-				C3E6DE9C2B20EA4B005AA291 /* OnboardingView.swift in Sources */,
 				C30FD90D2B2204470045B58D /* WindowRouter.swift in Sources */,
-				C34C44832B27AACC00D50343 /* KeyDetailsCollectionController.swift in Sources */,
+				C30B6CB42BE4DEBF00737397 /* ScannerAssembly.swift in Sources */,
 				C34C447C2B27A84100D50343 /* KeyDetailsModuleAssembly.swift in Sources */,
 				C34C446F2B275AE800D50343 /* AccessoryListItemView.swift in Sources */,
 				C30A3AF72BE23EC300D82A0B /* QRCodeGenerator.swift in Sources */,
 				C34C44752B27A41E00D50343 /* EnterPasswordCoordinator.swift in Sources */,
 				C30FD95D2B223AB00045B58D /* EditWalletNameViewModel.swift in Sources */,
+				C30F682C2BE560FC00F1FC52 /* KeyDetailsSection.swift in Sources */,
 				C34C44892B27C12500D50343 /* ShowRecoveryPhraseCoordinator.swift in Sources */,
 				C34C44B12B2911CA00D50343 /* SettingsListSection.swift in Sources */,
 				C34C44AB2B290E7600D50343 /* SettingsCollectionController.swift in Sources */,
 				C34C446D2B27571300D50343 /* TwoLinesListItemView.swift in Sources */,
+				C30F68302BE5749000F1FC52 /* SettingsSection.swift in Sources */,
 				C34C44AF2B29103D00D50343 /* SettingsListItem.swift in Sources */,
 				C323952A2B29292F00C4F954 /* SettingsCoordinator.swift in Sources */,
 				C30FD9182B2205610045B58D /* RootCoordinator.swift in Sources */,
 				C34C44A82B28CD1300D50343 /* SettingsModuleAssembly.swift in Sources */,
 				C34C448C2B28732700D50343 /* EditWalletNameViewModelConfigurator.swift in Sources */,
-				C30FD9692B2343AB0045B58D /* InputRecoveryPhraseViewModel.swift in Sources */,
+				C30B6CB22BE4DEBF00737397 /* QRScannerSwipeDownButton.swift in Sources */,
 				C30FD8F92B21E0060045B58D /* UIImage+Tonsign.swift in Sources */,
 				C34C441F2B24B53C00D50343 /* MainView.swift in Sources */,
+				C30B6CCC2BE4F88100737397 /* TonConnectConfirmationViewModel.swift in Sources */,
 				C30FD95B2B223AA90045B58D /* EditWalletNameViewController.swift in Sources */,
-				C34C449D2B28CC0300D50343 /* KeyDetailsListSection.swift in Sources */,
 				C34C441C2B24950000D50343 /* MainCoordinator.swift in Sources */,
 				C30FD91E2B2206C70045B58D /* OnboardingCoordinator.swift in Sources */,
-				C34C449B2B28B31000D50343 /* KeyDetailsQRCodeItemView.swift in Sources */,
+				C30B6CCA2BE4F88100737397 /* TonConnectConfirmationAssembly.swift in Sources */,
 				C323954D2B2A1D5B00C4F954 /* AddKeyViewController.swift in Sources */,
+				C30B6CB52BE4DEBF00737397 /* ScannerView.swift in Sources */,
 				C34C44242B24C9B400D50343 /* MainViewButtonsBarView.swift in Sources */,
 				C324BD792B2A869700BD83D1 /* CreateKeyCoordinator.swift in Sources */,
 				C34C44AD2B290E8300D50343 /* SettingsCollectionLayout.swift in Sources */,
-				C30FD9002B21F19B0045B58D /* OnboardingModuleAssembly.swift in Sources */,
 				C323954F2B2A1D6000C4F954 /* AddKeyView.swift in Sources */,
 				C30FD91B2B2205EC0045B58D /* NavigationController.swift in Sources */,
 				C34C44472B27316300D50343 /* MainCollectionLayout.swift in Sources */,
@@ -860,14 +933,17 @@
 				C30FD9122B2204830045B58D /* AppCoordinator.swift in Sources */,
 				C30FD95F2B223B580045B58D /* EditWalletNameModuleAssembly.swift in Sources */,
 				C34C448F2B288F3100D50343 /* ShowRecoveryPhraseViewController.swift in Sources */,
+				C30F68232BE523E800F1FC52 /* InputRecoveryPhraseSuggestsProvider.swift in Sources */,
 				C34C447A2B27A80000D50343 /* KeyDetailsView.swift in Sources */,
-				C30FD8FB2B21EAB00045B58D /* OnboardingViewModel.swift in Sources */,
+				C30B6CBA2BE4E12000737397 /* URLOpener.swift in Sources */,
 				C34C44A62B28CD0A00D50343 /* SettingsViewModel.swift in Sources */,
+				C30B6CCB2BE4F88100737397 /* TonConnectConfirmationViewController.swift in Sources */,
+				C30F68212BE523D400F1FC52 /* InputRecoveryPhraseValidator.swift in Sources */,
 				C30FD9242B2209C20045B58D /* PasswordInputView.swift in Sources */,
-				C30FD9672B23436F0045B58D /* InputRecoveryPhraseViewController.swift in Sources */,
+				C30B6CC82BE4F88100737397 /* TonConnectConfirmationContentView.swift in Sources */,
 				C324BD7C2B2A881700BD83D1 /* ImportKeyCoordinator.swift in Sources */,
+				C30B6CC92BE4F88100737397 /* TonConnectConfirmationFeeView.swift in Sources */,
 				C34C44422B2727A600D50343 /* MainModuleAssembly.swift in Sources */,
-				C3E6DE9A2B20E9DE005AA291 /* OnboardingViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1011,6 +1087,7 @@
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Signer/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan QR Codes";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
@@ -1046,6 +1123,7 @@
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Signer/Info.plist;
+				INFOPLIST_KEY_NSCameraUsageDescription = "Scan QR Codes";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
@@ -1092,18 +1170,34 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		C30F680F2BE4FE8D00F1FC52 /* XCRemoteSwiftPackageReference "SnapKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/SnapKit/SnapKit.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.7.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
-		C30FD9632B2343090045B58D /* TKScreenKIt */ = {
+		C30F68172BE51A1D00F1FC52 /* SnapKit-Dynamic */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = TKScreenKIt;
+			package = C30F680F2BE4FE8D00F1FC52 /* XCRemoteSwiftPackageReference "SnapKit" */;
+			productName = "SnapKit-Dynamic";
+		};
+		C30F681E2BE51CCE00F1FC52 /* TKScreenKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKScreenKit;
+		};
+		C30F68282BE5559800F1FC52 /* TKUIKitDynamic */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKitDynamic;
 		};
 		C360CC3A2BE20F49007F62BA /* SignerCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SignerCore;
-		};
-		C3E6DE9E2B20EA81005AA291 /* TKUIKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = TKUIKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

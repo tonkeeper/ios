@@ -50,5 +50,9 @@ public final class Assembly {
   public func recoveryPhraseController(walletKey: WalletKey) -> RecoveryPhraseController {
     RecoveryPhraseController(key: walletKey, mnemonicRepository: repositoriesAssembly.mnemonicRepository())
   }
+  
+  public func scannerController() -> ScannerController {
+    ScannerController()
+  }
 }
 

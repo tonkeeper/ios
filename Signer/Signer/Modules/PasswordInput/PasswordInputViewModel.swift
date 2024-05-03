@@ -2,11 +2,13 @@ import Foundation
 import TKUIKit
 
 protocol PasswordInputViewModel: AnyObject {
-  var didUpdateTitle: ((TKTitleDescriptionHeaderView.Model) -> Void)? { get set }
-  var didUpdateContinueButton: ((TKButtonControl<ButtonTitleContentView>.Model) -> Void)? { get set }
+  var didUpdateTitle: ((TKTitleDescriptionView.Model) -> Void)? { get set }
+  var didUpdateContinueButton: ((TKButton.Configuration) -> Void)? { get set }
   var didUpdateIsContinueButtonEnabled: ((Bool) -> Void)? { get set }
   var didUpdateIsValidInput: ((Bool) -> Void)? { get set }
   var didMakeInputActive: (() -> Void)? { get set }
+  
+  var input: String { get }
   
   func viewDidLoad()
   func viewWillAppear(isMovingToParent: Bool)
@@ -19,8 +21,8 @@ protocol PasswordInputModuleOutput: AnyObject {
 }
 
 final class PasswordInputViewModelImplementation: PasswordInputViewModel, PasswordInputModuleOutput {
-  var didUpdateTitle: ((TKTitleDescriptionHeaderView.Model) -> Void)?
-  var didUpdateContinueButton: ((TKButtonControl<ButtonTitleContentView>.Model) -> Void)?
+  var didUpdateTitle: ((TKTitleDescriptionView.Model) -> Void)?
+  var didUpdateContinueButton: ((TKButton.Configuration) -> Void)?
   var didUpdateIsContinueButtonEnabled: ((Bool) -> Void)?
   var didUpdateIsValidInput: ((Bool) -> Void)?
   var didMakeInputActive: (() -> Void)?
@@ -29,21 +31,24 @@ final class PasswordInputViewModelImplementation: PasswordInputViewModel, Passwo
   
   private let configurator: PasswordInputViewModelConfigurator
   
-  private var input = ""
+  var input = ""
   
   init(configurator: PasswordInputViewModelConfigurator) {
     self.configurator = configurator
   }
   
   func viewDidLoad() {
-    let titleDescriptionModel: TKTitleDescriptionHeaderView.Model = .init(
+    let titleDescriptionModel: TKTitleDescriptionView.Model = .init(
       title: configurator.title
     )
     didUpdateTitle?(titleDescriptionModel)
     
-    let continueButtonModel = TKButtonControl<ButtonTitleContentView>.Model(
-      contentModel: .init(title: "Continue")
-    ) { [weak self] in
+    var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
+      category: .primary,
+      size: .large
+    )
+    continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Continue"))
+    continueButtonConfiguration.action = { [weak self] in
       guard let self = self else { return }
       let isValid = self.configurator.validateInput(self.input)
       guard isValid else {
@@ -52,7 +57,7 @@ final class PasswordInputViewModelImplementation: PasswordInputViewModel, Passwo
       }
       self.didEnterPassword?(input)
     }
-    didUpdateContinueButton?(continueButtonModel)
+    didUpdateContinueButton?(continueButtonConfiguration)
     
     didUpdateIsContinueButtonEnabled?(false)
   }

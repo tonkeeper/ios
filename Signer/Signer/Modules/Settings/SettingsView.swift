@@ -24,8 +24,6 @@ private extension SettingsView {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
     addSubview(collectionView)
-    
-    collectionView.contentInset.top = 11
 
     setupConstraints()
   }

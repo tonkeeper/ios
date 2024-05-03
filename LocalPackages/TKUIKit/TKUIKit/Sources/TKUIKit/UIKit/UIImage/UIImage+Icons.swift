@@ -82,6 +82,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-pencil-outline-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var pencil: UIImage {
+          .imageWithName("Icons/28/ic-pencil-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var arrowUpOutline: UIImage {
           .imageWithName("Icons/28/ic-arrow-up-outline-28")
           .withRenderingMode(.alwaysTemplate)
@@ -156,6 +160,14 @@ public extension UIImage {
         }
         public static var globe: UIImage {
           .imageWithName("Icons/28/ic-globe-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var plusThin: UIImage {
+          .imageWithName("Icons/28/ic-plus-thin-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var copy: UIImage {
+          .imageWithName("Icons/28/ic-copy-28")
           .withRenderingMode(.alwaysTemplate)
         }
       }

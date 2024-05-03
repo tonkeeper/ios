@@ -32,7 +32,7 @@ private extension ShowRecoveryPhraseCoordinator {
       self?.openRecoveryPhrase()
     }
     
-    module.view.setCloseButton { [weak self, weak view = module.view] in
+    module.view.setupLeftCloseButton { [weak self, weak view = module.view] in
       view?.dismiss(animated: true) { [weak self] in
         self?.didFinish?()
       }
@@ -43,13 +43,19 @@ private extension ShowRecoveryPhraseCoordinator {
   }
   
   func openRecoveryPhrase() {
-
-    let module = ShowRecoveryPhraseModuleAssembly.module(assembly: assembly, walletKey: walletKey)
-    module.view.setCloseButton { [weak self, weak view = module.view] in
+    let module = TKRecoveryPhraseAssembly.module(
+      provider: RecoveryPhraseDataProvider(
+        recoveryPhraseController: assembly.recoveryPhraseController(
+          walletKey: walletKey
+        )
+      )
+    )
+    
+    module.viewController.setupLeftCloseButton { [weak self, weak view = module.viewController] in
       view?.dismiss(animated: true) { [weak self] in
         self?.didFinish?()
       }
     }
-    router.setViewControllers([(module.view, nil)])
+    router.setViewControllers([(module.viewController, nil)])
   }
 }

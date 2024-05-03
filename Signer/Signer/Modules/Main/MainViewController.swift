@@ -19,15 +19,15 @@ final class MainViewController: GenericViewViewController<MainView> {
     super.viewDidLoad()
     
     setupBindings()
-    collectionController.headerView = customView.buttonsBarView
+    collectionController.headerView = customView.buttonsView
     viewModel.viewDidLoad()
   }
 }
 
 private extension MainViewController {
   func setupBindings() {
-    viewModel.buttonsBarModelUpdate = { [customView] model in
-      customView.buttonsBarView.configure(model: model)
+    viewModel.didUpdateButtons = { [weak customView] model in
+      customView?.buttonsView.configure(model: model)
     }
     
     viewModel.titleUpdate = { [weak self] title in

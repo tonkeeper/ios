@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class SettingsListFooterView: UIView, ConfigurableView {
+final class SettingsListFooterCell: UICollectionViewCell, ConfigurableView {
   
   let topLabel = UILabel()
   let bottomLabel = UILabel()
@@ -12,7 +12,7 @@ final class SettingsListFooterView: UIView, ConfigurableView {
     stackView.spacing = 2
     stackView.isLayoutMarginsRelativeArrangement = true
     stackView.directionalLayoutMargins = NSDirectionalEdgeInsets(
-      top: 16,
+      top: 0,
       leading: 16,
       bottom: 16,
       trailing: 16
@@ -33,7 +33,7 @@ final class SettingsListFooterView: UIView, ConfigurableView {
   
   // MARK: - ConfigurableView
   
-  struct Model {
+  struct Model: Hashable {
     let top: String
     let bottom: String
   }
@@ -46,7 +46,7 @@ final class SettingsListFooterView: UIView, ConfigurableView {
   }
 }
 
-private extension SettingsListFooterView {
+private extension SettingsListFooterCell {
   func setup() {
     addSubview(stackView)
     stackView.addArrangedSubview(topLabel)

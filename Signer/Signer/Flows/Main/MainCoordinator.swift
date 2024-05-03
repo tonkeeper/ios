@@ -41,24 +41,38 @@ private extension MainCoordinator {
   }
   
   func openScan() {
-    print("scan")
+    let module = ScannerAssembly.module(
+      signerCoreAssembly: signerCoreAssembly,
+      urlOpener: UIApplication.shared,
+      title: "Scan QR Core",
+      subtitle: "From Tonkeeper on the action confirmation page"
+    )
+    
+    module.output.didScanDeeplink = { [weak self] deeplink in
+      self?.router.dismiss(completion: {
+        _ = self?.handleCoreDeeplink(deeplink)
+      })
+    }
+    
+    router.present(module.view)
   }
   
   func openAddWallet() {
     let addKeyViewController = AddKeyViewController()
-    addKeyViewController.didTapCreateNewKey = { [weak self, weak addKeyViewController] in
-      addKeyViewController?.dismiss(animated: true, completion: {
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: addKeyViewController)
+    
+    addKeyViewController.didTapCreateNewKey = { [weak self, weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss(completion: {
         self?.openCreateKey()
       })
     }
-    addKeyViewController.didTapImportKey = { [weak self, weak addKeyViewController] in
-      addKeyViewController?.dismiss(animated: true, completion: {
+    addKeyViewController.didTapImportKey = { [weak self, weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss(completion: {
         self?.openImportKey()
       })
-      
     }
-    let pullableCardViewController = TKPullableCardContainerViewController(content: addKeyViewController)
-    router.present(pullableCardViewController)
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
   func openSettings() {
@@ -132,5 +146,62 @@ private extension MainCoordinator {
     createKeyCoordinator.start()
     
     router.present(navigationController)
+  }
+  
+  func openSign() {
+    let module = TonConnectConfirmationAssembly.module()
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    bottomSheetViewController.didClose = { [weak self] isInteractivly in
+//      guard isInteractivly else { return }
+////      keyWindow?.makeKeyAndVisible()
+//      self?.didCancel?()
+//      Task {
+//        await tonConnectConfirmationController.cancel()
+//      }
+    }
+    
+//    module.output.didTapCancelButton = { [weak tonConnectConfirmationController, weak bottomSheetViewController] in
+//      guard let tonConnectConfirmationController else { return }
+//      Task {
+//        await tonConnectConfirmationController.cancel()
+//      }
+//      bottomSheetViewController?.dismiss(completion: { [weak self] in
+//        self?.didCancel?()
+//      })
+//    }
+//    
+//    module.output.didTapConfirmButton = { [weak self, weak bottomSheetViewController] in
+//      guard let bottomSheetViewController, let self else { return false }
+//      let isConfirmed = await self.openPasscodeConfirmation(fromViewController: bottomSheetViewController)
+//      guard isConfirmed else { return false }
+//      do {
+//        try await self.tonConnectConfirmationController.confirm()
+//        return true
+//      } catch {
+//        return false
+//      }
+//    }
+//    
+//    module.output.didConfirm = { [weak self, weak bottomSheetViewController] in
+//      bottomSheetViewController?.dismiss(completion: { [weak self] in
+//        self?.didConfirm?()
+//      })
+//    }
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func handleCoreDeeplink(_ deeplink: SignerCore.Deeplink) -> Bool {
+    switch deeplink {
+    case .tonsign(let tonsignDeeplink):
+      switch tonsignDeeplink {
+      case .plain: return true
+      case .sign(let model):
+        openSign()
+        return true
+      }
+    }
   }
 }

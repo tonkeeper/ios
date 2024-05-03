@@ -3,17 +3,17 @@ import TKUIKit
 
 final class PasswordInputView: UIView {
   
-  let titleDescriptionView: TKTitleDescriptionHeaderView = {
-    let view = TKTitleDescriptionHeaderView(size: .big)
+  let titleDescriptionView: TKTitleDescriptionView = {
+    let view = TKTitleDescriptionView(size: .big)
     view.padding.bottom = .titleBottomPadding
     return view
   }()
+
+  let passwordTextField = TKPasswordTextField()
+  let passwordTextFieldContainer = TKPaddingContainerView()
   
-  let passwordTextField = TKTextField.passwordTextField()
-  let passwordTextFieldContainer = TKPaddingContainer.textInputContainer()
-  
-  let continueButton = TKButton.titleButton(buttonCategory: .primary, buttonSize: .large)
-  let continueButtonContainer = TKPaddingContainer.buttonContainer()
+  let continueButton = TKButton()
+  let continueButtonContainer = TKPaddingContainerView()
   
   private var continueButtonContainerBottomSafeAreaConstraint: NSLayoutConstraint?
   private var continueButtonContainerBottomConstraint: NSLayoutConstraint?
@@ -53,12 +53,15 @@ private extension PasswordInputView {
     
     directionalLayoutMargins.top = .topSpacing
     
+    passwordTextFieldContainer.padding = .textFieldPadding
+    continueButtonContainer.padding = .buttonPadding
+    
     addSubview(titleDescriptionView)
     addSubview(passwordTextFieldContainer)
-    passwordTextFieldContainer.contentView = passwordTextField
+    passwordTextFieldContainer.setViews([passwordTextField])
     
     addSubview(continueButtonContainer)
-    continueButtonContainer.contentView = continueButton
+    continueButtonContainer.setViews([continueButton])
     
     setupConstraints()
   }
@@ -98,4 +101,9 @@ private extension CGFloat {
   static let titleBottomPadding: CGFloat = 16
   static let buttonsContainerSpacing: CGFloat = 16
   static let topSpacing: CGFloat = 44
+}
+
+private extension UIEdgeInsets {
+  static var textFieldPadding = UIEdgeInsets(top: 0, left: 32, bottom: 0, right: 32)
+  static var buttonPadding = UIEdgeInsets(top: 16, left: 32, bottom: 32, right: 32)
 }

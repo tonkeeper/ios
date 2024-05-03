@@ -28,7 +28,7 @@ final class ListItemAccessoryView: UIView, ConfigurableView {
     case .disclosure:
       let imageView = UIImageView()
       imageView.tintColor = .Icon.tertiary
-      imageView.image = .TKUIKit.Icons.List.Accessory.disclosure
+//      imageView.image = .TKUIKit.Icons.List.Accessory.disclosure
       contentView = imageView
     case let .icon(icon, tintColor):
       let imageView = UIImageView()

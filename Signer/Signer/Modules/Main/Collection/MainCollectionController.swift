@@ -2,8 +2,7 @@ import UIKit
 import TKUIKit
 
 final class MainCollectionController: NSObject {
-  typealias KeyItemCell = GenericCollectionViewCell<AccessoryListItemView<TwoLinesListItemView>>
-  typealias DataSource = UICollectionViewDiffableDataSource<String, MainListKeyItem>
+  typealias DataSource = UICollectionViewDiffableDataSource<String, TKUIListItemCell.Configuration>
   
   var didSelectItem: ((IndexPath) -> Void)?
   
@@ -22,8 +21,8 @@ final class MainCollectionController: NSObject {
     setupCollectionView()
   }
   
-  func setItems(_ items: [MainListKeyItem]) {
-    var snapshot = NSDiffableDataSourceSnapshot<String, MainListKeyItem>()
+  func setItems(_ items: [TKUIListItemCell.Configuration]) {
+    var snapshot = NSDiffableDataSourceSnapshot<String, TKUIListItemCell.Configuration>()
     snapshot.appendSections([""])
     snapshot.appendItems(items)
     if #available(iOS 15.0, *) {
@@ -34,7 +33,7 @@ final class MainCollectionController: NSObject {
     dataSource?.apply(snapshot)
   }
   
-  func addItem(_ item: MainListKeyItem) {
+  func addItem(_ item: TKUIListItemCell.Configuration) {
     guard var snapshot = dataSource?.snapshot() else { return }
     snapshot.appendItems([item])
     dataSource?.apply(snapshot)
@@ -48,7 +47,7 @@ private extension MainCollectionController {
       forSupplementaryViewOfKind: CollectionViewSupplementaryContainerView.reuseIdentifier,
       withReuseIdentifier: CollectionViewSupplementaryContainerView.reuseIdentifier
     )
-    collectionView.register(KeyItemCell.self, forCellWithReuseIdentifier: "Cell")
+    collectionView.register(TKUIListItemCell.self, forCellWithReuseIdentifier: TKUIListItemCell.reuseIdentifier)
     collectionView.setCollectionViewLayout(MainCollectionLayout.layout(), animated: false)
     dataSource = createDataSource()
     collectionView.dataSource = dataSource
@@ -86,13 +85,14 @@ private extension MainCollectionController {
     return headerContainer
   }
   
-  func dequeueKeyItemCell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: MainListKeyItem) -> UICollectionViewCell? {
-    guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "Cell", for: indexPath) as? KeyItemCell else {
-      return nil
-    }
-    cell.configure(model: itemIdentifier.model)
-    cell.isFirstCellInSection = { ip in ip.item == 0 }
-    cell.isLastCellInSection = { [weak collectionView = collectionView] ip in
+  func dequeueKeyItemCell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: TKUIListItemCell.Configuration) -> UICollectionViewCell? {
+    guard let cell = collectionView.dequeueReusableCell(
+      withReuseIdentifier: TKUIListItemCell.reuseIdentifier, for: indexPath
+    ) as? TKUIListItemCell else { return nil }
+    
+    cell.configure(configuration: itemIdentifier)
+    cell.isFirstInSection = { ip in ip.item == 0 }
+    cell.isLastInSection = { [weak collectionView = collectionView] ip in
       guard let collectionView = collectionView else { return false }
       return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
     }

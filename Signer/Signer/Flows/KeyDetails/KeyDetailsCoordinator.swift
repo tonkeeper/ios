@@ -51,9 +51,9 @@ private extension KeyDetailsCoordinator {
       configurator: EditEditWalletNameViewModelConfigurator(),
       defaultName: walletKey.name
     )
-    module.view.setCloseButton { [weak self] in
-      self?.router.dismiss()
-    }
+//    module.view.setCloseButton { [weak self] in
+//      self?.router.dismiss()
+//    }
     module.output.didEnterWalletName = { [signerCoreAssembly, walletKey, weak self] name in
       try? signerCoreAssembly.keysEditController().updateWalletKeyName(walletKey: walletKey, name: name)
       self?.router.dismiss()

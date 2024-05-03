@@ -1,4 +1,5 @@
 import UIKit
+import TKScreenKit
 import SignerCore
 
 final class OnboardingImportKeyCoordinator: RouterCoordinator<NavigationControllerRouter> {
@@ -21,12 +22,16 @@ final class OnboardingImportKeyCoordinator: RouterCoordinator<NavigationControll
 
 private extension OnboardingImportKeyCoordinator {
   func openEnterRecoveryPhrase() {
-    let module = InputRecoveryPhraseModuleAssembly.module()
-    module.view.setupBackButton()
-    module.output.didEnterRecoveryPhrase = { [weak self] recoveryPhrase in
+    let module = TKInputRecoveryPhraseAssembly.module(
+      validator: InputRecoveryPhraseValidator(),
+      suggestsProvider: InputRecoveryPhraseSuggestsProvider()
+    )
+    module.viewController.setupBackButton()
+    module.output.didInputRecoveryPhrase = { [weak self] recoveryPhrase, completion in
+      completion()
       self?.openCreatePassword(phrase: recoveryPhrase)
     }
-    router.push(viewController: module.view,
+    router.push(viewController: module.viewController,
                 onPopClosures: { [weak self] in
       self?.didFinish?()
     })

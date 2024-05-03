@@ -25,7 +25,7 @@ private extension CreateKeyCoordinator {
       configurator: CreateEditWalletNameViewModelConfigurator(),
       defaultName: nil
     )
-    module.view.setCloseButton { [weak self] in
+    module.view.setupLeftCloseButton { [weak self] in
       self?.didFinish?()
     }
     module.output.didEnterWalletName = { [weak self] walletName in

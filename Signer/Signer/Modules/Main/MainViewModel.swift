@@ -2,28 +2,10 @@ import Foundation
 import TKUIKit
 import SignerCore
 
-class MainListKeyItem: Identifiable, Hashable {
-  let id: String
-  let model: AccessoryListItemView<TwoLinesListItemView>.Model
-  
-  init(id: String, model: AccessoryListItemView<TwoLinesListItemView>.Model) {
-    self.id = id
-    self.model = model
-  }
-  
-  static func ==(lhs: MainListKeyItem, rhs: MainListKeyItem) -> Bool {
-    lhs.id == rhs.id
-  }
-  
-  func hash(into hasher: inout Hasher) {
-    hasher.combine(id)
-  }
-}
-
 protocol MainViewModel: AnyObject {
   var titleUpdate: ((NSAttributedString) -> Void)? { get set }
-  var buttonsBarModelUpdate: ((MainViewButtonsBarView.Model) -> Void)? { get set }
-  var itemsListUpdate: (([MainListKeyItem]) -> Void)? { get set }
+  var didUpdateButtons: ((MainHeaderButtonsView.Model) -> Void)? { get set }
+  var itemsListUpdate: (([TKUIListItemCell.Configuration]) -> Void)? { get set }
   
   func viewDidLoad()
   func didSelectKeyItem(index: Int)
@@ -48,8 +30,8 @@ final class MainViewModelImlementation: MainViewModel, MainModuleOutput {
   // MARK: - MainViewModel
   
   var titleUpdate: ((NSAttributedString) -> Void)?
-  var buttonsBarModelUpdate: ((MainViewButtonsBarView.Model) -> Void)?
-  var itemsListUpdate: (([MainListKeyItem]) -> Void)?
+  var didUpdateButtons: ((MainHeaderButtonsView.Model) -> Void)?
+  var itemsListUpdate: (([TKUIListItemCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
     listController.didUpdateKeys = { [weak self] walletKeys in
@@ -57,7 +39,7 @@ final class MainViewModelImlementation: MainViewModel, MainModuleOutput {
       self.walletKeys = walletKeys
     }
     
-    buttonsBarModelUpdate?(.init(buttons: createButtonsModels()))
+    didUpdateButtons?(createHeaderButtonsModel())
     
     titleUpdate?(createTitleString())
     
@@ -89,48 +71,75 @@ private extension MainViewModelImlementation {
     return ton
   }
   
-  func createButtonsModels() -> [TKFlatButtonControl<TKFlatButtonTitleIconContent>.Model] {
-    let scanButtonModel = TKFlatButtonControl<TKFlatButtonTitleIconContent>.Model(
-      contentModel: TKFlatButtonTitleIconContent.Model(
-        title: "Scan",
-        image: .TKUIKit.Icons.Button.Flat.scan
-      ),
-      action: { [weak self] in
-        self?.didTapScanButton?()
-      }
-    )
-    let addButtonModel = TKFlatButtonControl<TKFlatButtonTitleIconContent>.Model(
-      contentModel: TKFlatButtonTitleIconContent.Model(
-        title: "Add Key",
-        image: .TKUIKit.Icons.Button.Flat.add
-      ),
-      action: { [weak self] in
-        self?.didTapAddWallet?()
-      }
-    )
-    let settingsButtonModel = TKFlatButtonControl<TKFlatButtonTitleIconContent>.Model(
-      contentModel: TKFlatButtonTitleIconContent.Model(
-        title: "Settings",
-        image: .TKUIKit.Icons.Button.Flat.settings
-      ),
-      action: { [weak self] in
-        self?.didTapSettings?()
-      }
-    )
-    return [scanButtonModel, addButtonModel, settingsButtonModel]
-  }
-  
   func didUpdateWalletKeys(walletKeys: [WalletKey]) {
     let items = walletKeys.map { key in
-      MainListKeyItem(
-        id: key.id,
-        model: AccessoryListItemView<TwoLinesListItemView>.Model(
-          contentViewModel: TwoLinesListItemView.Model(title: key.name,
-                                                       subtitle: key.publicKeyShortHexString),
-          accessoryModel: .disclosure
+      let title = key.name.withTextStyle(
+        .label1,
+        color: .Text.primary,
+        alignment: .left,
+        lineBreakMode: .byTruncatingTail
+      )
+      let subtitle = key.publicKeyShortHexString.withTextStyle(
+        .body2,
+        color: .Text.secondary,
+        alignment: .left,
+        lineBreakMode: .byTruncatingTail
+      )
+      
+      let listItemConfiguration = TKUIListItemView.Configuration(
+        iconConfiguration: .init(iconConfiguration: .none, alignment: .center),
+        contentConfiguration: TKUIListItemContentView.Configuration(
+          leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
+            title: title,
+            tagViewModel: nil,
+            subtitle: subtitle,
+            description: nil
+          ),
+          rightItemConfiguration: nil
+        ),
+        accessoryConfiguration: .image(
+          .init(
+            image: .TKUIKit.Icons.Size16.chevronRight,
+            tintColor: .Text.tertiary,
+            padding: .zero
+          )
         )
       )
+      
+      return TKUIListItemCell.Configuration(
+        id: key.id,
+        listItemConfiguration: listItemConfiguration,
+        selectionClosure: nil)
     }
     itemsListUpdate?(items)
+  }
+  
+  func createHeaderButtonsModel() -> MainHeaderButtonsView.Model {
+    return MainHeaderButtonsView.Model(
+      scanButton: MainHeaderButtonsView.Model.Button(
+        title: "Scan",
+        icon: .TKUIKit.Icons.Size28.qrViewFinderThin,
+        isEnabled: true,
+        action: { [weak self] in
+          self?.didTapScanButton?()
+        }
+      ),
+      addKeyButton: MainHeaderButtonsView.Model.Button(
+        title: "Add Key",
+        icon: .TKUIKit.Icons.Size28.plusThin,
+        isEnabled: true,
+        action: { [weak self] in
+          self?.didTapAddWallet?()
+        }
+      ),
+      settingsButton: MainHeaderButtonsView.Model.Button(
+        title: "Settings",
+        icon: .TKUIKit.Icons.Size28.gearOutline,
+        isEnabled: true,
+        action: { [weak self] in
+          self?.didTapSettings?()
+        }
+      )
+    )
   }
 }

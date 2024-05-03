@@ -3,7 +3,7 @@ import TKUIKit
 
 final class MainView: UIView {
   
-  let buttonsBarView = MainViewButtonsBarView()
+  let buttonsView = MainHeaderButtonsView()
   let collectionView = TKUICollectionView(
     frame: .zero,
     collectionViewLayout: UICollectionViewLayout()

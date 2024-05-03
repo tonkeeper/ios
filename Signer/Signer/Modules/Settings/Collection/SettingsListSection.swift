@@ -1,7 +1,7 @@
 import Foundation
 
-struct SettingsListSection: Hashable {
-  let id = UUID()
-  let items: [SettingsListItem]
-}
+//struct SettingsListSection: Hashable {
+//  let id = UUID()
+//  let items: [SettingsListItem]
+//}
 

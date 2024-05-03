@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class TwoLinesListItemView: UIView, ConfigurableView, GenericCollectionViewCellContentView, ReusableView {
+final class TwoLinesListItemView: UIView, ConfigurableView, ReusableView {
   
   private let titleLabel = UILabel()
   private let subtitleLabel = UILabel()

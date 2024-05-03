@@ -2,15 +2,15 @@ import UIKit
 import TKUIKit
 
 final class AddKeyView: UIView {
-  let titleDescriptionView = TKTitleDescriptionHeaderView(size: .big)
+  let titleDescriptionView = TKTitleDescriptionView(size: .big)
   let buttonsContainer: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
     stackView.spacing = .buttonsContainerSpacing
     return stackView
   }()
-  let createButton = TKButton.titleButton(buttonCategory: .primary, buttonSize: .large)
-  let importButton = TKButton.titleButton(buttonCategory: .secondary, buttonSize: .large)
+  let createButton = TKButton()
+  let importButton = TKButton()
   
   // MARK: - Init
   

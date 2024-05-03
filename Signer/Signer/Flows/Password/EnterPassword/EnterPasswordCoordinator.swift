@@ -28,16 +28,16 @@ private extension EnterPasswordCoordinator {
       self?.didEnterPassword?()
     }
     
-    let signOutButton = TKButton.titleHeaderButton()
-    signOutButton.configure(
-      model: .init(
-        contentModel: .init(title: "Sign Out"),
-        action: { [weak self] in
-          self?.openSignOutAlert()
-        }
-      )
-    )
-    module.view.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: signOutButton)
+//    let signOutButton = TKButton.titleHeaderButton()
+//    signOutButton.configure(
+//      model: .init(
+//        contentModel: .init(title: "Sign Out"),
+//        action: { [weak self] in
+//          self?.openSignOutAlert()
+//        }
+//      )
+//    )
+//    module.view.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: signOutButton)
     
     router.push(viewController: module.view,
                 onPopClosures: {})

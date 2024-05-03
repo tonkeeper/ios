@@ -3,17 +3,21 @@ import TKUIKit
 
 final class EditWalletNameView: UIView {
   
-  let titleDescriptionView: TKTitleDescriptionHeaderView = {
-    let view = TKTitleDescriptionHeaderView(size: .big)
+  let titleDescriptionView: TKTitleDescriptionView = {
+    let view = TKTitleDescriptionView(size: .big)
     view.padding = .titleDescriptionPadding
     return view
   }()
   
-  let walletNameTextField = TKTextField.placeholderTextField()
-  let walletNameTextFieldContainer = TKPaddingContainer.textInputContainer()
+  let walletNameTextField = TKTextField(
+    textFieldInputView: TKTextFieldInputView(
+      textInputControl: TKTextInputTextFieldControl()
+    )
+  )
+  let walletNameTextFieldContainer = TKPaddingContainerView()
   
-  let continueButton = TKButton.titleButton(buttonCategory: .primary, buttonSize: .large)
-  let continueButtonContainer = TKPaddingContainer.buttonContainer()
+  let continueButton = TKButton()
+  let continueButtonContainer = TKPaddingContainerView()
   
   private var continueButtonContainerBottomSafeAreaConstraint: NSLayoutConstraint?
   private var continueButtonContainerBottomConstraint: NSLayoutConstraint?
@@ -61,12 +65,15 @@ private extension EditWalletNameView {
     
     directionalLayoutMargins.top = .topSpacing
     
+    walletNameTextFieldContainer.padding = .textFieldPadding
+    continueButtonContainer.padding = .buttonPadding
+    
     addSubview(titleDescriptionView)
     addSubview(walletNameTextFieldContainer)
-    walletNameTextFieldContainer.contentView = walletNameTextField
+    walletNameTextFieldContainer.setViews([walletNameTextField])
     
     addSubview(continueButtonContainer)
-    continueButtonContainer.contentView = continueButton
+    continueButtonContainer.setViews([continueButton])
     
     setupConstraints()
   }
@@ -114,4 +121,9 @@ private extension NSDirectionalEdgeInsets {
     bottom: 16,
     trailing: 32
   )
+}
+
+private extension UIEdgeInsets {
+  static var textFieldPadding = UIEdgeInsets(top: 0, left: 32, bottom: 0, right: 32)
+  static var buttonPadding = UIEdgeInsets(top: 16, left: 32, bottom: 32, right: 32)
 }

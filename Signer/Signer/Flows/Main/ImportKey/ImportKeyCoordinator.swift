@@ -1,4 +1,5 @@
 import UIKit
+import TKScreenKit
 import SignerCore
 
 final class ImportKeyCoordinator: RouterCoordinator<NavigationControllerRouter> {
@@ -21,14 +22,18 @@ final class ImportKeyCoordinator: RouterCoordinator<NavigationControllerRouter> 
 
 private extension ImportKeyCoordinator {
   func openEnterRecoveryPhrase() {
-    let module = InputRecoveryPhraseModuleAssembly.module()
-    module.view.setCloseButton { [weak self] in
+    let module = TKInputRecoveryPhraseAssembly.module(
+      validator: InputRecoveryPhraseValidator(),
+      suggestsProvider: InputRecoveryPhraseSuggestsProvider()
+    )
+    module.viewController.setupLeftCloseButton { [weak self] in
       self?.didFinish?()
     }
-    module.output.didEnterRecoveryPhrase = { [weak self] recoveryPhrase in
+    module.output.didInputRecoveryPhrase = { [weak self] recoveryPhrase, completion in
+      completion()
       self?.openNameYourKey(phrase: recoveryPhrase)
     }
-    router.push(viewController: module.view,
+    router.push(viewController: module.viewController,
                 onPopClosures: { [weak self] in
       self?.didFinish?()
     })

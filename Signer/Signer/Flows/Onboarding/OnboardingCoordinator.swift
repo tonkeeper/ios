@@ -1,4 +1,5 @@
 import UIKit
+import TKScreenKit
 import SignerCore
 
 final class OnboardingCoordinator: RouterCoordinator<NavigationControllerRouter> {
@@ -20,17 +21,24 @@ final class OnboardingCoordinator: RouterCoordinator<NavigationControllerRouter>
 
 private extension OnboardingCoordinator {
   func openOnboardingStart() {
-    let module = OnboardingModuleAssembly.module()
+    let model = TKOnboardingModel(
+      title: "Tonsign",
+      subtitle: "The storage place for your keys to sign transactions in Tonkeeper.",
+      coverImage: .Images.tonsignCover,
+      primaryButtonTitle: "Create New Key",
+      secondaryButtonTitle: "Import Existing Key"
+    )
+    let module = TKOnboardingAssembly.module(model: model)
     
-    module.output.didTapCreateButton = { [weak self] in
+    module.output.didTapPrimaryButton = { [weak self] in
       self?.openCreate()
     }
     
-    module.output.didTapImportButton = { [weak self] in
+    module.output.didTapSecondaryButton = { [weak self] in
       self?.openImport()
     }
     
-    router.push(viewController: module.view, animated: false)
+    router.push(viewController: module.viewController, animated: false)
   }
   
   func openCreate() {

@@ -2,10 +2,10 @@ import Foundation
 import TKUIKit
 
 protocol EditWalletNameViewModel: AnyObject {
-  var didUpdateTitleDescription: ((TKTitleDescriptionHeaderView.Model) -> Void)? { get set }
+  var didUpdateTitleDescription: ((TKTitleDescriptionView.Model) -> Void)? { get set }
   var didUpdateWalletNameTextFieldValue: ((String?) -> Void)? { get set }
   var didUpdateWalletNameTextFieldPlaceholder: ((String) -> Void)? { get set }
-  var didUpdateContinueButton: ((TKButtonControl<ButtonTitleContentView>.Model) -> Void)? { get set }
+  var didUpdateContinueButton: ((TKButton.Configuration) -> Void)? { get set }
   var didUpdateIsContinueButtonEnabled: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
@@ -17,10 +17,10 @@ protocol EditWalletNameModuleOutput: AnyObject {
 }
 
 final class EditWalletNameViewModelImplementation: EditWalletNameViewModel, EditWalletNameModuleOutput {
-  var didUpdateTitleDescription: ((TKTitleDescriptionHeaderView.Model) -> Void)?
+  var didUpdateTitleDescription: ((TKTitleDescriptionView.Model) -> Void)?
   var didUpdateWalletNameTextFieldPlaceholder: ((String) -> Void)?
   var didUpdateWalletNameTextFieldValue: ((String?) -> Void)?
-  var didUpdateContinueButton: ((TKButtonControl<ButtonTitleContentView>.Model) -> Void)?
+  var didUpdateContinueButton: ((TKButton.Configuration) -> Void)?
   var didUpdateIsContinueButtonEnabled: ((Bool) -> Void)?
   
   var didEnterWalletName: ((String) -> Void)?
@@ -36,7 +36,7 @@ final class EditWalletNameViewModelImplementation: EditWalletNameViewModel, Edit
   }
   
   func viewDidLoad() {
-    let titleDescriptionModel: TKTitleDescriptionHeaderView.Model = .init(
+    let titleDescriptionModel: TKTitleDescriptionView.Model = .init(
       title: "Name your Key",
       bottomDescription: "It will simplify the search for the necessary key in the list of keys."
     )
@@ -45,9 +45,12 @@ final class EditWalletNameViewModelImplementation: EditWalletNameViewModel, Edit
     didUpdateWalletNameTextFieldPlaceholder?("Name")
     didUpdateWalletNameTextFieldValue?(defaultName)
     
-    let continueButtonModel = TKButtonControl<ButtonTitleContentView>.Model(
-      contentModel: .init(title: configurator.continueButtonTitle)
-    ) { [weak self] in
+    var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
+      category: .primary,
+      size: .large
+    )
+    continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(configurator.continueButtonTitle))
+    continueButtonConfiguration.action = { [weak self] in
       guard let self = self else { return }
       Task {
         await self.configurator.handleContinueButtonTapped()
@@ -56,8 +59,8 @@ final class EditWalletNameViewModelImplementation: EditWalletNameViewModel, Edit
         }
       }
     }
-    didUpdateContinueButton?(continueButtonModel)
-    
+    didUpdateContinueButton?(continueButtonConfiguration)
+
     didUpdateIsContinueButtonEnabled?(false)
   }
   
