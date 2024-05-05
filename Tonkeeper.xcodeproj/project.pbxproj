@@ -52,6 +52,7 @@
 		7DDBBFF42ACCA10E00F811A5 /* TonkeeperIntents.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7DDBBFF82ACCA12E00F811A5 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; };
 		7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
+		C0759EF02BE2DC5C009C7871 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = C0759EEF2BE2DC5C009C7871 /* GoogleService-Info.plist */; };
 		C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */; };
 		C327C6322B4F682B00AAFB43 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */; };
 		C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C32C7C462BCD0D8E00785B6A /* TKCore */; };
@@ -199,6 +200,8 @@
 		7DDBC0012ACCAFE200F811A5 /* IntentsBase.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsBase.xcconfig; sourceTree = "<group>"; };
 		7DDBC0022ACCAFEF00F811A5 /* IntentsDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsDebug.xcconfig; sourceTree = "<group>"; };
 		7DDBC0032ACCAFF700F811A5 /* IntentsRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsRelease.xcconfig; sourceTree = "<group>"; };
+		C0759EEF2BE2DC5C009C7871 /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		C09C10082BE2E02000B6A2FB /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		C313EC0B2B50138D009DF825 /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
 		C313EC0D2B50138D009DF825 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
 		C313EC0E2B50138D009DF825 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
@@ -435,6 +438,7 @@
 		7DB8FB792A1BCFCD005B4B11 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				C0759EF12BE2DCDE009C7871 /* Firebase */,
 				7D143C372A4EC0DC00B5FCC0 /* Animations */,
 				7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */,
 				7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */,
@@ -451,6 +455,31 @@
 				7DDBBFF12ACCA10E00F811A5 /* Info.plist */,
 			);
 			path = TonkeeperIntents;
+			sourceTree = "<group>";
+		};
+		C0759EF12BE2DCDE009C7871 /* Firebase */ = {
+			isa = PBXGroup;
+			children = (
+				C09C10072BE2DFFA00B6A2FB /* Release */,
+				C0759EF22BE2DCEA009C7871 /* Debug */,
+			);
+			path = Firebase;
+			sourceTree = "<group>";
+		};
+		C0759EF22BE2DCEA009C7871 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				C09C10082BE2E02000B6A2FB /* GoogleService-Info.plist */,
+			);
+			path = Debug;
+			sourceTree = "<group>";
+		};
+		C09C10072BE2DFFA00B6A2FB /* Release */ = {
+			isa = PBXGroup;
+			children = (
+				C0759EEF2BE2DC5C009C7871 /* GoogleService-Info.plist */,
+			);
+			path = Release;
 			sourceTree = "<group>";
 		};
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
@@ -620,6 +649,7 @@
 				7D4C14642AD98E44002B2922 /* diamond.json in Resources */,
 				7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */,
 				7DB8FB6F2A1BCC92005B4B11 /* Assets.xcassets in Resources */,
+				C0759EF02BE2DC5C009C7871 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

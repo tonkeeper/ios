@@ -5,7 +5,9 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
-public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
+public final class BuyCoordinator: RouterCoordinator<NavigationControllerRouter> {
+    
+  var didFinish: (() -> Void)?
   
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -14,7 +16,7 @@ public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
   init(wallet: Wallet,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        coreAssembly: TKCore.CoreAssembly,
-       router: ViewControllerRouter) {
+       router: NavigationControllerRouter) {
     self.wallet = wallet
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
@@ -22,7 +24,8 @@ public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
   
   public override func start() {
-    openBuyList()
+    //openBuyList()
+      openBuySell()
   }
 }
 
@@ -50,6 +53,23 @@ private extension BuyCoordinator {
     
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
+
+    func openBuySell() {
+        let module = BuySellAssembly.module(
+            buySellController: keeperCoreMainAssembly.buySellController(
+                wallet: wallet,
+                isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
+            ),
+            appSettings: coreAssembly.appSettings,
+            buySellItem: BuySellItem(token: .ton, amount: 50)
+        )
+        
+        module.view.setupRightCloseButton { [weak self] in
+          self?.didFinish?()
+        }
+        
+        router.push(viewController: module.view, animated: false)
+    }
   
   func openWebView(url: URL, fromViewController: UIViewController) {
     let webViewController = TKWebViewController(url: url)

@@ -56,6 +56,11 @@ public extension TKTextStyle {
     lineHeight: 56
   )
   
+  static let amountInput = TKTextStyle(
+    font: .montserratSemiBold(size: 40),
+    lineHeight: 49
+  )
+  
   static let num1: TKTextStyle = .init(
     font: .montserratSemiBold(size: 32),
     lineHeight: 40

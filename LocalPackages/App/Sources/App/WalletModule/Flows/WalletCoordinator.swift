@@ -228,15 +228,26 @@ private extension WalletCoordinator {
   }
   
   func openBuy(wallet: Wallet) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
     let coordinator = BuyCoordinator(
       wallet: wallet,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly,
-      router: ViewControllerRouter(rootViewController: self.router.rootViewController)
+      router: NavigationControllerRouter(rootViewController: navigationController)
     )
+    
+    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
     
     addChild(coordinator)
     coordinator.start()
+      
+    self.router.present(navigationController)
   }
   
   func openHistoryEventDetails(event: AccountEventDetailsEvent) {
