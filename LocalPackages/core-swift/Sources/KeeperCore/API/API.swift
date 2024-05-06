@@ -331,6 +331,23 @@ extension API {
   }
 }
 
+// MARK: - Blockchain
+
+extension API {
+  func getWalletAddress(jettonMaster: String, owner: String) async throws -> Address {
+    let response = try await tonAPIClient.execGetMethodForBlockchainAccount(path: .init(account_id: jettonMaster, method_name: "get_wallet_address"), query: .init(args: [owner])
+    )
+    
+    let decoded = try response.ok.body.json.decoded?.value.unsafelyUnwrapped as AnyObject
+    
+    guard let jettonWalletAddress = decoded["jetton_wallet_address"] as? String else {
+      throw APIError.incorrectResponse
+    }
+    
+    return try Address.parse(jettonWalletAddress)
+  }
+}
+
 //// MARK: - Time
 //
 //extension API {
