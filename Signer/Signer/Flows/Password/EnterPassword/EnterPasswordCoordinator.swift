@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKCoordinator
 import SignerCore
 
 final class EnterPasswordCoordinator: RouterCoordinator<NavigationControllerRouter> {

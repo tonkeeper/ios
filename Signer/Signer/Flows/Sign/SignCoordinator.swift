@@ -57,8 +57,10 @@ private extension SignCoordinator {
   func handleSignURL(_ url: URL, walletKey: WalletKey, hexBody: String) {
     if UIApplication.shared.canOpenURL(url) {
       UIApplication.shared.open(url: url)
+      didCancel?()
+    } else {
+      openSignQRCode(url: url, walletKey: walletKey, hexBody: hexBody)
     }
-    openSignQRCode(url: url, walletKey: walletKey, hexBody: hexBody)
   }
   
   func openSignQRCode(url: URL, walletKey: WalletKey, hexBody: String) {

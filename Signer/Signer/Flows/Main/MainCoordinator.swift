@@ -1,19 +1,36 @@
 import UIKit
 import TKUIKit
+import TKCoordinator
 import SignerCore
 
 final class MainCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   private let signerCoreAssembly: SignerCore.Assembly
+  private let mainController: MainController
   
   init(router: NavigationControllerRouter,
        signerCoreAssembly: SignerCore.Assembly) {
     self.signerCoreAssembly = signerCoreAssembly
+    self.mainController = signerCoreAssembly.mainController()
     super.init(router: router)
   }
 
-  override func start() {
+  override func start(deeplink: (any CoordinatorDeeplink)? = nil) {
     openMain()
+    _ = handleDeeplink(deeplink: deeplink)
+  }
+  
+  override func handleDeeplink(deeplink: (any CoordinatorDeeplink)?) -> Bool {
+    if let coreDeeplink = deeplink as? SignerCore.Deeplink {
+      return handleCoreDeeplink(coreDeeplink)
+    } else {
+      do {
+        let deeplink = try mainController.parseDeeplink(deeplink: deeplink?.string)
+        return handleCoreDeeplink(deeplink)
+      } catch {
+        return false
+      }
+    }
   }
 }
 
@@ -151,6 +168,7 @@ private extension MainCoordinator {
   func openSign(model: TonSignModel, walletKey: WalletKey) {
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
+    window.applyThemeMode(.blue)
     
     let coordinator = SignCoordinator(
       router: WindowRouter(

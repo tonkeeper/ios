@@ -1,5 +1,6 @@
 import UIKit
 import TKScreenKit
+import TKCoordinator
 import SignerCore
 
 final class ImportKeyCoordinator: RouterCoordinator<NavigationControllerRouter> {

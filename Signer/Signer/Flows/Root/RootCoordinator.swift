@@ -1,11 +1,14 @@
 import UIKit
 import TKUIKit
+import TKCoordinator
 import SignerCore
 
 final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   private let signerCoreAssembly: SignerCore.Assembly
   private let rootController: RootController
+  
+  private weak var mainCoordinator: MainCoordinator?
 
   init(router: NavigationControllerRouter,
                 signerCoreAssembly: SignerCore.Assembly) {
@@ -15,13 +18,13 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     router.rootViewController.setNavigationBarHidden(true, animated: false)
   }
   
-  override func start() {
+  override func start(deeplink: CoordinatorDeeplink? = nil) {
     func handleState(state: RootController.State) {
       switch state {
       case .onboarding:
         openOnboarding()
       case .main:
-        openMain()
+        openEnterPassword(deeplink: deeplink)
       }
     }
     handleState(state: rootController.getState())
@@ -30,6 +33,13 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
       handleState(state: state)
     }
     rootController.start()
+  }
+  
+  override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    if let mainCoordinator {
+      return mainCoordinator.handleDeeplink(deeplink: deeplink)
+    }
+    return false
   }
 }
 
@@ -44,7 +54,7 @@ private extension RootCoordinator {
     )
     onboardingCoordinator.didCompleteOnboarding = { [weak self, unowned onboardingCoordinator] in
       self?.removeChild(onboardingCoordinator)
-      self?.openMain()
+      self?.openMain(deeplink: nil)
     }
     addChild(onboardingCoordinator)
     onboardingCoordinator.start()
@@ -52,7 +62,7 @@ private extension RootCoordinator {
     showViewController(navigationController, animated: false)
   }
   
-  func openEnterPassword() {
+  func openEnterPassword(deeplink: CoordinatorDeeplink?) {
     let navigationController = NavigationController()
     navigationController.configureTransparentAppearance()
     
@@ -64,7 +74,7 @@ private extension RootCoordinator {
     )
     enterPasswordCoodinator.didEnterPassword = { [weak self, unowned enterPasswordCoodinator] in
       self?.removeChild(enterPasswordCoodinator)
-      self?.openMain()
+      self?.openMain(deeplink: deeplink)
     }
     enterPasswordCoodinator.didSignOut = { [weak self, unowned enterPasswordCoodinator] in
       self?.removeChild(enterPasswordCoodinator)
@@ -76,7 +86,7 @@ private extension RootCoordinator {
     showViewController(navigationController, animated: false)
   }
   
-  func openMain() {
+  func openMain(deeplink: CoordinatorDeeplink?) {
     let navigationController = NavigationController()
     navigationController.configureDefaultAppearance()
 
@@ -84,8 +94,11 @@ private extension RootCoordinator {
       router: .init(rootViewController: navigationController),
       signerCoreAssembly: signerCoreAssembly
     )
+    
+    self.mainCoordinator = mainCoordinator
+    
     addChild(mainCoordinator)
-    mainCoordinator.start()
+    mainCoordinator.start(deeplink: deeplink)
     
     showViewController(navigationController, animated: true)
   }

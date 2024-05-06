@@ -25,6 +25,12 @@ public final class Assembly {
     RootController(walletKeysStore: storesAssembly.walletKeysStore)
   }
   
+  public func mainController() -> MainController {
+    MainController(deeplinkParser: DefaultDeeplinkParser(parsers: [
+      TonsignDeeplinkParser()
+    ]))
+  }
+  
   public func keysAddController() -> KeysAddController {
     KeysAddController(
       walletKeysStore: storesAssembly.walletKeysStore,

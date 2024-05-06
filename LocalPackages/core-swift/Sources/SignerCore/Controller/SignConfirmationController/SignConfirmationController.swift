@@ -48,7 +48,8 @@ public final class SignConfirmationController {
       return deeplinkGenerator.generatePublishDeeplink(
         signature: signature,
         network: model.network,
-        version: model.version
+        version: model.version,
+        return: model.returnURL
       )
     } catch {
       return nil

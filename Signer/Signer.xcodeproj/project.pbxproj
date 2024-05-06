@@ -33,13 +33,7 @@
 		C30F68302BE5749000F1FC52 /* SettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30F682F2BE5749000F1FC52 /* SettingsSection.swift */; };
 		C30FD8F92B21E0060045B58D /* UIImage+Tonsign.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD8F82B21E0060045B58D /* UIImage+Tonsign.swift */; };
 		C30FD8FE2B21F14C0045B58D /* Module.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD8FD2B21F14C0045B58D /* Module.swift */; };
-		C30FD9042B22011E0045B58D /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9032B22011E0045B58D /* Router.swift */; };
-		C30FD9062B2201FB0045B58D /* ContainerViewControllerRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9052B2201FB0045B58D /* ContainerViewControllerRouter.swift */; };
-		C30FD9082B2202390045B58D /* NavigationControllerRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9072B2202390045B58D /* NavigationControllerRouter.swift */; };
-		C30FD90B2B2202C00045B58D /* UINavigationController+Completion.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD90A2B2202C00045B58D /* UINavigationController+Completion.swift */; };
-		C30FD90D2B2204470045B58D /* WindowRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD90C2B2204470045B58D /* WindowRouter.swift */; };
 		C30FD9122B2204830045B58D /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9112B2204830045B58D /* AppCoordinator.swift */; };
-		C30FD9152B2205230045B58D /* Coordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9142B2205230045B58D /* Coordinator.swift */; };
 		C30FD9182B2205610045B58D /* RootCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9172B2205610045B58D /* RootCoordinator.swift */; };
 		C30FD91B2B2205EC0045B58D /* NavigationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD91A2B2205EC0045B58D /* NavigationController.swift */; };
 		C30FD91E2B2206C70045B58D /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD91D2B2206C70045B58D /* OnboardingCoordinator.swift */; };
@@ -113,6 +107,7 @@
 		C3E6DE5B2B1F40DB005AA291 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E6DE5A2B1F40DB005AA291 /* ViewController.swift */; };
 		C3E6DE602B1F40DB005AA291 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C3E6DE5F2B1F40DB005AA291 /* Assets.xcassets */; };
 		C3E6DE632B1F40DB005AA291 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C3E6DE612B1F40DB005AA291 /* LaunchScreen.storyboard */; };
+		C3F0D11A2BE899A000DBA78E /* TKCoordinator in Frameworks */ = {isa = PBXBuildFile; productRef = C3F0D1192BE899A000DBA78E /* TKCoordinator */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -155,13 +150,7 @@
 		C30F682F2BE5749000F1FC52 /* SettingsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSection.swift; sourceTree = "<group>"; };
 		C30FD8F82B21E0060045B58D /* UIImage+Tonsign.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIImage+Tonsign.swift"; sourceTree = "<group>"; };
 		C30FD8FD2B21F14C0045B58D /* Module.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Module.swift; sourceTree = "<group>"; };
-		C30FD9032B22011E0045B58D /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
-		C30FD9052B2201FB0045B58D /* ContainerViewControllerRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContainerViewControllerRouter.swift; sourceTree = "<group>"; };
-		C30FD9072B2202390045B58D /* NavigationControllerRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationControllerRouter.swift; sourceTree = "<group>"; };
-		C30FD90A2B2202C00045B58D /* UINavigationController+Completion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UINavigationController+Completion.swift"; sourceTree = "<group>"; };
-		C30FD90C2B2204470045B58D /* WindowRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowRouter.swift; sourceTree = "<group>"; };
 		C30FD9112B2204830045B58D /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
-		C30FD9142B2205230045B58D /* Coordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Coordinator.swift; sourceTree = "<group>"; };
 		C30FD9172B2205610045B58D /* RootCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootCoordinator.swift; sourceTree = "<group>"; };
 		C30FD91A2B2205EC0045B58D /* NavigationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationController.swift; sourceTree = "<group>"; };
 		C30FD91D2B2206C70045B58D /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
@@ -237,6 +226,7 @@
 		C3E6DE5F2B1F40DB005AA291 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C3E6DE622B1F40DB005AA291 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C3E6DE642B1F40DB005AA291 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C3F0D1182BE8998400DBA78E /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKCoordinator; path = ../LocalPackages/TKCoordinator; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -245,6 +235,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				C30F68292BE5559800F1FC52 /* TKUIKitDynamic in Frameworks */,
+				C3F0D11A2BE899A000DBA78E /* TKCoordinator in Frameworks */,
 				C30F68182BE51A1D00F1FC52 /* SnapKit-Dynamic in Frameworks */,
 				C30F681F2BE51CCE00F1FC52 /* TKScreenKit in Frameworks */,
 				C360CC3B2BE20F49007F62BA /* SignerCore in Frameworks */,
@@ -339,7 +330,6 @@
 			children = (
 				C30B6CB82BE4E11A00737397 /* Core */,
 				C30FD9302B2214D90045B58D /* Foundation */,
-				C30FD9012B2200EA0045B58D /* Coordinator */,
 				C30FD8FC2B21F1460045B58D /* Module */,
 				C30FD8F62B21DFED0045B58D /* UIKit */,
 			);
@@ -371,35 +361,6 @@
 			path = Module;
 			sourceTree = "<group>";
 		};
-		C30FD9012B2200EA0045B58D /* Coordinator */ = {
-			isa = PBXGroup;
-			children = (
-				C30FD9132B2204AD0045B58D /* Coordinator */,
-				C30FD9092B2202B00045B58D /* UIViewControllerExtensions */,
-				C30FD9022B2200F50045B58D /* Router */,
-			);
-			path = Coordinator;
-			sourceTree = "<group>";
-		};
-		C30FD9022B2200F50045B58D /* Router */ = {
-			isa = PBXGroup;
-			children = (
-				C30FD9032B22011E0045B58D /* Router.swift */,
-				C30FD9052B2201FB0045B58D /* ContainerViewControllerRouter.swift */,
-				C30FD9072B2202390045B58D /* NavigationControllerRouter.swift */,
-				C30FD90C2B2204470045B58D /* WindowRouter.swift */,
-			);
-			path = Router;
-			sourceTree = "<group>";
-		};
-		C30FD9092B2202B00045B58D /* UIViewControllerExtensions */ = {
-			isa = PBXGroup;
-			children = (
-				C30FD90A2B2202C00045B58D /* UINavigationController+Completion.swift */,
-			);
-			path = UIViewControllerExtensions;
-			sourceTree = "<group>";
-		};
 		C30FD90F2B2204760045B58D /* Flows */ = {
 			isa = PBXGroup;
 			children = (
@@ -422,14 +383,6 @@
 				C30FD9112B2204830045B58D /* AppCoordinator.swift */,
 			);
 			path = App;
-			sourceTree = "<group>";
-		};
-		C30FD9132B2204AD0045B58D /* Coordinator */ = {
-			isa = PBXGroup;
-			children = (
-				C30FD9142B2205230045B58D /* Coordinator.swift */,
-			);
-			path = Coordinator;
 			sourceTree = "<group>";
 		};
 		C30FD9162B2205580045B58D /* Root */ = {
@@ -799,6 +752,7 @@
 		C3E6DE6A2B1F41C3005AA291 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				C3F0D1182BE8998400DBA78E /* TKCoordinator */,
 				C30F681D2BE51C7F00F1FC52 /* TKScreenKit */,
 				C30F681A2BE51C5200F1FC52 /* TKUIKit */,
 				C360CC392BE20DE4007F62BA /* core-swift */,
@@ -851,6 +805,7 @@
 				C30F68172BE51A1D00F1FC52 /* SnapKit-Dynamic */,
 				C30F681E2BE51CCE00F1FC52 /* TKScreenKit */,
 				C30F68282BE5559800F1FC52 /* TKUIKitDynamic */,
+				C3F0D1192BE899A000DBA78E /* TKCoordinator */,
 			);
 			productName = Signer;
 			productReference = C3E6DE532B1F40DB005AA291 /* Signer.app */;
@@ -913,11 +868,9 @@
 				C30FD9622B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift in Sources */,
 				C34C447E2B27A8AD00D50343 /* KeyDetailsViewModel.swift in Sources */,
 				C30B6CB32BE4DEBF00737397 /* ToggleButton.swift in Sources */,
-				C30FD9152B2205230045B58D /* Coordinator.swift in Sources */,
 				C30FD92F2B22144E0045B58D /* UIViewController+Keyboard.swift in Sources */,
 				C30F682E2BE56AF900F1FC52 /* KeyDetailsQRCodeCell.swift in Sources */,
 				C30B6CB62BE4DEBF00737397 /* ScannerViewController.swift in Sources */,
-				C30FD9082B2202390045B58D /* NavigationControllerRouter.swift in Sources */,
 				C35434C72BE874DF009FA8C0 /* SignCoordinator.swift in Sources */,
 				C34C44A42B28CD0300D50343 /* SettingsViewController.swift in Sources */,
 				C34C44862B27B6B000D50343 /* KeyDetailsCoordinator.swift in Sources */,
@@ -927,8 +880,6 @@
 				C30FD9282B220A050045B58D /* PasswordInputViewModel.swift in Sources */,
 				C34C44912B288F7300D50343 /* ShowRecoveryPhraseViewModel.swift in Sources */,
 				C35434C52BE87229009FA8C0 /* SignConfirmationTransactionItemCommentView.swift in Sources */,
-				C30FD9062B2201FB0045B58D /* ContainerViewControllerRouter.swift in Sources */,
-				C30FD90B2B2202C00045B58D /* UINavigationController+Completion.swift in Sources */,
 				C3E6DE5B2B1F40DB005AA291 /* ViewController.swift in Sources */,
 				C30B6CB72BE4DEBF00737397 /* ScannerViewModel.swift in Sources */,
 				C30B6CB12BE4DEBF00737397 /* NoCameraPermissionView.swift in Sources */,
@@ -941,14 +892,12 @@
 				C34C44A22B28CCFC00D50343 /* SettingsView.swift in Sources */,
 				C3E6DE572B1F40DB005AA291 /* AppDelegate.swift in Sources */,
 				C34C44262B24D20200D50343 /* MainViewModel.swift in Sources */,
-				C30FD9042B22011E0045B58D /* Router.swift in Sources */,
 				C3E6DE592B1F40DB005AA291 /* SceneDelegate.swift in Sources */,
 				C30FD92C2B220D130045B58D /* PasswordInputViewModelConfigurator.swift in Sources */,
 				C34C44932B288F7D00D50343 /* ShowRecoveryPhraseModuleAssembly.swift in Sources */,
 				C30FD9552B2238F60045B58D /* CreatePasswordCoordinator.swift in Sources */,
 				C32395272B29289D00C4F954 /* ChangePasswordCoordinator.swift in Sources */,
 				C35434BB2BE80812009FA8C0 /* SignConfirmationTransactionItemView.swift in Sources */,
-				C30FD90D2B2204470045B58D /* WindowRouter.swift in Sources */,
 				C30B6CB42BE4DEBF00737397 /* ScannerAssembly.swift in Sources */,
 				C34C447C2B27A84100D50343 /* KeyDetailsModuleAssembly.swift in Sources */,
 				C34C446F2B275AE800D50343 /* AccessoryListItemView.swift in Sources */,
@@ -1260,6 +1209,10 @@
 		C360CC3A2BE20F49007F62BA /* SignerCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SignerCore;
+		};
+		C3F0D1192BE899A000DBA78E /* TKCoordinator */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKCoordinator;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

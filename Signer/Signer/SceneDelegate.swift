@@ -6,9 +6,11 @@
 //
 
 import UIKit
+import TKCoordinator
 import SignerCore
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+  
   var window: UIWindow?
   private var appCoordinator: AppCoordinator?
   
@@ -17,13 +19,31 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     let window = UIWindow(windowScene: windowScene)
     let coordinator = AppCoordinator(
-      router: .init(window: window),
+      router: WindowRouter(window: window),
       signerCoreAssembly: SignerCore.Assembly()
     )
+    
+    if let deeplink = connectionOptions.urlContexts.first?.url.absoluteString {
+      coordinator.start(deeplink: deeplink)
+    } else if let universalLink = connectionOptions.userActivities.first(where: { $0.webpageURL != nil })?.webpageURL {
+      coordinator.start(deeplink: universalLink.absoluteString)
+    } else {
+      coordinator.start(deeplink: nil)
+    }
+    
     window.makeKeyAndVisible()
-    coordinator.start()
     
     self.appCoordinator = coordinator
     self.window = window
+  }
+  
+  func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    guard let url = URLContexts.first?.url else { return }
+    _ = appCoordinator?.handleDeeplink(deeplink: url.absoluteString)
+  }
+  
+  func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+    guard let url = userActivity.webpageURL else { return }
+    _ = appCoordinator?.handleDeeplink(deeplink: url.absoluteString)
   }
 }

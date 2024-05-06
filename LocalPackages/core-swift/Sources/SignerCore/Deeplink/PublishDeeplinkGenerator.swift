@@ -1,24 +1,27 @@
 import Foundation
 
 struct PublishDeeplinkGenerator {
-  func generatePublishDeeplink(signature: Data, network: String?, version: String?) -> URL? {
+  func generatePublishDeeplink(signature: Data, network: String?, version: String?, return: String?) -> URL? {
     guard let signatureEncoded = signature
       .base64EncodedString()
       .percentEncoded else { return nil }
     
-    let parameters = [
+    var urlString: String
+    if let `return` {
+      urlString = `return`
+    } else {
+      urlString = "tonkeeper://"
+    }
+    let parameters: [String] = [
       DeeplinkParameter.boc.rawValue: signatureEncoded,
       DeeplinkParameter.network.rawValue: network,
       DeeplinkParameter.v.rawValue: version
-    ]
-    
-    var components = URLComponents()
-    components.scheme = DeeplinkScheme.tonkeeper.rawValue
-    components.host = "publish"
-    components.percentEncodedQueryItems = parameters.compactMap {
+    ].compactMap {
       guard let value = $0.value else { return nil }
-      return URLQueryItem(name: $0.key, value: value)
+      return "\($0.key)=\(value)"
     }
-    return components.url
+
+    urlString = "\(urlString)publish?\(parameters.joined(separator: "&"))"
+    return URL(string: urlString)
   }
 }
