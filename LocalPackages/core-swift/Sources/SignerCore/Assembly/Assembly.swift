@@ -7,7 +7,7 @@ public final class Assembly {
     repositoriesAssembly: repositoriesAssembly,
     coreAssembly: coreAssembly
   )
-  private lazy var storesAssembly = StoresAssembly(
+  public lazy var storesAssembly = StoresAssembly(
     servicesAssembly: servicesAssembly,
     coreAssembly: coreAssembly,
     repositoriesAssembly: repositoriesAssembly
@@ -53,6 +53,23 @@ public final class Assembly {
   
   public func scannerController() -> ScannerController {
     ScannerController()
+  }
+  
+  public func signConfirmationController(model: TonSignModel, walletKey: WalletKey) -> SignConfirmationController {
+    SignConfirmationController(
+      model: model,
+      walletKey: walletKey,
+      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
+      deeplinkGenerator: PublishDeeplinkGenerator()
+    )
+  }
+  
+  public func signQRController(hexBody: String, walletKey: WalletKey, url: URL) -> SignQRController {
+    SignQRController(
+      hexBody: hexBody,
+      walletKey: walletKey,
+      url: url
+    )
   }
 }
 

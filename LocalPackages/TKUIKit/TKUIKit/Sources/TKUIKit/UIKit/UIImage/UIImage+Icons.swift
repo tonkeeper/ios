@@ -78,6 +78,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-arrow-down-outline-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var arrowRightOutline: UIImage {
+          .imageWithName("Icons/28/ic-arrow-right-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var pencilOutline: UIImage {
           .imageWithName("Icons/28/ic-pencil-outline-28")
           .withRenderingMode(.alwaysTemplate)

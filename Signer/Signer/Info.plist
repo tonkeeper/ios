@@ -34,5 +34,9 @@
 	</dict>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>LSApplicationQueriesSchemes</key>
+  <array>
+      <string>tonkeeper</string>
+  </array>
 </dict>
 </plist>

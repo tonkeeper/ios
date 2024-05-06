@@ -2,6 +2,7 @@ import Foundation
 import AVFoundation
 import UIKit
 import SignerCore
+import TonSwift
 
 protocol ScannerViewModuleOutput: AnyObject {
   var didScanDeeplink: ((Deeplink) -> Void)? { get set }
@@ -80,6 +81,7 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   
   private let metadataOutputQueue = DispatchQueue(label: "metadata.capturesession.queue")
   private let captureSession = AVCaptureSession()
+  private var multiQRCode = MultiQRCode()
   
   // MARK: - Dependencies
   
@@ -221,15 +223,40 @@ extension ScannerViewModelImplementation: AVCaptureMetadataOutputObjectsDelegate
           metadataObject.type == .qr,
           let stringValue = metadataObject.stringValue
     else { return }
-    do {
-      let deeplink = try scannerController.handleScannedQRCode(stringValue)
-      self.captureSession.stopRunning()
-      UINotificationFeedbackGenerator().notificationOccurred(.warning)
-      DispatchQueue.main.async {
-        self.didScanDeeplink?(deeplink)
+    
+    if scannerController.isQRCodeStartString(stringValue) {
+      let qrCodeString = multiQRCode.fullString
+      if let deeplink = try? scannerController.handleScannedQRCode(qrCodeString) {
+        self.captureSession.stopRunning()
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        DispatchQueue.main.async {
+          self.didScanDeeplink?(deeplink)
+        }
+      } else {
+        multiQRCode.reset()
       }
-    } catch {
-      return
     }
+    
+    multiQRCode.setNext(stringValue)
+  }
+}
+
+struct MultiQRCode {
+  private var chunks = [String]()
+  private var chunksSet = Set<String>()
+  
+  var fullString: String {
+    chunks.joined()
+  }
+  
+  mutating func setNext(_ chunk: String) {
+    guard !chunksSet.contains(chunk) else { return }
+    chunksSet.insert(chunk)
+    chunks.append(chunk)
+  }
+  
+  mutating func reset() {
+    chunks = []
+    chunksSet = []
   }
 }

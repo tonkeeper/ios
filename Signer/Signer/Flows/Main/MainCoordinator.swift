@@ -148,49 +148,26 @@ private extension MainCoordinator {
     router.present(navigationController)
   }
   
-  func openSign() {
-    let module = TonConnectConfirmationAssembly.module()
+  func openSign(model: TonSignModel, walletKey: WalletKey) {
+    guard let windowScene = UIApplication.keyWindowScene else { return }
+    let window = TKWindow(windowScene: windowScene)
     
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    let coordinator = SignCoordinator(
+      router: WindowRouter(
+        window: window
+      ),
+      model: model,
+      walletKey: walletKey,
+      signerCoreAssembly: signerCoreAssembly
+    )
     
-    bottomSheetViewController.didClose = { [weak self] isInteractivly in
-//      guard isInteractivly else { return }
-////      keyWindow?.makeKeyAndVisible()
-//      self?.didCancel?()
-//      Task {
-//        await tonConnectConfirmationController.cancel()
-//      }
+    coordinator.didCancel = { [weak coordinator, weak self] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
     }
     
-//    module.output.didTapCancelButton = { [weak tonConnectConfirmationController, weak bottomSheetViewController] in
-//      guard let tonConnectConfirmationController else { return }
-//      Task {
-//        await tonConnectConfirmationController.cancel()
-//      }
-//      bottomSheetViewController?.dismiss(completion: { [weak self] in
-//        self?.didCancel?()
-//      })
-//    }
-//    
-//    module.output.didTapConfirmButton = { [weak self, weak bottomSheetViewController] in
-//      guard let bottomSheetViewController, let self else { return false }
-//      let isConfirmed = await self.openPasscodeConfirmation(fromViewController: bottomSheetViewController)
-//      guard isConfirmed else { return false }
-//      do {
-//        try await self.tonConnectConfirmationController.confirm()
-//        return true
-//      } catch {
-//        return false
-//      }
-//    }
-//    
-//    module.output.didConfirm = { [weak self, weak bottomSheetViewController] in
-//      bottomSheetViewController?.dismiss(completion: { [weak self] in
-//        self?.didConfirm?()
-//      })
-//    }
-    
-    bottomSheetViewController.present(fromViewController: router.rootViewController)
+    addChild(coordinator)
+    coordinator.start()
   }
   
   func handleCoreDeeplink(_ deeplink: SignerCore.Deeplink) -> Bool {
@@ -199,7 +176,14 @@ private extension MainCoordinator {
       switch tonsignDeeplink {
       case .plain: return true
       case .sign(let model):
-        openSign()
+        guard let walletKey = signerCoreAssembly
+          .storesAssembly
+          .walletKeysStore
+          .getWalletKeys().first(where: { $0.publicKey.data == model.publicKey.data }) else {
+          return false
+        }
+        
+        openSign(model: model, walletKey: walletKey)
         return true
       }
     }

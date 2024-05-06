@@ -27,7 +27,7 @@ public final class StoresAssembly {
   }
   
   private weak var _walletKeysStore: WalletKeysStore?
-  var walletKeysStore: WalletKeysStore {
+  public var walletKeysStore: WalletKeysStore {
     if let walletKeysStore = _walletKeysStore {
       return walletKeysStore
     } else {

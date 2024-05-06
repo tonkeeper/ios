@@ -138,6 +138,9 @@ private extension TKBottomSheetViewController {
   }
 
   func performPresent() {
+    view.setNeedsLayout()
+    view.layoutIfNeeded()
+    containerView.frame.size.width = view.bounds.width
     let contentHeight = calculateContentHeight()
     
     let containerHeigth = contentHeight + headerHeight + bottomSpacing
