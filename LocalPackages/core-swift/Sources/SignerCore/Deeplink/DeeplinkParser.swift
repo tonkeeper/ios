@@ -38,7 +38,7 @@ public struct TonsignDeeplinkParser: DeeplinkParser {
     
     switch components.scheme {
     case "tonsign":
-      guard let queryItems = components.percentEncodedQueryItems,
+      guard let queryItems = components.queryItems,
             !queryItems.isEmpty else { return .tonsign(.plain) }
       guard let pk = queryItems.first(where: { $0.name == "pk" })?.value,
             let publicKeyData = Data(base64Encoded: pk),

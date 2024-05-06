@@ -5,8 +5,7 @@ struct LinkDeeplinkGenerator {
   func generateAppDeeplink(network: Network, key: WalletKey) -> URL? {
     guard let publicKey = key
       .publicKey.data.base64EncodedString()
-      .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)?
-      .replacingOccurrences(of: "+", with: "%2B") else {
+      .percentEncoded else {
       return nil
     }
     
@@ -25,8 +24,7 @@ struct LinkDeeplinkGenerator {
   func generateWebDeeplink(network: Network, key: WalletKey) -> URL? {
     guard let publicKey = key
       .publicKey.data.base64EncodedString()
-      .addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)?
-      .replacingOccurrences(of: "+", with: "%2B") else {
+      .percentEncoded else {
       return nil
     }
     
