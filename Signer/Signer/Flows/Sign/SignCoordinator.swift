@@ -119,6 +119,7 @@ private extension SignCoordinator {
     
     let navigationController = TKNavigationController(rootViewController: module.view)
     navigationController.configureTransparentAppearance()
+    navigationController.modalTransitionStyle = .crossDissolve
     
     fromViewController.present(navigationController, animated: true)
   }

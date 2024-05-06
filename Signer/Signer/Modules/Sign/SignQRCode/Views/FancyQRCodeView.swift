@@ -11,6 +11,7 @@ final class FancyQRCodeView: UIView, ConfigurableView {
   }
   
   let qrCodeContainer = UIView()
+  let qrCodeImageViewContainer = UIView()
   let qrCodeImageView = UIImageView()
   let bottomPartView = UIView()
   let labelStackView = UIStackView()
@@ -31,6 +32,7 @@ final class FancyQRCodeView: UIView, ConfigurableView {
     super.layoutSubviews()
     bottomPartView.layoutIfNeeded()
     maskImageView.frame = bottomPartView.bounds
+    qrCodeImageView.frame = qrCodeImageViewContainer.bounds
   }
   
   struct Model {
@@ -43,6 +45,7 @@ final class FancyQRCodeView: UIView, ConfigurableView {
     qrCodeImageView.image = model.image
     topLabel.text = model.topString?.uppercased()
     bottomLabel.text = model.bottomString?.uppercased()
+    setNeedsLayout()
   }
 }
 
@@ -62,9 +65,12 @@ private extension FancyQRCodeView {
     
     bottomPartView.backgroundColor = color
     bottomPartView.mask = maskImageView
+    
+    qrCodeImageView.contentMode = .center
 
     addSubview(qrCodeContainer)
-    qrCodeContainer.addSubview(qrCodeImageView)
+    qrCodeContainer.addSubview(qrCodeImageViewContainer)
+    qrCodeImageViewContainer.addSubview(qrCodeImageView)
     addSubview(bottomPartView)
     bottomPartView.addSubview(labelStackView)
     labelStackView.addArrangedSubview(topLabel)
@@ -78,10 +84,10 @@ private extension FancyQRCodeView {
       make.top.left.right.equalTo(self)
     }
     
-    qrCodeImageView.snp.makeConstraints { make in
+    qrCodeImageViewContainer.snp.makeConstraints { make in
       make.top.left.right.equalTo(qrCodeContainer).inset(24).priority(.high)
-      make.bottom.equalTo(qrCodeContainer)
-      make.height.equalTo(qrCodeImageView.snp.width)
+      make.bottom.equalTo(qrCodeContainer).priority(.high)
+      make.height.equalTo(qrCodeImageViewContainer.snp.width)
     }
 
     bottomPartView.snp.makeConstraints { make in

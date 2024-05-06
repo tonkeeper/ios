@@ -27,6 +27,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
       coordinator.start(deeplink: deeplink)
     } else if let universalLink = connectionOptions.userActivities.first(where: { $0.webpageURL != nil })?.webpageURL {
       coordinator.start(deeplink: universalLink.absoluteString)
+    } else if let shortcutItem = connectionOptions.shortcutItem, shortcutItem.type == "ScanItemType" {
+      coordinator.start(deeplink: AppDeeplink.scan)
     } else {
       coordinator.start(deeplink: nil)
     }
@@ -46,4 +48,26 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     guard let url = userActivity.webpageURL else { return }
     _ = appCoordinator?.handleDeeplink(deeplink: url.absoluteString)
   }
+  
+  func windowScene(_ windowScene: UIWindowScene, 
+                   performActionFor shortcutItem: UIApplicationShortcutItem,
+                   completionHandler: @escaping (Bool) -> Void) {
+    switch shortcutItem.type {
+    case "ScanItemType":
+      if let appCoordinator {
+        let result = appCoordinator.handleDeeplink(deeplink: AppDeeplink.scan)
+        completionHandler(result)
+      } else {
+        completionHandler(false)
+      }
+    default:
+      completionHandler(false)
+    }
+  }
+}
+
+enum AppDeeplink: CoordinatorDeeplink {
+  var string: String { "" }
+  
+  case scan
 }

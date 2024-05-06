@@ -32,20 +32,24 @@ final class SignQRCodeViewModelImplementation: SignQRCodeViewModel, SignQRCodeMo
   
   func generateQRCode(width: CGFloat) {
     let url = signQRController.url
-    Task {
+    self.createQrCodeTask?.cancel()
+    let task = Task {
       let image = await self.qrCodeGenerator.generate(
         string: url.absoluteString,
         size: CGSize(width: width, height: width)
       )
+      guard !Task.isCancelled else { return }
       await MainActor.run {
         self.qrCodeImage = image
         self.update()
       }
     }
+    self.createQrCodeTask = task
   }
   
   // MARK: - State
   
+  private var createQrCodeTask: Task<(), Never>?
   private var qrCodeImage: UIImage?
   
   // MARK: - Dependencies

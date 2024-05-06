@@ -17,12 +17,20 @@ final class MainCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
   override func start(deeplink: (any CoordinatorDeeplink)? = nil) {
     openMain()
-    _ = handleDeeplink(deeplink: deeplink)
+    DispatchQueue.main.async {
+      _ = self.handleDeeplink(deeplink: deeplink)
+    }
   }
   
   override func handleDeeplink(deeplink: (any CoordinatorDeeplink)?) -> Bool {
     if let coreDeeplink = deeplink as? SignerCore.Deeplink {
       return handleCoreDeeplink(coreDeeplink, scanner: false)
+    } else if let appDeeplink = deeplink as? AppDeeplink {
+      switch appDeeplink {
+      case .scan:
+        openScan(animated: true)
+        return true
+      }
     } else {
       do {
         let deeplink = try mainController.parseDeeplink(deeplink: deeplink?.string)
@@ -57,7 +65,7 @@ private extension MainCoordinator {
     router.push(viewController: module.view, animated: false)
   }
   
-  func openScan() {
+  func openScan(animated: Bool = true) {
     let module = ScannerAssembly.module(
       signerCoreAssembly: signerCoreAssembly,
       urlOpener: UIApplication.shared,
@@ -71,7 +79,7 @@ private extension MainCoordinator {
       })
     }
     
-    router.present(module.view)
+    router.present(module.view, animated: animated)
   }
   
   func openAddWallet() {

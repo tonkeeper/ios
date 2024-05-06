@@ -4,6 +4,8 @@ import TKUIKit
 final class SignQRCodeViewController: GenericViewViewController<SignQRCodeView>, TKBottomSheetContentViewController {
   private let viewModel: SignQRCodeViewModel
   
+  private var cachedWidth: CGFloat?
+  
   // MARK: - Init
   
   init(viewModel: SignQRCodeViewModel) {
@@ -46,24 +48,22 @@ final class SignQRCodeViewController: GenericViewViewController<SignQRCodeView>,
   
   override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
-    viewModel.generateQRCode(width: customView.qrCodeView.qrCodeImageView.bounds.width)
+    customView.qrCodeView.layoutIfNeeded()
+    if cachedWidth != customView.bounds.width {
+      cachedWidth = customView.bounds.width
+      viewModel.generateQRCode(width: customView.qrCodeView.qrCodeImageViewContainer.bounds.width)
+    }
   }
 }
 
 // MARK: - Private
 
 private extension SignQRCodeViewController {
-  func setup() {
-    
-  }
+  func setup() {}
 
   func setupBindings() {
     viewModel.didUpdateModel = { [weak customView] in
       customView?.configure(model: $0)
     }
-    
-//    viewModel.didGenerateQRCode = { [weak customView] image in
-//      customView?.qrCodeView.image = image
-//    }
   }
 }

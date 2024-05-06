@@ -9,6 +9,8 @@ public struct QRCodeGeneratorImplementation: QRCodeGenerator {
   public init() {}
   
   public func generate(string: String, size: CGSize) async -> UIImage? {
+    let scale = await UIScreen.main.scale
+    let scaledSize = CGSize(width: size.width * scale, height: size.height * scale)
     let data = string.data(using: .ascii)
     let filter = CIFilter(name: "CIQRCodeGenerator")
     filter?.setValue(data, forKey: "inputMessage")
@@ -27,7 +29,7 @@ public struct QRCodeGeneratorImplementation: QRCodeGenerator {
     let scaleY = size.height / outputImage.extent.size.height
     let transform = CGAffineTransform(scaleX: scaleX, y: scaleY)
     let scaledQRCode = outputImage.transformed(by: transform)
-    
+    let image = UIImage(ciImage: scaledQRCode)
     return UIImage(ciImage: scaledQRCode)
   }
 }
