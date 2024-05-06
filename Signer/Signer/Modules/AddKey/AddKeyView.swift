@@ -42,11 +42,16 @@ private extension AddKeyView {
   func setupConstraints() {
     titleDescriptionView.translatesAutoresizingMaskIntoConstraints = false
     buttonsContainer.translatesAutoresizingMaskIntoConstraints = false
+    createButton.translatesAutoresizingMaskIntoConstraints = false
+    importButton.translatesAutoresizingMaskIntoConstraints = false
     
     NSLayoutConstraint.activate([
       titleDescriptionView.topAnchor.constraint(equalTo: topAnchor),
       titleDescriptionView.leftAnchor.constraint(equalTo: leftAnchor),
       titleDescriptionView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
+      
+      importButton.heightAnchor.constraint(equalToConstant: 56),
+      createButton.heightAnchor.constraint(equalToConstant: 56),
       
       buttonsContainer.topAnchor.constraint(
         equalTo: titleDescriptionView.bottomAnchor, 

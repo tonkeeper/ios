@@ -18,15 +18,18 @@ public final class SignConfirmationController {
   public var walletKey: WalletKey
   private let mnemonicRepository: WalletKeyMnemonicRepository
   private let deeplinkGenerator: PublishDeeplinkGenerator
+  private let amountFormatter: AmountFormatter
   
   init(model: TonSignModel,
        walletKey: WalletKey,
        mnemonicRepository: WalletKeyMnemonicRepository,
-       deeplinkGenerator: PublishDeeplinkGenerator) {
+       deeplinkGenerator: PublishDeeplinkGenerator,
+       amountFormatter: AmountFormatter) {
     self.model = model
     self.walletKey = walletKey
     self.mnemonicRepository = mnemonicRepository
     self.deeplinkGenerator = deeplinkGenerator
+    self.amountFormatter = amountFormatter
   }
   
   public func getTransactionModel() throws -> TransactionModel {
@@ -57,15 +60,36 @@ public final class SignConfirmationController {
   }
   
   public func createEmulationURL() -> URL? {
-//    let transferCell = try await signClosure(transfer)
-//    let externalMessage = Message.external(to: sender,
-//                                           stateInit: contract.stateInit,
-//                                           body: transferCell)
-//    let cell = try Builder().store(externalMessage).endCell()
-//    return try cell.toBoc().base64EncodedString()
-    
-    
-    return nil
+    do {
+      let contract: WalletContract
+      switch model.version {
+      case "v4r2", nil:
+        contract = WalletV4R2(publicKey: model.publicKey.data)
+      case "v3r2":
+        contract = try WalletV3(workchain: 0, publicKey: model.publicKey.data, revision: .r2)
+      case "v3r1":
+        contract = try WalletV3(workchain: 0, publicKey: model.publicKey.data, revision: .r1)
+      default:
+        return nil
+      }
+
+      let signer = WalletTransferEmptyKeySigner()
+      let messageCell = try Cell.fromBase64(src: model.body).toBuilder()
+      let signature = try signer.signMessage(messageCell.endCell().hash())
+      let body = Builder()
+      try body.store(data: signature)
+      try body.store(messageCell)
+      let transferCell = try body.endCell()
+      let externalMessage = Message.external(to: try contract.address(),
+                                             stateInit: contract.stateInit,
+                                             body: transferCell)
+      let cell = try Builder().store(externalMessage).endCell()
+      let hexBoc = try cell.toBoc().hexString()
+      let urlString = "https://tonviewer.com/emulate/\(hexBoc)"
+      return URL(string: urlString)
+    } catch {
+      return nil
+    }
   }
   
   private func parseBoc(_ bocString: String) throws -> Transaction {
@@ -146,8 +170,14 @@ public final class SignConfirmationController {
       
       switch transactionItem {
       case .sendTon(let address, let amount, let comment):
+        let formattedAmount = amountFormatter.formatAmount(
+          amount,
+          fractionDigits: 9,
+          maximumFractionDigits: 9,
+          symbol: "TON"
+        )
         subtitle = address.toShortString(bounceable: false)
-        value = "TON"
+        value = formattedAmount
         valueSubtitle = nil
         itemComment = comment
       case .sendJetton(let address, let jettonAddress, _, let comment):

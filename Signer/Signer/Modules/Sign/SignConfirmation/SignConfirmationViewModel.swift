@@ -7,6 +7,7 @@ import TonSwift
 protocol SignConfirmationModuleOutput: AnyObject {
   var didSignTransaction: ((URL, WalletKey, String) -> Void)? { get set }
   var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)? { get set }
+  var didOpenEmulateURL: ((URL) -> Void)? { get set }
 }
 
 protocol SignConfirmationViewModel: AnyObject {
@@ -24,6 +25,7 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
 
   var didSignTransaction: ((URL, WalletKey, String) -> Void)?
   var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)?
+  var didOpenEmulateURL: ((URL) -> Void)?
   
   // MARK: - SignConfirmationViewModel
 
@@ -33,7 +35,6 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   
   func viewDidLoad() {
     updateHeader()
-    
     do {
       let transactionModel = try controller.getTransactionModel()
       let model = createModel(transactionModel: transactionModel)
@@ -107,13 +108,21 @@ private extension SignConfirmationViewModelImplementation {
       size: .small
     )
     emulateButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Emulate in Browser"))
-    emulateButtonConfiguration.action = { }
+    emulateButtonConfiguration.action = { [weak self] in
+      guard let url = self?.controller.createEmulationURL() else { return }
+      self?.didOpenEmulateURL?(url)
+    }
     
     var copyButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
       category: .tertiary,
       size: .small
     )
     copyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Copy"))
+    copyButtonConfiguration.action = { [weak self] in
+      guard let self else { return }
+      UIPasteboard.general.string = self.controller.hexBody
+      ToastPresenter.showToast(configuration: .copied)
+    }
     
     let bocModel = SignConfirmationBocView.Model(
       boc: transactionModel.boc,

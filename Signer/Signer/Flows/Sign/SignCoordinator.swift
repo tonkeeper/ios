@@ -59,6 +59,10 @@ private extension SignCoordinator {
       })
     }
     
+    module.output.didOpenEmulateURL = { url in
+      UIApplication.shared.open(url: url)
+    }
+    
     bottomSheetViewController.present(fromViewController: rootViewController)
   }
   

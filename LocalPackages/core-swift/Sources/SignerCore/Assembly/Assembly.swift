@@ -17,6 +17,8 @@ public final class Assembly {
     storesAssembly: storesAssembly
   )
   
+  public lazy var formattersAssembly = FormattersAssembly()
+  
   public init() {
     self.coreAssembly = CoreAssembly()
   }
@@ -66,7 +68,8 @@ public final class Assembly {
       model: model,
       walletKey: walletKey,
       mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
-      deeplinkGenerator: PublishDeeplinkGenerator()
+      deeplinkGenerator: PublishDeeplinkGenerator(),
+      amountFormatter: formattersAssembly.amountFormatter
     )
   }
   
