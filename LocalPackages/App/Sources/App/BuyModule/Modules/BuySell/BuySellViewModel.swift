@@ -1,4 +1,5 @@
 import UIKit
+import TKUIKit
 import KeeperCore
 import TKCore
 import BigInt
@@ -18,11 +19,13 @@ protocol BuySellModuleInput: AnyObject {
 
 protocol BuySellViewModel: AnyObject {
   var didUpdateModel: ((BuySellModel) -> Void)? { get set }
+  var didUpdatePaymentMethodItems: (([PaymentMethodItemCell.Configuration]) -> Void)? { get set }
   
   var buySellAmountTextFieldFormatter: BuySellAmountTextFieldFormatter { get }
   
   func viewDidLoad()
   func didInputAmount(_ string: String)
+  func didSelectPaymentMethodId(_ id: String)
 }
 
 struct BuySellModel {
@@ -53,13 +56,27 @@ struct BuySellModel {
   let button: Button
 }
 
+public struct PaymentMethodItemsModel {
+  public let paymentMethodItems: [Item]
+  
+  public init(paymentMethodItems: [Item]) {
+    self.paymentMethodItems = paymentMethodItems
+  }
+}
+
+public extension PaymentMethodItemsModel {
+  struct Item {
+    public let identifier: String
+    public let title: String
+    public let image: UIImage
+  }
+}
+
 final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutput, BuySellModuleInput {
   
   // MARK: - BuySellModelModuleOutput
   
-  var didContinueSend: ((SendModel) -> Void)?
-  var didTapPicker: ((Wallet, Token) -> Void)?
-  var didTapScan: (() -> Void)?
+  //var didContinueBuy: ((BuyModel) -> Void)?
   
   // MARK: - BuySellModelModuleInput
   
@@ -67,8 +84,21 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   
   // MARK: - BuySellModelViewModel
   
+  var didUpdatePaymentMethodItems: (([PaymentMethodItemCell.Configuration]) -> Void)?
+  
   func viewDidLoad() {
     update()
+    
+    // TODO: Add BuySellController didChangeRegion
+    
+    let testItemsModel = PaymentMethodItemsModel(paymentMethodItems: [
+      PaymentMethodItemsModel.Item(identifier: "0", title: "Credit Card", image: .TKUIKit.Images.mastercardVisaCardsLogo),
+      PaymentMethodItemsModel.Item(identifier: "1", title: "Credit Card  ·  RUB", image: .TKUIKit.Images.mirCardLogo),
+      PaymentMethodItemsModel.Item(identifier: "2", title: "Cryptocurrency", image: .TKUIKit.Images.cryptocyrrencyLogo),
+      PaymentMethodItemsModel.Item(identifier: "3", title: "Apple Pay", image: .TKUIKit.Images.applePayCardLogo),
+    ])
+    
+    didUpdatePaymentMethodModel(testItemsModel)
   }
   
   func didInputAmount(_ string: String) {
@@ -87,11 +117,26 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     }
   }
   
+  func didSelectPaymentMethodId(_ id: String) {
+    selectedPaymentMethodId = id
+  }
+  
+  func didUpdatePaymentMethodModel(_ model: PaymentMethodItemsModel) {
+    let paymentMethodItems = model.paymentMethodItems.map {
+      listItemMapper.mapPaymentMethodItem($0)
+    }
+    
+    Task { @MainActor in
+      didUpdatePaymentMethodItems?(paymentMethodItems)
+    }
+  }
+  
   // MARK: - State
   
   private var amountInput = "0"
   private var convertedValue = "0"
   private var currency: Currency = .USD
+  private var selectedPaymentMethodId: String = ""
   
   private var isResolving = false {
     didSet {
@@ -114,7 +159,7 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     }
   }
   
-  // MARK: - Formatters
+  // MARK: - Formatter
   
   let buySellAmountTextFieldFormatter: BuySellAmountTextFieldFormatter = {
     let numberFormatter = NumberFormatter()
@@ -130,9 +175,13 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     return buySellInputFormatController
   }()
   
+  // MARK: - Mapper
+  
+  private let listItemMapper = BuySellListItemMapper()
+  
   // MARK: - Dependencies
   
-  private let imageLoader = ImageLoader()
+//  private let imageLoader = ImageLoader()
   private let buySellController: BuySellController
   private var buySellItem: BuySellItem
   

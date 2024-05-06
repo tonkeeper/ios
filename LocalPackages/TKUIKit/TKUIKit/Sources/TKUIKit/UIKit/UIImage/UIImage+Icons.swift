@@ -204,3 +204,27 @@ public extension UIImage {
     }
   }
 }
+
+public extension UIImage.TKUIKit.Icons.Size28 {
+  static var radioButtonEnabled: UIImage {
+    .imageWithName("Icons/28/ic-radio-button-enabled")
+  }
+  static var radioButtonDisabled: UIImage {
+    .imageWithName("Icons/28/ic-radio-button-disabled")
+  }
+}
+
+public extension UIImage.TKUIKit.Images {
+  static var mastercardVisaCardsLogo: UIImage {
+    .imageWithName("Images/mastercardVisaCards-logo")
+  }
+  static var mirCardLogo: UIImage {
+    .imageWithName("Images/mirCard-logo")
+  }
+  static var cryptocyrrencyLogo: UIImage {
+    .imageWithName("Images/cryptocurrencies-logo")
+  }
+  static var applePayCardLogo: UIImage {
+    .imageWithName("Images/applePayCard-logo")
+  }
+}

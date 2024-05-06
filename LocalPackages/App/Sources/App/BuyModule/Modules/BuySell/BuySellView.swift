@@ -3,20 +3,7 @@ import TKUIKit
 import SnapKit
 
 final class BuySellView: UIView {
-  let scrollView = TKUIScrollView()
-  let stackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .vertical
-    stackView.spacing = .contentVerticalPadding
-    stackView.isLayoutMarginsRelativeArrangement = true
-    stackView.directionalLayoutMargins = NSDirectionalEdgeInsets(
-      top: 0,
-      leading: 16,
-      bottom: 16,
-      trailing: 16
-    )
-    return stackView
-  }()
+  let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
     
   let amountInputView = BuySellAmountInputView()
   
@@ -39,21 +26,11 @@ final class BuySellView: UIView {
   private func setup() {
     amountInputView.layer.cornerRadius = .contentCornerRadius
     
-    addSubview(scrollView)
-    scrollView.addSubview(stackView)
-      
-    stackView.addArrangedSubview(amountInputView)
+    addSubview(collectionView)
     addSubview(continueButton)
     
-    scrollView.snp.makeConstraints { make in
+    collectionView.snp.makeConstraints { make in
       make.edges.equalTo(self)
-      make.width.equalTo(self)
-    }
-    
-    stackView.snp.makeConstraints { make in
-      make.top.equalTo(scrollView).offset(CGFloat.contentVerticalPadding)
-      make.left.right.bottom.equalTo(scrollView).priority(.high)
-      make.width.equalTo(scrollView)
     }
       
     continueButton.snp.makeConstraints { make in
