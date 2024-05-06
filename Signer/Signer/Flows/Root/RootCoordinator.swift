@@ -24,7 +24,7 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
       case .onboarding:
         openOnboarding()
       case .main:
-        openEnterPassword(deeplink: deeplink)
+        openMain(deeplink: deeplink)
       }
     }
     handleState(state: rootController.getState())

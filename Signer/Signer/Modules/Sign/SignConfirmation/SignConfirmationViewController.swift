@@ -64,5 +64,10 @@ private extension SignConfirmationViewController {
     viewModel.didUpdateModel = { [weak customView] model in
       customView?.configure(model: model)
     }
+    
+    viewModel.didCancel = { [weak customView] in
+      customView?.swipeControl.reset()
+      
+    }
   }
 }

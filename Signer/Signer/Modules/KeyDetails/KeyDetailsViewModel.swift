@@ -19,6 +19,7 @@ protocol KeyDetailsModuleOutput: AnyObject {
   var didTapEdit: (() -> Void)? { get set }
   var didTapOpenRecoveryPhrase: (() -> Void)? { get set }
   var didDeleteKey: (() -> Void)? { get set }
+  var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)? { get set }
 }
 
 final class KeyDetailsViewModelImplementation: KeyDetailsViewModel, KeyDetailsModuleOutput {
@@ -30,6 +31,7 @@ final class KeyDetailsViewModelImplementation: KeyDetailsViewModel, KeyDetailsMo
   var didDeleteKey: (() -> Void)?
   var didOpenUrl: ((URL) -> Void)?
   var didCopied: (() -> Void)?
+  var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)?
   
   // MARK: - KeyDetailsViewModel
   
@@ -243,13 +245,23 @@ private extension KeyDetailsViewModelImplementation {
   }
   
   private func sameDeviceLinkAction() {
-    guard let url = keyDetailsController.appLinkDeeplinkUrl() else { return }
-    didOpenUrl?(url)
+    let completion: (Bool) -> Void = { [weak self] isConfirmed in
+      guard isConfirmed else { return }
+      guard let self else { return }
+      guard let url = self.keyDetailsController.appLinkDeeplinkUrl() else { return }
+      self.didOpenUrl?(url)
+    }
+    didRequireConfirmation?(completion)
   }
   
   private func webLinkAction() {
-    guard let url = keyDetailsController.webLinkDeeplinkUrl() else { return }
-    didOpenUrl?(url)
+    let completion: (Bool) -> Void = { [weak self] isConfirmed in
+      guard isConfirmed else { return }
+      guard let self else { return }
+      guard let url = keyDetailsController.webLinkDeeplinkUrl() else { return }
+      self.didOpenUrl?(url)
+    }
+    didRequireConfirmation?(completion)
   }
 }
 

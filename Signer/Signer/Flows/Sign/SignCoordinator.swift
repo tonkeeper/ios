@@ -9,14 +9,17 @@ final class SignCoordinator: RouterCoordinator<WindowRouter> {
   
   private let model: TonSignModel
   private let walletKey: WalletKey
+  private let scanner: Bool
   private let signerCoreAssembly: SignerCore.Assembly
   
   init(router: WindowRouter,
        model: TonSignModel,
        walletKey: WalletKey,
+       scanner: Bool,
        signerCoreAssembly: SignerCore.Assembly) {
     self.model = model
     self.walletKey = walletKey
+    self.scanner = scanner
     self.signerCoreAssembly = signerCoreAssembly
     super.init(router: router)
   }
@@ -45,6 +48,11 @@ private extension SignCoordinator {
       self?.didCancel?()
     }
     
+    module.output.didRequireConfirmation = { [weak self, weak bottomSheetViewController] completion in
+      guard let bottomSheetViewController else { return }
+      self?.openEnterPassword(fromViewController: bottomSheetViewController, completion: completion)
+    }
+    
     module.output.didSignTransaction = { [weak self, weak bottomSheetViewController] url, walletKey, hexBody in
       bottomSheetViewController?.dismiss(completion: {
         self?.handleSignURL(url, walletKey: walletKey, hexBody: hexBody)
@@ -55,7 +63,9 @@ private extension SignCoordinator {
   }
   
   func handleSignURL(_ url: URL, walletKey: WalletKey, hexBody: String) {
-    if UIApplication.shared.canOpenURL(url) {
+    if scanner {
+      openSignQRCode(url: url, walletKey: walletKey, hexBody: hexBody)
+    } else if UIApplication.shared.canOpenURL(url) {
       UIApplication.shared.open(url: url)
       didCancel?()
     } else {
@@ -85,5 +95,27 @@ private extension SignCoordinator {
     
     guard let rootViewController = router.window.rootViewController else { return }
     bottomSheetViewController.present(fromViewController: rootViewController)
+  }
+  
+  func openEnterPassword(fromViewController: UIViewController, completion: @escaping (Bool) -> Void) {
+    let configurator = EnterPasswordPasswordInputViewModelConfigurator(
+      passwordRepository: signerCoreAssembly.repositoriesAssembly.passwordRepository()
+    )
+    let module = PasswordInputModuleAssembly.module(configurator: configurator)
+    module.output.didEnterPassword = { [weak view = module.view] _ in
+      view?.dismiss(animated: true) {
+        completion(true)
+      }
+    }
+    
+    module.view.setupLeftCloseButton { [weak view = module.view] in
+      completion(false)
+      view?.dismiss(animated: true)
+    }
+    
+    let navigationController = TKNavigationController(rootViewController: module.view)
+    navigationController.configureTransparentAppearance()
+    
+    fromViewController.present(navigationController, animated: true)
   }
 }

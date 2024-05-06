@@ -38,6 +38,12 @@ final class SwipeControl: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  func reset() {
+    isLocked = false
+    dragViewLeftConstraint?.update(offset: 0)
+    gradientLabel.alpha = 1
+  }
 }
 
 private extension SwipeControl {

@@ -6,11 +6,13 @@ import TonSwift
 
 protocol SignConfirmationModuleOutput: AnyObject {
   var didSignTransaction: ((URL, WalletKey, String) -> Void)? { get set }
+  var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)? { get set }
 }
 
 protocol SignConfirmationViewModel: AnyObject {
   var didUpdateHeader: ((String, NSAttributedString?) -> Void)? { get set }
   var didUpdateModel: ((SignConfirmationView.Model) -> Void)? { get set }
+  var didCancel: (() -> Void)? { get set }
   
   func viewDidLoad()
   func didConfirmTransaction()
@@ -21,11 +23,13 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   // MARK: - SignConfirmationModuleOutput
 
   var didSignTransaction: ((URL, WalletKey, String) -> Void)?
+  var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)?
   
   // MARK: - SignConfirmationViewModel
 
   var didUpdateHeader: ((String, NSAttributedString?) -> Void)?
   var didUpdateModel: ((SignConfirmationView.Model) -> Void)?
+  var didCancel: (() -> Void)?
   
   func viewDidLoad() {
     updateHeader()
@@ -41,8 +45,16 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   }
   
   func didConfirmTransaction() {
-    guard let signedURL = controller.signTransaction() else { return }
-    didSignTransaction?(signedURL, controller.walletKey, controller.hexBody)
+    let completion: (Bool) -> Void = { [weak self] isConfirmed in
+      guard let self else { return }
+      if isConfirmed {
+        guard let signedURL = self.controller.signTransaction() else { return }
+        self.didSignTransaction?(signedURL, self.controller.walletKey, self.controller.hexBody)
+      } else {
+        self.didCancel?()
+      }
+    }
+    didRequireConfirmation?(completion)
   }
   
   // MARK: - Dependencies

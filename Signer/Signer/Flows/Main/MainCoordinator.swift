@@ -22,11 +22,11 @@ final class MainCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   override func handleDeeplink(deeplink: (any CoordinatorDeeplink)?) -> Bool {
     if let coreDeeplink = deeplink as? SignerCore.Deeplink {
-      return handleCoreDeeplink(coreDeeplink)
+      return handleCoreDeeplink(coreDeeplink, scanner: false)
     } else {
       do {
         let deeplink = try mainController.parseDeeplink(deeplink: deeplink?.string)
-        return handleCoreDeeplink(deeplink)
+        return handleCoreDeeplink(deeplink, scanner: false)
       } catch {
         return false
       }
@@ -67,7 +67,7 @@ private extension MainCoordinator {
     
     module.output.didScanDeeplink = { [weak self] deeplink in
       self?.router.dismiss(completion: {
-        _ = self?.handleCoreDeeplink(deeplink)
+        _ = self?.handleCoreDeeplink(deeplink, scanner: true)
       })
     }
     
@@ -165,7 +165,7 @@ private extension MainCoordinator {
     router.present(navigationController)
   }
   
-  func openSign(model: TonSignModel, walletKey: WalletKey) {
+  func openSign(model: TonSignModel, walletKey: WalletKey, scanner: Bool) {
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
     window.applyThemeMode(.blue)
@@ -176,6 +176,7 @@ private extension MainCoordinator {
       ),
       model: model,
       walletKey: walletKey,
+      scanner: scanner,
       signerCoreAssembly: signerCoreAssembly
     )
     
@@ -188,7 +189,7 @@ private extension MainCoordinator {
     coordinator.start()
   }
   
-  func handleCoreDeeplink(_ deeplink: SignerCore.Deeplink) -> Bool {
+  func handleCoreDeeplink(_ deeplink: SignerCore.Deeplink, scanner: Bool) -> Bool {
     switch deeplink {
     case .tonsign(let tonsignDeeplink):
       switch tonsignDeeplink {
@@ -201,7 +202,7 @@ private extension MainCoordinator {
           return false
         }
         
-        openSign(model: model, walletKey: walletKey)
+        openSign(model: model, walletKey: walletKey, scanner: scanner)
         return true
       }
     }
