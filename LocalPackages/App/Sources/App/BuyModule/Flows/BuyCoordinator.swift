@@ -61,7 +61,11 @@ private extension BuyCoordinator {
                 isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
             ),
             appSettings: coreAssembly.appSettings,
-            buySellItem: BuySellItem(token: .ton, amount: 50)
+            buySellItem: BuySellItem(
+              operation: .buy,
+              token: .ton,
+              amount: 50
+            )
         )
         
         module.view.setupRightCloseButton { [weak self] in

@@ -4,7 +4,18 @@ import KeeperCore
 import TKCore
 import BigInt
 
+struct BuySellOperationModel {
+  let item: BuySellItem
+  let paymentMethodId: String
+}
+
 struct BuySellItem {
+  enum Operation: Hashable {
+    case buy
+    case sell
+  }
+  
+  var operation: Operation
   var token: Token
   var amount: BigUInt
 }
@@ -55,7 +66,7 @@ public extension PaymentMethodItemsModel {
 }
 
 protocol BuySellModuleOutput: AnyObject {
-//  var didContinueBuy: ((BuyModel) -> Void)? { get set }
+  var didContinueBuySell: ((BuySellOperationModel) -> Void)? { get set }
 }
 
 protocol BuySellModuleInput: AnyObject {
@@ -71,13 +82,14 @@ protocol BuySellViewModel: AnyObject {
   func viewDidLoad()
   func didInputAmount(_ string: String)
   func didSelectPaymentMethodId(_ id: String)
+  func didChangeOperation(_ operation: BuySellItem.Operation)
 }
 
 final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutput, BuySellModuleInput {
   
   // MARK: - BuySellModelModuleOutput
   
-  //var didContinueBuy: ((BuyModel) -> Void)?
+  var didContinueBuySell: ((BuySellOperationModel) -> Void)?
   
   // MARK: - BuySellModelModuleInput
   
@@ -134,6 +146,11 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     Task { @MainActor in
       didUpdatePaymentMethodItems?(paymentMethodItems)
     }
+  }
+  
+  func didChangeOperation(_ operation: BuySellItem.Operation) {
+    buySellItem.operation = operation
+    updatePaymentMethodList()
   }
   
   // MARK: - State
@@ -213,10 +230,13 @@ private extension BuySellViewModelImplementation {
           title: "Continue",
           isEnabled: !isResolving && isContinueEnable,
           isActivity: isResolving,
-          action: { //[weak self] in
-//            guard let self else { return }
-//            let buyModel = BuyModel()
-//            didContinueBuy?(buyModel)
+          action: { [weak self] in
+            guard let self else { return }
+            let operationModel = BuySellOperationModel(
+              item: buySellItem,
+              paymentMethodId: selectedPaymentMethodId
+            )
+            didContinueBuySell?(operationModel)
           }
         )
       )
@@ -272,6 +292,22 @@ private extension BuySellViewModelImplementation {
         update()
       }
     }
+  }
+  
+  func updatePaymentMethodList() {
+    // TODO: Fetch data
+    
+    var items = [
+      PaymentMethodItemsModel.Item(identifier: "0", title: "Credit Card", image: .TKUIKit.Images.mastercardVisaCardsLogo),
+      PaymentMethodItemsModel.Item(identifier: "1", title: "Credit Card  ·  RUB", image: .TKUIKit.Images.mirCardLogo),
+      PaymentMethodItemsModel.Item(identifier: "2", title: "Cryptocurrency", image: .TKUIKit.Images.cryptocyrrencyLogo),
+    ]
+    
+    if buySellItem.operation == .buy {
+      items.append(PaymentMethodItemsModel.Item(identifier: "3", title: "Apple Pay", image: .TKUIKit.Images.applePayCardLogo))
+    }
+    
+    didUpdatePaymentMethodModel(PaymentMethodItemsModel(paymentMethodItems: items))
   }
   
   func tokenFractionalDigits(token: Token) -> Int {

@@ -167,7 +167,18 @@ final class BuySellViewController: GenericViewViewController<BuySellView>, Keybo
 
 private extension BuySellViewController {
   func setup() {
-    title = "Buy Sell"
+    let tabButtonsContainerView = BuySellTabButtonsContainerView(model: .init(items: [
+      .init(id: 0, title: "Buy"),
+      .init(id: 1, title: "Sell")
+    ]))
+    
+    tabButtonsContainerView.itemDidSelect = {[weak viewModel] itemId in
+      let operation: BuySellItem.Operation = itemId == 0 ? .buy : .sell
+      viewModel?.didChangeOperation(operation)
+    }
+    
+    navigationItem.titleView = tabButtonsContainerView
+
     view.backgroundColor = .Background.page
     
     customView.collectionView.backgroundColor = .Background.page
@@ -230,7 +241,8 @@ private extension BuySellViewController {
       }
       
       let selectedIndexPath = IndexPath(row: 0, section: sectionIndex)
-      self?.updateCollectionViewSelection(at: selectedIndexPath)
+      let selectedId = paymentMethodItems[0].id
+      self?.updateCollectionViewSelection(at: selectedIndexPath, selectedId: selectedId)
     }
   }
   
@@ -238,9 +250,10 @@ private extension BuySellViewController {
     customView.amountInputView.addGestureRecognizer(tapGestureRecognizer)
   }
   
-  func updateCollectionViewSelection(at selectedIndexPath: IndexPath) {
-    customView.collectionView.performBatchUpdates(nil) { [weak collectionView = customView.collectionView] _ in
-      collectionView?.selectItem(at: selectedIndexPath, animated: false, scrollPosition: .top)
+  func updateCollectionViewSelection(at selectedIndexPath: IndexPath, selectedId: String) {
+    customView.collectionView.performBatchUpdates(nil) { [weak self] _ in
+      self?.customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: .top)
+      self?.viewModel.didSelectPaymentMethodId(selectedId)
     }
   }
   
