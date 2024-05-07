@@ -85,7 +85,7 @@ public final class BuySellController {
     }
   }
   
-  public func convertInputStringToAmount(input: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
+  public func convertInputStringToAmount(input: String, targetFractionalDigits: Int) -> (value: BigUInt, fractionalDigits: Int) {
     guard !input.isEmpty else { return (0, targetFractionalDigits) }
     let fractionalSeparator: String = .fractionalSeparator ?? ""
     let components = input.components(separatedBy: fractionalSeparator)

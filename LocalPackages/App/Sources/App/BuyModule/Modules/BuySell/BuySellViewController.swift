@@ -81,6 +81,14 @@ final class BuySellViewController: GenericViewViewController<BuySellView>, Keybo
     return dataSource
   }
   
+  lazy var tapGestureRecognizer: UITapGestureRecognizer = {
+    let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(resignGestureAction))
+    gestureRecognizer.cancelsTouchesInView = false
+    return gestureRecognizer
+  }()
+  
+  private var isViewDidAppearFirstTime = false
+  
   // MARK: - Dependencies
   
   private let viewModel: BuySellViewModel
@@ -103,6 +111,7 @@ final class BuySellViewController: GenericViewViewController<BuySellView>, Keybo
     
     setup()
     setupBindings()
+    setupGestures()
     setupViewEvents()
     viewModel.viewDidLoad()
   }
@@ -111,9 +120,17 @@ final class BuySellViewController: GenericViewViewController<BuySellView>, Keybo
     super.viewWillAppear(animated)
     
     registerForKeyboardEvents()
-    customView.amountInputView.amountTextField.becomeFirstResponder()
   }
-
+  
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    
+    if !isViewDidAppearFirstTime {
+      customView.amountInputView.amountTextField.becomeFirstResponder()
+      isViewDidAppearFirstTime = true
+    }
+  }
+  
   public override func viewWillDisappear(_ animated: Bool) {
     super.viewWillDisappear(animated)
     
@@ -122,16 +139,26 @@ final class BuySellViewController: GenericViewViewController<BuySellView>, Keybo
   
   public func keyboardWillShow(_ notification: Notification) {
     guard let animationDuration = notification.keyboardAnimationDuration,
-    let keyboardHeight = notification.keyboardSize?.height else { return }
+          let keyboardHeight = notification.keyboardSize?.height
+    else {
+      return
+    }
+    
+    let collectionViewBottomInset = keyboardHeight + customView.continueButton.bounds.height
+    let continueButtonTranslatedY = -keyboardHeight + view.safeAreaInsets.bottom
+    
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
-      self.customView.collectionView.contentInset.bottom = keyboardHeight
+      self.customView.collectionView.contentInset.bottom = collectionViewBottomInset
+      self.customView.continueButton.transform = CGAffineTransform(translationX: 0, y: continueButtonTranslatedY)
     }
   }
   
   public func keyboardWillHide(_ notification: Notification) {
     guard let animationDuration = notification.keyboardAnimationDuration else { return }
+    
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
       self.customView.collectionView.contentInset.bottom = 0
+      self.customView.continueButton.transform = .identity
     }
   }
 }
@@ -175,14 +202,13 @@ private extension BuySellViewController {
         customView.amountInputView.isHidden = false
         customView.amountInputView.amountTextField.text = amountModel.text
         customView.amountInputView.amountTokenTitleLabel.text = amountModel.token.title
+        customView.amountInputView.minAmountLabel.text = "Min. amount: \(amountModel.minimum) \(amountModel.token.title)"
       } else {
         customView.amountInputView.isHidden = true
       }
       
-      customView.amountInputView.convertedAmountLabel.text = model.balance.converted
-      customView.amountInputView.convertedCurrencyLabel.text = model.balance.currency.rawValue
-      
-      customView.amountInputView.minAmountLabel.text = "Min. amount: 50 TON"
+      customView.amountInputView.convertedAmountLabel.text = model.fiatAmount.converted
+      customView.amountInputView.convertedCurrencyLabel.text = model.fiatAmount.currency.rawValue
       
       customView.continueButton.configuration.content = TKButton.Configuration.Content(title: .plainString(model.button.title))
       customView.continueButton.configuration.isEnabled = model.button.isEnabled
@@ -208,6 +234,10 @@ private extension BuySellViewController {
     }
   }
   
+  func setupGestures() {
+    customView.amountInputView.addGestureRecognizer(tapGestureRecognizer)
+  }
+  
   func updateCollectionViewSelection(at selectedIndexPath: IndexPath) {
     customView.collectionView.performBatchUpdates(nil) { [weak collectionView = customView.collectionView] _ in
       collectionView?.selectItem(at: selectedIndexPath, animated: false, scrollPosition: .top)
@@ -218,6 +248,10 @@ private extension BuySellViewController {
     customView.amountInputView.didUpdateText = { [weak viewModel] in
       viewModel?.didInputAmount($0 ?? "")
     }
+  }
+  
+  @objc func resignGestureAction() {
+    customView.amountInputView.amountTextField.resignFirstResponder()
   }
 }
 
