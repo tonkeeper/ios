@@ -123,13 +123,13 @@ public final class SignConfirmationController {
         address: jettonTransferData.toAddress,
         jettonAddress: info.dest,
         amount: jettonTransferData.amount,
-        comment: jettonTransferData.comment
+        comment: parseComment(slice: try? jettonTransferData.forwardPayload?.toSlice())
       )
     case .nftTransferData(let nftTransferData):
       return .sendNFT(
         address: nftTransferData.newOwnerAddress,
         nftAddress: info.dest,
-        comment: nil
+        comment: parseComment(slice: try? nftTransferData.forwardPayload?.toSlice())
       )
     case .comment(let string):
       return .sendTon(
@@ -152,11 +152,15 @@ public final class SignConfirmationController {
       return .jettonTransferData(jettonTransferData)
     } else if let nftTransferData: NFTTransferData = try? slice.preloadType() {
       return .nftTransferData(nftTransferData)
-    } else if let textPayload: String = try? slice.loadSnakeString() {
-      return .comment(textPayload.trimmingCharacters(in: CharacterSet(["\0"])))
+    } else if let comment = parseComment(slice: slice) {
+      return .comment(comment)
     } else {
       return nil
     }
+  }
+    
+  private func parseComment(slice: Slice?) -> String? {
+    return try? slice?.loadSnakeString().trimmingCharacters(in: CharacterSet(["\0"]))
   }
   
   private func createTransactionModel(_ transaction: Transaction) -> TransactionModel {

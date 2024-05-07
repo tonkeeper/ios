@@ -218,7 +218,6 @@
 		C35434CC2BE876DD009FA8C0 /* SignQRCodeAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignQRCodeAssembly.swift; sourceTree = "<group>"; };
 		C35434D22BE8788F009FA8C0 /* FancyQRCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FancyQRCodeView.swift; sourceTree = "<group>"; };
 		C360CC392BE20DE4007F62BA /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "core-swift"; path = "../LocalPackages/core-swift"; sourceTree = "<group>"; };
-		C3A241AF2BEA7626007EFE90 /* ton-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "ton-swift"; path = "../../ton-swift"; sourceTree = "<group>"; };
 		C3E6DE532B1F40DB005AA291 /* Signer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Signer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C3E6DE562B1F40DB005AA291 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C3E6DE582B1F40DB005AA291 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -716,7 +715,6 @@
 		C3E6DE4A2B1F40DB005AA291 = {
 			isa = PBXGroup;
 			children = (
-				C3A241AF2BEA7626007EFE90 /* ton-swift */,
 				C3E6DE6A2B1F41C3005AA291 /* Packages */,
 				C3E6DE552B1F40DB005AA291 /* Signer */,
 				C3E6DE542B1F40DB005AA291 /* Products */,
