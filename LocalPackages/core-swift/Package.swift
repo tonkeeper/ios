@@ -12,7 +12,7 @@ let package = Package(
   ],
   dependencies: [
     .package(path: "../TKLocalize"),
-    .package(url: "https://github.com/tonkeeper/ton-swift", from: "1.0.6"),
+    .package(url: "https://github.com/tonkeeper/ton-swift", from: "1.0.8"),
     .package(url: "https://github.com/tonkeeper/ton-api-swift", from: "0.1.1"),
     .package(url: "https://github.com/apple/swift-openapi-runtime", .upToNextMinor(from: "0.3.0"))
   ],
