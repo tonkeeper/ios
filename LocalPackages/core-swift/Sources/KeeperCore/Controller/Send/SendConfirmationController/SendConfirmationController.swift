@@ -363,7 +363,7 @@ private extension SendConfirmationController {
           let body = transfer.base64EncodedString().percentEncoded else { return nil }
     let v = revision.rawValue.lowercased()
     
-    let string = "tonsign://?pk=\(publicKey)&body=\(body)&v=\(v)"
+    let string = "tonsign://?pk=\(publicKey)&body=\(body)&v=\(v)&return=\("tonkeeperx://publish".percentEncoded ?? "")"
     return URL(string: string)
   }
 }
