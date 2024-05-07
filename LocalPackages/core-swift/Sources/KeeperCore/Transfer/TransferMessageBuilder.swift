@@ -120,6 +120,40 @@ public struct TokenTransferMessageBuilder {
   }
 }
 
+public struct SwapMessageBuilder {
+  private init() {}
+  public static func sendSwap(wallet: Wallet,
+                              seqno: UInt64,
+                              minAskAmount: BigUInt,
+                              offerAmount: BigUInt,
+                              jettonToWalletAddress: Address,
+                              jettonFromWalletAddress: Address,
+                              forwardAmount: BigUInt,
+                              attachedAmount: BigUInt,
+                              signClosure: (WalletTransfer) async throws -> Cell) async throws -> String {
+    
+        
+    let internalMessage = try StonfiSwapMessage.internalMessage(
+      userWalletAddress: wallet.address,
+      minAskAmount: minAskAmount,
+      offerAmount: offerAmount,
+      jettonFromWalletAddress: jettonFromWalletAddress,
+      jettonToWalletAddress: jettonToWalletAddress,
+      forwardAmount: forwardAmount,
+      attachedAmount: attachedAmount
+    )
+      
+    return try await ExternalMessageTransferBuilder
+      .externalMessageTransfer(
+        wallet: wallet,
+        sender: try wallet.address,
+        seqno: seqno, internalMessages: { sender in
+          return [internalMessage]
+        },
+        signClosure: signClosure)
+  }
+}
+
 public struct NFTTransferMessageBuilder {
   private init() {}
   public static func sendNFTTransfer(wallet: Wallet,

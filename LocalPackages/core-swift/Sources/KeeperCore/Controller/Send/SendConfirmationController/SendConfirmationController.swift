@@ -21,6 +21,7 @@ public final class SendConfirmationController {
   private let sendItem: SendItem
   private let comment: String?
   private let sendService: SendService
+  private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
   private let ratesStore: RatesStore
   private let currencyStore: CurrencyStore
@@ -32,6 +33,7 @@ public final class SendConfirmationController {
        sendItem: SendItem,
        comment: String?,
        sendService: SendService,
+       blockchainService: BlockchainService,
        balanceStore: BalanceStore,
        ratesStore: RatesStore,
        currencyStore: CurrencyStore,
@@ -42,6 +44,7 @@ public final class SendConfirmationController {
     self.sendItem = sendItem
     self.comment = comment
     self.sendService = sendService
+    self.blockchainService = blockchainService
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
@@ -292,6 +295,87 @@ private extension SendConfirmationController {
         signClosure: signClosure
       )
     }
+  }
+  
+  /// Jetton to Jetton swap
+  func createSwapTransactionBoc(from: Address, to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Cell) async throws -> String {
+    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    
+    let fromWalletAddress = try await blockchainService.getWalletAddress(
+      jettonMaster: from.toRaw(),
+      owner: wallet.address.toRaw()
+    )
+    
+    let toWalletAddress = try await blockchainService.getWalletAddress(
+      jettonMaster: to.toRaw(),
+      owner: STONFI_CONSTANTS.RouterAddress
+    )
+    
+    return try await SwapMessageBuilder.sendSwap(
+      wallet: wallet,
+      seqno: seqno,
+      minAskAmount: minAskAmount,
+      offerAmount: offerAmount,
+      jettonToWalletAddress: toWalletAddress,
+      jettonFromWalletAddress: fromWalletAddress,
+      forwardAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_JETTON.ForwardGasAmount,
+      attachedAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_JETTON.GasAmount,
+      signClosure: signClosure
+    )
+  }
+  
+  /// Jetton to TON swap
+  func createSwapTransactionBoc(from: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Cell) async throws -> String {
+    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    
+    let fromWalletAddress = try await blockchainService.getWalletAddress(
+      jettonMaster: from.toRaw(),
+      owner: wallet.address.toRaw()
+    )
+    
+    let toWalletAddress = try await blockchainService.getWalletAddress(
+      jettonMaster: STONFI_CONSTANTS.TONProxyAddress,
+      owner: STONFI_CONSTANTS.RouterAddress
+    )
+    
+    return try await SwapMessageBuilder.sendSwap(
+      wallet: wallet,
+      seqno: seqno,
+      minAskAmount: minAskAmount,
+      offerAmount: offerAmount,
+      jettonToWalletAddress: toWalletAddress,
+      jettonFromWalletAddress: fromWalletAddress,
+      forwardAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_TON.ForwardGasAmount,
+      attachedAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_TON.GasAmount,
+      signClosure: signClosure
+    )
+  }
+  
+  /// TON to Jetton swap
+  func createSwapTransactionBoc(to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Cell) async throws -> String {
+    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    
+    let fromWalletAddress = try await blockchainService.getWalletAddress(
+      jettonMaster: STONFI_CONSTANTS.TONProxyAddress,
+      owner: STONFI_CONSTANTS.RouterAddress
+    )
+    
+    let toWalletAddress = try await blockchainService.getWalletAddress(
+      jettonMaster: to.toRaw(),
+      owner: STONFI_CONSTANTS.RouterAddress
+    )
+    
+    return try await SwapMessageBuilder.sendSwap(
+      wallet: wallet, 
+      seqno: seqno,
+      minAskAmount: minAskAmount,
+      offerAmount: offerAmount,
+      jettonToWalletAddress: toWalletAddress,
+      jettonFromWalletAddress: fromWalletAddress,
+      forwardAmount: STONFI_CONSTANTS.SWAP_TON_TO_JETTON.ForwardGasAmount,
+      attachedAmount: STONFI_CONSTANTS.SWAP_TON_TO_JETTON.ForwardGasAmount + offerAmount,
+      signClosure: signClosure
+    )
   }
   
   func createNFTEmulateTransactionBoc(nft: NFT) async throws -> String {

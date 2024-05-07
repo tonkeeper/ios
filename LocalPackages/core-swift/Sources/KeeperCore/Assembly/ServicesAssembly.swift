@@ -82,6 +82,12 @@ public final class ServicesAssembly {
     )
   }
   
+  func blockchainService() -> BlockchainService {
+    BlockchainServiceImplementation(
+      api: apiAssembly.api
+    )
+  }
+  
   func accountNftService() -> AccountNFTService {
     AccountNFTServiceImplementation(
       api: apiAssembly.api,
