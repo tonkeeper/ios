@@ -6,13 +6,11 @@ struct ScannerAssembly {
   private init() {}
   static func module(scannerController: ScannerController,
                      urlOpener: URLOpener,
-                     title: String?,
-                     subtitle: String? = nil) -> MVVMModule<ScannerViewController, ScannerViewModuleOutput, Void> {
+                     uiConfiguration: ScannerUIConfiguration) -> MVVMModule<ScannerViewController, ScannerViewModuleOutput, Void> {
     let viewModel = ScannerViewModelImplementation(
       urlOpener: urlOpener,
       scannerController: scannerController,
-      title: title,
-      subtitle: subtitle
+      uiConfiguration: uiConfiguration
     )
     let viewController = ScannerViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())

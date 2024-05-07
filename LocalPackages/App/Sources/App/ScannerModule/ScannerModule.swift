@@ -10,11 +10,12 @@ struct ScannerModule {
     self.dependencies = dependencies
   }
   
-  func createScannerModule(configurator: ScannerControllerConfigurator) -> MVVMModule<ScannerViewController, ScannerViewModuleOutput, Void> {
+  func createScannerModule(configurator: ScannerControllerConfigurator,
+                           uiConfiguration: ScannerUIConfiguration) -> MVVMModule<ScannerViewController, ScannerViewModuleOutput, Void> {
     ScannerAssembly.module(
       scannerController: dependencies.scannerAssembly.scannerController(configurator: configurator),
       urlOpener: dependencies.coreAssembly.urlOpener(),
-      title: TKLocales.Scanner.title
+      uiConfiguration: uiConfiguration
     )
   }
 }

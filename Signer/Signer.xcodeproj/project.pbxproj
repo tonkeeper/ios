@@ -205,7 +205,6 @@
 		C34C44AE2B29103D00D50343 /* SettingsListItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListItem.swift; sourceTree = "<group>"; };
 		C34C44B02B2911CA00D50343 /* SettingsListSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListSection.swift; sourceTree = "<group>"; };
 		C35434B52BE7D8D2009FA8C0 /* SignConfirmationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignConfirmationView.swift; sourceTree = "<group>"; };
-		C35434B72BE7DA3F009FA8C0 /* ton-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "ton-swift"; path = "../../ton-swift"; sourceTree = "<group>"; };
 		C35434B82BE807E5009FA8C0 /* SignConfirmationTransactionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignConfirmationTransactionsView.swift; sourceTree = "<group>"; };
 		C35434BA2BE80812009FA8C0 /* SignConfirmationTransactionItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignConfirmationTransactionItemView.swift; sourceTree = "<group>"; };
 		C35434BE2BE818FF009FA8C0 /* SignConfirmationBocView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignConfirmationBocView.swift; sourceTree = "<group>"; };
@@ -219,6 +218,7 @@
 		C35434CC2BE876DD009FA8C0 /* SignQRCodeAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignQRCodeAssembly.swift; sourceTree = "<group>"; };
 		C35434D22BE8788F009FA8C0 /* FancyQRCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FancyQRCodeView.swift; sourceTree = "<group>"; };
 		C360CC392BE20DE4007F62BA /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "core-swift"; path = "../LocalPackages/core-swift"; sourceTree = "<group>"; };
+		C3A241AF2BEA7626007EFE90 /* ton-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "ton-swift"; path = "../../ton-swift"; sourceTree = "<group>"; };
 		C3E6DE532B1F40DB005AA291 /* Signer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Signer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C3E6DE562B1F40DB005AA291 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C3E6DE582B1F40DB005AA291 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -716,7 +716,7 @@
 		C3E6DE4A2B1F40DB005AA291 = {
 			isa = PBXGroup;
 			children = (
-				C35434B72BE7DA3F009FA8C0 /* ton-swift */,
+				C3A241AF2BEA7626007EFE90 /* ton-swift */,
 				C3E6DE6A2B1F41C3005AA291 /* Packages */,
 				C3E6DE552B1F40DB005AA291 /* Signer */,
 				C3E6DE542B1F40DB005AA291 /* Products */,
@@ -1093,7 +1093,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development: Grigory Serebryanyy (XM75H6WXV7)";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1129,7 +1129,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Distribution: TONAPPS INC (CT523DK2KC)";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;

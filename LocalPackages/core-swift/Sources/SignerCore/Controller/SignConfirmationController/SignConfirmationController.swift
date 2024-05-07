@@ -153,7 +153,7 @@ public final class SignConfirmationController {
     } else if let nftTransferData: NFTTransferData = try? slice.preloadType() {
       return .nftTransferData(nftTransferData)
     } else if let textPayload: String = try? slice.loadSnakeString() {
-      return .comment(textPayload)
+      return .comment(textPayload.trimmingCharacters(in: CharacterSet(["\0"])))
     } else {
       return nil
     }

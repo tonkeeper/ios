@@ -13,8 +13,11 @@ struct SignerImportScanAssembly {
         configurator: SignerScannerControllerConfigurator()
       ),
       urlOpener: coreAssembly.urlOpener(),
-      title: TKLocales.Scanner.title,
-      subtitle: TKLocales.Signer.Scan.subtitle
+      uiConfiguration: ScannerUIConfiguration(
+        title: TKLocales.Scanner.title,
+        subtitle: TKLocales.Signer.Scan.subtitle,
+        isFlashlightVisible: true
+      )
     )
     
     let viewModel = SignerImportScanViewModelImplementation(

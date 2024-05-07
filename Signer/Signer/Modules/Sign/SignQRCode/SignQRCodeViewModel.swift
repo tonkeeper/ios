@@ -85,8 +85,8 @@ private extension SignQRCodeViewModelImplementation {
           title: "Scan the QR code with Tonkeeper",
           bottomDescription: "After scanning, the transaction will be sent to the network."
         ),
-        qrCodeModel: FancyQRCodeView.Model(
-          image: qrCodeImage,
+        qrCodeModel: TKFancyQRCodeView.Model(
+          images: qrCodeImage == nil ? [] : [qrCodeImage!],
           topString: "Signed Transaction",
           bottomString: bottomString
         ),

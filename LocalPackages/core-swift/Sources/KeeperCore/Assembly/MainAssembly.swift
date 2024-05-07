@@ -416,6 +416,10 @@ public final class MainAssembly {
       isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
     )
   }
+  
+  public func signerSignController(url: URL, wallet: Wallet) -> SignerSignController {
+    SignerSignController(url: url, wallet: wallet)
+  }
 }
 
 private extension MainAssembly {

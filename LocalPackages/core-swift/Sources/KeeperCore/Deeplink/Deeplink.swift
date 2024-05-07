@@ -40,6 +40,12 @@ public struct TonConnectDeeplink {
   let string: String
 }
 
+public struct TonkeeperPublishModel {
+  public let boc: Data
+  public let v: String?
+  public let network: String?
+}
+
 public enum TonkeeperDeeplink {
   public enum SignerDeeplink {
     case link(publicKey: TonSwift.PublicKey, name: String)
@@ -48,6 +54,7 @@ public enum TonkeeperDeeplink {
   }
   
   case signer(SignerDeeplink)
+  case publish(TonkeeperPublishModel)
   
   public var string: String { "" }
 }

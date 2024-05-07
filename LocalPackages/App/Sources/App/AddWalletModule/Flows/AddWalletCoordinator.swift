@@ -47,6 +47,8 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
     case .signer(let signerDeeplink):
       guard let pairSignerCoordinator else { return false }
       return pairSignerCoordinator.handleDeeplink(deeplink: signerDeeplink)
+    default:
+      return false
     }
   }
 }

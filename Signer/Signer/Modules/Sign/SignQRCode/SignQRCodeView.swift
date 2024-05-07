@@ -16,7 +16,7 @@ final class SignQRCodeView: UIView, ConfigurableView {
     )
     return view
   }()
-  let qrCodeView = FancyQRCodeView()
+  let qrCodeView = TKFancyQRCodeView()
   let doneButton = TKButton()
   
   override init(frame: CGRect) {
@@ -30,7 +30,7 @@ final class SignQRCodeView: UIView, ConfigurableView {
   
   struct Model {
     let titleDescriptionModel: TKTitleDescriptionView.Model
-    let qrCodeModel: FancyQRCodeView.Model
+    let qrCodeModel: TKFancyQRCodeView.Model
     let doneButtonConfiguration: TKButton.Configuration
   }
   

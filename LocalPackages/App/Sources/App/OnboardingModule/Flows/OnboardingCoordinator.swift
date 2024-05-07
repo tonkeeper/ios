@@ -125,6 +125,9 @@ private extension OnboardingCoordinator {
         self?.handleSignerDeeplink(signerDeeplink)
       }
       return true
+    case let .publish(model):
+      // TODO:
+      return false
     }
   }
   

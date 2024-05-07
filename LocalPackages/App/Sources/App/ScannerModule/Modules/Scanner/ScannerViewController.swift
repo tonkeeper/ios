@@ -81,5 +81,9 @@ private extension ScannerViewController {
     viewModel.didUpdateSubtitle = { [weak customView] subtitle in
       customView?.subtitleLabel.attributedText = subtitle
     }
+    
+    viewModel.didUpdateIsFlashlightVisible = { [weak customView] isVisible in
+      customView?.flashlightButton.isHidden = !isVisible
+    }
   }
 }

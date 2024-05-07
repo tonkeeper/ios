@@ -34,11 +34,10 @@ public final class PairSignerCoordinator: RouterCoordinator<NavigationController
   public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
     guard let signerDeeplink = deeplink as? TonkeeperDeeplink.SignerDeeplink else { return false }
     switch signerDeeplink {
-    case .link(let publicKey, let name):
+    case let .link(publicKey, name):
       openImportCoordinator(publicKey: publicKey, name: name)
       return true
     }
-    
   }
 }
 

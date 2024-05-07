@@ -1,5 +1,6 @@
 import UIKit
 import TKCoordinator
+import TKLocalize
 import TKUIKit
 import KeeperCore
 import TKCore
@@ -21,7 +22,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private var historyCoordinator: HistoryCoordinator?
   private var collectiblesCoordinator: CollectiblesCoordinator?
   
-  private var addWalletCoordinator: AddWalletCoordinator?
+  private weak var addWalletCoordinator: AddWalletCoordinator?
+  private weak var sendTokenCoordinator: SendTokenCoordinator?
   
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
@@ -114,9 +116,14 @@ private extension MainCoordinator {
       self?.openWalletPicker()
     }
     
-    let historyCoordinator = historyModule.createHistoryCoordinator()
-    let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
+    walletCoordinator.didTapSend = { [weak self] token in
+      self?.openSend(token: token)
+    }
     
+    let historyCoordinator = historyModule.createHistoryCoordinator()
+    
+    let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
+
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
     self.collectiblesCoordinator = collectiblesCoordinator
@@ -148,7 +155,12 @@ private extension MainCoordinator {
         coreAssembly: coreAssembly,
         scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
-    ).createScannerModule(configurator: DefaultScannerControllerConfigurator())
+    ).createScannerModule(
+      configurator: DefaultScannerControllerConfigurator(),
+      uiConfiguration: ScannerUIConfiguration(title: TKLocales.Scanner.title,
+                                              subtitle: nil,
+                                              isFlashlightVisible: true)
+    )
     
     let navigationController = TKNavigationController(rootViewController: scanModule.view)
     navigationController.configureTransparentAppearance()
@@ -162,7 +174,7 @@ private extension MainCoordinator {
     router.present(navigationController)
   }
   
-  func openSend(token: Token, recipient: Recipient) {
+  func openSend(token: Token, recipient: Recipient? = nil) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     
@@ -178,15 +190,20 @@ private extension MainCoordinator {
     )
     
     sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
+      self?.sendTokenCoordinator = nil
       navigationController?.dismiss(animated: true)
       guard let sendTokenCoordinator else { return }
       self?.removeChild(sendTokenCoordinator)
     }
     
+    self.sendTokenCoordinator = sendTokenCoordinator
+    
     addChild(sendTokenCoordinator)
     sendTokenCoordinator.start()
     
-    self.router.present(navigationController)
+    self.router.present(navigationController, onDismiss: { [weak self] in
+      self?.sendTokenCoordinator = nil
+    })
   }
   
   func openSend(recipient: String, jettonAddress: Address?) {
@@ -287,6 +304,14 @@ private extension MainCoordinator {
         self?.handleSignerDeeplink(signerDeeplink)
       }
       return true
+    case let .publish(model):
+      if let sendTokenCoordinator = sendTokenCoordinator {
+        return sendTokenCoordinator.handleTonkeeperPublishDeeplink(model: model)
+      }
+      if let collectiblesCoordinator = collectiblesCoordinator, collectiblesCoordinator.handleTonkeeperDeeplink(deeplink: deeplink) {
+        return true
+      }
+      return false
     }
   }
   

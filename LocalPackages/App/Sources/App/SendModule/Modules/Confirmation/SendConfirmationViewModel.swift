@@ -3,10 +3,12 @@ import TKUIKit
 import KeeperCore
 import TKCore
 import TKLocalize
+import TonSwift
 
 protocol SendConfirmationModuleOutput: AnyObject {
   var didRequireConfirmation: (() async -> Bool)? { get set }
   var didSendTransaction: (() -> Void)? { get set }
+  var didRequireExternalWalletSign: ((URL, Wallet) async throws -> Data?)? { get set }
 }
 
 protocol SendConfirmationModuleInput: AnyObject {
@@ -27,6 +29,7 @@ final class SendConfirmationViewModelImplementation: SendConfirmationViewModel, 
   
   var didRequireConfirmation: (() async -> Bool)?
   var didSendTransaction: (() -> Void)?
+  var didRequireExternalWalletSign: ((URL, Wallet) async throws -> Data?)?
   
   // MARK: - SendConfirmationModuleInput
   
@@ -66,6 +69,11 @@ private extension SendConfirmationViewModelImplementation {
       guard let self else { return }
       let configuration = self.mapSendConfirmationModel(sendConfirmationModel)
       self.didUpdateConfiguration?(configuration)
+    }
+    
+    sendConfirmationController.didGetExternalSign = { [weak self] url in
+      guard let self, let didRequireExternalWalletSign else { return Data() }
+      return try await didRequireExternalWalletSign(url, sendConfirmationController.wallet)
     }
   }
   
@@ -251,8 +259,10 @@ private extension SendConfirmationViewModelImplementation {
   }
   
   func sendTransaction() async -> Bool {
-    let isConfirmed = await didRequireConfirmation?() ?? false
-    guard isConfirmed else { return false }
+    if sendConfirmationController.isNeedToConfirm() {
+      let isConfirmed = await didRequireConfirmation?() ?? false
+      guard isConfirmed else { return false }
+    }
     do {
       try await sendConfirmationController.sendTransaction()
       return true

@@ -24,13 +24,11 @@ final class SignConfirmationTransactionItemView: UIView, ConfigurableView {
   }
   
   struct Model {
-//    let iconConfiguration: HistoryCellIconView.Configuration
     let contentConfiguration: TKUIListItemContentView.Configuration
     let commentConfiguration: SignConfirmationTransactionItemCommentView.Model?
   }
   
   func configure(model: Model) {
-//    iconView.configure(configuration: configuration.iconConfiguration)
     contentView.configure(configuration: model.contentConfiguration)
     if let commentConfiguration = model.commentConfiguration {
       commentView.isHidden = false
@@ -38,63 +36,31 @@ final class SignConfirmationTransactionItemView: UIView, ConfigurableView {
     } else {
       commentView.isHidden = true
     }
-//    
-//    if let nftConfiguration = configuration.nftConfiguration {
-//      nftView.isHidden = false
-//      nftView.configure(configuration: nftConfiguration)
-//    } else {
-//      nftView.isHidden = true
-//    }
-//    
-//    if configuration.isInProgress {
-//      inProgressLoaderView.isHidden = false
-//      inProgressLoaderView.startAnimation()
-//    } else {
-//      inProgressLoaderView.isHidden = true
-//      inProgressLoaderView.stopAnimation()
-//    }
-//    
     setNeedsLayout()
     invalidateIntrinsicContentSize()
   }
   
   override func sizeThatFits(_ size: CGSize) -> CGSize {
-//    .zero
     let contentSize = size.inset(by: .contentPadding)
-//    let iconViewSizeThatFits = iconView.sizeThatFits(contentSize)
-//    
+    
     var contentViewWidth = contentSize.width
-//    if !iconViewSizeThatFits.width.isZero {
-//      contentViewWidth -= iconViewSizeThatFits.width + 16
-//    }
-//    
     let contentSizeThatFits = contentView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
-//
+
     let commentSize: CGSize
     if commentView.isHidden {
       commentSize = .zero
     } else {
       commentSize = commentView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
     }
-//    
-//    let nftSize: CGSize
-//    if nftView.isHidden {
-//      nftSize = .zero
-//    } else {
-//      nftSize = nftView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
-//    }
-//    
     let height = contentSizeThatFits.height
     + commentSize.height
-//    + nftSize.height
     + UIEdgeInsets.contentPadding.top
     + UIEdgeInsets.contentPadding.bottom
-//    
+    
     return CGSize(width: size.width, height: height)
   }
   
   override var intrinsicContentSize: CGSize {
-//    return CGSize(width: UIView.noIntrinsicMetric, height: 200)
     return CGSize(width: UIView.noIntrinsicMetric, height: sizeThatFits(.init(width: bounds.width, height: 0)).height)
   }
   

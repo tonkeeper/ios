@@ -15,16 +15,12 @@
 			</array>
 		</dict>
 	</array>
-	<key>UIApplicationShortcutItems</key>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationQueriesSchemes</key>
 	<array>
-		<dict>
-			<key>UIApplicationShortcutItemType</key>
-			<string>ScanItemType</string>
-			<key>UIApplicationShortcutItemTitle</key>
-			<string>Scan</string>
-			<key>UIApplicationShortcutItemIconFile</key>
-			<string>ic-qr-viewfinder-outline-28</string>
-		</dict>
+		<string>tonkeeper</string>
+		<string>tonkeeperx</string>
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
@@ -43,13 +39,18 @@
 			</array>
 		</dict>
 	</dict>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemIconFile</key>
+			<string>ic-qr-viewfinder-outline-28</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Scan</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>ScanItemType</string>
+		</dict>
+	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
-	<key>LSApplicationQueriesSchemes</key>
-	<array>
-		<string>tonkeeper</string>
-	</array>
 </dict>
 </plist>

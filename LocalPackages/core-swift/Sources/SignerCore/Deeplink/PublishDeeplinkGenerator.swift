@@ -10,11 +10,7 @@ struct PublishDeeplinkGenerator {
     if let `return` {
       urlString = `return`
     } else {
-      urlString = "tonkeeper://"
-    }
-    
-    if !urlString.contains("publish") {
-      urlString = urlString + "publish"
+      urlString = "tonkeeperx://publish"
     }
     
     let parameters: [String] = [

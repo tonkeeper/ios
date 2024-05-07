@@ -34,6 +34,7 @@ public final class TKUIListItemView: UIView, TKConfigurableView {
     contentView.configure(configuration: configuration.contentConfiguration)
     accessoryView.configure(configuration: configuration.accessoryConfiguration)
     setNeedsLayout()
+    invalidateIntrinsicContentSize()
   }
   
   public override func sizeThatFits(_ size: CGSize) -> CGSize {
@@ -59,6 +60,10 @@ public final class TKUIListItemView: UIView, TKConfigurableView {
     let height = max(iconViewSizeThatFits.height, contentViewSizeThatFits.height)
     
     return CGSize(width: size.width, height: height)
+  }
+  
+  public override var intrinsicContentSize: CGSize {
+    return CGSize(width: UIView.noIntrinsicMetric, height: sizeThatFits(.init(width: bounds.width, height: 0)).height)
   }
   
   public override func layoutSubviews() {

@@ -10,6 +10,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   var didTapScan: (() -> Void)?
   var didLogout: (() -> Void)?
   var didTapWalletButton: (() -> Void)?
+  var didTapSend: ((Token) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -144,29 +145,7 @@ private extension WalletCoordinator {
   }
   
   func openSend(token: Token) {
-    let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
-    
-    let sendTokenCoordinator = SendModule(
-      dependencies: SendModule.Dependencies(
-        coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
-      )
-    ).createSendTokenCoordinator(
-      router: NavigationControllerRouter(rootViewController: navigationController),
-      sendItem: .token(token, amount: 0)
-    )
-    
-    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
-      navigationController?.dismiss(animated: true)
-      guard let sendTokenCoordinator else { return }
-      self?.removeChild(sendTokenCoordinator)
-    }
-    
-    addChild(sendTokenCoordinator)
-    sendTokenCoordinator.start()
-    
-    self.router.present(navigationController)
+    didTapSend?(token)
   }
   
   func openReceive(token: Token) {

@@ -121,10 +121,26 @@ public struct TonkeeperDeeplinkParser: DeeplinkParser {
     }
     
     switch scheme {
-    case "tonkeeper":
+    case "tonkeeper", "tonkeeperx":
       switch host {
       case "signer":
         return try signerParse(string: string, host: host, path: components.path, queryItems: queryItems)
+      case "publish":
+        guard let boc = queryItems.first(where: { $0.name == "boc" })?.value,
+              let bocData = Data(base64Encoded: boc) else {
+          throw DeeplinkParserError.unsupportedDeeplink(string: string)
+        }
+        
+        let v = queryItems.first(where: { $0.name == "v" })?.value
+        let network = queryItems.first(where: { $0.name == "network" })?.value
+        
+        let model = TonkeeperPublishModel(
+          boc: bocData,
+          v: v,
+          network: network
+        )
+        
+        return .tonkeeper(TonkeeperDeeplink.publish(model))
       default:
         throw DeeplinkParserError.unsupportedDeeplink(string: string)
       }
