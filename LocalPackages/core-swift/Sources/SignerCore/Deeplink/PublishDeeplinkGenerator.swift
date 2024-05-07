@@ -12,6 +12,11 @@ struct PublishDeeplinkGenerator {
     } else {
       urlString = "tonkeeper://"
     }
+    
+    if !urlString.contains("publish") {
+      urlString = urlString + "publish"
+    }
+    
     let parameters: [String] = [
       DeeplinkParameter.boc.rawValue: signatureEncoded,
       DeeplinkParameter.network.rawValue: network,
@@ -21,7 +26,7 @@ struct PublishDeeplinkGenerator {
       return "\($0.key)=\(value)"
     }
 
-    urlString = "\(urlString)publish?\(parameters.joined(separator: "&"))"
+    urlString = "\(urlString)?\(parameters.joined(separator: "&"))"
     return URL(string: urlString)
   }
 }
