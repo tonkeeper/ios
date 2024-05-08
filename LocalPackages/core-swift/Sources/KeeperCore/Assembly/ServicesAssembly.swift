@@ -140,4 +140,9 @@ public final class ServicesAssembly {
   func locationService() -> LocationService {
     LocationServiceImplementation(locationAPI: locationAPIAsembly.locationAPI())
   }
+  
+  func popularAppsService() -> PopularAppsService {
+    PopularAppsServiceImplementation(api: tonkeeperAPIAssembly.api,
+                                     popularAppsRepository: repositoriesAssembly.popularAppsRepository())
+  }
 }

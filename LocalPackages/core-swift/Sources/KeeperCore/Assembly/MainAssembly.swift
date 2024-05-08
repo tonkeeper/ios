@@ -422,6 +422,10 @@ public final class MainAssembly {
   public func signerSignController(url: URL, wallet: Wallet) -> SignerSignController {
     SignerSignController(url: url, wallet: wallet)
   }
+  
+  public func browserExploreController() -> BrowserExploreController {
+    BrowserExploreController(popularAppsService: servicesAssembly.popularAppsService())
+  }
 }
 
 private extension MainAssembly {
