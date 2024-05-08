@@ -175,6 +175,12 @@ class BuySellTabButtonsContainerView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
+  func preferredWidth() -> CGFloat {
+    items.reduce(0) { partialResult, item in
+      partialResult + item.preferredWidth()
+    }
+  }
+  
   struct Model {
     struct Item {
       let id: Int

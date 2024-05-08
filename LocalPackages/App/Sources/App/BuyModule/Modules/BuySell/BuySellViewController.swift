@@ -110,6 +110,7 @@ final class BuySellViewController: GenericViewViewController<BuySellView>, Keybo
     super.viewDidLoad()
     
     setup()
+    setupCollectionView()
     setupBindings()
     setupGestures()
     setupViewEvents()
@@ -167,18 +168,14 @@ final class BuySellViewController: GenericViewViewController<BuySellView>, Keybo
 
 private extension BuySellViewController {
   func setup() {
-    let tabButtonsContainerView = BuySellTabButtonsContainerView(model: .init(items: [
-      .init(id: 0, title: "Buy"),
-      .init(id: 1, title: "Sell")
-    ]))
+    navigationController?.setNavigationBarHidden(true, animated: false)
     
-    tabButtonsContainerView.itemDidSelect = {[weak viewModel] itemId in
-      let operation: BuySellItem.Operation = itemId == 0 ? .buy : .sell
-      viewModel?.didChangeOperation(operation)
+    if let closeButton = navigationItem.rightBarButtonItem?.customView {
+      customView.navigationBarView.setupRightBarItem(configuration:
+          .init(view: closeButton)
+      )
     }
     
-    navigationItem.titleView = tabButtonsContainerView
-
     view.backgroundColor = .Background.page
     
     customView.collectionView.backgroundColor = .Background.page
@@ -190,15 +187,17 @@ private extension BuySellViewController {
     customView.amountInputView.minAmountLabel.textColor = .Text.tertiary
     
     customView.amountInputView.amountTextField.delegate = viewModel.buySellAmountTextFieldFormatter
-    
+  }
+  
+  func setupCollectionView() {
+    customView.collectionView.delegate = self
+    customView.collectionView.showsVerticalScrollIndicator = false
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.register(
       TKReusableContainerView.self,
       forSupplementaryViewOfKind: .amountInputHeaderElementKind,
       withReuseIdentifier: TKReusableContainerView.reuseIdentifier
     )
-    customView.collectionView.delegate = self
-    customView.collectionView.showsVerticalScrollIndicator = false
     
     var snapshot = dataSource.snapshot()
     snapshot.appendSections([.paymentMethodItems])
@@ -258,6 +257,11 @@ private extension BuySellViewController {
   }
   
   func setupViewEvents() {
+    customView.tabButtonsContainerView.itemDidSelect = {[weak viewModel] itemId in
+      let operation: BuySellItem.Operation = itemId == 0 ? .buy : .sell
+      viewModel?.didChangeOperation(operation)
+    }
+    
     customView.amountInputView.didUpdateText = { [weak viewModel] in
       viewModel?.didInputAmount($0 ?? "")
     }
