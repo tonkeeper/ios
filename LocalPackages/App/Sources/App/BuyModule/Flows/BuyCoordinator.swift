@@ -25,7 +25,7 @@ public final class BuyCoordinator: RouterCoordinator<NavigationControllerRouter>
   
   public override func start() {
     //openBuyList()
-      openBuySell()
+    openBuySell()
   }
 }
 
@@ -54,26 +54,41 @@ private extension BuyCoordinator {
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
 
-    func openBuySell() {
-        let module = BuySellAssembly.module(
-            buySellController: keeperCoreMainAssembly.buySellController(
-                wallet: wallet,
-                isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
-            ),
-            appSettings: coreAssembly.appSettings,
-            buySellItem: BuySellItem(
-              operation: .buy,
-              token: .ton,
-              amount: 50
-            )
-        )
-        
-        module.view.setupRightCloseButton { [weak self] in
-          self?.didFinish?()
-        }
-        
-        router.push(viewController: module.view, animated: false)
+  func openBuySell() {
+    let module = BuySellAssembly.module(
+      buySellController: keeperCoreMainAssembly.buySellController(
+        wallet: wallet,
+        isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
+      ),
+      appSettings: coreAssembly.appSettings,
+      buySellItem: BuySellItem(
+        operation: .buy,
+        token: .ton,
+        amount: 50
+      )
+    )
+    
+    module.view.setupRightCloseButton { [weak self] in
+      self?.didFinish?()
     }
+    
+    module.view.didTapChangeCountryButton = {
+      // TODO: Add Change Country Screen
+      print("TODO: Add Change Country Screen")
+    }
+    
+    module.output.didContinueBuySell = { [weak self] buySellOperation in
+      self?.openOperator(buySellOperation: buySellOperation)
+    }
+    
+    router.push(viewController: module.view, animated: false)
+  }
+  
+  func openOperator(buySellOperation: BuySellOperationModel) {
+    let dummy = UIViewController()
+    dummy.view.backgroundColor = .red
+    router.push(viewController: dummy, animated: true)
+  }
   
   func openWebView(url: URL, fromViewController: UIViewController) {
     let webViewController = TKWebViewController(url: url)

@@ -75,6 +75,7 @@ protocol BuySellModuleInput: AnyObject {
 
 protocol BuySellViewModel: AnyObject {
   var didUpdateModel: ((BuySellModel) -> Void)? { get set }
+  var didUpdateCountryCode: ((String) -> Void)? { get set }
   var didUpdatePaymentMethodItems: (([PaymentMethodItemCell.Configuration]) -> Void)? { get set }
   
   var buySellAmountTextFieldFormatter: BuySellAmountTextFieldFormatter { get }
@@ -93,16 +94,17 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   
   // MARK: - BuySellModelModuleInput
   
-  var didUpdateModel: ((BuySellModel) -> Void)?
   
   // MARK: - BuySellModelViewModel
   
+  var didUpdateModel: ((BuySellModel) -> Void)?
+  var didUpdateCountryCode: ((String) -> Void)?
   var didUpdatePaymentMethodItems: (([PaymentMethodItemCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
     updateMinimumAmountInput()
+    updateCountryCode()
     update()
-    didInputAmount(minimumAmountInput)
     
     // TODO: Add BuySellController didChangeRegion
     
@@ -155,6 +157,7 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   
   // MARK: - State
   
+  private var countryCode = "🌍"
   private var amountInput = "0"
   private var minimumAmountInput = "0" {
     didSet {
@@ -271,12 +274,24 @@ private extension BuySellViewModelImplementation {
   func updateMinimumAmountInput() {
     // TODO: minimum amount
     minimumAmountInput = "50"
+    didInputAmount(minimumAmountInput)
   }
   
   func updateMinimumValidAmount() {
     let unformatted = buySellAmountTextFieldFormatter.unformatString(minimumAmountInput) ?? ""
     let amount = buySellController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: tokenFractionalDigits(token: buySellItem.token))
     minimumValidAmount = amount.value
+  }
+  
+  func updateCountryCode() {
+    Task {
+      guard let countryCode = await buySellController.getCountryCode() else { return }
+      
+      await MainActor.run {
+        self.countryCode = countryCode
+        didUpdateCountryCode?(countryCode)
+      }
+    }
   }
   
   func updateConverted() {

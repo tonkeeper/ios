@@ -7,6 +7,8 @@ enum BuySellSection: Hashable {
 
 final class BuySellViewController: GenericViewViewController<BuySellView>, KeyboardObserving {
   
+  var didTapChangeCountryButton: (() -> Void)?
+  
   // MARK: - Layout
   
   private lazy var layout: UICollectionViewCompositionalLayout = {
@@ -226,6 +228,10 @@ private extension BuySellViewController {
       customView.continueButton.configuration.action = model.button.action
     }
     
+    viewModel.didUpdateCountryCode = { [weak self] countryCode in
+      self?.customView.changeCountryButton.configuration.content.title = .plainString(countryCode)
+    }
+    
     viewModel.didUpdatePaymentMethodItems = { [weak self, weak dataSource] paymentMethodItems in
       guard let dataSource else { return }
       var snapshot = dataSource.snapshot()
@@ -257,6 +263,10 @@ private extension BuySellViewController {
   }
   
   func setupViewEvents() {
+    customView.changeCountryButton.configuration.action = { [weak self] in
+      self?.didTapChangeCountryButton?()
+    }
+    
     customView.tabButtonsContainerView.itemDidSelect = {[weak viewModel] itemId in
       let operation: BuySellItem.Operation = itemId == 0 ? .buy : .sell
       viewModel?.didChangeOperation(operation)

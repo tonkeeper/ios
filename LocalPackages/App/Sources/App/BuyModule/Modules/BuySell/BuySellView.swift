@@ -6,13 +6,21 @@ final class BuySellView: UIView {
   
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
   
-  let navigationBarView = ModalNavigationBarView()
-  let tabButtonsContainerView = BuySellTabButtonsContainerView(model: .init(items: [
-    .init(id: 0, title: "Buy"),
-    .init(id: 1, title: "Sell")
-  ]))
-    
   let amountInputView = BuySellAmountInputView()
+  
+  let navigationBarView = ModalNavigationBarView()
+  let tabButtonsContainerView = BuySellTabButtonsContainerView(
+    model: .init(items: [
+      .init(id: 0, title: "Buy"),
+      .init(id: 1, title: "Sell")
+    ])
+  )
+  
+  let changeCountryButton = TKButton(
+    configuration: .iconHeaderButtonConfiguration(
+      contentPadding: .init(top: 6, left: 12, bottom: 6, right: 12)
+    )
+  )
   
   let continueButton = TKButton(
     configuration: .actionButtonConfiguration(
@@ -41,12 +49,15 @@ private extension BuySellView {
     addSubview(continueButton)
     addSubview(navigationBarView)
     
-    navigationBarView.setupCenterBarItem(configuration:
-        .init(
-          view: tabButtonsContainerView,
-          containerHeight: 53,
-          containerAlignment: .bottom(0)
-        )
+    changeCountryButton.configuration.content.title = .plainString("🌍")
+    
+    navigationBarView.setupLeftBarItem(configuration: .init(view: changeCountryButton))
+    navigationBarView.setupCenterBarItem(
+      configuration: .init(
+        view: tabButtonsContainerView,
+        containerHeight: .tabButtonsContainerViewHeight,
+        containerAlignment: .bottom(0)
+      )
     )
     
     setupConstraints()
@@ -76,4 +87,5 @@ private extension CGFloat {
   static let contentCornerRadius: CGFloat = 16
   static let contentVerticalPadding: CGFloat = 16
   static let contentHorizontalMargin: CGFloat = 16
+  static let tabButtonsContainerViewHeight: CGFloat = 53
 }

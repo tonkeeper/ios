@@ -45,6 +45,10 @@ public final class BuySellController {
     }
   }
   
+  public func getCountryCode() async -> String? {
+    return try? await locationService.getCountryCodeByIp()
+  }
+  
   public func getActiveCurrency() async -> Currency {
     return await currencyStore.getActiveCurrency()
   }
