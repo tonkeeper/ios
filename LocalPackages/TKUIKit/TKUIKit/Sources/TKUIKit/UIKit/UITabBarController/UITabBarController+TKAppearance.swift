@@ -1,7 +1,7 @@
 import UIKit
 
 public extension UITabBarController {
-  func configureAppearance() {
+  func configureAppearance(isSeparatorVisible: Bool = true) {
     let itemAppearance = UITabBarItemAppearance()
     itemAppearance.normal.titleTextAttributes = [.font: TKTextStyle.label3.font,
                                                  .foregroundColor: UIColor.TabBar.inactiveIcon]
@@ -18,7 +18,7 @@ public extension UITabBarController {
     }
    
     let tabBarAppearance = createTabBarAppearance()
-    tabBarAppearance.shadowColor = .Separator.common
+    tabBarAppearance.shadowColor = isSeparatorVisible ? .Separator.common : .clear
     tabBar.standardAppearance = tabBarAppearance
     
     if #available(iOS 15.0, *) {

@@ -66,6 +66,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-purchases-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var explore: UIImage {
+          .imageWithName("Icons/28/ic-explore-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var clock: UIImage {
           .imageWithName("Icons/28/ic-clock-28")
           .withRenderingMode(.alwaysTemplate)

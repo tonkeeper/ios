@@ -16,10 +16,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private let walletModule: WalletModule
   private let historyModule: HistoryModule
+  private let browserModule: BrowserModule
   private let collectiblesModule: CollectiblesModule
   
   private var walletCoordinator: WalletCoordinator?
   private var historyCoordinator: HistoryCoordinator?
+  private var browserCoordinator: BrowserCoordinator?
   private var collectiblesCoordinator: CollectiblesCoordinator?
   
   private weak var addWalletCoordinator: AddWalletCoordinator?
@@ -46,6 +48,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
     self.historyModule = HistoryModule(
       dependencies: HistoryModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    )
+    self.browserModule = BrowserModule(
+      dependencies: BrowserModule.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
@@ -122,21 +130,32 @@ private extension MainCoordinator {
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
     
+    let browserCoordinator = browserModule.createBrowserCoordinator()
+    
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
 
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
+    self.browserCoordinator = browserCoordinator
     self.collectiblesCoordinator = collectiblesCoordinator
 
     let coordinators = [
       walletCoordinator,
       historyCoordinator,
+      browserCoordinator,
       collectiblesCoordinator
     ].compactMap { $0 }
     let viewControllers = coordinators.compactMap { $0.router.rootViewController }
     coordinators.forEach {
       addChild($0)
       $0.start()
+    }
+    
+    router.didSelectItem = { [weak self] index in
+      let isSeparatorVisible = index != 2
+      let isBlurVisible = index != 2
+      self?.router.rootViewController.configureAppearance(isSeparatorVisible: isSeparatorVisible)
+      (self?.router.rootViewController as? TKTabBarController)?.blurView.isHidden = !isBlurVisible
     }
     
     router.set(viewControllers: viewControllers, animated: false)
