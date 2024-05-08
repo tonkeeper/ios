@@ -111,6 +111,24 @@ private extension ReceiveViewModelImplementation {
       }))
     }
     
+    let tagModel: TKUITagView.Configuration?
+    switch model.walletModel.walletType {
+    case .regular:
+      tagModel = nil
+    case .watchOnly:
+      tagModel = TKUITagView.Configuration(
+        text: TKLocales.WalletTags.watch_only,
+        textColor: .black,
+        backgroundColor: .Accent.orange
+      )
+    case .external:
+      tagModel = TKUITagView.Configuration(
+        text: "SIGNER",
+        textColor: .Accent.purple,
+        backgroundColor: .Accent.purple.withAlphaComponent(0.48)
+      )
+    }
+    
     let receiveModel = ReceiveView.Model(
       titleDescriptionModel: titleDescriptionModel,
       buttonsModel: buttonsModel,
@@ -119,7 +137,7 @@ private extension ReceiveViewModelImplementation {
         self?.copyButtonAction(string: model.address)
       },
       image: image,
-      tag: model.tag
+      tag: tagModel
     )
     
     didUpdateModel?(receiveModel)
@@ -128,7 +146,14 @@ private extension ReceiveViewModelImplementation {
   func copyButtonAction(string: String?) {
     didTapCopy?(string)
     var configuration = ToastPresenter.Configuration.copied
-    configuration.backgroundColor = receiveController.isRegularWallet ? .Background.contentTint : .Accent.orange
+    switch receiveController.wallet.model.walletType {
+    case .regular:
+      configuration.backgroundColor = .Background.contentTint
+    case .external:
+      configuration.backgroundColor = .Accent.purple
+    case .watchOnly:
+      configuration.backgroundColor = .Accent.orange
+    }
     showToast?(configuration)
   }
 }

@@ -298,7 +298,7 @@ private extension SendConfirmationController {
   }
   
   /// Jetton to Jetton swap
-  func createSwapTransactionBoc(from: Address, to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Cell) async throws -> String {
+  func createSwapTransactionBoc(from: Address, to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(address: wallet.address)
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
@@ -325,7 +325,7 @@ private extension SendConfirmationController {
   }
   
   /// Jetton to TON swap
-  func createSwapTransactionBoc(from: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Cell) async throws -> String {
+  func createSwapTransactionBoc(from: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(address: wallet.address)
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
@@ -352,7 +352,7 @@ private extension SendConfirmationController {
   }
   
   /// TON to Jetton swap
-  func createSwapTransactionBoc(to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Cell) async throws -> String {
+  func createSwapTransactionBoc(to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(address: wallet.address)
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
@@ -411,9 +411,6 @@ private extension SendConfirmationController {
   }
   
   func signTransfer(_ transfer: WalletTransfer) async throws -> Data {
-    if wallet.isRegular {
-      
-    }
     switch wallet.identity.kind {
     case .Regular:
       let mnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)

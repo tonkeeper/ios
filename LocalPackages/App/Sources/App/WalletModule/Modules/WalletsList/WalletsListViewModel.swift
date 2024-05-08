@@ -126,9 +126,9 @@ private extension WalletsListViewModelImplementation {
     switch item.walletModel.walletType {
     case .regular:
       tagModel = nil
-    case .watchOnly(let tag):
+    case .watchOnly:
       tagModel = TKUITagView.Configuration(
-        text: tag,
+        text: TKLocales.WalletTags.watch_only,
         textColor: .Text.secondary,
         backgroundColor: .Background.contentTint
       )

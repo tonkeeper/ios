@@ -206,10 +206,20 @@ private extension WalletBalanceViewModelImplementation {
     switch walletType {
     case .regular:
       return nil
-    case .watchOnly(let tag):
-      return TKUITagView.Configuration(text: tag, textColor: .Accent.orange, backgroundColor: UIColor.init(hex: "332d24"))
+    case .watchOnly:
+      return TKUITagView.Configuration(
+        text: TKLocales.WalletTags.watch_only,
+        textColor: .Accent.orange,
+        backgroundColor: UIColor.init(
+          hex: "332d24"
+        )
+      )
     case .external:
-      return TKUITagView.Configuration(text: "SIGNER", textColor: .Text.primaryAlternate, backgroundColor: .Accent.green)
+      return TKUITagView.Configuration(
+        text: "SIGNER",
+        textColor: .Accent.purple,
+        backgroundColor: .Accent.purple.withAlphaComponent(0.16)
+      )
     }
   }
 
@@ -228,8 +238,8 @@ private extension WalletBalanceViewModelImplementation {
       backgroundColor = .Accent.orange
       foregroundColor = .Text.primary
     case .external:
-      backgroundColor = .Accent.green
-      foregroundColor = .Text.primaryAlternate
+      backgroundColor = .Accent.purple
+      foregroundColor = .Text.primary
     }
     let configuration = ToastPresenter.Configuration(
       title: TKLocales.Actions.copied,

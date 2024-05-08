@@ -130,7 +130,7 @@ public struct SwapMessageBuilder {
                               jettonFromWalletAddress: Address,
                               forwardAmount: BigUInt,
                               attachedAmount: BigUInt,
-                              signClosure: (WalletTransfer) async throws -> Cell) async throws -> String {
+                              signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     
         
     let internalMessage = try StonfiSwapMessage.internalMessage(
