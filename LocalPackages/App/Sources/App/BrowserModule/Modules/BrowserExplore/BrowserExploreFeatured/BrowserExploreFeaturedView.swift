@@ -36,7 +36,7 @@ final class BrowserExploreFeaturedView: UIView {
     }
   }
 
-  lazy var collectionView = UICollectionView(frame: .zero, collectionViewLayout: createLayout())
+  private lazy var collectionView = CollectionView(frame: .zero, collectionViewLayout: createLayout())
   
   private var indexOfCellBeforeDragging = 0
   private var slideshowTask: Task<Void, Never>?
@@ -77,6 +77,7 @@ final class BrowserExploreFeaturedView: UIView {
   override init(frame: CGRect) {
     super.init(frame: frame)
     
+    collectionView.contentInsetAdjustmentBehavior = .never
     collectionView.backgroundColor = .clear
     collectionView.showsHorizontalScrollIndicator = false
     collectionView.decelerationRate = .fast
@@ -97,6 +98,23 @@ final class BrowserExploreFeaturedView: UIView {
   override func layoutSubviews() {
     super.layoutSubviews()
     collectionView.frame = bounds
+  }
+  
+  func startSlideShow() {
+    startSlideShowTask()
+  }
+  
+  func stopSlideShow() {
+    slideshowTask?.cancel()
+    slideshowTask = nil
+  }
+  
+  override func didMoveToSuperview() {
+    guard superview != nil else {
+      stopSlideShow()
+      return
+    }
+    startSlideShow()
   }
 }
 
@@ -250,7 +268,11 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
           title: app.name?.withTextStyle(.label2, color: textColor),
           tagViewModel: nil,
           subtitle: nil,
-          description: app.description?.withTextStyle(.body3Alternate, color: textColor.withAlphaComponent(0.76)),
+          description: app.description?.withTextStyle(
+            .body3Alternate,
+            color: textColor.withAlphaComponent(0.76),
+            lineBreakMode: .byTruncatingTail
+          ),
           descriptionNumberOfLines: 2
         ),
         rightItemConfiguration: nil,
@@ -277,4 +299,12 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
 
 private extension Int {
   static let numberOfAdditionalItems = 5
+}
+
+private class CollectionView : UICollectionView {
+  private var _safeAreaInsets:UIEdgeInsets?
+  override var safeAreaInsets:UIEdgeInsets {
+    get { _safeAreaInsets ?? super.safeAreaInsets }
+    set { _safeAreaInsets = newValue }
+  }
 }

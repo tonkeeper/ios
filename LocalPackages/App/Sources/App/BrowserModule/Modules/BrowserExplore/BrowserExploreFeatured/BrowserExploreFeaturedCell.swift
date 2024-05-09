@@ -29,7 +29,7 @@ final class BrowserExploreFeaturedCell: UICollectionViewCell, ReusableView, Conf
     listView.frame = CGRect(
       x: .padding,
       y: bounds.height - .listItemHeight - .padding,
-      width: bounds.width,
+      width: bounds.width - .padding * 2,
       height: .listItemHeight
     )
   }
@@ -69,7 +69,7 @@ private extension BrowserExploreFeaturedCell {
   
   func setupConstraints() {
     posterImageView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
+      make.edges.equalTo(contentView)
     }
   }
 }
