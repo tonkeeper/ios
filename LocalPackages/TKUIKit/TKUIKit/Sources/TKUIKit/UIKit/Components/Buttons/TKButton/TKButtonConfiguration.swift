@@ -90,10 +90,8 @@ public extension TKButton.Configuration {
     )
   }
   
-  static func iconHeaderButtonConfiguration(
-    contentPadding: UIEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8),
-    padding: UIEdgeInsets = UIEdgeInsets(top: 8, left: 8, bottom: 8, right: 8)
-  ) -> TKButton.Configuration {
+  static func iconHeaderButtonConfiguration(contentPadding: UIEdgeInsets = .init(top: 8, left: 8, bottom: 8, right: 8),
+                                            padding: UIEdgeInsets = .init(top: 8, left: 8, bottom: 8, right: 8)) -> TKButton.Configuration {
     TKButton.Configuration(
       content: Content(),
       contentPadding: contentPadding,

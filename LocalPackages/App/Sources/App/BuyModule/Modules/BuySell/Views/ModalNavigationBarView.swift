@@ -4,7 +4,6 @@ import SnapKit
 // MARK: - BarItemContainerView
 
 final class ModalNavigationBarItemContainerView: UIView {
-  
   enum ContentAlignment {
     case center
     case left
@@ -29,12 +28,27 @@ final class ModalNavigationBarItemContainerView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  private func setup() {
+  private func getIntrinsicContentSize() -> CGSize {
+    var width: CGFloat = containedView.bounds.width + .horizontalPadding * 2
+    
+    if width < .minimumBarItemWidth {
+      let widthThatFits = containedView.sizeThatFits(bounds.size).width
+      width = widthThatFits < .minimumBarItemWidth ? .minimumBarItemWidth : widthThatFits
+    }
+    
+    return CGSize(width: width, height: height)
+  }
+}
+
+// MARK: - Setup
+
+private extension ModalNavigationBarItemContainerView {
+  func setup() {
     addSubview(containedView)
     setupConstraints()
   }
   
-  private func setupConstraints() {
+  func setupConstraints() {
     containedView.snp.makeConstraints { make in
       make.centerY.equalTo(self)
       
@@ -47,13 +61,6 @@ final class ModalNavigationBarItemContainerView: UIView {
         make.right.equalTo(self)
       }
     }
-  }
-  
-  private func getIntrinsicContentSize() -> CGSize {
-    var width: CGFloat = containedView.bounds.width + .horizontalPadding * 2
-    let widthThatFits = containedView.sizeThatFits(bounds.size).width
-    width = width >= .minimumBarItemWidth ? width : widthThatFits
-    return CGSize(width: width, height: height)
   }
 }
 
@@ -88,30 +95,36 @@ open class ModalNavigationBarView: UIView {
     let view: UIView
     let containerHeight: CGFloat
     let containerAlignment: ContainerAlignment
+    let contentAlignment: ContentAlignment
     
-    init(view: UIView, containerHeight: CGFloat = .barItemHeight, containerAlignment: ContainerAlignment = .center) {
+    init(view: UIView,
+         containerHeight: CGFloat = .barItemHeight,
+         containerAlignment: ContainerAlignment = .center,
+         contentAlignment: ContentAlignment = .center) {
       self.view = view
       self.containerHeight = containerHeight
       self.containerAlignment = containerAlignment
+      self.contentAlignment = contentAlignment
     }
   }
   
   public func setupLeftBarItem(configuration: BarItemConfiguration) {
-    setupBarItem(in: leftBarItemStack, configuration: configuration, contentAlignment: .left)
+    setupBarItem(in: leftBarItemStack, configuration: configuration)
   }
   
   public func setupCenterBarItem(configuration: BarItemConfiguration) {
-    setupBarItem(in: centerBarItemStack, configuration: configuration, contentAlignment: .center)
+    setupBarItem(in: centerBarItemStack, configuration: configuration)
   }
   
   public func setupRightBarItem(configuration: BarItemConfiguration) {
-    setupBarItem(in: rightBarItemStack, configuration: configuration, contentAlignment: .right)
+    setupBarItem(in: rightBarItemStack, configuration: configuration)
   }
   
-  private func setupBarItem(in barItemStack: UIStackView, configuration: BarItemConfiguration, contentAlignment: ContentAlignment) {
+  private func setupBarItem(in barItemStack: UIStackView, configuration: BarItemConfiguration) {
     let customView = configuration.view
     let containerHeight = configuration.containerHeight
     let containerAlignment = configuration.containerAlignment
+    let contentAlignment = configuration.contentAlignment
     
     barItemStack.arrangedSubviews.forEach { view in
       barItemStack.removeArrangedSubview(view)

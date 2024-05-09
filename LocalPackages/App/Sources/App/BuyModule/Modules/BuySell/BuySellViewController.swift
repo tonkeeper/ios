@@ -1,11 +1,63 @@
 import UIKit
 import TKUIKit
 
+open class ModalViewController<View: UIView, NavigationBar: ModalNavigationBarView>: GenericViewViewController<View> {
+  public let customNavigationBarView = NavigationBar()
+  private var leftNavigationItemObserveToken: NSKeyValueObservation?
+  private var rightNavigationItemObserveToken: NSKeyValueObservation?
+  
+  deinit {
+    leftNavigationItemObserveToken = nil
+    rightNavigationItemObserveToken = nil
+  }
+  
+  open override func viewDidLoad() {
+    super.viewDidLoad()
+    
+    setupNavigationBarView()
+  }
+  
+  open func setupNavigationBarView() {
+    navigationController?.setNavigationBarHidden(true, animated: false)
+    
+    customView.addSubview(customNavigationBarView)
+    
+    customNavigationBarView.snp.makeConstraints { make in
+      make.left.right.top.equalTo(customView)
+      make.height.equalTo(ModalNavigationBarView.defaultHeight)
+    }
+    
+    setupNavigationItemObservation()
+    
+    updateLeftBarItem()
+    updateRightBarItem()
+  }
+  
+  private func setupNavigationItemObservation() {
+    leftNavigationItemObserveToken = navigationItem.observe(\.leftBarButtonItem) { [weak self] item, _ in
+      self?.updateLeftBarItem()
+    }
+    rightNavigationItemObserveToken = navigationItem.observe(\.rightBarButtonItem) { [weak self] item, _ in
+      self?.updateRightBarItem()
+    }
+  }
+  
+  private func updateLeftBarItem() {
+    guard let leftItem = navigationItem.leftBarButtonItem?.customView else { return }
+    customNavigationBarView.setupLeftBarItem(configuration: .init(view: leftItem))
+  }
+  
+  private func updateRightBarItem() {
+    guard let rightItem = navigationItem.rightBarButtonItem?.customView else { return }
+    customNavigationBarView.setupRightBarItem(configuration: .init(view: rightItem))
+  }
+}
+
 enum BuySellSection: Hashable {
   case paymentMethodItems
 }
 
-final class BuySellViewController: GenericViewViewController<BuySellView>, KeyboardObserving {
+final class BuySellViewController: ModalViewController<BuySellView, ModalNavigationBarView>, KeyboardObserving {
   
   var didTapChangeCountryButton: (() -> Void)?
   
@@ -140,6 +192,28 @@ final class BuySellViewController: GenericViewViewController<BuySellView>, Keybo
     unregisterFromKeyboardEvents()
   }
   
+  override func setupNavigationBarView() {
+    super.setupNavigationBarView()
+    
+    customView.collectionView.contentInset.top = ModalNavigationBarView.defaultHeight
+    
+    customNavigationBarView.setupLeftBarItem(
+      configuration: .init(
+        view: customView.changeCountryButton,
+        contentAlignment: .left
+      )
+    )
+    
+    customNavigationBarView.setupCenterBarItem(
+      configuration: .init(
+        view: customView.tabButtonsContainerView,
+        containerHeight: .tabButtonsContainerViewHeight,
+        containerAlignment: .bottom(0),
+        contentAlignment: .center
+      )
+    )
+  }
+  
   public func keyboardWillShow(_ notification: Notification) {
     guard let animationDuration = notification.keyboardAnimationDuration,
           let keyboardHeight = notification.keyboardSize?.height
@@ -170,14 +244,6 @@ final class BuySellViewController: GenericViewViewController<BuySellView>, Keybo
 
 private extension BuySellViewController {
   func setup() {
-    navigationController?.setNavigationBarHidden(true, animated: false)
-    
-    if let closeButton = navigationItem.rightBarButtonItem?.customView {
-      customView.navigationBarView.setupRightBarItem(configuration:
-          .init(view: closeButton)
-      )
-    }
-    
     view.backgroundColor = .Background.page
     
     customView.collectionView.backgroundColor = .Background.page
@@ -232,34 +298,20 @@ private extension BuySellViewController {
       self?.customView.changeCountryButton.configuration.content.title = .plainString(countryCode)
     }
     
-    viewModel.didUpdatePaymentMethodItems = { [weak self, weak dataSource] paymentMethodItems in
-      guard let dataSource else { return }
+    viewModel.didUpdatePaymentMethodItems = { [weak self] paymentMethodItems in
+      guard let self else { return }
+      
       var snapshot = dataSource.snapshot()
       snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .paymentMethodItems))
       snapshot.appendItems(paymentMethodItems, toSection: .paymentMethodItems)
       dataSource.apply(snapshot,animatingDifferences: false)
       
-      guard !paymentMethodItems.isEmpty,
-            let sectionIndex = snapshot.sectionIdentifiers.firstIndex(of: .paymentMethodItems)
-      else {
-        return
-      }
-      
-      let selectedIndexPath = IndexPath(row: 0, section: sectionIndex)
-      let selectedId = paymentMethodItems[0].id
-      self?.updateCollectionViewSelection(at: selectedIndexPath, selectedId: selectedId)
+      selectFirstItemCell(snapshot: snapshot, items: paymentMethodItems, inSection: .paymentMethodItems)
     }
   }
   
   func setupGestures() {
     customView.amountInputView.addGestureRecognizer(tapGestureRecognizer)
-  }
-  
-  func updateCollectionViewSelection(at selectedIndexPath: IndexPath, selectedId: String) {
-    customView.collectionView.performBatchUpdates(nil) { [weak self] _ in
-      self?.customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: .top)
-      self?.viewModel.didSelectPaymentMethodId(selectedId)
-    }
   }
   
   func setupViewEvents() {
@@ -274,6 +326,22 @@ private extension BuySellViewController {
     
     customView.amountInputView.didUpdateText = { [weak viewModel] in
       viewModel?.didInputAmount($0 ?? "")
+    }
+  }
+  
+  func selectFirstItemCell<T: Hashable>(snapshot: NSDiffableDataSourceSnapshot<T, AnyHashable>,
+                                        items: [PaymentMethodItemCell.Configuration],
+                                        inSection section: T) {
+    guard !items.isEmpty, let sectionIndex = snapshot.sectionIdentifiers.firstIndex(of: section) else {
+      return
+    }
+    
+    let selectedIndexPath = IndexPath(row: 0, section: sectionIndex)
+    let selectedId = items[0].id
+    
+    customView.collectionView.performBatchUpdates(nil) { [weak self] _ in
+      self?.customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: .top)
+      self?.viewModel.didSelectPaymentMethodId(selectedId)
     }
   }
   
@@ -292,10 +360,6 @@ extension BuySellViewController: UICollectionViewDelegate {
       viewModel.didSelectPaymentMethodId(model.id)
     }
   }
-}
-
-private extension String {
-  static let amountInputHeaderElementKind = "AmountInputHeaderElementKind"
 }
 
 private extension NSCollectionLayoutSection {
@@ -326,6 +390,11 @@ private extension NSCollectionLayoutSection {
   }
 }
 
+private extension String {
+  static let amountInputHeaderElementKind = "AmountInputHeaderElementKind"
+}
+
 private extension CGFloat {
   static let paymentMethodCellHeight: CGFloat = 56
+  static let tabButtonsContainerViewHeight: CGFloat = 53
 }

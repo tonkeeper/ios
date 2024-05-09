@@ -85,9 +85,26 @@ private extension BuyCoordinator {
   }
   
   func openOperator(buySellOperation: BuySellOperationModel) {
-    let dummy = UIViewController()
-    dummy.view.backgroundColor = .red
-    router.push(viewController: dummy, animated: true)
+    let module = FiatOperatorAssembly.module(
+      fiatOperatorController: keeperCoreMainAssembly.fiatOperatorController(),
+      buySellOperation: buySellOperation
+    )
+    
+    module.view.setupBackButton()
+    
+    module.view.setupRightCloseButton { [weak self] in
+      self?.didFinish?()
+    }
+    
+    module.output.didTapCurrencyPicker = {
+      print("didTapCurrencyPicker")
+    }
+    
+    module.output.didTapContinue = {
+      print("didTapContinue")
+    }
+    
+    router.push(viewController: module.view, animated: true)
   }
   
   func openWebView(url: URL, fromViewController: UIViewController) {

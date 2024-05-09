@@ -420,8 +420,8 @@ public final class MainAssembly {
       isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
     )
   }
-   
-    public func buySellController(wallet: Wallet,
+  
+  public func buySellController(wallet: Wallet,
                                   isMarketRegionPickerAvailable: @escaping () async -> Bool) -> BuySellController {
     BuySellController(
       wallet: wallet,
@@ -432,6 +432,15 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       amountFormatter: formattersAssembly.amountFormatter,
       isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
+    )
+  }
+  
+  public func fiatOperatorController() -> FiatOperatorController {
+    FiatOperatorController(
+      buySellMethodsService: servicesAssembly.buySellMethodsService(),
+      locationService: servicesAssembly.locationService(),
+      tonRatesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore
     )
   }
 }

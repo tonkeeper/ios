@@ -116,6 +116,12 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     ])
     
     didUpdatePaymentMethodModel(testItemsModel)
+    
+    let operationModel = BuySellOperationModel(
+      item: buySellItem,
+      paymentMethodId: selectedPaymentMethodId
+    )
+    didContinueBuySell?(operationModel)
   }
   
   func didInputAmount(_ string: String) {

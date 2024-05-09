@@ -1,7 +1,6 @@
 import UIKit
 
 struct BuySellListItemMapper {
-  
   func mapPaymentMethodItem(_ item: PaymentMethodItemsModel.Item) -> PaymentMethodItemCell.Configuration {
     let id = item.identifier
     let title = makePaymentItemTitle(item.title)

@@ -16,6 +16,7 @@ struct BuySellAssembly {
     let viewController = BuySellViewController(
       viewModel: viewModel
     )
+    
     return MVVMModule(
       view: viewController,
       output: viewModel,
