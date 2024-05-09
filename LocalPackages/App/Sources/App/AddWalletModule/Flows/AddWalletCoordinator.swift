@@ -111,7 +111,7 @@ private extension AddWalletCoordinator {
   func openOption(option: AddWalletOption, passcode: String?, router: NavigationControllerRouter) {
     switch option {
     case .createRegular:
-      break
+      openCreateRegularWallet(router: router, passcode: passcode)
     case .importRegular:
       openAddWallet(router: router, passcode: passcode)
     case .importWatchOnly:
@@ -123,26 +123,23 @@ private extension AddWalletCoordinator {
     }
   }
   
-  func openCreateRegularWallet() {
-    let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
-    
+  func openCreateRegularWallet(router: NavigationControllerRouter, passcode: String?) {
     let coordinator = createWalletCoordinatorProvider(
-      NavigationControllerRouter(rootViewController: navigationController)
+      router
     )
     
-    coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
+    coordinator.didCancel = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      navigationController?.dismiss(animated: true, completion: {
+      router.dismiss(animated: true, completion: {
         self?.didCancel?()
       })
     }
     
-    coordinator.didCreateWallet = { [weak self, weak coordinator, weak navigationController] in
+    coordinator.didCreateWallet = { [weak self, weak coordinator] in
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      navigationController?.dismiss(animated: true, completion: {
+      router.dismiss(animated: true, completion :{
         self?.didAddWallets?()
       })
     }
@@ -150,9 +147,9 @@ private extension AddWalletCoordinator {
     addChild(coordinator)
     coordinator.start()
     
-    router.present(navigationController, onDismiss: { [weak self] in
-      self?.didCancel?()
-    })
+//    router.present(navigationController, onDismiss: { [weak self] in
+//      self?.didCancel?()
+//    })
   }
 
   func openAddWatchOnlyWallet(router: NavigationControllerRouter, passcode: String?) {
