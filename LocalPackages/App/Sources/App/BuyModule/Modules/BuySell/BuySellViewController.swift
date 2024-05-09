@@ -98,7 +98,7 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
   }()
   
   private lazy var dataSource = createDataSource()
-  private lazy var paymentMethodCellConfiguration = UICollectionView.CellRegistration<PaymentMethodItemCell, PaymentMethodItemCell.Configuration> { [weak self]
+  private lazy var paymentMethodCellConfiguration = UICollectionView.CellRegistration<RadioButtonCollectionViewCell, RadioButtonCollectionViewCell.Configuration> { [weak self]
     cell, indexPath, itemIdentifier in
     cell.configure(configuration: itemIdentifier)
     cell.isFirstInSection = { ip in ip.item == 0 }
@@ -112,7 +112,7 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
     let dataSource = UICollectionViewDiffableDataSource<BuySellSection, AnyHashable>(
       collectionView: customView.collectionView) { [paymentMethodCellConfiguration] collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
-        case let cellConfiguration as PaymentMethodItemCell.Configuration:
+        case let cellConfiguration as RadioButtonCollectionViewCell.Configuration:
           return collectionView.dequeueConfiguredReusableCell(using: paymentMethodCellConfiguration, for: indexPath, item: cellConfiguration)
         default: return nil
         }
@@ -330,7 +330,7 @@ private extension BuySellViewController {
   }
   
   func selectFirstItemCell<T: Hashable>(snapshot: NSDiffableDataSourceSnapshot<T, AnyHashable>,
-                                        items: [PaymentMethodItemCell.Configuration],
+                                        items: [RadioButtonCollectionViewCell.Configuration],
                                         inSection section: T) {
     guard !items.isEmpty, let sectionIndex = snapshot.sectionIdentifiers.firstIndex(of: section) else {
       return
@@ -356,7 +356,7 @@ extension BuySellViewController: UICollectionViewDelegate {
     let section = snapshot.sectionIdentifiers[indexPath.section]
     let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
     
-    if let model = item as? PaymentMethodItemCell.Configuration {
+    if let model = item as? RadioButtonCollectionViewCell.Configuration {
       viewModel.didSelectPaymentMethodId(model.id)
     }
   }

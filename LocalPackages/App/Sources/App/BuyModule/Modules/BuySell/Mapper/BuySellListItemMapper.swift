@@ -1,20 +1,38 @@
 import UIKit
+import TKUIKit
 
 struct BuySellListItemMapper {
-  func mapPaymentMethodItem(_ item: PaymentMethodItemsModel.Item) -> PaymentMethodItemCell.Configuration {
+  func mapPaymentMethodItem(_ item: PaymentMethodItemsModel.Item) -> RadioButtonCollectionViewCell.Configuration {
     let id = item.identifier
     let title = makePaymentItemTitle(item.title)
     
-    let paymentContentConfiguration = PaymentMethodItemCellContentView.Configuration(contentModel:
-        .init(
-          title: title,
-          paymentIcon: item.image
-        )
+    let contentConfiguration = TKUIListItemContentView.Configuration(
+      leftItemConfiguration:
+          .init(
+            title: title,
+            tagViewModel: nil,
+            subtitle: nil,
+            description: nil
+          ),
+      rightItemConfiguration: nil
     )
     
-    return PaymentMethodItemCell.Configuration(
+    let accessoryImageConfiguration = TKUIListItemImageAccessoryView.Configuration(
+      image: item.image,
+      tintColor: .clear,
+      padding: .zero
+    )
+    
+    let listItemConfiguration = TKUIListItemView.Configuration(
+      iconConfiguration: .init(iconConfiguration: .none, alignment: .center),
+      contentConfiguration: contentConfiguration,
+      accessoryConfiguration: .image(accessoryImageConfiguration)
+    )
+    
+    return RadioButtonCollectionViewCell.Configuration(
       id: id,
-      contentConfiguration: paymentContentConfiguration
+      listItemConfiguration: listItemConfiguration,
+      radioButtonAlignment: .left
     )
   }
   

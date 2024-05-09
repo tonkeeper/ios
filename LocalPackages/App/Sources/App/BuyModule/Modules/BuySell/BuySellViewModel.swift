@@ -76,7 +76,7 @@ protocol BuySellModuleInput: AnyObject {
 protocol BuySellViewModel: AnyObject {
   var didUpdateModel: ((BuySellModel) -> Void)? { get set }
   var didUpdateCountryCode: ((String) -> Void)? { get set }
-  var didUpdatePaymentMethodItems: (([PaymentMethodItemCell.Configuration]) -> Void)? { get set }
+  var didUpdatePaymentMethodItems: (([RadioButtonCollectionViewCell.Configuration]) -> Void)? { get set }
   
   var buySellAmountTextFieldFormatter: BuySellAmountTextFieldFormatter { get }
   
@@ -99,7 +99,7 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   
   var didUpdateModel: ((BuySellModel) -> Void)?
   var didUpdateCountryCode: ((String) -> Void)?
-  var didUpdatePaymentMethodItems: (([PaymentMethodItemCell.Configuration]) -> Void)?
+  var didUpdatePaymentMethodItems: (([RadioButtonCollectionViewCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
     updateMinimumAmountInput()
