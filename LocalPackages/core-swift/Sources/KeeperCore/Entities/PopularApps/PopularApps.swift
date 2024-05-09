@@ -6,6 +6,7 @@ public struct PopularApp: Codable {
   public let icon: URL?
   public let poster: URL?
   public let url: URL?
+  public let textColor: String?
 }
 
 public struct PopularAppsCategory: Codable {

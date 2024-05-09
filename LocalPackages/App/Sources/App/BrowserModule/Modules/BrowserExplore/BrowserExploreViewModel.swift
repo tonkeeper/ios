@@ -12,6 +12,7 @@ protocol BrowserExploreModuleOutput: AnyObject {
 protocol BrowserExploreViewModel: AnyObject {
 
   var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<BrowserExploreSection, AnyHashable>) -> Void)? { get set }
+  var didUpdateFeaturedItems: (([PopularApp]) -> Void)? { get set }
   
   func viewDidLoad()
   func didSelectCategoryAll(index: Int)
@@ -27,6 +28,7 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   // MARK: - BrowserExploreViewModel
   
   var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<BrowserExploreSection, AnyHashable>) -> Void)?
+  var didUpdateFeaturedItems: (([PopularApp]) -> Void)?
   
   func viewDidLoad() {
     reloadContent()
@@ -40,6 +42,7 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   // MARK: - State
   
   private var categories = [PopularAppsCategory]()
+  private var featuredCategory: PopularAppsCategory?
   
   // MARK: - Image Loading
   
@@ -58,22 +61,57 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
 
 private extension BrowserExploreViewModelImplementation {
   func reloadContent() {
-    if let cached = try? browserExploreController.getCachedPopularApps(lang: "en") {
-      let mapped = mapPopularAppsData(cached)
-      categories = cached.categories
-      updateSnapshot(sections: mapped)
+    let lang = Locale.current.languageCode ?? "en"
+    if let cached = try? browserExploreController.getCachedPopularApps(lang: lang) {
+      handle(popularAppsData: cached)
     }
+    
     Task {
       do {
-        let loaded = try await browserExploreController.loadPopularApps(lang: "en")
-        let mapped = mapPopularAppsData(loaded)
+        let loaded = try await browserExploreController.loadPopularApps(lang: lang)
         await MainActor.run {
-          categories = loaded.categories
-          updateSnapshot(sections: mapped)
+          handle(popularAppsData: loaded)
         }
       } catch {
         print(error)
       }
+    }
+  }
+  
+  func handle(popularAppsData: PopularAppsResponseData) {
+    var categories = [PopularAppsCategory]()
+    var featuredCategory: PopularAppsCategory?
+    popularAppsData.categories.forEach { category in
+      if category.id == "featured" {
+        featuredCategory = category
+      } else {
+        categories.append(category)
+      }
+    }
+    
+    var sections = [BrowserExploreSection]()
+    var featuredApps = [PopularApp]()
+    if let featuredCategory {
+      featuredApps = featuredCategory.apps
+      sections.append(.featured)
+    }
+    sections.append(contentsOf: mapCategories(categories))
+    
+    self.categories = categories
+    self.featuredCategory = featuredCategory
+    
+    updateSnapshot(sections: sections)
+    didUpdateFeaturedItems?(featuredApps)
+  }
+  
+  func mapCategories(_ categories: [PopularAppsCategory]) -> [BrowserExploreSection] {
+    categories.map { category in
+      let items = category.apps.map { mapPopularApp($0) }
+      return BrowserExploreSection.regular(
+        title: category.title ?? "",
+        hasAll: items.count > 3,
+        items: items
+      )
     }
   }
   
@@ -115,7 +153,7 @@ private extension BrowserExploreViewModelImplementation {
               tintColor: .clear,
               backgroundColor: .clear,
               size: CGSize(width: 44, height: 44),
-              cornerRadius: 12
+              cornerRadius: 16
             )
           ),
           alignment: .center
@@ -128,7 +166,8 @@ private extension BrowserExploreViewModelImplementation {
             description: popularApp.description?.withTextStyle(.body3Alternate, color: .Text.secondary),
             descriptionNumberOfLines: 2
           ),
-          rightItemConfiguration: nil
+          rightItemConfiguration: nil,
+          isVerticalCenter: true
         ),
         accessoryConfiguration: .image(.init(image: .TKUIKit.Icons.Size16.chevronRight, tintColor: .Icon.tertiary, padding: .zero))
       ),
@@ -145,6 +184,8 @@ private extension BrowserExploreViewModelImplementation {
       switch section {
       case .regular(_, _, let items):
         snapshot.appendItems(items, toSection: section)
+      case .featured:
+        break
       }
     }
     didUpdateSnapshot?(snapshot)

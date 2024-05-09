@@ -7,11 +7,14 @@ final class BrowserViewController: GenericViewViewController<BrowserView>, Scrol
   private let viewModel: BrowserViewModel
   
   private let exploreViewController: BrowserExploreViewController
+  private let connectedViewController: BrowserConnectedViewController
   
   init(viewModel: BrowserViewModel,
-       exploreViewController: BrowserExploreViewController) {
+       exploreViewController: BrowserExploreViewController,
+       connectedViewController: BrowserConnectedViewController) {
     self.viewModel = viewModel
     self.exploreViewController = exploreViewController
+    self.connectedViewController = connectedViewController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -47,6 +50,14 @@ final class BrowserViewController: GenericViewViewController<BrowserView>, Scrol
         right: 0
       )
     )
+    connectedViewController.setListContentInsets(
+      UIEdgeInsets(
+        top: customView.headerView.bounds.height,
+        left: 0,
+        bottom: customView.safeAreaInsets.bottom + customView.searchBar.bounds.height,
+        right: 0
+      )
+    )
   }
 }
 
@@ -57,6 +68,10 @@ private extension BrowserViewController {
     addChild(exploreViewController)
     customView.embedExploreView(exploreViewController.customView)
     exploreViewController.didMove(toParent: self)
+    
+    addChild(connectedViewController)
+    customView.embedConnectedView(connectedViewController.customView)
+    connectedViewController.didMove(toParent: self)
     
     customView.searchBar.addGestureRecognizer(
       UITapGestureRecognizer(

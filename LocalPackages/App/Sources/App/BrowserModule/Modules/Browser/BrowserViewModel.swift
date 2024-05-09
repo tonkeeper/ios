@@ -45,11 +45,14 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
   // MARK: - Dependencies
   
   private let exploreModuleOutput: BrowserExploreModuleOutput
+  private let connectedModuleOutput: BrowserConnectedModuleOutput
   
   // MARK: - Init
   
-  init(exploreModuleOutput: BrowserExploreModuleOutput) {
+  init(exploreModuleOutput: BrowserExploreModuleOutput,
+       connectedModuleOutput: BrowserConnectedModuleOutput) {
     self.exploreModuleOutput = exploreModuleOutput
+    self.connectedModuleOutput = connectedModuleOutput
   }
 }
 
