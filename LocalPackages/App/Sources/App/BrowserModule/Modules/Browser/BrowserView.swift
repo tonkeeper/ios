@@ -57,6 +57,10 @@ private extension BrowserView {
       make.edges.equalTo(self)
     }
     
+    connectedContainer.snp.makeConstraints { make in
+      make.edges.equalTo(self)
+    }
+    
     searchBar.snp.makeConstraints { make in
       make.left.right.equalTo(self)
       make.bottom.equalTo(safeAreaLayoutGuide.snp.bottom)

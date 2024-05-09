@@ -103,7 +103,8 @@ private extension BrowserCategoryViewModelImplementation {
             description: popularApp.description?.withTextStyle(.body3Alternate, color: .Text.secondary),
             descriptionNumberOfLines: 2
           ),
-          rightItemConfiguration: nil
+          rightItemConfiguration: nil,
+          isVerticalCenter: true
         ),
         accessoryConfiguration: .image(.init(image: .TKUIKit.Icons.Size16.chevronRight, tintColor: .Icon.tertiary, padding: .zero))
       ),

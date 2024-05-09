@@ -426,6 +426,13 @@ public final class MainAssembly {
   public func browserExploreController() -> BrowserExploreController {
     BrowserExploreController(popularAppsService: servicesAssembly.popularAppsService())
   }
+  
+  public func browserConnectedController() -> BrowserConnectedController {
+    BrowserConnectedController(
+      walletsStore: walletAssembly.walletStore,
+      tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
+    )
+  }
 }
 
 private extension MainAssembly {

@@ -8,7 +8,11 @@ final class BrowserExploreViewController: GenericViewViewController<BrowserExplo
   typealias DataSource = UICollectionViewDiffableDataSource<BrowserExploreSection, AnyHashable>
   private let viewModel: BrowserExploreViewModel
   
+  private let featuredView = BrowserExploreFeaturedView()
+  
   private lazy var dataSource = createDataSource()
+  
+  var isHorizontalScrollingEnabled = false
   
   private lazy var listItemCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration> { [weak self]
     cell, indexPath, itemIdentifier in
@@ -21,6 +25,8 @@ final class BrowserExploreViewController: GenericViewViewController<BrowserExplo
       return (ip.item + 1) % 3 == 0 || ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
     }
   }
+  
+  lazy var layout = createLayout()
   
   private lazy var sectionHeaderRegistration = UICollectionView.SupplementaryRegistration<BrowserExploreSectionHeaderView>(
     elementKind: BrowserExploreSectionHeaderView.reuseIdentifier) { _, _, _ in }
@@ -69,78 +75,137 @@ extension BrowserExploreViewController: UICollectionViewDelegate {
 
 private extension BrowserExploreViewController {
   func setup() {
-    customView.collectionView.setCollectionViewLayout(createLayout(), animated: false)
+//    addChild(featuredViewController)
+//    featuredViewController.didMove(toParent: self)
+    
+    customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
+    customView.collectionView.register(CollectionViewSupplementaryContainerView.self,
+                                       forSupplementaryViewOfKind: .featuredHeaderKind,
+                                       withReuseIdentifier: CollectionViewSupplementaryContainerView.reuseIdentifier)
   }
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
       self?.dataSource.apply(snapshot, animatingDifferences: false)
     }
+    
+    viewModel.didUpdateFeaturedItems = { [weak self] apps in
+      self?.featuredView.apps = apps
+    }
   }
   
   func createLayout() -> UICollectionViewCompositionalLayout {
-    let layout = UICollectionViewCompositionalLayout {
+    let configuration = UICollectionViewCompositionalLayoutConfiguration()
+    configuration.scrollDirection = .vertical
+    configuration.interSectionSpacing = 16
+    
+    let layout = UICollectionViewCompositionalLayout(sectionProvider: {
       [weak self] sectionIndex, environment -> NSCollectionLayoutSection? in
       guard let self = self else { return nil }
       
-      let itemSize = NSCollectionLayoutSize(
-        widthDimension: .fractionalWidth(1),
-        heightDimension: .absolute(84)
-      )
-      let item = NSCollectionLayoutItem(layoutSize: itemSize)
-      item.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 8)
-      
       let snapshot = dataSource.snapshot()
-      let itemsCount = snapshot.numberOfItems(inSection: snapshot.sectionIdentifiers[sectionIndex])
-      let groupItemsCount = itemsCount < 3 ? itemsCount : 3
-      
-      let widthDimension: NSCollectionLayoutDimension
-      if itemsCount <= 3 {
-        widthDimension = .absolute(environment.container.effectiveContentSize.width - 24)
-      } else {
-        widthDimension = .fractionalWidth(0.88)
+      let section = snapshot.sectionIdentifiers[sectionIndex]
+      switch section {
+      case .regular:
+        return regularSectionLayout(
+          snapshot: snapshot,
+          section: section,
+          environment: environment
+        )
+      case .featured:
+        return featuredSectionLayout(environment: environment)
       }
-      let groupSize = NSCollectionLayoutSize(
-        widthDimension: widthDimension,
-        heightDimension: .absolute(CGFloat(groupItemsCount) * 84)
-      )
-      
-      let group: NSCollectionLayoutGroup
+    }, configuration: configuration)
     
-      if #available(iOS 16.0, *) {
-        group = NSCollectionLayoutGroup.verticalGroup(
-          with: groupSize,
-          repeatingSubitem: item,
-          count: groupItemsCount
-        )
-      } else {
-        group = NSCollectionLayoutGroup.vertical(
-          layoutSize: groupSize,
-          subitem: item,
-          count: groupItemsCount
-        )
-      }
-      
-      let section = NSCollectionLayoutSection(group: group)
-      section.orthogonalScrollingBehavior = .groupPaging
-      section.contentInsets = .init(top: 10, leading: 16, bottom: 16, trailing: 0)
-      
-      let headerSize = NSCollectionLayoutSize(
-        widthDimension: .fractionalWidth(1.0),
-        heightDimension: .estimated(56)
-      )
-      let header = NSCollectionLayoutBoundarySupplementaryItem(
-        layoutSize: headerSize,
-        elementKind: BrowserExploreSectionHeaderView.reuseIdentifier,
-        alignment: .top
-      )
-      section.boundarySupplementaryItems = [header]
-      
-      return section
-
-    }
     return layout
+  }
+  
+  func regularSectionLayout(snapshot: NSDiffableDataSourceSnapshot<BrowserExploreSection, AnyHashable>,
+                            section: BrowserExploreSection,
+                            environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+    let itemSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1),
+      heightDimension: .absolute(84)
+    )
+    let item = NSCollectionLayoutItem(layoutSize: itemSize)
+    item.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 8)
+    
+    let itemsCount = snapshot.numberOfItems(inSection: section)
+    let groupItemsCount = itemsCount < 3 ? itemsCount : 3
+    
+    let widthDimension: NSCollectionLayoutDimension
+    if itemsCount <= 3 {
+      widthDimension = .absolute(environment.container.effectiveContentSize.width - 24)
+    } else {
+      widthDimension = .fractionalWidth(0.88)
+    }
+    let groupSize = NSCollectionLayoutSize(
+      widthDimension: widthDimension,
+      heightDimension: .absolute(CGFloat(groupItemsCount) * 84)
+    )
+    
+    let group: NSCollectionLayoutGroup
+  
+    if #available(iOS 16.0, *) {
+      group = NSCollectionLayoutGroup.verticalGroup(
+        with: groupSize,
+        repeatingSubitem: item,
+        count: groupItemsCount
+      )
+    } else {
+      group = NSCollectionLayoutGroup.vertical(
+        layoutSize: groupSize,
+        subitem: item,
+        count: groupItemsCount
+      )
+    }
+    
+    let section = NSCollectionLayoutSection(group: group)
+    section.orthogonalScrollingBehavior = .groupPaging
+    section.contentInsets = .init(top: 10, leading: 16, bottom: 16, trailing: 0)
+    
+    let headerSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(56)
+    )
+    let header = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: headerSize,
+      elementKind: BrowserExploreSectionHeaderView.reuseIdentifier,
+      alignment: .top
+    )
+    section.boundarySupplementaryItems = [header]
+    
+    return section
+  }
+  
+  func featuredSectionLayout(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+    let itemSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .absolute(0)
+    )
+    let item = NSCollectionLayoutItem(layoutSize: itemSize)
+    item.contentInsets = .init(top: 0, leading: 4, bottom: 0, trailing: 4)
+    
+    let groupSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .absolute(0)
+    )
+    
+    let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitems: [item])
+    let section = NSCollectionLayoutSection(group: group)
+    
+    let headerSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .fractionalWidth(0.46)
+    )
+    let header = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: headerSize,
+      elementKind: .featuredHeaderKind,
+      alignment: .top
+    )
+    section.boundarySupplementaryItems = [header]
+    return section
   }
   
   func createDataSource() -> DataSource {
@@ -152,16 +217,27 @@ private extension BrowserExploreViewController {
       }
     }
     
-    dataSource.supplementaryViewProvider = { [sectionHeaderRegistration, dataSource] collectionView, elementKind, indexPath in
+    dataSource.supplementaryViewProvider = {
+      [weak self, sectionHeaderRegistration, dataSource] collectionView, elementKind, indexPath in
+      guard let self else { return nil }
       switch elementKind {
+      case .featuredHeaderKind:
+        self.didMove(toParent: nil)
+        let containerView = collectionView.dequeueReusableSupplementaryView(
+          ofKind: elementKind,
+          withReuseIdentifier: CollectionViewSupplementaryContainerView.reuseIdentifier,
+          for: indexPath)
+        (containerView as? CollectionViewSupplementaryContainerView)?.setContentView(self.featuredView)
+        return containerView
       case BrowserExploreSectionHeaderView.reuseIdentifier:
-        let sectionHeader = collectionView.dequeueConfiguredReusableSupplementary(
-          using: sectionHeaderRegistration,
-          for: indexPath
-        )
         let section = dataSource.snapshot().sectionIdentifiers[indexPath.section]
         switch section {
         case let .regular(title, hasAll, _):
+          let sectionHeader = collectionView.dequeueConfiguredReusableSupplementary(
+            using: sectionHeaderRegistration,
+            for: indexPath
+          )
+          
           sectionHeader.configure(model: BrowserExploreSectionHeaderView.Model(
             title: title,
             isAllHidden: !hasAll,
@@ -169,8 +245,10 @@ private extension BrowserExploreViewController {
               self?.viewModel.didSelectCategoryAll(index: indexPath.section)
             })
           )
+          return sectionHeader
+        case .featured:
+          return nil
         }
-        return sectionHeader
       default:
         return nil
       }
@@ -180,3 +258,6 @@ private extension BrowserExploreViewController {
   }
 }
 
+private extension String {
+  static let featuredHeaderKind = "FeaturedHeaderKind"
+}

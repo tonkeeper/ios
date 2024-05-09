@@ -91,7 +91,7 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     ) else { throw TonkeeperAPIError.incorrectUrl }
     
     components.queryItems = [
-      .init(name: "lang", value: "en"),
+      .init(name: "lang", value: lang),
       .init(name: "build", value: "3.4.0"),
       .init(name: "platform", value: "ios_x")
     ]
