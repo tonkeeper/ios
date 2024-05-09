@@ -69,15 +69,22 @@ extension BrowserExploreViewController: UICollectionViewDelegate {
     default: break
     }
   }
+  
+  func collectionView(_ collectionView: UICollectionView,
+                      didEndDisplayingSupplementaryView view: UICollectionReusableView,
+                      forElementOfKind elementKind: String, at indexPath: IndexPath) {
+    switch elementKind {
+    case .featuredHeaderKind:
+      featuredView.stopSlideShow()
+    default: break
+    }
+  }
 }
 
 // MARK: - Private
 
 private extension BrowserExploreViewController {
   func setup() {
-//    addChild(featuredViewController)
-//    featuredViewController.didMove(toParent: self)
-    
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
     customView.collectionView.register(CollectionViewSupplementaryContainerView.self,
@@ -257,6 +264,7 @@ private extension BrowserExploreViewController {
     return dataSource
   }
 }
+
 
 private extension String {
   static let featuredHeaderKind = "FeaturedHeaderKind"
