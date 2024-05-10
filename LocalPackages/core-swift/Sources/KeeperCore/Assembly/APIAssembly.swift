@@ -16,9 +16,25 @@ final class APIAssembly {
   
   // MARK: - Internal
   
+  var apiProvider: APIProvider {
+    APIProvider { [testnetAPI, api] isTestnet in
+      isTestnet ? testnetAPI : api
+    }
+  }
+  
   var api: API {
     API(
       tonAPIClient: tonAPIClient(),
+      urlSession: URLSession(
+        configuration: urlSessionConfiguration
+      ),
+      configurationStore: configurationAssembly.remoteConfigurationStore
+    )
+  }
+  
+  var testnetAPI: API {
+    API(
+      tonAPIClient: tonAPITestnetClient(),
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
@@ -37,6 +53,19 @@ final class APIAssembly {
       middlewares: [apiHostProvider, authTokenProvider])
     _tonAPIClient = tonAPIClient
     return tonAPIClient
+  }
+  
+  private var _tonAPITestnetClient: TonAPI.Client?
+  func tonAPITestnetClient() -> TonAPI.Client {
+    if let tonAPITestnetClient = _tonAPITestnetClient {
+      return tonAPITestnetClient
+    }
+    let tonAPITestnetClient = TonAPI.Client(
+      serverURL: testnetTonAPIURL,
+      transport: transport,
+      middlewares: [authTokenProvider])
+    _tonAPITestnetClient = tonAPITestnetClient
+    return tonAPITestnetClient
   }
   
   private var _streamingTonAPIClient: TonStreamingAPI.Client?
@@ -101,6 +130,10 @@ final class APIAssembly {
   
   var tonAPIURL: URL {
     URL(string: "https://keeper.tonapi.io")!
+  }
+  
+  var testnetTonAPIURL: URL {
+    URL(string: "https://testnet.tonapi.io")!
   }
   
   var tonConnectURL: URL {

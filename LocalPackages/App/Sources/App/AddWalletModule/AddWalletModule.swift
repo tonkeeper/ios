@@ -33,8 +33,8 @@ struct AddWalletModule {
       createWalletCoordinatorProvider:  { router in
         return createCreateWalletCoordinator(router: router)
       },
-      importWalletCoordinatorProvider: { router in
-        return createImportWalletCoordinator(router: router)
+      importWalletCoordinatorProvider: { router, isTestnet in
+        return createImportWalletCoordinator(router: router, isTestnet: isTestnet)
       },
       importWatchOnlyWalletCoordinatorProvider: { router in
         return createImportWatchOnlyWalletCoordinator(router: router)
@@ -46,10 +46,11 @@ struct AddWalletModule {
     return coordinator
   }
   
-  func createImportWalletCoordinator(router: NavigationControllerRouter) -> ImportWalletCoordinator {
+  func createImportWalletCoordinator(router: NavigationControllerRouter, isTestnet: Bool) -> ImportWalletCoordinator {
     let coordinator = ImportWalletCoordinator(
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      isTestnet: isTestnet,
       customizeWalletModule: {
         self.createCustomizeWalletModule(
           name: nil,
@@ -78,7 +79,8 @@ struct AddWalletModule {
   public func createRecoveryPhraseCoordinator(router: NavigationControllerRouter) -> RecoveryPhraseCoordinator {
     let coordinator = RecoveryPhraseCoordinator(
       router: router,
-      walletsUpdateAssembly: dependencies.walletsUpdateAssembly
+      walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      isTestnet: false
     )
     
     return coordinator

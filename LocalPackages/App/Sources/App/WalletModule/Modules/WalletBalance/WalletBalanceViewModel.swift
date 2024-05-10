@@ -187,26 +187,37 @@ private extension WalletBalanceViewModelImplementation {
         action: { [weak self] in
           self?.didTapCopy(
             walletAddress: model.fullAddress, 
-            walletType: model.walletType
+            walletType: model.walletModel.walletType
           )
         }
       ),
       connectionStatusModel: createConnectionStatusModel(backgroundUpdateState: model.backgroundUpdateState),
-      tagConfiguration: createTagConfiguration(walletType: model.walletType),
+      tagConfiguration: createTagConfiguration(
+        walletType: model.walletModel.walletType,
+        isTestnet: model.walletModel.isTestnet
+      ),
       stateDate: stateDate
     )
     
     return WalletBalanceHeaderView.Model(
       balanceModel: balanceModel,
-      buttonsViewModel: createHeaderButtonsModel(walletType: model.walletType)
+      buttonsViewModel: createHeaderButtonsModel(walletType: model.walletModel.walletType)
     )
   }
   
-  func createTagConfiguration(walletType: WalletModel.WalletType) -> TKUITagView.Configuration? {
-    switch walletType {
-    case .regular:
+  func createTagConfiguration(walletType: WalletModel.WalletType, isTestnet: Bool) -> TKUITagView.Configuration? {
+    switch (walletType, isTestnet) {
+    case (.regular, false):
       return nil
-    case .watchOnly:
+    case (.regular, true):
+      return TKUITagView.Configuration(
+        text: "TESTNET",
+        textColor: .Accent.orange,
+        backgroundColor: UIColor.init(
+          hex: "332d24"
+        )
+      )
+    case (.watchOnly, _):
       return TKUITagView.Configuration(
         text: TKLocales.WalletTags.watch_only,
         textColor: .Accent.orange,
@@ -214,7 +225,7 @@ private extension WalletBalanceViewModelImplementation {
           hex: "332d24"
         )
       )
-    case .external:
+    case (.external, _):
       return TKUITagView.Configuration(
         text: "SIGNER",
         textColor: .Accent.purple,

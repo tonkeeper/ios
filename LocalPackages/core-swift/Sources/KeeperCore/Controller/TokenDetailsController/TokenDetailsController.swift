@@ -55,6 +55,14 @@ private extension TokenDetailsController {
         Task { await observer.didUpdateTonRates(tonRates) }
       }
     }
+    
+    _ = walletsStore.addEventObserver(self) { observer, event in
+      switch event {
+      case .didUpdateActiveWallet:
+        Task { await observer.setInitialState() }
+      default: break
+      }
+    }
   }
   
   func setInitialState() async {

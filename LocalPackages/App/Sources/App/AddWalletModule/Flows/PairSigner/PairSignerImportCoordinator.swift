@@ -58,7 +58,7 @@ public final class PairSignerImportCoordinator: RouterCoordinator<NavigationCont
 
 private extension PairSignerImportCoordinator {
   func detectActiveWallets(publicKey: TonSwift.PublicKey) async throws -> [ActiveWalletModel] {
-    try await walletsUpdateAssembly.walletImportController().findActiveWallets(publicKey: publicKey)
+    try await walletsUpdateAssembly.walletImportController().findActiveWallets(publicKey: publicKey, isTestnet: false)
   }
   
   func openChooseWalletToAdd(publicKey: TonSwift.PublicKey, activeWalletModels: [ActiveWalletModel]) {

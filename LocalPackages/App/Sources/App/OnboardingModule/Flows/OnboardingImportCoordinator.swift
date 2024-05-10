@@ -98,7 +98,8 @@ private extension OnboardingImportCoordinator {
       try addController.importWallets(
         phrase: phrase,
         revisions: revisions,
-        metaData: metaData)
+        metaData: metaData,
+      isTestnet: false)
       didImportWallets?()
     } catch {
       print("Log: Wallet import failed, error \(error)")

@@ -11,27 +11,27 @@ public struct ActiveWalletModel {
 }
 
 protocol ActiveWalletsService {
-  func loadActiveWallets(publicKey: TonSwift.PublicKey) async throws -> [ActiveWalletModel]
+  func loadActiveWallets(publicKey: TonSwift.PublicKey, isTestnet: Bool) async throws -> [ActiveWalletModel]
 }
 
 final class ActiveWalletsServiceImplementation: ActiveWalletsService {
-  private let api: API
+  private let apiProvider: APIProvider
   private let jettonsBalanceService: JettonBalanceService
   private let accountNFTService: AccountNFTService
   private let currencyService: CurrencyService
   
   
-  init(api: API,
+  init(apiProvider: APIProvider,
        jettonsBalanceService: JettonBalanceService,
        accountNFTService: AccountNFTService,
        currencyService: CurrencyService) {
-    self.api = api
+    self.apiProvider = apiProvider
     self.jettonsBalanceService = jettonsBalanceService
     self.accountNFTService = accountNFTService
     self.currencyService = currencyService
   }
   
-  func loadActiveWallets(publicKey: TonSwift.PublicKey) async throws -> [ActiveWalletModel] {
+  func loadActiveWallets(publicKey: TonSwift.PublicKey, isTestnet: Bool) async throws -> [ActiveWalletModel] {
     let revisions = WalletContractVersion.allCases
     
     let models = try await withThrowingTaskGroup(of: ActiveWalletModel.self, returning: [ActiveWalletModel].self) { [currencyService] taskGroup in
@@ -41,7 +41,7 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
           revision: revision
         )
         taskGroup.addTask {
-          async let accountTask = self.api.getAccountInfo(address: address.toRaw())
+          async let accountTask = self.apiProvider.api(isTestnet).getAccountInfo(address: address.toRaw())
           async let jettonsBalanceTask = self.jettonsBalanceService.loadJettonsBalance(address: address, currency: (try? currencyService.getActiveCurrency()) ?? .USD )
           async let nftsTask = self.accountNFTService.loadAccountNFTs(accountAddress: address, collectionAddress: nil, limit: nil, offset: nil, isIndirectOwnership: true)
           

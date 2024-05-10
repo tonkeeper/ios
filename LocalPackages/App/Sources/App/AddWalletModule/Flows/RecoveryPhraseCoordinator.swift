@@ -12,10 +12,13 @@ public final class RecoveryPhraseCoordinator: RouterCoordinator<NavigationContro
   public var didImportWallets: (([String], [WalletContractVersion]) -> Void)?
   
   private let walletsUpdateAssembly: WalletsUpdateAssembly
+  private let isTestnet: Bool
   
   init(router: NavigationControllerRouter,
-       walletsUpdateAssembly: WalletsUpdateAssembly) {
+       walletsUpdateAssembly: WalletsUpdateAssembly,
+       isTestnet: Bool) {
     self.walletsUpdateAssembly = walletsUpdateAssembly
+    self.isTestnet = isTestnet
     super.init(router: router)
   }
   
@@ -60,7 +63,10 @@ private extension RecoveryPhraseCoordinator {
   func detectActiveWallets(phrase: [String], completion: @escaping () -> Void) {
     Task {
       do {
-        let activeWallets = try await walletsUpdateAssembly.walletImportController().findActiveWallets(phrase: phrase)
+        let activeWallets = try await walletsUpdateAssembly.walletImportController().findActiveWallets(
+          phrase: phrase,
+          isTestnet: isTestnet
+        )
         await MainActor.run {
           completion()
           handleActiveWallets(phrase: phrase, activeWalletModels: activeWallets)

@@ -157,7 +157,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -174,7 +174,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -192,7 +192,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }

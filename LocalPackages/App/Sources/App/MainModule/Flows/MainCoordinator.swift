@@ -393,7 +393,7 @@ private extension MainCoordinator {
       )
     )
     
-    let coordinator = module.createAddWalletCoordinator(options: [.createRegular, .importRegular, .importWatchOnly, .signer],
+    let coordinator = module.createAddWalletCoordinator(options: [.createRegular, .importRegular, .importWatchOnly, .importTestnet, .signer],
                                                         router: router)
     coordinator.didAddWallets = { [weak self, weak coordinator] in
       self?.addWalletCoordinator = nil

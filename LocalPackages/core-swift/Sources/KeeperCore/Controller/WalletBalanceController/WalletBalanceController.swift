@@ -27,7 +27,7 @@ public final class WalletBalanceController {
     public let totalBalance: String
     public let stateDate: String?
     public let backgroundUpdateState: BackgroundUpdateState
-    public let walletType: WalletModel.WalletType
+    public let walletModel: WalletModel
     public let shortAddress: String?
     public let fullAddress: String?
   }
@@ -236,9 +236,9 @@ private extension WalletBalanceController {
       totalBalance: formattedTotalBalance,
       stateDate: stateDate,
       backgroundUpdateState: await state.backgroundUpdateState,
-      walletType: wallet.model.walletType,
-      shortAddress: try? wallet.address.toShortString(bounceable: false),
-      fullAddress: try? wallet.address.toString(bounceable: false)
+      walletModel: wallet.model,
+      shortAddress: try? wallet.friendlyAddress.toShort(),
+      fullAddress: try? wallet.friendlyAddress.toString()
     )
   }
   
