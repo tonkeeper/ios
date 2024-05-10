@@ -106,6 +106,8 @@
 "send.required_comment.placeholder" = "Комментарий";
 "send.required_comment.description" = "Обязательно укажите memo или тег при отправке на биржу.";
 
+"swap.title" = "Обменять";
+
 "confirm_send.token_transfer.title" = "Подтвердить действие";
 "confirm_send.token_transfer.transfer" = "Отправка %@";
 "confirm_send.fee" = "Комиссия";

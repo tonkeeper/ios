@@ -465,6 +465,12 @@ public enum TKLocales {
       localize("confirm_send.confirm_button")
     }
   }
+  public enum Swap {
+    /// Swap
+    public static var title: String {
+      localize("swap.title")
+    }
+  }
   public enum CustomizeWallet {
     /// Customize your Wallet
     public static var title: String {

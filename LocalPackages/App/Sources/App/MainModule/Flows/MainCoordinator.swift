@@ -24,6 +24,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private weak var addWalletCoordinator: AddWalletCoordinator?
   private weak var sendTokenCoordinator: SendTokenCoordinator?
+  private weak var swapTokenCoordinator: SwapTokenCoordinator?
   
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
@@ -118,6 +119,10 @@ private extension MainCoordinator {
     
     walletCoordinator.didTapSend = { [weak self] token in
       self?.openSend(token: token)
+    }
+
+    walletCoordinator.didTapSwap = { [weak self] in
+      self?.openSwap()
     }
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
@@ -228,6 +233,36 @@ private extension MainCoordinator {
         self.openSend(token: token, recipient: resolvedRecipient)
       }
     }
+  }
+
+  func openSwap() {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
+    let swapTokenCoordinator = SwapModule(
+      dependencies: SwapModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createSwapTokenCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController)
+    )
+
+    swapTokenCoordinator.didFinish = { [weak self, weak swapTokenCoordinator, weak navigationController] in
+      self?.swapTokenCoordinator = nil
+      navigationController?.dismiss(animated: true)
+      guard let swapTokenCoordinator else { return }
+      self?.removeChild(swapTokenCoordinator)
+    }
+
+    self.swapTokenCoordinator = swapTokenCoordinator
+    
+    addChild(swapTokenCoordinator)
+    swapTokenCoordinator.start()
+    
+    self.router.present(navigationController, onDismiss: { [weak self] in
+      self?.swapTokenCoordinator = nil
+    })
   }
 }
 

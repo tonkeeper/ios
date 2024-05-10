@@ -106,6 +106,8 @@
 "send.required_comment.placeholder" = "Required comment";
 "send.required_comment.description" = "You must include the note from the exchange for transfer. Without it your funds will be lost.";
 
+"swap.title" = "Swap";
+
 "confirm_send.token_transfer.title" = "Confirm action";
 "confirm_send.token_transfer.transfer" = "Transfer %@";
 "confirm_send.fee" = "Fee";
