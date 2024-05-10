@@ -3,6 +3,12 @@ import UIKit
 public extension UIImage {
   enum TKUIKit {
     public enum Icons {
+      public enum Size12 {
+        public static var lock: UIImage {
+          .imageWithName("Icons/12/ic-lock-12")
+          .withRenderingMode(.alwaysTemplate)
+        }
+      }
       public enum Size16 {
         public static var chevronDown: UIImage {
           .imageWithName("Icons/16/ic-chevron-down-16")
