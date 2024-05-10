@@ -77,6 +77,61 @@ final class SendV3View: UIView {
   }
 }
 
+extension SendV3View {
+  struct Model {
+    struct Recipient {
+      let placeholder: String
+      let text: String
+      let isValid: Bool
+    }
+    
+    struct Amount {
+      struct Token {
+        enum Image {
+          case image(UIImage)
+          case asyncImage(ImageDownloadTask)
+        }
+        let image: Image
+        let title: String
+      }
+      
+      let placeholder: String
+      let text: String
+      let fractionDigits: Int
+      let token: Token
+    }
+    
+    struct Comment {
+      let placeholder: String
+      let text: String
+      let isValid: Bool
+      let description: NSAttributedString?
+    }
+    
+    struct Button {
+      let title: String
+      let isEnabled: Bool
+      let isActivity: Bool
+      let action: (() -> Void)
+    }
+    
+    struct Balance {
+      enum Remaining {
+        case insufficient
+        case remaining(String)
+      }
+      let converted: String
+      let remaining: Remaining
+    }
+    
+    let recipient: Recipient
+    let amount: Amount?
+    let balance: Balance
+    let comment: Comment
+    let button: Button
+  }
+}
+
 private extension CGFloat {
   static let contentVerticalPadding: CGFloat = 16
 }
