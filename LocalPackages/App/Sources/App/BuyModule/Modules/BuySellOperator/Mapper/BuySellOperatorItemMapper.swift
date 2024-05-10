@@ -3,7 +3,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 
-struct FiatOperatorListItemMapper {
+struct BuySellOperatorItemMapper {
   let imageLoader = ImageLoader()
   
   func mapCurrencyPickerItem(_ item: CurrencyPickerItem, selectionClosure: @escaping () -> Void) -> TKUIListItemCell.Configuration {
@@ -46,7 +46,7 @@ struct FiatOperatorListItemMapper {
     )
   }
   
-  func mapFiatOperatorItem(_ item: FiatOperatorItemsModel.Item) -> SelectionCollectionViewCell.Configuration {
+  func mapBuySellOperatorItem(_ item: BuySellOperatorItemsModel.Item) -> SelectionCollectionViewCell.Configuration {
     let id = item.identifier
     let title = item.title.withTextStyle(.label1, color: .Text.primary)
     let subtitle = item.description.withTextStyle(.body2, color: .Text.secondary)

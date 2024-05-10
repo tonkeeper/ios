@@ -8,7 +8,7 @@ struct CurrencyPickerItem {
   let currencyTitle: String
 }
 
-struct FiatOperatorModel {
+struct BuySellOperatorModel {
   struct Button {
     let title: String
     let isEnabled: Bool
@@ -21,37 +21,37 @@ struct FiatOperatorModel {
   let button: Button
 }
 
-protocol FiatOperatorModuleOutput: AnyObject {
+protocol BuySellOperatorModuleOutput: AnyObject {
   var didTapCurrencyPicker: ((CurrencyListItem) -> Void)? { get set }
   var didTapContinue: (() -> Void)? { get set }
 }
 
-protocol FiatOperatorModuleInput: AnyObject {
+protocol BuySellOperatorModuleInput: AnyObject {
   func didChangeCurrency(_ currency: Currency)
 }
 
-protocol FiatOperatorViewModel: AnyObject {
-  var didUpdateModel: ((FiatOperatorModel) -> Void)? { get set }
+protocol BuySellOperatorViewModel: AnyObject {
+  var didUpdateModel: ((BuySellOperatorModel) -> Void)? { get set }
   var didUpdateCurrencyPickerItem: ((TKUIListItemCell.Configuration) -> Void)? { get set }
-  var didUpdateFiatOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
+  var didUpdateBuySellOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   
   func viewDidLoad()
-  func didSelectFiatOperatorId(_ id: String)
+  func didSelectOperatorId(_ id: String)
 }
 
-final class FiatOperatorViewModelImplementation: FiatOperatorViewModel, FiatOperatorModuleOutput, FiatOperatorModuleInput {
+final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, BuySellOperatorModuleOutput, BuySellOperatorModuleInput {
   
-  // MARK: - FiatOperatorModelModuleOutput
+  // MARK: - BuySellOperatorModelModuleOutput
   
   var didTapCurrencyPicker: ((CurrencyListItem) -> Void)?
   var didTapContinue: (() -> Void)?
   
-  // MARK: - FiatOperatorModelModuleInput
+  // MARK: - BuySellOperatorModelModuleInput
   
   func didChangeCurrency(_ currency: Currency) {
     selectedCurrency = currency
     
-    let currencyPickerItem = listItemMapper.mapCurrencyPickerItem(
+    let currencyPickerItem = itemMapper.mapCurrencyPickerItem(
       .init(
         identifier: "currencyPicker",
         currencyCode: currency.code,
@@ -66,36 +66,36 @@ final class FiatOperatorViewModelImplementation: FiatOperatorViewModel, FiatOper
     didUpdateCurrencyPickerItem?(currencyPickerItem)
   }
   
-  // MARK: - FiatOperatorModelViewModel
+  // MARK: - BuySellOperatorModelViewModel
   
-  var didUpdateModel: ((FiatOperatorModel) -> Void)?
+  var didUpdateModel: ((BuySellOperatorModel) -> Void)?
   var didUpdateCurrencyPickerItem: ((TKUIListItemCell.Configuration) -> Void)?
-  var didUpdateFiatOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)?
+  var didUpdateBuySellOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
     update()
     
-    fiatOperatorController.didUpdateFiatOperatorModel = { [weak self] fiatOperatorModel in
-      self?.didUpdateFiatOperatorModel(fiatOperatorModel)
+    buySellOperatorController.didUpdateBuySellOperatorItemsModel = { [weak self] buySellOperatorItemsModel in
+      self?.didUpdateBuySellOperatorItemsModel(buySellOperatorItemsModel)
     }
     
-    fiatOperatorController.didUpdateActiveCurrency = { [weak self] activeCurrency in
+    buySellOperatorController.didUpdateActiveCurrency = { [weak self] activeCurrency in
       self?.didChangeCurrency(activeCurrency)
     }
     
     Task {
-      await fiatOperatorController.start()
+      await buySellOperatorController.start()
     }
   }
   
-  func didSelectFiatOperatorId(_ id: String) {
-    selectedFiatOperatorId = id
+  func didSelectOperatorId(_ id: String) {
+    selectedOperatorId = id
   }
   
   // MARK: - State
   
   private var selectedCurrency = Currency.USD
-  private var selectedFiatOperatorId = ""
+  private var selectedOperatorId = ""
   
   private var isResolving = false {
     didSet {
@@ -110,17 +110,17 @@ final class FiatOperatorViewModelImplementation: FiatOperatorViewModel, FiatOper
   
   // MARK: - Mapper
   
-  private let listItemMapper = FiatOperatorListItemMapper()
+  private let itemMapper = BuySellOperatorItemMapper()
   
   // MARK: - Dependencies
   
-  private let fiatOperatorController: FiatOperatorController
+  private let buySellOperatorController: BuySellOperatorController
   private var buySellOperation: BuySellOperationModel
   
   // MARK: - Init
   
-  init(fiatOperatorController: FiatOperatorController, buySellOperation: BuySellOperationModel) {
-    self.fiatOperatorController = fiatOperatorController
+  init(buySellOperatorController: BuySellOperatorController, buySellOperation: BuySellOperationModel) {
+    self.buySellOperatorController = buySellOperatorController
     self.buySellOperation = buySellOperation
   }
   
@@ -131,14 +131,14 @@ final class FiatOperatorViewModelImplementation: FiatOperatorViewModel, FiatOper
 
 // MARK: - Private
 
-private extension FiatOperatorViewModelImplementation {
+private extension BuySellOperatorViewModelImplementation {
   func update() {
     let model = createModel()
     didUpdateModel?(model)
   }
   
-  func createModel() -> FiatOperatorModel {
-    FiatOperatorModel(
+  func createModel() -> BuySellOperatorModel {
+    BuySellOperatorModel(
       title: "Operator",
       description: "Credit card", // TODO: Get text from BuySellOperationModel
       button: .init(
@@ -152,13 +152,13 @@ private extension FiatOperatorViewModelImplementation {
     )
   }
   
-  func didUpdateFiatOperatorModel(_ model: FiatOperatorItemsModel) {
-    let fiatOperatorItems = model.fiatOperatorItems.map {
-      listItemMapper.mapFiatOperatorItem($0)
+  func didUpdateBuySellOperatorItemsModel(_ model: BuySellOperatorItemsModel) {
+    let buySellOperatorItems = model.items.map {
+      itemMapper.mapBuySellOperatorItem($0)
     }
     
     Task { @MainActor in
-      didUpdateFiatOperatorItems?(fiatOperatorItems)
+      didUpdateBuySellOperatorItems?(buySellOperatorItems)
     }
   }
 }

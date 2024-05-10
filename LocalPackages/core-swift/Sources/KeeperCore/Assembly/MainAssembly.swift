@@ -435,8 +435,8 @@ public final class MainAssembly {
     )
   }
   
-  public func fiatOperatorController() -> FiatOperatorController {
-    FiatOperatorController(
+  public func buySellOperatorController() -> BuySellOperatorController {
+    BuySellOperatorController(
       buySellMethodsService: servicesAssembly.buySellMethodsService(),
       locationService: servicesAssembly.locationService(),
       tonRatesStore: storesAssembly.tonRatesStore,

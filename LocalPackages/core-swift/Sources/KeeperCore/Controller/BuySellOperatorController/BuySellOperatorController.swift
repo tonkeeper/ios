@@ -1,7 +1,7 @@
 import Foundation
 
-public final class FiatOperatorController {
-  public var didUpdateFiatOperatorModel: ((FiatOperatorItemsModel) -> Void)?
+public final class BuySellOperatorController {
+  public var didUpdateBuySellOperatorItemsModel: ((BuySellOperatorItemsModel) -> Void)?
   public var didUpdateActiveCurrency: ((Currency) -> Void)?
   
   private let buySellMethodsService: BuySellMethodsService
@@ -20,7 +20,7 @@ public final class FiatOperatorController {
   }
   
   public func start() async {
-    let testItemsModel = FiatOperatorItemsModel(fiatOperatorItems: [
+    let testItemsModel = BuySellOperatorItemsModel(items: [
       .init(identifier: "mercuryo", iconURL: URL(string: "https://tonkeeper.com/assets/mercuryo-icon-new.png")!, title: "Mercuryo", description: "2,330.01 AMD for 1 TON", tagText: "BEST"),
       .init(identifier: "dreamwalkers", iconURL: URL(string: "https://tonkeeper.com/assets/dreamwalkers-icon.png")!, title: "Dreamwalkers", description: "2,470.01 AMD for 1 TON"),
       .init(identifier: "neocrypto", iconURL: URL(string: "https://tonkeeper.com/assets/neocrypto-new.png")!, title: "Neocrypto", description: "2,475.01 AMD for 1 TON"),
@@ -30,13 +30,13 @@ public final class FiatOperatorController {
     let activeCurrency = await currencyStore.getActiveCurrency()
     
     await MainActor.run {
-      didUpdateFiatOperatorModel?(testItemsModel)
+      didUpdateBuySellOperatorItemsModel?(testItemsModel)
       didUpdateActiveCurrency?(activeCurrency)
     }
   }
   
   // TODO: Refactor
-  public func updateFiatOperatorItems() async {
+  public func updateBuySellOperatorItems() async {
     guard let fiatMethods = try? await buySellMethodsService.loadFiatMethods(countryCode: nil) else { return }
     
     let buyItems = fiatMethods.categories
@@ -44,17 +44,17 @@ public final class FiatOperatorController {
       .map({ $0.items })
       .flatMap({ $0 })
     
-    let fiatOperatorItems = buyItems.map({ mapFiatMethodItem($0) })
-    let fiatOperatorItemsModel = FiatOperatorItemsModel(fiatOperatorItems: fiatOperatorItems)
+    let items = buyItems.map({ mapFiatMethodItem($0) })
+    let buySellOperatorItemsModel = BuySellOperatorItemsModel(items: items)
     
     await MainActor.run {
-      didUpdateFiatOperatorModel?(fiatOperatorItemsModel)
+      didUpdateBuySellOperatorItemsModel?(buySellOperatorItemsModel)
     }
   }
 }
 
-private extension FiatOperatorController {
-  func mapFiatMethodItem(_ item: FiatMethodItem) -> FiatOperatorItemsModel.Item {
+private extension BuySellOperatorController {
+  func mapFiatMethodItem(_ item: FiatMethodItem) -> BuySellOperatorItemsModel.Item {
     return .init(
       identifier: item.id,
       iconURL: item.iconURL,

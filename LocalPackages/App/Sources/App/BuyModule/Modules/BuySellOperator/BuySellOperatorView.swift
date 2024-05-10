@@ -1,9 +1,8 @@
 import UIKit
 import TKUIKit
 
-final class FiatOperatorView: UIView {
+final class BuySellOperatorView: UIView {
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
-  
   let titleView = ModalTitleView()
   
   let continueButton = TKButton(
@@ -23,7 +22,7 @@ final class FiatOperatorView: UIView {
   }
 }
 
-private extension FiatOperatorView {
+private extension BuySellOperatorView {
   func setup() {
     addSubview(collectionView)
     addSubview(continueButton)

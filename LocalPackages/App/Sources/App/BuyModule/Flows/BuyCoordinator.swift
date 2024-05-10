@@ -78,15 +78,15 @@ private extension BuyCoordinator {
     }
     
     module.output.didContinueBuySell = { [weak self] buySellOperation in
-      self?.openOperator(buySellOperation: buySellOperation)
+      self?.openBuySellOperator(buySellOperation: buySellOperation)
     }
     
     router.push(viewController: module.view, animated: false)
   }
   
-  func openOperator(buySellOperation: BuySellOperationModel) {
-    let module = FiatOperatorAssembly.module(
-      fiatOperatorController: keeperCoreMainAssembly.fiatOperatorController(),
+  func openBuySellOperator(buySellOperation: BuySellOperationModel) {
+    let module = BuySellOperatorAssembly.module(
+      buySellOperatorController: keeperCoreMainAssembly.buySellOperatorController(),
       buySellOperation: buySellOperation
     )
     

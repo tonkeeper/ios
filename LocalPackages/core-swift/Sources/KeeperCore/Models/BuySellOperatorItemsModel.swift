@@ -1,14 +1,14 @@
 import Foundation
 
-public struct FiatOperatorItemsModel {
-  public let fiatOperatorItems: [Item]
+public struct BuySellOperatorItemsModel {
+  public let items: [Item]
   
-  public init(fiatOperatorItems: [Item]) {
-    self.fiatOperatorItems = fiatOperatorItems
+  public init(items: [Item]) {
+    self.items = items
   }
 }
 
-public extension FiatOperatorItemsModel {
+public extension BuySellOperatorItemsModel {
   struct Item {
     public let identifier: String
     public let iconURL: URL?

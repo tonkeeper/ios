@@ -1,12 +1,12 @@
 import UIKit
 import TKUIKit
 
-enum FiatOperatorSection: Hashable {
+enum BuySellOperatorSection: Hashable {
   case currencyPicker
-  case fiatOperatorItems
+  case operatorItems
 }
 
-final class FiatOperatorViewController: ModalViewController<FiatOperatorView, ModalNavigationBarView> {
+final class BuySellOperatorViewController: ModalViewController<BuySellOperatorView, ModalNavigationBarView> {
   
   private typealias CellRegistration<T> = UICollectionView.CellRegistration<T, T.Configuration> where T: TKCollectionViewNewCell & TKConfigurableView
   
@@ -27,8 +27,8 @@ final class FiatOperatorViewController: ModalViewController<FiatOperatorView, Mo
         switch snapshot.sectionIdentifiers[sectionIndex] {
         case .currencyPicker:
           return .currencyPickerSection
-        case .fiatOperatorItems:
-          return .fiatOperatorItemsSection
+        case .operatorItems:
+          return .operatorItemsSection
         }
       },
       configuration: configuration
@@ -39,7 +39,7 @@ final class FiatOperatorViewController: ModalViewController<FiatOperatorView, Mo
   
   private lazy var dataSource = createDataSource()
   private lazy var currencyPickerCellConfiguration: CellRegistration<TKUIListItemCell> = makeCellRegistration()
-  private lazy var fiatOperatorCellConfiguration: CellRegistration<SelectionCollectionViewCell> = makeCellRegistration()
+  private lazy var operatorCellConfiguration: CellRegistration<SelectionCollectionViewCell> = makeCellRegistration()
   
   private func makeCellRegistration<T>() -> CellRegistration<T> {
     return CellRegistration<T> { [weak self]
@@ -53,12 +53,12 @@ final class FiatOperatorViewController: ModalViewController<FiatOperatorView, Mo
     }
   }
   
-  private func createDataSource() -> UICollectionViewDiffableDataSource<FiatOperatorSection, AnyHashable> {
-    let dataSource = UICollectionViewDiffableDataSource<FiatOperatorSection, AnyHashable>(
-      collectionView: customView.collectionView) { [fiatOperatorCellConfiguration, currencyPickerCellConfiguration] collectionView, indexPath, itemIdentifier in
+  private func createDataSource() -> UICollectionViewDiffableDataSource<BuySellOperatorSection, AnyHashable> {
+    let dataSource = UICollectionViewDiffableDataSource<BuySellOperatorSection, AnyHashable>(
+      collectionView: customView.collectionView) { [operatorCellConfiguration, currencyPickerCellConfiguration] collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
         case let cellConfiguration as SelectionCollectionViewCell.Configuration:
-          return collectionView.dequeueConfiguredReusableCell(using: fiatOperatorCellConfiguration, for: indexPath, item: cellConfiguration)
+          return collectionView.dequeueConfiguredReusableCell(using: operatorCellConfiguration, for: indexPath, item: cellConfiguration)
         case let cellConfiguration as TKUIListItemCell.Configuration:
           return collectionView.dequeueConfiguredReusableCell(using: currencyPickerCellConfiguration, for: indexPath, item: cellConfiguration)
         default: return nil
@@ -70,11 +70,11 @@ final class FiatOperatorViewController: ModalViewController<FiatOperatorView, Mo
   
   // MARK: - Dependencies
   
-  private let viewModel: FiatOperatorViewModel
+  private let viewModel: BuySellOperatorViewModel
   
   // MARK: - Init
   
-  init(viewModel: FiatOperatorViewModel) {
+  init(viewModel: BuySellOperatorViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
   }
@@ -110,7 +110,7 @@ final class FiatOperatorViewController: ModalViewController<FiatOperatorView, Mo
 
 // MARK: - Setup
 
-private extension FiatOperatorViewController {
+private extension BuySellOperatorViewController {
   func setup() {
     view.backgroundColor = .Background.page
     customView.collectionView.backgroundColor = .Background.page
@@ -124,7 +124,7 @@ private extension FiatOperatorViewController {
     
     var snapshot = dataSource.snapshot()
     snapshot.appendSections([.currencyPicker])
-    snapshot.appendSections([.fiatOperatorItems])
+    snapshot.appendSections([.operatorItems])
     dataSource.apply(snapshot,animatingDifferences: false)
   }
   
@@ -150,15 +150,15 @@ private extension FiatOperatorViewController {
       dataSource.apply(snapshot,animatingDifferences: false)
     }
     
-    viewModel.didUpdateFiatOperatorItems = { [weak self] fiatOperatorItems in
+    viewModel.didUpdateBuySellOperatorItems = { [weak self] buySellOperatorItems in
       guard let self else { return }
       
       var snapshot = dataSource.snapshot()
-      snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .fiatOperatorItems))
-      snapshot.appendItems(fiatOperatorItems, toSection: .fiatOperatorItems)
+      snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .operatorItems))
+      snapshot.appendItems(buySellOperatorItems, toSection: .operatorItems)
       dataSource.apply(snapshot,animatingDifferences: false)
       
-      selectFirstItemCell(snapshot: snapshot, items: fiatOperatorItems, inSection: .fiatOperatorItems)
+      selectFirstItemCell(snapshot: snapshot, items: buySellOperatorItems, inSection: .operatorItems)
     }
   }
   
@@ -174,24 +174,24 @@ private extension FiatOperatorViewController {
     
     customView.collectionView.performBatchUpdates(nil) { [weak self] _ in
       self?.customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: .top)
-      self?.viewModel.didSelectFiatOperatorId(selectedId)
+      self?.viewModel.didSelectOperatorId(selectedId)
     }
   }
 }
 
 // MARK: - UICollectionViewDelegate
 
-extension FiatOperatorViewController: UICollectionViewDelegate {
+extension BuySellOperatorViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, shouldDeselectItemAt indexPath: IndexPath) -> Bool {
     return false
   }
   
   func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
-    // Handling simultaneous cell selection for currencyPicker and fiatOperatorItems sections
+    // Handling simultaneous cell selection for currencyPicker and operatorItems sections
     // without this there will be multiple radio button selection
-    if let fiatOperatorItemsSectionIndex = sectionIndex(of: .fiatOperatorItems), indexPath.section == fiatOperatorItemsSectionIndex {
+    if let operatorItemsSectionIndex = sectionIndex(of: .operatorItems), indexPath.section == operatorItemsSectionIndex {
       collectionView.indexPathsForSelectedItems?.lazy
-        .filter { $0.section == fiatOperatorItemsSectionIndex }
+        .filter { $0.section == operatorItemsSectionIndex }
         .forEach { collectionView.deselectItem(at: $0, animated: false) }
     }
 
@@ -206,8 +206,8 @@ extension FiatOperatorViewController: UICollectionViewDelegate {
     switch section {
     case .currencyPicker:
       handleSelectionCurrencyPicker(collectionView, at: indexPath, item: item)
-    case .fiatOperatorItems:
-      handleSelectionFiatOperatorItems(collectionView, at: indexPath, item: item)
+    case .operatorItems:
+      handleSelectionOperatorItems(collectionView, at: indexPath, item: item)
     }
   }
   
@@ -217,12 +217,12 @@ extension FiatOperatorViewController: UICollectionViewDelegate {
     currencyPickerModel?.selectionClosure?()
   }
   
-  private func handleSelectionFiatOperatorItems(_ collectionView: UICollectionView, at indexPath: IndexPath, item: AnyHashable) {
+  private func handleSelectionOperatorItems(_ collectionView: UICollectionView, at indexPath: IndexPath, item: AnyHashable) {
     guard let model = item as? SelectionCollectionViewCell.Configuration else { return }
-    viewModel.didSelectFiatOperatorId(model.id)
+    viewModel.didSelectOperatorId(model.id)
   }
   
-  private func sectionIndex(of section: FiatOperatorSection) -> Int? {
+  private func sectionIndex(of section: BuySellOperatorSection) -> Int? {
     dataSource.snapshot().sectionIdentifiers.firstIndex(of: section)
   }
 }
@@ -235,8 +235,8 @@ private extension NSCollectionLayoutSection {
     return makeSection(cellHeight: .currencyPickerCellHeight, contentInsets: contentInsets)
   }
   
-  static var fiatOperatorItemsSection: NSCollectionLayoutSection {
-    return makeSection(cellHeight: .fiatOperatorCellHeight)
+  static var operatorItemsSection: NSCollectionLayoutSection {
+    return makeSection(cellHeight: .operatorCellHeight)
   }
   
   static func makeSection(cellHeight: CGFloat,
@@ -268,5 +268,5 @@ private extension NSDirectionalEdgeInsets {
 
 private extension CGFloat {
   static let currencyPickerCellHeight: CGFloat = 56
-  static let fiatOperatorCellHeight: CGFloat = 76
+  static let operatorCellHeight: CGFloat = 76
 }
