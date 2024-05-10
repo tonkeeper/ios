@@ -4,8 +4,8 @@ import KeeperCore
 
 struct CurrencyPickerItem {
   let identifier: String
-  let currencyNameShort: String
-  let currencyNameFull: String
+  let currencyCode: String
+  let currencyTitle: String
 }
 
 struct FiatOperatorModel {
@@ -22,7 +22,7 @@ struct FiatOperatorModel {
 }
 
 protocol FiatOperatorModuleOutput: AnyObject {
-  var didTapCurrencyPicker: (() -> Void)? { get set }
+  var didTapCurrencyPicker: ((CurrencyListItem) -> Void)? { get set }
   var didTapContinue: (() -> Void)? { get set }
 }
 
@@ -33,7 +33,7 @@ protocol FiatOperatorModuleInput: AnyObject {
 protocol FiatOperatorViewModel: AnyObject {
   var didUpdateModel: ((FiatOperatorModel) -> Void)? { get set }
   var didUpdateCurrencyPickerItem: ((TKUIListItemCell.Configuration) -> Void)? { get set }
-  var didUpdateFiatOperatorItems: (([RadioButtonCollectionViewCell.Configuration]) -> Void)? { get set }
+  var didUpdateFiatOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   
   func viewDidLoad()
   func didSelectFiatOperatorId(_ id: String)
@@ -43,20 +43,23 @@ final class FiatOperatorViewModelImplementation: FiatOperatorViewModel, FiatOper
   
   // MARK: - FiatOperatorModelModuleOutput
   
-  var didTapCurrencyPicker: (() -> Void)?
+  var didTapCurrencyPicker: ((CurrencyListItem) -> Void)?
   var didTapContinue: (() -> Void)?
   
   // MARK: - FiatOperatorModelModuleInput
   
   func didChangeCurrency(_ currency: Currency) {
+    selectedCurrency = currency
+    
     let currencyPickerItem = listItemMapper.mapCurrencyPickerItem(
       .init(
         identifier: "currencyPicker",
-        currencyNameShort: currency.code,
-        currencyNameFull: currency.title
+        currencyCode: currency.code,
+        currencyTitle: currency.title
       ),
       selectionClosure: { [weak self] in
-        self?.didTapCurrencyPicker?()
+        let currencyListItem = CurrencyListItem(selected: currency)
+        self?.didTapCurrencyPicker?(currencyListItem)
       }
     )
     
@@ -67,14 +70,17 @@ final class FiatOperatorViewModelImplementation: FiatOperatorViewModel, FiatOper
   
   var didUpdateModel: ((FiatOperatorModel) -> Void)?
   var didUpdateCurrencyPickerItem: ((TKUIListItemCell.Configuration) -> Void)?
-  var didUpdateFiatOperatorItems: (([RadioButtonCollectionViewCell.Configuration]) -> Void)?
+  var didUpdateFiatOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
     update()
-    didChangeCurrency(Currency.USD)
     
     fiatOperatorController.didUpdateFiatOperatorModel = { [weak self] fiatOperatorModel in
       self?.didUpdateFiatOperatorModel(fiatOperatorModel)
+    }
+    
+    fiatOperatorController.didUpdateActiveCurrency = { [weak self] activeCurrency in
+      self?.didChangeCurrency(activeCurrency)
     }
     
     Task {
@@ -88,7 +94,7 @@ final class FiatOperatorViewModelImplementation: FiatOperatorViewModel, FiatOper
   
   // MARK: - State
   
-  private var currency = Currency.USD
+  private var selectedCurrency = Currency.USD
   private var selectedFiatOperatorId = ""
   
   private var isResolving = false {
@@ -116,6 +122,10 @@ final class FiatOperatorViewModelImplementation: FiatOperatorViewModel, FiatOper
   init(fiatOperatorController: FiatOperatorController, buySellOperation: BuySellOperationModel) {
     self.fiatOperatorController = fiatOperatorController
     self.buySellOperation = buySellOperation
+  }
+  
+  deinit {
+    print("\(Self.self) deinit")
   }
 }
 

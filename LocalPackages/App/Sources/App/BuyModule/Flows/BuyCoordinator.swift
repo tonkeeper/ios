@@ -96,8 +96,12 @@ private extension BuyCoordinator {
       self?.didFinish?()
     }
     
-    module.output.didTapCurrencyPicker = {
-      print("didTapCurrencyPicker")
+    module.output.didTapCurrencyPicker = { [weak self, weak input = module.input, weak view = module.view] currencyListItem in
+      self?.openCurrencyList(
+        fromViewController: view,
+        currencyListItem: currencyListItem,
+        didChangeCurrencyClosure: input?.didChangeCurrency
+      )
     }
     
     module.output.didTapContinue = {
@@ -105,6 +109,25 @@ private extension BuyCoordinator {
     }
     
     router.push(viewController: module.view, animated: true)
+  }
+  
+  func openCurrencyList(fromViewController: UIViewController?,
+                        currencyListItem: CurrencyListItem,
+                        didChangeCurrencyClosure: ((Currency) -> Void)?) {
+    let module = CurrencyListAssembly.module(
+      currencyListController: keeperCoreMainAssembly.currencyListController(),
+      currencyListItem: currencyListItem
+    )
+    
+    module.view.setupRightCloseButton {
+      fromViewController?.dismiss(animated: true)
+    }
+    
+    module.output.didChangeCurrency = { newCurrency in
+      didChangeCurrencyClosure?(newCurrency)
+    }
+    
+    fromViewController?.present(module.view, animated: true)
   }
   
   func openWebView(url: URL, fromViewController: UIViewController) {

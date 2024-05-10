@@ -2,6 +2,7 @@ import Foundation
 
 public final class FiatOperatorController {
   public var didUpdateFiatOperatorModel: ((FiatOperatorItemsModel) -> Void)?
+  public var didUpdateActiveCurrency: ((Currency) -> Void)?
   
   private let buySellMethodsService: BuySellMethodsService
   private let locationService: LocationService
@@ -26,8 +27,11 @@ public final class FiatOperatorController {
       .init(identifier: "transak", iconURL: URL(string: "https://tonkeeper.com/assets/transak.png")!, title: "Transak", description: "2,570.01 AMD for 1 TON")
     ])
     
+    let activeCurrency = await currencyStore.getActiveCurrency()
+    
     await MainActor.run {
       didUpdateFiatOperatorModel?(testItemsModel)
+      didUpdateActiveCurrency?(activeCurrency)
     }
   }
   

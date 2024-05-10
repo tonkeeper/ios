@@ -76,7 +76,7 @@ protocol BuySellModuleInput: AnyObject {
 protocol BuySellViewModel: AnyObject {
   var didUpdateModel: ((BuySellModel) -> Void)? { get set }
   var didUpdateCountryCode: ((String) -> Void)? { get set }
-  var didUpdatePaymentMethodItems: (([RadioButtonCollectionViewCell.Configuration]) -> Void)? { get set }
+  var didUpdatePaymentMethodItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   
   var buySellAmountTextFieldFormatter: BuySellAmountTextFieldFormatter { get }
   
@@ -99,7 +99,7 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   
   var didUpdateModel: ((BuySellModel) -> Void)?
   var didUpdateCountryCode: ((String) -> Void)?
-  var didUpdatePaymentMethodItems: (([RadioButtonCollectionViewCell.Configuration]) -> Void)?
+  var didUpdatePaymentMethodItems: (([SelectionCollectionViewCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
     updateMinimumAmountInput()
@@ -109,10 +109,10 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     // TODO: Add BuySellController didChangeRegion
     
     let testItemsModel = PaymentMethodItemsModel(paymentMethodItems: [
-      PaymentMethodItemsModel.Item(identifier: "0", title: "Credit Card", image: .TKUIKit.Images.mastercardVisaCardsLogo),
-      PaymentMethodItemsModel.Item(identifier: "1", title: "Credit Card  ·  RUB", image: .TKUIKit.Images.mirCardLogo),
-      PaymentMethodItemsModel.Item(identifier: "2", title: "Cryptocurrency", image: .TKUIKit.Images.cryptocyrrencyLogo),
-      PaymentMethodItemsModel.Item(identifier: "3", title: "Apple Pay", image: .TKUIKit.Images.applePayCardLogo),
+      .init(identifier: "0", title: "Credit Card", image: .TKUIKit.Images.mastercardVisaCardsLogo),
+      .init(identifier: "1", title: "Credit Card  ·  RUB", image: .TKUIKit.Images.mirCardLogo),
+      .init(identifier: "2", title: "Cryptocurrency", image: .TKUIKit.Images.cryptocyrrencyLogo),
+      .init(identifier: "3", title: "Apple Pay", image: .TKUIKit.Images.applePayCardLogo),
     ])
     
     didUpdatePaymentMethodModel(testItemsModel)
@@ -225,6 +225,10 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     self.buySellController = buySellController
     self.buySellItem = buySellItem
     self.buySellAmountTextFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: buySellItem.token)
+  }
+  
+  deinit {
+    print("\(Self.self) deinit")
   }
 }
 

@@ -39,7 +39,7 @@ final class FiatOperatorViewController: ModalViewController<FiatOperatorView, Mo
   
   private lazy var dataSource = createDataSource()
   private lazy var currencyPickerCellConfiguration: CellRegistration<TKUIListItemCell> = makeCellRegistration()
-  private lazy var fiatOperatorCellConfiguration: CellRegistration<RadioButtonCollectionViewCell> = makeCellRegistration()
+  private lazy var fiatOperatorCellConfiguration: CellRegistration<SelectionCollectionViewCell> = makeCellRegistration()
   
   private func makeCellRegistration<T>() -> CellRegistration<T> {
     return CellRegistration<T> { [weak self]
@@ -57,7 +57,7 @@ final class FiatOperatorViewController: ModalViewController<FiatOperatorView, Mo
     let dataSource = UICollectionViewDiffableDataSource<FiatOperatorSection, AnyHashable>(
       collectionView: customView.collectionView) { [fiatOperatorCellConfiguration, currencyPickerCellConfiguration] collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
-        case let cellConfiguration as RadioButtonCollectionViewCell.Configuration:
+        case let cellConfiguration as SelectionCollectionViewCell.Configuration:
           return collectionView.dequeueConfiguredReusableCell(using: fiatOperatorCellConfiguration, for: indexPath, item: cellConfiguration)
         case let cellConfiguration as TKUIListItemCell.Configuration:
           return collectionView.dequeueConfiguredReusableCell(using: currencyPickerCellConfiguration, for: indexPath, item: cellConfiguration)
@@ -81,6 +81,10 @@ final class FiatOperatorViewController: ModalViewController<FiatOperatorView, Mo
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  deinit {
+    print("\(Self.self) deinit")
   }
   
   // MARK: - View Life cycle
@@ -159,7 +163,7 @@ private extension FiatOperatorViewController {
   }
   
   func selectFirstItemCell<T: Hashable>(snapshot: NSDiffableDataSourceSnapshot<T, AnyHashable>,
-                                        items: [RadioButtonCollectionViewCell.Configuration],
+                                        items: [SelectionCollectionViewCell.Configuration],
                                         inSection section: T) {
     guard !items.isEmpty, let sectionIndex = snapshot.sectionIdentifiers.firstIndex(of: section) else {
       return
@@ -214,7 +218,7 @@ extension FiatOperatorViewController: UICollectionViewDelegate {
   }
   
   private func handleSelectionFiatOperatorItems(_ collectionView: UICollectionView, at indexPath: IndexPath, item: AnyHashable) {
-    guard let model = item as? RadioButtonCollectionViewCell.Configuration else { return }
+    guard let model = item as? SelectionCollectionViewCell.Configuration else { return }
     viewModel.didSelectFiatOperatorId(model.id)
   }
   
@@ -226,6 +230,7 @@ extension FiatOperatorViewController: UICollectionViewDelegate {
 private extension NSCollectionLayoutSection {
   static var currencyPickerSection: NSCollectionLayoutSection {
     var contentInsets = NSDirectionalEdgeInsets.defaultSectionInsets
+    contentInsets.top = 0
     contentInsets.bottom = 0
     return makeSection(cellHeight: .currencyPickerCellHeight, contentInsets: contentInsets)
   }

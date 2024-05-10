@@ -443,6 +443,10 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore
     )
   }
+  
+  public func currencyListController() -> CurrencyListController {
+    CurrencyListController()
+  }
 }
 
 private extension MainAssembly {

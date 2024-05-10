@@ -2,9 +2,9 @@ import UIKit
 import TKUIKit
 
 struct BuySellListItemMapper {
-  func mapPaymentMethodItem(_ item: PaymentMethodItemsModel.Item) -> RadioButtonCollectionViewCell.Configuration {
+  func mapPaymentMethodItem(_ item: PaymentMethodItemsModel.Item) -> SelectionCollectionViewCell.Configuration {
     let id = item.identifier
-    let title = makePaymentItemTitle(item.title)
+    let title = makePaymentMethodItemTitle(item.title)
     
     let contentConfiguration = TKUIListItemContentView.Configuration(
       leftItemConfiguration:
@@ -29,14 +29,15 @@ struct BuySellListItemMapper {
       accessoryConfiguration: .image(accessoryImageConfiguration)
     )
     
-    return RadioButtonCollectionViewCell.Configuration(
+    return SelectionCollectionViewCell.Configuration(
       id: id,
       listItemConfiguration: listItemConfiguration,
-      radioButtonAlignment: .left
+      accesoryConfiguration: .init(accessoryType: .radioButton),
+      accesoryAlignment: .left
     )
   }
   
-  private func makePaymentItemTitle(_ titleString: String) -> NSAttributedString {
+  private func makePaymentMethodItemTitle(_ titleString: String) -> NSAttributedString {
     let attributedString = titleString.withTextStyle(
       .label1,
       color: .Text.primary,

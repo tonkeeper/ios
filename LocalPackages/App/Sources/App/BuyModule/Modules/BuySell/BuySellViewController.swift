@@ -98,7 +98,7 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
   }()
   
   private lazy var dataSource = createDataSource()
-  private lazy var paymentMethodCellConfiguration = UICollectionView.CellRegistration<RadioButtonCollectionViewCell, RadioButtonCollectionViewCell.Configuration> { [weak self]
+  private lazy var paymentMethodCellConfiguration = UICollectionView.CellRegistration<SelectionCollectionViewCell, SelectionCollectionViewCell.Configuration> { [weak self]
     cell, indexPath, itemIdentifier in
     cell.configure(configuration: itemIdentifier)
     cell.isFirstInSection = { ip in ip.item == 0 }
@@ -112,7 +112,7 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
     let dataSource = UICollectionViewDiffableDataSource<BuySellSection, AnyHashable>(
       collectionView: customView.collectionView) { [paymentMethodCellConfiguration] collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
-        case let cellConfiguration as RadioButtonCollectionViewCell.Configuration:
+        case let cellConfiguration as SelectionCollectionViewCell.Configuration:
           return collectionView.dequeueConfiguredReusableCell(using: paymentMethodCellConfiguration, for: indexPath, item: cellConfiguration)
         default: return nil
         }
@@ -156,6 +156,10 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  deinit {
+    print("\(Self.self) deinit")
   }
   
   // MARK: - View Life cycle
@@ -330,7 +334,7 @@ private extension BuySellViewController {
   }
   
   func selectFirstItemCell<T: Hashable>(snapshot: NSDiffableDataSourceSnapshot<T, AnyHashable>,
-                                        items: [RadioButtonCollectionViewCell.Configuration],
+                                        items: [SelectionCollectionViewCell.Configuration],
                                         inSection section: T) {
     guard !items.isEmpty, let sectionIndex = snapshot.sectionIdentifiers.firstIndex(of: section) else {
       return
@@ -356,7 +360,7 @@ extension BuySellViewController: UICollectionViewDelegate {
     let section = snapshot.sectionIdentifiers[indexPath.section]
     let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
     
-    if let model = item as? RadioButtonCollectionViewCell.Configuration {
+    if let model = item as? SelectionCollectionViewCell.Configuration {
       viewModel.didSelectPaymentMethodId(model.id)
     }
   }

@@ -8,13 +8,13 @@ struct FiatOperatorListItemMapper {
   
   func mapCurrencyPickerItem(_ item: CurrencyPickerItem, selectionClosure: @escaping () -> Void) -> TKUIListItemCell.Configuration {
     let id = item.identifier
-    let currencyNameShort = item.currencyNameShort.withTextStyle(.label1, color: .Text.primary)
-    let currencyNameFull = item.currencyNameFull.withTextStyle(.body1, color: .Text.secondary)
+    let currencyCode = item.currencyCode.withTextStyle(.label1, color: .Text.primary)
+    let currencyTitle = item.currencyTitle.withTextStyle(.body1, color: .Text.secondary)
     
     let title = NSMutableAttributedString()
-    title.append(currencyNameShort)
+    title.append(currencyCode)
     title.appendSpacer(width: 8)
-    title.append(currencyNameFull)
+    title.append(currencyTitle)
     
     let contentConfiguration = TKUIListItemContentView.Configuration(
       leftItemConfiguration:
@@ -46,7 +46,7 @@ struct FiatOperatorListItemMapper {
     )
   }
   
-  func mapFiatOperatorItem(_ item: FiatOperatorItemsModel.Item) -> RadioButtonCollectionViewCell.Configuration {
+  func mapFiatOperatorItem(_ item: FiatOperatorItemsModel.Item) -> SelectionCollectionViewCell.Configuration {
     let id = item.identifier
     let title = item.title.withTextStyle(.label1, color: .Text.primary)
     let subtitle = item.description.withTextStyle(.body2, color: .Text.secondary)
@@ -92,10 +92,11 @@ struct FiatOperatorListItemMapper {
       accessoryConfiguration: .none
     )
     
-    return RadioButtonCollectionViewCell.Configuration(
+    return SelectionCollectionViewCell.Configuration(
       id: id,
       listItemConfiguration: listItemConfiguration,
-      radioButtonAlignment: .right
+      accesoryConfiguration: .init(accessoryType: .radioButton),
+      accesoryAlignment: .right
     )
   }
   
