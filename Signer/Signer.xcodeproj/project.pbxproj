@@ -50,6 +50,8 @@
 		C30FD95D2B223AB00045B58D /* EditWalletNameViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD95C2B223AB00045B58D /* EditWalletNameViewModel.swift */; };
 		C30FD95F2B223B580045B58D /* EditWalletNameModuleAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD95E2B223B580045B58D /* EditWalletNameModuleAssembly.swift */; };
 		C30FD9622B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9612B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift */; };
+		C316144F2BEF8F4400D70977 /* SignerLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = C316144E2BEF8F4400D70977 /* SignerLocalize */; };
+		C31614522BEFA52000D70977 /* ToastConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31614512BEFA52000D70977 /* ToastConfiguration.swift */; };
 		C32395242B29215F00C4F954 /* SettingsListFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395232B29215F00C4F954 /* SettingsListFooterView.swift */; };
 		C32395272B29289D00C4F954 /* ChangePasswordCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395262B29289D00C4F954 /* ChangePasswordCoordinator.swift */; };
 		C323952A2B29292F00C4F954 /* SettingsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395292B29292F00C4F954 /* SettingsCoordinator.swift */; };
@@ -76,9 +78,6 @@
 		C34C44862B27B6B000D50343 /* KeyDetailsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44852B27B6B000D50343 /* KeyDetailsCoordinator.swift */; };
 		C34C44892B27C12500D50343 /* ShowRecoveryPhraseCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44882B27C12500D50343 /* ShowRecoveryPhraseCoordinator.swift */; };
 		C34C448C2B28732700D50343 /* EditWalletNameViewModelConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C448B2B28732700D50343 /* EditWalletNameViewModelConfigurator.swift */; };
-		C34C448F2B288F3100D50343 /* ShowRecoveryPhraseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C448E2B288F3100D50343 /* ShowRecoveryPhraseViewController.swift */; };
-		C34C44912B288F7300D50343 /* ShowRecoveryPhraseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44902B288F7300D50343 /* ShowRecoveryPhraseViewModel.swift */; };
-		C34C44932B288F7D00D50343 /* ShowRecoveryPhraseModuleAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44922B288F7D00D50343 /* ShowRecoveryPhraseModuleAssembly.swift */; };
 		C34C44A22B28CCFC00D50343 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44A12B28CCFC00D50343 /* SettingsView.swift */; };
 		C34C44A42B28CD0300D50343 /* SettingsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44A32B28CD0300D50343 /* SettingsViewController.swift */; };
 		C34C44A62B28CD0A00D50343 /* SettingsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C34C44A52B28CD0A00D50343 /* SettingsViewModel.swift */; };
@@ -167,6 +166,7 @@
 		C30FD95C2B223AB00045B58D /* EditWalletNameViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWalletNameViewModel.swift; sourceTree = "<group>"; };
 		C30FD95E2B223B580045B58D /* EditWalletNameModuleAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWalletNameModuleAssembly.swift; sourceTree = "<group>"; };
 		C30FD9612B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingImportKeyCoordinator.swift; sourceTree = "<group>"; };
+		C31614512BEFA52000D70977 /* ToastConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastConfiguration.swift; sourceTree = "<group>"; };
 		C32395232B29215F00C4F954 /* SettingsListFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListFooterView.swift; sourceTree = "<group>"; };
 		C32395262B29289D00C4F954 /* ChangePasswordCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordCoordinator.swift; sourceTree = "<group>"; };
 		C32395292B29292F00C4F954 /* SettingsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCoordinator.swift; sourceTree = "<group>"; };
@@ -174,6 +174,8 @@
 		C323954E2B2A1D6000C4F954 /* AddKeyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddKeyView.swift; sourceTree = "<group>"; };
 		C324BD782B2A869700BD83D1 /* CreateKeyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreateKeyCoordinator.swift; sourceTree = "<group>"; };
 		C324BD7B2B2A881700BD83D1 /* ImportKeyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImportKeyCoordinator.swift; sourceTree = "<group>"; };
+		C335A0BB2BEF8D0400142422 /* SignerLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = SignerLocalize; path = Packages/SignerLocalize; sourceTree = "<group>"; };
+		C335A0BE2BEF8F0400142422 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		C34C441B2B24950000D50343 /* MainCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainCoordinator.swift; sourceTree = "<group>"; };
 		C34C441E2B24B53C00D50343 /* MainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainView.swift; sourceTree = "<group>"; };
 		C34C44202B24B54500D50343 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
@@ -193,9 +195,6 @@
 		C34C44852B27B6B000D50343 /* KeyDetailsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyDetailsCoordinator.swift; sourceTree = "<group>"; };
 		C34C44882B27C12500D50343 /* ShowRecoveryPhraseCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowRecoveryPhraseCoordinator.swift; sourceTree = "<group>"; };
 		C34C448B2B28732700D50343 /* EditWalletNameViewModelConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWalletNameViewModelConfigurator.swift; sourceTree = "<group>"; };
-		C34C448E2B288F3100D50343 /* ShowRecoveryPhraseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowRecoveryPhraseViewController.swift; sourceTree = "<group>"; };
-		C34C44902B288F7300D50343 /* ShowRecoveryPhraseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowRecoveryPhraseViewModel.swift; sourceTree = "<group>"; };
-		C34C44922B288F7D00D50343 /* ShowRecoveryPhraseModuleAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShowRecoveryPhraseModuleAssembly.swift; sourceTree = "<group>"; };
 		C34C44A12B28CCFC00D50343 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C34C44A32B28CD0300D50343 /* SettingsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewController.swift; sourceTree = "<group>"; };
 		C34C44A52B28CD0A00D50343 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
@@ -238,6 +237,7 @@
 				C30F68182BE51A1D00F1FC52 /* SnapKit-Dynamic in Frameworks */,
 				C30F681F2BE51CCE00F1FC52 /* TKScreenKit in Frameworks */,
 				C360CC3B2BE20F49007F62BA /* SignerCore in Frameworks */,
+				C316144F2BEF8F4400D70977 /* SignerLocalize in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -486,6 +486,14 @@
 			path = ImportWallet;
 			sourceTree = "<group>";
 		};
+		C31614502BEFA50F00D70977 /* Toast */ = {
+			isa = PBXGroup;
+			children = (
+				C31614512BEFA52000D70977 /* ToastConfiguration.swift */,
+			);
+			path = Toast;
+			sourceTree = "<group>";
+		};
 		C32395222B29215700C4F954 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -579,6 +587,7 @@
 		C34C446A2B2756FD00D50343 /* Library */ = {
 			isa = PBXGroup;
 			children = (
+				C31614502BEFA50F00D70977 /* Toast */,
 				C30A3AF52BE23EBA00D82A0B /* QRCoreGenerator */,
 				C34C446B2B27570400D50343 /* Views */,
 			);
@@ -647,16 +656,6 @@
 				C34C448B2B28732700D50343 /* EditWalletNameViewModelConfigurator.swift */,
 			);
 			path = Configurator;
-			sourceTree = "<group>";
-		};
-		C34C448D2B288F1700D50343 /* ShowRecoveryPhrase */ = {
-			isa = PBXGroup;
-			children = (
-				C34C448E2B288F3100D50343 /* ShowRecoveryPhraseViewController.swift */,
-				C34C44902B288F7300D50343 /* ShowRecoveryPhraseViewModel.swift */,
-				C34C44922B288F7D00D50343 /* ShowRecoveryPhraseModuleAssembly.swift */,
-			);
-			path = ShowRecoveryPhrase;
 			sourceTree = "<group>";
 		};
 		C34C44942B289DEE00D50343 /* Views */ = {
@@ -750,6 +749,7 @@
 		C3E6DE6A2B1F41C3005AA291 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				C335A0BB2BEF8D0400142422 /* SignerLocalize */,
 				C3F0D1182BE8998400DBA78E /* TKCoordinator */,
 				C30F681D2BE51C7F00F1FC52 /* TKScreenKit */,
 				C30F681A2BE51C5200F1FC52 /* TKUIKit */,
@@ -765,7 +765,6 @@
 				C30B6CB02BE4DEBF00737397 /* Scanner */,
 				C323954B2B2A1D5100C4F954 /* AddKey */,
 				C34C44A02B28CCE900D50343 /* Settings */,
-				C34C448D2B288F1700D50343 /* ShowRecoveryPhrase */,
 				C34C44762B27A7E900D50343 /* KeyDetails */,
 				C34C441D2B24B52900D50343 /* Main */,
 				C30FD9572B223A790045B58D /* EditWalletName */,
@@ -804,6 +803,7 @@
 				C30F681E2BE51CCE00F1FC52 /* TKScreenKit */,
 				C30F68282BE5559800F1FC52 /* TKUIKitDynamic */,
 				C3F0D1192BE899A000DBA78E /* TKCoordinator */,
+				C316144E2BEF8F4400D70977 /* SignerLocalize */,
 			);
 			productName = Signer;
 			productReference = C3E6DE532B1F40DB005AA291 /* Signer.app */;
@@ -831,6 +831,7 @@
 			knownRegions = (
 				en,
 				Base,
+				ru,
 			);
 			mainGroup = C3E6DE4A2B1F40DB005AA291;
 			packageReferences = (
@@ -876,7 +877,6 @@
 				C32395242B29215F00C4F954 /* SettingsListFooterView.swift in Sources */,
 				C34C44212B24B54500D50343 /* MainViewController.swift in Sources */,
 				C30FD9282B220A050045B58D /* PasswordInputViewModel.swift in Sources */,
-				C34C44912B288F7300D50343 /* ShowRecoveryPhraseViewModel.swift in Sources */,
 				C35434C52BE87229009FA8C0 /* SignConfirmationTransactionItemCommentView.swift in Sources */,
 				C3E6DE5B2B1F40DB005AA291 /* ViewController.swift in Sources */,
 				C30B6CB72BE4DEBF00737397 /* ScannerViewModel.swift in Sources */,
@@ -892,7 +892,6 @@
 				C34C44262B24D20200D50343 /* MainViewModel.swift in Sources */,
 				C3E6DE592B1F40DB005AA291 /* SceneDelegate.swift in Sources */,
 				C30FD92C2B220D130045B58D /* PasswordInputViewModelConfigurator.swift in Sources */,
-				C34C44932B288F7D00D50343 /* ShowRecoveryPhraseModuleAssembly.swift in Sources */,
 				C30FD9552B2238F60045B58D /* CreatePasswordCoordinator.swift in Sources */,
 				C32395272B29289D00C4F954 /* ChangePasswordCoordinator.swift in Sources */,
 				C35434BB2BE80812009FA8C0 /* SignConfirmationTransactionItemView.swift in Sources */,
@@ -912,6 +911,7 @@
 				C35434C32BE8599C009FA8C0 /* AnimatedGradientLabel.swift in Sources */,
 				C323952A2B29292F00C4F954 /* SettingsCoordinator.swift in Sources */,
 				C30FD9182B2205610045B58D /* RootCoordinator.swift in Sources */,
+				C31614522BEFA52000D70977 /* ToastConfiguration.swift in Sources */,
 				C34C44A82B28CD1300D50343 /* SettingsModuleAssembly.swift in Sources */,
 				C35434B62BE7D8D2009FA8C0 /* SignConfirmationView.swift in Sources */,
 				C35434B92BE807E5009FA8C0 /* SignConfirmationTransactionsView.swift in Sources */,
@@ -939,7 +939,6 @@
 				C30FD8FE2B21F14C0045B58D /* Module.swift in Sources */,
 				C30FD9122B2204830045B58D /* AppCoordinator.swift in Sources */,
 				C30FD95F2B223B580045B58D /* EditWalletNameModuleAssembly.swift in Sources */,
-				C34C448F2B288F3100D50343 /* ShowRecoveryPhraseViewController.swift in Sources */,
 				C30F68232BE523E800F1FC52 /* InputRecoveryPhraseSuggestsProvider.swift in Sources */,
 				C34C447A2B27A80000D50343 /* KeyDetailsView.swift in Sources */,
 				C30B6CBA2BE4E12000737397 /* URLOpener.swift in Sources */,
@@ -963,6 +962,7 @@
 			isa = PBXVariantGroup;
 			children = (
 				C3E6DE622B1F40DB005AA291 /* Base */,
+				C335A0BE2BEF8F0400142422 /* ru */,
 			);
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
@@ -974,6 +974,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -1034,6 +1035,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -1203,6 +1205,10 @@
 		C30F68282BE5559800F1FC52 /* TKUIKitDynamic */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = TKUIKitDynamic;
+		};
+		C316144E2BEF8F4400D70977 /* SignerLocalize */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = SignerLocalize;
 		};
 		C360CC3A2BE20F49007F62BA /* SignerCore */ = {
 			isa = XCSwiftPackageProductDependency;

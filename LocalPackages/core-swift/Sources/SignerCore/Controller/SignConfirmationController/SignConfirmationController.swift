@@ -32,9 +32,9 @@ public final class SignConfirmationController {
     self.amountFormatter = amountFormatter
   }
   
-  public func getTransactionModel() throws -> TransactionModel {
+  public func getTransactionModel(sendTitle: String) throws -> TransactionModel {
     let transaction = try parseBoc(model.body)
-    let transactionModel = createTransactionModel(transaction)
+    let transactionModel = createTransactionModel(transaction, sendTitle: sendTitle)
     return transactionModel
   }
   
@@ -163,10 +163,9 @@ public final class SignConfirmationController {
     return try? slice?.loadSnakeString().trimmingCharacters(in: CharacterSet(["\0"]))
   }
   
-  private func createTransactionModel(_ transaction: Transaction) -> TransactionModel {
+  private func createTransactionModel(_ transaction: Transaction, sendTitle: String) -> TransactionModel {
     
     let items = transaction.items.map { transactionItem in
-      let title = "Send"
       let subtitle: String
       let value: String?
       let valueSubtitle: String?
@@ -197,7 +196,7 @@ public final class SignConfirmationController {
       }
       
       return TransactionModel.Item(
-        title: title,
+        title: sendTitle,
         subtitle: subtitle,
         value: value,
         valueSubtitle: valueSubtitle,

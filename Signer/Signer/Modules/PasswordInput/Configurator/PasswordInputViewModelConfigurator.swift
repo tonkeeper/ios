@@ -1,5 +1,6 @@
 import Foundation
 import SignerCore
+import SignerLocalize
 
 protocol PasswordInputViewModelConfigurator: AnyObject {
   var title: String { get }
@@ -24,7 +25,7 @@ final class CreatePasswordPasswordInputViewModelConfigurator: PasswordInputViewM
   // MARK: - PasswordInputViewModelConfigurator
   
   var title: String {
-    "Create Password"
+    SignerLocalize.Password.Create.title
   }
   
   var showKeyboardWhileAppear: Bool
@@ -44,7 +45,7 @@ final class ReenterPasswordPasswordInputViewModelConfigurator: PasswordInputView
   // MARK: - PasswordInputViewModelConfigurator
   
   var title: String {
-    "Re-enter Password"
+    SignerLocalize.Password.Reenter.title
   }
   
   var showKeyboardWhileAppear: Bool {
@@ -67,7 +68,7 @@ final class EnterPasswordPasswordInputViewModelConfigurator: PasswordInputViewMo
   // MARK: - PasswordInputViewModelConfigurator
   
   var title: String {
-    "Enter Password"
+    SignerLocalize.Password.Enter.title
   }
   
   var showKeyboardWhileAppear: Bool {

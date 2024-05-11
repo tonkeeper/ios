@@ -1,0 +1,69 @@
+"actions.continue_action" = "Продолжить";
+"actions.cancel" = "Отменить";
+"actions.copy" = "Скопировать";
+"actions.save" = "Сохранить";
+
+"toast.copied" = "Скопировано";
+"toast.password_changed" = "Пароль изменён";
+
+"app.name" = "Signer";
+
+"onboarding.title" = "Signer";
+"onboarding.caption" = "Безопасное место для хранения ключей и подписи транзакций в Tonkeeper";
+
+"password.create.title" = "Задайте новый пароль";
+"password.create.textfield.caption" = "Минимум 4 символа";
+"password.reenter.title" = "Введите пароль ещё раз";
+"password.enter.title" = "Введите пароль";
+
+"name_key.title" = "Добавьте имя ключа";
+"name_key.caption" = "Это упростит поиск необходимого ключа в списке ключей.";
+"name_key.textfield.placeholder" = "Имя";
+
+"main.buttons.scan.title" = "Сканировать";
+"main.buttons.addKey.title" = "Новый ключ";
+"main.buttons.settings.title" = "Настройки";
+
+"key_details.qr_header.title" = "Добавить на другое устройство";
+"key_details.qr_header.caption" = "Откройте Tonkeeper » Добавить кошелёк » Подключить Signer";
+"key_details.buttons.export_to_tonkeeper" = "Добавить в Tonkeeper";
+"key_details.buttons.export_to_tonkeeper_web" = "Добавить в Tonkeeper Web";
+"key_details.buttons.name" = "Имя";
+"key_details.buttons.hex_address" = "Hex адрес";
+"key_details.buttons.recovery_phrase" = "Секретный ключ";
+"key_details.buttons.delete_key" = "Удалить ключ";
+"key_details.delete_alert.title" = "Удалить ключ?";
+"key_details.delete_alert.description" = "Это сотрёт ключ к кошельку. Убедитесь, что вы создали резервную копию секретной ключа для восстановления.";
+"key_details.delete_alert.buttons.delete_key" = "Удалить ключ";
+
+"add_key.title" = "Добавить ключ";
+"add_key.caption" = "Создайте новый ключ или добавьте существующий.";
+"add_key.buttons.create_new" = "Создать новый ключ";
+"add_key.buttons.import_existing" = "Добавить существующий";
+
+"settings.title" = "Настройки";
+"settings.items.change_password" = "Поменять пароль";
+"settings.items.support" = "Поддержка";
+"settings.items.legal" = "Юридические документы";
+"settings.footer.version" = "Версия %@";
+
+"recovery.phrase.title" = "Секретный ключ";
+"recovery.phrase.caption" = "Запишите эти слова с их номерами и сохраните их в надёжном месте. Не вводите ключ в неизвестных вам приложениях.";
+
+"scanner.title" = "Отсканируйте QR-код";
+"scanner.caption" = "Со страницы подтверждения действия в Tonkeeper";
+
+"camera_permission.title" = "Разрешите доступ к камере, чтобы сканировать QR-коды";
+"camera_permission.button" = "Открыть настройки";
+
+"sign_transaction.title" = "Подписать транзакцию";
+"sign_transaction.audit_transaction" = "Проверить транзакцию";
+"sign_transaction.emulate" = "Эмулировать";
+"sign_transaction.copy" = "Скопировать";
+"sign_transaction.slide_to_sign" = "Подписать";
+"sign_transaction.send" = "Отправить";
+
+"sign_transaction_qr.title" = "Отсканируйте QR-код с помощью Tonkeeper";
+"sign_transaction_qr.caption" = "После сканирования транзакция будет отправлена в сеть.";
+"sign_transaction_qr.signed_transaction" = "Подписанная транзакция";
+"sign_transaction_qr.done" = "Готово";

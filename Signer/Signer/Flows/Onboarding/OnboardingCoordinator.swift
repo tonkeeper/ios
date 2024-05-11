@@ -2,6 +2,7 @@ import UIKit
 import TKScreenKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
 
 final class OnboardingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -23,11 +24,11 @@ final class OnboardingCoordinator: RouterCoordinator<NavigationControllerRouter>
 private extension OnboardingCoordinator {
   func openOnboardingStart() {
     let model = TKOnboardingModel(
-      title: "Tonsign",
-      subtitle: "The storage place for your keys to sign transactions in Tonkeeper.",
+      title: SignerLocalize.App.name,
+      subtitle: SignerLocalize.Onboarding.caption,
       coverImage: .Images.tonsignCover,
-      primaryButtonTitle: "Create New Key",
-      secondaryButtonTitle: "Import Existing Key"
+      primaryButtonTitle: SignerLocalize.AddKey.Buttons.create_new,
+      secondaryButtonTitle: SignerLocalize.AddKey.Buttons.import_existing
     )
     let module = TKOnboardingAssembly.module(model: model)
     

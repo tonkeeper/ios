@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import SignerLocalize
 
 protocol SettingsModuleOutput: AnyObject {
   var didTapChangePassword: (() -> Void)? { get set }
@@ -24,7 +25,7 @@ final class SettingsViewModelImplementation: SettingsViewModel, SettingsModuleOu
   var itemsListUpdate: ((NSDiffableDataSourceSnapshot<SettingsSection, AnyHashable>) -> Void)?
   
   func viewDidLoad() {
-    titleUpdate?("Settings")
+    titleUpdate?(SignerLocalize.Settings.title)
     
     updateList()
   }
@@ -54,7 +55,7 @@ private extension SettingsViewModelImplementation {
     SettingsSection(
       items: [
         createListItem(id: "ChangePasswordIdentifier",
-                       title: "Change Password",
+                       title: SignerLocalize.Settings.Items.change_password,
                        image: .TKUIKit.Icons.Size28.lock,
                        tintColor: .Accent.blue,
                        action: { [weak self] in
@@ -68,14 +69,14 @@ private extension SettingsViewModelImplementation {
     SettingsSection(
       items: [
         createListItem(id: "SupportIdentifier",
-                       title: "Support",
+                       title: SignerLocalize.Settings.Items.support,
                        image: .TKUIKit.Icons.Size28.messageBubble,
                        tintColor: .Icon.secondary,
                        action: {
                          
                        }),
         createListItem(id: "LegalIdentifier",
-                       title: "Legal",
+                       title: SignerLocalize.Settings.Items.legal,
                        image: .TKUIKit.Icons.Size28.messageBubble,
                        tintColor: .Icon.secondary,
                        action: {
@@ -87,7 +88,8 @@ private extension SettingsViewModelImplementation {
   
   func createFooterSection() -> SettingsSection {
     SettingsSection(items: [
-      SettingsListFooterCell.Model(top: "Signer", bottom: "Version 1.0")
+      SettingsListFooterCell.Model(top: SignerLocalize.App.name, 
+                                   bottom: "\(SignerLocalize.Settings.Footer.version(1.0))")
     ])
   }
   

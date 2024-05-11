@@ -48,7 +48,7 @@ private extension AddKeyView {
     NSLayoutConstraint.activate([
       titleDescriptionView.topAnchor.constraint(equalTo: topAnchor),
       titleDescriptionView.leftAnchor.constraint(equalTo: leftAnchor),
-      titleDescriptionView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
+      titleDescriptionView.rightAnchor.constraint(equalTo: rightAnchor),
       
       importButton.heightAnchor.constraint(equalToConstant: 56),
       createButton.heightAnchor.constraint(equalToConstant: 56),

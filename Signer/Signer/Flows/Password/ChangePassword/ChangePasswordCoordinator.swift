@@ -59,7 +59,7 @@ private extension ChangePasswordCoordinator {
     do {
       try createPasswordController.createPassword(newPassword)
       didFinish?()
-//      ToastPresenter.showToast(configuration: .init(title: "Password changed"))
+      ToastPresenter.showToast(configuration: .Signer.passwordChanged)
     } catch {}
   }
 }

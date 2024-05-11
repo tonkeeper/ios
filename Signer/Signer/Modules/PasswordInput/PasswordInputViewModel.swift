@@ -1,5 +1,6 @@
 import Foundation
 import TKUIKit
+import SignerLocalize
 
 protocol PasswordInputViewModel: AnyObject {
   var didUpdateTitle: ((TKTitleDescriptionView.Model) -> Void)? { get set }
@@ -47,7 +48,7 @@ final class PasswordInputViewModelImplementation: PasswordInputViewModel, Passwo
       category: .primary,
       size: .large
     )
-    continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Continue"))
+    continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(SignerLocalize.Actions.continue_action))
     continueButtonConfiguration.action = { [weak self] in
       guard let self = self else { return }
       let isValid = self.configurator.validateInput(self.input)

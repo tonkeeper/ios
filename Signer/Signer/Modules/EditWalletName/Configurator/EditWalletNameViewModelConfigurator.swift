@@ -1,4 +1,5 @@
 import Foundation
+import SignerLocalize
 
 protocol EditWalletNameViewModelConfigurator: AnyObject {
   var continueButtonTitle: String { get }
@@ -8,7 +9,7 @@ protocol EditWalletNameViewModelConfigurator: AnyObject {
 
 final class CreateEditWalletNameViewModelConfigurator: EditWalletNameViewModelConfigurator {
   var continueButtonTitle: String {
-    "Continue"
+    SignerLocalize.Actions.continue_action
   }
   
   func handleContinueButtonTapped() async {
@@ -18,7 +19,7 @@ final class CreateEditWalletNameViewModelConfigurator: EditWalletNameViewModelCo
 
 final class EditEditWalletNameViewModelConfigurator: EditWalletNameViewModelConfigurator {
   var continueButtonTitle: String {
-    "Save"
+    SignerLocalize.Actions.save
   }
   
   func handleContinueButtonTapped() async {

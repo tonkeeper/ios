@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import SignerLocalize
 
 final class AddKeyViewController: GenericViewViewController<AddKeyView>, TKBottomSheetContentViewController {
   
@@ -13,7 +14,11 @@ final class AddKeyViewController: GenericViewViewController<AddKeyView>, TKBotto
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?
   
   func calculateHeight(withWidth width: CGFloat) -> CGFloat {
-    return customView.systemLayoutSizeFitting(CGSize(width: width, height: 0)).height
+    return customView.systemLayoutSizeFitting(
+      CGSize(width: width, height: 0),
+      withHorizontalFittingPriority: .required,
+      verticalFittingPriority: .fittingSizeLevel
+    ).height
   }
   
   var didUpdateHeight: (() -> Void)?
@@ -22,15 +27,15 @@ final class AddKeyViewController: GenericViewViewController<AddKeyView>, TKBotto
     super.viewDidLoad()
     customView.titleDescriptionView.configure(
       model: TKTitleDescriptionView.Model(
-        title: "Add Key",
-        bottomDescription: "Create a new key or add an existing one.")
+        title: SignerLocalize.AddKey.title,
+        bottomDescription: SignerLocalize.AddKey.caption)
     )
     
     var createButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
       category: .primary,
       size: .large
     )
-    createButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Create New Key"))
+    createButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(SignerLocalize.AddKey.Buttons.create_new))
     createButtonConfiguration.action = { [weak self] in
       self?.didTapCreateNewKey?()
     }
@@ -40,7 +45,7 @@ final class AddKeyViewController: GenericViewViewController<AddKeyView>, TKBotto
       category: .secondary,
       size: .large
     )
-    importButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Import Existing Key"))
+    importButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(SignerLocalize.AddKey.Buttons.import_existing))
     importButtonConfiguration.action = { [weak self] in
       self?.didTapImportKey?()
     }

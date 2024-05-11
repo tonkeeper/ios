@@ -2,6 +2,7 @@ import Foundation
 import UIKit
 import TKUIKit
 import SignerCore
+import SignerLocalize
 
 protocol KeyDetailsViewModel: AnyObject {
   var titleUpdate: ((String) -> Void)? { get set }
@@ -110,8 +111,8 @@ private extension KeyDetailsViewModelImplementation {
       type: .qrCode,
       items: [
         createListItem(id: .qrCodeDescriptionItemIdentifier,
-                       title: "Export to another device",
-                       subtitle: "Open Tonkeeper » Import Existing Wallet » Pair Tonsign",
+                       title: SignerLocalize.KeyDetails.QrHeader.title,
+                       subtitle: SignerLocalize.KeyDetails.QrHeader.caption,
                        image: nil,
                        tintColor: .clear,
                        action: { [weak self] in
@@ -127,8 +128,8 @@ private extension KeyDetailsViewModelImplementation {
       type: .deviceLink,
       items: [
         createListItem(id: .linkToDeviceItemIdentifier,
-                       title: "Link to Tonkeeper on this device",
-                       subtitle: "Tonkeeper must be installed",
+                       title: SignerLocalize.KeyDetails.Buttons.export_to_tonkeeper,
+                       subtitle: nil,
                        image: .TKUIKit.Icons.Size16.chevronRight,
                        tintColor: .Icon.tertiary,
                        action: { [weak self] in
@@ -143,7 +144,7 @@ private extension KeyDetailsViewModelImplementation {
       type: .webLink,
       items: [
         createListItem(id: .linkToWebItemIdentifier,
-                       title: "Link to Tonkeeper Web",
+                       title: SignerLocalize.KeyDetails.Buttons.export_to_tonkeeper_web,
                        subtitle: "wallet.tonkeeper.com",
                        image: .TKUIKit.Icons.Size16.chevronRight,
                        tintColor: .Icon.tertiary,
@@ -159,7 +160,7 @@ private extension KeyDetailsViewModelImplementation {
       type: .actions,
       items: [
         createListItem(id: .nameItemIdentifier,
-                       title: "Name",
+                       title: SignerLocalize.KeyDetails.Buttons.name,
                        subtitle: keyDetailsController.walletKey.name,
                        image: .TKUIKit.Icons.Size28.pencil,
                        tintColor: .Accent.blue,
@@ -167,7 +168,7 @@ private extension KeyDetailsViewModelImplementation {
                          self?.didTapEdit?()
         }),
         createListItem(id: .hexItemIdentifier,
-                       title: "Hex Address",
+                       title: SignerLocalize.KeyDetails.Buttons.hex_address,
                        subtitle: keyDetailsController.walletKey.publicKeyShortHexString,
                        image: .TKUIKit.Icons.Size28.copy,
                        tintColor: .Accent.blue,
@@ -175,7 +176,7 @@ private extension KeyDetailsViewModelImplementation {
                          self?.didCopied?()
         }),
         createListItem(id: .recoveryPhraseItemIdentifier,
-                       title: "Recovery Phrase",
+                       title: SignerLocalize.KeyDetails.Buttons.recovery_phrase,
                        image: .TKUIKit.Icons.Size28.key,
                        tintColor: .Accent.blue,
                        action: { [weak self] in
@@ -190,7 +191,7 @@ private extension KeyDetailsViewModelImplementation {
       type: .delete,
       items: [
         createListItem(id: .deleteItemIdentifier,
-                       title: "Delete Key",
+                       title: SignerLocalize.KeyDetails.Buttons.delete_key,
                        image: .TKUIKit.Icons.Size28.trashBin,
                        tintColor: .Accent.blue,
                        action: { [weak self] in

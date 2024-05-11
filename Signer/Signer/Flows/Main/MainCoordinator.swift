@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
 
 final class MainCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -69,8 +70,8 @@ private extension MainCoordinator {
     let module = ScannerAssembly.module(
       signerCoreAssembly: signerCoreAssembly,
       urlOpener: UIApplication.shared,
-      title: "Scan QR Core",
-      subtitle: "From Tonkeeper on the action confirmation page"
+      title: SignerLocalize.Scanner.title,
+      subtitle: SignerLocalize.Scanner.caption
     )
     
     module.output.didScanDeeplink = { [weak self] deeplink in

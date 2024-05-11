@@ -1,0 +1,69 @@
+"actions.continue_action" = "Continue";
+"actions.cancel" = "Cancel";
+"actions.copy" = "Copy";
+"actions.save" = "Save";
+
+"toast.copied" = "Copied";
+"toast.password_changed" = "Password changed";
+
+"app.name" = "Signer";
+
+"onboarding.caption" = "The storage place for your keys to sign transactions in Tonkeeper";
+
+"password.create.title" = "Create Password";
+"password.create.textfield.caption" = "Minimum 4 characters";
+"password.reenter.title" = "Re-enter Password";
+"password.enter.title" = "Enter Password";
+
+"name_key.title" = "Name your Key";
+"name_key.caption" = "It will simplify the search for the necessary key in the list of keys.";
+"name_key.textfield.placeholder" = "Name";
+
+"main.buttons.scan.title" = "Scan";
+"main.buttons.addKey.title" = "Add Key";
+"main.buttons.settings.title" = "Settings";
+
+"key_details.qr_header.title" = "Export to another device";
+"key_details.qr_header.caption" = "Open Tonkeeper » Add Wallet » Pair Tonsign";
+"key_details.buttons.export_to_tonkeeper" = "Export to Tonkeeper";
+"key_details.buttons.export_to_tonkeeper_web" = "Export to Tonkeeper Web";
+"key_details.buttons.name" = "Name";
+"key_details.buttons.hex_address" = "Hex Address";
+"key_details.buttons.recovery_phrase" = "Recovery Phrase";
+"key_details.buttons.delete_key" = "Delete Key";
+"key_details.delete_alert.title" = "Delete Key?";
+"key_details.delete_alert.description" = "This will erase key to the wallet. Make sure you have backed up your secret recovery phrase.";
+"key_details.delete_alert.buttons.delete_key" = "Delete Key";
+
+"add_key.title" = "Add Key";
+"add_key.caption" = "Create a new key or add an existing one.";
+"add_key.buttons.create_new" = "Create New Key";
+"add_key.buttons.import_existing" = "Import Existing Key";
+
+"settings.title" = "Settings";
+"settings.items.change_password" = "Change Password";
+"settings.items.support" = "Support";
+"settings.items.legal" = "Legal";
+"settings.footer.version" = "Version %@";
+
+"recovery.phrase.title" = "Recovery Phrase";
+"recovery.phrase.caption" = "Write these words with their numbers and store them in a safe place down. Do not enter it into unknown apps.";
+
+"scanner.title" = "Scan QR code";
+"scanner.caption" = "From Tonkeeper on the action confirmation page";
+
+"camera_permission.title" = "Enable access to your camera in order to can scan QR codes";
+"camera_permission.button" = "Open Settings";
+
+"sign_transaction.title" = "Sign Transaction";
+"sign_transaction.audit_transaction" = "Audit Transaction";
+"sign_transaction.emulate" = "Emulate in Browser";
+"sign_transaction.copy" = "Copy";
+"sign_transaction.slide_to_sign" = "Slide to Sign";
+"sign_transaction.send" = "Send";
+
+"sign_transaction_qr.title" = "Scan the QR code with Tonkeeper";
+"sign_transaction_qr.caption" = "After scanning, the transaction will be sent to the network.";
+"sign_transaction_qr.signed_transaction" = "Signed Transaction";
+"sign_transaction_qr.done" = "Done";
+

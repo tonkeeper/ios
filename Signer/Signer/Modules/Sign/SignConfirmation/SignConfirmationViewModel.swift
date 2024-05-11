@@ -1,5 +1,6 @@
 import Foundation
 import SignerCore
+import SignerLocalize
 import UIKit
 import TKUIKit
 import TonSwift
@@ -36,7 +37,9 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   func viewDidLoad() {
     updateHeader()
     do {
-      let transactionModel = try controller.getTransactionModel()
+      let transactionModel = try controller.getTransactionModel(
+        sendTitle: SignerLocalize.SignTransaction.send
+      )
       let model = createModel(transactionModel: transactionModel)
       
       didUpdateModel?(model)
@@ -73,7 +76,7 @@ private extension SignConfirmationViewModelImplementation {
     subtitle.append("\(controller.walletKey.name) ".withTextStyle(.body2, color: .Text.secondary))
     subtitle.append(controller.walletKey.publicKeyShortHexString.withTextStyle(.body2, color: .Text.tertiary))
     
-    didUpdateHeader?("Sign Transaction", subtitle)
+    didUpdateHeader?(SignerLocalize.SignTransaction.title, subtitle)
   }
   
   func createModel(transactionModel: SignerCore.TransactionModel) -> SignConfirmationView.Model {
@@ -107,7 +110,7 @@ private extension SignConfirmationViewModelImplementation {
       category: .tertiary,
       size: .small
     )
-    emulateButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Emulate in Browser"))
+    emulateButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(SignerLocalize.SignTransaction.emulate))
     emulateButtonConfiguration.action = { [weak self] in
       guard let url = self?.controller.createEmulationURL() else { return }
       self?.didOpenEmulateURL?(url)
@@ -117,11 +120,11 @@ private extension SignConfirmationViewModelImplementation {
       category: .tertiary,
       size: .small
     )
-    copyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Copy"))
+    copyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(SignerLocalize.SignTransaction.copy))
     copyButtonConfiguration.action = { [weak self] in
       guard let self else { return }
       UIPasteboard.general.string = self.controller.hexBody
-      ToastPresenter.showToast(configuration: .copied)
+      ToastPresenter.showToast(configuration: .Signer.copied)
     }
     
     let bocModel = SignConfirmationBocView.Model(
@@ -133,7 +136,7 @@ private extension SignConfirmationViewModelImplementation {
     return SignConfirmationView.Model(
       transactionsModel: transactionsModel,
       bocModel: bocModel,
-      auditButtonText: "Audit Transaction"
+      auditButtonText: SignerLocalize.SignTransaction.audit_transaction
     )
   }
 }

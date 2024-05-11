@@ -1,6 +1,6 @@
 import UIKit
 import TKUIKit
-import TKLocalize
+//import TKLocalize
 
 public protocol TKInputRecoveryPhraseModuleOutput: AnyObject {
   var didInputRecoveryPhrase: (([String], @escaping (() -> Void)) -> Void)? { get set }
@@ -65,6 +65,9 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   
   // MARK: - Configuration
   
+  private let title: String
+  private let caption: String
+  private let continueButtonTitle: String
   private let validator: TKInputRecoveryPhraseValidator
   private let suggestsProvider: TKInputRecoveryPhraseSuggestsProvider
   
@@ -74,12 +77,18 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   
   // MARK: - Init
   
-  init(validator: TKInputRecoveryPhraseValidator,
+  init(title: String, 
+       caption: String,
+       continueButtonTitle: String,
+       validator: TKInputRecoveryPhraseValidator,
        suggestsProvider: TKInputRecoveryPhraseSuggestsProvider) {
+    self.title = title
+    self.caption = caption
+    self.continueButtonTitle = continueButtonTitle
     self.validator = validator
     self.suggestsProvider = suggestsProvider
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
+    continueButtonConfiguration.content.title = .plainString(continueButtonTitle)
     self.continueButtonConfiguration = continueButtonConfiguration
   }
 }
@@ -87,8 +96,8 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
 private extension TKInputRecoveryPhraseViewModelImplementation {
   func createModel() -> TKInputRecoveryPhraseView.Model {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: TKLocales.ImportWallet.title,
-      bottomDescription: TKLocales.ImportWallet.description
+      title: title,
+      bottomDescription: caption
     )
     
     let inputs: [TKInputRecoveryPhraseView.Model.InputModel] = (0..<Int.wordsCount)

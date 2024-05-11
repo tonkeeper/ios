@@ -2,6 +2,7 @@ import UIKit
 import TKScreenKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
 
 final class OnboardingImportKeyCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -24,6 +25,9 @@ final class OnboardingImportKeyCoordinator: RouterCoordinator<NavigationControll
 private extension OnboardingImportKeyCoordinator {
   func openEnterRecoveryPhrase() {
     let module = TKInputRecoveryPhraseAssembly.module(
+      title: SignerLocalize.Recovery.Phrase.title,
+      caption: SignerLocalize.Recovery.Phrase.caption,
+      continueButtonTitle: SignerLocalize.Actions.continue_action,
       validator: InputRecoveryPhraseValidator(),
       suggestsProvider: InputRecoveryPhraseSuggestsProvider()
     )
