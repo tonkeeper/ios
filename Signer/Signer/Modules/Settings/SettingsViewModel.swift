@@ -29,6 +29,16 @@ final class SettingsViewModelImplementation: SettingsViewModel, SettingsModuleOu
     
     updateList()
   }
+  
+  // MARK: - Dependencies
+  
+  private let urlOpener: URLOpener
+  
+  // MARK: - Init
+  
+  init(urlOpener: URLOpener) {
+    self.urlOpener = urlOpener
+  }
 }
 
 private extension SettingsViewModelImplementation {
@@ -72,8 +82,9 @@ private extension SettingsViewModelImplementation {
                        title: SignerLocalize.Settings.Items.support,
                        image: .TKUIKit.Icons.Size28.messageBubble,
                        tintColor: .Icon.secondary,
-                       action: {
-                         
+                       action: { [urlOpener] in
+                         guard let url = InfoProvider.supportURL() else { return }
+                         urlOpener.open(url: url)
                        }),
         createListItem(id: "LegalIdentifier",
                        title: SignerLocalize.Settings.Items.legal,
@@ -87,9 +98,17 @@ private extension SettingsViewModelImplementation {
   }
   
   func createFooterSection() -> SettingsSection {
-    SettingsSection(items: [
+    var string = ""
+    if let version = InfoProvider.appVersion() {
+      string += version
+    }
+    if let build = InfoProvider.buildVersion() {
+      string += "(\(build))"
+    }
+    
+    return SettingsSection(items: [
       SettingsListFooterCell.Model(top: SignerLocalize.App.name, 
-                                   bottom: "\(SignerLocalize.Settings.Footer.version(1.0))")
+                                   bottom: "\(SignerLocalize.Settings.Footer.version(string))")
     ])
   }
   

@@ -52,6 +52,7 @@
 		C30FD9622B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9612B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift */; };
 		C316144F2BEF8F4400D70977 /* SignerLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = C316144E2BEF8F4400D70977 /* SignerLocalize */; };
 		C31614522BEFA52000D70977 /* ToastConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31614512BEFA52000D70977 /* ToastConfiguration.swift */; };
+		C31614542BEFAB7800D70977 /* InfoProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31614532BEFAB7800D70977 /* InfoProvider.swift */; };
 		C32395242B29215F00C4F954 /* SettingsListFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395232B29215F00C4F954 /* SettingsListFooterView.swift */; };
 		C32395272B29289D00C4F954 /* ChangePasswordCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395262B29289D00C4F954 /* ChangePasswordCoordinator.swift */; };
 		C323952A2B29292F00C4F954 /* SettingsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395292B29292F00C4F954 /* SettingsCoordinator.swift */; };
@@ -167,6 +168,7 @@
 		C30FD95E2B223B580045B58D /* EditWalletNameModuleAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditWalletNameModuleAssembly.swift; sourceTree = "<group>"; };
 		C30FD9612B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingImportKeyCoordinator.swift; sourceTree = "<group>"; };
 		C31614512BEFA52000D70977 /* ToastConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastConfiguration.swift; sourceTree = "<group>"; };
+		C31614532BEFAB7800D70977 /* InfoProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoProvider.swift; sourceTree = "<group>"; };
 		C32395232B29215F00C4F954 /* SettingsListFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListFooterView.swift; sourceTree = "<group>"; };
 		C32395262B29289D00C4F954 /* ChangePasswordCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordCoordinator.swift; sourceTree = "<group>"; };
 		C32395292B29292F00C4F954 /* SettingsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCoordinator.swift; sourceTree = "<group>"; };
@@ -278,6 +280,7 @@
 			isa = PBXGroup;
 			children = (
 				C30B6CB92BE4E12000737397 /* URLOpener.swift */,
+				C31614532BEFAB7800D70977 /* InfoProvider.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -871,6 +874,7 @@
 				C30F682E2BE56AF900F1FC52 /* KeyDetailsQRCodeCell.swift in Sources */,
 				C30B6CB62BE4DEBF00737397 /* ScannerViewController.swift in Sources */,
 				C35434C72BE874DF009FA8C0 /* SignCoordinator.swift in Sources */,
+				C31614542BEFAB7800D70977 /* InfoProvider.swift in Sources */,
 				C34C44A42B28CD0300D50343 /* SettingsViewController.swift in Sources */,
 				C34C44862B27B6B000D50343 /* KeyDetailsCoordinator.swift in Sources */,
 				C30FD9262B2209EB0045B58D /* PasswordInputViewController.swift in Sources */,

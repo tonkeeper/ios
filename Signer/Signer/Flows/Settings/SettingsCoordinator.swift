@@ -21,7 +21,7 @@ final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
 private extension SettingsCoordinator {
   func openSettings() {
-    let module = SettingsModuleAssembly.module()
+    let module = SettingsModuleAssembly.module(urlOpener: UIApplication.shared)
     module.view.setupBackButton()
     
     module.output.didTapChangePassword = { [weak self] in
