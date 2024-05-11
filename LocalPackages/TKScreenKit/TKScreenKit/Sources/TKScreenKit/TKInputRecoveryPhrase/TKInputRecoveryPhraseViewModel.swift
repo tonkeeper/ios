@@ -9,6 +9,8 @@ public protocol TKInputRecoveryPhraseModuleOutput: AnyObject {
 protocol TKInputRecoveryPhraseViewModel: AnyObject {
   var didUpdateModel: ((TKInputRecoveryPhraseView.Model) -> Void)? { get set }
   var didUpdateContinueButton: ((TKButton.Configuration) -> Void)? { get set }
+  var didUpdatePasteButton: ((TKButton.Configuration) -> Void)? { get set }
+  var didUpdatePasteButtonIsHidden: ((Bool) -> Void)? { get set }
   var didUpdateInputValidationState: ((Int, Bool) -> Void)? { get set }
   var didUpdateText: ((Int, String) -> Void)? { get set }
   var didSelectInput: ((Int) -> Void)? { get set }
@@ -38,6 +40,8 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   
   var didUpdateModel: ((TKInputRecoveryPhraseView.Model) -> Void)?
   var didUpdateContinueButton: ((TKButton.Configuration) -> Void)?
+  var didUpdatePasteButton: ((TKButton.Configuration) -> Void)?
+  var didUpdatePasteButtonIsHidden: ((Bool) -> Void)?
   var didUpdateInputValidationState: ((Int, Bool) -> Void)?
   var didUpdateText: ((Int, String) -> Void)?
   var didSelectInput: ((Int) -> Void)?
@@ -50,6 +54,15 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
       self?.didTapContinueButton()
     }
     didUpdateModel?(createModel())
+    
+    var pasteButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .tertiary, size: .medium)
+    pasteButtonConfiguration.content.title = .plainString(pasteButtonTitle)
+    pasteButtonConfiguration.action = { [weak self] in
+      guard UIPasteboard.general.hasStrings,
+            let string = UIPasteboard.general.string else { return }
+      _ = self?.shouldPaste(text: string, index: 0)
+    }
+    didUpdatePasteButton?(pasteButtonConfiguration)
   }
   
   // MARK: - State
@@ -68,6 +81,7 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   private let title: String
   private let caption: String
   private let continueButtonTitle: String
+  private let pasteButtonTitle: String
   private let validator: TKInputRecoveryPhraseValidator
   private let suggestsProvider: TKInputRecoveryPhraseSuggestsProvider
   
@@ -80,13 +94,16 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
   init(title: String, 
        caption: String,
        continueButtonTitle: String,
+       pasteButtonTitle: String,
        validator: TKInputRecoveryPhraseValidator,
        suggestsProvider: TKInputRecoveryPhraseSuggestsProvider) {
     self.title = title
     self.caption = caption
     self.continueButtonTitle = continueButtonTitle
+    self.pasteButtonTitle = pasteButtonTitle
     self.validator = validator
     self.suggestsProvider = suggestsProvider
+    
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     continueButtonConfiguration.content.title = .plainString(continueButtonTitle)
     self.continueButtonConfiguration = continueButtonConfiguration
@@ -129,6 +146,8 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     didUpdateInputValidationState?(index, true)
     phrase[index] = text
     updateSuggests(index: index)
+    let isHidden = phrase.map { !$0.isEmpty }.reduce(into: false, { $0 = $0 || $1 })
+    didUpdatePasteButtonIsHidden?(isHidden)
   }
   
   func didBeginEditing(index: Int) {
@@ -157,6 +176,7 @@ private extension TKInputRecoveryPhraseViewModelImplementation {
     phrase.enumerated().forEach { index, word in
       self.phrase[index] = word
     }
+    didUpdatePasteButtonIsHidden?(true)
     dispatchQueue.async {
       let wordsValidation = phrase.map {
         self.validator.validateWord($0)

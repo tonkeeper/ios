@@ -16,6 +16,10 @@ public enum SignerLocalize {
     public static var save: String {
       localize("actions.save")
     }
+    /// Paste
+    public static var paste: String {
+      localize("actions.paste")
+    }
   }
   public enum Toast {
     /// Copied
@@ -212,6 +216,22 @@ public enum SignerLocalize {
       /// Write these words with their numbers and store them in a safe place down. Do not enter it into unknown apps.
       public static var caption: String {
         localize("recovery.phrase.caption")
+      }
+    }
+  }
+  public enum RecoveryInput {
+    /// Enter Recovery Phrase
+    public static var title: String {
+      localize("recovery_input.title")
+    }
+    /// When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.
+    public static var caption: String {
+      localize("recovery_input.caption")
+    }
+    public enum Banner {
+      /// It's safer to create a new key in Signer. Your old key may have been compromised by you previously.
+      public static var text: String {
+        localize("recovery_input.banner.text")
       }
     }
   }

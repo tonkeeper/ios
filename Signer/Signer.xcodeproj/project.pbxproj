@@ -53,6 +53,7 @@
 		C316144F2BEF8F4400D70977 /* SignerLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = C316144E2BEF8F4400D70977 /* SignerLocalize */; };
 		C31614522BEFA52000D70977 /* ToastConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31614512BEFA52000D70977 /* ToastConfiguration.swift */; };
 		C31614542BEFAB7800D70977 /* InfoProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31614532BEFAB7800D70977 /* InfoProvider.swift */; };
+		C31614572BEFB24700D70977 /* WarningBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C31614562BEFB24700D70977 /* WarningBannerView.swift */; };
 		C32395242B29215F00C4F954 /* SettingsListFooterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395232B29215F00C4F954 /* SettingsListFooterView.swift */; };
 		C32395272B29289D00C4F954 /* ChangePasswordCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395262B29289D00C4F954 /* ChangePasswordCoordinator.swift */; };
 		C323952A2B29292F00C4F954 /* SettingsCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C32395292B29292F00C4F954 /* SettingsCoordinator.swift */; };
@@ -169,6 +170,7 @@
 		C30FD9612B233EAB0045B58D /* OnboardingImportKeyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingImportKeyCoordinator.swift; sourceTree = "<group>"; };
 		C31614512BEFA52000D70977 /* ToastConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToastConfiguration.swift; sourceTree = "<group>"; };
 		C31614532BEFAB7800D70977 /* InfoProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InfoProvider.swift; sourceTree = "<group>"; };
+		C31614562BEFB24700D70977 /* WarningBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WarningBannerView.swift; sourceTree = "<group>"; };
 		C32395232B29215F00C4F954 /* SettingsListFooterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsListFooterView.swift; sourceTree = "<group>"; };
 		C32395262B29289D00C4F954 /* ChangePasswordCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChangePasswordCoordinator.swift; sourceTree = "<group>"; };
 		C32395292B29292F00C4F954 /* SettingsCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCoordinator.swift; sourceTree = "<group>"; };
@@ -497,6 +499,14 @@
 			path = Toast;
 			sourceTree = "<group>";
 		};
+		C31614552BEFB23E00D70977 /* WarningBanner */ = {
+			isa = PBXGroup;
+			children = (
+				C31614562BEFB24700D70977 /* WarningBannerView.swift */,
+			);
+			path = WarningBanner;
+			sourceTree = "<group>";
+		};
 		C32395222B29215700C4F954 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -600,6 +610,7 @@
 		C34C446B2B27570400D50343 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				C31614552BEFB23E00D70977 /* WarningBanner */,
 				C34C44702B275B5B00D50343 /* List */,
 			);
 			path = Views;
@@ -918,6 +929,7 @@
 				C31614522BEFA52000D70977 /* ToastConfiguration.swift in Sources */,
 				C34C44A82B28CD1300D50343 /* SettingsModuleAssembly.swift in Sources */,
 				C35434B62BE7D8D2009FA8C0 /* SignConfirmationView.swift in Sources */,
+				C31614572BEFB24700D70977 /* WarningBannerView.swift in Sources */,
 				C35434B92BE807E5009FA8C0 /* SignConfirmationTransactionsView.swift in Sources */,
 				C34C448C2B28732700D50343 /* EditWalletNameViewModelConfigurator.swift in Sources */,
 				C30B6CB22BE4DEBF00737397 /* QRScannerSwipeDownButton.swift in Sources */,

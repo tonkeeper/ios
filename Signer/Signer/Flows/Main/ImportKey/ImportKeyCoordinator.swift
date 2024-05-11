@@ -25,11 +25,22 @@ final class ImportKeyCoordinator: RouterCoordinator<NavigationControllerRouter> 
 private extension ImportKeyCoordinator {
   func openEnterRecoveryPhrase() {
     let module = TKInputRecoveryPhraseAssembly.module(
-      title: SignerLocalize.Recovery.Phrase.title,
-      caption: SignerLocalize.Recovery.Phrase.caption,
+      title: SignerLocalize.RecoveryInput.title,
+      caption: SignerLocalize.RecoveryInput.caption,
       continueButtonTitle: SignerLocalize.Actions.continue_action,
+      pasteButtonTitle: SignerLocalize.Actions.paste,
       validator: InputRecoveryPhraseValidator(),
-      suggestsProvider: InputRecoveryPhraseSuggestsProvider()
+      suggestsProvider: InputRecoveryPhraseSuggestsProvider(),
+      bannerViewProvider: {
+        let view = WarningBannerView()
+        view.configure(
+          model: WarningBannerView.Model(
+            text: SignerLocalize.RecoveryInput.Banner.text,
+            image: .TKUIKit.Icons.Size28.exclamationmarkTriangle
+          )
+        )
+        return view
+      }
     )
     module.viewController.setupLeftCloseButton { [weak self] in
       self?.didFinish?()

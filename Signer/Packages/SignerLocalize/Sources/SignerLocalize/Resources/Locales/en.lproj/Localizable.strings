@@ -2,6 +2,7 @@
 "actions.cancel" = "Cancel";
 "actions.copy" = "Copy";
 "actions.save" = "Save";
+"actions.paste" = "Paste";
 
 "toast.copied" = "Copied";
 "toast.password_changed" = "Password changed";
@@ -48,6 +49,10 @@
 
 "recovery.phrase.title" = "Recovery Phrase";
 "recovery.phrase.caption" = "Write these words with their numbers and store them in a safe place down. Do not enter it into unknown apps.";
+
+"recovery_input.title" = "Enter Recovery Phrase";
+"recovery_input.caption" = "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.";
+"recovery_input.banner.text" = "It's safer to create a new key in Signer. Your old key may have been compromised by you previously.";
 
 "scanner.title" = "Scan QR code";
 "scanner.caption" = "From Tonkeeper on the action confirmation page";
