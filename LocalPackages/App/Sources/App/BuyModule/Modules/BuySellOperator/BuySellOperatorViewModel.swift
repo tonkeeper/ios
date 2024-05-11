@@ -23,7 +23,7 @@ struct BuySellOperatorModel {
 
 protocol BuySellOperatorModuleOutput: AnyObject {
   var didTapCurrencyPicker: ((CurrencyListItem) -> Void)? { get set }
-  var didTapContinue: (() -> Void)? { get set }
+  var didTapContinue: ((BuySellDetailsItem) -> Void)? { get set }
 }
 
 protocol BuySellOperatorModuleInput: AnyObject {
@@ -44,7 +44,7 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
   // MARK: - BuySellOperatorModelModuleOutput
   
   var didTapCurrencyPicker: ((CurrencyListItem) -> Void)?
-  var didTapContinue: (() -> Void)?
+  var didTapContinue: ((BuySellDetailsItem) -> Void)?
   
   // MARK: - BuySellOperatorModelModuleInput
   
@@ -64,6 +64,9 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
     )
     
     didUpdateCurrencyPickerItem?(currencyPickerItem)
+
+    let buySellDetailsItem = createBuySellDetailsItem()
+    didTapContinue?(buySellDetailsItem)
   }
   
   // MARK: - BuySellOperatorModelViewModel
@@ -146,8 +149,28 @@ private extension BuySellOperatorViewModelImplementation {
         isEnabled: !isResolving && isContinueEnable,
         isActivity: isResolving,
         action: { [weak self] in
-          self?.didTapContinue?()
+          guard let self else { return }
+          let buySellDetailsItem = createBuySellDetailsItem()
+          self.didTapContinue?(buySellDetailsItem)
         }
+      )
+    )
+  }
+  
+  func createBuySellDetailsItem() -> BuySellDetailsItem {
+    BuySellDetailsItem(
+      iconUrl: URL(string: "https://tonkeeper.com/assets/mercuryo-icon-new.png")!,
+      serviceTitle: "Mercuryo",
+      serviceSubtitle: "Instantly buy with a credit card",
+      serviceInfo: .init(
+        provider: "Mercuryo",
+        leftButton: .init(title: "Privacy Policy", url: URL(string: "https://example.com")!),
+        rightButton: .init(title: "Terms of Use", url: URL(string: "https://example.com")!)
+      ),
+      amountPay: "50",
+      currencyDirection: .init(
+        from: .USD,
+        to: .TON
       )
     )
   }

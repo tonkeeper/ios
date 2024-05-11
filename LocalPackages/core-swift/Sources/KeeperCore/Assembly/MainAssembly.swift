@@ -447,6 +447,12 @@ public final class MainAssembly {
   public func currencyListController() -> CurrencyListController {
     CurrencyListController()
   }
+  
+  public func buySellDetailsController() -> BuySellDetailsController {
+    BuySellDetailsController(
+      tonRatesLoader: loadersAssembly.tonRatesLoader
+    )
+  }
 }
 
 private extension MainAssembly {

@@ -104,8 +104,8 @@ private extension BuyCoordinator {
       )
     }
     
-    module.output.didTapContinue = {
-      print("didTapContinue")
+    module.output.didTapContinue = { [weak self] buySellDetailsItem in
+      self?.openBuySellDetails(buySellDetailsItem: buySellDetailsItem)
     }
     
     router.push(viewController: module.view, animated: true)
@@ -128,6 +128,30 @@ private extension BuyCoordinator {
     }
     
     fromViewController?.present(module.view, animated: true)
+  }
+  
+  func openBuySellDetails(buySellDetailsItem: BuySellDetailsItem) {
+    let module = BuySellDetailsAssembly.module(
+      buySellDetailsController: keeperCoreMainAssembly.buySellDetailsController(),
+      buySellDetailsItem: buySellDetailsItem
+    )
+    
+    module.view.setupBackButton()
+    
+    module.view.setupRightCloseButton { [weak self] in
+      self?.didFinish?()
+    }
+    
+    module.output.didTapContinue = {
+      
+    }
+    
+    module.output.didTapInfoButton = { [weak self, weak view = module.view] url in
+      guard let url, let fromViewController = view else { return }
+      self?.openWebView(url: url, fromViewController: fromViewController)
+    }
+    
+    router.push(viewController: module.view, animated: true)
   }
   
   func openWebView(url: URL, fromViewController: UIViewController) {

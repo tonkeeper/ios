@@ -66,13 +66,17 @@ public final class TKTextFieldInputView: UIControl, TKTextFieldInputViewControl 
   
   public var placeholder: String = "" {
     didSet {
-      placeholderLabel.attributedText = placeholder.withTextStyle(
+      let placeholderText = placeholder.withTextStyle(
         .body1,
         color: .Text.secondary,
         alignment: .left
       )
+      placeholderLabel.attributedText = placeholderText
+      placeholderWidth = placeholderText.size().width
     }
   }
+  
+  public var placeholderWidth: CGFloat = 0
   
   // MARK: - Subviews
   
@@ -145,6 +149,7 @@ private extension TKTextFieldInputView {
       self.inputText = $0
       self.didUpdateText?(self.inputText)
       self.updateTextAction()
+      self.updateCursorLabel(inputText: self.inputText)
     }
     
     textInputControl.didBeginEditing = { [weak self] in
@@ -246,6 +251,11 @@ private extension TKTextFieldInputView {
   
   func didSetClearButtonMode() {
     updateClearButtonVisibility()
+  }
+  
+  func updateCursorLabel(inputText: String) {
+    let textInputTextViewControl = textInputControl as? TKTextInputTextViewControl
+    textInputTextViewControl?.updateCursorLabel(placeholderWidth: placeholderWidth, inputText: inputText)
   }
 }
 

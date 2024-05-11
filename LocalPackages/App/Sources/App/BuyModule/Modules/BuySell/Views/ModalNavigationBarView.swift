@@ -4,6 +4,7 @@ import SnapKit
 // MARK: - BarItemContainerView
 
 final class ModalNavigationBarItemContainerView: UIView {
+  
   enum ContentAlignment {
     case center
     case left
@@ -137,6 +138,7 @@ open class ModalNavigationBarView: UIView {
       contentAlignment: contentAlignment
     )
     
+    barItemStack.isHidden = false
     barItemStack.addArrangedSubview(containerView)
     
     barItemStack.snp.makeConstraints { make in
@@ -157,6 +159,10 @@ open class ModalNavigationBarView: UIView {
 private extension ModalNavigationBarView {
   func setup() {
     backgroundColor = .Background.page
+    
+    leftBarItemStack.isHidden = true
+    centerBarItemStack.isHidden = true
+    rightBarItemStack.isHidden = true
     
     addSubview(leftBarItemStack)
     addSubview(centerBarItemStack)

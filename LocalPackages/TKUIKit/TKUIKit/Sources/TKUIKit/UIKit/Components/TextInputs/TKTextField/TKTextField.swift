@@ -41,6 +41,10 @@ public final class TKTextField: UIControl {
     set { textFieldInputView.placeholder = newValue }
   }
   
+  public var placeholderWidth: CGFloat {
+    textFieldInputView.placeholderWidth
+  }
+  
   public var didUpdateText: ((String) -> Void)?
   public var didBeginEditing: (() -> Void)?
   public var didEndEditing: (() -> Void)?
