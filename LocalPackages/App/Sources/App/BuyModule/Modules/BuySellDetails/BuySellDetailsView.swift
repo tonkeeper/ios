@@ -9,8 +9,8 @@ final class BuySellDetailsView: UIView {
   let scrollView = TKUIScrollView()
   let serviceInfoContainerView = ServiceInfoContainerView()
   
-  private let payAmountInputControl: TKTextInputTextViewControl = .makeAmountInputControl()
-  private let getAmountInputControl: TKTextInputTextViewControl = .makeAmountInputControl()
+  let payAmountInputControl: TKTextInputTextViewControl = .makeAmountInputControl()
+  let getAmountInputControl: TKTextInputTextViewControl = .makeAmountInputControl()
   
   lazy var payAmountTextField: TKTextField = .makeAmountTextField(inputControl: payAmountInputControl)
   lazy var getAmountTextField: TKTextField = .makeAmountTextField(inputControl: getAmountInputControl)

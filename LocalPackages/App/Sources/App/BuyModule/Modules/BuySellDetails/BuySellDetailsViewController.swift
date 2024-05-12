@@ -66,11 +66,11 @@ final class BuySellDetailsViewController: ModalViewController<BuySellDetailsView
       return
     }
     
-    let collectionViewBottomInset = keyboardHeight + customView.continueButton.bounds.height
+    let contentInsetBottom = keyboardHeight + customView.continueButton.bounds.height
     let continueButtonTranslatedY = -keyboardHeight + view.safeAreaInsets.bottom + .continueButtonBottomOffset
     
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
-      self.customView.scrollView.contentInset.bottom = collectionViewBottomInset
+      self.customView.scrollView.contentInset.bottom = contentInsetBottom
       self.customView.continueButton.transform = CGAffineTransform(translationX: 0, y: continueButtonTranslatedY)
     }
   }
@@ -91,6 +91,9 @@ private extension BuySellDetailsViewController {
   func setup() {
     view.backgroundColor = .Background.page
     customView.backgroundColor = .Background.page
+    
+    customView.payAmountInputControl.formatterDelegate = viewModel.payAmountTextFieldFormatter
+    customView.getAmountInputControl.formatterDelegate = viewModel.getAmountTextFieldFormatter
   }
   
   func setupBindings() {
@@ -126,6 +129,18 @@ private extension BuySellDetailsViewController {
           rightButton: self.mapInfoContainerButtonConfiguration(model.infoContainer.rightButton)
         )
       )
+    }
+    
+    viewModel.didUpdateAmountPay = { [weak customView] text in
+      customView?.payAmountTextField.text = text
+    }
+    
+    viewModel.didUpdateAmountGet = { [weak customView] text in
+      customView?.getAmountTextField.text = text
+    }
+    
+    viewModel.didUpdateConvertedRate = { [weak customView] convertedRateText in
+      customView?.convertedRateContainer.configuration.description = convertedRateText.withTextStyle(.label2, color: .Text.tertiary)
     }
   }
   

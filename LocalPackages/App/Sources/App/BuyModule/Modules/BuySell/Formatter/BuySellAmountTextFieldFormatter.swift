@@ -1,4 +1,5 @@
 import UIKit
+import TKUIKit
 import AnyFormatKit
 
 final class BuySellAmountTextFieldFormatter: NSObject {
@@ -58,6 +59,25 @@ extension BuySellAmountTextFieldFormatter: UITextFieldDelegate {
     textField.text = result.formattedText
     textField.setCursorLocation(result.caretBeginOffset)
     notifyEditingChanged(at: textField)
+    return false
+  }
+}
+
+extension BuySellAmountTextFieldFormatter: TKTextInputTextViewFormatterDelegate {
+  func textView(_ textView: TKTextInputTextViewControl, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+    let currentText = textView.text ?? ""
+    guard text != inputFormatter.decimalSeparator || !currentText.isEmpty else { return false }
+    guard Set(text).isSubset(of: .validCharactes) else { return false }
+    
+    let result = inputFormatter.formatInput(
+      currentText: currentText,
+      range: range,
+      replacementString: inputFormatter.unformat(text) ?? ""
+    )
+    
+    textView.inputText = result.formattedText
+    textView.textViewDidChange(textView)
+
     return false
   }
 }

@@ -168,10 +168,13 @@ private extension BuySellOperatorViewModelImplementation {
         rightButton: .init(title: "Terms of Use", url: URL(string: "https://example.com")!)
       ),
       amountPay: "50",
-      currencyDirection: .init(
-        from: .USD,
-        to: .TON
-      )
+      transaction: createTransaction()
+    )
+  }
+  
+  func createTransaction() -> BuySellDetailsItem.Transaction {
+    BuySellDetailsItem.Transaction(
+      operation: .buyTon(fiatCurrency: .USD)
     )
   }
   

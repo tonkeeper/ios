@@ -450,7 +450,10 @@ public final class MainAssembly {
   
   public func buySellDetailsController() -> BuySellDetailsController {
     BuySellDetailsController(
-      tonRatesLoader: loadersAssembly.tonRatesLoader
+      ratesService: servicesAssembly.ratesService(),
+      tonRatesLoader: loadersAssembly.tonRatesLoader,
+      tonRatesStore: storesAssembly.tonRatesStore,
+      amountFormatter: formattersAssembly.amountFormatter
     )
   }
 }
