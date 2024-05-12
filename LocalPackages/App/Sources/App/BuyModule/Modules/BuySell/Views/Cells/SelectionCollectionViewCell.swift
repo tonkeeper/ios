@@ -68,15 +68,32 @@ public class SelectionCollectionViewCell: TKCollectionViewNewCell, TKConfigurabl
     public let listItemConfiguration: TKUIListItemView.Configuration
     public let accesoryConfiguration: SelectionAccessoryView.Configuration
     public let accesoryAlignment: AccessoryAlignment
+    public let selectionClosure: (() -> Void)?
     
     init(id: String, 
          listItemConfiguration: TKUIListItemView.Configuration,
          accesoryConfiguration: SelectionAccessoryView.Configuration,
-         accesoryAlignment: AccessoryAlignment) {
+         accesoryAlignment: AccessoryAlignment,
+         selectionClosure: (() -> Void)?) {
       self.id = id
       self.listItemConfiguration = listItemConfiguration
       self.accesoryConfiguration = accesoryConfiguration
       self.accesoryAlignment = accesoryAlignment
+      self.selectionClosure = selectionClosure
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+      hasher.combine(id)
+      hasher.combine(listItemConfiguration)
+      hasher.combine(accesoryConfiguration)
+      hasher.combine(accesoryAlignment)
+    }
+    
+    public static func ==(lhs: Configuration, rhs: Configuration) -> Bool {
+      lhs.id == rhs.id 
+      && lhs.listItemConfiguration == rhs.listItemConfiguration
+      && lhs.accesoryConfiguration == rhs.accesoryConfiguration
+      && lhs.accesoryAlignment == rhs.accesoryAlignment
     }
   }
   

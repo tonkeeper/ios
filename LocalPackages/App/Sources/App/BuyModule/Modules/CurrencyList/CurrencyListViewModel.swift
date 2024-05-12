@@ -34,7 +34,7 @@ protocol CurrencyListViewModel: AnyObject {
   var didUpdateCurrencyListItems: (([SelectionCollectionViewCell.Configuration], String) -> Void)? { get set }
   
   func viewDidLoad()
-  func didSelectCurrencyCode(_ code: String)
+  func didSelectCurrency(_ currency: Currency)
 }
 
 final class CurrencyListViewModelImplementation: CurrencyListViewModel, CurrencyListModuleOutput {
@@ -60,8 +60,8 @@ final class CurrencyListViewModelImplementation: CurrencyListViewModel, Currency
     currencyListController.start()
   }
   
-  func didSelectCurrencyCode(_ code: String) {
-    guard let currency = Currency(rawValue: code), currency != currencyListItem.selected else { return }
+  func didSelectCurrency(_ currency: Currency) {
+    guard currency != currencyListItem.selected else { return }
     currencyListItem.selected = currency
     didChangeCurrency?(currency)
   }
@@ -102,8 +102,10 @@ private extension CurrencyListViewModelImplementation {
   }
   
   func didUpdateCurrencyListItemsModel(_ model: CurrencyListItemsModel) {
-    let currencyListItems = model.currencyListItems.map {
-      listItemMapper.mapCurrencyListItem($0)
+    let currencyListItems = model.currencyListItems.map { item in
+      listItemMapper.mapCurrencyListItem(item) { [weak self] in
+        self?.didSelectCurrency(item.currency)
+      }
     }
     
     Task { @MainActor in

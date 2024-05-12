@@ -151,11 +151,11 @@ private extension CurrencyListViewController {
     }
     
     let selectedIndexPath = IndexPath(row: rowIndex, section: sectionIndex)
-    let selectedCurrencyCode = items[rowIndex].id
+    let selectionClosure = items[rowIndex].selectionClosure
     
     customView.collectionView.performBatchUpdates(nil) { [weak self] _ in
       self?.customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: [])
-      self?.viewModel.didSelectCurrencyCode(selectedCurrencyCode)
+      selectionClosure?()
     }
   }
 }
@@ -169,8 +169,7 @@ extension CurrencyListViewController: UICollectionViewDelegate {
     let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
     
     guard let model = item as? SelectionCollectionViewCell.Configuration else { return }
-    
-    viewModel.didSelectCurrencyCode(model.id)
+    model.selectionClosure?()
   }
 }
 

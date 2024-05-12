@@ -170,11 +170,11 @@ private extension BuySellOperatorViewController {
     }
     
     let selectedIndexPath = IndexPath(row: 0, section: sectionIndex)
-    let selectedId = items[0].id
+    let selectionClosure = items[0].selectionClosure
     
     customView.collectionView.performBatchUpdates(nil) { [weak self] _ in
       self?.customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: .top)
-      self?.viewModel.didSelectOperatorId(selectedId)
+      selectionClosure?()
     }
   }
 }
@@ -219,7 +219,7 @@ extension BuySellOperatorViewController: UICollectionViewDelegate {
   
   private func handleSelectionOperatorItems(_ collectionView: UICollectionView, at indexPath: IndexPath, item: AnyHashable) {
     guard let model = item as? SelectionCollectionViewCell.Configuration else { return }
-    viewModel.didSelectOperatorId(model.id)
+    model.selectionClosure?()
   }
   
   private func sectionIndex(of section: BuySellOperatorSection) -> Int? {

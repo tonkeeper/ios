@@ -7,7 +7,7 @@ struct BuySellOperatorItemMapper {
   let imageLoader = ImageLoader()
   
   func mapCurrencyPickerItem(_ item: CurrencyPickerItem, selectionClosure: @escaping () -> Void) -> TKUIListItemCell.Configuration {
-    let id = item.identifier
+    let id = item.id
     let currencyCode = item.currencyCode.withTextStyle(.label1, color: .Text.primary)
     let currencyTitle = item.currencyTitle.withTextStyle(.body1, color: .Text.secondary)
     
@@ -46,7 +46,7 @@ struct BuySellOperatorItemMapper {
     )
   }
   
-  func mapFiatOperatorItem(_ item: FiatOperator) -> SelectionCollectionViewCell.Configuration {
+  func mapFiatOperatorItem(_ item: FiatOperator, selectionClosure: @escaping () -> Void) -> SelectionCollectionViewCell.Configuration {
     let id = item.id
     let title = item.title.withTextStyle(.label1, color: .Text.primary)
     let subtitle = item.rate.withTextStyle(.body2, color: .Text.secondary)
@@ -96,7 +96,8 @@ struct BuySellOperatorItemMapper {
       id: id,
       listItemConfiguration: listItemConfiguration,
       accesoryConfiguration: .init(accessoryType: .radioButton),
-      accesoryAlignment: .right
+      accesoryAlignment: .right,
+      selectionClosure: selectionClosure
     )
   }
   

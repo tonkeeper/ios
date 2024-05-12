@@ -2,10 +2,8 @@ import Foundation
 import TKUIKit
 import KeeperCore
 
-
-
 struct CurrencyPickerItem {
-  let identifier: String
+  let id: String
   let currencyCode: String
   let currencyTitle: String
 }
@@ -16,8 +14,13 @@ struct BuySellOperatorItem {
     case sell(amount: String)
   }
   
+  struct PaymentMethod {
+    let id: String
+    let title: String
+  }
+  
   let operation: Operation
-  let paymentMethodId: String
+  let paymentMethod: PaymentMethod
   var amount: String {
     switch operation {
     case .buy(let amount), .sell(let amount):
@@ -54,7 +57,6 @@ protocol BuySellOperatorViewModel: AnyObject {
   var didUpdateBuySellOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   
   func viewDidLoad()
-  func didSelectOperatorId(_ id: String)
 }
 
 final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, BuySellOperatorModuleOutput, BuySellOperatorModuleInput {
@@ -71,7 +73,7 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
     
     let currencyPickerItem = itemMapper.mapCurrencyPickerItem(
       .init(
-        identifier: "currencyPicker",
+        id: "currencyPicker",
         currencyCode: currency.code,
         currencyTitle: currency.title
       ),
@@ -98,7 +100,6 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
     update()
     
     buySellOperatorController.didUpdateFiatOperatorItems = { [weak self] fiatOperatorItems in
-      self?.operatorList = fiatOperatorItems
       self?.didUpdateFiatOperatorItems(fiatOperatorItems)
     }
     
@@ -114,15 +115,10 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
 //    didTapContinue?(buySellDetailsItem)
   }
   
-  func didSelectOperatorId(_ id: String) {
-    selectedOperatorId = id
-  }
-  
   // MARK: - State
   
   private var selectedCurrency = Currency.USD
-  private var selectedOperatorId = ""
-  private var operatorList: [FiatOperator] = []
+  private var selectedOperator: FiatOperator = .emptyItem
   
   private var isResolving = false {
     didSet {
@@ -167,7 +163,7 @@ private extension BuySellOperatorViewModelImplementation {
   func createModel() -> BuySellOperatorModel {
     BuySellOperatorModel(
       title: "Operator",
-      description: "Credit card", // TODO: Get text from BuySellOperationModel
+      description: buySellOperatorItem.paymentMethod.title,
       button: .init(
         title: "Continue",
         isEnabled: !isResolving && isContinueEnable,
@@ -182,7 +178,7 @@ private extension BuySellOperatorViewModelImplementation {
   }
   
   func createBuySellDetailsItem() -> BuySellDetailsItem {
-    let fiatOperator = operatorList.first(where: { $0.id == selectedOperatorId })!
+    let fiatOperator = selectedOperator
     
     var leftInfoButton: BuySellDetailsItem.ServiceInfo.InfoButton?
     var rightInfoButton: BuySellDetailsItem.ServiceInfo.InfoButton?
@@ -228,12 +224,27 @@ private extension BuySellOperatorViewModelImplementation {
   }
   
   func didUpdateFiatOperatorItems(_ items: [FiatOperator]) {
-    let buySellOperatorItems = items.map {
-      itemMapper.mapFiatOperatorItem($0)
+    let buySellOperatorItems = items.map { fiatOperator in
+      itemMapper.mapFiatOperatorItem(fiatOperator) { [weak self] in
+        self?.selectedOperator = fiatOperator
+      }
     }
     
     Task { @MainActor in
       didUpdateBuySellOperatorItems?(buySellOperatorItems)
     }
   }
+}
+
+private extension FiatOperator {
+  static let emptyItem = FiatOperator(
+    id: "0",
+    title: "",
+    description: "",
+    rate: "",
+    badge: nil,
+    iconURL: nil,
+    actionTemplateURL: nil,
+    infoButtons: []
+  )
 }

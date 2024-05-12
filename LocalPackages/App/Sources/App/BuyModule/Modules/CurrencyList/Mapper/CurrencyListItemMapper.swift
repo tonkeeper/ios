@@ -4,7 +4,7 @@ import TKCore
 import KeeperCore
 
 struct CurrencyListItemMapper {
-  func mapCurrencyListItem(_ item: CurrencyListItemsModel.Item) -> SelectionCollectionViewCell.Configuration {
+  func mapCurrencyListItem(_ item: CurrencyListItemsModel.Item, selectionClosure: @escaping () -> Void) -> SelectionCollectionViewCell.Configuration {
     let id = item.identifier
     let currencyCode = item.currency.code.withTextStyle(.label1, color: .Text.primary)
     let currencyTitle = item.currency.title.withTextStyle(.body1, color: .Text.secondary)
@@ -35,7 +35,8 @@ struct CurrencyListItemMapper {
       id: id,
       listItemConfiguration: listItemConfiguration,
       accesoryConfiguration: .init(accessoryType: .checkmark),
-      accesoryAlignment: .right
+      accesoryAlignment: .right,
+      selectionClosure: selectionClosure
     )
   }
 }

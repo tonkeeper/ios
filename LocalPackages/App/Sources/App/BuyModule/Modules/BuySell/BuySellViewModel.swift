@@ -47,7 +47,7 @@ struct BuySellModel {
 
 public struct PaymentMethodItemsModel {
   public struct Item {
-    public let identifier: String
+    public let id: String
     public let title: String
     public let image: UIImage
   }
@@ -72,7 +72,7 @@ protocol BuySellViewModel: AnyObject {
   
   func viewDidLoad()
   func didInputAmount(_ string: String)
-  func didSelectPaymentMethodId(_ id: String)
+  func didSelectPaymentMethod(_ paymentMethod: PaymentMethodItemsModel.Item)
   func didChangeOperation(_ operation: BuySellItem.Operation)
 }
 
@@ -97,10 +97,10 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     // TODO: Add BuySellController didChangeRegion
     
     let testItemsModel = PaymentMethodItemsModel(items: [
-      .init(identifier: "0", title: "Credit Card", image: .TKUIKit.Images.mastercardVisaCardsLogo),
-      .init(identifier: "1", title: "Credit Card  ·  RUB", image: .TKUIKit.Images.mirCardLogo),
-      .init(identifier: "2", title: "Cryptocurrency", image: .TKUIKit.Images.cryptocyrrencyLogo),
-      .init(identifier: "3", title: "Apple Pay", image: .TKUIKit.Images.applePayCardLogo),
+      .creditCard,
+      .creditCardRUB,
+      .cryptocurrency,
+      .applePay
     ])
     
     didUpdatePaymentMethodModel(testItemsModel)
@@ -129,8 +129,8 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     }
   }
   
-  func didSelectPaymentMethodId(_ id: String) {
-    selectedPaymentMethodId = id
+  func didSelectPaymentMethod(_ paymentMethod: PaymentMethodItemsModel.Item) {
+    selectedPaymentMethod = paymentMethod
   }
   
   func didChangeOperation(_ operation: BuySellItem.Operation) {
@@ -147,7 +147,7 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   private var minimumValidAmount = BigUInt()
   private var convertedValue = "0"
   private var currency = Currency.USD
-  private var selectedPaymentMethodId = ""
+  private var selectedPaymentMethod = PaymentMethodItemsModel.Item.creditCard
   
   private var isResolving = false {
     didSet {
@@ -262,7 +262,10 @@ private extension BuySellViewModelImplementation {
     
     return BuySellOperatorItem(
       operation: buySellOperation,
-      paymentMethodId: selectedPaymentMethodId
+      paymentMethod: .init(
+        id: selectedPaymentMethod.id,
+        title: selectedPaymentMethod.title
+      )
     )
   }
   
@@ -309,22 +312,24 @@ private extension BuySellViewModelImplementation {
   
   func updatePaymentMethodList() {
     // TODO: Fetch data
-    var items = [
-      PaymentMethodItemsModel.Item(identifier: "0", title: "Credit Card", image: .TKUIKit.Images.mastercardVisaCardsLogo),
-      PaymentMethodItemsModel.Item(identifier: "1", title: "Credit Card  ·  RUB", image: .TKUIKit.Images.mirCardLogo),
-      PaymentMethodItemsModel.Item(identifier: "2", title: "Cryptocurrency", image: .TKUIKit.Images.cryptocyrrencyLogo),
+    var items: [PaymentMethodItemsModel.Item] = [
+      .creditCard,
+      .creditCardRUB,
+      .cryptocurrency
     ]
     
     if buySellItem.operation == .buy {
-      items.append(PaymentMethodItemsModel.Item(identifier: "3", title: "Apple Pay", image: .TKUIKit.Images.applePayCardLogo))
+      items.append(.applePay)
     }
     
     didUpdatePaymentMethodModel(PaymentMethodItemsModel(items: items))
   }
   
   func didUpdatePaymentMethodModel(_ model: PaymentMethodItemsModel) {
-    let paymentMethodItems = model.items.map {
-      listItemMapper.mapPaymentMethodItem($0)
+    let paymentMethodItems = model.items.map { item in
+      listItemMapper.mapPaymentMethodItem(item) { [weak self] in
+        self?.didSelectPaymentMethod(item)
+      }
     }
     
     Task { @MainActor in
@@ -342,4 +347,27 @@ private extension BuySellViewModelImplementation {
     }
     return fractionDigits
   }
+}
+
+private extension PaymentMethodItemsModel.Item {
+  static let creditCard = PaymentMethodItemsModel.Item(
+    id: "creditCard",
+    title: "Credit Card",
+    image: .TKUIKit.Images.mastercardVisaCardsLogo
+  )
+  static let creditCardRUB = PaymentMethodItemsModel.Item(
+    id: "creditCardRub",
+    title: "Credit Card  ·  RUB",
+    image: .TKUIKit.Images.mirCardLogo
+  )
+  static let cryptocurrency = PaymentMethodItemsModel.Item(
+    id: "cryptocurrency",
+    title: "Cryptocurrency",
+    image: .TKUIKit.Images.cryptocyrrencyLogo
+  )
+  static let applePay = PaymentMethodItemsModel.Item(
+    id: "creditCardRub",
+    title: "Apple Pay",
+    image: .TKUIKit.Images.applePayCardLogo
+  )
 }

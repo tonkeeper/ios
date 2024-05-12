@@ -2,8 +2,8 @@ import UIKit
 import TKUIKit
 
 struct BuySellListItemMapper {
-  func mapPaymentMethodItem(_ item: PaymentMethodItemsModel.Item) -> SelectionCollectionViewCell.Configuration {
-    let id = item.identifier
+  func mapPaymentMethodItem(_ item: PaymentMethodItemsModel.Item, selectionClosure: @escaping () -> Void) -> SelectionCollectionViewCell.Configuration {
+    let id = item.id
     let title = makePaymentMethodItemTitle(item.title)
     
     let contentConfiguration = TKUIListItemContentView.Configuration(
@@ -33,7 +33,8 @@ struct BuySellListItemMapper {
       id: id,
       listItemConfiguration: listItemConfiguration,
       accesoryConfiguration: .init(accessoryType: .radioButton),
-      accesoryAlignment: .left
+      accesoryAlignment: .left,
+      selectionClosure: selectionClosure
     )
   }
   

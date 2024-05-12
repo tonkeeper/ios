@@ -341,11 +341,11 @@ private extension BuySellViewController {
     }
     
     let selectedIndexPath = IndexPath(row: 0, section: sectionIndex)
-    let selectedId = items[0].id
+    let selectionClosure = items[0].selectionClosure
     
     customView.collectionView.performBatchUpdates(nil) { [weak self] _ in
       self?.customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: .top)
-      self?.viewModel.didSelectPaymentMethodId(selectedId)
+      selectionClosure?()
     }
   }
   
@@ -360,9 +360,8 @@ extension BuySellViewController: UICollectionViewDelegate {
     let section = snapshot.sectionIdentifiers[indexPath.section]
     let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
     
-    if let model = item as? SelectionCollectionViewCell.Configuration {
-      viewModel.didSelectPaymentMethodId(model.id)
-    }
+    guard let model = item as? SelectionCollectionViewCell.Configuration else { return }
+    model.selectionClosure?()
   }
 }
 
