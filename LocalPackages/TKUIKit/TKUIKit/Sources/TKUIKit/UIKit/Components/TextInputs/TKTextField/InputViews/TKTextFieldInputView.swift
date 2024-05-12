@@ -32,11 +32,7 @@ public final class TKTextFieldInputView: UIControl, TKTextFieldInputViewControl 
   }
   public var inputText: String {
     get { textInputControl.inputText }
-    set {
-      textInputControl.inputText = newValue
-      updateTextAction()
-      updateCursorLabel(inputText: newValue)
-    }
+    set { didInputText(newValue) }
   }
   public var textFieldState: TKTextFieldState = .inactive {
     didSet {
@@ -136,6 +132,12 @@ public final class TKTextFieldInputView: UIControl, TKTextFieldInputViewControl 
   public override func layoutSubviews() {
     super.layoutSubviews()
     updateTextInputAndPlaceholderLayoutAndScale()
+  }
+  
+  public func didInputText(_ newText: String, animateTextActions: Bool = true) {
+    textInputControl.inputText = newText
+    updateTextAction(animated: animateTextActions)
+    updateCursorLabel(inputText: newText)
   }
 }
 
@@ -238,10 +240,16 @@ private extension TKTextFieldInputView {
     updateTextAction()
   }
   
-  func updateTextAction() {
-    UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseInOut) {
-      self.updateClearButtonVisibility()
-      self.updateTextInputAndPlaceholderLayoutAndScale()
+  func updateTextAction(animated: Bool = true) {
+    let updateClosure = { [weak self] in
+      self?.updateClearButtonVisibility()
+      self?.updateTextInputAndPlaceholderLayoutAndScale()
+    }
+    
+    if animated {
+      UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseInOut) { updateClosure() }
+    } else {
+      updateClosure()
     }
   }
   

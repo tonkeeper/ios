@@ -7,13 +7,16 @@ final class BuySellDetailsView: UIView {
   // MARK: - Views
   
   let scrollView = TKUIScrollView()
+  
   let serviceInfoContainerView = ServiceInfoContainerView()
   
   let payAmountInputControl: TKTextInputTextViewControl = .makeAmountInputControl()
+  lazy var payAmountInputView: TKTextFieldInputView = .makeAmountInputView(inputControl: payAmountInputControl)
+  lazy var payAmountTextField = TKTextField(textFieldInputView: payAmountInputView)
+
   let getAmountInputControl: TKTextInputTextViewControl = .makeAmountInputControl()
-  
-  lazy var payAmountTextField: TKTextField = .makeAmountTextField(inputControl: payAmountInputControl)
-  lazy var getAmountTextField: TKTextField = .makeAmountTextField(inputControl: getAmountInputControl)
+  lazy var getAmountInputView: TKTextFieldInputView = .makeAmountInputView(inputControl: getAmountInputControl)
+  lazy var getAmountTextField = TKTextField(textFieldInputView: getAmountInputView)
   
   let convertedRateContainer = ListDescriptionContainerView()
   
@@ -139,11 +142,11 @@ private extension TKTextInputTextViewControl {
   }
 }
 
-private extension TKTextField {
-  static func makeAmountTextField(inputControl: TKTextInputTextViewControl) -> TKTextField {
+private extension TKTextFieldInputView {
+  static func makeAmountInputView(inputControl: TKTextInputTextViewControl) -> TKTextFieldInputView {
     let inputView = TKTextFieldInputView(textInputControl: inputControl)
     inputView.clearButtonMode = .never
-    return TKTextField(textFieldInputView: inputView)
+    return inputView
   }
 }
 

@@ -94,6 +94,9 @@ private extension BuySellDetailsViewController {
     
     customView.payAmountInputControl.formatterDelegate = viewModel.payAmountTextFieldFormatter
     customView.getAmountInputControl.formatterDelegate = viewModel.getAmountTextFieldFormatter
+    
+    customView.payAmountInputView.didInputText("0", animateTextActions: false)
+    customView.getAmountInputView.didInputText("0", animateTextActions: false)
   }
   
   func setupBindings() {
