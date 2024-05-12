@@ -53,8 +53,9 @@ protocol BuySellOperatorModuleInput: AnyObject {
 
 protocol BuySellOperatorViewModel: AnyObject {
   var didUpdateModel: ((BuySellOperatorModel) -> Void)? { get set }
+  var didLoadListItems: ((TKUIListItemCell.Configuration, [SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   var didUpdateCurrencyPickerItem: ((TKUIListItemCell.Configuration) -> Void)? { get set }
-  var didUpdateBuySellOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
+  var didUpdateFiatOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -72,11 +73,7 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
     selectedCurrency = currency
     
     let currencyPickerItem = itemMapper.mapCurrencyPickerItem(
-      .init(
-        id: "currencyPicker",
-        currencyCode: currency.code,
-        currencyTitle: currency.title
-      ),
+      createCurrencyPickerItem(activeCurrency: currency),
       selectionClosure: { [weak self] in
         let currencyListItem = CurrencyListItem(selected: currency)
         self?.didTapCurrencyPicker?(currencyListItem)
@@ -93,11 +90,16 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
   // MARK: - BuySellOperatorModelViewModel
   
   var didUpdateModel: ((BuySellOperatorModel) -> Void)?
+  var didLoadListItems: ((TKUIListItemCell.Configuration, [SelectionCollectionViewCell.Configuration]) -> Void)?
   var didUpdateCurrencyPickerItem: ((TKUIListItemCell.Configuration) -> Void)?
-  var didUpdateBuySellOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)?
+  var didUpdateFiatOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
     update()
+    
+    buySellOperatorController.didLoadListItems = { [weak self] activeCurrency, fiatOperatorItems in
+      self?.didLoadListItems(activeCurrency, fiatOperatorItems)
+    }
     
     buySellOperatorController.didUpdateFiatOperatorItems = { [weak self] fiatOperatorItems in
       self?.didUpdateFiatOperatorItems(fiatOperatorItems)
@@ -223,16 +225,44 @@ private extension BuySellOperatorViewModelImplementation {
     )
   }
   
-  func didUpdateFiatOperatorItems(_ items: [FiatOperator]) {
-    let buySellOperatorItems = items.map { fiatOperator in
+  func didLoadListItems(_ activeCurrency: Currency, _ fiatOperatorItems: [FiatOperator]) {
+    let currencyPickerItem = itemMapper.mapCurrencyPickerItem(
+      createCurrencyPickerItem(activeCurrency: activeCurrency),
+      selectionClosure: { [weak self] in
+        let currencyListItem = CurrencyListItem(selected: activeCurrency)
+        self?.didTapCurrencyPicker?(currencyListItem)
+      }
+    )
+    
+    let fiatOperatorItems = fiatOperatorItems.map { fiatOperator in
       itemMapper.mapFiatOperatorItem(fiatOperator) { [weak self] in
         self?.selectedOperator = fiatOperator
       }
     }
     
     Task { @MainActor in
-      didUpdateBuySellOperatorItems?(buySellOperatorItems)
+      didLoadListItems?(currencyPickerItem, fiatOperatorItems)
     }
+  }
+  
+  func didUpdateFiatOperatorItems(_ items: [FiatOperator]) {
+    let fiatOperatorItems = items.map { fiatOperator in
+      itemMapper.mapFiatOperatorItem(fiatOperator) { [weak self] in
+        self?.selectedOperator = fiatOperator
+      }
+    }
+    
+    Task { @MainActor in
+      didUpdateFiatOperatorItems?(fiatOperatorItems)
+    }
+  }
+  
+  func createCurrencyPickerItem(activeCurrency: Currency) -> CurrencyPickerItem {
+    CurrencyPickerItem(
+      id: "currencyPicker",
+      currencyCode: activeCurrency.code,
+      currencyTitle: activeCurrency.title
+    )
   }
 }
 

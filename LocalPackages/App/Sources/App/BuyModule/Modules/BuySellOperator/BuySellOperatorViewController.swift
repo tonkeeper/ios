@@ -4,10 +4,12 @@ import TKUIKit
 enum BuySellOperatorSection: Hashable {
   case currencyPicker
   case operatorItems
+  case shimmer
 }
 
 final class BuySellOperatorViewController: ModalViewController<BuySellOperatorView, ModalNavigationBarView> {
   
+  private typealias OperatorShimmerView = TKCollectionViewSupplementaryContainerView<BuySellOperatorShimmerView>
   private typealias CellRegistration<T> = UICollectionView.CellRegistration<T, T.Configuration> where T: TKCollectionViewNewCell & TKConfigurableView
   
   // MARK: - Layout
@@ -29,6 +31,8 @@ final class BuySellOperatorViewController: ModalViewController<BuySellOperatorVi
           return .currencyPickerSection
         case .operatorItems:
           return .operatorItemsSection
+        case .shimmer:
+          return .shimmerSection
         }
       },
       configuration: configuration
@@ -64,6 +68,25 @@ final class BuySellOperatorViewController: ModalViewController<BuySellOperatorVi
         default: return nil
         }
       }
+    
+    dataSource.supplementaryViewProvider = { [weak dataSource] collectionView, kind, indexPath -> UICollectionReusableView? in
+      guard let dataSource else { return nil }
+      
+      let snapshot = dataSource.snapshot()
+      let section = snapshot.sectionIdentifiers[indexPath.section]
+      switch section {
+      case .shimmer:
+        let shimmerView = collectionView.dequeueReusableSupplementaryView(
+          ofKind: kind,
+          withReuseIdentifier: OperatorShimmerView.reuseIdentifier,
+          for: indexPath
+        )
+        (shimmerView as? OperatorShimmerView)?.contentView.startAnimation()
+        return shimmerView
+      default:
+        return nil
+      }
+    }
     
     return dataSource
   }
@@ -121,11 +144,17 @@ private extension BuySellOperatorViewController {
     customView.collectionView.allowsMultipleSelection = true
     customView.collectionView.showsVerticalScrollIndicator = false
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
+    customView.collectionView.register(
+      OperatorShimmerView.self,
+      forSupplementaryViewOfKind: .shimmerSectionFooterElementKind,
+      withReuseIdentifier: OperatorShimmerView.reuseIdentifier
+    )
     
     var snapshot = dataSource.snapshot()
+    snapshot.appendSections([.shimmer])
     snapshot.appendSections([.currencyPicker])
     snapshot.appendSections([.operatorItems])
-    dataSource.apply(snapshot,animatingDifferences: false)
+    dataSource.apply(snapshot, animatingDifferences: false)
   }
   
   func setupBindings() {
@@ -141,22 +170,36 @@ private extension BuySellOperatorViewController {
       customView.continueButton.configuration.action = model.button.action
     }
     
+    viewModel.didLoadListItems = { [weak self] currencyPickerItem, fiatOperatorItems in
+      guard let self else { return }
+      
+      var snapshot = dataSource.snapshot()
+      snapshot.deleteSections([.shimmer])
+      snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .currencyPicker))
+      snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .operatorItems))
+      snapshot.appendItems([currencyPickerItem], toSection: .currencyPicker)
+      snapshot.appendItems(fiatOperatorItems, toSection: .operatorItems)
+      dataSource.apply(snapshot, animatingDifferences: true)
+      
+      selectFirstItemCell(snapshot: snapshot, items: fiatOperatorItems, inSection: .operatorItems)
+    }
+    
     viewModel.didUpdateCurrencyPickerItem = { [weak self] currencyPickerItem in
       guard let self else { return }
       
       var snapshot = dataSource.snapshot()
       snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .currencyPicker))
       snapshot.appendItems([currencyPickerItem], toSection: .currencyPicker)
-      dataSource.apply(snapshot,animatingDifferences: false)
+      dataSource.apply(snapshot, animatingDifferences: false)
     }
     
-    viewModel.didUpdateBuySellOperatorItems = { [weak self] buySellOperatorItems in
+    viewModel.didUpdateFiatOperatorItems = { [weak self] buySellOperatorItems in
       guard let self else { return }
       
       var snapshot = dataSource.snapshot()
       snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .operatorItems))
       snapshot.appendItems(buySellOperatorItems, toSection: .operatorItems)
-      dataSource.apply(snapshot,animatingDifferences: false)
+      dataSource.apply(snapshot, animatingDifferences: false)
       
       selectFirstItemCell(snapshot: snapshot, items: buySellOperatorItems, inSection: .operatorItems)
     }
@@ -208,6 +251,8 @@ extension BuySellOperatorViewController: UICollectionViewDelegate {
       handleSelectionCurrencyPicker(collectionView, at: indexPath, item: item)
     case .operatorItems:
       handleSelectionOperatorItems(collectionView, at: indexPath, item: item)
+    case .shimmer:
+      break
     }
   }
   
@@ -239,6 +284,24 @@ private extension NSCollectionLayoutSection {
     return makeSection(cellHeight: .operatorCellHeight)
   }
   
+  static var shimmerSection: NSCollectionLayoutSection {
+    let section = NSCollectionLayoutSection.makeSection(
+      cellHeight: 100,
+      contentInsets: .init(top: 0, leading: 16, bottom: 0, trailing: 16)
+    )
+    let footerSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(100)
+    )
+    let footer = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: footerSize,
+      elementKind: .shimmerSectionFooterElementKind,
+      alignment: .bottom
+    )
+    section.boundarySupplementaryItems = [footer]
+    return section
+  }
+  
   static func makeSection(cellHeight: CGFloat,
                           contentInsets: NSDirectionalEdgeInsets = .defaultSectionInsets) -> NSCollectionLayoutSection {
     let itemLayoutSize = NSCollectionLayoutSize(
@@ -260,6 +323,10 @@ private extension NSCollectionLayoutSection {
     section.contentInsets = contentInsets
     return section
   }
+}
+
+private extension String {
+  static let shimmerSectionFooterElementKind = "ShimmerSectionFooterElementKind"
 }
 
 private extension NSDirectionalEdgeInsets {

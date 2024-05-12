@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import SnapKit
 
 final class BuySellOperatorView: UIView {
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())

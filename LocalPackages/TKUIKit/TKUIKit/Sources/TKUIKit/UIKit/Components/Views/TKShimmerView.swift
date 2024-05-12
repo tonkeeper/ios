@@ -2,6 +2,11 @@ import UIKit
 
 public final class TKShimmerView: UIView {
   
+  public enum CornerRadiusRule {
+    case fixed(CGFloat)
+    case rounded
+  }
+  
   private let gradientLayer = CAGradientLayer()
   
   private let animation: CABasicAnimation = {
@@ -13,6 +18,21 @@ public final class TKShimmerView: UIView {
     animation.duration = 0.9
     return animation
   }()
+  
+  public var cornerRadiusRule: CornerRadiusRule = .rounded {
+    didSet {
+      setNeedsLayout()
+    }
+  }
+  
+  private var cornerRadius: CGFloat {
+    switch cornerRadiusRule {
+    case .fixed(let value):
+      return value
+    case .rounded:
+      return bounds.height / 2
+    }
+  }
   
   public override init(frame: CGRect) {
     super.init(frame: frame)
@@ -31,7 +51,7 @@ public final class TKShimmerView: UIView {
   public override func layoutSubviews() {
     super.layoutSubviews()
     gradientLayer.frame = bounds
-    layer.cornerRadius = bounds.height / 2
+    layer.cornerRadius = cornerRadius
   }
   
   public func startAnimation() {

@@ -82,6 +82,8 @@ final class ServiceInfoContainerView: UIView {
 
 private extension ServiceInfoContainerView {
   func setup() {
+    iconImageView.backgroundColor = .Background.contentTint
+    
     addSubview(iconImageView)
     addSubview(titleLabel)
     addSubview(subtitleLabel)
