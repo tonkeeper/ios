@@ -22,7 +22,7 @@ final class EnterPasswordCoordinator: RouterCoordinator<NavigationControllerRout
 private extension EnterPasswordCoordinator {
   func openEnterPassword() {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      passwordRepository: assembly.repositoriesAssembly.passwordRepository()
+      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository()
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.output.didEnterPassword = { [weak self] _ in

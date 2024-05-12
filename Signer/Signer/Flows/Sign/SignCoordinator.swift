@@ -48,7 +48,7 @@ private extension SignCoordinator {
       self?.didCancel?()
     }
     
-    module.output.didRequireConfirmation = { [weak self, weak bottomSheetViewController] completion in
+    module.output.didRequirePassword = { [weak self, weak bottomSheetViewController] completion in
       guard let bottomSheetViewController else { return }
       self?.openEnterPassword(fromViewController: bottomSheetViewController, completion: completion)
     }
@@ -101,19 +101,19 @@ private extension SignCoordinator {
     bottomSheetViewController.present(fromViewController: rootViewController)
   }
   
-  func openEnterPassword(fromViewController: UIViewController, completion: @escaping (Bool) -> Void) {
+  func openEnterPassword(fromViewController: UIViewController, completion: @escaping (String?) -> Void) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      passwordRepository: signerCoreAssembly.repositoriesAssembly.passwordRepository()
+      mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository()
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
-    module.output.didEnterPassword = { [weak view = module.view] _ in
+    module.output.didEnterPassword = { [weak view = module.view] password in
       view?.dismiss(animated: true) {
-        completion(true)
+        completion(password)
       }
     }
     
     module.view.setupLeftCloseButton { [weak view = module.view] in
-      completion(false)
+      completion(nil)
       view?.dismiss(animated: true)
     }
     

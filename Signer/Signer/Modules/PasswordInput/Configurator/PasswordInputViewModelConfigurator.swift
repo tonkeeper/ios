@@ -59,10 +59,10 @@ final class ReenterPasswordPasswordInputViewModelConfigurator: PasswordInputView
 
 final class EnterPasswordPasswordInputViewModelConfigurator: PasswordInputViewModelConfigurator {
   
-  private let passwordRepository: PasswordRepository
+  private let mnemonicsRepository: MnemonicsRepository
   
-  init(passwordRepository: PasswordRepository) {
-    self.passwordRepository = passwordRepository
+  init(mnemonicsRepository: MnemonicsRepository) {
+    self.mnemonicsRepository = mnemonicsRepository
   }
   
   // MARK: - PasswordInputViewModelConfigurator
@@ -76,10 +76,6 @@ final class EnterPasswordPasswordInputViewModelConfigurator: PasswordInputViewMo
   }
   
   func validateInput(_ input: String) -> Bool {
-    do {
-      return try input == passwordRepository.getPassword()
-    } catch {
-      return false
-    }
+    mnemonicsRepository.checkIfPasswordValid(input)
   }
 }

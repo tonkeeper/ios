@@ -6,6 +6,7 @@
 
 "toast.copied" = "Скопировано";
 "toast.password_changed" = "Пароль изменён";
+"toast.failed" = "Ошибка";
 
 "app.name" = "Signer";
 

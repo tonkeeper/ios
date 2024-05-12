@@ -53,11 +53,9 @@ private extension OnboardingCreateKeyCoordinator {
   }
   
   func createKey(password: String, name: String) {
-    let createPasswordController = assembly.passwordAssembly.passwordCreateController()
     let keysAddController = assembly.keysAddController()
     do {
-      try createPasswordController.createPassword(password)
-      try keysAddController.createWalletKey(name: name)
+      try keysAddController.createWalletKey(name: name, password: password)
       didCreateKey?()
     } catch {
       print("Log: Key creation failed, error \(error)")

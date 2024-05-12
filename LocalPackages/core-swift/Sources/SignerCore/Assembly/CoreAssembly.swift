@@ -6,6 +6,10 @@ public struct CoreAssembly {
     MnemonicVault(keychainVault: keychainVault, accessGroup: nil)
   }
   
+  func mnemonicsV2Vault(seedProvider: @escaping () -> String) -> MnemonicsV2Vault {
+    MnemonicsV2Vault(seedProvider: seedProvider, keychainVault: keychainVault, accessGroup: nil)
+  }
+  
   func passcodeVault() -> PasscodeVault {
     PasscodeVault(keychainVault: keychainVault)
   }
@@ -16,6 +20,10 @@ public struct CoreAssembly {
 
   func fileSystemVault<T, K>() -> FileSystemVault<T, K> {
     return FileSystemVault(fileManager: fileManager, directory: cacheURL)
+  }
+  
+  func settingsVault() -> SettingsVault<SettingsVaultKey> {
+    return SettingsVault(userDefaults: userDefaults)
   }
 }
 
@@ -45,4 +53,17 @@ private extension CoreAssembly {
     }
     return documentsDirectory
   }
+  
+  var userDefaults: UserDefaults {
+    UserDefaults.standard
+  }
+}
+
+public enum SettingsVaultKey: String, CustomStringConvertible {
+  public var description: String {
+    rawValue
+  }
+  
+  case seed
+  case isFirstRun
 }

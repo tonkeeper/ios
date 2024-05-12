@@ -62,15 +62,33 @@ private extension ImportKeyCoordinator {
     )
     module.view.setupBackButton()
     module.output.didEnterWalletName = { [weak self] walletName in
-      self?.createKey(phrase: phrase, name: walletName)
+      self?.openEnterPassword(phrase: phrase, name: walletName)
     }
     router.push(viewController: module.view)
   }
   
-  func createKey(phrase: [String], name: String) {
+  func openEnterPassword(phrase: [String], name: String) {
+    let configurator = EnterPasswordPasswordInputViewModelConfigurator(
+      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository()
+    )
+    let module = PasswordInputModuleAssembly.module(configurator: configurator)
+    module.view.setupBackButton()
+    module.output.didEnterPassword = { [weak self] password in
+      self?.createKey(phrase: phrase, name: name, password: password)
+    }
+    
+    router.push(viewController: module.view,
+                onPopClosures: {})
+  }
+  
+  func createKey(phrase: [String], name: String, password: String) {
     let keysAddController = assembly.keysAddController()
     do {
-      try keysAddController.importWalletKey(phrase: phrase, name: name)
+      try keysAddController.importWalletKey(
+        phrase: phrase,
+        name: name,
+        password: password
+      )
       didImportKey?()
     } catch {
       print("Log: Key creation failed, error \(error)")

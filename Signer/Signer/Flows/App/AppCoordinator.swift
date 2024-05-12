@@ -15,6 +15,17 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
   }
   
   override func start(deeplink: (any CoordinatorDeeplink)? = nil) {
+    var settingsRepository = signerCoreAssembly.repositoriesAssembly.settingsRepository()
+    if settingsRepository.isFirstRun {
+      settingsRepository.isFirstRun = false
+      settingsRepository.seed = UUID().uuidString
+    }
+    MnemonicV2Migration(
+      signerInfoRepository: signerCoreAssembly.repositoriesAssembly.signerInfoRepository(),
+      oldMnemonicRepository: signerCoreAssembly.repositoriesAssembly.oldMnemonicRepository(),
+      mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository(),
+      passwordRepository: signerCoreAssembly.repositoriesAssembly.passwordRepository()
+    ).migrateIfNeeded()
     router.window.applyThemeMode(.blue)
     openRoot(deeplink: deeplink)
   }

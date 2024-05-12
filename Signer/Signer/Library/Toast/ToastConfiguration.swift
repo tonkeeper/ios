@@ -17,6 +17,13 @@ extension ToastPresenter.Configuration {
         foregroundColor: .Text.primary
       )
     }
+    static var passwordChangeFailed: ToastPresenter.Configuration {
+      .init(
+        title: SignerLocalize.Toast.failed,
+        backgroundColor: .Background.contentTint,
+        foregroundColor: .Text.primary
+      )
+    }
   }
 }
 

@@ -16,18 +16,18 @@ public final class SignConfirmationController {
   
   public let model: TonSignModel
   public var walletKey: WalletKey
-  private let mnemonicRepository: WalletKeyMnemonicRepository
+  private let mnemonicsRepository: MnemonicsRepository
   private let deeplinkGenerator: PublishDeeplinkGenerator
   private let amountFormatter: AmountFormatter
   
   init(model: TonSignModel,
        walletKey: WalletKey,
-       mnemonicRepository: WalletKeyMnemonicRepository,
+       mnemonicsRepository: MnemonicsRepository,
        deeplinkGenerator: PublishDeeplinkGenerator,
        amountFormatter: AmountFormatter) {
     self.model = model
     self.walletKey = walletKey
-    self.mnemonicRepository = mnemonicRepository
+    self.mnemonicsRepository = mnemonicsRepository
     self.deeplinkGenerator = deeplinkGenerator
     self.amountFormatter = amountFormatter
   }
@@ -38,9 +38,9 @@ public final class SignConfirmationController {
     return transactionModel
   }
   
-  public func signTransaction() -> URL? {
+  public func signTransaction(password: String) -> URL? {
     do {
-      let mnemonic = try mnemonicRepository.getMnemonic(forWalletKey: walletKey)
+      let mnemonic = try mnemonicsRepository.getMnemonic(walletKey: walletKey, password: password)
       let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
       let privateKey = keyPair.privateKey
       let signer = WalletTransferSecretKeySigner(secretKey: privateKey.data)

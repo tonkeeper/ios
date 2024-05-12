@@ -84,11 +84,13 @@ private extension OnboardingImportKeyCoordinator {
   }
   
   func createKey(phrase: [String], password: String, name: String) {
-    let createPasswordController = assembly.passwordAssembly.passwordCreateController()
     let keysAddController = assembly.keysAddController()
     do {
-      try createPasswordController.createPassword(password)
-      try keysAddController.importWalletKey(phrase: phrase, name: name)
+      try keysAddController.importWalletKey(
+        phrase: phrase,
+        name: name,
+        password: password
+      )
       didImportKey?()
     } catch {
       print("Log: Key import failed, error \(error)")

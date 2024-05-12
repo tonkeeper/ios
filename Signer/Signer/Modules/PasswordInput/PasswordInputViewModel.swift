@@ -51,12 +51,12 @@ final class PasswordInputViewModelImplementation: PasswordInputViewModel, Passwo
     continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(SignerLocalize.Actions.continue_action))
     continueButtonConfiguration.action = { [weak self] in
       guard let self = self else { return }
-      let isValid = self.configurator.validateInput(self.input)
+      let isValid = self.configurator.validateInput(self.input.hashed)
       guard isValid else {
         self.didUpdateIsValidInput?(isValid)
         return
       }
-      self.didEnterPassword?(input)
+      self.didEnterPassword?(input.hashed)
     }
     didUpdateContinueButton?(continueButtonConfiguration)
     

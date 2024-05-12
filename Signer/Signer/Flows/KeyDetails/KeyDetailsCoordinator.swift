@@ -56,6 +56,9 @@ private extension KeyDetailsCoordinator {
       configurator: EditEditWalletNameViewModelConfigurator(),
       defaultName: walletKey.name
     )
+    module.view.setupRightCloseButton { [weak self] in
+      self?.router.dismiss()
+    }
     module.output.didEnterWalletName = { [signerCoreAssembly, walletKey, weak self] name in
       try? signerCoreAssembly.keysEditController().updateWalletKeyName(walletKey: walletKey, name: name)
       self?.router.dismiss()
@@ -64,7 +67,6 @@ private extension KeyDetailsCoordinator {
     let navigationController = NavigationController(rootViewController: module.view)
     navigationController.configureTransparentAppearance()
     
-    navigationController.modalPresentationStyle = .fullScreen
     router.present(navigationController)
   }
   
@@ -88,10 +90,9 @@ private extension KeyDetailsCoordinator {
     router.present(navigationController)
   }
   
-  
   func openEnterPassword(fromViewController: UIViewController, completion: @escaping (Bool) -> Void) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      passwordRepository: signerCoreAssembly.repositoriesAssembly.passwordRepository()
+      mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository()
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.output.didEnterPassword = { [weak view = module.view] _ in

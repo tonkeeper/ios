@@ -6,6 +6,7 @@
 
 "toast.copied" = "Copied";
 "toast.password_changed" = "Password changed";
+"toast.failed" = "Failed";
 
 "app.name" = "Signer";
 

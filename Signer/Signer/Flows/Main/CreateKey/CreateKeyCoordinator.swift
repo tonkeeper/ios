@@ -30,15 +30,29 @@ private extension CreateKeyCoordinator {
       self?.didFinish?()
     }
     module.output.didEnterWalletName = { [weak self] walletName in
-      self?.createKey(name: walletName)
+      self?.openEnterPassword(name: walletName)
     }
     router.push(viewController: module.view)
   }
   
-  func createKey(name: String) {
+  func openEnterPassword(name: String) {
+    let configurator = EnterPasswordPasswordInputViewModelConfigurator(
+      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository()
+    )
+    let module = PasswordInputModuleAssembly.module(configurator: configurator)
+    module.view.setupBackButton()
+    module.output.didEnterPassword = { [weak self] password in
+      self?.createKey(name: name, password: password)
+    }
+    
+    router.push(viewController: module.view,
+                onPopClosures: {})
+  }
+  
+  func createKey(name: String, password: String) {
     let keysAddController = assembly.keysAddController()
     do {
-      try keysAddController.createWalletKey(name: name)
+      try keysAddController.createWalletKey(name: name, password: password)
       didCreateKey?()
     } catch {
       print("Log: Key creation failed, error \(error)")

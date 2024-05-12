@@ -30,6 +30,10 @@ public enum SignerLocalize {
     public static var password_changed: String {
       localize("toast.password_changed")
     }
+    /// Failed
+    public static var failed: String {
+      localize("toast.failed")
+    }
   }
   public enum App {
     /// Signer
