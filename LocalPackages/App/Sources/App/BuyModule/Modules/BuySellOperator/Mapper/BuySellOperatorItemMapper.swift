@@ -46,11 +46,11 @@ struct BuySellOperatorItemMapper {
     )
   }
   
-  func mapBuySellOperatorItem(_ item: BuySellOperatorItemsModel.Item) -> SelectionCollectionViewCell.Configuration {
-    let id = item.identifier
+  func mapFiatOperatorItem(_ item: FiatOperator) -> SelectionCollectionViewCell.Configuration {
+    let id = item.id
     let title = item.title.withTextStyle(.label1, color: .Text.primary)
-    let subtitle = item.description.withTextStyle(.body2, color: .Text.secondary)
-    let tagViewModel = makeTagViewModel(item.tagText)
+    let subtitle = item.rate.withTextStyle(.body2, color: .Text.secondary)
+    let tagViewModel = makeTagViewModel(item.badge)
     
     let iconImageDownloadTask = TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
       return imageLoader.loadImage(

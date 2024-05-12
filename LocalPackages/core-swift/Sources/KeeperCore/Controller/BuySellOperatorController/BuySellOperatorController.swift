@@ -1,7 +1,7 @@
 import Foundation
 
 public final class BuySellOperatorController {
-  public var didUpdateBuySellOperatorItemsModel: ((BuySellOperatorItemsModel) -> Void)?
+  public var didUpdateFiatOperatorItems: (([FiatOperator]) -> Void)?
   public var didUpdateActiveCurrency: ((Currency) -> Void)?
   
   private let buySellMethodsService: BuySellMethodsService
@@ -23,18 +23,25 @@ public final class BuySellOperatorController {
   }
   
   public func start() async {
-    let testItemsModel = BuySellOperatorItemsModel(items: [
-      .init(identifier: "mercuryo", iconURL: URL(string: "https://tonkeeper.com/assets/mercuryo-icon-new.png")!, title: "Mercuryo", description: "2,330.01 AMD for 1 TON", tagText: "BEST"),
-      .init(identifier: "dreamwalkers", iconURL: URL(string: "https://tonkeeper.com/assets/dreamwalkers-icon.png")!, title: "Dreamwalkers", description: "2,470.01 AMD for 1 TON"),
-      .init(identifier: "neocrypto", iconURL: URL(string: "https://tonkeeper.com/assets/neocrypto-new.png")!, title: "Neocrypto", description: "2,475.01 AMD for 1 TON"),
-      .init(identifier: "transak", iconURL: URL(string: "https://tonkeeper.com/assets/transak.png")!, title: "Transak", description: "2,570.01 AMD for 1 TON")
-    ])
+    let testInfoButtons: [FiatOperator.InfoButton] = [
+      .init(title: "Privacy Policy", url: URL(string: "https://example.com")),
+      .init(title: "Terms of Use", url: URL(string: "https://example.com"))
+    ]
+    
+    let testFiatOperators: [FiatOperator] = [
+      .init(id: "mercuryo", title: "Mercuryo", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: "BEST", iconURL: URL(string: "https://tonkeeper.com/assets/mercuryo-icon-new.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
+      .init(id: "dreamwalkers", title: "Dreamwalkers", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/dreamwalkers-icon.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
+      .init(id: "neocrypto", title: "Neocrypto", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/neocrypto-new.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
+      .init(id: "transak", title: "Transak", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/transak.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
+    ]
+    
+
+    //await updateBuySellOperatorItems()
     
     let activeCurrency = await currencyStore.getActiveCurrency()
-    
     await MainActor.run {
-      didUpdateBuySellOperatorItemsModel?(testItemsModel)
       didUpdateActiveCurrency?(activeCurrency)
+      didUpdateFiatOperatorItems?(testFiatOperators)
     }
   }
   
@@ -51,23 +58,25 @@ public final class BuySellOperatorController {
       .map({ $0.items })
       .flatMap({ $0 })
     
-    let items = buyItems.map({ mapFiatMethodItem($0) })
-    let buySellOperatorItemsModel = BuySellOperatorItemsModel(items: items)
+    let fiatOperatorItems = buyItems.map({ mapFiatMethodItem($0) })
     
     await MainActor.run {
-      didUpdateBuySellOperatorItemsModel?(buySellOperatorItemsModel)
+      didUpdateFiatOperatorItems?(fiatOperatorItems)
     }
   }
 }
 
 private extension BuySellOperatorController {
-  func mapFiatMethodItem(_ item: FiatMethodItem) -> BuySellOperatorItemsModel.Item {
-    return .init(
-      identifier: item.id,
-      iconURL: item.iconURL,
+  func mapFiatMethodItem(_ item: FiatMethodItem) -> FiatOperator {
+    FiatOperator(
+      id: item.id,
       title: item.title,
       description: item.description ?? "",
-      tagText: item.badge
+      rate: "",
+      badge: item.badge,
+      iconURL: item.iconURL,
+      actionTemplateURL: item.actionButton.url,
+      infoButtons: item.infoButtons.map({ .init(title: $0.title, url: URL(string: $0.url)) })
     )
   }
 }

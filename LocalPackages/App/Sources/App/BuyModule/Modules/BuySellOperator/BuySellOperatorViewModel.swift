@@ -2,6 +2,8 @@ import Foundation
 import TKUIKit
 import KeeperCore
 
+
+
 struct CurrencyPickerItem {
   let identifier: String
   let currencyCode: String
@@ -95,8 +97,9 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
   func viewDidLoad() {
     update()
     
-    buySellOperatorController.didUpdateBuySellOperatorItemsModel = { [weak self] buySellOperatorItemsModel in
-      self?.didUpdateBuySellOperatorItemsModel(buySellOperatorItemsModel)
+    buySellOperatorController.didUpdateFiatOperatorItems = { [weak self] fiatOperatorItems in
+      self?.operatorList = fiatOperatorItems
+      self?.didUpdateFiatOperatorItems(fiatOperatorItems)
     }
     
     buySellOperatorController.didUpdateActiveCurrency = { [weak self] activeCurrency in
@@ -107,8 +110,8 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
       await buySellOperatorController.start()
     }
     
-    let buySellDetailsItem = createBuySellDetailsItem()
-    didTapContinue?(buySellDetailsItem)
+//    let buySellDetailsItem = createBuySellDetailsItem()
+//    didTapContinue?(buySellDetailsItem)
   }
   
   func didSelectOperatorId(_ id: String) {
@@ -119,6 +122,7 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
   
   private var selectedCurrency = Currency.USD
   private var selectedOperatorId = ""
+  private var operatorList: [FiatOperator] = []
   
   private var isResolving = false {
     didSet {
@@ -178,14 +182,29 @@ private extension BuySellOperatorViewModelImplementation {
   }
   
   func createBuySellDetailsItem() -> BuySellDetailsItem {
-    BuySellDetailsItem(
-      iconUrl: URL(string: "https://tonkeeper.com/assets/mercuryo-icon-new.png")!,
-      serviceTitle: "Mercuryo",
-      serviceSubtitle: "Instantly buy with a credit card",
+    let fiatOperator = operatorList.first(where: { $0.id == selectedOperatorId })!
+    
+    var leftInfoButton: BuySellDetailsItem.ServiceInfo.InfoButton?
+    var rightInfoButton: BuySellDetailsItem.ServiceInfo.InfoButton?
+    
+    if fiatOperator.infoButtons.count > 0 {
+      let left = fiatOperator.infoButtons[0]
+      leftInfoButton = .init(title: left.title, url: left.url)
+    }
+    
+    if fiatOperator.infoButtons.count > 1 {
+      let right = fiatOperator.infoButtons[1]
+      rightInfoButton = .init(title: right.title, url: right.url)
+    }
+    
+    return BuySellDetailsItem(
+      iconUrl: fiatOperator.iconURL,
+      serviceTitle: fiatOperator.title,
+      serviceSubtitle: fiatOperator.description,
       serviceInfo: .init(
-        provider: "Mercuryo",
-        leftButton: .init(title: "Privacy Policy", url: URL(string: "https://example.com")!),
-        rightButton: .init(title: "Terms of Use", url: URL(string: "https://example.com")!)
+        provider: fiatOperator.title,
+        leftButton: leftInfoButton,
+        rightButton: rightInfoButton
       ),
       inputAmount: buySellOperatorItem.amount,
       transaction: createTransaction()
@@ -208,9 +227,9 @@ private extension BuySellOperatorViewModelImplementation {
     )
   }
   
-  func didUpdateBuySellOperatorItemsModel(_ model: BuySellOperatorItemsModel) {
-    let buySellOperatorItems = model.items.map {
-      itemMapper.mapBuySellOperatorItem($0)
+  func didUpdateFiatOperatorItems(_ items: [FiatOperator]) {
+    let buySellOperatorItems = items.map {
+      itemMapper.mapFiatOperatorItem($0)
     }
     
     Task { @MainActor in
