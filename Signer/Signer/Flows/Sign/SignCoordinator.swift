@@ -1,5 +1,6 @@
 import UIKit
 import SignerCore
+import SignerLocalize
 import TKCoordinator
 import TKUIKit
 
@@ -103,7 +104,8 @@ private extension SignCoordinator {
   
   func openEnterPassword(fromViewController: UIViewController, completion: @escaping (String?) -> Void) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository()
+      mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository(),
+      title: SignerLocalize.Password.Enter.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.output.didEnterPassword = { [weak view = module.view] password in

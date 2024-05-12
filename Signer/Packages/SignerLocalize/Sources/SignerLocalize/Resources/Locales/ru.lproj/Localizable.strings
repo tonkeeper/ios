@@ -17,6 +17,9 @@
 "password.create.textfield.caption" = "Минимум 4 символа";
 "password.reenter.title" = "Введите пароль ещё раз";
 "password.enter.title" = "Введите пароль";
+"password.change.enter_current.title" = "Введите текущий пароль";
+"password.change.enter_new.title" = "Задайте новый пароль";
+"password.change.reenter_new.title" = "Введите пароль ещё раз";
 
 "name_key.title" = "Добавьте имя ключа";
 "name_key.caption" = "Это упростит поиск необходимого ключа в списке ключей.";

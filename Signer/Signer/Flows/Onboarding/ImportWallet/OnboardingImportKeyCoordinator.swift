@@ -57,7 +57,8 @@ private extension OnboardingImportKeyCoordinator {
     let coordinator = CreatePasswordCoordinator(
       router: router,
       showKeyboardOnAppear: true,
-      showAsRoot: false
+      showAsRoot: false,
+      isChangePassword: false
     )
     coordinator.didFinish = { [weak self, unowned coordinator] in
       self?.removeChild(coordinator)

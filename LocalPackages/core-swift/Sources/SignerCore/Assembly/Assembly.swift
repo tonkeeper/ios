@@ -48,7 +48,11 @@ public final class Assembly {
   }
   
   public func walletKeyDetailsController(walletKey: WalletKey) -> WalletKeyDetailsController {
-    WalletKeyDetailsController(walletKey: walletKey, walletKeysStore: storesAssembly.walletKeysStore)
+    WalletKeyDetailsController(
+      walletKey: walletKey,
+      walletKeysStore: storesAssembly.walletKeysStore,
+      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository()
+    )
   }
   
   public func recoveryPhraseController(walletKey: WalletKey, password: String) -> RecoveryPhraseController {

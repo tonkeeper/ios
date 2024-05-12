@@ -62,6 +62,29 @@ public struct MnemonicsV2Vault {
     }
   }
   
+  public func deleteMnemonic(key: String, password: String) throws {
+    do {
+      let encryptedMnemonics: Data = try keychainVault.readValue(
+        query(
+          key: mnemonicsKey,
+          accessGroup: accessGroup
+        )
+      )
+      var decryptedMnemonics = try decryptMnemonics(encryptedMnemonics, password: password)
+      decryptedMnemonics[key] = nil
+      let encryptedUpdatedMnemonics = try encryptMnemonics(decryptedMnemonics, password: password)
+      try keychainVault.saveValue(encryptedUpdatedMnemonics, to: query(key: mnemonicsKey, accessGroup: accessGroup))
+    } catch KeychainVaultError.noItemFound {
+      throw Error.noMnemonics
+    } catch {
+      throw Error.other(error)
+    }
+  }
+  
+  public func deleteAll() throws {
+    try keychainVault.deleteItem(query(key: mnemonicsKey, accessGroup: accessGroup))
+  }
+  
   public func changePassword(oldPassword: String, newPassword: String) throws {
     do {
       let encryptedMnemonics: Data = try keychainVault.readValue(

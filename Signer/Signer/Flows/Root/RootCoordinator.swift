@@ -24,7 +24,7 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
       case .onboarding:
         openOnboarding()
       case .main:
-        openMain(deeplink: deeplink)
+        openEnterPassword(deeplink: deeplink)
       }
     }
     handleState(state: rootController.getState())
@@ -117,6 +117,6 @@ private extension RootCoordinator {
       viewController.view.rightAnchor.constraint(equalTo: containerViewController.view.rightAnchor)
     ])
     
-    router.push(viewController: containerViewController, animated: animated)
+    router.rootViewController.setViewControllers([containerViewController], animated: true)
   }
 }

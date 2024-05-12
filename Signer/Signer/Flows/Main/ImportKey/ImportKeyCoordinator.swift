@@ -69,7 +69,8 @@ private extension ImportKeyCoordinator {
   
   func openEnterPassword(phrase: [String], name: String) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository()
+      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
+      title: SignerLocalize.Password.Enter.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.view.setupBackButton()

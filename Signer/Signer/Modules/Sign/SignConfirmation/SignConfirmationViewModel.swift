@@ -7,7 +7,6 @@ import TonSwift
 
 protocol SignConfirmationModuleOutput: AnyObject {
   var didSignTransaction: ((URL, WalletKey, String) -> Void)? { get set }
-//  var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)? { get set }
   var didRequirePassword: (( @escaping (String?) -> Void ) -> Void)? { get set }
   var didOpenEmulateURL: ((URL) -> Void)? { get set }
 }
@@ -26,7 +25,6 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   // MARK: - SignConfirmationModuleOutput
 
   var didSignTransaction: ((URL, WalletKey, String) -> Void)?
-//  var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)?
   var didRequirePassword: ((@escaping (String?) -> Void) -> Void)?
   var didOpenEmulateURL: ((URL) -> Void)?
   

@@ -57,6 +57,9 @@ private extension PasswordInputViewController {
     viewModel.didUpdateTitle = { [customView] model in
       customView.titleDescriptionView.configure(model: model)
     }
+    viewModel.didUpdateTextFieldCaption = { [customView] caption in
+      customView.textFieldCaption = caption
+    }
     viewModel.didUpdateContinueButton = { [customView] configuration in
       customView.continueButton.configuration = configuration
     }
@@ -69,7 +72,6 @@ private extension PasswordInputViewController {
     viewModel.didMakeInputActive = { [customView] in
       customView.passwordTextField.becomeFirstResponder()
     }
-    
     customView.passwordTextField.didUpdateText = { [viewModel] input in
       viewModel.didUpdateInput(input)
     }

@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
 
 final class KeyDetailsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -40,6 +41,12 @@ private extension KeyDetailsCoordinator {
       self?.openRecoveryPhrase()
     }
     module.output.didRequireConfirmation = { [weak self] completion in
+      guard let self else { return }
+      self.openEnterPassword(fromViewController: self.router.rootViewController, completion: { password in
+        completion(password != nil)
+      })
+    }
+    module.output.didRequirePassword = { [weak self] completion in
       guard let self else { return }
       self.openEnterPassword(fromViewController: self.router.rootViewController, completion: completion)
     }
@@ -90,18 +97,19 @@ private extension KeyDetailsCoordinator {
     router.present(navigationController)
   }
   
-  func openEnterPassword(fromViewController: UIViewController, completion: @escaping (Bool) -> Void) {
+  func openEnterPassword(fromViewController: UIViewController, completion: @escaping (String?) -> Void) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository()
+      mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository(),
+      title: SignerLocalize.Password.Enter.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
-    module.output.didEnterPassword = { [weak view = module.view] _ in
-      completion(true)
+    module.output.didEnterPassword = { [weak view = module.view] password in
+      completion(password)
       view?.dismiss(animated: true)
     }
     
     module.view.setupLeftCloseButton { [weak view = module.view] in
-      completion(false)
+      completion(nil)
       view?.dismiss(animated: true)
     }
     

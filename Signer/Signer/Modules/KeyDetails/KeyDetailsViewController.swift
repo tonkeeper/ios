@@ -7,10 +7,13 @@ final class KeyDetailsViewController: GenericViewViewController<KeyDetailsView> 
   
   private lazy var dataSource = createDataSource()
   
-  private lazy var listItemCellRegistration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration>(handler: { cell, indexPath, itemIdentifier in
+  private lazy var listItemCellRegistration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration>(handler: { 
+    [weak self] cell,
+    indexPath,
+    itemIdentifier in
     cell.configure(configuration: itemIdentifier)
     cell.isFirstInSection = { ip in ip.item == 0 }
-    cell.isLastInSection = { [weak self] ip in
+    cell.isLastInSection = { ip in
       guard let collectionView = self?.customView.collectionView else { return false }
       return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
     }

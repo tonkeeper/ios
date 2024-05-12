@@ -16,6 +16,9 @@
 "password.create.textfield.caption" = "Minimum 4 characters";
 "password.reenter.title" = "Re-enter Password";
 "password.enter.title" = "Enter Password";
+"password.change.enter_current.title" = "Enter current Password";
+"password.change.enter_new.title" = "Enter new Password";
+"password.change.reenter_new.title" = "Re-enter Password";
 
 "name_key.title" = "Name your Key";
 "name_key.caption" = "It will simplify the search for the necessary key in the list of keys.";

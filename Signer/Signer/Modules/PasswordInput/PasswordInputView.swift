@@ -3,6 +3,17 @@ import TKUIKit
 
 final class PasswordInputView: UIView {
   
+  var textFieldCaption: String? {
+    didSet {
+      textFieldCaptionLabel.attributedText = textFieldCaption?.withTextStyle(
+        .body2,
+        color: .Text.secondary,
+        alignment: .center,
+        lineBreakMode: .byTruncatingTail
+      )
+    }
+  }
+  
   let titleDescriptionView: TKTitleDescriptionView = {
     let view = TKTitleDescriptionView(size: .big)
     view.padding.bottom = .titleBottomPadding
@@ -11,6 +22,8 @@ final class PasswordInputView: UIView {
 
   let passwordTextField = TKPasswordTextField()
   let passwordTextFieldContainer = TKPaddingContainerView()
+  
+  let textFieldCaptionLabel = UILabel()
   
   let continueButton = TKButton()
   let continueButtonContainer = TKPaddingContainerView()
@@ -59,6 +72,7 @@ private extension PasswordInputView {
     addSubview(titleDescriptionView)
     addSubview(passwordTextFieldContainer)
     passwordTextFieldContainer.setViews([passwordTextField])
+    addSubview(textFieldCaptionLabel)
     
     addSubview(continueButtonContainer)
     continueButtonContainer.setViews([continueButton])
@@ -70,6 +84,7 @@ private extension PasswordInputView {
     titleDescriptionView.translatesAutoresizingMaskIntoConstraints = false
     passwordTextFieldContainer.translatesAutoresizingMaskIntoConstraints = false
     continueButtonContainer.translatesAutoresizingMaskIntoConstraints = false
+    textFieldCaptionLabel.translatesAutoresizingMaskIntoConstraints = false
     
     continueButtonContainerBottomSafeAreaConstraint = continueButtonContainer
       .bottomAnchor
@@ -90,6 +105,10 @@ private extension PasswordInputView {
       passwordTextFieldContainer.topAnchor.constraint(equalTo: titleDescriptionView.bottomAnchor),
       passwordTextFieldContainer.leftAnchor.constraint(equalTo: leftAnchor),
       passwordTextFieldContainer.rightAnchor.constraint(equalTo: rightAnchor),
+      
+      textFieldCaptionLabel.topAnchor.constraint(equalTo: passwordTextFieldContainer.bottomAnchor, constant: 12),
+      textFieldCaptionLabel.leftAnchor.constraint(equalTo: passwordTextFieldContainer.leftAnchor, constant: 17),
+      textFieldCaptionLabel.rightAnchor.constraint(equalTo: passwordTextFieldContainer.rightAnchor, constant: -17),
       
       continueButtonContainer.leftAnchor.constraint(equalTo: leftAnchor),
       continueButtonContainer.rightAnchor.constraint(equalTo: rightAnchor)

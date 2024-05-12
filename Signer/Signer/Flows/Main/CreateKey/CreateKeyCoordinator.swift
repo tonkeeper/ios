@@ -1,6 +1,7 @@
 import UIKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
 
 final class CreateKeyCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -37,7 +38,8 @@ private extension CreateKeyCoordinator {
   
   func openEnterPassword(name: String) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository()
+      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
+      title: SignerLocalize.Password.Enter.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.view.setupBackButton()

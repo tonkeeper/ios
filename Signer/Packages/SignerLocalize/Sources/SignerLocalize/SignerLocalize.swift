@@ -72,6 +72,26 @@ public enum SignerLocalize {
         localize("password.enter.title")
       }
     }
+    public enum Change {
+      public enum EnterCurrent {
+        /// Enter current Password
+        public static var title: String {
+          localize("password.change.enter_current.title")
+        }
+      }
+      public enum EnterNew {
+        /// Enter new Password
+        public static var title: String {
+          localize("password.change.enter_new.title")
+        }
+      }
+      public enum ReenterNew {
+        /// Re-enter Password
+        public static var title: String {
+          localize("password.change.reenter_new.title")
+        }
+      }
+    }
   }
   public enum NameKey {
     /// Name your Key

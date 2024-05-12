@@ -2,6 +2,7 @@ import UIKit
 import TKScreenKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
 
 final class ShowRecoveryPhraseCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -26,7 +27,8 @@ final class ShowRecoveryPhraseCoordinator: RouterCoordinator<NavigationControlle
 private extension ShowRecoveryPhraseCoordinator {
   func openEnterPassword() {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository()
+      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
+      title: SignerLocalize.Password.Enter.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.output.didEnterPassword = { [weak self] password in

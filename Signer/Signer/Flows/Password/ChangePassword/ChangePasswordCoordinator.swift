@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
 
 final class ChangePasswordCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
@@ -21,7 +22,8 @@ final class ChangePasswordCoordinator: RouterCoordinator<NavigationControllerRou
 private extension ChangePasswordCoordinator {
   func openEnterCurrentPassword() {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository()
+      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
+      title: SignerLocalize.Password.Change.EnterCurrent.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.output.didEnterPassword = { [weak self] password in
@@ -41,7 +43,8 @@ private extension ChangePasswordCoordinator {
   func openSetNewPassword(oldPassword: String) {
     let coordinator = CreatePasswordCoordinator(router: router,
                                                 showKeyboardOnAppear: true,
-                                                showAsRoot: true)
+                                                showAsRoot: true,
+                                                isChangePassword: true)
     coordinator.didCreatePassword = { [weak self] password in
       self?.setNewPassword(oldPassword: oldPassword, newPassword: password)
     }
