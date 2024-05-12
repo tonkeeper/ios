@@ -3,6 +3,7 @@ import TKUIKit
 
 final class BuySellOperatorView: UIView {
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
+  
   let titleView = ModalTitleView()
   
   let continueButton = TKButton(

@@ -439,6 +439,7 @@ public final class MainAssembly {
     BuySellOperatorController(
       buySellMethodsService: servicesAssembly.buySellMethodsService(),
       locationService: servicesAssembly.locationService(),
+      tonRatesLoader: loadersAssembly.tonRatesLoader,
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore
     )

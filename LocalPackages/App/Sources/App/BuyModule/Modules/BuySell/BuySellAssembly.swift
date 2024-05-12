@@ -6,7 +6,7 @@ struct BuySellAssembly {
   private init() {}
   static func module(buySellController: BuySellController,
                      appSettings: AppSettings,
-                     buySellItem: BuySellItem) -> MVVMModule<BuySellViewController, BuySellModuleOutput, BuySellModuleInput> {
+                     buySellItem: BuySellItem) -> MVVMModule<BuySellViewController, BuySellModuleOutput, Void> {
     let viewModel = BuySellViewModelImplementation(
       buySellController: buySellController,
       appSettings: appSettings,
@@ -20,7 +20,7 @@ struct BuySellAssembly {
     return MVVMModule(
       view: viewController,
       output: viewModel,
-      input: viewModel
+      input: Void()
     )
   }
 }

@@ -8,6 +8,22 @@ struct CurrencyPickerItem {
   let currencyTitle: String
 }
 
+struct BuySellOperatorItem {
+  enum Operation {
+    case buy(amount: String)
+    case sell(amount: String)
+  }
+  
+  let operation: Operation
+  let paymentMethodId: String
+  var amount: String {
+    switch operation {
+    case .buy(let amount), .sell(let amount):
+      return amount
+    }
+  }
+}
+
 struct BuySellOperatorModel {
   struct Button {
     let title: String
@@ -64,9 +80,10 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
     )
     
     didUpdateCurrencyPickerItem?(currencyPickerItem)
-
-    let buySellDetailsItem = createBuySellDetailsItem()
-    didTapContinue?(buySellDetailsItem)
+    
+    Task {
+      await buySellOperatorController.loadRate(for: currency)
+    }
   }
   
   // MARK: - BuySellOperatorModelViewModel
@@ -89,6 +106,9 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
     Task {
       await buySellOperatorController.start()
     }
+    
+    let buySellDetailsItem = createBuySellDetailsItem()
+    didTapContinue?(buySellDetailsItem)
   }
   
   func didSelectOperatorId(_ id: String) {
@@ -118,13 +138,13 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
   // MARK: - Dependencies
   
   private let buySellOperatorController: BuySellOperatorController
-  private var buySellOperation: BuySellOperationModel
+  private var buySellOperatorItem: BuySellOperatorItem
   
   // MARK: - Init
   
-  init(buySellOperatorController: BuySellOperatorController, buySellOperation: BuySellOperationModel) {
+  init(buySellOperatorController: BuySellOperatorController, buySellOperatorItem: BuySellOperatorItem) {
     self.buySellOperatorController = buySellOperatorController
-    self.buySellOperation = buySellOperation
+    self.buySellOperatorItem = buySellOperatorItem
   }
   
   deinit {
@@ -167,14 +187,24 @@ private extension BuySellOperatorViewModelImplementation {
         leftButton: .init(title: "Privacy Policy", url: URL(string: "https://example.com")!),
         rightButton: .init(title: "Terms of Use", url: URL(string: "https://example.com")!)
       ),
-      amountPay: "50",
+      inputAmount: buySellOperatorItem.amount,
       transaction: createTransaction()
     )
   }
   
   func createTransaction() -> BuySellDetailsItem.Transaction {
-    BuySellDetailsItem.Transaction(
-      operation: .buyTon(fiatCurrency: .USD)
+    let fiatCurrency = selectedCurrency
+    
+    let transactionOperation: BuySellDetailsItem.Transaction.Operation
+    switch buySellOperatorItem.operation {
+    case .buy:
+      transactionOperation = .buyTon(fiatCurrency: fiatCurrency)
+    case .sell:
+      transactionOperation = .sellTon(fiatCurrency: fiatCurrency)
+    }
+
+    return BuySellDetailsItem.Transaction(
+      operation: transactionOperation
     )
   }
   

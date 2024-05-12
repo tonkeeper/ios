@@ -6,15 +6,18 @@ public final class BuySellOperatorController {
   
   private let buySellMethodsService: BuySellMethodsService
   private let locationService: LocationService
+  private let tonRatesLoader: TonRatesLoader
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   
   init(buySellMethodsService: BuySellMethodsService,
        locationService: LocationService,
+       tonRatesLoader: TonRatesLoader,
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore) {
     self.buySellMethodsService = buySellMethodsService
     self.locationService = locationService
+    self.tonRatesLoader = tonRatesLoader
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
   }
@@ -33,6 +36,10 @@ public final class BuySellOperatorController {
       didUpdateBuySellOperatorItemsModel?(testItemsModel)
       didUpdateActiveCurrency?(activeCurrency)
     }
+  }
+  
+  public func loadRate(for currency: Currency) async {
+    await tonRatesLoader.loadRate(currency: currency)
   }
   
   // TODO: Refactor

@@ -21,7 +21,7 @@ struct BuySellDetailsItem {
     }
     
     var operation: Operation
-    var pay: Currency {
+    var currencyPay: Currency {
       switch operation {
       case .buyTon(let fiatCurrency):
         return fiatCurrency
@@ -29,7 +29,7 @@ struct BuySellDetailsItem {
         return .TON
       }
     }
-    var get: Currency {
+    var currencyGet: Currency {
       switch operation {
       case .buyTon:
         return .TON
@@ -54,7 +54,7 @@ struct BuySellDetailsItem {
   var serviceTitle: String
   var serviceSubtitle: String
   var serviceInfo: ServiceInfo
-  var amountPay: String
+  var inputAmount: String
   var transaction: Transaction
 }
 
@@ -66,7 +66,6 @@ struct BuySellDetailsModel {
   
   struct TextField {
     let placeholder: String
-    let inputText: String
     let currencyCode: String
   }
   
@@ -150,7 +149,18 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   
   func viewDidLoad() {
     update()
+    updateAmountTextFields()
     updateConvertedRate()
+    
+    buySellDetailsController.didUpdateRates = { [weak self] in
+      self?.updateConvertedRate()
+      self?.updateAmountTextFields()
+    }
+    
+    Task {
+      await buySellDetailsController.start()
+      await buySellDetailsController.loadRate(for: buySellDetailsItem.transaction.operation.fiatCurrency)
+    }
   }
   
   func didInputAmountPay(_ string: String) {
@@ -238,13 +248,23 @@ private extension BuySellDetailsViewModelImplementation {
     didUpdateModel?(model)
   }
   
+  func updateAmountTextFields() {
+    switch buySellDetailsItem.transaction.operation {
+    case .buyTon:
+      didInputAmountGet(buySellDetailsItem.inputAmount)
+    case .sellTon:
+      didInputAmountPay(buySellDetailsItem.inputAmount)
+    }
+  }
+  
   func updateConvertedRate() {
     Task {
       let amount = BigUInt(stringLiteral: "1")
       let payAmount = mapInputAmount(amount, from: .get)
       let payInput = Input(amount: payAmount, fractionLength: 0)
       let currency = buySellDetailsItem.transaction.operation.fiatCurrency
-      let convertedRate = await buySellDetailsController.convertAmountInput(payInput, currency: currency, outputFractionLenght: 2)
+      let outputFractionLenght = maximumFractionDigits(forInputField: .pay)
+      let convertedRate = await buySellDetailsController.convertAmountInput(payInput, currency: currency, outputFractionLenght: outputFractionLenght)
       
       await MainActor.run {
         self.convertedRate = convertedRate
@@ -270,8 +290,8 @@ private extension BuySellDetailsViewModelImplementation {
       icon: .asyncImage(iconImageDownloadTask),
       title: buySellDetailsItem.serviceTitle,
       subtitle: buySellDetailsItem.serviceSubtitle,
-      textFieldPay: .init(placeholder: "You Pay", inputText: "", currencyCode: buySellDetailsItem.transaction.pay.code),
-      textFieldGet: .init(placeholder: "You Get", inputText: "", currencyCode: buySellDetailsItem.transaction.get.code),
+      textFieldPay: .init(placeholder: "You Pay", currencyCode: buySellDetailsItem.transaction.currencyPay.code),
+      textFieldGet: .init(placeholder: "You Get", currencyCode: buySellDetailsItem.transaction.currencyGet.code),
       convertedRate: createConvertedRateText(),
       infoContainer: createInfoContainerModel(buySellDetailsItem.serviceInfo),
       continueButton: .init(
@@ -301,8 +321,8 @@ private extension BuySellDetailsViewModelImplementation {
   }
   
   func createConvertedRateText() -> String {
-    let currencyPay = buySellDetailsItem.transaction.pay
-    let currencyGet = buySellDetailsItem.transaction.get
+    let currencyPay = buySellDetailsItem.transaction.currencyPay
+    let currencyGet = buySellDetailsItem.transaction.currencyGet
     return "\(convertedRate) \(currencyPay.code) for 1 \(currencyGet.code)"
   }
   
@@ -396,7 +416,7 @@ private extension BuySellAmountTextFieldFormatter {
     numberFormatter.usesGroupingSeparator = true
     numberFormatter.groupingSeparator = " "
     numberFormatter.decimalSeparator = Locale.current.decimalSeparator
-    numberFormatter.maximumIntegerDigits = 8
+    numberFormatter.maximumIntegerDigits = 16
     numberFormatter.roundingMode = .down
     return BuySellAmountTextFieldFormatter(
       currencyFormatter: numberFormatter

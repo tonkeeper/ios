@@ -3,6 +3,8 @@ import BigInt
 
 public final class BuySellDetailsController {
   
+  public var didUpdateRates: (() -> Void)?
+  
   public struct Input {
     public enum Amount {
       case ton(BigUInt)
@@ -33,7 +35,13 @@ public final class BuySellDetailsController {
   }
   
   public func start() async {
-    
+    _ = await tonRatesStore.addEventObserver(self) { observer, event in
+      switch event {
+      case .didUpdateRates:
+        print("update rates")
+        observer.didUpdateRates?()
+      }
+    }
   }
   
   public func loadRate(for currency: Currency) async {

@@ -55,17 +55,20 @@ private extension BuyCoordinator {
   }
 
   func openBuySell() {
+    let defaultBuySellItem = BuySellItem(
+      operation: .buy,
+      token: .ton,
+      inputAmount: "300",
+      minimumInputAmount: "50"
+    )
+    
     let module = BuySellAssembly.module(
       buySellController: keeperCoreMainAssembly.buySellController(
         wallet: wallet,
         isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
       ),
       appSettings: coreAssembly.appSettings,
-      buySellItem: BuySellItem(
-        operation: .buy,
-        token: .ton,
-        amount: 50
-      )
+      buySellItem: defaultBuySellItem
     )
     
     module.view.setupRightCloseButton { [weak self] in
@@ -77,17 +80,17 @@ private extension BuyCoordinator {
       print("TODO: Add Change Country Screen")
     }
     
-    module.output.didContinueBuySell = { [weak self] buySellOperation in
-      self?.openBuySellOperator(buySellOperation: buySellOperation)
+    module.output.didContinueBuySell = { [weak self] buySellOperatorItem in
+      self?.openBuySellOperator(buySellOperatorItem: buySellOperatorItem)
     }
     
     router.push(viewController: module.view, animated: false)
   }
   
-  func openBuySellOperator(buySellOperation: BuySellOperationModel) {
+  func openBuySellOperator(buySellOperatorItem: BuySellOperatorItem) {
     let module = BuySellOperatorAssembly.module(
       buySellOperatorController: keeperCoreMainAssembly.buySellOperatorController(),
-      buySellOperation: buySellOperation
+      buySellOperatorItem: buySellOperatorItem
     )
     
     module.view.setupBackButton()
