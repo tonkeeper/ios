@@ -35,6 +35,7 @@ public final class TKTextFieldInputView: UIControl, TKTextFieldInputViewControl 
     set {
       textInputControl.inputText = newValue
       updateTextAction()
+      updateCursorLabel(inputText: newValue)
     }
   }
   public var textFieldState: TKTextFieldState = .inactive {
@@ -149,7 +150,6 @@ private extension TKTextFieldInputView {
       self.inputText = $0
       self.didUpdateText?(self.inputText)
       self.updateTextAction()
-      self.updateCursorLabel(inputText: self.inputText)
     }
     
     textInputControl.didBeginEditing = { [weak self] in

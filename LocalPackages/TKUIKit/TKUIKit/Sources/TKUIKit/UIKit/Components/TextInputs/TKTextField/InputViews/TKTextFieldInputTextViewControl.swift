@@ -1,5 +1,9 @@
 import UIKit
 
+public protocol TKTextInputTextViewFormatterDelegate: AnyObject {
+  func textView(_ textView: TKTextInputTextViewControl, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool
+}
+
 public final class TKTextInputTextViewControl: UITextView, TKTextFieldInputViewControl {
   public var didUpdateText: ((String) -> Void)?
   public var didBeginEditing: (() -> Void)?
@@ -26,6 +30,7 @@ public final class TKTextInputTextViewControl: UITextView, TKTextFieldInputViewC
     set { inputAccessoryView = newValue }
   }
   
+  public weak var formatterDelegate: TKTextInputTextViewFormatterDelegate?
   public var cursorLabel: UILabel?
   
   public init() {
@@ -78,6 +83,11 @@ extension TKTextInputTextViewControl: UITextViewDelegate {
   
   public func textViewDidEndEditing(_ textView: UITextView) {
     didEndEditing?()
+  }
+  
+  public func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+    guard let formatterDelegate else { return true }
+    return formatterDelegate.textView(self, shouldChangeTextIn: range, replacementText: text)
   }
 }
 
