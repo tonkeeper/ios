@@ -102,6 +102,7 @@
 		C37671422BF18F7C003CD9CB /* SettingsRootItemsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37671412BF18F7C003CD9CB /* SettingsRootItemsProvider.swift */; };
 		C37671452BF192F7003CD9CB /* SettingsLegalItemsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37671442BF1924E003CD9CB /* SettingsLegalItemsProvider.swift */; };
 		C37671482BF19665003CD9CB /* FontLicenseViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37671472BF19665003CD9CB /* FontLicenseViewController.swift */; };
+		C376714A2BF1BA33003CD9CB /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C37671492BF1BA18003CD9CB /* PrivacyInfo.xcprivacy */; };
 		C3E6DE572B1F40DB005AA291 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E6DE562B1F40DB005AA291 /* AppDelegate.swift */; };
 		C3E6DE592B1F40DB005AA291 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E6DE582B1F40DB005AA291 /* SceneDelegate.swift */; };
 		C3E6DE5B2B1F40DB005AA291 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3E6DE5A2B1F40DB005AA291 /* ViewController.swift */; };
@@ -219,6 +220,7 @@
 		C37671412BF18F7C003CD9CB /* SettingsRootItemsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRootItemsProvider.swift; sourceTree = "<group>"; };
 		C37671442BF1924E003CD9CB /* SettingsLegalItemsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsLegalItemsProvider.swift; sourceTree = "<group>"; };
 		C37671472BF19665003CD9CB /* FontLicenseViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FontLicenseViewController.swift; sourceTree = "<group>"; };
+		C37671492BF1BA18003CD9CB /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		C3E6DE532B1F40DB005AA291 /* Signer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Signer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		C3E6DE562B1F40DB005AA291 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C3E6DE582B1F40DB005AA291 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -769,6 +771,7 @@
 				C3E6DE5F2B1F40DB005AA291 /* Assets.xcassets */,
 				C3E6DE612B1F40DB005AA291 /* LaunchScreen.storyboard */,
 				C3E6DE642B1F40DB005AA291 /* Info.plist */,
+				C37671492BF1BA18003CD9CB /* PrivacyInfo.xcprivacy */,
 			);
 			path = Signer;
 			sourceTree = "<group>";
@@ -878,6 +881,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C376714A2BF1BA33003CD9CB /* PrivacyInfo.xcprivacy in Resources */,
 				C3E6DE632B1F40DB005AA291 /* LaunchScreen.storyboard in Resources */,
 				C3E6DE602B1F40DB005AA291 /* Assets.xcassets in Resources */,
 			);
