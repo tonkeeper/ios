@@ -485,17 +485,19 @@ private extension HistoryListMapper {
                              nftsCollection: NFTsCollection,
                              isTestnet: Bool) -> HistoryEvent.Action {
     let eventType: HistoryEvent.Action.ActionType
-    let leftTopDescription: String?
-    
+    var leftTopDescription: String?
+    if let previewAccount = preview.accounts.first {
+      leftTopDescription = previewAccount.address.toFriendly(
+        testOnly: isTestnet,
+        bounceable: !previewAccount.isWallet
+      ).toShort()
+    }
     if historyEvent.isScam {
       eventType = .spam
-      leftTopDescription = action.sender?.value(isTestnet: isTestnet)
     } else if action.sender == historyEvent.account {
       eventType = .sent
-      leftTopDescription = action.recipient?.value(isTestnet: isTestnet)
     } else {
       eventType = .receieved
-      leftTopDescription = action.sender?.value(isTestnet: isTestnet)
     }
     
     var nft: HistoryEvent.Action.NFTModel?

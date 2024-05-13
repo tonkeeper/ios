@@ -30,26 +30,28 @@ struct AddWalletModule {
       router: router,
       options: options,
       walletAddController: dependencies.walletsUpdateAssembly.walletAddController(),
-      createWalletCoordinatorProvider:  { router in
-        return createCreateWalletCoordinator(router: router)
+      createWalletCoordinatorProvider:  { router, passcode in
+        return createCreateWalletCoordinator(router: router, passcode: passcode)
       },
-      importWalletCoordinatorProvider: { router, isTestnet in
-        return createImportWalletCoordinator(router: router, isTestnet: isTestnet)
+      importWalletCoordinatorProvider: { router, passcode, isTestnet in
+        return createImportWalletCoordinator(router: router, passcode: passcode, isTestnet: isTestnet)
       },
-      importWatchOnlyWalletCoordinatorProvider: { router in
-        return createImportWatchOnlyWalletCoordinator(router: router)
-      }, pairSignerCoordinatorProvider: { router in
-        return createPairSignerCoordinator(router: router)
+      importWatchOnlyWalletCoordinatorProvider: { router, passcode in
+        return createImportWatchOnlyWalletCoordinator(router: router, passcode: passcode)
+      }, pairSignerCoordinatorProvider: { router, passcode in
+        return createPairSignerCoordinator(router: router, passcode: passcode)
       }, createPasscodeCoordinatorProvider: createPasscodeCoordinatorProvider
     )
     
     return coordinator
   }
   
-  func createImportWalletCoordinator(router: NavigationControllerRouter, isTestnet: Bool) -> ImportWalletCoordinator {
+  func createImportWalletCoordinator(router: NavigationControllerRouter, passcode: String?, isTestnet: Bool) -> ImportWalletCoordinator {
     let coordinator = ImportWalletCoordinator(
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      passcodeAssembly: dependencies.passcodeAssembly,
+      passcode: passcode,
       isTestnet: isTestnet,
       customizeWalletModule: {
         self.createCustomizeWalletModule(
@@ -86,12 +88,17 @@ struct AddWalletModule {
     return coordinator
   }
   
-  public func createPairSignerImportCoordinator(publicKey: TonSwift.PublicKey, name: String, router: NavigationControllerRouter) -> PairSignerImportCoordinator {
+  public func createPairSignerImportCoordinator(publicKey: TonSwift.PublicKey, 
+                                                name: String,
+                                                passcode: String?,
+                                                router: NavigationControllerRouter) -> PairSignerImportCoordinator {
     PairSignerImportCoordinator(
       publicKey: publicKey,
       name: name,
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      passcodeAssembly: dependencies.passcodeAssembly,
+      passcode: passcode,
       customizeWalletModule: {
         self.createCustomizeWalletModule(
           name: name,
@@ -103,24 +110,26 @@ struct AddWalletModule {
     )
   }
   
-  public func createPairSignerCoordinator(router: NavigationControllerRouter) -> PairSignerCoordinator {
+  public func createPairSignerCoordinator(router: NavigationControllerRouter, passcode: String?) -> PairSignerCoordinator {
     PairSignerCoordinator(
       scannerAssembly: dependencies.scannerAssembly,
       walletUpdateAssembly: dependencies.walletsUpdateAssembly,
       coreAssembly: dependencies.coreAssembly,
       router: router,
       pairSignerImportCoordinatorProvider: { router, publicKey, name in
-        self.createPairSignerImportCoordinator(publicKey: publicKey, name: name, router: router)
+        self.createPairSignerImportCoordinator(publicKey: publicKey, name: name, passcode: passcode, router: router)
       }
     )
   }
 }
 
 private extension AddWalletModule {
-  func createCreateWalletCoordinator(router: NavigationControllerRouter) -> CreateWalletCoordinator {
+  func createCreateWalletCoordinator(router: NavigationControllerRouter, passcode: String?) -> CreateWalletCoordinator {
     let coordinator = CreateWalletCoordinator(
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      passcodeAssembly: dependencies.passcodeAssembly,
+      passcode: passcode,
       customizeWalletModule: {
         self.createCustomizeWalletModule(
           name: nil,
@@ -134,10 +143,12 @@ private extension AddWalletModule {
     return coordinator
   }
   
-  func createImportWatchOnlyWalletCoordinator(router: NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator {
+  func createImportWatchOnlyWalletCoordinator(router: NavigationControllerRouter, passcode: String?) -> ImportWatchOnlyWalletCoordinator {
     let coordinator = ImportWatchOnlyWalletCoordinator(
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      passcodeAssembly: dependencies.passcodeAssembly,
+      passcode: passcode,
       customizeWalletModule: { name in
         self.createCustomizeWalletModule(
           name: name,

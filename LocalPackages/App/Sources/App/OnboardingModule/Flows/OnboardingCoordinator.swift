@@ -132,47 +132,81 @@ private extension OnboardingCoordinator {
   }
   
   func handleSignerDeeplink(_ deeplink: TonkeeperDeeplink.SignerDeeplink) {
-
+    
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
     switch deeplink {
     case .link(let publicKey, let name):
-      let coordinator = AddWalletModule(
-        dependencies: AddWalletModule.Dependencies(
-          walletsUpdateAssembly: keeperCoreOnboardingAssembly.walletsUpdateAssembly,
-          coreAssembly: coreAssembly,
-          scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly(),
-          passcodeAssembly: keeperCoreOnboardingAssembly.passcodeAssembly
+      openCreatePasscode { [weak self, keeperCoreOnboardingAssembly, coreAssembly] passcode in
+        guard let passcode else { return }
+        let coordinator = AddWalletModule(
+          dependencies: AddWalletModule.Dependencies(
+            walletsUpdateAssembly: keeperCoreOnboardingAssembly.walletsUpdateAssembly,
+            coreAssembly: coreAssembly,
+            scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly(),
+            passcodeAssembly: keeperCoreOnboardingAssembly.passcodeAssembly
+          )
+        ).createPairSignerImportCoordinator(
+          publicKey: publicKey,
+          name: name,
+          passcode: passcode,
+          router: NavigationControllerRouter(
+            rootViewController: navigationController
+          )
         )
-      ).createPairSignerImportCoordinator(
-        publicKey: publicKey,
-        name: name,
-        router: NavigationControllerRouter(
-          rootViewController: navigationController
-        )
-      )
-      
-      coordinator.didPrepareForPresent = { [weak router] in
-        router?.present(navigationController)
+        
+        coordinator.didPrepareForPresent = { [weak self] in
+          self?.router.present(navigationController)
+        }
+        
+        coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
+          navigationController?.dismiss(animated: true)
+          guard let coordinator else { return }
+          self?.removeChild(coordinator)
+        }
+        
+        coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in
+          navigationController?.dismiss(animated: true, completion: {
+            self?.didFinishOnboarding?()
+          })
+          guard let coordinator else { return }
+          self?.removeChild(coordinator)
+        }
+        
+        self?.addChild(coordinator)
+        coordinator.start()
       }
-      
-      coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
-        navigationController?.dismiss(animated: true)
-        guard let coordinator else { return }
-        self?.removeChild(coordinator)
-      }
-      
-      coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in
-        navigationController?.dismiss(animated: true, completion: {
-          self?.didFinishOnboarding?()
-        })
-        guard let coordinator else { return }
-        self?.removeChild(coordinator)
-      }
-      
-      addChild(coordinator)
-      coordinator.start()
     }
+  }
+  
+  func openCreatePasscode(completion: @escaping (String?) -> Void) {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    let coordinator = PasscodeModule(
+      dependencies: PasscodeModule.Dependencies(
+        passcodeAssembly: keeperCoreOnboardingAssembly.passcodeAssembly
+      )
+    ).createCreatePasscodeCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+    
+    coordinator.didCreatePasscode = { passcode in
+      navigationController.dismiss(animated: true) {
+        completion(passcode)
+      }
+    }
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      navigationController.dismiss(animated: true) {
+        completion(nil)
+      }
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+    
+    router.present(navigationController)
   }
 }

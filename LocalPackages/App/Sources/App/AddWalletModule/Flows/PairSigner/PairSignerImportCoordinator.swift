@@ -15,16 +15,22 @@ public final class PairSignerImportCoordinator: RouterCoordinator<NavigationCont
   private let publicKey: TonSwift.PublicKey
   private let name: String
   private let walletsUpdateAssembly: WalletsUpdateAssembly
+  private let passcodeAssembly: KeeperCore.PasscodeAssembly
+  private let passcode: String?
   private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
   init(publicKey: TonSwift.PublicKey,
        name: String,
        router: NavigationControllerRouter,
        walletsUpdateAssembly: WalletsUpdateAssembly,
+       passcodeAssembly: KeeperCore.PasscodeAssembly,
+       passcode: String?,
        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
     self.publicKey = publicKey
     self.name = name
     self.walletsUpdateAssembly = walletsUpdateAssembly
+    self.passcodeAssembly = passcodeAssembly
+    self.passcode = passcode
     self.customizeWalletModule = customizeWalletModule
     super.init(router: router)
   }
@@ -114,6 +120,9 @@ private extension PairSignerImportCoordinator {
       tintColor: model.tintColor,
       emoji: model.emoji)
     do {
+      if let passcode {
+        try passcodeAssembly.passcodeCreateController().createPasscode(passcode)
+      }
       try addController.importExternalWallet(
         publicKey: publicKey,
         revisions: revisions,

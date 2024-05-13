@@ -332,6 +332,7 @@ private extension MainCoordinator {
       ).createPairSignerImportCoordinator(
         publicKey: publicKey,
         name: name,
+        passcode: nil,
         router: NavigationControllerRouter(
           rootViewController: navigationController
         )
