@@ -38,7 +38,7 @@
 "key_details.buttons.recovery_phrase" = "Секретный ключ";
 "key_details.buttons.delete_key" = "Удалить ключ";
 "key_details.delete_alert.title" = "Удалить ключ?";
-"key_details.delete_alert.description" = "Это сотрёт ключ к кошельку. Убедитесь, что вы создали резервную копию секретной ключа для восстановления.";
+"key_details.delete_alert.description" = "Это сотрёт ключ к кошельку. Убедитесь, что вы создали резервную копию секретного ключа для восстановления.";
 "key_details.delete_alert.buttons.delete_key" = "Удалить ключ";
 
 "add_key.title" = "Добавить ключ";
