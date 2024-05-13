@@ -123,6 +123,6 @@ private extension CGFloat {
 }
 
 private extension UIEdgeInsets {
-  static var textFieldPadding = UIEdgeInsets(top: 0, left: 32, bottom: 0, right: 32)
+  static var textFieldPadding = UIEdgeInsets(top: 16, left: 32, bottom: 0, right: 32)
   static var buttonPadding = UIEdgeInsets(top: 16, left: 32, bottom: 32, right: 32)
 }

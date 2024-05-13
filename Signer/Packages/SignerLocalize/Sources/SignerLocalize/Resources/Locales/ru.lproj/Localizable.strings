@@ -52,6 +52,12 @@
 "settings.items.legal" = "Юридические документы";
 "settings.footer.version" = "Версия %@";
 
+"settings.legal.title" = "Документы";
+"settings.legal.items.terms_of_service" = "Правила использования";
+"settings.legal.items.privacy_policy" = "Политика конфиденциальности";
+"settings.legal.items.montserrat_font" = "Шрифт Montserrat";
+"settings.legal.sections.licenses" = "Лицензии";
+
 "recovery.phrase.title" = "Секретный ключ";
 "recovery.phrase.caption" = "Запишите эти слова с их номерами и сохраните их в надёжном месте. Не вводите ключ в неизвестных вам приложениях.";
 

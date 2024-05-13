@@ -51,6 +51,12 @@
 "settings.items.legal" = "Legal";
 "settings.footer.version" = "Version %@";
 
+"settings.legal.title" = "Legal";
+"settings.legal.items.terms_of_service" = "Terms of service";
+"settings.legal.items.privacy_policy" = "Privacy policy";
+"settings.legal.items.montserrat_font" = "Montserrat font";
+"settings.legal.sections.licenses" = "Licences";
+
 "recovery.phrase.title" = "Recovery Phrase";
 "recovery.phrase.caption" = "Write these words with their numbers and store them in a safe place down. Do not enter it into unknown apps.";
 

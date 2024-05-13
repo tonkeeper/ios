@@ -5,6 +5,8 @@ struct InfoProvider {
     case appVersion = "CFBundleShortVersionString"
     case buildVersion = "CFBundleVersion"
     case supportURL = "SupportURL"
+    case termsOfServiceURL = "TermsOfServiceURL"
+    case privacyPolicyURL = "PrivacyPolicyURL"
   }
   
   static func value<T>(key: Keys) -> T? {
@@ -13,6 +15,16 @@ struct InfoProvider {
   
   static func supportURL() -> URL? {
     guard let value: String = self.value(key: .supportURL) else { return nil }
+    return URL(string: value)
+  }
+  
+  static func termsOfServiceURL() -> URL? {
+    guard let value: String = self.value(key: .termsOfServiceURL) else { return nil }
+    return URL(string: value)
+  }
+  
+  static func privacyPolicyURL() -> URL? {
+    guard let value: String = self.value(key: .privacyPolicyURL) else { return nil }
     return URL(string: value)
   }
   

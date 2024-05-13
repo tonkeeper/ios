@@ -21,12 +21,15 @@ final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
 private extension SettingsCoordinator {
   func openSettings() {
-    let module = SettingsModuleAssembly.module(urlOpener: UIApplication.shared)
-    module.view.setupBackButton()
-    
-    module.output.didTapChangePassword = { [weak self] in
+    let itemsProvider = SettingsRootItemsProvider(urlOpener: UIApplication.shared)
+    itemsProvider.didTapChangePassword = { [weak self] in
       self?.openChangePassword()
     }
+    itemsProvider.didTapLegal = { [weak self] in
+      self?.openLegal()
+    }
+    let module = SettingsModuleAssembly.module(itemsProvider: itemsProvider)
+    module.view.setupBackButton()
     
     router.push(
       viewController: module.view,
@@ -57,5 +60,20 @@ private extension SettingsCoordinator {
     
     navigationController.modalPresentationStyle = .fullScreen
     router.present(navigationController)
+  }
+  
+  func openLegal() {
+    let itemsProvider = SettingsLegalItemsProvider(urlOpener: UIApplication.shared)
+    itemsProvider.didSelectFontLicense = { [weak self] in
+      let viewController = FontLicenseViewController()
+      viewController.setupBackButton()
+      self?.router.rootViewController.pushViewController(viewController, animated: true)
+    }
+    
+    let module = SettingsModuleAssembly.module(itemsProvider: itemsProvider)
+    module.view.setupBackButton()
+    
+    router.push(
+      viewController: module.view)
   }
 }

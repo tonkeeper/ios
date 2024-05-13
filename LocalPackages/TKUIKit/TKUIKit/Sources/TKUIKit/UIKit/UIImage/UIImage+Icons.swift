@@ -178,6 +178,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-copy-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var doc: UIImage {
+          .imageWithName("Icons/28/ic-doc-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {
