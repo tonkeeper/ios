@@ -4,6 +4,7 @@ import TKCore
 import TKCoordinator
 import TKUIKit
 import TKScreenKit
+import TKLocalize
 
 public final class RecoveryPhraseCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -26,6 +27,10 @@ public final class RecoveryPhraseCoordinator: RouterCoordinator<NavigationContro
 private extension RecoveryPhraseCoordinator {
   func openInputRecoveryPhrase() {
     let inputRecoveryPhrase = TKInputRecoveryPhraseAssembly.module(
+      title: TKLocales.ImportWallet.title,
+      caption: TKLocales.ImportWallet.description,
+      continueButtonTitle: TKLocales.Actions.continue_action,
+      pasteButtonTitle: TKLocales.Actions.paste,
       validator: AddWalletInputRecoveryPhraseValidator(),
       suggestsProvider: AddWalletInputRecoveryPhraseSuggestsProvider()
     )
