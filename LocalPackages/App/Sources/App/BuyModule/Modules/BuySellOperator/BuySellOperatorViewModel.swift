@@ -1,5 +1,6 @@
 import Foundation
 import TKUIKit
+import TKLocalize
 import KeeperCore
 
 struct CurrencyPickerItem {
@@ -180,8 +181,8 @@ private extension BuySellOperatorViewModelImplementation {
     BuySellOperatorModel(
       title: "Operator",
       description: buySellOperatorItem.paymentMethod.title,
-      button: .init(
-        title: "Continue",
+      button: BuySellOperatorModel.Button(
+        title: TKLocales.Actions.continue_action,
         isEnabled: !isResolving && isContinueEnable,
         isActivity: isResolving,
         action: { [weak self] in

@@ -9,10 +9,10 @@ enum BuySellOperatorSection: Hashable {
 
 final class BuySellOperatorViewController: ModalViewController<BuySellOperatorView, ModalNavigationBarView> {
   
-  private typealias OperatorShimmerView = TKCollectionViewSupplementaryContainerView<BuySellOperatorShimmerView>
-  private typealias CellRegistration<T> = UICollectionView.CellRegistration<T, T.Configuration> where T: TKCollectionViewNewCell & TKConfigurableView
+  typealias OperatorShimmerView = TKCollectionViewSupplementaryContainerView<BuySellOperatorShimmerView>
+  typealias CellRegistration<T> = UICollectionView.CellRegistration<T, T.Configuration> where T: TKCollectionViewNewCell & TKConfigurableView
   
-  // MARK: - Layout
+  // MARK: - List
   
   private lazy var layout: UICollectionViewCompositionalLayout = {
     let size = NSCollectionLayoutSize(
@@ -42,54 +42,8 @@ final class BuySellOperatorViewController: ModalViewController<BuySellOperatorVi
   }()
   
   private lazy var dataSource = createDataSource()
-  private lazy var currencyPickerCellConfiguration: CellRegistration<TKUIListItemCell> = makeCellRegistration()
-  private lazy var operatorCellConfiguration: CellRegistration<SelectionCollectionViewCell> = makeCellRegistration()
-  
-  private func makeCellRegistration<T>() -> CellRegistration<T> {
-    return CellRegistration<T> { [weak self]
-      cell, indexPath, itemIdentifier in
-      cell.configure(configuration: itemIdentifier)
-      cell.isFirstInSection = { ip in ip.item == 0 }
-      cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
-        guard let collectionView = collectionView else { return false }
-        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
-      }
-    }
-  }
-  
-  private func createDataSource() -> UICollectionViewDiffableDataSource<BuySellOperatorSection, AnyHashable> {
-    let dataSource = UICollectionViewDiffableDataSource<BuySellOperatorSection, AnyHashable>(
-      collectionView: customView.collectionView) { [operatorCellConfiguration, currencyPickerCellConfiguration] collectionView, indexPath, itemIdentifier in
-        switch itemIdentifier {
-        case let cellConfiguration as SelectionCollectionViewCell.Configuration:
-          return collectionView.dequeueConfiguredReusableCell(using: operatorCellConfiguration, for: indexPath, item: cellConfiguration)
-        case let cellConfiguration as TKUIListItemCell.Configuration:
-          return collectionView.dequeueConfiguredReusableCell(using: currencyPickerCellConfiguration, for: indexPath, item: cellConfiguration)
-        default: return nil
-        }
-      }
-    
-    dataSource.supplementaryViewProvider = { [weak dataSource] collectionView, kind, indexPath -> UICollectionReusableView? in
-      guard let dataSource else { return nil }
-      
-      let snapshot = dataSource.snapshot()
-      let section = snapshot.sectionIdentifiers[indexPath.section]
-      switch section {
-      case .shimmer:
-        let shimmerView = collectionView.dequeueReusableSupplementaryView(
-          ofKind: kind,
-          withReuseIdentifier: OperatorShimmerView.reuseIdentifier,
-          for: indexPath
-        )
-        (shimmerView as? OperatorShimmerView)?.contentView.startAnimation()
-        return shimmerView
-      default:
-        return nil
-      }
-    }
-    
-    return dataSource
-  }
+  private lazy var currencyPickerCellConfiguration: CellRegistration<TKUIListItemCell> = createDefaultCellRegistration()
+  private lazy var operatorCellConfiguration: CellRegistration<SelectionCollectionViewCell> = createDefaultCellRegistration()
   
   // MARK: - Dependencies
   
@@ -144,6 +98,7 @@ private extension BuySellOperatorViewController {
     customView.collectionView.allowsMultipleSelection = true
     customView.collectionView.showsVerticalScrollIndicator = false
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
+    
     customView.collectionView.register(
       OperatorShimmerView.self,
       forSupplementaryViewOfKind: .shimmerSectionFooterElementKind,
@@ -220,6 +175,52 @@ private extension BuySellOperatorViewController {
       selectionClosure?()
     }
   }
+  
+  func createDataSource() -> UICollectionViewDiffableDataSource<BuySellOperatorSection, AnyHashable> {
+    let dataSource = UICollectionViewDiffableDataSource<BuySellOperatorSection, AnyHashable>(
+      collectionView: customView.collectionView) { [operatorCellConfiguration, currencyPickerCellConfiguration] collectionView, indexPath, itemIdentifier in
+        switch itemIdentifier {
+        case let cellConfiguration as SelectionCollectionViewCell.Configuration:
+          return collectionView.dequeueConfiguredReusableCell(using: operatorCellConfiguration, for: indexPath, item: cellConfiguration)
+        case let cellConfiguration as TKUIListItemCell.Configuration:
+          return collectionView.dequeueConfiguredReusableCell(using: currencyPickerCellConfiguration, for: indexPath, item: cellConfiguration)
+        default: return nil
+        }
+      }
+    
+    dataSource.supplementaryViewProvider = { [weak dataSource] collectionView, kind, indexPath -> UICollectionReusableView? in
+      guard let dataSource else { return nil }
+      
+      let snapshot = dataSource.snapshot()
+      let section = snapshot.sectionIdentifiers[indexPath.section]
+      switch section {
+      case .shimmer:
+        let shimmerView = collectionView.dequeueReusableSupplementaryView(
+          ofKind: kind,
+          withReuseIdentifier: OperatorShimmerView.reuseIdentifier,
+          for: indexPath
+        )
+        (shimmerView as? OperatorShimmerView)?.contentView.startAnimation()
+        return shimmerView
+      default:
+        return nil
+      }
+    }
+    
+    return dataSource
+  }
+  
+  func createDefaultCellRegistration<T>() -> CellRegistration<T> {
+    return CellRegistration<T> { [weak self]
+      cell, indexPath, itemIdentifier in
+      cell.configure(configuration: itemIdentifier)
+      cell.isFirstInSection = { ip in ip.item == 0 }
+      cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
+        guard let collectionView = collectionView else { return false }
+        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
+      }
+    }
+  }
 }
 
 // MARK: - UICollectionViewDelegate
@@ -277,15 +278,15 @@ private extension NSCollectionLayoutSection {
     var contentInsets = NSDirectionalEdgeInsets.defaultSectionInsets
     contentInsets.top = 0
     contentInsets.bottom = 0
-    return makeSection(cellHeight: .currencyPickerCellHeight, contentInsets: contentInsets)
+    return createSection(cellHeight: .currencyPickerCellHeight, contentInsets: contentInsets)
   }
   
   static var operatorItemsSection: NSCollectionLayoutSection {
-    return makeSection(cellHeight: .operatorCellHeight)
+    return createSection(cellHeight: .operatorCellHeight)
   }
   
   static var shimmerSection: NSCollectionLayoutSection {
-    let section = NSCollectionLayoutSection.makeSection(
+    let section = NSCollectionLayoutSection.createSection(
       cellHeight: 100,
       contentInsets: .init(top: 0, leading: 16, bottom: 0, trailing: 16)
     )
@@ -302,7 +303,7 @@ private extension NSCollectionLayoutSection {
     return section
   }
   
-  static func makeSection(cellHeight: CGFloat,
+  static func createSection(cellHeight: CGFloat,
                           contentInsets: NSDirectionalEdgeInsets = .defaultSectionInsets) -> NSCollectionLayoutSection {
     let itemLayoutSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),

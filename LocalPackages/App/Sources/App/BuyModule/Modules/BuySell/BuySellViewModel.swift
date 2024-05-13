@@ -1,7 +1,8 @@
 import UIKit
 import TKUIKit
-import KeeperCore
+import TKLocalize
 import TKCore
+import KeeperCore
 import BigInt
 
 struct BuySellItem {
@@ -104,9 +105,6 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     ])
     
     didUpdatePaymentMethodModel(testItemsModel)
-    
-    let buySellOperatorItem = createBuySellOperatorItem()
-    didContinueBuySell?(buySellOperatorItem)
   }
   
   func didInputAmount(_ string: String) {
@@ -218,16 +216,16 @@ private extension BuySellViewModelImplementation {
       amount: createAmountModel(amountInput: amountInput, token: buySellItem.token),
       fiatAmount: BuySellModel.FiatAmount(converted: "\(convertedValue)", currency: currency),
       button: BuySellModel.Button(
-          title: "Continue",
-          isEnabled: !isResolving && isContinueEnable,
-          isActivity: isResolving,
-          action: { [weak self] in
-            guard let self else { return }
-            let buySellOperatorItem = createBuySellOperatorItem()
-            didContinueBuySell?(buySellOperatorItem)
-          }
-        )
+        title: TKLocales.Actions.continue_action,
+        isEnabled: !isResolving && isContinueEnable,
+        isActivity: isResolving,
+        action: { [weak self] in
+          guard let self else { return }
+          let buySellOperatorItem = createBuySellOperatorItem()
+          didContinueBuySell?(buySellOperatorItem)
+        }
       )
+    )
   }
     
   func createAmountModel(amountInput: String, token: Token) -> BuySellModel.Amount {

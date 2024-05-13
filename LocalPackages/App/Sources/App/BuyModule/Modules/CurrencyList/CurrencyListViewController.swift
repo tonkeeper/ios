@@ -7,9 +7,9 @@ enum CurrencyListSection: Hashable {
 
 final class CurrencyListViewController: ModalViewController<CurrencyListView, ModalNavigationBarView> {
   
-  private typealias CellRegistration<T> = UICollectionView.CellRegistration<T, T.Configuration> where T: TKCollectionViewNewCell & TKConfigurableView
+  typealias CellRegistration<T> = UICollectionView.CellRegistration<T, T.Configuration> where T: TKCollectionViewNewCell & TKConfigurableView
   
-  // MARK: - Layout
+  // MARK: - List
   
   private lazy var layout: UICollectionViewCompositionalLayout = {
     let size = NSCollectionLayoutSize(
@@ -35,32 +35,7 @@ final class CurrencyListViewController: ModalViewController<CurrencyListView, Mo
   }()
   
   private lazy var dataSource = createDataSource()
-  private lazy var currencyCellConfiguration: CellRegistration<SelectionCollectionViewCell> = makeCellRegistration()
-  
-  private func makeCellRegistration<T>() -> CellRegistration<T> {
-    return CellRegistration<T> { [weak self]
-      cell, indexPath, itemIdentifier in
-      cell.configure(configuration: itemIdentifier)
-      cell.isFirstInSection = { ip in ip.item == 0 }
-      cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
-        guard let collectionView = collectionView else { return false }
-        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
-      }
-    }
-  }
-  
-  private func createDataSource() -> UICollectionViewDiffableDataSource<CurrencyListSection, AnyHashable> {
-    let dataSource = UICollectionViewDiffableDataSource<CurrencyListSection, AnyHashable>(
-      collectionView: customView.collectionView) { [currencyCellConfiguration] collectionView, indexPath, itemIdentifier in
-        switch itemIdentifier {
-        case let cellConfiguration as SelectionCollectionViewCell.Configuration:
-          return collectionView.dequeueConfiguredReusableCell(using: currencyCellConfiguration, for: indexPath, item: cellConfiguration)
-        default: return nil
-        }
-      }
-    
-    return dataSource
-  }
+  private lazy var currencyCellConfiguration: CellRegistration<SelectionCollectionViewCell> = createDefaultCellRegistration()
   
   // MARK: - Dependencies
   
@@ -158,6 +133,31 @@ private extension CurrencyListViewController {
       selectionClosure?()
     }
   }
+  
+  func createDataSource() -> UICollectionViewDiffableDataSource<CurrencyListSection, AnyHashable> {
+    let dataSource = UICollectionViewDiffableDataSource<CurrencyListSection, AnyHashable>(
+      collectionView: customView.collectionView) { [currencyCellConfiguration] collectionView, indexPath, itemIdentifier in
+        switch itemIdentifier {
+        case let cellConfiguration as SelectionCollectionViewCell.Configuration:
+          return collectionView.dequeueConfiguredReusableCell(using: currencyCellConfiguration, for: indexPath, item: cellConfiguration)
+        default: return nil
+        }
+      }
+    
+    return dataSource
+  }
+  
+  func createDefaultCellRegistration<T>() -> CellRegistration<T> {
+    return CellRegistration<T> { [weak self]
+      cell, indexPath, itemIdentifier in
+      cell.configure(configuration: itemIdentifier)
+      cell.isFirstInSection = { ip in ip.item == 0 }
+      cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
+        guard let collectionView = collectionView else { return false }
+        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
+      }
+    }
+  }
 }
 
 // MARK: - UICollectionViewDelegate
@@ -175,10 +175,10 @@ extension CurrencyListViewController: UICollectionViewDelegate {
 
 private extension NSCollectionLayoutSection {
   static var currencyItemsSection: NSCollectionLayoutSection {
-    return makeSection(cellHeight: .currencyCellHeight)
+    return createSection(cellHeight: .currencyCellHeight)
   }
   
-  static func makeSection(cellHeight: CGFloat,
+  static func createSection(cellHeight: CGFloat,
                           contentInsets: NSDirectionalEdgeInsets = .defaultSectionInsets) -> NSCollectionLayoutSection {
     let itemLayoutSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),

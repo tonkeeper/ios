@@ -1,7 +1,8 @@
 import UIKit
 import TKUIKit
-import KeeperCore
+import TKLocalize
 import TKCore
+import KeeperCore
 import BigInt
 
 struct BuySellDetailsItem {
@@ -319,12 +320,18 @@ private extension BuySellDetailsViewModelImplementation {
       icon: .asyncImage(iconImageDownloadTask),
       title: buySellDetailsItem.serviceTitle,
       subtitle: buySellDetailsItem.serviceSubtitle,
-      textFieldPay: .init(placeholder: "You Pay", currencyCode: buySellDetailsItem.transaction.currencyPay.code),
-      textFieldGet: .init(placeholder: "You Get", currencyCode: buySellDetailsItem.transaction.currencyGet.code),
+      textFieldPay: BuySellDetailsModel.TextField(
+        placeholder: "You Pay",
+        currencyCode: buySellDetailsItem.transaction.currencyPay.code
+      ),
+      textFieldGet: BuySellDetailsModel.TextField(
+        placeholder: "You Get",
+        currencyCode: buySellDetailsItem.transaction.currencyGet.code
+      ),
       convertedRate: createConvertedRateText(),
       infoContainer: createInfoContainerModel(buySellDetailsItem.serviceInfo),
-      continueButton: .init(
-        title: "Continue",
+      continueButton: BuySellDetailsModel.Button(
+        title: TKLocales.Actions.continue_action,
         isEnabled: !isResolving && isContinueEnable,
         isActivity: isResolving,
         action: { [weak self] in
