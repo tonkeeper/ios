@@ -1,7 +1,21 @@
 import UIKit
 import TKUIKit
+import SnapKit
 
 public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
+  
+  var bannerViewProvider: (() -> UIView)? {
+    didSet {
+      bannerView?.removeFromSuperview()
+      bannerView = nil
+      if let bannerView = bannerViewProvider?() {
+        self.bannerView = bannerView
+        self.contentStackView.insertArrangedSubview(bannerView, at: 1)
+        self.contentStackView.setCustomSpacing(.afterWordInputSpacing, after: bannerView)
+      }
+    }
+  }
+  
   let scrollView: UIScrollView = {
     let scrollView = TKUIScrollView()
     scrollView.showsVerticalScrollIndicator = false
@@ -25,10 +39,30 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
   var inputTextFields = [TKMnemonicTextField]()
   
   let continueButton = TKButton()
-  let continueButtonContainer = TKPaddingContainerView()
   
   let suggestsView = TKInputRecoveryPhraseSuggestsView()
+  let pasteButton = TKButton()
   
+  var bannerView: UIView?
+  
+  var keyboardHeight: CGFloat = 0 {
+    didSet {
+      if keyboardHeight.isZero {
+        scrollView.contentInset.bottom = 0
+      } else {
+        scrollView.contentInset.bottom = keyboardHeight - safeAreaInsets.bottom
+      }
+      pasteButton.snp.remakeConstraints { make in
+        make.centerX.equalTo(self)
+        if keyboardHeight.isZero {
+          make.bottom.equalTo(safeAreaLayoutGuide.snp.bottom)
+        } else {
+          make.bottom.equalTo(self).offset(-(keyboardHeight - safeAreaInsets.bottom))
+        }
+      }
+    }
+  }
+    
   // MARK: - Init
   
   override init(frame: CGRect) {
@@ -71,8 +105,8 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
     
     inputTextFields.forEach { $0.removeFromSuperview() }
     inputTextFields = []
-    model.inputs
-      .forEach { inputModel in
+    model.inputs.enumerated()
+      .forEach { index, inputModel in
         let textField = TKMnemonicTextField()
         textField.accessoryView = suggestsView
         textField.indexNumber = inputModel.index
@@ -90,10 +124,15 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
         }
         
         contentStackView.addArrangedSubview(textField)
-        contentStackView.setCustomSpacing(.afterWordInputSpacing, after: textField)
+        if index == inputTextFields.count - 1 {
+          contentStackView.setCustomSpacing(.afterWordInputSpacing + 16, after: textField)
+        } else {
+          contentStackView.setCustomSpacing(.afterWordInputSpacing, after: textField)
+        }
         inputTextFields.append(textField)
       }
-    contentStackView.addArrangedSubview(continueButtonContainer)
+    contentStackView.addArrangedSubview(continueButton)
+    contentStackView.setCustomSpacing(32, after: continueButton)
   }
   
   func scrollToInput(at index: Int,
@@ -137,10 +176,9 @@ private extension TKInputRecoveryPhraseView {
     scrollView.addSubview(contentStackView)
     
     contentStackView.addArrangedSubview(titleDescriptionView)
-    contentStackView.addArrangedSubview(continueButtonContainer)
+    contentStackView.addArrangedSubview(continueButton)
     
-    continueButtonContainer.padding = .continueButtonContainerPadding
-    continueButtonContainer.setViews([continueButton])
+    addSubview(pasteButton)
     
     setupConstraints()
   }
@@ -148,6 +186,11 @@ private extension TKInputRecoveryPhraseView {
   func setupConstraints() {
     scrollView.translatesAutoresizingMaskIntoConstraints = false
     contentStackView.translatesAutoresizingMaskIntoConstraints = false
+    
+    pasteButton.snp.makeConstraints { make in
+      make.centerX.equalTo(self)
+      make.bottom.equalTo(safeAreaLayoutGuide.snp.bottom)
+    }
     
     NSLayoutConstraint.activate([
       scrollView.topAnchor.constraint(equalTo: topAnchor),
@@ -158,12 +201,9 @@ private extension TKInputRecoveryPhraseView {
       
       contentStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
       contentStackView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),
-      contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor)
-        .withPriority(.defaultHigh),
-      contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor)
-        .withPriority(.defaultHigh),
-      contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
-        .withPriority(.defaultHigh)
+      contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+      contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor),
+      contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
     ])
   }
 }

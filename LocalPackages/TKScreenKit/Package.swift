@@ -14,14 +14,16 @@ let package = Package(
     ],
     dependencies: [
       .package(url: "https://github.com/SnapKit/SnapKit.git", .upToNextMajor(from: "5.0.1")),
-      .package(path: "../TKUIKit")
+      .package(path: "../TKUIKit"),
+      .package(path: "../TKLocalize")
     ],
     targets: [
         .target(
             name: "TKScreenKit",
             dependencies: [
               .product(name: "SnapKit-Dynamic", package: "SnapKit"),
-              .product(name: "TKUIKitDynamic", package: "TKUIKit")
+              .product(name: "TKUIKitDynamic", package: "TKUIKit"),
+              .product(name: "TKLocalize", package: "TKLocalize")
             ],
             path: "TKScreenKit/Sources/TKScreenKit"
         )

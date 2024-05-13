@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import TKCore
+import TKLocalize
 
 final class SettingsThemePickerListItemsProvider: SettingsListItemsProvider {
   private let appSettings: AppSettings
@@ -12,7 +13,7 @@ final class SettingsThemePickerListItemsProvider: SettingsListItemsProvider {
   var didUpdateSections: (() -> Void)?
   var didSelectItem: ((SettingsListSection, Int) -> Void)?
   
-  var title: String { "Theme" }
+  var title = TKLocales.Theme.title
   
   func getSections() -> [SettingsListSection] {
     [createSection()]

@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import SnapKit
 
 final class ScannerView: UIView {
   
@@ -7,7 +8,9 @@ final class ScannerView: UIView {
   let overlayView = UIView()
   let flashlightButton = ToggleButton()
   let titleLabel = UILabel()
+  let subtitleLabel = UILabel()
   let cameraPermissionViewContainer = UIView()
+  let holeRectView = UIView()
   
   private let maskLayer = CAShapeLayer()
   private let cornersLayer = CAShapeLayer()
@@ -41,10 +44,8 @@ final class ScannerView: UIView {
     flashlightButton.frame = flashlightButtonFrame
     flashlightButton.layer.cornerRadius = flashlightButtonFrame.height / 2
     
-    titleLabel.sizeToFit()
-    titleLabel.frame.origin.y = holeRect.minY - titleLabel.frame.size.height - .titleBottomOffset
-    titleLabel.center.x = bounds.width / 2
-    
+    holeRectView.frame = holeRect
+
     cameraPermissionViewContainer.frame = bounds
   }
   
@@ -68,11 +69,22 @@ final class ScannerView: UIView {
 
 private extension ScannerView {
   func setup() {
+    subtitleLabel.numberOfLines = 0
+    subtitleLabel.alpha = 0.64
+    
     cameraPermissionViewContainer.isHidden = true
     addSubview(videoContainerView)
     videoContainerView.addSubview(overlayView)
     overlayView.addSubview(flashlightButton)
-    overlayView.addSubview(titleLabel)
+    overlayView.addSubview(holeRectView)
+    
+    let stackView = UIStackView()
+    stackView.axis = .vertical
+    stackView.spacing = 4
+    stackView.addArrangedSubview(titleLabel)
+    stackView.addArrangedSubview(subtitleLabel)
+    
+    overlayView.addSubview(stackView)
     
     layer.addSublayer(cornersLayer)
     
@@ -90,7 +102,11 @@ private extension ScannerView {
     overlayView.layer.mask = maskLayer
     
     setupFlashlightButton()
-    setupTitleLabel()
+    
+    stackView.snp.makeConstraints { make in
+      make.bottom.equalTo(holeRectView.snp.top).offset(-CGFloat.titleBottomOffset)
+      make.left.right.equalTo(self).inset(32)
+    }
   }
   
   func setupFlashlightButton() {
@@ -112,12 +128,6 @@ private extension ScannerView {
     )
     flashlightButton.setImage(.TKUIKit.Icons.Size56.flashlightOff,
                               for: .normal)
-  }
-  
-  func setupTitleLabel() {
-    titleLabel.font = TKTextStyle.h2.font
-    titleLabel.textAlignment = .center
-    titleLabel.textColor = .white
   }
   
   func calculateHoleRect(bounds: CGRect) -> CGRect {

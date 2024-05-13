@@ -13,7 +13,7 @@ public struct DefaultDeeplinkParser: DeeplinkParser {
   
   private let parsers: [DeeplinkParser]
   
-  init(parsers: [DeeplinkParser]) {
+  public init(parsers: [DeeplinkParser]) {
     self.parsers = parsers
   }
   
@@ -27,8 +27,10 @@ public struct DefaultDeeplinkParser: DeeplinkParser {
   }
 }
 
-struct TonDeeplinkParser: DeeplinkParser {
-  func parse(string: String?) throws -> Deeplink {
+public struct TonDeeplinkParser: DeeplinkParser {
+  public init() {}
+  
+  public func parse(string: String?) throws -> Deeplink {
     guard let string else { throw DeeplinkParserError.unsupportedDeeplink(string: string) }
     guard let url = URL(string: string),
           let scheme = url.scheme,
@@ -59,8 +61,10 @@ struct TonDeeplinkParser: DeeplinkParser {
   }
 }
 
-struct TonConnectDeeplinkParser: DeeplinkParser {
-  func parse(string: String?) throws -> Deeplink {
+public struct TonConnectDeeplinkParser: DeeplinkParser {
+  public init() {}
+  
+  public func parse(string: String?) throws -> Deeplink {
     guard let string else { throw DeeplinkParserError.unsupportedDeeplink(string: string) }
     if let deeplink = try? parseTonConnectDeeplink(string: string) {
       return deeplink
@@ -103,3 +107,60 @@ struct TonConnectDeeplinkParser: DeeplinkParser {
   }
 }
 
+public struct TonkeeperDeeplinkParser: DeeplinkParser {
+  public init() {}
+  
+  public func parse(string: String?) throws -> Deeplink {
+    guard let string,
+          let url = URL(string: string),
+          let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
+          let scheme = components.scheme,
+          let host = components.host,
+          let queryItems = components.queryItems else {
+      throw DeeplinkParserError.unsupportedDeeplink(string: string)
+    }
+    
+    switch scheme {
+    case "tonkeeper", "tonkeeperx":
+      switch host {
+      case "signer":
+        return try signerParse(string: string, host: host, path: components.path, queryItems: queryItems)
+      case "publish":
+        guard let boc = queryItems.first(where: { $0.name == "boc" })?.value,
+              let bocData = Data(base64Encoded: boc) else {
+          throw DeeplinkParserError.unsupportedDeeplink(string: string)
+        }
+        
+        let v = queryItems.first(where: { $0.name == "v" })?.value
+        let network = queryItems.first(where: { $0.name == "network" })?.value
+        
+        let model = TonkeeperPublishModel(
+          boc: bocData,
+          v: v,
+          network: network
+        )
+        
+        return .tonkeeper(TonkeeperDeeplink.publish(model))
+      default:
+        throw DeeplinkParserError.unsupportedDeeplink(string: string)
+      }
+    default:
+      throw DeeplinkParserError.unsupportedDeeplink(string: string)
+    }
+  }
+  
+  func signerParse(string: String, host: String, path: String, queryItems: [URLQueryItem]) throws -> Deeplink {
+    switch path {
+    case "/link":
+      guard let pk = queryItems.first(where: { $0.name == "pk" })?.value,
+            let publicKeyData = Data(base64Encoded: pk),
+            let name = queryItems.first(where: { $0.name == "name" })?.value else {
+        throw DeeplinkParserError.unsupportedDeeplink(string: string)
+      }
+      let publicKey = TonSwift.PublicKey(data: publicKeyData)
+      return .tonkeeper(TonkeeperDeeplink.signer(.link(publicKey: publicKey, name: name)))
+    default:
+      throw DeeplinkParserError.unsupportedDeeplink(string: string)
+    }
+  }
+}

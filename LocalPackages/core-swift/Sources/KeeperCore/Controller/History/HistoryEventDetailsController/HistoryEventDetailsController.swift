@@ -1,4 +1,5 @@
 import Foundation
+import TKLocalize
 import BigInt
 
 public final class HistoryEventDetailsController {
@@ -71,7 +72,7 @@ public final class HistoryEventDetailsController {
   private let rateConverter = RateConverter()
   private let dateFormatter: DateFormatter = {
     let formatter = DateFormatter()
-    formatter.locale = Locale.init(identifier: "EN")
+    formatter.locale = Locale.current
     formatter.dateFormat = "d MMM, HH:mm"
     return formatter
   }()
@@ -117,7 +118,7 @@ private extension HistoryEventDetailsController {
       currency: .TON)
     let fiatFee = await tonFiatString(amount: BigUInt(abs(event.accountEvent.fee)))
     let feeListItem = Model.ListItem(
-      title: "Fee",
+      title: .feeLabel,
       topValue: fee,
       bottomValue: fiatFee)
     
@@ -242,7 +243,7 @@ private extension HistoryEventDetailsController {
                       feeListItem: Model.ListItem,
                       status: AccountEventStatus) async -> Model {
     let amountType: HistoryEventActionAmountMapperActionType
-    let actionString: String
+    let actionType: ActionTypeEnum
     
     let nameTitle: String
     let nameValue: String?
@@ -251,21 +252,21 @@ private extension HistoryEventDetailsController {
     
     if activityEvent.isScam {
       amountType = .income
-      actionString = .received
+      actionType = .Received
       addressTitle = .senderAddress
       nameTitle = .sender
       nameValue = tonTransfer.sender.name
       addressValue = tonTransfer.sender.address.toString(bounceable: !tonTransfer.sender.isWallet)
     } else if tonTransfer.recipient == activityEvent.account {
       amountType = .income
-      actionString = .received
+      actionType = .Received
       addressTitle = .senderAddress
       nameTitle = .sender
       nameValue = tonTransfer.sender.name
       addressValue = tonTransfer.sender.address.toString(bounceable: !tonTransfer.sender.isWallet)
     } else {
       amountType = .outcome
-      actionString = .sent
+      actionType = .Sent
       addressTitle = .recipientAddress
       nameTitle = .recipient
       nameValue = tonTransfer.recipient.name
@@ -280,7 +281,14 @@ private extension HistoryEventDetailsController {
       maximumFractionDigits: 2,
       type: amountType,
       currency: .TON)
-    let dateString = "\(actionString) on \(date)"
+    
+    let dateString: String
+    switch actionType {
+    case .Received: 
+      dateString = TKLocales.EventDetails.received_on(date)
+    case .Sent:
+      dateString = TKLocales.EventDetails.sent_on(date)
+    }
     
     var listItems = [Model.ListItem]()
     
@@ -386,11 +394,14 @@ private extension HistoryEventDetailsController {
     var listItems = [Model.ListItem]()
     
     if let senderName = action.seller.name {
-      listItems.append(Model.ListItem(title: "Sender", topValue: senderName, isTopValueFullString: true))
+      listItems.append(Model.ListItem(title: .sender, topValue: senderName, isTopValueFullString: true))
     }
     listItems.append(
-      Model.ListItem(title: "Sender address",
-                     topValue: action.seller.address.toString(bounceable: !action.seller.isWallet), isTopValueFullString: true)
+      Model.ListItem(
+        title: .senderAddress,
+        topValue: action.seller.address.toString(bounceable: !action.seller.isWallet),
+        isTopValueFullString: true
+      )
     )
     listItems.append(feeListItem)
     
@@ -741,13 +752,18 @@ private extension HistoryEventDetailsController {
     )
   }
   
+  enum ActionTypeEnum {
+    case Sent
+    case Received
+  }
+  
   func mapJettonTransfer(activityEvent: AccountEvent,
                          action: AccountEventAction.JettonTransfer,
                          date: String,
                          feeListItem: Model.ListItem,
                          status: AccountEventStatus) async -> Model {
     let amountType: HistoryEventActionAmountMapperActionType
-    let actionString: String
+    let actionType: ActionTypeEnum
     
     let nameTitle: String
     let nameValue: String?
@@ -756,21 +772,21 @@ private extension HistoryEventDetailsController {
     
     if activityEvent.isScam {
       amountType = .income
-      actionString = .received
+      actionType = .Received
       addressTitle = .senderAddress
       nameTitle = .sender
       nameValue = action.sender?.name
       addressValue = action.sender?.address.toString(bounceable: !(action.sender?.isWallet ?? false))
     } else if action.recipient == activityEvent.account {
       amountType = .income
-      actionString = .received
+      actionType = .Received
       addressTitle = .senderAddress
       nameTitle = .sender
       nameValue = action.sender?.name
       addressValue = action.sender?.address.toString(bounceable: !(action.sender?.isWallet ?? false))
     } else {
       amountType = .outcome
-      actionString = .sent
+      actionType = .Sent
       addressTitle = .recipientAddress
       nameTitle = .recipient
       nameValue = action.recipient?.name
@@ -785,7 +801,15 @@ private extension HistoryEventDetailsController {
       maximumFractionDigits: action.jettonInfo.fractionDigits,
       type: amountType,
       symbol: action.jettonInfo.symbol)
-    let dateString = "\(actionString) on \(date)"
+    
+    let dateString: String
+
+    switch actionType {
+    case .Received:
+      dateString = TKLocales.EventDetails.received_on(date)
+    case .Sent:
+      dateString = TKLocales.EventDetails.sent_on(date)
+    }
     
     var listItems = [Model.ListItem]()
     
@@ -911,11 +935,12 @@ private extension HistoryEventDetailsController {
 }
 
 private extension String {
-  static let received = "Received"
-  static let sent = "Sent"
-  static let sender = "Sender"
-  static let recipient = "Recipient"
-  static let senderAddress = "Sender address"
-  static let recipientAddress = "Recipient address"
-  static let comment = "Comment"
+  static let feeLabel = TKLocales.EventDetails.fee
+  static let received = TKLocales.EventDetails.received
+  static let sent = TKLocales.EventDetails.sent
+  static let sender = TKLocales.EventDetails.sender
+  static let recipient = TKLocales.EventDetails.recipient
+  static let senderAddress = TKLocales.EventDetails.sender_address
+  static let recipientAddress = TKLocales.EventDetails.recipient_address
+  static let comment = TKLocales.EventDetails.comment
 }

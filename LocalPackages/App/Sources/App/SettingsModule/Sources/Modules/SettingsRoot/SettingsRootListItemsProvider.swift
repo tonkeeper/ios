@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   typealias WalletCellRegistration = UICollectionView.CellRegistration<WalletsListWalletCell, WalletsListWalletCell.Model>
@@ -55,7 +56,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   
   var didUpdateSections: (() -> Void)?
   
-  var title: String { "Settings" }
+  var title: String { TKLocales.Tabs.history }
   
   func getSections() async -> [SettingsListSection] {
     await setupSettingsSections()
@@ -86,21 +87,23 @@ private extension SettingsRootListItemsProvider {
     var logoutSectionItems = [AnyHashable]()
     switch settingsController.activeWallet().model.walletType {
     case .watchOnly:
-//      break
       logoutSectionItems.append(setupDeleteWatchOnlyAccount())
     default:
-//      break
       logoutSectionItems.append(setupDeleteAccountItem())
     }
     logoutSectionItems.append(setupLogoutItem())
     
+    var securitySectionItems = [setupSecurityItem()]
+    switch settingsController.activeWallet().model.walletType {
+    case .regular:
+      securitySectionItems.append(setupBackupItem())
+    default: break
+    }
+    
     return await [setupWalletSection(),
      SettingsListSection(
       padding: .sectionPadding,
-      items: [
-        setupSecurityItem(),
-        setupBackupItem()
-      ]
+      items: securitySectionItems
      ),
      SettingsListSection(
       padding: .sectionPadding,
@@ -133,7 +136,7 @@ private extension SettingsRootListItemsProvider {
       backgroundColor: walletModel.tintColor.uiColor,
       walletName: walletModel.label,
       walletTag: walletModel.tag,
-      balance: "Edit name and color"
+      balance: TKLocales.Settings.Items.setup_wallet_description
     )
     
     let cellModel = WalletsListWalletCell.Model(
@@ -381,35 +384,35 @@ private extension SettingsRootListItemsProvider {
 }
 
 private extension String {
-  static let securityItemTitle = "Security"
+  static let securityItemTitle = TKLocales.Settings.Items.security
   
-  static let backupItemTitle = "Backup"
+  static let backupItemTitle = TKLocales.Settings.Items.backup
   
-  static let currencyItemTitle = "Currency"
-  static let themeItemTitle = "Theme"
+  static let currencyItemTitle = TKLocales.Settings.Items.currency
+  static let themeItemTitle = TKLocales.Settings.Items.theme
   
-  static let logoutItemTitle = "Sign Out"
-  static let logoutTitle = "Log out?"
-  static let logoutDescription = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases."
-  static let logoutCancelButtonTitle = "Cancel"
-  static let logoutLogoutButtonTitle = "Log out"
+  static let logoutItemTitle = TKLocales.Settings.Items.logout
+  static let logoutTitle = TKLocales.Settings.Logout.title
+  static let logoutDescription = TKLocales.Settings.Logout.description
+  static let logoutCancelButtonTitle = TKLocales.Actions.cancel
+  static let logoutLogoutButtonTitle = TKLocales.Settings.Items.logout
   
-  static let supportTitle = "Support"
-  static let tonkeeperNewsTitle = "Tonkeeper news"
-  static let contactUsTitle = "Contact us"
-  static let rateTonkeeperXTitle = "Rate Tonkeeper X"
-  static let legalTitle = "Legal"
+  static let supportTitle = TKLocales.Settings.Items.support
+  static let tonkeeperNewsTitle = TKLocales.Settings.Items.tk_news
+  static let contactUsTitle = TKLocales.Settings.Items.contact_us
+  static let rateTonkeeperXTitle = TKLocales.Settings.Items.rate
+  static let legalTitle = TKLocales.Settings.Items.legal
   
-  static let deleteItemTitle = "Delete account"
+  static let deleteItemTitle = TKLocales.Settings.Items.delete_account
   static let deleteTitle = "Are you sure you want to delete your account?"
   static let deleteDescription = "This action will delete your account and all data from this application."
   static let deleteDeleteButtonTitle = "Delete account and data"
-  static let deleteCancelButtonTitle = "Cancel"
+  static let deleteCancelButtonTitle = TKLocales.Actions.cancel
   
   static let deleteWatchItemTitle = "Delete Watch Account"
   static let deleteWatchTitle = "Are you sure you want to delete Watch account?"
-  static let deleteWatchDeleteButtonTitle = "Delete"
-  static let deleteWatchCancelButtonTitle = "Cancel"
+  static let deleteWatchDeleteButtonTitle = TKLocales.Actions.delete
+  static let deleteWatchCancelButtonTitle = TKLocales.Actions.cancel
 }
 
 private extension NSDirectionalEdgeInsets {

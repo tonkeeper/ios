@@ -88,7 +88,7 @@ private extension TonConnectConfirmationController {
   }
   
   func createRequestTransactionBoc(parameters: TonConnect.AppRequest.Param,
-                                   signClosure: (WalletTransfer) async throws -> Cell) async throws  -> String{
+                                   signClosure: (WalletTransfer) async throws -> Data) async throws  -> String{
     let seqno = try await sendService.loadSeqno(address: wallet.address)
     let payloads = parameters.messages.map { message in
         TonConnectTransferMessageBuilder.Payload(

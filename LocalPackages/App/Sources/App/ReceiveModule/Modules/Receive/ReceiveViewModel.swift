@@ -3,6 +3,7 @@ import TKUIKit
 import TKCore
 import UIKit
 import KeeperCore
+import TKLocalize
 
 protocol ReceiveModuleOutput: AnyObject {
   
@@ -71,13 +72,13 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
 private extension ReceiveViewModelImplementation {
   func createModel(model: KeeperCore.ReceiveController.Model) {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: "Receive \(model.tokenName)",
-      bottomDescription: "Send only \(model.descriptionTokenName) and tokens in TON network to this address, or you might lose your funds."
+      title: TKLocales.Receive.title(model.tokenName),
+      bottomDescription: TKLocales.Receive.description(model.descriptionTokenName)
     )
-    
+        
     let buttonsModel = ReceiveButtonsView.Model(
       copyButtonModel: TKUIActionButton.Model(
-        title: "Copy",
+        title: TKLocales.Actions.copy,
         icon: TKUIButtonTitleIconContentView.Model.Icon(
           icon: .TKUIKit.Icons.Size16.copy,
           position: .left
@@ -110,6 +111,24 @@ private extension ReceiveViewModelImplementation {
       }))
     }
     
+    let tagModel: TKUITagView.Configuration?
+    switch model.walletModel.walletType {
+    case .regular:
+      tagModel = nil
+    case .watchOnly:
+      tagModel = TKUITagView.Configuration(
+        text: TKLocales.WalletTags.watch_only,
+        textColor: .black,
+        backgroundColor: .Accent.orange
+      )
+    case .external:
+      tagModel = TKUITagView.Configuration(
+        text: "SIGNER",
+        textColor: .Accent.purple,
+        backgroundColor: .Accent.purple.withAlphaComponent(0.48)
+      )
+    }
+    
     let receiveModel = ReceiveView.Model(
       titleDescriptionModel: titleDescriptionModel,
       buttonsModel: buttonsModel,
@@ -118,7 +137,7 @@ private extension ReceiveViewModelImplementation {
         self?.copyButtonAction(string: model.address)
       },
       image: image,
-      tag: model.tag
+      tag: tagModel
     )
     
     didUpdateModel?(receiveModel)
@@ -127,7 +146,14 @@ private extension ReceiveViewModelImplementation {
   func copyButtonAction(string: String?) {
     didTapCopy?(string)
     var configuration = ToastPresenter.Configuration.copied
-    configuration.backgroundColor = receiveController.isRegularWallet ? .Background.contentTint : .Accent.orange
+    switch receiveController.wallet.model.walletType {
+    case .regular:
+      configuration.backgroundColor = .Background.contentTint
+    case .external:
+      configuration.backgroundColor = .Accent.purple
+    case .watchOnly:
+      configuration.backgroundColor = .Accent.orange
+    }
     showToast?(configuration)
   }
 }

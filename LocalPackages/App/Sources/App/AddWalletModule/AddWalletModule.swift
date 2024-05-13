@@ -3,6 +3,7 @@ import TKUIKit
 import TKCoordinator
 import TKCore
 import KeeperCore
+import TonSwift
 
 struct AddWalletModule {
   private let dependencies: Dependencies
@@ -10,9 +11,24 @@ struct AddWalletModule {
     self.dependencies = dependencies
   }
   
-  func createAddWalletCoordinator(router: ViewControllerRouter) -> AddWalletCoordinator {
+  func createAddWalletCoordinator(options: [AddWalletOption],
+                                  createPasscode: Bool = false,
+                                  router: ViewControllerRouter) -> AddWalletCoordinator {
+    
+    var createPasscodeCoordinatorProvider: ((NavigationControllerRouter) -> CreatePasscodeCoordinator)?
+    if createPasscode {
+      createPasscodeCoordinatorProvider = { router in
+        PasscodeModule(
+          dependencies: PasscodeModule.Dependencies(
+            passcodeAssembly: dependencies.passcodeAssembly
+          )
+        ).createCreatePasscodeCoordinator(router: router)
+      }
+    }
+    
     let coordinator = AddWalletCoordinator(
       router: router,
+      options: options,
       walletAddController: dependencies.walletsUpdateAssembly.walletAddController(),
       createWalletCoordinatorProvider:  { router in
         return createCreateWalletCoordinator(router: router)
@@ -22,7 +38,9 @@ struct AddWalletModule {
       },
       importWatchOnlyWalletCoordinatorProvider: { router in
         return createImportWatchOnlyWalletCoordinator(router: router)
-      }
+      }, pairSignerCoordinatorProvider: { router in
+        return createPairSignerCoordinator(router: router)
+      }, createPasscodeCoordinatorProvider: createPasscodeCoordinatorProvider
     )
     
     return coordinator
@@ -65,6 +83,35 @@ struct AddWalletModule {
     
     return coordinator
   }
+  
+  public func createPairSignerImportCoordinator(publicKey: TonSwift.PublicKey, name: String, router: NavigationControllerRouter) -> PairSignerImportCoordinator {
+    PairSignerImportCoordinator(
+      publicKey: publicKey,
+      name: name,
+      router: router,
+      walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      customizeWalletModule: {
+        self.createCustomizeWalletModule(
+          name: name,
+          tintColor: nil,
+          emoji: nil,
+          configurator: AddWalletCustomizeWalletViewModelConfigurator()
+        )
+      }
+    )
+  }
+  
+  public func createPairSignerCoordinator(router: NavigationControllerRouter) -> PairSignerCoordinator {
+    PairSignerCoordinator(
+      scannerAssembly: dependencies.scannerAssembly,
+      walletUpdateAssembly: dependencies.walletsUpdateAssembly,
+      coreAssembly: dependencies.coreAssembly,
+      router: router,
+      pairSignerImportCoordinatorProvider: { router, publicKey, name in
+        self.createPairSignerImportCoordinator(publicKey: publicKey, name: name, router: router)
+      }
+    )
+  }
 }
 
 private extension AddWalletModule {
@@ -106,9 +153,18 @@ private extension AddWalletModule {
 extension AddWalletModule {
   struct Dependencies {
     let walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly
+    let coreAssembly: TKCore.CoreAssembly
+    let scannerAssembly: KeeperCore.ScannerAssembly
+    let passcodeAssembly: KeeperCore.PasscodeAssembly
     
-    public init(walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly) {
+    public init(walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
+                coreAssembly: TKCore.CoreAssembly,
+                scannerAssembly: KeeperCore.ScannerAssembly,
+                passcodeAssembly: KeeperCore.PasscodeAssembly) {
       self.walletsUpdateAssembly = walletsUpdateAssembly
+      self.coreAssembly = coreAssembly
+      self.scannerAssembly = scannerAssembly
+      self.passcodeAssembly = passcodeAssembly
     }
   }
 }

@@ -35,20 +35,30 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     rootController.loadBuySellMethods()
     switch rootController.getState() {
     case .onboarding:
-      openOnboarding()
+      openOnboarding(deeplink: try? rootController.parseDeeplink(string: deeplink?.string))
     case let .main(wallets, activeWallet):
-      openMain(wallets: wallets, activeWallet: activeWallet, deeplink: deeplink)
+      openMain(wallets: wallets, activeWallet: activeWallet, deeplink: try? rootController.parseDeeplink(string: deeplink?.string))
     }
   }
   
-  override func handleDeeplink(deeplink: CoordinatorDeeplink?) {
-    let coreDeeplink = try? rootController.parseDeeplink(string: deeplink?.string)
-    mainCoordinator?.handleDeeplink(deeplink: coreDeeplink)
+  override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    do {
+      let coreDeeplink = try rootController.parseDeeplink(string: deeplink?.string)
+      if let onboardingCoordinator {
+        return onboardingCoordinator.handleDeeplink(deeplink: coreDeeplink)
+      } else if let mainCoordinator {
+        return mainCoordinator.handleDeeplink(deeplink: coreDeeplink)
+      } else {
+        return false
+      }
+    } catch {
+      return false
+    }
   }
 }
 
 private extension RootCoordinator {
-  func openOnboarding() {
+  func openOnboarding(deeplink: CoordinatorDeeplink?) {
     let module = OnboardingModule(
       dependencies: OnboardingModule.Dependencies(
         coreAssembly: dependencies.coreAssembly,
@@ -58,13 +68,16 @@ private extension RootCoordinator {
     let coordinator = module.createOnboardingCoordinator()
     
     coordinator.didFinishOnboarding = { [weak self, weak coordinator] in
+      self?.onboardingCoordinator = nil
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
       self?.start(deeplink: nil)
     }
     
+    self.onboardingCoordinator = coordinator
+    
     addChild(coordinator)
-    coordinator.start()
+    coordinator.start(deeplink: deeplink)
     
     showViewController(coordinator.router.rootViewController, animated: true)
   }
@@ -84,6 +97,7 @@ private extension RootCoordinator {
     )
     let coordinator = module.createMainCoordinator()
     coordinator.didLogout = { [weak self, weak coordinator] in
+      self?.mainCoordinator = nil
       guard let self, let coordinator else { return }
       Task {
         await self.rootController.logout()
@@ -119,3 +133,5 @@ private extension RootCoordinator {
 }
 
 extension KeeperCore.Deeplink: TKCoordinator.CoordinatorDeeplink {}
+extension KeeperCore.TonkeeperDeeplink: TKCoordinator.CoordinatorDeeplink {}
+extension KeeperCore.TonkeeperDeeplink.SignerDeeplink: TKCoordinator.CoordinatorDeeplink {}

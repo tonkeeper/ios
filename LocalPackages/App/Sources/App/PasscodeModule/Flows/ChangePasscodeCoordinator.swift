@@ -2,6 +2,7 @@ import UIKit
 import TKCoordinator
 import TKUIKit
 import KeeperCore
+import TKLocalize
 
 public final class ChangePasscodeCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -25,7 +26,6 @@ private extension ChangePasscodeCoordinator {
   func openChangePasscode() {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
-    navigationController.interactivePopGestureEnabled = false
     
     let module = PasscodeAssembly.module(
       navigationController: navigationController,
@@ -167,7 +167,7 @@ private extension ChangePasscodeChildCoordinator {
   
   func openReenterPasscode(createdPasscode: String) {
     let passcodeInput = PasscodeInputAssembly.module(
-      title: "Re-enter passcode",
+      title: TKLocales.Passcode.reenter,
       validator: ReenterPasscodeInputValidator(createdPasscode: createdPasscode),
       biometryProvider: BiometryProvider()
     )

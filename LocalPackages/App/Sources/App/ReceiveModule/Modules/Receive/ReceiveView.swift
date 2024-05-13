@@ -45,7 +45,7 @@ final class ReceiveView: UIView, ConfigurableView {
     public let address: String?
     public let addressButtonAction: () -> Void
     public let image: Image
-    public let tag: String?
+    public let tag: TKUITagView.Configuration?
   }
   
   func configure(model: Model) {
@@ -62,7 +62,7 @@ final class ReceiveView: UIView, ConfigurableView {
       )
     }
 
-    qrCodeView.tagString = model.tag
+    qrCodeView.setTagModel(model.tag)
     qrCodeView.addressButton.address = model.address
     qrCodeView.addressButton.tapHandler = {
       model.addressButtonAction()

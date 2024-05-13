@@ -3,6 +3,7 @@ import TKCoordinator
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
   private let coreAssembly: TKCore.CoreAssembly
@@ -14,7 +15,7 @@ public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRou
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
-    router.rootViewController.tabBarItem.title = "History"
+    router.rootViewController.tabBarItem.title = TKLocales.Tabs.history
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.clock
   }
   

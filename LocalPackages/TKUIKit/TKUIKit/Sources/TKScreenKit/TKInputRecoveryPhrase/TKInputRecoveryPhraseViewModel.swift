@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 public protocol TKInputRecoveryPhraseModuleOutput: AnyObject {
   var didInputRecoveryPhrase: (([String], @escaping (() -> Void)) -> Void)? { get set }
@@ -78,7 +79,7 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
     self.validator = validator
     self.suggestsProvider = suggestsProvider
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    continueButtonConfiguration.content.title = .plainString("Continue")
+    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
     self.continueButtonConfiguration = continueButtonConfiguration
   }
 }

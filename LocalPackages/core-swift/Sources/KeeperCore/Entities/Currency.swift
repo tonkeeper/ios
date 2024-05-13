@@ -1,4 +1,5 @@
 import Foundation
+import TKLocalize
 
 public enum Currency: String, Codable, CaseIterable {
   case TON = "TON"
@@ -46,19 +47,19 @@ public enum Currency: String, Codable, CaseIterable {
   public var title: String {
     switch self {
     case .TON: return "Toncoin"
-    case .USD: return "United States Dollar"
-    case .JPY: return "Japanese Yen"
-    case .AED: return "United Arab Emirates Dirham"
-    case .EUR: return "Euro"
-    case .CHF: return "Swiss Franc"
-    case .CNY: return "China Yuan"
-    case .GBP: return "Great Britain Pound"
-    case .IDR: return "Indonesian Rupiah"
-    case .INR: return "Indian Rupee"
-    case .KRW: return "South Korean Won"
-    case .KZT: return "Kazakhstani Tenge"
-    case .RUB: return "Russian Ruble"
-    case .UAH: return "Ukrainian hryvnian"
+    case .USD: return TKLocales.Currency.Items.usd
+    case .JPY: return TKLocales.Currency.Items.jpy
+    case .AED: return TKLocales.Currency.Items.aed
+    case .EUR: return TKLocales.Currency.Items.eur
+    case .CHF: return TKLocales.Currency.Items.chf
+    case .CNY: return TKLocales.Currency.Items.cny
+    case .GBP: return TKLocales.Currency.Items.gbp
+    case .IDR: return TKLocales.Currency.Items.idr
+    case .INR: return TKLocales.Currency.Items.inr
+    case .KRW: return TKLocales.Currency.Items.krw
+    case .KZT: return TKLocales.Currency.Items.kzt
+    case .RUB: return TKLocales.Currency.Items.rub
+    case .UAH: return TKLocales.Currency.Items.uah
     }
   }
   

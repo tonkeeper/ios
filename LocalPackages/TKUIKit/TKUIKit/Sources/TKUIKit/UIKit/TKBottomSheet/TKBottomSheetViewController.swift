@@ -50,7 +50,7 @@ public final class TKBottomSheetViewController: UIViewController {
   public override func viewDidLoad() {
     super.viewDidLoad()
     
-    setup()
+//    setup()
   }
   
   public override func viewDidLayoutSubviews() {
@@ -66,6 +66,7 @@ public final class TKBottomSheetViewController: UIViewController {
     navigationController.modalPresentationStyle = .overFullScreen
     
     fromViewController.present(navigationController, animated: false) {
+      self.setup()
       self.performPresent()
     }
   }
@@ -88,7 +89,7 @@ private extension TKBottomSheetViewController {
     containerView.layer.masksToBounds = true
     
     setupHeader()
-    setupContent()
+//    setupContent()
     
     view.addSubview(dimmingView)
     view.addSubview(containerView)
@@ -138,6 +139,10 @@ private extension TKBottomSheetViewController {
   }
 
   func performPresent() {
+    view.setNeedsLayout()
+    view.layoutIfNeeded()
+    setupContent()
+    containerView.frame.size.width = view.bounds.width
     let contentHeight = calculateContentHeight()
     
     let containerHeigth = contentHeight + headerHeight + bottomSpacing

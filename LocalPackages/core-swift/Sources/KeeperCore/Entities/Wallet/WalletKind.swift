@@ -24,13 +24,13 @@ public enum WalletKind: Codable, Equatable, Identifiable {
   public var id: String {
     switch self {
     case .Regular(let publicKey, let walletContractVersion):
-      return publicKey.hexString + walletContractVersion.rawValue
+      return "r_\(publicKey.hexString + walletContractVersion.rawValue)"
     case .Lockup(let publicKey, _):
       return publicKey.hexString
     case .Watchonly(let resolvableAddress):
       return String(resolvableAddress.hashValue)
     case .External(let publicKey, let walletContractVersion):
-      return publicKey.hexString + walletContractVersion.rawValue
+      return "e_\(publicKey.hexString + walletContractVersion.rawValue)"
     }
   }
 }

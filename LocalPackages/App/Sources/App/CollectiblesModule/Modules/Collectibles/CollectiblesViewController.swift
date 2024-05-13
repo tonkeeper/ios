@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import TKCoordinator
+import TKLocalize
 
 final class CollectiblesViewController: GenericViewViewController<CollectiblesView>, ScrollViewController {
   private let viewModel: CollectiblesViewModel
@@ -59,7 +60,7 @@ private extension CollectiblesViewController {
   }
   
   func setup() {
-    customView.navigationBarView.title = "Collectibles"
+      customView.navigationBarView.title = TKLocales.Purchases.title
   }
   
   func setupListViewController(viewController: CollectiblesListViewController) {

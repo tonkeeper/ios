@@ -86,6 +86,8 @@ private extension SettingsController {
     case .didUpdateWalletMetadata(let wallet):
       guard wallet == walletsStore.activeWallet else { return }
       didUpdateActiveWallet?()
+    case .didUpdateActiveWallet:
+      didUpdateActiveWallet?()
     case .didDeleteWallet:
       didDeleteWallet?()
     case .didDeleteLastWallet:

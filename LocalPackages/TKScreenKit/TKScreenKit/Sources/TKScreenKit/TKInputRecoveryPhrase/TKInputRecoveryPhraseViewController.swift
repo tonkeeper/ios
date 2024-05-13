@@ -3,9 +3,12 @@ import TKUIKit
 
 public final class TKInputRecoveryPhraseViewController: GenericViewViewController<TKInputRecoveryPhraseView>, KeyboardObserving {
   private let viewModel: TKInputRecoveryPhraseViewModel
+  private let bannerViewProvider: (() -> UIView)?
   
-  init(viewModel: TKInputRecoveryPhraseViewModel) {
+  init(viewModel: TKInputRecoveryPhraseViewModel,
+       bannerViewProvider: (() -> UIView)? = nil) {
     self.viewModel = viewModel
+    self.bannerViewProvider = bannerViewProvider
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -16,6 +19,7 @@ public final class TKInputRecoveryPhraseViewController: GenericViewViewControlle
   public override func viewDidLoad() {
     super.viewDidLoad()
     
+    customView.bannerViewProvider = bannerViewProvider
     setupBindings()
     viewModel.viewDidLoad()
   }
@@ -36,12 +40,20 @@ public final class TKInputRecoveryPhraseViewController: GenericViewViewControlle
   }
   
   public func keyboardWillShow(_ notification: Notification) {
-    guard let keyboardSize = notification.keyboardSize else { return }
-    customView.scrollView.contentInset.bottom = keyboardSize.height - view.safeAreaInsets.bottom
+    guard let animationDuration = notification.keyboardAnimationDuration,
+    let keyboardHeight = notification.keyboardSize?.height else { return }
+    UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
+      self.customView.keyboardHeight = keyboardHeight
+      self.customView.layoutIfNeeded()
+    }
   }
   
   public func keyboardWillHide(_ notification: Notification) {
-    customView.scrollView.contentInset.bottom = 0
+    guard let animationDuration = notification.keyboardAnimationDuration else { return }
+    UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
+      self.customView.keyboardHeight = 0
+      self.customView.layoutIfNeeded()
+    }
   }
 }
 
@@ -53,6 +65,14 @@ private extension TKInputRecoveryPhraseViewController {
     
     viewModel.didUpdateContinueButton = { [weak customView] configuration in
       customView?.continueButton.configuration = configuration
+    }
+    
+    viewModel.didUpdatePasteButton = { [weak customView] configuration in
+      customView?.pasteButton.configuration = configuration
+    }
+    
+    viewModel.didUpdatePasteButtonIsHidden = { [weak customView] isHidden in
+      customView?.pasteButton.isHidden = isHidden
     }
     
     viewModel.didUpdateInputValidationState = { [customView] index, isValid in

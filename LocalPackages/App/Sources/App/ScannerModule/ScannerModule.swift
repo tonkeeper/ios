@@ -1,6 +1,7 @@
 import TKUIKit
 import TKCoordinator
 import TKCore
+import TKLocalize
 import KeeperCore
 
 struct ScannerModule {
@@ -9,10 +10,12 @@ struct ScannerModule {
     self.dependencies = dependencies
   }
   
-  func createScannerModule() -> MVVMModule<ScannerViewController, ScannerViewModuleOutput, Void> {
+  func createScannerModule(configurator: ScannerControllerConfigurator,
+                           uiConfiguration: ScannerUIConfiguration) -> MVVMModule<ScannerViewController, ScannerViewModuleOutput, Void> {
     ScannerAssembly.module(
-      scannerController: dependencies.keeperCoreMainAssembly.scannerController(),
-      urlOpener: dependencies.coreAssembly.urlOpener()
+      scannerController: dependencies.scannerAssembly.scannerController(configurator: configurator),
+      urlOpener: dependencies.coreAssembly.urlOpener(),
+      uiConfiguration: uiConfiguration
     )
   }
 }
@@ -20,12 +23,12 @@ struct ScannerModule {
 extension ScannerModule {
   struct Dependencies {
     let coreAssembly: TKCore.CoreAssembly
-    let keeperCoreMainAssembly: KeeperCore.MainAssembly
+    let scannerAssembly: KeeperCore.ScannerAssembly
     
     public init(coreAssembly: TKCore.CoreAssembly,
-                keeperCoreMainAssembly: KeeperCore.MainAssembly) {
+                scannerAssembly: KeeperCore.ScannerAssembly) {
       self.coreAssembly = coreAssembly
-      self.keeperCoreMainAssembly = keeperCoreMainAssembly
+      self.scannerAssembly = scannerAssembly
     }
   }
 }

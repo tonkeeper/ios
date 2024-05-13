@@ -44,11 +44,11 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   
   func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
     guard let url = URLContexts.first?.url else { return }
-    appCoordinator?.handleDeeplink(deeplink: url.absoluteString)
+    _ = appCoordinator?.handleDeeplink(deeplink: url.absoluteString)
   }
   
   func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
     guard let url = userActivity.webpageURL else { return }
-    appCoordinator?.handleDeeplink(deeplink: url.absoluteString)
+    _ = appCoordinator?.handleDeeplink(deeplink: url.absoluteString)
   }
 }

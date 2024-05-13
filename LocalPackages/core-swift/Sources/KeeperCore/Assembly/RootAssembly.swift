@@ -44,6 +44,7 @@ public final class RootAssembly {
         remoteConfigurationStore: configurationAssembly.remoteConfigurationStore,
         knownAccountsStore: storesAssembly.knownAccountsStore,
         deeplinkParser: DefaultDeeplinkParser(parsers: [
+          TonkeeperDeeplinkParser(),
           TonDeeplinkParser(),
           TonConnectDeeplinkParser()
         ]),
