@@ -125,16 +125,10 @@ private extension WalletMainController {
   }
   
   func loadWalletsNfts(wallets: [Wallet]) async {
-    let addresses = wallets.compactMap { try? $0.address }
-    await loadWalletsNfts(addresses: addresses)
-  }
-  
-  func loadWalletsNfts(addresses: [Address]) async {
-    
     await withTaskGroup(of: Void.self) { [nftsLoader] group in
-      for address in addresses {
+      for wallet in wallets {
         group.addTask {
-          await nftsLoader.loadNfts(address: address)
+          await nftsLoader.loadNfts(wallet: wallet)
         }
       }
     }

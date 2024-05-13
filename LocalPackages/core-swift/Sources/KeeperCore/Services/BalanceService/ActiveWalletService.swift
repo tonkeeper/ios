@@ -46,8 +46,13 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
             address: address,
             currencies: [(try? currencyService.getActiveCurrency()) ?? .USD]
           )
-          async let nftsTask = self.accountNFTService.loadAccountNFTs(accountAddress: address, collectionAddress: nil, limit: nil, offset: nil, isIndirectOwnership: true)
-          
+          async let nftsTask = self.apiProvider.api(isTestnet).getAccountNftItems(
+            address: address,
+            collectionAddress: nil,
+            limit: nil,
+            offset: nil,
+            isIndirectOwnership: true
+          )
           let isActive: Bool
           let balance: Balance
           let nfts: [NFT]

@@ -84,13 +84,13 @@ public final class ServicesAssembly {
   
   func blockchainService() -> BlockchainService {
     BlockchainServiceImplementation(
-      api: apiAssembly.api
+      apiProvider: apiAssembly.apiProvider
     )
   }
   
   func accountNftService() -> AccountNFTService {
     AccountNFTServiceImplementation(
-      api: apiAssembly.api,
+      apiProvider: apiAssembly.apiProvider,
       accountNFTRepository: repositoriesAssembly.accountsNftRepository(),
       nftRepository: repositoriesAssembly.nftRepository()
     )
@@ -120,7 +120,7 @@ public final class ServicesAssembly {
   }
   
   func dnsService() -> DNSService {
-    DNSServiceImplementation(api: apiAssembly.api)
+    DNSServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
   func knownAccountsService() -> KnownAccountsService {

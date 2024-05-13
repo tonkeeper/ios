@@ -306,12 +306,14 @@ private extension SendConfirmationController {
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: from.toRaw(),
-      owner: wallet.address.toRaw()
+      owner: wallet.address.toRaw(),
+      isTestnet: wallet.isTestnet
     )
     
     let toWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: to.toRaw(),
-      owner: STONFI_CONSTANTS.RouterAddress
+      owner: STONFI_CONSTANTS.RouterAddress,
+      isTestnet: wallet.isTestnet
     )
     
     return try await SwapMessageBuilder.sendSwap(
@@ -333,12 +335,14 @@ private extension SendConfirmationController {
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: from.toRaw(),
-      owner: wallet.address.toRaw()
+      owner: wallet.address.toRaw(),
+      isTestnet: wallet.isTestnet
     )
     
     let toWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: STONFI_CONSTANTS.TONProxyAddress,
-      owner: STONFI_CONSTANTS.RouterAddress
+      owner: STONFI_CONSTANTS.RouterAddress,
+      isTestnet: wallet.isTestnet
     )
     
     return try await SwapMessageBuilder.sendSwap(
@@ -360,12 +364,14 @@ private extension SendConfirmationController {
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: STONFI_CONSTANTS.TONProxyAddress,
-      owner: STONFI_CONSTANTS.RouterAddress
+      owner: STONFI_CONSTANTS.RouterAddress,
+      isTestnet: wallet.isTestnet
     )
     
     let toWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: to.toRaw(),
-      owner: STONFI_CONSTANTS.RouterAddress
+      owner: STONFI_CONSTANTS.RouterAddress,
+      isTestnet: wallet.isTestnet
     )
     
     return try await SwapMessageBuilder.sendSwap(

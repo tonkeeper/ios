@@ -18,7 +18,7 @@ actor AddressResolver {
       return ResolvableAddress.Resolved(address)
     }
     
-    if let domain = try? await dnsService.resolveDomainName(input) {
+    if let domain = try? await dnsService.resolveDomainName(input, isTestnet: false) {
       return ResolvableAddress.Domain(domain.domain, domain.friendlyAddress.address)
     }
     

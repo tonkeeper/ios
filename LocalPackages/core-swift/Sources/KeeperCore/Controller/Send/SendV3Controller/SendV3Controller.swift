@@ -42,7 +42,9 @@ public final class SendV3Controller {
     } else if let rawAddress = try? Address.parse(input) {
       return (Recipient(recipientAddress: .raw(rawAddress),
                         isMemoRequired: knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false))
-    } else if let domain = try? await dnsService.resolveDomainName(input) {
+    } else if let domain = try? await dnsService.resolveDomainName(
+      input,
+      isTestnet: walletsStore.activeWallet.isTestnet) {
       return Recipient(recipientAddress: .domain(domain),
                        isMemoRequired: knownAccounts.first(where: { $0.address == domain.friendlyAddress.address })?.requireMemo ?? false)
     } else {

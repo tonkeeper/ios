@@ -42,16 +42,14 @@ public final class CollectiblesController {
     
     _ = await nftsStore.addEventObserver(self) { observer, event in
       switch event {
-      case .nftsUpdate(let nfts, let walletAddress):
-        guard let address = try? observer.wallet.address, address == walletAddress else { return }
+      case .nftsUpdate(let nfts, let wallet):
+        guard (try? wallet.friendlyAddress) == (try? observer.wallet.friendlyAddress) else { return }
         observer.didUpdateIsEmpty?(nfts.isEmpty)
       }
     }
     
-    if let address = try? wallet.address {
-      let nfts = await nftsStore.getNfts(walletAddress: address)
-      didUpdateIsEmpty?(nfts.isEmpty)
-    }
+    let nfts = await nftsStore.getNfts(wallet: wallet)
+    didUpdateIsEmpty?(nfts.isEmpty)
   }
   
   public func updateConnectingState() async {
@@ -63,9 +61,9 @@ public final class CollectiblesController {
 private extension CollectiblesController {
   func didChangeActiveWallet() async {
     guard let address = try? wallet.address else { return }
-    let walletNfts = await nftsStore.getNfts(walletAddress: address)
+    let nfts = await nftsStore.getNfts(wallet: wallet)
     didUpdateActiveWallet?()
-    didUpdateIsEmpty?(walletNfts.isEmpty)
+    didUpdateIsEmpty?(nfts.isEmpty)
   }
   
   func handleBackgroundUpdateState(_ state: BackgroundUpdateState) {

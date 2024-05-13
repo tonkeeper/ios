@@ -27,7 +27,7 @@ public final class MainController {
   private let tonConnectService: TonConnectService
   private let deeplinkParser: DeeplinkParser
   // TODO: wrap to service
-  private let api: API
+  private let apiProvider: APIProvider
   
   private var state = State()
   
@@ -42,7 +42,7 @@ public final class MainController {
        dnsService: DNSService,
        tonConnectService: TonConnectService,
        deeplinkParser: DeeplinkParser,
-       api: API) {
+       apiProvider: APIProvider) {
     self.walletsStore = walletsStore
     self.accountNFTService = accountNFTService
     self.backgroundUpdateStore = backgroundUpdateStore
@@ -52,7 +52,7 @@ public final class MainController {
     self.dnsService = dnsService
     self.tonConnectService = tonConnectService
     self.deeplinkParser = deeplinkParser
-    self.api = api
+    self.apiProvider = apiProvider
   }
   
   deinit {
@@ -129,11 +129,6 @@ public final class MainController {
         ),
         isMemoRequired: knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false
       )
-    } else if let domain = try? await dnsService.resolveDomainName(recipient) {
-      inputRecipient = Recipient(
-        recipientAddress: .domain(domain),
-        isMemoRequired: knownAccounts.first(where: { $0.address == domain.friendlyAddress.address })?.requireMemo ?? false
-      )
     } else {
       inputRecipient = nil
     }
@@ -141,21 +136,24 @@ public final class MainController {
   }
   
   public func resolveJetton(jettonAddress: Address) async -> JettonItem? {
-    do {
-      let jettonInfo = try await api.resolveJetton(address: jettonAddress)
-      for wallet in walletsStore.wallets {
-        guard let balance = try? balanceStore.getBalance(wallet: wallet).balance else {
-          continue
-        }
-        guard let jettonItem =  balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonInfo })?.item else {
-          continue
-        }
-        return jettonItem
-      }
-      return nil
-    } catch {
+    let jettonInfo: JettonInfo
+    if let mainnetJettonInfo = try? await apiProvider.api(false).resolveJetton(address: jettonAddress) {
+      jettonInfo = mainnetJettonInfo
+    } else if let testnetJettonInfo = try? await apiProvider.api(true).resolveJetton(address: jettonAddress) {
+      jettonInfo = testnetJettonInfo
+    } else {
       return nil
     }
+    for wallet in walletsStore.wallets {
+      guard let balance = try? balanceStore.getBalance(wallet: wallet).balance else {
+        continue
+      }
+      guard let jettonItem =  balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonInfo })?.item else {
+        continue
+      }
+      return jettonItem
+    }
+    return nil
   }
 }
 

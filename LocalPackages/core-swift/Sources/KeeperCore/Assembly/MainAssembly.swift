@@ -71,7 +71,7 @@ public final class MainAssembly {
           TonDeeplinkParser(),
         ]
       ),
-      api: apiAssembly.api
+      apiProvider: apiAssembly.apiProvider
     )
   }
   
