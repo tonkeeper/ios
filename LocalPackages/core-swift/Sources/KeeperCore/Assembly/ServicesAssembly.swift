@@ -70,7 +70,7 @@ public final class ServicesAssembly {
   
   func historyService() -> HistoryService {
     HistoryServiceImplementation(
-      api: apiAssembly.api,
+      apiProvider: apiAssembly.apiProvider,
       repository: repositoriesAssembly.historyRepository()
     )
   }
@@ -116,7 +116,7 @@ public final class ServicesAssembly {
   }
   
   func sendService() -> SendService {
-    SendServiceImplementation(api: apiAssembly.api)
+    SendServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
   func dnsService() -> DNSService {

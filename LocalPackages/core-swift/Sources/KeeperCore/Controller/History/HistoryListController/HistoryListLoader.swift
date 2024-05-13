@@ -2,9 +2,9 @@ import Foundation
 import TonSwift
 
 protocol HistoryListLoader {
-  func cachedEvents(address: Address) throws -> AccountEvents
-  func loadEvents(address: Address, beforeLt: Int64?, limit: Int) async throws -> AccountEvents
-  func loadEvent(address: Address, eventId: String) async throws -> AccountEvent
+  func cachedEvents(wallet: Wallet) throws -> AccountEvents
+  func loadEvents(wallet: Wallet, beforeLt: Int64?, limit: Int) async throws -> AccountEvents
+  func loadEvent(wallet: Wallet, eventId: String) async throws -> AccountEvent
 }
 
 final class HistoryListAllEventsLoader: HistoryListLoader {
@@ -14,19 +14,19 @@ final class HistoryListAllEventsLoader: HistoryListLoader {
     self.historyService = historyService
   }
   
-  func cachedEvents(address: Address) throws -> AccountEvents {
-    try historyService.cachedEvents(address: address)
+  func cachedEvents(wallet: Wallet) throws -> AccountEvents {
+    try historyService.cachedEvents(wallet: wallet)
   }
   
-  func loadEvents(address: Address,
+  func loadEvents(wallet: Wallet,
                   beforeLt: Int64?,
                   limit: Int) async throws -> AccountEvents {
-    return try await historyService.loadEvents(address: address, beforeLt: beforeLt, limit: limit)
+    return try await historyService.loadEvents(wallet: wallet, beforeLt: beforeLt, limit: limit)
   }
   
-  func loadEvent(address: Address,
+  func loadEvent(wallet: Wallet,
                  eventId: String) async throws -> AccountEvent {
-    return try await historyService.loadEvent(accountAddress: address, eventId: eventId)
+    return try await historyService.loadEvent(wallet: wallet, eventId: eventId)
   }
 }
 
@@ -37,8 +37,8 @@ final class HistoryListTonEventsLoader: HistoryListLoader {
     self.historyService = historyService
   }
   
-  func cachedEvents(address: Address) throws -> AccountEvents {
-    let cachedEvents = try historyService.cachedEvents(address: address)
+  func cachedEvents(wallet: Wallet) throws -> AccountEvents {
+    let cachedEvents = try historyService.cachedEvents(wallet: wallet)
     let filteredEvents = cachedEvents.events.compactMap { event -> AccountEvent? in
       let filteredActions = event.actions.compactMap { action -> AccountEventAction? in
         guard case .tonTransfer = action.type else { return nil }
@@ -57,18 +57,18 @@ final class HistoryListTonEventsLoader: HistoryListLoader {
     }
     
     return AccountEvents(
-      address: address,
+      address: try wallet.address,
       events: filteredEvents,
       startFrom: cachedEvents.startFrom,
       nextFrom: cachedEvents.nextFrom
     )
   }
   
-  func loadEvents(address: Address,
+  func loadEvents(wallet: Wallet,
                   beforeLt: Int64?,
                   limit: Int) async throws -> AccountEvents {
     let loadedEvents = try await historyService.loadEvents(
-      address: address,
+      wallet: wallet,
       beforeLt: beforeLt,
       limit: limit
     )
@@ -91,16 +91,16 @@ final class HistoryListTonEventsLoader: HistoryListLoader {
     }
     
     return AccountEvents(
-      address: address,
+      address: try wallet.address,
       events: filteredEvents,
       startFrom: loadedEvents.startFrom,
       nextFrom: loadedEvents.nextFrom
     )
   }
   
-  func loadEvent(address: Address,
+  func loadEvent(wallet: Wallet,
                  eventId: String) async throws -> AccountEvent {
-    return try await historyService.loadEvent(accountAddress: address, eventId: eventId)
+    return try await historyService.loadEvent(wallet: wallet, eventId: eventId)
   }
 }
 
@@ -114,26 +114,26 @@ final class HistoryListJettonEventsLoader: HistoryListLoader {
     self.historyService = historyService
   }
   
-  func cachedEvents(address: Address) throws -> AccountEvents {
+  func cachedEvents(wallet: Wallet) throws -> AccountEvents {
     try historyService.cachedEvents(
-      address: address,
+      wallet: wallet,
       jettonInfo: jettonInfo
     )
   }
   
-  func loadEvents(address: Address,
+  func loadEvents(wallet: Wallet,
                   beforeLt: Int64?,
                   limit: Int) async throws -> AccountEvents {
     return try await historyService.loadEvents(
-      address: address,
+      wallet: wallet,
       jettonInfo: jettonInfo,
       beforeLt: beforeLt,
       limit: limit
     )
   }
   
-  func loadEvent(address: Address,
+  func loadEvent(wallet: Wallet,
                  eventId: String) async throws -> AccountEvent {
-    return try await historyService.loadEvent(accountAddress: address, eventId: eventId)
+    return try await historyService.loadEvent(wallet: wallet, eventId: eventId)
   }
 }
