@@ -156,5 +156,7 @@ private extension TKButton {
       self.buttonContentView.title = nil
     }
     self.buttonContentView.icon = configuration.content.icon
+      self.buttonContentView.layer.borderWidth = 1.5
+      self.buttonContentView.layer.borderColor = configuration.borderColor.cgColor
   }
 }

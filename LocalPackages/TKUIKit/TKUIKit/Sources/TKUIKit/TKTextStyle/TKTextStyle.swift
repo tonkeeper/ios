@@ -55,6 +55,11 @@ public extension TKTextStyle {
     font: .montserratSemiBold(size: 44),
     lineHeight: 56
   )
+    
+  static let stakeInput: TKTextStyle = .init(
+    font: .montserratSemiBold(size: 40),
+    lineHeight: 48
+  )
   
   static let num1: TKTextStyle = .init(
     font: .montserratSemiBold(size: 32),

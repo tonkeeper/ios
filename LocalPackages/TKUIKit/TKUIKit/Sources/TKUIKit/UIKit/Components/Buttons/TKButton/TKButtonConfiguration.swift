@@ -10,6 +10,7 @@ public extension TKButton {
     public var textColor: UIColor
     public var iconPosition: TKButtonIconPosition
     public var iconTintColor: UIColor
+    public var borderColor: UIColor
     public var backgroundColors: [TKButtonState: UIColor]
     public var contentAlpha: [TKButtonState: CGFloat]
     public var cornerRadius: CGFloat
@@ -27,6 +28,7 @@ public extension TKButton {
                 textColor: UIColor = .white,
                 iconPosition: TKButtonIconPosition = .left,
                 iconTintColor: UIColor = .white,
+                borderColor: UIColor = .clear,
                 backgroundColors: [TKButtonState : UIColor] = [.normal: .clear],
                 contentAlpha: [TKButtonState : CGFloat] = [.normal: 1, .disabled: 0.48],
                 cornerRadius: CGFloat = 0,
@@ -43,6 +45,7 @@ public extension TKButton {
       self.textColor = textColor
       self.iconPosition = iconPosition
       self.iconTintColor = iconTintColor
+      self.borderColor = borderColor
       self.backgroundColors = backgroundColors
       self.contentAlpha = contentAlpha
       self.cornerRadius = cornerRadius
@@ -154,4 +157,25 @@ public extension TKButton.Configuration {
       action: nil
     )
   }
+    
+    static func stakeBalanceButtonConfiguration() -> TKButton.Configuration {
+      TKButton.Configuration(
+        content: Content(),
+        contentPadding: UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16),
+        padding: UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0),
+        spacing: 4,
+        textStyle: .body1,
+        textColor: .Text.secondary, 
+        iconPosition: .right,
+        iconTintColor: .Text.secondary,
+        borderColor: .Button.tertiaryBackground,
+        backgroundColors: [
+            .normal: .clear,
+            .highlighted: .Button.secondaryBackgroundHighlighted,
+            .disabled: .clear
+        ],
+        cornerRadius: 21,
+        action: nil
+      )
+    }
 }
