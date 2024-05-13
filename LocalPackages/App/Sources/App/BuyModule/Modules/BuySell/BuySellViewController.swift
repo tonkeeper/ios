@@ -299,7 +299,7 @@ private extension BuySellViewController {
     }
     
     viewModel.didUpdateCountryCode = { [weak self] countryCode in
-      self?.customView.changeCountryButton.configuration.content.title = .plainString(countryCode)
+      self?.customView.changeCountryButton.configuration.content.title = .plainString(countryCode ?? "🌍")
     }
     
     viewModel.didUpdatePaymentMethodItems = { [weak self] paymentMethodItems in

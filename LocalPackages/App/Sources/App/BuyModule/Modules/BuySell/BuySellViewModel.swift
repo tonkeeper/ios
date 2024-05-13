@@ -65,7 +65,7 @@ protocol BuySellModuleOutput: AnyObject {
 
 protocol BuySellViewModel: AnyObject {
   var didUpdateModel: ((BuySellModel) -> Void)? { get set }
-  var didUpdateCountryCode: ((String) -> Void)? { get set }
+  var didUpdateCountryCode: ((String?) -> Void)? { get set }
   var didUpdatePaymentMethodItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   
   var buySellAmountTextFieldFormatter: BuySellAmountTextFieldFormatter { get }
@@ -85,7 +85,7 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   // MARK: - BuySellModelViewModel
   
   var didUpdateModel: ((BuySellModel) -> Void)?
-  var didUpdateCountryCode: ((String) -> Void)?
+  var didUpdateCountryCode: ((String?) -> Void)?
   var didUpdatePaymentMethodItems: (([SelectionCollectionViewCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
@@ -140,7 +140,7 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   
   // MARK: - State
   
-  private var countryCode = "🌍"
+  private var countryCode: String?
   private var amountInput = "0"
   private var amountInputMinimum = "0"
   private var amountInputValue = BigUInt()
@@ -253,11 +253,12 @@ private extension BuySellViewModelImplementation {
   
   func createBuySellOperatorItem() -> BuySellOperatorItem {
     let amount = buySellAmountTextFieldFormatter.formatString(amountInput) ?? ""
-    let buySellOperation: BuySellOperatorItem.Operation = switch buySellItem.operation {
+    let buySellOperation: BuySellOperatorItem.Operation
+    switch buySellItem.operation {
     case .buy:
-        .buy(amount: amount)
+      buySellOperation = .buy(amount: amount)
     case .sell:
-        .sell(amount: amount)
+      buySellOperation = .sell(amount: amount)
     }
     
     return BuySellOperatorItem(
@@ -265,7 +266,8 @@ private extension BuySellViewModelImplementation {
       paymentMethod: .init(
         id: selectedPaymentMethod.id,
         title: selectedPaymentMethod.title
-      )
+      ),
+      countryCode: countryCode
     )
   }
   
@@ -286,7 +288,7 @@ private extension BuySellViewModelImplementation {
   
   func updateCountryCode() {
     Task {
-      guard let countryCode = await buySellController.getCountryCode() else { return }
+      let countryCode = await buySellController.getCountryCode()
       
       await MainActor.run {
         self.countryCode = countryCode

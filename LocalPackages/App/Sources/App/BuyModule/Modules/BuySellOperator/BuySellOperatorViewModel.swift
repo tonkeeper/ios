@@ -21,10 +21,22 @@ struct BuySellOperatorItem {
   
   let operation: Operation
   let paymentMethod: PaymentMethod
+  let countryCode: String?
   var amount: String {
     switch operation {
     case .buy(let amount), .sell(let amount):
       return amount
+    }
+  }
+}
+
+extension BuySellOperatorItem.Operation {
+  var buySellOperationType: BuySellOperationType {
+    switch self {
+    case .buy:
+      return .buy
+    case .sell:
+      return .sell
     }
   }
 }
@@ -99,6 +111,7 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
     
     buySellOperatorController.didLoadListItems = { [weak self] activeCurrency, fiatOperatorItems in
       self?.didLoadListItems(activeCurrency, fiatOperatorItems)
+      self?.isResolving = false
     }
     
     buySellOperatorController.didUpdateFiatOperatorItems = { [weak self] fiatOperatorItems in
@@ -110,7 +123,8 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
     }
     
     Task {
-      await buySellOperatorController.start()
+      let buySellOperationType = buySellOperatorItem.operation.buySellOperationType
+      await buySellOperatorController.start(buySellOperationType: buySellOperationType)
     }
     
 //    let buySellDetailsItem = createBuySellDetailsItem()
@@ -122,7 +136,7 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
   private var selectedCurrency = Currency.USD
   private var selectedOperator: FiatOperator = .emptyItem
   
-  private var isResolving = false {
+  private var isResolving = true {
     didSet {
       guard isResolving != oldValue else { return }
       update()

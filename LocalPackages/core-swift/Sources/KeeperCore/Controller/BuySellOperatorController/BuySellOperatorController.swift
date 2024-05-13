@@ -23,25 +23,15 @@ public final class BuySellOperatorController {
     self.currencyStore = currencyStore
   }
   
-  public func start() async {
-//    let testInfoButtons: [FiatOperator.InfoButton] = [
-//      .init(title: "Privacy Policy", url: URL(string: "https://example.com")),
-//      .init(title: "Terms of Use", url: URL(string: "https://example.com"))
-//    ]
-//    
-//    let testFiatOperators: [FiatOperator] = [
-//      .init(id: "mercuryo", title: "Mercuryo", description: "Instantly buy with a credit card", rate: 2,330.01 AMD for 1 TON", badge: "BEST", iconURL: URL(string: "https://tonkeeper.com/assets/mercuryo-icon-new.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
-//      .init(id: "dreamwalkers", title: "Dreamwalkers", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/dreamwalkers-icon.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
-//      .init(id: "neocrypto", title: "Neocrypto", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/neocrypto-new.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
-//      .init(id: "transak", title: "Transak", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/transak.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
-//    ]
-
+  public func start(buySellOperationType: BuySellOperationType) async {
     let activeCurrency = await currencyStore.getActiveCurrency()
     let fiatMethods = try? await buySellMethodsService.loadFiatMethods(countryCode: nil)
     let fiatCategories = fiatMethods?.categories ?? []
     
+    let fiatCategoryType = buySellOperationType.fiatCategoryType
+    
     let buyItems = fiatCategories
-      .filter({ $0.type == .buy })
+      .filter({ $0.type == fiatCategoryType })
       .map({ $0.items })
       .flatMap({ $0 })
     
@@ -58,6 +48,18 @@ public final class BuySellOperatorController {
   
   // TODO: Refactor
   public func updateBuySellOperatorItems() async {
+//    let testInfoButtons: [FiatOperator.InfoButton] = [
+//      .init(title: "Privacy Policy", url: URL(string: "https://example.com")),
+//      .init(title: "Terms of Use", url: URL(string: "https://example.com"))
+//    ]
+//
+//    let testFiatOperators: [FiatOperator] = [
+//      .init(id: "mercuryo", title: "Mercuryo", description: "Instantly buy with a credit card", rate: 2,330.01 AMD for 1 TON", badge: "BEST", iconURL: URL(string: "https://tonkeeper.com/assets/mercuryo-icon-new.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
+//      .init(id: "dreamwalkers", title: "Dreamwalkers", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/dreamwalkers-icon.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
+//      .init(id: "neocrypto", title: "Neocrypto", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/neocrypto-new.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
+//      .init(id: "transak", title: "Transak", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/transak.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
+//    ]
+    
     guard let fiatMethods = try? await buySellMethodsService.loadFiatMethods(countryCode: nil) else { return }
     
     let buyItems = fiatMethods.categories
