@@ -23,6 +23,10 @@ final class StakeListItemView: UIView {
         static let cornerRadius: CGFloat = 16
     }
     
+    // MARK: - Public
+    
+    var didTapListItem: (() -> Void)?
+    
     // MARK: - UI
     
     private let listItemView = TKUIListItemView()
@@ -69,6 +73,7 @@ extension StakeListItemView {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesEnded(touches, with: event)
         pressAnimation(isPressed: false)
+        didTapListItem?()
     }
     
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {

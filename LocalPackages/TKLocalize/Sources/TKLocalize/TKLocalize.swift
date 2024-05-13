@@ -823,4 +823,11 @@ public enum TKLocales {
       localize("action_types.wallet_initialize")
     }
   }
+    public enum Stake {
+        /// Send
+        public static var title: String {
+            localize("stake.title")
+        }
+        
+    }
 }

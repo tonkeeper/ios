@@ -226,3 +226,5 @@
 "action_types.domain_renew" = "Renew Domain";
 "action_types.unknown" = "Unknown";
 "action_types.wallet_initialize" = "Wallet initialized";
+
+"stake.title" = "Stake";

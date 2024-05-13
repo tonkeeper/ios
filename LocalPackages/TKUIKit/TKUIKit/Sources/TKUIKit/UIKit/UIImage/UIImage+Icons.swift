@@ -48,6 +48,10 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-sale-badge-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var informationCircle: UIImage {
+          .imageWithName("Icons/16/ic-information-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
@@ -202,6 +206,9 @@ public extension UIImage {
       public enum Size44 {
         public static var tonCurrency: UIImage {
           .imageWithName("Icons/44/ton_currency")
+        }
+        public static var tonstakers: UIImage {
+          .imageWithName("Icons/44/tonstakers")
         }
       }
       public enum Size56 {
