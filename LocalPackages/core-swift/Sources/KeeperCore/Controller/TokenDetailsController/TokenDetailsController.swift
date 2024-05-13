@@ -41,10 +41,10 @@ private extension TokenDetailsController {
   func startObservations() async {
     _ = await walletBalanceStore.addEventObserver(self) { [walletsStore] observer, event in
       switch event {
-      case .balanceUpdate(let balance, let walletAddress):
+      case .balanceUpdate(let balance, let wallet):
         Task {
-          guard let address = try? walletsStore.activeWallet.address, address == walletAddress else { return }
-          await observer.didUpdateBalanceState(balanceState: balance, address: walletAddress)
+          guard walletsStore.activeWallet == wallet else { return }
+          await observer.didUpdateBalanceState(balanceState: balance, wallet: wallet)
         }
       }
     }
@@ -77,7 +77,7 @@ private extension TokenDetailsController {
     didUpdate?(model)
   }
   
-  func didUpdateBalanceState(balanceState: WalletBalanceState, address: Address) async {
+  func didUpdateBalanceState(balanceState: WalletBalanceState, wallet: Wallet) async {
     let tonRates = await tonRatesStore.getTonRates()
     let currency = await currencyStore.getActiveCurrency()
     let model = configurator.getTokenModel(
@@ -97,7 +97,7 @@ private extension TokenDetailsController {
   
   func getBalance() async -> Balance {
     do {
-      return try await walletBalanceStore.getBalanceState(walletAddress: walletsStore.activeWallet.address)
+      return try await walletBalanceStore.getBalanceState(wallet: walletsStore.activeWallet)
         .walletBalance
         .balance
     } catch {

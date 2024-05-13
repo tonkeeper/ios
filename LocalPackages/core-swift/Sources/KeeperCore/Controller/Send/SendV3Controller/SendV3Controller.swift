@@ -87,7 +87,7 @@ public final class SendV3Controller {
   public func isAmountAvailableToSend(amount: BigUInt, token: Token) async -> Bool {
     let wallet = walletsStore.activeWallet
     do {
-      let balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address)
+      let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
       switch token {
       case .ton:
         return BigUInt(balance.walletBalance.balance.tonBalance.amount) >= amount
@@ -117,7 +117,7 @@ public final class SendV3Controller {
     case .jetton(let jettonItem):
       let wallet = walletsStore.activeWallet
       do {
-        let balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address)
+        let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
         guard let jettonBalance = balance.walletBalance.balance.jettonsBalance.first(where: {
           $0.item.jettonInfo == jettonItem.jettonInfo
         }) else { return "" }
@@ -147,7 +147,7 @@ public final class SendV3Controller {
     let tokenSymbol: String?
     let fractionalDigits: Int
     do {
-      let balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address)
+      let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
       switch token {
       case .ton:
         amount = BigUInt(balance.walletBalance.balance.tonBalance.amount)
@@ -181,7 +181,7 @@ public final class SendV3Controller {
   public func getMaximumAmount(token: Token) async -> BigUInt {
     let wallet = walletsStore.activeWallet
     do {
-      let balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address)
+      let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
       switch token {
       case .ton:
         return BigUInt(balance.walletBalance.balance.tonBalance.amount)

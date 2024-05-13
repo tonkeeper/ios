@@ -32,11 +32,11 @@ public final class ServicesAssembly {
   }
   
   func tonBalanceService() -> TonBalanceService {
-    TonBalanceServiceImplementation(api: apiAssembly.api)
+    TonBalanceServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
   func jettonsBalanceService() -> JettonBalanceService {
-    JettonBalanceServiceImplementation(api: apiAssembly.api)
+    JettonBalanceServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
   func totalBalanceService() -> TotalBalanceService {

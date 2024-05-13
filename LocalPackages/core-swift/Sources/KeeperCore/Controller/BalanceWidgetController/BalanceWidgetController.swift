@@ -51,7 +51,7 @@ public final class BalanceWidgetController {
     }
 
     do {
-      let balance = try await balanceService.loadWalletBalance(address: wallet.address, currency: currency)
+      let balance = try await balanceService.loadWalletBalance(wallet: wallet, currency: currency)
       let rates = try await ratesService.loadRates(jettons: [], currencies: [currency])
       
       let formattedFiatBalance: String
