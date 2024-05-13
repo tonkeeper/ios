@@ -114,12 +114,12 @@ private extension TonConnectConfirmationController {
         nftAddressesToLoad.insert(nftItemTransfer.nftAddress)
       case .nftPurchase(let nftPurchase):
         nfts[nftPurchase.nft.address] = nftPurchase.nft
-        try? nftService.saveNFT(nft: nftPurchase.nft)
+        try? nftService.saveNFT(nft: nftPurchase.nft, isTestnet: wallet.isTestnet)
       default: continue
       }
     }
     
-    if let loadedNFTs = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad)) {
+    if let loadedNFTs = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad), isTestnet: wallet.isTestnet) {
       nfts.merge(loadedNFTs, uniquingKeysWith: { $1 })
     }
     

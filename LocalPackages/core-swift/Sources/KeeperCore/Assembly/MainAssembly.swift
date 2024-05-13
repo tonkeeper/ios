@@ -239,6 +239,7 @@ public final class MainAssembly {
       loader: loadersAssembly.chartLoader,
       chartService: servicesAssembly.chartService(),
       currencyStore: storesAssembly.currencyStore,
+      walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
     )
   }

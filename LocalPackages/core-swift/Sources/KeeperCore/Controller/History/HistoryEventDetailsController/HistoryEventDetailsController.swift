@@ -108,6 +108,7 @@ public final class HistoryEventDetailsController {
 
 private extension HistoryEventDetailsController {
   func mapModel() async -> Model {
+    let wallet = walletsStore.activeWallet
     let eventAction = event.action
     let date = dateFormatter.string(from: Date(timeIntervalSince1970: event.accountEvent.timestamp))
     let fee = amountMapper.mapAmount(
@@ -187,7 +188,8 @@ private extension HistoryEventDetailsController {
         nftTransfer: nftItemTransfer,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case let .nftPurchase(nftPurchase):
       return await mapNFTPurchase(
         activityEvent: event.accountEvent,
@@ -315,7 +317,8 @@ private extension HistoryEventDetailsController {
                       nftTransfer: AccountEventAction.NFTItemTransfer,
                       date: String,
                       feeListItem: Model.ListItem,
-                      status: AccountEventStatus) -> Model {
+                      status: AccountEventStatus,
+                      isTestnet: Bool) -> Model {
     let actionString: String
     
     let nameTitle: String
@@ -358,7 +361,7 @@ private extension HistoryEventDetailsController {
       listItems.append(Model.ListItem(title: .comment, topValue: comment, topNumberOfLines: 0))
     }
     
-    let nft = try? nftService.getNFT(address: nftTransfer.nftAddress)
+    let nft = try? nftService.getNFT(address: nftTransfer.nftAddress, isTestnet: isTestnet)
     var headerImage: Model.HeaderImage?
     if let nftImageUrl = nft?.imageURL {
       headerImage = .nft(nftImageUrl)

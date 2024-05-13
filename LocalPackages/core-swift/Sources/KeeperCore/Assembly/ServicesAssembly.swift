@@ -77,7 +77,7 @@ public final class ServicesAssembly {
   
   func nftService() -> NFTService {
     NFTServiceImplementation(
-      api: apiAssembly.api,
+      apiProvider: apiAssembly.apiProvider,
       nftRepository: repositoriesAssembly.nftRepository()
     )
   }
@@ -98,7 +98,7 @@ public final class ServicesAssembly {
   
   func chartService() -> ChartService {
     ChartServiceImplementation(
-      api: apiAssembly.api,
+      apiProvider: apiAssembly.apiProvider,
       repository: repositoriesAssembly.chartDataRepository()
     )
   }
