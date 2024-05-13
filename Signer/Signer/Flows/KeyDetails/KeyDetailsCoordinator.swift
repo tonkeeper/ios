@@ -71,14 +71,14 @@ private extension KeyDetailsCoordinator {
       self?.router.dismiss()
     }
     
-    let navigationController = NavigationController(rootViewController: module.view)
+    let navigationController = TKNavigationController(rootViewController: module.view)
     navigationController.configureTransparentAppearance()
     
     router.present(navigationController)
   }
   
   func openRecoveryPhrase() {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
     let coordinator = ShowRecoveryPhraseCoordinator(

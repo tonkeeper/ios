@@ -1,4 +1,5 @@
 import UIKit
+import TKUIKit
 import TKCoordinator
 import SignerCore
 
@@ -39,7 +40,7 @@ private extension SettingsCoordinator {
   }
   
   func openChangePassword() {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
     let coordinator = ChangePasswordCoordinator(

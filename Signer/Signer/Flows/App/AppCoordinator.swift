@@ -1,4 +1,5 @@
 import UIKit
+import TKUIKit
 import TKCoordinator
 import SignerCore
 
@@ -38,7 +39,7 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
 
 private extension AppCoordinator {
   func openRoot(deeplink: TKCoordinator.CoordinatorDeeplink? = nil) {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     let rootCoordinator = RootCoordinator(
       router: .init(rootViewController: navigationController),
       signerCoreAssembly: signerCoreAssembly

@@ -45,7 +45,7 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
 private extension RootCoordinator {
   func openOnboarding() {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
 
     let onboardingCoordinator = OnboardingCoordinator(
@@ -63,7 +63,7 @@ private extension RootCoordinator {
   }
   
   func openEnterPassword(deeplink: CoordinatorDeeplink?) {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
     let enterPasswordCoodinator = EnterPasswordCoordinator(
@@ -87,7 +87,7 @@ private extension RootCoordinator {
   }
   
   func openMain(deeplink: CoordinatorDeeplink?) {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
 
     let mainCoordinator = MainCoordinator(

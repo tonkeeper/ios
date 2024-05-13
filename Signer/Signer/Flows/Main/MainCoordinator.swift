@@ -129,7 +129,7 @@ private extension MainCoordinator {
   }
   
   func openCreateKey() {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
     let createKeyCoordinator = CreateKeyCoordinator(
@@ -154,7 +154,7 @@ private extension MainCoordinator {
   }
   
   func openImportKey() {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
     let createKeyCoordinator = ImportKeyCoordinator(

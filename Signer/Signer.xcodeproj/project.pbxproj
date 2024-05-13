@@ -35,7 +35,6 @@
 		C30FD8FE2B21F14C0045B58D /* Module.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD8FD2B21F14C0045B58D /* Module.swift */; };
 		C30FD9122B2204830045B58D /* AppCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9112B2204830045B58D /* AppCoordinator.swift */; };
 		C30FD9182B2205610045B58D /* RootCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9172B2205610045B58D /* RootCoordinator.swift */; };
-		C30FD91B2B2205EC0045B58D /* NavigationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD91A2B2205EC0045B58D /* NavigationController.swift */; };
 		C30FD91E2B2206C70045B58D /* OnboardingCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD91D2B2206C70045B58D /* OnboardingCoordinator.swift */; };
 		C30FD9212B22094E0045B58D /* OnboardingCreateKeyCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9202B22094D0045B58D /* OnboardingCreateKeyCoordinator.swift */; };
 		C30FD9242B2209C20045B58D /* PasswordInputView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30FD9232B2209C20045B58D /* PasswordInputView.swift */; };
@@ -153,7 +152,6 @@
 		C30FD8FD2B21F14C0045B58D /* Module.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Module.swift; sourceTree = "<group>"; };
 		C30FD9112B2204830045B58D /* AppCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppCoordinator.swift; sourceTree = "<group>"; };
 		C30FD9172B2205610045B58D /* RootCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootCoordinator.swift; sourceTree = "<group>"; };
-		C30FD91A2B2205EC0045B58D /* NavigationController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationController.swift; sourceTree = "<group>"; };
 		C30FD91D2B2206C70045B58D /* OnboardingCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCoordinator.swift; sourceTree = "<group>"; };
 		C30FD9202B22094D0045B58D /* OnboardingCreateKeyCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingCreateKeyCoordinator.swift; sourceTree = "<group>"; };
 		C30FD9232B2209C20045B58D /* PasswordInputView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasswordInputView.swift; sourceTree = "<group>"; };
@@ -400,7 +398,6 @@
 		C30FD9192B2205DF0045B58D /* UIViewController */ = {
 			isa = PBXGroup;
 			children = (
-				C30FD91A2B2205EC0045B58D /* NavigationController.swift */,
 				C30FD92E2B22144E0045B58D /* UIViewController+Keyboard.swift */,
 			);
 			path = UIViewController;
@@ -963,7 +960,6 @@
 				C324BD792B2A869700BD83D1 /* CreateKeyCoordinator.swift in Sources */,
 				C35434D32BE8788F009FA8C0 /* FancyQRCodeView.swift in Sources */,
 				C323954F2B2A1D6000C4F954 /* AddKeyView.swift in Sources */,
-				C30FD91B2B2205EC0045B58D /* NavigationController.swift in Sources */,
 				C34C44472B27316300D50343 /* MainCollectionLayout.swift in Sources */,
 				C35434BF2BE818FF009FA8C0 /* SignConfirmationBocView.swift in Sources */,
 				C376713F2BF18F27003CD9CB /* SettingsLiteItemsProvider.swift in Sources */,
