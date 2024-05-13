@@ -35,7 +35,7 @@ public final class BuySellOperatorController {
       .map({ $0.items })
       .flatMap({ $0 })
     
-    let fiatOperatorItems = buyItems.map({ mapFiatMethodItem($0) })
+    let fiatOperatorItems = buyItems.map { mapFiatMethodItem($0) }
     
     await MainActor.run {
       didLoadListItems?(activeCurrency, fiatOperatorItems)
@@ -46,8 +46,16 @@ public final class BuySellOperatorController {
     await tonRatesLoader.loadRate(currency: currency)
   }
   
+  //  https://api.tonkeeper.com/sign/moonpay?currencyCode=ton&baseCurrencyCode={CUR_FROM}&walletAddress={ADDRESS}&lang=en
+  //  https://buy.neocrypto.net?cur_from={CUR_FROM}&cur_to={CUR_TO}&address={ADDRESS}&fix_cur_to=true&show_address=false&partner=tonkeeper&lang=en
+  //  https://exchange.mercuryo.io?widget_id=4a399137-6863-4c47-8bd5-41f327aa33c3&networks=NEWTON&type=buy&fix_currency=true&hide_address=true&lang=en&theme=tonkeeper&currency={CUR_TO}&fiat_currency={CUR_FROM}&address={ADDRESS}&merchant_transaction_id={TX_ID}&return_url=https%3A%2F%2Ftonkeeper.com%2Fmercuryo_success%3Ftx_id%3D{TX_ID}
+  //  https://dreamwalkers.io/en/tonkeeper/?wallet={ADDRESS}
+  //  https://onramp.money/main/buy/?appId=445945&coinCode=ton&walletAddress={ADDRESS}
+  //  https://widget.changelly.com/?from=btc,ton,usdtrx,usdtbsc,usdt20,eth,bnb,xrp,sol,ada,trx&to=eth,ton,btc,usdtrx,usdtbsc,usdt20,trx,sol,ada,xrp,bnb&amount=0.1&address={ADDRESS}&fromDefault=usdtrx&toDefault=ton&merchant_id=FF8aM-Mf2AY1Kg66&payment_id=&v=3
+  //  https://global.transak.com/?hideMenu=true&disableWalletAddressForm=true&cryptoCurrencyCode=ton&productsAvailed=BUY&walletAddress={ADDRESS}&apiKey=c822e2bf-d71c-4f31-9f99-cc153e5eda58
+  
   // TODO: Refactor
-  public func updateBuySellOperatorItems() async {
+//  public func updateBuySellOperatorItems() async {
 //    let testInfoButtons: [FiatOperator.InfoButton] = [
 //      .init(title: "Privacy Policy", url: URL(string: "https://example.com")),
 //      .init(title: "Terms of Use", url: URL(string: "https://example.com"))
@@ -59,20 +67,20 @@ public final class BuySellOperatorController {
 //      .init(id: "neocrypto", title: "Neocrypto", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/neocrypto-new.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
 //      .init(id: "transak", title: "Transak", description: "Instantly buy with a credit card", rate: "2,330.01 AMD for 1 TON", badge: nil, iconURL: URL(string: "https://tonkeeper.com/assets/transak.png")!, actionTemplateURL: "", infoButtons: testInfoButtons),
 //    ]
-    
-    guard let fiatMethods = try? await buySellMethodsService.loadFiatMethods(countryCode: nil) else { return }
-    
-    let buyItems = fiatMethods.categories
-      .filter({ $0.type == .buy })
-      .map({ $0.items })
-      .flatMap({ $0 })
-    
-    let fiatOperatorItems = buyItems.map({ mapFiatMethodItem($0) })
-    
-    await MainActor.run {
-      didUpdateFiatOperatorItems?(fiatOperatorItems)
-    }
-  }
+//    
+//    guard let fiatMethods = try? await buySellMethodsService.loadFiatMethods(countryCode: nil) else { return }
+//    
+//    let buyItems = fiatMethods.categories
+//      .filter({ $0.type == .buy })
+//      .map({ $0.items })
+//      .flatMap({ $0 })
+//    
+//    let fiatOperatorItems = buyItems.map({ mapFiatMethodItem($0) })
+//    
+//    await MainActor.run {
+//      didUpdateFiatOperatorItems?(fiatOperatorItems)
+//    }
+//  }
 }
 
 private extension BuySellOperatorController {

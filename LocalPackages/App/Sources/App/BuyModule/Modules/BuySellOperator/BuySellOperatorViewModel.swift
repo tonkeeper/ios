@@ -210,10 +210,12 @@ private extension BuySellOperatorViewModelImplementation {
     }
     
     return BuySellDetailsItem(
-      iconUrl: fiatOperator.iconURL,
+      iconURL: fiatOperator.iconURL,
+      actionTemplateURL: fiatOperator.actionTemplateURL,
       serviceTitle: fiatOperator.title,
       serviceSubtitle: fiatOperator.description,
       serviceInfo: .init(
+        id: fiatOperator.id,
         provider: fiatOperator.title,
         leftButton: leftInfoButton,
         rightButton: rightInfoButton

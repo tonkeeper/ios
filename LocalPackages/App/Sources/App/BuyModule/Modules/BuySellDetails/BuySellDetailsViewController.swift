@@ -178,7 +178,14 @@ private extension BuySellDetailsViewController {
     return .init(title: title, action: button.action)
   }
   
-  @objc func resignGestureAction() {
+  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
+    let touchLocation = sender.location(in: customView.contentStackView)
+    let isTapInPayTextField = customView.payAmountTextField.frame.contains(touchLocation)
+    let isTapInGetTextField = customView.getAmountTextField.frame.contains(touchLocation)
+    let isTapInTextFields = isTapInPayTextField || isTapInGetTextField
+    
+    guard !isTapInTextFields else { return }
+    
     customView.payAmountTextField.resignFirstResponder()
     customView.getAmountTextField.resignFirstResponder()
   }

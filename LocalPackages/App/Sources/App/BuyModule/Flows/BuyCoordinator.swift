@@ -145,8 +145,9 @@ private extension BuyCoordinator {
       self?.didFinish?()
     }
     
-    module.output.didTapContinue = {
-      
+    module.output.didTapContinue = { [weak self, weak view = module.view] actionURL in
+      guard let actionURL, let fromViewController = view else { return }
+      self?.openWebView(url: actionURL, fromViewController: fromViewController)
     }
     
     module.output.didTapInfoButton = { [weak self, weak view = module.view] url in

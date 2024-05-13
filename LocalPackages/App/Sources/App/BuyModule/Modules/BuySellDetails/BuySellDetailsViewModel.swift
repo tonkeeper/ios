@@ -45,12 +45,14 @@ struct BuySellDetailsItem {
       var url: URL?
     }
     
+    var id: String
     var provider: String
     var leftButton: InfoButton?
     var rightButton: InfoButton?
   }
   
-  var iconUrl: URL?
+  var iconURL: URL?
+  var actionTemplateURL: String?
   var serviceTitle: String
   var serviceSubtitle: String
   var serviceInfo: ServiceInfo
@@ -98,7 +100,7 @@ struct BuySellDetailsModel {
 }
 
 protocol BuySellDetailsModuleOutput: AnyObject {
-  var didTapContinue: (() -> Void)? { get set }
+  var didTapContinue: ((URL?) -> Void)? { get set }
   var didTapInfoButton: ((URL?) -> Void)? { get set }
 }
 
@@ -135,7 +137,7 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   
   // MARK: - BuySellDetailsModelModuleOutput
   
-  var didTapContinue: (() -> Void)?
+  var didTapContinue: ((URL?) -> Void)?
   var didTapInfoButton: ((URL?) -> Void)?
   
   // MARK: - BuySellDetailsModelModuleInput
@@ -151,6 +153,7 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
     update()
     updateAmountTextFields()
     updateConvertedRate()
+    updateActionURL()
     
     buySellDetailsController.didUpdateRates = { [weak self] in
       self?.updateConvertedRate()
@@ -201,7 +204,8 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   
   private var amountPay = ""
   private var amountGet = ""
-  private var convertedRate = "-"
+  private var convertedRate = ""
+  private var actionURL: URL?
   
   private var isResolving = false {
     didSet {
@@ -210,11 +214,18 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
     }
   }
   
-  private var isContinueEnable: Bool {
-    true
+  private var isActionUrlExists: Bool = false {
+    didSet {
+      guard isActionUrlExists != oldValue else { return }
+      update()
+    }
   }
   
-  // MARK: - Formatter
+  private var isContinueEnable: Bool {
+    isActionUrlExists
+  }
+  
+  // MARK: - Formatters
   
   let payAmountTextFieldFormatter: BuySellAmountTextFieldFormatter = .makeAmountFormatter()
   let getAmountTextFieldFormatter: BuySellAmountTextFieldFormatter = .makeAmountFormatter()
@@ -274,12 +285,30 @@ private extension BuySellDetailsViewModelImplementation {
     }
   }
   
+  func updateActionURL() {
+    Task {
+      let actionURL = await buySellDetailsController.makeActionUrl(
+        actionTemplateURL: buySellDetailsItem.actionTemplateURL,
+        operatorId: buySellDetailsItem.serviceInfo.id,
+        currencyFrom: buySellDetailsItem.transaction.currencyPay,
+        currencyTo: buySellDetailsItem.transaction.currencyGet
+      )
+      
+      await MainActor.run {
+        if let actionURL {
+          self.actionURL = actionURL
+          isActionUrlExists = true
+        }
+      }
+    }
+  }
+  
   func createModel() -> BuySellDetailsModel {
-    let iconUrl = buySellDetailsItem.iconUrl
+    let iconURL = buySellDetailsItem.iconURL
     
     let iconImageDownloadTask = TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
       return imageLoader.loadImage(
-        url: iconUrl,
+        url: iconURL,
         imageView: imageView,
         size: size,
         cornerRadius: cornerRadius
@@ -299,7 +328,7 @@ private extension BuySellDetailsViewModelImplementation {
         isEnabled: !isResolving && isContinueEnable,
         isActivity: isResolving,
         action: { [weak self] in
-          self?.didTapContinue?()
+          self?.didTapContinue?(self?.actionURL)
         }
       )
     )

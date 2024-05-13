@@ -2,7 +2,6 @@ import Foundation
 import BigInt
 
 public final class BuySellDetailsController {
-  
   public var didUpdateRates: (() -> Void)?
   
   public struct Input {
@@ -25,12 +24,21 @@ public final class BuySellDetailsController {
   private let ratesService: RatesService
   private let tonRatesLoader: TonRatesLoader
   private let tonRatesStore: TonRatesStore
+  private let walletsStore: WalletsStore
+  private let configurationStore: ConfigurationStore
   private let amountFormatter: AmountFormatter
   
-  init(ratesService: RatesService, tonRatesLoader: TonRatesLoader, tonRatesStore: TonRatesStore, amountFormatter: AmountFormatter) {
+  init(ratesService: RatesService,
+       tonRatesLoader: TonRatesLoader,
+       tonRatesStore: TonRatesStore,
+       walletsStore: WalletsStore,
+       configurationStore: ConfigurationStore,
+       amountFormatter: AmountFormatter) {
     self.ratesService = ratesService
     self.tonRatesLoader = tonRatesLoader
     self.tonRatesStore = tonRatesStore
+    self.walletsStore = walletsStore
+    self.configurationStore = configurationStore
     self.amountFormatter = amountFormatter
   }
   
@@ -95,6 +103,39 @@ public final class BuySellDetailsController {
     let zeroString = String(repeating: "0", count: max(0, targetFractionalDigits - fractionalDigits))
     let bigIntValue = BigUInt(stringLiteral: components.joined() + zeroString)
     return (bigIntValue, targetFractionalDigits)
+  }
+  
+  public func makeActionUrl(actionTemplateURL: String?,
+                            operatorId: String,
+                            currencyFrom: Currency,
+                            currencyTo: Currency) async -> URL? {
+    guard let actionTemplateURL,
+          let walletAddress = try? walletsStore.activeWallet.address.toString(bounceable: false)
+    else {
+      return nil
+    }
+    
+    let currencyFromCode = currencyFrom.code
+    let currencyToCode = currencyTo.code
+    
+    var urlString = actionTemplateURL
+      .replacingOccurrences(of: "{ADDRESS}", with: walletAddress)
+      .replacingOccurrences(of: "{CUR_FROM}", with: currencyFromCode)
+      .replacingOccurrences(of: "{CUR_TO}", with: currencyToCode)
+    
+    if ["mercuryo", "mercuryo_sell"].contains(operatorId) {
+      let txId = "mercuryo_" + UUID().uuidString
+      urlString = urlString
+        .replacingOccurrences(of: "{TX_ID}", with: txId)
+      
+      let mercuryoSecret = (try? await configurationStore.getConfiguration().mercuryoSecret) ?? ""
+
+      if let signature = (walletAddress + mercuryoSecret).data(using: .utf8)?.sha256().hexString() {
+        urlString += "&signature=\(signature)"
+      }
+    }
+    
+    return URL(string: urlString)
   }
 }
 

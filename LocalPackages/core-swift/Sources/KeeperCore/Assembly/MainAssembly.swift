@@ -454,6 +454,8 @@ public final class MainAssembly {
       ratesService: servicesAssembly.ratesService(),
       tonRatesLoader: loadersAssembly.tonRatesLoader,
       tonRatesStore: storesAssembly.tonRatesStore,
+      walletsStore: walletAssembly.walletStore,
+      configurationStore: configurationAssembly.remoteConfigurationStore,
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
