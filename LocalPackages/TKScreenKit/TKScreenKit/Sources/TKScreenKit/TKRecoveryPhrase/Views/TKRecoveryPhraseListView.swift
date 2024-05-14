@@ -3,41 +3,41 @@ import TKUIKit
 
 public final class TKRecoveryPhraseListView: UIView, ConfigurableView {
   
-  private let leftColumnView = TKRecoveryPhraseColumnView()
-  private let rightColumnView = TKRecoveryPhraseColumnView()
+  private var leftColumnItemViews = [TKRecoveryPhraseItemView]()
+  private var rightColumnItemViews = [TKRecoveryPhraseItemView]()
 
-  // MARK: - Init
-
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
   public override func layoutSubviews() {
     super.layoutSubviews()
     
-    let columnWidth = (bounds.width - .leftPaddig - .spacing)/2
+    let verticalItemsCount = max(leftColumnItemViews.count, rightColumnItemViews.count)
+    let columnWidth = (bounds.width - .leftPaddig - .columnSpacing)/2
+    let verticalSpacing: CGFloat = CGFloat(verticalItemsCount - 1) * .itemSpacing
+    let calculatedItemHeight = (bounds.height - .topPadding - verticalSpacing) / CGFloat(verticalItemsCount)
+    let itemHeight = min(calculatedItemHeight, .maximumItemHeight)
+    let itemResultHeight = (leftColumnItemViews + rightColumnItemViews).map {
+      $0.sizeThatFits(
+        CGSize(
+          width: columnWidth,
+          height: itemHeight
+        )
+      ).height
+    }.min() ?? itemHeight
     
-    let leftColumnFrame = CGRect(
-      x: .leftPaddig,
-      y: 0,
-      width: columnWidth,
-      height: bounds.height
-    )
+    func layoutItems(_ items: [TKRecoveryPhraseItemView], originX: CGFloat, width: CGFloat, height: CGFloat) {
+      var itemY: CGFloat = .topPadding
+      for item in items {
+        item.frame = CGRect(
+          x: originX,
+          y: itemY,
+          width: columnWidth,
+          height: itemResultHeight
+        )
+        itemY += itemResultHeight + .itemSpacing
+      }
+    }
     
-    let rightColumnFrame = CGRect(
-      x: leftColumnFrame.maxX + .spacing,
-      y: 0,
-      width: columnWidth,
-      height: bounds.height
-    )
-    
-    leftColumnView.frame = leftColumnFrame
-    rightColumnView.frame = rightColumnFrame
+    layoutItems(leftColumnItemViews, originX: .columnSpacing, width: columnWidth, height: itemResultHeight)
+    layoutItems(rightColumnItemViews, originX: columnWidth + (.columnSpacing * 2), width: columnWidth, height: itemResultHeight)
   }
 
   // MARK: - ConfigurableView
@@ -55,20 +55,30 @@ public final class TKRecoveryPhraseListView: UIView, ConfigurableView {
     let leftWords = model.wordModels[0..<halfIndex]
     let rightWords = model.wordModels[halfIndex..<model.wordModels.count]
     
-    leftColumnView.configure(model: TKRecoveryPhraseColumnView.Model(items: Array(leftWords)))
-    rightColumnView.configure(model: TKRecoveryPhraseColumnView.Model(items: Array(rightWords)))
-  }
-}
-
-private extension TKRecoveryPhraseListView {
-  func setup() {
-    addSubview(leftColumnView)
-    addSubview(rightColumnView)
+    leftColumnItemViews.forEach { $0.removeFromSuperview() }
+    rightColumnItemViews.forEach { $0.removeFromSuperview() }
+    
+    leftWords.forEach { model in
+      let view = TKRecoveryPhraseItemView()
+      view.configure(model: model)
+      addSubview(view)
+      leftColumnItemViews.append(view)
+    }
+    
+    rightWords.forEach { model in
+      let view = TKRecoveryPhraseItemView()
+      view.configure(model: model)
+      addSubview(view)
+      rightColumnItemViews.append(view)
+    }
   }
 }
 
 private extension CGFloat {
+  static let topPadding: CGFloat = 16
   static let leftPaddig: CGFloat = 16
-  static let spacing: CGFloat = 16
+  static let columnSpacing: CGFloat = 16
+  static let itemSpacing: CGFloat = 8
+  static let maximumItemHeight: CGFloat = 24
 }
 
