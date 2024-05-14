@@ -179,6 +179,7 @@ private extension KeyDetailsViewModelImplementation {
                        image: .TKUIKit.Icons.Size28.copy,
                        tintColor: .Accent.blue,
                        action: { [weak self] in
+                         UIPasteboard.general.string = self?.keyDetailsController.walletKey.publicKeyHexString
                          self?.didCopied?()
         }),
         createListItem(id: .recoveryPhraseItemIdentifier,
