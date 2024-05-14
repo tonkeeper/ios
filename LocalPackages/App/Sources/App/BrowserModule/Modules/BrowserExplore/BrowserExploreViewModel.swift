@@ -16,6 +16,7 @@ protocol BrowserExploreViewModel: AnyObject {
   
   func viewDidLoad()
   func didSelectCategoryAll(index: Int)
+  func selectFeaturedApp(index: Int)
 }
 
 final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, BrowserExploreModuleOutput {
@@ -37,6 +38,15 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   func didSelectCategoryAll(index: Int) {
     guard index < categories.count else { return }
     didSelectCategory?(categories[index])
+  }
+  
+  func selectFeaturedApp(index: Int) {
+    guard let featuredCategory,
+          index < (featuredCategory.apps.count - 1) else {
+      return
+    }
+    let app = featuredCategory.apps[index]
+    didSelectApp?(app)
   }
   
   // MARK: - State
@@ -93,7 +103,7 @@ private extension BrowserExploreViewModelImplementation {
     var featuredApps = [PopularApp]()
     if let featuredCategory {
       featuredApps = featuredCategory.apps
-      sections.append(.featured)
+      sections.append(.featured(items: [.banner]))
     }
     sections.append(contentsOf: mapCategories(categories))
     
@@ -184,8 +194,8 @@ private extension BrowserExploreViewModelImplementation {
       switch section {
       case .regular(_, _, let items):
         snapshot.appendItems(items, toSection: section)
-      case .featured:
-        break
+      case .featured(let items):
+        snapshot.appendItems(items, toSection: section)
       }
     }
     didUpdateSnapshot?(snapshot)

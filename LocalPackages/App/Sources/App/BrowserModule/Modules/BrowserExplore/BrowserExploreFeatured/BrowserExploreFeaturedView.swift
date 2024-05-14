@@ -5,6 +5,8 @@ import KeeperCore
 import TKCore
 
 final class BrowserExploreFeaturedView: UIView {
+  
+  var didSelectApp: ((Int) -> Void)?
 
   // MARK: - Image Loader
   
@@ -12,6 +14,7 @@ final class BrowserExploreFeaturedView: UIView {
   
   var apps = [PopularApp]() {
     didSet {
+      guard apps != oldValue else { return }
       let models = apps.map { app in
        mapApp(app)
       }
@@ -26,11 +29,15 @@ final class BrowserExploreFeaturedView: UIView {
   
   private var dataSource = [BrowserExploreFeaturedCell.Model]() {
     didSet {
+      collectionView.alpha = 0
       collectionView.reloadData()
       collectionView.layoutIfNeeded()
       DispatchQueue.main.async {
         let indexOfLeftSignificantCell = Int.numberOfAdditionalItems/2 * self.apps.count
         self.collectionView.scrollToItem(at: IndexPath(item: indexOfLeftSignificantCell, section: 0), at: .centeredHorizontally, animated: false)
+        UIView.animate(withDuration: 0.2) {
+          self.collectionView.alpha = 1.0
+        }
         self.startSlideShowTask()
       }
     }
@@ -134,7 +141,7 @@ private extension BrowserExploreFeaturedView {
   func startSlideShowTask() {
     slideshowTask?.cancel()
     slideshowTask = Task {
-      try? await Task.sleep(nanoseconds: 2_000_000_000)
+      try? await Task.sleep(nanoseconds: 4_000_000_000)
       guard !Task.isCancelled else { return }
       await MainActor.run {
         resetCarouselIfNeeded()
@@ -172,6 +179,10 @@ extension BrowserExploreFeaturedView: UICollectionViewDataSource {
 }
 
 extension BrowserExploreFeaturedView: UICollectionViewDelegate {
+  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    didSelectApp?(indexPath.item - ((indexPath.item / apps.count) * apps.count))
+  }
+  
   func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
     indexOfCellBeforeDragging = indexOfMostVisibleCell()
     slideshowTask?.cancel()
