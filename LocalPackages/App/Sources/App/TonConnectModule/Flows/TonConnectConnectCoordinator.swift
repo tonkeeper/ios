@@ -144,7 +144,7 @@ private extension TonConnectConnectCoordinator {
     )
     
     let coordinator = module.createAddWalletCoordinator(
-      options: [.createRegular, .importRegular, .importWatchOnly, .signer],
+      options: [.createRegular, .importRegular, .importWatchOnly, .importTestnet, .signer],
       router: router
     )
     coordinator.didAddWallets = {

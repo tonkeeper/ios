@@ -10,15 +10,15 @@ public final class WalletImportController {
     self.activeWalletService = activeWalletService
   }
   
-  public func findActiveWallets(phrase: [String]) async throws -> [ActiveWalletModel] {
+  public func findActiveWallets(phrase: [String], isTestnet: Bool) async throws -> [ActiveWalletModel] {
     let mnemonic = try Mnemonic(mnemonicWords: phrase)
     let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
     )
-    return try await activeWalletService.loadActiveWallets(publicKey: keyPair.publicKey)
+    return try await activeWalletService.loadActiveWallets(publicKey: keyPair.publicKey, isTestnet: isTestnet)
   }
   
-  public func findActiveWallets(publicKey: TonSwift.PublicKey) async throws -> [ActiveWalletModel] {
-    return try await activeWalletService.loadActiveWallets(publicKey: publicKey)
+  public func findActiveWallets(publicKey: TonSwift.PublicKey, isTestnet: Bool) async throws -> [ActiveWalletModel] {
+    return try await activeWalletService.loadActiveWallets(publicKey: publicKey, isTestnet: isTestnet)
   }
 }

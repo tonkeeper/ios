@@ -1,5 +1,6 @@
 import Foundation
 import SignerCore
+import SignerLocalize
 import UIKit
 import TKUIKit
 import TonSwift
@@ -70,7 +71,7 @@ private extension SignQRCodeViewModelImplementation {
       category: .secondary,
       size: .large
     )
-    doneButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Done"))
+    doneButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(SignerLocalize.SignTransactionQr.done))
     doneButtonConfiguration.action = { [weak self] in
       self?.didTapDone?()
     }
@@ -82,12 +83,12 @@ private extension SignQRCodeViewModelImplementation {
     didUpdateModel?(
       SignQRCodeView.Model(
         titleDescriptionModel: TKTitleDescriptionView.Model(
-          title: "Scan the QR code with Tonkeeper",
-          bottomDescription: "After scanning, the transaction will be sent to the network."
+          title: SignerLocalize.SignTransactionQr.title,
+          bottomDescription: SignerLocalize.SignTransactionQr.caption
         ),
         qrCodeModel: TKFancyQRCodeView.Model(
           images: qrCodeImage == nil ? [] : [qrCodeImage!],
-          topString: "Signed Transaction",
+          topString: SignerLocalize.SignTransactionQr.signed_transaction,
           bottomString: bottomString
         ),
         doneButtonConfiguration: doneButtonConfiguration

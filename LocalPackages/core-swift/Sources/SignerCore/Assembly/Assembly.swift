@@ -1,7 +1,7 @@
 import Foundation
 
 public final class Assembly {
-  private let coreAssembly: CoreAssembly
+  let coreAssembly: CoreAssembly
   public lazy var repositoriesAssembly = RepositoriesAssembly(coreAssembly: coreAssembly)
   private lazy var servicesAssembly = ServicesAssembly(
     repositoriesAssembly: repositoriesAssembly,
@@ -12,11 +12,7 @@ public final class Assembly {
     coreAssembly: coreAssembly,
     repositoriesAssembly: repositoriesAssembly
   )
-  public lazy var passwordAssembly = PasswordAssembly(
-    repositoriesAssembly: repositoriesAssembly,
-    storesAssembly: storesAssembly
-  )
-  
+
   public lazy var formattersAssembly = FormattersAssembly()
   
   public init() {
@@ -36,14 +32,14 @@ public final class Assembly {
   public func keysAddController() -> KeysAddController {
     KeysAddController(
       walletKeysStore: storesAssembly.walletKeysStore,
-      mnemonicRepositoty: repositoriesAssembly.mnemonicRepository()
+      mnemonicsRepositoty: repositoriesAssembly.mnemonicsRepository()
     )
   }
   
   public func keysEditController() -> KeysEditController {
     KeysEditController(
       walletKeysStore: storesAssembly.walletKeysStore,
-      mnemonicRepositoty: repositoriesAssembly.mnemonicRepository()
+      mnemonicsRepositoty: repositoriesAssembly.mnemonicsRepository()
     )
   }
   
@@ -52,11 +48,19 @@ public final class Assembly {
   }
   
   public func walletKeyDetailsController(walletKey: WalletKey) -> WalletKeyDetailsController {
-    WalletKeyDetailsController(walletKey: walletKey, walletKeysStore: storesAssembly.walletKeysStore)
+    WalletKeyDetailsController(
+      walletKey: walletKey,
+      walletKeysStore: storesAssembly.walletKeysStore,
+      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository()
+    )
   }
   
-  public func recoveryPhraseController(walletKey: WalletKey) -> RecoveryPhraseController {
-    RecoveryPhraseController(key: walletKey, mnemonicRepository: repositoriesAssembly.mnemonicRepository())
+  public func recoveryPhraseController(walletKey: WalletKey, password: String) -> RecoveryPhraseController {
+    RecoveryPhraseController(
+      key: walletKey,
+      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
+      password: password
+    )
   }
   
   public func scannerController() -> ScannerController {
@@ -67,7 +71,7 @@ public final class Assembly {
     SignConfirmationController(
       model: model,
       walletKey: walletKey,
-      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
+      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
       deeplinkGenerator: PublishDeeplinkGenerator(),
       amountFormatter: formattersAssembly.amountFormatter
     )

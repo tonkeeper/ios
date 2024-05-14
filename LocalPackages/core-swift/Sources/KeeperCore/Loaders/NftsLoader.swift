@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 actor NftsLoader {
-  private var tasksInProgress = [Address: Task<(), Never>]()
+  private var tasksInProgress = [FriendlyAddress: Task<(), Never>]()
   
   private let nftsStore: NftsStore
   private let nftsService: AccountNFTService
@@ -12,7 +12,8 @@ actor NftsLoader {
     self.nftsService = nftsService
   }
   
-  func loadNfts(address: Address) {
+  func loadNfts(wallet: Wallet) {
+    guard let address = try? wallet.friendlyAddress else { return }
     if let taskInProgress = tasksInProgress[address] {
       taskInProgress.cancel()
       tasksInProgress[address] = nil
@@ -21,17 +22,17 @@ actor NftsLoader {
     let task = Task {
       do {
         let nfts = try await nftsService.loadAccountNFTs(
-          accountAddress: address,
+          wallet: wallet,
           collectionAddress: nil,
           limit: nil,
           offset: nil,
           isIndirectOwnership: true
         )
         guard !Task.isCancelled else { return }
-        await nftsStore.setNfts(nfts, walletAddress: address)
+        await nftsStore.setNfts(nfts, wallet: wallet)
       } catch {
         guard !error.isCancelledError else { return }
-        await nftsStore.setNfts([], walletAddress: address)
+        await nftsStore.setNfts([], wallet: wallet)
       }
     }
     tasksInProgress[address] = task

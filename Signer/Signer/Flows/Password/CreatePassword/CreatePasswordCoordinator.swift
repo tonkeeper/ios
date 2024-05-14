@@ -1,5 +1,6 @@
 import UIKit
 import TKCoordinator
+import SignerLocalize
 
 final class CreatePasswordCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -8,12 +9,15 @@ final class CreatePasswordCoordinator: RouterCoordinator<NavigationControllerRou
   
   private let showKeyboardOnAppear: Bool
   private let showAsRoot: Bool
+  private let isChangePassword: Bool
   
   init(router: NavigationControllerRouter,
        showKeyboardOnAppear: Bool,
-       showAsRoot: Bool) {
+       showAsRoot: Bool,
+       isChangePassword: Bool) {
     self.showKeyboardOnAppear = showKeyboardOnAppear
     self.showAsRoot = showAsRoot
+    self.isChangePassword = isChangePassword
     super.init(router: router)
   }
   
@@ -24,7 +28,10 @@ final class CreatePasswordCoordinator: RouterCoordinator<NavigationControllerRou
 
 private extension CreatePasswordCoordinator {
   func openEnterPassword() {
-    let configurator = CreatePasswordPasswordInputViewModelConfigurator(showKeyboardWhileAppear: showKeyboardOnAppear)
+    let configurator = CreatePasswordPasswordInputViewModelConfigurator(
+      showKeyboardWhileAppear: showKeyboardOnAppear,
+      title: isChangePassword ? SignerLocalize.Password.Change.EnterNew.title : SignerLocalize.Password.Create.title
+    )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.output.didEnterPassword = { [weak self] password in
       self?.openReenterPassword(password: password)
@@ -47,7 +54,10 @@ private extension CreatePasswordCoordinator {
   }
   
   func openReenterPassword(password: String) {
-    let configurator = ReenterPasswordPasswordInputViewModelConfigurator(password: password)
+    let configurator = ReenterPasswordPasswordInputViewModelConfigurator(
+      title: isChangePassword ? SignerLocalize.Password.Change.ReenterNew.title	 : SignerLocalize.Password.Reenter.title,
+      password: password
+    )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.view.setupBackButton()
     module.output.didEnterPassword = { [weak self] password in

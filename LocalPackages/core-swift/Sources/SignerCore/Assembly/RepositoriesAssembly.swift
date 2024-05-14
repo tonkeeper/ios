@@ -9,7 +9,17 @@ public final class RepositoriesAssembly {
     self.coreAssembly = coreAssembly
   }
   
-  public func mnemonicRepository() -> WalletKeyMnemonicRepository {
+  public func settingsRepository() -> SettingsRepository {
+    SettingsRepository(settingsVault: coreAssembly.settingsVault())
+  }
+  
+  public func mnemonicsRepository() -> MnemonicsRepository {
+    coreAssembly.mnemonicsV2Vault { [weak self] in
+      guard let self else { return "" }
+      return self.settingsRepository().seed
+    }
+  }
+  public func oldMnemonicRepository() -> WalletKeyMnemonicRepository {
     coreAssembly.mnemonicVault()
   }
   

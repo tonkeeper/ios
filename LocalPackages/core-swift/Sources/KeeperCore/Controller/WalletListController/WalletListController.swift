@@ -90,9 +90,9 @@ private extension WalletListController {
   func startObservations() async {
     _ = await walletTotalBalanceStore.addEventObserver(self) { observer, event in
       switch event {
-      case .didUpdateTotalBalance(let totalBalanceState, let walletAddress):
+      case .didUpdateTotalBalance(let totalBalanceState, let wallet):
         Task { await observer.didUpdateTotalBalanceState(totalBalanceState,
-                                                         walletAddress: walletAddress)
+                                                         wallet: wallet)
         }
       }
     }
@@ -120,7 +120,7 @@ private extension WalletListController {
   }
   
   func didUpdateTotalBalanceState(_ totalBalanceState: TotalBalanceState,
-                                  walletAddress: TonSwift.Address) async {
+                                  wallet: Wallet) async {
     await updateWalletModels()
   }
   
@@ -153,7 +153,7 @@ private extension WalletListController {
     let currency = await currencyStore.getActiveCurrency()
     var modelsWithBalance = [ItemModel]()
     for wallet in wallets {
-      if let walletTotalBalanceState = try? await walletTotalBalanceStore.getTotalBalanceState(walletAddress: wallet.address) {
+      if let walletTotalBalanceState = try? await walletTotalBalanceStore.getTotalBalanceState(wallet: wallet) {
         let balance = walletListMapper.mapTotalBalance(
           walletTotalBalanceState.totalBalance,
           currency: currency

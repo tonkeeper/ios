@@ -4,10 +4,10 @@ import TonSwift
 actor WalletBalanceStore {
   typealias ObservationClosure = (Event) -> Void
   enum Event {
-    case balanceUpdate(balance: WalletBalanceState, walletAddress: Address)
+    case balanceUpdate(balance: WalletBalanceState, wallet: Wallet)
   }
   
-  private var balanceStates = [Address: WalletBalanceState]()
+  private var balanceStates = [FriendlyAddress: WalletBalanceState]()
   
   private let repository: WalletBalanceRepository
   
@@ -15,21 +15,23 @@ actor WalletBalanceStore {
     self.repository = repository
   }
   
-  func getBalanceState(walletAddress: Address) throws -> WalletBalanceState {
-    if let balanceState = balanceStates[walletAddress] {
+  func getBalanceState(wallet: Wallet) throws -> WalletBalanceState {
+    let address = try wallet.friendlyAddress
+    if let balanceState = balanceStates[address] {
       return balanceState
     } else {
-      let balance = try repository.getWalletBalance(address: walletAddress)
+      let balance = try repository.getWalletBalance(wallet: wallet)
       let balanceState = WalletBalanceState.previous(balance)
-      balanceStates[walletAddress] = balanceState
+      balanceStates[address] = balanceState
       return balanceState
     }
   }
   
-  func setBalanceState(_ balanceState: WalletBalanceState, walletAddress: Address) {
-    balanceStates[walletAddress] = balanceState
-    try? repository.saveWalletBalance(balanceState.walletBalance, for: walletAddress)
-    observations.values.forEach { $0(.balanceUpdate(balance: balanceState, walletAddress: walletAddress)) }
+  func setBalanceState(_ balanceState: WalletBalanceState, wallet: Wallet) {
+    guard let address = try? wallet.friendlyAddress else { return }
+    balanceStates[address] = balanceState
+    try? repository.saveWalletBalance(balanceState.walletBalance,for: wallet)
+    observations.values.forEach { $0(.balanceUpdate(balance: balanceState, wallet: wallet)) }
   }
   
   private var observations = [UUID: ObservationClosure]()

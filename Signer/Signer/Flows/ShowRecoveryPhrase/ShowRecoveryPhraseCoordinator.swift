@@ -2,6 +2,7 @@ import UIKit
 import TKScreenKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
 
 final class ShowRecoveryPhraseCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -26,11 +27,12 @@ final class ShowRecoveryPhraseCoordinator: RouterCoordinator<NavigationControlle
 private extension ShowRecoveryPhraseCoordinator {
   func openEnterPassword() {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      passwordRepository: assembly.repositoriesAssembly.passwordRepository()
+      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
+      title: SignerLocalize.Password.Enter.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
-    module.output.didEnterPassword = { [weak self] _ in
-      self?.openRecoveryPhrase()
+    module.output.didEnterPassword = { [weak self] password in
+      self?.openRecoveryPhrase(password: password)
     }
     
     module.view.setupLeftCloseButton { [weak self, weak view = module.view] in
@@ -43,11 +45,12 @@ private extension ShowRecoveryPhraseCoordinator {
                 onPopClosures: {})
   }
   
-  func openRecoveryPhrase() {
+  func openRecoveryPhrase(password: String) {
     let module = TKRecoveryPhraseAssembly.module(
       provider: RecoveryPhraseDataProvider(
         recoveryPhraseController: assembly.recoveryPhraseController(
-          walletKey: walletKey
+          walletKey: walletKey,
+          password: password
         )
       )
     )

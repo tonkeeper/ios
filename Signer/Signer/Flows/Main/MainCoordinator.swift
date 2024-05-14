@@ -2,6 +2,9 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
+import TonSwift
+import CoreComponents
 
 final class MainCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -69,17 +72,19 @@ private extension MainCoordinator {
     let module = ScannerAssembly.module(
       signerCoreAssembly: signerCoreAssembly,
       urlOpener: UIApplication.shared,
-      title: "Scan QR Core",
-      subtitle: "From Tonkeeper on the action confirmation page"
+      title: SignerLocalize.Scanner.title,
+      subtitle: SignerLocalize.Scanner.caption
     )
-    
     module.output.didScanDeeplink = { [weak self] deeplink in
       self?.router.dismiss(completion: {
         _ = self?.handleCoreDeeplink(deeplink, scanner: true)
       })
     }
     
-    router.present(module.view, animated: animated)
+    let navigationController = TKNavigationController(rootViewController: module.view)
+    navigationController.configureTransparentAppearance()
+    
+    router.present(navigationController, animated: animated)
   }
   
   func openAddWallet() {
@@ -124,7 +129,7 @@ private extension MainCoordinator {
   }
   
   func openCreateKey() {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
     let createKeyCoordinator = CreateKeyCoordinator(
@@ -149,7 +154,7 @@ private extension MainCoordinator {
   }
   
   func openImportKey() {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
     let createKeyCoordinator = ImportKeyCoordinator(

@@ -69,7 +69,7 @@ public final class ReceiveController {
         walletModel: wallet.model,
         tokenName: tokenName,
         descriptionTokenName: descriptionTokenName,
-        address: try? walletsStore.activeWallet.address.toString(bounceable: false),
+        address: try? walletsStore.activeWallet.friendlyAddress.toString(),
         image: image
       )
     )

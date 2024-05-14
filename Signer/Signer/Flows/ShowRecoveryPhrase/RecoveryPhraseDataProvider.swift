@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKScreenKit
 import SignerCore
+import SignerLocalize
 
 struct RecoveryPhraseDataProvider: TKRecoveryPhraseDataProvider {
   
@@ -28,18 +29,18 @@ private extension RecoveryPhraseDataProvider {
     
     return TKRecoveryPhraseView.Model(
       titleDescriptionModel: TKTitleDescriptionView.Model(
-        title: "Recovery Phrase",
-        bottomDescription: "Write down these words with their numbers and store them in a safe place."
+        title: SignerLocalize.Recovery.Phrase.title,
+        bottomDescription: SignerLocalize.Recovery.Phrase.caption
       ),
       phraseListViewModel: phraseListViewModel,
       buttons: [
         TKRecoveryPhraseView.Model.Button(
-          model: TKUIActionButton.Model(title: "Copy"),
+          model: TKUIActionButton.Model(title: SignerLocalize.Actions.copy),
           category: .secondary,
           action: {
             UINotificationFeedbackGenerator().notificationOccurred(.warning)
             UIPasteboard.general.string = recoveryPhraseController.getRecoveryPhrase().joined(separator: "\n")
-            ToastPresenter.showToast(configuration: .copied)
+            ToastPresenter.showToast(configuration: .Signer.copied)
           }
         )
       ]

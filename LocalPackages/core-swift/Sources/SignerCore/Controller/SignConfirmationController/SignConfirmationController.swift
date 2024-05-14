@@ -16,31 +16,31 @@ public final class SignConfirmationController {
   
   public let model: TonSignModel
   public var walletKey: WalletKey
-  private let mnemonicRepository: WalletKeyMnemonicRepository
+  private let mnemonicsRepository: MnemonicsRepository
   private let deeplinkGenerator: PublishDeeplinkGenerator
   private let amountFormatter: AmountFormatter
   
   init(model: TonSignModel,
        walletKey: WalletKey,
-       mnemonicRepository: WalletKeyMnemonicRepository,
+       mnemonicsRepository: MnemonicsRepository,
        deeplinkGenerator: PublishDeeplinkGenerator,
        amountFormatter: AmountFormatter) {
     self.model = model
     self.walletKey = walletKey
-    self.mnemonicRepository = mnemonicRepository
+    self.mnemonicsRepository = mnemonicsRepository
     self.deeplinkGenerator = deeplinkGenerator
     self.amountFormatter = amountFormatter
   }
   
-  public func getTransactionModel() throws -> TransactionModel {
+  public func getTransactionModel(sendTitle: String) throws -> TransactionModel {
     let transaction = try parseBoc(model.body)
-    let transactionModel = createTransactionModel(transaction)
+    let transactionModel = createTransactionModel(transaction, sendTitle: sendTitle)
     return transactionModel
   }
   
-  public func signTransaction() -> URL? {
+  public func signTransaction(password: String) -> URL? {
     do {
-      let mnemonic = try mnemonicRepository.getMnemonic(forWalletKey: walletKey)
+      let mnemonic = try mnemonicsRepository.getMnemonic(walletKey: walletKey, password: password)
       let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
       let privateKey = keyPair.privateKey
       let signer = WalletTransferSecretKeySigner(secretKey: privateKey.data)
@@ -163,10 +163,9 @@ public final class SignConfirmationController {
     return try? slice?.loadSnakeString().trimmingCharacters(in: CharacterSet(["\0"]))
   }
   
-  private func createTransactionModel(_ transaction: Transaction) -> TransactionModel {
+  private func createTransactionModel(_ transaction: Transaction, sendTitle: String) -> TransactionModel {
     
     let items = transaction.items.map { transactionItem in
-      let title = "Send"
       let subtitle: String
       let value: String?
       let valueSubtitle: String?
@@ -197,7 +196,7 @@ public final class SignConfirmationController {
       }
       
       return TransactionModel.Item(
-        title: title,
+        title: sendTitle,
         subtitle: subtitle,
         value: value,
         valueSubtitle: valueSubtitle,

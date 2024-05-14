@@ -112,16 +112,22 @@ private extension ReceiveViewModelImplementation {
     }
     
     let tagModel: TKUITagView.Configuration?
-    switch model.walletModel.walletType {
-    case .regular:
+    switch (model.walletModel.walletType, model.walletModel.isTestnet) {
+    case (.regular, false):
       tagModel = nil
-    case .watchOnly:
+    case (.regular, true):
+      tagModel = TKUITagView.Configuration(
+        text: "TESTNET",
+        textColor: .black,
+        backgroundColor: .Accent.orange
+      )
+    case (.watchOnly, _):
       tagModel = TKUITagView.Configuration(
         text: TKLocales.WalletTags.watch_only,
         textColor: .black,
         backgroundColor: .Accent.orange
       )
-    case .external:
+    case (.external, _):
       tagModel = TKUITagView.Configuration(
         text: "SIGNER",
         textColor: .Accent.purple,

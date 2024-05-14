@@ -6,19 +6,24 @@ public final class WalletKeyDetailsController {
   
   public private(set) var walletKey: WalletKey
   private let walletKeysStore: WalletKeysStore
+  private let mnemonicsRepository: MnemonicsRepository
   
   init(walletKey: WalletKey,
-       walletKeysStore: WalletKeysStore) {
+       walletKeysStore: WalletKeysStore,
+       mnemonicsRepository: MnemonicsRepository) {
     self.walletKey = walletKey
     self.walletKeysStore = walletKeysStore
+    self.mnemonicsRepository = mnemonicsRepository
   }
   
   public func start() {
     _ = walletKeysStore.addEventObserver(self) { observer, event in
       switch event {
       case .didUpdateKeyName(let walletKey):
-        self.walletKey = walletKey
+        observer.walletKey = walletKey
         observer.didUpdateWalletKey?(walletKey)
+      case .didDeleteAll:
+        try? observer.mnemonicsRepository.deleteAll()
       default:
         break
       }
@@ -34,7 +39,8 @@ public final class WalletKeyDetailsController {
     LinkDeeplinkGenerator().generateWebDeeplink(network: .ton, key: walletKey)
   }
   
-  public func deleteKey() throws {
+  public func deleteKey(password: String) throws {
     try walletKeysStore.deleteKey(walletKey)
+    try mnemonicsRepository.deleteMnemonic(walletKey: walletKey, password: password)
   }
 }

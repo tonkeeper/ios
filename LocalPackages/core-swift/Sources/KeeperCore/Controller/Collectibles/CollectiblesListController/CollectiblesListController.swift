@@ -42,16 +42,17 @@ public final class CollectiblesListController {
   public func start() async {
     _ = await nftsStore.addEventObserver(self) { observer, event in
       switch event {
-      case .nftsUpdate(let nfts, let walletAddress):
-        guard let address = try? observer.wallet.address, walletAddress == address else { return }
-        Task { 
+      case .nftsUpdate(let nfts, let wallet):
+        guard (try? wallet.friendlyAddress) == (try? observer.wallet.friendlyAddress) else { return }
+        Task {
           await observer.state.setNfts(nfts)
           observer.didGetEvent?(.loaded(nfts))
         }
       }
     }
     
-    guard let nfts = try? await nftsStore.getNfts(walletAddress: wallet.address) else {
+    let nfts = await nftsStore.getNfts(wallet: wallet)
+    guard !nfts.isEmpty else {
       didGetEvent?(.empty)
       return
     }

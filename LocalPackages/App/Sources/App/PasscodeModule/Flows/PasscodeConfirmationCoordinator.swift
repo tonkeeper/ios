@@ -27,7 +27,6 @@ private extension PasscodeConfirmationCoordinator {
   func openCreatePasscode() {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
-    navigationController.interactivePopGestureEnabled = false
     
     let module = PasscodeAssembly.module(
       navigationController: navigationController,

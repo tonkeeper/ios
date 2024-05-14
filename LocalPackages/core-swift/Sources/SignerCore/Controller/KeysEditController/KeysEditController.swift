@@ -4,12 +4,12 @@ import TonSwift
 
 public final class KeysEditController {
   private let walletKeysStore: WalletKeysStore
-  private let mnemonicRepositoty: WalletKeyMnemonicRepository
+  private let mnemonicsRepositoty: MnemonicsRepository
   
   init(walletKeysStore: WalletKeysStore,
-       mnemonicRepositoty: WalletKeyMnemonicRepository) {
+       mnemonicsRepositoty: MnemonicsRepository) {
     self.walletKeysStore = walletKeysStore
-    self.mnemonicRepositoty = mnemonicRepositoty
+    self.mnemonicsRepositoty = mnemonicsRepositoty
   }
   
   public func updateWalletKeyName(walletKey: WalletKey, 

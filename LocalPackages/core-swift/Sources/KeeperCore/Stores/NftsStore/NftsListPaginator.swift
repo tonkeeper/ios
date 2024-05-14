@@ -38,7 +38,8 @@ actor NftsListPaginator {
     state = .isLoading
     offset = 0
     nfts = []
-    if let cached = try? accountNftsService.getAccountNfts(accountAddress: wallet.address) {
+    let cached = accountNftsService.getAccountNfts(wallet: wallet)
+    if !cached.isEmpty {
       eventHandler?(.cached(cached))
       self.nfts = cached
     } else {
@@ -83,7 +84,7 @@ actor NftsListPaginator {
 private extension NftsListPaginator {
   private func loadAll() async throws -> [NFT] {
     let nfts = try await accountNftsService.loadAccountNFTs(
-      accountAddress: wallet.address,
+      wallet: wallet,
       collectionAddress: nil,
       limit: nil,
       offset: nil,
@@ -96,7 +97,7 @@ private extension NftsListPaginator {
   
   private func loadNextPage() async throws -> [NFT] {
     let nfts = try await accountNftsService.loadAccountNFTs(
-      accountAddress: wallet.address,
+      wallet: wallet,
       collectionAddress: nil,
       limit: nil,
       offset: nil,

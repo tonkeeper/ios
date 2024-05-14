@@ -4,7 +4,7 @@ import TonSwift
 actor NftsStore {
   typealias ObservationClosure = (Event) -> Void
   enum Event {
-    case nftsUpdate(nfts: [NFT], walletAddress: Address)
+    case nftsUpdate(nfts: [NFT], wallet: Wallet)
   }
   
   private let service: AccountNFTService
@@ -13,13 +13,13 @@ actor NftsStore {
     self.service = service
   }
   
-  func getNfts(walletAddress: Address) -> [NFT] {
-    return service.getAccountNfts(accountAddress: walletAddress)
+  func getNfts(wallet: Wallet) -> [NFT] {
+    return service.getAccountNfts(wallet: wallet)
   }
   
-  func setNfts(_ nfts: [NFT], walletAddress: Address) {
-    try? service.saveAccountNfts(accountAddress: walletAddress, nfts: nfts)
-    observations.values.forEach { $0(.nftsUpdate(nfts: nfts, walletAddress: walletAddress)) }
+  func setNfts(_ nfts: [NFT], wallet: Wallet) {
+    try? service.saveAccountNfts(wallet: wallet, nfts: nfts)
+    observations.values.forEach { $0(.nftsUpdate(nfts: nfts, wallet: wallet)) }
   }
   
   private var observations = [UUID: ObservationClosure]()

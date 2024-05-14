@@ -12,14 +12,16 @@ public actor ChartV2Loader {
   
   public func loadChartData(period: Period,
                             token: String,
-                            currency: Currency) async throws -> [Coordinate] {
+                            currency: Currency,
+                            isTestnet: Bool) async throws -> [Coordinate] {
     loadChartDataTask?.cancel()
     
     let task = Task {
       let coordinates = try await chartService.loadChartData(
         period: period,
         token: token,
-        currency: currency
+        currency: currency,
+        isTestnet: isTestnet
       )
       try Task.checkCancellation()
       return coordinates

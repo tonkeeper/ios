@@ -4,6 +4,7 @@ import TKCore
 import TKCoordinator
 import TKUIKit
 import TKScreenKit
+import TKLocalize
 
 public final class RecoveryPhraseCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -11,10 +12,13 @@ public final class RecoveryPhraseCoordinator: RouterCoordinator<NavigationContro
   public var didImportWallets: (([String], [WalletContractVersion]) -> Void)?
   
   private let walletsUpdateAssembly: WalletsUpdateAssembly
+  private let isTestnet: Bool
   
   init(router: NavigationControllerRouter,
-       walletsUpdateAssembly: WalletsUpdateAssembly) {
+       walletsUpdateAssembly: WalletsUpdateAssembly,
+       isTestnet: Bool) {
     self.walletsUpdateAssembly = walletsUpdateAssembly
+    self.isTestnet = isTestnet
     super.init(router: router)
   }
   
@@ -26,6 +30,10 @@ public final class RecoveryPhraseCoordinator: RouterCoordinator<NavigationContro
 private extension RecoveryPhraseCoordinator {
   func openInputRecoveryPhrase() {
     let inputRecoveryPhrase = TKInputRecoveryPhraseAssembly.module(
+      title: TKLocales.ImportWallet.title,
+      caption: TKLocales.ImportWallet.description,
+      continueButtonTitle: TKLocales.Actions.continue_action,
+      pasteButtonTitle: TKLocales.Actions.paste,
       validator: AddWalletInputRecoveryPhraseValidator(),
       suggestsProvider: AddWalletInputRecoveryPhraseSuggestsProvider()
     )
@@ -55,7 +63,10 @@ private extension RecoveryPhraseCoordinator {
   func detectActiveWallets(phrase: [String], completion: @escaping () -> Void) {
     Task {
       do {
-        let activeWallets = try await walletsUpdateAssembly.walletImportController().findActiveWallets(phrase: phrase)
+        let activeWallets = try await walletsUpdateAssembly.walletImportController().findActiveWallets(
+          phrase: phrase,
+          isTestnet: isTestnet
+        )
         await MainActor.run {
           completion()
           handleActiveWallets(phrase: phrase, activeWalletModels: activeWallets)

@@ -1,15 +1,19 @@
 import UIKit
 import TKUIKit
+import SignerLocalize
 
 final class KeyDetailsViewController: GenericViewViewController<KeyDetailsView> {
   private let viewModel: KeyDetailsViewModel
   
   private lazy var dataSource = createDataSource()
   
-  private lazy var listItemCellRegistration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration>(handler: { cell, indexPath, itemIdentifier in
+  private lazy var listItemCellRegistration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration>(handler: { 
+    [weak self] cell,
+    indexPath,
+    itemIdentifier in
     cell.configure(configuration: itemIdentifier)
     cell.isFirstInSection = { ip in ip.item == 0 }
-    cell.isLastInSection = { [weak self] ip in
+    cell.isLastInSection = { ip in
       guard let collectionView = self?.customView.collectionView else { return false }
       return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
     }
@@ -100,25 +104,25 @@ private extension KeyDetailsViewController {
     }
     
     viewModel.didCopied = {
-      ToastPresenter.showToast(configuration: .copied)
+      ToastPresenter.showToast(configuration: .Signer.copied)
     }
   }
   
   func showDeleteAlert() {
     let alertController = UIAlertController(
-      title: "Delete Key?",
-      message: "This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase.",
+      title: SignerLocalize.KeyDetails.DeleteAlert.title,
+      message: SignerLocalize.KeyDetails.DeleteAlert.description,
       preferredStyle: .alert
     )
     alertController.addAction(
       UIAlertAction(
-        title: "Cancel",
+        title: SignerLocalize.Actions.cancel,
         style: .cancel
       )
     )
     alertController.addAction(
       UIAlertAction(
-        title: "Delete Key",
+        title: SignerLocalize.KeyDetails.DeleteAlert.Buttons.delete_key,
         style: .destructive,
         handler: { [weak self] _ in
           self?.viewModel.didConfirmDelete()

@@ -108,6 +108,7 @@ public final class HistoryEventDetailsController {
 
 private extension HistoryEventDetailsController {
   func mapModel() async -> Model {
+    let wallet = walletsStore.activeWallet
     let eventAction = event.action
     let date = dateFormatter.string(from: Date(timeIntervalSince1970: event.accountEvent.timestamp))
     let fee = amountMapper.mapAmount(
@@ -152,7 +153,8 @@ private extension HistoryEventDetailsController {
         action: depositStake,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case let .jettonBurn(jettonBurn):
       return await mapJettonBurn(
         activityEvent: event.accountEvent,
@@ -166,63 +168,72 @@ private extension HistoryEventDetailsController {
         action: jettonMint,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case let .jettonSwap(jettonSwap):
       return mapJettonSwap(
         activityEvent: event.accountEvent,
         action: jettonSwap,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case let .jettonTransfer(jettonTransfer):
       return await mapJettonTransfer(
         activityEvent: event.accountEvent,
         action: jettonTransfer,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case let .nftItemTransfer(nftItemTransfer):
       return mapNFTTransfer(
         activityEvent: event.accountEvent,
         nftTransfer: nftItemTransfer,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case let .nftPurchase(nftPurchase):
       return await mapNFTPurchase(
         activityEvent: event.accountEvent,
         action: nftPurchase,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case let .smartContractExec(smartContractExec):
       return await mapSmartContractExec(
         activityEvent: event.accountEvent,
         smartContractExec: smartContractExec,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case let .tonTransfer(tonTransfer):
       return await mapTonTransfer(
         activityEvent: event.accountEvent,
         tonTransfer: tonTransfer,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case let .withdrawStake(withdrawStake):
       return await mapWithdrawStake(
         activityEvent: event.accountEvent,
         action: withdrawStake,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case let .withdrawStakeRequest(withdrawStakeRequest):
       return mapWithdrawStakeRequest(
         activityEvent: event.accountEvent,
         action: withdrawStakeRequest,
         date: date,
         feeListItem: feeListItem,
-        status: eventAction.status)
+        status: eventAction.status,
+        isTestnet: wallet.isTestnet)
     case .unknown:
       return mapUnknownAction(
         date: date,
@@ -241,7 +252,8 @@ private extension HistoryEventDetailsController {
                       tonTransfer: AccountEventAction.TonTransfer,
                       date: String,
                       feeListItem: Model.ListItem,
-                      status: AccountEventStatus) async -> Model {
+                      status: AccountEventStatus,
+                      isTestnet: Bool) async -> Model {
     let amountType: HistoryEventActionAmountMapperActionType
     let actionType: ActionTypeEnum
     
@@ -256,21 +268,21 @@ private extension HistoryEventDetailsController {
       addressTitle = .senderAddress
       nameTitle = .sender
       nameValue = tonTransfer.sender.name
-      addressValue = tonTransfer.sender.address.toString(bounceable: !tonTransfer.sender.isWallet)
+      addressValue = tonTransfer.sender.address.toString(testOnly: isTestnet, bounceable: !tonTransfer.sender.isWallet)
     } else if tonTransfer.recipient == activityEvent.account {
       amountType = .income
       actionType = .Received
       addressTitle = .senderAddress
       nameTitle = .sender
       nameValue = tonTransfer.sender.name
-      addressValue = tonTransfer.sender.address.toString(bounceable: !tonTransfer.sender.isWallet)
+      addressValue = tonTransfer.sender.address.toString(testOnly: isTestnet, bounceable: !tonTransfer.sender.isWallet)
     } else {
       amountType = .outcome
       actionType = .Sent
       addressTitle = .recipientAddress
       nameTitle = .recipient
       nameValue = tonTransfer.recipient.name
-      addressValue = tonTransfer.recipient.address.toString(bounceable: !tonTransfer.sender.isWallet)
+      addressValue = tonTransfer.recipient.address.toString(testOnly: isTestnet, bounceable: !tonTransfer.sender.isWallet)
     }
     
     let fiatPrice = await tonFiatString(amount: BigUInt(tonTransfer.amount))
@@ -315,7 +327,8 @@ private extension HistoryEventDetailsController {
                       nftTransfer: AccountEventAction.NFTItemTransfer,
                       date: String,
                       feeListItem: Model.ListItem,
-                      status: AccountEventStatus) -> Model {
+                      status: AccountEventStatus,
+                      isTestnet: Bool) -> Model {
     let actionString: String
     
     let nameTitle: String
@@ -328,19 +341,19 @@ private extension HistoryEventDetailsController {
       addressTitle = .senderAddress
       nameTitle = .sender
       nameValue = nftTransfer.sender?.name
-      addressValue = nftTransfer.sender?.address.toString(bounceable: !(nftTransfer.sender?.isWallet ?? false))
+      addressValue = nftTransfer.sender?.address.toString(testOnly: isTestnet, bounceable: !(nftTransfer.sender?.isWallet ?? false))
     } else if nftTransfer.recipient == activityEvent.account {
       actionString = .received
       addressTitle = .senderAddress
       nameTitle = .sender
       nameValue = nftTransfer.sender?.name
-      addressValue = nftTransfer.sender?.address.toString(bounceable: !(nftTransfer.sender?.isWallet ?? false))
+      addressValue = nftTransfer.sender?.address.toString(testOnly: isTestnet, bounceable: !(nftTransfer.sender?.isWallet ?? false))
     } else {
       actionString = .sent
       addressTitle = .recipientAddress
       nameTitle = .recipient
       nameValue = nftTransfer.recipient?.name
-      addressValue = nftTransfer.recipient?.address.toString(bounceable: !(nftTransfer.recipient?.isWallet ?? false))
+      addressValue = nftTransfer.recipient?.address.toString(testOnly: isTestnet, bounceable: !(nftTransfer.recipient?.isWallet ?? false))
     }
     let title = "NFT"
     let dateString = "\(actionString) on \(date)"
@@ -358,7 +371,7 @@ private extension HistoryEventDetailsController {
       listItems.append(Model.ListItem(title: .comment, topValue: comment, topNumberOfLines: 0))
     }
     
-    let nft = try? nftService.getNFT(address: nftTransfer.nftAddress)
+    let nft = try? nftService.getNFT(address: nftTransfer.nftAddress, isTestnet: isTestnet)
     var headerImage: Model.HeaderImage?
     if let nftImageUrl = nft?.imageURL {
       headerImage = .nft(nftImageUrl)
@@ -379,7 +392,8 @@ private extension HistoryEventDetailsController {
                       action: AccountEventAction.NFTPurchase,
                       date: String,
                       feeListItem: Model.ListItem,
-                      status: AccountEventStatus) async -> Model {
+                      status: AccountEventStatus,
+                      isTestnet: Bool) async -> Model {
     let nftName = action.nft.name
     let nftCollectionName = action.nft.collection?.name
     let fiatPrice = await tonFiatString(amount: action.price)
@@ -399,7 +413,7 @@ private extension HistoryEventDetailsController {
     listItems.append(
       Model.ListItem(
         title: .senderAddress,
-        topValue: action.seller.address.toString(bounceable: !action.seller.isWallet),
+        topValue: action.seller.address.toString(testOnly: isTestnet, bounceable: !action.seller.isWallet),
         isTopValueFullString: true
       )
     )
@@ -480,7 +494,8 @@ private extension HistoryEventDetailsController {
                             smartContractExec: AccountEventAction.SmartContractExec,
                             date: String,
                             feeListItem: Model.ListItem,
-                            status: AccountEventStatus) async -> Model {
+                            status: AccountEventStatus,
+                            isTestnet: Bool) async -> Model {
     let fiatPrice = await tonFiatString(amount: BigUInt(smartContractExec.tonAttached))
     
     let title = amountMapper.mapAmount(
@@ -492,7 +507,7 @@ private extension HistoryEventDetailsController {
     let dateString = "Called contract on \(date)"
     
     var listItems = [Model.ListItem]()
-    listItems.append(Model.ListItem(title: "Address", topValue: smartContractExec.contract.address.toString(), isTopValueFullString: true))
+    listItems.append(Model.ListItem(title: "Address", topValue: smartContractExec.contract.address.toString(testOnly: isTestnet), isTopValueFullString: true))
     listItems.append(Model.ListItem(title: "Operation", topValue: smartContractExec.operation))
     listItems.append(feeListItem)
     if let payload = smartContractExec.payload {
@@ -512,7 +527,8 @@ private extension HistoryEventDetailsController {
                      action: AccountEventAction.JettonSwap,
                      date: String,
                      feeListItem: Model.ListItem,
-                     status: AccountEventStatus) -> Model {
+                     status: AccountEventStatus,
+                     isTestnet: Bool) -> Model {
     let title: String? = {
       let amount: BigUInt
       let fractionDigits: Int
@@ -573,7 +589,16 @@ private extension HistoryEventDetailsController {
     let dateString = "Swapped on \(date)"
     
     var listItems = [Model.ListItem]()
-    listItems.append(Model.ListItem(title: .recipient, topValue: action.user.address.toString(bounceable: !action.user.isWallet), isTopValueFullString: true))
+    listItems.append(
+      Model.ListItem(
+        title: .recipient,
+        topValue: action.user.address.toString(
+          testOnly: isTestnet,
+          bounceable: !action.user.isWallet
+        ),
+        isTopValueFullString: true
+      )
+    )
     listItems.append(feeListItem)
     
     let headerImage: Model.HeaderImage = {
@@ -613,7 +638,8 @@ private extension HistoryEventDetailsController {
                                action: AccountEventAction.WithdrawStakeRequest,
                                date: String,
                                feeListItem: Model.ListItem,
-                               status: AccountEventStatus) -> Model {
+                               status: AccountEventStatus,
+                               isTestnet: Bool) -> Model {
     let title = "Unstake Request"
     let dateString = "\(date)"
     
@@ -621,7 +647,15 @@ private extension HistoryEventDetailsController {
     if let senderName = action.pool.name {
       listItems.append(Model.ListItem(title: .sender, topValue: senderName))
     }
-    listItems.append(Model.ListItem(title: .senderAddress, topValue: action.pool.address.toString(bounceable: !action.pool.isWallet)))
+    listItems.append(
+      Model.ListItem(
+        title: .senderAddress,
+        topValue: action.pool.address.toString(
+          testOnly: isTestnet,
+          bounceable: !action.pool.isWallet
+        )
+      )
+    )
     if let amount = action.amount {
       let formattedAmount = amountMapper.mapAmount(
         amount: BigUInt(integerLiteral: UInt64(amount)),
@@ -648,7 +682,8 @@ private extension HistoryEventDetailsController {
                         action: AccountEventAction.WithdrawStake,
                         date: String,
                         feeListItem: Model.ListItem,
-                        status: AccountEventStatus) async -> Model {
+                        status: AccountEventStatus,
+                        isTestnet: Bool) async -> Model {
     let title = amountMapper.mapAmount(
       amount: BigUInt(integerLiteral: UInt64(action.amount)),
       fractionDigits: TonInfo.fractionDigits,
@@ -665,7 +700,8 @@ private extension HistoryEventDetailsController {
     }
     listItems.append(
       Model.ListItem(title: .senderAddress,
-                     topValue: action.pool.address.toString(bounceable: !action.pool.isWallet),
+                     topValue: action.pool.address.toString(testOnly: isTestnet,
+                                                            bounceable: !action.pool.isWallet),
                      isTopValueFullString: true)
     )
     listItems.append(feeListItem)
@@ -683,7 +719,8 @@ private extension HistoryEventDetailsController {
                        action: AccountEventAction.DepositStake,
                        date: String,
                        feeListItem: Model.ListItem,
-                       status: AccountEventStatus) -> Model {
+                       status: AccountEventStatus,
+                       isTestnet: Bool) -> Model {
     let title = amountMapper.mapAmount(
       amount: BigUInt(integerLiteral: UInt64(action.amount)),
       fractionDigits: TonInfo.fractionDigits,
@@ -698,7 +735,7 @@ private extension HistoryEventDetailsController {
     }
     listItems.append(
       Model.ListItem(title: .recipientAddress,
-                     topValue: action.pool.address.toString(bounceable: !action.pool.isWallet),
+                     topValue: action.pool.address.toString(testOnly: isTestnet, bounceable: !action.pool.isWallet),
                      isTopValueFullString: true)
     )
     listItems.append(feeListItem)
@@ -717,7 +754,8 @@ private extension HistoryEventDetailsController {
                      action: AccountEventAction.JettonMint,
                      date: String,
                      feeListItem: Model.ListItem,
-                     status: AccountEventStatus) async -> Model {
+                     status: AccountEventStatus,
+                     isTestnet: Bool) async -> Model {
     let title = amountMapper.mapAmount(
       amount: action.amount,
       fractionDigits: action.jettonInfo.fractionDigits,
@@ -732,7 +770,7 @@ private extension HistoryEventDetailsController {
     }
     listItems.append(
       Model.ListItem(title: .recipientAddress,
-                     topValue: action.recipient.address.toString(bounceable: !action.recipient.isWallet),
+                     topValue: action.recipient.address.toString(testOnly: isTestnet, bounceable: !action.recipient.isWallet),
                      isTopValueFullString: true)
     )
     listItems.append(feeListItem)
@@ -761,7 +799,8 @@ private extension HistoryEventDetailsController {
                          action: AccountEventAction.JettonTransfer,
                          date: String,
                          feeListItem: Model.ListItem,
-                         status: AccountEventStatus) async -> Model {
+                         status: AccountEventStatus,
+                         isTestnet: Bool) async -> Model {
     let amountType: HistoryEventActionAmountMapperActionType
     let actionType: ActionTypeEnum
     
@@ -776,21 +815,21 @@ private extension HistoryEventDetailsController {
       addressTitle = .senderAddress
       nameTitle = .sender
       nameValue = action.sender?.name
-      addressValue = action.sender?.address.toString(bounceable: !(action.sender?.isWallet ?? false))
+      addressValue = action.sender?.address.toString(testOnly: isTestnet, bounceable: !(action.sender?.isWallet ?? false))
     } else if action.recipient == activityEvent.account {
       amountType = .income
       actionType = .Received
       addressTitle = .senderAddress
       nameTitle = .sender
       nameValue = action.sender?.name
-      addressValue = action.sender?.address.toString(bounceable: !(action.sender?.isWallet ?? false))
+      addressValue = action.sender?.address.toString(testOnly: isTestnet, bounceable: !(action.sender?.isWallet ?? false))
     } else {
       amountType = .outcome
       actionType = .Sent
       addressTitle = .recipientAddress
       nameTitle = .recipient
       nameValue = action.recipient?.name
-      addressValue = action.recipient?.address.toString(bounceable: !(action.recipient?.isWallet ?? false))
+      addressValue = action.recipient?.address.toString(testOnly: isTestnet, bounceable: !(action.recipient?.isWallet ?? false))
     }
     
     let fiatPrice = await jettonFiatString(amount: action.amount, jettonInfo: action.jettonInfo)

@@ -19,6 +19,10 @@ public struct PasswordVault {
   public func save(_ password: String) throws {
     try keychainVault.saveValue(password, to: String.query())
   }
+  
+  public func delete() throws {
+    try keychainVault.deleteItem(String.query())
+  }
 }
 
 private extension String {

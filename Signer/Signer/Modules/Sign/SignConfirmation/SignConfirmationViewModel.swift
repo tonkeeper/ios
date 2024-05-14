@@ -1,12 +1,13 @@
 import Foundation
 import SignerCore
+import SignerLocalize
 import UIKit
 import TKUIKit
 import TonSwift
 
 protocol SignConfirmationModuleOutput: AnyObject {
   var didSignTransaction: ((URL, WalletKey, String) -> Void)? { get set }
-  var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)? { get set }
+  var didRequirePassword: (( @escaping (String?) -> Void ) -> Void)? { get set }
   var didOpenEmulateURL: ((URL) -> Void)? { get set }
 }
 
@@ -24,7 +25,7 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   // MARK: - SignConfirmationModuleOutput
 
   var didSignTransaction: ((URL, WalletKey, String) -> Void)?
-  var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)?
+  var didRequirePassword: ((@escaping (String?) -> Void) -> Void)?
   var didOpenEmulateURL: ((URL) -> Void)?
   
   // MARK: - SignConfirmationViewModel
@@ -36,7 +37,9 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   func viewDidLoad() {
     updateHeader()
     do {
-      let transactionModel = try controller.getTransactionModel()
+      let transactionModel = try controller.getTransactionModel(
+        sendTitle: SignerLocalize.SignTransaction.send
+      )
       let model = createModel(transactionModel: transactionModel)
       
       didUpdateModel?(model)
@@ -46,16 +49,16 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   }
   
   func didConfirmTransaction() {
-    let completion: (Bool) -> Void = { [weak self] isConfirmed in
+    let completion: (String?) -> Void = { [weak self] password in
       guard let self else { return }
-      if isConfirmed {
-        guard let signedURL = self.controller.signTransaction() else { return }
+      if let password {
+        guard let signedURL = self.controller.signTransaction(password: password) else { return }
         self.didSignTransaction?(signedURL, self.controller.walletKey, self.controller.hexBody)
       } else {
         self.didCancel?()
       }
     }
-    didRequireConfirmation?(completion)
+    didRequirePassword?(completion)
   }
   
   // MARK: - Dependencies
@@ -73,7 +76,7 @@ private extension SignConfirmationViewModelImplementation {
     subtitle.append("\(controller.walletKey.name) ".withTextStyle(.body2, color: .Text.secondary))
     subtitle.append(controller.walletKey.publicKeyShortHexString.withTextStyle(.body2, color: .Text.tertiary))
     
-    didUpdateHeader?("Sign Transaction", subtitle)
+    didUpdateHeader?(SignerLocalize.SignTransaction.title, subtitle)
   }
   
   func createModel(transactionModel: SignerCore.TransactionModel) -> SignConfirmationView.Model {
@@ -107,7 +110,7 @@ private extension SignConfirmationViewModelImplementation {
       category: .tertiary,
       size: .small
     )
-    emulateButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Emulate in Browser"))
+    emulateButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(SignerLocalize.SignTransaction.emulate))
     emulateButtonConfiguration.action = { [weak self] in
       guard let url = self?.controller.createEmulationURL() else { return }
       self?.didOpenEmulateURL?(url)
@@ -117,11 +120,11 @@ private extension SignConfirmationViewModelImplementation {
       category: .tertiary,
       size: .small
     )
-    copyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Copy"))
+    copyButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(SignerLocalize.SignTransaction.copy))
     copyButtonConfiguration.action = { [weak self] in
       guard let self else { return }
       UIPasteboard.general.string = self.controller.hexBody
-      ToastPresenter.showToast(configuration: .copied)
+      ToastPresenter.showToast(configuration: .Signer.copied)
     }
     
     let bocModel = SignConfirmationBocView.Model(
@@ -133,7 +136,7 @@ private extension SignConfirmationViewModelImplementation {
     return SignConfirmationView.Model(
       transactionsModel: transactionsModel,
       bocModel: bocModel,
-      auditButtonText: "Audit Transaction"
+      auditButtonText: SignerLocalize.SignTransaction.audit_transaction
     )
   }
 }
