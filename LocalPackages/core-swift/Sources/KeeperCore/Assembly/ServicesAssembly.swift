@@ -115,7 +115,7 @@ public final class ServicesAssembly {
     )
   }
   
-  func sendService() -> SendService {
+  public func sendService() -> SendService {
     SendServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   

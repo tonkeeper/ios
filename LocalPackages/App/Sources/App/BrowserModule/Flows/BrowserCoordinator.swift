@@ -59,96 +59,165 @@ private extension BrowserCoordinator {
   }
   
   func openApp(_ app: PopularApp) {
-    guard let url = app.url else { return }
+    let messageHandler = DefaultDappMessageHandler()
+    let module = DappAssembly.module(app: app, messageHandler: messageHandler)
     
-    let webViewController = TKBridgeWebViewController(initialURL: url, initialTitle: app.name)
-    webViewController.addBridgeMessageObserver(message: "blabla") { body in
-      print(body)
-    }
-    webViewController.didLoadInitialURLHandler = {
-      Task {
-        do {
-          try await webViewController.evaulateJavaScript(javaScriptIbj)
-          print("OK")
-        } catch {
-          print(error)
-        }
+    messageHandler.connect = { [weak self, weak moduleView = module.view] protocolVersion, payload, completion in
+      guard let moduleView else { 
+        completion(.error(.unknownError))
+        return
       }
+      self?.performConnect(
+        protocolVersion: protocolVersion,
+        payload: payload,
+        fromViewController: moduleView,
+        completion: completion)
     }
-    let nc = TKNavigationController(rootViewController: webViewController)
-    nc.modalPresentationStyle = .fullScreen
-    router.present(nc)
+    
+    messageHandler.reconnect = {
+      [weak self] app,
+      completion in
+      guard let self else { return }
+      let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+      let result = self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.reconnectBridgeDapp(
+        wallet: wallet,
+        appUrl: app.url
+      )
+      completion(result)
+    }
+    
+    messageHandler.disconnect = {
+      [weak self] app in
+      guard let self else { return }
+      let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+      try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnect(wallet: wallet, appUrl: app.url)
+    }
+    
+    messageHandler.send = {
+      [weak self] app, request, completion in
+      guard let self else { return }
+      self.openSend(app: app, appRequest: request, completion: completion)
+    }
+
+    module.view.modalPresentationStyle = .fullScreen
+    router.present(module.view)
   }
   
   func openSearch() {
     
   }
+  
+  func performConnect(protocolVersion: Int,
+                      payload: TonConnectRequestPayload,
+                      fromViewController: UIViewController,
+                      completion: @escaping (TonConnectAppsStore.ConnectResult) -> Void) {
+    ToastPresenter.hideAll()
+    ToastPresenter.showToast(configuration: .loading)
+    Task {
+      do {
+        let manifest = try await keeperCoreMainAssembly.tonConnectAssembly.tonConnectService().loadManifest(
+          url: payload.manifestUrl
+        )
+        let parameters = TonConnectParameters(
+          version: .v2,
+          clientId: UUID().uuidString,
+          requestPayload: payload
+        )
+        await MainActor.run {
+          ToastPresenter.hideToast()
+          handleLoadedManifest(
+            parameters: parameters,
+            manifest: manifest,
+            router: ViewControllerRouter(rootViewController: fromViewController),
+            completion: completion
+          )
+        }
+      } catch {
+        await MainActor.run {
+          ToastPresenter.hideToast()
+          completion(.error(.appManifestNotFound))
+        }
+      }
+    }
+    
+    @Sendable
+    func handleLoadedManifest(parameters: TonConnectParameters,
+                              manifest: TonConnectManifest,
+                              router: ViewControllerRouter,
+                              completion: @escaping (TonConnectAppsStore.ConnectResult) -> Void) {
+      let connector = BridgeTonConnectConnectCoordinatorConnector(
+        tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore) {
+          completion($0)
+        }
+      let coordinator = TonConnectConnectCoordinator(
+        router: router,
+        connector: connector,
+        parameters: parameters,
+        manifest: manifest,
+        showWalletPicker: false,
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+      
+      coordinator.didCancel = { [weak self, weak coordinator] in
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+      
+      coordinator.didConnect = { [weak self, weak coordinator] in
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+      
+      addChild(coordinator)
+      coordinator.start()
+    }
+  }
+  
+  func openSend(app: PopularApp,
+                appRequest: TonConnect.AppRequest,
+                completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
+    let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+    guard let connectedApps = try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
+          let connectedApp = connectedApps.apps.first(where: { $0.manifest.host == app.url?.host }) else {
+      completion(.error(.unknownApp))
+      return
+    }
+    
+    guard let windowScene = UIApplication.keyWindowScene else { return }
+    let window = TKWindow(windowScene: windowScene)
+    let coordinator = TonConnectConfirmationCoordinator(
+      router: WindowRouter(window: window),
+      wallet: wallet,
+      appRequest: appRequest,
+      app: connectedApp,
+      confirmator: BridgeTonConnectConfirmationCoordinatorConfirmator(
+        sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
+        tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
+        connectionResponseHandler: { result in
+          completion(result)
+        }
+      ),
+      tonConnectConfirmationController: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmationController(
+        wallet: wallet,
+        appRequest: appRequest,
+        app: connectedApp
+      ),
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didConfirm = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
 }
-
-let javaScriptIbj = """
-        (() => {
-                        if (!window.tonkeeper) {
-                            window.rnPromises = {};
-                            window.rnEventListeners = [];
-                            window.invokeRnFunc = (name, args, resolve, reject) => {
-                                const invocationId = btoa(Math.random()).substring(0, 12);
-                                const timeoutMs = null;
-                                const timeoutId = timeoutMs ? setTimeout(() => reject(new Error('bridge timeout for function with name: '+name+'')), timeoutMs) : null;
-                                window.rnPromises[invocationId] = { resolve, reject, timeoutId }
-                                                                window.webkit.messageHandlers.blabla.postMessage(JSON.stringify({
-                                    type: 'invokeRnFunc',
-                                    invocationId: invocationId,
-                                    name,
-                                    args,
-                                }));
-                            };
-                            
-                            window.addEventListener('message', ({ data }) => {
-                                try {
-                                    const message = data;
-                                    console.log('message bridge', JSON.stringify(message));
-                                    if (message.type === 'functionResponse') {
-                                        const promise = window.rnPromises[message.invocationId];
-                                        
-                                        if (!promise) {
-                                            return;
-                                        }
-                                        
-                                        if (promise.timeoutId) {
-                                            clearTimeout(promise.timeoutId);
-                                        }
-                                        
-                                        if (message.status === 'fulfilled') {
-                                            promise.resolve(JSON.parse(message.data));
-                                        } else {
-                                            promise.reject(new Error(message.data));
-                                        }
-                                        
-                                        delete window.rnPromises[message.invocationId];
-                                    }
-                                    
-                                    if (message.type === 'event') {
-                                        window.rnEventListeners.forEach((listener) => listener(message.event));
-                                    }
-                                } catch { }
-                            });
-                        }
-                        
-                        const listen = (cb) => {
-                            window.rnEventListeners.push(cb);
-                            return () => {
-                                const index = window.rnEventListeners.indexOf(cb);
-                                if (index > -1) {
-                                    window.rnEventListeners.splice(index, 1);
-                                }
-                            };
-                        };
-                        
-                        window.tonkeeper = {
-                            tonconnect: Object.assign({"isWalletBrowser":true,"deviceInfo":{"platform":"ios_x","appName":"Tonkeeper","appVersion":"3.4.0","maxProtocolVersion":2,"features":["SendTransaction"]},"protocolVersion":2},{ send: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('send', args, resolve, reject))},connect: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('connect', args, resolve, reject))},restoreConnection: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('restoreConnection', args, resolve, reject))},disconnect: (...args) => {return new Promise((resolve, reject) => window.invokeRnFunc('disconnect', args, resolve, reject))} },{ listen }),
-                        }
-                    })();
-"""
-
-
-

@@ -2,7 +2,7 @@ import Foundation
 import TonAPI
 import TonSwift
 
-protocol SendService {
+public protocol SendService {
   func loadSeqno(wallet: Wallet) async throws -> UInt64
   func loadTransactionInfo(boc: String, wallet: Wallet) async throws -> Components.Schemas.MessageConsequences
   func sendTransaction(boc: String, wallet: Wallet) async throws
