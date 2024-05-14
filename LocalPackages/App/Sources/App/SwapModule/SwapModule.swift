@@ -12,8 +12,9 @@ struct SwapModule {
   public func createSwapTokenCoordinator(router: NavigationControllerRouter) -> SwapTokenCoordinator {
     let coordinator = SwapTokenCoordinator(
       router: router,
-      coreAssembly: dependencies.coreAssembly,
-      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
+      coreAssembly: dependencies.coreAssembly, 
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      token: .ton // inject for opening for different tokens
     )
     return coordinator
   }

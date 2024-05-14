@@ -18,6 +18,8 @@ public extension TKButton {
     public var loaderSize: TKLoaderView.Size
     public var loaderStyle: TKLoaderView.Style
     public var action: (() -> Void)?
+    public var tapAreaInsets: UIEdgeInsets = .zero
+    public var shouldBounceOnTap: Bool = false
     
     public init(content: Content = Content(),
                 contentPadding: UIEdgeInsets = .zero,
@@ -86,6 +88,21 @@ public extension TKButton.Configuration {
       ],
       cornerRadius: size.cornerRadius,
       loaderSize: size.loaderViewSize,
+      action: nil
+    )
+  }
+
+  static func iconActionButton(icon: UIImage, size: CGFloat) -> TKButton.Configuration {
+    TKButton.Configuration(
+      content: Content(icon: icon),
+      contentPadding: UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12),
+      padding: .zero,
+      backgroundColors: [
+        .normal: .Button.tertiaryBackground,
+        .highlighted: .Button.tertiaryBackgroundHighlighted,
+        .disabled: .Button.tertiaryBackgroundDisabled
+      ],
+      cornerRadius: size / 2,
       action: nil
     )
   }

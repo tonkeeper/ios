@@ -13,7 +13,10 @@ open class TKButton: UIControl {
   }
   
   open override var isHighlighted: Bool {
-    didSet { didUpdateControlState() }
+    didSet {
+      if configuration.shouldBounceOnTap { shrink(down: isHighlighted) }
+      didUpdateControlState()
+    }
   }
   
   open override var isSelected: Bool {
@@ -96,6 +99,31 @@ open class TKButton: UIControl {
     super.setContentCompressionResistancePriority(priority, for: axis)
     buttonContentView.setContentCompressionResistancePriority(priority, for: axis)
   }
+
+  open override func point(inside point: CGPoint, with event: UIEvent?) -> Bool {
+    bounds.inset(by: configuration.tapAreaInsets)
+      .contains(point)
+  }
+
+
+  open override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    super.touchesEnded(touches, with: event)
+    guard configuration.shouldBounceOnTap else { return }
+    UIView.transition(
+      with: self,
+      duration: 0.2, options: [.transitionCrossDissolve, .overrideInheritedDuration]) {
+      self.transform = CGAffineTransformMakeScale(1.05, 1.05)
+    } completion: { _ in
+      UIView.animate(
+        withDuration: 0.4, delay: 0,
+        usingSpringWithDamping: 0.4, initialSpringVelocity: 0.2,
+        options: [.overrideInheritedDuration],
+        animations: {
+          self.transform = CGAffineTransform.identity
+        }
+      )
+    }
+  }
 }
 
 private extension TKButton {
@@ -108,16 +136,20 @@ private extension TKButton {
     addSubview(loaderView)
     
     didUpdateConfiguration()
-    
+
     addAction(UIAction(handler: { [weak self] _ in
-      self?.configuration.action?()
+      guard let self else { return }
+      if self.configuration.shouldBounceOnTap { self.bounce() }
+      self.configuration.action?()
     }), for: .touchUpInside)
   }
   
   func didUpdateButtonState() {
-    buttonContentView.backgroundColor = configuration.backgroundColors[buttonState]
-    buttonContentView.titleLabel.alpha = configuration.contentAlpha[buttonState] ?? 1
-    buttonContentView.imageView.alpha = configuration.contentAlpha[buttonState] ?? 1
+    UIView.animate(withDuration: 0.2) {
+      self.buttonContentView.backgroundColor = self.configuration.backgroundColors[self.buttonState]
+      self.buttonContentView.titleLabel.alpha = self.configuration.contentAlpha[self.buttonState] ?? 1
+      self.buttonContentView.imageView.alpha = self.configuration.contentAlpha[self.buttonState] ?? 1
+    }
   }
   
   func didUpdateControlState() {

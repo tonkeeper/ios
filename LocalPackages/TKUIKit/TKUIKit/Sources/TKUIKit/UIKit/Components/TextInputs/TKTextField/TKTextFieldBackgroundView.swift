@@ -1,6 +1,8 @@
 import UIKit
 
 final class TKTextFieldBackgroundView: UIView {
+
+  var highlightBorder = true
   
   var textFieldState: TKTextFieldState = .inactive {
     didSet {
@@ -22,12 +24,12 @@ private extension TKTextFieldBackgroundView {
   func setup() {
     didUpdateState()
     
-    layer.borderWidth = 1.5
+    if highlightBorder { layer.borderWidth = 1.5 }
     layer.cornerRadius = 16
   }
   
   func didUpdateState() {
     backgroundColor = textFieldState.backgroundColor
-    layer.borderColor = textFieldState.borderColor.cgColor
+    if highlightBorder { layer.borderColor = textFieldState.borderColor.cgColor }
   }
 }

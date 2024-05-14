@@ -44,7 +44,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   var didUpdateModel: ((SendV3View.Model) -> Void)?
   
   func updateWithToken(_ token: Token) {
-    sendAmountTextFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: token)
+    sendAmountTextFieldFormatter.maximumFractionDigits = token.tokenFractionalDigits
     sendItem = .token(token, amount: 0)
     amountInput = ""
     isAmountValid = false
@@ -107,7 +107,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
       Task {
         guard string != amountInput else { return }
         let unformatted = self.sendAmountTextFieldFormatter.unformatString(string) ?? ""
-        let amount = sendController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: tokenFractionalDigits(token: token))
+        let amount = sendController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: token.tokenFractionalDigits)
         let isAmountValid = await sendController.isAmountAvailableToSend(amount: amount.amount, token: token) && !amount.amount.isZero
         
         await MainActor.run {
@@ -254,7 +254,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     
     switch sendItem {
     case .token(let token, _):
-      sendAmountTextFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: token)
+      sendAmountTextFieldFormatter.maximumFractionDigits = token.tokenFractionalDigits
     case .nft:
       break
     }
@@ -368,7 +368,7 @@ private extension SendV3ViewModelImplementation {
     return SendV3View.Model.Amount(
       placeholder: TKLocales.Send.Amount.placeholder,
       text: sendAmountTextFieldFormatter.formatString(amountInput) ?? "",
-      fractionDigits: tokenFractionalDigits(token: token),
+      fractionDigits: token.tokenFractionalDigits,
       token: createTokenModel(token: token)
     )
   }
@@ -437,16 +437,5 @@ private extension SendV3ViewModelImplementation {
     }
     
     return recipient != nil && (isCommentRequired && !commentInput.isEmpty || !isCommentRequired) && isItemValid
-  }
-  
-  func tokenFractionalDigits(token: Token) -> Int {
-    let fractionDigits: Int
-    switch token {
-    case .ton:
-      fractionDigits = TonInfo.fractionDigits
-    case .jetton(let jettonItem):
-      fractionDigits = jettonItem.jettonInfo.fractionDigits
-    }
-    return fractionDigits
   }
 }

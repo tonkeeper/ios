@@ -4,6 +4,10 @@ public extension UIImage {
   enum TKUIKit {
     public enum Icons {
       public enum Size16 {
+        public static var swapVertical: UIImage {
+          .imageWithName("Icons/16/ic-swap-vertical-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var chevronDown: UIImage {
           .imageWithName("Icons/16/ic-chevron-down-16")
           .withRenderingMode(.alwaysTemplate)
