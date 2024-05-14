@@ -3,7 +3,8 @@ import KeeperCore
 
 protocol DappViewModel: AnyObject {
   var didOpenApp: ((URL?, String?) -> Void)? { get set }
-  var injectHandler: ((String, (() -> Void)?) -> Void)? { get set }
+  var injectHandler: ((String) -> Void)? { get set }
+  var jsInjection: String? { get }
   
   func viewDidLoad()
   func didLoadInitialRequest()
@@ -11,20 +12,16 @@ protocol DappViewModel: AnyObject {
   func reconnectIfNeeded()
 }
 
-final class DappViewModelImplementation: DappViewModel {
+final class DappViewModelImplementation: DappViewModel {  
   var didOpenApp: ((URL?, String?) -> Void)?
-  var injectHandler: ((String, (() -> Void)?) -> Void)?
+  var injectHandler: ((String) -> Void)?
   
   func viewDidLoad() {
     didOpenApp?(app.url, app.name)
   }
   
   func didLoadInitialRequest() {
-    guard let jsInjection = self.jsInjection else { return }
-    let completion: () -> Void = { [weak self] in
-      self?.reconnectIfNeeded()
-    }
-    injectHandler?(jsInjection, completion)
+    self.reconnectIfNeeded()
   }
   
   func reconnectIfNeeded() {
@@ -108,67 +105,9 @@ final class DappViewModelImplementation: DappViewModel {
         }));
     })();
     """
-    injectHandler?(js, nil)
-  }
-}
-
-private struct Info: Encodable {
-  let isWalletBrowser: Bool
-  let deviceInfo: TonConnect.DeviceInfo
-  let protocolVersion: Int
-}
-
-struct DappFunctionInvokeMessage {
-  let type: DappBridgeFunctionType
-  let invocationId: String
-  let args: [Any]
-}
-
-struct DappBridgeResponse {
-  enum Status: String {
-    case fulfilled
-    case rejected
+    injectHandler?(js)
   }
   
-  enum Data {
-    case data(String)
-    case error(Int)
-  }
-
-  let invocationId: String
-  let status: Status
-  let data: Data
-  
-  var json: String? {
-    var dictionary: [String: Any] = ["invocationId": invocationId,
-                                     "status": status.rawValue, 
-                                     "type": "functionResponse"]
-    switch data {
-    case .data(let data):
-      dictionary["data"] = data
-    case .error(let error):
-      dictionary["data"] = error
-    }
-    guard let data = try? JSONSerialization.data(withJSONObject: dictionary),
-    let dataString = String(data: data, encoding: .utf8) else { return nil }
-    return dataString
-  }
-}
-
-enum DappBridgeMessageType: String, Codable {
-  case invokeRnFunc
-  case functionResponse
-  case event
-}
-
-enum DappBridgeFunctionType: String, Codable {
-  case send
-  case connect
-  case restoreConnection
-  case disconnect
-}
-
-private extension DappViewModel {
   var jsInjection: String? {
     let deviceInfo = TonConnect.DeviceInfo()
     let info = Info(
@@ -244,6 +183,62 @@ private extension DappViewModel {
                         })();
     """
   }
+}
+
+private struct Info: Encodable {
+  let isWalletBrowser: Bool
+  let deviceInfo: TonConnect.DeviceInfo
+  let protocolVersion: Int
+}
+
+struct DappFunctionInvokeMessage {
+  let type: DappBridgeFunctionType
+  let invocationId: String
+  let args: [Any]
+}
+
+struct DappBridgeResponse {
+  enum Status: String {
+    case fulfilled
+    case rejected
+  }
+  
+  enum Data {
+    case data(String)
+    case error(Int)
+  }
+
+  let invocationId: String
+  let status: Status
+  let data: Data
+  
+  var json: String? {
+    var dictionary: [String: Any] = ["invocationId": invocationId,
+                                     "status": status.rawValue, 
+                                     "type": "functionResponse"]
+    switch data {
+    case .data(let data):
+      dictionary["data"] = data
+    case .error(let error):
+      dictionary["data"] = error
+    }
+    guard let data = try? JSONSerialization.data(withJSONObject: dictionary),
+    let dataString = String(data: data, encoding: .utf8) else { return nil }
+    return dataString
+  }
+}
+
+enum DappBridgeMessageType: String, Codable {
+  case invokeRnFunc
+  case functionResponse
+  case event
+}
+
+enum DappBridgeFunctionType: String, Codable {
+  case send
+  case connect
+  case restoreConnection
+  case disconnect
 }
 
 private extension String {
