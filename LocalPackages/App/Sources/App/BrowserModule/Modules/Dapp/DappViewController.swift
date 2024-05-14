@@ -2,7 +2,6 @@ import UIKit
 import TKUIKit
 import TKScreenKit
 import SnapKit
-import KeeperCore
 
 final class DappViewController: UIViewController {
   private let viewModel: DappViewModel
