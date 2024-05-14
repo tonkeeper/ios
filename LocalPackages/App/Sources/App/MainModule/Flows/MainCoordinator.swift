@@ -88,6 +88,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       }
     setupTabBarTaps()
     setupChildCoordinators()
+    mainController.didUpdateBrowserAvailability = { [weak self] isBrowserAvailable in
+      guard let self = self else { return }
+      Task { await self.didUpdateBrowserAvailability(isAvailable: isBrowserAvailable) }
+    }
     Task {
       await mainController.start()
       await MainActor.run {
@@ -477,6 +481,27 @@ private extension MainCoordinator {
     } catch {
       print("Log: Wallet update failed")
     }
+  }
+  
+  @MainActor
+  private func didUpdateBrowserAvailability(isAvailable: Bool) {
+    let viewControllers: [UIViewController?] = {
+      if isAvailable {
+        return [
+          walletCoordinator?.router.rootViewController,
+          historyCoordinator?.router.rootViewController,
+          browserCoordinator?.router.rootViewController,
+          collectiblesCoordinator?.router.rootViewController
+        ]
+      } else {
+        return [
+          walletCoordinator?.router.rootViewController,
+          historyCoordinator?.router.rootViewController,
+          collectiblesCoordinator?.router.rootViewController
+        ]
+      }
+    }()
+    router.set(viewControllers: viewControllers.compactMap { $0 }, animated: false)
   }
 }
 
