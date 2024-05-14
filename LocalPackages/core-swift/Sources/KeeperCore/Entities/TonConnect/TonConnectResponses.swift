@@ -13,7 +13,25 @@ public extension TonConnect {
     public let appName = "Tonkeeper"
     public let appVersion = "3.4.0"
     public let maxProtocolVersion = 2
-    public let features = [Feature()]
+    public let features = [
+      FeatureCompatible.legacy(Feature()),
+      FeatureCompatible.feature(Feature())
+    ]
+    
+    public enum FeatureCompatible: Encodable {
+      case feature(Feature)
+      case legacy(Feature)
+            
+      public func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+          case .feature(let feature):
+            try container.encode(feature)
+          case .legacy(let feature):
+            try container.encode(feature.name)
+        }
+      }
+    }
     
     public struct Feature: Encodable {
       public let name = "SendTransaction"

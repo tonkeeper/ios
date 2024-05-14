@@ -6,14 +6,23 @@ import WebKit
 open class TKBridgeWebViewController: UIViewController {
   
   public var didLoadInitialURLHandler: (() -> Void)?
-  
   private let userContentController = WKUserContentController()
+  
+  private let jsInjection: String
+
   private lazy var webView: WKWebView = {
     let configuration = WKWebViewConfiguration()
+    let script = WKUserScript(
+      source: jsInjection,
+      injectionTime: WKUserScriptInjectionTime.atDocumentStart,
+      forMainFrameOnly: true
+    )
+    userContentController.addUserScript(script)
     configuration.userContentController = userContentController
     let webView = WKWebView(frame: .zero, configuration: configuration)
     return webView
   }()
+  
   private let headerView = TKBridgeWebHeaderView()
   
   // MARK: - KVO
@@ -49,10 +58,12 @@ open class TKBridgeWebViewController: UIViewController {
   // MARK: - Init
   
   public init(initialURL: URL,
-              initialTitle: String?) {
+              initialTitle: String?,
+              jsInjection: String?) {
     self.initialURL = initialURL
     self.initialTitle = initialTitle
     self.url = initialURL
+    self.jsInjection = jsInjection ?? ""
     super.init(nibName: nil, bundle: nil)
     self.title = initialTitle
   }
@@ -75,6 +86,9 @@ open class TKBridgeWebViewController: UIViewController {
     webView.scrollView.layer.masksToBounds = false
     webView.layer.masksToBounds = false
     webView.scrollView.contentInsetAdjustmentBehavior = .never
+    if #available(iOS 16.4, *) {
+      webView.isInspectable = true
+    }
     
     view.addSubview(webView)
     view.addSubview(headerView)

@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKScreenKit
 import SnapKit
+import KeeperCore
 
 final class DappViewController: UIViewController {
   private let viewModel: DappViewModel
@@ -37,7 +38,8 @@ private extension DappViewController {
       
       let bridgeWebViewController = TKBridgeWebViewController(
         initialURL: url,
-        initialTitle: title
+        initialTitle: title,
+        jsInjection: self.viewModel.jsInjection
       )
       bridgeWebViewController.didLoadInitialURLHandler = { [weak self] in
         self?.viewModel.didLoadInitialRequest()
@@ -56,11 +58,10 @@ private extension DappViewController {
       self.bridgeWebViewController = bridgeWebViewController
     }
     
-    viewModel.injectHandler = { [weak self] jsInjection, completion in
+    viewModel.injectHandler = { [weak self] jsInjection in
       Task {
         do {
           try await self?.bridgeWebViewController?.evaulateJavaScript(jsInjection)
-          completion?()
         } catch {
           print(error)
         }
