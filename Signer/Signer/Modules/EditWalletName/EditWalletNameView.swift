@@ -9,11 +9,15 @@ final class EditWalletNameView: UIView {
     return view
   }()
   
-  let walletNameTextField = TKTextField(
-    textFieldInputView: TKTextFieldInputView(
-      textInputControl: TKTextInputTextFieldControl()
+  let walletNameTextField: TKTextField = {
+    let textInputControl = TKTextInputTextFieldControl()
+    textInputControl.autocapitalizationType = .sentences
+    return TKTextField(
+      textFieldInputView: TKTextFieldInputView(
+        textInputControl: textInputControl
+      )
     )
-  )
+  }()
   let walletNameTextFieldContainer = TKPaddingContainerView()
   
   let continueButton = TKButton()
