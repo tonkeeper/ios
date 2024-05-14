@@ -92,6 +92,12 @@ public enum SignerLocalize {
         }
       }
     }
+    public enum Confirmation {
+      /// Enter current Password
+      public static var title: String {
+        localize("password.confirmation.title")
+      }
+    }
   }
   public enum NameKey {
     /// Name your Key

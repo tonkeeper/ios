@@ -64,13 +64,13 @@ private extension TKOnboardingViewModelImplementation {
     )
     
     var primaryButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    primaryButtonConfiguration.content.title = .plainString(TKLocales.Onboarding.Buttons.create_new)
+    primaryButtonConfiguration.content.title = .plainString(model.title)
     primaryButtonConfiguration.action = { [weak self] in
       self?.didTapPrimaryButton?()
     }
     
     var secondaryButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-    secondaryButtonConfiguration.content.title = .plainString(TKLocales.Onboarding.Buttons.import_existing)
+    secondaryButtonConfiguration.content.title = .plainString(model.subtitle)
     secondaryButtonConfiguration.action = { [weak self] in
       self?.didTapSecondaryButton?()
     }
