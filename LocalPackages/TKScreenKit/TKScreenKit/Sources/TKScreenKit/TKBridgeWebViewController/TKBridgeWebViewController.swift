@@ -84,6 +84,8 @@ open class TKBridgeWebViewController: UIViewController {
     didUpdateUrl()
     
     headerView.closeButton.configuration.action = { [weak self] in
+      self?.webView.scrollView.layer.masksToBounds = true
+      self?.webView.layer.masksToBounds = true
       self?.dismiss(animated: true)
     }
     headerView.backButton.configuration.action = { [weak self] in

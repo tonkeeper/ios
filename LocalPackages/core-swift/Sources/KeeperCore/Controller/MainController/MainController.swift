@@ -12,6 +12,7 @@ public final class MainController {
   }
   
   public var didUpdateNftsAvailability: ((Bool) -> Void)?
+  public var didUpdateBrowserAvailability: ((Bool) -> Void)?
   public var didReceiveTonConnectRequest: ((TonConnect.AppRequest, Wallet, TonConnectApp) -> Void)?
   
   private var walletsStoreObservationToken: ObservationToken?
@@ -82,6 +83,7 @@ public final class MainController {
       case .didAddWallets:
         Task { await observer.startBackgroundUpdate() }
       case .didUpdateActiveWallet:
+        self.didUpdateActiveWallet()
         Task { await observer.updateNfts() }
       default: break
       }
@@ -90,6 +92,7 @@ public final class MainController {
     await tonConnectEventsStore.addObserver(self)
     
     await startBackgroundUpdate()
+    didUpdateActiveWallet()
   }
   
   public func updateNfts() async {}
@@ -154,6 +157,11 @@ public final class MainController {
       return jettonItem
     }
     return nil
+  }
+  
+  private func didUpdateActiveWallet() {
+    let isBrowserAvailable = !walletsStore.activeWallet.isWatchonly
+    didUpdateBrowserAvailability?(isBrowserAvailable)
   }
 }
 
