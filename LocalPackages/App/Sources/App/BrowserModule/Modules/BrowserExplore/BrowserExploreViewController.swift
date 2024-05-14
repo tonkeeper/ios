@@ -69,16 +69,6 @@ extension BrowserExploreViewController: UICollectionViewDelegate {
     default: break
     }
   }
-  
-  func collectionView(_ collectionView: UICollectionView,
-                      didEndDisplayingSupplementaryView view: UICollectionReusableView,
-                      forElementOfKind elementKind: String, at indexPath: IndexPath) {
-    switch elementKind {
-    case .featuredHeaderKind:
-      featuredView.stopSlideShow()
-    default: break
-    }
-  }
 }
 
 // MARK: - Private
@@ -87,9 +77,11 @@ private extension BrowserExploreViewController {
   func setup() {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
-    customView.collectionView.register(CollectionViewSupplementaryContainerView.self,
-                                       forSupplementaryViewOfKind: .featuredHeaderKind,
-                                       withReuseIdentifier: CollectionViewSupplementaryContainerView.reuseIdentifier)
+    customView.collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "ContainerCell")
+    
+    featuredView.didSelectApp = { [weak self] index in
+      self?.viewModel.selectFeaturedApp(index: index)
+    }
   }
   
   func setupBindings() {
@@ -153,7 +145,7 @@ private extension BrowserExploreViewController {
     )
     
     let group: NSCollectionLayoutGroup
-  
+    
     if #available(iOS 16.0, *) {
       group = NSCollectionLayoutGroup.verticalGroup(
         with: groupSize,
@@ -189,37 +181,33 @@ private extension BrowserExploreViewController {
   func featuredSectionLayout(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
     let itemSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .absolute(0)
+      heightDimension: .fractionalWidth(0.46)
     )
     let item = NSCollectionLayoutItem(layoutSize: itemSize)
     item.contentInsets = .init(top: 0, leading: 4, bottom: 0, trailing: 4)
     
     let groupSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .absolute(0)
+      heightDimension: .estimated(50)
     )
     
     let group = NSCollectionLayoutGroup.vertical(layoutSize: groupSize, subitems: [item])
     let section = NSCollectionLayoutSection(group: group)
-    
-    let headerSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .fractionalWidth(0.46)
-    )
-    let header = NSCollectionLayoutBoundarySupplementaryItem(
-      layoutSize: headerSize,
-      elementKind: .featuredHeaderKind,
-      alignment: .top
-    )
-    section.boundarySupplementaryItems = [header]
     return section
   }
   
   func createDataSource() -> DataSource {
-    let dataSource = DataSource(collectionView: customView.collectionView) { [listItemCellConfiguration] collectionView, indexPath, itemIdentifier in
+    let dataSource = DataSource(collectionView: customView.collectionView) { [featuredView, listItemCellConfiguration] collectionView, indexPath, itemIdentifier in
       switch itemIdentifier {
       case let listCellConfiguration as TKUIListItemCell.Configuration:
         return collectionView.dequeueConfiguredReusableCell(using: listItemCellConfiguration, for: indexPath, item: listCellConfiguration)
+      case _ as BrowserExploreFeatureSectionItem:
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "ContainerCell", for: indexPath)
+        cell.contentView.addSubview(featuredView)
+        featuredView.snp.makeConstraints { make in
+          make.edges.equalTo(cell.contentView)
+        }
+        return cell
       default: return nil
       }
     }
@@ -228,14 +216,6 @@ private extension BrowserExploreViewController {
       [weak self, sectionHeaderRegistration, dataSource] collectionView, elementKind, indexPath in
       guard let self else { return nil }
       switch elementKind {
-      case .featuredHeaderKind:
-        self.didMove(toParent: nil)
-        let containerView = collectionView.dequeueReusableSupplementaryView(
-          ofKind: elementKind,
-          withReuseIdentifier: CollectionViewSupplementaryContainerView.reuseIdentifier,
-          for: indexPath)
-        (containerView as? CollectionViewSupplementaryContainerView)?.setContentView(self.featuredView)
-        return containerView
       case BrowserExploreSectionHeaderView.reuseIdentifier:
         let section = dataSource.snapshot().sectionIdentifiers[indexPath.section]
         switch section {
@@ -263,9 +243,4 @@ private extension BrowserExploreViewController {
     
     return dataSource
   }
-}
-
-
-private extension String {
-  static let featuredHeaderKind = "FeaturedHeaderKind"
 }

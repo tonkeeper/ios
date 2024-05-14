@@ -1,6 +1,6 @@
 import Foundation
 
-public struct PopularApp: Codable {
+public struct PopularApp: Codable, Equatable {
   public let name: String?
   public let description: String?
   public let icon: URL?
