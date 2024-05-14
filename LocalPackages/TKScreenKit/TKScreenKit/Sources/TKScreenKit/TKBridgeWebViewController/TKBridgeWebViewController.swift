@@ -86,9 +86,6 @@ open class TKBridgeWebViewController: UIViewController {
     webView.scrollView.layer.masksToBounds = false
     webView.layer.masksToBounds = false
     webView.scrollView.contentInsetAdjustmentBehavior = .never
-    if #available(iOS 16.4, *) {
-      webView.isInspectable = true
-    }
     
     view.addSubview(webView)
     view.addSubview(headerView)
