@@ -69,15 +69,10 @@ private extension TonConnectConnectViewController {
       return headerView
     }
     
-    viewModel.walletPickerView = { walletModel in
+    viewModel.walletPickerView = { model in
       let view = TonConnectConnectWalletButton()
       view.contentView.configure(
-        model: TonConnectConnectWalletButtonContentView.Model(
-          emoji: walletModel.emoji,
-          backgroundColor: walletModel.tintColor.uiColor,
-          walletName: walletModel.name,
-          address: walletModel.address
-        )
+        model: model
       )
       return view
     }

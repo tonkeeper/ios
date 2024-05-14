@@ -17,7 +17,7 @@ public final class MainAssembly {
   let repositoriesAssembly: RepositoriesAssembly
   public let walletAssembly: WalletAssembly
   public let walletUpdateAssembly: WalletsUpdateAssembly
-  let servicesAssembly: ServicesAssembly
+  public let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
   public let formattersAssembly: FormattersAssembly
   let configurationAssembly: ConfigurationAssembly
@@ -311,16 +311,6 @@ public final class MainAssembly {
   public func settingsSecurityController() -> SettingsSecurityController {
     SettingsSecurityController(
       securityStore: storesAssembly.securityStore
-    )
-  }
-  
-  public func tonConnectConnectController(parameters: TonConnectParameters,
-                                          manifest: TonConnectManifest) -> TonConnectConnectController {
-    TonConnectConnectController(
-      parameters: parameters,
-      manifest: manifest,
-      walletsStore: walletAssembly.walletStore,
-      tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
     )
   }
   

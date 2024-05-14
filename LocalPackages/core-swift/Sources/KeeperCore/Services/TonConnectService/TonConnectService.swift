@@ -7,15 +7,28 @@ enum TonConnectServiceError: Swift.Error {
   case incorrectUrl
   case manifestLoadFailed
   case unsupportedWalletKind(walletKind: WalletKind)
+  case incorrectClientId
 }
 
-protocol TonConnectService {
+public protocol TonConnectService {
   func loadTonConnectConfiguration(with deeplink: TonConnectDeeplink) async throws -> (TonConnectParameters, TonConnectManifest)
-  func connect(wallet: Wallet,
-               parameters: TonConnectParameters,
-               manifest: TonConnectManifest) async throws
+  func buildConnectEventSuccessResponse(
+    wallet: Wallet,
+    parameters: TonConnectParameters,
+    manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess
+  func encryptSuccessResponse(
+    _ successResponse: TonConnect.ConnectEventSuccess,
+    parameters: TonConnectParameters,
+    sessionCrypto: TonConnectSessionCrypto) throws -> String
+  func buildReconnectConnectEventSuccessResponse(
+    wallet: Wallet,
+    manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess
+  func storeConnectedApp(wallet: Wallet, sessionCrypto: TonConnectSessionCrypto, parameters: TonConnectParameters, manifest: TonConnectManifest) throws
+  func confirmConnectionRequest(body: String,
+                                sessionCrypto: TonConnectSessionCrypto,
+                                parameters: TonConnectParameters) async throws
   func getConnectedApps(forWallet wallet: Wallet) throws -> TonConnectApps
-  
+  func disconnectApp(_ app: TonConnectApp, wallet: Wallet) throws
   func createEmulateRequestBoc(wallet: Wallet,
                               seqno: UInt64,
                               timeout: UInt64,
@@ -34,6 +47,7 @@ protocol TonConnectService {
   
   func getLastEventId() throws -> String
   func saveLastEventId(_ lastEventId: String) throws
+  func loadManifest(url: URL) async throws -> TonConnectManifest
 }
 
 final class TonConnectServiceImplementation: TonConnectService {
@@ -66,41 +80,70 @@ final class TonConnectServiceImplementation: TonConnectService {
     }
   }
   
-  func connect(wallet: Wallet, 
-               parameters: TonConnectParameters,
-               manifest: TonConnectManifest) async throws {
-    guard wallet.isRegular else { throw
-      TonConnectServiceError.unsupportedWalletKind(
-        walletKind: wallet.identity.kind
-      )
-    }
-    let mnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-    let privateKey = keyPair.privateKey
-    
-    let sessionCrypto = try TonConnectSessionCrypto()
-    let body = try TonConnectResponseBuilder
-        .buildConnectEventSuccesResponse(
-            requestPayloadItems: parameters.requestPayload.items,
-            wallet: wallet,
-            sessionCrypto: sessionCrypto,
-            walletPrivateKey: privateKey,
-            manifest: manifest,
-            clientId: parameters.clientId
+  func buildReconnectConnectEventSuccessResponse(
+    wallet: Wallet,
+    manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess {
+      guard wallet.isRegular else { throw
+        TonConnectServiceError.unsupportedWalletKind(
+          walletKind: wallet.identity.kind
         )
-    let resp = try await apiClient.message(
-        query: .init(client_id: sessionCrypto.sessionId,
-                     to: parameters.clientId, ttl: 300),
-        body: .plainText(.init(stringLiteral: body))
-    )
-    _ = try resp.ok.body.json
-    
+      }
+      let successResponse = try TonConnectResponseBuilder.buildReconnectConnectEventSuccessResponse(
+        wallet: wallet,
+        manifest: manifest
+      )
+      return successResponse
+    }
+  
+  func buildConnectEventSuccessResponse(
+    wallet: Wallet,
+    parameters: TonConnectParameters,
+    manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess {
+      guard wallet.isRegular else { throw
+        TonConnectServiceError.unsupportedWalletKind(
+          walletKind: wallet.identity.kind
+        )
+      }
+      let mnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
+      let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+      let privateKey = keyPair.privateKey
+      let successResponse = try TonConnectResponseBuilder
+          .buildConnectEventSuccesResponse(
+              requestPayloadItems: parameters.requestPayload.items,
+              wallet: wallet,
+              walletPrivateKey: privateKey,
+              manifest: manifest
+          )
+      return successResponse
+  }
+  
+  func encryptSuccessResponse(
+    _ successResponse: TonConnect.ConnectEventSuccess,
+    parameters: TonConnectParameters,
+    sessionCrypto: TonConnectSessionCrypto) throws -> String {
+      let responseData = try JSONEncoder().encode(successResponse)
+      guard let receiverPublicKey = Data(hex: parameters.clientId) else {
+        throw TonConnectServiceError.incorrectClientId
+      }
+      let response = try sessionCrypto.encrypt(
+        message: responseData,
+        receiverPublicKey: receiverPublicKey
+      )
+      let base64Response = response.base64EncodedString()
+      return base64Response
+    }
+  
+  func storeConnectedApp(
+    wallet: Wallet,
+    sessionCrypto: TonConnectSessionCrypto,
+    parameters: TonConnectParameters,
+    manifest: TonConnectManifest) throws {
     let tonConnectApp = TonConnectApp(
       clientId: parameters.clientId,
       manifest: manifest,
       keyPair: sessionCrypto.keyPair
     )
-    
+
     let key = try wallet.address.toRaw()
     if let apps = try? tonConnectAppsVault.loadValue(key: key) {
       try tonConnectAppsVault.saveValue(apps.addApp(tonConnectApp), for: key)
@@ -110,8 +153,26 @@ final class TonConnectServiceImplementation: TonConnectService {
     }
   }
   
+  func confirmConnectionRequest(body: String, 
+                                sessionCrypto: TonConnectSessionCrypto,
+                                parameters: TonConnectParameters) async throws {
+    let resp = try await apiClient.message(
+      query: .init(client_id: sessionCrypto.sessionId,
+                   to: parameters.clientId, ttl: 300),
+      body: .plainText(.init(stringLiteral: body))
+    )
+    _ = try resp.ok.body.json
+  }
+
   func getConnectedApps(forWallet wallet: Wallet) throws -> TonConnectApps {
     try tonConnectAppsVault.loadValue(key: try wallet.address.toRaw())
+  }
+  
+  func disconnectApp(_ app: TonConnectApp, wallet: Wallet) throws {
+    let apps = try getConnectedApps(forWallet: wallet)
+    let updatedApps = apps.removeApp(app)
+    let key = try wallet.address.toRaw()
+    try tonConnectAppsVault.saveValue(updatedApps, for: key)
   }
   
   func cancelRequest(appRequest: TonConnect.AppRequest, app: TonConnectApp) async throws {
@@ -189,6 +250,12 @@ final class TonConnectServiceImplementation: TonConnectService {
   func saveLastEventId(_ lastEventId: String) throws {
     try tonConnectRepository.saveLastEventId(TonConnectLastEventId(lastEventId: lastEventId))
   }
+  
+  func loadManifest(url: URL) async throws -> TonConnectManifest {
+    let (data, _) = try await urlSession.data(from: url)
+    let jsonDecoder = JSONDecoder()
+    return try jsonDecoder.decode(TonConnectManifest.self, from: data)
+  }
 }
 
 private extension TonConnectServiceImplementation {
@@ -233,12 +300,6 @@ private extension TonConnectServiceImplementation {
       version: version,
       clientId: clientId,
       requestPayload: requestPayload)
-  }
-  
-  func loadManifest(url: URL) async throws -> TonConnectManifest {
-    let (data, _) = try await urlSession.data(from: url)
-    let jsonDecoder = JSONDecoder()
-    return try jsonDecoder.decode(TonConnectManifest.self, from: data)
   }
 }
 

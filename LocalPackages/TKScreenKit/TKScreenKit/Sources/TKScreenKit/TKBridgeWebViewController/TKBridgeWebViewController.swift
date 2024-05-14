@@ -10,8 +10,6 @@ open class TKBridgeWebViewController: UIViewController {
   private let userContentController = WKUserContentController()
   private lazy var webView: WKWebView = {
     let configuration = WKWebViewConfiguration()
-    configuration.processPool = WKProcessPool()
-    configuration.websiteDataStore = WKWebsiteDataStore.nonPersistent()
     configuration.userContentController = userContentController
     let webView = WKWebView(frame: .zero, configuration: configuration)
     return webView
@@ -73,6 +71,7 @@ open class TKBridgeWebViewController: UIViewController {
     webView.scrollView.backgroundColor = .Background.page
     webView.isOpaque = false
     webView.navigationDelegate = self
+    webView.uiDelegate = self
     webView.scrollView.layer.masksToBounds = false
     webView.layer.masksToBounds = false
     webView.scrollView.contentInsetAdjustmentBehavior = .never
@@ -157,6 +156,23 @@ extension TKBridgeWebViewController: WKNavigationDelegate {
       didLoadInitialURL = true
     }
     self.url = url
+  }
+  
+  public func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction) async -> WKNavigationActionPolicy {
+    if let url = navigationAction.request.url, let host = url.host,host.contains("t.me") {
+      UIApplication.shared.open(url, options: [:], completionHandler: nil)
+      return .cancel
+    }
+    return .allow
+  }
+}
+
+extension TKBridgeWebViewController: WKUIDelegate {
+  public func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+    if navigationAction.targetFrame == nil {
+      webView.load(navigationAction.request)
+    }
+    return nil
   }
 }
 

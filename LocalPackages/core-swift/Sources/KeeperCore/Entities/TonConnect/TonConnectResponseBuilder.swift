@@ -1,13 +1,29 @@
 import Foundation
 import TonSwift
 
-struct TonConnectResponseBuilder {
+public struct TonConnectResponseBuilder {
+  static func buildReconnectConnectEventSuccessResponse(wallet: Wallet,
+                                                        manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess {
+    let address = try wallet.address
+    
+    let replyItems = [TonConnect.ConnectItemReply.tonAddress(.init(
+      address: address,
+      network: wallet.identity.network,
+      publicKey: try wallet.publicKey,
+      walletStateInit: try wallet.stateInit)
+    )]
+    
+    let successEvent = TonConnect.ConnectEventSuccess(
+      payload: .init(items: replyItems,
+                     device: .init())
+    )
+    return successEvent
+  }
+  
   static func buildConnectEventSuccesResponse(requestPayloadItems: [TonConnectRequestPayload.Item],
                                               wallet: Wallet,
-                                              sessionCrypto: TonConnectSessionCrypto,
                                               walletPrivateKey: TonSwift.PrivateKey,
-                                              manifest: TonConnectManifest,
-                                              clientId: String) throws -> String {
+                                              manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess {
     let address = try wallet.address
     
     let replyItems = try requestPayloadItems.compactMap { item in
@@ -34,16 +50,10 @@ struct TonConnectResponseBuilder {
       payload: .init(items: replyItems,
                      device: .init())
     )
-    let responseData = try JSONEncoder().encode(successEvent)
-    guard let receiverPublicKey = Data(hex: clientId) else { return "" }
-    let response = try sessionCrypto.encrypt(
-      message: responseData,
-      receiverPublicKey: receiverPublicKey
-    )
-    return response.base64EncodedString()
+    return successEvent
   }
-  
-  static func buildSendTransactionResponseSuccess(
+
+  public static func buildSendTransactionResponseSuccess(
     sessionCrypto: TonConnectSessionCrypto,
     boc: String,
     id: String,

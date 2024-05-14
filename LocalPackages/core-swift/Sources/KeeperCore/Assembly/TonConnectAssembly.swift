@@ -53,7 +53,7 @@ public final class TonConnectAssembly {
     TonConnectRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
-  func tonConnectService() -> TonConnectService {
+  public func tonConnectService() -> TonConnectService {
     TonConnectServiceImplementation(
       urlSession: .shared,
       apiClient: apiAssembly.tonConnectAPIClient(),
@@ -64,7 +64,7 @@ public final class TonConnectAssembly {
   }
   
   private weak var _tonConnectAppsStore: TonConnectAppsStore?
-  var tonConnectAppsStore: TonConnectAppsStore {
+  public var tonConnectAppsStore: TonConnectAppsStore {
     if let tonConnectAppsStore = _tonConnectAppsStore {
       return tonConnectAppsStore
     } else {

@@ -287,8 +287,12 @@ private extension MainCoordinator {
             )
           ).createConnectCoordinator(
             router: ViewControllerRouter(rootViewController: router.rootViewController),
+            connector: DefaultTonConnectConnectCoordinatorConnector(
+              tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+            ),
             parameters: parameters,
-            manifest: manifest
+            manifest: manifest,
+            showWalletPicker: true
           )
           
           coordinator.didCancel = { [weak self, weak coordinator] in
