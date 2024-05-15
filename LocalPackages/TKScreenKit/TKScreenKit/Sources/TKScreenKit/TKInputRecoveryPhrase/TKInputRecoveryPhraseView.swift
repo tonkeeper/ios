@@ -48,7 +48,7 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
   var keyboardHeight: CGFloat = 0 {
     didSet {
       if keyboardHeight.isZero {
-        scrollView.contentInset.bottom = 0
+        scrollView.contentInset.bottom = safeAreaInsets.bottom
       } else {
         scrollView.contentInset.bottom = keyboardHeight - safeAreaInsets.bottom
       }
@@ -143,8 +143,18 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
     let scrollViewMaxOrigin = scrollView.contentSize.height
     - scrollView.frame.height
     + scrollView.contentInset.bottom
+    
+    let maxY: CGFloat
+    if let bannerView {
+      maxY = bannerView.frame.maxY - .afterWordInputSpacing
+    } else {
+      maxY = titleDescriptionView.frame.maxY
+    }
+    
     let originY = min(
-      convertedFrame.origin.y - titleDescriptionView.frame.maxY - convertedFrame.size.height,
+      convertedFrame.origin.y
+      - maxY
+      - convertedFrame.size.height,
       scrollViewMaxOrigin
     )
     UIView.animate(withDuration: animationDuration) {
@@ -209,7 +219,6 @@ private extension TKInputRecoveryPhraseView {
 }
 
 private extension CGFloat {
-  static let buttonsContainerSpacing: CGFloat = 16
   static let topSpacing: CGFloat = 44
   static let afterWordInputSpacing: CGFloat = 16
 }
