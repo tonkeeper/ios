@@ -125,7 +125,7 @@ public final class SendV3Controller {
         }) else { return "" }
         
         guard let rate = jettonBalance.rates[currency] else { return ""}
-        let converted = RateConverter().convert(amount: amount, amountFractionLength: TonInfo.fractionDigits, rate: rate)
+        let converted = RateConverter().convert(amount: amount, amountFractionLength: jettonItem.jettonInfo.fractionDigits, rate: rate)
         let formatted = amountFormatter.formatAmount(
           converted.amount,
           fractionDigits: converted.fractionLength,
