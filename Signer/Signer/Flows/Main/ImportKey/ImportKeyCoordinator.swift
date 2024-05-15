@@ -61,6 +61,7 @@ private extension ImportKeyCoordinator {
       defaultName: nil
     )
     module.view.setupBackButton()
+    module.view.presentationMode = .sheet
     module.output.didEnterWalletName = { [weak self] walletName in
       self?.openEnterPassword(phrase: phrase, name: walletName)
     }

@@ -2,6 +2,26 @@ import UIKit
 import TKUIKit
 
 final class EditWalletNameViewController: GenericViewViewController<EditWalletNameView>, KeyboardObserving {
+  enum PresentationMode {
+    case sheet
+    case fullscreen
+    
+    var navigationBarBottomPadding: CGFloat {
+      switch self {
+      case .fullscreen:
+        return 44
+      case .sheet:
+        return 0
+      }
+    }
+  }
+  
+  var presentationMode: PresentationMode = .fullscreen {
+    didSet {
+      customView.titleDescriptionViewTopPadding = presentationMode.navigationBarBottomPadding
+    }
+  }
+  
   private let viewModel: EditWalletNameViewModel
   
   init(viewModel: EditWalletNameViewModel) {
@@ -16,6 +36,7 @@ final class EditWalletNameViewController: GenericViewViewController<EditWalletNa
   override func viewDidLoad() {
     super.viewDidLoad()
     
+    customView.titleDescriptionViewTopPadding = presentationMode.navigationBarBottomPadding
     setupBinding()
     viewModel.viewDidLoad()
   }

@@ -70,6 +70,7 @@ private extension KeyDetailsCoordinator {
       try? signerCoreAssembly.keysEditController().updateWalletKeyName(walletKey: walletKey, name: name)
       self?.router.dismiss()
     }
+    module.view.presentationMode = .sheet
     
     let navigationController = TKNavigationController(rootViewController: module.view)
     navigationController.configureTransparentAppearance()

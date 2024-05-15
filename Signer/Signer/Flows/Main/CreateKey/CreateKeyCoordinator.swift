@@ -30,6 +30,7 @@ private extension CreateKeyCoordinator {
     module.view.setupLeftCloseButton { [weak self] in
       self?.didFinish?()
     }
+    module.view.presentationMode = .sheet
     module.output.didEnterWalletName = { [weak self] walletName in
       self?.openEnterPassword(name: walletName)
     }

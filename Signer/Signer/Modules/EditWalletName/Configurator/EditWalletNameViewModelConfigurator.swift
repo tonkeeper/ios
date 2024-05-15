@@ -5,6 +5,7 @@ protocol EditWalletNameViewModelConfigurator: AnyObject {
   var continueButtonTitle: String { get }
   
   func handleContinueButtonTapped() async
+  func isContinueButtonEnabledOnStart() -> Bool
 }
 
 final class CreateEditWalletNameViewModelConfigurator: EditWalletNameViewModelConfigurator {
@@ -15,6 +16,10 @@ final class CreateEditWalletNameViewModelConfigurator: EditWalletNameViewModelCo
   func handleContinueButtonTapped() async {
     return
   }
+  
+  func isContinueButtonEnabledOnStart() -> Bool {
+    return false
+  }
 }
 
 final class EditEditWalletNameViewModelConfigurator: EditWalletNameViewModelConfigurator {
@@ -24,5 +29,9 @@ final class EditEditWalletNameViewModelConfigurator: EditWalletNameViewModelConf
   
   func handleContinueButtonTapped() async {
     return
+  }
+  
+  func isContinueButtonEnabledOnStart() -> Bool {
+    return true
   }
 }
