@@ -233,6 +233,15 @@ public extension UIImage {
   }
 }
 
+public extension UIImage.TKUIKit.Icons.Size16 {
+  static var sliders: UIImage {
+    .imageWithName("Icons/16/ic-sliders-16")
+  }
+  static var swapVertical: UIImage {
+    .imageWithName("Icons/16/ic-swap-vertical-16")
+  }
+}
+
 public extension UIImage.TKUIKit.Icons.Size28 {
   static var radioButtonEnabled: UIImage {
     .imageWithName("Icons/28/ic-radio-button-enabled")

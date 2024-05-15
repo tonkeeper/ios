@@ -164,6 +164,32 @@ private extension WalletCoordinator {
     router.present(navigationController)
   }
   
+  func openSwap(wallet: Wallet) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
+    let coordinator = SwapModule(
+      dependencies: SwapModule.Dependencies(
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly
+      )
+    ).createSwapCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      wallet: wallet
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+      
+    self.router.present(navigationController)
+  }
+  
   func openBuy(wallet: Wallet) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
@@ -273,6 +299,10 @@ private extension WalletCoordinator {
     
     module.output.didTapScan = { [weak self] in
       self?.didTapScan?()
+    }
+    
+    module.output.didTapSwap = { [weak self] wallet in
+      self?.openSwap(wallet: wallet)
     }
     
     module.output.didTapBuy = { [weak self] wallet in

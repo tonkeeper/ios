@@ -406,6 +406,12 @@ public final class MainAssembly {
     )
   }
   
+  public func swapController() -> SwapController {
+    SwapController(
+      amountFormatter: formattersAssembly.amountFormatter
+    )
+  }
+  
   public func buyListController(wallet: Wallet,
                                 isMarketRegionPickerAvailable: @escaping () async -> Bool) -> BuyListController {
     BuyListController(

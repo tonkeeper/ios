@@ -3,6 +3,7 @@ import SnapKit
 import TKCore
 
 final class ServiceInfoContainerView: UIView {
+  
   private let iconImageView = UIImageView()
   private let titleLabel = UILabel()
   private let subtitleLabel = UILabel()
@@ -57,7 +58,7 @@ final class ServiceInfoContainerView: UIView {
     subtitleLabel.attributedText = configuration.subtitle
     setIconImage(configuration.image)
     
-    setNeedsDisplay()
+    setNeedsLayout()
   }
   
   private func setIconImage(_ imageConfiguration: Configuration.Image) {
