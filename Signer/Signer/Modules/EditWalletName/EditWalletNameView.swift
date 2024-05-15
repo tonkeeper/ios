@@ -15,8 +15,10 @@ final class EditWalletNameView: UIView {
     return view
   }()
   
-  let walletNameTextField: TKTextField = {
-    let textInputControl = TKTextInputTextFieldControl()
+  let walletNameInputControl = TKTextInputTextFieldControl()
+  
+  lazy var walletNameTextField: TKTextField = {
+    let textInputControl = walletNameInputControl
     textInputControl.autocapitalizationType = .sentences
     return TKTextField(
       textFieldInputView: TKTextFieldInputView(
@@ -73,7 +75,7 @@ final class EditWalletNameView: UIView {
 private extension EditWalletNameView {
   func setup() {
     backgroundColor = .Background.page
-   
+    
     walletNameTextFieldContainer.padding = .textFieldPadding
     continueButtonContainer.padding = .buttonPadding
     
@@ -96,7 +98,7 @@ private extension EditWalletNameView {
       .bottomAnchor
       .constraint(equalTo: safeAreaLayoutGuide.bottomAnchor)
     continueButtonContainerBottomConstraint?.isActive = true
-
+    
     continueButtonContainerBottomConstraint = continueButtonContainer
       .bottomAnchor
       .constraint(equalTo: bottomAnchor)
