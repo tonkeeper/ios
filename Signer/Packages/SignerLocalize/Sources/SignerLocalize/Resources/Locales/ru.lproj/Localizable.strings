@@ -83,3 +83,8 @@
 "sign_transaction_qr.caption" = "После сканирования транзакция будет отправлена в сеть.";
 "sign_transaction_qr.signed_transaction" = "Подписанная транзакция";
 "sign_transaction_qr.done" = "Готово";
+
+"sign_out.button.title" = "Выйти";
+"sign_out.alert.title" = "Выйти?";
+"sign_out.alert.caption" = "Доступ к кошельку будет отключён. Убедитесь, что вы сохранили секретный ключ.";
+"sign_out.alert.button.sign_out" = "Выйти";

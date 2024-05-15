@@ -20,7 +20,11 @@ public struct TKOnboardingModel {
   public let primaryButtonTitle: String
   public let secondaryButtonTitle: String
   
-  public init(title: String, subtitle: String, coverImage: UIImage?, primaryButtonTitle: String, secondaryButtonTitle: String) {
+  public init(title: String, 
+              subtitle: String,
+              coverImage: UIImage?,
+              primaryButtonTitle: String,
+              secondaryButtonTitle: String) {
     self.title = title
     self.subtitle = subtitle
     self.coverImage = coverImage
@@ -64,13 +68,13 @@ private extension TKOnboardingViewModelImplementation {
     )
     
     var primaryButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    primaryButtonConfiguration.content.title = .plainString(model.title)
+    primaryButtonConfiguration.content.title = .plainString(model.primaryButtonTitle)
     primaryButtonConfiguration.action = { [weak self] in
       self?.didTapPrimaryButton?()
     }
     
     var secondaryButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-    secondaryButtonConfiguration.content.title = .plainString(model.subtitle)
+    secondaryButtonConfiguration.content.title = .plainString(model.secondaryButtonTitle)
     secondaryButtonConfiguration.action = { [weak self] in
       self?.didTapSecondaryButton?()
     }

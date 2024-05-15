@@ -77,8 +77,11 @@ private extension RootCoordinator {
       self?.openMain(deeplink: deeplink)
     }
     enterPasswordCoodinator.didSignOut = { [weak self, unowned enterPasswordCoodinator] in
-      self?.removeChild(enterPasswordCoodinator)
-      self?.openOnboarding()
+      do {
+        try self?.signerCoreAssembly.servicesAssembly.signOutService().signOut()
+        self?.removeChild(enterPasswordCoodinator)
+        self?.openOnboarding()
+      } catch {}
     }
     addChild(enterPasswordCoodinator)
     enterPasswordCoodinator.start()

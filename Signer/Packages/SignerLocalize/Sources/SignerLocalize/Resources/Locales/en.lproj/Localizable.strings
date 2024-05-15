@@ -83,3 +83,8 @@
 "sign_transaction_qr.signed_transaction" = "Signed Transaction";
 "sign_transaction_qr.done" = "Done";
 
+"sign_out.button.title" = "Sign Out";
+"sign_out.alert.title" = "Sign Out?";
+"sign_out.alert.caption" = "This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase.";
+"sign_out.alert.button.sign_out" = "Sign Out";
+

@@ -3,7 +3,7 @@ import Foundation
 public final class Assembly {
   let coreAssembly: CoreAssembly
   public lazy var repositoriesAssembly = RepositoriesAssembly(coreAssembly: coreAssembly)
-  private lazy var servicesAssembly = ServicesAssembly(
+  public lazy var servicesAssembly = ServicesAssembly(
     repositoriesAssembly: repositoriesAssembly,
     coreAssembly: coreAssembly
   )
