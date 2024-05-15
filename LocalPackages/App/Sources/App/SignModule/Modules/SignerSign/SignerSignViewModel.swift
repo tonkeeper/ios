@@ -154,7 +154,7 @@ private extension SignerSignViewModelImplementation {
       qrCodeModel: TKFancyQRCodeView.Model(
         images: qrCodeImages,
         topString: "TRANSACTION",
-        bottomString: signerSignController.wallet.metaData.label
+        bottomLeftString: signerSignController.wallet.metaData.label
       )
     )
   }

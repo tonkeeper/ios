@@ -39,13 +39,13 @@ public final class TKFancyQRCodeView: UIView, ConfigurableView {
   public struct Model {
     public let images: [UIImage]
     public let topString: String?
-    public let bottomLeftString: String?
+    public let bottomLeftString: String
     public let bottomRightString: String?
     
     public init(images: [UIImage],
                 topString: String?,
-                bottomLeftString: String?,
-                bottomRightString: String?) {
+                bottomLeftString: String,
+                bottomRightString: String? = nil) {
       self.images = images
       self.topString = topString
       self.bottomLeftString = bottomLeftString
@@ -65,14 +65,12 @@ public final class TKFancyQRCodeView: UIView, ConfigurableView {
     }
     topLabel.text = model.topString?.uppercased()
     bottomLabelStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-    if let leftString = model.bottomLeftString {
-      bottomLabelStackView.addArrangedSubview(bottomLeftLabel)
-    }
-    if let rightString = model.bottomRightString {
+    bottomLabelStackView.addArrangedSubview(bottomLeftLabel)
+    if model.bottomRightString != nil {
       bottomLabelStackView.addArrangedSubview(bottomRightLabel)
     }
   
-    bottomLeftLabel.text = model.bottomLeftString?.uppercased()
+    bottomLeftLabel.text = model.bottomLeftString.uppercased()
     bottomRightLabel.text = model.bottomRightString?.uppercased()
     setNeedsLayout()
   }
