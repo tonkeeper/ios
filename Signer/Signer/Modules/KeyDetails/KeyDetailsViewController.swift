@@ -130,6 +130,7 @@ private extension KeyDetailsViewController {
         }
       )
     )
+    alertController.overrideUserInterfaceStyle = ThemeManager.shared.theme.alertUserInterfaceStyle
     present(alertController, animated: true)
   }
   
