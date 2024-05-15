@@ -92,7 +92,7 @@
 "wallet_buttons.send" = "Отправить";
 "wallet_buttons.receive" = "Получить";
 "wallet_buttons.scan" = "Сканировать";
-"wallet_buttons.buy" = "Купить TON";
+"wallet_buttons.buy" = "Купить/продать";
 "wallet_buttons.swap" = "Обменять";
 "wallet_buttons.stake" = "Застейкать";
 

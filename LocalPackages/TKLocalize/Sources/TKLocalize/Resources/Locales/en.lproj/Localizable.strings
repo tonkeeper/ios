@@ -92,7 +92,7 @@
 "wallet_buttons.send" = "Send";
 "wallet_buttons.receive" = "Receive";
 "wallet_buttons.scan" = "Scan";
-"wallet_buttons.buy" = "Buy TON";
+"wallet_buttons.buy" = "Buy or Sell";
 "wallet_buttons.swap" = "Swap";
 "wallet_buttons.stake" = "Stake";
 
