@@ -207,7 +207,6 @@
 		C313EC0E2B50138D009DF825 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
 		C32C7C492BCD111100785B6A /* TonkeeperIntents.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperIntents.entitlements; sourceTree = "<group>"; };
 		C34C705F2BE1151300143AC8 /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "core-swift"; sourceTree = "<group>"; };
-		C376714B2BF1C172003CD9CB /* ton-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "ton-swift"; path = "../ton-swift"; sourceTree = "<group>"; };
 		C3777E962BE11C9C00DC3C92 /* TKScreenKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKScreenKit; sourceTree = "<group>"; };
 		C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseConfigurator.swift; sourceTree = "<group>"; };
 		C392CE022BE11B0300E0C473 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKit; sourceTree = "<group>"; };
@@ -403,7 +402,6 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
-				C376714B2BF1C172003CD9CB /* ton-swift */,
 				C313EC0A2B50138D009DF825 /* LocalPackages */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,
