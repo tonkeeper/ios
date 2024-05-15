@@ -46,8 +46,6 @@ private extension ScannerViewController {
       self?.viewModel.didTapFlashlightButton(isToggled: isToggled)
     }
     
-    customView.titleLabel.text = "Scan QR code"
-    
     let swipeDownButton = QRScannerSwipeDownButton()
     swipeDownButton.addTarget(self, action: #selector(didTapSwipeDownButton), for: .touchUpInside)
     navigationItem.leftBarButtonItem = UIBarButtonItem(customView: swipeDownButton)

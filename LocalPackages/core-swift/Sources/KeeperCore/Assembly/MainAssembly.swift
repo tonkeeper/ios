@@ -71,7 +71,7 @@ public final class MainAssembly {
           TonDeeplinkParser(),
         ]
       ),
-      api: apiAssembly.api
+      apiProvider: apiAssembly.apiProvider
     )
   }
   
@@ -157,7 +157,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -174,7 +174,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -192,7 +192,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -239,6 +239,7 @@ public final class MainAssembly {
       loader: loadersAssembly.chartLoader,
       chartService: servicesAssembly.chartService(),
       currencyStore: storesAssembly.currencyStore,
+      walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
     )
   }

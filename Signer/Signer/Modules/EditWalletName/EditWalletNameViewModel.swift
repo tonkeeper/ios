@@ -1,5 +1,6 @@
 import Foundation
 import TKUIKit
+import SignerLocalize
 
 protocol EditWalletNameViewModel: AnyObject {
   var didUpdateTitleDescription: ((TKTitleDescriptionView.Model) -> Void)? { get set }
@@ -37,12 +38,12 @@ final class EditWalletNameViewModelImplementation: EditWalletNameViewModel, Edit
   
   func viewDidLoad() {
     let titleDescriptionModel: TKTitleDescriptionView.Model = .init(
-      title: "Name your Key",
-      bottomDescription: "It will simplify the search for the necessary key in the list of keys."
+      title: SignerLocalize.NameKey.title,
+      bottomDescription: SignerLocalize.NameKey.caption
     )
     didUpdateTitleDescription?(titleDescriptionModel)
     
-    didUpdateWalletNameTextFieldPlaceholder?("Name")
+    didUpdateWalletNameTextFieldPlaceholder?(SignerLocalize.NameKey.Textfield.placeholder)
     didUpdateWalletNameTextFieldValue?(defaultName)
     
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(

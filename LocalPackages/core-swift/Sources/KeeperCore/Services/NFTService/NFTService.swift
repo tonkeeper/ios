@@ -2,45 +2,43 @@ import Foundation
 import TonSwift
 
 protocol NFTService {
-  func loadNFTs(addresses: [Address]) async throws -> [Address: NFT]
-  func getNFTs() throws -> [Address: NFT]
-  func getNFT(address: Address) throws -> NFT
-  func saveNFT(nft: NFT) throws
+  func loadNFTs(addresses: [Address], isTestnet: Bool) async throws -> [Address: NFT]
+  func getNFT(address: Address, isTestnet: Bool) throws -> NFT
+  func saveNFT(nft: NFT, isTestnet: Bool) throws
 }
 
 final class NFTServiceImplementation: NFTService {
-  private let api: API
+  private let apiProvider: APIProvider
   private let nftRepository: NFTRepository
   
-  init(api: API, nftRepository: NFTRepository) {
-    self.api = api
+  init(apiProvider: APIProvider, nftRepository: NFTRepository) {
+    self.apiProvider = apiProvider
     self.nftRepository = nftRepository
   }
   
-  func loadNFTs(addresses: [Address]) async throws -> [Address: NFT] {
-    let nfts = try await api.getNftItemsByAddresses(addresses)
+  func loadNFTs(addresses: [Address], isTestnet: Bool) async throws -> [Address: NFT] {
+    let nfts = try await apiProvider.api(isTestnet).getNftItemsByAddresses(addresses)
     var result = [Address: NFT]()
     nfts.forEach {
-      try? nftRepository.saveNFT($0, key: $0.address.toRaw())
+      try? nftRepository.saveNFT(
+        $0,
+        key: FriendlyAddress(address: $0.address, testOnly: isTestnet, bounceable: true).toShort()
+      )
       result[$0.address] = $0
     }
     return result
   }
-  
-  func getNFTs() throws -> [Address: NFT] {
-    let nfts = nftRepository.getNFTs()
-    var result = [Address: NFT]()
-    nfts.forEach {
-      result[$0.address] = $0
-    }
-    return result
+
+  func getNFT(address: Address, isTestnet: Bool) throws -> NFT {
+    try nftRepository.getNFT(
+      FriendlyAddress(address: address, testOnly: isTestnet, bounceable: true).toShort()
+    )
   }
   
-  func getNFT(address: Address) throws -> NFT {
-    try nftRepository.getNFT(address.toRaw())
-  }
-  
-  func saveNFT(nft: NFT) throws {
-    try nftRepository.saveNFT(nft, key: nft.address.toRaw())
+  func saveNFT(nft: NFT, isTestnet: Bool) throws {
+    try nftRepository.saveNFT(
+      nft,
+      key: FriendlyAddress(address: nft.address, testOnly: isTestnet, bounceable: true).toShort()
+    )
   }
 }

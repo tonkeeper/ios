@@ -1,8 +1,10 @@
 import Foundation
 import TKUIKit
+import SignerLocalize
 
 protocol PasswordInputViewModel: AnyObject {
   var didUpdateTitle: ((TKTitleDescriptionView.Model) -> Void)? { get set }
+  var didUpdateTextFieldCaption: ((String?) -> Void)? { get set }
   var didUpdateContinueButton: ((TKButton.Configuration) -> Void)? { get set }
   var didUpdateIsContinueButtonEnabled: ((Bool) -> Void)? { get set }
   var didUpdateIsValidInput: ((Bool) -> Void)? { get set }
@@ -22,6 +24,7 @@ protocol PasswordInputModuleOutput: AnyObject {
 
 final class PasswordInputViewModelImplementation: PasswordInputViewModel, PasswordInputModuleOutput {
   var didUpdateTitle: ((TKTitleDescriptionView.Model) -> Void)?
+  var didUpdateTextFieldCaption: ((String?) -> Void)?
   var didUpdateContinueButton: ((TKButton.Configuration) -> Void)?
   var didUpdateIsContinueButtonEnabled: ((Bool) -> Void)?
   var didUpdateIsValidInput: ((Bool) -> Void)?
@@ -42,20 +45,21 @@ final class PasswordInputViewModelImplementation: PasswordInputViewModel, Passwo
       title: configurator.title
     )
     didUpdateTitle?(titleDescriptionModel)
+    didUpdateTextFieldCaption?(configurator.textFieldCaption)
     
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
       category: .primary,
       size: .large
     )
-    continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Continue"))
+    continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(SignerLocalize.Actions.continue_action))
     continueButtonConfiguration.action = { [weak self] in
       guard let self = self else { return }
-      let isValid = self.configurator.validateInput(self.input)
+      let isValid = self.configurator.validateInput(self.input.hashed)
       guard isValid else {
         self.didUpdateIsValidInput?(isValid)
         return
       }
-      self.didEnterPassword?(input)
+      self.didEnterPassword?(input.hashed)
     }
     didUpdateContinueButton?(continueButtonConfiguration)
     

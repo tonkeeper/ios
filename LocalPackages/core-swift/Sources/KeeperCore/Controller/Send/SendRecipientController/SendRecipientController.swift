@@ -85,7 +85,7 @@ public final class SendRecipientController {
           isMemoRequired: knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false
         )
         isValid = true
-      } else if let domain = try? await dnsService.resolveDomainName(input) {
+      } else if let domain = try? await dnsService.resolveDomainName(input, isTestnet: false) {
         inputRecipient = Recipient(
           recipientAddress: .domain(domain),
           isMemoRequired: knownAccounts.first(where: { $0.address == domain.friendlyAddress.address })?.requireMemo ?? false

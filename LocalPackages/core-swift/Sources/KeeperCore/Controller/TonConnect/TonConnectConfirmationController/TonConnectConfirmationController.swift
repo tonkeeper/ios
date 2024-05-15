@@ -51,21 +51,21 @@ public final class TonConnectConfirmationController {
   
   public func confirm() async throws {
     guard let parameters = appRequest.params.first else { return }
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
     let boc = try await tonConnectService.createConfirmTransactionBoc(
       wallet: wallet,
       seqno: seqno,
       parameters: parameters
     )
     
-    try await sendService.sendTransaction(boc: boc)
+    try await sendService.sendTransaction(boc: boc, wallet: wallet)
     try await tonConnectService.confirmRequest(boc: boc, appRequest: appRequest, app: app)
   }
 }
 
 private extension TonConnectConfirmationController {
   func emulateAppRequest(appRequestParam: TonConnect.AppRequest.Param) async throws -> Model {
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
     let boc = try await tonConnectService.createEmulateRequestBoc(
       wallet: wallet,
       seqno: seqno,
@@ -74,7 +74,7 @@ private extension TonConnectConfirmationController {
     
     let currency = await currencyStore.getActiveCurrency()
     let rates = ratesStore.getRates(jettons: []).ton.first(where: { $0.currency == currency })
-    let transactionInfo = try await sendService.loadTransactionInfo(boc: boc)
+    let transactionInfo = try await sendService.loadTransactionInfo(boc: boc, wallet: wallet)
     let event = try AccountEvent(accountEvent: transactionInfo.event)
     let nfts = try await loadEventNFTs(event: event)
     
@@ -89,7 +89,7 @@ private extension TonConnectConfirmationController {
   
   func createRequestTransactionBoc(parameters: TonConnect.AppRequest.Param,
                                    signClosure: (WalletTransfer) async throws -> Data) async throws  -> String{
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
     let payloads = parameters.messages.map { message in
         TonConnectTransferMessageBuilder.Payload(
             value: BigInt(integerLiteral: message.amount),
@@ -114,12 +114,12 @@ private extension TonConnectConfirmationController {
         nftAddressesToLoad.insert(nftItemTransfer.nftAddress)
       case .nftPurchase(let nftPurchase):
         nfts[nftPurchase.nft.address] = nftPurchase.nft
-        try? nftService.saveNFT(nft: nftPurchase.nft)
+        try? nftService.saveNFT(nft: nftPurchase.nft, isTestnet: wallet.isTestnet)
       default: continue
       }
     }
     
-    if let loadedNFTs = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad)) {
+    if let loadedNFTs = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad), isTestnet: wallet.isTestnet) {
       nfts.merge(loadedNFTs, uniquingKeysWith: { $1 })
     }
     

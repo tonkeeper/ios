@@ -4,6 +4,7 @@ import CoreComponents
 public protocol PasswordRepository {
   func savePassword(_ password: String) throws
   func getPassword() throws -> String
+  func deletePassword() throws
 }
 
 struct PasswordRepositoryImplementation: PasswordRepository {
@@ -20,5 +21,9 @@ struct PasswordRepositoryImplementation: PasswordRepository {
   
   func getPassword() throws -> String {
     try passwordVault.load()
+  }
+  
+  func deletePassword() throws {
+    try passwordVault.delete()
   }
 }

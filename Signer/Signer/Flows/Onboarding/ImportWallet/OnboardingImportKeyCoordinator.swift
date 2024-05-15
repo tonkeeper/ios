@@ -2,6 +2,7 @@ import UIKit
 import TKScreenKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
 
 final class OnboardingImportKeyCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -24,8 +25,22 @@ final class OnboardingImportKeyCoordinator: RouterCoordinator<NavigationControll
 private extension OnboardingImportKeyCoordinator {
   func openEnterRecoveryPhrase() {
     let module = TKInputRecoveryPhraseAssembly.module(
+      title: SignerLocalize.RecoveryInput.title,
+      caption: SignerLocalize.RecoveryInput.caption,
+      continueButtonTitle: SignerLocalize.Actions.continue_action,
+      pasteButtonTitle: SignerLocalize.Actions.paste,
       validator: InputRecoveryPhraseValidator(),
-      suggestsProvider: InputRecoveryPhraseSuggestsProvider()
+      suggestsProvider: InputRecoveryPhraseSuggestsProvider(),
+      bannerViewProvider: {
+        let view = WarningBannerView()
+        view.configure(
+          model: WarningBannerView.Model(
+            text: SignerLocalize.RecoveryInput.Banner.text,
+            image: .TKUIKit.Icons.Size28.exclamationmarkTriangle
+          )
+        )
+        return view
+      }
     )
     module.viewController.setupBackButton()
     module.output.didInputRecoveryPhrase = { [weak self] recoveryPhrase, completion in
@@ -42,7 +57,8 @@ private extension OnboardingImportKeyCoordinator {
     let coordinator = CreatePasswordCoordinator(
       router: router,
       showKeyboardOnAppear: true,
-      showAsRoot: false
+      showAsRoot: false,
+      isChangePassword: false
     )
     coordinator.didFinish = { [weak self, unowned coordinator] in
       self?.removeChild(coordinator)
@@ -69,11 +85,13 @@ private extension OnboardingImportKeyCoordinator {
   }
   
   func createKey(phrase: [String], password: String, name: String) {
-    let createPasswordController = assembly.passwordAssembly.passwordCreateController()
     let keysAddController = assembly.keysAddController()
     do {
-      try createPasswordController.createPassword(password)
-      try keysAddController.importWalletKey(phrase: phrase, name: name)
+      try keysAddController.importWalletKey(
+        phrase: phrase,
+        name: name,
+        password: password
+      )
       didImportKey?()
     } catch {
       print("Log: Key import failed, error \(error)")

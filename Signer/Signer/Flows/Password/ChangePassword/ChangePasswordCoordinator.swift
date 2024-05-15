@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 import SignerCore
+import SignerLocalize
 
 final class ChangePasswordCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
@@ -21,11 +22,12 @@ final class ChangePasswordCoordinator: RouterCoordinator<NavigationControllerRou
 private extension ChangePasswordCoordinator {
   func openEnterCurrentPassword() {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
-      passwordRepository: assembly.repositoriesAssembly.passwordRepository()
+      mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
+      title: SignerLocalize.Password.Change.EnterCurrent.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
-    module.output.didEnterPassword = { [weak self] _ in
-      self?.openSetNewPassword()
+    module.output.didEnterPassword = { [weak self] password in
+      self?.openSetNewPassword(oldPassword: password)
     }
     
     module.view.setupLeftCloseButton { [weak self, weak view = module.view] in
@@ -38,12 +40,13 @@ private extension ChangePasswordCoordinator {
                 onPopClosures: {})
   }
   
-  func openSetNewPassword() {
+  func openSetNewPassword(oldPassword: String) {
     let coordinator = CreatePasswordCoordinator(router: router,
                                                 showKeyboardOnAppear: true,
-                                                showAsRoot: true)
+                                                showAsRoot: true,
+                                                isChangePassword: true)
     coordinator.didCreatePassword = { [weak self] password in
-      self?.setNewPassword(password)
+      self?.setNewPassword(oldPassword: oldPassword, newPassword: password)
     }
     
     coordinator.didFinish = { [weak self, unowned coordinator] in
@@ -54,12 +57,14 @@ private extension ChangePasswordCoordinator {
     coordinator.start()
   }
   
-  func setNewPassword(_ newPassword: String) {
-    let createPasswordController = assembly.passwordAssembly.passwordCreateController()
+  func setNewPassword(oldPassword: String, newPassword: String) {
+    let mnemonicsRepository = assembly.repositoriesAssembly.mnemonicsRepository()
     do {
-      try createPasswordController.createPassword(newPassword)
+      try mnemonicsRepository.changePassword(oldPassword: oldPassword, newPassword: newPassword)
       didFinish?()
-//      ToastPresenter.showToast(configuration: .init(title: "Password changed"))
-    } catch {}
+      ToastPresenter.showToast(configuration: .Signer.passwordChanged)
+    } catch {
+      ToastPresenter.showToast(configuration: .Signer.passwordChangeFailed)
+    }
   }
 }

@@ -123,23 +123,29 @@ private extension WalletsListViewModelImplementation {
   func createListItem(item: WalletListController.ItemModel,
                       isHighlightable: Bool) -> TKUIListItemCell.Configuration {
     let tagModel: TKUITagView.Configuration?
-    switch item.walletModel.walletType {
-    case .regular:
+    switch (item.walletModel.walletType, item.walletModel.isTestnet) {
+    case (.regular, false):
       tagModel = nil
-    case .watchOnly:
+    case (.regular, true):
+      tagModel = TKUITagView.Configuration(
+        text: "TESTNET",
+        textColor: .Text.secondary,
+        backgroundColor: .Background.contentTint
+      )
+    case (.watchOnly, _):
       tagModel = TKUITagView.Configuration(
         text: TKLocales.WalletTags.watch_only,
         textColor: .Text.secondary,
         backgroundColor: .Background.contentTint
       )
-    case .external:
+    case (.external, _):
       tagModel = TKUITagView.Configuration(
         text: "SIGNER",
         textColor: .Text.secondary,
         backgroundColor: .Background.contentTint
       )
     }
-    
+
     let contentConfiguration = TKUIListItemContentView.Configuration(
       leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
         title: item.walletModel.label.withTextStyle(.label1, color: .Text.primary, alignment: .left),

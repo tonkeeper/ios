@@ -1,5 +1,6 @@
 import UIKit
 import SnapKit
+import SignerLocalize
 
 final class SwipeControl: UIView {
   
@@ -81,7 +82,7 @@ private extension SwipeControl {
     
     setupConstraints()
     
-    gradientLabel.text = "Slide to Sign"
+    gradientLabel.text = SignerLocalize.SignTransaction.slide_to_sign
   }
   
   func setupConstraints() {

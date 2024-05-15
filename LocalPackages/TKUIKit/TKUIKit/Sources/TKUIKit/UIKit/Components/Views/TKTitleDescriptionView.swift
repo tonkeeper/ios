@@ -1,4 +1,5 @@
 import UIKit
+import SnapKit
 
 public final class TKTitleDescriptionView: UIView, ConfigurableView {
   
@@ -24,11 +25,12 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
   
   public var padding: NSDirectionalEdgeInsets = .zero {
     didSet {
-      stackViewTopAnchor?.constant = padding.top
-      stackViewLeftAnchor?.constant = padding.leading
-      stackViewBottomAnchor?.constant = -padding.bottom
-      stackViewRightAnchor?.constant = -padding.trailing
-      stackViewWidthAnchor?.constant = -(padding.leading + padding.trailing)
+      stackView.snp.remakeConstraints { make in
+        make.left.equalTo(self).offset(padding.leading)
+        make.bottom.equalTo(self).offset(-padding.bottom)
+        make.right.equalTo(self).offset(-padding.trailing)
+        make.top.equalTo(self).offset(padding.top)
+      }
     }
   }
   
@@ -77,22 +79,39 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
     
     if let topDescription = model.topDescription {
       let topDescriptionLabel = UILabel()
+      topDescriptionLabel.setContentHuggingPriority(.required, for: .vertical)
       topDescriptionLabel.numberOfLines = 0
       topDescriptionLabel.attributedText = topDescription
-        .withTextStyle(.body1, color: .Text.secondary, alignment: .center)
+        .withTextStyle(
+          .body1,
+          color: .Text.secondary,
+          alignment: .center,
+          lineBreakMode: .byWordWrapping
+        )
       stackView.addArrangedSubview(topDescriptionLabel)
       stackView.setCustomSpacing(4, after: topDescriptionLabel)
     }
     
     titleLabel.attributedText = model.title
-      .withTextStyle(size.titleTextStyle, color: .Text.primary, alignment: .center, lineBreakMode: .byWordWrapping)
+      .withTextStyle(
+        size.titleTextStyle,
+        color: .Text.primary,
+        alignment: .center,
+        lineBreakMode: .byWordWrapping
+      )
     stackView.addArrangedSubview(titleLabel)
     
     if let bottomDescription = model.bottomDescription {
       let bottomDescriptionLabel = UILabel()
+      bottomDescriptionLabel.setContentHuggingPriority(.required, for: .vertical)
       bottomDescriptionLabel.numberOfLines = 0
       bottomDescriptionLabel.attributedText = bottomDescription
-        .withTextStyle(.body1, color: .Text.secondary, alignment: .center)
+        .withTextStyle(
+          .body1,
+          color: .Text.secondary,
+          alignment: .center,
+          lineBreakMode: .byWordWrapping
+        )
       stackView.addArrangedSubview(bottomDescriptionLabel)
       stackView.setCustomSpacing(4, after: titleLabel)
     }
@@ -104,30 +123,17 @@ public final class TKTitleDescriptionView: UIView, ConfigurableView {
 private extension TKTitleDescriptionView {
   func setup() {
     titleLabel.numberOfLines = 0
+    titleLabel.setContentHuggingPriority(.required, for: .vertical)
     
     addSubview(stackView)
     setupConstraints()
   }
   
   func setupConstraints() {
-    stackView.translatesAutoresizingMaskIntoConstraints = false
-    
-    stackView.setContentCompressionResistancePriority(.required, for: .vertical)
+    stackView.snp.makeConstraints { make in
+      make.edges.equalTo(self)
+    }
     stackView.setContentHuggingPriority(.required, for: .vertical)
-    
-    stackViewTopAnchor = stackView.topAnchor.constraint(equalTo: topAnchor)
-    stackViewLeftAnchor = stackView.leftAnchor.constraint(equalTo: leftAnchor)
-    stackViewRightAnchor = stackView.rightAnchor.constraint(equalTo: rightAnchor)
-      .withPriority(.defaultHigh)
-    stackViewBottomAnchor = stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
-      .withPriority(.defaultHigh)
-    stackViewWidthAnchor = stackView.widthAnchor.constraint(lessThanOrEqualTo: widthAnchor)
-
-    stackViewTopAnchor?.isActive = true
-    stackViewLeftAnchor?.isActive = true
-    stackViewRightAnchor?.isActive = true
-    stackViewBottomAnchor?.isActive = true
-    stackViewWidthAnchor?.isActive = true
   }
   
   func didUpdateSize() {

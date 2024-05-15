@@ -27,7 +27,7 @@ public final class WalletBalanceController {
     public let totalBalance: String
     public let stateDate: String?
     public let backgroundUpdateState: BackgroundUpdateState
-    public let walletType: WalletModel.WalletType
+    public let walletModel: WalletModel
     public let shortAddress: String?
     public let fullAddress: String?
   }
@@ -109,9 +109,10 @@ private extension WalletBalanceController {
   func startObservations() async {
     _ = await walletTotalBalanceStore.addEventObserver(self) { observer, event in
       switch event {
-      case .didUpdateTotalBalance(let totalBalanceState, let address):
-        guard let walletAddress = try? observer.wallet.address else { return }
-        guard walletAddress == address else { return }
+      case .didUpdateTotalBalance(let totalBalanceState, let wallet):
+        guard let walletAddress = try? observer.wallet.friendlyAddress,
+              let updateWalletAddress = try? wallet.friendlyAddress else { return }
+        guard walletAddress == updateWalletAddress else { return }
         Task { await observer.didUpdateTotalBalanceState(totalBalanceState) }
       }
     }
@@ -126,9 +127,10 @@ private extension WalletBalanceController {
     
     _ = await walletBalanceStore.addEventObserver(self) { observer, event in
       switch event {
-      case .balanceUpdate(let balance, let address):
-        guard let walletAddress = try? observer.wallet.address else { return }
-        guard walletAddress == address else { return }
+      case .balanceUpdate(let balance, let wallet):
+        guard let walletAddress = try? observer.wallet.friendlyAddress,
+              let updateWalletAddress = try? wallet.friendlyAddress else { return }
+        guard walletAddress == updateWalletAddress else { return }
         Task { await observer.didUpdateBalanceState(balance)}
       }
     }
@@ -167,7 +169,7 @@ private extension WalletBalanceController {
   }
   
   func setInitialState() async {
-    if let totalBalanceState = try? await walletTotalBalanceStore.getTotalBalanceState(walletAddress: wallet.address) {
+    if let totalBalanceState = try? await walletTotalBalanceStore.getTotalBalanceState(wallet: wallet) {
       await state.setTotalBalanceState(totalBalanceState)
     } else {
       await state.setTotalBalanceState(nil)
@@ -176,7 +178,7 @@ private extension WalletBalanceController {
     let model = await getStateModel()
     didUpdateState?(model)
     
-    if let walletBalanceState = try? await walletBalanceStore.getBalanceState(walletAddress: wallet.address) {
+    if let walletBalanceState = try? await walletBalanceStore.getBalanceState(wallet: wallet) {
       await balanceState.setWalletBalance(walletBalanceState.walletBalance)
     } else {
       await balanceState.setWalletBalance(nil)
@@ -236,9 +238,9 @@ private extension WalletBalanceController {
       totalBalance: formattedTotalBalance,
       stateDate: stateDate,
       backgroundUpdateState: await state.backgroundUpdateState,
-      walletType: wallet.model.walletType,
-      shortAddress: try? wallet.address.toShortString(bounceable: false),
-      fullAddress: try? wallet.address.toString(bounceable: false)
+      walletModel: wallet.model,
+      shortAddress: try? wallet.friendlyAddress.toShort(),
+      fullAddress: try? wallet.friendlyAddress.toString()
     )
   }
   

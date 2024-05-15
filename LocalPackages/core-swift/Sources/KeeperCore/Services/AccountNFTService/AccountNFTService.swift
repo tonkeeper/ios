@@ -2,61 +2,61 @@ import Foundation
 import TonSwift
 
 struct AccountNfts {
-  let address: Address
+  let wallet: Wallet
   let nfts: [NFT]
 }
 
 protocol AccountNFTService {
-  func getAccountNfts(accountAddress: Address) -> [NFT]
-  func getAccountsNfts(accountAddresses: [Address]) -> [AccountNfts]
-  func loadAccountNFTs(accountAddress: Address,
+  func getAccountNfts(wallet: Wallet) -> [NFT]
+  func getAccountsNfts(wallets: [Wallet]) -> [AccountNfts]
+  func loadAccountNFTs(wallet: Wallet,
                        collectionAddress: Address?,
                        limit: Int?,
                        offset: Int?,
                        isIndirectOwnership: Bool) async throws -> [NFT]
-  func loadAccountsNfts(accountAddresses: [Address],
+  func loadAccountsNfts(wallets: [Wallet],
                         collectionAddress: Address?,
                         limit: Int,
                         offset: Int,
                         isIndirectOwnership: Bool) async throws -> [AccountNfts]
-  func saveAccountNfts(accountAddress: Address,
+  func saveAccountNfts(wallet: Wallet,
                        nfts: [NFT]) throws
 }
 
 final class AccountNFTServiceImplementation: AccountNFTService {
-  private let api: API
+  private let apiProvider: APIProvider
   private let accountNFTRepository: AccountNFTRepository
   private let nftRepository: NFTRepository
   
-  init(api: API, accountNFTRepository: AccountNFTRepository, nftRepository: NFTRepository) {
-    self.api = api
+  init(apiProvider: APIProvider, accountNFTRepository: AccountNFTRepository, nftRepository: NFTRepository) {
+    self.apiProvider = apiProvider
     self.accountNFTRepository = accountNFTRepository
     self.nftRepository = nftRepository
   }
   
-  func getAccountNfts(accountAddress: Address) -> [NFT] {
+  func getAccountNfts(wallet: Wallet) -> [NFT] {
     do {
-      return try accountNFTRepository.getNfts(key: accountAddress.toRaw())
+      return try accountNFTRepository.getNfts(key: wallet.friendlyAddress.toShort())
     } catch {
       return []
     }
   }
   
-  func getAccountsNfts(accountAddresses: [Address]) -> [AccountNfts] {
-    accountAddresses.compactMap {
-      let nfts = getAccountNfts(accountAddress: $0)
-      return AccountNfts(address: $0, nfts: nfts)
+  func getAccountsNfts(wallets: [Wallet]) -> [AccountNfts] {
+    wallets.compactMap {
+      let nfts = getAccountNfts(wallet: $0)
+      return AccountNfts(wallet: $0, nfts: nfts)
     }
   }
   
-  func loadAccountNFTs(accountAddress: Address,
+  func loadAccountNFTs(wallet: Wallet,
                        collectionAddress: Address?,
                        limit: Int?,
                        offset: Int?,
                        isIndirectOwnership: Bool) async throws -> [NFT] {
     do {
-      let nfts = try await api.getAccountNftItems(
-        address: accountAddress,
+      let nfts = try await apiProvider.api(wallet.isTestnet).getAccountNftItems(
+        address: wallet.address,
         collectionAddress: collectionAddress,
         limit: limit,
         offset: offset,
@@ -65,34 +65,34 @@ final class AccountNFTServiceImplementation: AccountNFTService {
       nfts.forEach {
         try? nftRepository.saveNFT($0, key: $0.address.toRaw())
       }
-      try? accountNFTRepository.saveNfts(nfts, key: accountAddress.toRaw())
+      try? accountNFTRepository.saveNfts(nfts, key: wallet.friendlyAddress.toShort())
       return nfts
     } catch {
-      try? accountNFTRepository.saveNfts([], key: accountAddress.toRaw())
+      try? accountNFTRepository.saveNfts([], key: wallet.friendlyAddress.toShort())
       throw error
     }
   }
   
-  func loadAccountsNfts(accountAddresses: [Address],
+  func loadAccountsNfts(wallets: [Wallet],
                         collectionAddress: Address?,
                         limit: Int,
                         offset: Int,
                         isIndirectOwnership: Bool) async throws -> [AccountNfts] {
     let nfts = await withTaskGroup(of: AccountNfts.self, returning: [AccountNfts].self) { [weak self] taskGroup in
       guard let self = self else { return [] }
-      for address in accountAddresses {
+      for wallet in wallets {
         taskGroup.addTask {
           do {
             let nfts = try await self.loadAccountNFTs(
-              accountAddress: address,
+              wallet: wallet,
               collectionAddress: nil,
               limit: limit,
               offset: offset,
               isIndirectOwnership: true
             )
-            return AccountNfts(address: address, nfts: nfts)
+            return AccountNfts(wallet: wallet, nfts: nfts)
           } catch {
-            return AccountNfts(address: address, nfts: [])
+            return AccountNfts(wallet: wallet, nfts: [])
           }
         }
       }
@@ -103,11 +103,11 @@ final class AccountNFTServiceImplementation: AccountNFTService {
     return nfts
   }
   
-  func saveAccountNfts(accountAddress: Address,
+  func saveAccountNfts(wallet: Wallet,
                        nfts: [NFT]) throws {
     try accountNFTRepository.saveNfts(
       nfts,
-      key: accountAddress.toRaw()
+      key: wallet.friendlyAddress.toString()
     )
   }
 }

@@ -74,6 +74,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-gear-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var exclamationmarkTriangle: UIImage {
+          .imageWithName("Icons/28/ic-exclamationmark-triangle-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var gearOutline: UIImage {
           .imageWithName("Icons/28/ic-gear-outline-28")
           .withRenderingMode(.alwaysTemplate)
@@ -176,6 +180,10 @@ public extension UIImage {
         }
         public static var copy: UIImage {
           .imageWithName("Icons/28/ic-copy-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var doc: UIImage {
+          .imageWithName("Icons/28/ic-doc-28")
           .withRenderingMode(.alwaysTemplate)
         }
       }

@@ -1,4 +1,5 @@
 import UIKit
+import TKUIKit
 import TKCoordinator
 import SignerCore
 
@@ -15,6 +16,17 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
   }
   
   override func start(deeplink: (any CoordinatorDeeplink)? = nil) {
+    var settingsRepository = signerCoreAssembly.repositoriesAssembly.settingsRepository()
+    if settingsRepository.isFirstRun {
+      settingsRepository.isFirstRun = false
+      settingsRepository.seed = UUID().uuidString
+    }
+    MnemonicV2Migration(
+      signerInfoRepository: signerCoreAssembly.repositoriesAssembly.signerInfoRepository(),
+      oldMnemonicRepository: signerCoreAssembly.repositoriesAssembly.oldMnemonicRepository(),
+      mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository(),
+      passwordRepository: signerCoreAssembly.repositoriesAssembly.passwordRepository()
+    ).migrateIfNeeded()
     router.window.applyThemeMode(.blue)
     openRoot(deeplink: deeplink)
   }
@@ -27,7 +39,7 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
 
 private extension AppCoordinator {
   func openRoot(deeplink: TKCoordinator.CoordinatorDeeplink? = nil) {
-    let navigationController = NavigationController()
+    let navigationController = TKNavigationController()
     let rootCoordinator = RootCoordinator(
       router: .init(rootViewController: navigationController),
       signerCoreAssembly: signerCoreAssembly

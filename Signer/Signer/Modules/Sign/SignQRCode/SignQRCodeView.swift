@@ -10,9 +10,9 @@ final class SignQRCodeView: UIView, ConfigurableView {
     let view = TKTitleDescriptionView(size: .big)
     view.padding = NSDirectionalEdgeInsets(
       top: 0,
-      leading: 32,
+      leading: 16,
       bottom: 32,
-      trailing: 32
+      trailing: 16
     )
     return view
   }()

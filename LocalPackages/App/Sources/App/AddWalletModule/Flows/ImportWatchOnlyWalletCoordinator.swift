@@ -10,12 +10,18 @@ public final class ImportWatchOnlyWalletCoordinator: RouterCoordinator<Navigatio
   public var didImportWallet: (() -> Void)?
   
   private let walletsUpdateAssembly: WalletsUpdateAssembly
+  private let passcodeAssembly: KeeperCore.PasscodeAssembly
+  private let passcode: String?
   private let customizeWalletModule: (_ name: String?) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
   init(router: NavigationControllerRouter,
        walletsUpdateAssembly: WalletsUpdateAssembly,
+       passcodeAssembly: KeeperCore.PasscodeAssembly,
+       passcode: String?,
        customizeWalletModule: @escaping (_ name: String?) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
     self.walletsUpdateAssembly = walletsUpdateAssembly
+    self.passcodeAssembly = passcodeAssembly
+    self.passcode = passcode
     self.customizeWalletModule = customizeWalletModule
     super.init(router: router)
   }
@@ -82,6 +88,9 @@ private extension ImportWatchOnlyWalletCoordinator {
       tintColor: model.tintColor,
       emoji: model.emoji)
     do {
+      if let passcode {
+        try passcodeAssembly.passcodeCreateController().createPasscode(passcode)
+      }
       try addController.importWatchOnlyWallet(
         resolvableAddress: resolvableAddress,
         metaData: metaData

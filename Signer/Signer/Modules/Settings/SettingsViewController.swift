@@ -26,6 +26,8 @@ final class SettingsViewController: GenericViewViewController<SettingsView> {
     let layout = UICollectionViewCompositionalLayout(
       sectionProvider: { [weak dataSource, weak self] sectionIndex, _ -> NSCollectionLayoutSection? in
         guard let dataSource else { return nil }
+        let snapshot = dataSource.snapshot()
+        let snapshotSection = snapshot.sectionIdentifiers[sectionIndex]
         let itemLayoutSize = NSCollectionLayoutSize(
           widthDimension: .fractionalWidth(1.0),
           heightDimension: .estimated(76)
@@ -41,7 +43,20 @@ final class SettingsViewController: GenericViewViewController<SettingsView> {
           subitems: [item]
         )
         
+        let headerSize = NSCollectionLayoutSize(
+          widthDimension: .fractionalWidth(1.0),
+          heightDimension: .estimated(0)
+        )
+        let header = NSCollectionLayoutBoundarySupplementaryItem(
+          layoutSize: headerSize,
+          elementKind: .sectionHeaderKind,
+          alignment: .top
+        )
+    
         let section = NSCollectionLayoutSection(group: group)
+        if let snapshotSectionTitle = snapshotSection.title, !snapshotSectionTitle.isEmpty {
+          section.boundarySupplementaryItems = [header]
+        }
         section.contentInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16)
         return section
       },
@@ -73,6 +88,11 @@ private extension SettingsViewController {
   func setup() {
     customView.collectionView.delegate = self
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
+    customView.collectionView.register(
+      TKCollectionViewSupplementaryContainerView<TKListTitleView>.self,
+      forSupplementaryViewOfKind: .sectionHeaderKind,
+      withReuseIdentifier: TKCollectionViewSupplementaryContainerView<TKListTitleView>.reuseIdentifier
+    )
   }
   
   func setupBindings() {
@@ -108,6 +128,20 @@ private extension SettingsViewController {
           return nil
         }
       }
+    
+    dataSource.supplementaryViewProvider = { [dataSource] collectionView, kind, indexPath in
+      let snapshot = dataSource.snapshot()
+      let section = snapshot.sectionIdentifiers[indexPath.section]
+      guard let title = section.title else { return nil }
+      let view = collectionView.dequeueReusableSupplementaryView(
+        ofKind: .sectionHeaderKind,
+        withReuseIdentifier: TKCollectionViewSupplementaryContainerView<TKListTitleView>.reuseIdentifier,
+        for: indexPath) as? TKCollectionViewSupplementaryContainerView<TKListTitleView>
+      view?.contentView.configure(model: TKListTitleView.Model(title: section.title, textStyle: .h3))
+      
+      return view
+    }
+    
     return dataSource
   }
 }
@@ -122,5 +156,9 @@ extension SettingsViewController: UICollectionViewDelegate {
     default: break
     }
   }
+}
+
+private extension String {
+  static let sectionHeaderKind = "SectionHeaderKind"
 }
 

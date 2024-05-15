@@ -14,6 +14,7 @@ public struct WalletModel: Equatable {
   public let emoji: String
   public let tintColor: WalletTintColor
   public let walletType: WalletType
+  public let isTestnet: Bool
   
   public var emojiLabel: String {
     "\(emoji) \(label)"
@@ -45,7 +46,8 @@ extension Wallet {
       tag: tag,
       emoji: metaData.emoji,
       tintColor: metaData.tintColor,
-      walletType: walletType
+      walletType: walletType,
+      isTestnet: identity.network == .testnet
     )
   }
 }

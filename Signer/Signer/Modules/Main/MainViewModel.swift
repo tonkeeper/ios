@@ -1,6 +1,7 @@
 import Foundation
 import TKUIKit
 import SignerCore
+import SignerLocalize
 
 protocol MainViewModel: AnyObject {
   var titleUpdate: ((NSAttributedString) -> Void)? { get set }
@@ -117,7 +118,7 @@ private extension MainViewModelImlementation {
   func createHeaderButtonsModel() -> MainHeaderButtonsView.Model {
     return MainHeaderButtonsView.Model(
       scanButton: MainHeaderButtonsView.Model.Button(
-        title: "Scan",
+        title: SignerLocalize.Main.Buttons.Scan.title,
         icon: .TKUIKit.Icons.Size28.qrViewFinderThin,
         isEnabled: true,
         action: { [weak self] in
@@ -125,7 +126,7 @@ private extension MainViewModelImlementation {
         }
       ),
       addKeyButton: MainHeaderButtonsView.Model.Button(
-        title: "Add Key",
+        title: SignerLocalize.Main.Buttons.AddKey.title,
         icon: .TKUIKit.Icons.Size28.plusThin,
         isEnabled: true,
         action: { [weak self] in
@@ -133,7 +134,7 @@ private extension MainViewModelImlementation {
         }
       ),
       settingsButton: MainHeaderButtonsView.Model.Button(
-        title: "Settings",
+        title: SignerLocalize.Main.Buttons.Settings.title,
         icon: .TKUIKit.Icons.Size28.gearOutline,
         isEnabled: true,
         action: { [weak self] in

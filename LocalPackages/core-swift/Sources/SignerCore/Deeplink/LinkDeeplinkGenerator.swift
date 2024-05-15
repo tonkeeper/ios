@@ -5,7 +5,8 @@ struct LinkDeeplinkGenerator {
   func generateAppDeeplink(network: Network, key: WalletKey) -> URL? {
     guard let publicKey = key
       .publicKey.data.base64EncodedString()
-      .percentEncoded else {
+      .percentEncoded,
+          let name = key.name.percentEncoded else {
       return nil
     }
     
@@ -15,7 +16,7 @@ struct LinkDeeplinkGenerator {
     components.path = "/link"
     components.percentEncodedQueryItems = [
       URLQueryItem(name: "pk", value: publicKey),
-      URLQueryItem(name: "name", value: key.name),
+      URLQueryItem(name: "name", value: name),
       URLQueryItem(name: "network", value: network.rawValue)
     ]
     return components.url
@@ -24,7 +25,8 @@ struct LinkDeeplinkGenerator {
   func generateWebDeeplink(network: Network, key: WalletKey) -> URL? {
     guard let publicKey = key
       .publicKey.data.base64EncodedString()
-      .percentEncoded else {
+      .percentEncoded,
+          let name = key.name.percentEncoded else {
       return nil
     }
     
@@ -34,7 +36,7 @@ struct LinkDeeplinkGenerator {
     components.path = "/signer/link"
     components.percentEncodedQueryItems = [
       URLQueryItem(name: "pk", value: publicKey),
-      URLQueryItem(name: "name", value: key.name),
+      URLQueryItem(name: "name", value: name),
       URLQueryItem(name: "network", value: network.rawValue)
     ]
     return components.url

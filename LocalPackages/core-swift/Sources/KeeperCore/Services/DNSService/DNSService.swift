@@ -3,8 +3,8 @@ import TonAPI
 import TonSwift
 
 protocol DNSService {
-  func resolveDomainName(_ domainName: String) async throws -> Domain
-  func loadDomainExpirationDate(_ domainName: String) async throws -> Date?
+  func resolveDomainName(_ domainName: String, isTestnet: Bool) async throws -> Domain
+  func loadDomainExpirationDate(_ domainName: String, isTestnet: Bool) async throws -> Date?
 }
 
 final class DNSServiceImplementation: DNSService {
@@ -12,21 +12,21 @@ final class DNSServiceImplementation: DNSService {
     case noWalletData
   }
   
-  private let api: API
+  private let apiProvider: APIProvider
   
-  init(api: API) {
-    self.api = api
+  init(apiProvider: APIProvider) {
+    self.apiProvider = apiProvider
   }
   
-  func resolveDomainName(_ domainName: String) async throws -> Domain {
+  func resolveDomainName(_ domainName: String, isTestnet: Bool) async throws -> Domain {
     let parsedDomainName = parseDomainName(domainName)
-    let result = try await api.resolveDomainName(parsedDomainName)
+    let result = try await apiProvider.api(isTestnet).resolveDomainName(parsedDomainName)
     return Domain(domain: parsedDomainName, friendlyAddress: result)
   }
   
-  func loadDomainExpirationDate(_ domainName: String) async throws -> Date? {
+  func loadDomainExpirationDate(_ domainName: String, isTestnet: Bool) async throws -> Date? {
     let parsedDomainName = parseDomainName(domainName)
-    return try await api.getDomainExpirationDate(parsedDomainName)
+    return try await apiProvider.api(isTestnet).getDomainExpirationDate(parsedDomainName)
   }
 }
 

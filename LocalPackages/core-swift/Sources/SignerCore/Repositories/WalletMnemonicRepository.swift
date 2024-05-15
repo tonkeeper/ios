@@ -11,6 +11,7 @@ public enum WalletKeyMnemonicRepositoryError: Swift.Error {
 public protocol WalletKeyMnemonicRepository {
   func getMnemonic(forWalletKey walletKey: WalletKey) throws -> CoreComponents.Mnemonic
   func saveMnemonic(_ mnemonic: CoreComponents.Mnemonic, forWalletKey walletKey: WalletKey) throws
+  func deleteMnemonic(forWalletKey walletKey: WalletKey) throws
 }
 
 extension MnemonicVault: WalletKeyMnemonicRepository {
@@ -35,5 +36,9 @@ extension MnemonicVault: WalletKeyMnemonicRepository {
     } catch {
       throw WalletKeyMnemonicRepositoryError.other(error)
     }
+  }
+  
+  public func deleteMnemonic(forWalletKey walletKey: WalletKey) throws {
+    try deleteValue(for: walletKey.publicKey.hexString)
   }
 }

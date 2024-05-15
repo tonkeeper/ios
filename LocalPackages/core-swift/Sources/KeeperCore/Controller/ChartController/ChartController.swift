@@ -39,7 +39,7 @@ public final class ChartController {
       async let coordinatesTask = self.chartService.loadChartData(
         period: period,
         token: "ton",
-        currency: currency)
+        currency: currency, isTestnet: false)
       let rates = await tonRatesStore.getTonRates()
       let coordinates = try await coordinatesTask
       

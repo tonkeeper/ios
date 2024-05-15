@@ -2,16 +2,18 @@ import Foundation
 
 public final class RecoveryPhraseController {
   private let key: WalletKey
-  private let mnemonicRepository: WalletKeyMnemonicRepository
+  private let password: String
+  private let mnemonicsRepository: MnemonicsRepository
   
-  init(key: WalletKey, mnemonicRepository: WalletKeyMnemonicRepository) {
+  init(key: WalletKey, mnemonicsRepository: MnemonicsRepository, password: String) {
     self.key = key
-    self.mnemonicRepository = mnemonicRepository
+    self.password = password
+    self.mnemonicsRepository = mnemonicsRepository
   }
   
   public func getRecoveryPhrase() -> [String] {
     do {
-      let phrase = try mnemonicRepository.getMnemonic(forWalletKey: key)
+      let phrase = try mnemonicsRepository.getMnemonic(walletKey: key, password: password)
       return phrase.mnemonicWords
     } catch {
       return []

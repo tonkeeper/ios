@@ -21,11 +21,11 @@ public struct Recipient: Equatable {
     public var shortAddressString: String {
       switch self {
       case .friendly(let friendlyAddress):
-        return friendlyAddress.address.toShortString(bounceable: friendlyAddress.isBounceable)
+        return friendlyAddress.toShort()
       case .raw(let address):
         return address.toShortRawString()
       case .domain(let domain):
-        return domain.friendlyAddress.address.toShortString(bounceable: domain.friendlyAddress.isBounceable)
+        return domain.friendlyAddress.toShort()
       }
     }
     
