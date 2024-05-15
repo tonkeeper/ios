@@ -1,24 +1,34 @@
 import UIKit
 
 public enum Theme {
-  case blue
+  case deepBlue
   case dark
+  case light
+  case system
   
   public var userInterfaceStyle: UIUserInterfaceStyle {
     switch self {
-    case .blue:
-      return .light
+    case .deepBlue:
+      return .dark
     case .dark:
       return .dark
+    case .light:
+      return .light
+    case .system:
+      return .unspecified
     }
   }
   
   public var alertUserInterfaceStyle: UIUserInterfaceStyle {
     switch self {
-    case .blue:
+    case .deepBlue:
       return .dark
     case .dark:
       return .dark
+    case .light:
+      return .light
+    case .system:
+      return .unspecified
     }
   }
 }
@@ -26,7 +36,7 @@ public enum Theme {
 public final class ThemeManager {
   public static let shared = ThemeManager()
   
-  public var theme: Theme = .blue {
+  public var theme: Theme = .dark {
     didSet {
       NotificationCenter.default.post(Notification(name: Notification.Name.didChangeThemeMode))
     }

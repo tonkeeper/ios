@@ -9,7 +9,27 @@ public extension UIColor {
     public static let overlayExtraLight = UIColor.named("Colors/Background/Overlay Extra Light")
     public static let overlayLight = UIColor.named("Colors/Background/Overlay Light")
     public static let overlayStrong = UIColor.named("Colors/Background/Overlay Strong")
-    public static let page = UIColor.named("Colors/Background/Page")
+    public static var page = UIColor {
+      switch ThemeManager.shared.theme {
+      case .deepBlue:
+        DeepBlueColorScheme.backgroundPage
+      case .dark:
+        DarkColorScheme.backgroundPage
+      case .light:
+        LightColorScheme.backgroundPage
+      case .system:
+        switch $0.userInterfaceStyle {
+        case .light:
+          LightColorScheme.backgroundPage
+        case .dark:
+          DarkColorScheme.backgroundPage
+        case .unspecified:
+          DarkColorScheme.backgroundPage
+        @unknown default:
+          DarkColorScheme.backgroundPage
+        }
+      }
+    }
     public static let transparent = UIColor.named("Colors/Background/Transparent")
   }
   enum Button {
