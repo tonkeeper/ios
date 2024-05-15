@@ -27,7 +27,7 @@ final class ShimmerLabel: UIView {
   }()
   lazy var shimmerLayer: CAGradientLayer = {
     let layer = CAGradientLayer()
-    layer.colors = [UIColor.Text.tertiary.cgColor, UIColor.white.cgColor]
+    layer.colors = [UIColor(hex: "C2DAFF", alpha: 1).cgColor, UIColor.white.cgColor]
     layer.anchorPoint = .zero
     layer.startPoint = CGPoint(x: 0, y: 0.5)
     layer.endPoint = CGPoint(x: 1, y: 0.5)
@@ -77,5 +77,20 @@ final class ShimmerLabel: UIView {
     gradientAnimation.repeatCount = Float.infinity
 
     gradientLayer.add(gradientAnimation, forKey: nil)
+  }
+}
+
+class LL: CALayer {
+  override func draw(in ctx: CGContext) {
+    let gradient = CGGradient.with(easing: .easeInQuad, from: .clear, to: .Accent.blue)
+    let startPoint = CGPoint(x: bounds.midX, y: bounds.minY)
+    let endPoint = CGPoint(x: bounds.midX, y: bounds.maxY)
+    ctx.addRect(bounds)
+    ctx.clip()
+    ctx.drawLinearGradient(
+      gradient,
+      start: startPoint,
+      end: endPoint,
+      options: CGGradientDrawingOptions())
   }
 }

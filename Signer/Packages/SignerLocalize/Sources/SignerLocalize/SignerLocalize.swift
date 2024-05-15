@@ -92,6 +92,12 @@ public enum SignerLocalize {
         }
       }
     }
+    public enum Confirmation {
+      /// Enter current Password
+      public static var title: String {
+        localize("password.confirmation.title")
+      }
+    }
   }
   public enum NameKey {
     /// Name your Key
@@ -347,6 +353,30 @@ public enum SignerLocalize {
     /// Done
     public static var done: String {
       localize("sign_transaction_qr.done")
+    }
+  }
+  public enum SignOut {
+    public enum Button {
+      /// Sign Out
+      public static var title: String {
+        localize("sign_out.button.title")
+      }
+    }
+    public enum Alert {
+      /// Sign Out?
+      public static var title: String {
+        localize("sign_out.alert.title")
+      }
+      /// This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase.
+      public static var caption: String {
+        localize("sign_out.alert.caption")
+      }
+      public enum Button {
+        /// Sign Out
+        public static var sign_out: String {
+          localize("sign_out.alert.button.sign_out")
+        }
+      }
     }
   }
 }

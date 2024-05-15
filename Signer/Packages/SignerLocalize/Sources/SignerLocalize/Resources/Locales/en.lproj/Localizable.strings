@@ -19,6 +19,7 @@
 "password.change.enter_current.title" = "Enter current Password";
 "password.change.enter_new.title" = "Enter new Password";
 "password.change.reenter_new.title" = "Re-enter Password";
+"password.confirmation.title" = "Enter current Password";
 
 "name_key.title" = "Name your Key";
 "name_key.caption" = "It will simplify the search for the necessary key in the list of keys.";
@@ -81,4 +82,9 @@
 "sign_transaction_qr.caption" = "After scanning, the transaction will be sent to the network.";
 "sign_transaction_qr.signed_transaction" = "Signed Transaction";
 "sign_transaction_qr.done" = "Done";
+
+"sign_out.button.title" = "Sign Out";
+"sign_out.alert.title" = "Sign Out?";
+"sign_out.alert.caption" = "This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase.";
+"sign_out.alert.button.sign_out" = "Sign Out";
 

@@ -12,7 +12,7 @@ final class SettingsListFooterCell: UICollectionViewCell, ConfigurableView {
     stackView.spacing = 2
     stackView.isLayoutMarginsRelativeArrangement = true
     stackView.directionalLayoutMargins = NSDirectionalEdgeInsets(
-      top: 0,
+      top: 16,
       leading: 16,
       bottom: 16,
       trailing: 16

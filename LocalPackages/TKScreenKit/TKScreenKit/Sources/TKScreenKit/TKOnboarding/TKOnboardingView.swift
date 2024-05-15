@@ -81,7 +81,10 @@ private extension TKOnboardingView {
       coverImageView.bottomAnchor.constraint(equalTo: titleDescriptionView.topAnchor, constant: -24),
       coverImageView.leftAnchor.constraint(equalTo: titleDescriptionView.leftAnchor),
       coverImageView.rightAnchor.constraint(equalTo: titleDescriptionView.rightAnchor),
-      coverImageView.topAnchor.constraint(equalTo: topAnchor)
+      coverImageView.topAnchor.constraint(equalTo: topAnchor),
+      
+      primaryButton.heightAnchor.constraint(equalToConstant: 56),
+      secondaryButton.heightAnchor.constraint(equalToConstant: 56),
     ])
   }
 }

@@ -61,6 +61,7 @@ private extension ImportKeyCoordinator {
       defaultName: nil
     )
     module.view.setupBackButton()
+    module.view.presentationMode = .sheet
     module.output.didEnterWalletName = { [weak self] walletName in
       self?.openEnterPassword(phrase: phrase, name: walletName)
     }
@@ -70,7 +71,7 @@ private extension ImportKeyCoordinator {
   func openEnterPassword(phrase: [String], name: String) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
-      title: SignerLocalize.Password.Enter.title
+      title: SignerLocalize.Password.Confirmation.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.view.setupBackButton()

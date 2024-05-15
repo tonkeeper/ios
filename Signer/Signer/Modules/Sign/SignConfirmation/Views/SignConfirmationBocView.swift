@@ -31,6 +31,12 @@ final class SignConfirmationBocView: UIView, ConfigurableView {
     stackView.spacing = 8
     return stackView
   }()
+  private let buttonsWrapper: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .vertical
+    stackView.alignment = .leading
+    return stackView
+  }()
   private let containerView = UIView()
   
   override init(frame: CGRect) {
@@ -63,7 +69,8 @@ private extension SignConfirmationBocView {
     
     addSubview(containerView)
     containerView.addSubview(textView)
-    containerView.addSubview(buttonsStackView)
+    containerView.addSubview(buttonsWrapper)
+    buttonsWrapper.addArrangedSubview(buttonsStackView)
     buttonsStackView.addArrangedSubview(emulateButton)
     buttonsStackView.addArrangedSubview(copyButton)
     
@@ -72,15 +79,15 @@ private extension SignConfirmationBocView {
   
   func setupConstraints() {
     containerView.snp.makeConstraints { make in
-      make.edges.equalTo(UIEdgeInsets(top: 8, left: 16, bottom: 16, right: 16)).priority(.high)
+      make.edges.equalTo(UIEdgeInsets(top: 12, left: 16, bottom: 16, right: 16)).priority(.high)
     }
     
     textView.snp.makeConstraints { make in
       make.top.left.right.equalTo(containerView)
     }
     
-    buttonsStackView.snp.makeConstraints { make in
-      make.top.equalTo(textView.snp.bottom).offset(8)
+    buttonsWrapper.snp.makeConstraints { make in
+      make.top.equalTo(textView.snp.bottom).offset(12)
       make.left.right.bottom.equalTo(containerView)
     }
   }

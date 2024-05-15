@@ -79,14 +79,5 @@ private extension SignQRCodeView {
       make.left.right.equalTo(containerView)
       make.bottom.equalTo(containerView).offset(-16)
     }
-//    containerView.snp.makeConstraints { make in
-//      make.edges.equalTo(self)
-//    }
-//    
-//    qrCodeView.snp.makeConstraints { make in
-//      make.top.equalTo(containerView)
-//      make.left.right.equalTo(containerView).inset(16).priority(.high)
-//      make.bottom.equalTo(containerView).priority(.high)
-//    }
   }
 }
