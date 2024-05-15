@@ -48,14 +48,7 @@ final class BrowserConnectedViewController: GenericViewViewController<BrowserCon
 
 extension BrowserConnectedViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    let item = dataSource
-      .snapshot()
-      .itemIdentifiers(inSection: dataSource.snapshot().sectionIdentifiers[indexPath.section])[indexPath.item]
-    switch item {
-    case let listItem as TKUIListItemCell.Configuration:
-      listItem.selectionClosure?()
-    default: break
-    }
+    viewModel.selectApp(index: indexPath.item)
   }
 }
 
@@ -70,6 +63,10 @@ private extension BrowserConnectedViewController {
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
       self?.dataSource.apply(snapshot, animatingDifferences: false)
+    }
+    
+    viewModel.didUpdateViewState = { [weak self] state in
+      self?.customView.state = state
     }
   }
   
@@ -130,9 +127,6 @@ private extension BrowserConnectedViewController {
     group.contentInsets = .init(top: 0, leading: 12, bottom: 0, trailing: 12)
     
     let section = NSCollectionLayoutSection(group: group)
-//    section.orthogonalScrollingBehavior = .groupPaging
-//    section.contentInsets = .init(top: 10, leading: 16, bottom: 16, trailing: 0)
-    
     return section
   }
   

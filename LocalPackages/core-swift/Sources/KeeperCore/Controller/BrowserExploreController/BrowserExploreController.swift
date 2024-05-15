@@ -13,8 +13,13 @@ public final class BrowserExploreController {
   }
   
   public func loadPopularApps(lang: String) async throws -> PopularAppsResponseData {
-    let apps = try await popularAppsService.loadPopularApps(lang: lang)
-    try? popularAppsService.savePopularApps(apps, lang: lang)
-    return apps
+    do {
+      let apps = try await popularAppsService.loadPopularApps(lang: lang)
+      try? popularAppsService.savePopularApps(apps, lang: lang)
+      return apps
+    } catch {
+      try? popularAppsService.savePopularApps(.empty, lang: lang)
+      throw error
+    }
   }
 }

@@ -5,30 +5,30 @@ import TKCore
 import TKLocalize
 
 protocol BrowserConnectedModuleOutput: AnyObject {
-  var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
-  var didSelectApp: ((PopularApp) -> Void)? { get set }
+  var didSelectDapp: ((Dapp) -> Void)? { get set }
 }
 
 protocol BrowserConnectedViewModel: AnyObject {
 
+  var didUpdateViewState: ((BrowserConnectedView.State) -> Void)? { get set }
   var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<BrowserConnectedSection, AnyHashable>) -> Void)? { get set }
-  var didUpdateFeaturedItems: (([PopularApp]) -> Void)? { get set }
+  var didUpdateFeaturedItems: (([Dapp]) -> Void)? { get set }
   
   func viewDidLoad()
-  func didSelectCategoryAll(index: Int)
+  func selectApp(index: Int)
 }
 
 final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, BrowserConnectedModuleOutput {
   
   // MARK: - BrowserConnectedModuleOutput
   
-  var didSelectCategory: ((PopularAppsCategory) -> Void)?
-  var didSelectApp: ((PopularApp) -> Void)?
+  var didSelectDapp: ((Dapp) -> Void)?
   
   // MARK: - BrowserConnectedViewModel
   
+  var didUpdateViewState: ((BrowserConnectedView.State) -> Void)?
   var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<BrowserConnectedSection, AnyHashable>) -> Void)?
-  var didUpdateFeaturedItems: (([PopularApp]) -> Void)?
+  var didUpdateFeaturedItems: (([Dapp]) -> Void)?
   
   func viewDidLoad() {
     browserConnectedController.didUpdateApps = { [weak self] in
@@ -38,15 +38,27 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
     reloadContent()
   }
   
-  func didSelectCategoryAll(index: Int) {
-    guard index < categories.count else { return }
-    didSelectCategory?(categories[index])
+  func selectApp(index: Int) {
+    guard connectedApps.count > index else { return }
+    let connectedApp = connectedApps[index]
+    let dapp = Dapp(
+      name: connectedApp.name,
+      description: nil,
+      icon: connectedApp.iconURL,
+      poster: nil,
+      url: connectedApp.url,
+      textColor: nil
+    )
+    didSelectDapp?(dapp)
   }
   
   // MARK: - State
   
-  private var categories = [PopularAppsCategory]()
-  private var featuredCategory: PopularAppsCategory?
+  private var connectedApps = [BrowserConnectedController.ConnectedApp]() {
+    didSet {
+      didUpdateConnectedApps()
+    }
+  }
   
   // MARK: - Image Loading
   
@@ -66,28 +78,7 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
 private extension BrowserConnectedViewModelImplementation {
   func reloadContent() {
     
-    let connectedApps = browserConnectedController.getConnectedApps()
-    let items = connectedApps.map { app in
-      BrowserConnectedAppCell.Configuration(
-        title: app.name,
-        iconUrl: app.iconURL,
-        iconDownloadTask: TKCore.ImageDownloadTask(
-          closure: {
-            [imageLoader] imageView,
-            size,
-            cornerRadius in
-            return imageLoader.loadImage(
-              url: app.iconURL,
-              imageView: imageView,
-              size: size,
-              cornerRadius: cornerRadius
-            )
-          }
-        )
-      )
-    }
-   
-    updateSnapshot(sections: [.apps(items: items)])
+    self.connectedApps = browserConnectedController.getConnectedApps()
   }
   
   func updateSnapshot(sections: [BrowserConnectedSection]) {
@@ -100,5 +91,49 @@ private extension BrowserConnectedViewModelImplementation {
       }
     }
     didUpdateSnapshot?(snapshot)
+  }
+  
+  func didUpdateConnectedApps() {
+    let state: BrowserConnectedView.State
+    let sections: [BrowserConnectedSection]
+    if connectedApps.isEmpty {
+      sections = [.apps(items: [])]
+      state = .empty(
+        TKEmptyStateView.Model(
+          title: "Connected apps will be shown here",
+          caption: "Explore apps and services in Tonkeeper browser.",
+          leftButton: nil,
+          rightButton: nil
+        )
+      )
+    } else {
+      let items = connectedApps.map { app in
+        BrowserConnectedAppCell.Configuration(
+          title: app.name,
+          iconUrl: app.iconURL,
+          iconDownloadTask: TKCore.ImageDownloadTask(
+            closure: {
+              [imageLoader] imageView,
+              size,
+              cornerRadius in
+              return imageLoader.loadImage(
+                url: app.iconURL,
+                imageView: imageView,
+                size: size,
+                cornerRadius: cornerRadius
+              )
+            }
+          )
+        )
+      }
+     
+      sections = [.apps(items: items)]
+      state = .data
+    }
+  
+    DispatchQueue.main.async {
+      self.updateSnapshot(sections: sections)
+      self.didUpdateViewState?(state)
+    }
   }
 }

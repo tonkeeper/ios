@@ -11,7 +11,7 @@ public struct TonConnectApps: Codable {
   }
   
   public func removeApp(_ app: TonConnectApp) -> TonConnectApps {
-    var mutableApps = apps.filter { $0.manifest.host != app.manifest.host }
+    let mutableApps = apps.filter { $0.manifest.host != app.manifest.host }
     return TonConnectApps(apps: mutableApps)
   }
 }

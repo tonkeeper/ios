@@ -7,7 +7,7 @@ import TKLocalize
 protocol BrowserModuleOutput: AnyObject {
   var didTapSearch: (() -> Void)? { get set }
   var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
-  var didSelectApp: ((PopularApp) -> Void)? { get set }
+  var didSelectDapp: ((Dapp) -> Void)? { get set }
 }
 
 protocol BrowserViewModel: AnyObject {
@@ -25,7 +25,7 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
   
   var didTapSearch: (() -> Void)?
   var didSelectCategory: ((PopularAppsCategory) -> Void)?
-  var didSelectApp: ((PopularApp) -> Void)?
+  var didSelectDapp: ((Dapp) -> Void)?
   
   // MARK: - BrowserViewModel
   
@@ -63,8 +63,12 @@ private extension BrowserViewModelImplementation {
       self?.didSelectCategory?(category)
     }
     
-    exploreModuleOutput.didSelectApp = { [weak self] app in
-      self?.didSelectApp?(app)
+    exploreModuleOutput.didSelectDapp = { [weak self] dapp in
+      self?.didSelectDapp?(dapp)
+    }
+    
+    connectedModuleOutput.didSelectDapp = { [weak self] dapp in
+      self?.didSelectDapp?(dapp)
     }
     
     let segmentedControlModel = BrowserSegmentedControl.Model(

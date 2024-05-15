@@ -39,8 +39,8 @@ private extension BrowserCoordinator {
       self?.openCategory(category)
     }
     
-    module.output.didSelectApp = { [weak self] app in
-      self?.openApp(app)
+    module.output.didSelectDapp = { [weak self] dapp in
+      self?.openDapp(dapp)
     }
     
     router.push(viewController: module.view, animated: false)
@@ -49,8 +49,8 @@ private extension BrowserCoordinator {
   func openCategory(_ category: PopularAppsCategory) {
     let module = BrowserCategoryAssembly.module(category: category)
     
-    module.output.didSelectApp = { [weak self] app in
-      self?.openApp(app)
+    module.output.didSelectDapp = { [weak self] dapp in
+      self?.openDapp(dapp)
     }
     
     module.view.setupBackButton()
@@ -58,9 +58,9 @@ private extension BrowserCoordinator {
     router.push(viewController: module.view)
   }
   
-  func openApp(_ app: PopularApp) {
+  func openDapp(_ dapp: Dapp) {
     let messageHandler = DefaultDappMessageHandler()
-    let module = DappAssembly.module(app: app, messageHandler: messageHandler)
+    let module = DappAssembly.module(dapp: dapp, messageHandler: messageHandler)
     
     messageHandler.connect = { [weak self, weak moduleView = module.view] protocolVersion, payload, completion in
       guard let moduleView else { 
@@ -75,28 +75,28 @@ private extension BrowserCoordinator {
     }
     
     messageHandler.reconnect = {
-      [weak self] app,
+      [weak self] dapp,
       completion in
       guard let self else { return }
       let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
       let result = self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.reconnectBridgeDapp(
         wallet: wallet,
-        appUrl: app.url
+        appUrl: dapp.url
       )
       completion(result)
     }
     
     messageHandler.disconnect = {
-      [weak self] app in
+      [weak self] dapp in
       guard let self else { return }
       let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
-      try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnect(wallet: wallet, appUrl: app.url)
+      try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnect(wallet: wallet, appUrl: dapp.url)
     }
     
     messageHandler.send = {
       [weak self] app, request, completion in
       guard let self else { return }
-      self.openSend(app: app, appRequest: request, completion: completion)
+      self.openSend(dapp: dapp, appRequest: request, completion: completion)
     }
 
     module.view.modalPresentationStyle = .fullScreen
@@ -174,12 +174,12 @@ private extension BrowserCoordinator {
     }
   }
   
-  func openSend(app: PopularApp,
+  func openSend(dapp: Dapp,
                 appRequest: TonConnect.AppRequest,
                 completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
     let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
     guard let connectedApps = try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
-          let connectedApp = connectedApps.apps.first(where: { $0.manifest.host == app.url?.host }) else {
+          let connectedApp = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host }) else {
       completion(.error(.unknownApp))
       return
     }

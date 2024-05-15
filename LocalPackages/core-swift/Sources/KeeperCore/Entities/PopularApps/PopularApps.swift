@@ -1,29 +1,28 @@
 import Foundation
 
-public struct PopularApp: Codable, Equatable {
-  public let name: String?
-  public let description: String?
-  public let icon: URL?
-  public let poster: URL?
-  public let url: URL?
-  public let textColor: String?
-}
-
 public struct PopularAppsCategory: Codable {
   public let id: String
   public let title: String?
-  public let apps: [PopularApp]
+  public let apps: [Dapp]
 }
 
 public struct PopularApps: Codable {
   public let categories: [PopularAppsCategory]
-  public let apps: [PopularApp]
+  public let apps: [Dapp]
 }
 
 public struct PopularAppsResponseData: Codable {
   public let moreEnabled: Bool
-  public let apps: [PopularApp]
+  public let apps: [Dapp]
   public let categories: [PopularAppsCategory]
+  
+  public static var empty: PopularAppsResponseData {
+    PopularAppsResponseData(
+      moreEnabled: false,
+      apps: [],
+      categories: []
+    )
+  }
 }
 
 public struct PopularAppsResponse: Codable {

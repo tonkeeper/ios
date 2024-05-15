@@ -17,7 +17,7 @@ final class DappViewModelImplementation: DappViewModel {
   var injectHandler: ((String) -> Void)?
   
   func viewDidLoad() {
-    didOpenApp?(app.url, app.name)
+    didOpenApp?(dapp.url, dapp.name)
   }
   
   func didLoadInitialRequest() {
@@ -25,7 +25,7 @@ final class DappViewModelImplementation: DappViewModel {
   }
   
   func reconnectIfNeeded() {
-    messageHandler.reconnectIfNeeded(app: app) { [weak self] result in
+    messageHandler.reconnectIfNeeded(dapp: dapp) { [weak self] result in
       switch result {
       case .success(let data):
         guard let string = String(data: data, encoding: .utf8) else {
@@ -64,7 +64,7 @@ final class DappViewModelImplementation: DappViewModel {
       args: args
     )
     
-    messageHandler.handleFunctionInvokeMessage(message, app: app) { [weak self] result in
+    messageHandler.handleFunctionInvokeMessage(message, dapp: dapp) { [weak self] result in
       switch result {
       case .success(let data):
         guard let string = String(data: data, encoding: .utf8) else {
@@ -87,12 +87,12 @@ final class DappViewModelImplementation: DappViewModel {
     }
   }
   
-  private let app: PopularApp
+  private let dapp: Dapp
   private let messageHandler: DappMessageHandler
   
-  init(app: PopularApp,
+  init(dapp: Dapp,
        messageHandler: DappMessageHandler) {
-    self.app = app
+    self.dapp = dapp
     self.messageHandler = messageHandler
   }
   

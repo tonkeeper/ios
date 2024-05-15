@@ -12,11 +12,11 @@ final class BrowserExploreFeaturedView: UIView {
   
   private let imageLoader = ImageLoader()
   
-  var apps = [PopularApp]() {
+  var dapps = [Dapp]() {
     didSet {
-      guard apps != oldValue else { return }
-      let models = apps.map { app in
-       mapApp(app)
+      guard dapps != oldValue else { return }
+      let models = dapps.map { dapp in
+       mapDapp(dapp)
       }
       
       let dataSource = (0..<Int.numberOfAdditionalItems).reduce(into: [BrowserExploreFeaturedCell.Model]()) { partialResult, _  in
@@ -32,8 +32,9 @@ final class BrowserExploreFeaturedView: UIView {
       collectionView.alpha = 0
       collectionView.reloadData()
       collectionView.layoutIfNeeded()
+      guard !dataSource.isEmpty else { return }
       DispatchQueue.main.async {
-        let indexOfLeftSignificantCell = Int.numberOfAdditionalItems/2 * self.apps.count
+        let indexOfLeftSignificantCell = Int.numberOfAdditionalItems/2 * self.dapps.count
         self.collectionView.scrollToItem(at: IndexPath(item: indexOfLeftSignificantCell, section: 0), at: .centeredHorizontally, animated: false)
         UIView.animate(withDuration: 0.2) {
           self.collectionView.alpha = 1.0
@@ -135,8 +136,8 @@ private extension BrowserExploreFeaturedView {
     return safeIndex
   }
   
-  var indexOfLeftSignificantCell: Int { Int.numberOfAdditionalItems/2 * self.apps.count }
-  var indexOfRightSignificantCell: Int { indexOfLeftSignificantCell + self.apps.count - 1 }
+  var indexOfLeftSignificantCell: Int { Int.numberOfAdditionalItems/2 * self.dapps.count }
+  var indexOfRightSignificantCell: Int { indexOfLeftSignificantCell + self.dapps.count - 1 }
   
   func startSlideShowTask() {
     slideshowTask?.cancel()
@@ -180,7 +181,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDataSource {
 
 extension BrowserExploreFeaturedView: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    didSelectApp?(indexPath.item - ((indexPath.item / apps.count) * apps.count))
+    didSelectApp?(indexPath.item - ((indexPath.item / dapps.count) * dapps.count))
   }
   
   func scrollViewWillBeginDragging(_ scrollView: UIScrollView) {
@@ -226,8 +227,8 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
   
   func resetCarouselIfNeeded() {
     let indexOfMostVisibleCell = self.indexOfMostVisibleCell()
-    let indexOfLeftSignificantCell = Int.numberOfAdditionalItems/2 * self.apps.count
-    let indexOfRightSignificantCell = indexOfLeftSignificantCell + self.apps.count - 1
+    let indexOfLeftSignificantCell = Int.numberOfAdditionalItems/2 * self.dapps.count
+    let indexOfRightSignificantCell = indexOfLeftSignificantCell + self.dapps.count - 1
     
     if indexOfMostVisibleCell == indexOfLeftSignificantCell - 1 {
       collectionView.scrollToItem(at: IndexPath(item: indexOfRightSignificantCell, section: 0),
@@ -240,10 +241,10 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
     }
   }
   
-  func mapApp(_ app: PopularApp) -> BrowserExploreFeaturedCell.Model {
+  func mapDapp(_ dapp: Dapp) -> BrowserExploreFeaturedCell.Model {
     
     let textColor: UIColor
-    if let itemTextColor = app.textColor {
+    if let itemTextColor = dapp.textColor {
       textColor = UIColor(hex: itemTextColor)
     } else {
       textColor = .Text.primary
@@ -253,13 +254,13 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
       iconConfiguration: TKUIListItemIconView.Configuration(
         iconConfiguration: .image(
           TKUIListItemImageIconView.Configuration(
-            image: .asyncImage(app.icon, TKCore.ImageDownloadTask(
+            image: .asyncImage(dapp.icon, TKCore.ImageDownloadTask(
               closure: {
                 [imageLoader] imageView,
                 size,
                 cornerRadius in
                 return imageLoader.loadImage(
-                  url: app.icon,
+                  url: dapp.icon,
                   imageView: imageView,
                   size: size,
                   cornerRadius: cornerRadius
@@ -276,10 +277,10 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
       ),
       contentConfiguration: TKUIListItemContentView.Configuration(
         leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-          title: app.name?.withTextStyle(.label2, color: textColor),
+          title: dapp.name.withTextStyle(.label2, color: textColor),
           tagViewModel: nil,
           subtitle: nil,
-          description: app.description?.withTextStyle(
+          description: dapp.description?.withTextStyle(
             .body3Alternate,
             color: textColor.withAlphaComponent(0.76),
             lineBreakMode: .byTruncatingTail
@@ -294,7 +295,7 @@ extension BrowserExploreFeaturedView: UICollectionViewDelegate {
     
     let posterImageTask = TKCore.ImageDownloadTask { imageView, size, cornerRadius in
       return self.imageLoader.loadImage(
-        url: app.poster,
+        url: dapp.poster,
         imageView: imageView,
         size: size,
         cornerRadius: cornerRadius

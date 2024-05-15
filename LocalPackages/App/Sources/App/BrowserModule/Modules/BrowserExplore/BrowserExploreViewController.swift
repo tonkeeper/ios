@@ -54,6 +54,7 @@ final class BrowserExploreViewController: GenericViewViewController<BrowserExplo
   }
   
   func setListContentInsets(_ insets: UIEdgeInsets) {
+    customView.topInset = insets.top
     customView.collectionView.contentInset = insets
   }
 }
@@ -89,8 +90,12 @@ private extension BrowserExploreViewController {
       self?.dataSource.apply(snapshot, animatingDifferences: false)
     }
     
-    viewModel.didUpdateFeaturedItems = { [weak self] apps in
-      self?.featuredView.apps = apps
+    viewModel.didUpdateFeaturedItems = { [weak self] dapps in
+      self?.featuredView.dapps = dapps
+    }
+    
+    viewModel.didUpdateViewState = { [weak self] state in
+      self?.customView.state = state
     }
   }
   

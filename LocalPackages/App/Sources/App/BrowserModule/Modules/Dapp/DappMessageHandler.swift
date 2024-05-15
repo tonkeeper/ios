@@ -25,17 +25,17 @@ enum DappMessageHandlerResult {
 }
 
 protocol DappMessageHandler {
-  func handleFunctionInvokeMessage(_ message: DappFunctionInvokeMessage, app: PopularApp, completion: @escaping (DappMessageHandlerResult) -> Void)
-  func reconnectIfNeeded(app: PopularApp, completion: @escaping (DappMessageHandlerResult) -> Void)
+  func handleFunctionInvokeMessage(_ message: DappFunctionInvokeMessage, dapp: Dapp, completion: @escaping (DappMessageHandlerResult) -> Void)
+  func reconnectIfNeeded(dapp: Dapp, completion: @escaping (DappMessageHandlerResult) -> Void)
 }
 
 final class DefaultDappMessageHandler: DappMessageHandler {
   var connect: ((Int, TonConnectRequestPayload, @escaping (TonConnectAppsStore.ConnectResult) -> Void) -> Void)?
-  var reconnect: ((PopularApp, @escaping (TonConnectAppsStore.ConnectResult) -> Void) -> Void)?
-  var disconnect: ((PopularApp) -> Void)?
-  var send: ((PopularApp, TonConnect.AppRequest, @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) -> Void)?
+  var reconnect: ((Dapp, @escaping (TonConnectAppsStore.ConnectResult) -> Void) -> Void)?
+  var disconnect: ((Dapp) -> Void)?
+  var send: ((Dapp, TonConnect.AppRequest, @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) -> Void)?
   
-  func handleFunctionInvokeMessage(_ message: DappFunctionInvokeMessage, app: PopularApp, completion: @escaping (DappMessageHandlerResult) -> Void) {
+  func handleFunctionInvokeMessage(_ message: DappFunctionInvokeMessage, dapp: Dapp, completion: @escaping (DappMessageHandlerResult) -> Void) {
     switch message.type {
     case .connect:
       guard message.args.count >= 2,
@@ -56,7 +56,7 @@ final class DefaultDappMessageHandler: DappMessageHandler {
       let reconnectCompletion: ((TonConnectAppsStore.ConnectResult) -> Void) = { result in
         completion(DappMessageHandlerResult(result))
       }
-      reconnect?(app, reconnectCompletion)
+      reconnect?(dapp, reconnectCompletion)
     case .send:
       guard !message.args.isEmpty,
             let data = try? JSONSerialization.data(withJSONObject: message.args[0]),
@@ -68,16 +68,16 @@ final class DefaultDappMessageHandler: DappMessageHandler {
       let sendCompletion: ((TonConnectAppsStore.SendTransactionResult) -> Void) = { result in
         completion(DappMessageHandlerResult(result))
       }
-      send?(app, request, sendCompletion)
+      send?(dapp, request, sendCompletion)
     case .disconnect:
-      disconnect?(app)
+      disconnect?(dapp)
     }
   }
   
-  func reconnectIfNeeded(app: PopularApp, completion: @escaping (DappMessageHandlerResult) -> Void) {
+  func reconnectIfNeeded(dapp: Dapp, completion: @escaping (DappMessageHandlerResult) -> Void) {
     let reconnectCompletion: ((TonConnectAppsStore.ConnectResult) -> Void) = { result in
       completion(DappMessageHandlerResult(result))
     }
-    reconnect?(app, reconnectCompletion)
+    reconnect?(dapp, reconnectCompletion)
   }
 }

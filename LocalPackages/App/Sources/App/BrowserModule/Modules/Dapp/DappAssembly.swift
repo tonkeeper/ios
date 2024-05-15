@@ -4,10 +4,10 @@ import KeeperCore
 
 struct DappAssembly {
   private init() {}
-  static func module(app: PopularApp, messageHandler: DappMessageHandler)
+  static func module(dapp: Dapp, messageHandler: DappMessageHandler)
   -> MVVMModule<DappViewController, Void, Void> {
 
-    let viewModel = DappViewModelImplementation(app: app, messageHandler: messageHandler)
+    let viewModel = DappViewModelImplementation(dapp: dapp, messageHandler: messageHandler)
     let viewController = DappViewController(
       viewModel: viewModel
     )

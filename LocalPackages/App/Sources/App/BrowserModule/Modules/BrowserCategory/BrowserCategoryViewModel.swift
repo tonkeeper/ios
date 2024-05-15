@@ -5,7 +5,7 @@ import TKCore
 import TKLocalize
 
 protocol BrowserCategoryModuleOutput: AnyObject {
-  var didSelectApp: ((PopularApp) -> Void)? { get set }
+  var didSelectDapp: ((Dapp) -> Void)? { get set }
 }
 
 protocol BrowserCategoryViewModel: AnyObject {
@@ -19,7 +19,7 @@ final class BrowserCategoryViewModelImplementation: BrowserCategoryViewModel, Br
   
   // MARK: - BrowserCategoryModuleOutput
   
-  var didSelectApp: ((PopularApp) -> Void)?
+  var didSelectDapp: ((Dapp) -> Void)?
   
   // MARK: - BrowserCategoryViewModel
   
@@ -59,11 +59,11 @@ private extension BrowserCategoryViewModelImplementation {
   }
   
   func mapCategory(_ category: PopularAppsCategory) -> BrowserCategorySection {
-    let items = category.apps.map { mapPopularApp($0) }
+    let items = category.apps.map { mapDapp($0) }
     return BrowserCategorySection.regular(items: items)
   }
   
-  func mapPopularApp(_ popularApp: PopularApp) -> TKUIListItemCell.Configuration? {
+  func mapDapp(_ dapp: Dapp) -> TKUIListItemCell.Configuration? {
     let id = UUID().uuidString
     return TKUIListItemCell.Configuration(
       id: id,
@@ -72,14 +72,14 @@ private extension BrowserCategoryViewModelImplementation {
           iconConfiguration: .image(
             TKUIListItemImageIconView.Configuration(
               image: .asyncImage(
-                popularApp.icon,
+                dapp.icon,
                 TKCore.ImageDownloadTask(
                   closure: {
                     [imageLoader] imageView,
                     size,
                     cornerRadius in
                     return imageLoader.loadImage(
-                      url: popularApp.icon,
+                      url: dapp.icon,
                       imageView: imageView,
                       size: size,
                       cornerRadius: cornerRadius
@@ -97,10 +97,10 @@ private extension BrowserCategoryViewModelImplementation {
         ),
         contentConfiguration: TKUIListItemContentView.Configuration(
           leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: popularApp.name?.withTextStyle(.label2, color: .Text.primary),
+            title: dapp.name.withTextStyle(.label2, color: .Text.primary),
             tagViewModel: nil,
             subtitle: nil,
-            description: popularApp.description?.withTextStyle(.body3Alternate, color: .Text.secondary),
+            description: dapp.description?.withTextStyle(.body3Alternate, color: .Text.secondary),
             descriptionNumberOfLines: 2
           ),
           rightItemConfiguration: nil,
@@ -109,7 +109,7 @@ private extension BrowserCategoryViewModelImplementation {
         accessoryConfiguration: .image(.init(image: .TKUIKit.Icons.Size16.chevronRight, tintColor: .Icon.tertiary, padding: .zero))
       ),
       selectionClosure: { [weak self] in
-        self?.didSelectApp?(popularApp)
+        self?.didSelectDapp?(dapp)
       }
     )
   }
