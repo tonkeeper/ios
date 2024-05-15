@@ -85,6 +85,15 @@ private extension SignConfirmationViewModelImplementation {
         transactionAction in
         SignConfirmationTransactionsView.Model.Action(
           configuration: SignConfirmationTransactionItemView.Model(
+            iconConfiguration: SignConfirmationTransactionItemView.IconView.Configuration(
+              imageModel: TKUIListItemImageIconView.Configuration(
+                image: .image(UIImage(named: "ic-tray-arrow-up-28")?.withRenderingMode(.alwaysTemplate)),
+                tintColor: .Icon.secondary,
+                backgroundColor: .Background.contentTint,
+                size: CGSize(width: 44, height: 44),
+                cornerRadius: 22
+              )
+            ),
             contentConfiguration: TKUIListItemContentView.Configuration(
               leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
                 title: transactionAction.title.withTextStyle(.label1, color: .Text.primary),
