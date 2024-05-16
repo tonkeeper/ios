@@ -49,11 +49,18 @@ public extension TKModalCardViewController.Configuration {
     public let left: String
     public let rightTop: RightItem<String>
     public let rightBottom: RightItem<String?>
-    
-    public init(left: String, rightTop: RightItem<String>, rightBottom: RightItem<String?>) {
+    public let copyableValue: String?
+
+    public init(
+      left: String,
+      rightTop: RightItem<String>,
+      rightBottom: RightItem<String?>, 
+      copyableValue: String? = nil
+    ) {
       self.left = left
       self.rightTop = rightTop
       self.rightBottom = rightBottom
+      self.copyableValue = copyableValue
     }
   }
   
