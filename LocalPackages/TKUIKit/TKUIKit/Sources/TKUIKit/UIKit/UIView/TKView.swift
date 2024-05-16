@@ -13,4 +13,12 @@ open class TKView: UIView {
   
   open func setup() {}
   open func setupConstraints() {}
+  
+  open func updateKeyboardHeight(_ height: CGFloat,
+                                 duration: TimeInterval,
+                                 curve: UIView.AnimationCurve) {
+    
+  }
+  open func hideKeyboard(duration: TimeInterval,
+                         curve: UIView.AnimationCurve) {}
 }

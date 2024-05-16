@@ -1,6 +1,6 @@
 import Foundation
 
-protocol PopularAppsService {
+public protocol PopularAppsService {
   func loadPopularApps(lang: String) async throws -> PopularAppsResponseData
   func getPopularApps(lang: String) throws -> PopularAppsResponseData
   func savePopularApps(_ popularApps: PopularAppsResponseData, lang: String) throws

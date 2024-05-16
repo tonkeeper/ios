@@ -39,6 +39,7 @@ private extension BrowserView {
   func setup() {
     backgroundColor = .Background.page
     searchBar.blurView.isHidden = true
+    searchBar.textField.isUserInteractionEnabled = false
     
     addSubview(exploreContainer)
     addSubview(connectedContainer)

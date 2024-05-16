@@ -39,8 +39,8 @@ private extension BrowserCoordinator {
       self?.openCategory(category)
     }
     
-    module.output.didSelectDapp = { [weak self] dapp in
-      self?.openDapp(dapp)
+    module.output.didSelectDapp = { [weak self, unowned router] dapp in
+      self?.openDapp(dapp, fromViewController: router.rootViewController)
     }
     
     router.push(viewController: module.view, animated: false)
@@ -49,8 +49,8 @@ private extension BrowserCoordinator {
   func openCategory(_ category: PopularAppsCategory) {
     let module = BrowserCategoryAssembly.module(category: category)
     
-    module.output.didSelectDapp = { [weak self] dapp in
-      self?.openDapp(dapp)
+    module.output.didSelectDapp = { [weak self, unowned router] dapp in
+      self?.openDapp(dapp, fromViewController: router.rootViewController)
     }
     
     module.view.setupBackButton()
@@ -58,7 +58,7 @@ private extension BrowserCoordinator {
     router.push(viewController: module.view)
   }
   
-  func openDapp(_ dapp: Dapp) {
+  func openDapp(_ dapp: Dapp, fromViewController: UIViewController) {
     let messageHandler = DefaultDappMessageHandler()
     let module = DappAssembly.module(dapp: dapp, messageHandler: messageHandler)
     
@@ -100,11 +100,18 @@ private extension BrowserCoordinator {
     }
 
     module.view.modalPresentationStyle = .fullScreen
-    router.present(module.view)
+    fromViewController.present(module.view, animated: true)
   }
   
   func openSearch() {
+    let module = BrowserSearchAssembly.module(keeperCoreAssembly: keeperCoreMainAssembly)
+    let navigationController = TKNavigationController(rootViewController: module.view)
+    navigationController.configureDefaultAppearance()
+    module.output.didSelectDapp = { [weak self, unowned navigationController] dapp in
+      self?.openDapp(dapp, fromViewController: navigationController)
+    }
     
+    router.present(navigationController)
   }
   
   func performConnect(protocolVersion: Int,

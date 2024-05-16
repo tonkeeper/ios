@@ -49,7 +49,7 @@ private extension BrowserSearchBar {
     )
     textField.addTarget(self, action: #selector(didBecomeActive), for: .editingDidBegin)
     textField.addTarget(self, action: #selector(didBecomeInactive), for: .editingDidEnd)
-    textField.isUserInteractionEnabled = false
+    textField.keyboardAppearance = .dark
     
     textFieldContainer.backgroundColor = .Background.content
     textFieldContainer.layer.masksToBounds = true
