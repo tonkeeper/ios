@@ -160,7 +160,7 @@ public final class MainController {
   }
   
   private func didUpdateActiveWallet() {
-    let isBrowserAvailable = !walletsStore.activeWallet.isWatchonly
+    let isBrowserAvailable = !walletsStore.activeWallet.isWatchonly && !walletsStore.activeWallet.isExternal
     didUpdateBrowserAvailability?(isBrowserAvailable)
   }
 }

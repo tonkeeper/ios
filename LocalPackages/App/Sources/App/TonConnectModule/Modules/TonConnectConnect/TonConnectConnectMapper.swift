@@ -36,13 +36,19 @@ struct TonConnectConnectMapper {
     title.append(domain)
     title.append(questioMark)
     
-    let description = "\(manifest.name) is requesting access to your wallet address:"
+    let description = NSMutableAttributedString()
+    let caption = "\(manifest.name) is requesting access to your wallet address\(showWalletPicker ? ":" : " ")"
       .withTextStyle(
         .body1,
         color: .Text.secondary,
         alignment: .center,
         lineBreakMode: .byWordWrapping
       )
+    description.append(caption)
+    if !showWalletPicker, let address = try? wallet.friendlyAddress.toShort() {
+      let walletAddress = address.withTextStyle(.body1, color: .Text.tertiary)
+      description.append(walletAddress)
+    }
     
     let address = try? wallet.friendlyAddress.toShort()
     

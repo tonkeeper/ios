@@ -86,7 +86,7 @@ private extension TonConnectConnectViewModelImplementation {
     let configuration = TonConnectConnectMapper.modalCardConfiguration(
       wallet: selectedWallet,
       manifest: manifest,
-      showWalletPicker: !walletsStore.wallets.isEmpty,
+      showWalletPicker: !walletsStore.wallets.isEmpty && showWalletPicker,
       headerView: {
         headerView?($0, $1)
       },
