@@ -1,9 +1,13 @@
 import UIKit
 
-public final class TKUIListItemIconView: UIView, TKConfigurableView {
+public final class TKUIListItemIconView: UIView, TKConfigurableView, ReusableView {
   
   private var iconView: UIView?
   private var alignment: Configuration.Alignment = .top
+  
+  public func prepareForReuse() {
+    (iconView as? ReusableView)?.prepareForReuse()
+  }
 
   public struct Configuration: Hashable {
     public enum Alignment: Hashable {

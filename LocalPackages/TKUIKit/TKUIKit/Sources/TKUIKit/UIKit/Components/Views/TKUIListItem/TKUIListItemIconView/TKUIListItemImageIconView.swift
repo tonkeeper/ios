@@ -96,6 +96,7 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
 
 private extension TKUIListItemImageIconView {
   func setup() {
+    layer.masksToBounds = true
     imageView.contentMode = .center
     addSubview(imageView)
   }
