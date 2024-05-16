@@ -5,6 +5,7 @@ import SnapKit
 // MARK: - ShimmerView
 
 final class BuySellOperatorShimmerView: UICollectionReusableView, ReusableView, TKCollectionViewSupplementaryContainerViewContentView {
+  
   private let pickerCellShimmerView = BuySellCurrencyPickerShimmerCellView()
   private var cellShimmerView = [BuySellOperatorShimmerCellView]()
   private let cellsContainer = UIView()

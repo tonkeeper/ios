@@ -3,6 +3,7 @@ import TKUIKit
 import SnapKit
 
 final class CurrencyListView: UIView {
+  
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
   let titleView = ModalTitleView()
   

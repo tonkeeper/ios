@@ -3,6 +3,7 @@ import TKUIKit
 import SnapKit
 
 final class InfoButtonsContainerView: UIView {
+  
   private let leftButton = TKButton(configuration: .infoButtonConfiguration())
   private let rightButton = TKButton(configuration: .infoButtonConfiguration())
   private let spacerDot: UILabel = {

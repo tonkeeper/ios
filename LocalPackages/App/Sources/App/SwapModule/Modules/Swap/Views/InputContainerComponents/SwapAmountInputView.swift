@@ -82,6 +82,7 @@ private extension CGFloat {
 }
 
 public class PlainTextField: UITextField {
+  
   public var didUpdateText: ((String) -> Void)?
   public var didBeginEditing: (() -> Void)?
   public var didEndEditing: (() -> Void)?

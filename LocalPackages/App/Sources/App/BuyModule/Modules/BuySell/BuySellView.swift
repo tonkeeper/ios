@@ -3,6 +3,7 @@ import TKUIKit
 import SnapKit
 
 final class BuySellView: UIView {
+  
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
   
   let amountInputView = BuySellAmountInputView()

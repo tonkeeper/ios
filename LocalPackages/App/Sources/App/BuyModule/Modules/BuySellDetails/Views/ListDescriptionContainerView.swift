@@ -3,14 +3,15 @@ import TKUIKit
 import SnapKit
 
 final class ListDescriptionContainerView: UIView, TKConfigurableView {
-  let descriptionLabel = UILabel()
-  let valueLabel = UILabel()
   
   var configuration: Configuration = .init(description: NSAttributedString()) {
     didSet {
       didUpdateConfiguration()
     }
   }
+  
+  let descriptionLabel = UILabel()
+  let valueLabel = UILabel()
   
   override var intrinsicContentSize: CGSize { sizeThatFits(bounds.size) }
   

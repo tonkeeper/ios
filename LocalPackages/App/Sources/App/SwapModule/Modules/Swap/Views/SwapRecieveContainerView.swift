@@ -4,10 +4,11 @@ import SnapKit
 
 final class SwapRecieveContainerView: UIView, ConfigurableView {
   
-  let inputContainerView = SwapInputContainerView(inputViewHeight: 52, topOffset: 12)
   var textField: PlainTextField {
     inputContainerView.amountInputView.textField
   }
+  
+  let inputContainerView = SwapInputContainerView(inputViewHeight: 52, topOffset: 12)
   
   override init(frame: CGRect) {
     super.init(frame: frame)

@@ -44,6 +44,15 @@ final class SwapTokenButton: TKUIButton<SwapTokenButtonContentView, TKUIButtonDe
 
 final class SwapTokenButtonContentView: UIView, ConfigurableView {
   
+  private var hasIcon: Bool {
+    !iconImageView.isHidden
+  }
+  
+  private var contentPadding: UIEdgeInsets {
+    let leftPadding: CGFloat = hasIcon ? 4 : 14
+    return UIEdgeInsets(top: 4, left: leftPadding, bottom: 4, right: 14)
+  }
+  
   let iconImageView = UIImageView()
   let titleLabel = UILabel()
   let contentStackView: UIStackView = {
@@ -53,15 +62,6 @@ final class SwapTokenButtonContentView: UIView, ConfigurableView {
     stackView.distribution = .equalSpacing
     return stackView
   }()
-  
-  private var contentPadding: UIEdgeInsets {
-    let leftPadding: CGFloat = hasIcon ? 4 : 14
-    return UIEdgeInsets(top: 4, left: leftPadding, bottom: 4, right: 14)
-  }
-  
-  private var hasIcon: Bool {
-    !iconImageView.isHidden
-  }
   
   private var imageDownloadTask: ImageDownloadTask?
   

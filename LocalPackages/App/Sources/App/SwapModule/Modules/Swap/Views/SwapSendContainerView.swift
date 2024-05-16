@@ -4,8 +4,6 @@ import SnapKit
 
 final class SwapSendContainerView: UIView, ConfigurableView {
   
-  let inputContainerView = SwapInputContainerView(inputViewHeight: 48, topOffset: 0)
-  
   var maxButton: TKButton {
     inputContainerView.amountHeaderView.actionButton
   }
@@ -13,6 +11,8 @@ final class SwapSendContainerView: UIView, ConfigurableView {
   var textField: PlainTextField {
     inputContainerView.amountInputView.textField
   }
+  
+  let inputContainerView = SwapInputContainerView(inputViewHeight: 48, topOffset: 0)
   
   override init(frame: CGRect) {
     super.init(frame: frame)
