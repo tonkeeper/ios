@@ -46,7 +46,6 @@ private extension TKTextInputTextViewControl {
     keyboardType = .alphabet
     autocapitalizationType = .none
     autocorrectionType = .no
-    keyboardAppearance = .dark
     isScrollEnabled = false
     backgroundColor = .clear
     delegate = self

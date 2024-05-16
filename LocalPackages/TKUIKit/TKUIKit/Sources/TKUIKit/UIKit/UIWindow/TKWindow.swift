@@ -25,15 +25,21 @@ open class TKWindow: UIWindow {
 
 private extension TKWindow {
   func setup() {
-//    overrideUserInterfaceStyle = ThemeManager.shared.theme.userInterfaceStyle
-    token = NotificationCenter.default.addObserver(
-      forName: Notification.Name.didChangeThemeMode,
-      object: nil,
-      queue: .main,
-      using: { [weak self] notification in
-//        self?.overrideUserInterfaceStyle = ThemeManager.shared.theme.userInterfaceStyle
+    TKThemeManager.shared.addEventObserver(self) { observer, theme in
+      observer.updateUserInterfaceStyle(theme.themeAppaearance.userInterfaceStyle)
+    }
+    updateUserInterfaceStyle(TKThemeManager.shared.themeAppearance.userInterfaceStyle)
+  }
+  
+  private func updateUserInterfaceStyle(_ userInterfaceStyle: UIUserInterfaceStyle) {
+    if traitCollection.userInterfaceStyle == userInterfaceStyle {
+      if traitCollection.userInterfaceStyle == .light {
+        overrideUserInterfaceStyle = .dark
+      } else {
+        overrideUserInterfaceStyle = .light
       }
-    )
+    }
+    overrideUserInterfaceStyle = userInterfaceStyle
   }
 }
 

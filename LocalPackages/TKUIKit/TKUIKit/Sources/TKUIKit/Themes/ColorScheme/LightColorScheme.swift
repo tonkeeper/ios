@@ -1,156 +1,163 @@
 import UIKit
 
 struct LightColorScheme: ColorScheme {
-  static var backgroundContentAttention: UIColor {
+  var backgroundContentAttention: UIColor {
     return UIColor(hex: "#F0F0F0")
   }
-  static var backgroundContentTint: UIColor {
+  var backgroundContentTint: UIColor {
     return UIColor(hex: "#E7E6EB")
   }
-  static var backgroundContent: UIColor {
+  var backgroundContent: UIColor {
     return UIColor(hex: "#FFFFFF")
   }
-  static var backgroundHighlighted: UIColor {
+  var backgroundHighlighted: UIColor {
     return UIColor(hex: "#818C99", alpha: 0.08)
   }
-  static var backgroundOverlayExtraLight: UIColor {
+  var backgroundOverlayExtraLight: UIColor {
     return UIColor(hex: "#141414", alpha: 0.24)
   }
-  static var backgroundOverlayLight: UIColor {
+  var backgroundOverlayLight: UIColor {
     return UIColor(hex: "#141414", alpha: 0.48)
   }
-  static var backgroundOverlayStrong: UIColor {
+  var backgroundOverlayStrong: UIColor {
     return UIColor(hex: "#141414", alpha: 0.72)
   }
-  static var backgroundPage: UIColor {
+  var backgroundPage: UIColor {
     return UIColor(hex: "#EFEEF3")
   }
-  static var backgroundTransparent: UIColor {
+  var backgroundTransparent: UIColor {
     return UIColor(hex: "#FFFFFF", alpha: 0.96)
   }
-  static var backgroundContentPlaceholder: UIColor {
+  var backgroundContentPlaceholder: UIColor {
     return UIColor(hex: "#FFFFFF", alpha: 0.08)
   }
   
-  static var buttonPrimaryBackgroundDisabled: UIColor {
-    return UIColor(hex: "#378AC2")
+  var buttonPrimaryBackgroundDisabled: UIColor {
+    return UIColor(hex: "#3D9AFF")
   }
-  static var buttonPrimaryBackgroundHighlighted: UIColor {
+  var buttonPrimaryBackgroundHighlighted: UIColor {
     return UIColor(hex: "#1F8AFF")
   }
-  static var buttonPrimaryBackground: UIColor {
+  var buttonPrimaryBackground: UIColor {
     return UIColor(hex: "#007AFF")
   }
-  static var buttonPrimaryForeground: UIColor {
+  var buttonPrimaryForeground: UIColor {
     return UIColor(hex: "#FFFFFF")
   }
-  static var buttonSecondaryBackgroundDisabled: UIColor {
+  var buttonSecondaryBackgroundDisabled: UIColor {
     return UIColor(hex: "#818C99", alpha: 0.12)
   }
-  static var buttonSecondaryBackgroundHighlighted: UIColor {
+  var buttonSecondaryBackgroundHighlighted: UIColor {
     return UIColor(hex: "#818C99", alpha: 0.24)
   }
-  static var buttonSecondaryBackground: UIColor {
+  var buttonSecondaryBackground: UIColor {
     return UIColor(hex: "#818C99", alpha: 0.16)
   }
-  static var buttonSecondaryForeground: UIColor {
+  var buttonSecondaryForeground: UIColor {
     return UIColor(hex: "#000000")
   }
-  static var buttonTertiaryBackgroundDisabled: UIColor {
+  var buttonTertiaryBackgroundDisabled: UIColor {
     return UIColor(hex: "#818C99", alpha: 0.08)
   }
-  static var buttonTertiaryBackgroundHighlighted: UIColor {
+  var buttonTertiaryBackgroundHighlighted: UIColor {
     return UIColor(hex: "#818C99", alpha: 0.2)
   }
-  static var buttonTertiaryBackground: UIColor {
+  var buttonTertiaryBackground: UIColor {
     return UIColor(hex: "#818C99", alpha: 0.12)
   }
-  static var buttonTertiaryForeground: UIColor {
+  var buttonTertiaryForeground: UIColor {
     return UIColor(hex: "#000000")
   }
-  static var buttonPrimaryBackgroundGreen: UIColor {
+  var buttonPrimaryBackgroundGreen: UIColor {
     return UIColor(hex: "#25B86F")
   }
-  static var buttonPrimaryBackgroundGreenHighlighted: UIColor {
+  var buttonPrimaryBackgroundGreenHighlighted: UIColor {
     return UIColor(hex: "#17C26D")
   }
-  static var buttonPrimaryBackgroundGreenDisabled: UIColor {
+  var buttonPrimaryBackgroundGreenDisabled: UIColor {
     return UIColor(hex: "#2B9962")
   }
   
-  static var fieldActiveBorder: UIColor {
+  var fieldActiveBorder: UIColor {
     return UIColor(hex: "#007AFF")
   }
-  static var fieldBackground: UIColor {
+  var fieldBackground: UIColor {
     return UIColor(hex: "#818C99", alpha: 0.12)
   }
-  static var fieldErrorBackground: UIColor {
+  var fieldErrorBackground: UIColor {
     return UIColor(hex: "#FF3B30", alpha: 0.08)
   }
-  static var fieldErrorBorder: UIColor {
+  var fieldErrorBorder: UIColor {
     return UIColor(hex: "#FF3B30")
   }
   
-  static var iconPrimaryAlternate: UIColor {
+  var iconPrimaryAlternate: UIColor {
     return UIColor(hex: "#FFFFFF")
   }
-  static var iconPrimary: UIColor {
+  var iconPrimary: UIColor {
     return UIColor(hex: "#000000")
   }
-  static var iconSecondary: UIColor {
+  var iconSecondary: UIColor {
     return UIColor(hex: "#818C99")
   }
-  static var iconTertiary: UIColor {
+  var iconTertiary: UIColor {
     return UIColor(hex: "#95A0AD")
   }
   
-  static var separatorAlternate: UIColor {
+  var separatorAlternate: UIColor {
     return UIColor(hex: "#3C3C43", alpha: 0.08)
   }
-  static var separatorCommon: UIColor {
+  var separatorCommon: UIColor {
     return UIColor(hex: "#3C3C43", alpha: 0.08)
   }
   
-  static var tabBarActiveIcon: UIColor {
+  var tabBarActiveIcon: UIColor {
     return UIColor(hex: "#007AFF")
   }
-  static var tabBarInactiveIcon: UIColor {
+  var tabBarInactiveIcon: UIColor {
     return UIColor(hex: "#95A0AD")
   }
   
-  static var textAccent: UIColor {
+  var textAccent: UIColor {
     return UIColor(hex: "#007AFF")
   }
-  static var textPrimaryAlternate: UIColor {
+  var textPrimaryAlternate: UIColor {
     return UIColor(hex: "#FFFFFF")
   }
-  static var textPrimary: UIColor {
+  var textPrimary: UIColor {
     return UIColor(hex: "#000000")
   }
-  static var textSecondary: UIColor {
+  var textSecondary: UIColor {
     return UIColor(hex: "#818C99")
   }
-  static var textTertiary: UIColor {
+  var textTertiary: UIColor {
     return UIColor(hex: "#95A0AD")
   }
   
-  static var accentBlue: UIColor {
+  var bubbleBackground: UIColor {
     return UIColor(hex: "#007AFF")
   }
-  static var accentGreen: UIColor {
+  var bubbleForeground: UIColor {
+    return UIColor(hex: "#FFFFFF")
+  }
+  
+  var accentBlue: UIColor {
+    return UIColor(hex: "#007AFF")
+  }
+  var accentGreen: UIColor {
     return UIColor(hex: "#25B86F")
   }
-  static var accentRed: UIColor {
-    return UIColor(hex: "#25B86F")
+  var accentRed: UIColor {
+    return UIColor(hex: "#FF3B30")
   }
-  static var accentOrange: UIColor {
+  var accentOrange: UIColor {
     return UIColor(hex: "#F5A73B")
   }
-  static var accentPurple: UIColor {
+  var accentPurple: UIColor {
     return UIColor(hex: "#7665E5")
   }
   
-  static var constantTonBlue: UIColor {
+  var constantTonBlue: UIColor {
     return UIColor(hex: "#0088CC")
   }
   

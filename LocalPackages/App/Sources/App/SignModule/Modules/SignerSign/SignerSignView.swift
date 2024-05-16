@@ -5,6 +5,7 @@ import SnapKit
 final class SignerSignView: UIView, ConfigurableView {
   
   let scrollView = UIScrollView()
+  let scrollViewContainer = UIView()
   let contentView = UIView()
   
   let fistStepView = SignerSignStepView()
@@ -54,7 +55,8 @@ private extension SignerSignView {
     qrCodeView.color = UIColor(hex: "FFE26B")
     
     addSubview(scrollView)
-    scrollView.addSubview(contentView)
+    scrollView.addSubview(scrollViewContainer)
+    scrollViewContainer.addSubview(contentView)
     
     contentView.addSubview(fistStepView)
     contentView.addSubview(qrCodeView)
@@ -70,11 +72,16 @@ private extension SignerSignView {
       make.edges.equalTo(self)
     }
     
+    scrollViewContainer.snp.makeConstraints { make in
+      make.edges.equalTo(scrollView)
+      make.width.equalTo(scrollView)
+    }
+    
     contentView.snp.makeConstraints { make in
-      make.top.bottom.equalTo(scrollView)
-      make.left.equalTo(scrollView).offset(16)
-      make.right.equalTo(scrollView).offset(-16)
-      make.width.equalTo(scrollView).inset(16).priority(.high)
+      make.top.bottom.equalTo(scrollViewContainer)
+      make.left.equalTo(scrollViewContainer).offset(16)
+      make.right.equalTo(scrollViewContainer).offset(-16)
+      make.width.equalTo(scrollViewContainer).inset(16).priority(.high)
     }
     
     fistStepView.snp.makeConstraints { make in
