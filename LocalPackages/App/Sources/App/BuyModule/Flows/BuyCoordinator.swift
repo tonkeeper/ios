@@ -5,7 +5,9 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
-public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
+public final class BuyCoordinator: RouterCoordinator<NavigationControllerRouter> {
+  
+  var didFinish: (() -> Void)?
   
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -14,7 +16,7 @@ public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
   init(wallet: Wallet,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        coreAssembly: TKCore.CoreAssembly,
-       router: ViewControllerRouter) {
+       router: NavigationControllerRouter) {
     self.wallet = wallet
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
@@ -22,11 +24,27 @@ public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
   
   public override func start() {
-    openBuyList()
+    openBuyAndSell()
   }
 }
 
 private extension BuyCoordinator {
+  func openBuyAndSell() {
+    let module = BuyAndSellAssembly.module(
+      buyListController: keeperCoreMainAssembly.buyListController(
+        wallet: wallet,
+        isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
+      ),
+      appSettings: coreAssembly.appSettings
+    )
+    
+    module.view.setupRightCloseButton { [weak self] in
+      self?.didFinish?()
+    }
+    
+    router.push(viewController: module.view, animated: false)
+  }
+  
   func openBuyList() {
     let module = BuyListAssembly.module(
       buyListController: keeperCoreMainAssembly.buyListController(
