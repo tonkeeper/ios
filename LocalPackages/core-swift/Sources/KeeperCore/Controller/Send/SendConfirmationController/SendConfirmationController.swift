@@ -390,12 +390,19 @@ private extension SendConfirmationController {
   func createNFTEmulateTransactionBoc(nft: NFT) async throws -> String {
     let transferAmount = BigUInt(stringLiteral: "10000000000")
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    
+    var commentCell: Cell?
+    if let comment = comment {
+        commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
+    }
+    
     return try await NFTTransferMessageBuilder.sendNFTTransfer(
         wallet: wallet,
         seqno: seqno,
         nftAddress: nft.address,
         recipientAddress: recipient.recipientAddress.address,
-        transferAmount: transferAmount) { transfer in
+        transferAmount: transferAmount,
+        forwardPayload: commentCell) { transfer in
             try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
         }
   }
@@ -409,12 +416,19 @@ private extension SendConfirmationController {
     : transferAmount
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     
+    var commentCell: Cell?
+    if let comment = comment {
+        commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
+    }
+    
     return try await NFTTransferMessageBuilder.sendNFTTransfer(
         wallet: wallet,
         seqno: seqno,
         nftAddress: nft.address,
         recipientAddress: recipient.recipientAddress.address,
-        transferAmount: transferAmount.magnitude) { transfer in
+        transferAmount: transferAmount.magnitude,
+        forwardPayload: commentCell
+        ) { transfer in
           return try await signTransfer(transfer)
         }
   }
