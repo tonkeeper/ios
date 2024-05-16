@@ -46,6 +46,7 @@ private extension OnboardingCreateKeyCoordinator {
       configurator: CreateEditWalletNameViewModelConfigurator(),
       defaultName: nil
     )
+    module.view.presentationMode = .fullscreen
     module.view.setupBackButton()
     module.output.didEnterWalletName = { [weak self] walletName in
       self?.createKey(password: password, name: walletName)

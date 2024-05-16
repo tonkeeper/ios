@@ -82,6 +82,7 @@ final class KeyDetailsViewController: GenericViewViewController<KeyDetailsView> 
 
 private extension KeyDetailsViewController {
   func setup() {
+    customView.collectionView.contentInset.top = 16
     customView.collectionView.delegate = self
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
   }
@@ -129,6 +130,7 @@ private extension KeyDetailsViewController {
         }
       )
     )
+    alertController.overrideUserInterfaceStyle = ThemeManager.shared.theme.alertUserInterfaceStyle
     present(alertController, animated: true)
   }
   

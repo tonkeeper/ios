@@ -64,6 +64,7 @@ private extension ScannerViewController {
         let viewController = UIHostingController(rootView: NoCameraPermissionView(buttonHandler: { [weak self] in
           self?.viewModel.didTapSettingsButton()
         }))
+        viewController.view.backgroundColor = .Background.page
         addChild(viewController)
         customView.setCameraPermissionDeniedView(viewController.view)
         viewController.didMove(toParent: self)

@@ -62,7 +62,7 @@ final class EditWalletNameViewModelImplementation: EditWalletNameViewModel, Edit
     }
     didUpdateContinueButton?(continueButtonConfiguration)
 
-    didUpdateIsContinueButtonEnabled?(false)
+    didUpdateIsContinueButtonEnabled?(configurator.isContinueButtonEnabledOnStart())
   }
   
   func didUpdateInput(_ input: String) {

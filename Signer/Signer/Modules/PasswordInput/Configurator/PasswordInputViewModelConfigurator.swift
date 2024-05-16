@@ -1,4 +1,4 @@
-import Foundation
+import UIKit
 import SignerCore
 import SignerLocalize
 
@@ -58,7 +58,11 @@ final class ReenterPasswordPasswordInputViewModelConfigurator: PasswordInputView
   }
   
   func validateInput(_ input: String) -> Bool {
-    input == password
+    let isValid = input == password
+    if !isValid {
+      UINotificationFeedbackGenerator().notificationOccurred(.error)
+    }
+    return isValid
   }
 }
 
@@ -83,6 +87,10 @@ final class EnterPasswordPasswordInputViewModelConfigurator: PasswordInputViewMo
   }
   
   func validateInput(_ input: String) -> Bool {
-    mnemonicsRepository.checkIfPasswordValid(input)
+    let isValid = mnemonicsRepository.checkIfPasswordValid(input)
+    if !isValid {
+      UINotificationFeedbackGenerator().notificationOccurred(.error)
+    }
+    return isValid
   }
 }

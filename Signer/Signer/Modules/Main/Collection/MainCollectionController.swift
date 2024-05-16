@@ -50,8 +50,8 @@ private extension MainCollectionController {
     collectionView.register(TKUIListItemCell.self, forCellWithReuseIdentifier: TKUIListItemCell.reuseIdentifier)
     collectionView.setCollectionViewLayout(MainCollectionLayout.layout(), animated: false)
     dataSource = createDataSource()
-    collectionView.dataSource = dataSource
     collectionView.delegate = self
+    collectionView.contentInset.top = 16
   }
   
   func createDataSource() -> DataSource {

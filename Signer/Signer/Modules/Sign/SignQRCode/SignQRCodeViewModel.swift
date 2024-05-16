@@ -76,10 +76,8 @@ private extension SignQRCodeViewModelImplementation {
       self?.didTapDone?()
     }
     
-    let hexBody = "\(signQRController.hexBody.prefix(4))...\(signQRController.hexBody.suffix(4))"
-    
-    let bottomString = "\(signQRController.walletKey.name.prefix(8)) / \(hexBody)"
-    
+    let hexBody = " / \(signQRController.hexBody.prefix(4))...\(signQRController.hexBody.suffix(4))"
+        
     didUpdateModel?(
       SignQRCodeView.Model(
         titleDescriptionModel: TKTitleDescriptionView.Model(
@@ -89,7 +87,8 @@ private extension SignQRCodeViewModelImplementation {
         qrCodeModel: TKFancyQRCodeView.Model(
           images: qrCodeImage == nil ? [] : [qrCodeImage!],
           topString: SignerLocalize.SignTransactionQr.signed_transaction,
-          bottomString: bottomString
+          bottomLeftString: signQRController.walletKey.name,
+          bottomRightString: hexBody
         ),
         doneButtonConfiguration: doneButtonConfiguration
       )

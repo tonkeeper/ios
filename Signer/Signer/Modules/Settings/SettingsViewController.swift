@@ -93,6 +93,7 @@ private extension SettingsViewController {
       forSupplementaryViewOfKind: .sectionHeaderKind,
       withReuseIdentifier: TKCollectionViewSupplementaryContainerView<TKListTitleView>.reuseIdentifier
     )
+    customView.collectionView.contentInset.top = 16
   }
   
   func setupBindings() {

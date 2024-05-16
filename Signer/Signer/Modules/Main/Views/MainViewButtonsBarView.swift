@@ -84,6 +84,6 @@ private extension NSDirectionalEdgeInsets {
   static var padding = NSDirectionalEdgeInsets(
     top: 0,
     leading: 16,
-    bottom: 20,
+    bottom: 36,
     trailing: 16)
 }

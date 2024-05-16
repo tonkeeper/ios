@@ -14,8 +14,10 @@ public final class TKFancyQRCodeView: UIView, ConfigurableView {
   public let qrCodeImageView = UIImageView()
   public let bottomPartView = UIView()
   public let labelStackView = UIStackView()
+  public let bottomLabelStackView = UIStackView()
   public let topLabel = UILabel()
-  public let bottomLabel = UILabel()
+  public let bottomLeftLabel = UILabel()
+  public let bottomRightLabel = UILabel()
   public let maskImageView = UIImageView(image: UIImage.imageWithName("Rectangle"))
   
   public override init(frame: CGRect) {
@@ -37,12 +39,17 @@ public final class TKFancyQRCodeView: UIView, ConfigurableView {
   public struct Model {
     public let images: [UIImage]
     public let topString: String?
-    public let bottomString: String?
+    public let bottomLeftString: String
+    public let bottomRightString: String?
     
-    public init(images: [UIImage], topString: String?, bottomString: String?) {
+    public init(images: [UIImage],
+                topString: String?,
+                bottomLeftString: String,
+                bottomRightString: String? = nil) {
       self.images = images
       self.topString = topString
-      self.bottomString = bottomString
+      self.bottomLeftString = bottomLeftString
+      self.bottomRightString = bottomRightString
     }
   }
   
@@ -57,7 +64,14 @@ public final class TKFancyQRCodeView: UIView, ConfigurableView {
       qrCodeImageView.startAnimating()
     }
     topLabel.text = model.topString?.uppercased()
-    bottomLabel.text = model.bottomString?.uppercased()
+    bottomLabelStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    bottomLabelStackView.addArrangedSubview(bottomLeftLabel)
+    if model.bottomRightString != nil {
+      bottomLabelStackView.addArrangedSubview(bottomRightLabel)
+    }
+  
+    bottomLeftLabel.text = model.bottomLeftString.uppercased()
+    bottomRightLabel.text = model.bottomRightString?.uppercased()
     setNeedsLayout()
   }
 }
@@ -65,11 +79,14 @@ public final class TKFancyQRCodeView: UIView, ConfigurableView {
 private extension TKFancyQRCodeView {
   func setup() {
     labelStackView.axis = .vertical
-    
     topLabel.textColor = .black
     topLabel.font = .monospacedSystemFont(ofSize: 14, weight: .medium)
-    bottomLabel.textColor = .black
-    bottomLabel.font = .monospacedSystemFont(ofSize: 14, weight: .medium)
+    bottomLeftLabel.textColor = .black
+    bottomLeftLabel.font = .monospacedSystemFont(ofSize: 14, weight: .medium)
+    bottomLeftLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    bottomLeftLabel.setContentHuggingPriority(.required, for: .horizontal)
+    bottomRightLabel.textColor = .black
+    bottomRightLabel.font = .monospacedSystemFont(ofSize: 14, weight: .medium)
     
     qrCodeContainer.backgroundColor = color
     qrCodeContainer.layer.cornerCurve = .continuous
@@ -80,6 +97,8 @@ private extension TKFancyQRCodeView {
     bottomPartView.mask = maskImageView
     
     qrCodeImageView.contentMode = .center
+    
+    bottomLabelStackView.axis = .horizontal
 
     addSubview(qrCodeContainer)
     qrCodeContainer.addSubview(qrCodeImageViewContainer)
@@ -87,7 +106,7 @@ private extension TKFancyQRCodeView {
     addSubview(bottomPartView)
     bottomPartView.addSubview(labelStackView)
     labelStackView.addArrangedSubview(topLabel)
-    labelStackView.addArrangedSubview(bottomLabel)
+    labelStackView.addArrangedSubview(bottomLabelStackView)
     
     setupConstraints()
   }
@@ -98,7 +117,7 @@ private extension TKFancyQRCodeView {
     }
     
     qrCodeImageViewContainer.snp.makeConstraints { make in
-      make.top.left.right.equalTo(qrCodeContainer).inset(24).priority(.high)
+      make.top.left.right.equalTo(qrCodeContainer).inset(19).priority(.high)
       make.bottom.equalTo(qrCodeContainer).priority(.high)
       make.height.equalTo(qrCodeImageViewContainer.snp.width)
     }
@@ -120,7 +139,11 @@ private extension TKFancyQRCodeView {
       make.height.equalTo(20)
     }
     
-    bottomLabel.snp.makeConstraints { make in
+    bottomLeftLabel.snp.makeConstraints { make in
+      make.height.equalTo(20)
+    }
+    
+    bottomRightLabel.snp.makeConstraints { make in
       make.height.equalTo(20)
     }
   }

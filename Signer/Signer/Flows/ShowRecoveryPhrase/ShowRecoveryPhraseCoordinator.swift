@@ -28,7 +28,7 @@ private extension ShowRecoveryPhraseCoordinator {
   func openEnterPassword() {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
-      title: SignerLocalize.Password.Enter.title
+      title: SignerLocalize.Password.Confirmation.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.output.didEnterPassword = { [weak self] password in

@@ -2,38 +2,42 @@ import UIKit
 import TKUIKit
 
 public final class TKRecoveryPhraseListView: UIView, ConfigurableView {
+  
+  private var leftColumnItemViews = [TKRecoveryPhraseItemView]()
+  private var rightColumnItemViews = [TKRecoveryPhraseItemView]()
 
-  private let stackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .horizontal
-    stackView.distribution = .fillEqually
-    stackView.spacing = 40
-    return stackView
-  }()
-
-  private let leftColumnStackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .vertical
-    stackView.spacing = 8
-    return stackView
-  }()
-
-  private let rightColumnStackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .vertical
-    stackView.spacing = 8
-    return stackView
-  }()
-
-  // MARK: - Init
-
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
+  public override func layoutSubviews() {
+    super.layoutSubviews()
+    
+    let verticalItemsCount = max(leftColumnItemViews.count, rightColumnItemViews.count)
+    let columnWidth = (bounds.width - .leftPaddig - .columnSpacing)/2
+    let verticalSpacing: CGFloat = CGFloat(verticalItemsCount - 1) * .itemSpacing
+    let calculatedItemHeight = (bounds.height - .topPadding - verticalSpacing) / CGFloat(verticalItemsCount)
+    let itemHeight = min(calculatedItemHeight, .maximumItemHeight)
+    let itemResultHeight = (leftColumnItemViews + rightColumnItemViews).map {
+      $0.sizeThatFits(
+        CGSize(
+          width: columnWidth,
+          height: itemHeight
+        )
+      ).height
+    }.min() ?? itemHeight
+    
+    func layoutItems(_ items: [TKRecoveryPhraseItemView], originX: CGFloat, width: CGFloat, height: CGFloat) {
+      var itemY: CGFloat = .topPadding
+      for item in items {
+        item.frame = CGRect(
+          x: originX,
+          y: itemY,
+          width: columnWidth,
+          height: itemResultHeight
+        )
+        itemY += itemResultHeight + .itemSpacing
+      }
+    }
+    
+    layoutItems(leftColumnItemViews, originX: .columnSpacing, width: columnWidth, height: itemResultHeight)
+    layoutItems(rightColumnItemViews, originX: columnWidth + (.columnSpacing * 2), width: columnWidth, height: itemResultHeight)
   }
 
   // MARK: - ConfigurableView
@@ -47,62 +51,34 @@ public final class TKRecoveryPhraseListView: UIView, ConfigurableView {
   }
 
   public func configure(model: Model) {
-    leftColumnStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-    rightColumnStackView.arrangedSubviews.forEach { $0.removeFromSuperview() }
-
     let halfIndex = Int((Float(model.wordModels.count) / 2).rounded(.up))
     let leftWords = model.wordModels[0..<halfIndex]
     let rightWords = model.wordModels[halfIndex..<model.wordModels.count]
-
-    leftWords.forEach {
+    
+    leftColumnItemViews.forEach { $0.removeFromSuperview() }
+    rightColumnItemViews.forEach { $0.removeFromSuperview() }
+    
+    leftWords.forEach { model in
       let view = TKRecoveryPhraseItemView()
-      view.configure(model: $0)
-      leftColumnStackView.addArrangedSubview(view)
+      view.configure(model: model)
+      addSubview(view)
+      leftColumnItemViews.append(view)
     }
-
-    rightWords.forEach {
+    
+    rightWords.forEach { model in
       let view = TKRecoveryPhraseItemView()
-      view.configure(model: $0)
-      rightColumnStackView.addArrangedSubview(view)
+      view.configure(model: model)
+      addSubview(view)
+      rightColumnItemViews.append(view)
     }
   }
 }
 
-private extension TKRecoveryPhraseListView {
-  func setup() {
-    addSubview(stackView)
-    stackView.addArrangedSubview(leftColumnStackView)
-    stackView.addArrangedSubview(rightColumnStackView)
-
-    setupConstraints()
-  }
-
-  func setupConstraints() {
-    stackView.translatesAutoresizingMaskIntoConstraints = false
-
-    NSLayoutConstraint.activate([
-      stackView.topAnchor.constraint(
-        equalTo: topAnchor, constant: UIEdgeInsets.stackViewSideInsets.top
-      ),
-      stackView.leftAnchor.constraint(
-        equalTo: leftAnchor, constant: UIEdgeInsets.stackViewSideInsets.left
-      ),
-      stackView.bottomAnchor.constraint(
-        equalTo: bottomAnchor,
-        constant: -UIEdgeInsets.stackViewSideInsets.bottom
-      )
-      .withPriority(.defaultHigh),
-      stackView.rightAnchor.constraint(
-        equalTo: rightAnchor, constant: -UIEdgeInsets.stackViewSideInsets.right
-      )
-      .withPriority(.defaultHigh)
-    ])
-  }
-}
-
-private extension UIEdgeInsets {
-  static var stackViewSideInsets: UIEdgeInsets {
-    .init(top: 0, left: 24, bottom: 0, right: 24)
-  }
+private extension CGFloat {
+  static let topPadding: CGFloat = 16
+  static let leftPaddig: CGFloat = 16
+  static let columnSpacing: CGFloat = 16
+  static let itemSpacing: CGFloat = 8
+  static let maximumItemHeight: CGFloat = 24
 }
 

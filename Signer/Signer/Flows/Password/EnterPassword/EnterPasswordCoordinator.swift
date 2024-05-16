@@ -24,23 +24,25 @@ private extension EnterPasswordCoordinator {
   func openEnterPassword() {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
-      title: SignerLocalize.Password.Enter.title
+      title: SignerLocalize.Password.Confirmation.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.output.didEnterPassword = { [weak self] _ in
       self?.didEnterPassword?()
     }
     
-//    let signOutButton = TKButton.titleHeaderButton()
-//    signOutButton.configure(
-//      model: .init(
-//        contentModel: .init(title: "Sign Out"),
-//        action: { [weak self] in
-//          self?.openSignOutAlert()
-//        }
-//      )
-//    )
-//    module.view.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: signOutButton)
+    let singOutButton = TKButton(configuration: .titleHeaderButtonConfiguration(category: .secondary))
+    singOutButton.configuration.padding.top = 4
+    singOutButton.configuration.padding.bottom = 4
+    singOutButton.configuration.content = TKButton.Configuration.Content(
+      title: .plainString(
+        SignerLocalize.SignOut.Button.title
+      )
+    )
+    singOutButton.configuration.action = { [weak self] in
+      self?.openSignOutAlert()
+    }
+    module.view.navigationItem.rightBarButtonItem = UIBarButtonItem(customView: singOutButton)
     
     router.push(viewController: module.view,
                 onPopClosures: {})
@@ -48,21 +50,22 @@ private extension EnterPasswordCoordinator {
   
   func openSignOutAlert() {
     let alertViewController = UIAlertController(
-      title: "Sign Out?",
-      message: "This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase.",
+      title: SignerLocalize.SignOut.Alert.title,
+      message: SignerLocalize.SignOut.Alert.caption,
       preferredStyle: .alert
     )
     alertViewController.addAction(
-      UIAlertAction(title: "Cancel",
+      UIAlertAction(title: SignerLocalize.Actions.cancel,
                     style: .default)
     )
     alertViewController.addAction(
-      UIAlertAction(title: "Sign Out",
+      UIAlertAction(title: SignerLocalize.SignOut.Alert.Button.sign_out,
                     style: .destructive,
                     handler: { [weak self] _ in
                       self?.didSignOut?()
                     })
     )
+    alertViewController.overrideUserInterfaceStyle = ThemeManager.shared.theme.alertUserInterfaceStyle
     router.rootViewController.present(alertViewController, animated: true)
   }
 }
