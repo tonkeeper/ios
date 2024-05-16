@@ -111,6 +111,8 @@ private extension BrowserCoordinator {
       self?.openDapp(dapp, fromViewController: navigationController)
     }
     
+    navigationController.modalTransitionStyle = .crossDissolve
+    navigationController.modalPresentationStyle = .fullScreen
     router.present(navigationController)
   }
   

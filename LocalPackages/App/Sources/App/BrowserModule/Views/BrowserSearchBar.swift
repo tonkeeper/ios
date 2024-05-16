@@ -37,7 +37,7 @@ final class BrowserSearchBar: UIView {
 
 private extension BrowserSearchBar {
   func setup() {
-    glassImageView.image = .TKUIKit.Icons.Size16.globe
+    glassImageView.image = .TKUIKit.Icons.Size16.magnifyingGlass
     glassImageView.tintColor = .Icon.secondary
     
     textField.tintColor = .Accent.blue
