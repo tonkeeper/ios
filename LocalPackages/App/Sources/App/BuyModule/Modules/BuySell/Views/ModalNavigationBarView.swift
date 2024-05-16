@@ -14,6 +14,7 @@ final class ModalNavigationBarItemContainerView: UIView {
   override var intrinsicContentSize: CGSize { getIntrinsicContentSize() }
   
   private let containedView: UIView
+  
   private let height: CGFloat
   private let contentAlignment: ContentAlignment
   
@@ -82,6 +83,18 @@ open class ModalNavigationBarView: UIView {
   private let leftBarItemStack: UIStackView = .horizontalStack()
   private let centerBarItemStack: UIStackView = .horizontalStack()
   private let rightBarItemStack: UIStackView = .horizontalStack()
+  
+  public var leftItemPadding: CGFloat = .horizontalPadding {
+    didSet {
+      updateLeftItemPaddingConstraint()
+    }
+  }
+  
+  public var rightItemPadding: CGFloat = .horizontalPadding {
+    didSet {
+      updateRightItemPaddingConstraints()
+    }
+  }
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -173,7 +186,7 @@ private extension ModalNavigationBarView {
   
   func setupConstraints() {
     leftBarItemStack.snp.makeConstraints { make in
-      make.left.equalTo(self).offset(CGFloat.horizontalPadding)
+      make.left.equalTo(self).offset(leftItemPadding)
     }
     
     centerBarItemStack.snp.makeConstraints { make in
@@ -182,7 +195,19 @@ private extension ModalNavigationBarView {
     }
     
     rightBarItemStack.snp.makeConstraints { make in
-      make.right.equalTo(self).inset(CGFloat.horizontalPadding)
+      make.right.equalTo(self).inset(rightItemPadding)
+    }
+  }
+  
+  func updateLeftItemPaddingConstraint() {
+    leftBarItemStack.snp.updateConstraints { make in
+      make.left.equalTo(self).offset(leftItemPadding)
+    }
+  }
+  
+  func updateRightItemPaddingConstraints() {
+    rightBarItemStack.snp.updateConstraints { make in
+      make.right.equalTo(self).inset(rightItemPadding)
     }
   }
 }

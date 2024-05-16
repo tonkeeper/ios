@@ -165,8 +165,12 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     switch input {
     case .send:
       swapItem.sendToken = token
+      amountSend = "0"
+      didUpdateAmountSend?(amountSend)
     case .recieve:
       swapItem.recieveToken = token
+      amountRecieve = "0"
+      didUpdateAmountRecieve?(amountRecieve)
     }
     
     update()
@@ -190,27 +194,32 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     update()
     updateActionButton()
     
-    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-      self.swapItem.sendToken?.balance.amount = .testBalanceAmount
-      self.updateSendBalance()
-    }
+//    DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+//      self.swapItem.sendToken?.balance.amount = .testBalanceAmount
+//      self.updateSendBalance()
+//    }
+//    
+//    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+//      self.swapItem.recieveToken = .usdt
+//      self.updateRecieveBalance()
+//      self.update()
+//    }
+//    
+//    didTapTokenButton = { [self] token, input in
+//      // TODO: Fetch token data
+//      var newToken: SwapItem.Token
+//      switch input {
+//      case .send:
+//        newToken = .ton
+//      case .recieve:
+//        newToken = .usdt
+//      }
+//      
+//      didChooseToken(newToken, forInput: input)
+//    }
     
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-      self.swapItem.recieveToken = .usdt
-      self.updateRecieveBalance()
-      self.update()
-    }
-    
-    didTapTokenButton = { [self] token, input in
-      // TODO: Fetch token data
-      let newToken: SwapItem.Token
-      switch input {
-      case .send:
-        newToken = .ton
-      case .recieve:
-        newToken = .usdt
-      }
-      didChooseToken(newToken, forInput: input)
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+      self.didTapTokenButton?(self.swapItem.sendToken, .send)
     }
     
     Task {

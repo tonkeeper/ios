@@ -3,9 +3,10 @@ import TKUIKit
 import SnapKit
 
 final class BuySellOperatorView: UIView {
-  let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
   
   let titleView = ModalTitleView()
+  
+  let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
   
   let continueButton = TKButton(
     configuration: .actionButtonConfiguration(

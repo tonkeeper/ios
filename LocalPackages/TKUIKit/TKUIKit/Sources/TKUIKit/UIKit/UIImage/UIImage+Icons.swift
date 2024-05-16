@@ -240,6 +240,9 @@ public extension UIImage.TKUIKit.Icons.Size16 {
   static var swapVertical: UIImage {
     .imageWithName("Icons/16/ic-swap-vertical-16")
   }
+  static var magnifyingGlass: UIImage {
+    .imageWithName("Icons/16/ic-magnifying-glass-16")
+  }
 }
 
 public extension UIImage.TKUIKit.Icons.Size28 {
