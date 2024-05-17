@@ -123,7 +123,6 @@ private extension TonConnectConnectCoordinator {
     
     module.output.didTapAddWalletButton = { [weak self, unowned bottomSheetViewController] in
       self?.openAddWallet(router: ViewControllerRouter(rootViewController: bottomSheetViewController)) {
-//        bottomSheetViewController.dismiss()
       }
     }
     
@@ -135,11 +134,19 @@ private extension TonConnectConnectCoordinator {
   }
   
   func openAddWallet(router: ViewControllerRouter, onAddWallets: @escaping () -> Void) {
-    let module = AddWalletModule(dependencies: AddWalletModule.Dependencies(
-      walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly)
+    let module = AddWalletModule(
+      dependencies: AddWalletModule.Dependencies(
+        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        coreAssembly: coreAssembly,
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+      )
     )
     
-    let coordinator = module.createAddWalletCoordinator(router: router)
+    let coordinator = module.createAddWalletCoordinator(
+      options: [.createRegular, .importRegular, .importWatchOnly, .importTestnet, .signer],
+      router: router
+    )
     coordinator.didAddWallets = {
       onAddWallets()
     }

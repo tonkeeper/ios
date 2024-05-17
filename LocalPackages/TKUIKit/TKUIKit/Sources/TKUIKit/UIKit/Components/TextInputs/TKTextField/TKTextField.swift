@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TKTextField: UIControl {
+public class TKTextField: UIControl {
   
   public struct RightItem {
     public enum Mode {
@@ -52,7 +52,7 @@ public final class TKTextField: UIControl {
     }
   }
   
-  var textFieldState: TKTextFieldState = .inactive {
+  public var textFieldState: TKTextFieldState = .inactive {
     didSet {
       didUpdateState()
     }

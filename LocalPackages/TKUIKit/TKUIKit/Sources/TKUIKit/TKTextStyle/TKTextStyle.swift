@@ -11,7 +11,7 @@ public struct TKTextStyle: Hashable {
   
   public var baselineOffset: CGFloat {
     let delimeter: CGFloat
-    if #available(iOS 16, *) {
+    if #available(iOS 16.4, *) {
       delimeter = 2
     } else {
       delimeter = 4

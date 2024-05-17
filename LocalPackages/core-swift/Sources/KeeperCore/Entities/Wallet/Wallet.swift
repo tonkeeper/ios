@@ -1,5 +1,6 @@
 import Foundation
 import TonSwift
+import TKLocalize
 
 public struct Wallet: Codable, Hashable, Identifiable {
   /// Unique internal ID for this wallet
@@ -58,11 +59,11 @@ public struct Wallet: Codable, Hashable, Identifiable {
   public var tag: String? {
     switch identity.kind {
     case .Regular:
-      return nil
+      return isTestnet ? "TESTNET" : nil
     case .Lockup:
       return nil
     case .Watchonly:
-      return "Watch only"
+      return TKLocales.WalletTags.watch_only
     case .External:
       return "Signer"
     }
@@ -133,6 +134,25 @@ extension Wallet {
           return address
         case .Domain(_, let address):
           return address
+        }
+      case .Lockup:
+        throw Error.notAvailableWalletKind
+      }
+    }
+  }
+  
+  public var friendlyAddress: FriendlyAddress {
+    get throws {
+      let isTestnet = self.isTestnet
+      switch identity.kind {
+      case .Regular, .External:
+        return try contract.address().toFriendly(testOnly: isTestnet, bounceable: false)
+      case .Watchonly(let address):
+        switch address {
+        case .Resolved(let address):
+          return address.toFriendly(testOnly: isTestnet, bounceable: false)
+        case .Domain(_, let address):
+          return address.toFriendly(testOnly: isTestnet, bounceable: false)
         }
       case .Lockup:
         throw Error.notAvailableWalletKind

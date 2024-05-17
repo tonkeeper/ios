@@ -102,7 +102,9 @@ private extension WalletMainController {
   func didReceiveBackgroundUpdateEvent(_ backgroundUpdateEvent: BackgroundUpdateEvent) async {
     try? await Task.sleep(nanoseconds: 1_000_000_000)
     let currency = await currencyStore.getActiveCurrency()
-    await loadWalletsBalances(addresses: [backgroundUpdateEvent.accountAddress], currency: currency)
+    let wallets = walletsStore.wallets
+      .filter { (try? $0.address) == backgroundUpdateEvent.accountAddress }
+    await loadWalletsBalances(wallets: wallets, currency: currency)
   }
   
   func reload() async {
@@ -113,32 +115,20 @@ private extension WalletMainController {
   }
   
   func loadWalletsBalances(wallets: [Wallet], currency: Currency) async {
-    let addresses = wallets.compactMap { try? $0.address }
-    await loadWalletsBalances(addresses: addresses, currency: currency)
-  }
-  
-  func loadWalletsBalances(addresses: [Address], currency: Currency) async {
-    
     await withTaskGroup(of: Void.self) { [walletBalanceLoader] group in
-      for address in addresses {
+      for wallet in wallets {
         group.addTask {
-          await walletBalanceLoader.loadBalance(walletAddress: address, currency: currency)
+          await walletBalanceLoader.loadBalance(wallet: wallet, currency: currency)
         }
       }
     }
   }
   
   func loadWalletsNfts(wallets: [Wallet]) async {
-    let addresses = wallets.compactMap { try? $0.address }
-    await loadWalletsNfts(addresses: addresses)
-  }
-  
-  func loadWalletsNfts(addresses: [Address]) async {
-    
     await withTaskGroup(of: Void.self) { [nftsLoader] group in
-      for address in addresses {
+      for wallet in wallets {
         group.addTask {
-          await nftsLoader.loadNfts(address: address)
+          await nftsLoader.loadNfts(wallet: wallet)
         }
       }
     }

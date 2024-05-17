@@ -118,7 +118,8 @@ struct HistoryEventMapper {
     
     let contentConfiguration = TKUIListItemContentView.Configuration(
       leftItemConfiguration: leftItemConfiguration,
-      rightItemConfiguration: rightItemConfiguration
+      rightItemConfiguration: rightItemConfiguration,
+      isVerticalCenter: false
     )
 
     var commentConfiguration: HistoryCellActionView.CommentView.Configuration?

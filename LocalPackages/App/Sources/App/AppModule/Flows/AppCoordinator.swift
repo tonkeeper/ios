@@ -28,8 +28,9 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
     openRoot(deeplink: deeplink)
   }
   
-  public override func handleDeeplink(deeplink: CoordinatorDeeplink?) {
-    rootCoordinator?.handleDeeplink(deeplink: deeplink)
+  public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    guard let rootCoordinator else { return false }
+    return rootCoordinator.handleDeeplink(deeplink: deeplink)
   }
 }
 

@@ -199,7 +199,7 @@ private extension StakingController {
         let wallet = walletStore.activeWallet
         let balance: Balance
         do {
-          balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address).walletBalance.balance
+          balance = try await walletBalanceStore.getBalanceState(wallet: wallet).walletBalance.balance
         } catch {
           balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
         }
@@ -228,7 +228,7 @@ private extension StakingController {
       let wallet = walletStore.activeWallet
       let balance: Balance
       do {
-        balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address).walletBalance.balance
+        balance = try await walletBalanceStore.getBalanceState(wallet: wallet).walletBalance.balance
       } catch {
         balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
       }

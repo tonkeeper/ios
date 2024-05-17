@@ -58,6 +58,7 @@ public extension UIColor {
     public static let green = UIColor.named("Colors/Accent/Green")
     public static let red = UIColor.named("Colors/Accent/Red")
     public static let orange = UIColor.named("Colors/Accent/Orange")
+    public static let purple = UIColor.named("Colors/Accent/Purple")
   }
   enum Constant {
     public static let tonBlue = UIColor.named("Colors/Constant&System/TON Blue")

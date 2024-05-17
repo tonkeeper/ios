@@ -2,10 +2,13 @@ import UIKit
 import TKUIKit
 import KeeperCore
 import TKCore
+import TKLocalize
+import TonSwift
 
 protocol SendConfirmationModuleOutput: AnyObject {
   var didRequireConfirmation: (() async -> Bool)? { get set }
   var didSendTransaction: (() -> Void)? { get set }
+  var didRequireExternalWalletSign: ((URL, Wallet) async throws -> Data?)? { get set }
 }
 
 protocol SendConfirmationModuleInput: AnyObject {
@@ -26,6 +29,7 @@ final class SendConfirmationViewModelImplementation: SendConfirmationViewModel, 
   
   var didRequireConfirmation: (() async -> Bool)?
   var didSendTransaction: (() -> Void)?
+  var didRequireExternalWalletSign: ((URL, Wallet) async throws -> Data?)?
   
   // MARK: - SendConfirmationModuleInput
   
@@ -66,6 +70,11 @@ private extension SendConfirmationViewModelImplementation {
       let configuration = self.mapSendConfirmationModel(sendConfirmationModel)
       self.didUpdateConfiguration?(configuration)
     }
+    
+    sendConfirmationController.didGetExternalSign = { [weak self] url in
+      guard let self, let didRequireExternalWalletSign else { return Data() }
+      return try await didRequireExternalWalletSign(url, sendConfirmationController.wallet)
+    }
   }
   
   func mapSendConfirmationModel(_ sendConfirmationModel: SendConfirmationModel) -> TKModalCardViewController.Configuration {
@@ -99,7 +108,7 @@ private extension SendConfirmationViewModelImplementation {
     let description: String
     switch sendConfirmationModel.descriptionType {
     case .jetton, .ton:
-      description = "Confirm Action"
+      description = TKLocales.ConfirmSend.TokenTransfer.title
     case .nft(let value):
       description = value
     }
@@ -107,11 +116,11 @@ private extension SendConfirmationViewModelImplementation {
     let title: String
     switch sendConfirmationModel.titleType {
     case .ton:
-      title = "Transfer TON"
+      title = TKLocales.ConfirmSend.TokenTransfer.transfer("TON")
     case .jetton(let symbol):
-      title = "Transfer \(symbol)"
+      title = TKLocales.ConfirmSend.TokenTransfer.transfer(symbol)
     case .nft:
-      title = "Transfer NFT"
+      title = TKLocales.ConfirmSend.TokenTransfer.transfer("NFT")
     }
     
     let header = TKModalCardViewController.Configuration.Header(
@@ -137,7 +146,7 @@ private extension SendConfirmationViewModelImplementation {
     var listItems = [TKModalCardViewController.Configuration.ListItem]()
     listItems.append(
       TKModalCardViewController.Configuration.ListItem(
-        left: .wallet,
+        left: TKLocales.ConfirmSend.wallet,
         rightTop: .value(sendConfirmationModel.wallet, numberOfLines: 0, isFullString: false),
         rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
       )
@@ -145,7 +154,7 @@ private extension SendConfirmationViewModelImplementation {
     if let recipientName = sendConfirmationModel.recipientName {
       listItems.append(
         TKModalCardViewController.Configuration.ListItem(
-          left: .recipientTitle,
+          left: TKLocales.ConfirmSend.Recipient.title,
           rightTop: .value(recipientName, numberOfLines: 0, isFullString: true),
           rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
         )
@@ -154,7 +163,7 @@ private extension SendConfirmationViewModelImplementation {
     if let recipientAddress = sendConfirmationModel.recipientAddress {
       listItems.append(
         TKModalCardViewController.Configuration.ListItem(
-          left: .recipientAddressTitle,
+          left: TKLocales.ConfirmSend.Recipient.address,
           rightTop: .value(recipientAddress, numberOfLines: 1, isFullString: false),
           rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
         )
@@ -170,7 +179,7 @@ private extension SendConfirmationViewModelImplementation {
       }
       listItems.append(
         TKModalCardViewController.Configuration.ListItem(
-          left: .amountTitle,
+          left: TKLocales.ConfirmSend.amount,
           rightTop: .value(amount, numberOfLines: 0, isFullString: false),
           rightBottom: rightBottom
         )
@@ -193,7 +202,7 @@ private extension SendConfirmationViewModelImplementation {
     }
     listItems.append(
       TKModalCardViewController.Configuration.ListItem(
-        left: .feeTitle,
+        left: TKLocales.ConfirmSend.fee,
         rightTop: feeRightTop,
         rightBottom: feeRightBottom
       )
@@ -202,7 +211,7 @@ private extension SendConfirmationViewModelImplementation {
     if let comment = sendConfirmationModel.comment, !comment.isEmpty {
       listItems.append(
         TKModalCardViewController.Configuration.ListItem(
-          left: .commentTitle,
+          left: TKLocales.ConfirmSend.comment,
           rightTop: .value(comment, numberOfLines: 0, isFullString: false),
           rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
         )
@@ -217,7 +226,7 @@ private extension SendConfirmationViewModelImplementation {
       items: [
         .button(
           TKModalCardViewController.Configuration.Button(
-            title: .buttonTitle,
+            title: TKLocales.ConfirmSend.confirm_button,
             size: .large,
             category: .primary,
             isEnabled: true,
@@ -250,8 +259,10 @@ private extension SendConfirmationViewModelImplementation {
   }
   
   func sendTransaction() async -> Bool {
-    let isConfirmed = await didRequireConfirmation?() ?? false
-    guard isConfirmed else { return false }
+    if sendConfirmationController.isNeedToConfirm() {
+      let isConfirmed = await didRequireConfirmation?() ?? false
+      guard isConfirmed else { return false }
+    }
     do {
       try await sendConfirmationController.sendTransaction()
       return true
@@ -259,15 +270,4 @@ private extension SendConfirmationViewModelImplementation {
       return false
     }
   }
-}
-
-private extension String {
-  static let wallet = "Wallet"
-  static let description = "Confirm action"
-  static let recipientTitle = "Recipient"
-  static let recipientAddressTitle = "Recipient address"
-  static let amountTitle = "Amount"
-  static let feeTitle = "Fee"
-  static let commentTitle = "Comment"
-  static let buttonTitle = "Confirm and send"
 }

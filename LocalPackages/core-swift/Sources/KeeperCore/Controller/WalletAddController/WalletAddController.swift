@@ -36,7 +36,8 @@ public final class WalletAddController {
   
   public func importWallets(phrase: [String],
                             revisions: [WalletContractVersion],
-                            metaData: WalletMetaData) throws {
+                            metaData: WalletMetaData,
+                            isTestnet: Bool) throws {
     let mnemonic = try Mnemonic(mnemonicWords: phrase)
     let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
@@ -44,6 +45,8 @@ public final class WalletAddController {
     
     let addPostfix = revisions.count > 1
 
+    let network: Network = isTestnet ? .testnet : .mainnet
+    
     let wallets = revisions.map { revision in
       let label = addPostfix ? "\(metaData.label) \(revision.rawValue)" : metaData.label
       let revisionMetaData = WalletMetaData(
@@ -53,7 +56,7 @@ public final class WalletAddController {
       )
       
       let walletIdentity = WalletIdentity(
-        network: .mainnet,
+        network: network,
         kind: .Regular(keyPair.publicKey, revision)
       )
       
@@ -79,5 +82,33 @@ public final class WalletAddController {
     )
     try walletsStoreUpdate.addWallets([wallet])
     try walletsStoreUpdate.makeWalletActive(wallet)
+  }
+  
+  public func importExternalWallet(publicKey: TonSwift.PublicKey, 
+                                   revisions: [WalletContractVersion],
+                                   metaData: WalletMetaData) throws {
+    let addPostfix = revisions.count > 1
+
+    let wallets = revisions.map { revision in
+      let label = addPostfix ? "\(metaData.label) \(revision.rawValue)" : metaData.label
+      let revisionMetaData = WalletMetaData(
+        label: label,
+        tintColor: metaData.tintColor,
+        emoji: metaData.emoji
+      )
+      
+      let walletIdentity = WalletIdentity(
+        network: .mainnet,
+        kind: .External(publicKey, revision)
+      )
+      
+      return Wallet(
+        identity: walletIdentity,
+        metaData: revisionMetaData,
+        setupSettings: WalletSetupSettings(backupDate: Date()))
+    }
+
+    try walletsStoreUpdate.addWallets(wallets)
+    try walletsStoreUpdate.makeWalletActive(wallets[0])
   }
 }

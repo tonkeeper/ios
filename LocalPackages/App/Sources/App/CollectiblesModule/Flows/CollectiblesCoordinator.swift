@@ -4,8 +4,12 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import TonSwift
+import TKLocalize
 
 public final class CollectiblesCoordinator: RouterCoordinator<NavigationControllerRouter> {
+  
+  private weak var sendTokenCoordinator: SendTokenCoordinator?
+  
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   
@@ -15,12 +19,23 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
-    router.rootViewController.tabBarItem.title = "Collectibles"
+    router.rootViewController.tabBarItem.title = TKLocales.Tabs.purchases
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.purchase
   }
   
   public override func start() {
     openCollectibles()
+  }
+  
+  public func handleTonkeeperDeeplink(deeplink: TonkeeperDeeplink) -> Bool {
+    switch deeplink {
+    case let .publish(model):
+      if let sendTokenCoordinator = sendTokenCoordinator {
+        return sendTokenCoordinator.handleTonkeeperPublishDeeplink(model: model)
+      }
+      return false
+    default: return false
+    }
   }
 }
 
@@ -75,10 +90,13 @@ extension CollectiblesCoordinator: CollectibleDetailsModuleOutput {
     )
     
     sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
+      self?.sendTokenCoordinator = nil
       navigationController?.dismiss(animated: true)
       guard let sendTokenCoordinator else { return }
       self?.removeChild(sendTokenCoordinator)
     }
+    
+    self.sendTokenCoordinator = sendTokenCoordinator
     
     addChild(sendTokenCoordinator)
     sendTokenCoordinator.start()

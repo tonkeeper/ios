@@ -53,6 +53,7 @@ public final class WidgetAssembly {
       loader: loadersAssembly.chartLoader,
       chartService: servicesAssembly.chartService(),
       currencyStore: storesAssembly.currencyStore,
+      walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
     )
   }

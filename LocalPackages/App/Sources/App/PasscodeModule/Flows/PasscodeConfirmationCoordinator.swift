@@ -2,6 +2,7 @@ import UIKit
 import TKCoordinator
 import TKUIKit
 import KeeperCore
+import TKLocalize
 
 public final class PasscodeConfirmationCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -26,7 +27,6 @@ private extension PasscodeConfirmationCoordinator {
   func openCreatePasscode() {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
-    navigationController.interactivePopGestureEnabled = false
     
     let module = PasscodeAssembly.module(
       navigationController: navigationController,
@@ -122,7 +122,7 @@ private extension PasscodeConfirmationChildCoordinator {
     }
     
     let passcodeInput = PasscodeInputAssembly.module(
-      title: "Enter passcode",
+      title: TKLocales.Passcode.enter,
       validator: PasscodeConfirmationInputValidator(
         passcodeConfirmationController: passcodeConfirmationController
       ),

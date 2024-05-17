@@ -1,0 +1,228 @@
+"actions.copied" = "Copied";
+"actions.delete" = "Delete";
+"actions.cancel" = "Cancel";
+"actions.save" = "Save";
+"actions.paste" = "Paste";
+"actions.continue_action" = "Continue";
+"actions.done" = "Done";
+"actions.edit" = "Edit";
+"actions.copy" = "Copy";
+
+"dates.today" = "Today";
+"dates.yesterday" = "Yesterday";
+
+"tabs.wallet" = "Wallet";
+"tabs.history" = "History";
+"tabs.purchases" = "Purchases";
+
+"camera_permission.title" = "Enable access to your camera in order to can scan QR codes";
+"camera_permission.button" = "Open Settings";
+
+"purchases.title" = "Purchases";
+"purchases.empty_placeholder" = "Your collectibles\nwill be shown here";
+"history.placeholder.title" = "Your history\nwill be shown here";
+"history.placeholder.subtitle" = "Make your first transaction!";
+"history.placeholder.buttons.receive" = "Receive";
+"history.placeholder.buttons.buy" = "Buy Toncoin";
+
+"history.title" = "History";
+
+"event_details.received" = "Received";
+"event_details.sent" = "Sent";
+"event_details.recipient.title" = "Recipient";
+"event_details.recipient.address" = "Recipient address";
+"event_details.sender.title" = "Sender";
+"event_details.sender.address" = "Sender address";
+"event_details.fee" = "Fee";
+"event_details.comment" = "Comment";
+
+"settings.title" = "Settings";
+"settings.items.security" = "Security";
+"settings.items.backup" = "Backup";
+"settings.items.currency" = "Currency";
+"settings.items.theme" = "Theme";
+"settings.items.logout" = "Sign out";
+"settings.items.support" = "Support";
+"settings.items.tk_news" = "Tonkeeper news";
+"settings.items.contact_us" = "Contact us";
+"settings.items.rate" = "Rate Tonkeeper X";
+"settings.items.legal" = "Legal";
+"settings.items.delete_account" = "Delete account";
+"settings.items.setup_wallet_description" = "Edit name and color";
+
+"settings.logout.title" = "Log out?";
+"settings.logout.description" = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.";
+
+"theme.title" = "Theme";
+"theme.options.system" = "System";
+"theme.options.dark" = "Dark";
+"theme.options.blue" = "Blue";
+
+"currency.title" = "Primary currency";
+
+"currency.items.jpy" = "Japanese Yen";
+"currency.items.usd" = "United States Dollar";
+"currency.items.eur" = "Euro";
+"currency.items.rub" = "Russian Ruble";
+"currency.items.aed" = "United Arab Emirates Dirham";
+"currency.items.kzt" = "Kazakhstani Tenge";
+"currency.items.uah" = "Ukrainian hryvnian";
+"currency.items.gbp" = "Great Britain Pound";
+"currency.items.chf" = "Swiss Franc";
+"currency.items.cny" = "China Yuan";
+"currency.items.krw" = "South Korean Won";
+"currency.items.idr" = "Indonesian Rupiah";
+"currency.items.inr" = "Indian Rupee";
+
+"backup.title" = "Backup";
+"backup.information.title" = "Manual";
+"backup.information.subtitle" = "Back up your wallet manually by writing down the recovery phrase.";
+"backup.done.title" = "Manual Backup On";
+"backup.done.subtitle" = "Last backup %@";
+
+"backup.manually.button" = "Back Up Manually";
+"backup.show_phrase.title" = "Show Recovery Phrase";
+
+"security.title" = "Security";
+"security.use" = "Use %@";
+"security.change_passcode" = "Change Passcode";
+"security.unavailable_error" = "Biometry unavailable";
+"security.use_biometry_description" = "You can always unlock your wallet with a passcode.";
+
+"wallet_buttons.send" = "Send";
+"wallet_buttons.receive" = "Receive";
+"wallet_buttons.scan" = "Scan";
+"wallet_buttons.buy" = "Buy TON";
+"wallet_buttons.swap" = "Swap";
+"wallet_buttons.stake" = "Stake";
+
+"send.title" = "Send";
+"send.recepient.placeholder" = "Address or name";
+"send.amount.placeholder" = "Amount";
+
+"send.comment.placeholder" = "Comment";
+"send.comment.description" = "Will be visible to everyone.";
+
+"send.required_comment.placeholder" = "Required comment";
+"send.required_comment.description" = "You must include the note from the exchange for transfer. Without it your funds will be lost.";
+
+"confirm_send.token_transfer.title" = "Confirm action";
+"confirm_send.token_transfer.transfer" = "Transfer %@";
+"confirm_send.fee" = "Fee";
+"confirm_send.wallet" = "Wallet";
+"confirm_send.amount" = "Amount";
+"confirm_send.comment" = "Comment";
+"confirm_send.recipient.title" = "Recipient";
+"confirm_send.recipient.address" = "Recipient address";
+"confirm_send.confirm_button" = "Confirm and send";
+
+"customize_wallet.title" = "Customize your Wallet";
+"customize_wallet.description" = "Wallet name and icon are stored locally on your device.";
+"customize_wallet.input_placeholder" = "Wallet Name";
+"customize_wallet.default_wallet_name" = "Wallet";
+
+"connection_status.updating" = "Updating";
+"connection_status.no_internet" = "No Internet connection";
+"connection_status.updated_at" = "Updated %@";
+
+"token.unverified" = "Unverified token";
+
+"onboarding.caption" = "Create a new wallet or add an existing one";
+"onboarding.buttons.create_new" = "Create New Wallet";
+"onboarding.buttons.import_existing" = "Import Existing Wallet";
+
+"passcode.create" = "Create passcode";
+"passcode.reenter" = "Re-enter passcode";
+"passcode.enter" = "Enter passcode";
+
+"import_wallet.title" = "Enter recovery phrase";
+"import_wallet.description" = "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.";
+
+"choose_wallets.title" = "Choose Wallets";
+"choose_wallets.description" = "Choose wallets you want to add.";
+"choose_wallets.tokens" = "tokens";
+
+"finish_setup.title" = "Finish setting up";
+"finish_setup.setup_biometry" = "Use %@ to approve transactions";
+"finish_setup.biometry_unavailable" = "Biometry unavailable";
+"finish_setup.backup" = "Back up the wallet recovery phrase";
+
+"wallets_list.title" = "Wallets list";
+"wallets_list.add_wallet" = "Add Wallet";
+
+"add_wallet.title" = "Add Wallet";
+"add_wallet.description" = "Create a new wallet or add an existing one.";
+
+"add_wallet.items.new_wallet.title" = "New Wallet";
+"add_wallet.items.new_wallet.subtitle" = "Create new wallet";
+
+"add_wallet.items.existing_wallet.title" = "Existing Wallet";
+"add_wallet.items.existing_wallet.subtitle" = "Import wallet with a 24 secret recovery words";
+
+"add_wallet.items.watch_only.title" = "Watch Account";
+"add_wallet.items.watch_only.subtitle" = "For monitor wallet activity without recovery phrase";
+
+"add_wallet.items.testnet.title" = "Testnet Account";
+"add_wallet.items.testnet.subtitle" = "Import wallet with a 24 secret recovery words to Testnet";
+
+"add_wallet.items.pair_signer.title" = "Pair Signer";
+"add_wallet.items.pair_signer.subtitle" = "A higher level of control and security";
+
+"scanner.title" = "Scan QR code";
+
+"signer.scan.subtitle" = "Open Signer » Select the required key » Scan QR code";
+"signer.scan.open_signer_button" = "Open Signer on this device";
+
+"chart.price" = "Price";
+
+"periods.hour" = "H";
+"periods.day" = "D";
+"periods.week" = "W";
+"periods.month" = "M";
+"periods.half_year" = "6M";
+"periods.year" = "Y";
+
+"wallet_tags.watch_only" = "Watch only";
+
+"receive.title" = "Receive %@";
+"receive.description" = "Send only %@ and tokens in TON network to this address, or you might lose your funds.";
+
+"watch_account.title" = "Watch Account";
+"watch_account.description" = "Monitor wallet activity without recovery phrase. You will be notified of any transactions from this wallet.";
+"watch_account.placeholder" = "Address or name";
+
+"event_details.sender_address" = "Sender address";
+"event_details.sender" = "Sender";
+"event_details.fee" = "Fee";
+"event_details.recipient" = "Recipient";
+"event_details.recipient_address" = "Recipient address";
+"event_details.comment" = "Comment";
+"event_details.sent_on" = "Sent on %@";
+"event_details.received_on" = "Received on %@";
+"event_details.received" = "Received";
+"event_details.sent" = "Sent";
+"event_details.transaction" = "Transaction";
+
+"action_types.future.send" = "Send";
+"action_types.future.receive" = "Receive";
+"action_types.sent" = "Sent";
+"action_types.received" = "Received";
+"action_types.stake" = "Stake";
+"action_types.unstake" = "Unstake";
+"action_types.unstake_request" = "Unstake Request";
+"action_types.swap" = "Swap";
+"action_types.spam" = "Spam";
+"action_types.bounced" = "Bounced";
+"action_types.subscribed" = "Subscribed";
+"action_types.unsubscribed" = "Unsubscribed";
+"action_types.contract_exec" = "Call contract";
+"action_types.nft_collection_deploy" = "NFT сollection creation";
+"action_types.nft_deploy" = "NFT creation";
+"action_types.nft_sale_removal" = "Removal from sale";
+"action_types.nft_purchase" = "NFT purchase";
+"action_types.bid" = "Bid";
+"action_types.put_up_auction" = "Put up for auction";
+"action_types.end_auction" = "End of auction";
+"action_types.domain_renew" = "Renew Domain";
+"action_types.unknown" = "Unknown";
+"action_types.wallet_initialize" = "Wallet initialized";

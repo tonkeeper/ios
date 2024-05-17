@@ -28,7 +28,8 @@ struct TonConnectConfirmationMapper {
         try AccountEvent(accountEvent: info.event),
         eventDate: Date(),
         nftsCollection: nftsCollection,
-        accountEventRightTopDescriptionProvider: descriptionProvider
+        accountEventRightTopDescriptionProvider: descriptionProvider,
+        isTestnet: wallet.isTestnet
       )
 
     var feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"

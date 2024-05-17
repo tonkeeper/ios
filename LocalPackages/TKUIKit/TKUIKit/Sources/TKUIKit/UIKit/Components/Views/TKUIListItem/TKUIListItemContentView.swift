@@ -4,6 +4,7 @@ public final class TKUIListItemContentView: UIView, TKConfigurableView {
   
   let leftItem = TKUIListItemContentLeftItem()
   let rightItem = TKUIListItemContentRightItem()
+  private var isVerticalCenter: Bool = true
   
   public override init(frame: CGRect) {
     super.init(frame: frame)
@@ -44,7 +45,10 @@ public final class TKUIListItemContentView: UIView, TKConfigurableView {
     
     if !rightItem.isHidden {
       let rightItemSizeToFit = rightItem.sizeThatFits(CGSize(width: bounds.width, height: bounds.height))
-      let rightItemSize = CGSize(width: rightItemSizeToFit.width, height: bounds.height)
+      let rightItemSize = CGSize(
+        width: rightItemSizeToFit.width,
+        height: isVerticalCenter ? rightItemSizeToFit.height : bounds.height
+      )
       let rightItemFrame = CGRect(origin: CGPoint(x: bounds.width - rightItemSize.width, y: 0),
                                   size: rightItemSize)
       width -= rightItemSize.width
@@ -57,8 +61,11 @@ public final class TKUIListItemContentView: UIView, TKConfigurableView {
         height: bounds.height
       )
     )
-    let leftItemSize = CGSize(width: leftItemSizeToFit.width, height: bounds.height)
-    let leftItemFrame = CGRect(origin: CGPoint(x: 0, y: 0), size: leftItemSize)
+    let leftItemSize = CGSize(
+      width: leftItemSizeToFit.width,
+      height: isVerticalCenter ? leftItemSizeToFit.height : bounds.height
+    )
+    let leftItemFrame = CGRect(origin: CGPoint(x: 0, y: bounds.height/2 - leftItemSize.height/2), size: leftItemSize)
     
     leftItem.frame = leftItemFrame
   }
@@ -66,11 +73,14 @@ public final class TKUIListItemContentView: UIView, TKConfigurableView {
   public struct Configuration: Hashable {
     public let leftItemConfiguration: TKUIListItemContentLeftItem.Configuration?
     public let rightItemConfiguration: TKUIListItemContentRightItem.Configuration?
+    public let isVerticalCenter: Bool
     
     public init(leftItemConfiguration: TKUIListItemContentLeftItem.Configuration?,
-                rightItemConfiguration: TKUIListItemContentRightItem.Configuration?) {
+                rightItemConfiguration: TKUIListItemContentRightItem.Configuration?,
+                isVerticalCenter: Bool = true) {
       self.leftItemConfiguration = leftItemConfiguration
       self.rightItemConfiguration = rightItemConfiguration
+      self.isVerticalCenter = isVerticalCenter
     }
   }
   
@@ -87,6 +97,7 @@ public final class TKUIListItemContentView: UIView, TKConfigurableView {
     } else {
       rightItem.isHidden = true
     }
+    self.isVerticalCenter = configuration.isVerticalCenter
     setNeedsLayout()
   }
 }

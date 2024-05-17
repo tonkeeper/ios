@@ -11,43 +11,48 @@ public struct ActiveWalletModel {
 }
 
 protocol ActiveWalletsService {
-  func loadActiveWallets(mnemonic: CoreComponents.Mnemonic) async throws -> [ActiveWalletModel]
+  func loadActiveWallets(publicKey: TonSwift.PublicKey, isTestnet: Bool) async throws -> [ActiveWalletModel]
 }
 
 final class ActiveWalletsServiceImplementation: ActiveWalletsService {
-  private let api: API
+  private let apiProvider: APIProvider
   private let jettonsBalanceService: JettonBalanceService
   private let accountNFTService: AccountNFTService
   private let currencyService: CurrencyService
   
   
-  init(api: API,
+  init(apiProvider: APIProvider,
        jettonsBalanceService: JettonBalanceService,
        accountNFTService: AccountNFTService,
        currencyService: CurrencyService) {
-    self.api = api
+    self.apiProvider = apiProvider
     self.jettonsBalanceService = jettonsBalanceService
     self.accountNFTService = accountNFTService
     self.currencyService = currencyService
   }
   
-  func loadActiveWallets(mnemonic: CoreComponents.Mnemonic) async throws -> [ActiveWalletModel] {
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
-      mnemonicArray: mnemonic.mnemonicWords
-    )
+  func loadActiveWallets(publicKey: TonSwift.PublicKey, isTestnet: Bool) async throws -> [ActiveWalletModel] {
     let revisions = WalletContractVersion.allCases
     
     let models = try await withThrowingTaskGroup(of: ActiveWalletModel.self, returning: [ActiveWalletModel].self) { [currencyService] taskGroup in
       for revision in revisions {
         let address = try createAddress(
-          publicKey: keyPair.publicKey,
+          publicKey: publicKey,
           revision: revision
         )
         taskGroup.addTask {
-          async let accountTask = self.api.getAccountInfo(address: address.toRaw())
-          async let jettonsBalanceTask = self.jettonsBalanceService.loadJettonsBalance(address: address, currency: (try? currencyService.getActiveCurrency()) ?? .USD )
-          async let nftsTask = self.accountNFTService.loadAccountNFTs(accountAddress: address, collectionAddress: nil, limit: nil, offset: nil, isIndirectOwnership: true)
-          
+          async let accountTask = self.apiProvider.api(isTestnet).getAccountInfo(address: address.toRaw())
+          async let jettonsBalanceTask = try await self.apiProvider.api(isTestnet).getAccountJettonsBalances(
+            address: address,
+            currencies: [(try? currencyService.getActiveCurrency()) ?? .USD]
+          )
+          async let nftsTask = self.apiProvider.api(isTestnet).getAccountNftItems(
+            address: address,
+            collectionAddress: nil,
+            limit: nil,
+            offset: nil,
+            isIndirectOwnership: true
+          )
           let isActive: Bool
           let balance: Balance
           let nfts: [NFT]

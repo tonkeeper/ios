@@ -36,9 +36,13 @@ public final class TKUIListItemContentLeftItem: UIView, TKConfigurableView {
     )
     
     let descriptionSizeThatFits = descriptionLabel.sizeThatFits(size)
+    let descriptionSize = CGSize(
+      width: min(descriptionSizeThatFits.width, size.width),
+      height: descriptionSizeThatFits.height
+    )
     
-    let width = [titleSize.width + tagSize.width, subtitleSize.width, descriptionSizeThatFits.width].max() ?? 0
-    let height = titleSize.height + subtitleSize.height + descriptionSizeThatFits.height
+    let width = [titleSize.width + tagSize.width, subtitleSize.width, descriptionSize.width].max() ?? 0
+    let height = titleSize.height + subtitleSize.height + descriptionSize.height
 
     return CGSize(width: width, height: height)
   }

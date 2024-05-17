@@ -1,4 +1,5 @@
 import Foundation
+import TKLocalize
 
 public enum Period: CaseIterable {
   case hour
@@ -43,12 +44,12 @@ public enum Period: CaseIterable {
   
   public var title: String {
     switch self {
-    case .hour: return "H"
-    case .day: return "D"
-    case .week: return "W"
-    case .month: return "M"
-    case .halfYear: return "6M"
-    case .year: return "Y"
+    case .hour: return TKLocales.Periods.hour
+    case .day: return TKLocales.Periods.day
+    case .week: return TKLocales.Periods.week
+    case .month: return TKLocales.Periods.month
+    case .halfYear: return TKLocales.Periods.half_year
+    case .year: return TKLocales.Periods.year
     }
   }
 }

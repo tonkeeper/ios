@@ -32,11 +32,11 @@ public final class ServicesAssembly {
   }
   
   func tonBalanceService() -> TonBalanceService {
-    TonBalanceServiceImplementation(api: apiAssembly.api)
+    TonBalanceServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
   func jettonsBalanceService() -> JettonBalanceService {
-    JettonBalanceServiceImplementation(api: apiAssembly.api)
+    JettonBalanceServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
   func totalBalanceService() -> TotalBalanceService {
@@ -48,7 +48,7 @@ public final class ServicesAssembly {
   
   func activeWalletsService() -> ActiveWalletsService {
     ActiveWalletsServiceImplementation(
-      api: apiAssembly.api,
+      apiProvider: apiAssembly.apiProvider,
       jettonsBalanceService: jettonsBalanceService(),
       accountNFTService: accountNftService(),
       currencyService: currencyService()
@@ -70,21 +70,27 @@ public final class ServicesAssembly {
   
   func historyService() -> HistoryService {
     HistoryServiceImplementation(
-      api: apiAssembly.api,
+      apiProvider: apiAssembly.apiProvider,
       repository: repositoriesAssembly.historyRepository()
     )
   }
   
   func nftService() -> NFTService {
     NFTServiceImplementation(
-      api: apiAssembly.api,
+      apiProvider: apiAssembly.apiProvider,
       nftRepository: repositoriesAssembly.nftRepository()
+    )
+  }
+  
+  func blockchainService() -> BlockchainService {
+    BlockchainServiceImplementation(
+      apiProvider: apiAssembly.apiProvider
     )
   }
   
   func accountNftService() -> AccountNFTService {
     AccountNFTServiceImplementation(
-      api: apiAssembly.api,
+      apiProvider: apiAssembly.apiProvider,
       accountNFTRepository: repositoriesAssembly.accountsNftRepository(),
       nftRepository: repositoriesAssembly.nftRepository()
     )
@@ -92,7 +98,7 @@ public final class ServicesAssembly {
   
   func chartService() -> ChartService {
     ChartServiceImplementation(
-      api: apiAssembly.api,
+      apiProvider: apiAssembly.apiProvider,
       repository: repositoriesAssembly.chartDataRepository()
     )
   }
@@ -110,11 +116,11 @@ public final class ServicesAssembly {
   }
   
   func sendService() -> SendService {
-    SendServiceImplementation(api: apiAssembly.api)
+    SendServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
   func dnsService() -> DNSService {
-    DNSServiceImplementation(api: apiAssembly.api)
+    DNSServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
   func knownAccountsService() -> KnownAccountsService {

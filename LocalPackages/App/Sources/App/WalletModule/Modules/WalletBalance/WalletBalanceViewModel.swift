@@ -2,7 +2,7 @@ import Foundation
 import TKUIKit
 import KeeperCore
 import UIKit
-import TKCore
+import TKLocalize
 
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: ((Wallet) -> Void)? { get set }
@@ -167,9 +167,9 @@ private extension WalletBalanceViewModelImplementation {
     Task { @MainActor in
       var buttonContent: TKButton.Configuration.Content?
       if model.isFinishSetupAvailable {
-        buttonContent = TKButton.Configuration.Content(title: .plainString("Done"))
+        buttonContent = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.done))
       }
-      finishSetupSectionHeaderModel = TKListTitleView.Model(title: "Finish setting up", textStyle: .label1, buttonContent: buttonContent)
+      finishSetupSectionHeaderModel = TKListTitleView.Model(title: TKLocales.FinishSetup.title, textStyle: .label1, buttonContent: buttonContent)
       didUpdateFinishSetupItems?(finishSetupItems)
     }
   }
@@ -177,7 +177,7 @@ private extension WalletBalanceViewModelImplementation {
   func createHeaderModel(_ model: WalletBalanceController.StateModel) -> WalletBalanceHeaderView.Model {
     var stateDate: String?
     if let modelStateDate = model.stateDate {
-      stateDate = "Updated \(modelStateDate)"
+      stateDate = TKLocales.ConnectionStatus.updated_at(modelStateDate)
     }
 
     let balanceModel = WalletBalanceHeaderBalanceView.Model(
@@ -190,27 +190,50 @@ private extension WalletBalanceViewModelImplementation {
         action: { [weak self] in
           self?.didTapCopy(
             walletAddress: model.fullAddress, 
-            walletType: model.walletType
+            walletType: model.walletModel.walletType
           )
         }
       ),
       connectionStatusModel: createConnectionStatusModel(backgroundUpdateState: model.backgroundUpdateState),
-      tagConfiguration: createTagConfiguration(walletType: model.walletType),
+      tagConfiguration: createTagConfiguration(
+        walletType: model.walletModel.walletType,
+        isTestnet: model.walletModel.isTestnet
+      ),
       stateDate: stateDate
     )
     
     return WalletBalanceHeaderView.Model(
       balanceModel: balanceModel,
-      buttonsViewModel: createHeaderButtonsModel(walletType: model.walletType)
+      buttonsViewModel: createHeaderButtonsModel(walletType: model.walletModel.walletType)
     )
   }
   
-  func createTagConfiguration(walletType: WalletModel.WalletType) -> TKUITagView.Configuration? {
-    switch walletType {
-    case .regular:
+  func createTagConfiguration(walletType: WalletModel.WalletType, isTestnet: Bool) -> TKUITagView.Configuration? {
+    switch (walletType, isTestnet) {
+    case (.regular, false):
       return nil
-    case .watchOnly(let tag):
-      return TKUITagView.Configuration(text: tag, textColor: .Accent.orange, backgroundColor: UIColor.init(hex: "332d24"))
+    case (.regular, true):
+      return TKUITagView.Configuration(
+        text: "TESTNET",
+        textColor: .Accent.orange,
+        backgroundColor: UIColor.init(
+          hex: "332d24"
+        )
+      )
+    case (.watchOnly, _):
+      return TKUITagView.Configuration(
+        text: TKLocales.WalletTags.watch_only,
+        textColor: .Accent.orange,
+        backgroundColor: UIColor.init(
+          hex: "332d24"
+        )
+      )
+    case (.external, _):
+      return TKUITagView.Configuration(
+        text: "SIGNER",
+        textColor: .Accent.purple,
+        backgroundColor: .Accent.purple.withAlphaComponent(0.16)
+      )
     }
   }
 
@@ -220,16 +243,22 @@ private extension WalletBalanceViewModelImplementation {
     UIPasteboard.general.string = walletAddress
     
     let backgroundColor: UIColor
+    let foregroundColor: UIColor
     switch walletType {
     case .regular:
       backgroundColor = .Background.contentTint
+      foregroundColor = .Text.primary
     case .watchOnly:
       backgroundColor = .Accent.orange
+      foregroundColor = .Text.primary
+    case .external:
+      backgroundColor = .Accent.purple
+      foregroundColor = .Text.primary
     }
     let configuration = ToastPresenter.Configuration(
-      title: "Copied.",
+      title: TKLocales.Actions.copied,
       backgroundColor: backgroundColor,
-      foregroundColor: .Text.primary,
+      foregroundColor: foregroundColor,
       dismissRule: .default
     )
     didCopy?(configuration)
@@ -239,7 +268,7 @@ private extension WalletBalanceViewModelImplementation {
     switch backgroundUpdateState {
     case .connecting:
       return ConnectionStatusView.Model(
-        title: "Updating",
+        title: TKLocales.ConnectionStatus.updating,
         titleColor: .Text.secondary,
         isLoading: true
       )
@@ -247,13 +276,13 @@ private extension WalletBalanceViewModelImplementation {
       return nil
     case .disconnected:
       return ConnectionStatusView.Model(
-        title: "Updating",
+        title: TKLocales.ConnectionStatus.updating,
         titleColor: .Text.secondary,
         isLoading: true
       )
     case .noConnection:
       return ConnectionStatusView.Model(
-        title: "No Internet connection",
+        title: TKLocales.ConnectionStatus.no_internet,
         titleColor: .Accent.orange,
         isLoading: false
       )
@@ -283,35 +312,42 @@ private extension WalletBalanceViewModelImplementation {
       isSwapEnable = false
       isBuyEnable = true
       isStakeEnable = false
+    case .external:
+      isSendEnable = true
+      isReceiveEnable = true
+      isScanEnable = true
+      isSwapEnable = false
+      isBuyEnable = true
+      isStakeEnable = false
     }
     
     return WalletBalanceHeaderButtonsView.Model(
       sendButton: WalletBalanceHeaderButtonsView.Model.Button(
-        title: "Send",
+        title: TKLocales.WalletButtons.send,
         icon: .TKUIKit.Icons.Size28.arrowUpOutline,
         isEnabled: isSendEnable,
         action: { [weak self] in self?.didTapSend?() }
       ),
       recieveButton: WalletBalanceHeaderButtonsView.Model.Button(
-        title: "Receive",
+        title: TKLocales.WalletButtons.receive,
         icon: .TKUIKit.Icons.Size28.arrowDownOutline,
         isEnabled: isReceiveEnable,
         action: { [weak self] in self?.didTapReceive?() }
       ),
       scanButton: WalletBalanceHeaderButtonsView.Model.Button(
-        title: "Scan",
+        title: TKLocales.WalletButtons.scan,
         icon: .TKUIKit.Icons.Size28.qrViewFinderThin,
         isEnabled: isScanEnable,
         action: { [weak self] in self?.didTapScan?() }
       ),
       swapButton: WalletBalanceHeaderButtonsView.Model.Button(
-        title: "Swap",
+        title: TKLocales.WalletButtons.swap,
         icon: .TKUIKit.Icons.Size28.swapHorizontalOutline,
         isEnabled: isSwapEnable,
         action: {}
       ),
       buyButton: WalletBalanceHeaderButtonsView.Model.Button(
-        title: "Buy TON",
+        title: TKLocales.WalletButtons.buy,
         icon: .TKUIKit.Icons.Size28.usd,
         isEnabled: isBuyEnable,
         action: { [weak self] in
@@ -319,7 +355,7 @@ private extension WalletBalanceViewModelImplementation {
           self?.didTapBuy?(wallet) }
       ),
       stakeButton: WalletBalanceHeaderButtonsView.Model.Button(
-        title: "Stake",
+        title: TKLocales.WalletButtons.stake,
         icon: .TKUIKit.Icons.Size28.stakingOutline,
         isEnabled: isStakeEnable,
         action: { [weak self] in

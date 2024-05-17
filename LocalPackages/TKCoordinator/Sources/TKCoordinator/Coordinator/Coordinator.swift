@@ -5,7 +5,7 @@ public protocol Coordinator: AnyObject {
   func removeChild(_ child: Coordinator)
   func start()
   func start(deeplink: CoordinatorDeeplink?)
-  func handleDeeplink(deeplink: CoordinatorDeeplink?)
+  func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool
 }
 
 open class RouterCoordinator<CoordinatorRouter: Router>: Coordinator {
@@ -32,5 +32,5 @@ open class RouterCoordinator<CoordinatorRouter: Router>: Coordinator {
   
   open func start() {}
   open func start(deeplink: CoordinatorDeeplink? = nil) {}
-  open func handleDeeplink(deeplink: CoordinatorDeeplink?) {}
+  open func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool { return false }
 }

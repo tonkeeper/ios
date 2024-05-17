@@ -11,12 +11,21 @@ public final class ImportWalletCoordinator: RouterCoordinator<NavigationControll
   public var didImportWallets: (() -> Void)?
   
   private let walletsUpdateAssembly: WalletsUpdateAssembly
+  private let passcodeAssembly: KeeperCore.PasscodeAssembly
+  private let passcode: String?
+  private let isTestnet: Bool
   private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
   init(router: NavigationControllerRouter,
        walletsUpdateAssembly: WalletsUpdateAssembly,
+       passcodeAssembly: KeeperCore.PasscodeAssembly,
+       passcode: String?,
+       isTestnet: Bool,
        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
     self.walletsUpdateAssembly = walletsUpdateAssembly
+    self.passcodeAssembly = passcodeAssembly
+    self.passcode = passcode
+    self.isTestnet = isTestnet
     self.customizeWalletModule = customizeWalletModule
     super.init(router: router)
   }
@@ -30,7 +39,8 @@ private extension ImportWalletCoordinator {
   func openInputRecoveryPhrase() {
     let coordinator = RecoveryPhraseCoordinator(
       router: router,
-      walletsUpdateAssembly: walletsUpdateAssembly
+      walletsUpdateAssembly: walletsUpdateAssembly,
+      isTestnet: isTestnet
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
@@ -77,10 +87,14 @@ private extension ImportWalletCoordinator {
       tintColor: model.tintColor,
       emoji: model.emoji)
     do {
+      if let passcode {
+        try passcodeAssembly.passcodeCreateController().createPasscode(passcode)
+      }
       try addController.importWallets(
         phrase: phrase,
         revisions: revisions,
-        metaData: metaData)
+        metaData: metaData,
+        isTestnet: isTestnet)
       didImportWallets?()
     } catch {
       print("Log: Wallet import failed")

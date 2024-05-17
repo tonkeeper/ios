@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 public protocol WatchOnlyWalletAddressInputModuleOutput: AnyObject {
   var didInputWallet: ((ResolvableAddress) -> Void)? { get set }
@@ -73,7 +74,7 @@ final class WatchOnlyWalletAddressInputViewModelImplementation: WatchOnlyWalletA
   init(controller: WatchOnlyWalletAddressInputController) {
     self.controller = controller
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    continueButtonConfiguration.content.title = .plainString("Continue")
+    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
     self.continueButtonConfiguration = continueButtonConfiguration
   }
 }
@@ -81,11 +82,11 @@ final class WatchOnlyWalletAddressInputViewModelImplementation: WatchOnlyWalletA
 private extension WatchOnlyWalletAddressInputViewModelImplementation {
   func createModel() -> WatchOnlyWalletAddressInputView.Model {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: "Watch Account",
-      bottomDescription: "Monitor wallet activity without recovery phrase. You will be notified of any transactions from this wallet."
+      title: TKLocales.WatchAccount.title,
+      bottomDescription: TKLocales.WatchAccount.description
     )
     
-    let placeholder = "Address or name"
+    let placeholder = TKLocales.WatchAccount.placeholder
     
     return WatchOnlyWalletAddressInputView.Model(
       titleDescriptionModel: titleDescriptionModel,

@@ -1,0 +1,12 @@
+{
+  "name": "swift-locales-codegen",
+  "version": "1.0.0",
+  "description": "Codegen script for locales",
+  "main": "index.js",
+  "scripts": {
+    "codegen": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}

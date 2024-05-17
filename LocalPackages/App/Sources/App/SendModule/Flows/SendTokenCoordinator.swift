@@ -1,12 +1,16 @@
 import UIKit
 import TKCoordinator
+import TKLocalize
 import TKUIKit
 import KeeperCore
 import TKCore
+import TonSwift
 
 final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didFinish: (() -> Void)?
+  
+  private var externalSignHandler: ((Data) async -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -27,6 +31,15 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   
   public override func start() {
     openSend()
+  }
+  
+  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+    guard let externalSignHandler else { return false }
+    Task {
+      await externalSignHandler(model.boc)
+    }
+    self.externalSignHandler = nil
+    return true
   }
 }
 
@@ -50,8 +63,8 @@ private extension SendTokenCoordinator {
         token: token,
         sourceViewController: self.router.rootViewController,
         completion: { token in
-        module.input.updateWithToken(token)
-      })
+          module.input.updateWithToken(token)
+        })
     }
     
     module.output.didTapScan = { [weak self] in
@@ -67,7 +80,7 @@ private extension SendTokenCoordinator {
         }
       })
     }
-
+    
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
@@ -90,7 +103,7 @@ private extension SendTokenCoordinator {
     openSendTokenEdit(sendModel: sendModel, step: .comment, completion: completion)
   }
   
-  func openSendTokenEdit(sendModel: SendModel, 
+  func openSendTokenEdit(sendModel: SendModel,
                          step: SendTokenEditCoordinator.Step,
                          completion: @escaping (SendModel) -> Void) {
     let navigationController = TKNavigationController()
@@ -122,7 +135,7 @@ private extension SendTokenCoordinator {
     
     addChild(coordinator)
     coordinator.start()
-
+    
     router.present(navigationController)
   }
   
@@ -147,6 +160,13 @@ private extension SendTokenCoordinator {
       self?.router.dismiss(completion: {
         self?.didFinish?()
       })
+    }
+    
+    module.output.didRequireExternalWalletSign = { [weak self] transferURL, wallet in
+      guard let self else { return Data() }
+      return try await self.handleExternalSign(url: transferURL,
+                                               wallet: wallet,
+                                               fromViewController: self.router.rootViewController)
     }
     
     module.view.setupBackButton()
@@ -213,9 +233,12 @@ private extension SendTokenCoordinator {
     let scanModule = ScannerModule(
       dependencies: ScannerModule.Dependencies(
         coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
-    ).createScannerModule()
+    ).createScannerModule(configurator: DefaultScannerControllerConfigurator(),
+                          uiConfiguration: ScannerUIConfiguration(title: TKLocales.Scanner.title,
+                                                                  subtitle: nil,
+                                                                  isFlashlightVisible: true))
     
     let navigationController = TKNavigationController(rootViewController: scanModule.view)
     navigationController.configureTransparentAppearance()
@@ -227,5 +250,39 @@ private extension SendTokenCoordinator {
     }
     
     router.present(navigationController)
+  }
+  
+  func handleExternalSign(url: URL, wallet: Wallet, fromViewController: UIViewController) async throws -> Data? {
+    return try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue.main.async {
+        if self.coreAssembly.urlOpener().canOpen(url: url) {
+          self.externalSignHandler = { data in
+            continuation.resume(returning: data)
+          }
+          self.coreAssembly.urlOpener().open(url: url)
+        } else {
+          let module = SignerSignAssembly.module(
+            url: url,
+            wallet: wallet,
+            assembly: self.keeperCoreMainAssembly,
+            coreAssembly: self.coreAssembly
+          )
+          let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+          
+          bottomSheetViewController.didClose = { isInteractivly in
+            guard isInteractivly else { return }
+            continuation.resume(returning: nil)
+          }
+          
+          module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
+            bottomSheetViewController?.dismiss(completion: {
+              continuation.resume(returning: model.boc)
+            })
+          }
+          
+          bottomSheetViewController.present(fromViewController: fromViewController)
+        }
+      }
+    }
   }
 }

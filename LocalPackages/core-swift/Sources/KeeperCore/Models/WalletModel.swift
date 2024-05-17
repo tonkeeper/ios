@@ -1,9 +1,11 @@
 import Foundation
+import TKLocalize
 
 public struct WalletModel: Equatable {
   public enum WalletType {
     case regular
-    case watchOnly(tag: String)
+    case watchOnly
+    case external
   }
   
   public let identifier: String
@@ -12,6 +14,7 @@ public struct WalletModel: Equatable {
   public let emoji: String
   public let tintColor: WalletTintColor
   public let walletType: WalletType
+  public let isTestnet: Bool
   
   public var emojiLabel: String {
     "\(emoji) \(label)"
@@ -32,9 +35,9 @@ extension Wallet {
     case .Lockup:
       fatalError("")
     case .Watchonly:
-      walletType = .watchOnly(tag: "Watch only")
+      walletType = .watchOnly
     case .External:
-      fatalError("")
+      walletType = .external
     }
 
     return WalletModel(
@@ -43,7 +46,8 @@ extension Wallet {
       tag: tag,
       emoji: metaData.emoji,
       tintColor: metaData.tintColor,
-      walletType: walletType
+      walletType: walletType,
+      isTestnet: identity.network == .testnet
     )
   }
 }

@@ -33,9 +33,10 @@ public final class TokenPickerController {
   public func start() async {
     _ = await walletBalanceStore.addEventObserver(self) { observer, event in
       switch event {
-      case .balanceUpdate(_, let walletAddress):
-        guard let address = try? observer.wallet.address else { return }
-        guard walletAddress == address else { return }
+      case .balanceUpdate(_, let wallet):
+        guard (try? wallet.friendlyAddress) == (try? observer.wallet.friendlyAddress) else {
+          return
+        }
         Task { await observer.reloadTokens() }
       }
     }
@@ -57,7 +58,7 @@ private extension TokenPickerController {
   func reloadTokens() async {
     let balance: Balance
     do {
-      balance = try await walletBalanceStore.getBalanceState(walletAddress: wallet.address).walletBalance.balance
+      balance = try await walletBalanceStore.getBalanceState(wallet: wallet).walletBalance.balance
     } catch {
       balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
     }
