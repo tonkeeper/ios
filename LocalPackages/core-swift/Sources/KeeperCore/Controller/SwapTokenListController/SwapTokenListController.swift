@@ -1,4 +1,28 @@
 import Foundation
+import BigInt
+
+public enum AssetKind {
+  case ton
+  case jetton
+  case unknown
+  
+  public init(fromString rawValue: String) {
+    switch rawValue.lowercased() {
+    case "ton":
+      self = .ton
+    case "jetton":
+      self = .jetton
+    default:
+      self = .unknown
+    }
+  }
+}
+
+struct AssetBalance {
+  let assetSymbol: String
+  let amount: String
+  let convertedAmount: String?
+}
 
 public final class SwapTokenListController {
   
@@ -6,19 +30,39 @@ public final class SwapTokenListController {
   
   private var tokenListItems: [TokenListItemsModel.Item] = []
   
+  private let wallet: Wallet
+  
   private let stonfiAssetsStore: StonfiAssetsStore
   private let stonfiAssetsLoader: StonfiAssetsLoader
+  private let ratesStore: RatesStore
+  private let currencyStore: CurrencyStore
+  private let walletsStore: WalletsStore
+  private let walletBalanceStore: WalletBalanceStore
+  private let swapTokenListMapper: SwapTokenListMapper
   
-  init(stonfiAssetsStore: StonfiAssetsStore, stonfiAssetsLoader: StonfiAssetsLoader) {
+  init(stonfiAssetsStore: StonfiAssetsStore,
+       stonfiAssetsLoader: StonfiAssetsLoader,
+       ratesStore: RatesStore,
+       currencyStore: CurrencyStore,
+       walletsStore: WalletsStore,
+       walletBalanceStore: WalletBalanceStore
+       , swapTokenListMapper: SwapTokenListMapper) {
     self.stonfiAssetsStore = stonfiAssetsStore
     self.stonfiAssetsLoader = stonfiAssetsLoader
+    self.ratesStore = ratesStore
+    self.currencyStore = currencyStore
+    self.walletsStore = walletsStore
+    self.walletBalanceStore = walletBalanceStore
+    self.swapTokenListMapper = swapTokenListMapper
+    self.wallet = walletsStore.activeWallet
   }
   
   public func start() async {
     _ = await stonfiAssetsStore.addEventObserver(self) { [weak self] observer, event in
+      guard let self else { return }
       switch event {
       case .didUpdateAssets(let assets):
-        self?.assetsDidUpdate(assets)
+        Task { await self.assetsDidUpdate(assets) }
       }
     }
     
@@ -29,42 +73,107 @@ public final class SwapTokenListController {
     let isStoredAssetsValid = !items.isEmpty && expirationDate.timeIntervalSinceNow > 0
     
     if isStoredAssetsValid {
-      print("SwapTokenListController using stored assets")
-      assetsDidUpdate(storedAssets)
+      await assetsDidUpdate(storedAssets)
     } else {
-      print("SwapTokenListController loadAssets")
-      await stonfiAssetsLoader.loadAssets()
+      await stonfiAssetsLoader.loadAssets(excludeCommunityAssets: true)
     }
   }
 }
 
 private extension SwapTokenListController {
-  func assetsDidUpdate(_ assets: StonfiAssets) {
-    let tokenListItems = assets.items.map { asset in
-      mapStonfiAsset(asset)
-    }
+  func assetsDidUpdate(_ assets: StonfiAssets) async {
+    let assetsBalanceDict = await getAssetsBalanceDict()
+    
+    let tokenListItems: [TokenListItemsModel.Item] = assets.items
+      .filter { !$0.isCommunity }
+      .map { stonfiAsset in
+        var tokenListItem = swapTokenListMapper.mapStonfiAsset(stonfiAsset)
+        let assetBalanceList = assetsBalanceDict[tokenListItem.kind]
+        let assetBalance = assetBalanceList?.first(where: { $0.assetSymbol == tokenListItem.symbol })
+        tokenListItem.amount = assetBalance?.amount
+        tokenListItem.convertedAmount = assetBalance?.convertedAmount
+        return tokenListItem
+      }
+      .sorted(by: { $0.symbol.localizedStandardCompare($1.symbol) == .orderedAscending })
+      .tokenListSorted()
+    
     let tokenListItemsModel = TokenListItemsModel(items: tokenListItems)
     
-    Task { @MainActor in
+    await MainActor.run {
       self.tokenListItems = tokenListItems
       didUpdateTokenListItemsModel?(tokenListItemsModel)
     }
   }
   
-  func mapStonfiAsset(_ asset: StonfiAsset) -> TokenListItemsModel.Item {
-    var imageUrl: URL?
-    if let imageUrlString = asset.imageUrl  {
-      imageUrl = URL(string: imageUrlString)
+  func getAssetsBalanceDict() async -> [AssetKind : [AssetBalance]] {
+    let walletBalanceState = try? await walletBalanceStore.getBalanceState(walletAddress: wallet.address)
+    
+    let balance: Balance
+    if let walletBalance = walletBalanceState?.walletBalance {
+      balance = walletBalance.balance
+    } else {
+      balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
     }
     
-    return TokenListItemsModel.Item(
-      identifier: asset.contractAddress,
-      image: .asyncImage(imageUrl),
-      symbol: asset.symbol,
-      displayName: asset.displayName ?? "",
-      badge: nil,
-      amount: nil,
-      convertedAmount: nil
+    let jettons = balance.jettonsBalance.map({ $0.item.jettonInfo })
+    let rates = ratesStore.getRates(jettons: jettons)
+    
+    let currency = await currencyStore.getActiveCurrency()
+    
+    return swapTokenListMapper.mapBalance(
+      balance: balance,
+      rates: rates,
+      currency: currency
     )
   }
+}
+
+private extension Array where Element == TokenListItemsModel.Item {
+  func tokenListSorted() -> [TokenListItemsModel.Item] {
+    return self.sorted { (leftItem: TokenListItemsModel.Item, rightItem: TokenListItemsModel.Item) -> Bool in
+      // Place TON at first position
+      if leftItem.symbol == .tonSymbol && leftItem.kind == .ton {
+        return true
+      } else if rightItem.symbol == .tonSymbol && rightItem.kind == .ton {
+        return false
+      }
+      
+      // Sort Ton kind by amount
+      if leftItem.kind == .ton && leftItem.amount != nil {
+        if rightItem.kind != .ton || rightItem.amount == nil {
+          return true
+        }
+      } else if rightItem.kind == .ton && rightItem.amount != nil {
+        return false
+      }
+      
+      // Sort by USDT symbol
+      if leftItem.symbol == .usdtSymbol || leftItem.symbol == .jusdtSymbol {
+        if leftItem.symbol == .usdtSymbol {
+          return true
+        } else if rightItem.symbol != .usdtSymbol && rightItem.symbol != .jusdtSymbol {
+          return true
+        }
+      } else if rightItem.symbol == .usdtSymbol || rightItem.symbol == .jusdtSymbol {
+        return false
+      }
+      
+      // Sort any kind by amount
+      if leftItem.amount != nil {
+        if rightItem.amount == nil {
+          return true
+        }
+      } else if rightItem.amount != nil {
+        return false
+      }
+      
+      return leftItem.symbol.localizedStandardCompare(rightItem.symbol) == .orderedAscending
+    }
+  }
+}
+
+private extension String {
+  static let tonSymbol = TonInfo.symbol
+  static let usdtSymbol = "USD₮"
+  static let jusdtSymbol = "jUSDT"
 }

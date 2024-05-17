@@ -415,7 +415,12 @@ public final class MainAssembly {
   public func swapTokenListController() -> SwapTokenListController {
     SwapTokenListController(
       stonfiAssetsStore: storesAssembly.stonfiAssetsStore,
-      stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader
+      stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader,
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      walletsStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      swapTokenListMapper: swapTokenListMapper
     )
   }
   
@@ -512,6 +517,13 @@ private extension MainAssembly {
   
   var tokenDetailsMapper: TokenDetailsMapper {
     TokenDetailsMapper(
+      amountFormatter: formattersAssembly.amountFormatter,
+      rateConverter: RateConverter()
+    )
+  }
+  
+  var swapTokenListMapper: SwapTokenListMapper {
+    SwapTokenListMapper(
       amountFormatter: formattersAssembly.amountFormatter,
       rateConverter: RateConverter()
     )

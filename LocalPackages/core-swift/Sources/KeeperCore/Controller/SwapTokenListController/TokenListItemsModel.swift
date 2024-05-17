@@ -17,14 +17,16 @@ public extension TokenListItemsModel {
     
     public let identifier: String
     public let image: Image
+    public let kind: AssetKind
     public let symbol: String
     public let displayName: String
     public let badge: String?
-    public let amount: String?
-    public let convertedAmount: String?
+    public var amount: String?
+    public var convertedAmount: String?
     
     public init(identifier: String,
                 image: Image,
+                kind: AssetKind,
                 symbol: String,
                 displayName: String,
                 badge: String?,
@@ -32,6 +34,7 @@ public extension TokenListItemsModel {
                 convertedAmount: String?) {
       self.identifier = identifier
       self.image = image
+      self.kind = kind
       self.symbol = symbol
       self.displayName = displayName
       self.badge = badge
