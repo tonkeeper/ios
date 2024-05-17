@@ -50,7 +50,12 @@
 "settings.items.change_password" = "Change Password";
 "settings.items.support" = "Support";
 "settings.items.legal" = "Legal";
+"settings.items.theme" = "Theme";
 "settings.footer.version" = "Version %@";
+"settings.themes.deepblue" = "Deep Blue";
+"settings.themes.dark" = "Dark";
+"settings.themes.light" = "Light";
+"settings.themes.system" = "System";
 
 "settings.legal.title" = "Legal";
 "settings.legal.items.terms_of_service" = "Terms of service";

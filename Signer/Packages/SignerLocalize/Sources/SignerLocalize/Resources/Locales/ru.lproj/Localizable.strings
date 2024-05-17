@@ -51,7 +51,12 @@
 "settings.items.change_password" = "Поменять пароль";
 "settings.items.support" = "Поддержка";
 "settings.items.legal" = "Юридические документы";
+"settings.items.theme" = "Тема";
 "settings.footer.version" = "Версия %@";
+"settings.themes.deepblue" = "Тёмно-синяя";
+"settings.themes.dark" = "Тёмная";
+"settings.themes.light" = "Светлая";
+"settings.themes.system" = "Системная";
 
 "settings.legal.title" = "Документы";
 "settings.legal.items.terms_of_service" = "Правила использования";

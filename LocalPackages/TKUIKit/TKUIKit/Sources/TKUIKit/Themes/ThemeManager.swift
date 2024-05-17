@@ -59,13 +59,13 @@ public final class TKThemeManager {
   
   public private(set) var themeAppearance: TKThemeAppearance
   
-  private let userDefaults = UserDefaults(suiteName: "TKUIKit")
+  private let userDefaults = UserDefaults.standard
   
   init() {
-    guard let themeIdentifier = userDefaults?.string(forKey: .themeKey),
+    guard let themeIdentifier = userDefaults.string(forKey: .themeKey),
           let theme = TKTheme(rawValue: themeIdentifier) else {
-      self.theme = .light
-      self.themeAppearance = LightThemeAppearance()
+      self.theme = .deepBlue
+      self.themeAppearance = DeepBlueThemeAppearance()
       return
     }
     self.theme = theme
@@ -91,7 +91,7 @@ public final class TKThemeManager {
   
   private func didUpdateTheme() {
     themeAppearance = theme.themeAppaearance
-    userDefaults?.setValue(theme.rawValue, forKey: .themeKey)
+    userDefaults.setValue(theme.rawValue, forKey: .themeKey)
     observations.forEach { $0.value(theme) }
   }
 }

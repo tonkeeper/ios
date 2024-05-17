@@ -28,7 +28,7 @@ private extension TKWindow {
     TKThemeManager.shared.addEventObserver(self) { observer, theme in
       observer.updateUserInterfaceStyle(theme.themeAppaearance.userInterfaceStyle)
     }
-    updateUserInterfaceStyle(TKThemeManager.shared.themeAppearance.userInterfaceStyle)
+    updateUserInterfaceStyle(TKThemeManager.shared.theme.themeAppaearance.userInterfaceStyle)
   }
   
   private func updateUserInterfaceStyle(_ userInterfaceStyle: UIUserInterfaceStyle) {
