@@ -140,4 +140,11 @@ public final class ServicesAssembly {
   func locationService() -> LocationService {
     LocationServiceImplementation(locationAPI: locationAPIAsembly.locationAPI())
   }
+  
+  func stonfiAssetsService() -> StonfiAssetsService {
+    StonfiServiceImplementation(
+      api: apiAssembly.api,
+      stonfiAssetsRepository: repositoriesAssembly.stonfiAssetsRepository()
+    )
+  }
 }

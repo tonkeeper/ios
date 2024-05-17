@@ -348,6 +348,37 @@ extension API {
   }
 }
 
+// MARK: - STONfi
+
+extension API {
+  private struct StonfiAssetsResponse: Codable {
+    let assetList: [StonfiAsset]
+    
+    enum CodingKeys: String, CodingKey {
+      case assetList = "asset_list"
+    }
+  }
+  
+  func getStonfiAssets() async throws -> [StonfiAsset] {
+    let configuration = try await configurationStore.getConfiguration()
+    guard var components = URLComponents(string: configuration.stonfiApiV1Endpoint) else { return [] }
+    components.path = "/v1/assets"
+    
+    guard let url = components.url else { return [] }
+    let request = URLRequest(url: url)
+    let (data, response) = try await urlSession.data(for: request)
+    guard let httpResponse = (response as? HTTPURLResponse) else {
+      throw APIError.incorrectResponse
+    }
+    guard (200..<300).contains(httpResponse.statusCode) else {
+      throw APIError.serverError(statusCode: httpResponse.statusCode)
+    }
+    
+    let stonfiAssetsResponse = try JSONDecoder().decode(StonfiAssetsResponse.self, from: data)
+    return stonfiAssetsResponse.assetList
+  }
+}
+
 //// MARK: - Time
 //
 //extension API {

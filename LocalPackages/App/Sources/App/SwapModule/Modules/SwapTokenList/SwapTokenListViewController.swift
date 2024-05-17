@@ -178,7 +178,6 @@ private extension SwapTokenListViewController {
       
       let snapshot = dataSource.snapshot()
       let section = snapshot.sectionIdentifiers[indexPath.section]
-      print(kind)
       switch section {
       case .suggestedTokens:
         let titleHeaderView = collectionView.dequeueReusableSupplementaryView(

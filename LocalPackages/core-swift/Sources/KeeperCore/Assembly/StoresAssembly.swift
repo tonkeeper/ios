@@ -161,4 +161,17 @@ public final class StoresAssembly {
       return knownAccountsStore
     }
   }
+  
+  private weak var _stonfiAssetsStore: StonfiAssetsStore?
+  var stonfiAssetsStore: StonfiAssetsStore {
+    if let stonfiAssetsStore = _stonfiAssetsStore {
+      return stonfiAssetsStore
+    } else {
+      let stonfiAssetsStore = StonfiAssetsStore(
+        repository: repositoriesAssembly.stonfiAssetsRepository()
+      )
+      _stonfiAssetsStore = stonfiAssetsStore
+      return stonfiAssetsStore
+    }
+  }
 }

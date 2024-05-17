@@ -1,34 +1,6 @@
 import UIKit
 import TKUIKit
-import TKLocalize
-import TKCore
 import KeeperCore
-import BigInt
-
-public struct TokenListItemsModel {
-  public let items: [Item]
-  
-  public init(items: [Item]) {
-    self.items = items
-  }
-}
-
-public extension TokenListItemsModel {
-  struct Item {
-    enum Image {
-      case image(UIImage)
-      case asyncImage(URL?)
-    }
-    
-    //let kind: String
-    let image: Image
-    let symbol: String
-    let displayName: String
-    let badge: String?
-    let balance: String?
-    let balanceConverted: String?
-  }
-}
 
 struct SwapTokenListModel {
   struct Button {
@@ -77,32 +49,29 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
   func viewDidLoad() {
     update()
     
+    swapTokenListController.didUpdateTokenListItemsModel = { [weak self] tokenListItemsModel in
+      guard let self else { return }
+      
+      let suggestedItems: [SuggestedTokenCell.Configuration] = [
+        .init(id: "0", tokenButtonModel: .init(title: "ANON".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
+        .init(id: "1", tokenButtonModel: .init(title: "TON".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
+        .init(id: "2", tokenButtonModel: .init(title: "jUSDT".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
+        .init(id: "3", tokenButtonModel: .init(title: "GRAM".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
+        .init(id: "4", tokenButtonModel: .init(title: "USDT".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
+      ]
+      
+      let otherItems = tokenListItemsModel.items.map { item in
+        self.itemMapper.mapTokenListItem(item) {
+          self.didSelectToken(item.symbol)
+        }
+      }
+      
+      self.didUpdateListItems?(suggestedItems, otherItems)
+    }
+    
     Task {
       await swapTokenListController.start()
     }
-    
-    let suggestedItems: [SuggestedTokenCell.Configuration] = [
-      .init(id: "0", tokenButtonModel: .init(title: "ANON".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
-      .init(id: "1", tokenButtonModel: .init(title: "TON".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
-      .init(id: "2", tokenButtonModel: .init(title: "jUSDT".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
-      .init(id: "3", tokenButtonModel: .init(title: "GRAM".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
-      .init(id: "4", tokenButtonModel: .init(title: "USDT".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
-    ]
-    
-    let otherItemsModel: TokenListItemsModel = .init(items: [
-      .init(image: .image(.TKCore.Icons.Size44.tonLogo), symbol: "TON", displayName: "Toncoin", badge: nil, balance: "100,000.01", balanceConverted: "$600,000.01"),
-      .init(image: .image(.TKCore.Icons.Size44.tonLogo), symbol: "USD₮", displayName: "Tether USD", badge: "TON", balance: "100,000.01", balanceConverted: "$100,000.01"),
-      .init(image: .image(.TKCore.Icons.Size44.tonLogo), symbol: "ANON", displayName: "ANON", badge: nil, balance: nil, balanceConverted: nil),
-      .init(image: .image(.TKCore.Icons.Size44.tonLogo), symbol: "GLINT", displayName: "Glint Coin", badge: nil,balance: nil, balanceConverted: nil),
-    ])
-    
-    let otherItems = otherItemsModel.items.map { item in
-      itemMapper.mapTokenListItem(item) { [weak self] in
-        self?.didSelectToken(item.symbol)
-      }
-    }
-    
-    didUpdateListItems?(suggestedItems, otherItems)
   }
   
   func didInputSearchText(_ searchText: String) {

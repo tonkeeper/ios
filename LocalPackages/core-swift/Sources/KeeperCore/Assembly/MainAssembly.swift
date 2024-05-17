@@ -413,7 +413,10 @@ public final class MainAssembly {
   }
   
   public func swapTokenListController() -> SwapTokenListController {
-    SwapTokenListController()
+    SwapTokenListController(
+      stonfiAssetsStore: storesAssembly.stonfiAssetsStore,
+      stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader
+    )
   }
   
   public func buyListController(wallet: Wallet,

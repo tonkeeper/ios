@@ -8,13 +8,13 @@ final class SwapTokenListItemMapper {
   let imageLoader = ImageLoader()
   
   func mapTokenListItem(_ item: TokenListItemsModel.Item, selectionClosure: @escaping (() -> Void)) -> TKUIListItemCell.Configuration {
-    let id = item.symbol
+    let id = item.identifier
     let title = item.symbol.withTextStyle(.label1, color: .Text.primary)
     let subtitle = item.displayName.withTextStyle(.body2, color: .Text.secondary)
     
     let zeroValue = "0".withTextStyle(.label1, color: .Text.tertiary)
-    let value = item.balance?.withTextStyle(.label1, color: .Text.primary) ?? zeroValue
-    let valueSubtitle = item.balanceConverted?.withTextStyle(.body2, color: .Text.secondary)
+    let value = item.amount?.withTextStyle(.label1, color: .Text.primary) ?? zeroValue
+    let valueSubtitle = item.convertedAmount?.withTextStyle(.body2, color: .Text.secondary)
     
     let contentConfiguration = TKUIListItemContentView.Configuration(
       leftItemConfiguration: .init(
