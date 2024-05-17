@@ -10,8 +10,6 @@ public final class StakeCoordinator: RouterCoordinator<NavigationControllerRoute
   var didFinish: (() -> Void)?
   var didUpdateSendModel: ((SendModel) -> Void)?
   
-  private let flowViewController = SendEditFlowViewController()
-  
   private let wallet: Wallet
   private let walletsStore: WalletsStore
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -56,7 +54,15 @@ private extension StakeCoordinator {
   }
   
   func openStakeNextScreen() {
+    let module = StakeConfirmationAssembly.module()
     
+    module.output.didSendTransaction = { [weak self] in
+      self?.router.dismiss()
+    }
+    
+    module.view.setupBackButton()
+    
+    router.push(viewController: module.view)
   }
   
 }
