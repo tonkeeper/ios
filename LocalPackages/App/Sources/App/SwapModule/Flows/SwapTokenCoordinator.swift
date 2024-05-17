@@ -47,13 +47,7 @@ private extension SwapTokenCoordinator {
   }
 
   func openTokenPicker(sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
-    // TODO: Change to new Token Picker
-    let module = TokenPickerAssembly.module(
-      tokenPickerController: keeperCoreMainAssembly.tokenPickerController(
-        wallet: keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet,
-        selectedToken: .ton
-      )
-    )
+    let module = ChooseTokenAssembly.module()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     module.output.didSelectToken = { token in
       completion(token)
