@@ -67,4 +67,17 @@ public final class LoadersAssembly {
     _stonfiAssetsLoader = loader
     return loader
   }
+  
+  weak var _stonfiPairsLoader: StonfiPairsLoader?
+  var stonfiPairsLoader: StonfiPairsLoader {
+    if let _stonfiPairsLoader {
+      return _stonfiPairsLoader
+    }
+    let loader = StonfiPairsLoader(
+      stonfiPairsStore: storesAssembly.stonfiPairsStore,
+      stonfiPairsService: servicesAssembly.stonfiPairsService()
+    )
+    _stonfiPairsLoader = loader
+    return loader
+  }
 }

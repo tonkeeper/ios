@@ -60,4 +60,8 @@ public final class RepositoriesAssembly {
   func stonfiAssetsRepository() -> StonfiAssetsRepository {
     StonfiAssetsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
+  
+  func stonfiPairsStoreRepository() -> StonfiPairsRepository {
+    StonfiPairsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
 }

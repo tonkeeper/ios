@@ -174,4 +174,17 @@ public final class StoresAssembly {
       return stonfiAssetsStore
     }
   }
+  
+  private weak var _stonfiPairsStore: StonfiPairsStore?
+  var stonfiPairsStore: StonfiPairsStore {
+    if let stonfiPairsStore = _stonfiPairsStore {
+      return stonfiPairsStore
+    } else {
+      let stonfiPairsStore = StonfiPairsStore(
+        repository: repositoriesAssembly.stonfiPairsStoreRepository()
+      )
+      _stonfiPairsStore = stonfiPairsStore
+      return stonfiPairsStore
+    }
+  }
 }

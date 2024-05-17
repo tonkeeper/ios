@@ -147,4 +147,11 @@ public final class ServicesAssembly {
       stonfiAssetsRepository: repositoriesAssembly.stonfiAssetsRepository()
     )
   }
+  
+  func stonfiPairsService() -> StonfiPairsService {
+    StonfiPairsServiceImplementation(
+      api: apiAssembly.api,
+      stonfiPairsRepository: repositoriesAssembly.stonfiPairsStoreRepository()
+    )
+  }
 }

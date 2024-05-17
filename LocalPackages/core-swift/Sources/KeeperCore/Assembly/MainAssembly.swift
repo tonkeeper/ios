@@ -415,11 +415,14 @@ public final class MainAssembly {
   public func swapTokenListController() -> SwapTokenListController {
     SwapTokenListController(
       stonfiAssetsStore: storesAssembly.stonfiAssetsStore,
-      stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader,
+      stonfiPairsStore: storesAssembly.stonfiPairsStore,
       ratesStore: storesAssembly.ratesStore,
       currencyStore: storesAssembly.currencyStore,
       walletsStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
+      stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader,
+      stonfiPairsLoader: loadersAssembly.stonfiPairsLoader,
+      stonfiPairsService: servicesAssembly.stonfiPairsService(),
       swapTokenListMapper: swapTokenListMapper
     )
   }

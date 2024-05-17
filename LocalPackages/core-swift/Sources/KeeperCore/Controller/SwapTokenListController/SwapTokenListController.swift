@@ -31,28 +31,38 @@ public final class SwapTokenListController {
   private var tokenListItems: [TokenListItemsModel.Item] = []
   
   private let wallet: Wallet
+  private var tonContractAddress = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
   
   private let stonfiAssetsStore: StonfiAssetsStore
-  private let stonfiAssetsLoader: StonfiAssetsLoader
+  private let stonfiPairsStore: StonfiPairsStore
   private let ratesStore: RatesStore
   private let currencyStore: CurrencyStore
   private let walletsStore: WalletsStore
   private let walletBalanceStore: WalletBalanceStore
+  private let stonfiAssetsLoader: StonfiAssetsLoader
+  private let stonfiPairsLoader: StonfiPairsLoader
+  private let stonfiPairsService: StonfiPairsService
   private let swapTokenListMapper: SwapTokenListMapper
-  
+
   init(stonfiAssetsStore: StonfiAssetsStore,
-       stonfiAssetsLoader: StonfiAssetsLoader,
+       stonfiPairsStore: StonfiPairsStore,
        ratesStore: RatesStore,
        currencyStore: CurrencyStore,
        walletsStore: WalletsStore,
-       walletBalanceStore: WalletBalanceStore
-       , swapTokenListMapper: SwapTokenListMapper) {
+       walletBalanceStore: WalletBalanceStore,
+       stonfiAssetsLoader: StonfiAssetsLoader,
+       stonfiPairsLoader: StonfiPairsLoader,
+       stonfiPairsService: StonfiPairsService,
+       swapTokenListMapper: SwapTokenListMapper) {
     self.stonfiAssetsStore = stonfiAssetsStore
-    self.stonfiAssetsLoader = stonfiAssetsLoader
+    self.stonfiPairsStore = stonfiPairsStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
     self.walletsStore = walletsStore
     self.walletBalanceStore = walletBalanceStore
+    self.stonfiAssetsLoader = stonfiAssetsLoader
+    self.stonfiPairsLoader = stonfiPairsLoader
+    self.stonfiPairsService = stonfiPairsService
     self.swapTokenListMapper = swapTokenListMapper
     self.wallet = walletsStore.activeWallet
   }
@@ -75,16 +85,26 @@ public final class SwapTokenListController {
     if isStoredAssetsValid {
       await assetsDidUpdate(storedAssets)
     } else {
-      await stonfiAssetsLoader.loadAssets(excludeCommunityAssets: true)
+      await stonfiAssetsLoader.loadAssets(excludeCommunityAssets: false)
     }
   }
 }
 
 private extension SwapTokenListController {
+  func getStonfiPairs() async -> StonfiPairs{
+    do {
+      return try await stonfiPairsService.loadPairs()
+    } catch {
+      return StonfiPairs(expirationDate: Date(timeIntervalSince1970: 0), pairs: [], pairsSet: [])
+    }
+  }
+  
   func assetsDidUpdate(_ assets: StonfiAssets) async {
+    let pairs = await getStonfiPairs()
     let assetsBalanceDict = await getAssetsBalanceDict()
     
     let tokenListItems: [TokenListItemsModel.Item] = assets.items
+      .filter { pairs.hasPair(keyOne: $0.contractAddress, keyTwo: tonContractAddress) }
       .filter { !$0.isCommunity }
       .map { stonfiAsset in
         var tokenListItem = swapTokenListMapper.mapStonfiAsset(stonfiAsset)
