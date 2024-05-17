@@ -8,7 +8,7 @@ struct SwapAssembly {
                      coreAssembly: TKCore.CoreAssembly,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly) -> MVVMModule<SwapViewController, SwapModuleOutput, SwapModuleInput> {
     let viewModel = SwapViewModelImplementation(
-      token: token,
+      swapItem: SwapPair.Item(token: token, amount: 0),
       sendController: keeperCoreMainAssembly.sendV3Controller()
     )
     let viewController = SwapViewController(viewModel: viewModel)

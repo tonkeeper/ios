@@ -1,8 +1,13 @@
 import KeeperCore
+import BigInt
 
-struct SwapItem {
-  let send: Token
-  let receive: Token?
+struct SwapPair {
+  struct Item {
+    let token: Token
+    let amount: BigUInt
+  }
+  let send: SwapPair.Item
+  let receive: SwapPair.Item?
 }
 
 enum SwapField {

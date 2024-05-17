@@ -85,7 +85,7 @@ private extension SwapViewController {
       if model.status.isValid {
         
       } else {
-        self.customView.detailsView.statusLabel.text = model.status.hint
+        self.showHint(model.status.hint)
       }
     }
   }
@@ -104,10 +104,27 @@ private extension SwapViewController {
     }
     
     [customView.inputView1, customView.inputView2].forEach {
-      $0.didTapChooseToken = { [weak viewModel] swapField in
+      $0.didTapChooseToken = { [weak viewModel, weak self] swapField in
+        self?.customView.sendView.amountTextField.resignFirstResponder()
+        self?.customView.receiveView.amountTextField.resignFirstResponder()
         viewModel?.didTapTokenPicker(swapField: swapField)
       }
     }
   }
+}
+
+private extension SwapViewController {
+
+  func showHint(_ hint: String) {
+    let label = customView.detailsView.statusLabel
+    if label.text == nil {
+      label.text = hint
+      return
+    }
+    if label.text == hint { return }
+    label.text = hint
+    label.bounce()
+  }
+  
 }
 
