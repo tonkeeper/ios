@@ -143,14 +143,14 @@ public final class ServicesAssembly {
   
   func stonfiAssetsService() -> StonfiAssetsService {
     StonfiServiceImplementation(
-      api: apiAssembly.api,
+      stonfiApi: apiAssembly.stonfiApi,
       stonfiAssetsRepository: repositoriesAssembly.stonfiAssetsRepository()
     )
   }
   
   func stonfiPairsService() -> StonfiPairsService {
     StonfiPairsServiceImplementation(
-      api: apiAssembly.api,
+      stonfiApi: apiAssembly.stonfiApi,
       stonfiPairsRepository: repositoriesAssembly.stonfiPairsStoreRepository()
     )
   }

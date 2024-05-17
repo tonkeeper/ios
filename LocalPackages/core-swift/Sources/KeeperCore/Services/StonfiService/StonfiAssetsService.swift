@@ -2,15 +2,15 @@ import Foundation
 
 protocol StonfiAssetsService {
   func getAssets() async throws -> StonfiAssets
-  func loadAssets(excludeCommunityAssets: Bool) async throws -> StonfiAssets
+  func loadAssets() async throws -> StonfiAssets
 }
 
 final class StonfiServiceImplementation: StonfiAssetsService {
-  private let api: API
+  private let stonfiApi: StonfiAPI
   private let stonfiAssetsRepository: StonfiAssetsRepository
   
-  init(api: API, stonfiAssetsRepository: StonfiAssetsRepository) {
-    self.api = api
+  init(stonfiApi: StonfiAPI, stonfiAssetsRepository: StonfiAssetsRepository) {
+    self.stonfiApi = stonfiApi
     self.stonfiAssetsRepository = stonfiAssetsRepository
   }
   
@@ -19,14 +19,9 @@ final class StonfiServiceImplementation: StonfiAssetsService {
     return assets
   }
   
-  func loadAssets(excludeCommunityAssets: Bool) async throws -> StonfiAssets {
-    var items = try await api.getStonfiAssets()
-    
-    if excludeCommunityAssets {
-      items = items.lazy.filter { !$0.isCommunity }
-    }
-    
-    items = items
+  func loadAssets() async throws -> StonfiAssets {
+    let items = try await stonfiApi.getStonfiAssets()
+      .filter { isValidStonfiAsset($0) }
       .sorted { $0.symbol.localizedStandardCompare($1.symbol) == .orderedAscending }
     
     let assets = StonfiAssets(
@@ -37,6 +32,15 @@ final class StonfiServiceImplementation: StonfiAssetsService {
     try? stonfiAssetsRepository.saveAssets(assets)
     
     return assets
+  }
+}
+
+private extension StonfiServiceImplementation {
+  func isValidStonfiAsset(_ asset: StonfiAsset) -> Bool {
+    return asset.kind.uppercased() != "WTON"
+    && !asset.isCommunity
+    && !asset.isDeprecated
+    && !asset.isBlacklisted
   }
 }
 

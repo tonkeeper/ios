@@ -91,7 +91,7 @@ public final class SwapTokenListController {
 }
 
 private extension SwapTokenListController {
-  func getStonfiPairs() async -> StonfiPairs{
+  func getStonfiPairs() async -> StonfiPairs {
     do {
       return try await stonfiPairsService.loadPairs()
     } catch {
@@ -105,7 +105,6 @@ private extension SwapTokenListController {
     
     let tokenListItems: [TokenListItemsModel.Item] = assets.items
       .filter { pairs.hasPair(keyOne: $0.contractAddress, keyTwo: tonContractAddress) }
-      .filter { !$0.isCommunity }
       .map { stonfiAsset in
         var tokenListItem = swapTokenListMapper.mapStonfiAsset(stonfiAsset)
         let assetBalanceList = assetsBalanceDict[tokenListItem.kind]

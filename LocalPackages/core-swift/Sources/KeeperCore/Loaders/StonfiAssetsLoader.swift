@@ -19,7 +19,7 @@ actor StonfiAssetsLoader {
     }
     
     let task = Task {
-      let assets = try await stonfiAssetsService.loadAssets(excludeCommunityAssets: excludeCommunityAssets)
+      let assets = try await stonfiAssetsService.loadAssets()
       
       guard !Task.isCancelled else { return }
       await stonfiAssetsStore.setAssets(assets)

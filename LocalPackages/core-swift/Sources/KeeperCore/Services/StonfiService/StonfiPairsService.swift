@@ -19,11 +19,11 @@ protocol StonfiPairsService {
 }
 
 final class StonfiPairsServiceImplementation: StonfiPairsService {
-  private let api: API
+  private let stonfiApi: StonfiAPI
   private let stonfiPairsRepository: StonfiPairsRepository
   
-  init(api: API, stonfiPairsRepository: StonfiPairsRepository) {
-    self.api = api
+  init(stonfiApi: StonfiAPI, stonfiPairsRepository: StonfiPairsRepository) {
+    self.stonfiApi = stonfiApi
     self.stonfiPairsRepository = stonfiPairsRepository
   }
   
@@ -33,7 +33,7 @@ final class StonfiPairsServiceImplementation: StonfiPairsService {
   }
   
   func loadPairs() async throws -> StonfiPairs {
-    let items = try await api.getStonfiPairs()
+    let items = try await stonfiApi.getStonfiPairs()
     
     let pairs = StonfiPairs(
       expirationDate: Date().advanced(by: .minutes(5)),
