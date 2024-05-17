@@ -1,6 +1,16 @@
 import UIKit
 
 public final class TKBottomSheetViewController: UIViewController {
+
+  public struct Configuration {
+    let dragHalfWayToClose: Bool
+    let bottomSpacing: CGFloat
+
+    public init(dragHalfWayToClose: Bool, bottomSpacing: CGFloat) {
+      self.dragHalfWayToClose = dragHalfWayToClose
+      self.bottomSpacing = bottomSpacing
+    }
+  }
   
   public var didClose: ((_ interactivly: Bool) -> Void)?
   
@@ -8,6 +18,9 @@ public final class TKBottomSheetViewController: UIViewController {
   let containerView = UIView()
   let headerView = TKBottomSheetHeaderView()
   let contentViewController: TKBottomSheetContentViewController
+  let configuration: Configuration?
+
+  private var lastContentHeight: CGFloat = 0
   
   private let scrollController = TKBottomSheetScrollController()
   
@@ -33,13 +46,17 @@ public final class TKBottomSheetViewController: UIViewController {
   }
   
   private var bottomSpacing: CGFloat {
-    view.safeAreaInsets.bottom
+    configuration?.bottomSpacing ?? view.safeAreaInsets.bottom
   }
 
   private var containerFrame: CGRect = .zero
   
-  public init(contentViewController: TKBottomSheetContentViewController) {
+  public init(
+    contentViewController: TKBottomSheetContentViewController,
+    configuration: Configuration? = nil
+  ) {
     self.contentViewController = contentViewController
+    self.configuration = configuration
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -191,11 +208,14 @@ private extension TKBottomSheetViewController {
       let contentHeight = scrollableContent.calculateHeight(withWidth: containerView.bounds.width)
       let adjustedHeight = min(contentMaximumHeight, contentHeight)
       scrollableContent.scrollView.isScrollEnabled = adjustedHeight < contentHeight
-
+      
+      lastContentHeight = adjustedHeight
       return adjustedHeight
     } else {
       let contentHeight = contentViewController.calculateHeight(withWidth: containerView.bounds.width)
       let adjustedHeight = min(contentMaximumHeight, contentHeight)
+
+      lastContentHeight = adjustedHeight
       return adjustedHeight
     }
   }
@@ -232,7 +252,8 @@ private extension TKBottomSheetViewController {
   }
   
   func didEndDragging(offset: CGFloat) {
-    if offset > 60 {
+    let minOffset = (configuration?.dragHalfWayToClose ?? false) ? lastContentHeight / 2 : 60
+    if offset > minOffset {
       dismiss { [weak self] in
         self?.didClose?(true)
       }

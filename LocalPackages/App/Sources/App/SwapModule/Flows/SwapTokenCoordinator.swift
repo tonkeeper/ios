@@ -48,7 +48,10 @@ private extension SwapTokenCoordinator {
 
   func openTokenPicker(sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
     let module = ChooseTokenAssembly.module()
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    let bottomSheetViewController = TKBottomSheetViewController(
+      contentViewController: module.view,
+      configuration: .init(dragHalfWayToClose: true, bottomSpacing: 0)
+    )
     module.output.didSelectToken = { token in
       completion(token)
     }

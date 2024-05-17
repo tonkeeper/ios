@@ -8,7 +8,8 @@ protocol ChooseTokenModuleOutput: AnyObject {
   var didSelectToken: ((Token) -> Void)? { get set }
 }
 
-protocol ChooseTokenViewModel: AnyObject {  
+protocol ChooseTokenViewModel: AnyObject {
+  var didUpdateTokens: (([TKUIListItemCell.Configuration]) -> Void)? { get set }
   func viewDidLoad()
 }
 
@@ -18,10 +19,17 @@ final class ChooseTokenViewModelImplementation: ChooseTokenViewModel, ChooseToke
   
   var didFinish: (() -> Void)?
   var didSelectToken: ((Token) -> Void)?
+  var didUpdateTokens: (([TKUIListItemCell.Configuration]) -> Void)?
   
   // MARK: - TokenPickerViewModel
   
-  func viewDidLoad() { }
+  func viewDidLoad() {
+    var items = [TKUIListItemCell.Configuration]()
+    for _ in 0..<10 {
+      items.append(ChooseTokenListItemMapper().make())
+    }
+    didUpdateTokens?(items)
+  }
   
   // MARK: - Image Loading
     
