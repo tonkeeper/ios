@@ -12,14 +12,14 @@ actor StonfiAssetsLoader {
     self.stonfiAssetsService = stonfiAssetsService
   }
   
-  func loadAssets() async {
+  func loadAssets(excludeCommunityAssets: Bool = true) async {
     if let taskInProgress = taskInProgress {
       taskInProgress.cancel()
       self.taskInProgress = nil
     }
     
     let task = Task {
-      let assets = try await stonfiAssetsService.loadAssets()
+      let assets = try await stonfiAssetsService.loadAssets(excludeCommunityAssets: excludeCommunityAssets)
       
       guard !Task.isCancelled else { return }
       await stonfiAssetsStore.setAssets(assets)

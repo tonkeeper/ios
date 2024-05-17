@@ -2,7 +2,7 @@ import Foundation
 
 protocol StonfiAssetsService {
   func getAssets() async throws -> StonfiAssets
-  func loadAssets() async throws -> StonfiAssets
+  func loadAssets(excludeCommunityAssets: Bool) async throws -> StonfiAssets
 }
 
 final class StonfiServiceImplementation: StonfiAssetsService {
@@ -19,8 +19,15 @@ final class StonfiServiceImplementation: StonfiAssetsService {
     return assets
   }
   
-  func loadAssets() async throws -> StonfiAssets {
-    let items = try await api.getStonfiAssets()
+  func loadAssets(excludeCommunityAssets: Bool) async throws -> StonfiAssets {
+    var items = try await api.getStonfiAssets()
+    
+    if excludeCommunityAssets {
+      items = items.lazy.filter { !$0.isCommunity }
+    }
+    
+    items = items
+      .sorted { $0.symbol.localizedStandardCompare($1.symbol) == .orderedAscending }
     
     let assets = StonfiAssets(
       expirationDate: Date().advanced(by: .hours(1)),
