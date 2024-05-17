@@ -105,19 +105,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   
   // MARK: - Formatters
   
-  let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
-    let numberFormatter = NumberFormatter()
-    numberFormatter.groupingSeparator = ","
-    numberFormatter.groupingSize = 3
-    numberFormatter.usesGroupingSeparator = true
-    numberFormatter.decimalSeparator = Locale.current.decimalSeparator
-    numberFormatter.maximumIntegerDigits = 16
-    numberFormatter.roundingMode = .down
-    let amountInputFormatController = SendAmountTextFieldFormatter(
-      currencyFormatter: numberFormatter
-    )
-    return amountInputFormatController
-  }()
+  private let sendAmountTextFieldFormatter = SendAmountTextFieldFormatterFactory.make(groupingSeparator: ",")
 }
 
 private extension SwapViewModelImplementation {

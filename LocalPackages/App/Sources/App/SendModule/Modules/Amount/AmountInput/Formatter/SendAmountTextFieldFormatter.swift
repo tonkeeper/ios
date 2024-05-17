@@ -2,7 +2,7 @@ import UIKit
 import AnyFormatKit
 
 final class SendAmountTextFieldFormatter: NSObject {
-  
+
   var maximumFractionDigits: Int = 0 {
     didSet {
       currencyFormatter.maximumFractionDigits = maximumFractionDigits
