@@ -17,6 +17,13 @@ class BuyAndSellViewController: GenericViewViewController<BuyAndSellView>, Keybo
 
   override func viewDidLoad() {
     super.viewDidLoad()
-    title = "Insert segmented control here"
+    
+    let segmentedControl = UnderlinedSegmentedControl(items: ["Buy", "Sell"])
+    navigationItem.titleView = segmentedControl
+    segmentedControl.selectedSegmentIndex = 0
+    
+    segmentedControl.snp.makeConstraints { make in
+      make.height.equalTo(34)
+    }
   }
 }
