@@ -48,6 +48,29 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-sale-badge-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var infoCircle: UIImage {
+          .imageWithName("Icons/16/ic-information-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var swapVertical: UIImage {
+          .imageWithName("Icons/16/ic-swap-vertical-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        
+        public static var twitter: UIImage {
+          .imageWithName("Icons/16/ic-twitter-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        
+        public static var telegram: UIImage {
+          .imageWithName("Icons/16/ic-telegram-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        
+        public static var magnifyingGlass: UIImage {
+          .imageWithName("Icons/16/ic-magnifying-glass-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {

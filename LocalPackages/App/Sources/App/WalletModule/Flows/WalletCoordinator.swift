@@ -269,6 +269,32 @@ private extension WalletCoordinator {
     coordinator.start()
   }
   
+  func openStaking() {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
+    let module = StakingModule(
+      dependencies:
+          .init(
+            keeperCoreMainAssembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly
+          )
+    )
+    
+    let coordinator = module.createStakingCoordinator(router: router)
+    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+    
+    self.router.present(navigationController)
+  }
+  
   func openConfirmation() async -> Bool {
     return await Task<Bool, Never> { @MainActor in
       return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
@@ -373,6 +399,10 @@ private extension WalletCoordinator {
     
     module.output.didTapBackup = { [weak self] wallet in
       self?.openBackup(wallet: wallet)
+    }
+    
+    module.output.didTapStake = { [weak self] in
+      self?.openStaking()
     }
     
     module.output.didRequireConfirmation = { [weak self] in

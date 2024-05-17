@@ -420,6 +420,29 @@ public final class MainAssembly {
       isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
     )
   }
+  
+  public func stakingController() -> StakingController {
+    StakingController(
+      walletStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      rateConverter: RateConverter(),
+      amountFormatter: formattersAssembly.amountFormatter
+    )
+  }
+  
+  public func stakingConfirmationController(wallet: Wallet, operation: StakingOperation) -> StakingConfirmationController {
+    StakingConfirmationController(
+      operation: operation,
+      wallet: wallet,
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
+      amountFormatter: formattersAssembly.amountFormatter
+    )
+  }
 }
 
 private extension MainAssembly {

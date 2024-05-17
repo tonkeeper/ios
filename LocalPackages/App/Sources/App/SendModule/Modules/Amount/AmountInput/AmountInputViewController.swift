@@ -17,11 +17,19 @@ final class AmountInputViewController: GenericViewViewController<AmountInputView
       didUpdateInputValue()
     }
   }
-  var convertedValue = "" {
+  var convertedValue: String = "" {
     didSet {
-      customView.convertedButton.setTitle(convertedValue, for: .normal)
+      let styled = convertedValue.withTextStyle(TKTextStyle.body1, color: .Text.secondary)
+      customView.convertedButton.configuration.content.title = .init(.attributedString(styled))
     }
   }
+
+  var convertedIcon: UIImage?  {
+    didSet {
+      customView.convertedButton.configuration.content.icon = convertedIcon
+    }
+  }
+  
   var maximumFractionDigits: Int {
     get {
       sendAmountTextFieldFormatter.maximumFractionDigits
@@ -64,10 +72,26 @@ final class AmountInputViewController: GenericViewViewController<AmountInputView
     
     customView.inputControl.amountTextField.becomeFirstResponder()
   }
+  
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    customView.inputControl.amountTextField.becomeFirstResponder()
+  }
+  
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    customView.layoutIfNeeded()
+    customView.convertedButton.layer.cornerRadius = customView.convertedButton.frame.height/2
+  }
 }
 
 private extension AmountInputViewController {
   func setup() {
+    customView.convertedButton.configuration.iconTintColor = .Text.secondary
+    customView.convertedButton.configuration.iconPosition = .right
+    customView.convertedButton.configuration.contentAlpha = [.highlighted:  0.48]
+    customView.convertedButton.configuration.spacing = 8
+    customView.convertedButton.configuration.contentPadding = .convertedButtonContentInsets
     
     customView.inputControl.didUpdateText = { [weak self] text in
       self?.didUpdateText?(self?.sendAmountTextFieldFormatter.unformatString(text))
@@ -86,4 +110,8 @@ private extension AmountInputViewController {
     let formatted = sendAmountTextFieldFormatter.formatString(sendAmountTextFieldFormatter.unformatString(inputValue))
     customView.inputControl.setInputValue(formatted)
   }
+}
+
+private extension UIEdgeInsets {
+  static let convertedButtonContentInsets = UIEdgeInsets(top: 8, left: 16, bottom: 8, right: 16)
 }

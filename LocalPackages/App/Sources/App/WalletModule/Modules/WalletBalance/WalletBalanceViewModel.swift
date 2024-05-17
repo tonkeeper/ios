@@ -2,6 +2,7 @@ import Foundation
 import TKUIKit
 import KeeperCore
 import UIKit
+import TKCore
 
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: ((Wallet) -> Void)? { get set }
@@ -11,6 +12,8 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
+  var didTapStake: (() -> Void)? { get set }
+
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
@@ -44,6 +47,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
+  var didTapStake: (() -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
   var didRequireConfirmation: (() async -> Bool)?
@@ -269,9 +273,9 @@ private extension WalletBalanceViewModelImplementation {
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true
-      isSwapEnable = false
+      isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     case .watchOnly:
       isSendEnable = false
       isReceiveEnable = true
@@ -318,7 +322,10 @@ private extension WalletBalanceViewModelImplementation {
         title: "Stake",
         icon: .TKUIKit.Icons.Size28.stakingOutline,
         isEnabled: isStakeEnable,
-        action: {}
+        action: { [weak self] in
+            guard let wallet = self?.walletBalanceController.wallet else { return }
+            self?.didTapStake?()
+        }
       )
     )
   }

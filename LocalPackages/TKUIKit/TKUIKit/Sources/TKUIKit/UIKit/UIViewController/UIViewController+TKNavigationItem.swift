@@ -36,6 +36,38 @@ public extension UIViewController {
     closeButton.tapAreaInsets = UIEdgeInsets(top: -10, left: -10, bottom: -10, right: -10)
     return closeButton
   }
+  
+  func createButton(icon: UIImage, _ action: @escaping () -> Void) -> TKUIHeaderIconButton {
+    let button = TKUIHeaderIconButton()
+    button.configure(
+      model: TKUIHeaderButtonIconContentView.Model(
+        image: icon
+      )
+    )
+    button.addTapAction {
+      action()
+    }
+    button.tapAreaInsets = UIEdgeInsets(top: -10, left: -10, bottom: -10, right: -10)
+    return button
+  }
+  
+  func setupButton(icon: UIImage, position: UINavigationItem.Position = .left,  _ action: @escaping (() -> Void)) {
+    let button = createButton(icon: icon, action)
+    let buttonItem = UIBarButtonItem(customView: button)
+    
+    switch position {
+    case .left:
+      navigationItem.leftBarButtonItem = buttonItem
+    case .right:
+      navigationItem.rightBarButtonItem = buttonItem
+    }
+  }
+}
+
+public extension UINavigationItem {
+  enum Position {
+    case left, right
+  }
 }
 
 public extension UINavigationItem {
