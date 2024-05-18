@@ -11,6 +11,29 @@ final class TKPopupMenuView: UIView {
   }
   
   private var itemViews = [TKPopupMenuItemView]()
+  private let backgroundView: UIView = {
+    let view = UIView()
+    view.backgroundColor = .Background.contentTint
+    view.layer.cornerRadius = 16
+    view.layer.masksToBounds = true
+    return view
+  }()
+  private let shadowViewOne: UIView = {
+    let view = UIView()
+    view.layer.shadowColor = UIColor.black.withAlphaComponent(0.1).cgColor
+    view.layer.shadowRadius = 64
+    view.layer.shadowOffset = CGSize(width: 0, height: 16)
+    view.layer.shadowOpacity = 1
+    return view
+  }()
+  private let shadowViewTwo: UIView = {
+    let view = UIView()
+    view.layer.shadowColor = UIColor.black.withAlphaComponent(0.1).cgColor
+    view.layer.shadowRadius = 16
+    view.layer.shadowOffset = CGSize(width: 0, height: 4)
+    view.layer.shadowOpacity = 1
+    return view
+  }()
   
   let stackView: UIStackView = {
     let stackView = UIStackView()
@@ -27,19 +50,31 @@ final class TKPopupMenuView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    shadowViewOne.frame = bounds
+    shadowViewOne.layer.shadowPath = UIBezierPath(rect: bounds).cgPath
+    shadowViewTwo.frame = bounds
+    shadowViewTwo.layer.shadowPath = UIBezierPath(rect: bounds).cgPath
+  }
+  
   func selectItem(index: Int) {
     guard items.count > index else { return }
     itemViews[index].isSelected = true
   }
   
   private func setup() {
-    layer.cornerRadius = 16
-    layer.masksToBounds = true
+    addSubview(shadowViewOne)
+    addSubview(shadowViewTwo)
+    addSubview(backgroundView)
+    backgroundView.addSubview(stackView)
     
-    addSubview(stackView)
+    backgroundView.snp.makeConstraints { make in
+      make.edges.equalTo(self)
+    }
     
     stackView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
+      make.edges.equalTo(backgroundView)
     }
   }
   
