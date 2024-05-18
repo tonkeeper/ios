@@ -130,7 +130,7 @@ private extension StakeViewController {
     }
     
     customView.stakeListItemView.didTapListItem = { [weak viewModel] in
-      // TODO: Add action
+      viewModel?.didTapToOptions()
     }
     
     customView.balanceView.insufficientLabel.isHidden = false

@@ -50,6 +50,18 @@ private extension StakeCoordinator {
       self?.openStakeNextScreen()
     }
     
+    module.output.showOptions = { [weak self] in
+      self?.openOptions()
+    }
+    
+    router.push(viewController: module.view)
+  }
+  
+  func openOptions() {
+    let module = StakeOptionsAssembly.module()
+    
+    module.view.setupBackButton()
+    
     router.push(viewController: module.view)
   }
   

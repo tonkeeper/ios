@@ -1,19 +1,19 @@
 //
-//  StakeConfirmationViewController.swift
+//  StakeOptionsViewController.swift
 //
 //
-//  Created by Semyon on 17/05/2024.
+//  Created by Semyon on 18/05/2024.
 //
 
 import UIKit
 import TKUIKit
 
-final class StakeConfirmationViewController: GenericViewViewController<StakeConfirmationView> {
-  private let viewModel: StakeConfirmationViewModel
+final class StakeOptionsViewController: GenericViewViewController<StakeOptionsView> {
+  private let viewModel: StakeOptionsViewModel
   
   private let modalCardViewController = TKModalCardViewController()
   
-  init(viewModel: StakeConfirmationViewModel) {
+  init(viewModel: StakeOptionsViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
   }
@@ -44,16 +44,13 @@ final class StakeConfirmationViewController: GenericViewViewController<StakeConf
   }
 }
 
-private extension StakeConfirmationViewController {
+private extension StakeOptionsViewController {
   func setup() {
-    addChild(modalCardViewController)
-    customView.embedContent(modalCardViewController.view)
-    modalCardViewController.didMove(toParent: self)
+
   }
   
   func setupBindings() {
-    viewModel.didUpdateConfiguration = { [weak modalCardViewController] configuration in
-      modalCardViewController?.configuration = configuration
-    }
+   
   }
 }
+
