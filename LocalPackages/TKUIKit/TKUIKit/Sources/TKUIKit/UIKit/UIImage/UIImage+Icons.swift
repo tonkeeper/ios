@@ -24,6 +24,14 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-globe-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var twitter: UIImage {
+          .imageWithName("Icons/16/ic-twitter-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var telegram: UIImage {
+          .imageWithName("Icons/16/ic-telegram-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var doneBold: UIImage {
           .imageWithName("Icons/16/ic-done-bold-16")
           .withRenderingMode(.alwaysTemplate)
@@ -50,6 +58,10 @@ public extension UIImage {
         }
         public static var informationCircle: UIImage {
           .imageWithName("Icons/16/ic-information-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var magnifyingGlass: UIImage {
+          .imageWithName("Icons/16/ic-magnifying-glass-16")
           .withRenderingMode(.alwaysTemplate)
         }
       }
@@ -184,6 +196,14 @@ public extension UIImage {
         }
         public static var doc: UIImage {
           .imageWithName("Icons/28/ic-doc-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var radioOn: UIImage {
+          .imageWithName("Icons/28/ic-radio-on-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var radioOff: UIImage {
+          .imageWithName("Icons/28/ic-radio-off-28")
           .withRenderingMode(.alwaysTemplate)
         }
       }

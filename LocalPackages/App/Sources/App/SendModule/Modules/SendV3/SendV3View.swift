@@ -38,7 +38,7 @@ final class SendV3View: UIView {
   let recipientPasteButton = TKButton()
   let recipientScanButton = TKButton()
   let commentPasteButton = TKButton()
-    
+
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -49,7 +49,6 @@ final class SendV3View: UIView {
   }
   
   private func setup() {
-    
     recipientTextField.rightItems = [
       TKTextField.RightItem(view: recipientPasteButton, mode: .empty),
       TKTextField.RightItem(view: recipientScanButton, mode: .empty)
@@ -59,10 +58,54 @@ final class SendV3View: UIView {
     addSubview(scrollView)
     scrollView.addSubview(stackView)
     
-    stackView.addArrangedSubview(recipientTextField)
-    stackView.addArrangedSubview(amountInputView)
-    stackView.addArrangedSubview(commentInputView)
-    stackView.addArrangedSubview(continueButton)
+    let liquidStakingView = StakingView(model: .init(
+      title: "Liquid Staking",
+      providers: [
+        .init(
+          iconURL: iconURL,
+          title: "Tonstakers",
+          subtitle: "Minimum deposit 1 TON.\nAPY ≈ 5.01%",
+          badge: "MAX APY",
+          isSelected: true
+        ),
+        .init(
+          iconURL: iconURL,
+          title: "Bemo",
+          subtitle: "Minimum deposit 1 TON.\nAPY ≈ 4.01%",
+          badge: nil,
+          isSelected: false
+        ),
+      ],
+      style: .liquid
+    ))
+    stackView.addArrangedSubview(liquidStakingView)
+
+    let otherStakingView = StakingView(model: .init(
+      title: "Other",
+      providers: [
+        .init(
+          iconURL: iconURL,
+          title: "Tonstakers",
+          subtitle: "Minimum deposit 1 TON.\nAPY ≈ 5.01%",
+          badge: "MAX APY",
+          isSelected: true
+        ),
+        .init(
+          iconURL: iconURL,
+          title: "Bemo",
+          subtitle: "Minimum deposit 1 TON.\nAPY ≈ 4.01%",
+          badge: nil,
+          isSelected: false
+        ),
+      ],
+      style: .other
+    ))
+    stackView.addArrangedSubview(otherStakingView)
+
+//    stackView.addArrangedSubview(recipientTextField)
+//    stackView.addArrangedSubview(amountInputView)
+//    stackView.addArrangedSubview(commentInputView)
+//    stackView.addArrangedSubview(continueButton)
     
     scrollView.snp.makeConstraints { make in
       make.edges.equalTo(self)
