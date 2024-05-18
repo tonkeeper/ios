@@ -81,12 +81,12 @@ final class SwapTokenButtonContentView: UIView, ConfigurableView {
     
     let iconImageViewOrigin = CGPoint(x: contentPadding.left, y: contentPadding.top)
     
-    let titleLabelX = hasIcon ? contentPadding.left + CGSize.iconSize.width + .spacing : contentPadding.left
+    let titleLabelX = hasIcon ? contentPadding.left + CGSize.iconImageSize.width + .spacing : contentPadding.left
     let titleLabelOrigin = CGPoint(x: titleLabelX, y: contentPadding.top)
     var titleLabelSize = titleLabel.sizeThatFits(bounds.size)
-    titleLabelSize.height = CGSize.iconSize.height
+    titleLabelSize.height = CGSize.iconImageSize.height
     
-    iconImageView.frame = CGRect(origin: iconImageViewOrigin, size: .iconSize)
+    iconImageView.frame = CGRect(origin: iconImageViewOrigin, size: .iconImageSize)
     titleLabel.frame = CGRect(origin: titleLabelOrigin, size: titleLabelSize)
     
     iconImageView.layer.cornerRadius = iconImageView.bounds.height/2
@@ -95,12 +95,12 @@ final class SwapTokenButtonContentView: UIView, ConfigurableView {
   override func sizeThatFits(_ size: CGSize) -> CGSize {
     let contentPadding = self.contentPadding
     
-    let iconImageWidth: CGFloat = hasIcon ? CGSize.iconSize.width : 0
+    let iconImageWidth: CGFloat = hasIcon ? CGSize.iconImageSize.width : 0
     let spacing: CGFloat = hasIcon ? .spacing : 0
     let titleWidth = titleLabel.sizeThatFits(bounds.size).width
     
     let width = iconImageWidth + spacing + titleWidth + contentPadding.left + contentPadding.right
-    let height = CGSize.iconSize.height + contentPadding.top + contentPadding.bottom
+    let height = CGSize.iconImageSize.height + contentPadding.top + contentPadding.bottom
     
     return CGSize(width: width, height: height)
   }
@@ -125,7 +125,9 @@ final class SwapTokenButtonContentView: UIView, ConfigurableView {
       iconImageView.image = image
       iconImageView.isHidden = image == nil
     case .asyncImage(let imageDownloadTask):
-      let size = CGSize.iconSize
+      iconImageView.image = nil
+      iconImageView.isHidden = false
+      let size = CGSize.iconImageSize
       imageDownloadTask.start(imageView: iconImageView, size: size, cornerRadius: size.width/2)
       self.imageDownloadTask = imageDownloadTask
     }
@@ -137,6 +139,8 @@ final class SwapTokenButtonContentView: UIView, ConfigurableView {
   
   private func setup() {
     iconImageView.backgroundColor = .Background.contentTint
+    iconImageView.layer.cornerRadius = CGSize.iconImageSize.height / 2
+    iconImageView.layer.masksToBounds = true
     
     addSubview(iconImageView)
     addSubview(titleLabel)
@@ -156,5 +160,5 @@ private extension CGFloat {
 }
 
 private extension CGSize {
-  static let iconSize: CGSize = CGSize(width: 28, height: 28)
+  static let iconImageSize = CGSize(width: 28, height: 28)
 }

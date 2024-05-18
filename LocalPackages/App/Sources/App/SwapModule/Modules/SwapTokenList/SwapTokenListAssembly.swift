@@ -4,9 +4,11 @@ import KeeperCore
 
 struct SwapTokenListAssembly {
   private init() {}
-  static func module(swapTokenListController: SwapTokenListController) -> MVVMModule<SwapTokenListViewController, SwapTokenListModuleOutput, SwapTokenListModuleInput> {
+  static func module(swapTokenListController: SwapTokenListController,
+                     swapTokenListItem: SwapTokenListItem) -> MVVMModule<SwapTokenListViewController, SwapTokenListModuleOutput, SwapTokenListModuleInput> {
     let viewModel = SwapTokenListViewModelImplementation(
-      swapTokenListController: swapTokenListController
+      swapTokenListController: swapTokenListController,
+      swapTokenListItem: swapTokenListItem
     )
     
     let viewController = SwapTokenListViewController(

@@ -4,29 +4,49 @@ import TKCore
 import KeeperCore
 import BigInt
 
-struct SwapItem {
-  // TODO: Add jetton
-  struct Token {
-    enum Icon {
-      case image(UIImage)
-      case asyncImage(ImageDownloadTask)
-    }
-    
-    struct Balance {
-      var amount: BigUInt
-    }
-    
-    var icon: Icon
-    var title: String
-    var inputAmount: String
-    var balance: Balance
+struct SwapToken {
+  enum Icon {
+    case image(UIImage)
+    case asyncImage(ImageDownloadTask)
   }
   
-  var sendToken: Token?
-  var recieveToken: Token?
+  struct Balance {
+    var amount: BigUInt
+  }
+  
+  var icon: Icon
+  var asset: SwapAsset
+  var balance: Balance
+  var inputAmount: String
 }
 
-private extension SwapItem.Token.Icon {
+extension SwapAsset: Equatable {
+  public static func == (lhs: SwapAsset, rhs: SwapAsset) -> Bool {
+    return lhs.contractAddress == rhs.contractAddress
+    && lhs.kind == rhs.kind
+    && lhs.symbol == rhs.symbol
+    && lhs.displayName == rhs.displayName
+  }
+}
+
+extension SwapToken {
+  static let tonStub = SwapToken(
+    icon: .image(.TKCore.Icons.Size44.tonLogo),
+    asset: SwapAsset(
+      contractAddress: "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c",
+      kind: .ton,
+      symbol: TonInfo.symbol,
+      displayName: TonInfo.name,
+      fractionDigits: TonInfo.fractionDigits
+    ),
+    balance: SwapToken.Balance(
+      amount: .testBalanceAmount // 100,000.01
+    ),
+    inputAmount: "0"
+  )
+}
+
+private extension SwapToken.Icon {
   var tokenButtonIcon: SwapAmountInputView.Model.Icon {
     switch self {
     case .image(let image):
@@ -35,26 +55,6 @@ private extension SwapItem.Token.Icon {
       return .asyncImage(imageDownloadTask)
     }
   }
-}
-
-extension SwapItem.Token {
-  static let ton = SwapItem.Token(
-    icon: .image(.TKCore.Icons.Size44.tonLogo),
-    title: "TON",
-    inputAmount: "0",
-    balance: SwapItem.Token.Balance(
-      amount: BigUInt(stringLiteral: "0")
-    )
-  )
-  
-  static let usdt = SwapItem.Token(
-    icon: .image(.TKCore.Icons.Size44.tonLogo),
-    title: "USDT",
-    inputAmount: "0",
-    balance: SwapItem.Token.Balance(
-      amount: BigUInt(stringLiteral: "35359000000")
-    )
-  )
 }
 
 private extension BigUInt {
@@ -75,6 +75,11 @@ private extension BigUInt {
 //  var route: String
 //  var provider: String
 //}
+
+struct SwapOperationItem {
+  var sendToken: SwapToken?
+  var recieveToken: SwapToken?
+}
 
 struct SwapModel {
   struct SwapButton {
@@ -109,13 +114,13 @@ enum SwapInput {
 
 protocol SwapModuleOutput: AnyObject {
   var didTapSwapSettings: (() -> Void)? { get set }
-  var didTapTokenButton: ((SwapItem.Token?, SwapInput) -> Void)? { get set }
+  var didTapTokenButton: ((String?, SwapInput) -> Void)? { get set }
   var didTapBuyTon: (() -> Void)? { get set }
   var didTapContinue: (() -> Void)? { get set }
 }
 
 protocol SwapModuleInput: AnyObject {
-  func didChooseToken(_ token: SwapItem.Token, forInput input: SwapInput)
+  func didChooseToken(_ swapAsset: SwapAsset, forInput input: SwapInput)
 }
 
 protocol SwapViewModel: AnyObject {
@@ -155,23 +160,48 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   // MARK: - SwapModuleOutput
   
   var didTapSwapSettings: (() -> Void)?
-  var didTapTokenButton: ((SwapItem.Token?, SwapInput) -> Void)?
+  var didTapTokenButton: ((String?, SwapInput) -> Void)?
   var didTapBuyTon: (() -> Void)?
   var didTapContinue: (() -> Void)?
   
   // MARK: - SwapModuleInput
   
-  func didChooseToken(_ token: SwapItem.Token, forInput input: SwapInput) {
+  func didChooseToken(_ swapAsset: SwapAsset, forInput input: SwapInput) {
+    let token = mapSwapAsset(swapAsset)
+    
     switch input {
     case .send:
-      swapItem.sendToken = token
-      amountSend = "0"
-      didUpdateAmountSend?(amountSend)
+      swapOperationItem.sendToken = token
     case .recieve:
-      swapItem.recieveToken = token
-      amountRecieve = "0"
-      didUpdateAmountRecieve?(amountRecieve)
+      swapOperationItem.recieveToken = token
     }
+    
+    let shouldClearInputAmounts = input == lastInput
+    if shouldClearInputAmounts {
+      updateInputAmount("0", forInput: .send)
+      updateInputAmount("0", forInput: .recieve)
+    }
+    
+    let tokensHasPair = swapController.hasPair(
+      assetOne: swapOperationItem.sendToken?.asset,
+      assetTwo: swapOperationItem.recieveToken?.asset
+    )
+    
+    let assetsAreEqual = swapOperationItem.sendToken?.asset == swapOperationItem.recieveToken?.asset
+    if !tokensHasPair || assetsAreEqual {
+      switch input {
+      case .send:
+        swapOperationItem.recieveToken = nil
+        updateInputAmount("0", forInput: .recieve)
+        lastInput = .send
+      case .recieve:
+        swapOperationItem.sendToken = nil
+        updateInputAmount("0", forInput: .send)
+        lastInput = .recieve
+      }
+    }
+    
+    // TODO: simulate swap with existing lastInput amount
     
     update()
     updateSendBalance()
@@ -219,7 +249,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
 //    }
     
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-      self.didTapTokenButton?(self.swapItem.sendToken, .send)
+      self.didTapTokenButton?(self.swapOperationItem.sendToken?.asset.contractAddress, .recieve)
     }
     
     Task {
@@ -246,7 +276,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   }
   
   func didTapMaxButton() {
-    guard let sendToken = swapItem.sendToken else { return }
+    guard let sendToken = swapOperationItem.sendToken else { return }
     
     lastInput = .send
     
@@ -260,9 +290,9 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   }
   
   func didTapSwapButton() {
-    let sendToken = swapItem.sendToken
-    swapItem.sendToken = swapItem.recieveToken
-    swapItem.recieveToken = sendToken
+    let sendToken = swapOperationItem.sendToken
+    swapOperationItem.sendToken = swapOperationItem.recieveToken
+    swapOperationItem.recieveToken = sendToken
     
     swap(&amountSend, &amountRecieve)
     
@@ -302,6 +332,10 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     true
   }
   
+  // MARK: - Loaders
+  
+  private let imageLoader = ImageLoader()
+  
   // MARK: - Formatter
   
   let amountInpuTextFieldFormatter: BuySellAmountTextFieldFormatter = .makeAmountFormatter()
@@ -309,14 +343,14 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   // MARK: - Dependencies
   
   private let swapController: SwapController
-  private var swapItem: SwapItem
+  private var swapOperationItem: SwapOperationItem
   
   // MARK: - Init
   
-  init(swapController: SwapController, swapItem: SwapItem) {
+  init(swapController: SwapController, swapOperationItem: SwapOperationItem) {
     self.swapController = swapController
-    self.swapItem = swapItem
-    self.amountInpuTextFieldFormatter.maximumFractionDigits = TonInfo.fractionDigits
+    self.swapOperationItem = swapOperationItem
+    self.amountInpuTextFieldFormatter.maximumFractionDigits = TonInfo.fractionDigits // TODO: Change depends on assets fractionLenght
   }
   
   deinit {
@@ -354,7 +388,7 @@ private extension SwapViewModelImplementation {
     var balanceTitle: String?
     var maxButton: SwapInputContainerView.Model.HeaderButton?
     
-    if swapItem.sendToken != nil {
+    if swapOperationItem.sendToken != nil {
       isInputEnabled = true
       balanceTitle = createBalanceTitle(balance: tokenSendBalanceRemaining.value)
       maxButton = SwapInputContainerView.Model.HeaderButton(
@@ -370,7 +404,11 @@ private extension SwapViewModelImplementation {
         headerTitle: "Send",
         balanceTitle: balanceTitle,
         maxButton: maxButton,
-        tokenButton: mapTokenButton(token: swapItem.sendToken, forInput: .send),
+        tokenButton: mapTokenButton(
+          buttonToken: swapOperationItem.sendToken,
+          assetForPair: nil, // send token shouldn't check pairs with recieve
+          input: .send
+        ),
         isInputEnabled: isInputEnabled
       )
     )
@@ -380,7 +418,7 @@ private extension SwapViewModelImplementation {
     var isInputEnabled = false
     var balanceTitle: String?
     
-    if swapItem.recieveToken != nil {
+    if swapOperationItem.recieveToken != nil {
       isInputEnabled = true
       balanceTitle = createBalanceTitle(balance: tokenRecieveBalance)
     }
@@ -390,19 +428,23 @@ private extension SwapViewModelImplementation {
         headerTitle: "Recieve",
         balanceTitle: balanceTitle,
         maxButton: nil,
-        tokenButton: mapTokenButton(token: swapItem.recieveToken, forInput: .recieve),
+        tokenButton: mapTokenButton(
+          buttonToken: swapOperationItem.recieveToken,
+          assetForPair: swapOperationItem.sendToken?.asset,
+          input: .recieve
+        ),
         isInputEnabled: isInputEnabled
       )
     )
   }
   
-  func mapTokenButton(token: SwapItem.Token?, forInput input: SwapInput) -> SwapInputContainerView.Model.TokenButton {
-    if let token {
+  func mapTokenButton(buttonToken: SwapToken?, assetForPair: SwapAsset?, input: SwapInput) -> SwapInputContainerView.Model.TokenButton {
+    if let buttonToken {
       return SwapInputContainerView.Model.TokenButton(
-        title: token.title,
-        icon: token.icon.tokenButtonIcon,
+        title: buttonToken.asset.symbol,
+        icon: buttonToken.icon.tokenButtonIcon,
         action: { [weak self] in
-          self?.didTapTokenButton?(token, input)
+          self?.didTapTokenButton?(assetForPair?.contractAddress, input)
         }
       )
     } else {
@@ -410,14 +452,25 @@ private extension SwapViewModelImplementation {
         title: "CHOOSE",
         icon: .image(nil),
         action: { [weak self] in
-          self?.didTapTokenButton?(token, input)
+          self?.didTapTokenButton?(assetForPair?.contractAddress, input)
         }
       )
     }
   }
   
+  func updateInputAmount(_ amount: String, forInput input: SwapInput) {
+    switch input {
+    case .send:
+      amountSend = amount
+      didUpdateAmountRecieve?(amount)
+    case .recieve:
+      amountRecieve = amount
+      didUpdateAmountRecieve?(amount)
+    }
+  }
+  
   func updateSendBalance() {
-    guard let sendToken = swapItem.sendToken else {
+    guard let sendToken = swapOperationItem.sendToken else {
       tokenSendBalanceRemaining = .insufficient
       return
     }
@@ -438,7 +491,7 @@ private extension SwapViewModelImplementation {
   }
   
   func updateRecieveBalance() {
-    guard let recieveToken = swapItem.recieveToken else {
+    guard let recieveToken = swapOperationItem.recieveToken else {
       tokenRecieveBalance = "0"
       return
     }
@@ -454,8 +507,8 @@ private extension SwapViewModelImplementation {
   }
   
   func updateActionButton() {
-    let hasSendToken = swapItem.sendToken != nil
-    let hasRecieveToken = swapItem.recieveToken != nil
+    let hasSendToken = swapOperationItem.sendToken != nil
+    let hasRecieveToken = swapOperationItem.recieveToken != nil
     
     let actionButtonState: SwapActionButtonState
 
@@ -465,7 +518,7 @@ private extension SwapViewModelImplementation {
     case (_, "0", false, true):
       actionButtonState = .chooseToken
     case (_, _, true, _) where tokenSendBalanceRemaining == .insufficient:
-      actionButtonState = actionButtonStateForInsufficient(sendTokenTitle: swapItem.sendToken?.title)
+      actionButtonState = actionButtonStateForInsufficient(sendTokenTitle: swapOperationItem.sendToken?.asset.symbol)
     case (_, _, true, false), (_, _, false, true):
       actionButtonState = .chooseToken
     case (_, _, true, true) where amountSend != "0" && amountRecieve != "0":
@@ -540,7 +593,7 @@ private extension SwapViewModelImplementation {
   
   func createInsufficientBalanceButton() -> SwapActionButtonModel {
     SwapActionButtonModel(
-      title: "Insufficient \(swapItem.sendToken?.title ?? "") balance",
+      title: "Insufficient \(swapOperationItem.sendToken?.asset.symbol ?? "") balance",
       backgroundColor: .Button.secondaryBackground,
       backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
       isEnabled: !isResolving,
@@ -561,6 +614,35 @@ private extension SwapViewModelImplementation {
       }
     )
   }
+  
+  func mapSwapAsset(_ swapAsset: SwapAsset) -> SwapToken {
+    let icon: SwapToken.Icon
+    let isToncoin = swapAsset.kind == .ton && swapAsset.symbol == TonInfo.symbol
+    if isToncoin {
+      icon = .image(.TKCore.Icons.Size44.tonLogo)
+    } else {
+      let iconImageDownloadTask = configureDownloadTask(forUrl: swapAsset.imageUrl)
+      icon = .asyncImage(iconImageDownloadTask)
+    }
+    
+    return SwapToken(
+      icon: icon,
+      asset: swapAsset,
+      balance: SwapToken.Balance(amount: .zero),
+      inputAmount: "0"
+    )
+  }
+  
+  func configureDownloadTask(forUrl url: URL?) -> TKCore.ImageDownloadTask {
+    TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
+      return imageLoader.loadImage(
+        url: url,
+        imageView: imageView,
+        size: .iconSize,
+        cornerRadius: .iconCornerRadius
+      )
+    }
+  }
 }
 
 private extension BuySellAmountTextFieldFormatter {
@@ -576,4 +658,12 @@ private extension BuySellAmountTextFieldFormatter {
       currencyFormatter: numberFormatter
     )
   }
+}
+
+private extension CGSize {
+  static let iconSize = CGSize(width: 44, height: 44)
+}
+
+private extension CGFloat {
+  static let iconCornerRadius: CGFloat = 22
 }

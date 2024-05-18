@@ -2,6 +2,10 @@ import UIKit
 import TKUIKit
 import KeeperCore
 
+struct SwapTokenListItem {
+  var contractAddressForPair: String
+}
+
 struct SwapTokenListModel {
   struct Button {
     let title: String
@@ -14,8 +18,8 @@ struct SwapTokenListModel {
 }
 
 protocol SwapTokenListModuleOutput: AnyObject {
-  var didTapCloseButton: (() -> Void)? { get set }
-  var didChooseToken: (() -> Void)? { get set }
+  var didFinish: (() -> Void)? { get set }
+  var didChooseToken: ((SwapAsset) -> Void)? { get set }
 }
 
 protocol SwapTokenListModuleInput: AnyObject {
@@ -30,18 +34,17 @@ protocol SwapTokenListViewModel: AnyObject {
   func viewDidLoad()
   func reloadListItems()
   func didInputSearchText(_ searchText: String)
-  func didSelectToken(_ symbol: String)
+  func didSelectToken(_ asset: SwapAsset)
 }
 
 final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTokenListModuleOutput, SwapTokenListModuleInput {
 
   // MARK: - SwapTokenListModuleOutput
   
-  var didTapCloseButton: (() -> Void)?
-  var didChooseToken: (() -> Void)?
+  var didFinish: (() -> Void)?
+  var didChooseToken: ((SwapAsset) -> Void)?
   
   // MARK: - SwapTokenListModuleInput
-  
   
   // MARK: - SwapTokenListViewModel
   
@@ -57,13 +60,13 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
       
       let suggestedItems = tokenButtonListItemsModel.items.map { item in
         self.itemMapper.mapTokenButtonListItem(item) {
-          self.didSelectToken(item.symbol)
+          self.didSelectToken(item.asset)
         }
       }
       
       let otherItems = tokenListItemsModel.items.map { item in
         self.itemMapper.mapTokenListItem(item) {
-          self.didSelectToken(item.symbol)
+          self.didSelectToken(item.asset)
         }
       }
       
@@ -75,7 +78,7 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
       
       let searchResultsItems = tokenListItemsModel.items.map { item in
         self.itemMapper.mapTokenListItem(item) {
-          self.didSelectToken(item.symbol)
+          self.didSelectToken(item.asset)
         }
       }
       
@@ -83,7 +86,7 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
     }
     
     Task {
-      await swapTokenListController.start()
+      await swapTokenListController.start(contractAddressForPair: swapTokenListItem.contractAddressForPair)
     }
   }
   
@@ -97,8 +100,9 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
     swapTokenListController.performSearch(with: searchText)
   }
   
-  func didSelectToken(_ symbol: String) {
-    print(symbol)
+  func didSelectToken(_ asset: SwapAsset) {
+    didChooseToken?(asset)
+    didFinish?()
   }
   
   // MARK: - State
@@ -117,11 +121,13 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
   // MARK: - Dependencies
   
   private let swapTokenListController: SwapTokenListController
+  private let swapTokenListItem: SwapTokenListItem
   
   // MARK: - Init
   
-  init(swapTokenListController: SwapTokenListController) {
+  init(swapTokenListController: SwapTokenListController, swapTokenListItem: SwapTokenListItem) {
     self.swapTokenListController = swapTokenListController
+    self.swapTokenListItem = swapTokenListItem
   }
   
   deinit {
@@ -144,7 +150,7 @@ private extension SwapTokenListViewModelImplementation {
       closeButton: SwapTokenListModel.Button(
         title: "Close",
         action: { [weak self] in
-          self?.didTapCloseButton?()
+          self?.didFinish?()
         }
       )
     )

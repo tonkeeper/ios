@@ -408,6 +408,9 @@ public final class MainAssembly {
   
   public func swapController() -> SwapController {
     SwapController(
+      stonfiPairsStore: storesAssembly.stonfiPairsStore,
+      stonfiPairsService: servicesAssembly.stonfiPairsService(),
+      stonfiPairsLoader: loadersAssembly.stonfiPairsLoader,
       amountFormatter: formattersAssembly.amountFormatter
     )
   }

@@ -11,7 +11,7 @@ struct SwapTokenListMapper {
     self.rateConverter = rateConverter
   }
   
-  func mapStonfiAsset(_ asset: StonfiAsset) -> TokenListItemsModel.Item {
+  func mapStonfiAsset(_ asset: StonfiAsset) -> SwapTokenListItemsModel.Item {
     var imageUrl: URL?
     if let imageUrlString = asset.imageUrl  {
       imageUrl = URL(string: imageUrlString)
@@ -31,12 +31,18 @@ struct SwapTokenListMapper {
       badge = asset.kind
     }
     
-    return TokenListItemsModel.Item(
-      identifier: asset.contractAddress,
-      image: .asyncImage(imageUrl),
+    let swapAsset = SwapAsset(
+      contractAddress: asset.contractAddress,
       kind: assetKind,
       symbol: asset.symbol,
       displayName: displayName,
+      fractionDigits: asset.decimals,
+      imageUrl: imageUrl
+    )
+    
+    return SwapTokenListItemsModel.Item(
+      asset: swapAsset,
+      image: .asyncImage(imageUrl),
       badge: badge,
       amount: nil,
       convertedAmount: nil
@@ -153,12 +159,10 @@ struct SwapTokenListMapper {
     )
   }
   
-  func mapTokenListItem(_ tokenListItem: TokenListItemsModel.Item) -> TokenButtonListItemsModel.Item {
+  func mapTokenListItem(_ tokenListItem: SwapTokenListItemsModel.Item) -> TokenButtonListItemsModel.Item {
     TokenButtonListItemsModel.Item(
-      identifier: tokenListItem.identifier,
-      image: tokenListItem.image,
-      kind: tokenListItem.kind,
-      symbol: tokenListItem.symbol
+      asset: tokenListItem.asset,
+      image: tokenListItem.image
     )
   }
 }

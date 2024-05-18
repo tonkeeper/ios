@@ -22,7 +22,7 @@ final class SwapTokenListItemMapper {
     )
   }
   
-  func mapTokenListItem(_ item: TokenListItemsModel.Item, selectionClosure: @escaping (() -> Void)) -> TKUIListItemCell.Configuration {
+  func mapTokenListItem(_ item: SwapTokenListItemsModel.Item, selectionClosure: @escaping (() -> Void)) -> TKUIListItemCell.Configuration {
     let id = item.identifier
     let title = item.symbol.withTextStyle(.label1, color: .Text.primary)
     let subtitle = item.displayName.withTextStyle(.body2, color: .Text.secondary)
@@ -48,11 +48,11 @@ final class SwapTokenListItemMapper {
     let iconViewConfiguration = TKUIListItemIconView.Configuration(
       iconConfiguration: .image(
         .init(
-          image:  createTokenListIcon(item.image),
+          image: createTokenListIcon(item.image),
           tintColor: .clear,
           backgroundColor: .Background.contentTint,
-          size: CGSize(width: 44, height: 44),
-          cornerRadius: 22
+          size: .iconSize,
+          cornerRadius: .iconCornerRadius
         )
       ),
       alignment: .center
@@ -98,8 +98,8 @@ private extension SwapTokenListItemMapper {
       return imageLoader.loadImage(
         url: url,
         imageView: imageView,
-        size: size,
-        cornerRadius: cornerRadius
+        size: .iconSize,
+        cornerRadius: .iconCornerRadius
       )
     }
   }
@@ -112,4 +112,12 @@ private extension SwapTokenListItemMapper {
       backgroundColor: .Background.contentTint
     )
   }
+}
+
+private extension CGSize {
+  static let iconSize = CGSize(width: 44, height: 44)
+}
+
+private extension CGFloat {
+  static let iconCornerRadius: CGFloat = 22
 }

@@ -10,9 +10,19 @@ public struct TokenButtonListItemsModel {
 
 public extension TokenButtonListItemsModel {
   struct Item {
-    public let identifier: String
+    public let asset: SwapAsset
     public let image: ImageModel
-    public let kind: AssetKind
-    public let symbol: String
+    
+    public var identifier: String {
+      asset.contractAddress
+    }
+    
+    public var kind: AssetKind {
+      asset.kind
+    }
+    
+    public var symbol: String {
+      asset.symbol
+    }
   }
 }

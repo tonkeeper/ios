@@ -3,6 +3,10 @@ import Foundation
 struct StonfiAssets: Codable {
   let expirationDate: Date
   let items: [StonfiAsset]
+  
+  var isValid: Bool {
+    !items.isEmpty && expirationDate.timeIntervalSinceNow > 0
+  }
 }
 
 extension StonfiAssets {

@@ -26,13 +26,13 @@ struct AssetBalance {
 
 public final class SwapTokenListController {
   
-  public var didUpdateListItems: ((TokenButtonListItemsModel, TokenListItemsModel) -> Void)?
-  public var didUpdateSearchResultsItems: ((TokenListItemsModel) -> Void)?
+  public var didUpdateListItems: ((TokenButtonListItemsModel, SwapTokenListItemsModel) -> Void)?
+  public var didUpdateSearchResultsItems: ((SwapTokenListItemsModel) -> Void)?
   
-  private var tokenListItems: [TokenListItemsModel.Item] = []
+  private var tokenListItems: [SwapTokenListItemsModel.Item] = []
   
   private let wallet: Wallet
-  private var tonContractAddress = "EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"
+  private var contractAddressForPair = ""
   
   private let stonfiAssetsStore: StonfiAssetsStore
   private let stonfiPairsStore: StonfiPairsStore
@@ -68,7 +68,9 @@ public final class SwapTokenListController {
     self.wallet = walletsStore.activeWallet
   }
   
-  public func start() async {
+  public func start(contractAddressForPair: String) async {
+    self.contractAddressForPair = contractAddressForPair
+    
     _ = await stonfiAssetsStore.addEventObserver(self) { [weak self] observer, event in
       guard let self else { return }
       switch event {
@@ -82,12 +84,7 @@ public final class SwapTokenListController {
   
   public func updateListItems(forceUpdate: Bool = false) async {
     let storedAssets = await stonfiAssetsStore.getAssets()
-    let items = storedAssets.items
-    let expirationDate = storedAssets.expirationDate
-    
-    let isStoredAssetsValid = !items.isEmpty && expirationDate.timeIntervalSinceNow > 0
-    
-    if isStoredAssetsValid && !forceUpdate {
+    if storedAssets.isValid && !forceUpdate {
       await assetsDidUpdate(storedAssets)
     } else {
       await stonfiAssetsLoader.loadAssets(excludeCommunityAssets: false)
@@ -107,7 +104,7 @@ public final class SwapTokenListController {
           return matchesSymbol || matchesDisplayName
         }
       
-      let tokenListItemsModel = TokenListItemsModel(items: searchResults)
+      let tokenListItemsModel = SwapTokenListItemsModel(items: searchResults)
       
       await MainActor.run {
         didUpdateSearchResultsItems?(tokenListItemsModel)
@@ -121,8 +118,11 @@ private extension SwapTokenListController {
     let pairs = await getStonfiPairs()
     let assetsBalanceDict = await getAssetsBalanceDict()
     
-    let tokenListItems: [TokenListItemsModel.Item] = assets.items
-      .filter { pairs.hasPair(keyOne: $0.contractAddress, keyTwo: tonContractAddress) }
+    let tokenListItems: [SwapTokenListItemsModel.Item] = assets.items
+      .filter { asset in
+        guard !contractAddressForPair.isEmpty else { return true }
+        return pairs.hasPair(keyOne: asset.contractAddress, keyTwo: contractAddressForPair)
+      }
       .map { stonfiAsset in
         var tokenListItem = swapTokenListMapper.mapStonfiAsset(stonfiAsset)
         let assetBalanceList = assetsBalanceDict[tokenListItem.kind]
@@ -135,7 +135,7 @@ private extension SwapTokenListController {
       .tokenListSorted()
     
     let suggestedTokenListItemsModel = createSuggestedTokenListModel(from: tokenListItems)
-    let otherTokenListItemsModel = TokenListItemsModel(items: tokenListItems)
+    let otherTokenListItemsModel = SwapTokenListItemsModel(items: tokenListItems)
     
     await MainActor.run {
       self.tokenListItems = tokenListItems
@@ -143,7 +143,7 @@ private extension SwapTokenListController {
     }
   }
   
-  func createSuggestedTokenListModel(from tokenListItems: [TokenListItemsModel.Item]) -> TokenButtonListItemsModel {
+  func createSuggestedTokenListModel(from tokenListItems: [SwapTokenListItemsModel.Item]) -> TokenButtonListItemsModel {
     let items = tokenListItems
       .filter { suggestedTokenSymbols.contains($0.symbol) }
       .map { swapTokenListMapper.mapTokenListItem($0) }
@@ -175,9 +175,7 @@ private extension SwapTokenListController {
   
   func getStonfiPairs() async -> StonfiPairs {
     let storedPairs = await stonfiPairsStore.getPairs()
-
-    let isStoredPairsValid = !storedPairs.pairsSet.isEmpty && storedPairs.expirationDate.timeIntervalSinceNow > 0
-    if isStoredPairsValid {
+    if storedPairs.isValid {
       return storedPairs
     } else {
       return await loadStonfiPairs()
@@ -193,13 +191,13 @@ private extension SwapTokenListController {
   }
   
   var suggestedTokenSymbols: [String] {
-    ["USD₮", "ANON", "STON"]
+    [TonInfo.symbol, "USD₮", "ANON"]
   }
 }
 
-private extension Array where Element == TokenListItemsModel.Item {
-  func tokenListSorted() -> [TokenListItemsModel.Item] {
-    return self.sorted { (leftItem: TokenListItemsModel.Item, rightItem: TokenListItemsModel.Item) -> Bool in
+private extension Array where Element == SwapTokenListItemsModel.Item {
+  func tokenListSorted() -> [SwapTokenListItemsModel.Item] {
+    return self.sorted { (leftItem: SwapTokenListItemsModel.Item, rightItem: SwapTokenListItemsModel.Item) -> Bool in
       // Place TON at first position
       if leftItem.symbol == .tonSymbol && leftItem.kind == .ton {
         return true

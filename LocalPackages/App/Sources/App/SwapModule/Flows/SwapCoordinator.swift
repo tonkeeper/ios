@@ -32,9 +32,8 @@ private extension SwapCoordinator {
   func openSwap() {
     let module = SwapAssembly.module(
       swapController: keeperCoreMainAssembly.swapController(),
-      swapItem: SwapItem(
-        sendToken: .ton,
-        recieveToken: nil
+      swapOperationItem: SwapOperationItem(
+        sendToken: .tonStub
       )
     )
     
@@ -46,10 +45,13 @@ private extension SwapCoordinator {
       print("didTapSwapSettings")
     }
     
-    module.output.didTapTokenButton = { [weak self, weak view = module.view] token, swapInput in
-      self?.openSwapTokenList(fromViewController: view, didChooseTokenClosure: {
-        print("token did choose")
-      })
+    module.output.didTapTokenButton = { [weak self, weak view = module.view] contractAddressForPair, swapInput in
+      self?.openSwapTokenList(
+        sourceViewController: view,
+        contractAddressForPair: contractAddressForPair ?? "",
+        completion: { swapAsset in
+          module.input.didChooseToken(swapAsset, forInput: swapInput)
+        })
     }
     
     module.output.didTapBuyTon = {
@@ -63,42 +65,28 @@ private extension SwapCoordinator {
     router.push(viewController: module.view, animated: false)
   }
   
-  func openSwapTokenList(fromViewController: UIViewController?, didChooseTokenClosure: (() -> Void)?) {
+  func openSwapTokenList(sourceViewController: UIViewController?,
+                         contractAddressForPair: String,
+                         completion: ((SwapAsset) -> Void)?) {
     let module = SwapTokenListAssembly.module(
-      swapTokenListController: keeperCoreMainAssembly.swapTokenListController()
+      swapTokenListController: keeperCoreMainAssembly.swapTokenListController(),
+      swapTokenListItem: SwapTokenListItem(
+        contractAddressForPair: contractAddressForPair
+      )
     )
     
     module.view.setupRightCloseButton {
-      fromViewController?.dismiss(animated: true)
+      sourceViewController?.dismiss(animated: true)
     }
     
-    module.output.didTapCloseButton = {
-      fromViewController?.dismiss(animated: true)
+    module.output.didFinish = {
+      sourceViewController?.dismiss(animated: true)
     }
     
-    module.output.didChooseToken = {
-      didChooseTokenClosure?()
+    module.output.didChooseToken = { swapAsset in
+      completion?(swapAsset)
     }
     
-    fromViewController?.present(module.view, animated: true)
-  }
-  
-  func openCurrencyList(fromViewController: UIViewController?,
-                        currencyListItem: CurrencyListItem,
-                        didChangeCurrencyClosure: ((Currency) -> Void)?) {
-    let module = CurrencyListAssembly.module(
-      currencyListController: keeperCoreMainAssembly.currencyListController(),
-      currencyListItem: currencyListItem
-    )
-    
-    module.view.setupRightCloseButton {
-      fromViewController?.dismiss(animated: true)
-    }
-    
-    module.output.didChangeCurrency = { newCurrency in
-      didChangeCurrencyClosure?(newCurrency)
-    }
-    
-    fromViewController?.present(module.view, animated: true)
+    sourceViewController?.present(module.view, animated: true)
   }
 }
