@@ -5,7 +5,7 @@ import KeeperCore
 
 final class SwapTokenListItemMapper {
   
-  let imageLoader = ImageLoader()
+  let imageLoader = CachedMemoryImageLoader(cacheExpirationInMinutes: 3)
   
   func mapTokenButtonListItem(_ item: TokenButtonListItemsModel.Item, selectionClosure: @escaping (() -> Void)) -> SuggestedTokenCell.Configuration {
     let id = item.identifier
