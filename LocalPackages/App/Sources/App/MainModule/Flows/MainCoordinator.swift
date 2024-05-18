@@ -24,6 +24,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private weak var addWalletCoordinator: AddWalletCoordinator?
   private weak var sendTokenCoordinator: SendTokenCoordinator?
+  private weak var stakeCoordinator: StakeCoordinator?
   
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
@@ -118,6 +119,10 @@ private extension MainCoordinator {
     
     walletCoordinator.didTapSend = { [weak self] token in
       self?.openSend(token: token)
+    }
+      
+    walletCoordinator.didTapStake = { [weak self] wallet in
+      self?.openStake(wallet: wallet)
     }
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
@@ -229,6 +234,38 @@ private extension MainCoordinator {
       }
     }
   }
+    
+    func openStake(wallet: Wallet) {
+        let navigationController = TKNavigationController()
+        navigationController.configureDefaultAppearance()
+        
+        let stakeCoordinator = StakeModule(
+            dependencies: StakeModule.Dependencies(
+                coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly
+            )
+        ).createStakeCoordinator(
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            wallet: wallet
+        )
+        
+        stakeCoordinator.didFinish = { [weak self, weak stakeCoordinator, weak navigationController] in
+          self?.stakeCoordinator = nil
+          navigationController?.dismiss(animated: true)
+          guard let stakeCoordinator else { return }
+          self?.removeChild(stakeCoordinator)
+        }
+        
+        self.stakeCoordinator = stakeCoordinator
+        
+        addChild(stakeCoordinator)
+        stakeCoordinator.start()
+        
+        self.router.present(navigationController, onDismiss: { [weak self] in
+          self?.stakeCoordinator = nil
+        })
+    }
+    
 }
 
 // MARK: - Deeplinks

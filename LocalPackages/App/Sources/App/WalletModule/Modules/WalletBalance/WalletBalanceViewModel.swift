@@ -12,6 +12,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
+  var didTapStake: ((Wallet) -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
@@ -45,6 +46,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
+  var didTapStake: ((Wallet) -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
   var didRequireConfirmation: (() async -> Bool)?
@@ -299,23 +301,23 @@ private extension WalletBalanceViewModelImplementation {
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true
-      isSwapEnable = false
+      isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     case .watchOnly:
       isSendEnable = false
       isReceiveEnable = true
       isScanEnable = false
-      isSwapEnable = false
+      isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     case .external:
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true
-      isSwapEnable = false
+      isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     }
     
     return WalletBalanceHeaderButtonsView.Model(
@@ -341,7 +343,9 @@ private extension WalletBalanceViewModelImplementation {
         title: TKLocales.WalletButtons.swap,
         icon: .TKUIKit.Icons.Size28.swapHorizontalOutline,
         isEnabled: isSwapEnable,
-        action: {}
+        action: {
+            
+        }
       ),
       buyButton: WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.buy,
@@ -355,7 +359,10 @@ private extension WalletBalanceViewModelImplementation {
         title: TKLocales.WalletButtons.stake,
         icon: .TKUIKit.Icons.Size28.stakingOutline,
         isEnabled: isStakeEnable,
-        action: {}
+        action: { [weak self] in
+            guard let wallet = self?.walletBalanceController.wallet else { return }
+            self?.didTapStake?(wallet)
+        }
       )
     )
   }

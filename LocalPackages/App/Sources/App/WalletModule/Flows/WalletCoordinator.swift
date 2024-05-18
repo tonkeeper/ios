@@ -11,6 +11,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   var didLogout: (() -> Void)?
   var didTapWalletButton: (() -> Void)?
   var didTapSend: ((Token) -> Void)?
+  var didTapStake: ((Wallet) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -176,6 +177,10 @@ private extension WalletCoordinator {
     coordinator.start()
   }
   
+  func openStake(wallet: Wallet) {
+    didTapStake?(wallet)
+  }
+  
   func openHistoryEventDetails(event: AccountEventDetailsEvent) {
     let module = HistoryEventDetailsAssembly.module(
       historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(event: event),
@@ -266,6 +271,10 @@ private extension WalletCoordinator {
     
     module.output.didTapBuy = { [weak self] wallet in
       self?.openBuy(wallet: wallet)
+    }
+      
+    module.output.didTapStake = { [weak self] wallet in
+      self?.openStake(wallet: wallet)
     }
     
     module.output.didTapBackup = { [weak self] wallet in
