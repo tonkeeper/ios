@@ -14,6 +14,11 @@ final class SuggestedTokenCell: TKCollectionViewNewCell, TKConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   
+  override func prepareForReuse() {
+    super.prepareForReuse()
+    tokenButtonContentView.prepareForReuse()
+  }
+  
   public override func preferredLayoutAttributesFitting(
     _ layoutAttributes: UICollectionViewLayoutAttributes
   ) -> UICollectionViewLayoutAttributes {

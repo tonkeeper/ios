@@ -1,6 +1,6 @@
 import Foundation
 
-public struct StonfiPairs: Codable {
+struct StonfiPairs: Codable {
   let expirationDate: Date
   let pairs: [[String]]
   let pairsSet: Set<String>
@@ -10,6 +10,16 @@ public struct StonfiPairs: Codable {
       return true
     }
     return false
+  }
+}
+
+extension StonfiPairs {
+  init() {
+    self.init(
+      expirationDate: Date(timeIntervalSince1970: 0),
+      pairs: [],
+      pairsSet: []
+    )
   }
 }
 

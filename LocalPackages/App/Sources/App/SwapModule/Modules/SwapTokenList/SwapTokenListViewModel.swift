@@ -49,16 +49,14 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
   func viewDidLoad() {
     update()
     
-    swapTokenListController.didUpdateTokenListItemsModel = { [weak self] tokenListItemsModel in
+    swapTokenListController.didLoadListItems = { [weak self] tokenButtonListItemsModel, tokenListItemsModel in
       guard let self else { return }
       
-      let suggestedItems: [SuggestedTokenCell.Configuration] = [
-        .init(id: "0", tokenButtonModel: .init(title: "ANON".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
-        .init(id: "1", tokenButtonModel: .init(title: "TON".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
-        .init(id: "2", tokenButtonModel: .init(title: "jUSDT".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
-        .init(id: "3", tokenButtonModel: .init(title: "GRAM".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
-        .init(id: "4", tokenButtonModel: .init(title: "USDT".withTextStyle(.body2, color: .white), icon: .image(.TKCore.Icons.Size44.tonLogo)), selectionClosure: nil),
-      ]
+      let suggestedItems = tokenButtonListItemsModel.items.map { item in
+        self.itemMapper.mapTokenButtonListItem(item) {
+          self.didSelectToken(item.symbol)
+        }
+      }
       
       let otherItems = tokenListItemsModel.items.map { item in
         self.itemMapper.mapTokenListItem(item) {

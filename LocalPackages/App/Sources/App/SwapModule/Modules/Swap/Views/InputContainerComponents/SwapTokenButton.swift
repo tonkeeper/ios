@@ -136,8 +136,18 @@ final class SwapTokenButtonContentView: UIView, ConfigurableView {
   }
   
   private func setup() {
+    iconImageView.backgroundColor = .Background.contentTint
+    
     addSubview(iconImageView)
     addSubview(titleLabel)
+  }
+}
+
+extension SwapTokenButtonContentView: ReusableView {
+  func prepareForReuse() {
+    imageDownloadTask?.cancel()
+    imageDownloadTask = nil
+    iconImageView.image = nil
   }
 }
 

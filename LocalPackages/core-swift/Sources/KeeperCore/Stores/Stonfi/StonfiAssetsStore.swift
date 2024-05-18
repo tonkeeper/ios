@@ -17,7 +17,7 @@ actor StonfiAssetsStore {
     do {
       return try repository.getAssets()
     } catch {
-      return StonfiAssets(expirationDate: Date(timeIntervalSince1970: 0), items: [])
+      return StonfiAssets()
     }
   }
   

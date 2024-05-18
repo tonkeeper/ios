@@ -17,7 +17,7 @@ actor StonfiPairsStore {
     do {
       return try repository.getPairs()
     } catch {
-      return StonfiPairs(expirationDate: Date(timeIntervalSince1970: 0), pairs: [], pairsSet: [])
+      return StonfiPairs()
     }
   }
   

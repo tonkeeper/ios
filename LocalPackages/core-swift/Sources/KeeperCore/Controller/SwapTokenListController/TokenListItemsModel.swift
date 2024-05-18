@@ -10,13 +10,8 @@ public struct TokenListItemsModel {
 
 public extension TokenListItemsModel {
   struct Item {
-    public enum Image {
-      case image(UIImage)
-      case asyncImage(URL?)
-    }
-    
     public let identifier: String
-    public let image: Image
+    public let image: ImageModel
     public let kind: AssetKind
     public let symbol: String
     public let displayName: String
@@ -25,7 +20,7 @@ public extension TokenListItemsModel {
     public var convertedAmount: String?
     
     public init(identifier: String,
-                image: Image,
+                image: ImageModel,
                 kind: AssetKind,
                 symbol: String,
                 displayName: String,

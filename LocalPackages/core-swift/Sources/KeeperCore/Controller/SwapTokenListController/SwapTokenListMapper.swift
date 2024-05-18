@@ -152,4 +152,13 @@ struct SwapTokenListMapper {
       convertedAmount: convertedAmount
     )
   }
+  
+  func mapTokenListItem(_ tokenListItem: TokenListItemsModel.Item) -> TokenButtonListItemsModel.Item {
+    TokenButtonListItemsModel.Item(
+      identifier: tokenListItem.identifier,
+      image: tokenListItem.image,
+      kind: tokenListItem.kind,
+      symbol: tokenListItem.symbol
+    )
+  }
 }

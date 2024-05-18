@@ -5,6 +5,15 @@ struct StonfiAssets: Codable {
   let items: [StonfiAsset]
 }
 
+extension StonfiAssets {
+  init() {
+    self.init(
+      expirationDate: Date(timeIntervalSince1970: 0),
+      items: []
+    )
+  }
+}
+
 public struct StonfiAsset: Codable {
   public let contractAddress: String
   public let symbol: String

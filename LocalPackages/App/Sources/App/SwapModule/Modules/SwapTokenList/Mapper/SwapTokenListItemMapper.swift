@@ -7,6 +7,21 @@ final class SwapTokenListItemMapper {
   
   let imageLoader = ImageLoader()
   
+  func mapTokenButtonListItem(_ item: TokenButtonListItemsModel.Item, selectionClosure: @escaping (() -> Void)) -> SuggestedTokenCell.Configuration {
+    let id = item.identifier
+    
+    let tokenButtonModel = SwapTokenButtonContentView.Model(
+      title: item.symbol.withTextStyle(.body2, color: .Button.tertiaryForeground),
+      icon: createTokenButtonIcon(item.image)
+    )
+    
+    return SuggestedTokenCell.Configuration(
+      id: id,
+      tokenButtonModel: tokenButtonModel,
+      selectionClosure: selectionClosure
+    )
+  }
+  
   func mapTokenListItem(_ item: TokenListItemsModel.Item, selectionClosure: @escaping (() -> Void)) -> TKUIListItemCell.Configuration {
     let id = item.identifier
     let title = item.symbol.withTextStyle(.label1, color: .Text.primary)
@@ -33,7 +48,7 @@ final class SwapTokenListItemMapper {
     let iconViewConfiguration = TKUIListItemIconView.Configuration(
       iconConfiguration: .image(
         .init(
-          image:  mapItemImage(item.image),
+          image:  createTokenListIcon(item.image),
           tintColor: .clear,
           backgroundColor: .Background.contentTint,
           size: CGSize(width: 44, height: 44),
@@ -55,25 +70,41 @@ final class SwapTokenListItemMapper {
       selectionClosure: selectionClosure
     )
   }
-  
-  private func mapItemImage(_ itemImage: TokenListItemsModel.Item.Image) -> TKUIListItemImageIconView.Configuration.Image {
-    switch itemImage {
+}
+
+private extension SwapTokenListItemMapper {
+  func createTokenListIcon(_ imageModel: ImageModel) -> TKUIListItemImageIconView.Configuration.Image {
+    switch imageModel {
     case .image(let image):
       return .image(image)
     case .asyncImage(let url):
-      let iconImageDownloadTask = TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
-        return imageLoader.loadImage(
-          url: url,
-          imageView: imageView,
-          size: size,
-          cornerRadius: cornerRadius
-        )
-      }
+      let iconImageDownloadTask = configureDownloadTask(forUrl: url)
       return .asyncImage(url, iconImageDownloadTask)
     }
   }
   
-  private func mapBadgeText(_ tagText: String?) -> TKUITagView.Configuration? {
+  func createTokenButtonIcon(_ imageModel: ImageModel) -> SwapTokenButtonContentView.Model.Icon {
+    switch imageModel {
+    case .image(let image):
+      return .image(image)
+    case .asyncImage(let url):
+      let iconImageDownloadTask = configureDownloadTask(forUrl: url)
+      return .asyncImage(iconImageDownloadTask)
+    }
+  }
+  
+  func configureDownloadTask(forUrl url: URL?) -> TKCore.ImageDownloadTask {
+    TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
+      return imageLoader.loadImage(
+        url: url,
+        imageView: imageView,
+        size: size,
+        cornerRadius: cornerRadius
+      )
+    }
+  }
+  
+  func mapBadgeText(_ tagText: String?) -> TKUITagView.Configuration? {
     guard let tagText else { return nil }
     return TKUITagView.Configuration(
       text: tagText,

@@ -26,7 +26,7 @@ struct AssetBalance {
 
 public final class SwapTokenListController {
   
-  public var didUpdateTokenListItemsModel: ((TokenListItemsModel) -> Void)?
+  public var didLoadListItems: ((TokenButtonListItemsModel, TokenListItemsModel) -> Void)?
   
   private var tokenListItems: [TokenListItemsModel.Item] = []
   
@@ -91,14 +91,6 @@ public final class SwapTokenListController {
 }
 
 private extension SwapTokenListController {
-  func getStonfiPairs() async -> StonfiPairs {
-    do {
-      return try await stonfiPairsService.loadPairs()
-    } catch {
-      return StonfiPairs(expirationDate: Date(timeIntervalSince1970: 0), pairs: [], pairsSet: [])
-    }
-  }
-  
   func assetsDidUpdate(_ assets: StonfiAssets) async {
     let pairs = await getStonfiPairs()
     let assetsBalanceDict = await getAssetsBalanceDict()
@@ -116,12 +108,21 @@ private extension SwapTokenListController {
       .sorted(by: { $0.symbol.localizedStandardCompare($1.symbol) == .orderedAscending })
       .tokenListSorted()
     
-    let tokenListItemsModel = TokenListItemsModel(items: tokenListItems)
+    let suggestedTokenListItemsModel = createSuggestedTokenListModel(from: tokenListItems)
+    let otherTokenListItemsModel = TokenListItemsModel(items: tokenListItems)
     
     await MainActor.run {
       self.tokenListItems = tokenListItems
-      didUpdateTokenListItemsModel?(tokenListItemsModel)
+      didLoadListItems?(suggestedTokenListItemsModel, otherTokenListItemsModel)
     }
+  }
+  
+  func createSuggestedTokenListModel(from tokenListItems: [TokenListItemsModel.Item]) -> TokenButtonListItemsModel {
+    let items = tokenListItems
+      .filter { suggestedTokenSymbols.contains($0.symbol) }
+      .map { swapTokenListMapper.mapTokenListItem($0) }
+    
+    return TokenButtonListItemsModel(items: items)
   }
   
   func getAssetsBalanceDict() async -> [AssetKind : [AssetBalance]] {
@@ -144,6 +145,29 @@ private extension SwapTokenListController {
       rates: rates,
       currency: currency
     )
+  }
+  
+  func getStonfiPairs() async -> StonfiPairs {
+    let storedPairs = await stonfiPairsStore.getPairs()
+
+    let isStoredPairsValid = !storedPairs.pairsSet.isEmpty && storedPairs.expirationDate.timeIntervalSinceNow > 0
+    if isStoredPairsValid {
+      return storedPairs
+    } else {
+      return await loadStonfiPairs()
+    }
+  }
+  
+  func loadStonfiPairs() async -> StonfiPairs {
+    do {
+      return try await stonfiPairsService.loadPairs()
+    } catch {
+      return StonfiPairs()
+    }
+  }
+  
+  var suggestedTokenSymbols: [String] {
+    ["USD₮", "ANON", "GLINT", "NOT", "STON"]
   }
 }
 
