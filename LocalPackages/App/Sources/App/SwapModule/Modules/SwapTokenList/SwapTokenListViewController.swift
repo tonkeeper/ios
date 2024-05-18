@@ -5,10 +5,12 @@ enum SwapTokenListSection {
   case searchResults
   case suggestedTokens
   case otherTokens
+  case shimmer
 }
 
 final class SwapTokenListViewController: ModalViewController<SwapTokenListView, ModalNavigationBarView>, KeyboardObserving {
   
+  typealias ShimmerContainerView = TKCollectionViewSupplementaryContainerView<SwapTokenListShimmerView>
   typealias CellRegistration<T> = UICollectionView.CellRegistration<T, T.Configuration> where T: TKCollectionViewNewCell & TKConfigurableView
   typealias Snapshot = NSDiffableDataSourceSnapshot<SwapTokenListSection, AnyHashable>
   
@@ -33,6 +35,8 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
           return .suggestedTokensSection
         case .otherTokens:
           return .otherTokensSection
+        case .shimmer:
+          return .shimmerSection
         }
       },
       configuration: configuration
@@ -151,7 +155,7 @@ private extension SwapTokenListViewController {
   
   func setupCollectionView() {
     customView.collectionView.delegate = self
-    customView.collectionView.allowsMultipleSelection = true
+    customView.collectionView.delaysContentTouches = false
     customView.collectionView.showsVerticalScrollIndicator = false
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     
@@ -167,9 +171,14 @@ private extension SwapTokenListViewController {
       withReuseIdentifier: TitleHeaderCollectionView.reuseIdentifier
     )
     
+    customView.collectionView.register(
+      ShimmerContainerView.self,
+      forSupplementaryViewOfKind: .shimmerSectionFooterElementKind,
+      withReuseIdentifier: ShimmerContainerView.reuseIdentifier
+    )
+    
     var snapshot = dataSource.snapshot()
-    snapshot.appendSections([.suggestedTokens])
-    snapshot.appendSections([.otherTokens])
+    snapshot.appendSections([.shimmer])
     dataSource.apply(snapshot, animatingDifferences: false)
   }
   
@@ -190,12 +199,14 @@ private extension SwapTokenListViewController {
       
       if !isSearching {
         // Just update data source with new snapshot
-        let snapshot = configureDefaultSnapshot(
-          snapshot: dataSource.snapshot(),
+        let snapshot = dataSource.snapshot()
+        let hasShimmer = snapshot.sectionIdentifiers.contains(where: { $0 == .shimmer })
+        let configuredSnapshot = configureDefaultSnapshot(
+          snapshot: snapshot,
           suggestedTokenItems: suggestedTokenItems,
           otherTokenItems: otherTokenItems
         )
-        dataSource.apply(snapshot, animatingDifferences: false)
+        dataSource.apply(configuredSnapshot, animatingDifferences: hasShimmer)
       } else if let snapshot = self.preSearchSnapshot {
         // Configure new preSearchSnapshot and don't apply new snapshot (don't cancel search)
         self.preSearchSnapshot = configureDefaultSnapshot(
@@ -290,6 +301,14 @@ private extension SwapTokenListViewController {
           )
         )
         return titleHeaderView
+      case .shimmer:
+        let shimmerView = collectionView.dequeueReusableSupplementaryView(
+          ofKind: kind,
+          withReuseIdentifier: ShimmerContainerView.reuseIdentifier,
+          for: indexPath
+        )
+        (shimmerView as? ShimmerContainerView)?.contentView.startAnimation()
+        return shimmerView
       default:
         return nil
       }
@@ -396,6 +415,24 @@ private extension NSCollectionLayoutSection {
     return section
   }
   
+  static var shimmerSection: NSCollectionLayoutSection {
+    let section = NSCollectionLayoutSection.createSection(
+      cellHeight: 100,
+      contentInsets: .init(top: 0, leading: 16, bottom: 0, trailing: 16)
+    )
+    let footerSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(400)
+    )
+    let footer = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: footerSize,
+      elementKind: .shimmerSectionFooterElementKind,
+      alignment: .bottom
+    )
+    section.boundarySupplementaryItems = [footer]
+    return section
+  }
+  
   static func createSection(cellHeight: CGFloat,
                           contentInsets: NSDirectionalEdgeInsets = .defaultSectionInsets) -> NSCollectionLayoutSection {
     let itemLayoutSize = NSCollectionLayoutSize(
@@ -440,6 +477,7 @@ private extension String {
   static let otherHeaderTitle = "Other"
   static let searchBarElementKind = "SearchBarElementKind"
   static let titleHeaderElementKind = "TitleHeaderElementKind"
+  static let shimmerSectionFooterElementKind = "ShimmerSectionFooterElementKind"
 }
 
 private extension NSDirectionalEdgeInsets {

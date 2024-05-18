@@ -193,7 +193,7 @@ private extension SwapTokenListController {
   }
   
   var suggestedTokenSymbols: [String] {
-    ["USD₮", "ANON", "GLINT", "NOT", "STON"]
+    ["USD₮", "ANON", "STON"]
   }
 }
 
