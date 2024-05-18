@@ -8,6 +8,7 @@ import TKLocalize
 protocol StakeModulOutput: AnyObject {
   var didContinueStake: (() -> Void)? { get set }
   var showOptions: (() -> Void)? { get set }
+  var showInfo: (() -> Void)? { get set }
 }
 
 protocol StakeModulInput: AnyObject {
@@ -22,6 +23,7 @@ protocol StakeViewModel: AnyObject {
   func viewDidLoad()
   func didInputAmount(_ string: String)
   func didTapToOptions()
+  func didTapToInfo()
   
 }
 
@@ -79,6 +81,7 @@ final class StakeViewModelImplementation: StakeViewModel, StakeModulOutput, Stak
   var didTapMax: ((String) -> Void)?
   var didContinueStake: (() -> Void)?
   var showOptions: (() -> Void)?
+  var showInfo: (() -> Void)?
   
   // MARK: - Dependencies
   private let imageLoader = ImageLoader()
@@ -141,6 +144,10 @@ final class StakeViewModelImplementation: StakeViewModel, StakeModulOutput, Stak
   
   func didTapToOptions() {
     showOptions?()
+  }
+  
+  func didTapToInfo() {
+    showInfo?()
   }
   
 }
@@ -250,6 +257,7 @@ private extension StakeViewModelImplementation {
   }
   
   var isContinueEnable: Bool {
+    return true 
     let isItemValid: Bool
     switch sendItem {
     case .nft:

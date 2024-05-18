@@ -142,7 +142,7 @@ private extension StakeViewController {
   
   @objc
   func didTapInfoButton() {
-    // TODO: Add action
+    viewModel.didTapToInfo()
   }
   
 }

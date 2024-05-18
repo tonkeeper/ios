@@ -1,5 +1,5 @@
 //
-//  StakeOptionsViewController.swift
+//  StakeInfoViewController.swift
 //
 //
 //  Created by Semyon on 18/05/2024.
@@ -8,12 +8,12 @@
 import UIKit
 import TKUIKit
 
-final class StakeOptionsViewController: GenericViewViewController<StakeOptionsView> {
-  private let viewModel: StakeOptionsViewModel
+final class StakeInfoViewController: GenericViewViewController<StakeConfirmationView> {
+  private let viewModel: StakeInfoViewModel
   
   private let modalCardViewController = TKModalCardViewController()
   
-  init(viewModel: StakeOptionsViewModel) {
+  init(viewModel: StakeInfoViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
   }
@@ -44,13 +44,18 @@ final class StakeOptionsViewController: GenericViewViewController<StakeOptionsVi
   }
 }
 
-private extension StakeOptionsViewController {
+private extension StakeInfoViewController {
   func setup() {
-    title = "Options"
+    title = "Tonstakers"
+    addChild(modalCardViewController)
+    customView.embedContent(modalCardViewController.view)
+    modalCardViewController.didMove(toParent: self)
   }
   
   func setupBindings() {
-   
+    viewModel.didUpdateConfiguration = { [weak modalCardViewController] configuration in
+      modalCardViewController?.configuration = configuration
+    }
   }
 }
 

@@ -54,6 +54,10 @@ private extension StakeCoordinator {
       self?.openOptions()
     }
     
+    module.output.showInfo = { [weak self] in
+      self?.openStakeInfo()
+    }
+    
     router.push(viewController: module.view)
   }
   
@@ -71,6 +75,14 @@ private extension StakeCoordinator {
     module.output.didSendTransaction = { [weak self] in
       self?.router.dismiss()
     }
+    
+    module.view.setupBackButton()
+    
+    router.push(viewController: module.view)
+  }
+  
+  func openStakeInfo() {
+    let module = StakeInfoAssembly.module()
     
     module.view.setupBackButton()
     
