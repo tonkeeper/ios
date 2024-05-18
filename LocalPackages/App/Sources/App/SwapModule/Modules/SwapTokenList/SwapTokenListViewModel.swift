@@ -9,6 +9,7 @@ struct SwapTokenListModel {
   }
   
   let title: String
+  let noSearchResultsTitle: String
   let closeButton: Button
 }
 
@@ -24,9 +25,10 @@ protocol SwapTokenListModuleInput: AnyObject {
 protocol SwapTokenListViewModel: AnyObject {
   var didUpdateModel: ((SwapTokenListModel) -> Void)? { get set }
   var didUpdateListItems: (([SuggestedTokenCell.Configuration], [TKUIListItemCell.Configuration]) -> Void)? { get set }
-  var amountInpuTextFieldFormatter: BuySellAmountTextFieldFormatter { get }
+  var didUpdateSearchResultsItems: (([TKUIListItemCell.Configuration]) -> Void)? { get set }
   
   func viewDidLoad()
+  func reloadListItems()
   func didInputSearchText(_ searchText: String)
   func didSelectToken(_ symbol: String)
 }
@@ -45,11 +47,12 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
   
   var didUpdateModel: ((SwapTokenListModel) -> Void)?
   var didUpdateListItems: (([SuggestedTokenCell.Configuration], [TKUIListItemCell.Configuration]) -> Void)?
+  var didUpdateSearchResultsItems: (([TKUIListItemCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
     update()
     
-    swapTokenListController.didLoadListItems = { [weak self] tokenButtonListItemsModel, tokenListItemsModel in
+    swapTokenListController.didUpdateListItems = { [weak self] tokenButtonListItemsModel, tokenListItemsModel in
       guard let self else { return }
       
       let suggestedItems = tokenButtonListItemsModel.items.map { item in
@@ -67,13 +70,31 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
       self.didUpdateListItems?(suggestedItems, otherItems)
     }
     
+    swapTokenListController.didUpdateSearchResultsItems = { [weak self] tokenListItemsModel in
+      guard let self else { return }
+      
+      let searchResultsItems = tokenListItemsModel.items.map { item in
+        self.itemMapper.mapTokenListItem(item) {
+          self.didSelectToken(item.symbol)
+        }
+      }
+      
+      self.didUpdateSearchResultsItems?(searchResultsItems)
+    }
+    
     Task {
       await swapTokenListController.start()
     }
   }
   
+  func reloadListItems() {
+    Task {
+      await swapTokenListController.updateListItems()
+    }
+  }
+  
   func didInputSearchText(_ searchText: String) {
-    print(searchText)
+    swapTokenListController.performSearch(with: searchText)
   }
   
   func didSelectToken(_ symbol: String) {
@@ -89,10 +110,6 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
     }
   }
   
-  // MARK: - Formatter
-  
-  let amountInpuTextFieldFormatter: BuySellAmountTextFieldFormatter = .makeAmountFormatter()
-  
   // MARK: - Mapper
   
   private let itemMapper = SwapTokenListItemMapper()
@@ -105,7 +122,6 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
   
   init(swapTokenListController: SwapTokenListController) {
     self.swapTokenListController = swapTokenListController
-    self.amountInpuTextFieldFormatter.maximumFractionDigits = TonInfo.fractionDigits
   }
   
   deinit {
@@ -124,27 +140,13 @@ private extension SwapTokenListViewModelImplementation {
   func createModel() -> SwapTokenListModel {
     SwapTokenListModel(
       title: "Choose Token",
+      noSearchResultsTitle: "Your search returned no results",
       closeButton: SwapTokenListModel.Button(
         title: "Close",
         action: { [weak self] in
           self?.didTapCloseButton?()
         }
       )
-    )
-  }
-}
-
-private extension BuySellAmountTextFieldFormatter {
-  static func makeAmountFormatter() -> BuySellAmountTextFieldFormatter {
-    let numberFormatter = NumberFormatter()
-    numberFormatter.groupingSize = 3
-    numberFormatter.usesGroupingSeparator = true
-    numberFormatter.groupingSeparator = " "
-    numberFormatter.decimalSeparator = Locale.current.decimalSeparator
-    numberFormatter.maximumIntegerDigits = 16
-    numberFormatter.roundingMode = .down
-    return BuySellAmountTextFieldFormatter(
-      currencyFormatter: numberFormatter
     )
   }
 }

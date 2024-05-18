@@ -13,6 +13,10 @@ final class SwapTokenListView: UIView {
     searchBar.intrinsicContentSize.height + UIEdgeInsets.searchBarPadding.top + UIEdgeInsets.searchBarPadding.bottom
   }
   
+  var contentInsetBottom: CGFloat {
+    closuButtonSize.height + .verticalPadding
+  }
+  
   let titleView = ModalTitleView()
   let searchBar = SearchBar()
   let searchBarContainer: TKPaddingContainerView = {
@@ -24,12 +28,14 @@ final class SwapTokenListView: UIView {
   }()
   
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
+  let noSearchResultsLabel = UILabel()
   
+  let closuButtonSize = TKActionButtonSize.large
   let closeButtonBackgroundView = UIView()
-  let closeButton = TKButton(
+  lazy var closeButton = TKButton(
     configuration: .actionButtonConfiguration(
       category: .secondary,
-      size: .large
+      size: closuButtonSize
     )
   )
   
@@ -49,11 +55,13 @@ final class SwapTokenListView: UIView {
 
 private extension SwapTokenListView {
   func setup() {
+    noSearchResultsLabel.isHidden = true
     closeButtonBackgroundView.backgroundColor = .Background.page
     
     searchBarContainer.setViews([searchBar])
     
     addSubview(collectionView)
+    addSubview(noSearchResultsLabel)
     addSubview(searchBarContainer)
     addSubview(closeButtonBackgroundView)
     addSubview(closeButton)
@@ -66,11 +74,15 @@ private extension SwapTokenListView {
       make.edges.equalTo(self)
     }
     
+    noSearchResultsLabel.snp.makeConstraints { make in
+      make.centerX.equalTo(self)
+      make.top.equalTo(searchBarContainer.snp.bottom).offset(64)
+    }
+    
     searchBarContainer.snp.makeConstraints { make in
       make.left.equalTo(self)
       make.right.equalTo(self)
       make.top.equalTo(self).offset(searchBarViewTopOffset)
-      //make.height.equalTo(64)
     }
     
     closeButtonBackgroundView.snp.makeConstraints { make in

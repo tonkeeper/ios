@@ -26,7 +26,8 @@ struct AssetBalance {
 
 public final class SwapTokenListController {
   
-  public var didLoadListItems: ((TokenButtonListItemsModel, TokenListItemsModel) -> Void)?
+  public var didUpdateListItems: ((TokenButtonListItemsModel, TokenListItemsModel) -> Void)?
+  public var didUpdateSearchResultsItems: ((TokenListItemsModel) -> Void)?
   
   private var tokenListItems: [TokenListItemsModel.Item] = []
   
@@ -76,16 +77,41 @@ public final class SwapTokenListController {
       }
     }
     
+    await updateListItems()
+  }
+  
+  public func updateListItems(forceUpdate: Bool = false) async {
     let storedAssets = await stonfiAssetsStore.getAssets()
     let items = storedAssets.items
     let expirationDate = storedAssets.expirationDate
     
     let isStoredAssetsValid = !items.isEmpty && expirationDate.timeIntervalSinceNow > 0
     
-    if isStoredAssetsValid {
+    if isStoredAssetsValid && !forceUpdate {
       await assetsDidUpdate(storedAssets)
     } else {
       await stonfiAssetsLoader.loadAssets(excludeCommunityAssets: false)
+    }
+  }
+  
+  public func performSearch(with query: String) {
+    guard !query.isEmpty else { return }
+    let tokenListItems = self.tokenListItems
+    
+    Task {
+      let lowercasedQuery = query.lowercased()
+      let searchResults = tokenListItems
+        .filter { item in
+          let matchesSymbol = item.symbol.lowercased().contains(lowercasedQuery)
+          let matchesDisplayName = item.displayName.lowercased().contains(lowercasedQuery)
+          return matchesSymbol || matchesDisplayName
+        }
+      
+      let tokenListItemsModel = TokenListItemsModel(items: searchResults)
+      
+      await MainActor.run {
+        didUpdateSearchResultsItems?(tokenListItemsModel)
+      }
     }
   }
 }
@@ -113,7 +139,7 @@ private extension SwapTokenListController {
     
     await MainActor.run {
       self.tokenListItems = tokenListItems
-      didLoadListItems?(suggestedTokenListItemsModel, otherTokenListItemsModel)
+      didUpdateListItems?(suggestedTokenListItemsModel, otherTokenListItemsModel)
     }
   }
   

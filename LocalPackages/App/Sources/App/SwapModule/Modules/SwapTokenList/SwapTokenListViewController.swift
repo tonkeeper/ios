@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 
 enum SwapTokenListSection {
-//  case searchResults
+  case searchResults
   case suggestedTokens
   case otherTokens
 }
@@ -10,6 +10,7 @@ enum SwapTokenListSection {
 final class SwapTokenListViewController: ModalViewController<SwapTokenListView, ModalNavigationBarView>, KeyboardObserving {
   
   typealias CellRegistration<T> = UICollectionView.CellRegistration<T, T.Configuration> where T: TKCollectionViewNewCell & TKConfigurableView
+  typealias Snapshot = NSDiffableDataSourceSnapshot<SwapTokenListSection, AnyHashable>
   
   // MARK: - List
   
@@ -26,6 +27,8 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
       sectionProvider: { [dataSource] sectionIndex, _ in
         let snapshot = dataSource.snapshot()
         switch snapshot.sectionIdentifiers[sectionIndex] {
+        case .searchResults:
+          return .searchResultsSection
         case .suggestedTokens:
           return .suggestedTokensSection
         case .otherTokens:
@@ -41,6 +44,15 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
   private lazy var dataSource = createDataSource()
   private lazy var suggestedTokenCellConfiguration: CellRegistration<SuggestedTokenCell> = createDefaultCellRegistration()
   private lazy var otherTokensCellConfiguration: CellRegistration<TKUIListItemCell> = createDefaultCellRegistration()
+  
+  private var preSearchSnapshot: Snapshot?
+  
+  private var isSearching: Bool = false {
+    didSet {
+      guard isSearching != oldValue else { return }
+      didUpdateSearchingState(newValue: isSearching)
+    }
+  }
   
   private lazy var tapGestureRecognizer: UITapGestureRecognizer = {
     let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(resignGestureAction))
@@ -81,10 +93,21 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
     viewModel.viewDidLoad()
   }
   
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    registerForKeyboardEvents()
+  }
+  
+  public override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    unregisterFromKeyboardEvents()
+  }
+  
   override func setupNavigationBarView() {
     super.setupNavigationBarView()
     
     customView.collectionView.contentInset.top = ModalNavigationBarView.defaultHeight + customView.searchBarContainerHeight
+    customView.collectionView.contentInset.bottom = customView.contentInsetBottom
     customView.searchBarViewTopOffset = ModalNavigationBarView.defaultHeight
     
     customNavigationBarView.leftItemPadding = 16
@@ -94,6 +117,27 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
         contentAlignment: .left
       )
     )
+  }
+  
+  public func keyboardWillShow(_ notification: Notification) {
+    guard let animationDuration = notification.keyboardAnimationDuration else { return }
+    guard let keyboardHeight = notification.keyboardSize?.height else { return }
+    
+    let contentInsetBottom = keyboardHeight - view.safeAreaInsets.bottom
+    
+    UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
+      self.customView.collectionView.contentInset.bottom = contentInsetBottom
+    }
+  }
+  
+  public func keyboardWillHide(_ notification: Notification) {
+    guard let animationDuration = notification.keyboardAnimationDuration else { return }
+    
+    let contentInsetBottom = customView.contentInsetBottom
+    
+    UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
+      self.customView.collectionView.contentInset.bottom = contentInsetBottom
+    }
   }
 }
 
@@ -135,19 +179,43 @@ private extension SwapTokenListViewController {
       
       customView.titleView.configure(model: .init(title: model.title))
       
+      customView.noSearchResultsLabel.attributedText = model.noSearchResultsTitle.withTextStyle(.body1, color: .Text.secondary)
+      
       customView.closeButton.configuration.content = TKButton.Configuration.Content(title: .plainString(model.closeButton.title))
       customView.closeButton.configuration.action = model.closeButton.action
     }
     
     viewModel.didUpdateListItems = { [weak self] suggestedTokenItems, otherTokenItems in
-      guard let dataSource = self?.dataSource else { return }
+      guard let self else { return }
       
-      var snapshot = dataSource.snapshot()
-      snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .suggestedTokens))
-      snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .otherTokens))
-      snapshot.appendItems(suggestedTokenItems, toSection: .suggestedTokens)
-      snapshot.appendItems(otherTokenItems, toSection: .otherTokens)
-      dataSource.apply(snapshot,animatingDifferences: false)
+      if !isSearching {
+        // Just update data source with new snapshot
+        let snapshot = configureDefaultSnapshot(
+          snapshot: dataSource.snapshot(),
+          suggestedTokenItems: suggestedTokenItems,
+          otherTokenItems: otherTokenItems
+        )
+        dataSource.apply(snapshot, animatingDifferences: false)
+      } else if let snapshot = self.preSearchSnapshot {
+        // Configure new preSearchSnapshot and don't apply new snapshot (don't cancel search)
+        self.preSearchSnapshot = configureDefaultSnapshot(
+          snapshot: snapshot,
+          suggestedTokenItems: suggestedTokenItems,
+          otherTokenItems: otherTokenItems
+        )
+      }
+    }
+    
+    viewModel.didUpdateSearchResultsItems = { [weak self] searchResultsItems in
+      guard let self else { return }
+      
+      let snapshot = configureSearchSnapshot(
+        snapshot: dataSource.snapshot(),
+        searchResultsItems: searchResultsItems
+      )
+      dataSource.apply(snapshot, animatingDifferences: false)
+      
+      customView.noSearchResultsLabel.isHidden = !searchResultsItems.isEmpty
     }
   }
   
@@ -157,8 +225,27 @@ private extension SwapTokenListViewController {
   
   func setupViewEvents() {
     customView.searchBar.textDidChange = { [weak self] searchText in
+      self?.isSearching = !searchText.isEmpty
       self?.viewModel.didInputSearchText(searchText)
     }
+  }
+  
+  func configureDefaultSnapshot(snapshot: Snapshot,
+                                suggestedTokenItems: [SuggestedTokenCell.Configuration],
+                                otherTokenItems: [TKUIListItemCell.Configuration]) -> Snapshot {
+    var newSnapshot = snapshot
+    newSnapshot.prepareForItems(insSections: [.suggestedTokens, .otherTokens])
+    newSnapshot.appendItems(suggestedTokenItems, toSection: .suggestedTokens)
+    newSnapshot.appendItems(otherTokenItems, toSection: .otherTokens)
+    return newSnapshot
+  }
+  
+  func configureSearchSnapshot(snapshot: Snapshot,
+                               searchResultsItems: [TKUIListItemCell.Configuration]) -> Snapshot {
+    var newSnapshot = snapshot
+    newSnapshot.prepareForItems(insSections: [.searchResults])
+    newSnapshot.appendItems(searchResultsItems, toSection: .searchResults)
+    return newSnapshot
   }
   
   func createDataSource() -> UICollectionViewDiffableDataSource<SwapTokenListSection, AnyHashable> {
@@ -187,7 +274,7 @@ private extension SwapTokenListViewController {
         ) as? TitleHeaderCollectionView
         titleHeaderView?.configure(
           model: TitleHeaderCollectionView.Model(
-            title: "Suggested".withTextStyle(.label1, color: .Text.primary)
+            title: String.suggestedHeaderTitle.withTextStyle(.label1, color: .Text.primary)
           )
         )
         return titleHeaderView
@@ -199,10 +286,12 @@ private extension SwapTokenListViewController {
         ) as? TitleHeaderCollectionView
         titleHeaderView?.configure(
           model: TitleHeaderCollectionView.Model(
-            title: "Other".withTextStyle(.label1, color: .Text.primary)
+            title: String.otherHeaderTitle.withTextStyle(.label1, color: .Text.primary)
           )
         )
         return titleHeaderView
+      default:
+        return nil
       }
     }
     
@@ -217,6 +306,20 @@ private extension SwapTokenListViewController {
       cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
         guard let collectionView = collectionView else { return false }
         return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
+      }
+    }
+  }
+  
+  func didUpdateSearchingState(newValue: Bool) {
+    if newValue {
+      preSearchSnapshot = dataSource.snapshot()
+    } else {
+      if let preSearchSnapshot {
+        customView.noSearchResultsLabel.isHidden = true
+        dataSource.apply(preSearchSnapshot, animatingDifferences: false)
+        self.preSearchSnapshot = nil
+      } else {
+        viewModel.reloadListItems()
       }
     }
   }
@@ -250,7 +353,22 @@ extension SwapTokenListViewController: UICollectionViewDelegate {
   }
 }
 
+extension NSDiffableDataSourceSnapshot {
+  mutating func prepareForItems(insSections sections: [SectionIdentifierType]) {
+    if self.sectionIdentifiers == sections {
+      sections.forEach { self.deleteItems(self.itemIdentifiers(inSection: $0)) }
+    } else {
+      self.deleteSections(self.sectionIdentifiers)
+      self.appendSections(sections)
+    }
+  }
+}
+
 private extension NSCollectionLayoutSection {
+  static var searchResultsSection: NSCollectionLayoutSection {
+    return .createSection(cellHeight: .tokenCellListHeight)
+  }
+  
   static var suggestedTokensSection: NSCollectionLayoutSection {
     let itemLayoutSize = NSCollectionLayoutSize(
       widthDimension: .estimated(100),
@@ -273,7 +391,7 @@ private extension NSCollectionLayoutSection {
   }
   
   static var otherTokensSection: NSCollectionLayoutSection {
-    let section = NSCollectionLayoutSection.createSection(cellHeight: .otherTokenCellHeight)
+    let section = NSCollectionLayoutSection.createSection(cellHeight: .tokenCellListHeight)
     section.boundarySupplementaryItems = [.createTitleHeaderItem()]
     return section
   }
@@ -318,6 +436,8 @@ private extension NSCollectionLayoutBoundarySupplementaryItem {
 }
 
 private extension String {
+  static let suggestedHeaderTitle = "Suggested"
+  static let otherHeaderTitle = "Other"
   static let searchBarElementKind = "SearchBarElementKind"
   static let titleHeaderElementKind = "TitleHeaderElementKind"
 }
@@ -330,5 +450,5 @@ private extension CGFloat {
   static let titleHeaderHeight: CGFloat = 48
   static let suggestedTokenInterGroupSpacing: CGFloat = 8
   static let suggestedTokenCellHeight: CGFloat = 36
-  static let otherTokenCellHeight: CGFloat = 76
+  static let tokenCellListHeight: CGFloat = 76
 }
