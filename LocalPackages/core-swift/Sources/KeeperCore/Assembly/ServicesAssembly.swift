@@ -154,4 +154,10 @@ public final class ServicesAssembly {
       stonfiPairsRepository: repositoriesAssembly.stonfiPairsStoreRepository()
     )
   }
+  
+  func stonfiSwapService() -> StonfiSwapService {
+    StonfiSwapServiceImplementation(
+      stonfiApi: apiAssembly.stonfiApi
+    )
+  }
 }
