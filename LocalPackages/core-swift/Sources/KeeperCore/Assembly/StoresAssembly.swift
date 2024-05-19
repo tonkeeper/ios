@@ -168,6 +168,7 @@ public final class StoresAssembly {
       return stonfiAssetsStore
     } else {
       let stonfiAssetsStore = StonfiAssetsStore(
+        service: servicesAssembly.stonfiAssetsService(),
         repository: repositoriesAssembly.stonfiAssetsRepository()
       )
       _stonfiAssetsStore = stonfiAssetsStore
@@ -181,6 +182,7 @@ public final class StoresAssembly {
       return stonfiPairsStore
     } else {
       let stonfiPairsStore = StonfiPairsStore(
+        service: servicesAssembly.stonfiPairsService(),
         repository: repositoriesAssembly.stonfiPairsStoreRepository()
       )
       _stonfiPairsStore = stonfiPairsStore

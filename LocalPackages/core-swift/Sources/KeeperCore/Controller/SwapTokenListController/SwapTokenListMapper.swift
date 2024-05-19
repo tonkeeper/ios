@@ -11,38 +11,15 @@ struct SwapTokenListMapper {
     self.rateConverter = rateConverter
   }
   
-  func mapStonfiAsset(_ asset: StonfiAsset) -> SwapTokenListItemsModel.Item {
-    var imageUrl: URL?
-    if let imageUrlString = asset.imageUrl  {
-      imageUrl = URL(string: imageUrlString)
-    }
-    
-    let assetKind = AssetKind(fromString: asset.kind)
-    
-    let displayName: String
-    if assetKind == .ton, asset.displayName == TonInfo.symbol {
-      displayName = TonInfo.name
-    } else {
-      displayName = asset.displayName ?? ""
-    }
-    
+  func mapSwapAsset(_ asset: SwapAsset) -> SwapTokenListItemsModel.Item {
     var badge: String?
-    if assetKind == .ton && asset.symbol != TonInfo.symbol {
-      badge = asset.kind
+    if asset.kind == .ton && asset.symbol != TonInfo.symbol {
+      badge = asset.kind.toString().uppercased()
     }
-    
-    let swapAsset = SwapAsset(
-      contractAddress: asset.contractAddress,
-      kind: assetKind,
-      symbol: asset.symbol,
-      displayName: displayName,
-      fractionDigits: asset.decimals,
-      imageUrl: imageUrl
-    )
     
     return SwapTokenListItemsModel.Item(
-      asset: swapAsset,
-      image: .asyncImage(imageUrl),
+      asset: asset,
+      image: .asyncImage(asset.imageUrl),
       badge: badge,
       amount: nil,
       convertedAmount: nil

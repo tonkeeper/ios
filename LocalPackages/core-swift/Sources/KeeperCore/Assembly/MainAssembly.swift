@@ -408,10 +408,14 @@ public final class MainAssembly {
   
   public func swapController() -> SwapController {
     SwapController(
+      stonfiAssetsStore: storesAssembly.stonfiAssetsStore,
       stonfiPairsStore: storesAssembly.stonfiPairsStore,
-      stonfiPairsService: servicesAssembly.stonfiPairsService(),
+      stonfiSwapService: servicesAssembly.stonfiSwapService(),
+      stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader,
       stonfiPairsLoader: loadersAssembly.stonfiPairsLoader,
-      amountFormatter: formattersAssembly.amountFormatter
+      stonfiMapper: stonfiMapper,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
     )
   }
   
@@ -426,6 +430,7 @@ public final class MainAssembly {
       stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader,
       stonfiPairsLoader: loadersAssembly.stonfiPairsLoader,
       stonfiPairsService: servicesAssembly.stonfiPairsService(),
+      stonfiMapper: stonfiMapper,
       swapTokenListMapper: swapTokenListMapper
     )
   }
@@ -526,6 +531,10 @@ private extension MainAssembly {
       amountFormatter: formattersAssembly.amountFormatter,
       rateConverter: RateConverter()
     )
+  }
+  
+  var stonfiMapper: StonfiMapper {
+    StonfiMapper()
   }
   
   var swapTokenListMapper: SwapTokenListMapper {

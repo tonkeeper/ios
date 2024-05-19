@@ -4,6 +4,7 @@ import TKScreenKit
 import TKCoordinator
 import TKCore
 import KeeperCore
+import TonSwift
 
 public final class SwapCoordinator: RouterCoordinator<NavigationControllerRouter> {
     
@@ -32,9 +33,7 @@ private extension SwapCoordinator {
   func openSwap() {
     let module = SwapAssembly.module(
       swapController: keeperCoreMainAssembly.swapController(),
-      swapOperationItem: SwapOperationItem(
-        sendToken: .tonStub
-      )
+      swapOperationItem: SwapOperationItem()
     )
     
     module.view.setupRightCloseButton { [weak self] in
@@ -48,7 +47,7 @@ private extension SwapCoordinator {
     module.output.didTapTokenButton = { [weak self, weak view = module.view] contractAddressForPair, swapInput in
       self?.openSwapTokenList(
         sourceViewController: view,
-        contractAddressForPair: contractAddressForPair ?? "",
+        contractAddressForPair: contractAddressForPair,
         completion: { swapAsset in
           module.input.didChooseToken(swapAsset, forInput: swapInput)
         })
@@ -66,7 +65,7 @@ private extension SwapCoordinator {
   }
   
   func openSwapTokenList(sourceViewController: UIViewController?,
-                         contractAddressForPair: String,
+                         contractAddressForPair: Address?,
                          completion: ((SwapAsset) -> Void)?) {
     let module = SwapTokenListAssembly.module(
       swapTokenListController: keeperCoreMainAssembly.swapTokenListController(),

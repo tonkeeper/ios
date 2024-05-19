@@ -1,4 +1,5 @@
 import UIKit
+import TonSwift
 
 public struct SwapTokenListItemsModel {
   public let items: [Item]
@@ -17,7 +18,7 @@ public extension SwapTokenListItemsModel {
     public var convertedAmount: String?
     
     public var identifier: String {
-      asset.contractAddress
+      asset.contractAddress.toString()
     }
     
     public var kind: AssetKind {
@@ -35,14 +36,14 @@ public extension SwapTokenListItemsModel {
 }
 
 public struct SwapAsset {
-  public var contractAddress: String
+  public var contractAddress: Address
   public var kind: AssetKind
   public var symbol: String
   public var displayName: String
   public var fractionDigits: Int
   public var imageUrl: URL?
   
-  public init(contractAddress: String, kind: AssetKind, symbol: String, displayName: String, fractionDigits: Int, imageUrl: URL? = nil) {
+  public init(contractAddress: Address, kind: AssetKind, symbol: String, displayName: String, fractionDigits: Int, imageUrl: URL? = nil) {
     self.contractAddress = contractAddress
     self.kind = kind
     self.symbol = symbol

@@ -5,7 +5,7 @@ protocol StonfiAssetsService {
   func loadAssets() async throws -> StonfiAssets
 }
 
-final class StonfiServiceImplementation: StonfiAssetsService {
+final class StonfiAssetsServiceImplementation: StonfiAssetsService {
   private let stonfiApi: StonfiAPI
   private let stonfiAssetsRepository: StonfiAssetsRepository
   
@@ -35,7 +35,7 @@ final class StonfiServiceImplementation: StonfiAssetsService {
   }
 }
 
-private extension StonfiServiceImplementation {
+private extension StonfiAssetsServiceImplementation {
   func isValidStonfiAsset(_ asset: StonfiAsset) -> Bool {
     return asset.kind.uppercased() != "WTON"
     && !asset.isCommunity

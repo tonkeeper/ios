@@ -7,18 +7,29 @@ actor StonfiPairsStore {
     case didUpdatePairs(_ pairs: StonfiPairs)
   }
   
+  private let service: StonfiPairsService
   private let repository: StonfiPairsRepository
   
-  init(repository: StonfiPairsRepository) {
+  init(service: StonfiPairsService, repository: StonfiPairsRepository) {
+    self.service = service
     self.repository = repository
   }
   
-  func getPairs() -> StonfiPairs {
+  func getPairs() async -> StonfiPairs {
+    let pairs: StonfiPairs
+    
     do {
-      return try repository.getPairs()
+      let storedPairs = try repository.getPairs()
+      if storedPairs.isValid {
+        pairs = storedPairs
+      } else {
+        pairs = try await service.loadPairs()
+      }
     } catch {
-      return StonfiPairs()
+      pairs = StonfiPairs()
     }
+    
+    return pairs
   }
   
   func setPairs(_ pairs: StonfiPairs) {

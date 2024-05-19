@@ -1,10 +1,7 @@
 import UIKit
 import TKUIKit
 import KeeperCore
-
-struct SwapTokenListItem {
-  var contractAddressForPair: String
-}
+import TonSwift
 
 struct SwapTokenListModel {
   struct Button {
@@ -15,6 +12,10 @@ struct SwapTokenListModel {
   let title: String
   let noSearchResultsTitle: String
   let closeButton: Button
+}
+
+struct SwapTokenListItem {
+  var contractAddressForPair: Address?
 }
 
 protocol SwapTokenListModuleOutput: AnyObject {

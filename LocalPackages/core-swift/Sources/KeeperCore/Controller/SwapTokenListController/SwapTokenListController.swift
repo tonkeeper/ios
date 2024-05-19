@@ -1,5 +1,6 @@
 import Foundation
 import BigInt
+import TonSwift
 
 public enum AssetKind {
   case ton
@@ -14,6 +15,17 @@ public enum AssetKind {
       self = .jetton
     default:
       self = .unknown
+    }
+  }
+  
+  public func toString() -> String {
+    switch self {
+    case .ton:
+      return "Ton"
+    case .jetton:
+      return "Jetton"
+    case .unknown:
+      return ""
     }
   }
 }
@@ -43,6 +55,7 @@ public final class SwapTokenListController {
   private let stonfiAssetsLoader: StonfiAssetsLoader
   private let stonfiPairsLoader: StonfiPairsLoader
   private let stonfiPairsService: StonfiPairsService
+  private let stonfiMapper: StonfiMapper
   private let swapTokenListMapper: SwapTokenListMapper
 
   init(stonfiAssetsStore: StonfiAssetsStore,
@@ -54,6 +67,7 @@ public final class SwapTokenListController {
        stonfiAssetsLoader: StonfiAssetsLoader,
        stonfiPairsLoader: StonfiPairsLoader,
        stonfiPairsService: StonfiPairsService,
+       stonfiMapper: StonfiMapper,
        swapTokenListMapper: SwapTokenListMapper) {
     self.stonfiAssetsStore = stonfiAssetsStore
     self.stonfiPairsStore = stonfiPairsStore
@@ -64,12 +78,13 @@ public final class SwapTokenListController {
     self.stonfiAssetsLoader = stonfiAssetsLoader
     self.stonfiPairsLoader = stonfiPairsLoader
     self.stonfiPairsService = stonfiPairsService
+    self.stonfiMapper = stonfiMapper
     self.swapTokenListMapper = swapTokenListMapper
     self.wallet = walletsStore.activeWallet
   }
   
-  public func start(contractAddressForPair: String) async {
-    self.contractAddressForPair = contractAddressForPair
+  public func start(contractAddressForPair: Address?) async {
+    self.contractAddressForPair = contractAddressForPair?.toString() ?? ""
     
     _ = await stonfiAssetsStore.addEventObserver(self) { [weak self] observer, event in
       guard let self else { return }
@@ -87,7 +102,7 @@ public final class SwapTokenListController {
     if storedAssets.isValid && !forceUpdate {
       await assetsDidUpdate(storedAssets)
     } else {
-      await stonfiAssetsLoader.loadAssets(excludeCommunityAssets: false)
+      await stonfiAssetsLoader.loadAssets()
     }
   }
   
@@ -123,10 +138,11 @@ private extension SwapTokenListController {
         guard !contractAddressForPair.isEmpty else { return true }
         return pairs.hasPair(keyOne: asset.contractAddress, keyTwo: contractAddressForPair)
       }
-      .map { stonfiAsset in
-        var tokenListItem = swapTokenListMapper.mapStonfiAsset(stonfiAsset)
-        let assetBalanceList = assetsBalanceDict[tokenListItem.kind]
-        let assetBalance = assetBalanceList?.first(where: { $0.assetSymbol == tokenListItem.symbol })
+      .compactMap { stonfiAsset in
+        guard let swapAsset = stonfiMapper.mapStonfiAsset(stonfiAsset) else { return nil }
+        let assetBalanceList = assetsBalanceDict[swapAsset.kind]
+        let assetBalance = assetBalanceList?.first(where: { $0.assetSymbol == swapAsset.symbol })
+        var tokenListItem = swapTokenListMapper.mapSwapAsset(swapAsset)
         tokenListItem.amount = assetBalance?.amount
         tokenListItem.convertedAmount = assetBalance?.convertedAmount
         return tokenListItem

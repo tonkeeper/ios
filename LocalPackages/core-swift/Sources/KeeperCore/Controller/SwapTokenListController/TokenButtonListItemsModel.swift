@@ -14,7 +14,7 @@ public extension TokenButtonListItemsModel {
     public let image: ImageModel
     
     public var identifier: String {
-      asset.contractAddress
+      asset.contractAddress.toString()
     }
     
     public var kind: AssetKind {

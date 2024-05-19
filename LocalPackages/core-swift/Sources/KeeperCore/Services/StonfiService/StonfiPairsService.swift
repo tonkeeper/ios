@@ -6,7 +6,7 @@ struct StonfiPairs: Codable {
   let pairsSet: Set<String>
   
   public var isValid: Bool {
-    pairsSet.isEmpty && expirationDate.timeIntervalSinceNow > 0
+    !pairsSet.isEmpty && expirationDate.timeIntervalSinceNow > 0
   }
   
   public func hasPair(keyOne: String, keyTwo: String) -> Bool {

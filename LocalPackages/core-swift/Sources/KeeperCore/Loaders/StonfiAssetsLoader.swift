@@ -12,7 +12,7 @@ actor StonfiAssetsLoader {
     self.stonfiAssetsService = stonfiAssetsService
   }
   
-  func loadAssets(excludeCommunityAssets: Bool = true) async {
+  func loadAssets() async {
     if let taskInProgress = taskInProgress {
       taskInProgress.cancel()
       self.taskInProgress = nil

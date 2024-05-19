@@ -7,18 +7,29 @@ actor StonfiAssetsStore {
     case didUpdateAssets(_ assets: StonfiAssets)
   }
   
+  private let service: StonfiAssetsService
   private let repository: StonfiAssetsRepository
   
-  init(repository: StonfiAssetsRepository) {
+  init(service: StonfiAssetsService, repository: StonfiAssetsRepository) {
+    self.service = service
     self.repository = repository
   }
   
-  func getAssets() -> StonfiAssets {
+  func getAssets() async -> StonfiAssets {
+    let assets: StonfiAssets
+    
     do {
-      return try repository.getAssets()
+      let storedAssets = try repository.getAssets()
+      if storedAssets.isValid {
+        assets = storedAssets
+      } else {
+        assets = try await service.loadAssets()
+      }
     } catch {
-      return StonfiAssets()
+      assets = StonfiAssets()
     }
+    
+    return assets
   }
   
   func setAssets(_ assets: StonfiAssets) {

@@ -142,7 +142,7 @@ public final class ServicesAssembly {
   }
   
   func stonfiAssetsService() -> StonfiAssetsService {
-    StonfiServiceImplementation(
+    StonfiAssetsServiceImplementation(
       stonfiApi: apiAssembly.stonfiApi,
       stonfiAssetsRepository: repositoriesAssembly.stonfiAssetsRepository()
     )
