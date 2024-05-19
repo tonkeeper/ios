@@ -5,8 +5,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/abseil-cpp-binary.git",
       "state" : {
-        "revision" : "748c7837511d0e6a507737353af268484e1745e2",
-        "version" : "1.2024011601.1"
+        "revision" : "df308b8b46607675f2b9ec8e569109008f9155ce",
+        "version" : "1.2022062300.1"
       }
     },
     {
@@ -23,8 +23,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/app-check.git",
       "state" : {
-        "revision" : "7d2688de038d5484866d835acb47b379722d610e",
-        "version" : "10.19.0"
+        "revision" : "076b241a625e25eac22f8849be256dfb960fcdfe",
+        "version" : "10.19.1"
       }
     },
     {
@@ -50,8 +50,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/firebase-ios-sdk",
       "state" : {
-        "revision" : "97940381e57703c07f31a8058d8f39ec53b7c272",
-        "version" : "10.25.0"
+        "revision" : "c60c958e707c50a9cf8bcb7cfd7d51c566d726c5",
+        "version" : "10.19.1"
       }
     },
     {
@@ -59,8 +59,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/GoogleAppMeasurement.git",
       "state" : {
-        "revision" : "16244d177c4e989f87b25e9db1012b382cfedc55",
-        "version" : "10.25.0"
+        "revision" : "6b332152355c372ace9966d8ee76ed191f97025e",
+        "version" : "10.17.0"
       }
     },
     {
@@ -86,8 +86,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/google/grpc-binary.git",
       "state" : {
-        "revision" : "e9fad491d0673bdda7063a0341fb6b47a30c5359",
-        "version" : "1.62.2"
+        "revision" : "ea4cb5cc0c39c732b85386263116d2e2fdbbdc61",
+        "version" : "1.49.2"
       }
     },
     {
@@ -140,8 +140,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/firebase/nanopb.git",
       "state" : {
-        "revision" : "b7e1104502eca3a213b46303391ca4d3bc8ddec1",
-        "version" : "2.30910.0"
+        "revision" : "819d0a2173aff699fb8c364b6fb906f7cdb1a692",
+        "version" : "2.30909.0"
       }
     },
     {

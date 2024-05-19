@@ -843,6 +843,7 @@
 			baseConfigurationReference = 7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				BASE_BUNDLE_IDENTIFIER = com.tonapps.tonkeeperx.sina;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -906,6 +907,7 @@
 			baseConfigurationReference = 7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				BASE_BUNDLE_IDENTIFIER = com.tonapps.tonkeeperx.sina;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
@@ -966,11 +968,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
-				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				DEVELOPMENT_TEAM = R7H2AN2LNR;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
@@ -988,8 +990,9 @@
 				);
 				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				"PRODUCT_BUNDLE_IDENTIFIER[sdk=iphoneos*]" = com.tonapps.tonkeeperx.sina.debug;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
@@ -1181,8 +1184,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 10.19.1;
+				kind = exactVersion;
+				version = 10.19.1;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
