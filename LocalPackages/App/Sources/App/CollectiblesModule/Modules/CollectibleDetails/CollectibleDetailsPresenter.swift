@@ -70,7 +70,7 @@ private extension CollectibleDetailsPresenter {
         left: $0.title,
         rightTop: .value($0.value.short, numberOfLines: 1, isFullString: false),
         rightBottom: .value(nil, numberOfLines: 1, isFullString: false),
-        copyableValue: $0.value.full
+        modelValue: $0.value.full
       )
     }
     

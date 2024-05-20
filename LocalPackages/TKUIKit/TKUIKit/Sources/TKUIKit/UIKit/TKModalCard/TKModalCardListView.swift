@@ -31,8 +31,8 @@ public final class TKModalCardListView: UIView, ConfigurableView {
       let listItemView = TKModalCardListItemView()
       listItemView.configure(model: item)
       listItemView.addAction(UIAction(handler: { _ in
-        if (item.copyableValue != nil) {
-          UIPasteboard.general.string = item.copyableValue
+        if (item.modelValue != nil) {
+          UIPasteboard.general.string = item.modelValue
         } else {
           UIPasteboard.general.string = item.rightTop.value
         }
