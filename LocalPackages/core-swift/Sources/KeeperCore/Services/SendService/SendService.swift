@@ -40,7 +40,7 @@ final class SendServiceImplementation: SendService {
   }
 }
 
-extension SendService {
+public extension SendService {
   func getTimeoutSafely(wallet: Wallet, TTL: UInt64 = 5 * 60) async -> UInt64 {
     return await getTimeoutSafely(wallet: wallet, TTL: TTL)
   }

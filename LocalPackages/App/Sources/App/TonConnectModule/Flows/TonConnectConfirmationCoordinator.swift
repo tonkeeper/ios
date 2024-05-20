@@ -21,9 +21,12 @@ struct DefaultTonConnectConfirmationCoordinatorConfirmator: TonConnectConfirmati
   func confirm(appRequest: TonConnect.AppRequest, app: TonConnectApp, wallet: Wallet) async throws {
     guard let parameters = appRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+
     let boc = try await tonConnectService.createConfirmTransactionBoc(
       wallet: wallet,
       seqno: seqno,
+      timeout: timeout,
       parameters: parameters
     )
     
@@ -53,9 +56,11 @@ struct BridgeTonConnectConfirmationCoordinatorConfirmator: TonConnectConfirmatio
     guard let parameters = appRequest.params.first else { return }
     do {
       let seqno = try await sendService.loadSeqno(wallet: wallet)
+      let timeout = await sendService.getTimeoutSafely(wallet: wallet)
       let boc = try await tonConnectService.createConfirmTransactionBoc(
         wallet: wallet,
         seqno: seqno,
+        timeout: timeout,
         parameters: parameters
       )
       
