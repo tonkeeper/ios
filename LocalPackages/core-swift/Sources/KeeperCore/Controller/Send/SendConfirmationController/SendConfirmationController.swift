@@ -268,6 +268,8 @@ private extension SendConfirmationController {
   
   func createTokenTransactionBoc(token: Token, amount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+        
     switch token {
     case .ton:
       let isMax: Bool
@@ -284,6 +286,7 @@ private extension SendConfirmationController {
         recipientAddress: recipient.recipientAddress.address,
         isBounceable: recipient.recipientAddress.isBouncable,
         comment: comment,
+        timeout: timeout,
         signClosure: signClosure
       )
     case .jetton(let jettonItem):
@@ -295,6 +298,7 @@ private extension SendConfirmationController {
         recipientAddress: recipient.recipientAddress.address,
         isBounceable: recipient.recipientAddress.isBouncable,
         comment: comment,
+        timeout: timeout,
         signClosure: signClosure
       )
     }
@@ -303,6 +307,7 @@ private extension SendConfirmationController {
   /// Jetton to Jetton swap
   func createSwapTransactionBoc(from: Address, to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: from.toRaw(),
@@ -325,6 +330,7 @@ private extension SendConfirmationController {
       jettonFromWalletAddress: fromWalletAddress,
       forwardAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_JETTON.ForwardGasAmount,
       attachedAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_JETTON.GasAmount,
+      timeout: timeout,
       signClosure: signClosure
     )
   }
@@ -332,7 +338,8 @@ private extension SendConfirmationController {
   /// Jetton to TON swap
   func createSwapTransactionBoc(from: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
-    
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: from.toRaw(),
       owner: wallet.address.toRaw(),
@@ -354,6 +361,7 @@ private extension SendConfirmationController {
       jettonFromWalletAddress: fromWalletAddress,
       forwardAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_TON.ForwardGasAmount,
       attachedAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_TON.GasAmount,
+      timeout: timeout,
       signClosure: signClosure
     )
   }
@@ -361,6 +369,7 @@ private extension SendConfirmationController {
   /// TON to Jetton swap
   func createSwapTransactionBoc(to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: STONFI_CONSTANTS.TONProxyAddress,
@@ -383,6 +392,7 @@ private extension SendConfirmationController {
       jettonFromWalletAddress: fromWalletAddress,
       forwardAmount: STONFI_CONSTANTS.SWAP_TON_TO_JETTON.ForwardGasAmount,
       attachedAmount: STONFI_CONSTANTS.SWAP_TON_TO_JETTON.ForwardGasAmount + offerAmount,
+      timeout: timeout,
       signClosure: signClosure
     )
   }
@@ -390,6 +400,8 @@ private extension SendConfirmationController {
   func createNFTEmulateTransactionBoc(nft: NFT) async throws -> String {
     let transferAmount = BigUInt(stringLiteral: "10000000000")
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    
     
     var commentCell: Cell?
     if let comment = comment {
@@ -402,6 +414,7 @@ private extension SendConfirmationController {
         nftAddress: nft.address,
         recipientAddress: recipient.recipientAddress.address,
         transferAmount: transferAmount,
+        timeout: timeout,
         forwardPayload: commentCell) { transfer in
             try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
         }
@@ -415,6 +428,7 @@ private extension SendConfirmationController {
     ? minimumTransferAmount
     : transferAmount
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     
     var commentCell: Cell?
     if let comment = comment {
@@ -427,6 +441,7 @@ private extension SendConfirmationController {
         nftAddress: nft.address,
         recipientAddress: recipient.recipientAddress.address,
         transferAmount: transferAmount.magnitude,
+        timeout: timeout,
         forwardPayload: commentCell
         ) { transfer in
           return try await signTransfer(transfer)

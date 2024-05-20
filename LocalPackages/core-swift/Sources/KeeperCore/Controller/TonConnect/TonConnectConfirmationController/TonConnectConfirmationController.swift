@@ -52,9 +52,11 @@ public final class TonConnectConfirmationController {
   public func confirm() async throws {
     guard let parameters = appRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let boc = try await tonConnectService.createConfirmTransactionBoc(
       wallet: wallet,
       seqno: seqno,
+      timeout: timeout,
       parameters: parameters
     )
     
@@ -66,9 +68,11 @@ public final class TonConnectConfirmationController {
 private extension TonConnectConfirmationController {
   func emulateAppRequest(appRequestParam: TonConnect.AppRequest.Param) async throws -> Model {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let boc = try await tonConnectService.createEmulateRequestBoc(
       wallet: wallet,
       seqno: seqno,
+      timeout: timeout,
       parameters: appRequestParam
     )
     
@@ -90,6 +94,7 @@ private extension TonConnectConfirmationController {
   func createRequestTransactionBoc(parameters: TonConnect.AppRequest.Param,
                                    signClosure: (WalletTransfer) async throws -> Data) async throws  -> String{
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let payloads = parameters.messages.map { message in
         TonConnectTransferMessageBuilder.Payload(
             value: BigInt(integerLiteral: message.amount),
@@ -102,6 +107,7 @@ private extension TonConnectConfirmationController {
       seqno: seqno,
       payloads: payloads,
       sender: parameters.from,
+      timeout: timeout,
       signClosure: signClosure)
   }
   

@@ -18,9 +18,11 @@ protocol TonConnectService {
   
   func createEmulateRequestBoc(wallet: Wallet,
                               seqno: UInt64,
+                              timeout: UInt64,
                               parameters: TonConnect.AppRequest.Param) async throws -> String
   func createConfirmTransactionBoc(wallet: Wallet,
                                    seqno: UInt64,
+                                   timeout: UInt64,
                                    parameters: TonConnect.AppRequest.Param) async throws -> String
   
   func cancelRequest(appRequest: TonConnect.AppRequest,
@@ -145,10 +147,12 @@ final class TonConnectServiceImplementation: TonConnectService {
   
   func createEmulateRequestBoc(wallet: Wallet,
                                seqno: UInt64,
+                               timeout: UInt64,
                                parameters: TonConnect.AppRequest.Param) async throws -> String {
     try await createRequestTransactionBoc(
       wallet: wallet,
       seqno: seqno,
+      timeout: timeout,
       parameters: parameters) { transfer in
         try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
       }
@@ -156,6 +160,7 @@ final class TonConnectServiceImplementation: TonConnectService {
   
   func createConfirmTransactionBoc(wallet: Wallet,
                                    seqno: UInt64,
+                                   timeout: UInt64,
                                    parameters: TonConnect.AppRequest.Param) async throws -> String {
     let walletMnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
     let keyPair = try Mnemonic.mnemonicToPrivateKey(mnemonicArray: walletMnemonic.mnemonicWords)
@@ -163,6 +168,7 @@ final class TonConnectServiceImplementation: TonConnectService {
     return try await createRequestTransactionBoc(
       wallet: wallet,
       seqno: seqno,
+      timeout: timeout,
       parameters: parameters) { transfer in
         if wallet.isRegular {
             return try transfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
@@ -188,6 +194,7 @@ final class TonConnectServiceImplementation: TonConnectService {
 private extension TonConnectServiceImplementation {
   func createRequestTransactionBoc(wallet: Wallet,
                                    seqno: UInt64,
+                                   timeout: UInt64,
                                    parameters: TonConnect.AppRequest.Param,
                                    signClosure: (WalletTransfer) async throws -> Data) async throws  -> String{
     let payloads = parameters.messages.map { message in
@@ -202,6 +209,7 @@ private extension TonConnectServiceImplementation {
       seqno: seqno,
       payloads: payloads,
       sender: parameters.from,
+      timeout: timeout,
       signClosure: signClosure)
   }
   
