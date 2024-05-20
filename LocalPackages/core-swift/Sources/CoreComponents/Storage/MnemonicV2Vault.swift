@@ -1,9 +1,11 @@
 import Foundation
+import TonSwift
 import CryptoKit
 
 public struct MnemonicsV2Vault {
   
   public enum Error: Swift.Error {
+    case failedGenerateSalt
     case noMnemonics
     case incorrectPassword(_ password: String)
     case failedToEncrypt(Swift.Error?)
@@ -31,26 +33,30 @@ public struct MnemonicsV2Vault {
         accessGroup: accessGroup
       )
     ) {
-      var decryptedMnemonics = try decryptMnemonics(encryptedMnemonics, password: password)
+      let salt: Data = try keychainVault.readValue(saltQuery())
+      var decryptedMnemonics = try decryptMnemonics(encryptedMnemonics, password: password, salt: salt)
       decryptedMnemonics[key] = mnemonic
-      let encryptedUpdatedMnemonics = try encryptMnemonics(decryptedMnemonics, password: password)
+      let encryptedUpdatedMnemonics = try encryptMnemonics(decryptedMnemonics, password: password, salt: salt)
       try keychainVault.saveValue(encryptedUpdatedMnemonics, to: query(key: mnemonicsKey, accessGroup: accessGroup))
     } else {
+      let salt = Data(try secureRandomBytes(count: 32))
+      try keychainVault.saveValue(salt, to: saltQuery())
       let mnemonics = [key: mnemonic]
-      let encryptedMnemonics = try encryptMnemonics(mnemonics, password: password)
+      let encryptedMnemonics = try encryptMnemonics(mnemonics, password: password, salt: salt)
       try keychainVault.saveValue(encryptedMnemonics, to: query(key: mnemonicsKey, accessGroup: accessGroup))
     }
   }
   
   public func loadMnemonic(key: String, password: String) throws -> Mnemonic {
     do {
+      let salt: Data = try keychainVault.readValue(saltQuery())
       let encryptedMnemonics: Data = try keychainVault.readValue(
         query(
           key: mnemonicsKey,
           accessGroup: accessGroup
         )
       )
-      let decryptedMnemonics = try decryptMnemonics(encryptedMnemonics, password: password)
+      let decryptedMnemonics = try decryptMnemonics(encryptedMnemonics, password: password, salt: salt)
       guard let mnemonic = decryptedMnemonics[key] else {
         throw Error.noMnemonic(key: key)
       }
@@ -64,15 +70,16 @@ public struct MnemonicsV2Vault {
   
   public func deleteMnemonic(key: String, password: String) throws {
     do {
+      let salt: Data = try keychainVault.readValue(saltQuery())
       let encryptedMnemonics: Data = try keychainVault.readValue(
         query(
           key: mnemonicsKey,
           accessGroup: accessGroup
         )
       )
-      var decryptedMnemonics = try decryptMnemonics(encryptedMnemonics, password: password)
+      var decryptedMnemonics = try decryptMnemonics(encryptedMnemonics, password: password, salt: salt)
       decryptedMnemonics[key] = nil
-      let encryptedUpdatedMnemonics = try encryptMnemonics(decryptedMnemonics, password: password)
+      let encryptedUpdatedMnemonics = try encryptMnemonics(decryptedMnemonics, password: password, salt: salt)
       try keychainVault.saveValue(encryptedUpdatedMnemonics, to: query(key: mnemonicsKey, accessGroup: accessGroup))
     } catch KeychainVaultError.noItemFound {
       throw Error.noMnemonics
@@ -83,18 +90,20 @@ public struct MnemonicsV2Vault {
   
   public func deleteAll() throws {
     try keychainVault.deleteItem(query(key: mnemonicsKey, accessGroup: accessGroup))
+    try keychainVault.deleteItem(saltQuery())
   }
   
   public func changePassword(oldPassword: String, newPassword: String) throws {
     do {
+      let salt: Data = try keychainVault.readValue(saltQuery())
       let encryptedMnemonics: Data = try keychainVault.readValue(
         query(
           key: mnemonicsKey,
           accessGroup: accessGroup
         )
       )
-      let decryptedMnemonics = try decryptMnemonics(encryptedMnemonics, password: oldPassword)
-      let newPasswordEncryptedMnemonics = try encryptMnemonics(decryptedMnemonics, password: newPassword)
+      let decryptedMnemonics = try decryptMnemonics(encryptedMnemonics, password: oldPassword, salt: salt)
+      let newPasswordEncryptedMnemonics = try encryptMnemonics(decryptedMnemonics, password: newPassword, salt: salt)
       try keychainVault.saveValue(newPasswordEncryptedMnemonics, to: query(key: mnemonicsKey, accessGroup: accessGroup))
     } catch KeychainVaultError.noItemFound {
       throw Error.noMnemonics
@@ -104,13 +113,15 @@ public struct MnemonicsV2Vault {
   }
   
   public func validatePassword(_ password: String) throws {
+    try? migrateIfNeeded(password: password)
+    let salt: Data = try keychainVault.readValue(saltQuery())
     let data: Data = try keychainVault.readValue(
       query(
         key: mnemonicsKey,
         accessGroup: accessGroup
       )
     )
-    let _ = try decryptMnemonics(data, password: password)
+    let _ = try decryptMnemonics(data, password: password, salt: salt)
   }
   
   private func query(key: String,
@@ -121,17 +132,58 @@ public struct MnemonicsV2Vault {
                                 accessible: .whenUnlockedThisDeviceOnly)
   }
   
-  func keyFromPassword(_ password: String) throws -> SymmetricKey {
-    let subString = String(password.prefix(32))
-    guard let keyData = subString.data(using: .utf8) else {
-      throw Error.incorrectPassword(password)
-    }
-    return SymmetricKey(data: keyData)
+  private func saltQuery() -> KeychainQueryable {
+    KeychainGenericPasswordItem(service: "MnemonicsVault",
+                                account: "salt",
+                                accessGroup: accessGroup,
+                                accessible: .whenUnlockedThisDeviceOnly)
   }
   
-  private func encryptMnemonics(_ mnemonics: [String: Mnemonic], password: String) throws -> Data {
+  private func migrateIfNeeded(password: String) throws {
+    let data: Data = try keychainVault.readValue(
+      query(
+        key: mnemonicsKey,
+        accessGroup: accessGroup
+      )
+    )
+    let substring = String(password.prefix(32))
+    guard let keyData = substring.data(using: .utf8) else {
+      throw Error.incorrectPassword(password)
+    }
+    let key = SymmetricKey(data: keyData)
     do {
-      let symmetricKey = try keyFromPassword(password)
+      let sealedBox = try AES.GCM.SealedBox(combined: data)
+      let decryptedData = try AES.GCM.open(sealedBox, using: key)
+      let mnemonics = try JSONDecoder().decode([String: Mnemonic].self, from: decryptedData)
+      let salt = Data(try secureRandomBytes(count: 32))
+      try keychainVault.saveValue(salt, to: saltQuery())
+      let encryptedMnemonics = try encryptMnemonics(
+        mnemonics,
+        password: password,
+        salt: salt
+      )
+      try keychainVault.saveValue(
+        encryptedMnemonics,
+        to: query(key: mnemonicsKey, accessGroup: accessGroup)
+      )
+    } catch { return }
+  }
+  
+  func keyFromPassword(_ password: String, salt: Data) throws -> SymmetricKey {
+    guard let passwordData = password.data(using: .utf8) else {
+      throw Error.incorrectPassword(password)
+    }
+    let passwordHash = pbkdf2Sha512(phrase: passwordData, salt: salt)
+    guard passwordHash.count >= 32 else {
+      throw Error.incorrectPassword(password)
+    }
+    let keyData = passwordHash[0..<32]
+    return SymmetricKey(data: Data(keyData))
+  }
+  
+  private func encryptMnemonics(_ mnemonics: [String: Mnemonic], password: String, salt: Data) throws -> Data {
+    do {
+      let symmetricKey = try keyFromPassword(password, salt: salt)
       let data = try JSONEncoder().encode(mnemonics)
       let sealedBox = try AES.GCM.seal(data, using: symmetricKey)
       guard let data = sealedBox.combined else {
@@ -145,9 +197,9 @@ public struct MnemonicsV2Vault {
     }
   }
   
-  private func decryptMnemonics(_ encryptedMnemonics: Data, password: String) throws -> [String: Mnemonic] {
+  private func decryptMnemonics(_ encryptedMnemonics: Data, password: String, salt: Data) throws -> [String: Mnemonic] {
     do {
-      let symmetricKey = try keyFromPassword(password)
+      let symmetricKey = try keyFromPassword(password, salt: salt)
       let sealedBox = try AES.GCM.SealedBox(combined: encryptedMnemonics)
       let decryptedData = try AES.GCM.open(sealedBox, using: symmetricKey)
       return try JSONDecoder().decode([String: Mnemonic].self, from: decryptedData)
@@ -160,6 +212,21 @@ public struct MnemonicsV2Vault {
   
   private var mnemonicsKey: String {
     "\(String.mnemonicsKey)_\(seedProvider())"
+  }
+  
+  private func secureRandomBytes(count: Int) throws -> [UInt8] {
+    var bytes = [UInt8](repeating: 0, count: count)
+    let status = SecRandomCopyBytes(
+      kSecRandomDefault,
+      count,
+      &bytes
+    )
+    if status == errSecSuccess {
+      return bytes
+    }
+    else {
+      throw Error.failedGenerateSalt
+    }
   }
 }
 
