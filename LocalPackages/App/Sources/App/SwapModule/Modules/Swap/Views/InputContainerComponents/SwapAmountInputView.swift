@@ -83,13 +83,36 @@ private extension CGFloat {
 
 public class PlainTextField: UITextField {
   
+  public enum TextFieldState {
+    case inactive
+    case active
+    case error
+    
+    var textColor: UIColor {
+      switch self {
+      case .inactive:
+        return .Text.tertiary
+      case .active:
+        return .Text.primary
+      case .error:
+        return .Accent.red
+      }
+    }
+  }
+  
   public var didUpdateText: ((String) -> Void)?
   public var didBeginEditing: (() -> Void)?
   public var didEndEditing: (() -> Void)?
   
+  public var textFieldState: TextFieldState = .inactive {
+    didSet {
+      didUpdateTextFieldState()
+    }
+  }
+  
   public override var isEnabled: Bool {
     didSet {
-      didUpdateState()
+      textFieldState = isEnabled ? .active : .inactive
     }
   }
   
@@ -129,7 +152,11 @@ public class PlainTextField: UITextField {
     didEndEditing?()
   }
   
-  func didUpdateState() {
-    textColor = isEnabled ? .Text.primary : .Text.tertiary
+  private func didUpdateTextFieldState() {
+    if isEnabled {
+      textColor = textFieldState.textColor
+    } else {
+      textColor = TextFieldState.inactive.textColor
+    }
   }
 }

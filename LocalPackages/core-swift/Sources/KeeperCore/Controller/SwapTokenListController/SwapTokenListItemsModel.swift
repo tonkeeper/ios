@@ -52,3 +52,12 @@ public struct SwapAsset {
     self.imageUrl = imageUrl
   }
 }
+
+extension SwapAsset: Equatable {
+  public static func == (lhs: SwapAsset, rhs: SwapAsset) -> Bool {
+    return lhs.contractAddress == rhs.contractAddress
+    && lhs.kind == rhs.kind
+    && lhs.symbol == rhs.symbol
+    && lhs.displayName == rhs.displayName
+  }
+}

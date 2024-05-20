@@ -44,12 +44,12 @@ private extension SwapCoordinator {
       print("didTapSwapSettings")
     }
     
-    module.output.didTapTokenButton = { [weak self, weak view = module.view] contractAddressForPair, swapInput in
+    module.output.didTapTokenButton = { [weak self, weak view = module.view, weak input = module.input] contractAddressForPair, swapInput in
       self?.openSwapTokenList(
         sourceViewController: view,
         contractAddressForPair: contractAddressForPair,
         completion: { swapAsset in
-          module.input.didChooseToken(swapAsset, forInput: swapInput)
+          input?.didChooseToken(swapAsset, forInput: swapInput)
         })
     }
     

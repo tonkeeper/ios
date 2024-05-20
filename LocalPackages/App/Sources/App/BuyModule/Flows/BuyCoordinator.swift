@@ -99,7 +99,7 @@ private extension BuyCoordinator {
       self?.didFinish?()
     }
     
-    module.output.didTapCurrencyPicker = { [weak self, weak input = module.input, weak view = module.view] currencyListItem in
+    module.output.didTapCurrencyPicker = { [weak self, weak view = module.view, weak input = module.input] currencyListItem in
       self?.openCurrencyList(
         fromViewController: view,
         currencyListItem: currencyListItem,

@@ -21,15 +21,6 @@ struct SwapToken {
   var inputAmount: String
 }
 
-extension SwapAsset: Equatable {
-  public static func == (lhs: SwapAsset, rhs: SwapAsset) -> Bool {
-    return lhs.contractAddress == rhs.contractAddress
-    && lhs.kind == rhs.kind
-    && lhs.symbol == rhs.symbol
-    && lhs.displayName == rhs.displayName
-  }
-}
-
 extension SwapToken {
   static let tonStub = SwapToken(
     icon: .image(.TKCore.Icons.Size44.tonLogo),
@@ -62,11 +53,6 @@ private extension BigUInt {
   static let testBalanceAmount = BigUInt(stringLiteral: "100000010000000")
 }
 
-struct SwapOperationItem {
-  var sendToken: SwapToken?
-  var recieveToken: SwapToken?
-}
-
 struct SwapModel {
   struct SwapButton {
     let action: (() -> Void)?
@@ -76,12 +62,9 @@ struct SwapModel {
   let swapButton: SwapButton
 }
 
-enum SwapActionButtonState {
-  case enterAmount
-  case chooseToken
-  case insufficientBalanceTon
-  case insufficientBalance
-  case continueSwap
+struct SwapStateModel {
+  let sendTextFieldState: PlainTextField.TextFieldState
+  let actionButton: SwapActionButtonModel
 }
 
 struct SwapActionButtonModel {
@@ -107,6 +90,11 @@ enum SwapInput {
   }
 }
 
+struct SwapOperationItem {
+  var sendToken: SwapToken?
+  var recieveToken: SwapToken?
+}
+
 protocol SwapModuleOutput: AnyObject {
   var didTapSwapSettings: (() -> Void)? { get set }
   var didTapTokenButton: ((Address?, SwapInput) -> Void)? { get set }
@@ -120,7 +108,7 @@ protocol SwapModuleInput: AnyObject {
 
 protocol SwapViewModel: AnyObject {
   var didUpdateModel: ((SwapModel) -> Void)? { get set }
-  var didUpdateActionButtonModel: ((SwapActionButtonModel) -> Void)? { get set }
+  var didUpdateStateModel: ((SwapStateModel) -> Void)? { get set }
   var didUpdateAmountSend: ((String) -> Void)? { get set }
   var didUpdateAmountRecieve: ((String) -> Void)? { get set }
   var didUpdateSendTokenBalance: ((String) -> Void)? { get set }
@@ -137,6 +125,15 @@ protocol SwapViewModel: AnyObject {
 }
 
 final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapModuleInput {
+  
+  enum SwapState: Equatable {
+    case enterAmount
+    case chooseToken
+    case insufficientBalanceTon
+    case insufficientBalance(tokenSymbol: String)
+    case continueSwap
+    case simulationFail
+  }
   
   enum SwapSimulationDirection {
     case direct
@@ -167,39 +164,34 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   // MARK: - SwapModuleInput
   
   func didChooseToken(_ swapAsset: SwapAsset, forInput input: SwapInput) {
+    let oldAsset = token(atInput: input)?.asset
     let newToken = mapSwapAsset(swapAsset)
     let oppositeToken = token(atInput: input.opposite)
+    let isOppositeAssetSame = newToken.asset == oppositeToken?.asset
     
-    setToken(newToken, forInput: input)
-    
-    if input == lastInput {
+    if input == lastInput && swapAsset != oldAsset {
       clearAllInputs()
     }
     
-    let assetsAreEqual = newToken.asset == oppositeToken?.asset
+    setToken(newToken, forInput: input)
     
     Task {
       let tokensHasPair = await swapController.isPairExistsForAssets(newToken.asset, oppositeToken?.asset)
-      let isNeedRemoveOppositeToken = !tokensHasPair || assetsAreEqual
+      let shouldRemoveOppositeToken = !tokensHasPair || isOppositeAssetSame
       
       await MainActor.run {
-        if isNeedRemoveOppositeToken {
+        if shouldRemoveOppositeToken {
           setToken(nil, forInput: input.opposite)
-          updateInputAmount("0", forInput: input.opposite)
+          clearInput(input.opposite)
           lastInput = input
         }
         
         update()
         updateSendBalance()
         updateRecieveBalance()
-        updateActionButton()
         
-        switch lastInput {
-        case .send:
-          simulateSwap(.direct)
-        case .recieve:
-          simulateSwap(.reverse)
-        }
+        let swapSimulationDirection = swapSimulationDirection(forLastInput: lastInput)
+        simulateSwap(swapSimulationDirection)
       }
     }
   }
@@ -207,7 +199,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   // MARK: - SwapViewModel
   
   var didUpdateModel: ((SwapModel) -> Void)?
-  var didUpdateActionButtonModel: ((SwapActionButtonModel) -> Void)?
+  var didUpdateStateModel: ((SwapStateModel) -> Void)?
   var didUpdateAmountSend: ((String) -> Void)?
   var didUpdateAmountRecieve: ((String) -> Void)?
   var didUpdateSendTokenBalance: ((String) -> Void)?
@@ -217,7 +209,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   
   func viewDidLoad() {
     update()
-    updateActionButton()
+    updateSwapState()
 
     Task {
       await swapController.start()
@@ -240,8 +232,11 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     amountSend = string
     lastInput = .send
     
+    if string == "0" {
+      clearInput(.recieve)
+    }
+    
     updateSendBalance()
-    updateActionButton()
     
     simulateSwap(.direct)
   }
@@ -250,7 +245,9 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     amountRecieve = string
     lastInput = .recieve
     
-    updateActionButton()
+    if string == "0" {
+      clearInput(.send)
+    }
     
     simulateSwap(.reverse)
   }
@@ -268,8 +265,8 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     let unformattedAmountSend = amountInpuTextFieldFormatter.unformatString(balanceAmountSend) ?? "0"
     let formattedAmountSend = amountInpuTextFieldFormatter.formatString(unformattedAmountSend) ?? "0"
     
+    updateInputAmount(formattedAmountSend, forInput: .send)
     didInputAmountSend(formattedAmountSend)
-    didUpdateAmountSend?(formattedAmountSend)
   }
   
   func didTapSwapButton() {
@@ -283,9 +280,15 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     updateInputAmount(amountSend, forInput: .send)
     updateInputAmount(amountRecieve, forInput: .recieve)
     
+    isLastSimulationFailed = false
+    currentSwapSimulationModel = nil
+    
     update()
     updateSendBalance()
     updateRecieveBalance()
+    
+    let swapSimulationDirection = swapSimulationDirection(forLastInput: lastInput)
+    simulateSwap(swapSimulationDirection)
   }
   
   // MARK: - State
@@ -295,13 +298,21 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   private var tokenSendBalanceRemaining = Remaining.remaining("0")
   private var tokenRecieveBalance = "0"
   private var lastInput = SwapInput.send
-  
+  private var isLastSimulationFailed = false
+  private var currentSwapSimulationModel: SwapSimulationModel?
   private var swapSimulationDebounceTimer: Timer?
+  
+  private var swapState = SwapState.enterAmount {
+    didSet {
+      guard swapState != oldValue && !isResolving else { return }
+      updateSwapState()
+    }
+  }
   
   private var isResolving = false {
     didSet {
       guard isResolving != oldValue else { return }
-      update()
+      updateSwapState()
     }
   }
   
@@ -383,8 +394,9 @@ private extension SwapViewModelImplementation {
         maxButton: maxButton,
         tokenButton: mapTokenButton(
           buttonToken: swapOperationItem.sendToken,
-          assetForPair: nil, // send token shouldn't check pairs with recieve
-          input: .send
+          action: { [weak self] in
+            self?.didTapTokenButton?(nil, .send)
+          }
         ),
         isInputEnabled: isInputEnabled
       )
@@ -407,30 +419,28 @@ private extension SwapViewModelImplementation {
         maxButton: nil,
         tokenButton: mapTokenButton(
           buttonToken: swapOperationItem.recieveToken,
-          assetForPair: swapOperationItem.sendToken?.asset,
-          input: .recieve
+          action: { [weak self] in
+            let addressToPair = self?.swapOperationItem.sendToken?.asset.contractAddress
+            self?.didTapTokenButton?(addressToPair, .recieve)
+          }
         ),
         isInputEnabled: isInputEnabled
       )
     )
   }
   
-  func mapTokenButton(buttonToken: SwapToken?, assetForPair: SwapAsset?, input: SwapInput) -> SwapInputContainerView.Model.TokenButton {
+  func mapTokenButton(buttonToken: SwapToken?, action: (() -> Void)?) -> SwapInputContainerView.Model.TokenButton {
     if let buttonToken {
       return SwapInputContainerView.Model.TokenButton(
         title: buttonToken.asset.symbol,
         icon: buttonToken.icon.tokenButtonIcon,
-        action: { [weak self] in
-          self?.didTapTokenButton?(assetForPair?.contractAddress, input)
-        }
+        action: action
       )
     } else {
       return SwapInputContainerView.Model.TokenButton(
         title: "CHOOSE",
         icon: .image(nil),
-        action: { [weak self] in
-          self?.didTapTokenButton?(assetForPair?.contractAddress, input)
-        }
+        action: action
       )
     }
   }
@@ -452,12 +462,14 @@ private extension SwapViewModelImplementation {
       return
     }
     
+    let fractionDigits = sendToken.asset.fractionDigits
+    
     let unformatted = amountInpuTextFieldFormatter.unformatString(amountSend) ?? ""
-    let inputAmount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: TonInfo.fractionDigits)
+    let inputAmount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: fractionDigits)
     
     if inputAmount.value <= sendToken.balance.amount {
       let remainingBalanceAmount = sendToken.balance.amount - inputAmount.value
-      let remainingBalanceString = swapController.convertAmountToString(amount: remainingBalanceAmount, fractionDigits: TonInfo.fractionDigits)
+      let remainingBalanceString = swapController.convertAmountToString(amount: remainingBalanceAmount, fractionDigits: fractionDigits)
       tokenSendBalanceRemaining = .remaining(remainingBalanceString)
     } else {
       tokenSendBalanceRemaining = .insufficient
@@ -473,7 +485,9 @@ private extension SwapViewModelImplementation {
       return
     }
     
-    let balanceString = swapController.convertAmountToString(amount: recieveToken.balance.amount, fractionDigits: TonInfo.fractionDigits)
+    let fractionDigits = recieveToken.asset.fractionDigits
+    
+    let balanceString = swapController.convertAmountToString(amount: recieveToken.balance.amount, fractionDigits: fractionDigits)
     let balanceTitle = createBalanceTitle(balance: balanceString)
     tokenRecieveBalance = balanceString
     didUpdateRecieveTokenBalance?(balanceTitle)
@@ -483,43 +497,67 @@ private extension SwapViewModelImplementation {
     "Balance: \(balance)"
   }
   
-  func updateActionButton() {
+  func updateSwapState() {
+    let stateModel = createSwapStateModel()
+    didUpdateStateModel?(stateModel)
+  }
+  
+  func createSwapStateModel() -> SwapStateModel {
+    let textFieldState: PlainTextField.TextFieldState
+    switch swapState {
+    case .insufficientBalance:
+      textFieldState = .error
+    default:
+      textFieldState = .active
+    }
+    
+    return SwapStateModel(
+      sendTextFieldState: textFieldState,
+      actionButton: createActionButton(forState: swapState)
+    )
+  }
+  
+  func recalculateSwapState() {
     let hasSendToken = swapOperationItem.sendToken != nil
     let hasRecieveToken = swapOperationItem.recieveToken != nil
     
-    let actionButtonState: SwapActionButtonState
-
+    let inputsAreNotEmpty = amountSend != "0" && amountSend != "" && amountRecieve != "0" && amountRecieve != ""
+    let hasSwapSimulationModel = currentSwapSimulationModel != nil
+    let canContinueSwap = inputsAreNotEmpty && hasSwapSimulationModel && tokenSendBalanceRemaining != .insufficient
+    
+    var swapState: SwapState
     switch (amountSend, amountRecieve, hasSendToken, hasRecieveToken) {
     case ("0", "0", true, true), ("0", _, true, false):
-      actionButtonState = .enterAmount
+      swapState = .enterAmount
     case (_, "0", false, true):
-      actionButtonState = .chooseToken
+      swapState = .chooseToken
     case (_, _, true, _) where tokenSendBalanceRemaining == .insufficient:
-      actionButtonState = actionButtonStateForInsufficient(sendTokenTitle: swapOperationItem.sendToken?.asset.symbol)
+      swapState = swapStateForInsufficient(sendTokenSymbol: swapOperationItem.sendToken?.asset.symbol)
     case (_, _, true, false), (_, _, false, true):
-      actionButtonState = .chooseToken
-    case (_, _, true, true) where amountSend != "0" && amountRecieve != "0":
-      actionButtonState = .continueSwap
+      swapState = .chooseToken
+    case (_, _, true, true) where canContinueSwap:
+      swapState = .continueSwap
     default:
-      actionButtonState = .enterAmount
+      swapState = .enterAmount
     }
     
-    print(actionButtonState)
+    if isLastSimulationFailed {
+      swapState = .simulationFail
+    }
     
-    let actionButtonModel = createActionButton(forState: actionButtonState)
-    didUpdateActionButtonModel?(actionButtonModel)
+    self.swapState = swapState
   }
   
-  func actionButtonStateForInsufficient(sendTokenTitle: String?) -> SwapActionButtonState {
-    if sendTokenTitle == "TON" {
+  func swapStateForInsufficient(sendTokenSymbol: String?) -> SwapState {
+    if sendTokenSymbol?.uppercased() == TonInfo.symbol {
       return .insufficientBalanceTon
     } else {
-      return .insufficientBalance
+      return .insufficientBalance(tokenSymbol: sendTokenSymbol ?? "")
     }
   }
   
-  func createActionButton(forState actionButtonState: SwapActionButtonState) -> SwapActionButtonModel {
-    switch actionButtonState {
+  func createActionButton(forState swapState: SwapState) -> SwapActionButtonModel {
+    switch swapState {
     case .enterAmount:
       return createEnterAmountButton()
     case .chooseToken:
@@ -530,6 +568,8 @@ private extension SwapViewModelImplementation {
       return createInsufficientBalanceButton()
     case .continueSwap:
       return createContinueButton()
+    case .simulationFail:
+      return createSimulationFailButton()
     }
   }
   
@@ -560,8 +600,8 @@ private extension SwapViewModelImplementation {
       title: "Insufficient Balance. Buy TON",
       backgroundColor: .Button.secondaryBackground,
       backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
-      isEnabled: !isResolving,
-      isActivity: isResolving,
+      isEnabled: true,
+      isActivity:isResolving && currentSwapSimulationModel == nil,
       action: { [weak self] in
         self?.didTapBuyTon?()
       }
@@ -573,8 +613,8 @@ private extension SwapViewModelImplementation {
       title: "Insufficient \(swapOperationItem.sendToken?.asset.symbol ?? "") balance",
       backgroundColor: .Button.secondaryBackground,
       backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
-      isEnabled: !isResolving,
-      isActivity: isResolving,
+      isEnabled: true,
+      isActivity: isResolving && currentSwapSimulationModel == nil,
       action: nil
     )
   }
@@ -589,6 +629,17 @@ private extension SwapViewModelImplementation {
       action: { [weak self] in
         self?.didTapContinue?()
       }
+    )
+  }
+  
+  func createSimulationFailButton() -> SwapActionButtonModel {
+    SwapActionButtonModel(
+      title: "Simulation fail",
+      backgroundColor: .Button.secondaryBackground,
+      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
+      isEnabled: true,
+      isActivity: false,
+      action: nil
     )
   }
   
@@ -648,28 +699,55 @@ private extension SwapViewModelImplementation {
     updateInputAmount("0", forInput: input)
   }
   
+  func swapSimulationDirection(forLastInput input: SwapInput) -> SwapSimulationDirection {
+    switch input {
+    case .send:
+      return .direct
+    case .recieve:
+      return .reverse
+    }
+  }
+  
   func simulateSwap(_ direction: SwapSimulationDirection, debounceDuration: TimeInterval = 0.3) {
+    recalculateSwapState()
+    isResolving = isNeedStartResolving()
     swapSimulationDebounceTimer?.invalidate()
     swapSimulationDebounceTimer = Timer.scheduledTimer(withTimeInterval: debounceDuration, repeats: false) { [weak self] _ in
       switch direction {
       case .direct:
-        self?.simulateDirectSwap()
+        self?.simulateDirectSwap(completion: {
+          self?.recalculateSwapState()
+          self?.isResolving = false
+        })
       case .reverse:
-        self?.simulateReverseSwap()
+        self?.simulateReverseSwap(completion: {
+          self?.recalculateSwapState()
+          self?.isResolving = false
+        })
       }
     }
   }
   
-  func simulateDirectSwap() {
-    guard let sendAsset = swapOperationItem.sendToken?.asset else { return }
-    guard let recieveAsset = swapOperationItem.recieveToken?.asset else { return }
+  func simulateDirectSwap(completion: @escaping () -> Void) {
+    guard let sendAsset = swapOperationItem.sendToken?.asset,
+          let recieveAsset = swapOperationItem.recieveToken?.asset
+    else {
+      completion()
+      return
+    }
     
-    let amountSend = self.amountSend
+    let unformatted = amountInpuTextFieldFormatter.unformatString(amountSend) ?? ""
+    let sendAmount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: sendAsset.fractionDigits)
+    
+    guard sendAmount.value != .zero else {
+      isLastSimulationFailed = false
+      clearInput(.recieve)
+      updateSendBalance()
+      completion()
+      return
+    }
     
     Task {
-      let unformatted = amountInpuTextFieldFormatter.unformatString(amountSend) ?? ""
-      let sendAmount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: sendAsset.fractionDigits)
-      
       do {
         let swapSimulationModel = try await swapController.simulateDirectSwap(
           sendAmount: sendAmount.value,
@@ -680,24 +758,40 @@ private extension SwapViewModelImplementation {
         await MainActor.run {
           guard sendAsset == swapOperationItem.sendToken?.asset && recieveAsset == swapOperationItem.recieveToken?.asset else { return }
           updateInputAmount(swapSimulationModel.recieveAmount, forInput: .recieve)
-          print(swapSimulationModel)
+          updateSendBalance()
+          didSimulationEnd(withResult: swapSimulationModel)
+          completion()
         }
       } catch {
-        // ActionButtonState = simulation fail
+        await MainActor.run {
+          clearInput(.recieve)
+          didSimulationEnd(withResult: nil)
+          completion()
+        }
       }
     }
   }
   
-  func simulateReverseSwap() {
-    guard let sendAsset = swapOperationItem.sendToken?.asset else { return }
-    guard let recieveAsset = swapOperationItem.recieveToken?.asset else { return }
+  func simulateReverseSwap(completion: @escaping () -> Void) {
+    guard let sendAsset = swapOperationItem.sendToken?.asset,
+          let recieveAsset = swapOperationItem.recieveToken?.asset
+    else {
+      completion()
+      return
+    }
     
-    let amountRecieve = self.amountRecieve
+    let unformatted = amountInpuTextFieldFormatter.unformatString(amountRecieve) ?? ""
+    let recieveAmount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: recieveAsset.fractionDigits)
+    
+    guard recieveAmount.value != .zero else {
+      isLastSimulationFailed = false
+      clearInput(.send)
+      updateSendBalance()
+      completion()
+      return
+    }
     
     Task {
-      let unformatted = amountInpuTextFieldFormatter.unformatString(amountRecieve) ?? ""
-      let recieveAmount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: recieveAsset.fractionDigits)
-      
       do {
         let swapSimulationModel = try await swapController.simulateReverseSwap(
           recieveAmount: recieveAmount.value,
@@ -708,12 +802,29 @@ private extension SwapViewModelImplementation {
         await MainActor.run {
           guard sendAsset == swapOperationItem.sendToken?.asset && recieveAsset == swapOperationItem.recieveToken?.asset else { return }
           updateInputAmount(swapSimulationModel.sendAmount, forInput: .send)
-          print(swapSimulationModel)
+          updateSendBalance()
+          didSimulationEnd(withResult: swapSimulationModel)
+          completion()
         }
       } catch {
-        // ActionButtonState = simulation fail
+        await MainActor.run {
+          clearInput(.send)
+          didSimulationEnd(withResult: nil)
+          completion()
+        }
       }
     }
+  }
+  
+  func didSimulationEnd(withResult swapSimulationModel: SwapSimulationModel?) {
+    isLastSimulationFailed = swapSimulationModel == nil
+    currentSwapSimulationModel = swapSimulationModel
+  }
+  
+  func isNeedStartResolving() -> Bool {
+    return swapOperationItem.sendToken != nil
+    && swapOperationItem.recieveToken != nil
+    && (amountSend != "0" || amountRecieve != "0")
   }
 }
 

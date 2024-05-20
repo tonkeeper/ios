@@ -81,16 +81,19 @@ private extension SwapViewController {
       customView.swapButton.configuration.action = model.swapButton.action
     }
     
-    viewModel.didUpdateActionButtonModel = { [weak self] actionButtonModel in
+    viewModel.didUpdateStateModel = { [weak self] stateModel in
       guard let customView = self?.customView else { return }
       
-      customView.continueButton.configuration.content.title = .plainString(actionButtonModel.title)
-      customView.continueButton.configuration.isEnabled = actionButtonModel.isEnabled
-      customView.continueButton.configuration.showsLoader = actionButtonModel.isActivity
-      customView.continueButton.configuration.action = actionButtonModel.action
+      customView.swapSendContainerView.textField.textFieldState = stateModel.sendTextFieldState
+      
+      customView.continueButton.configuration.content.title = .plainString(stateModel.actionButton.title)
+      customView.continueButton.configuration.isEnabled = stateModel.actionButton.isEnabled
+      customView.continueButton.configuration.showsLoader = stateModel.actionButton.isActivity
+      customView.continueButton.configuration.action = stateModel.actionButton.action
       customView.continueButton.configuration.backgroundColors = [
-        .normal : actionButtonModel.backgroundColor,
-        .highlighted : actionButtonModel.backgroundColorHighlighted
+        .normal : stateModel.actionButton.backgroundColor,
+        .highlighted : stateModel.actionButton.backgroundColorHighlighted,
+        .disabled : stateModel.actionButton.backgroundColor
       ]
     }
     
