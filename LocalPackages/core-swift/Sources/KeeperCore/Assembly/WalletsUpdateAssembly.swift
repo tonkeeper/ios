@@ -40,7 +40,7 @@ public final class WalletsUpdateAssembly {
   public func chooseWalletController(activeWalletModels: [ActiveWalletModel]) -> ChooseWalletsController {
     ChooseWalletsController(
       activeWalletModels: activeWalletModels,
-      amountFormatter: formattersAssembly.amountFormatter
+      amountFormatter: formattersAssembly.amountFormatter()
     )
   }
 }

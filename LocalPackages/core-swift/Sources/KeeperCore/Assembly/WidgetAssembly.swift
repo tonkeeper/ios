@@ -43,7 +43,7 @@ public final class WidgetAssembly {
       walletService: servicesAssembly.walletsService(),
       balanceService: servicesAssembly.balanceService(),
       ratesService: servicesAssembly.ratesService(),
-      amountFormatter: formattersAssembly.amountFormatter
+      amountFormatter: formattersAssembly.amountFormatter()
     )
   }
   

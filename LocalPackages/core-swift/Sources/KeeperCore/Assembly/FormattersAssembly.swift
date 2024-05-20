@@ -1,12 +1,17 @@
 import Foundation
 
 public final class FormattersAssembly {
-  public var amountFormatter: AmountFormatter {
+  public func amountFormatter(
+    bigIntAmountFormatter: BigIntAmountFormatter = BigIntAmountFormatter()
+  ) -> AmountFormatter {
     AmountFormatter(bigIntFormatter: bigIntAmountFormatter)
   }
   
-  public var bigIntAmountFormatter: BigIntAmountFormatter {
-    BigIntAmountFormatter()
+  public func bigIntAmountFormatter(
+    groupSeparator: String = " ",
+    fractionalSeparator: String? = Locale.current.decimalSeparator
+  ) -> BigIntAmountFormatter {
+    BigIntAmountFormatter(groupSeparator: groupSeparator, fractionalSeparator: fractionalSeparator)
   }
   
   public var shortNumberFormatter: NumberFormatter {

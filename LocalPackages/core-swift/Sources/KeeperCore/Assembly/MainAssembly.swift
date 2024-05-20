@@ -255,7 +255,7 @@ public final class MainAssembly {
   public func historyEventDetailsController(event: AccountEventDetailsEvent) -> HistoryEventDetailsController {
     HistoryEventDetailsController(
       event: event,
-      amountMapper: AmountHistoryListEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
+      amountMapper: AmountHistoryListEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter()),
       tonRatesStore: storesAssembly.tonRatesStore,
       walletsStore: walletAssembly.walletStore,
       currencyStore: storesAssembly.currencyStore,
@@ -332,7 +332,7 @@ public final class MainAssembly {
       balanceStore: storesAssembly.balanceStore,
       knownAccountsStore: storesAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
-      amountFormatter: formattersAssembly.amountFormatter
+      amountFormatter: formattersAssembly.amountFormatter()
     )
   }
   
@@ -344,7 +344,7 @@ public final class MainAssembly {
       dnsService: servicesAssembly.dnsService(),
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      amountFormatter: formattersAssembly.amountFormatter
+      amountFormatter: formattersAssembly.amountFormatter()
     )
   }
   
@@ -367,7 +367,7 @@ public final class MainAssembly {
       ratesStore: storesAssembly.ratesStore,
       currencyStore: storesAssembly.currencyStore,
       rateConverter: RateConverter(),
-      amountFormatter: formattersAssembly.amountFormatter
+      amountFormatter: formattersAssembly.amountFormatter()
     )
   }
   
@@ -394,7 +394,7 @@ public final class MainAssembly {
       ratesStore: storesAssembly.ratesStore,
       currencyStore: storesAssembly.currencyStore,
       mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
-      amountFormatter: formattersAssembly.amountFormatter
+      amountFormatter: formattersAssembly.amountFormatter()
     )
   }
   
@@ -403,7 +403,7 @@ public final class MainAssembly {
       wallet: wallet,
       selectedToken: selectedToken,
       walletBalanceStore: storesAssembly.walletBalanceStore,
-      amountFormatter: formattersAssembly.amountFormatter
+      amountFormatter: formattersAssembly.amountFormatter()
     )
   }
   
@@ -415,6 +415,13 @@ public final class MainAssembly {
       locationService: servicesAssembly.locationService(),
       configurationStore: configurationAssembly.remoteConfigurationStore,
       currencyStore: storesAssembly.currencyStore,
+      walletsStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      tonRatesStore: storesAssembly.tonRatesStore,
+      bigIntAmountFormatter: formattersAssembly.bigIntAmountFormatter(
+        groupSeparator: ",",
+        fractionalSeparator: "."
+      ),
       isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
     )
   }
@@ -437,7 +444,7 @@ private extension MainAssembly {
   
   var walletBalanceMapper: WalletBalanceMapper {
     WalletBalanceMapper(
-      amountFormatter: formattersAssembly.amountFormatter,
+      amountFormatter: formattersAssembly.amountFormatter(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
       rateConverter: RateConverter(),
       dateFormatter: formattersAssembly.dateFormatter)
@@ -445,7 +452,7 @@ private extension MainAssembly {
   
   var walletListMapper: WalletListMapper {
     WalletListMapper(
-      amountFormatter: formattersAssembly.amountFormatter,
+      amountFormatter: formattersAssembly.amountFormatter(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
       rateConverter: RateConverter()
     )
@@ -454,10 +461,10 @@ private extension MainAssembly {
   var historyListMapper: HistoryListMapper {
     HistoryListMapper(
       dateFormatter: formattersAssembly.dateFormatter,
-      amountFormatter: formattersAssembly.amountFormatter,
+      amountFormatter: formattersAssembly.amountFormatter(),
       amountMapper: SignedAmountHistoryListEventAmountMapper(
         amountAccountHistoryListEventAmountMapper: AmountHistoryListEventAmountMapper(
-          amountFormatter: formattersAssembly.amountFormatter
+          amountFormatter: formattersAssembly.amountFormatter()
         )
       )
     )
@@ -465,7 +472,7 @@ private extension MainAssembly {
   
   var tokenDetailsMapper: TokenDetailsMapper {
     TokenDetailsMapper(
-      amountFormatter: formattersAssembly.amountFormatter,
+      amountFormatter: formattersAssembly.amountFormatter(),
       rateConverter: RateConverter()
     )
   }

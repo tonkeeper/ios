@@ -3,6 +3,7 @@ import TKUIKit
 import SnapKit
 
 class UnderlinedSegmentedControl: UISegmentedControl {
+  var didChangeSegment: ((Int) -> Void)?
   
   private lazy var underlineView: UIView = {
     let view = UIView()
@@ -102,6 +103,7 @@ class UnderlinedSegmentedControl: UISegmentedControl {
   
   @objc private func segmentValueChanged() {
     updateUnderlinePosition(animated: true)
+    didChangeSegment?(selectedSegmentIndex)
   }
   
   private func updateUnderlinePosition(animated: Bool) {

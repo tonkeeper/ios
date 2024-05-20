@@ -1,4 +1,5 @@
 import Foundation
+import BigInt
 
 public final class BuyListController {
   public var didUpdateMethods: (([[BuySellItemModel]]) -> Void)?
@@ -8,6 +9,10 @@ public final class BuyListController {
   private let locationService: LocationService
   private let configurationStore: ConfigurationStore
   private let currencyStore: CurrencyStore
+  private let walletsStore: WalletsStore
+  private let walletBalanceStore: WalletBalanceStore
+  private let tonRatesStore: TonRatesStore
+  private let bigIntAmountFormatter: BigIntAmountFormatter
   private let isMarketRegionPickerAvailable: () async -> Bool
   
   init(wallet: Wallet,
@@ -15,12 +20,20 @@ public final class BuyListController {
        locationService: LocationService,
        configurationStore: ConfigurationStore,
        currencyStore: CurrencyStore,
+       walletsStore: WalletsStore,
+       walletBalanceStore: WalletBalanceStore,
+       tonRatesStore: TonRatesStore,
+       bigIntAmountFormatter: BigIntAmountFormatter,
        isMarketRegionPickerAvailable: @escaping () async -> Bool) {
     self.wallet = wallet
     self.buySellMethodsService = buySellMethodsService
     self.locationService = locationService
     self.configurationStore = configurationStore
     self.currencyStore = currencyStore
+    self.walletsStore = walletsStore
+    self.walletBalanceStore = walletBalanceStore
+    self.tonRatesStore = tonRatesStore
+    self.bigIntAmountFormatter = bigIntAmountFormatter
     self.isMarketRegionPickerAvailable = isMarketRegionPickerAvailable
   }
   
@@ -36,6 +49,44 @@ public final class BuyListController {
     } catch {
       didUpdateMethods?([])
     }
+  }
+  
+  public func convertInputStringToAmount(input: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
+    do {
+      let result = try bigIntAmountFormatter.bigUInt(string: input, targetFractionalDigits: targetFractionalDigits)
+      return result
+    } catch {
+      return (0, targetFractionalDigits)
+    }
+  }
+  
+  public func isAmountAvailableToSend(amount: BigUInt, token: Token) async -> Bool {
+    let wallet = walletsStore.activeWallet
+    do {
+      let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
+      switch token {
+      case .ton:
+        return BigUInt(balance.walletBalance.balance.tonBalance.amount) >= amount
+      case .jetton(let jettonItem):
+        let jettonBalanceAmount = balance.walletBalance.balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonItem.jettonInfo })?.quantity ?? 0
+        return jettonBalanceAmount >= amount
+      }
+    } catch {
+      return false
+    }
+  }
+  
+  public func convertTokenAmountToCurrency(_ amount: BigUInt) async -> String {
+    let currency = await currencyStore.getActiveCurrency()
+    guard !amount.isZero else { return "0.00 \(currency.rawValue)" }
+    guard let rate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency }) else { return ""}
+    let converted = RateConverter().convert(amount: amount, amountFractionLength: TonInfo.fractionDigits, rate: rate)
+    let formatted = bigIntAmountFormatter.format(
+      amount: converted.amount,
+      fractionDigits: converted.fractionLength,
+      maximumFractionDigits: 2
+    )
+    return "\(formatted)\(String.Symbol.shortSpace)\(currency.rawValue)"
   }
 }
 

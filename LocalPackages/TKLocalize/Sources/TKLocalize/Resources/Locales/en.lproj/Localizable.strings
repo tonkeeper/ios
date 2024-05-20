@@ -226,3 +226,7 @@
 "action_types.domain_renew" = "Renew Domain";
 "action_types.unknown" = "Unknown";
 "action_types.wallet_initialize" = "Wallet initialized";
+
+"buy.button_buy" = "Buy";
+"buy.button_sell" = "Sell";
+"buy.min_amount" = "Min. amount: %@";

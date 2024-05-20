@@ -9,13 +9,15 @@ final class SendAmountTextFieldFormatter: NSObject {
     }
   }
   
+  var shouldUpdateCursorLocation = true
+  
   private let currencyFormatter: NumberFormatter
   private let inputFormatter: SumTextInputFormatter
   
-  init(currencyFormatter: NumberFormatter) {
+  init(currencyFormatter: NumberFormatter, maximumIntegerDigits: Int = 16) {
     self.currencyFormatter = currencyFormatter
     self.inputFormatter = SumTextInputFormatter(numberFormatter: currencyFormatter)
-    self.inputFormatter.maximumIntegerCharacters = .maximumIntegerDigits
+    self.inputFormatter.maximumIntegerCharacters = maximumIntegerDigits
   }
   
   var groupingSeparator: String? {
@@ -56,14 +58,12 @@ extension SendAmountTextFieldFormatter: UITextFieldDelegate {
     )
     
     textField.text = result.formattedText
-    textField.setCursorLocation(result.caretBeginOffset)
+    if shouldUpdateCursorLocation {
+      textField.setCursorLocation(result.caretBeginOffset)
+    }
     notifyEditingChanged(at: textField)
     return false
   }
-}
-
-private extension Int {
-  static let maximumIntegerDigits = 16
 }
 
 private extension UITextField {

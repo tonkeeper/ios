@@ -35,7 +35,8 @@ private extension BuyCoordinator {
         wallet: wallet,
         isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
       ),
-      appSettings: coreAssembly.appSettings
+      appSettings: coreAssembly.appSettings,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
     module.view.setupRightCloseButton { [weak self] in
