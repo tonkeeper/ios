@@ -54,6 +54,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-qr-viewfinder-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var linkOutline: UIImage {
+          .imageWithName("Icons/28/ic-link-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var wallet: UIImage {
           .imageWithName("Icons/28/ic-wallet-28")
           .withRenderingMode(.alwaysTemplate)
