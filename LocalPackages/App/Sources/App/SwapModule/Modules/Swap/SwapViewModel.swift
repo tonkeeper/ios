@@ -8,7 +8,7 @@ import TonSwift
 struct SwapToken {
   enum Icon {
     case image(UIImage)
-    case asyncImage(ImageDownloadTask)
+    case asyncImage(URL?)
   }
   
   struct Balance {
@@ -30,6 +30,21 @@ extension SwapToken {
       symbol: TonInfo.symbol,
       displayName: TonInfo.name,
       fractionDigits: TonInfo.fractionDigits
+    ),
+    balance: SwapToken.Balance(
+      amount: .testBalanceAmount // 100,000.01
+    ),
+    inputAmount: "0"
+  )
+  
+  static let usdtStub = SwapToken(
+    icon: .asyncImage(URL(string: "https://asset.ston.fi/img/EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs")!),
+    asset: SwapAsset(
+      contractAddress: try! Address.parse("EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"),
+      kind: .jetton,
+      symbol: "USD₮",
+      displayName: "USD₮",
+      fractionDigits: 6
     ),
     balance: SwapToken.Balance(
       amount: .testBalanceAmount // 100,000.01
@@ -88,7 +103,7 @@ protocol SwapModuleOutput: AnyObject {
   var didTapSwapSettings: (() -> Void)? { get set }
   var didTapTokenButton: ((Address?, SwapInput) -> Void)? { get set }
   var didTapBuyTon: (() -> Void)? { get set }
-  var didTapContinue: (() -> Void)? { get set }
+  var didTapContinue: ((SwapConfirmationItem) -> Void)? { get set }
 }
 
 protocol SwapModuleInput: AnyObject {
@@ -164,7 +179,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   var didTapSwapSettings: (() -> Void)?
   var didTapTokenButton: ((Address?, SwapInput) -> Void)?
   var didTapBuyTon: (() -> Void)?
-  var didTapContinue: (() -> Void)?
+  var didTapContinue: ((SwapConfirmationItem) -> Void)?
   
   // MARK: - SwapModuleInput
   
@@ -223,6 +238,8 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   func viewDidLoad() {
     update()
     updateSwapState()
+    
+    didTapContinue?(SwapConfirmationItem.testData)
 
     Task {
       await swapController.start()
@@ -310,8 +327,18 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   
   // MARK: - State
   
-  private var amountSend = "0"
-  private var amountRecieve = "0"
+  private var amountSend = "0" {
+    didSet {
+      swapOperationItem.sendToken?.inputAmount = amountSend
+    }
+  }
+  
+  private var amountRecieve = "0" {
+    didSet {
+      swapOperationItem.recieveToken?.inputAmount = amountRecieve
+    }
+  }
+  
   private var tokenSendBalanceRemaining = Remaining.remaining("0")
   private var tokenRecieveBalance = "0"
   private var lastInput = SwapInput.send
@@ -433,7 +460,9 @@ private extension SwapViewModelImplementation {
             self?.didTapTokenButton?(nil, .send)
           }
         ),
-        isInputEnabled: isInputEnabled
+        textField: SwapInputContainerView.Model.TextField(
+          isEnabled: isInputEnabled
+        )
       )
     )
   }
@@ -459,7 +488,9 @@ private extension SwapViewModelImplementation {
             self?.didTapTokenButton?(addressToPair, .recieve)
           }
         ),
-        isInputEnabled: isInputEnabled
+        textField: SwapInputContainerView.Model.TextField(
+          isEnabled: isInputEnabled
+        )
       )
     )
   }
@@ -646,7 +677,13 @@ private extension SwapViewModelImplementation {
       isEnabled: !isResolving && isContinueEnable,
       isActivity: isResolving,
       action: { [weak self] in
-        self?.didTapContinue?()
+        guard let self else { return }
+        guard let simulationModel = currentSwapSimulationModel else { return }
+        let swapConfirmationItem = SwapConfirmationItem(
+          operationItem: swapOperationItem,
+          simulationModel: simulationModel
+        )
+        self.didTapContinue?(swapConfirmationItem)
       }
     )
   }

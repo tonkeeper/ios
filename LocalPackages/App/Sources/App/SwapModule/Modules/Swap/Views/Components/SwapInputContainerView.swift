@@ -24,12 +24,13 @@ final class SwapInputContainerView: UIView, ConfigurableView {
   struct Model {
     typealias HeaderButton = SwapAmountHeaderView.Model.Button
     typealias TokenButton = SwapAmountInputView.Model.TokenButton
+    typealias TextField = SwapAmountInputView.Model.TextField
     
     let headerTitle: String
     let balanceTitle: String?
     let maxButton: HeaderButton?
     let tokenButton: TokenButton
-    let isInputEnabled: Bool
+    let textField: TextField
   }
   
   func configure(model: Model) {
@@ -44,7 +45,7 @@ final class SwapInputContainerView: UIView, ConfigurableView {
     amountInputView.configure(
       model: SwapAmountInputView.Model(
         tokenButton: model.tokenButton,
-        isInputEnabled: model.isInputEnabled
+        textField: model.textField
       )
     )
   }

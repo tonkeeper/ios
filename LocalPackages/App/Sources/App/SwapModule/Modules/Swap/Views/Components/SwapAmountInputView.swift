@@ -42,8 +42,13 @@ final class SwapAmountInputView: UIView, ConfigurableView {
       let action: (() -> Void)?
     }
     
+    struct TextField {
+      let isEnabled: Bool
+      var inputText: String? = nil
+    }
+    
     let tokenButton: TokenButton
-    let isInputEnabled: Bool
+    let textField: TextField
   }
   
   func configure(model: Model) {
@@ -58,7 +63,10 @@ final class SwapAmountInputView: UIView, ConfigurableView {
       model.tokenButton.action?()
     }
     
-    textField.isEnabled = model.isInputEnabled
+    textField.isEnabled = model.textField.isEnabled
+    if let inputText = model.textField.inputText {
+      textField.text = inputText
+    }
     
     setNeedsLayout()
   }

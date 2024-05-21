@@ -99,3 +99,13 @@ public extension TKPaddingContainerView {
     16
   }
 }
+
+public extension TKPaddingContainerView {
+  func setContainerAxis(_ axis: NSLayoutConstraint.Axis) {
+    stackView.axis = axis
+  }
+  
+  func setContainerDistribution(_ distribution: UIStackView.Distribution) {
+    stackView.distribution = distribution
+  }
+}

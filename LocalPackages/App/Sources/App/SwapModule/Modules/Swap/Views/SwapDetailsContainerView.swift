@@ -13,8 +13,6 @@ final class SwapDetailsContainerView: UIView, ConfigurableView {
     return stackView
   }()
   
-  private var dividers = [UIView]()
-  
   override var intrinsicContentSize: CGSize { sizeThatFits(bounds.size) }
   
   override init(frame: CGRect) {
@@ -53,8 +51,8 @@ private extension SwapDetailsContainerView {
     detailsStackView.addArrangedSubview(swapInfoContainerView)
     addSubview(detailsStackView)
     
-    addTopDivider(toView: swapRateRow)
-    addTopDivider(toView: swapInfoContainerView)
+    swapRateRow.addTopDivider()
+    swapInfoContainerView.addTopDivider()
     
     setupConstraints()
   }
@@ -64,22 +62,30 @@ private extension SwapDetailsContainerView {
       make.edges.equalTo(self)
     }
   }
+}
+
+extension UIView {
+  class DividerView: UIView {}
   
-  func addTopDivider(toView view: UIView) {
+  func addTopDivider() {
     let divider = createDivider()
-    dividers.append(divider)
-    
-    view.addSubview(divider)
+    addSubview(divider)
     
     divider.snp.makeConstraints { make in
-      make.left.right.top.equalTo(view)
+      make.left.right.top.equalTo(self)
       make.height.equalTo(Constants.separatorWidth)
     }
   }
   
-  func createDivider() -> UIView {
-    let view = UIView()
+  func createDivider() -> DividerView {
+    let view = DividerView()
     view.backgroundColor = .Separator.common
     return view
+  }
+  
+  func removeAllDividers() {
+    for subview in subviews where subview is DividerView {
+      subview.removeFromSuperview()
+    }
   }
 }

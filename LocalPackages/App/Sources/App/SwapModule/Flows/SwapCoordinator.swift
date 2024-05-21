@@ -57,8 +57,12 @@ private extension SwapCoordinator {
       print("open buy ton")
     }
     
-    module.output.didTapContinue = {
-      print("didTapContinue")
+    module.output.didTapContinue = { [weak self, weak view = module.view] swapConfirmationItem in
+      self?.openSwapConfirmation(
+        sourceViewController: view,
+        swapConfirmationItem: swapConfirmationItem,
+        completion: nil
+      )
     }
     
     router.push(viewController: module.view, animated: false)
@@ -84,6 +88,29 @@ private extension SwapCoordinator {
     
     module.output.didChooseToken = { swapAsset in
       completion?(swapAsset)
+    }
+    
+    sourceViewController?.present(module.view, animated: true)
+  }
+  
+  func openSwapConfirmation(sourceViewController: UIViewController?,
+                            swapConfirmationItem: SwapConfirmationItem,
+                            completion: (() -> Void)?) {
+    let module = SwapConfirmationAssembly.module(
+      swapConfirmationController: keeperCoreMainAssembly.swapConfirmationController(),
+      swapConfirmationItem: swapConfirmationItem
+    )
+    
+    module.view.setupRightCloseButton {
+      sourceViewController?.dismiss(animated: true)
+    }
+    
+    module.output.didFinish = {
+      sourceViewController?.dismiss(animated: true)
+    }
+    
+    module.output.didTapConfirm = {
+      print("didTapConfirm")
     }
     
     sourceViewController?.present(module.view, animated: true)

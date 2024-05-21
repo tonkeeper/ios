@@ -10,7 +10,7 @@ struct SwapItemMaper {
     if let buttonToken {
       return SwapInputContainerView.Model.TokenButton(
         title: buttonToken.asset.symbol,
-        icon: buttonToken.icon.tokenButtonIcon,
+        icon: mapSwapTokenIcon(buttonToken.icon),
         action: action
       )
     } else {
@@ -22,14 +22,23 @@ struct SwapItemMaper {
     }
   }
   
+  func mapSwapTokenIcon(_ icon: SwapToken.Icon) -> SwapTokenButton.Model.Icon {
+    switch icon {
+    case .image(let image):
+      return .image(image)
+    case .asyncImage(let imageUrl):
+      let iconImageDownloadTask = configureDownloadTask(forUrl: imageUrl)
+      return .asyncImage(iconImageDownloadTask)
+    }
+  }
+  
   func mapSwapAsset(_ swapAsset: SwapAsset) -> SwapToken {
     let icon: SwapToken.Icon
     let isToncoin = swapAsset.kind == .ton && swapAsset.symbol == TonInfo.symbol
     if isToncoin {
       icon = .image(.TKCore.Icons.Size44.tonLogo)
     } else {
-      let iconImageDownloadTask = configureDownloadTask(forUrl: swapAsset.imageUrl)
-      icon = .asyncImage(iconImageDownloadTask)
+      icon = .asyncImage(swapAsset.imageUrl)
     }
     
     return SwapToken(
@@ -38,17 +47,6 @@ struct SwapItemMaper {
       balance: SwapToken.Balance(amount: .zero),
       inputAmount: "0"
     )
-  }
-  
-  func configureDownloadTask(forUrl url: URL?) -> TKCore.ImageDownloadTask {
-    TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
-      return imageLoader.loadImage(
-        url: url,
-        imageView: imageView,
-        size: .iconSize,
-        cornerRadius: .iconCornerRadius
-      )
-    }
   }
   
   func mapSwapSimulationRate(swapRate: SwapSimulationModel.Rate, swapRoute: SwapSimulationModel.Info.Route) -> SwapRateRow.Model {
@@ -88,6 +86,19 @@ struct SwapItemMaper {
       )
     )
   }
+}
+
+private extension SwapItemMaper {
+  func configureDownloadTask(forUrl url: URL?) -> TKCore.ImageDownloadTask {
+    TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
+      return imageLoader.loadImage(
+        url: url,
+        imageView: imageView,
+        size: .iconSize,
+        cornerRadius: .iconCornerRadius
+      )
+    }
+  }
   
   func createSwapInfoRowModel(infoTitle: String, value: String, infoButtonAction: (() -> Void)? = nil) -> SwapInfoRow.Model {
     var infoButton: InfoLabel.Model.InfoButton?
@@ -104,16 +115,6 @@ struct SwapItemMaper {
   }
 }
 
-private extension SwapToken.Icon {
-  var tokenButtonIcon: SwapAmountInputView.Model.Icon {
-    switch self {
-    case .image(let image):
-      return .image(image)
-    case .asyncImage(let imageDownloadTask):
-      return .asyncImage(imageDownloadTask)
-    }
-  }
-}
 
 private extension CGSize {
   static let iconSize = CGSize(width: 44, height: 44)
