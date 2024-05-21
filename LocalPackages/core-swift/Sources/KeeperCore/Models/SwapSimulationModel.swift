@@ -1,25 +1,37 @@
 import Foundation
 
-public struct SwapSimulationModel {
+public struct SwapSimulationModel: Equatable {
+  public struct Info: Equatable {
+    public struct Route: Equatable {
+      public let tokenSymbolSend: String
+      public let tokenSymbolRecieve: String
+    }
+    
+    public let priceImpact: String
+    public let minimumRecieved: String
+    public let liquidityProviderFee: String
+    public let blockchainFee: String
+    public let route: Route
+    public let providerName: String
+  }
+  
+  public struct Rate: Equatable {
+    public let value: String
+  }
+  
   public let sendAmount: String
   public let recieveAmount: String
-  public let swapRate: String
-  public let details: SwapDetails
+  public let swapRate: Rate
+  public let info: Info
 }
 
-public struct SwapDetails {
-  public let priceImpact: String
-  public let minimumRecieved: String
-  public let liquidityProviderFee: String
-  public let blockchainFee: String
-  public let route: SwapRoute
-  public let providerName: String
+extension SwapSimulationModel.Rate {
+  public func toString(route: SwapSimulationModel.Info.Route) -> String {
+    "1 \(route.tokenSymbolSend) ≈ \(value) \(route.tokenSymbolRecieve)"
+  }
 }
 
-public struct SwapRoute {
-  public let tokenSymbolSend: String
-  public let tokenSymbolRecieve: String
-  
+extension SwapSimulationModel.Info.Route {
   public func toString() -> String {
     "\(tokenSymbolSend) » \(tokenSymbolRecieve)"
   }

@@ -3,12 +3,20 @@ import TKUIKit
 
 final class SwapView: UIView {
   
+  var isDetailsHidden: Bool = true {
+    didSet {
+      guard isDetailsHidden != oldValue else { return }
+      didUpdateDetailsContainerState()
+    }
+  }
+  
   let titleView = ModalTitleView()
   let scrollView = TKUIScrollView()
   
   let contentView = UIView()
   let swapSendContainerView = SwapSendContainerView()
   let swapRecieveContainerView = SwapRecieveContainerView()
+  let swapDetailsContainerView = SwapDetailsContainerView()
   
   let swapButton = TKButton(
     configuration: .iconHeaderButtonConfiguration(
@@ -21,7 +29,7 @@ final class SwapView: UIView {
     configuration: .iconHeaderButtonConfiguration()
   )
   
-  let continueButton = TKButton(
+  let actionButton = TKButton(
     configuration: .actionButtonConfiguration(
       category: .primary,
       size: .large
@@ -38,6 +46,40 @@ final class SwapView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
+  
+  func showDetails(animated: Bool = false) {
+    layoutIfNeeded()
+    
+    contentView.snp.remakeConstraints { make in
+      make.top.equalTo(scrollView)
+      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
+      make.centerX.equalTo(scrollView)
+      make.bottom.equalTo(swapDetailsContainerView)
+    }
+    
+    if animated {
+      UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
+        self.layoutIfNeeded()
+      }
+    }
+  }
+  
+  func hideDetails(animated: Bool = false) {
+    layoutIfNeeded()
+    
+    contentView.snp.remakeConstraints { make in
+      make.top.equalTo(scrollView)
+      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
+      make.centerX.equalTo(scrollView)
+      make.bottom.equalTo(swapRecieveContainerView)
+    }
+    
+    if animated {
+      UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
+        self.layoutIfNeeded()
+      }
+    }
+  }
 }
 
 // MARK: - Setup
@@ -45,12 +87,18 @@ final class SwapView: UIView {
 private extension SwapView {
   func setup() {
     scrollView.delaysContentTouches = false
+    scrollView.showsVerticalScrollIndicator = false
+    scrollView.showsHorizontalScrollIndicator = false
     
+    contentView.layer.masksToBounds = true
+    contentView.layer.cornerRadius = 16
     swapSendContainerView.layer.cornerRadius = 16
     swapRecieveContainerView.layer.cornerRadius = 16
+    swapRecieveContainerView.layer.maskedCorners = [.layerMaxXMinYCorner, .layerMinXMinYCorner]
     
     swapSendContainerView.backgroundColor = .Background.content
     swapRecieveContainerView.backgroundColor = .Background.content
+    swapDetailsContainerView.backgroundColor = .Background.content
     
     swapButton.configuration.cornerRadius = CGSize.swapButtonSize.inset(by: .swapButtonPadding).height/2
     swapButton.configuration.content.icon = .TKUIKit.Icons.Size16.swapVertical
@@ -61,11 +109,12 @@ private extension SwapView {
     
     contentView.addSubview(swapSendContainerView)
     contentView.addSubview(swapRecieveContainerView)
+    contentView.addSubview(swapDetailsContainerView)
     contentView.addSubview(swapButton)
     
-    addSubview(scrollView)
     scrollView.addSubview(contentView)
-    scrollView.addSubview(continueButton)
+    scrollView.addSubview(actionButton)
+    addSubview(scrollView)
     
     setupConstraints()
   }
@@ -79,8 +128,8 @@ private extension SwapView {
     contentView.snp.makeConstraints { make in
       make.top.equalTo(scrollView)
       make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
-      make.height.equalTo(CGFloat.contentContainerHeight)
       make.centerX.equalTo(scrollView)
+      make.bottom.equalTo(swapRecieveContainerView)
     }
     
     swapSendContainerView.snp.makeConstraints { make in
@@ -95,15 +144,32 @@ private extension SwapView {
       make.height.equalTo(CGFloat.swapContainerViewHeight)
     }
     
+    swapDetailsContainerView.snp.makeConstraints { make in
+      make.top.equalTo(swapRecieveContainerView.snp.bottom)
+      make.left.right.equalTo(contentView)
+    }
+    
     swapButton.snp.makeConstraints { make in
       make.size.equalTo(CGSize.swapButtonSize)
       make.right.equalTo(contentView).inset(28)
       make.centerY.equalTo(swapSendContainerView.snp.bottom).offset(CGFloat.interContainerSpacing/2)
     }
     
-    continueButton.snp.makeConstraints { make in
-      make.top.equalTo(swapRecieveContainerView.snp.bottom).offset(32)
+    actionButton.snp.remakeConstraints { make in
+      make.top.equalTo(contentView.snp.bottom).offset(32)
       make.left.right.equalTo(contentView)
+    }
+    
+    scrollView.contentLayoutGuide.snp.makeConstraints { make in
+      make.bottom.equalTo(actionButton).offset(CGFloat.horizontalContentPadding)
+    }
+  }
+  
+  func didUpdateDetailsContainerState() {
+    if isDetailsHidden {
+      hideDetails()
+    } else {
+      showDetails(animated: true)
     }
   }
 }

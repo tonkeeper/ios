@@ -41,6 +41,16 @@ final class SwapViewController: ModalViewController<SwapView, ModalNavigationBar
     viewModel.viewDidLoad()
   }
   
+  override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    registerForKeyboardEvents()
+  }
+  
+  public override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    unregisterFromKeyboardEvents()
+  }
+  
   override func setupNavigationBarView() {
     super.setupNavigationBarView()
     
@@ -58,6 +68,23 @@ final class SwapViewController: ModalViewController<SwapView, ModalNavigationBar
         view: customView.titleView
       )
     )
+  }
+  
+  public func keyboardWillShow(_ notification: Notification) {
+    guard let animationDuration = notification.keyboardAnimationDuration else { return }
+    guard let keyboardHeight = notification.keyboardSize?.height else { return }
+    
+    UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
+      self.customView.scrollView.contentInset.bottom = keyboardHeight
+    }
+  }
+  
+  public func keyboardWillHide(_ notification: Notification) {
+    guard let animationDuration = notification.keyboardAnimationDuration else { return }
+    
+    UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
+      self.customView.scrollView.contentInset.bottom = 0
+    }
   }
 }
 
@@ -86,15 +113,23 @@ private extension SwapViewController {
       
       customView.swapSendContainerView.textField.textFieldState = stateModel.sendTextFieldState
       
-      customView.continueButton.configuration.content.title = .plainString(stateModel.actionButton.title)
-      customView.continueButton.configuration.isEnabled = stateModel.actionButton.isEnabled
-      customView.continueButton.configuration.showsLoader = stateModel.actionButton.isActivity
-      customView.continueButton.configuration.action = stateModel.actionButton.action
-      customView.continueButton.configuration.backgroundColors = [
+      customView.actionButton.configuration.content.title = .plainString(stateModel.actionButton.title)
+      customView.actionButton.configuration.isEnabled = stateModel.actionButton.isEnabled
+      customView.actionButton.configuration.showsLoader = stateModel.actionButton.isActivity
+      customView.actionButton.configuration.action = stateModel.actionButton.action
+      customView.actionButton.configuration.backgroundColors = [
         .normal : stateModel.actionButton.backgroundColor,
         .highlighted : stateModel.actionButton.backgroundColorHighlighted,
         .disabled : stateModel.actionButton.backgroundColor
       ]
+    }
+    
+    viewModel.didUpdateDetailsModel = { [weak self] detailsModel in
+      guard let customView = self?.customView else { return }
+      if let detailsModel {
+        customView.swapDetailsContainerView.configure(model: detailsModel)
+      }
+      customView.isDetailsHidden = detailsModel == nil
     }
     
     viewModel.didUpdateAmountSend = { [weak self] amountSend in

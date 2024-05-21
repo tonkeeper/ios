@@ -62,6 +62,7 @@ private extension SwapInputContainerView {
     
     setupConstraints()
   }
+  
   func setupConstraints() {
     amountHeaderView.snp.makeConstraints { make in
       make.top.equalTo(self).offset(topOffset)
