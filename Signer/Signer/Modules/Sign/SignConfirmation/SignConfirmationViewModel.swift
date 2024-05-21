@@ -38,16 +38,12 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   
   func viewDidLoad() {
     updateHeader()
-    do {
-      let transactionModel = try controller.getTransactionModel(
-        sendTitle: SignerLocalize.SignTransaction.send
-      )
-      let model = createModel(transactionModel: transactionModel)
-      
-      didUpdateModel?(model)
-    } catch {
-      print("FAILED TO PARSE TRANSACTION")
-    }
+    let transactionModel = controller.getTransactionModel(
+      sendTitle: SignerLocalize.SignTransaction.send
+    )
+    let model = createModel(transactionModel: transactionModel)
+    
+    didUpdateModel?(model)
   }
   
   func didConfirmTransaction() {

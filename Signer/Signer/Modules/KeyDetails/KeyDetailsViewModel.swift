@@ -65,7 +65,7 @@ final class KeyDetailsViewModelImplementation: KeyDetailsViewModel, KeyDetailsMo
   }
   
   func generateQRCode(width: CGFloat) {
-    guard let url = keyDetailsController.appLinkDeeplinkUrl() else { return }
+    guard let url = keyDetailsController.appLinkDeeplinkUrl(isLocal: false) else { return }
     self.qrCodeTask?.cancel()
     self.qrCodeTask = Task {
       do {
@@ -272,7 +272,7 @@ private extension KeyDetailsViewModelImplementation {
     let completion: (Bool) -> Void = { [weak self] isConfirmed in
       guard isConfirmed else { return }
       guard let self else { return }
-      guard let url = self.keyDetailsController.appLinkDeeplinkUrl() else { return }
+      guard let url = self.keyDetailsController.appLinkDeeplinkUrl(isLocal: true) else { return }
       self.didOpenUrl?(url)
     }
     didRequireConfirmation?(completion)
