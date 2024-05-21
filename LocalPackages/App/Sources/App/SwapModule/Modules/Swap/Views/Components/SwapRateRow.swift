@@ -3,6 +3,12 @@ import TKUIKit
 
 final class SwapRateRow: UIView, ConfigurableView {
   
+  var isRefreshing: Bool = false {
+    didSet {
+      didUpdateRefreshingState(isRefreshing)
+    }
+  }
+  
   let swapRateLabel = UILabel()
   let loaderView = TKLoaderView(size: .small, style: .secondary)
   
@@ -32,6 +38,7 @@ final class SwapRateRow: UIView, ConfigurableView {
 
 private extension SwapRateRow {
   func setup() {
+    loaderView.alpha = 0
     loaderView.isLoading = true
     
     addSubview(swapRateLabel)
@@ -52,6 +59,12 @@ private extension SwapRateRow {
     loaderView.snp.makeConstraints { make in
       make.right.equalTo(self).inset(CGFloat.horizontalPadding)
       make.centerY.equalTo(self)
+    }
+  }
+  
+  func didUpdateRefreshingState(_ state: Bool) {
+    UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
+      self.loaderView.alpha = state ? 1 : 0
     }
   }
 }

@@ -99,6 +99,7 @@ protocol SwapViewModel: AnyObject {
   var didUpdateModel: ((SwapModel) -> Void)? { get set }
   var didUpdateStateModel: ((SwapStateModel) -> Void)? { get set }
   var didUpdateDetailsModel: ((SwapDetailsContainerView.Model?) -> Void)? { get set }
+  var didUpdateIsRefreshing: ((Bool) -> Void)? { get set }
   var didUpdateAmountSend: ((String) -> Void)? { get set }
   var didUpdateAmountRecieve: ((String) -> Void)? { get set }
   var didUpdateSendTokenBalance: ((String) -> Void)? { get set }
@@ -126,15 +127,11 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     case simulationFail
   }
   
-  enum SwapSimulationDirection {
-    case direct
-    case reverse
-  }
-  
   enum SwapSimulationResult: Equatable {
     case empty
     case success(SwapSimulationModel)
     case fail
+    case cancel
     
     var isSimulationFailed: Bool {
       self == .fail
@@ -215,6 +212,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   var didUpdateModel: ((SwapModel) -> Void)?
   var didUpdateStateModel: ((SwapStateModel) -> Void)?
   var didUpdateDetailsModel: ((SwapDetailsContainerView.Model?) -> Void)?
+  var didUpdateIsRefreshing: ((Bool) -> Void)?
   var didUpdateAmountSend: ((String) -> Void)?
   var didUpdateAmountRecieve: ((String) -> Void)?
   var didUpdateSendTokenBalance: ((String) -> Void)?
@@ -320,10 +318,11 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   private var isLastSimulationFailed = false
   
   private var swapSimulationDebounceTimer: Timer?
+  private var swapSimulationAutoRefreshTimer: Timer?
   
   private var currentSwapSimulationModel: SwapSimulationModel? {
     didSet {
-      updateDetailsModel()
+      didUpdateCurrentSwapSimulationModel()
     }
   }
   
@@ -338,6 +337,13 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     didSet {
       guard isResolving != oldValue else { return }
       updateSwapState()
+    }
+  }
+  
+  private var isRefreshing = false {
+    didSet {
+      guard isRefreshing != oldValue else { return }
+      didUpdateIsRefreshing?(isRefreshing)
     }
   }
   
@@ -367,6 +373,10 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   }
   
   deinit {
+    swapSimulationDebounceTimer?.invalidate()
+    swapSimulationAutoRefreshTimer?.invalidate()
+    swapSimulationDebounceTimer = nil
+    swapSimulationAutoRefreshTimer = nil
     print("\(Self.self) deinit")
   }
 }
@@ -688,25 +698,22 @@ private extension SwapViewModelImplementation {
     }
   }
   
-  func simulateSwap(_ direction: SwapSimulationDirection, debounceDuration: TimeInterval = 0.3) {
+  func simulateSwap(_ direction: SwapSimulationDirection,
+                    isResolvingEnabled: Bool = true,
+                    debounceDuration: TimeInterval = 0.3,
+                    completion: (() -> Void)? = nil) {
     recalculateSwapState()
-    isResolving = isNeedStartResolving()
+    isResolving = isNeedStartResolving() && isResolvingEnabled
     swapSimulationDebounceTimer?.invalidate()
     swapSimulationDebounceTimer = Timer.scheduledTimer(withTimeInterval: debounceDuration, repeats: false) { [weak self] _ in
-      switch direction {
-      case .direct:
-        self?.simulateDirectSwap(completion: { result in
-          self?.didCompleteSwapSimulation(withResult: result)
-          self?.recalculateSwapState()
-          self?.isResolving = false
-        })
-      case .reverse:
-        self?.simulateReverseSwap(completion: { result in
-          self?.didCompleteSwapSimulation(withResult: result)
-          self?.recalculateSwapState()
-          self?.isResolving = false
-        })
-      }
+      self?.swapSimulationAutoRefreshTimer?.invalidate()
+      self?.startSwapSimulation(direction: direction, completion: { result in
+        self?.didCompleteSwapSimulation(withResult: result)
+        self?.updateSendBalance()
+        self?.recalculateSwapState()
+        self?.isResolving = false
+        completion?()
+      })
     }
   }
   
@@ -716,7 +723,7 @@ private extension SwapViewModelImplementation {
     && (amountSend != "0" || amountRecieve != "0")
   }
   
-  func simulateDirectSwap(completion: @escaping (SwapSimulationResult) -> Void) {
+  func startSwapSimulation(direction: SwapSimulationDirection, completion: @escaping (SwapSimulationResult) -> Void) {
     guard let sendAsset = swapOperationItem.sendToken?.asset,
           let recieveAsset = swapOperationItem.recieveToken?.asset
     else {
@@ -724,76 +731,55 @@ private extension SwapViewModelImplementation {
       return
     }
     
-    let unformatted = amountInpuTextFieldFormatter.unformatString(amountSend) ?? ""
-    let sendAmount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: sendAsset.fractionDigits)
+    let input: SwapInput
+    let inputAmount: String
+    let inputAsset: SwapAsset
     
-    guard sendAmount.value != .zero else {
+    switch direction {
+    case .direct:
+      input = .send
+      inputAmount = amountSend
+      inputAsset = sendAsset
+    case .reverse:
+      input = .recieve
+      inputAmount = amountRecieve
+      inputAsset = recieveAsset
+    }
+    
+    let inputUnformatted = amountInpuTextFieldFormatter.unformatString(inputAmount) ?? ""
+    let amount = swapController.convertStringToAmount(string: inputUnformatted, targetFractionalDigits: inputAsset.fractionDigits)
+    
+    guard amount.value != .zero else {
       isLastSimulationFailed = false
-      clearInput(.recieve)
-      updateSendBalance()
+      clearInput(input.opposite)
       completion(.empty)
       return
     }
     
     Task {
       do {
-        let swapSimulationModel = try await swapController.simulateDirectSwap(
-          sendAmount: sendAmount.value,
+        let swapSimulationModel = try await swapController.simulateSwap(
+          direction: direction,
+          amount: amount.value,
           sendAsset: sendAsset,
           recieveAsset: recieveAsset
         )
         
         await MainActor.run {
           guard sendAsset == swapOperationItem.sendToken?.asset && recieveAsset == swapOperationItem.recieveToken?.asset else { return }
-          updateInputAmount(swapSimulationModel.recieveAmount, forInput: .recieve)
-          updateSendBalance()
+          let outputAmount = swapSimulationModel.outputAmount(for: direction)
+          updateInputAmount(outputAmount, forInput: input.opposite)
           completion(.success(swapSimulationModel))
-        }
-      } catch {
-        await MainActor.run {
-          clearInput(.recieve)
-          completion(.fail)
         }
       }
-    }
-  }
-  
-  func simulateReverseSwap(completion: @escaping (SwapSimulationResult) -> Void) {
-    guard let sendAsset = swapOperationItem.sendToken?.asset,
-          let recieveAsset = swapOperationItem.recieveToken?.asset
-    else {
-      completion(.empty)
-      return
-    }
-    
-    let unformatted = amountInpuTextFieldFormatter.unformatString(amountRecieve) ?? ""
-    let recieveAmount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: recieveAsset.fractionDigits)
-    
-    guard recieveAmount.value != .zero else {
-      isLastSimulationFailed = false
-      clearInput(.send)
-      updateSendBalance()
-      completion(.empty)
-      return
-    }
-    
-    Task {
-      do {
-        let swapSimulationModel = try await swapController.simulateReverseSwap(
-          recieveAmount: recieveAmount.value,
-          sendAsset: sendAsset,
-          recieveAsset: recieveAsset
-        )
-        
+      catch is CancellationError, URLError.cancelled {
         await MainActor.run {
-          guard sendAsset == swapOperationItem.sendToken?.asset && recieveAsset == swapOperationItem.recieveToken?.asset else { return }
-          updateInputAmount(swapSimulationModel.sendAmount, forInput: .send)
-          updateSendBalance()
-          completion(.success(swapSimulationModel))
+          completion(.cancel)
         }
       } catch {
         await MainActor.run {
-          clearInput(.send)
+          print(error)
+          clearInput(input.opposite)
           completion(.fail)
         }
       }
@@ -802,7 +788,35 @@ private extension SwapViewModelImplementation {
   
   func didCompleteSwapSimulation(withResult swapSimulationResult: SwapSimulationResult) {
     isLastSimulationFailed = swapSimulationResult.isSimulationFailed
+    guard swapSimulationResult != .cancel else { return }
     currentSwapSimulationModel = swapSimulationResult.swapSimulationModel
+  }
+  
+  func didUpdateCurrentSwapSimulationModel() {
+    isRefreshing = false
+    if currentSwapSimulationModel != nil {
+      startSwapSimulationAutoRefresh()
+    } else {
+      stopSwapSimulationAutoRefresh()
+    }
+    
+    updateDetailsModel()
+  }
+  
+  func startSwapSimulationAutoRefresh() {
+    swapSimulationAutoRefreshTimer?.invalidate()
+    swapSimulationAutoRefreshTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
+      guard let lastInput = self?.lastInput, let direction = self?.swapSimulationDirection(forLastInput: lastInput) else { return }
+      self?.isRefreshing = true
+      self?.simulateSwap(direction, isResolvingEnabled: false, debounceDuration: 1.0) {
+        self?.isRefreshing = false
+      }
+    }
+  }
+  
+  func stopSwapSimulationAutoRefresh() {
+    swapSimulationAutoRefreshTimer?.invalidate()
+    swapSimulationAutoRefreshTimer = nil
   }
   
   func updateDetailsModel() {

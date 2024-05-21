@@ -17,6 +17,8 @@ public final class SwapController {
     }
   }
   
+  private var swapSimulationTask: Task<StonfiSwapSimulation, Error>?
+  
   private var state = State()
   
   private let stonfiAssetsStore: StonfiAssetsStore
@@ -92,34 +94,33 @@ public final class SwapController {
     return pairs.hasPair(keyOne: assetOne.contractAddress.toString(), keyTwo: assetTwo.contractAddress.toString())
   }
   
-  public func simulateDirectSwap(sendAmount: BigUInt, sendAsset: SwapAsset, recieveAsset: SwapAsset) async throws -> SwapSimulationModel {
-    let fromAddress = sendAsset.contractAddress
-    let toAddress = recieveAsset.contractAddress
-    
-    let directSwapSimulation = try await stonfiSwapService.simulateDirectSwap(
-      from: fromAddress,
-      to: toAddress,
-      offerAmount: sendAmount,
+  public func simulateSwap(direction: SwapSimulationDirection, amount: BigUInt, sendAsset: SwapAsset, recieveAsset: SwapAsset) async throws -> SwapSimulationModel {
+    let stonfiSimulationRequestModel = StonfiSwapSimulationRequestModel(
+      fromAddress: sendAsset.contractAddress,
+      toAddress: recieveAsset.contractAddress,
+      amount: amount,
       slippageTolerance: "0.005", // TODO: slippage tolerance input
-      referral: nil
+      referralAddress: nil
     )
     
-    return mapStonfiSwapSimulation(directSwapSimulation, sendAsset: sendAsset, recieveAsset: recieveAsset)
-  }
-  
-  public func simulateReverseSwap(recieveAmount: BigUInt, sendAsset: SwapAsset, recieveAsset: SwapAsset) async throws -> SwapSimulationModel {
-    let fromAddress = sendAsset.contractAddress
-    let toAddress = recieveAsset.contractAddress
+    let task = Task {
+      try Task.checkCancellation()
+      let stonfiSwapSimulation: StonfiSwapSimulation
+      switch direction {
+      case .direct:
+        stonfiSwapSimulation = try await stonfiSwapService.simulateDirectSwap(stonfiSimulationRequestModel)
+      case .reverse:
+        stonfiSwapSimulation = try await stonfiSwapService.simulateReverseSwap(stonfiSimulationRequestModel)
+      }
+      try Task.checkCancellation()
+      return stonfiSwapSimulation
+    }
     
-    let reverseSwapSimulation = try await stonfiSwapService.simulateReverseSwap(
-      from: fromAddress,
-      to: toAddress,
-      askAmount: recieveAmount,
-      slippageTolerance: "0.005", // TODO: slippage tolerance input
-      referral: nil
-    )
+    swapSimulationTask?.cancel()
+    swapSimulationTask = task
     
-    return mapStonfiSwapSimulation(reverseSwapSimulation, sendAsset: sendAsset, recieveAsset: recieveAsset)
+    let stonfiSwapSimulation = try await task.value
+    return mapStonfiSwapSimulation(stonfiSwapSimulation, sendAsset: sendAsset, recieveAsset: recieveAsset)
   }
   
   public func convertStringToAmount(string: String, targetFractionalDigits: Int) -> (value: BigUInt, fractionalDigits: Int) {

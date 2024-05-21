@@ -2,9 +2,25 @@ import Foundation
 import TonSwift
 import BigInt
 
+struct StonfiSwapSimulationRequestModel {
+  let fromAddress: Address
+  let toAddress: Address
+  let amount: BigUInt
+  let slippageTolerance: String
+  let referralAddress: Address?
+  
+  init(fromAddress: Address, toAddress: Address, amount: BigUInt, slippageTolerance: String, referralAddress: Address? = nil) {
+    self.fromAddress = fromAddress
+    self.toAddress = toAddress
+    self.amount = amount
+    self.slippageTolerance = slippageTolerance
+    self.referralAddress = referralAddress
+  }
+}
+
 protocol StonfiSwapService {
-  func simulateDirectSwap(from: Address, to: Address, offerAmount: BigUInt, slippageTolerance: String, referral: Address?) async throws -> StonfiSwapSimulation
-  func simulateReverseSwap(from: Address, to: Address, askAmount: BigUInt, slippageTolerance: String, referral: Address?) async throws -> StonfiSwapSimulation
+  func simulateDirectSwap(_ simulationRequest: StonfiSwapSimulationRequestModel) async throws -> StonfiSwapSimulation
+  func simulateReverseSwap(_ simulationRequest: StonfiSwapSimulationRequestModel) async throws -> StonfiSwapSimulation
 }
 
 final class StonfiSwapServiceImplementation: StonfiSwapService {
@@ -14,24 +30,24 @@ final class StonfiSwapServiceImplementation: StonfiSwapService {
     self.stonfiApi = stonfiApi
   }
   
-  func simulateDirectSwap(from: Address, to: Address, offerAmount: BigUInt, slippageTolerance: String, referral: Address?) async throws -> StonfiSwapSimulation {
+  func simulateDirectSwap(_ simulationRequestModel: StonfiSwapSimulationRequestModel) async throws -> StonfiSwapSimulation {
     let simulationResult = try await stonfiApi.simulateDirectSwap(
-      from: from,
-      to: to,
-      offerAmount: offerAmount,
-      slippageTolerance: slippageTolerance,
-      referral: referral
+      from: simulationRequestModel.fromAddress,
+      to: simulationRequestModel.toAddress,
+      offerAmount: simulationRequestModel.amount,
+      slippageTolerance: simulationRequestModel.slippageTolerance,
+      referral: simulationRequestModel.referralAddress
     )
     return try mapSwapSimulationResult(simulationResult)
   }
   
-  func simulateReverseSwap(from: Address, to: Address, askAmount: BigUInt, slippageTolerance: String, referral: Address?) async throws -> StonfiSwapSimulation {
+  func simulateReverseSwap(_ simulationRequestModel: StonfiSwapSimulationRequestModel) async throws -> StonfiSwapSimulation {
     let simulationResult = try await stonfiApi.simulateReverseSwap(
-      from: from,
-      to: to,
-      askAmount: askAmount,
-      slippageTolerance: slippageTolerance,
-      referral: referral
+      from: simulationRequestModel.fromAddress,
+      to: simulationRequestModel.toAddress,
+      askAmount: simulationRequestModel.amount,
+      slippageTolerance: simulationRequestModel.slippageTolerance,
+      referral: simulationRequestModel.referralAddress
     )
     return try mapSwapSimulationResult(simulationResult)
   }

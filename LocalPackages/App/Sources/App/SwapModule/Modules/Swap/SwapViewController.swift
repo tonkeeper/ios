@@ -131,6 +131,10 @@ private extension SwapViewController {
       customView.isDetailsHidden = detailsModel == nil
     }
     
+    viewModel.didUpdateIsRefreshing = { [weak self] isRefreshing in
+      self?.customView.swapDetailsContainerView.swapRateRow.isRefreshing = isRefreshing
+    }
+    
     viewModel.didUpdateAmountSend = { [weak self] amountSend in
       self?.customView.swapSendContainerView.textField.text = amountSend
     }

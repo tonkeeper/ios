@@ -25,6 +25,22 @@ public struct SwapSimulationModel: Equatable {
   public let info: Info
 }
 
+public enum SwapSimulationDirection {
+  case direct
+  case reverse
+}
+
+extension SwapSimulationModel {
+  public func outputAmount(for direction: SwapSimulationDirection) -> String {
+    switch direction {
+    case .direct:
+      return recieveAmount
+    case .reverse:
+      return sendAmount
+    }
+  }
+}
+
 extension SwapSimulationModel.Rate {
   public func toString(route: SwapSimulationModel.Info.Route) -> String {
     "1 \(route.tokenSymbolSend) ≈ \(value) \(route.tokenSymbolRecieve)"
