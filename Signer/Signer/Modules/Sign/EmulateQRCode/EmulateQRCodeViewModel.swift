@@ -3,6 +3,7 @@ import SignerCore
 import SignerLocalize
 import UIKit
 import TKUIKit
+import TKQRCode
 import TonSwift
 
 protocol EmulateQRCodeModuleOutput: AnyObject {
@@ -33,14 +34,18 @@ final class EmulateQRCodeViewModelImplementation: EmulateQRCodeViewModel, Emulat
   func generateQRCode(width: CGFloat) {
     self.createQrCodeTask?.cancel()
     let task = Task {
-      let image = await self.qrCodeGenerator.generate(
-        string: url.absoluteString,
-        size: CGSize(width: width, height: width)
-      )
-      guard !Task.isCancelled else { return }
-      await MainActor.run {
-        self.qrCodeImage = image
-        self.update()
+      do {
+        let qrCode = try await self.qrCodeGenerator.generateQRCode(
+          string: url.absoluteString,
+          size: CGSize(width: width, height: width),
+          type: .dynamic(charLimit: TKQRCode.defaultCharLimit)
+        )
+        await MainActor.run {
+          self.qrCode = qrCode
+          self.update()
+        }
+      } catch {
+        self.qrCode = nil
       }
     }
     self.createQrCodeTask = task
@@ -49,15 +54,15 @@ final class EmulateQRCodeViewModelImplementation: EmulateQRCodeViewModel, Emulat
   // MARK: - State
   
   private var createQrCodeTask: Task<(), Never>?
-  private var qrCodeImage: UIImage?
+  private var qrCode: QRCode?
   
   // MARK: - Dependencies
   
   private let url: URL
-  private let qrCodeGenerator: QRCodeGenerator
+  private let qrCodeGenerator: TKQRCodeGenerator
   
   init(url: URL,
-       qrCodeGenerator: QRCodeGenerator) {
+       qrCodeGenerator: TKQRCodeGenerator) {
     self.url = url
     self.qrCodeGenerator = qrCodeGenerator
   }
@@ -83,7 +88,7 @@ private extension EmulateQRCodeViewModelImplementation {
         titleDescriptionModel: TKTitleDescriptionView.Model(
           title: SignerLocalize.EmulateTransactionQr.title
         ),
-        qrCodeImage: qrCodeImage,
+        qrCode: qrCode,
         closeButtonConfiguration: closeButtonConfiguration
       )
     )

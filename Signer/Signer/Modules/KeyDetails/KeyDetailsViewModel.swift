@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TKUIKit
+import TKQRCode
 import SignerCore
 import SignerLocalize
 
@@ -64,29 +65,42 @@ final class KeyDetailsViewModelImplementation: KeyDetailsViewModel, KeyDetailsMo
   }
   
   func generateQRCode(width: CGFloat) {
-    Task {
-      guard let url = keyDetailsController.appLinkDeeplinkUrl() else { return }
-      let image = await qrCodeGenerator.generate(string: url.absoluteString, size: CGSize(width: width, height: width))
-      await MainActor.run {
-        self.qrCodeImage = image
-        updateList()
+    guard let url = keyDetailsController.appLinkDeeplinkUrl() else { return }
+    self.qrCodeTask?.cancel()
+    self.qrCodeTask = Task {
+      do {
+        let qrCode = try await self.qrCodeGenerator.generateQRCode(
+          string: url.absoluteString,
+          size: CGSize(width: width, height: width),
+          type: .static
+        )
+        await MainActor.run {
+          self.qrCode = qrCode
+          self.updateList()
+        }
+      } catch {
+        self.qrCode = nil
       }
     }
   }
   
   // MARK: - State
   
-  private var qrCodeImage: UIImage?
+//  private var qrCodeImage: UIImage?
+  private var qrCode: QRCode?
+  private var qrCodeTask: Task<Void, Never>?
   
   // MARK: - Dependencies
   
   private let keyDetailsController: WalletKeyDetailsController
-  private let qrCodeGenerator = QRCodeGeneratorImplementation()
+  private let qrCodeGenerator: TKQRCodeGenerator
   
   // MARK: - Init
   
-  init(keyDetailsController: WalletKeyDetailsController) {
+  init(keyDetailsController: WalletKeyDetailsController,
+       qrCodeGenerator: TKQRCodeGenerator) {
     self.keyDetailsController = keyDetailsController
+    self.qrCodeGenerator = qrCodeGenerator
   }
 }
 
@@ -124,7 +138,7 @@ private extension KeyDetailsViewModelImplementation {
                        tintColor: .clear,
                        isHighlightable: false,
                        action: nil),
-        KeyDetailsQRCodeCell.Model(image: qrCodeImage)
+        KeyDetailsQRCodeCell.Model(qrCode: qrCode)
       ]
     )
   }

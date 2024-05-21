@@ -1,4 +1,5 @@
 import UIKit
+import TKQRCode
 import SignerCore
 
 struct EmulateQRCodeAssembly {
@@ -7,7 +8,7 @@ struct EmulateQRCodeAssembly {
                      url: URL) -> Module<EmulateQRCodeViewController, EmulateQRCodeModuleOutput, Void> {
     let viewModel = EmulateQRCodeViewModelImplementation(
       url: url,
-      qrCodeGenerator: QRCodeGeneratorImplementation()
+      qrCodeGenerator: TKQRCode.qrCodeGenerator
     )
     let viewController = EmulateQRCodeViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())

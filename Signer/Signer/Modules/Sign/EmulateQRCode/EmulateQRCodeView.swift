@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKQRCode
 import SnapKit
 
 final class EmulateQRCodeView: UIView, ConfigurableView {
@@ -16,7 +17,7 @@ final class EmulateQRCodeView: UIView, ConfigurableView {
     )
     return view
   }()
-  let qrCodeImageView = UIImageView()
+  let qrCodeImageView = TKQRCodeImageView(frame: .zero)
   let qrCodeContainer = UIView()
   let closeButton = TKButton()
   
@@ -31,13 +32,13 @@ final class EmulateQRCodeView: UIView, ConfigurableView {
   
   struct Model {
     let titleDescriptionModel: TKTitleDescriptionView.Model
-    let qrCodeImage: UIImage?
+    let qrCode: QRCode?
     let closeButtonConfiguration: TKButton.Configuration
   }
   
   func configure(model: Model) {
     titleDescriptionView.configure(model: model.titleDescriptionModel)
-    qrCodeImageView.image = model.qrCodeImage
+    qrCodeImageView.setQRCode(model.qrCode)
     closeButton.configuration = model.closeButtonConfiguration
   }
 }
