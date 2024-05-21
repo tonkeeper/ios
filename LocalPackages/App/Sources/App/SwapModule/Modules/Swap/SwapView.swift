@@ -18,15 +18,21 @@ final class SwapView: UIView {
   let swapRecieveContainerView = SwapRecieveContainerView()
   let swapDetailsContainerView = SwapDetailsContainerView()
   
+  let swapSettingsButton: TKUIHeaderIconButton = {
+    let button = TKUIHeaderIconButton()
+    button.configure(
+      model: TKUIHeaderButtonIconContentView.Model(
+        image: .TKUIKit.Icons.Size16.sliders
+      )
+    )
+    return button
+  }()
+  
   let swapButton = TKButton(
     configuration: .iconHeaderButtonConfiguration(
       contentPadding: .swapButtonContentPadding,
       padding: .swapButtonPadding
     )
-  )
-  
-  let swapSettingsButton = TKButton(
-    configuration: .iconHeaderButtonConfiguration()
   )
   
   let actionButton = TKButton(

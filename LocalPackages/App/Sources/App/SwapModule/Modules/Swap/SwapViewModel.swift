@@ -112,6 +112,7 @@ protocol SwapViewModel: AnyObject {
   func didInputAmountRecieve(_ string: String)
   func didTapMaxButton()
   func didTapSwapButton()
+  func didTapSwapSettingsButton()
 }
 
 final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapModuleInput {
@@ -303,6 +304,10 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     
     let swapSimulationDirection = swapSimulationDirection(forLastInput: lastInput)
     simulateSwap(swapSimulationDirection)
+  }
+  
+  func didTapSwapSettingsButton() {
+    didTapSwapSettings?()
   }
   
   // MARK: - State

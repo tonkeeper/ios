@@ -236,21 +236,30 @@ public extension UIImage {
 public extension UIImage.TKUIKit.Icons.Size16 {
   static var sliders: UIImage {
     .imageWithName("Icons/16/ic-sliders-16")
+    .withRenderingMode(.alwaysTemplate)
   }
   static var swapVertical: UIImage {
     .imageWithName("Icons/16/ic-swap-vertical-16")
+    .withRenderingMode(.alwaysTemplate)
   }
   static var magnifyingGlass: UIImage {
     .imageWithName("Icons/16/ic-magnifying-glass-16")
+    .withRenderingMode(.alwaysTemplate)
+  }
+  static var informationCircle: UIImage {
+    .imageWithName("Icons/16/ic-information-circle-16")
+    .withRenderingMode(.alwaysTemplate)
   }
 }
 
 public extension UIImage.TKUIKit.Icons.Size28 {
   static var radioButtonEnabled: UIImage {
     .imageWithName("Icons/28/ic-radio-button-enabled")
+    .withRenderingMode(.alwaysTemplate)
   }
   static var radioButtonDisabled: UIImage {
     .imageWithName("Icons/28/ic-radio-button-disabled")
+    .withRenderingMode(.alwaysTemplate)
   }
 }
 

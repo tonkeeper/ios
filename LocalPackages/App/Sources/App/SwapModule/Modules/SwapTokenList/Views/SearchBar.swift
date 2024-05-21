@@ -59,11 +59,11 @@ open class SearchBar: UISearchBar {
       .foregroundColor : UIColor.Text.primary
     ]
     
-    let magnifyingGlassIcon = UIImage.TKUIKit.Icons.Size16.magnifyingGlass.withTintColor(.Icon.secondary)
+    let magnifyingGlassIcon = UIImage.TKUIKit.Icons.Size16.magnifyingGlass.withTintColor(.Icon.secondary, renderingMode: .alwaysOriginal)
     setImage(magnifyingGlassIcon, for: .search, state: .normal)
     
     let clearButton = searchTextField.value(forKey: "clearButton") as? UIButton
-    let xmarkCircleIcon = UIImage.TKUIKit.Icons.Size16.xmarkCircle.withRenderingMode(.alwaysTemplate)
+    let xmarkCircleIcon = UIImage.TKUIKit.Icons.Size16.xmarkCircle
     clearButton?.setImage(xmarkCircleIcon, for: .normal)
     clearButton?.tintColor = .Icon.secondary
     

@@ -104,7 +104,6 @@ private extension SwapViewController {
       guard let customView = self?.customView else { return }
       
       customView.titleView.configure(model: .init(title: model.title))
-      customView.swapSettingsButton.configuration.content.icon = .TKUIKit.Icons.Size16.sliders
       customView.swapButton.configuration.action = model.swapButton.action
     }
     
@@ -162,6 +161,10 @@ private extension SwapViewController {
   }
   
   func setupViewEvents() {
+    customView.swapSettingsButton.addTapAction { [weak self] in
+      self?.viewModel.didTapSwapSettingsButton()
+    }
+    
     customView.swapSendContainerView.textField.didUpdateText = { [weak self] text in
       self?.viewModel.didInputAmountSend(text)
     }
