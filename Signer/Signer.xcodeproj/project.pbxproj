@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7D2D12FA2BFCB0040061BBD3 /* EmulateQRCodeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2D12F62BFCAF720061BBD3 /* EmulateQRCodeViewController.swift */; };
+		7D2D12FB2BFCB0040061BBD3 /* EmulateQRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2D12F72BFCAF730061BBD3 /* EmulateQRCodeView.swift */; };
+		7D2D12FC2BFCB0040061BBD3 /* EmulateQRCodeAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2D12F92BFCAF730061BBD3 /* EmulateQRCodeAssembly.swift */; };
+		7D2D12FD2BFCB0040061BBD3 /* EmulateQRCodeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2D12F82BFCAF730061BBD3 /* EmulateQRCodeViewModel.swift */; };
 		C30A3AF72BE23EC300D82A0B /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30A3AF62BE23EC300D82A0B /* QRCodeGenerator.swift */; };
 		C30B6CB12BE4DEBF00737397 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CA82BE4DEBF00737397 /* NoCameraPermissionView.swift */; };
 		C30B6CB22BE4DEBF00737397 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CA92BE4DEBF00737397 /* QRScannerSwipeDownButton.swift */; };
@@ -128,6 +132,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7D2D12F62BFCAF720061BBD3 /* EmulateQRCodeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulateQRCodeViewController.swift; sourceTree = "<group>"; };
+		7D2D12F72BFCAF730061BBD3 /* EmulateQRCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulateQRCodeView.swift; sourceTree = "<group>"; };
+		7D2D12F82BFCAF730061BBD3 /* EmulateQRCodeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulateQRCodeViewModel.swift; sourceTree = "<group>"; };
+		7D2D12F92BFCAF730061BBD3 /* EmulateQRCodeAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulateQRCodeAssembly.swift; sourceTree = "<group>"; };
 		C30A3AF62BE23EC300D82A0B /* QRCodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeGenerator.swift; sourceTree = "<group>"; };
 		C30B6CA82BE4DEBF00737397 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
 		C30B6CA92BE4DEBF00737397 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
@@ -248,6 +256,17 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7D2D12F52BFCAF020061BBD3 /* EmulateQRCode */ = {
+			isa = PBXGroup;
+			children = (
+				7D2D12F92BFCAF730061BBD3 /* EmulateQRCodeAssembly.swift */,
+				7D2D12F62BFCAF720061BBD3 /* EmulateQRCodeViewController.swift */,
+				7D2D12F82BFCAF730061BBD3 /* EmulateQRCodeViewModel.swift */,
+				7D2D12F72BFCAF730061BBD3 /* EmulateQRCodeView.swift */,
+			);
+			path = EmulateQRCode;
+			sourceTree = "<group>";
+		};
 		C30A3AF52BE23EBA00D82A0B /* QRCoreGenerator */ = {
 			isa = PBXGroup;
 			children = (
@@ -298,6 +317,7 @@
 		C30B6CBC2BE4EA4600737397 /* Sign */ = {
 			isa = PBXGroup;
 			children = (
+				7D2D12F52BFCAF020061BBD3 /* EmulateQRCode */,
 				C35434C82BE8767E009FA8C0 /* SignQRCode */,
 				C30B6CC72BE4F88100737397 /* SignConfirmation */,
 			);
@@ -902,6 +922,10 @@
 				C30F682E2BE56AF900F1FC52 /* KeyDetailsQRCodeCell.swift in Sources */,
 				C37671422BF18F7C003CD9CB /* SettingsRootItemsProvider.swift in Sources */,
 				C30B6CB62BE4DEBF00737397 /* ScannerViewController.swift in Sources */,
+				7D2D12FA2BFCB0040061BBD3 /* EmulateQRCodeViewController.swift in Sources */,
+				7D2D12FB2BFCB0040061BBD3 /* EmulateQRCodeView.swift in Sources */,
+				7D2D12FC2BFCB0040061BBD3 /* EmulateQRCodeAssembly.swift in Sources */,
+				7D2D12FD2BFCB0040061BBD3 /* EmulateQRCodeViewModel.swift in Sources */,
 				C35434C72BE874DF009FA8C0 /* SignCoordinator.swift in Sources */,
 				C31614542BEFAB7800D70977 /* InfoProvider.swift in Sources */,
 				C34C44A42B28CD0300D50343 /* SettingsViewController.swift in Sources */,

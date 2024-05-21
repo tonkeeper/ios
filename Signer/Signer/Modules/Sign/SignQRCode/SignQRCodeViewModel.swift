@@ -25,7 +25,6 @@ final class SignQRCodeViewModelImplementation: SignQRCodeViewModel, SignQRCodeMo
   // MARK: - SignQRCodeViewModel
   
   var didUpdateModel: ((SignQRCodeView.Model) -> Void)?
-  var didGenerateQRCode: ((UIImage?) -> Void)?
 
   func viewDidLoad() {
     update()
