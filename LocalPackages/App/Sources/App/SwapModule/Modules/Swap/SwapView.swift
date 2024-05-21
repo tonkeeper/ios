@@ -54,6 +54,8 @@ final class SwapView: UIView {
   }
   
   func showDetails(animated: Bool = false) {
+    contentView.layer.removeAllAnimations()
+    actionButton.layer.removeAllAnimations()
     layoutIfNeeded()
     
     contentView.snp.remakeConstraints { make in
@@ -71,6 +73,8 @@ final class SwapView: UIView {
   }
   
   func hideDetails(animated: Bool = false) {
+    contentView.layer.removeAllAnimations()
+    actionButton.layer.removeAllAnimations()
     layoutIfNeeded()
     
     contentView.snp.remakeConstraints { make in
