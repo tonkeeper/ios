@@ -3,12 +3,14 @@ import TKCore
 import KeeperCore
 
 struct SwapConfirmationItem {
+  let convertedFiatAmount: String
   let operationItem: SwapOperationItem
   let simulationModel: SwapSimulationModel
 }
 
 extension SwapConfirmationItem {
   static let testData = SwapConfirmationItem(
+    convertedFiatAmount: "$ 6,010.01",
     operationItem: SwapOperationItem(
       sendToken: .tonStub,
       recieveToken: .usdtStub
@@ -115,7 +117,7 @@ private extension SwapConfirmationViewModelImplementation {
       sendContainer: SwapSendContainerView.Model(
         inputContainerModel: SwapInputContainerView.Model(
           headerTitle: "Send",
-          balanceTitle: "$ 6,010.01",
+          balanceTitle: swapConfirmationItem.convertedFiatAmount,
           maxButton: nil,
           tokenButton: swapItemMapper.mapTokenButton(
             buttonToken: swapConfirmationItem.operationItem.sendToken,
@@ -130,7 +132,7 @@ private extension SwapConfirmationViewModelImplementation {
       recieveContainer: SwapRecieveContainerView.Model(
         inputContainerModel: SwapInputContainerView.Model(
           headerTitle: "Recieve",
-          balanceTitle: "$ 6,010.01",
+          balanceTitle: swapConfirmationItem.convertedFiatAmount,
           maxButton: nil,
           tokenButton: swapItemMapper.mapTokenButton(
             buttonToken: swapConfirmationItem.operationItem.recieveToken,

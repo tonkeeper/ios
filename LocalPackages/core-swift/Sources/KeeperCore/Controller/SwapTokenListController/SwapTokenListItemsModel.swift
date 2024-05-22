@@ -35,29 +35,77 @@ public extension SwapTokenListItemsModel {
   }
 }
 
-public struct SwapAsset {
-  public var contractAddress: Address
-  public var kind: AssetKind
-  public var symbol: String
-  public var displayName: String
-  public var fractionDigits: Int
-  public var imageUrl: URL?
+public enum SwapAsset {
+  case ton(AssetInfo)
+  case jetton(AssetInfo)
+  case unknown(AssetInfo)
   
-  public init(contractAddress: Address, kind: AssetKind, symbol: String, displayName: String, fractionDigits: Int, imageUrl: URL? = nil) {
-    self.contractAddress = contractAddress
-    self.kind = kind
-    self.symbol = symbol
-    self.displayName = displayName
-    self.fractionDigits = fractionDigits
-    self.imageUrl = imageUrl
+  var assetInfo: AssetInfo {
+    switch self {
+    case .ton(let info), .jetton(let info), .unknown(let info):
+      return info
+    }
+  }
+  
+  public var kind: AssetKind {
+    assetInfo.kind
+  }
+  public var contractAddress: Address {
+    assetInfo.contractAddress
+  }
+  public var symbol: String {
+    assetInfo.symbol
+  }
+  public var displayName: String {
+    assetInfo.displayName
+  }
+  public var fractionDigits: Int {
+    assetInfo.fractionDigits
+  }
+  public var imageUrl: URL? {
+    assetInfo.imageUrl
+  }
+  
+  public init(kind: AssetKind,
+              contractAddress: Address,
+              symbol: String,
+              displayName: String,
+              fractionDigits: Int,
+              isWhitelisted: Bool,
+              imageUrl: URL? = nil) {
+    let assetInfo = AssetInfo(
+      kind: kind,
+      contractAddress: contractAddress,
+      symbol: symbol,
+      displayName: displayName,
+      fractionDigits: fractionDigits,
+      isWhitelisted: isWhitelisted,
+      imageUrl: imageUrl
+    )
+    
+    switch kind {
+    case .ton:
+      self = .ton(assetInfo)
+    case .jetton:
+      self = .jetton(assetInfo)
+    case .unknown:
+      self = .unknown(assetInfo)
+    }
   }
 }
 
 extension SwapAsset: Equatable {
   public static func == (lhs: SwapAsset, rhs: SwapAsset) -> Bool {
-    return lhs.contractAddress == rhs.contractAddress
-    && lhs.kind == rhs.kind
-    && lhs.symbol == rhs.symbol
-    && lhs.displayName == rhs.displayName
+    return lhs.assetInfo == rhs.assetInfo
   }
+}
+
+public struct AssetInfo: Equatable {
+  public var kind: AssetKind
+  public var contractAddress: Address
+  public var symbol: String
+  public var displayName: String
+  public var fractionDigits: Int
+  public var isWhitelisted: Bool
+  public var imageUrl: URL?
 }

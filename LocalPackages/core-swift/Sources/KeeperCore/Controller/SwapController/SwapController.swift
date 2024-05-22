@@ -23,7 +23,9 @@ public final class SwapController {
   
   private let stonfiAssetsStore: StonfiAssetsStore
   private let stonfiPairsStore: StonfiPairsStore
+  private let currencyStore: CurrencyStore
   private let stonfiSwapService: StonfiSwapService
+  private let ratesService: RatesService
   private let stonfiAssetsLoader: StonfiAssetsLoader
   private let stonfiPairsLoader: StonfiPairsLoader
   private let stonfiMapper: StonfiMapper
@@ -32,7 +34,9 @@ public final class SwapController {
   
   init(stonfiAssetsStore: StonfiAssetsStore,
        stonfiPairsStore: StonfiPairsStore,
+       currencyStore: CurrencyStore,
        stonfiSwapService: StonfiSwapService,
+       ratesService: RatesService,
        stonfiAssetsLoader: StonfiAssetsLoader,
        stonfiPairsLoader: StonfiPairsLoader,
        stonfiMapper: StonfiMapper,
@@ -40,7 +44,9 @@ public final class SwapController {
        decimalAmountFormatter: DecimalAmountFormatter) {
     self.stonfiAssetsStore = stonfiAssetsStore
     self.stonfiPairsStore = stonfiPairsStore
+    self.currencyStore = currencyStore
     self.stonfiSwapService = stonfiSwapService
+    self.ratesService = ratesService
     self.stonfiAssetsLoader = stonfiAssetsLoader
     self.stonfiPairsLoader = stonfiPairsLoader
     self.stonfiMapper = stonfiMapper
@@ -123,6 +129,19 @@ public final class SwapController {
     return mapStonfiSwapSimulation(stonfiSwapSimulation, sendAsset: sendAsset, recieveAsset: recieveAsset)
   }
   
+  public func convertAssetAmountToFiat(_ swapAsset: SwapAsset, amount: BigUInt) async -> String {
+    let currency = await currencyStore.getActiveCurrency()
+    let rates = await loadRates(jettons: swapAsset.jettons, currency: currency)
+    let rate = getRate(from: rates, for: swapAsset, currency: currency)
+    let converted = RateConverter().convert(amount: amount, amountFractionLength: swapAsset.fractionDigits, rate: rate)
+    return convertAmountToString(
+      amount: converted.amount,
+      fractionDigits: converted.fractionLength,
+      maximumFractionDigits: 2,
+      currency: currency
+    )
+  }
+  
   public func convertStringToAmount(string: String, targetFractionalDigits: Int) -> (value: BigUInt, fractionalDigits: Int) {
     guard !string.isEmpty else { return (0, targetFractionalDigits) }
     let fractionalSeparator: String = .fractionalSeparator ?? ""
@@ -141,12 +160,16 @@ public final class SwapController {
     return (bigIntValue, targetFractionalDigits)
   }
   
-  public func convertAmountToString(amount: BigUInt, fractionDigits: Int, maximumFractionDigits: Int? = nil) -> String {
+  public func convertAmountToString(amount: BigUInt, 
+                                    fractionDigits: Int,
+                                    maximumFractionDigits: Int? = nil,
+                                    currency: Currency? = nil) -> String {
     let newMaximumFractionDigits = maximumFractionDigits ?? fractionDigits
     return amountFormatter.formatAmount(
       amount,
       fractionDigits: fractionDigits,
-      maximumFractionDigits: newMaximumFractionDigits
+      maximumFractionDigits: newMaximumFractionDigits,
+      currency: currency
     )
   }
 }
@@ -204,11 +227,51 @@ private extension SwapController {
       )
     )
   }
+  
+  func loadRates(jettons: [JettonInfo], currency: Currency) async -> Rates {
+    do {
+      return try await ratesService.loadRates(jettons: jettons, currencies: [currency])
+    } catch {
+      return Rates(ton: [], jettonsRates: [])
+    }
+  }
+  
+  func getRate(from rates: Rates, for swapAsset: SwapAsset, currency: Currency) -> Rates.Rate {
+    switch swapAsset {
+    case .ton:
+      return rates.ton.first ?? .zero(currency: currency)
+    case .jetton(let assetInfo):
+      return rates.jettonsRates
+        .first(where: { $0.jettonInfo.address == assetInfo.contractAddress })?
+        .rates.first ?? .zero(currency: currency)
+    default:
+      return .zero(currency: currency)
+    }
+  }
 }
 
-private extension StonfiAsset {
-  var isToncoin: Bool {
-    symbol == TonInfo.symbol && kind.uppercased() == "TON"
+private extension SwapAsset {
+  var jettons: [JettonInfo] {
+    switch self {
+    case .jetton(let assetInfo):
+      let jettonInfo = JettonInfo(
+        address: assetInfo.contractAddress,
+        fractionDigits: assetInfo.fractionDigits,
+        name: assetInfo.displayName,
+        symbol: assetInfo.symbol,
+        verification: assetInfo.isWhitelisted ? .whitelist : .none,
+        imageURL: assetInfo.imageUrl
+      )
+      return [jettonInfo]
+    default:
+      return []
+    }
+  }
+}
+
+private extension Rates.Rate {
+  static func zero(currency: Currency) -> Rates.Rate {
+    Rates.Rate(currency: currency, rate: 0, diff24h: nil)
   }
 }
 

@@ -410,7 +410,9 @@ public final class MainAssembly {
     SwapController(
       stonfiAssetsStore: storesAssembly.stonfiAssetsStore,
       stonfiPairsStore: storesAssembly.stonfiPairsStore,
+      currencyStore: storesAssembly.currencyStore,
       stonfiSwapService: servicesAssembly.stonfiSwapService(),
+      ratesService: servicesAssembly.ratesService(),
       stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader,
       stonfiPairsLoader: loadersAssembly.stonfiPairsLoader,
       stonfiMapper: stonfiMapper,

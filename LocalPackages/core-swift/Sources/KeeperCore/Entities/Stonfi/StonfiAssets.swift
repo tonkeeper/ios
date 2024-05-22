@@ -28,6 +28,7 @@ public struct StonfiAsset: Codable {
   public let isDeprecated: Bool
   public let isCommunity: Bool
   public let isBlacklisted: Bool
+  public let tags: [String]?
   public let dexPriceUsd: String?
   
   enum CodingKeys: String, CodingKey {
@@ -40,5 +41,13 @@ public struct StonfiAsset: Codable {
     case isDeprecated = "deprecated"
     case isCommunity = "community"
     case isBlacklisted = "blacklisted"
+    case tags
+    case dexPriceUsd = "dex_price_usd"
+  }
+}
+
+public extension StonfiAsset {
+  var isToncoin: Bool {
+    symbol.lowercased() == TonInfo.symbol.lowercased() && kind.lowercased() == TonInfo.symbol.lowercased()
   }
 }

@@ -1,5 +1,4 @@
 import UIKit
-import TKLocalize
 import TKCore
 import KeeperCore
 import BigInt
@@ -25,11 +24,12 @@ extension SwapToken {
   static let tonStub = SwapToken(
     icon: .image(.TKCore.Icons.Size44.tonLogo),
     asset: SwapAsset(
-      contractAddress: try! Address.parse("EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
       kind: .ton,
+      contractAddress: try! Address.parse("EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
       symbol: TonInfo.symbol,
       displayName: TonInfo.name,
-      fractionDigits: TonInfo.fractionDigits
+      fractionDigits: TonInfo.fractionDigits,
+      isWhitelisted: true
     ),
     balance: SwapToken.Balance(
       amount: .testBalanceAmount // 100,000.01
@@ -40,11 +40,12 @@ extension SwapToken {
   static let usdtStub = SwapToken(
     icon: .asyncImage(URL(string: "https://asset.ston.fi/img/EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs")!),
     asset: SwapAsset(
-      contractAddress: try! Address.parse("EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"),
       kind: .jetton,
+      contractAddress: try! Address.parse("EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"),
       symbol: "USD₮",
       displayName: "USD₮",
-      fractionDigits: 6
+      fractionDigits: 6,
+      isWhitelisted: true
     ),
     balance: SwapToken.Balance(
       amount: .testBalanceAmount // 100,000.01
@@ -677,13 +678,7 @@ private extension SwapViewModelImplementation {
       isEnabled: !isResolving && isContinueEnable,
       isActivity: isResolving,
       action: { [weak self] in
-        guard let self else { return }
-        guard let simulationModel = currentSwapSimulationModel else { return }
-        let swapConfirmationItem = SwapConfirmationItem(
-          operationItem: swapOperationItem,
-          simulationModel: simulationModel
-        )
-        self.didTapContinue?(swapConfirmationItem)
+        self?.handleContinueButtonTap()
       }
     )
   }
@@ -697,6 +692,26 @@ private extension SwapViewModelImplementation {
       isActivity: false,
       action: nil
     )
+  }
+  
+  func handleContinueButtonTap() {
+    guard let simulationModel = currentSwapSimulationModel, let token = swapOperationItem.recieveToken else { return }
+    let swapOperationItem = self.swapOperationItem
+    isResolving = true
+    Task {
+      let unformatted = amountInpuTextFieldFormatter.unformatString(token.inputAmount) ?? "0"
+      let amount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: token.asset.fractionDigits)
+      let convertedFiatAmount = await swapController.convertAssetAmountToFiat(token.asset, amount: amount.value)
+      await MainActor.run {
+        let swapConfirmationItem = SwapConfirmationItem(
+          convertedFiatAmount: convertedFiatAmount,
+          operationItem: swapOperationItem,
+          simulationModel: simulationModel
+        )
+        didTapContinue?(swapConfirmationItem)
+        isResolving = false
+      }
+    }
   }
   
   func token(atInput input: SwapInput) -> SwapToken? {
@@ -737,7 +752,7 @@ private extension SwapViewModelImplementation {
   
   func simulateSwap(_ direction: SwapSimulationDirection,
                     isResolvingEnabled: Bool = true,
-                    debounceDuration: TimeInterval = 0.3,
+                    debounceDuration: TimeInterval = 0.4,
                     completion: (() -> Void)? = nil) {
     recalculateSwapState()
     isResolving = isNeedStartResolving() && isResolvingEnabled
@@ -801,7 +816,6 @@ private extension SwapViewModelImplementation {
           sendAsset: sendAsset,
           recieveAsset: recieveAsset
         )
-        
         await MainActor.run {
           guard sendAsset == swapOperationItem.sendToken?.asset && recieveAsset == swapOperationItem.recieveToken?.asset else { return }
           let outputAmount = swapSimulationModel.outputAmount(for: direction)

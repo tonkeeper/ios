@@ -3,29 +3,39 @@ import TonSwift
 
 struct StonfiMapper {
   func mapStonfiAsset(_ asset: StonfiAsset) -> SwapAsset? {
-    var imageUrl: URL?
-    if let imageUrlString = asset.imageUrl  {
-      imageUrl = URL(string: imageUrlString)
-    }
-    
-    let assetKind = AssetKind(fromString: asset.kind)
-    
-    let displayName: String
-    if assetKind == .ton, asset.displayName == TonInfo.symbol {
-      displayName = TonInfo.name
-    } else {
-      displayName = asset.displayName ?? ""
-    }
-    
     guard let contractAddress = try? Address.parse(asset.contractAddress) else { return nil }
     
+    var imageUrl = mapImageUrlString(asset.imageUrl)
+    let assetKind = AssetKind(fromString: asset.kind)
+    let displayName = getDisplayName(for: asset, kind: assetKind)
+    let tags = asset.tags ?? []
+    let isWhitelisted = tags.contains(where: { $0.lowercased() == .tagWhitelisted })
+
     return SwapAsset(
-      contractAddress: contractAddress,
       kind: assetKind,
+      contractAddress: contractAddress,
       symbol: asset.symbol,
       displayName: displayName,
       fractionDigits: asset.decimals,
+      isWhitelisted: isWhitelisted,
       imageUrl: imageUrl
     )
   }
+  
+  func mapImageUrlString(_ imageUrlString: String?) -> URL? {
+    guard let imageUrlString else { return nil }
+    return URL(string: imageUrlString)
+  }
+  
+  func getDisplayName(for asset: StonfiAsset, kind assetKind: AssetKind) -> String {
+    if assetKind == .ton, asset.displayName == TonInfo.symbol {
+      return TonInfo.name
+    } else {
+      return asset.displayName ?? ""
+    }
+  }
+}
+
+private extension String {
+  static let tagWhitelisted = "whitelisted"
 }
