@@ -57,10 +57,10 @@ private extension SwapCoordinator {
       print("open buy ton")
     }
     
-    module.output.didTapContinue = { [weak self, weak view = module.view] swapConfirmationItem in
+    module.output.didTapContinue = { [weak self, weak view = module.view] swapModel in
       self?.openSwapConfirmation(
         sourceViewController: view,
-        swapConfirmationItem: swapConfirmationItem,
+        swapModel: swapModel,
         completion: nil
       )
     }
@@ -94,11 +94,14 @@ private extension SwapCoordinator {
   }
   
   func openSwapConfirmation(sourceViewController: UIViewController?,
-                            swapConfirmationItem: SwapConfirmationItem,
+                            swapModel: SwapModel,
                             completion: (() -> Void)?) {
     let module = SwapConfirmationAssembly.module(
-      swapConfirmationController: keeperCoreMainAssembly.swapConfirmationController(),
-      swapConfirmationItem: swapConfirmationItem
+      swapConfirmationController: keeperCoreMainAssembly.swapConfirmationController(
+        wallet: wallet,
+        swapModel: swapModel
+      ),
+      swapConfirmationItem: swapModel.confirmationItem
     )
     
     module.view.setupRightCloseButton {

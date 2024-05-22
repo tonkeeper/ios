@@ -437,8 +437,14 @@ public final class MainAssembly {
     )
   }
   
-  public func swapConfirmationController() -> SwapConfirmationController {
-    SwapConfirmationController()
+  public func swapConfirmationController(wallet: Wallet, swapModel: SwapModel) -> SwapConfirmationController {
+    SwapConfirmationController(
+      wallet: wallet,
+      swapTransactionItem: swapModel.transactionItem,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(), 
+      mnemonicRepository: repositoriesAssembly.mnemonicRepository()
+    )
   }
   
   public func buyListController(wallet: Wallet,

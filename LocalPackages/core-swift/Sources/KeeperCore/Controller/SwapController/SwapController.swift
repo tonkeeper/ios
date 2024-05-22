@@ -202,22 +202,32 @@ private extension SwapController {
   }
   
   func mapStonfiSwapSimulation(_ stonfiSwapSimulation: StonfiSwapSimulation, sendAsset: SwapAsset, recieveAsset: SwapAsset) -> SwapSimulationModel {
-    let offerAmount = convertAmountToString(amount: stonfiSwapSimulation.offerUnits, fractionDigits: sendAsset.fractionDigits)
-    let askAmount = convertAmountToString(amount: stonfiSwapSimulation.askUnits, fractionDigits: recieveAsset.fractionDigits)
-    let minAskAmount = convertAmountToString(amount: stonfiSwapSimulation.minAskUnits, fractionDigits: recieveAsset.fractionDigits, maximumFractionDigits: 4)
-    let feeAmount  = convertAmountToString(amount: stonfiSwapSimulation.feeUnits, fractionDigits: recieveAsset.fractionDigits, maximumFractionDigits: 4)
+    let offerAmountConverted = convertAmountToString(amount: stonfiSwapSimulation.offerUnits, fractionDigits: sendAsset.fractionDigits)
+    let askAmountConverted = convertAmountToString(amount: stonfiSwapSimulation.askUnits, fractionDigits: recieveAsset.fractionDigits)
+    let minAskAmountConverted = convertAmountToString(amount: stonfiSwapSimulation.minAskUnits, fractionDigits: recieveAsset.fractionDigits, maximumFractionDigits: 4)
+    let feeAmountConverted  = convertAmountToString(amount: stonfiSwapSimulation.feeUnits, fractionDigits: recieveAsset.fractionDigits, maximumFractionDigits: 4)
     
     let swapRate = decimalAmountFormatter.format(amount: stonfiSwapSimulation.swapRate, maximumFractionDigits: 4)
     let priceImpact = decimalAmountFormatter.format(amount: stonfiSwapSimulation.priceImpact * 100, maximumFractionDigits: 3)
     
     return SwapSimulationModel(
-      sendAmount: offerAmount,
-      recieveAmount: askAmount,
+      offerAmount: SwapSimulationModel.Amount(
+        amount: stonfiSwapSimulation.offerUnits,
+        converted: offerAmountConverted
+      ),
+      askAmount: SwapSimulationModel.Amount(
+        amount: stonfiSwapSimulation.askUnits,
+        converted: askAmountConverted
+      ),
+      minAskAmount: SwapSimulationModel.Amount(
+        amount: stonfiSwapSimulation.minAskUnits,
+        converted: minAskAmountConverted
+      ),
       swapRate: SwapSimulationModel.Rate(value: swapRate),
       info: SwapSimulationModel.Info(
         priceImpact: priceImpact,
-        minimumRecieved: minAskAmount,
-        liquidityProviderFee: feeAmount,
+        minimumRecieved: minAskAmountConverted,
+        liquidityProviderFee: feeAmountConverted,
         blockchainFee: "0.08 - 0.25 TON",
         route: SwapSimulationModel.Info.Route(
           tokenSymbolSend: sendAsset.symbol,

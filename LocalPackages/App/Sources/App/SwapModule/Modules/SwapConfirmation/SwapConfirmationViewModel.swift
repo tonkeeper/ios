@@ -1,12 +1,7 @@
 import Foundation
 import TKCore
 import KeeperCore
-
-struct SwapConfirmationItem {
-  let convertedFiatAmount: String
-  let operationItem: SwapOperationItem
-  let simulationModel: SwapSimulationModel
-}
+import BigInt
 
 extension SwapConfirmationItem {
   static let testData = SwapConfirmationItem(
@@ -16,8 +11,18 @@ extension SwapConfirmationItem {
       recieveToken: .usdtStub
     ),
     simulationModel: SwapSimulationModel(
-      sendAmount: "",
-      recieveAmount: "",
+      offerAmount: SwapSimulationModel.Amount(
+        amount: BigUInt(),
+        converted: "1,000"
+      ),
+      askAmount: SwapSimulationModel.Amount(
+        amount: BigUInt(),
+        converted: "6,010.01"
+      ),
+      minAskAmount: SwapSimulationModel.Amount(
+        amount: BigUInt(),
+        converted: "6,010.01"
+      ),
       swapRate: SwapSimulationModel.Rate(value: "0"),
       info: SwapSimulationModel.Info(
         priceImpact: "0.001",

@@ -1,20 +1,33 @@
 import Foundation
+import BigInt
 
 public struct SwapSimulationModel: Equatable {
-  public let sendAmount: String
-  public let recieveAmount: String
+  public let offerAmount: Amount
+  public let askAmount: Amount
+  public let minAskAmount: Amount
   public let swapRate: Rate
   public let info: Info
   
-  public init(sendAmount: String, recieveAmount: String, swapRate: Rate, info: Info) {
-    self.sendAmount = sendAmount
-    self.recieveAmount = recieveAmount
+  public init(offerAmount: Amount, askAmount: Amount, minAskAmount: Amount, swapRate: Rate, info: Info) {
+    self.offerAmount = offerAmount
+    self.askAmount = askAmount
+    self.minAskAmount = minAskAmount
     self.swapRate = swapRate
     self.info = info
   }
 }
 
 extension SwapSimulationModel {
+  public struct Amount: Equatable {
+    public let amount: BigUInt
+    public let converted: String
+    
+    public init(amount: BigUInt, converted: String) {
+      self.amount = amount
+      self.converted = converted
+    }
+  }
+  
   public struct Rate: Equatable {
     public let value: String
     
@@ -60,12 +73,12 @@ public enum SwapSimulationDirection {
 }
 
 extension SwapSimulationModel {
-  public func outputAmount(for direction: SwapSimulationDirection) -> String {
+  public func outputAmount(for direction: SwapSimulationDirection) -> Amount {
     switch direction {
     case .direct:
-      return recieveAmount
+      return askAmount
     case .reverse:
-      return sendAmount
+      return offerAmount
     }
   }
 }

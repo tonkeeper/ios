@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class SwapView: UIView {
+final class SwapView: UIView, ConfigurableView {
   
   var isDetailsHidden: Bool = true {
     didSet {
@@ -51,6 +51,20 @@ final class SwapView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  struct Model {
+    struct SwapButton {
+      let action: (() -> Void)?
+    }
+    
+    let title: ModalTitleView.Model
+    let swapButton: SwapButton
+  }
+  
+  func configure(model: Model) {
+    titleView.configure(model: model.title)
+    swapButton.configuration.action = model.swapButton.action
   }
   
   func showDetails(animated: Bool = false) {

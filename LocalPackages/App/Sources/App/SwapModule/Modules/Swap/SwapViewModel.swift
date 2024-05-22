@@ -4,22 +4,6 @@ import KeeperCore
 import BigInt
 import TonSwift
 
-struct SwapToken {
-  enum Icon {
-    case image(UIImage)
-    case asyncImage(URL?)
-  }
-  
-  struct Balance {
-    var amount: BigUInt
-  }
-  
-  var icon: Icon
-  var asset: SwapAsset
-  var balance: Balance
-  var inputAmount: String
-}
-
 extension SwapToken {
   static let tonStub = SwapToken(
     icon: .image(.TKCore.Icons.Size44.tonLogo),
@@ -58,15 +42,6 @@ private extension BigUInt {
   static let testBalanceAmount = BigUInt(stringLiteral: "100000010000000")
 }
 
-struct SwapModel {
-  struct SwapButton {
-    let action: (() -> Void)?
-  }
-  
-  let title: String
-  let swapButton: SwapButton
-}
-
 struct SwapStateModel {
   let sendTextFieldState: PlainTextField.TextFieldState
   let actionButton: SwapActionButtonModel
@@ -95,16 +70,11 @@ enum SwapInput {
   }
 }
 
-struct SwapOperationItem {
-  var sendToken: SwapToken?
-  var recieveToken: SwapToken?
-}
-
 protocol SwapModuleOutput: AnyObject {
   var didTapSwapSettings: (() -> Void)? { get set }
   var didTapTokenButton: ((Address?, SwapInput) -> Void)? { get set }
   var didTapBuyTon: (() -> Void)? { get set }
-  var didTapContinue: ((SwapConfirmationItem) -> Void)? { get set }
+  var didTapContinue: ((SwapModel) -> Void)? { get set }
 }
 
 protocol SwapModuleInput: AnyObject {
@@ -112,7 +82,7 @@ protocol SwapModuleInput: AnyObject {
 }
 
 protocol SwapViewModel: AnyObject {
-  var didUpdateModel: ((SwapModel) -> Void)? { get set }
+  var didUpdateModel: ((SwapView.Model) -> Void)? { get set }
   var didUpdateStateModel: ((SwapStateModel) -> Void)? { get set }
   var didUpdateDetailsModel: ((SwapDetailsContainerView.Model?) -> Void)? { get set }
   var didUpdateIsRefreshing: ((Bool) -> Void)? { get set }
@@ -180,7 +150,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   var didTapSwapSettings: (() -> Void)?
   var didTapTokenButton: ((Address?, SwapInput) -> Void)?
   var didTapBuyTon: (() -> Void)?
-  var didTapContinue: ((SwapConfirmationItem) -> Void)?
+  var didTapContinue: ((SwapModel) -> Void)?
   
   // MARK: - SwapModuleInput
   
@@ -225,7 +195,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   
   // MARK: - SwapViewModel
   
-  var didUpdateModel: ((SwapModel) -> Void)?
+  var didUpdateModel: ((SwapView.Model) -> Void)?
   var didUpdateStateModel: ((SwapStateModel) -> Void)?
   var didUpdateDetailsModel: ((SwapDetailsContainerView.Model?) -> Void)?
   var didUpdateIsRefreshing: ((Bool) -> Void)?
@@ -239,8 +209,6 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   func viewDidLoad() {
     update()
     updateSwapState()
-    
-    didTapContinue?(SwapConfirmationItem.testData)
 
     Task {
       await swapController.start()
@@ -423,10 +391,10 @@ private extension SwapViewModelImplementation {
     didUpdateSwapRecieveContainer?(swapRecieveContainerModel)
   }
   
-  func createModel() -> SwapModel {
-    SwapModel(
-      title: "Swap",
-      swapButton: SwapModel.SwapButton(
+  func createModel() -> SwapView.Model {
+    SwapView.Model(
+      title: ModalTitleView.Model(title: "Swap"),
+      swapButton: SwapView.Model.SwapButton(
         action: { [weak self] in
           self?.didTapSwapButton()
         }
@@ -695,41 +663,66 @@ private extension SwapViewModelImplementation {
   }
   
   func handleContinueButtonTap() {
-    guard let simulationModel = currentSwapSimulationModel, let token = swapOperationItem.recieveToken else { return }
-    let swapOperationItem = self.swapOperationItem
+    guard let sendToken = swapOperationItem.sendToken,
+          let recieveToken = swapOperationItem.recieveToken,
+          let swapSimulationModel = currentSwapSimulationModel
+    else {
+      return
+    }
+    
     isResolving = true
     Task {
-      let unformatted = amountInpuTextFieldFormatter.unformatString(token.inputAmount) ?? "0"
-      let amount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: token.asset.fractionDigits)
-      let convertedFiatAmount = await swapController.convertAssetAmountToFiat(token.asset, amount: amount.value)
+      let swapModel = await createSwapModel(
+        sendToken: sendToken,
+        recieveToken: recieveToken,
+        swapSimulationModel: swapSimulationModel
+      )
       await MainActor.run {
-        let swapConfirmationItem = SwapConfirmationItem(
-          convertedFiatAmount: convertedFiatAmount,
-          operationItem: swapOperationItem,
-          simulationModel: simulationModel
-        )
-        didTapContinue?(swapConfirmationItem)
         isResolving = false
+        guard let swapModel else { return }
+        didTapContinue?(swapModel)
       }
     }
   }
   
-  func token(atInput input: SwapInput) -> SwapToken? {
-    switch input {
-    case .send:
-      return swapOperationItem.sendToken
-    case .recieve:
-      return swapOperationItem.recieveToken
+  func createSwapModel(sendToken: SwapToken,
+                       recieveToken: SwapToken,
+                       swapSimulationModel: SwapSimulationModel) async -> SwapModel? {
+    let unformatted = amountInpuTextFieldFormatter.unformatString(recieveToken.inputAmount) ?? "0"
+    let amount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: recieveToken.asset.fractionDigits)
+    let convertedFiatAmount = await swapController.convertAssetAmountToFiat(recieveToken.asset, amount: amount.value)
+    
+    let swapConfirmationItem = SwapConfirmationItem(
+      convertedFiatAmount: convertedFiatAmount,
+      operationItem: SwapOperationItem(sendToken: sendToken, recieveToken: recieveToken),
+      simulationModel: swapSimulationModel
+    )
+    
+    let swapItem = SwapItem(
+      fromAddress: sendToken.asset.contractAddress,
+      toAddress: recieveToken.asset.contractAddress,
+      minAskAmount: swapSimulationModel.minAskAmount.amount,
+      offerAmount: swapSimulationModel.offerAmount.amount
+    )
+    
+    let swapTransactionItem: SwapTransactionItem?
+    switch (sendToken.asset.kind, recieveToken.asset.kind) {
+    case (.jetton, .jetton):
+      swapTransactionItem = .jettonToJetton(swapItem)
+    case (.jetton, .ton):
+      swapTransactionItem = .jettonToTon(swapItem)
+    case (.ton, .jetton):
+      swapTransactionItem = .tonToJetton(swapItem)
+    default:
+      swapTransactionItem = nil
     }
-  }
-  
-  func setToken(_ token: SwapToken?, forInput input: SwapInput) {
-    switch input {
-    case .send:
-      swapOperationItem.sendToken = token
-    case .recieve:
-      swapOperationItem.recieveToken = token
-    }
+    
+    guard let swapTransactionItem else { return nil }
+    
+    return SwapModel(
+      confirmationItem: swapConfirmationItem,
+      transactionItem: swapTransactionItem
+    )
   }
   
   func clearAllInputs() {
@@ -739,15 +732,6 @@ private extension SwapViewModelImplementation {
   
   func clearInput(_ input: SwapInput) {
     updateInputAmount("0", forInput: input)
-  }
-  
-  func swapSimulationDirection(forLastInput input: SwapInput) -> SwapSimulationDirection {
-    switch input {
-    case .send:
-      return .direct
-    case .recieve:
-      return .reverse
-    }
   }
   
   func simulateSwap(_ direction: SwapSimulationDirection,
@@ -818,7 +802,7 @@ private extension SwapViewModelImplementation {
         )
         await MainActor.run {
           guard sendAsset == swapOperationItem.sendToken?.asset && recieveAsset == swapOperationItem.recieveToken?.asset else { return }
-          let outputAmount = swapSimulationModel.outputAmount(for: direction)
+          let outputAmount = swapSimulationModel.outputAmount(for: direction).converted
           updateInputAmount(outputAmount, forInput: input.opposite)
           completion(.success(swapSimulationModel))
         }
@@ -884,6 +868,35 @@ private extension SwapViewModelImplementation {
       ),
       infoContainer: swapItemMapper.mapSwapSimulationInfo(swapSimulationModel.info)
     )
+  }
+}
+
+private extension SwapViewModelImplementation {
+  func token(atInput input: SwapInput) -> SwapToken? {
+    switch input {
+    case .send:
+      return swapOperationItem.sendToken
+    case .recieve:
+      return swapOperationItem.recieveToken
+    }
+  }
+  
+  func setToken(_ token: SwapToken?, forInput input: SwapInput) {
+    switch input {
+    case .send:
+      swapOperationItem.sendToken = token
+    case .recieve:
+      swapOperationItem.recieveToken = token
+    }
+  }
+  
+  func swapSimulationDirection(forLastInput input: SwapInput) -> SwapSimulationDirection {
+    switch input {
+    case .send:
+      return .direct
+    case .recieve:
+      return .reverse
+    }
   }
 }
 

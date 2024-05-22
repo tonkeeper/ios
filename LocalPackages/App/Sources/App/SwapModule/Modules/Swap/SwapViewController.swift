@@ -101,10 +101,7 @@ private extension SwapViewController {
   
   func setupBindings() {
     viewModel.didUpdateModel = { [weak self] model in
-      guard let customView = self?.customView else { return }
-      
-      customView.titleView.configure(model: .init(title: model.title))
-      customView.swapButton.configuration.action = model.swapButton.action
+      self?.customView.configure(model: model)
     }
     
     viewModel.didUpdateStateModel = { [weak self] stateModel in
