@@ -1,8 +1,10 @@
 import Foundation
+import TonSwift
 
 protocol StonfiAssetsService {
   func getAssets() async throws -> StonfiAssets
   func loadAssets() async throws -> StonfiAssets
+  func loadAssetsInfo(addresses: [Address]) async throws -> [StonfiAsset]
 }
 
 final class StonfiAssetsServiceImplementation: StonfiAssetsService {
@@ -15,8 +17,7 @@ final class StonfiAssetsServiceImplementation: StonfiAssetsService {
   }
   
   func getAssets() throws -> StonfiAssets {
-    let assets = try stonfiAssetsRepository.getAssets()
-    return assets
+    return try stonfiAssetsRepository.getAssets()
   }
   
   func loadAssets() async throws -> StonfiAssets {
@@ -32,6 +33,10 @@ final class StonfiAssetsServiceImplementation: StonfiAssetsService {
     try? stonfiAssetsRepository.saveAssets(assets)
     
     return assets
+  }
+  
+  func loadAssetsInfo(addresses: [Address]) async throws -> [StonfiAsset] {
+    return try await stonfiApi.getAssetsInfo(addresses: addresses)
   }
 }
 

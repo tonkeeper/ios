@@ -1,4 +1,5 @@
 import Foundation
+import TonSwift
 
 actor StonfiAssetsStore {
   typealias ObservationClosure = (Event) -> Void
@@ -30,6 +31,14 @@ actor StonfiAssetsStore {
     }
     
     return assets
+  }
+  
+  func loadAssetsInfo(addresses: [Address]) async -> [StonfiAsset] {
+    do {
+      return try await service.loadAssetsInfo(addresses: addresses)
+    } catch {
+      return []
+    }
   }
   
   func setAssets(_ assets: StonfiAssets) {

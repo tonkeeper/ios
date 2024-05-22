@@ -88,6 +88,35 @@ extension StonfiAPI {
   }
 }
 
+// MARK: - Get Assets Info
+
+extension StonfiAPI {
+  func getAssetsInfo(addresses: [Address]) async throws -> [StonfiAsset] {
+    let configuration = try await configurationStore.getConfiguration()
+    guard var components = URLComponents(string: configuration.stonfiJsonRpcEndpoint) else { return [] }
+    components.path = "/rpc"
+    
+    guard let url = components.url else { return [] }
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = try StonfiJsonRpcMethods.getAssetsInfo.createHttpBody(parameters: [
+      "addresses" : addresses.map({ $0.toString() })
+    ])
+    
+    let (data, response) = try await urlSession.data(for: request)
+    guard let httpResponse = (response as? HTTPURLResponse) else {
+      throw APIError.incorrectResponse
+    }
+    guard (200..<300).contains(httpResponse.statusCode) else {
+      throw APIError.serverError(statusCode: httpResponse.statusCode)
+    }
+    
+    let stonfiAssetsResponse = try JSONDecoder().decode(JsonRpcResponse<StonfiAssetsResult>.self, from: data)
+    return stonfiAssetsResponse.result.assets
+  }
+}
+
 // MARK: - Get Pairs
 
 extension StonfiAPI {

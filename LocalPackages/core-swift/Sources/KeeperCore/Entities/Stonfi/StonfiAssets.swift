@@ -28,6 +28,7 @@ public struct StonfiAsset: Codable {
   public let isDeprecated: Bool
   public let isCommunity: Bool
   public let isBlacklisted: Bool
+  public let dexPriceUsd: String?
   
   enum CodingKeys: String, CodingKey {
     case contractAddress = "contract_address"
