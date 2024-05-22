@@ -89,7 +89,9 @@ private extension BuyCoordinator {
   
   func openBuySellOperator(buySellOperatorItem: BuySellOperatorItem) {
     let module = BuySellOperatorAssembly.module(
-      buySellOperatorController: keeperCoreMainAssembly.buySellOperatorController(),
+      buySellOperatorController: keeperCoreMainAssembly.buySellOperatorController(
+        fiatOperatorCategory: buySellOperatorItem.operation.fiatOperatorCategory
+      ),
       buySellOperatorItem: buySellOperatorItem
     )
     
@@ -107,8 +109,13 @@ private extension BuyCoordinator {
       )
     }
     
-    module.output.didTapContinue = { [weak self] buySellDetailsItem in
+    module.output.onOpenDetails = { [weak self] buySellDetailsItem in
       self?.openBuySellDetails(buySellDetailsItem: buySellDetailsItem)
+    }
+    
+    module.output.onOpenProviderUrl = { [weak self, weak view = module.view] providerUrl in
+      guard let providerUrl, let fromViewController = view else { return }
+      self?.openWebView(url: providerUrl, fromViewController: fromViewController)
     }
     
     router.push(viewController: module.view, animated: true)

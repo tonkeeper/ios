@@ -46,7 +46,6 @@ public final class BuySellDetailsController {
     _ = await tonRatesStore.addEventObserver(self) { observer, event in
       switch event {
       case .didUpdateRates:
-        print("update rates")
         observer.didUpdateRates?()
       }
     }
@@ -105,10 +104,10 @@ public final class BuySellDetailsController {
     return (bigIntValue, targetFractionalDigits)
   }
   
-  public func makeActionUrl(actionTemplateURL: String?,
-                            operatorId: String,
-                            currencyFrom: Currency,
-                            currencyTo: Currency) async -> URL? {
+  public func createActionUrl(actionTemplateURL: String?,
+                              operatorId: String,
+                              currencyFrom: Currency,
+                              currencyTo: Currency) async -> URL? {
     guard let actionTemplateURL,
           let walletAddress = try? walletsStore.activeWallet.address.toString(bounceable: false)
     else {

@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-final class BuySellOperatorView: UIView {
+final class BuySellOperatorView: UIView, ConfigurableView {
   
   let titleView = ModalTitleView()
   
@@ -22,6 +22,26 @@ final class BuySellOperatorView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  struct Model {
+    struct Button {
+      let title: String
+      let isEnabled: Bool
+      let isActivity: Bool
+      let action: (() -> Void)
+    }
+    
+    let title: ModalTitleView.Model
+    let button: Button
+  }
+  
+  func configure(model: Model) {
+    titleView.configure(model: model.title)
+    continueButton.configuration.content = TKButton.Configuration.Content(title: .plainString(model.button.title))
+    continueButton.configuration.isEnabled = model.button.isEnabled
+    continueButton.configuration.showsLoader = model.button.isActivity
+    continueButton.configuration.action = model.button.action
   }
 }
 

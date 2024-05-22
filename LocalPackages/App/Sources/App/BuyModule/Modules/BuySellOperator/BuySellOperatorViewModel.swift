@@ -32,7 +32,7 @@ struct BuySellOperatorItem {
 }
 
 extension BuySellOperatorItem.Operation {
-  var buySellOperationType: BuySellOperationType {
+  var fiatOperatorCategory: FiatOperatorCategory {
     switch self {
     case .buy:
       return .buy
@@ -42,22 +42,10 @@ extension BuySellOperatorItem.Operation {
   }
 }
 
-struct BuySellOperatorModel {
-  struct Button {
-    let title: String
-    let isEnabled: Bool
-    let isActivity: Bool
-    let action: (() -> Void)
-  }
-  
-  let title: String
-  let description: String
-  let button: Button
-}
-
 protocol BuySellOperatorModuleOutput: AnyObject {
   var didTapCurrencyPicker: ((CurrencyListItem) -> Void)? { get set }
-  var didTapContinue: ((BuySellDetailsItem) -> Void)? { get set }
+  var onOpenDetails: ((BuySellDetailsItem) -> Void)? { get set }
+  var onOpenProviderUrl: ((URL?) -> Void)? { get set }
 }
 
 protocol BuySellOperatorModuleInput: AnyObject {
@@ -65,7 +53,7 @@ protocol BuySellOperatorModuleInput: AnyObject {
 }
 
 protocol BuySellOperatorViewModel: AnyObject {
-  var didUpdateModel: ((BuySellOperatorModel) -> Void)? { get set }
+  var didUpdateModel: ((BuySellOperatorView.Model) -> Void)? { get set }
   var didLoadListItems: ((TKUIListItemCell.Configuration, [SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   var didUpdateCurrencyPickerItem: ((TKUIListItemCell.Configuration) -> Void)? { get set }
   var didUpdateFiatOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
@@ -78,7 +66,8 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
   // MARK: - BuySellOperatorModelModuleOutput
   
   var didTapCurrencyPicker: ((CurrencyListItem) -> Void)?
-  var didTapContinue: ((BuySellDetailsItem) -> Void)?
+  var onOpenDetails: ((BuySellDetailsItem) -> Void)?
+  var onOpenProviderUrl: ((URL?) -> Void)?
   
   // MARK: - BuySellOperatorModelModuleInput
   
@@ -96,13 +85,14 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
     didUpdateCurrencyPickerItem?(currencyPickerItem)
     
     Task {
+      await buySellOperatorController.updateFiatOperatorItems(forCurrency: currency)
       await buySellOperatorController.loadRate(for: currency)
     }
   }
   
   // MARK: - BuySellOperatorModelViewModel
   
-  var didUpdateModel: ((BuySellOperatorModel) -> Void)?
+  var didUpdateModel: ((BuySellOperatorView.Model) -> Void)?
   var didLoadListItems: ((TKUIListItemCell.Configuration, [SelectionCollectionViewCell.Configuration]) -> Void)?
   var didUpdateCurrencyPickerItem: ((TKUIListItemCell.Configuration) -> Void)?
   var didUpdateFiatOperatorItems: (([SelectionCollectionViewCell.Configuration]) -> Void)?
@@ -124,12 +114,8 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
     }
     
     Task {
-      let buySellOperationType = buySellOperatorItem.operation.buySellOperationType
-      await buySellOperatorController.start(buySellOperationType: buySellOperationType)
+      await buySellOperatorController.start()
     }
-    
-//    let buySellDetailsItem = createBuySellDetailsItem()
-//    didTapContinue?(buySellDetailsItem)
   }
   
   // MARK: - State
@@ -177,21 +163,42 @@ private extension BuySellOperatorViewModelImplementation {
     didUpdateModel?(model)
   }
   
-  func createModel() -> BuySellOperatorModel {
-    BuySellOperatorModel(
-      title: "Operator",
-      description: buySellOperatorItem.paymentMethod.title,
-      button: BuySellOperatorModel.Button(
+  func createModel() -> BuySellOperatorView.Model {
+    BuySellOperatorView.Model(
+      title: ModalTitleView.Model(
+        title: "Operator",
+        description: buySellOperatorItem.paymentMethod.title
+      ),
+      button: BuySellOperatorView.Model.Button(
         title: TKLocales.Actions.continue_action,
         isEnabled: !isResolving && isContinueEnable,
         isActivity: isResolving,
         action: { [weak self] in
-          guard let self else { return }
-          let buySellDetailsItem = createBuySellDetailsItem()
-          self.didTapContinue?(buySellDetailsItem)
+          self?.handleContinueButtonTap()
         }
       )
     )
+  }
+  
+  func handleContinueButtonTap() {
+    if selectedOperator.canOpenDetailsView() {
+      onOpenDetails?(createBuySellDetailsItem())
+    } else {
+      isResolving = true
+      let transaction = createTransaction()
+      Task {
+        let providerUrl = await buySellOperatorController.createActionUrl(
+          actionTemplateURL: selectedOperator.actionTemplateURL,
+          operatorId: selectedOperator.id,
+          currencyFrom: transaction.currencyPay,
+          currencyTo: transaction.currencyGet
+        )
+        await MainActor.run {
+          onOpenProviderUrl?(providerUrl)
+          isResolving = false
+        }
+      }
+    }
   }
   
   func createBuySellDetailsItem() -> BuySellDetailsItem {
@@ -288,7 +295,8 @@ private extension FiatOperator {
     id: "0",
     title: "",
     description: "",
-    rate: "",
+    rate: .zero,
+    formattedRate: "",
     badge: nil,
     iconURL: nil,
     actionTemplateURL: nil,

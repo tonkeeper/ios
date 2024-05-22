@@ -288,7 +288,7 @@ private extension BuySellDetailsViewModelImplementation {
   
   func updateActionURL() {
     Task {
-      let actionURL = await buySellDetailsController.makeActionUrl(
+      let actionURL = await buySellDetailsController.createActionUrl(
         actionTemplateURL: buySellDetailsItem.actionTemplateURL,
         operatorId: buySellDetailsItem.serviceInfo.id,
         currencyFrom: buySellDetailsItem.transaction.currencyPay,

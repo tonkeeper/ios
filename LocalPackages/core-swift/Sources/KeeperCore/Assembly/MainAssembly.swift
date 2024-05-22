@@ -469,13 +469,16 @@ public final class MainAssembly {
     )
   }
   
-  public func buySellOperatorController() -> BuySellOperatorController {
+  public func buySellOperatorController(fiatOperatorCategory: FiatOperatorCategory) -> BuySellOperatorController {
     BuySellOperatorController(
+      fiatOperatorCategory: fiatOperatorCategory,
       buySellMethodsService: servicesAssembly.buySellMethodsService(),
       locationService: servicesAssembly.locationService(),
       tonRatesLoader: loadersAssembly.tonRatesLoader,
-      tonRatesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore
+      currencyStore: storesAssembly.currencyStore,
+      walletsStore: walletAssembly.walletStore,
+      configurationStore: configurationAssembly.remoteConfigurationStore,
+      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
     )
   }
   

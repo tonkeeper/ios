@@ -114,15 +114,7 @@ private extension BuySellOperatorViewController {
   
   func setupBindings() {
     viewModel.didUpdateModel = { [weak self] model in
-      guard let customView = self?.customView else { return }
-      
-      let titleViewModel = ModalTitleView.Model(title: model.title, description: model.description)
-      customView.titleView.configure(model: titleViewModel)
-      
-      customView.continueButton.configuration.content = TKButton.Configuration.Content(title: .plainString(model.button.title))
-      customView.continueButton.configuration.isEnabled = model.button.isEnabled
-      customView.continueButton.configuration.showsLoader = model.button.isActivity
-      customView.continueButton.configuration.action = model.button.action
+      self?.customView.configure(model: model)
     }
     
     viewModel.didLoadListItems = { [weak self] currencyPickerItem, fiatOperatorItems in

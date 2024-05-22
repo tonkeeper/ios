@@ -11,15 +11,18 @@ protocol TonkeeperAPI {
                          platform: String) async throws -> RemoteConfiguration
   func loadChart(period: Period) async throws -> [Coordinate]
   func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
+  func loadFiatRates(category: FiatMethodCategory.CategoryType, currency: Currency) async throws -> [FiatMethodRate]
 }
 
 struct TonkeeperAPIImplementation: TonkeeperAPI {
   private let urlSession: URLSession
   private let host: URL
+  private let bootHost: URL
   
-  init(urlSession: URLSession, host: URL) {
+  init(urlSession: URLSession, host: URL, bootHost: URL) {
     self.urlSession = urlSession
     self.host = host
+    self.bootHost = bootHost
   }
   
   func loadConfiguration(lang: String,
@@ -80,5 +83,21 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     let (data, _) = try await urlSession.data(from: url)
     let entity = try JSONDecoder().decode(FiatMethodsResponse.self, from: data)
     return entity.data
+  }
+  
+  func loadFiatRates(category: FiatMethodCategory.CategoryType, currency: Currency) async throws -> [FiatMethodRate] {
+    let url = bootHost.appendingPathComponent("/widget/\(category.rawValue)/rates")
+    guard var components = URLComponents(
+      url: url,
+      resolvingAgainstBaseURL: false
+    ) else { throw TonkeeperAPIError.incorrectUrl }
+    
+    components.queryItems = [
+      .init(name: "currency", value: currency.code)
+    ]
+    guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+    let (data, _) = try await urlSession.data(from: url)
+    let entity = try JSONDecoder().decode(FiatMethodsRatesResponse.self, from: data)
+    return entity.items
   }
 }
