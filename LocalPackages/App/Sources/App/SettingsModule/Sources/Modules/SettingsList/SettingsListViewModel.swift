@@ -13,6 +13,8 @@ protocol SettingsListViewModel: AnyObject {
   var didShowAlert: ((String, String?, [UIAlertAction]) -> Void)? { get set }
   var didSelectItem: ((IndexPath) -> Void)? { get set }
   
+  var showsBackButton: Bool { get }
+  
   func viewDidLoad()
   func selectItem(section: SettingsListSection, index: Int)
   func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell?
@@ -45,6 +47,8 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   var didUpdateSettingsSections: (([SettingsListSection]) -> Void)?
   var didShowAlert: ((String, String?, [UIAlertAction]) -> Void)?
   var didSelectItem: ((IndexPath) -> Void)?
+  
+  var showsBackButton: Bool
   
   private var token: NSObjectProtocol?
   
@@ -114,8 +118,9 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   
   private let itemsProvider: SettingsListItemsProvider
   
-  init(itemsProvider: SettingsListItemsProvider) {
+  init(itemsProvider: SettingsListItemsProvider, showsBackButton: Bool) {
     self.itemsProvider = itemsProvider
+    self.showsBackButton = showsBackButton
   }
 }
 

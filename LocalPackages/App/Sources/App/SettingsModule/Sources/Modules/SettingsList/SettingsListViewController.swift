@@ -39,8 +39,10 @@ public final class SettingsListViewController: GenericViewViewController<Setting
 
 private extension SettingsListViewController {
   func setup() {
-    navigationItem.setupBackButton { [weak self] in
-      self?.navigationController?.popViewController(animated: true)
+    if viewModel.showsBackButton {
+      navigationItem.setupBackButton { [weak self] in
+        self?.navigationController?.popViewController(animated: true)
+      }
     }
   }
   

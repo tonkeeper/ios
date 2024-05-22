@@ -11,6 +11,7 @@ protocol TonkeeperAPI {
                          platform: String) async throws -> RemoteConfiguration
   func loadChart(period: Period) async throws -> [Coordinate]
   func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
+  func loadOperators(mode: TransactionMode, currency: Currency) async throws -> [Operator]
 }
 
 struct TonkeeperAPIImplementation: TonkeeperAPI {
@@ -80,5 +81,19 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     let (data, _) = try await urlSession.data(from: url)
     let entity = try JSONDecoder().decode(FiatMethodsResponse.self, from: data)
     return entity.data
+  }
+  
+  func loadOperators(mode: TransactionMode, currency: Currency) async throws -> [Operator] {
+    let urlString = "https://boot.tonkeeper.com/widget/\(mode)/rates"
+    guard var components = URLComponents(string: urlString) else { throw TonkeeperAPIError.incorrectUrl }
+    
+    components.queryItems = [
+      .init(name: "currency", value: currency.rawValue)
+    ]
+    
+    guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+    let (data, _) = try await urlSession.data(from: url)
+    let entity = try JSONDecoder().decode(OperatorsResponse.self, from: data)
+    return entity.items
   }
 }

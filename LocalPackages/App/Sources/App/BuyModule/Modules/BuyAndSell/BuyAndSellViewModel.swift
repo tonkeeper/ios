@@ -5,6 +5,10 @@ import TKUIKit
 import TKLocalize
 import BigInt
 
+protocol BuyAndSellViewModelOutput: AnyObject {
+  var didContinue: ((TransactionAmountModel) -> Void)? { get set }
+}
+
 protocol BuyAndSellViewModel: AnyObject {
   var didUpdateModel: ((BuyAndSellView.Model) -> Void)? { get set }
   
@@ -16,7 +20,14 @@ protocol BuyAndSellViewModel: AnyObject {
   func didSelectSegment(at index: Int)
 }
 
-final class BuyAndSellViewModelImplementation: BuyAndSellViewModel {
+final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellViewModelOutput {
+  
+  // MARK: - BuyListModuleOutput
+  
+  var didContinue: ((TransactionAmountModel) -> Void)?
+  
+  // MARK: - BuyAndSellViewModel
+  
   var didUpdateModel: ((BuyAndSellView.Model) -> Void)?
     
   private let buyListController: BuyListController
@@ -27,15 +38,10 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel {
   
   // MARK: - State
   
-  enum Mode: CaseIterable {
-    case buy
-    case sell
-  }
-  
   private var amountInput = ""
   private var convertedValue = ""
   private var amount: BigUInt = 0
-  private var mode: Mode = .buy {
+  private var mode: TransactionMode = .buy {
     didSet {
       guard mode != oldValue else { return }
       update()
@@ -89,11 +95,12 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel {
   }
   
   func didTapContinueButton() {
-    
+    let transactionModel = TransactionAmountModel(mode: mode, amount: amount)
+    didContinue?(transactionModel)
   }
   
   func didSelectSegment(at index: Int) {
-    mode = Mode.allCases[index]
+    mode = TransactionMode.allCases[index]
     print(mode)
   }
   

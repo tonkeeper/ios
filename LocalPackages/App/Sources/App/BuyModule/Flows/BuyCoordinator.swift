@@ -34,16 +34,58 @@ private extension BuyCoordinator {
       buyListController: keeperCoreMainAssembly.buyListController(
         wallet: wallet,
         isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
-      ),
-      appSettings: coreAssembly.appSettings,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    )
+    
+    module.view.setupRightCloseButton { [weak self] in
+      self?.didFinish?()
+    }
+        
+    module.output.didContinue = { [weak self] transactionModel in
+      self?.openOperatorSelection(transactionModel: transactionModel)
+    }
+    
+    router.push(viewController: module.view, animated: false)
+  }
+  
+  func openOperatorSelection(transactionModel: TransactionAmountModel) {
+    let module = OperatorSelectionAssembly.module(
+      settingsController: keeperCoreMainAssembly.settingsController,
+      buyListController: keeperCoreMainAssembly.buyListController(
+        wallet: wallet,
+        isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
+      ), 
+      decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+      transactionModel: transactionModel
     )
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
     
-    router.push(viewController: module.view, animated: false)
+    module.view.setupBackButton()
+    
+    module.output.didTapCurrency = { [weak self] in
+      self?.openCurrencyPicker()
+    }
+    
+    router.push(viewController: module.view, animated: true)
+  }
+  
+  func openCurrencyPicker() {
+    let itemsProvider = SettingsCurrencyPickerListItemsProvider(settingsController: keeperCoreMainAssembly.settingsController)
+    let module = SettingsListAssembly.module(itemsProvider: itemsProvider, showsBackButton: false)
+    let viewController = module.viewController
+
+    let navigationController = TKNavigationController(rootViewController: viewController)
+    navigationController.configureDefaultAppearance()
+    
+    viewController.setupRightCloseButton { [weak self] in
+      self?.router.dismiss(animated: true)
+    }
+    
+    router.present(navigationController, animated: true)
   }
   
   func openBuyList() {

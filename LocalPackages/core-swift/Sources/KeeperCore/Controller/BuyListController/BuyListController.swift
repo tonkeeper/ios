@@ -51,6 +51,15 @@ public final class BuyListController {
     }
   }
   
+  public func fetchOperators(mode: TransactionMode, currency: Currency) async -> [Operator] {
+    do {
+      let models = try await loadOperators(mode: mode, currency: currency)
+      return models
+    } catch {
+      return []
+    }
+  }
+  
   public func convertInputStringToAmount(input: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
     do {
       let result = try bigIntAmountFormatter.bigUInt(string: input, targetFractionalDigits: targetFractionalDigits)
@@ -96,6 +105,15 @@ private extension BuyListController {
       return try await loadFiatMethodsByLocationRequired()
     } else {
       return try await loadDefaultFiatMethods()
+    }
+  }
+  
+  func loadOperators(mode: TransactionMode, currency: Currency) async throws -> [Operator] {
+    do {
+      let operators = try await buySellMethodsService.loadOperators(mode: mode, currency: currency)
+      return operators
+    } catch {
+      return []
     }
   }
   

@@ -182,6 +182,14 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-doc-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var radio: UIImage {
+          .imageWithName("Icons/28/ic-radio-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var radioSelected: UIImage {
+          .imageWithName("Icons/28/ic-radio-selected-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {
