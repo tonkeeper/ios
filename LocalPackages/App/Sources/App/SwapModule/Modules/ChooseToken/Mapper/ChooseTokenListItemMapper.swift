@@ -8,31 +8,30 @@ struct ChooseTokenListItemMapper {
 
   let imageLoader = ImageLoader()
 
-  func make() -> TKUIListItemCell.Configuration {
+  func mapAvailabeToken(_ availableToken: AvailableTokenModelItem) -> TKUIListItemCell.Configuration {
+    let id: String
+    let symbolString: String
+    let tokenName: String
+    let tokenImage: TokenImage
+    var verification: JettonInfo.Verification = .whitelist
+    let amount = availableToken.amount ?? "0"
+    let convertedAmount = availableToken.convertedAmount ?? "0"
+    switch availableToken.token {
+    case .ton:
+      id = "ton"
+      symbolString = "TON"
+      tokenName = "Toncoin"
+      tokenImage = .ton
+    case .jetton(let jettonItem):
+      let jettonInfo = jettonItem.jettonInfo
+      id = jettonInfo.address.toRaw()
+      symbolString = jettonInfo.symbol?.uppercased() ?? ""
+      tokenName = jettonInfo.name.capitalized
+      tokenImage = .url(jettonInfo.imageURL)
+      verification = jettonInfo.verification
+    }
     
-    let item = WalletBalanceItemsModel.Item(
-      identifier: UUID().uuidString,
-      token: .ton,
-      image: .ton,
-      title: "TON",
-      price: "Toncoin",
-      rateDiff: nil,
-      amount: "100,000.01",
-      convertedAmount: "$668,001.66",
-      verification: .whitelist,
-      hasPrice: true
-    )
-
-//    let id: String
-//    switch item.token {
-//    case .ton:
-//      id = "ton"
-//    case .jetton(let jettonItem):
-//      id = jettonItem.jettonInfo.address.toRaw()
-//    }
-    let id = UUID().uuidString
-    
-    let title = item.title.withTextStyle(
+    let title = symbolString.withTextStyle(
       .label1,
       color: .white,
       alignment: .left,
@@ -40,38 +39,19 @@ struct ChooseTokenListItemMapper {
     )
     
     let subtitle = NSMutableAttributedString()
-    switch item.verification {
-    case .none:
-      subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
+    switch verification {
+    case .none, .blacklist:
+      subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange))
     case .whitelist:
-      if let price = item.price?.withTextStyle(
-        .body2,
-        color: .Text.secondary,
-        alignment: .left,
-        lineBreakMode: .byTruncatingTail
-      ) {
-        subtitle.append(price)
-        subtitle.append(" ".withTextStyle(.body2, color: .Text.secondary))
-      }
-    case .blacklist:
-      subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
+      let price = tokenName.withTextStyle(.body2, color: .Text.secondary)
+      subtitle.append(price)
     }
     
-    let value = item.amount?.withTextStyle(
-      .label1,
-      color: .white,
-      alignment: .right,
-      lineBreakMode: .byTruncatingTail
-    )
-    let valueSubtitle = item.convertedAmount?.withTextStyle(
-      .body2,
-      color: .Text.secondary,
-      alignment: .right,
-      lineBreakMode: .byTruncatingTail
-    )
+    let value = amount.withTextStyle(.label1, color: amount == "0" ? .Text.secondary : .white, alignment: .right)
+    let valueSubtitle = convertedAmount.withTextStyle(.body2, color: .Text.secondary, alignment: .right)
     
     let iconConfigurationImage: TKUIListItemImageIconView.Configuration.Image
-    switch item.image {
+    switch tokenImage {
     case .ton:
       iconConfigurationImage = .image(.TKCore.Icons.Size44.tonLogo)
     case .url(let url):
@@ -115,7 +95,7 @@ struct ChooseTokenListItemMapper {
           subtitle: subtitle,
           description: nil
         ),
-        rightItemConfiguration: TKUIListItemContentRightItem.Configuration(
+        rightItemConfiguration: amount == "0" ? nil : TKUIListItemContentRightItem.Configuration(
           value: value,
           subtitle: valueSubtitle,
           description: nil

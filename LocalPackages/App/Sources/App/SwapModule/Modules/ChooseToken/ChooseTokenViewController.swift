@@ -117,6 +117,8 @@ private extension ChooseTokenViewController {
 
 extension ChooseTokenViewController: UICollectionViewDelegate {
 
-  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) { }
+  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    print("here")
+  }
 
 }

@@ -24,20 +24,26 @@ final class ChooseTokenViewModelImplementation: ChooseTokenViewModel, ChooseToke
   // MARK: - TokenPickerViewModel
   
   func viewDidLoad() {
-    var items = [TKUIListItemCell.Configuration]()
-    for _ in 0..<10 {
-      items.append(ChooseTokenListItemMapper().make())
+    Task {
+      let availableTokens = await swapAvailableTokenController.receiveTokenList()
+      let mapper = ChooseTokenListItemMapper()
+      let items = availableTokens.map { mapper.mapAvailabeToken($0) }
+      await MainActor.run {
+        didUpdateTokens?(items)
+      }
     }
-    didUpdateTokens?(items)
   }
   
   // MARK: - Image Loading
     
   // MARK: - Dependencies
+
+  private let swapAvailableTokenController: SwapAvailableTokenController
     
   // MARK: - Init
   
-  init() {
+  init(swapAvailableTokenController: SwapAvailableTokenController) {
+    self.swapAvailableTokenController = swapAvailableTokenController
   }
 }
 

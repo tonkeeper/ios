@@ -406,6 +406,20 @@ public final class MainAssembly {
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
+
+  public func swapAvailableTokenController() -> SwapAvailableTokenController {
+    SwapAvailableTokenController(
+      // Why not to put activeWallet here?
+      wallet: walletAssembly.walletStore.activeWallet,
+      jettonService: servicesAssembly.jettonsService(),
+      balanceService: servicesAssembly.balanceService(),
+      ratesStore: storesAssembly.ratesStore,
+      tonRatesStore: storesAssembly.tonRatesStore,
+      swapAvailableTokenMapper: swapAvailableTokenMapper,
+      currencyStore: storesAssembly.currencyStore,
+      amountFormatter: formattersAssembly.amountFormatter
+    )
+  }
   
   public func buyListController(wallet: Wallet,
                                 isMarketRegionPickerAvailable: @escaping () async -> Bool) -> BuyListController {
@@ -447,7 +461,16 @@ private extension MainAssembly {
     WalletListMapper(
       amountFormatter: formattersAssembly.amountFormatter,
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
-      rateConverter: RateConverter()
+      rateConverter: RateConverter() // why this one is initialised and other reused?
+    )
+  }
+
+  var swapAvailableTokenMapper: SwapAvailableTokenMapper {
+    SwapAvailableTokenMapper(
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
+      rateConverter: RateConverter(),
+      dateFormatter: formattersAssembly.dateFormatter
     )
   }
   
