@@ -79,6 +79,7 @@ protocol SwapModuleOutput: AnyObject {
 
 protocol SwapModuleInput: AnyObject {
   func didChooseToken(_ swapAsset: SwapAsset, forInput input: SwapInput)
+  func didBuyTon()
 }
 
 protocol SwapViewModel: AnyObject {
@@ -191,6 +192,12 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
         simulateSwap(swapSimulationDirection)
       }
     }
+  }
+  
+  func didBuyTon() {
+    // TODO: fetch data
+    updateSendBalance()
+    updateRecieveBalance()
   }
   
   // MARK: - SwapViewModel

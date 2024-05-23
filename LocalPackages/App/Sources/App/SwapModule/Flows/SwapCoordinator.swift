@@ -53,8 +53,14 @@ private extension SwapCoordinator {
         })
     }
     
-    module.output.didTapBuyTon = {
-      print("open buy ton")
+    module.output.didTapBuyTon = { [weak self, weak input = module.input] in
+      guard let self else { return }
+      self.openBuy(
+        wallet: wallet,
+        completion: {
+          input?.didBuyTon()
+        }
+      )
     }
     
     module.output.didTapContinue = { [weak self, weak view = module.view] swapModel in
@@ -117,5 +123,29 @@ private extension SwapCoordinator {
     }
     
     sourceViewController?.present(module.view, animated: true)
+  }
+  
+  func openBuy(wallet: Wallet, completion: (() -> Void)?) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
+    let coordinator = BuyCoordinator(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: NavigationControllerRouter(rootViewController: navigationController)
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+      completion?()
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+      
+    self.router.present(navigationController)
   }
 }
