@@ -5,6 +5,13 @@ import WebKit
 
 open class TKBridgeWebViewController: UIViewController {
   
+  public var isHeaderHidden = false {
+    didSet {
+      setupWebViewConstraints()
+      headerView.isHidden = isHeaderHidden
+    }
+  }
+  
   public var didLoadInitialURLHandler: (() -> Void)?
   private let userContentController = WKUserContentController()
   
@@ -95,6 +102,8 @@ open class TKBridgeWebViewController: UIViewController {
     view.addSubview(webView)
     view.addSubview(headerView)
     
+    headerView.isHidden = isHeaderHidden
+    
     setupConstraints()
     
     didUpdateUrl()
@@ -146,8 +155,16 @@ open class TKBridgeWebViewController: UIViewController {
     headerView.snp.makeConstraints { make in
       make.top.left.right.equalTo(self.view)
     }
-    webView.snp.makeConstraints { make in
-      make.top.equalTo(headerView.snp.bottom)
+    setupWebViewConstraints()
+  }
+  
+  private func setupWebViewConstraints() {
+    webView.snp.remakeConstraints { make in
+      if isHeaderHidden {
+        make.top.equalTo(view)
+      } else {
+        make.top.equalTo(headerView.snp.bottom)
+      }
       make.left.right.equalTo(self.view)
       make.bottom.equalTo(self.view.snp.bottom)
     }

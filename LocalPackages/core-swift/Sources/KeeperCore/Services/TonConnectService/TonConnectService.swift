@@ -32,11 +32,11 @@ public protocol TonConnectService {
   func createEmulateRequestBoc(wallet: Wallet,
                               seqno: UInt64,
                               timeout: UInt64,
-                              parameters: TonConnect.AppRequest.Param) async throws -> String
+                              parameters: SendTransactionParam) async throws -> String
   func createConfirmTransactionBoc(wallet: Wallet,
                                    seqno: UInt64,
                                    timeout: UInt64,
-                                   parameters: TonConnect.AppRequest.Param) async throws -> String
+                                   parameters: SendTransactionParam) async throws -> String
   
   func cancelRequest(appRequest: TonConnect.AppRequest,
                      app: TonConnectApp) async throws
@@ -209,7 +209,7 @@ final class TonConnectServiceImplementation: TonConnectService {
   func createEmulateRequestBoc(wallet: Wallet,
                                seqno: UInt64,
                                timeout: UInt64,
-                               parameters: TonConnect.AppRequest.Param) async throws -> String {
+                               parameters: SendTransactionParam) async throws -> String {
     try await createRequestTransactionBoc(
       wallet: wallet,
       seqno: seqno,
@@ -222,7 +222,7 @@ final class TonConnectServiceImplementation: TonConnectService {
   func createConfirmTransactionBoc(wallet: Wallet,
                                    seqno: UInt64,
                                    timeout: UInt64,
-                                   parameters: TonConnect.AppRequest.Param) async throws -> String {
+                                   parameters: SendTransactionParam) async throws -> String {
     let walletMnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
     let keyPair = try Mnemonic.mnemonicToPrivateKey(mnemonicArray: walletMnemonic.mnemonicWords)
     let privateKey = keyPair.privateKey
@@ -239,9 +239,7 @@ final class TonConnectServiceImplementation: TonConnectService {
       }
   }
   
-  func confirmRequest(wallet: Wallet, appRequestParam: TonConnect.AppRequest.Param) async throws {
-    
-  }
+  func confirmRequest(wallet: Wallet, appRequestParam: SendTransactionParam) async throws {}
   
   func getLastEventId() throws -> String {
     try tonConnectRepository.getLastEventId().lastEventId
@@ -262,7 +260,7 @@ private extension TonConnectServiceImplementation {
   func createRequestTransactionBoc(wallet: Wallet,
                                    seqno: UInt64,
                                    timeout: UInt64,
-                                   parameters: TonConnect.AppRequest.Param,
+                                   parameters: SendTransactionParam,
                                    signClosure: (WalletTransfer) async throws -> Data) async throws  -> String{
     let payloads = parameters.messages.map { message in
         TonConnectTransferMessageBuilder.Payload(

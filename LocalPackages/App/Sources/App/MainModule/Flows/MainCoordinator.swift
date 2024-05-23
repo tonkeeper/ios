@@ -132,6 +132,10 @@ private extension MainCoordinator {
       self?.openSend(token: token)
     }
     
+    walletCoordinator.didTapSwap = { [weak self] in
+      self?.openSwap()
+    }
+    
     let historyCoordinator = historyModule.createHistoryCoordinator()
     
     let browserCoordinator = browserModule.createBrowserCoordinator()
@@ -251,6 +255,33 @@ private extension MainCoordinator {
         self.openSend(token: token, recipient: resolvedRecipient)
       }
     }
+  }
+  
+  func openSwap() {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    navigationController.setNavigationBarHidden(true, animated: false)
+    
+    let coordinator = WebSwapModule(
+      dependencies: WebSwapModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).swapCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+    
+    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+    
+    router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+    })
   }
 }
 

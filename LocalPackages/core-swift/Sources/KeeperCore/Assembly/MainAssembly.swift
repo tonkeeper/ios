@@ -20,7 +20,7 @@ public final class MainAssembly {
   public let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
   public let formattersAssembly: FormattersAssembly
-  let configurationAssembly: ConfigurationAssembly
+  public let configurationAssembly: ConfigurationAssembly
   public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
   let apiAssembly: APIAssembly

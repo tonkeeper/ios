@@ -27,12 +27,10 @@ public final class TonConnectAssembly {
   }
   
   public func tonConnectConfirmationController(wallet: Wallet,
-                                               appRequest: TonConnect.AppRequest,
-                                               app: TonConnectApp) -> TonConnectConfirmationController {
+                                               signTransactionParams: [SendTransactionParam]) -> TonConnectConfirmationController {
     TonConnectConfirmationController(
       wallet: wallet,
-      appRequest: appRequest,
-      app: app,
+      signTransactionParams: signTransactionParams,
       tonConnectService: tonConnectService(),
       sendService: servicesAssembly.sendService(),
       nftService: servicesAssembly.nftService(),

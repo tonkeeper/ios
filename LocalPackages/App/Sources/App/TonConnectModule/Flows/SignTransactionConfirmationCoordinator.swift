@@ -4,21 +4,28 @@ import TKCoordinator
 import TKUIKit
 import TKCore
 
-protocol TonConnectConfirmationCoordinatorConfirmator {
-  func confirm(appRequest: TonConnect.AppRequest, app: TonConnectApp, wallet: Wallet) async throws
-  func cancel(appRequest: TonConnect.AppRequest, app: TonConnectApp, wallet: Wallet) async
+protocol SignTransactionConfirmationCoordinatorConfirmator {
+  func confirm(wallet: Wallet) async throws
+  func cancel(wallet: Wallet) async
 }
 
-struct DefaultTonConnectConfirmationCoordinatorConfirmator: TonConnectConfirmationCoordinatorConfirmator {
+struct DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignTransactionConfirmationCoordinatorConfirmator {
+  private let app: TonConnectApp
+  private let appRequest: TonConnect.AppRequest
   private let sendService: SendService
   private let tonConnectService: TonConnectService
   
-  init(sendService: SendService, tonConnectService: TonConnectService) {
+  init(app: TonConnectApp,
+       appRequest: TonConnect.AppRequest,
+       sendService: SendService,
+       tonConnectService: TonConnectService) {
+    self.app = app
+    self.appRequest = appRequest
     self.sendService = sendService
     self.tonConnectService = tonConnectService
   }
   
-  func confirm(appRequest: TonConnect.AppRequest, app: TonConnectApp, wallet: Wallet) async throws {
+  func confirm(wallet: Wallet) async throws {
     guard let parameters = appRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
@@ -34,25 +41,28 @@ struct DefaultTonConnectConfirmationCoordinatorConfirmator: TonConnectConfirmati
     try await tonConnectService.confirmRequest(boc: boc, appRequest: appRequest, app: app)
   }
   
-  func cancel(appRequest: TonConnect.AppRequest, app: TonConnectApp, wallet: Wallet) async {
+  func cancel(wallet: Wallet) async {
     try? await tonConnectService.cancelRequest(appRequest: appRequest, app: app)
   }
 }
 
-struct BridgeTonConnectConfirmationCoordinatorConfirmator: TonConnectConfirmationCoordinatorConfirmator {
+struct BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignTransactionConfirmationCoordinatorConfirmator {
+  private let appRequest: TonConnect.AppRequest
   private let sendService: SendService
   private let tonConnectService: TonConnectService
   private let connectionResponseHandler: (TonConnectAppsStore.SendTransactionResult) -> Void
   
-  init(sendService: SendService,
+  init(appRequest: TonConnect.AppRequest,
+       sendService: SendService,
        tonConnectService: TonConnectService,
        connectionResponseHandler: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
+    self.appRequest = appRequest
     self.sendService = sendService
     self.tonConnectService = tonConnectService
     self.connectionResponseHandler = connectionResponseHandler
   }
   
-  func confirm(appRequest: TonConnect.AppRequest, app: TonConnectApp, wallet: Wallet) async throws {
+  func confirm(wallet: Wallet) async throws {
     guard let parameters = appRequest.params.first else { return }
     do {
       let seqno = try await sendService.loadSeqno(wallet: wallet)
@@ -76,35 +86,65 @@ struct BridgeTonConnectConfirmationCoordinatorConfirmator: TonConnectConfirmatio
     }
   }
   
-  func cancel(appRequest: TonConnect.AppRequest, app: TonConnectApp, wallet: Wallet) async {
+  func cancel(wallet: Wallet) async {
     connectionResponseHandler(.error(.userDeclinedTransaction))
   }
 }
 
-final class TonConnectConfirmationCoordinator: RouterCoordinator<WindowRouter> {
+struct StonfiSwapSignTransactionConfirmationCoordinatorConfirmator: SignTransactionConfirmationCoordinatorConfirmator {
+  private let signRequest: SendTransactionSignRequest
+  private let sendService: SendService
+  private let tonConnectService: TonConnectService
+  private let responseHandler: (SendTransactionSignResult) -> Void
+  
+  init(signRequest: SendTransactionSignRequest,
+       sendService: SendService,
+       tonConnectService: TonConnectService,
+       responseHandler: @escaping (SendTransactionSignResult) -> Void) {
+    self.signRequest = signRequest
+    self.sendService = sendService
+    self.tonConnectService = tonConnectService
+    self.responseHandler = responseHandler
+  }
+  
+  func confirm(wallet: KeeperCore.Wallet) async throws {
+    guard let parameters = signRequest.params.first else { return }
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    let boc = try await tonConnectService.createConfirmTransactionBoc(
+      wallet: wallet,
+      seqno: seqno,
+      timeout: timeout,
+      parameters: parameters
+    )
+    
+    try await sendService.sendTransaction(boc: boc, wallet: wallet)
+    responseHandler(.response(boc))
+  }
+  
+  func cancel(wallet: KeeperCore.Wallet) async {
+    responseHandler(.error(.userDeclinedTransaction))
+  }
+}
+
+final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRouter> {
   
   var didCancel: (() -> Void)?
   var didConfirm: (() -> Void)?
   
   private let wallet: Wallet
-  private let appRequest: TonConnect.AppRequest
-  private let app: TonConnectApp
-  private let confirmator: TonConnectConfirmationCoordinatorConfirmator
+  private let confirmator: SignTransactionConfirmationCoordinatorConfirmator
   private let tonConnectConfirmationController: TonConnectConfirmationController
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   
   init(router: WindowRouter,
        wallet: Wallet,
-       appRequest: TonConnect.AppRequest,
-       app: TonConnectApp,
-       confirmator: TonConnectConfirmationCoordinatorConfirmator,
+       confirmator: SignTransactionConfirmationCoordinatorConfirmator,
        tonConnectConfirmationController: TonConnectConfirmationController,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        coreAssembly: TKCore.CoreAssembly) {
     self.wallet = wallet
-    self.appRequest = appRequest
-    self.app = app
     self.confirmator = confirmator
     self.tonConnectConfirmationController = tonConnectConfirmationController
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
@@ -130,7 +170,7 @@ final class TonConnectConfirmationCoordinator: RouterCoordinator<WindowRouter> {
   }
 }
 
-private extension TonConnectConfirmationCoordinator {
+private extension SignTransactionConfirmationCoordinator {
   func openConfirmation(model: TonConnectConfirmationController.Model) {
     let rootViewController = UIViewController()
     router.window.rootViewController = rootViewController
@@ -145,20 +185,20 @@ private extension TonConnectConfirmationCoordinator {
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
-    bottomSheetViewController.didClose = { [weak self, weak tonConnectConfirmationController] isInteractivly in
+    bottomSheetViewController.didClose = { [weak self] isInteractivly in
+      guard let self else { return }
       guard isInteractivly else { return }
-      guard let tonConnectConfirmationController else { return }
       keyWindow?.makeKeyAndVisible()
-      self?.didCancel?()
+      self.didCancel?()
       Task {
-        await tonConnectConfirmationController.cancel()
+        await self.confirmator.cancel(wallet: self.wallet)
       }
     }
     
     module.output.didTapCancelButton = { [weak self, weak bottomSheetViewController] in
       guard let self else { return }
       Task {
-        await self.confirmator.cancel(appRequest: self.appRequest, app: self.app, wallet: self.wallet)
+        await self.confirmator.cancel(wallet: self.wallet)
       }
       bottomSheetViewController?.dismiss(completion: { [weak self] in
         self?.didCancel?()
@@ -170,7 +210,7 @@ private extension TonConnectConfirmationCoordinator {
       let isConfirmed = await self.openPasscodeConfirmation(fromViewController: bottomSheetViewController)
       guard isConfirmed else { return false }
       do {
-        try await self.confirmator.confirm(appRequest: self.appRequest, app: self.app, wallet: self.wallet)
+        try await self.confirmator.confirm(wallet: self.wallet)
         return true
       } catch {
         return false

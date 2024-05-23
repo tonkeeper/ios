@@ -3,12 +3,12 @@ import TKUIKit
 import TKScreenKit
 import SnapKit
 
-final class DappViewController: UIViewController {
-  private let viewModel: DappViewModel
+final class StonfiSwapViewController: UIViewController {
+  private let viewModel: StonfiSwapViewModel
   
   private var bridgeWebViewController: TKBridgeWebViewController?
 
-  init(viewModel: DappViewModel) {
+  init(viewModel: StonfiSwapViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
   }
@@ -26,13 +26,13 @@ final class DappViewController: UIViewController {
   }
 }
 
-private extension DappViewController {
+private extension StonfiSwapViewController {
   func setup() {
     
   }
   
   func setupBinding() {
-    viewModel.didOpenApp = { [weak self] url, title in
+    viewModel.didOpen = { [weak self] url, title in
       guard let self, let url else { return }
       
       let bridgeWebViewController = TKBridgeWebViewController(
@@ -40,7 +40,7 @@ private extension DappViewController {
         initialTitle: title,
         jsInjection: self.viewModel.jsInjection
       )
-      print(self.viewModel.jsInjection)
+      bridgeWebViewController.isHeaderHidden = true
       bridgeWebViewController.didLoadInitialURLHandler = { [weak self] in
         self?.viewModel.didLoadInitialRequest()
       }
@@ -51,7 +51,7 @@ private extension DappViewController {
       bridgeWebViewController.view.snp.makeConstraints { make in
         make.edges.equalTo(self.view)
       }
-      bridgeWebViewController.addBridgeMessageObserver(message: "dapp", observer: { [weak self] body in
+      bridgeWebViewController.addBridgeMessageObserver(message: "swap", observer: { [weak self] body in
         self?.viewModel.didReceiveMessage(body: body)
       })
       

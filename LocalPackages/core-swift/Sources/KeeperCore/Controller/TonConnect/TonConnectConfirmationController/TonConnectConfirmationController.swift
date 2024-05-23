@@ -10,8 +10,7 @@ public final class TonConnectConfirmationController {
   }
   
   private let wallet: Wallet
-  private let appRequest: TonConnect.AppRequest
-  private let app: TonConnectApp
+  private let signTransactionParams: [SendTransactionParam]
   private let tonConnectService: TonConnectService
   private let sendService: SendService
   private let nftService: NFTService
@@ -20,8 +19,7 @@ public final class TonConnectConfirmationController {
   private let tonConnectConfirmationMapper: TonConnectConfirmationMapper
   
   init(wallet: Wallet,
-       appRequest: TonConnect.AppRequest,
-       app: TonConnectApp,
+       signTransactionParams: [SendTransactionParam],
        tonConnectService: TonConnectService,
        sendService: SendService,
        nftService: NFTService,
@@ -29,8 +27,7 @@ public final class TonConnectConfirmationController {
        currencyStore: CurrencyStore,
        tonConnectConfirmationMapper: TonConnectConfirmationMapper) {
     self.wallet = wallet
-    self.appRequest = appRequest
-    self.app = app
+    self.signTransactionParams = signTransactionParams
     self.tonConnectService = tonConnectService
     self.sendService = sendService
     self.nftService = nftService
@@ -40,33 +37,14 @@ public final class TonConnectConfirmationController {
   }
   
   public func createRequestModel() async throws -> Model {
-    guard let parameters = appRequest.params.first else { throw NSError(domain: "", code: 3232) }
+    guard let parameters = signTransactionParams.first else { throw NSError(domain: "", code: 3232) }
     let model = try await emulateAppRequest(appRequestParam: parameters)
     return model
-  }
-  
-  public func cancel() async {
-    try? await tonConnectService.cancelRequest(appRequest: appRequest, app: app)
-  }
-  
-  public func confirm() async throws {
-    guard let parameters = appRequest.params.first else { return }
-    let seqno = try await sendService.loadSeqno(wallet: wallet)
-    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
-    let boc = try await tonConnectService.createConfirmTransactionBoc(
-      wallet: wallet,
-      seqno: seqno,
-      timeout: timeout,
-      parameters: parameters
-    )
-    
-    try await sendService.sendTransaction(boc: boc, wallet: wallet)
-    try await tonConnectService.confirmRequest(boc: boc, appRequest: appRequest, app: app)
   }
 }
 
 private extension TonConnectConfirmationController {
-  func emulateAppRequest(appRequestParam: TonConnect.AppRequest.Param) async throws -> Model {
+  func emulateAppRequest(appRequestParam: SendTransactionParam) async throws -> Model {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let boc = try await tonConnectService.createEmulateRequestBoc(
@@ -91,7 +69,7 @@ private extension TonConnectConfirmationController {
     )
   }
   
-  func createRequestTransactionBoc(parameters: TonConnect.AppRequest.Param,
+  func createRequestTransactionBoc(parameters: SendTransactionParam,
                                    signClosure: (WalletTransfer) async throws -> Data) async throws  -> String{
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)

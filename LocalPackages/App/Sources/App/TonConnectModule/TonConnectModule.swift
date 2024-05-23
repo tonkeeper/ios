@@ -31,20 +31,19 @@ struct TonConnectModule {
     wallet: Wallet,
     appRequest: TonConnect.AppRequest,
     app: TonConnectApp
-  ) -> TonConnectConfirmationCoordinator {
-    TonConnectConfirmationCoordinator(
+  ) -> SignTransactionConfirmationCoordinator {
+    SignTransactionConfirmationCoordinator(
       router: WindowRouter(window: window),
       wallet: wallet,
-      appRequest: appRequest,
-      app: app,
-      confirmator: DefaultTonConnectConfirmationCoordinatorConfirmator(
+      confirmator: DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator(
+        app: app,
+        appRequest: appRequest,
         sendService: dependencies.keeperCoreMainAssembly.servicesAssembly.sendService(),
         tonConnectService: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()
       ),
       tonConnectConfirmationController: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmationController(
         wallet: wallet,
-        appRequest: appRequest,
-        app: app
+        signTransactionParams: appRequest.params
       ),
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
       coreAssembly: dependencies.coreAssembly

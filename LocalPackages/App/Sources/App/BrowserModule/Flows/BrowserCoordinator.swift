@@ -195,12 +195,11 @@ private extension BrowserCoordinator {
     
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
-    let coordinator = TonConnectConfirmationCoordinator(
+    let coordinator = SignTransactionConfirmationCoordinator(
       router: WindowRouter(window: window),
       wallet: wallet,
-      appRequest: appRequest,
-      app: connectedApp,
-      confirmator: BridgeTonConnectConfirmationCoordinatorConfirmator(
+      confirmator: BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator(
+        appRequest: appRequest,
         sendService: keeperCoreMainAssembly.servicesAssembly.sendService(),
         tonConnectService: keeperCoreMainAssembly.tonConnectAssembly.tonConnectService(),
         connectionResponseHandler: { result in
@@ -209,8 +208,7 @@ private extension BrowserCoordinator {
       ),
       tonConnectConfirmationController: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmationController(
         wallet: wallet,
-        appRequest: appRequest,
-        app: connectedApp
+        signTransactionParams: appRequest.params
       ),
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
