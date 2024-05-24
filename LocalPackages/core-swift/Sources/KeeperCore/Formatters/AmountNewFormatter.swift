@@ -3,7 +3,7 @@ import BigInt
 
 public struct AmountNewFormatter {
   
-  private let groupSeparator = FormattersConstants.groupSeparator
+  private let groupingSeparator = FormattersConstants.groupingSeparator
   private let fractionalSeparator = FormattersConstants.fractionalSeparator
   
   private let bigIntFormatter: BigIntAmountFormatter
@@ -15,12 +15,12 @@ public struct AmountNewFormatter {
   public func formatAmount(_ amount: BigUInt,
                            fractionDigits: Int,
                            maximumFractionDigits: Int,
-                           currency: Currency?) -> String {
+                           currency: Currency? = nil) -> String {
     var formatted = bigIntFormatter.format(
       amount: amount,
       fractionDigits: fractionDigits,
       maximumFractionDigits: maximumFractionDigits,
-      groupSeparator: groupSeparator,
+      groupingSeparator: groupingSeparator,
       fractionalSeparator: fractionalSeparator
     )
     if let currency = currency {

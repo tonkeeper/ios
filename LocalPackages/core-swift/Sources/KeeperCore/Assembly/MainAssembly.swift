@@ -469,7 +469,7 @@ public final class MainAssembly {
       locationService: servicesAssembly.locationService(),
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      amountFormatter: formattersAssembly.amountFormatter
+      amountNewFormatter: formattersAssembly.amountNewFormatter
     )
   }
   
@@ -482,7 +482,7 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       walletsStore: walletAssembly.walletStore,
       configurationStore: configurationAssembly.remoteConfigurationStore,
-      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
+      decimalAmountFormatter: formattersAssembly.decimalAmountNewFormatter
     )
   }
   
@@ -497,7 +497,7 @@ public final class MainAssembly {
       tonRatesStore: storesAssembly.tonRatesStore,
       walletsStore: walletAssembly.walletStore,
       configurationStore: configurationAssembly.remoteConfigurationStore,
-      amountFormatter: formattersAssembly.amountFormatter
+      amountNewFormatter: formattersAssembly.amountNewFormatter
     )
   }
   

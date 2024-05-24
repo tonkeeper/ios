@@ -29,7 +29,7 @@ public final class FormattersAssembly {
   
   public var shortNumberNewFormatter: NumberFormatter {
     let formatter = shortNumberFormatter
-    formatter.groupingSeparator = FormattersConstants.groupSeparator
+    formatter.groupingSeparator = FormattersConstants.groupingSeparator
     formatter.decimalSeparator = FormattersConstants.fractionalSeparator
     return formatter
   }

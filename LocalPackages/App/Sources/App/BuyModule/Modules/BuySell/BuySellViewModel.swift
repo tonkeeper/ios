@@ -69,7 +69,7 @@ protocol BuySellViewModel: AnyObject {
   var didUpdateCountryCode: ((String?) -> Void)? { get set }
   var didUpdatePaymentMethodItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   
-  var buySellAmountTextFieldFormatter: BuySellAmountTextFieldFormatter { get }
+  var textFieldFormatter: InputAmountTextFieldFormatter { get }
   
   func viewDidLoad()
   func didInputAmount(_ string: String)
@@ -112,14 +112,17 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
     amountInput = string
     
     Task {
-      let unformatted = buySellAmountTextFieldFormatter.unformatString(string) ?? ""
-      let inputAmount = buySellController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: tokenFractionalDigits(token: buySellItem.token))
-      let isAmountValid = minimumValidAmount <= inputAmount.value
+      let unformatted = textFieldFormatter.unformatString(string) ?? ""
+      let convertedInput = buySellController.convertStringToAmount(
+        string: unformatted,
+        targetFractionalDigits: tokenFractionalDigits(token: buySellItem.token)
+      )
+      let isAmountValid = minimumValidAmount <= convertedInput.amount
       
       await MainActor.run {
         self.amountInput = unformatted
         self.buySellItem.inputAmount = unformatted
-        self.amountInputValue = inputAmount.value
+        self.amountInputValue = convertedInput.amount
         self.isAmountValid = isAmountValid
         updateConverted()
         update()
@@ -167,19 +170,7 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   
   // MARK: - Formatter
   
-  let buySellAmountTextFieldFormatter: BuySellAmountTextFieldFormatter = {
-    let numberFormatter = NumberFormatter()
-    numberFormatter.groupingSize = 3
-    numberFormatter.usesGroupingSeparator = true
-    numberFormatter.groupingSeparator = " "
-    numberFormatter.decimalSeparator = Locale.current.decimalSeparator
-    numberFormatter.maximumIntegerDigits = 16
-    numberFormatter.roundingMode = .down
-    let buySellInputFormatController = BuySellAmountTextFieldFormatter(
-      currencyFormatter: numberFormatter
-    )
-    return buySellInputFormatController
-  }()
+  let textFieldFormatter = InputAmountTextFieldFormatter()
   
   // MARK: - Mapper
   
@@ -195,7 +186,7 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   init(buySellController: BuySellController, appSettings: AppSettings, buySellItem: BuySellItem) {
     self.buySellController = buySellController
     self.buySellItem = buySellItem
-    self.buySellAmountTextFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: buySellItem.token)
+    self.textFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: buySellItem.token)
   }
   
   deinit {
@@ -230,7 +221,7 @@ private extension BuySellViewModelImplementation {
     
   func createAmountModel(amountInput: String, token: Token) -> BuySellModel.Amount {
     BuySellModel.Amount(
-      text: buySellAmountTextFieldFormatter.formatString(amountInput) ?? "",
+      text: textFieldFormatter.formatString(amountInput) ?? "",
       fractionDigits: tokenFractionalDigits(token: token),
       minimum: amountInputMinimum,
       token: createTokenModel(token: token)
@@ -250,7 +241,7 @@ private extension BuySellViewModelImplementation {
   }
   
   func createBuySellOperatorItem() -> BuySellOperatorItem {
-    let amount = buySellAmountTextFieldFormatter.formatString(amountInput) ?? ""
+    let amount = textFieldFormatter.formatString(amountInput) ?? ""
     let buySellOperation: BuySellOperatorItem.Operation
     switch buySellItem.operation {
     case .buy:
@@ -275,9 +266,12 @@ private extension BuySellViewModelImplementation {
   }
 
   func updateMinimumValidAmount(with amount: String) {
-    let unformatted = buySellAmountTextFieldFormatter.unformatString(amount) ?? ""
-    let amount = buySellController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: tokenFractionalDigits(token: buySellItem.token))
-    minimumValidAmount = amount.value
+    let unformatted = textFieldFormatter.unformatString(amount) ?? ""
+    let converted = buySellController.convertStringToAmount(
+      string: unformatted,
+      targetFractionalDigits: tokenFractionalDigits(token: buySellItem.token)
+    )
+    minimumValidAmount = converted.amount
   }
   
   func updateAmountInput(with inputAmount: String) {

@@ -220,7 +220,7 @@ private extension BuySellViewController {
     customView.amountInputView.convertedCurrencyLabel.textColor = .Text.secondary
     customView.amountInputView.minAmountLabel.textColor = .Text.tertiary
     
-    customView.amountInputView.amountTextField.delegate = viewModel.buySellAmountTextFieldFormatter
+    customView.amountInputView.amountTextField.delegate = viewModel.textFieldFormatter
   }
   
   func setupCollectionView() {

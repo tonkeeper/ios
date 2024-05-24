@@ -94,6 +94,7 @@ protocol SwapViewModel: AnyObject {
   var didUpdateRecieveTokenBalance: ((String) -> Void)? { get set }
   var didUpdateSwapSendContainer: ((SwapSendContainerView.Model) -> Void)? { get set }
   var didUpdateSwapRecieveContainer: ((SwapRecieveContainerView.Model) -> Void)? { get set }
+  
   var sendTextFieldFormatter: InputAmountTextFieldFormatter { get }
   var recieveTextFieldFormatter: InputAmountTextFieldFormatter { get }
   
@@ -280,8 +281,8 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     let unformattedAmountSend = sendTextFieldFormatter.unformatString(balanceAmountSend) ?? "0"
     let formattedAmountSend = sendTextFieldFormatter.formatString(unformattedAmountSend) ?? "0"
     
-    updateInputAmount(formattedAmountSend, forInput: .send)
     didInputAmountSend(formattedAmountSend)
+    updateInputAmount(formattedAmountSend, forInput: .send)
   }
   
   func didTapSwapButton() {

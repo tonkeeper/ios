@@ -26,20 +26,20 @@ public final class BuySellDetailsController {
   private let tonRatesStore: TonRatesStore
   private let walletsStore: WalletsStore
   private let configurationStore: ConfigurationStore
-  private let amountFormatter: AmountFormatter
+  private let amountNewFormatter: AmountNewFormatter
   
   init(ratesService: RatesService,
        tonRatesLoader: TonRatesLoader,
        tonRatesStore: TonRatesStore,
        walletsStore: WalletsStore,
        configurationStore: ConfigurationStore,
-       amountFormatter: AmountFormatter) {
+       amountNewFormatter: AmountNewFormatter) {
     self.ratesService = ratesService
     self.tonRatesLoader = tonRatesLoader
     self.tonRatesStore = tonRatesStore
     self.walletsStore = walletsStore
     self.configurationStore = configurationStore
-    self.amountFormatter = amountFormatter
+    self.amountNewFormatter = amountNewFormatter
   }
   
   public func start() async {
@@ -79,29 +79,15 @@ public final class BuySellDetailsController {
     }
     
     let converted = rateConverter.convert(amount: amount, amountFractionLength: input.fractionLength, rate: correctedRate)
-    return amountFormatter.formatAmount(
+    return amountNewFormatter.formatAmount(
       converted.amount,
       fractionDigits: converted.fractionLength,
       maximumFractionDigits: outputFractionLenght
     )
   }
   
-  public func convertInputStringToAmount(input: String, targetFractionalDigits: Int) -> (value: BigUInt, fractionalDigits: Int) {
-    guard !input.isEmpty else { return (0, targetFractionalDigits) }
-    let fractionalSeparator: String = .fractionalSeparator ?? ""
-    let components = input.components(separatedBy: fractionalSeparator)
-    guard components.count < 3 else {
-      return (0, targetFractionalDigits)
-    }
-    
-    var fractionalDigits = 0
-    if components.count == 2 {
-        let fractionalString = components[1]
-        fractionalDigits = fractionalString.count
-    }
-    let zeroString = String(repeating: "0", count: max(0, targetFractionalDigits - fractionalDigits))
-    let bigIntValue = BigUInt(stringLiteral: components.joined() + zeroString)
-    return (bigIntValue, targetFractionalDigits)
+  public func convertStringToAmount(string: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
+    return amountNewFormatter.amount(from: string, targetFractionalDigits: targetFractionalDigits)
   }
   
   public func createActionUrl(actionTemplateURL: String?,
@@ -135,12 +121,5 @@ public final class BuySellDetailsController {
     }
     
     return URL(string: urlString)
-  }
-}
-
-private extension String {
-  static let groupSeparator = " "
-  static var fractionalSeparator: String? {
-    Locale.current.decimalSeparator
   }
 }

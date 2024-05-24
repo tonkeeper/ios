@@ -5,12 +5,11 @@ import KeeperCore
 
 final class InputAmountTextFieldFormatter: NSObject {
   
-  private let groupSeparator = FormattersConstants.groupSeparator
+  private let groupingSeparator = FormattersConstants.groupingSeparator
   private let fractionalSeparator = FormattersConstants.fractionalSeparator
   
   var maximumFractionDigits: Int = 0 {
     didSet {
-      print(maximumFractionDigits)
       numberFormatter.maximumFractionDigits = maximumFractionDigits
     }
   }
@@ -103,7 +102,7 @@ private extension NumberFormatter {
     let numberFormatter = NumberFormatter()
     numberFormatter.groupingSize = 3
     numberFormatter.usesGroupingSeparator = true
-    numberFormatter.groupingSeparator = FormattersConstants.groupSeparator
+    numberFormatter.groupingSeparator = FormattersConstants.groupingSeparator
     numberFormatter.decimalSeparator = FormattersConstants.fractionalSeparator
     numberFormatter.maximumIntegerDigits = 16
     numberFormatter.roundingMode = .down

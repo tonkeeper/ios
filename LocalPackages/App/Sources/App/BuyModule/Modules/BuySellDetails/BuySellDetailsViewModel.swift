@@ -114,8 +114,9 @@ protocol BuySellDetailsViewModel: AnyObject {
   var didUpdateAmountPay: ((String) -> Void)? { get set }
   var didUpdateAmountGet: ((String) -> Void)? { get set }
   var didUpdateConvertedRate: ((String) -> Void)? { get set }
-  var payAmountTextFieldFormatter: BuySellAmountTextFieldFormatter { get }
-  var getAmountTextFieldFormatter: BuySellAmountTextFieldFormatter { get }
+  
+  var payAmountTextFieldFormatter: InputAmountTextFieldFormatter { get }
+  var getAmountTextFieldFormatter: InputAmountTextFieldFormatter { get }
   
   func viewDidLoad()
   func didInputAmountPay(_ string: String)
@@ -228,8 +229,8 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   
   // MARK: - Formatters
   
-  let payAmountTextFieldFormatter: BuySellAmountTextFieldFormatter = .makeAmountFormatter()
-  let getAmountTextFieldFormatter: BuySellAmountTextFieldFormatter = .makeAmountFormatter()
+  let payAmountTextFieldFormatter = InputAmountTextFieldFormatter()
+  let getAmountTextFieldFormatter = InputAmountTextFieldFormatter()
   
   // MARK: - Dependencies
   
@@ -389,10 +390,13 @@ private extension BuySellDetailsViewModelImplementation {
       let maximumFractionDigitsInput = maximumFractionDigits(forInputField: inputField)
       let maximumFractionDigitsOuput = maximumFractionDigits(forInputField: outputField)
       
-      let inputAmount = buySellDetailsController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: maximumFractionDigitsInput)
+      let convertedInput = buySellDetailsController.convertStringToAmount(
+        string: unformatted,
+        targetFractionalDigits: maximumFractionDigitsInput
+      )
       let input = Input(
-        amount: mapInputAmount(inputAmount.value, from: inputField),
-        fractionLength: inputAmount.fractionalDigits
+        amount: mapInputAmount(convertedInput.amount, from: inputField),
+        fractionLength: convertedInput.fractionalDigits
       )
       
       let currency = buySellDetailsItem.transaction.operation.fiatCurrency
@@ -404,7 +408,7 @@ private extension BuySellDetailsViewModelImplementation {
     return convertedOutput
   }
   
-  func textFormatter(forInputField inputField: InputField) -> BuySellAmountTextFieldFormatter {
+  func textFormatter(forInputField inputField: InputField) -> InputAmountTextFieldFormatter {
     switch inputField {
     case .pay:
       return payAmountTextFieldFormatter
@@ -442,20 +446,5 @@ private extension BuySellDetailsViewModelImplementation {
     case (.sellTon, .get):
       return .fiat
     }
-  }
-}
-
-private extension BuySellAmountTextFieldFormatter {
-  static func makeAmountFormatter() -> BuySellAmountTextFieldFormatter {
-    let numberFormatter = NumberFormatter()
-    numberFormatter.groupingSize = 3
-    numberFormatter.usesGroupingSeparator = true
-    numberFormatter.groupingSeparator = " "
-    numberFormatter.decimalSeparator = Locale.current.decimalSeparator
-    numberFormatter.maximumIntegerDigits = 16
-    numberFormatter.roundingMode = .down
-    return BuySellAmountTextFieldFormatter(
-      currencyFormatter: numberFormatter
-    )
   }
 }

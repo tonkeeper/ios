@@ -54,7 +54,7 @@ extension BigIntAmountFormatter {
   public func format(amount: BigUInt,
                      fractionDigits: Int,
                      maximumFractionDigits: Int,
-                     groupSeparator: String,
+                     groupingSeparator: String,
                      fractionalSeparator: String) -> String {
     guard !amount.isZero else { return "0" }
     let initialString = amount.description
@@ -70,7 +70,7 @@ extension BigIntAmountFormatter {
       let fractionalResult = String(fractional[fractional.startIndex..<fractional.index(fractional.startIndex, offsetBy: fractionalLength)])
         .replacingOccurrences(of: "0+$", with: "", options: .regularExpression)
       let integer = String(initialString.prefix(initialString.count - fractional.count))
-      let separatedInteger = groups(string: integer.isEmpty ? "0" : integer, size: .groupSize).joined(separator: groupSeparator)
+      let separatedInteger = groups(string: integer.isEmpty ? "0" : integer, size: .groupSize).joined(separator: groupingSeparator)
       var result = separatedInteger
       if fractionalResult.count > 0 {
         result += fractionalSeparator + fractionalResult

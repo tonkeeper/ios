@@ -276,10 +276,3 @@ private extension Rates.Rate {
     Rates.Rate(currency: currency, rate: 0, diff24h: nil)
   }
 }
-
-private extension String {
-  static let groupSeparator = " "
-  static var fractionalSeparator: String? {
-    Locale.current.decimalSeparator
-  }
-}
