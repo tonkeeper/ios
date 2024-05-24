@@ -104,7 +104,6 @@ public final class SignConfirmationController {
   }
   
   private func parseBoc(_ boc: Data) throws -> Transaction {
-    throw NSError(domain: "dsd", code: 1)
     let cell = try Cell.cellFromBoc(src: boc)
     let hex = boc.hexString()
     let slice = try cell.toSlice()
