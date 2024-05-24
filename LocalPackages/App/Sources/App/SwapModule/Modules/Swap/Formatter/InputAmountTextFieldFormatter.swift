@@ -8,6 +8,8 @@ final class InputAmountTextFieldFormatter: NSObject {
   private let groupingSeparator = FormattersConstants.groupingSeparator
   private let fractionalSeparator = FormattersConstants.fractionalSeparator
   
+  var isAllowedEmptyInput: Bool = false
+  
   var maximumFractionDigits: Int = 0 {
     didSet {
       numberFormatter.maximumFractionDigits = maximumFractionDigits
@@ -33,6 +35,18 @@ final class InputAmountTextFieldFormatter: NSObject {
 }
 
 private extension InputAmountTextFieldFormatter {
+  func formatInput(currentText: String, range: NSRange, replacementString text: String) -> FormattedTextValue {
+    var result = inputFormatter.formatInput(
+      currentText: currentText,
+      range: range,
+      replacementString: text
+    )
+    if !isAllowedEmptyInput && result.formattedText.isEmpty {
+      result = FormattedTextValue(formattedText: "0", caretBeginOffset: 1)
+    }
+    return result
+  }
+  
   func notifyEditingChanged(at textField: UITextField) {
     textField.sendActions(for: .editingChanged)
     NotificationCenter.default.post(
@@ -53,7 +67,7 @@ extension InputAmountTextFieldFormatter: UITextFieldDelegate {
     guard inputText != inputFormatter.decimalSeparator || !currentText.isEmpty else { return false }
     guard Set(inputText).isSubset(of: .validCharactes) else { return false }
     
-    let result = inputFormatter.formatInput(
+    let result = formatInput(
       currentText: currentText,
       range: range,
       replacementString: inputFormatter.unformat(inputText) ?? ""
@@ -75,7 +89,7 @@ extension InputAmountTextFieldFormatter: TKTextInputTextViewFormatterDelegate {
     guard inputText != inputFormatter.decimalSeparator || !currentText.isEmpty else { return false }
     guard Set(inputText).isSubset(of: .validCharactes) else { return false }
     
-    let result = inputFormatter.formatInput(
+    let result = formatInput(
       currentText: currentText,
       range: range,
       replacementString: inputFormatter.unformat(inputText) ?? ""
