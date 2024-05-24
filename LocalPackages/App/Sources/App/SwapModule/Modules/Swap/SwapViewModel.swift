@@ -71,7 +71,7 @@ enum SwapInput {
 }
 
 protocol SwapModuleOutput: AnyObject {
-  var didTapSwapSettings: (() -> Void)? { get set }
+  var didTapSwapSettings: ((SwapSettingsModel) -> Void)? { get set }
   var didTapTokenButton: ((Address?, SwapInput) -> Void)? { get set }
   var didTapBuyTon: (() -> Void)? { get set }
   var didTapContinue: ((SwapModel) -> Void)? { get set }
@@ -79,6 +79,7 @@ protocol SwapModuleOutput: AnyObject {
 
 protocol SwapModuleInput: AnyObject {
   func didChooseToken(_ swapAsset: SwapAsset, forInput input: SwapInput)
+  func didUpdateSwapSettings(_ swapSettingsModel: SwapSettingsModel)
   func didBuyTon()
 }
 
@@ -148,7 +149,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   
   // MARK: - SwapModuleOutput
   
-  var didTapSwapSettings: (() -> Void)?
+  var didTapSwapSettings: ((SwapSettingsModel) -> Void)?
   var didTapTokenButton: ((Address?, SwapInput) -> Void)?
   var didTapBuyTon: (() -> Void)?
   var didTapContinue: ((SwapModel) -> Void)?
@@ -187,11 +188,14 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
         update()
         updateSendBalance()
         updateRecieveBalance()
-        
-        let swapSimulationDirection = swapSimulationDirection(forLastInput: lastInput)
-        simulateSwap(swapSimulationDirection)
+        reloadSimulation()
       }
     }
+  }
+  
+  func didUpdateSwapSettings(_ swapSettingsModel: SwapSettingsModel) {
+    self.swapSettingsModel = swapSettingsModel
+    reloadSimulation()
   }
   
   func didBuyTon() {
@@ -216,6 +220,8 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   func viewDidLoad() {
     update()
     updateSwapState()
+    
+    didTapSwapSettings?(swapSettingsModel)
 
     Task {
       await swapController.start()
@@ -292,13 +298,11 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     update()
     updateSendBalance()
     updateRecieveBalance()
-    
-    let swapSimulationDirection = swapSimulationDirection(forLastInput: lastInput)
-    simulateSwap(swapSimulationDirection)
+    reloadSimulation()
   }
   
   func didTapSwapSettingsButton() {
-    didTapSwapSettings?()
+    didTapSwapSettings?(swapSettingsModel)
   }
   
   // MARK: - State
@@ -366,12 +370,14 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   
   private let swapController: SwapController
   private var swapOperationItem: SwapOperationItem
+  private var swapSettingsModel: SwapSettingsModel
   
   // MARK: - Init
   
-  init(swapController: SwapController, swapOperationItem: SwapOperationItem) {
+  init(swapController: SwapController, swapOperationItem: SwapOperationItem, swapSettingsModel: SwapSettingsModel) {
     self.swapController = swapController
     self.swapOperationItem = swapOperationItem
+    self.swapSettingsModel = swapSettingsModel
     self.amountInpuTextFieldFormatter.maximumFractionDigits = TonInfo.fractionDigits // TODO: Change depends on assets fractionLenght
   }
   
@@ -741,6 +747,11 @@ private extension SwapViewModelImplementation {
     updateInputAmount("0", forInput: input)
   }
   
+  func reloadSimulation() {
+    let swapSimulationDirection = swapSimulationDirection(forLastInput: lastInput)
+    simulateSwap(swapSimulationDirection)
+  }
+  
   func simulateSwap(_ direction: SwapSimulationDirection,
                     isResolvingEnabled: Bool = true,
                     debounceDuration: TimeInterval = 0.4,
@@ -791,6 +802,7 @@ private extension SwapViewModelImplementation {
     
     let inputUnformatted = amountInpuTextFieldFormatter.unformatString(inputAmount) ?? ""
     let amount = swapController.convertStringToAmount(string: inputUnformatted, targetFractionalDigits: inputAsset.fractionDigits)
+    let swapSettings = swapSettingsModel
     
     guard amount.value != .zero else {
       isLastSimulationFailed = false
@@ -805,7 +817,8 @@ private extension SwapViewModelImplementation {
           direction: direction,
           amount: amount.value,
           sendAsset: sendAsset,
-          recieveAsset: recieveAsset
+          recieveAsset: recieveAsset,
+          swapSettings: swapSettings
         )
         await MainActor.run {
           guard sendAsset == swapOperationItem.sendToken?.asset && recieveAsset == swapOperationItem.recieveToken?.asset else { return }

@@ -33,15 +33,22 @@ private extension SwapCoordinator {
   func openSwap() {
     let module = SwapAssembly.module(
       swapController: keeperCoreMainAssembly.swapController(),
-      swapOperationItem: SwapOperationItem()
+      swapOperationItem: SwapOperationItem(),
+      swapSettingsModel: SwapSettingsModel()
     )
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
     
-    module.output.didTapSwapSettings = {
-      print("didTapSwapSettings")
+    module.output.didTapSwapSettings = { [weak self, weak view = module.view, weak input = module.input] currentSwapSettings in
+      self?.openSwapSettings(
+        sourceViewController: view,
+        swapSettingsModel: currentSwapSettings,
+        didUpdateSettingsClosure: { swapSettingsModel in
+          input?.didUpdateSwapSettings(swapSettingsModel)
+        }
+      )
     }
     
     module.output.didTapTokenButton = { [weak self, weak view = module.view, weak input = module.input] contractAddressForPair, swapInput in
@@ -72,6 +79,29 @@ private extension SwapCoordinator {
     }
     
     router.push(viewController: module.view, animated: false)
+  }
+  
+  func openSwapSettings(sourceViewController: UIViewController?,
+                        swapSettingsModel: SwapSettingsModel,
+                        didUpdateSettingsClosure: ((SwapSettingsModel) -> Void)?) {
+    let module = SwapSettingsAssembly.module(
+      swapSettingsController: keeperCoreMainAssembly.swapSettingsController(),
+      swapSettingsModel: swapSettingsModel
+    )
+    
+    module.view.setupRightCloseButton {
+      sourceViewController?.dismiss(animated: true)
+    }
+    
+    module.output.didTapSave = { swapSettingsModel in
+      didUpdateSettingsClosure?(swapSettingsModel)
+    }
+    
+    module.output.didFinish = {
+      sourceViewController?.dismiss(animated: true)
+    }
+    
+    sourceViewController?.present(module.view, animated: true)
   }
   
   func openSwapTokenList(sourceViewController: UIViewController?,

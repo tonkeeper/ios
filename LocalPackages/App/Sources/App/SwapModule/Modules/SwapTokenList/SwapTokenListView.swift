@@ -14,7 +14,7 @@ final class SwapTokenListView: UIView {
   }
   
   var contentInsetBottom: CGFloat {
-    closuButtonSize.height + .verticalPadding
+    closeButtonSize.height + .verticalPadding
   }
   
   let titleView = ModalTitleView()
@@ -30,12 +30,12 @@ final class SwapTokenListView: UIView {
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
   let noSearchResultsLabel = UILabel()
   
-  let closuButtonSize = TKActionButtonSize.large
+  let closeButtonSize = TKActionButtonSize.large
   let closeButtonBackgroundView = UIView()
   lazy var closeButton = TKButton(
     configuration: .actionButtonConfiguration(
       category: .secondary,
-      size: closuButtonSize
+      size: closeButtonSize
     )
   )
   

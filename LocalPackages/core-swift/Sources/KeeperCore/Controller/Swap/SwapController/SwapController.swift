@@ -100,12 +100,16 @@ public final class SwapController {
     return pairs.hasPair(keyOne: assetOne.contractAddress.toString(), keyTwo: assetTwo.contractAddress.toString())
   }
   
-  public func simulateSwap(direction: SwapSimulationDirection, amount: BigUInt, sendAsset: SwapAsset, recieveAsset: SwapAsset) async throws -> SwapSimulationModel {
+  public func simulateSwap(direction: SwapSimulationDirection,
+                           amount: BigUInt,
+                           sendAsset: SwapAsset,
+                           recieveAsset: SwapAsset,
+                           swapSettings: SwapSettingsModel) async throws -> SwapSimulationModel {
     let stonfiSimulationRequestModel = StonfiSwapSimulationRequestModel(
       fromAddress: sendAsset.contractAddress,
       toAddress: recieveAsset.contractAddress,
       amount: amount,
-      slippageTolerance: "0.005", // TODO: slippage tolerance input
+      slippageTolerance: swapSettings.slippageTolerance.converted,
       referralAddress: nil
     )
     

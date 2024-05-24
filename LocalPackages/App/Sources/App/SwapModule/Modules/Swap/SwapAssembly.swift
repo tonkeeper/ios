@@ -5,10 +5,12 @@ import KeeperCore
 struct SwapAssembly {
   private init() {}
   static func module(swapController: SwapController,
-                     swapOperationItem: SwapOperationItem) -> MVVMModule<SwapViewController, SwapModuleOutput, SwapModuleInput> {
+                     swapOperationItem: SwapOperationItem,
+                     swapSettingsModel: SwapSettingsModel) -> MVVMModule<SwapViewController, SwapModuleOutput, SwapModuleInput> {
     let viewModel = SwapViewModelImplementation(
       swapController: swapController,
-      swapOperationItem: swapOperationItem
+      swapOperationItem: swapOperationItem,
+      swapSettingsModel: swapSettingsModel
     )
     
     let viewController = SwapViewController(

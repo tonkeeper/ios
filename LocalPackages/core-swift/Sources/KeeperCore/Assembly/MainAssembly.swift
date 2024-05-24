@@ -447,6 +447,10 @@ public final class MainAssembly {
     )
   }
   
+  public func swapSettingsController() -> SwapSettingsController {
+    SwapSettingsController()
+  }
+  
   public func buyListController(wallet: Wallet,
                                 isMarketRegionPickerAvailable: @escaping () async -> Bool) -> BuyListController {
     BuyListController(

@@ -5,7 +5,7 @@ struct StonfiMapper {
   func mapStonfiAsset(_ asset: StonfiAsset) -> SwapAsset? {
     guard let contractAddress = try? Address.parse(asset.contractAddress) else { return nil }
     
-    var imageUrl = mapImageUrlString(asset.imageUrl)
+    let imageUrl = mapImageUrlString(asset.imageUrl)
     let assetKind = AssetKind(fromString: asset.kind)
     let displayName = getDisplayName(for: asset, kind: assetKind)
     let tags = asset.tags ?? []
