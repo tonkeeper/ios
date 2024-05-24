@@ -111,15 +111,11 @@ private extension SwapSettingsView {
     saveButtonContainer.snp.remakeConstraints { make in
       make.left.right.bottom.equalTo(self)
     }
-    
-    scrollView.contentLayoutGuide.snp.makeConstraints { make in
-      make.bottom.equalTo(contentView).offset(CGFloat.horizontalContentPadding)
-    }
   }
 }
 
 private extension CGFloat {
-  static let horizontalContentPadding: CGFloat = 16
+  static let verticalContentPadding: CGFloat = 16
 }
 
 private extension UIEdgeInsets {

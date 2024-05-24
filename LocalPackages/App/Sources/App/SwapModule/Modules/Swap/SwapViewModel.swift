@@ -138,6 +138,19 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
       }
       return nil
     }
+    
+    var rawValue: String {
+      switch self {
+      case .empty:
+        return "empty"
+      case .success(let swapSimulationModel):
+        return "success"
+      case .fail:
+        return "fail"
+      case .cancel:
+        return "cancel"
+      }
+    }
   }
   
   enum Remaining: Equatable {
@@ -180,19 +193,18 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     }
     
     setToken(newToken, forInput: input)
+    stopSwapSimulationAutoRefresh()
     updateFormatters()
     
     Task {
       let tokensHasPair = await swapController.isPairExistsForAssets(newToken.asset, oppositeToken?.asset)
       let shouldRemoveOppositeToken = !tokensHasPair || isOppositeAssetSame
-      
       await MainActor.run {
         if shouldRemoveOppositeToken {
           setToken(nil, forInput: input.opposite)
           clearInput(input.opposite)
           lastInput = input
         }
-        
         update()
         updateSendBalance()
         updateRecieveBalance()
@@ -669,7 +681,7 @@ private extension SwapViewModelImplementation {
       backgroundColor: .Button.secondaryBackground,
       backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
       isEnabled: true,
-      isActivity:isResolving && currentSwapSimulationModel == nil,
+      isActivity: isResolving && currentSwapSimulationModel == nil,
       action: { [weak self] in
         self?.didTapBuyTon?()
       }
@@ -804,7 +816,7 @@ private extension SwapViewModelImplementation {
         self?.didCompleteSwapSimulation(withResult: result)
         self?.updateSendBalance()
         self?.recalculateSwapState()
-        self?.isResolving = false
+        self?.isResolving = result == .cancel
         completion?()
       })
     }

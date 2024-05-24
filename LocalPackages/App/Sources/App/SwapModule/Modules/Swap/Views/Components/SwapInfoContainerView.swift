@@ -144,6 +144,10 @@ final class SwapInfoRow: UIView, ConfigurableView {
       make.top.equalTo(self).offset(4)
       make.bottom.equalTo(self).inset(4)
     }
+    
+    infoLabel.snp.makeConstraints { make in
+      make.width.equalTo(infoLabel.sizeThatFits(bounds.size).width).priority(.required)
+    }
   }
 }
 

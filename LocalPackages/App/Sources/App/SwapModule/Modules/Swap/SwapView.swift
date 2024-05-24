@@ -41,6 +41,11 @@ final class SwapView: UIView, ConfigurableView {
       size: .large
     )
   )
+  private let actionButtonContainer: TKPaddingContainerView = {
+    let container = TKPaddingContainerView()
+    container.padding = .actionButtonContainerPadding
+    return container
+  }()
   
   // MARK: - Init
   
@@ -137,7 +142,8 @@ private extension SwapView {
     contentView.addSubview(swapButton)
     
     scrollView.addSubview(contentView)
-    scrollView.addSubview(actionButton)
+    actionButtonContainer.setViews([actionButton])
+    scrollView.addSubview(actionButtonContainer)
     addSubview(scrollView)
     
     setupConstraints()
@@ -147,6 +153,12 @@ private extension SwapView {
     scrollView.snp.makeConstraints { make in
       make.edges.equalTo(self)
       make.width.equalTo(self)
+    }
+    
+    scrollView.contentLayoutGuide.snp.makeConstraints { make in
+      make.top.equalTo(contentView)
+      make.width.equalTo(contentView)
+      make.bottom.equalTo(actionButtonContainer)
     }
     
     contentView.snp.makeConstraints { make in
@@ -179,13 +191,9 @@ private extension SwapView {
       make.centerY.equalTo(swapSendContainerView.snp.bottom).offset(CGFloat.interContainerSpacing/2)
     }
     
-    actionButton.snp.remakeConstraints { make in
-      make.top.equalTo(contentView.snp.bottom).offset(32)
+    actionButtonContainer.snp.remakeConstraints { make in
+      make.top.equalTo(contentView.snp.bottom)
       make.left.right.equalTo(contentView)
-    }
-    
-    scrollView.contentLayoutGuide.snp.makeConstraints { make in
-      make.bottom.equalTo(actionButton).offset(CGFloat.horizontalContentPadding)
     }
   }
   
@@ -200,6 +208,7 @@ private extension SwapView {
 
 private extension CGFloat {
   static let horizontalContentPadding: CGFloat = 16
+  static let verticalContentPadding: CGFloat = 16
   static let interContainerSpacing: CGFloat = 8
   static let swapContainerViewHeight: CGFloat = 108
   static var contentContainerHeight: CGFloat {
@@ -225,4 +234,5 @@ private extension CGSize {
 private extension UIEdgeInsets {
   static let swapButtonContentPadding: UIEdgeInsets = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
   static let swapButtonPadding: UIEdgeInsets = UIEdgeInsets(top: 4, left: 4, bottom: 4, right: 4)
+  static let actionButtonContainerPadding = UIEdgeInsets(top: 32, left: 0, bottom: 16, right: 0)
 }

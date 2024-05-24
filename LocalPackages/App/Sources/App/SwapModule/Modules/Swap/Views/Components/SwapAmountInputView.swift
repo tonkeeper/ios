@@ -19,18 +19,7 @@ final class SwapAmountInputView: UIView, ConfigurableView {
     super.layoutSubviews()
     
     let tokenButtonFrame = CGRect(origin: .zero, size: tokenButton.sizeThatFits(bounds.size))
-    
-    let textFieldX = tokenButton.frame.maxX + .horizontalSpacing
-    let textFieldWidth = bounds.width - tokenButton.frame.maxX - .horizontalSpacing
-    let textFieldFrame = CGRect(
-      x: textFieldX,
-      y: 0,
-      width: textFieldWidth,
-      height: .itemHeight
-    )
-    
     tokenButton.frame = tokenButtonFrame
-    textField.frame = textFieldFrame
   }
   
   struct Model {
@@ -73,7 +62,7 @@ final class SwapAmountInputView: UIView, ConfigurableView {
 }
 
 private extension SwapAmountInputView {
-  private func setup() {
+  func setup() {
     textField.text = "0"
     textField.font = TKTextStyle.num2.font
     textField.textColor = .Text.primary
@@ -81,6 +70,17 @@ private extension SwapAmountInputView {
     
     addSubview(tokenButton)
     addSubview(textField)
+    
+    setupConstraints()
+  }
+  
+  func setupConstraints() {
+    textField.snp.makeConstraints { make in
+      make.left.equalTo(tokenButton.snp.right).offset(CGFloat.horizontalSpacing)
+      make.right.equalTo(self)
+      make.height.equalTo(CGFloat.itemHeight)
+      make.centerY.equalTo(tokenButton)
+    }
   }
 }
 
