@@ -7,8 +7,8 @@ public enum TransactionMode: CaseIterable {
 }
 
 public struct TransactionAmountModel {
-  let mode: TransactionMode
-  let amount: BigUInt
+  public let mode: TransactionMode
+  public let amount: BigUInt
   
   public init(mode: TransactionMode, amount: BigUInt) {
     self.mode = mode

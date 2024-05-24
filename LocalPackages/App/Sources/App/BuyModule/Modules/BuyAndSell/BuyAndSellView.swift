@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-final class BuyAndSellView: UIView, ConfigurableView {
+final class BuyAndSellView: UIView {
   
   struct Model {
     struct Amount {
@@ -51,14 +51,6 @@ final class BuyAndSellView: UIView, ConfigurableView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
-  }
-  
-  // MARK: - Configure
-  func configure(model: Model) {
-    amountView.minAmountLabel.text = model.minAmountDisclaimer
-    amountView.convertedAmountLabel.text = model.convertedAmount
-    amountView.amountTextField.text = model.amount.text
-    amountView.amountTextField.placeholder = model.amount.placeholder
   }
 }
 

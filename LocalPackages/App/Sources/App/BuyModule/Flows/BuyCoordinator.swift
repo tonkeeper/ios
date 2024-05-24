@@ -12,6 +12,7 @@ public final class BuyCoordinator: RouterCoordinator<NavigationControllerRouter>
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
+  private let buyListController: BuyListController
   
   init(wallet: Wallet,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
@@ -20,6 +21,10 @@ public final class BuyCoordinator: RouterCoordinator<NavigationControllerRouter>
     self.wallet = wallet
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
+    self.buyListController = keeperCoreMainAssembly.buyListController(
+      wallet: wallet,
+      isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
+    )
     super.init(router: router)
   }
   
@@ -30,12 +35,7 @@ public final class BuyCoordinator: RouterCoordinator<NavigationControllerRouter>
 
 private extension BuyCoordinator {
   func openBuyAndSell() {
-    let module = BuyAndSellAssembly.module(
-      buyListController: keeperCoreMainAssembly.buyListController(
-        wallet: wallet,
-        isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
-      )
-    )
+    let module = BuyAndSellAssembly.module(buyListController: buyListController)
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
@@ -51,13 +51,44 @@ private extension BuyCoordinator {
   func openOperatorSelection(transactionModel: TransactionAmountModel) {
     let module = OperatorSelectionAssembly.module(
       settingsController: keeperCoreMainAssembly.settingsController,
-      buyListController: keeperCoreMainAssembly.buyListController(
-        wallet: wallet,
-        isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
-      ), 
-      decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+      buyListController: buyListController,
+      currencyRateFormatter: keeperCoreMainAssembly.formattersAssembly.currencyToTONFormatter,
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
       transactionModel: transactionModel
+    )
+    
+    module.view.setupBackButton()
+    
+    module.view.setupRightCloseButton { [weak self] in
+      self?.didFinish?()
+    }
+    
+    module.output.didTapCurrency = { [weak self] in
+      self?.openCurrencyPicker()
+    }
+    
+    module.output.didContinue = { [weak self] exchangeOperator, transactionModel, currency in
+      self?.openTransactionAmountConfirmation(exchangeOperator: exchangeOperator, transactionModel: transactionModel, currency: currency)
+    }
+    
+    router.push(viewController: module.view, animated: true)
+  }
+  
+  func openTransactionAmountConfirmation(
+    exchangeOperator: Operator,
+    transactionModel: TransactionAmountModel,
+    currency: Currency
+  ) {
+    let module = TransactionAssembly.module(
+      exchangeOperator: exchangeOperator,
+      transactionModel: transactionModel,
+      currency: currency,
+      buyListController: buyListController,
+      currencyRateFormatter: keeperCoreMainAssembly.formattersAssembly.currencyToTONFormatter,
+      bigIntAmountFormatter: keeperCoreMainAssembly.formattersAssembly.bigIntAmountFormatter(
+        groupSeparator: ",",
+        fractionalSeparator: "."
+      )
     )
     
     module.view.setupRightCloseButton { [weak self] in
@@ -65,10 +96,6 @@ private extension BuyCoordinator {
     }
     
     module.view.setupBackButton()
-    
-    module.output.didTapCurrency = { [weak self] in
-      self?.openCurrencyPicker()
-    }
     
     router.push(viewController: module.view, animated: true)
   }

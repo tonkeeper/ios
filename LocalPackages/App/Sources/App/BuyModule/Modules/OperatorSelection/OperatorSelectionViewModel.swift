@@ -12,6 +12,7 @@ enum OperatorSelectionSection: Hashable {
 
 protocol OperatorSelectionViewModelOutput: AnyObject {
   var didTapCurrency: (() -> Void)? { get set }
+  var didContinue: ((Operator, TransactionAmountModel, Currency) -> Void)? { get set }
 }
 
 protocol OperatorSelectionViewModel: AnyObject {
@@ -35,11 +36,13 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
   // MARK: - OperatorSelectionViewModelOutput
   
   var didTapCurrency: (() -> Void)?
+  var didContinue: ((Operator, TransactionAmountModel, Currency) -> Void)?
   
   private let settingsController: SettingsController
   private let buyListController: BuyListController
-  private let decimalAmountFormatter: DecimalAmountFormatter
+  private let currencyRateFormatter: CurrencyToTONFormatter
   private let currencyStore: CurrencyStore
+  private let transactionModel: TransactionAmountModel
   
   private var operators: [Operator] = []
   private var selectedOperatorId: String? {
@@ -47,17 +50,20 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
       didUpdateSelection?(selectedOperatorId != nil)
     }
   }
+  private var currency: Currency?
   
   init(
     settingsController: SettingsController,
     buyListController: BuyListController,
     currencyStore: CurrencyStore,
-    decimalAmountFormatter: DecimalAmountFormatter
+    currencyRateFormatter: CurrencyToTONFormatter,
+    transactionModel: TransactionAmountModel
   ) {
     self.settingsController = settingsController
     self.buyListController = buyListController
     self.currencyStore = currencyStore
-    self.decimalAmountFormatter = decimalAmountFormatter
+    self.currencyRateFormatter = currencyRateFormatter
+    self.transactionModel = transactionModel
   }
   
   func viewDidLoad() {
@@ -67,7 +73,14 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
   }
   
   func didTapContinueButton() {
-    print("HIHI")
+    guard
+      let selectedOperatorId,
+      let exchangeOperator = operators.first(where: { $0.id == selectedOperatorId }),
+    let currency
+    else {
+      return
+    }
+    didContinue?(exchangeOperator, transactionModel, currency)
   }
   
   private func loadOperators() {
@@ -77,7 +90,8 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
       let operators = await buyListController.fetchOperators(mode: .buy, currency: currency)
       await MainActor.run {
         self.operators = operators
-        update(currency: currency, operators: operators)
+        self.currency = currency
+        self.update(currency: currency, operators: operators)
       }
     }
   }
@@ -86,14 +100,11 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
     _ = await currencyStore.addEventObserver(self) { [weak self] observer, event in
       switch event {
       case .didChangeCurrency(let currency):
-        self?.didUpdateCurrency(currency)
+        self?.currency = currency
+        self?.update(currency: currency, operators: nil)
         self?.loadOperators()
       }
     }
-  }
-  
-  private func didUpdateCurrency(_ currency: Currency) {
-    update(currency: currency, operators: nil)
   }
   
   private func update(currency: Currency, operators: [Operator]?) {
@@ -201,9 +212,9 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
       lineBreakMode: .byTruncatingTail
     )
     
-    let rate = decimalAmountFormatter.format(amount: model.rate, maximumFractionDigits: 4)
+    let rate = currencyRateFormatter.format(currency: currency, rate: model.rate)
     
-    let description = "\(rate) \(currency.rawValue) for 1 TON".withTextStyle(
+    let description = rate.withTextStyle(
       .body2,
       color: .Text.secondary,
       alignment: .left,

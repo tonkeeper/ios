@@ -28,6 +28,10 @@ public final class FormattersAssembly {
     DecimalAmountFormatter(numberFormatter: shortNumberFormatter)
   }
   
+  public var currencyToTONFormatter: CurrencyToTONFormatter {
+    CurrencyToTONFormatter(decimalAmountFormatter: decimalAmountFormatter)
+  }
+  
   public var dateFormatter: DateFormatter {
     let dateFormatter = DateFormatter()
     dateFormatter.locale = Locale.current

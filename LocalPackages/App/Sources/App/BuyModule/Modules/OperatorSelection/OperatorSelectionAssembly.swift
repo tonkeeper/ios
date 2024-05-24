@@ -7,7 +7,7 @@ struct OperatorSelectionAssembly {
   static func module(
     settingsController: SettingsController,
     buyListController: BuyListController,
-    decimalAmountFormatter: DecimalAmountFormatter,
+    currencyRateFormatter: CurrencyToTONFormatter,
     currencyStore: CurrencyStore,
     transactionModel: TransactionAmountModel
   ) -> MVVMModule<OperatorSelectionViewController, OperatorSelectionViewModelOutput, Void> {
@@ -16,7 +16,8 @@ struct OperatorSelectionAssembly {
       settingsController: settingsController,
       buyListController: buyListController,
       currencyStore: currencyStore,
-      decimalAmountFormatter: decimalAmountFormatter
+      currencyRateFormatter: currencyRateFormatter,
+      transactionModel: transactionModel
     )
     
     let viewController = OperatorSelectionViewController(viewModel: viewModel)
@@ -27,5 +28,4 @@ struct OperatorSelectionAssembly {
       input: Void()
     )
   }
-  
 }
