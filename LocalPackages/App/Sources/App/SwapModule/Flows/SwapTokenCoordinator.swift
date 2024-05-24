@@ -55,10 +55,11 @@ private extension SwapTokenCoordinator {
       contentViewController: module.view,
       configuration: .init(dragHalfWayToClose: true, bottomSpacing: 44)
     )
-    module.output.didSelectToken = { token in
+    module.output.didSelectToken = { [weak bottomSheetViewController] token in
       completion(token)
+      bottomSheetViewController?.dismiss()
     }
-    module.output.didFinish = {  [weak bottomSheetViewController] in
+    module.output.didFinish = { [weak bottomSheetViewController] in
       bottomSheetViewController?.dismiss()
     }
     bottomSheetViewController.present(fromViewController: sourceViewController)

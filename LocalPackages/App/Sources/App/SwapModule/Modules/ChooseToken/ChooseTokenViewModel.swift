@@ -27,7 +27,11 @@ final class ChooseTokenViewModelImplementation: ChooseTokenViewModel, ChooseToke
     Task {
       let availableTokens = await swapAvailableTokenController.receiveTokenList()
       let mapper = ChooseTokenListItemMapper()
-      let items = availableTokens.map { mapper.mapAvailabeToken($0) }
+      let items = availableTokens.map { availableToken in
+        mapper.mapAvailabeToken(availableToken, selectionClosure:  { [weak self] in
+          self?.didSelectToken?(availableToken.token)
+        })
+      }
       await MainActor.run {
         didUpdateTokens?(items)
       }

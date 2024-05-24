@@ -8,7 +8,7 @@ struct ChooseTokenListItemMapper {
 
   let imageLoader = ImageLoader()
 
-  func mapAvailabeToken(_ availableToken: AvailableTokenModelItem) -> TKUIListItemCell.Configuration {
+  func mapAvailabeToken(_ availableToken: AvailableTokenModelItem, selectionClosure: @escaping () -> Void) -> TKUIListItemCell.Configuration {
     let id: String
     let symbolString: String
     let tokenName: String
@@ -107,7 +107,7 @@ struct ChooseTokenListItemMapper {
     return TKUIListItemCell.Configuration(
       id: id,
       listItemConfiguration: listItemConfiguration,
-      selectionClosure: nil
+      selectionClosure: selectionClosure
     )
   }
 }

@@ -17,14 +17,15 @@ protocol SwapViewModel: AnyObject {
 
   func didTapTokenPicker(swapField: SwapField)
   func didInputAmount(_ string: String)
-  func didTapMax(isHalf: Bool)
+  func didTapMax()
 }
 
 final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapModuleInput {
 
-  init(swapItem: SwapPair.Item, sendController: SendV3Controller) {
+  init(swapItem: SwapPair.Item, sendController: SendV3Controller, swapController: SwapController) {
     self.swapPair = SwapPair(send: swapItem, receive: nil)
     self.sendController = sendController
+    self.swapController = swapController
     sendAmountTextFieldFormatter.maximumFractionDigits = swapItem.token.tokenFractionalDigits
   }
 
@@ -41,7 +42,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     case .receive:
       swapPair = SwapPair(send: swapPair.send, receive: .init(token: token, amount: swapPair.receive?.amount ?? 0))
     }
-    update()
+    didInputAmount(sendAmount)
   }
 
   // MARK: - SwapViewModel
@@ -49,8 +50,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   var didUpdateModel: ((SwapView.Model) -> Void)?
   
   func viewDidLoad() {
-    updateTotalBalance(field: .send)
-    update()
+    didInputAmount("")
   }
 
   func didTapTokenPicker(swapField: SwapField) {
@@ -58,41 +58,39 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   }
 
   func didInputAmount(_ string: String) {
-    guard string != sendAmount else { return }
+    print(string)
     let unformatted = sendAmountTextFieldFormatter.unformatString(string) ?? ""
     let formatted = sendAmountTextFieldFormatter.formatString(unformatted) ?? ""
-    let amount = sendController.convertInputStringToAmount(
-      input: unformatted, 
-      targetFractionalDigits: swapPair.send.token.tokenFractionalDigits
-    )
     sendAmount = formatted.count > 0 ? formatted : "0"
+    update()
+
     Task {
+      let amount = sendController.convertInputStringToAmount(
+        input: unformatted,
+        targetFractionalDigits: swapPair.send.token.tokenFractionalDigits
+      )
       let isAmountValid = await sendController.isAmountAvailableToSend(
         amount: amount.amount,
         token: swapPair.send.token
-      ) && !amount.amount.isZero
+      )
+      let balance = await updateBalance(field: .send)
+      let receiveData = await updateReceive(with: amount.amount)
       await MainActor.run {
         isSendAmountValid = isAmountValid
-        swapPair = SwapPair(send: .init(token: swapPair.send.token, amount: amount.amount), receive: swapPair.receive)
+        sendBalance = balance
+        receiveBalance = receiveData.totalBalance
+        swapPair = SwapPair(
+          send: .init(token: swapPair.send.token, amount: amount.amount), 
+          receive: swapPair.receive != nil ? .init(token: swapPair.receive!.token, amount: receiveData.receiveAmount) : nil
+        )
+        receiveAmount = receiveData.amountFormatted
         update()
       }
     }
-    update()
   }
 
-  func didTapMax(isHalf: Bool) {
-    if !isHalf {
-      didInputAmount(sendBalance)
-    } else {
-      Task {
-        let amount = await sendController.getMaximumAmount(token: swapPair.send.token) / 2
-        let formatted = sendController.convertAmountToInputString(amount: amount, token: swapPair.send.token)
-        await MainActor.run {
-          self.sendAmount = formatted.count > 0 ? formatted : "0"
-          update()
-        }
-      }
-    }
+  func didTapMax() {
+    didInputAmount(sendBalance)
   }
 
   // MARK: - State
@@ -110,6 +108,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   
   private let imageLoader = ImageLoader()
   private let sendController: SendV3Controller
+  private let swapController: SwapController
   
   // MARK: - Formatters
   
@@ -125,27 +124,24 @@ private extension SwapViewModelImplementation {
     ))
   }
 
-  func updateTotalBalance(field: SwapField) {
-    if field == .receive, swapPair.receive?.token == nil { return }
-    Task {
-      let remaining = await sendController.calculateRemaining(
-        token: field == .send ? swapPair.send.token : swapPair.receive!.token,
-        tokenAmount: 0,
-        showSymbol: false
-      )
-      await MainActor.run {
-        switch remaining {
-        case let .remaining(balance):
-          if field == .send {
-            self.sendBalance = balance
-          } else if field == .receive {
-            self.receiveBalance = balance
-          }
-        case .insufficient: return
-        }
-        update()
-      }
-    }
+  func updateReceive(with sendAmount: BigUInt) async -> (receiveAmount: BigUInt, amountFormatted: String, totalBalance: String) {
+    guard let receiveToken = swapPair.receive?.token else { return (0, "0", "") }
+    let totalAmount = await sendController.getMaximumAmount(token: receiveToken)
+    let formattedTotal = sendController.convertAmountToInputString(amount: totalAmount, token: receiveToken)
+    let amount: BigUInt = (try? await swapController.calculateReceiveRate(
+      sendToken: swapPair.send.token,
+      amount: sendAmount,
+      receiveToken: receiveToken
+    )) ?? 0
+    let formattedAmount = sendController.convertAmountToInputString(amount: amount, token: receiveToken)
+    return (amount, formattedAmount, formattedTotal)
+  }
+
+  func updateBalance(field: SwapField) async -> String {
+    if field == .receive, swapPair.receive?.token == nil { return "" }
+    let token = field == .send ? swapPair.send.token : swapPair.receive!.token
+    let amount = await sendController.getMaximumAmount(token: token)
+    return sendController.convertAmountToInputString(amount: amount, token: token)
   }
 
   func createFieldModel(field: SwapField) -> SwapView.Model.Field {
@@ -153,7 +149,7 @@ private extension SwapViewModelImplementation {
       token: field == .send ? createTokenModel(token: swapPair.send.token) :
         (swapPair.receive != nil) ? createTokenModel(token: swapPair.receive!.token) : nil,
       amount: field == .send ? sendAmount : receiveAmount,
-      balance: field == .send ? sendBalance : receiveBalance
+      balance: field == .send ? "Balance: \(sendBalance)" : receiveBalance.isEmpty ? "" : "Balance: \(receiveBalance)"
     )
   }
 
@@ -169,8 +165,9 @@ private extension SwapViewModelImplementation {
       hint = "Choose Receive Token"
     }
     return SwapView.Model.Status(
-      isValid: receiveTokenNotEmpty && isSendAmountValid,
+      isValid: receiveTokenNotEmpty && isSendAmountValid && swapPair.send.amount > 0,
       isValidReceiveToken: receiveTokenNotEmpty,
+      isSendAmountValid: isSendAmountValid,
       hint: hint
     )
   }
@@ -206,6 +203,7 @@ extension SwapView {
     struct Status {
       let isValid: Bool
       let isValidReceiveToken: Bool
+      let isSendAmountValid: Bool
       let hint: String
     }
     let send: Field

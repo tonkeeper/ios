@@ -18,16 +18,8 @@ final class SwapInputView: UIView {
   lazy var maxButton: TKButton = {
     var configuration = TKButton.Configuration.accentButtonConfiguration(padding: .zero)
     configuration.textStyle = .label2
-    configuration.tapAreaInsets = .init(top: -20, left: 0, bottom: -20, right: -20)
+    configuration.tapAreaInsets = .init(top: -20, left: -60, bottom: -20, right: -20)
     configuration.content.title = .plainString("MAX")
-    return TKButton(configuration: configuration)
-  }()
-
-  lazy var halfButton: TKButton = {
-    var configuration = TKButton.Configuration.accentButtonConfiguration(padding: .zero)
-    configuration.textStyle = .label2
-    configuration.tapAreaInsets = .init(top: -20, left: -20, bottom: -20, right: 0)
-    configuration.content.title = .plainString("50%")
     return TKButton(configuration: configuration)
   }()
 
@@ -85,10 +77,8 @@ private extension SwapInputView {
     headerView.addSubview(actionLabel)
     headerView.addSubview(balanceLabel)
     headerView.addSubview(maxButton)
-    headerView.addSubview(halfButton)
 
     maxButton.alpha = swapField == .send ? 1 : 0
-    halfButton.alpha = swapField == .send ? 1 : 0
 
     tokenView.addSubview(chooseTokenView)
     tokenView.addSubview(amountTextField)
@@ -141,14 +131,10 @@ private extension SwapInputView {
       make.top.equalTo(16)
       make.right.equalTo(headerView).inset(16)
     }
-    halfButton.snp.makeConstraints { make in
-      make.top.equalTo(16)
-      make.right.equalTo(maxButton.snp.left).offset(-8)
-    }
     balanceLabel.snp.makeConstraints { make in
       make.top.equalTo(16)
       if swapField == .send {
-        make.right.equalTo(halfButton.snp.left).offset(-8)
+        make.right.equalTo(maxButton.snp.left).offset(-8)
       } else {
         make.right.equalTo(headerView).offset(-16)
       }
@@ -159,7 +145,7 @@ private extension SwapInputView {
     balanceLabel.snp.remakeConstraints { make in
       make.top.equalTo(16)
       if swapField == .send {
-        make.right.equalTo(halfButton.snp.left).offset(-8)
+        make.right.equalTo(maxButton.snp.left).offset(-8)
       } else {
         make.right.equalTo(headerView).inset(16)
       }
@@ -180,7 +166,6 @@ private extension SwapInputView {
     }
     UIView.animate(withDuration: 0.25, delay: 0, options: .overrideInheritedOptions) {
       self.maxButton.alpha = self.swapField == .send ? 1 : 0
-      self.halfButton.alpha = self.swapField == .send ? 1 : 0
       self.layoutIfNeeded()
     }
   }

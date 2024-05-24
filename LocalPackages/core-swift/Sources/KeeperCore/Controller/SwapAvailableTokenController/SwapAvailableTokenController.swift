@@ -33,7 +33,7 @@ public final class SwapAvailableTokenController {
   }
 
   public func receiveTokenList() async -> [AvailableTokenModelItem] {
-    async let availableJettons = try? jettonService.loadAvailable(wallet: wallet)
+//    async let availableJettons = try? jettonService.loadAvailable(wallet: wallet)
     async let walletBalance = try? balanceService.getBalance(wallet: wallet)
     let activeCurrency = await currencyStore.getActiveCurrency()
     var availableTokens = [AvailableTokenModelItem]()

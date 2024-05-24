@@ -16,8 +16,18 @@ struct RateConverter {
   func convert(amount: BigUInt,
                amountFractionLength: Int,
                rate: Rates.Rate) -> (amount: BigUInt, fractionLength: Int) {
-    let rateFractionLength = max(Int16(-rate.rate.exponent), 0)
-    let ratePlain = NSDecimalNumber(decimal: rate.rate)
+    return convert(
+      amount: amount,
+      amountFractionLength: amountFractionLength,
+      rate: rate.rate
+    )
+  }
+
+  func convert(amount: BigUInt,
+               amountFractionLength: Int,
+               rate: Decimal) -> (amount: BigUInt, fractionLength: Int) {
+    let rateFractionLength = max(Int16(-rate.exponent), 0)
+    let ratePlain = NSDecimalNumber(decimal: rate)
       .multiplying(byPowerOf10: rateFractionLength)
     let rateBigInt = BigUInt(stringLiteral: ratePlain.stringValue)
     

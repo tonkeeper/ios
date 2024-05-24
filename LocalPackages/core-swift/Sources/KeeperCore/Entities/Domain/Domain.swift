@@ -8,7 +8,7 @@ public struct Domain: Equatable {
 
 extension FriendlyAddress {
   public static func == (lhs: FriendlyAddress, rhs: FriendlyAddress) -> Bool {
-    // TODO: move it to TonSwift?
+    // TODO: move it to TonSwift as the Equatable conformance and the FriendlyAdress type are declared there
     lhs.address == rhs.address && lhs.isBounceable == rhs.isBounceable && lhs.isTestOnly == rhs.isTestOnly
   }
 }

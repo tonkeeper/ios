@@ -118,7 +118,10 @@ private extension ChooseTokenViewController {
 extension ChooseTokenViewController: UICollectionViewDelegate {
 
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    print("here")
+    let snapshot = dataSource.snapshot()
+    let section = snapshot.sectionIdentifiers[indexPath.section]
+    let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
+    item.selectionClosure?()
   }
 
 }

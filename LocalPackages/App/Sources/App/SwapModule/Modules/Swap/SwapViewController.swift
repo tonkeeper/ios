@@ -78,14 +78,15 @@ private extension SwapViewController {
       self.customView.sendView.updateTotalBalance(model.send.balance)
       
       self.customView.receiveView.chooseTokenView.token = model.receive.token
+      self.customView.receiveView.amountTextField.text = model.receive.amount
       self.customView.receiveView.updateTotalBalance(model.receive.balance)
       
       self.customView.swapInputsButton.isEnabled = model.status.isValidReceiveToken
 
       if model.status.isValid {
-        
+        self.showHint("", isValid: true)
       } else {
-        self.showHint(model.status.hint)
+        self.showHint(model.status.hint, isValid: model.status.isSendAmountValid)
       }
     }
   }
@@ -96,13 +97,9 @@ private extension SwapViewController {
     }
 
     customView.sendView.maxButton.configuration.action = { [weak viewModel] in
-      viewModel?.didTapMax(isHalf: false)
+      viewModel?.didTapMax()
     }
 
-    customView.sendView.halfButton.configuration.action = { [weak viewModel] in
-      viewModel?.didTapMax(isHalf: true)
-    }
-    
     [customView.inputView1, customView.inputView2].forEach {
       $0.didTapChooseToken = { [weak viewModel, weak self] swapField in
         self?.customView.sendView.amountTextField.resignFirstResponder()
@@ -115,13 +112,14 @@ private extension SwapViewController {
 
 private extension SwapViewController {
 
-  func showHint(_ hint: String) {
+  func showHint(_ hint: String, isValid: Bool) {
     let label = customView.detailsView.statusLabel
     if label.text == nil {
       label.text = hint
       return
     }
     if label.text == hint { return }
+    label.textColor = isValid ? .Button.secondaryForeground : .Field.errorBorder
     label.text = hint
     label.bounce()
   }
