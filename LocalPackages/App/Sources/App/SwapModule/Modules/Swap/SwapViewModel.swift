@@ -94,7 +94,8 @@ protocol SwapViewModel: AnyObject {
   var didUpdateRecieveTokenBalance: ((String) -> Void)? { get set }
   var didUpdateSwapSendContainer: ((SwapSendContainerView.Model) -> Void)? { get set }
   var didUpdateSwapRecieveContainer: ((SwapRecieveContainerView.Model) -> Void)? { get set }
-  var amountInpuTextFieldFormatter: BuySellAmountTextFieldFormatter { get }
+  var sendTextFieldFormatter: InputAmountTextFieldFormatter { get }
+  var recieveTextFieldFormatter: InputAmountTextFieldFormatter { get }
   
   func viewDidLoad()
   func didInputAmountSend(_ string: String)
@@ -173,6 +174,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     }
     
     setToken(newToken, forInput: input)
+    updateFormatters()
     
     Task {
       let tokensHasPair = await swapController.isPairExistsForAssets(newToken.asset, oppositeToken?.asset)
@@ -221,8 +223,6 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     update()
     updateSwapState()
     
-    didTapSwapSettings?(swapSettingsModel)
-
     Task {
       await swapController.start()
       guard let initialSwapAsset = await swapController.getInitalSwapAsset() else { return }
@@ -241,22 +241,25 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   }
   
   func didInputAmountSend(_ string: String) {
-    amountSend = string
     lastInput = .send
+    
+    guard string != amountSend else { return }
+    amountSend = string
     
     if string == "0" {
       clearInput(.recieve)
     }
     
     updateSendBalance()
-    
     simulateSwap(.direct)
   }
   
   func didInputAmountRecieve(_ string: String) {
-    amountRecieve = string
     lastInput = .recieve
     
+    guard string != amountRecieve else { return }
+    amountRecieve = string
+   
     if string == "0" {
       clearInput(.send)
     }
@@ -274,8 +277,8 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
       fractionDigits: sendToken.asset.fractionDigits
     )
     
-    let unformattedAmountSend = amountInpuTextFieldFormatter.unformatString(balanceAmountSend) ?? "0"
-    let formattedAmountSend = amountInpuTextFieldFormatter.formatString(unformattedAmountSend) ?? "0"
+    let unformattedAmountSend = sendTextFieldFormatter.unformatString(balanceAmountSend) ?? "0"
+    let formattedAmountSend = sendTextFieldFormatter.formatString(unformattedAmountSend) ?? "0"
     
     updateInputAmount(formattedAmountSend, forInput: .send)
     didInputAmountSend(formattedAmountSend)
@@ -296,6 +299,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     currentSwapSimulationModel = nil
     
     update()
+    updateFormatters()
     updateSendBalance()
     updateRecieveBalance()
     reloadSimulation()
@@ -364,7 +368,8 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   
   // MARK: - Formatter
   
-  let amountInpuTextFieldFormatter: BuySellAmountTextFieldFormatter = .makeAmountFormatter()
+  let sendTextFieldFormatter = InputAmountTextFieldFormatter()
+  let recieveTextFieldFormatter = InputAmountTextFieldFormatter()
   
   // MARK: - Dependencies
   
@@ -378,7 +383,8 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     self.swapController = swapController
     self.swapOperationItem = swapOperationItem
     self.swapSettingsModel = swapSettingsModel
-    self.amountInpuTextFieldFormatter.maximumFractionDigits = TonInfo.fractionDigits // TODO: Change depends on assets fractionLenght
+    self.sendTextFieldFormatter.maximumFractionDigits = TonInfo.fractionDigits
+    self.recieveTextFieldFormatter.maximumFractionDigits = TonInfo.fractionDigits
   }
   
   deinit {
@@ -488,6 +494,15 @@ private extension SwapViewModelImplementation {
     }
   }
   
+  func updateFormatters() {
+    if let sendAsset = swapOperationItem.sendToken?.asset {
+      sendTextFieldFormatter.maximumFractionDigits = sendAsset.fractionDigits
+    }
+    if let recieveAsset = swapOperationItem.recieveToken?.asset {
+      recieveTextFieldFormatter.maximumFractionDigits = recieveAsset.fractionDigits
+    }
+  }
+  
   func updateSendBalance() {
     guard let sendToken = swapOperationItem.sendToken else {
       tokenSendBalanceRemaining = .insufficient
@@ -496,11 +511,14 @@ private extension SwapViewModelImplementation {
     
     let fractionDigits = sendToken.asset.fractionDigits
     
-    let unformatted = amountInpuTextFieldFormatter.unformatString(amountSend) ?? ""
-    let inputAmount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: fractionDigits)
+    let unformatted = sendTextFieldFormatter.unformatString(amountSend) ?? ""
+    let convertedInput = swapController.convertStringToAmount(
+      string: unformatted,
+      targetFractionalDigits: fractionDigits
+    )
     
-    if inputAmount.value <= sendToken.balance.amount {
-      let remainingBalanceAmount = sendToken.balance.amount - inputAmount.value
+    if convertedInput.amount <= sendToken.balance.amount {
+      let remainingBalanceAmount = sendToken.balance.amount - convertedInput.amount
       let remainingBalanceString = swapController.convertAmountToString(amount: remainingBalanceAmount, fractionDigits: fractionDigits)
       tokenSendBalanceRemaining = .remaining(remainingBalanceString)
     } else {
@@ -701,10 +719,13 @@ private extension SwapViewModelImplementation {
   func createSwapModel(sendToken: SwapToken,
                        recieveToken: SwapToken,
                        swapSimulationModel: SwapSimulationModel) async -> SwapModel? {
-    let unformatted = amountInpuTextFieldFormatter.unformatString(recieveToken.inputAmount) ?? "0"
-    let amount = swapController.convertStringToAmount(string: unformatted, targetFractionalDigits: recieveToken.asset.fractionDigits)
-    let convertedFiatAmount = await swapController.convertAssetAmountToFiat(recieveToken.asset, amount: amount.value)
+    let unformatted = formatter(forInput: lastInput).unformatString(recieveToken.inputAmount) ?? "0"
+    let converted = swapController.convertStringToAmount(
+      string: unformatted,
+      targetFractionalDigits: recieveToken.asset.fractionDigits
+    )
     
+    let convertedFiatAmount = await swapController.convertAssetAmountToFiat(recieveToken.asset, amount: converted.amount)
     let swapConfirmationItem = SwapConfirmationItem(
       convertedFiatAmount: convertedFiatAmount,
       operationItem: SwapOperationItem(sendToken: sendToken, recieveToken: recieveToken),
@@ -800,11 +821,14 @@ private extension SwapViewModelImplementation {
       inputAsset = recieveAsset
     }
     
-    let inputUnformatted = amountInpuTextFieldFormatter.unformatString(inputAmount) ?? ""
-    let amount = swapController.convertStringToAmount(string: inputUnformatted, targetFractionalDigits: inputAsset.fractionDigits)
     let swapSettings = swapSettingsModel
+    let inputUnformatted = formatter(forInput: lastInput).unformatString(inputAmount) ?? ""
+    let convertedInput = swapController.convertStringToAmount(
+      string: inputUnformatted,
+      targetFractionalDigits: inputAsset.fractionDigits
+    )
     
-    guard amount.value != .zero else {
+    guard convertedInput.amount != .zero else {
       isLastSimulationFailed = false
       clearInput(input.opposite)
       completion(.empty)
@@ -815,7 +839,7 @@ private extension SwapViewModelImplementation {
       do {
         let swapSimulationModel = try await swapController.simulateSwap(
           direction: direction,
-          amount: amount.value,
+          amount: convertedInput.amount,
           sendAsset: sendAsset,
           recieveAsset: recieveAsset,
           swapSettings: swapSettings
@@ -892,6 +916,15 @@ private extension SwapViewModelImplementation {
 }
 
 private extension SwapViewModelImplementation {
+  func formatter(forInput input: SwapInput) -> InputAmountTextFieldFormatter {
+    switch input {
+    case .send:
+      return sendTextFieldFormatter
+    case .recieve:
+      return recieveTextFieldFormatter
+    }
+  }
+  
   func token(atInput input: SwapInput) -> SwapToken? {
     switch input {
     case .send:
@@ -917,20 +950,5 @@ private extension SwapViewModelImplementation {
     case .recieve:
       return .reverse
     }
-  }
-}
-
-private extension BuySellAmountTextFieldFormatter {
-  static func makeAmountFormatter() -> BuySellAmountTextFieldFormatter {
-    let numberFormatter = NumberFormatter()
-    numberFormatter.groupingSize = 3
-    numberFormatter.usesGroupingSeparator = true
-    numberFormatter.groupingSeparator = " "
-    numberFormatter.decimalSeparator = Locale.current.decimalSeparator
-    numberFormatter.maximumIntegerDigits = 16
-    numberFormatter.roundingMode = .down
-    return BuySellAmountTextFieldFormatter(
-      currencyFormatter: numberFormatter
-    )
   }
 }

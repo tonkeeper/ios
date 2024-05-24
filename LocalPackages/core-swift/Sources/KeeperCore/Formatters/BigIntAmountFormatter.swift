@@ -50,6 +50,53 @@ public struct BigIntAmountFormatter {
   }
 }
 
+extension BigIntAmountFormatter {
+  public func format(amount: BigUInt,
+                     fractionDigits: Int,
+                     maximumFractionDigits: Int,
+                     groupSeparator: String,
+                     fractionalSeparator: String) -> String {
+    guard !amount.isZero else { return "0" }
+    let initialString = amount.description
+    if initialString.count < fractionDigits {
+      let significantLength = initialString.count
+      let nonSignificantLength = fractionDigits - significantLength
+      let significantPart = initialString.prefix(maximumFractionDigits).filter { $0 != "0" }
+      let string = String(repeating: "0", count: nonSignificantLength) + significantPart
+      return "0" + fractionalSeparator + string
+    } else {
+      let fractional = String(initialString.suffix(fractionDigits))
+      let fractionalLength = min(fractionDigits, maximumFractionDigits)
+      let fractionalResult = String(fractional[fractional.startIndex..<fractional.index(fractional.startIndex, offsetBy: fractionalLength)])
+        .replacingOccurrences(of: "0+$", with: "", options: .regularExpression)
+      let integer = String(initialString.prefix(initialString.count - fractional.count))
+      let separatedInteger = groups(string: integer.isEmpty ? "0" : integer, size: .groupSize).joined(separator: groupSeparator)
+      var result = separatedInteger
+      if fractionalResult.count > 0 {
+        result += fractionalSeparator + fractionalResult
+      }
+      return result
+    }
+  }
+  
+  public func bigUInt(string: String,
+                      targetFractionalDigits: Int,
+                      fractionalSeparator: String) throws -> (amount: BigUInt, fractionalDigits: Int) {
+    guard !string.isEmpty else { throw Error.invalidInput(string) }
+    let components = string.components(separatedBy: fractionalSeparator)
+    guard components.count < 3 else { throw Error.invalidInput(string) }
+    
+    var fractionalDigits = 0
+    if components.count == 2 {
+      let fractionalString = components[1]
+      fractionalDigits = fractionalString.count
+    }
+    let zeroString = String(repeating: "0", count: max(0, targetFractionalDigits - fractionalDigits))
+    let bigUIntValue = BigUInt(stringLiteral: components.joined() + zeroString)
+    return (bigUIntValue, targetFractionalDigits)
+  }
+}
+
 private extension BigIntAmountFormatter {
   func groups(string: String, size: Int) -> [String] {
     guard string.count > size else { return [string] }

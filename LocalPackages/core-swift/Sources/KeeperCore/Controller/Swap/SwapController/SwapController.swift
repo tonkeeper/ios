@@ -29,7 +29,7 @@ public final class SwapController {
   private let stonfiAssetsLoader: StonfiAssetsLoader
   private let stonfiPairsLoader: StonfiPairsLoader
   private let stonfiMapper: StonfiMapper
-  private let amountFormatter: AmountFormatter
+  private let amountNewFormatter: AmountNewFormatter
   private let decimalAmountFormatter: DecimalAmountFormatter
   
   init(stonfiAssetsStore: StonfiAssetsStore,
@@ -40,7 +40,7 @@ public final class SwapController {
        stonfiAssetsLoader: StonfiAssetsLoader,
        stonfiPairsLoader: StonfiPairsLoader,
        stonfiMapper: StonfiMapper,
-       amountFormatter: AmountFormatter,
+       amountNewFormatter: AmountNewFormatter,
        decimalAmountFormatter: DecimalAmountFormatter) {
     self.stonfiAssetsStore = stonfiAssetsStore
     self.stonfiPairsStore = stonfiPairsStore
@@ -50,7 +50,7 @@ public final class SwapController {
     self.stonfiAssetsLoader = stonfiAssetsLoader
     self.stonfiPairsLoader = stonfiPairsLoader
     self.stonfiMapper = stonfiMapper
-    self.amountFormatter = amountFormatter
+    self.amountNewFormatter = amountNewFormatter
     self.decimalAmountFormatter = decimalAmountFormatter
   }
   
@@ -146,35 +146,21 @@ public final class SwapController {
     )
   }
   
-  public func convertStringToAmount(string: String, targetFractionalDigits: Int) -> (value: BigUInt, fractionalDigits: Int) {
-    guard !string.isEmpty else { return (0, targetFractionalDigits) }
-    let fractionalSeparator: String = .fractionalSeparator ?? ""
-    let components = string.components(separatedBy: fractionalSeparator)
-    guard components.count < 3 else {
-      return (0, targetFractionalDigits)
-    }
-    
-    var fractionalDigits = 0
-    if components.count == 2 {
-        let fractionalString = components[1]
-        fractionalDigits = fractionalString.count
-    }
-    let zeroString = String(repeating: "0", count: max(0, targetFractionalDigits - fractionalDigits))
-    let bigIntValue = BigUInt(stringLiteral: components.joined() + zeroString)
-    return (bigIntValue, targetFractionalDigits)
-  }
-  
-  public func convertAmountToString(amount: BigUInt, 
+  public func convertAmountToString(amount: BigUInt,
                                     fractionDigits: Int,
                                     maximumFractionDigits: Int? = nil,
                                     currency: Currency? = nil) -> String {
     let newMaximumFractionDigits = maximumFractionDigits ?? fractionDigits
-    return amountFormatter.formatAmount(
+    return amountNewFormatter.formatAmount(
       amount,
       fractionDigits: fractionDigits,
       maximumFractionDigits: newMaximumFractionDigits,
       currency: currency
     )
+  }
+  
+  public func convertStringToAmount(string: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
+    return amountNewFormatter.amount(from: string, targetFractionalDigits: targetFractionalDigits)
   }
 }
 
@@ -214,6 +200,8 @@ private extension SwapController {
     let swapRate = decimalAmountFormatter.format(amount: stonfiSwapSimulation.swapRate, maximumFractionDigits: 4)
     let priceImpact = decimalAmountFormatter.format(amount: stonfiSwapSimulation.priceImpact * 100, maximumFractionDigits: 3)
     
+    let blockchainFee = "0.08 - 0.25 TON".replacingOccurrences(of: ".", with: FormattersConstants.fractionalSeparator)
+    
     return SwapSimulationModel(
       offerAmount: SwapSimulationModel.Amount(
         amount: stonfiSwapSimulation.offerUnits,
@@ -232,7 +220,7 @@ private extension SwapController {
         priceImpact: priceImpact,
         minimumRecieved: minAskAmountConverted,
         liquidityProviderFee: feeAmountConverted,
-        blockchainFee: "0.08 - 0.25 TON",
+        blockchainFee: blockchainFee,
         route: SwapSimulationModel.Info.Route(
           tokenSymbolSend: sendAsset.symbol,
           tokenSymbolRecieve: recieveAsset.symbol

@@ -94,9 +94,8 @@ private extension SwapViewController {
   func setup() {
     view.backgroundColor = .Background.page
     customView.backgroundColor = .Background.page
-    
-    customView.swapSendContainerView.textField.delegate = viewModel.amountInpuTextFieldFormatter
-    customView.swapRecieveContainerView.textField.delegate = viewModel.amountInpuTextFieldFormatter
+    customView.swapSendContainerView.textField.delegate = viewModel.sendTextFieldFormatter
+    customView.swapRecieveContainerView.textField.delegate = viewModel.recieveTextFieldFormatter
   }
   
   func setupBindings() {

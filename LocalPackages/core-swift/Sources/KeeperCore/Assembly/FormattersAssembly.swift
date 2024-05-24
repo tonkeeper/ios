@@ -5,6 +5,10 @@ public final class FormattersAssembly {
     AmountFormatter(bigIntFormatter: bigIntAmountFormatter)
   }
   
+  public var amountNewFormatter: AmountNewFormatter {
+    AmountNewFormatter(bigIntFormatter: bigIntAmountFormatter)
+  }
+  
   public var bigIntAmountFormatter: BigIntAmountFormatter {
     BigIntAmountFormatter()
   }
@@ -21,6 +25,17 @@ public final class FormattersAssembly {
   
   public var decimalAmountFormatter: DecimalAmountFormatter {
     DecimalAmountFormatter(numberFormatter: shortNumberFormatter)
+  }
+  
+  public var shortNumberNewFormatter: NumberFormatter {
+    let formatter = shortNumberFormatter
+    formatter.groupingSeparator = FormattersConstants.groupSeparator
+    formatter.decimalSeparator = FormattersConstants.fractionalSeparator
+    return formatter
+  }
+  
+  public var decimalAmountNewFormatter: DecimalAmountFormatter {
+    DecimalAmountFormatter(numberFormatter: shortNumberNewFormatter)
   }
   
   public var dateFormatter: DateFormatter {

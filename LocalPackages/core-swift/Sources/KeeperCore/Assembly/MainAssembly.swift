@@ -416,8 +416,8 @@ public final class MainAssembly {
       stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader,
       stonfiPairsLoader: loadersAssembly.stonfiPairsLoader,
       stonfiMapper: stonfiMapper,
-      amountFormatter: formattersAssembly.amountFormatter,
-      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
+      amountNewFormatter: formattersAssembly.amountNewFormatter,
+      decimalAmountFormatter: formattersAssembly.decimalAmountNewFormatter
     )
   }
   
