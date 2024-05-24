@@ -408,6 +408,8 @@ public final class MainAssembly {
   
   public func swapController() -> SwapController {
     SwapController(
+      walletsStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
       stonfiAssetsStore: storesAssembly.stonfiAssetsStore,
       stonfiPairsStore: storesAssembly.stonfiPairsStore,
       currencyStore: storesAssembly.currencyStore,

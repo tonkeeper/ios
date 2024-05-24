@@ -21,6 +21,8 @@ public final class SwapController {
   
   private var state = State()
   
+  private let walletsStore: WalletsStore
+  private let walletBalanceStore: WalletBalanceStore
   private let stonfiAssetsStore: StonfiAssetsStore
   private let stonfiPairsStore: StonfiPairsStore
   private let currencyStore: CurrencyStore
@@ -32,7 +34,9 @@ public final class SwapController {
   private let amountNewFormatter: AmountNewFormatter
   private let decimalAmountFormatter: DecimalAmountFormatter
   
-  init(stonfiAssetsStore: StonfiAssetsStore,
+  init(walletsStore: WalletsStore,
+       walletBalanceStore: WalletBalanceStore,
+       stonfiAssetsStore: StonfiAssetsStore,
        stonfiPairsStore: StonfiPairsStore,
        currencyStore: CurrencyStore,
        stonfiSwapService: StonfiSwapService,
@@ -42,6 +46,8 @@ public final class SwapController {
        stonfiMapper: StonfiMapper,
        amountNewFormatter: AmountNewFormatter,
        decimalAmountFormatter: DecimalAmountFormatter) {
+    self.walletsStore = walletsStore
+    self.walletBalanceStore = walletBalanceStore
     self.stonfiAssetsStore = stonfiAssetsStore
     self.stonfiPairsStore = stonfiPairsStore
     self.currencyStore = currencyStore
@@ -161,6 +167,30 @@ public final class SwapController {
   
   public func convertStringToAmount(string: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
     return amountNewFormatter.amount(from: string, targetFractionalDigits: targetFractionalDigits)
+  }
+  
+  public func getBalanceAmount(swapAsset: SwapAsset) async -> BigUInt {
+    let wallet = walletsStore.activeWallet
+    do {
+      let balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address)
+      switch swapAsset {
+      case .ton:
+        // TODO: Remove stub
+        return BigUInt(stringLiteral: "100000010000000") // 100,000.01
+        //return BigUInt(balance.walletBalance.balance.tonBalance.amount)
+      case .jetton(let assetInfo):
+        if assetInfo.symbol == "USD₮" {
+          return BigUInt(stringLiteral: "123450000") // 123.45
+        }
+        return balance.walletBalance.balance.jettonsBalance
+          .first(where: { $0.item.jettonInfo.address == assetInfo.contractAddress })?
+          .quantity ?? 0
+      case .unknown:
+        return 0
+      }
+    } catch {
+      return 0
+    }
   }
 }
 

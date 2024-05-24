@@ -40,20 +40,12 @@ public struct SwapToken {
     case asyncImage(URL?)
   }
   
-  public struct Balance {
-    public var amount: BigUInt
-    
-    public init(amount: BigUInt) {
-      self.amount = amount
-    }
-  }
-  
   public var icon: Icon
   public var asset: SwapAsset
-  public var balance: Balance
+  public var balance: BigUInt
   public var inputAmount: String
   
-  public init(icon: Icon, asset: SwapAsset, balance: Balance, inputAmount: String) {
+  public init(icon: Icon, asset: SwapAsset, balance: BigUInt, inputAmount: String) {
     self.icon = icon
     self.asset = asset
     self.balance = balance

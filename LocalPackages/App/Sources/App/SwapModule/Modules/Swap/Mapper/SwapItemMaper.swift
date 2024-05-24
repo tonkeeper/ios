@@ -44,7 +44,7 @@ struct SwapItemMaper {
     return SwapToken(
       icon: icon,
       asset: swapAsset,
-      balance: SwapToken.Balance(amount: .zero),
+      balance: .zero,
       inputAmount: "0"
     )
   }

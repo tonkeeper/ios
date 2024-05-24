@@ -15,9 +15,7 @@ extension SwapToken {
       fractionDigits: TonInfo.fractionDigits,
       isWhitelisted: true
     ),
-    balance: SwapToken.Balance(
-      amount: .testBalanceAmount // 100,000.01
-    ),
+    balance: .testBalanceAmount,
     inputAmount: "0"
   )
   
@@ -31,9 +29,7 @@ extension SwapToken {
       fractionDigits: 6,
       isWhitelisted: true
     ),
-    balance: SwapToken.Balance(
-      amount: .testBalanceAmount // 100,000.01
-    ),
+    balance: .testBalanceAmount,
     inputAmount: "0"
   )
 }
@@ -115,6 +111,15 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     case insufficientBalance(tokenSymbol: String)
     case continueSwap
     case simulationFail
+    
+    var isInsufficientBalance: Bool {
+      switch self {
+      case .insufficientBalanceTon, .insufficientBalance(_):
+        return true
+      default:
+        return false
+      }
+    }
   }
   
   enum SwapSimulationResult: Equatable {
@@ -202,7 +207,6 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   }
   
   func didBuyTon() {
-    // TODO: fetch data
     updateSendBalance()
     updateRecieveBalance()
   }
@@ -227,16 +231,8 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     Task {
       await swapController.start()
       guard let initialSwapAsset = await swapController.getInitalSwapAsset() else { return }
-      
       await MainActor.run {
         didChooseToken(initialSwapAsset, forInput: .send)
-        
-        #if DEBUG
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-          self.swapOperationItem.sendToken?.balance.amount = .testBalanceAmount
-          self.updateSendBalance()
-        }
-        #endif
       }
     }
   }
@@ -274,7 +270,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     lastInput = .send
     
     let balanceAmountSend = swapController.convertAmountToString(
-      amount: sendToken.balance.amount,
+      amount: sendToken.balance,
       fractionDigits: sendToken.asset.fractionDigits
     )
     
@@ -295,6 +291,8 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     lastInput = lastInput.opposite
     updateInputAmount(amountSend, forInput: .send)
     updateInputAmount(amountRecieve, forInput: .recieve)
+    didUpdateSendTokenBalance?(createBalanceTitle(balance: "0"))
+    didUpdateRecieveTokenBalance?(createBalanceTitle(balance: "0"))
     
     isLastSimulationFailed = false
     currentSwapSimulationModel = nil
@@ -340,7 +338,10 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   
   private var swapState = SwapState.enterAmount {
     didSet {
-      guard swapState != oldValue && !isResolving else { return }
+      let isNeedUpdate = swapState != oldValue && !isResolving
+      let toInsufficientState = swapState.isInsufficientBalance
+      let fromInsufficientState = oldValue.isInsufficientBalance
+      guard isNeedUpdate || toInsufficientState || fromInsufficientState else { return }
       updateSwapState()
     }
   }
@@ -510,24 +511,33 @@ private extension SwapViewModelImplementation {
       return
     }
     
-    let fractionDigits = sendToken.asset.fractionDigits
-    
     let unformatted = sendTextFieldFormatter.unformatString(amountSend) ?? ""
     let convertedInput = swapController.convertStringToAmount(
       string: unformatted,
-      targetFractionalDigits: fractionDigits
+      targetFractionalDigits: sendToken.asset.fractionDigits
     )
     
-    if convertedInput.amount <= sendToken.balance.amount {
-      let remainingBalanceAmount = sendToken.balance.amount - convertedInput.amount
-      let remainingBalanceString = swapController.convertAmountToString(amount: remainingBalanceAmount, fractionDigits: fractionDigits)
-      tokenSendBalanceRemaining = .remaining(remainingBalanceString)
-    } else {
-      tokenSendBalanceRemaining = .insufficient
+    Task {
+      let sendBalance = await swapController.getBalanceAmount(swapAsset: sendToken.asset)
+      let remaining: Remaining
+      if convertedInput.amount <= sendBalance {
+        let remainingBalance = sendBalance - convertedInput.amount
+        let remainingBalanceString = swapController.convertAmountToString(
+          amount: remainingBalance,
+          fractionDigits: sendToken.asset.fractionDigits
+        )
+        remaining = .remaining(remainingBalanceString)
+      } else {
+        remaining = .insufficient
+      }
+      await MainActor.run {
+        guard sendToken.asset == swapOperationItem.sendToken?.asset else { return }
+        swapOperationItem.sendToken?.balance = sendBalance
+        tokenSendBalanceRemaining = remaining
+        didUpdateSendTokenBalance?(createBalanceTitle(balance: remaining.value))
+        recalculateSwapState()
+      }
     }
-    
-    let balanceTitle = createBalanceTitle(balance: tokenSendBalanceRemaining.value)
-    didUpdateSendTokenBalance?(balanceTitle)
   }
   
   func updateRecieveBalance() {
@@ -536,12 +546,19 @@ private extension SwapViewModelImplementation {
       return
     }
     
-    let fractionDigits = recieveToken.asset.fractionDigits
-    
-    let balanceString = swapController.convertAmountToString(amount: recieveToken.balance.amount, fractionDigits: fractionDigits)
-    let balanceTitle = createBalanceTitle(balance: balanceString)
-    tokenRecieveBalance = balanceString
-    didUpdateRecieveTokenBalance?(balanceTitle)
+    Task {
+      let recieveBalance = await swapController.getBalanceAmount(swapAsset: recieveToken.asset)
+      let balanceString = swapController.convertAmountToString(
+        amount: recieveBalance,
+        fractionDigits: recieveToken.asset.fractionDigits
+      )
+      await MainActor.run {
+        guard recieveToken.asset == swapOperationItem.recieveToken?.asset else { return }
+        swapOperationItem.sendToken?.balance = recieveBalance
+        tokenRecieveBalance = balanceString
+        didUpdateRecieveTokenBalance?(createBalanceTitle(balance: balanceString))
+      }
+    }
   }
   
   func createBalanceTitle(balance: String) -> String {
@@ -879,7 +896,6 @@ private extension SwapViewModelImplementation {
     } else {
       stopSwapSimulationAutoRefresh()
     }
-    
     updateDetailsModel()
   }
   
