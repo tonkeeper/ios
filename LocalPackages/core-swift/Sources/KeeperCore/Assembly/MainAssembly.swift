@@ -347,7 +347,51 @@ public final class MainAssembly {
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
+    
+  public func swapItemsController() -> SwapItemsController {
+      SwapItemsController(
+        swapService: storesAssembly.servicesAssembly.swapService(),
+        assetsStore: storesAssembly.assetsStore,
+        walletsStore: walletAssembly.walletStore,
+        walletBalanceStore: storesAssembly.walletBalanceStore,
+        knownAccountsStore: storesAssembly.knownAccountsStore,
+        tonRatesStore: storesAssembly.tonRatesStore,
+        currencyStore: storesAssembly.currencyStore,
+        amountFormatter: formattersAssembly.amountFormatter
+      )
+  }
   
+  public func swapConfirmationController(wallet: Wallet) -> SwapConfirmationController {
+    SwapConfirmationController(
+      wallet: wallet,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      swapService: storesAssembly.servicesAssembly.swapService(),
+      tonRatesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
+      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
+      amountFormatter: formattersAssembly.amountFormatter
+    )
+}
+
+  public func swapTokenPickerController(wallet: Wallet, selectedToken: SwapToken?, selectedPairToken: SwapToken?) -> SwapTokenPickerController {
+    SwapTokenPickerController(
+      wallet: wallet,
+      selectedToken: selectedToken,
+      selectedPairToken: selectedPairToken,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      tonRatesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
+      assetsStore: storesAssembly.assetsStore,
+      amountFormatter: formattersAssembly.amountFormatter
+    )
+  }
+
+  public func swapSettingsController() -> SwapSettingsController {
+    SwapSettingsController(
+    )
+  }
+
   public func sendRecipientController(recipient: Recipient?) -> SendRecipientController {
     SendRecipientController(
       recipient: recipient,

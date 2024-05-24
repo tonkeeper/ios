@@ -48,6 +48,18 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-sale-badge-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var reverse: UIImage {
+          .imageWithName("Icons/16/ic-reverse-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var info: UIImage {
+          .imageWithName("Icons/16/ic-info-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var settings: UIImage {
+          .imageWithName("Icons/16/ic-settings-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {

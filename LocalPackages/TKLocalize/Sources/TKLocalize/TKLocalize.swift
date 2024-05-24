@@ -465,6 +465,93 @@ public enum TKLocales {
       localize("confirm_send.confirm_button")
     }
   }
+  public enum Swap {
+    /// Swap title
+    public static var title: String {
+      localize("swap.title")
+    }
+    /// Send token
+    public static var send: String {
+      localize("swap.send")
+    }
+    /// Receive token
+    public static var receive: String {
+      localize("swap.receive")
+    }
+    public static var choose: String {
+      localize("swap.choose")
+    }
+    public static var balance: String {
+      localize("swap.balance")
+    }
+    public static var enterAmount: String {
+      localize("swap.enterAmount")
+    }
+    public static var chooseToken: String {
+      localize("swap.chooseToken")
+    }
+    public static var suggested: String {
+      localize("swap.suggested")
+    }
+    public static var other: String {
+      localize("swap.other")
+    }
+    public static var insufficientBalance: String {
+      localize("swap.insufficientBalance")
+    }
+    public static var priceImpact: String {
+      localize("swap.priceImpact")
+    }
+    public static var priceImpactInfo: String {
+      localize("swap.priceImpactInfo")
+    }
+    public static var minimumReceived: String {
+      localize("swap.minimumReceived")
+    }
+    public static var minimumReceivedInfo: String {
+      localize("swap.minimumReceivedInfo")
+    }
+    public static var liquidityProviderFee: String {
+      localize("swap.liquidityProviderFee")
+    }
+    public static var liquidityProviderFeeInfo: String {
+      localize("swap.liquidityProviderFeeInfo")
+    }
+    public static var blockchainFee: String {
+      localize("swap.blockchainFee")
+    }
+    public static var route: String {
+      localize("swap.route")
+    }
+    public static var provider: String {
+      localize("swap.provider")
+    }    
+  }
+  public enum SwapSettings {
+    public static var title: String {
+      localize("swap_settings.title")
+    }
+    public static var slippage: String {
+      localize("swap_settings.slippage")
+    }
+    public static var description: String {
+      localize("swap_settings.description")
+    }
+    public static var expertMode: String {
+      localize("swap_settings.expertMode")
+    }
+    public static var expertModeSettings: String {
+      localize("swap_settings.expertModeSettings")
+    }
+  }
+  public enum SwapConfirmation {
+    public static var title: String {
+      localize("swap_confirmation.title")
+    }
+    public static var confirm: String {
+      localize("swap_confirmation.confirm")
+    }
+  }
   public enum CustomizeWallet {
     /// Customize your Wallet
     public static var title: String {

@@ -66,17 +66,23 @@ public final class ToastView: UIView, ConfigurableView {
     let isActivity: Bool
     let backgroundColor: UIColor
     let foregroundColor: UIColor
+    let alignment: NSTextAlignment
+    let position: ToastPresenter.Configuration.Position
     
     init(title: String,
       shape: Shape,
       isActivity: Bool,
       backgroundColor: UIColor = .Background.contentTint,
-      foregroundColor: UIColor = .Text.primary) {
+      foregroundColor: UIColor = .Text.primary,
+      alignment: NSTextAlignment = .center,
+      position: ToastPresenter.Configuration.Position) {
       self.title = title
       self.shape = shape
       self.isActivity = isActivity
       self.backgroundColor = backgroundColor
       self.foregroundColor = foregroundColor
+      self.alignment = alignment
+      self.position = position
     }
   }
   
@@ -86,7 +92,8 @@ public final class ToastView: UIView, ConfigurableView {
     titleLabel.attributedText = model.title
       .withTextStyle(.label2,
                      color: model.foregroundColor,
-                     alignment: .center)
+                     alignment: model.alignment)
+    titleLabel.numberOfLines = 0
     
     if model.isActivity {
       activityView.isHidden = false
@@ -105,7 +112,7 @@ public final class ToastView: UIView, ConfigurableView {
   // MARK: - Layout
   
   public override var intrinsicContentSize: CGSize {
-    CGSize(width: UIView.noIntrinsicMetric, height: model.shape.height)
+    CGSize(width: UIView.noIntrinsicMetric, height: UIView.noIntrinsicMetric)
   }
 }
 

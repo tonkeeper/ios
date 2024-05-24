@@ -39,7 +39,7 @@ public final class TKListItemContentView: UIView, ReusableView, ConfigurableView
       origin: rightContentOrigin,
       size: CGSize(
         width: rightContentSize.width,
-        height: bounds.height/2 - rightContentSize.height/2
+        height: rightContentSize.height
       )
     )
     

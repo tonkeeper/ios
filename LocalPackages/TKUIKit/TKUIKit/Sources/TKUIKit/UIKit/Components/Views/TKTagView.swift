@@ -26,6 +26,13 @@ public final class TKTagView: UIView, ConfigurableView {
     titleLabel.frame = CGRect(origin: CGPoint(x: UIEdgeInsets.titlePadding.left, y: UIEdgeInsets.titlePadding.top), 
                               size: titleSize)
   }
+  
+  public override func sizeThatFits(_ size: CGSize) -> CGSize {
+    let titleTargetSize = bounds.size.inset(by: .titlePadding)
+    let titleFittingSize = titleLabel.systemLayoutSizeFitting(titleTargetSize)
+    let titleSize = CGSize(width: min(titleTargetSize.width, titleFittingSize.width), height: titleFittingSize.height)
+    return CGSize(width: UIEdgeInsets.titlePadding.left + titleSize.width, height: UIEdgeInsets.titlePadding.top + titleFittingSize.height)
+  }
 
   public override func systemLayoutSizeFitting(_ targetSize: CGSize) -> CGSize {
     let titleTargetSize = targetSize.inset(by: .titlePadding)

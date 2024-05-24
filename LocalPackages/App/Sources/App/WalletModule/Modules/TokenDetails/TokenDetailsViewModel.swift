@@ -8,6 +8,7 @@ protocol TokenDetailsModuleOutput: AnyObject {
   var didTapSend: ((KeeperCore.Token) -> Void)? { get set }
   var didTapReceive: ((KeeperCore.Token) -> Void)? { get set }
   var didTapBuyOrSell: (() -> Void)? { get set }
+    var didTapSwap: (() -> Void)? { get set }
 }
 
 protocol TokenDetailsViewModel: AnyObject {
@@ -26,6 +27,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   var didTapSend: ((KeeperCore.Token) -> Void)?
   var didTapReceive: ((KeeperCore.Token) -> Void)?
   var didTapBuyOrSell: (() -> Void)?
+    var didTapSwap: (() -> Void)?
   
   // MARK: - TokenDetailsViewModel
   
@@ -93,6 +95,8 @@ private extension TokenDetailsViewModelImplementation {
             self?.didTapReceive?(token)
           case .buySell:
             self?.didTapBuyOrSell?()
+          case .swap:
+              self?.didTapSwap?()
           default:
             break
           }
