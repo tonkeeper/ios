@@ -1,8 +1,9 @@
 import UIKit
+import TKUIKit
 import SnapKit
 import TKCore
 
-final class ServiceInfoContainerView: UIView {
+final class ServiceInfoContainerView: UIView, ConfigurableView {
   
   private let iconImageView = UIImageView()
   private let titleLabel = UILabel()
@@ -38,11 +39,10 @@ final class ServiceInfoContainerView: UIView {
     height += .interLabelPadding
     height += subtitleHeight
     height += .subtitleLabelBottomPadding
-    
     return CGSize(width: bounds.width, height: height)
   }
   
-  struct Configuration {
+  struct Model {
     enum Image {
       case image(UIImage?)
       case asyncImage(TKCore.ImageDownloadTask)
@@ -53,15 +53,15 @@ final class ServiceInfoContainerView: UIView {
     let subtitle: NSAttributedString
   }
   
-  func configure(configuration: Configuration) {
-    titleLabel.attributedText = configuration.title
-    subtitleLabel.attributedText = configuration.subtitle
-    setIconImage(configuration.image)
+  func configure(model: Model) {
+    titleLabel.attributedText = model.title
+    subtitleLabel.attributedText = model.subtitle
+    setIconImage(model.image)
     
     setNeedsLayout()
   }
   
-  private func setIconImage(_ imageConfiguration: Configuration.Image) {
+  private func setIconImage(_ imageConfiguration: Model.Image) {
     imageDownloadTask?.cancel()
     imageDownloadTask = nil
     

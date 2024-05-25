@@ -25,55 +25,16 @@ struct BuySellDetailsItem {
   var serviceInfo: ServiceInfo
 }
 
-struct BuySellDetailsModel {
-  enum Icon {
-    case image(UIImage?)
-    case asyncImage(TKCore.ImageDownloadTask)
-  }
-  
-  struct TextField {
-    let placeholder: String
-    let currencyCode: String
-  }
-  
-  struct Button {
-    let title: String
-    let isEnabled: Bool
-    let isActivity: Bool
-    let action: (() -> Void)
-  }
-  
-  struct InfoContainer {
-    struct InfoButton {
-      let title: String
-      let action: (() -> Void)
-    }
-    
-    let description: String
-    let leftButton: InfoButton?
-    let rightButton: InfoButton?
-  }
-  
-  let icon: Icon
-  let title: String
-  let subtitle: String
-  let textFieldPay: TextField
-  let textFieldGet: TextField
-  let convertedRate: String
-  let infoContainer: InfoContainer
-  let continueButton: Button
-}
-
 protocol BuySellDetailsModuleOutput: AnyObject {
   var didTapContinue: ((URL?) -> Void)? { get set }
   var didTapInfoButton: ((URL?) -> Void)? { get set }
 }
 
 protocol BuySellDetailsViewModel: AnyObject {
-  var didUpdateModel: ((BuySellDetailsModel) -> Void)? { get set }
+  var didUpdateModel: ((BuySellDetailsView.Model) -> Void)? { get set }
   var didUpdateAmountPay: ((String) -> Void)? { get set }
   var didUpdateAmountGet: ((String) -> Void)? { get set }
-  var didUpdateConvertedRate: ((String) -> Void)? { get set }
+  var didUpdateRateContainerModel: ((ListDescriptionContainerView.Model) -> Void)? { get set }
   
   var payAmountTextFieldFormatter: InputAmountTextFieldFormatter { get }
   var getAmountTextFieldFormatter: InputAmountTextFieldFormatter { get }
@@ -104,10 +65,10 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   
   // MARK: - BuySellDetailsModelViewModel
   
-  var didUpdateModel: ((BuySellDetailsModel) -> Void)?
+  var didUpdateModel: ((BuySellDetailsView.Model) -> Void)?
   var didUpdateAmountPay: ((String) -> Void)?
   var didUpdateAmountGet: ((String) -> Void)?
-  var didUpdateConvertedRate: ((String) -> Void)?
+  var didUpdateRateContainerModel: ((ListDescriptionContainerView.Model) -> Void)?
   
   func viewDidLoad() {
     update()
@@ -221,6 +182,66 @@ private extension BuySellDetailsViewModelImplementation {
     didUpdateModel?(model)
   }
   
+  func createModel() -> BuySellDetailsView.Model {
+    let iconURL = buySellDetailsItem.iconURL
+    let iconImageDownloadTask = TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
+      return imageLoader.loadImage(
+        url: iconURL,
+        imageView: imageView,
+        size: size,
+        cornerRadius: cornerRadius
+      )
+    }
+    return BuySellDetailsView.Model(
+      serviceInfo: ServiceInfoContainerView.Model(
+        image: .asyncImage(iconImageDownloadTask),
+        title: buySellDetailsItem.serviceTitle.withTextStyle(.h2, color: .Text.primary),
+        subtitle: buySellDetailsItem.serviceSubtitle.withTextStyle(.body1, color: .Text.secondary)
+      ),
+      textFieldPay: BuySellDetailsView.Model.TextField(
+        placeholder: "You Pay",
+        currencyCode: buySellTransactionModel.currencyPay.code
+      ),
+      textFieldGet: BuySellDetailsView.Model.TextField(
+        placeholder: "You Get",
+        currencyCode: buySellTransactionModel.currencyGet.code
+      ),
+      rateContainer: createRateContainerModel(convertedRate: convertedRate),
+      serviceProvidedTitle: "Service provided by \(buySellDetailsItem.serviceInfo.provider)".withTextStyle(.body2, color: .Text.tertiary),
+      infoButtonsContainer: InfoButtonsContainerView.Model(
+        leftButton: createInfoButton(buySellDetailsItem.serviceInfo.leftButton),
+        rightButton: createInfoButton(buySellDetailsItem.serviceInfo.rightButton)
+      ),
+      continueButton: BuySellDetailsView.Model.Button(
+        title: TKLocales.Actions.continue_action,
+        isEnabled: !isResolving && isContinueEnable,
+        isActivity: isResolving,
+        action: { [weak self] in
+          self?.didTapContinue?(self?.actionURL)
+        }
+      )
+    )
+  }
+  
+  func createRateContainerModel(convertedRate: String) -> ListDescriptionContainerView.Model {
+    let currencyPay = buySellTransactionModel.currencyPay
+    let currencyGet = buySellTransactionModel.currencyGet
+    let description = "\(convertedRate) \(currencyPay.code) for 1 \(currencyGet.code)"
+    return ListDescriptionContainerView.Model(
+      description: description.withTextStyle(.body2, color: .Text.tertiary)
+    )
+  }
+  
+  func createInfoButton(_ infoButton: BuySellDetailsItem.ServiceInfo.InfoButton?) -> InfoButtonsContainerView.Model.Button? {
+    guard let infoButton else { return nil }
+    return InfoButtonsContainerView.Model.Button(
+      title: infoButton.title.withTextStyle(.body2, color: .Text.secondary),
+      action: { [weak self] in
+        self?.didTapInfoButton?(infoButton.url)
+      }
+    )
+  }
+  
   func updateAmountTextFields() {
     let inputAmount = buySellDetailsController.convertAmountToString(
       amount: buySellTransactionModel.inputAmount,
@@ -249,8 +270,8 @@ private extension BuySellDetailsViewModelImplementation {
       )
       await MainActor.run {
         self.convertedRate = convertedRate
-        let convertedRateText = createConvertedRateText()
-        didUpdateConvertedRate?(convertedRateText)
+        let rateContainerModel = createRateContainerModel(convertedRate: convertedRate)
+        didUpdateRateContainerModel?(rateContainerModel)
       }
     }
   }
@@ -269,59 +290,6 @@ private extension BuySellDetailsViewModelImplementation {
           isActionUrlExists = true
         }
       }
-    }
-  }
-  
-  func createModel() -> BuySellDetailsModel {
-    let iconURL = buySellDetailsItem.iconURL
-    let iconImageDownloadTask = TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
-      return imageLoader.loadImage(
-        url: iconURL,
-        imageView: imageView,
-        size: size,
-        cornerRadius: cornerRadius
-      )
-    }
-    
-    return BuySellDetailsModel(
-      icon: .asyncImage(iconImageDownloadTask),
-      title: buySellDetailsItem.serviceTitle,
-      subtitle: buySellDetailsItem.serviceSubtitle,
-      textFieldPay: BuySellDetailsModel.TextField(
-        placeholder: "You Pay",
-        currencyCode: buySellTransactionModel.currencyPay.code
-      ),
-      textFieldGet: BuySellDetailsModel.TextField(
-        placeholder: "You Get",
-        currencyCode: buySellTransactionModel.currencyGet.code
-      ),
-      convertedRate: createConvertedRateText(),
-      infoContainer: BuySellDetailsModel.InfoContainer(
-        description: "Service provided by \(buySellDetailsItem.serviceInfo.provider)",
-        leftButton: createInfoButton(buySellDetailsItem.serviceInfo.leftButton),
-        rightButton: createInfoButton(buySellDetailsItem.serviceInfo.rightButton)
-      ),
-      continueButton: BuySellDetailsModel.Button(
-        title: TKLocales.Actions.continue_action,
-        isEnabled: !isResolving && isContinueEnable,
-        isActivity: isResolving,
-        action: { [weak self] in
-          self?.didTapContinue?(self?.actionURL)
-        }
-      )
-    )
-  }
-  
-  func createConvertedRateText() -> String {
-    let currencyPay = buySellTransactionModel.currencyPay
-    let currencyGet = buySellTransactionModel.currencyGet
-    return "\(convertedRate) \(currencyPay.code) for 1 \(currencyGet.code)"
-  }
-  
-  func createInfoButton(_ button: BuySellDetailsItem.ServiceInfo.InfoButton?) -> BuySellDetailsModel.InfoContainer.InfoButton? {
-    guard let button else { return nil }
-    return .init(title: button.title) { [weak self] in
-      self?.didTapInfoButton?(button.url)
     }
   }
   

@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-final class InfoButtonsContainerView: UIView {
+final class InfoButtonsContainerView: UIView, ConfigurableView {
   
   private let leftButton = TKButton(configuration: .infoButtonConfiguration())
   private let rightButton = TKButton(configuration: .infoButtonConfiguration())
@@ -29,42 +29,28 @@ final class InfoButtonsContainerView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  struct Configuration {
+  struct Model {
     struct Button {
       let title: NSAttributedString
       let action: (() -> Void)?
     }
+    
     let leftButton: Button?
     let rightButton: Button?
     
-    init(leftButton: Button? = nil,
-         rightButton: Button? = nil) {
+    init(leftButton: Button? = nil, rightButton: Button? = nil) {
       self.leftButton = leftButton
       self.rightButton = rightButton
     }
   }
   
-  func configure(configuration: Configuration) {
-    configureButton(leftButton, with: configuration.leftButton)
-    configureButton(rightButton, with: configuration.rightButton)
+  func configure(model: Model) {
+    configureButton(leftButton, with: model.leftButton)
+    configureButton(rightButton, with: model.rightButton)
     
     spacerDot.isHidden = leftButton.isHidden && rightButton.isHidden
 
     invalidateIntrinsicContentSize()
-  }
-  
-  private func configureButton(_ button: TKButton, with buttonConfiguration: Configuration.Button?) {
-    if let buttonConfiguration {
-      button.isHidden = false
-      button.isEnabled = false
-      button.configuration.content.title = .attributedString(buttonConfiguration.title)
-      button.configuration.action = buttonConfiguration.action
-    } else {
-      button.isHidden = true
-      button.isEnabled = true
-      button.configuration.content.title = nil
-      button.configuration.action = nil
-    }
   }
 }
 
@@ -81,6 +67,20 @@ private extension InfoButtonsContainerView {
   func setupConstraints() {
     contentStackView.snp.makeConstraints { make in
       make.edges.equalTo(self)
+    }
+  }
+  
+  func configureButton(_ button: TKButton, with buttonConfiguration: Model.Button?) {
+    if let buttonConfiguration {
+      button.isHidden = false
+      button.isEnabled = false
+      button.configuration.content.title = .attributedString(buttonConfiguration.title)
+      button.configuration.action = buttonConfiguration.action
+    } else {
+      button.isHidden = true
+      button.isEnabled = true
+      button.configuration.content.title = nil
+      button.configuration.action = nil
     }
   }
 }

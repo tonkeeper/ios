@@ -100,38 +100,8 @@ private extension BuySellDetailsViewController {
   }
   
   func setupBindings() {
-    viewModel.didUpdateModel = { [weak self] model in
-      guard let customView = self?.customView, let self else { return }
-      
-      customView.serviceInfoContainerView.configure(
-        configuration: .init(
-          image: self.mapIconImageConfiguration(model.icon),
-          title: model.title.withTextStyle(.h2, color: .Text.primary),
-          subtitle: model.subtitle.withTextStyle(.body1, color: .Text.secondary)
-        )
-      )
-      
-      customView.payAmountTextField.placeholder = model.textFieldPay.placeholder
-      customView.getAmountTextField.placeholder = model.textFieldGet.placeholder
-      
-      customView.setPayAmountCursorLabel(title: model.textFieldPay.currencyCode)
-      customView.setGetAmountCursorLabel(title: model.textFieldGet.currencyCode)
-      
-      customView.convertedRateContainer.configuration.description = model.convertedRate.withTextStyle(.body2, color: .Text.tertiary)
-      
-      customView.continueButton.configuration.content = TKButton.Configuration.Content(title: .plainString(model.continueButton.title))
-      customView.continueButton.configuration.isEnabled = model.continueButton.isEnabled
-      customView.continueButton.configuration.showsLoader = model.continueButton.isActivity
-      customView.continueButton.configuration.action = model.continueButton.action
-      
-      customView.serviceProvidedLabel.attributedText = model.infoContainer.description.withTextStyle(.label2, color: .Text.tertiary)
-      
-      customView.infoButtonsContainer.configure(
-        configuration: .init(
-          leftButton: self.mapInfoContainerButtonConfiguration(model.infoContainer.leftButton),
-          rightButton: self.mapInfoContainerButtonConfiguration(model.infoContainer.rightButton)
-        )
-      )
+    viewModel.didUpdateModel = { [weak customView] model in
+      customView?.configure(model: model)
     }
     
     viewModel.didUpdateAmountPay = { [weak customView] text in
@@ -142,8 +112,8 @@ private extension BuySellDetailsViewController {
       customView?.getAmountTextField.text = text
     }
     
-    viewModel.didUpdateConvertedRate = { [weak customView] convertedRateText in
-      customView?.convertedRateContainer.configuration.description = convertedRateText.withTextStyle(.label2, color: .Text.tertiary)
+    viewModel.didUpdateRateContainerModel = { [weak customView] rateContainerModel in
+      customView?.rateContainerView.configure(model: rateContainerModel)
     }
   }
   
@@ -159,23 +129,6 @@ private extension BuySellDetailsViewController {
     customView.getAmountTextField.didUpdateText = { [weak self] text in
       self?.viewModel.didInputAmountGet(text)
     }
-  }
-  
-  func mapIconImageConfiguration(_ icon: BuySellDetailsModel.Icon) -> ServiceInfoContainerView.Configuration.Image {
-    switch icon {
-    case .image(let image):
-      return .image(image)
-    case .asyncImage(let imageDownloadTask):
-      return .asyncImage(imageDownloadTask)
-    }
-  }
-  
-  func mapInfoContainerButtonConfiguration(
-    _ button: BuySellDetailsModel.InfoContainer.InfoButton?
-  ) -> InfoButtonsContainerView.Configuration.Button? {
-    guard let button else { return nil }
-    let title = button.title.withTextStyle(.body2, color: .Text.secondary)
-    return .init(title: title, action: button.action)
   }
   
   @objc func resignGestureAction(sender: UITapGestureRecognizer) {

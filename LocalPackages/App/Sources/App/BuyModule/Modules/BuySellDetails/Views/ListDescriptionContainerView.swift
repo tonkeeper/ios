@@ -2,13 +2,7 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-final class ListDescriptionContainerView: UIView, TKConfigurableView {
-  
-  var configuration: Configuration = .init(description: NSAttributedString()) {
-    didSet {
-      didUpdateConfiguration()
-    }
-  }
+final class ListDescriptionContainerView: UIView, ConfigurableView {
   
   let descriptionLabel = UILabel()
   let valueLabel = UILabel()
@@ -28,11 +22,10 @@ final class ListDescriptionContainerView: UIView, TKConfigurableView {
     var height = descriptionLabel.sizeThatFits(size).height
     height += .topPadding
     height += .bottomPadding
-    
     return CGSize(width: bounds.width, height: height)
   }
   
-  struct Configuration: Hashable {
+  struct Model {
     var description: NSAttributedString
     var value: NSAttributedString?
     
@@ -42,8 +35,12 @@ final class ListDescriptionContainerView: UIView, TKConfigurableView {
     }
   }
   
-  func configure(configuration: Configuration) {
-    self.configuration = configuration
+  func configure(model: Model) {
+    descriptionLabel.attributedText = model.description
+    valueLabel.attributedText = model.value
+    valueLabel.isHidden = model.value == nil
+    
+    invalidateIntrinsicContentSize()
   }
 }
 
@@ -65,14 +62,6 @@ private extension ListDescriptionContainerView {
       make.right.equalTo(self).inset(CGFloat.horizontalPadding)
       make.top.equalTo(CGFloat.topPadding)
     }
-  }
-  
-  func didUpdateConfiguration() {
-    descriptionLabel.attributedText = configuration.description
-    valueLabel.attributedText = configuration.value
-    valueLabel.isHidden = configuration.value == nil
-    
-    invalidateIntrinsicContentSize()
   }
 }
 

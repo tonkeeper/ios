@@ -1,8 +1,9 @@
 import UIKit
 import TKUIKit
 import SnapKit
+import TKCore
 
-final class BuySellDetailsView: UIView {
+final class BuySellDetailsView: UIView, ConfigurableView {
   
   // MARK: - Views
   
@@ -18,24 +19,10 @@ final class BuySellDetailsView: UIView {
   lazy var getAmountInputView: TKTextFieldInputView = .makeAmountInputView(inputControl: getAmountInputControl)
   lazy var getAmountTextField = TKTextField(textFieldInputView: getAmountInputView)
   
-  let convertedRateContainer = ListDescriptionContainerView()
+  let rateContainerView = ListDescriptionContainerView()
   
   let serviceProvidedLabel = UILabel()
   let infoButtonsContainer = InfoButtonsContainerView()
-  
-  let contentStackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .vertical
-    stackView.spacing = 0
-    stackView.isLayoutMarginsRelativeArrangement = true
-    stackView.directionalLayoutMargins = NSDirectionalEdgeInsets(
-      top: 0,
-      leading: 16,
-      bottom: 0,
-      trailing: 16
-    )
-    return stackView
-  }()
   
   let continueButton = TKButton(
     configuration: .actionButtonConfiguration(
@@ -43,6 +30,15 @@ final class BuySellDetailsView: UIView {
       size: .large
     )
   )
+  
+  let contentStackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .vertical
+    stackView.spacing = 0
+    stackView.isLayoutMarginsRelativeArrangement = true
+    stackView.directionalLayoutMargins = .contentStackViewPadding
+    return stackView
+  }()
   
   // MARK: - Init
   
@@ -55,20 +51,45 @@ final class BuySellDetailsView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  func setPayAmountCursorLabel(title: String) {
-    setCursorLabel(
-      withTitle: title,
-      inputControl: payAmountInputControl,
-      textField: payAmountTextField
-    )
+  struct Model {
+    struct TextField {
+      let placeholder: String
+      let currencyCode: String
+    }
+    
+    struct Button {
+      let title: String
+      let isEnabled: Bool
+      let isActivity: Bool
+      let action: (() -> Void)
+    }
+    
+    let serviceInfo: ServiceInfoContainerView.Model
+    let textFieldPay: TextField
+    let textFieldGet: TextField
+    let rateContainer: ListDescriptionContainerView.Model
+    let serviceProvidedTitle: NSAttributedString
+    let infoButtonsContainer: InfoButtonsContainerView.Model
+    let continueButton: Button
   }
   
-  func setGetAmountCursorLabel(title: String) {
-    setCursorLabel(
-      withTitle: title,
-      inputControl: getAmountInputControl,
-      textField: getAmountTextField
-    )
+  func configure(model: Model) {
+    serviceInfoContainerView.configure(model: model.serviceInfo)
+    rateContainerView.configure(model: model.rateContainer)
+    infoButtonsContainer.configure(model: model.infoButtonsContainer)
+    
+    payAmountTextField.placeholder = model.textFieldPay.placeholder
+    getAmountTextField.placeholder = model.textFieldGet.placeholder
+    
+    setPayAmountCursorLabel(title: model.textFieldPay.currencyCode)
+    setGetAmountCursorLabel(title: model.textFieldGet.currencyCode)
+    
+    serviceProvidedLabel.attributedText = model.serviceProvidedTitle
+    
+    continueButton.configuration.content.title = .plainString(model.continueButton.title)
+    continueButton.configuration.isEnabled = model.continueButton.isEnabled
+    continueButton.configuration.showsLoader = model.continueButton.isActivity
+    continueButton.configuration.action = model.continueButton.action
   }
 }
 
@@ -83,7 +104,7 @@ private extension BuySellDetailsView {
     contentStackView.addArrangedSubview(payAmountTextField)
     contentStackView.setCustomSpacing(.contentVerticalPadding, after: payAmountTextField)
     contentStackView.addArrangedSubview(getAmountTextField)
-    contentStackView.addArrangedSubview(convertedRateContainer)
+    contentStackView.addArrangedSubview(rateContainerView)
     
     addSubview(continueButton)
     addSubview(serviceProvidedLabel)
@@ -123,6 +144,22 @@ private extension BuySellDetailsView {
     }
   }
   
+  func setPayAmountCursorLabel(title: String) {
+    setCursorLabel(
+      withTitle: title,
+      inputControl: payAmountInputControl,
+      textField: payAmountTextField
+    )
+  }
+  
+  func setGetAmountCursorLabel(title: String) {
+    setCursorLabel(
+      withTitle: title,
+      inputControl: getAmountInputControl,
+      textField: getAmountTextField
+    )
+  }
+  
   func setCursorLabel(withTitle title: String,
                       inputControl: TKTextInputTextViewControl,
                       textField: TKTextField) {
@@ -155,3 +192,13 @@ private extension CGFloat {
   static let contentHorizontalPadding: CGFloat = 16
   static let infoItemHeight: CGFloat = 20
 }
+
+private extension NSDirectionalEdgeInsets {
+  static let contentStackViewPadding = NSDirectionalEdgeInsets(
+    top: 0,
+    leading: 16,
+    bottom: 0,
+    trailing: 16
+  )
+}
+
