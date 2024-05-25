@@ -237,7 +237,11 @@ private extension BuySellViewModelImplementation {
     let amountValue = amountInputValue
     Task {
       let currency = await buySellController.getActiveCurrency()
-      let convertedValue = await buySellController.convertTokenAmountToCurrency(token: .ton, amountValue, currency: currency)
+      let convertedValue = await buySellController.convertTokenAmountToCurrency(
+        token: buySellModel.token,
+        amount: amountValue,
+        currency: currency
+      )
       await MainActor.run {
         self.convertedValue = convertedValue
         self.currency = currency
