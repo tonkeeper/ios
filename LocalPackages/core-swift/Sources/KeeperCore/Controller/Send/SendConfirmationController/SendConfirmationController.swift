@@ -118,7 +118,7 @@ private extension SendConfirmationController {
         feeConverted = .value(nil)
       }
     } else {
-      feeItem = .value("?")
+      feeItem = .value("")
       feeConverted = .value(nil)
     }
     

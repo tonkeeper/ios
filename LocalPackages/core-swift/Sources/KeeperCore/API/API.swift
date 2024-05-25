@@ -348,6 +348,75 @@ extension API {
   }
 }
 
+// MARK: - Staking
+
+extension API {
+  func getStakingPools(address: Address, includeUnverified: Bool) async throws -> [StakingPool] {
+    let input: Operations.getStakingPools.Input = .init(
+      query: .init(
+        available_for: address.toRaw(),
+        include_unverified: includeUnverified
+      )
+    )
+    
+    let response = try await tonAPIClient.getStakingPools(input)
+    let jsonPayload = try response.ok.body.json
+    
+    return parceJsonPayload(jsonPayload)
+  }
+  
+  private func parceJsonPayload(
+    _ payload: Operations.getStakingPools.Output.Ok.Body.jsonPayload
+  ) -> [StakingPool] {
+    let poolTypes: [StakingPool.Implementation] = StakingPool.Implementation.Kind
+      .allCases
+      .compactMap { kind in
+        guard let poolImplementation = payload.implementations.additionalProperties[kind.rawValue] else {
+          return nil
+        }
+        
+        return .init(
+          type: kind,
+          name: poolImplementation.name,
+          description: poolImplementation.description,
+          urlString: poolImplementation.url,
+          socials: poolImplementation.socials
+        )
+      }
+    
+    return payload.pools.compactMap { pool -> StakingPool? in
+      do {
+        guard 
+          let poolType = StakingPool.Implementation.Kind(rawValue: pool.implementation.rawValue),
+          let poolImplementation = poolTypes.first(where: { $0.type == poolType })
+        else {
+          return nil
+        }
+        
+        let address = try Address.parse(pool.address)
+        
+        var jettonMaster: Address?
+        if let jettonMasterAddress = pool.liquid_jetton_master {
+          jettonMaster = try? Address.parse(jettonMasterAddress)
+        }
+        
+        return .init(
+          address: address,
+          name: pool.name,
+          apy: Decimal(pool.apy),
+          minStake: pool.min_stake,
+          cycleEnd: pool.cycle_end,
+          cycleStart: pool.cycle_start,
+          jettonMaster: jettonMaster,
+          implementation: poolImplementation
+        )
+      } catch {
+        return nil
+      }
+    }
+  }
+}
+
 //// MARK: - Time
 //
 //extension API {

@@ -234,6 +234,18 @@ public extension UIImage {
         public static var tonCurrency: UIImage {
           .imageWithName("Icons/44/ton_currency")
         }
+        
+        public static var tonNominatorsLogo: UIImage {
+          return .imageWithName("Icons/44/ton_nominators")
+        }
+        
+        public static var tonStakersLogo: UIImage {
+          .imageWithName("Icons/44/ton_stakers")
+        }
+        
+        public static var tonWhalesLogo: UIImage {
+          .imageWithName("Icons/44/ton_whales")
+        }
       }
       public enum Size56 {
         public static var flashlightOff: UIImage {

@@ -5,6 +5,7 @@ import TKCore
 
 
 final class StakingConfirmationView: UIView {
+  let sliderActionView = SliderActionView()
   
   private let modalContentContainer = UIView()
   
@@ -41,6 +42,13 @@ private extension StakingConfirmationView {
   }
   
   func setupConstraints() {
+    sliderActionView.layout(in: self) {
+      $0.leading.equalToSuperview().offset(16)
+      $0.trailing.equalToSuperview().inset(16)
+      $0.height.equalTo(56)
+      $0.bottom.equalTo(safeAreaLayoutGuide).inset(16)
+    }
+    
     modalContentContainer.snp.makeConstraints { make in
       make.top.equalTo(safeAreaLayoutGuide)
       make.left.bottom.right.equalTo(self).priority(.high)

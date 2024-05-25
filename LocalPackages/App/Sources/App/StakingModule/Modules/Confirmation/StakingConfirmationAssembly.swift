@@ -5,16 +5,33 @@ import KeeperCore
 
 struct StakingConfirmationAssembly {
   static func module(
-    operation: StakingOperation,
-    wallet: Wallet,
+    stakeConfirmationItem: StakingConfirmationItem,
     keeperCoreMainAssembly: KeeperCore.MainAssembly
   ) -> MVVMModule<StakingConfirmationViewController, StakingConfirmationModuleOutput, Void> {
-    let viewModel = StakingConfirmationViewModelImplementation(
-      controller: keeperCoreMainAssembly.stakingConfirmationController(wallet: wallet, operation: operation),
-      modelMapper: .init()
-    )
+    let controller = makeController(keeperCoreAssembly: keeperCoreMainAssembly, confirmationItem: stakeConfirmationItem)
+    
+    let viewModel = StakingConfirmationViewModelImplementation(controller: controller, modelMapper: .init())
     let viewController = StakingConfirmationViewController(viewModel: viewModel)
     
     return .init(view: viewController, output: viewModel, input: Void())
+  }
+  
+  private static func makeController(
+    keeperCoreAssembly: KeeperCore.MainAssembly,
+    confirmationItem: StakingConfirmationItem
+  ) -> StakingConfirmationController {
+    let amount = confirmationItem.amount
+    switch confirmationItem.operatiom {
+    case .deposit(let depositModel):
+      return keeperCoreAssembly.stakingConfirmationController(
+        depositModel: depositModel,
+        amount: amount
+      )
+    case .withdraw(let withdrawModel):
+      return keeperCoreAssembly.stakingWithdrawConfirmationController(
+        withdrawModel: withdrawModel,
+        amount: amount
+      )
+    }
   }
 }

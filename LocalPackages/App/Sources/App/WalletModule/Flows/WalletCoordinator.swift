@@ -141,11 +141,39 @@ private extension WalletCoordinator {
       self?.openSend(token: token)
     }
     
+    module.output.didTapWithdraw = { [weak self] withdrawModel in
+      self?.openWithdraw(model: withdrawModel)
+    }
+    
     router.push(viewController: module.view)
   }
   
   func openSend(token: Token) {
     didTapSend?(token)
+  }
+  
+  func openWithdraw(model: WithdrawModel) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
+    let module = StakingModule(dependencies:
+        .init(
+          keeperCoreMainAssembly: keeperCoreMainAssembly,
+          coreAssembly: coreAssembly)
+    )
+    
+    let coordinator = module.createStakingCoordinator(router: router)
+    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.openWithdrawEditAmount(withdrawModel: model)
+    
+    self.router.present(navigationController)
   }
   
   func openReceive(token: Token) {
@@ -206,7 +234,7 @@ private extension WalletCoordinator {
     coordinator.start()
   }
   
-  func openStaking() {
+  func openStakingDeposit(depositeModel: DepositModel) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     let router = NavigationControllerRouter(rootViewController: navigationController)
@@ -220,6 +248,7 @@ private extension WalletCoordinator {
     )
     
     let coordinator = module.createStakingCoordinator(router: router)
+    
     coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
       navigationController?.dismiss(animated: true)
       guard let coordinator else { return }
@@ -227,7 +256,7 @@ private extension WalletCoordinator {
     }
     
     addChild(coordinator)
-    coordinator.start()
+    coordinator.openDepositEditAmount(depositeModel: depositeModel)
     
     self.router.present(navigationController)
   }
@@ -298,8 +327,8 @@ private extension WalletCoordinator {
       self?.openBackup(wallet: wallet)
     }
     
-    module.output.didTapStake = { [weak self] in
-      self?.openStaking()
+    module.output.didTapStake = { [weak self] model in
+      self?.openStakingDeposit(depositeModel: model)
     }
     
     module.output.didRequireConfirmation = { [weak self] in

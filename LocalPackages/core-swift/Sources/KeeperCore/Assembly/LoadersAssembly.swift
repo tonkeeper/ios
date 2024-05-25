@@ -51,6 +51,16 @@ public final class LoadersAssembly {
     return loader
   }
   
+  private weak var _stakingPoolsLoader: StakingPoolsLoader?
+  var stakingPoolsLoader: StakingPoolsLoader {
+    if let _stakingPoolsLoader {
+      return _stakingPoolsLoader
+    }
+    let loader = StakingPoolsLoader(service: servicesAssembly.stakingPoolsService())
+    _stakingPoolsLoader = loader
+    return loader
+  }
+  
   var chartLoader: ChartV2Loader {
     ChartV2Loader(chartService: servicesAssembly.chartService())
   }

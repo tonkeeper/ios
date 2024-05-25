@@ -1,8 +1,8 @@
 import UIKit
 
-final class TKResultView: UIView {
+public final class TKResultView: UIView {
   
-  enum State {
+  public enum State {
     case success
     case failure
     
@@ -28,7 +28,7 @@ final class TKResultView: UIView {
     }
   }
   
-  var state: State {
+  public var state: State {
     didSet { didChangeState() }
   }
   
@@ -51,7 +51,7 @@ final class TKResultView: UIView {
     return label
   }()
   
-  init(state: State) {
+  public init(state: State) {
     self.state = state
     super.init(frame: .zero)
     setup()
@@ -61,7 +61,7 @@ final class TKResultView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  override var intrinsicContentSize: CGSize {
+  override public var intrinsicContentSize: CGSize {
     stackView.systemLayoutSizeFitting(.zero)
   }
 }

@@ -83,6 +83,7 @@ public final class MainAssembly {
       nftsLoader: loadersAssembly.nftsLoader,
       tonRatesLoader: loadersAssembly.tonRatesLoader,
       currencyStore: storesAssembly.currencyStore,
+      stakingPoolLoader: loadersAssembly.stakingPoolsLoader,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore
     )
   }
@@ -127,7 +128,8 @@ public final class MainAssembly {
       setupStore: storesAssembly.setupStore,
       securityStore: storesAssembly.securityStore,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore,
-      walletBalanceMapper: walletBalanceMapper
+      walletBalanceMapper: walletBalanceMapper,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
     )
   }
   
@@ -206,7 +208,8 @@ public final class MainAssembly {
       walletsStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
       currencyStore: storesAssembly.currencyStore,
-      tonRatesStore: storesAssembly.tonRatesStore
+      tonRatesStore: storesAssembly.tonRatesStore,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
     )
   }
   
@@ -220,7 +223,8 @@ public final class MainAssembly {
       walletsStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
       currencyStore: storesAssembly.currencyStore,
-      tonRatesStore: storesAssembly.tonRatesStore
+      tonRatesStore: storesAssembly.tonRatesStore,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
     )
   }
   
@@ -419,26 +423,89 @@ public final class MainAssembly {
     )
   }
   
-  public func stakingController() -> StakingController {
-    StakingController(
+  public func stakingDepositEditAmountController(depositModel: DepositModel) -> StakingEditAmountController {
+    StakingDepositEditAmountController(
+      depositModel: depositModel,
       walletStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
       ratesStore: storesAssembly.ratesStore,
       currencyStore: storesAssembly.currencyStore,
-      rateConverter: RateConverter(),
-      amountFormatter: formattersAssembly.amountFormatter
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter,
+      amountConverter: stakingEditAmountConverter,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
     )
   }
   
-  public func stakingConfirmationController(wallet: Wallet, operation: StakingOperation) -> StakingConfirmationController {
-    StakingConfirmationController(
-      operation: operation,
-      wallet: wallet,
+  public func stakingWithdrawEditAmountController(withdrawModel: WithdrawModel) -> StakingEditAmountController {
+    StakingWithdrawEditAmountController(
+      withdrawModel: withdrawModel,
+      walletStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter,
+      amountConverter: stakingEditAmountConverter,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
+    )
+  }
+  
+  public func stakingConfirmationController(
+    depositModel: DepositModel,
+    amount: BigUInt
+  ) -> StakingConfirmationController {
+    StakingDepositConfirmationController(
+      depositModel: depositModel,
+      amount: amount,
+      walletsStore: walletAssembly.walletStore,
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.ratesStore,
       currencyStore: storesAssembly.currencyStore,
       mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
-      amountFormatter: formattersAssembly.amountFormatter
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter,
+      sendService: servicesAssembly.sendService()
+    )
+  }
+  
+  public func stakingWithdrawConfirmationController(
+    withdrawModel: WithdrawModel,
+    amount: BigUInt
+  ) -> StakingConfirmationController {
+    StakingWithdrawConfirmationController(
+      withdrawModel: withdrawModel,
+      amount: amount,
+      walletsStore: walletAssembly.walletStore,
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService()
+    )
+  }
+  
+  public func stakingOptionsListController(
+    listModel: StakingOptionsListModel,
+    selectedPoolAddress: Address?
+  ) -> StakingOptionsListController {
+    StakingOptionsListController(
+      listModel: listModel,
+      selectedPoolAddress: selectedPoolAddress,
+      mapper: stakingOptionsListMapper,
+      stakingPoolsService: servicesAssembly.stakingPoolsService(),
+      walletStore: walletAssembly.walletStore
+    )
+  }
+  
+  public func stakingOptionDetailsController(stakingPool: StakingPool) -> StakingOptionsDetailsController {
+    StakingOptionsDetailsController(
+      stakingPool: stakingPool,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter
     )
   }
 
@@ -486,10 +553,21 @@ private extension MainAssembly {
     )
   }
   
+  var stakingOptionsListMapper: StakingOptionsListMapper {
+    StakingOptionsListMapper(
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter
+    )
+  }
+  
   var tokenDetailsMapper: TokenDetailsMapper {
     TokenDetailsMapper(
       amountFormatter: formattersAssembly.amountFormatter,
       rateConverter: RateConverter()
     )
+  }
+  
+  var stakingEditAmountConverter: StakingEditAmountConverter {
+    StakingEditAmountConverter(rateConverter: RateConverter())
   }
 }

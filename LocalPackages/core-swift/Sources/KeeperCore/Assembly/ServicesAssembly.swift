@@ -140,4 +140,11 @@ public final class ServicesAssembly {
   func locationService() -> LocationService {
     LocationServiceImplementation(locationAPI: locationAPIAsembly.locationAPI())
   }
+  
+  func stakingPoolsService() -> StakingPoolsService {
+    StakingPoolsServiceImplementation(
+      apiProvider: apiAssembly.apiProvider,
+      repository: repositoriesAssembly.stakingPoolsRepository()
+    )
+  }
 }

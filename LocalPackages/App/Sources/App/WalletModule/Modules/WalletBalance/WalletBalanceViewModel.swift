@@ -12,9 +12,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
-  var didTapStake: (() -> Void)? { get set }
-
-  
+  var didTapStake: ((DepositModel) -> Void)? { get set }
   var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
 }
@@ -47,7 +45,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
-  var didTapStake: (() -> Void)?
+  var didTapStake: ((DepositModel) -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
   var didRequireConfirmation: (() async -> Bool)?
@@ -359,8 +357,14 @@ private extension WalletBalanceViewModelImplementation {
         icon: .TKUIKit.Icons.Size28.stakingOutline,
         isEnabled: isStakeEnable,
         action: { [weak self] in
-            guard let wallet = self?.walletBalanceController.wallet else { return }
-            self?.didTapStake?()
+            guard 
+              self?.walletBalanceController.wallet != nil,
+              let stakingPool = self?.walletBalanceController.getMostPofitableStakingPool()
+          else {
+              return
+            }
+            
+          self?.didTapStake?(.init(pool: stakingPool, token: .ton))
         }
       )
     )

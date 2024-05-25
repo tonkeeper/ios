@@ -3,7 +3,7 @@ import TKUIKit
 import TKCore
 
 final class StakingConfirmationViewController: GenericViewViewController<StakingConfirmationView> {
-  
+
   private let viewModel: StakingConfirmationViewModel
   private let modalCardViewController = TKModalCardViewController()
   
@@ -41,6 +41,10 @@ private extension StakingConfirmationViewController {
   func setupBindings() {
     viewModel.didUpdateConfiguration = { [weak modalCardViewController] configuration in
       modalCardViewController?.configuration = configuration
+    }
+    
+    viewModel.didUpdateSliderActionModel = { [weak customView] model in
+      customView?.sliderActionView.configure(model: model)
     }
   }
 }

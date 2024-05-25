@@ -56,4 +56,8 @@ public final class RepositoriesAssembly {
   func chartDataRepository() -> ChartDataRepository {
     ChartDataRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
+  
+  func stakingPoolsRepository() -> StakingPoolsRepository {
+    StakingPoolsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
 }

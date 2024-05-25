@@ -97,3 +97,10 @@ private extension UIStackView {
         return view
     }
 }
+
+extension UIStackView {
+  func addSpacer() {
+    addArrangedSubview(UIView())
+  }
+}
+

@@ -13,6 +13,7 @@ public final class WalletMainController {
   private let tonRatesLoader: TonRatesLoader
   private let currencyStore: CurrencyStore
   private let backgroundUpdateStore: BackgroundUpdateStore
+  private var stakingPoolLoader: StakingPoolsLoader
   
   init(walletsStore: WalletsStore, 
        walletBalanceLoader: WalletBalanceLoader,
@@ -20,6 +21,7 @@ public final class WalletMainController {
        nftsLoader: NftsLoader,
        tonRatesLoader: TonRatesLoader,
        currencyStore: CurrencyStore,
+       stakingPoolLoader: StakingPoolsLoader,
        backgroundUpdateStore: BackgroundUpdateStore) {
     self.walletsStore = walletsStore
     self.walletBalanceLoader = walletBalanceLoader
@@ -27,6 +29,7 @@ public final class WalletMainController {
     self.nftsLoader = nftsLoader
     self.tonRatesLoader = tonRatesLoader
     self.currencyStore = currencyStore
+    self.stakingPoolLoader = stakingPoolLoader
     self.backgroundUpdateStore = backgroundUpdateStore
   }
   
@@ -112,6 +115,7 @@ private extension WalletMainController {
     Task { await loadWalletsBalances(wallets: walletsStore.wallets, currency: currency) }
     Task { await loadTonRates(currency: currency) }
     Task { await loadWalletsNfts(wallets: walletsStore.wallets) }
+    Task { await loadStakingPools(wallets: walletsStore.wallets,  includeUnverified: false) }
   }
   
   func loadWalletsBalances(wallets: [Wallet], currency: Currency) async {
@@ -130,6 +134,14 @@ private extension WalletMainController {
         group.addTask {
           await nftsLoader.loadNfts(wallet: wallet)
         }
+      }
+    }
+  }
+  
+  func loadStakingPools(wallets: [Wallet], includeUnverified: Bool) async {
+    await withTaskGroup(of: Void.self) { [stakingPoolLoader] group in
+      for wallet in wallets {
+        await stakingPoolLoader.loadPools(wallet: wallet, includeUnverified: includeUnverified)
       }
     }
   }

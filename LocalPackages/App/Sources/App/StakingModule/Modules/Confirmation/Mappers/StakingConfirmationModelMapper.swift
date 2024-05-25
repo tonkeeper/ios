@@ -5,6 +5,7 @@ import TKCore
 import BigInt
 import TonSwift
 import KeeperCore
+import SnapKit
 
 struct StakingConfirmationModelMapper {
   func map(
@@ -15,44 +16,17 @@ struct StakingConfirmationModelMapper {
     let header = mapHeader(model)
     let listItems = mapListItems(model)
     let content = TKModalCardViewController.Configuration.Content(items: [.list(listItems)])
-    let actionBar = mapActionBar(tapAction: tapAction, completionAction: completionAction)
     
     return .init(
       header: header,
-      content: content,
-      actionBar: actionBar
+      content: content
     )
   }
 }
 
 // MARK: - Private methods
 
-private extension StakingConfirmationModelMapper {
-  func mapActionBar(
-    tapAction: ((@escaping (_ isActivity: Bool) -> Void, @escaping (_ isSuccess: Bool) -> Void) -> Void)?,
-    completionAction: ((Bool) -> Void)?
-  ) -> TKModalCardViewController.Configuration.ActionBar {
-    TKModalCardViewController.Configuration.ActionBar(
-      items: [
-        .button(
-          TKModalCardViewController.Configuration.Button(
-            title: .buttonTitle,
-            size: .large,
-            category: .primary,
-            isEnabled: true,
-            isActivity: false,
-            tapAction: tapAction,
-            completionAction: { isSuccess in
-              guard isSuccess else { return }
-              completionAction?(isSuccess)
-            }
-          ),
-          bottomSpacing: 0
-        )
-      ]
-    )
-  }
-  
+private extension StakingConfirmationModelMapper {  
   func mapListItems(_ model: StakingConfirmationModel) -> [TKModalCardViewController.Configuration.ListItem] {
     var items = [TKModalCardViewController.Configuration.ListItem]()
     items.append(
@@ -66,32 +40,17 @@ private extension StakingConfirmationModelMapper {
     items.append(
       TKModalCardViewController.Configuration.ListItem(
         left: .recipientTitle,
-        rightTop: .value(model.provider, numberOfLines: 0, isFullString: true),
+        rightTop: .value(model.poolName, numberOfLines: 0, isFullString: true),
         rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
       )
     )
     
-    items.append(
-      TKModalCardViewController.Configuration.ListItem(
-        left: .recipientTitle,
-        rightTop: .value(model.apyPercent, numberOfLines: 0, isFullString: true),
-        rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
-      )
-    )
-    
-    if let amount = model.amount {
-      let rightBottom: TKModalCardViewController.Configuration.ListItem.RightItem<String?>
-      switch model.amountConverted {
-      case .loading:
-        rightBottom = .loading
-      case .value(let value):
-        rightBottom = .value(value, numberOfLines: 1, isFullString: false)
-      }
+    if let apyPercent = model.apyPercent {
       items.append(
         TKModalCardViewController.Configuration.ListItem(
-          left: .amountTitle,
-          rightTop: .value(amount, numberOfLines: 0, isFullString: false),
-          rightBottom: rightBottom
+          left: .apyTitle,
+          rightTop: .value(apyPercent, numberOfLines: 0, isFullString: true),
+          rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
         )
       )
     }
@@ -101,7 +60,7 @@ private extension StakingConfirmationModelMapper {
     case .loading:
       feeTop = .loading
     case .value(let value):
-      feeTop = .value(value, numberOfLines: 1, isFullString: false)
+      feeTop = .value("≈ \(value)", numberOfLines: 1, isFullString: false)
     }
     let feeBottom: TKModalCardViewController.Configuration.ListItem.RightItem<String?>
     switch model.feeConverted {
@@ -118,44 +77,57 @@ private extension StakingConfirmationModelMapper {
         rightBottom: feeBottom
       )
     )
-  
+    
     return items
   }
   
   func mapHeader(_ model: StakingConfirmationModel) -> TKModalCardViewController.Configuration.Header {
-    let headerView = HistoreEventDetailsTokenHeaderImageView()
+    var items: [TKModalCardViewController.Configuration.Item] = []
+    
+    let headerView = StakingConfirmationHeaderView()
     headerView.imageLoader = ImageLoader()
-    headerView.configure(model: HistoreEventDetailsTokenHeaderImageView.Model(image: .url(model.providerImage)))
-    
-    let title = model.amount ?? ""
-    let description = String.description
-    
+    let image: Image
+    switch model.poolImage {
+    case .fromResource:
+      image = .image(model.kind.image, tinColor: nil, backgroundColor: nil)
+    case .url(let url):
+      image = .url(url)
+    }
+    headerView.configure(model: StakingConfirmationHeaderView.Model(image: image))
     let headerItem: TKModalCardViewController.Configuration.Item = .customView(headerView, bottomSpacing: 20)
-    let descriptionItem: TKModalCardViewController.Configuration.Item = .text(
-      TKModalCardViewController.Configuration.Text(
-        text: description.withTextStyle(.body1, color: .Text.secondary, alignment: .center),
-        numberOfLines: 1
-      ),
+    items.append(headerItem)
+    
+    let hintItem: TKModalCardViewController.Configuration.Item = .text(
+      .init(text: String.hint.withTextStyle(.body1, color: .Text.secondary, alignment: .center), numberOfLines: 1),
       bottomSpacing: 4
     )
+    items.append(hintItem)
+    
+    let title = model.amount + " \(model.tokenSymbol)"
     let titleItem: TKModalCardViewController.Configuration.Item = .text(
-      TKModalCardViewController.Configuration.Text(
-        text: title.withTextStyle(.h3, color: .Text.primary, alignment: .center),
-        numberOfLines: 1
-      ),
+      .init(text: title.withTextStyle(.h3, color: .Text.primary, alignment: .center), numberOfLines: 1),
       bottomSpacing: 0
     )
+    items.append(titleItem)
     
-    return .init(items: [headerItem, descriptionItem, titleItem])
+    if let convertedAmount = model.amountConverted {
+      let subtitleItem: TKModalCardViewController.Configuration.Item = .text(
+        .init(text: convertedAmount.withTextStyle(.body1, color: .Text.secondary, alignment: .center), numberOfLines: 1),
+        bottomSpacing: 0
+      )
+      items.append(subtitleItem)
+      
+    }
+    
+    return .init(items: items)
   }
 }
 
 private extension String {
   static let wallet = "Wallet"
-  static let description = "Deposit"
+  static let hint = "Deposit"
   static let recipientTitle = "Recipient"
-  static let recipientAddressTitle = "Recipient address"
-  static let amountTitle = "Amount"
+  static let apyTitle = "APY"
   static let feeTitle = "Fee"
   static let buttonTitle = "Stake"
 }

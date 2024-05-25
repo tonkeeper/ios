@@ -58,6 +58,7 @@ public final class WalletBalanceController {
   private let securityStore: SecurityStore
   private let backgroundUpdateStore: BackgroundUpdateStore
   private let walletBalanceMapper: WalletBalanceMapper
+  private let stakingPoolsService: StakingPoolsService
   
   init(walletsStore: WalletsStore,
        walletBalanceStore: WalletBalanceStore,
@@ -67,7 +68,9 @@ public final class WalletBalanceController {
        setupStore: SetupStore,
        securityStore: SecurityStore,
        backgroundUpdateStore: BackgroundUpdateStore,
-       walletBalanceMapper: WalletBalanceMapper) {
+       walletBalanceMapper: WalletBalanceMapper,
+       stakingPoolsService: StakingPoolsService
+  ) {
     self.walletsStore = walletsStore
     self.walletBalanceStore = walletBalanceStore
     self.walletTotalBalanceStore = walletTotalBalanceStore
@@ -77,6 +80,7 @@ public final class WalletBalanceController {
     self.securityStore = securityStore
     self.backgroundUpdateStore = backgroundUpdateStore
     self.walletBalanceMapper = walletBalanceMapper
+    self.stakingPoolsService = stakingPoolsService
     
     self.wallet = walletsStore.activeWallet
   }
@@ -103,6 +107,16 @@ public final class WalletBalanceController {
   public func finishSetup() async {
     try? await setupStore.setSetupIsFinished()
   }
+  
+  public func getMostPofitableStakingPool() -> StakingPool? {
+    let availablePools = (try? stakingPoolsService.getPools(
+      address: wallet.address,
+      isTestnet: wallet.isTestnet
+    )) ?? []
+    
+    return availablePools.mostProfitablePool
+  }
+  
 }
 
 private extension WalletBalanceController {

@@ -33,6 +33,32 @@ public struct BigIntAmountFormatter {
     }
   }
   
+  public func format(amount: BigInt,
+                     fractionDigits: Int,
+                     maximumFractionDigits: Int) -> String {
+    guard !amount.isZero else { return "0" }
+    let initialString = amount.description
+    if initialString.count < fractionDigits {
+      let significantLength = initialString.count
+      let nonSignificantLength = fractionDigits - significantLength
+      let significantPart = initialString.prefix(maximumFractionDigits).filter { $0 != "0" }
+      let string = String(repeating: "0", count: nonSignificantLength) + significantPart
+      return "0" + (.fractionalSeparator ?? ".") + string
+    } else {
+      let fractional = String(initialString.suffix(fractionDigits))
+      let fractionalLength = min(fractionDigits, maximumFractionDigits)
+      let fractionalResult = String(fractional[fractional.startIndex..<fractional.index(fractional.startIndex, offsetBy: fractionalLength)])
+        .replacingOccurrences(of: "0+$", with: "", options: .regularExpression)
+      let integer = String(initialString.prefix(initialString.count - fractional.count))
+      let separatedInteger = groups(string: integer.isEmpty ? "0" : integer, size: .groupSize).joined(separator: .groupSeparator)
+      var result = separatedInteger
+      if fractionalResult.count > 0 {
+        result += (.fractionalSeparator ?? ".") + fractionalResult
+      }
+      return result
+    }
+  }
+  
   public func bigInt(string: String, targetFractionalDigits: Int) throws -> (amount: BigInt, fractionalDigits: Int) {
     guard !string.isEmpty else { throw Error.invalidInput(string) }
     let fractionalSeparator: String = .fractionalSeparator ?? ""

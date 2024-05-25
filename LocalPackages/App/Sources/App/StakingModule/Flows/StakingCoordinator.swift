@@ -4,6 +4,7 @@ import TKUIKit
 import TKScreenKit
 import TKCore
 import KeeperCore
+import TonSwift
 
 final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
@@ -23,52 +24,109 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
   }
   
   override func start() {
-    let stakingModule = StakingAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
-//    let vc = TestVC()
-//    router.push(viewController: vc, animated: false)
-    
-    stakingModule.view.setupRightCloseButton { [weak self] in
+
+  }
+  
+  func openWithdrawEditAmount(withdrawModel: WithdrawModel) {
+    let editAmountModule = StakingWithdrawEditAmountAssembly.module(withdrawModel: withdrawModel, keeperCoreMainAssembly: keeperCoreMainAssembly)
+  
+    editAmountModule.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
     
-    stakingModule.view.setupButton(icon: UIImage.TKUIKit.Icons.Size16.infoCircle, position: .left) {
-      print("open warning")
-    }
-
-    stakingModule.output.didTapProviderPicker = { [weak self] in
-      let optionsOutput = self?.openOptions()
-      optionsOutput?.didChooseOption = { item in
-        stakingModule.input.setOption(item)
+    editAmountModule.output.didTapContinue = { [weak self] confirmItem in
+      let confirmOutput = self?.openConfirm(item: confirmItem)
+      confirmOutput?.didRequireConfirmation = { [weak self] in
+        guard let self else { return false }
+        return await self.openPasscode(fromViewController: self.router.rootViewController)
       }
       
-      optionsOutput?.didTapOptionDetails = { item in
-        let detailsOutput = self?.openOptionDetails(item: item)
+      confirmOutput?.didFinish = { [weak self] in
+        self?.didFinish?()
+      }
+    }
+    
+    router.push(viewController: editAmountModule.view, animated: false)
+  }
+  
+  func openDepositEditAmount(depositeModel: DepositModel) {
+//    let vc = TestVC()
+//    router.push(viewController: vc, animated: false)
+    
+    let editAmountModule = StakingDepositEditAmountAssembly.module(depositModel: depositeModel, keeperCoreMainAssembly: keeperCoreMainAssembly)
+    
+    editAmountModule.view.setupButton(icon: UIImage.TKUIKit.Icons.Size16.infoCircle, position: .left) { [weak self] in
+      guard 
+        let self,
+        let url = URL(string: "https://telegra.ph/Guide-How-to-Stake-TON-Within-Tonkeeper-Wallet-05-23")
+      else { return }
+      // вынести
+      self.coreAssembly.urlOpener().open(url: url)
+    }
+    
+    editAmountModule.view.setupRightCloseButton { [weak self] in
+      self?.didFinish?()
+    }
+
+    editAmountModule.output.didTapPoolPicker = { [weak self] listModel, selectedPoolAddress in
+      let poolTypeOutput = self?.openOptionsList(listModel: listModel, selectedPoolAddress: selectedPoolAddress)
+      
+      poolTypeOutput?.didChooseStakingPool = { stakingPool in
+        editAmountModule.input.setStakingPool(stakingPool)
+        self?.router.popTo(viewController: editAmountModule.view, animated: true, completion: nil)
+      }
+      
+      poolTypeOutput?.didTapOptionDetails = { pool in
+        let detailsOutput = self?.openOptionDetails(stakingPool: pool)
         
-        detailsOutput?.didChooseOption = { [weak self] item in
-          stakingModule.input.setOption(item)
-          self?.router.popTo(viewController: stakingModule.view, animated: true, completion: nil)
+        detailsOutput?.didChooseStakingPool = { pool in
+          editAmountModule.input.setStakingPool(pool)
+          self?.router.popTo(viewController: editAmountModule.view, animated: true, completion: nil)
+        }
+      }
+      
+      poolTypeOutput?.didTapPoolImplementation = { model, selectedPoolAddress in
+        let exactPoolOutput = self?.openOptionsList(listModel: model, selectedPoolAddress: selectedPoolAddress)
+        exactPoolOutput?.didTapOptionDetails = { pool in
+          let detailsOutput = self?.openOptionDetails(stakingPool: pool)
+         
+          detailsOutput?.didChooseStakingPool = { pool in
+            editAmountModule.input.setStakingPool(pool)
+            self?.router.popTo(viewController: editAmountModule.view, animated: true, completion: nil)
+          }
+        }
+        
+        exactPoolOutput?.didChooseStakingPool = { [weak self] stakingPool in
+          editAmountModule.input.setStakingPool(stakingPool)
+          self?.router.popTo(viewController: editAmountModule.view, animated: true, completion: nil)
         }
       }
     }
     
-    stakingModule.output.didTapContinue = { [weak self] wallet in
-      let confirmOutput = self?.openConfirm(wallet: wallet, operation: .stake)
-      confirmOutput?.didPerformStaking = {
-        print("Successfully perform staking operation")
-      }
-      
+    editAmountModule.output.didTapContinue = { [weak self] confirmationItem in
+      let confirmOutput = self?.openConfirm(item: confirmationItem)
       confirmOutput?.didRequireConfirmation = { [weak self] in
         guard let self else { return false }
-        
         return await self.openPasscode(fromViewController: self.router.rootViewController)
+      }
+      
+      confirmOutput?.didFinish = { [weak self] in
+        self?.didFinish?()
       }
     }
     
-    router.push(viewController: stakingModule.view, animated: false)
+    router.push(viewController: editAmountModule.view, animated: false)
   }
-  
-  func openConfirm(wallet: Wallet, operation: StakingOperation) -> StakingConfirmationModuleOutput {
-    let module = StakingConfirmationAssembly.module(operation: operation, wallet: wallet, keeperCoreMainAssembly: keeperCoreMainAssembly)
+}
+
+// MARK: - Private methods
+
+private extension StakingCoordinator {
+  func openConfirm(item: StakingConfirmationItem) -> StakingConfirmationModuleOutput {
+    let module = StakingConfirmationAssembly.module(
+      stakeConfirmationItem: item,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
@@ -79,8 +137,15 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
     return module.output
   }
   
-  func openOptions() -> StakingOptionsModuleOutput {
-    let module = StakingOptionsAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
+  func openOptionsList(
+    listModel: StakingOptionsListModel,
+    selectedPoolAddress: Address?
+  ) -> StakingOptionsListModuleOutput {
+    let module = StakingOptionsListAssembly.module(
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      listModel: listModel,
+      selectedPoolAddress: selectedPoolAddress
+    )
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
@@ -91,9 +156,9 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
     return module.output
   }
   
-  func openOptionDetails(item: OptionItem) -> StakingOptionDetailsModuleOutput {
+  func openOptionDetails(stakingPool: StakingPool) -> StakingOptionDetailsModuleOutput {
     let module = StakingOptionDetailsAssembly.module(
-      item: item,
+      stakingPool: stakingPool,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       urlOpener: coreAssembly.urlOpener()
     )

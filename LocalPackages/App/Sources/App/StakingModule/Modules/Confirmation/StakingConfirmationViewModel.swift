@@ -8,11 +8,13 @@ import KeeperCore
 
 protocol StakingConfirmationModuleOutput: AnyObject {
   var didRequireConfirmation: (() async -> Bool)? { get set }
-  var didPerformStaking: (() -> Void)? { get set }
+  var didFinish: (() -> Void)? { get set }
 }
 
 protocol StakingConfirmationViewModel: AnyObject {
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)? { get set }
+  var didUpdateSliderActionModel: ((SliderActionView.Model) -> Void)? { get set }
+  
   func viewDidLoad()
 }
 
@@ -20,15 +22,18 @@ final class StakingConfirmationViewModelImplementation: StakingConfirmationViewM
   
   // MARK: - StakingConfirmationModuleOutput
   
-  var didPerformStaking: (() -> Void)?
   var didRequireConfirmation: (() async -> Bool)?
-  
+  var didFinish: (() -> Void)?
+
   // MARK: - StakingViewModel
   
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)?
+  var didUpdateSliderActionModel: ((SliderActionView.Model) -> Void)?
   
   func viewDidLoad() {
     setupControllerBindings()
+    
+    didUpdateSliderActionModel?(createSliderActionModel())
     
     Task {
       await controller.start()
@@ -39,6 +44,7 @@ final class StakingConfirmationViewModelImplementation: StakingConfirmationViewM
   
   let controller: StakingConfirmationController
   let modelMapper: StakingConfirmationModelMapper
+  
   init(controller: StakingConfirmationController, modelMapper: StakingConfirmationModelMapper) {
     self.controller = controller
     self.modelMapper = modelMapper
@@ -52,32 +58,68 @@ private extension StakingConfirmationViewModelImplementation {
     controller.didUpdateModel = { [weak self] confirmationModel in
       guard let self else { return }
       let configuration = self.modelMapper.map(
-        model: confirmationModel) { [weak self] isActivityClosure, isSuccessClosure in
-          guard let self = self else { return }
-          isActivityClosure(true)
-          Task {
-            let isSuccess = await self.performStaking()
-            await MainActor.run {
-               isSuccessClosure(isSuccess)
-            }
+        model: confirmationModel
+      ) { [weak self] isActivityClosure, isSuccessClosure in
+        guard let self = self else { return }
+        isActivityClosure(true)
+        Task {
+          let isSuccess = await self.sendTransaction()
+          await MainActor.run {
+            isSuccessClosure(isSuccess)
           }
-        } completionAction: { [weak self] isSuccess in
-          guard isSuccess else { return }
-          
-          self?.didPerformStaking?()
         }
-
+      } completionAction: { [weak self] isSuccess in
+        guard isSuccess else { return }
+        self?.didFinish?()
+      }
+      
       self.didUpdateConfiguration?(configuration)
+    }
+    
+    controller.didGetError = { error in
+      print("[PAG] Handle \(error)")
     }
   }
   
-  func performStaking() async -> Bool {
-    let isConfirmed = await didRequireConfirmation?() ?? false
-    if !isConfirmed {
+  func createSliderActionModel() -> SliderActionView.Model {
+    let title = String.sliderTitle.withTextStyle(
+      .label1,
+      color: .Text.secondary
+    )
+    
+    return .init(
+      title: title
+    ) { [weak self] loadingClosure, isSuccessClosure in
+      guard let self = self else { return }
+      
+      loadingClosure()
+      
+      Task {
+        let isSuccess = await self.sendTransaction()
+        await MainActor.run {
+          isSuccessClosure(isSuccess)
+        }
+      }
+    } completionAction: { [weak self] isSuccess in
+      guard isSuccess else { return }
+      self?.didFinish?()
+    }
+  }
+  
+  func sendTransaction() async -> Bool {
+    if controller.isNeedToConfirm() {
+      let isConfirmed = await didRequireConfirmation?() ?? false
+      guard isConfirmed else { return false }
+    }
+    do {
+      try await controller.sendTransaction()
+      return true
+    } catch {
       return false
     }
-    
-    try? await Task.sleep(nanoseconds: 1_000_000_000)
-    return true
   }
+}
+
+private extension String {
+  static let sliderTitle = "Slide to confirm"
 }

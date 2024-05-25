@@ -7,12 +7,12 @@ import TonSwift
 import KeeperCore
 
 protocol StakingOptionDetailsModuleOutput: AnyObject {
-  var didChooseOption: ((OptionItem) -> Void)? { get set }
+  var didChooseStakingPool: ((StakingPool) -> Void)? { get set }
 }
 
 protocol StakingOptionDetailsViewModel: AnyObject {
-  var didUpdateTitle: ((String) -> Void)? { get set }
   var didUpdateModel: ((StakingOptionDetailsView.Model) -> Void)? { get set }
+  var didUpdateTitle: ((String) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -21,7 +21,7 @@ final class StakingOptionDetailsViewModelImplementation: StakingOptionDetailsVie
   
   // MARK: - StakingOptionDetailsModuleOutput
   
-  var didChooseOption: ((OptionItem) -> Void)?
+  var didChooseStakingPool: ((StakingPool) -> Void)?
   
   // MARK: - StakingOptionDetailsViewModel
   
@@ -29,39 +29,44 @@ final class StakingOptionDetailsViewModelImplementation: StakingOptionDetailsVie
   var didUpdateModel: ((StakingOptionDetailsView.Model) -> Void)?
   
   func viewDidLoad() {
-    didUpdateTitle?(item.title)
-    
-    let model = StakingOptionDetailsView.Model.init(
-      textList: [(.apy, "≈ \(item.apyPercents)"), (.minDeposit, item.minDepositAmount)],
-      hintText: .hint,
-      subtitle: .links,
-      linkButtonModels: [
-        [
-          createConfiguration(kind: .tonstakers),
-          createConfiguration(kind: .twitter)
+    controller.didUpdateItem = { [weak self] item in
+      guard let self else { return }
+      
+      let model = StakingOptionDetailsView.Model.init(
+        textList: [(.apy, "≈ \(item.apy)"), (.minDeposit, item.minDeposit)],
+        hintText: .hint,
+        subtitle: .links,
+        linkButtonModels: [
+          [
+            self.createConfiguration(kind: .tonstakers),
+            self.createConfiguration(kind: .twitter)
+          ],
+          [
+            self.createConfiguration(kind: .community),
+            self.createConfiguration(kind: .tonviewer)
+          ]
         ],
-        [
-          createConfiguration(kind: .community),
-          createConfiguration(kind: .tonviewer)
-        ]
-      ],
-      chooseButtonConfiguration: createChooseButtonConfiguration()
-    ) { [weak self] linkButtonKind in
-      guard let self, let url = linkButtonKind.url else { return }
+        chooseButtonConfiguration: createChooseButtonConfiguration()
+      ) { [weak self] linkButtonKind in
+        guard let self, let url = linkButtonKind.url else { return }
 
-      self.urlOpener.open(url: url)
+        self.urlOpener.open(url: url)
+      }
+      
+      didUpdateTitle?(item.name)
+      didUpdateModel?(model)
     }
     
-    didUpdateModel?(model)
+    controller.start()
   }
   
   // MARK: - Dependencies
   
-  private let item: OptionItem
+  private let controller: StakingOptionsDetailsController
   private let urlOpener: URLOpener
   
-  init(item: OptionItem, urlOpener: URLOpener) {
-    self.item = item
+  init(controller: StakingOptionsDetailsController, urlOpener: URLOpener) {
+    self.controller = controller
     self.urlOpener = urlOpener
   }
 }
@@ -95,7 +100,7 @@ private extension StakingOptionDetailsViewModelImplementation {
     configuration.action = { [weak self] in
       guard let self else { return }
       
-      self.didChooseOption?(self.item)
+      self.didChooseStakingPool?(self.controller.stakingPool)
     }
     
     return configuration

@@ -10,7 +10,9 @@ struct StakingModule {
     self.dependencies = dependencies
   }
   
-  func createStakingCoordinator(router: NavigationControllerRouter) -> StakingCoordinator {
+  func createStakingCoordinator(
+    router: NavigationControllerRouter
+  ) -> StakingCoordinator {
     return StakingCoordinator(
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
       coreAssembly: dependencies.coreAssembly,

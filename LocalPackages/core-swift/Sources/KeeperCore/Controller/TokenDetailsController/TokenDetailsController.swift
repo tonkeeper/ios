@@ -18,22 +18,48 @@ public final class TokenDetailsController {
   private let walletBalanceStore: WalletBalanceStore
   private let currencyStore: CurrencyStore
   private let tonRatesStore: TonRatesStore
+  private let stakingPoolsService: StakingPoolsService
   
   init(configurator: TokenDetailsControllerConfigurator, 
        walletsStore: WalletsStore,
        walletBalanceStore: WalletBalanceStore,
        currencyStore: CurrencyStore,
-       tonRatesStore: TonRatesStore) {
+       tonRatesStore: TonRatesStore,
+       stakingPoolsService: StakingPoolsService) {
     self.configurator = configurator
     self.walletsStore = walletsStore
     self.walletBalanceStore = walletBalanceStore
     self.currencyStore = currencyStore
     self.tonRatesStore = tonRatesStore
+    
+    self.stakingPoolsService = stakingPoolsService
   }
   
   public func start() async {
     await startObservations()
     await setInitialState()
+  }
+  
+  public func getWithDrawModel(for token: Token) -> WithdrawModel? {
+    var jetton: JettonInfo?
+    
+    switch token {
+    case .ton:
+      return nil
+    case .jetton(let jettonItem):
+      jetton = jettonItem.jettonInfo
+    }
+    
+    guard let jetton else { return nil }
+    
+    let wallet = walletsStore.activeWallet
+    let pools = (try? stakingPoolsService.getPools(address: wallet.address, isTestnet: wallet.isTestnet)) ?? []
+    
+    guard let pool = pools.first(where: { $0.jettonMaster == jetton.address }) else {
+      return nil
+    }
+      
+    return .init(pool: pool, lpJetton: jetton, token: .ton)
   }
 }
 
