@@ -3,7 +3,15 @@ import TKUIKit
 
 final class SwapDetailsView: UIView {
 
-  private let backgroundView = TKBackgroundView()
+  enum State {
+    case notValid
+    case updating
+    case fixed
+  }
+
+  var state: SwapDetailsView.State = .notValid
+
+  let backgroundView = TKBackgroundView()
 
   let statusLabel = UILabel()
 
@@ -17,7 +25,7 @@ final class SwapDetailsView: UIView {
   }
 
   override var intrinsicContentSize: CGSize {
-    return CGSize(width: UIView.noIntrinsicMetric, height: 56)
+    return CGSize(width: UIView.noIntrinsicMetric, height: state == .notValid ? 56 : 280)
   }
 }
 

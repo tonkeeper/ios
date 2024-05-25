@@ -13,6 +13,8 @@ protocol SwapModuleInput: AnyObject {
 
 protocol SwapViewModel: AnyObject {
   var didUpdateModel: ((SwapView.Model) -> Void)? { get set }
+  var shoudMakeActive: ((SwapField) -> Void)? { get set }
+  
   func viewDidLoad()
 
   func swapTokens()
@@ -44,11 +46,13 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
       swapPair = SwapPair(send: swapPair.send, receive: .init(token: token, amount: swapPair.receive?.amount ?? 0))
     }
     didInputAmount(sendAmount, swapField: .send)
+    shoudMakeActive?(.send)
   }
 
   // MARK: - SwapViewModel
 
   var didUpdateModel: ((SwapView.Model) -> Void)?
+  var shoudMakeActive: ((SwapField) -> Void)?
   
   func viewDidLoad() {
     didInputAmount("", swapField: .send)
@@ -67,6 +71,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     receiveAmount = oldSendAmount
 
     didInputAmount(sendAmount, swapField: .send)
+    shoudMakeActive?(.send)
   }
   func didTapTokenPicker(swapField: SwapField) {
     didTapToken?(swapField)

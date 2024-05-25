@@ -86,9 +86,13 @@ private extension SwapViewController {
 
       if model.status.isValid {
         self.showHint("", isValid: true)
+        self.customView.expandDetailView()
       } else {
         self.showHint(model.status.hint, isValid: model.status.isSendAmountValid)
       }
+    }
+    viewModel.shoudMakeActive = { [weak self] field in
+      self?.customView.sendView.amountTextField.becomeFirstResponder()
     }
   }
   

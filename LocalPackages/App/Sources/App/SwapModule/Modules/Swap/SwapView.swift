@@ -50,6 +50,19 @@ final class SwapView: UIView {
     super.init(frame: frame)
     setup()
   }
+
+  func expandDetailView() {
+    UIView.animate(withDuration: 0.3, delay: 0, options: []) {
+      self.detailsDivider.snp.remakeConstraints {make in
+        make.height.equalTo(0)
+      }
+      self.detailsView.backgroundView.state = .topMerge
+      self.receiveView.backgroundView.state = .bottomMerge
+      self.detailsView.state = .updating
+      self.detailsView.invalidateIntrinsicContentSize()
+      self.layoutIfNeeded()
+    }
+  }
 }
 
 private extension SwapView {

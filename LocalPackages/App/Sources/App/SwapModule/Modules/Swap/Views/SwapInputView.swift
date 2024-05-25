@@ -9,7 +9,7 @@ final class SwapInputView: UIView {
 
   var didTapChooseToken: ((SwapField) -> Void)?
 
-  private let backgroundView = TKBackgroundView()
+  let backgroundView = TKBackgroundView()
   private let headerView = UIView()
   private let tokenView = UIView()
   private let actionLabel = UILabel()
