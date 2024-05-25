@@ -25,7 +25,7 @@ final class ChooseTokenViewModelImplementation: ChooseTokenViewModel, ChooseToke
   
   func viewDidLoad() {
     Task {
-      let availableTokens = await swapAvailableTokenController.receiveTokenList()
+      let availableTokens = await swapAvailableTokenController.receiveTokenList(exclude: excludeToken)
       let mapper = ChooseTokenListItemMapper()
       let items = availableTokens.map { availableToken in
         mapper.mapAvailabeToken(availableToken, selectionClosure:  { [weak self] in
@@ -43,11 +43,13 @@ final class ChooseTokenViewModelImplementation: ChooseTokenViewModel, ChooseToke
   // MARK: - Dependencies
 
   private let swapAvailableTokenController: SwapAvailableTokenController
+  private let excludeToken: Token?
     
   // MARK: - Init
   
-  init(swapAvailableTokenController: SwapAvailableTokenController) {
+  init(excludeToken: Token?, swapAvailableTokenController: SwapAvailableTokenController) {
     self.swapAvailableTokenController = swapAvailableTokenController
+    self.excludeToken = excludeToken
   }
 }
 

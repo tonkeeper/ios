@@ -4,7 +4,7 @@ import TKCore
 import BigInt
 
 protocol SwapModuleOutput: AnyObject {
-  var didTapToken: ((SwapField) -> Void)? { get set }
+  var didTapToken: ((SwapField, Token?) -> Void)? { get set }
 }
 
 protocol SwapModuleInput: AnyObject {
@@ -34,7 +34,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
 
   // MARK: - SendV3ModuleOutput
 
-  var didTapToken: ((SwapField) -> Void)?
+  var didTapToken: ((SwapField, Token?) -> Void)?
 
   // MARK: - SendV3ModuleInput
 
@@ -74,7 +74,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     shoudMakeActive?(.send)
   }
   func didTapTokenPicker(swapField: SwapField) {
-    didTapToken?(swapField)
+    didTapToken?(swapField, swapField == .send ? swapPair.receive?.token : swapPair.send.token)
   }
 
   func didInputAmount(_ string: String, swapField: SwapField) {

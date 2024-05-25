@@ -32,7 +32,7 @@ public final class SwapAvailableTokenController {
     self.amountFormatter = amountFormatter
   }
 
-  public func receiveTokenList() async -> [AvailableTokenModelItem] {
+  public func receiveTokenList(exclude excludeToken: Token?) async -> [AvailableTokenModelItem] {
 //    async let availableJettons = try? jettonService.loadAvailable(wallet: wallet)
     async let walletBalance = try? balanceService.getBalance(wallet: wallet)
     let activeCurrency = await currencyStore.getActiveCurrency()
@@ -40,15 +40,24 @@ public final class SwapAvailableTokenController {
     var alreadyAddedTokens = Set<Address>()
     if let balance = await walletBalance?.balance {
       let rates = ratesStore.getRates(jettons: balance.jettonsBalance.compactMap { $0.item.jettonInfo })
-      availableTokens.append(swapAvailableTokenMapper.mapTon(
-        balance: balance.tonBalance,
-        rates: rates.ton, currency: activeCurrency)
-      )
+
+      if excludeToken != .ton {
+        availableTokens.append(swapAvailableTokenMapper.mapTon(
+          balance: balance.tonBalance,
+          rates: rates.ton, currency: activeCurrency)
+        )
+      }
+
+      var excludeTokenAddress: Address? = nil
+      if case let .jetton(item) = excludeToken {
+        excludeTokenAddress = item.walletAddress
+      }
 
       let tokensOnBalance = swapAvailableTokenMapper.mapJettons(
         jettonsBalance: balance.jettonsBalance,
         jettonsRates: rates.jettonsRates,
-        currency: activeCurrency
+        currency: activeCurrency,
+        excludeTokenAddress: excludeTokenAddress
       )
       tokensOnBalance.forEach {
         if case let .jetton(item) = $0.token {

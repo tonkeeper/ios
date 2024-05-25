@@ -35,10 +35,11 @@ private extension SwapTokenCoordinator {
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
-    module.output.didTapToken = { [weak self] swapField in
+    module.output.didTapToken = { [weak self] (swapField, excludeToken) in
       guard let self else { return }
       self.openTokenPicker(
         sourceViewController: self.router.rootViewController,
+        exclude: excludeToken,
         completion: { token in
           module.input.update(swapField: swapField, token: token)
         })
@@ -46,8 +47,9 @@ private extension SwapTokenCoordinator {
     router.push(viewController: module.view, animated: false)
   }
 
-  func openTokenPicker(sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
+  func openTokenPicker(sourceViewController: UIViewController, exclude: Token?, completion: @escaping (Token) -> Void) {
     let module = ChooseTokenAssembly.module(
+      excludeToken: exclude,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )

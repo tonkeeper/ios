@@ -1,5 +1,6 @@
 import Foundation
 import BigInt
+import TonSwift
 
 public struct AvailableTokenModelItem {
   public let token: Token
@@ -53,16 +54,18 @@ struct SwapAvailableTokenMapper {
 
   func mapJettons(jettonsBalance: [JettonBalance],
                   jettonsRates: [Rates.JettonRate],
-                  currency: Currency) -> [AvailableTokenModelItem] {
+                  currency: Currency,
+                  excludeTokenAddress: Address?) -> ([AvailableTokenModelItem]) {
     jettonsBalance.compactMap { jettonBalance in
-        guard !jettonBalance.quantity.isZero else { return nil }
-        let jettonRates = jettonsRates.first(where: { $0.jettonInfo == jettonBalance.item.jettonInfo })
-        return mapJetton(
-          jettonBalance: jettonBalance,
-          jettonRates: jettonRates,
-          currency: currency
-        )
-      }
+      if jettonBalance.item.walletAddress == excludeTokenAddress { return nil }
+      guard !jettonBalance.quantity.isZero else { return nil }
+      let jettonRates = jettonsRates.first(where: { $0.jettonInfo == jettonBalance.item.jettonInfo })
+      return mapJetton(
+        jettonBalance: jettonBalance,
+        jettonRates: jettonRates,
+        currency: currency
+      )
+    }
   }
   
   private func mapJetton(jettonBalance: JettonBalance,
