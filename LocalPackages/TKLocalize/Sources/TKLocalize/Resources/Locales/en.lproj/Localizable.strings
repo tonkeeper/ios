@@ -135,6 +135,7 @@
 "swap.blockchainFee" = "Blockchain fee";
 "swap.route" = "Route";
 "swap.provider" = "Provider";
+"swap.search" = "Search";
 
 "swap_settings.title" = "Settings";
 "swap_settings.slippage" = "Slippage";

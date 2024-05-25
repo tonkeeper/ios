@@ -525,7 +525,10 @@ public enum TKLocales {
     }
     public static var provider: String {
       localize("swap.provider")
-    }    
+    }
+    public static var search: String {
+      localize("swap.search")
+    }
   }
   public enum SwapSettings {
     public static var title: String {

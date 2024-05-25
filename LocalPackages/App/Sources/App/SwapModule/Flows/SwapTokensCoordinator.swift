@@ -46,17 +46,15 @@ final class SwapTokensCoordinator: RouterCoordinator<NavigationControllerRouter>
       )
     )
     
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    
     module.output.didSelectToken = { token in
       completion(token)
     }
     
-    module.output.didFinish = {  [weak bottomSheetViewController] in
-      bottomSheetViewController?.dismiss()
+    module.output.didFinish = {
+      module.view.dismiss(animated: true)
     }
     
-    bottomSheetViewController.present(fromViewController: sourceViewController)
+    sourceViewController.present(TKNavigationController(rootViewController: module.view), animated: true)
   }
   
 }

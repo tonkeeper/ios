@@ -14,6 +14,7 @@ protocol SwapTokenPickerViewModel: AnyObject {
   
   func viewDidLoad()
   func didSelectItemAt(section: Int, index: Int)
+  func update(searchText: String)
 }
 
 final class SwapTokenPickerViewModelImplementation: SwapTokenPickerViewModel, SwapTokenPickerModuleOutput {
@@ -48,6 +49,12 @@ final class SwapTokenPickerViewModelImplementation: SwapTokenPickerViewModel, Sw
         didSelectToken?(swapTokenPickerController.getTokenAt(index: index))
         didFinish?()
       }
+    }
+  }
+  
+  func update(searchText: String) {
+    Task {
+      await swapTokenPickerController.search(text: searchText.lowercased())
     }
   }
   

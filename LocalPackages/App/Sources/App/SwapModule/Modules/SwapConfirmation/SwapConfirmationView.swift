@@ -51,23 +51,6 @@ final class SwapConfirmationView: UIView {
     return iv
   }()
   var isSwapInfoExpanded = true
-  private lazy var swapRateView = {
-    let stackView = UIStackView()
-    stackView.distribution = .fill
-    stackView.alignment = .center
-    stackView.snp.makeConstraints { make in
-      make.height.equalTo(36)
-    }
-    stackView.layoutMargins = .init(top: 0, left: 16, bottom: 0, right: 16)
-    stackView.isLayoutMarginsRelativeArrangement = true
-    /*rateLabel.font = TKTextStyle.body2.font
-    rateLabel.textColor = .Text.secondary
-    stackView.addArrangedSubview(rateLabel)*/
-    stackView.addArrangedSubview(UIView())
-    stackView.addArrangedSubview(arrowImageView)
-    stackView.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(toggleInfoPressed)))
-    return stackView
-  }()
   private func itemRowGenerator(title: String, label: UILabel, info: String? = nil) -> UIStackView {
     let stackView = UIStackView()
     stackView.snp.makeConstraints { make in
@@ -114,9 +97,6 @@ final class SwapConfirmationView: UIView {
       view.color = .Separator.common
       return view
     }
-    stackView.addArrangedSubview(separatorViewGenerator())
-    stackView.addArrangedSubview(swapRateView)
-    stackView.addArrangedSubview(separatorViewGenerator())
     stackView.addArrangedSubview(
       itemRowGenerator(title: TKLocales.Swap.priceImpact, label: priceImpactLabel, info: TKLocales.Swap.priceImpactInfo)
     )

@@ -2,7 +2,7 @@ import UIKit
 import TKLocalize
 import TKUIKit
 
-final class SwapTokenPickerViewController: GenericViewViewController<SwapTokenPickerView>, TKBottomSheetScrollContentViewController {
+final class SwapTokenPickerViewController: GenericViewViewController<SwapTokenPickerView> {
   enum Item: Hashable {
     case suggested(SwapTokenPickerSuggestedCell.Model)
     case token(SwapTokenPickerCell.Model)
@@ -55,24 +55,22 @@ final class SwapTokenPickerViewController: GenericViewViewController<SwapTokenPi
     setupBindings()
     viewModel.viewDidLoad()
   }
-  
-  // MARK: - TKPullCardScrollableContent
-  
-  var scrollView: UIScrollView {
-    customView.collectionView
-  }
-  var didUpdateHeight: (() -> Void)?
-  var didUpdatePullCardHeaderItem: ((TKPullCardHeaderItem) -> Void)?
-  var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: "Choose Token")
-  }
-  func calculateHeight(withWidth width: CGFloat) -> CGFloat {
-    scrollView.contentSize.height
-  }
 }
 
 private extension SwapTokenPickerViewController {
   func setup() {
+    let titleLabel = UILabel()
+    titleLabel.attributedText = NSAttributedString(string: TKLocales.Swap.chooseToken,
+                                                   attributes: [.foregroundColor: UIColor.Text.primary,
+                                                                .font: TKTextStyle.h3.font])
+    titleLabel.sizeToFit()
+    titleLabel.textAlignment = .left
+    let titleView = UIView(frame: CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44))
+    titleLabel.frame = CGRect(x: 0, y: 0, width: titleLabel.bounds.width, height: 44)
+    titleView.addSubview(titleLabel)
+    navigationItem.titleView = titleView
+    
+    customView.searchBar.delegate = self
     customView.collectionView.delegate = self
     customView.collectionView.register(
       TKReusableContainerView.self,
@@ -269,7 +267,6 @@ private extension SwapTokenPickerViewController {
     snapshot.appendItems(suggestedItemsArray, toSection: .suggestedTokens)
     snapshot.reloadItems(suggestedItemsArray)
     dataSource.apply(snapshot)
-    didUpdateHeight?()
   }
 }
 
@@ -289,5 +286,11 @@ final class EmptyHeaderView: UICollectionReusableView {
 
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+}
+
+extension SwapTokenPickerViewController: UISearchBarDelegate {
+  func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+    viewModel.update(searchText: searchText)
   }
 }
