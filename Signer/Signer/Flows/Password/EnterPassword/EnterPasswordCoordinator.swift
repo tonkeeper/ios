@@ -65,7 +65,6 @@ private extension EnterPasswordCoordinator {
                       self?.didSignOut?()
                     })
     )
-    alertViewController.overrideUserInterfaceStyle = ThemeManager.shared.theme.alertUserInterfaceStyle
     router.rootViewController.present(alertViewController, animated: true)
   }
 }

@@ -115,7 +115,7 @@ public final class ServicesAssembly {
     )
   }
   
-  func sendService() -> SendService {
+  public func sendService() -> SendService {
     SendServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
@@ -146,5 +146,10 @@ public final class ServicesAssembly {
       apiProvider: apiAssembly.apiProvider,
       repository: repositoriesAssembly.stakingPoolsRepository()
     )
+  }
+  
+  public func popularAppsService() -> PopularAppsService {
+    PopularAppsServiceImplementation(api: tonkeeperAPIAssembly.api,
+                                     popularAppsRepository: repositoriesAssembly.popularAppsRepository())
   }
 }

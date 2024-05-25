@@ -14,17 +14,29 @@ final class FontLicenseViewController: UIViewController {
     textView.backgroundColor = .clear
     textView.textContainerInset.left = 16
     textView.textContainerInset.right = 16
-    textView.attributedText = String.license.withTextStyle(
-      .body2,
-      color: .Text.primary,
-      alignment: .left,
-      lineBreakMode: .byWordWrapping
-    )
+    textView.font = TKTextStyle.body2.font
+    textView.textColor = .Text.primary
+    textView.text = .license
+
+    textView.isEditable = false
+    textView.isSelectable = true
+    textView.contentInsetAdjustmentBehavior = .never
     
     view.addSubview(textView)
     textView.snp.makeConstraints { make in
-      make.edges.equalTo(self.view)
+      make.left.right.equalTo(self.view)
+      make.top.bottom.equalTo(self.view.safeAreaLayoutGuide)
     }
+  }
+  
+  override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    textView.layoutManager.ensureLayout(
+      forCharacterRange: NSRange(
+        location: 0,
+        length: String.license.count
+      )
+    )
   }
 }
 

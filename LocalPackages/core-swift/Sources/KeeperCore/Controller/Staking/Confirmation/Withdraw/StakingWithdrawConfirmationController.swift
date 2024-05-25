@@ -205,6 +205,7 @@ private extension StakingWithdrawConfirmationController {
     let withdrawFee = pool.implementation.withdrawalFee
     
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let jettonWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: jettonRawAddress,
       owner: wallet.address.toRaw(),

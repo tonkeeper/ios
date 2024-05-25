@@ -3,15 +3,13 @@ import TKUIKit
 import SignerLocalize
 
 final class SettingsLegalItemsProvider: SettingsLiteItemsProvider {
-  
-  var didSelectFontLicense: (() -> Void)?
-  
   var title: String {
     SignerLocalize.Settings.Legal.title
   }
+  var didUpdate: (() -> Void)?
+  var showPopupMenu: (([TKPopupMenuItem], Int?, IndexPath) -> Void)?
   
-  var didTapChangePassword: (() -> Void)?
-  var didTapLegal: (() -> Void)?
+  var didSelectFontLicense: (() -> Void)?
   
   private let urlOpener: URLOpener
   

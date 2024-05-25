@@ -3,6 +3,12 @@ import UIKit
 public extension UIImage {
   enum TKUIKit {
     public enum Icons {
+      public enum Size12 {
+        public static var lock: UIImage {
+          .imageWithName("Icons/12/ic-lock-12")
+          .withRenderingMode(.alwaysTemplate)
+        }
+      }
       public enum Size16 {
         public static var chevronDown: UIImage {
           .imageWithName("Icons/16/ic-chevron-down-16")
@@ -66,9 +72,12 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-telegram-16")
           .withRenderingMode(.alwaysTemplate)
         }
-        
         public static var magnifyingGlass: UIImage {
           .imageWithName("Icons/16/ic-magnifying-glass-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var qrCode: UIImage {
+          .imageWithName("Icons/16/ic-qr-code-16")
           .withRenderingMode(.alwaysTemplate)
         }
       }
@@ -77,12 +86,20 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-qr-viewfinder-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var linkOutline: UIImage {
+          .imageWithName("Icons/28/ic-link-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var wallet: UIImage {
           .imageWithName("Icons/28/ic-wallet-28")
           .withRenderingMode(.alwaysTemplate)
         }
         public static var purchase: UIImage {
           .imageWithName("Icons/28/ic-purchases-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var explore: UIImage {
+          .imageWithName("Icons/28/ic-explore-28")
           .withRenderingMode(.alwaysTemplate)
         }
         public static var clock: UIImage {

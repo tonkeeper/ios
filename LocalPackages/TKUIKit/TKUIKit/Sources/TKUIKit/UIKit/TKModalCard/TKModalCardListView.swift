@@ -31,7 +31,11 @@ public final class TKModalCardListView: UIView, ConfigurableView {
       let listItemView = TKModalCardListItemView()
       listItemView.configure(model: item)
       listItemView.addAction(UIAction(handler: { _ in
-        UIPasteboard.general.string = item.rightTop.value
+        if (item.modelValue != nil) {
+          UIPasteboard.general.string = item.modelValue
+        } else {
+          UIPasteboard.general.string = item.rightTop.value
+        }
         ToastPresenter.showToast(configuration: .copied)
         UINotificationFeedbackGenerator().notificationOccurred(.warning)
       }), for: .touchUpInside)

@@ -33,7 +33,7 @@ final class SettingsThemePickerListItemsProvider: SettingsListItemsProvider {
   }
   
   func initialSelectedIndexPath() async -> IndexPath? {
-    guard let index = ThemeMode.allCases.firstIndex(of: appSettings.themeMode()) else {
+    guard let index = TKTheme.allCases.firstIndex(of: TKThemeManager.shared.theme) else {
       return nil
     }
     return IndexPath(row: index, section: 0)
@@ -42,8 +42,8 @@ final class SettingsThemePickerListItemsProvider: SettingsListItemsProvider {
 
 private extension SettingsThemePickerListItemsProvider {
   func createSection() -> SettingsListSection {
-    let items = ThemeMode.allCases.map { themeMode in
-      let title = themeMode.title.withTextStyle(
+    let items = TKTheme.allCases.map { theme in
+      let title = theme.title.withTextStyle(
         .label1,
         color: .Text.primary,
         alignment: .left,
@@ -51,16 +51,10 @@ private extension SettingsThemePickerListItemsProvider {
       )
       
       return SettingsCell.Model(
-        identifier: themeMode.rawValue,
+        identifier: theme.rawValue,
         isSelectable: true,
-        selectionHandler: { [weak self] in
-          guard let self else { return }
-          self.appSettings.setThemeMode(themeMode)
-          NotificationCenter.default.post(
-            name: NSNotification.Name.didChangeThemeMode, 
-            object: nil,
-            userInfo: [ThemeMode.notificationUserInfoKey: themeMode]
-          )
+        selectionHandler: {
+          TKThemeManager.shared.theme = theme
         },
         cellContentModel: SettingsCellContentView.Model(
           title: title

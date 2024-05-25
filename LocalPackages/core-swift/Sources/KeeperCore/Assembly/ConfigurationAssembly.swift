@@ -12,7 +12,7 @@ public final class ConfigurationAssembly {
   }
   
   private weak var _remoteConfigurationStore: ConfigurationStore?
-  var remoteConfigurationStore: ConfigurationStore {
+  public var remoteConfigurationStore: ConfigurationStore {
     if let remoteConfigurationStore = _remoteConfigurationStore {
       return remoteConfigurationStore
     } else {

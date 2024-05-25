@@ -140,6 +140,7 @@ public final class ToastPresenter {
       toastWindow.layoutIfNeeded()
     }, completion: { _ in
       completion()
+      self.toastWindow = nil
     })
   }
   
@@ -148,6 +149,9 @@ public final class ToastPresenter {
     let scene = UIApplication.keyWindowScene
     guard let scene = scene else { return }
     let toastWindow = TKPassthroughWindow(windowScene: scene)
+    let viewController = BasicViewController()
+    viewController.view.alpha = 0
+    toastWindow.rootViewController = viewController
     toastWindow.makeKeyAndVisible()
     self.toastWindow = toastWindow
     

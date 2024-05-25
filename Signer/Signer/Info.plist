@@ -51,7 +51,7 @@
 		</dict>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
+	<true/>
 	<key>SupportURL</key>
 	<string>https://t.me/tonkeeper_supportbot</string>
 	<key>LegalURL</key>

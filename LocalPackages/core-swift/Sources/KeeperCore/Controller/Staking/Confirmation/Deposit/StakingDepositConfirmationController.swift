@@ -149,6 +149,7 @@ private extension StakingDepositConfirmationController {
     signClosure: (WalletTransfer) async throws -> Data
   ) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: walletsStore.activeWallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: walletsStore.activeWallet)
     let amount = getDepositAmount()
   
     return try await StakingMessageBuilder.deposit(
@@ -157,6 +158,7 @@ private extension StakingDepositConfirmationController {
       poolAddress: depositModel.pool.address,
       poolImplementation: depositModel.pool.implementation,
       amount: amount,
+      timeout: timeout,
       signClosure: signClosure
     )
   }

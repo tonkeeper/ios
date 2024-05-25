@@ -7,6 +7,7 @@ protocol SettingsModuleOutput: AnyObject {}
 protocol SettingsViewModel: AnyObject {
   var titleUpdate: ((String) -> Void)? { get set }
   var itemsListUpdate: ((NSDiffableDataSourceSnapshot<SettingsSection, AnyHashable>) -> Void)? { get set }
+  var showPopupMenu: (([TKPopupMenuItem], Int?, IndexPath) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -21,21 +22,28 @@ final class SettingsViewModelImplementation: SettingsViewModel, SettingsModuleOu
   
   var titleUpdate: ((String) -> Void)?
   var itemsListUpdate: ((NSDiffableDataSourceSnapshot<SettingsSection, AnyHashable>) -> Void)?
+  var showPopupMenu: (([TKPopupMenuItem], Int?, IndexPath) -> Void)?
   
   func viewDidLoad() {
     titleUpdate?(itemsProvider.title)
+    itemsProvider.didUpdate = { [weak self] in
+      self?.updateList()
+    }
     
     updateList()
   }
   
   // MARK: - Dependencies
   
-  private let itemsProvider: SettingsLiteItemsProvider
+  private var itemsProvider: SettingsLiteItemsProvider
   
   // MARK: - Init
   
   init(itemsProvider: SettingsLiteItemsProvider) {
     self.itemsProvider = itemsProvider
+    self.itemsProvider.showPopupMenu = { [weak self] in
+      self?.showPopupMenu?($0, $1, $2)
+    }
   }
 }
 

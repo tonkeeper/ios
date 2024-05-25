@@ -27,7 +27,6 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
       mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository(),
       passwordRepository: signerCoreAssembly.repositoriesAssembly.passwordRepository()
     ).migrateIfNeeded()
-    router.window.applyThemeMode(.blue)
     openRoot(deeplink: deeplink)
   }
   

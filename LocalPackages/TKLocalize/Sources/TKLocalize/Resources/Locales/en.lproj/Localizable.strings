@@ -13,6 +13,7 @@
 
 "tabs.wallet" = "Wallet";
 "tabs.history" = "History";
+"tabs.browser" = "Browser";
 "tabs.purchases" = "Purchases";
 
 "camera_permission.title" = "Enable access to your camera in order to can scan QR codes";
@@ -20,12 +21,19 @@
 
 "purchases.title" = "Purchases";
 "purchases.empty_placeholder" = "Your collectibles\nwill be shown here";
+
+"history.title" = "History";
 "history.placeholder.title" = "Your history\nwill be shown here";
 "history.placeholder.subtitle" = "Make your first transaction!";
 "history.placeholder.buttons.receive" = "Receive";
 "history.placeholder.buttons.buy" = "Buy Toncoin";
 
-"history.title" = "History";
+"browser.tab.explore" = "Explore";
+"browser.tab.connected" = "Connected";
+"browser.list.all" = "All";
+"browser.search_field.placeholder" = "Search or enter address";
+"browser.search.title" = "Browser";
+"browser.search.placeholder" = "Enter an address or search the web";
 
 "event_details.received" = "Received";
 "event_details.sent" = "Sent";

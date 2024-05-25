@@ -9,6 +9,7 @@ public struct StakingMessageBuilder {
     poolAddress: Address,
     poolImplementation: StakingPool.Implementation,
     amount: BigUInt,
+    timeout: UInt64,
     signClosure: (WalletTransfer) async throws -> Data
   ) async throws -> String {
     let internalMessage = try StakingInternalMessage.deposit(
@@ -23,6 +24,7 @@ public struct StakingMessageBuilder {
       internalMessages: { _ in
         return [internalMessage]
       },
+      timeout: timeout,
       signClosure: signClosure
     )
     
@@ -53,6 +55,7 @@ public struct StakingMessageBuilder {
       internalMessages: { _ in
         return [internalMessage]
       },
+      timeout: nil,
       signClosure: signClosure
     )
     
