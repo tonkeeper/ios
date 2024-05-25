@@ -105,8 +105,11 @@ private extension BuyCoordinator {
       )
     }
     
-    module.output.onOpenDetails = { [weak self] buySellDetailsItem in
-      self?.openBuySellDetails(buySellDetailsItem: buySellDetailsItem)
+    module.output.onOpenDetails = { [weak self] buySellDetailsItem, buySellTransactionModel in
+      self?.openBuySellDetails(
+        buySellDetailsItem: buySellDetailsItem,
+        buySellTransactionModel: buySellTransactionModel
+      )
     }
     
     module.output.onOpenProviderUrl = { [weak self, weak view = module.view] providerUrl in
@@ -136,10 +139,11 @@ private extension BuyCoordinator {
     fromViewController?.present(module.view, animated: true)
   }
   
-  func openBuySellDetails(buySellDetailsItem: BuySellDetailsItem) {
+  func openBuySellDetails(buySellDetailsItem: BuySellDetailsItem, buySellTransactionModel: BuySellTransactionModel) {
     let module = BuySellDetailsAssembly.module(
       buySellDetailsController: keeperCoreMainAssembly.buySellDetailsController(),
-      buySellDetailsItem: buySellDetailsItem
+      buySellDetailsItem: buySellDetailsItem,
+      buySellTransactionModel: buySellTransactionModel
     )
     
     module.view.setupBackButton()

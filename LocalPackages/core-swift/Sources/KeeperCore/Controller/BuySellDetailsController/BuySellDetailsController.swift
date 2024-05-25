@@ -19,8 +19,6 @@ public final class BuySellDetailsController {
     }
   }
   
-  private let rateConverter = RateConverter()
-  
   private let ratesService: RatesService
   private let tonRatesLoader: TonRatesLoader
   private let tonRatesStore: TonRatesStore
@@ -55,8 +53,14 @@ public final class BuySellDetailsController {
     await tonRatesLoader.loadRate(currency: currency)
   }
   
-  public func convertAmountInput(_ input: Input, currency: Currency, outputFractionLenght: Int) async -> String {
-    guard let rate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency }) else { return "" }
+  public func convertAmountInput(input: Input, providerRate: Decimal, currency: Currency, outputFractionLenght: Int) async -> String {
+    let rate: Rates.Rate
+    if providerRate.isZero {
+      let tonRate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency })
+      rate = tonRate ?? Rates.Rate(currency: currency, rate: 0, diff24h: nil)
+    } else {
+      rate = Rates.Rate(currency: currency, rate: providerRate, diff24h: nil)
+    }
     
     let amount: BigUInt
     let correctedRate: Rates.Rate
@@ -78,11 +82,23 @@ public final class BuySellDetailsController {
       )
     }
     
-    let converted = rateConverter.convert(amount: amount, amountFractionLength: input.fractionLength, rate: correctedRate)
+    let converted = RateConverter().convert(amount: amount, amountFractionLength: input.fractionLength, rate: correctedRate)
     return amountNewFormatter.formatAmount(
       converted.amount,
       fractionDigits: converted.fractionLength,
       maximumFractionDigits: outputFractionLenght
+    )
+  }
+  
+  public func convertAmountToString(amount: BigUInt,
+                                    fractionDigits: Int,
+                                    maximumFractionDigits: Int? = nil) -> String {
+    let newMaximumFractionDigits = maximumFractionDigits ?? fractionDigits
+    return amountNewFormatter.formatAmount(
+      amount,
+      fractionDigits: fractionDigits,
+      maximumFractionDigits: newMaximumFractionDigits,
+      currency: nil
     )
   }
   

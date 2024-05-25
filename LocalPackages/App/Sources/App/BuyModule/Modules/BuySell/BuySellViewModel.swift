@@ -186,17 +186,8 @@ private extension BuySellViewModelImplementation {
   }
   
   func createBuySellOperatorItem() -> BuySellOperatorItem {
-    let unformattedAmount = textFieldFormatter.unformatString(amountInput)
-    let amount = textFieldFormatter.formatString(unformattedAmount) ?? ""
-    let buySellOperation: BuySellOperatorItem.Operation
-    switch buySellModel.operation {
-    case .buy:
-      buySellOperation = .buy(amount: amount)
-    case .sell:
-      buySellOperation = .sell(amount: amount)
-    }
-    return BuySellOperatorItem(
-      operation: buySellOperation,
+    BuySellOperatorItem(
+      buySellModel: buySellModel,
       paymentMethod: .init(
         id: selectedPaymentMethod.id,
         title: selectedPaymentMethod.title

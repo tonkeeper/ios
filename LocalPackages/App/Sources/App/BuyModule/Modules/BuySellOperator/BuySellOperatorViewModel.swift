@@ -10,28 +10,21 @@ struct CurrencyPickerItem {
 }
 
 struct BuySellOperatorItem {
-  enum Operation {
-    case buy(amount: String)
-    case sell(amount: String)
-  }
-  
   struct PaymentMethod {
     let id: String
     let title: String
   }
   
-  let operation: Operation
+  let buySellModel: BuySellModel
   let paymentMethod: PaymentMethod
   let countryCode: String?
-  var amount: String {
-    switch operation {
-    case .buy(let amount), .sell(let amount):
-      return amount
-    }
+  
+  var operation: BuySellModel.Operation {
+    buySellModel.operation
   }
 }
 
-extension BuySellOperatorItem.Operation {
+extension BuySellModel.Operation {
   var fiatOperatorCategory: FiatOperatorCategory {
     switch self {
     case .buy:
@@ -44,7 +37,7 @@ extension BuySellOperatorItem.Operation {
 
 protocol BuySellOperatorModuleOutput: AnyObject {
   var didTapCurrencyPicker: ((CurrencyListItem) -> Void)? { get set }
-  var onOpenDetails: ((BuySellDetailsItem) -> Void)? { get set }
+  var onOpenDetails: ((BuySellDetailsItem, BuySellTransactionModel) -> Void)? { get set }
   var onOpenProviderUrl: ((URL?) -> Void)? { get set }
 }
 
@@ -66,7 +59,7 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
   // MARK: - BuySellOperatorModelModuleOutput
   
   var didTapCurrencyPicker: ((CurrencyListItem) -> Void)?
-  var onOpenDetails: ((BuySellDetailsItem) -> Void)?
+  var onOpenDetails: ((BuySellDetailsItem, BuySellTransactionModel) -> Void)?
   var onOpenProviderUrl: ((URL?) -> Void)?
   
   // MARK: - BuySellOperatorModelModuleInput
@@ -181,17 +174,18 @@ private extension BuySellOperatorViewModelImplementation {
   }
   
   func handleContinueButtonTap() {
+    let buySellTransactionModel = createBuySellTransaction()
     if selectedOperator.canOpenDetailsView() {
-      onOpenDetails?(createBuySellDetailsItem())
+      let buySellDetailsItem = createBuySellDetailsItem()
+      onOpenDetails?(buySellDetailsItem, buySellTransactionModel)
     } else {
       isResolving = true
-      let transaction = createTransaction()
       Task {
         let providerUrl = await buySellOperatorController.createActionUrl(
           actionTemplateURL: selectedOperator.actionTemplateURL,
           operatorId: selectedOperator.id,
-          currencyFrom: transaction.currencyPay,
-          currencyTo: transaction.currencyGet
+          currencyFrom: buySellTransactionModel.currencyPay,
+          currencyTo: buySellTransactionModel.currencyGet
         )
         await MainActor.run {
           onOpenProviderUrl?(providerUrl)
@@ -227,25 +221,23 @@ private extension BuySellOperatorViewModelImplementation {
         provider: fiatOperator.title,
         leftButton: leftInfoButton,
         rightButton: rightInfoButton
-      ),
-      inputAmount: buySellOperatorItem.amount,
-      transaction: createTransaction()
+      )
     )
   }
   
-  func createTransaction() -> BuySellDetailsItem.Transaction {
-    let fiatCurrency = selectedCurrency
-    
-    let transactionOperation: BuySellDetailsItem.Transaction.Operation
-    switch buySellOperatorItem.operation {
+  func createBuySellTransaction() -> BuySellTransactionModel {
+    let transactionOperation: BuySellTransactionModel.Operation
+    switch buySellOperatorItem.buySellModel.operation {
     case .buy:
-      transactionOperation = .buyTon(fiatCurrency: fiatCurrency)
+      transactionOperation = .buyTon(fiatCurrency: selectedCurrency)
     case .sell:
-      transactionOperation = .sellTon(fiatCurrency: fiatCurrency)
+      transactionOperation = .sellTon(fiatCurrency: selectedCurrency)
     }
-
-    return BuySellDetailsItem.Transaction(
-      operation: transactionOperation
+    return BuySellTransactionModel(
+      operation: transactionOperation,
+      token: buySellOperatorItem.buySellModel.token,
+      inputAmount: buySellOperatorItem.buySellModel.inputAmount,
+      providerRate: selectedOperator.rate
     )
   }
   

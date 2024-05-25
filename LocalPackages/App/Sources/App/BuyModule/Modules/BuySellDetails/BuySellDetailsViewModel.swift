@@ -6,40 +6,6 @@ import KeeperCore
 import BigInt
 
 struct BuySellDetailsItem {
-  struct Transaction {
-    enum Operation {
-      case buyTon(fiatCurrency: Currency)
-      case sellTon(fiatCurrency: Currency)
-//      case buyUsdt(fiatCurrency: Currency)
-//      case sellUsdt(fiatCurrency: Currency)
-      
-      var fiatCurrency: Currency {
-        switch self {
-        case .buyTon(let fiatCurrency), .sellTon(let fiatCurrency):
-          return fiatCurrency
-        }
-      }
-    }
-    
-    var operation: Operation
-    var currencyPay: Currency {
-      switch operation {
-      case .buyTon(let fiatCurrency):
-        return fiatCurrency
-      case .sellTon:
-        return .TON
-      }
-    }
-    var currencyGet: Currency {
-      switch operation {
-      case .buyTon:
-        return .TON
-      case .sellTon(let fiatCurrency):
-        return fiatCurrency
-      }
-    }
-  }
-  
   struct ServiceInfo {
     struct InfoButton {
       var title: String
@@ -57,8 +23,6 @@ struct BuySellDetailsItem {
   var serviceTitle: String
   var serviceSubtitle: String
   var serviceInfo: ServiceInfo
-  var inputAmount: String
-  var transaction: Transaction
 }
 
 struct BuySellDetailsModel {
@@ -105,10 +69,6 @@ protocol BuySellDetailsModuleOutput: AnyObject {
   var didTapInfoButton: ((URL?) -> Void)? { get set }
 }
 
-protocol BuySellDetailsModuleInput: AnyObject {
-  
-}
-
 protocol BuySellDetailsViewModel: AnyObject {
   var didUpdateModel: ((BuySellDetailsModel) -> Void)? { get set }
   var didUpdateAmountPay: ((String) -> Void)? { get set }
@@ -123,7 +83,7 @@ protocol BuySellDetailsViewModel: AnyObject {
   func didInputAmountGet(_ string: String)
 }
 
-final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuySellDetailsModuleOutput, BuySellDetailsModuleInput {
+final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuySellDetailsModuleOutput {
   
   typealias Input = BuySellDetailsController.Input
   
@@ -141,8 +101,6 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   
   var didTapContinue: ((URL?) -> Void)?
   var didTapInfoButton: ((URL?) -> Void)?
-  
-  // MARK: - BuySellDetailsModelModuleInput
   
   // MARK: - BuySellDetailsModelViewModel
   
@@ -164,7 +122,7 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
     
     Task {
       await buySellDetailsController.start()
-      await buySellDetailsController.loadRate(for: buySellDetailsItem.transaction.operation.fiatCurrency)
+      await buySellDetailsController.loadRate(for: buySellTransactionModel.operation.fiatCurrency)
     }
   }
   
@@ -174,12 +132,11 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
       await processInputAmount(
         inputString: string,
         inputField: .pay,
-        onConverted: { formattedInput, convertedOutput in
-          self.amountPay = formattedInput
-          self.didUpdateAmountPay?(formattedInput)
-          
-          self.amountGet = convertedOutput
-          self.didUpdateAmountGet?(convertedOutput)
+        onConverted: { [weak self] formattedInput, convertedOutput in
+          self?.amountPay = formattedInput
+          self?.amountGet = convertedOutput
+          self?.didUpdateAmountPay?(formattedInput)
+          self?.didUpdateAmountGet?(convertedOutput)
         }
       )
     }
@@ -191,12 +148,11 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
       await processInputAmount(
         inputString: string,
         inputField: .get,
-        onConverted: { formattedInput, convertedOutput in
-          self.amountGet = formattedInput
-          self.didUpdateAmountGet?(formattedInput)
-          
-          self.amountPay = convertedOutput
-          self.didUpdateAmountPay?(convertedOutput)
+        onConverted: { [weak self] formattedInput, convertedOutput in
+          self?.amountGet = formattedInput
+          self?.amountPay = convertedOutput
+          self?.didUpdateAmountGet?(formattedInput)
+          self?.didUpdateAmountPay?(convertedOutput)
         }
       )
     }
@@ -238,14 +194,18 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   
   private let buySellDetailsController: BuySellDetailsController
   private var buySellDetailsItem: BuySellDetailsItem
+  private var buySellTransactionModel: BuySellTransactionModel
   
   // MARK: - Init
   
-  init(buySellDetailsController: BuySellDetailsController, buySellDetailsItem: BuySellDetailsItem) {
+  init(buySellDetailsController: BuySellDetailsController, buySellDetailsItem: BuySellDetailsItem, buySellTransactionModel: BuySellTransactionModel) {
     self.buySellDetailsController = buySellDetailsController
     self.buySellDetailsItem = buySellDetailsItem
+    self.buySellTransactionModel = buySellTransactionModel
     self.payAmountTextFieldFormatter.maximumFractionDigits = maximumFractionDigits(forInputField: .pay)
     self.getAmountTextFieldFormatter.maximumFractionDigits = maximumFractionDigits(forInputField: .get)
+    self.payAmountTextFieldFormatter.isAllowedEmptyInput = true
+    self.getAmountTextFieldFormatter.isAllowedEmptyInput = true
   }
   
   deinit {
@@ -262,11 +222,15 @@ private extension BuySellDetailsViewModelImplementation {
   }
   
   func updateAmountTextFields() {
-    switch buySellDetailsItem.transaction.operation {
+    let inputAmount = buySellDetailsController.convertAmountToString(
+      amount: buySellTransactionModel.inputAmount,
+      fractionDigits: buySellTransactionModel.token.fractionDigits
+    )
+    switch buySellTransactionModel.operation {
     case .buyTon:
-      didInputAmountGet(buySellDetailsItem.inputAmount)
+      didInputAmountGet(inputAmount)
     case .sellTon:
-      didInputAmountPay(buySellDetailsItem.inputAmount)
+      didInputAmountPay(inputAmount)
     }
   }
   
@@ -275,10 +239,14 @@ private extension BuySellDetailsViewModelImplementation {
       let amount = BigUInt(stringLiteral: "1")
       let payAmount = mapInputAmount(amount, from: .get)
       let payInput = Input(amount: payAmount, fractionLength: 0)
-      let currency = buySellDetailsItem.transaction.operation.fiatCurrency
+      let currency = buySellTransactionModel.operation.fiatCurrency
       let outputFractionLenght = maximumFractionDigits(forInputField: .pay)
-      let convertedRate = await buySellDetailsController.convertAmountInput(payInput, currency: currency, outputFractionLenght: outputFractionLenght)
-      
+      let convertedRate = await buySellDetailsController.convertAmountInput(
+        input: payInput,
+        providerRate: buySellTransactionModel.providerRate,
+        currency: currency,
+        outputFractionLenght: outputFractionLenght
+      )
       await MainActor.run {
         self.convertedRate = convertedRate
         let convertedRateText = createConvertedRateText()
@@ -292,10 +260,9 @@ private extension BuySellDetailsViewModelImplementation {
       let actionURL = await buySellDetailsController.createActionUrl(
         actionTemplateURL: buySellDetailsItem.actionTemplateURL,
         operatorId: buySellDetailsItem.serviceInfo.id,
-        currencyFrom: buySellDetailsItem.transaction.currencyPay,
-        currencyTo: buySellDetailsItem.transaction.currencyGet
+        currencyFrom: buySellTransactionModel.currencyPay,
+        currencyTo: buySellTransactionModel.currencyGet
       )
-      
       await MainActor.run {
         if let actionURL {
           self.actionURL = actionURL
@@ -307,7 +274,6 @@ private extension BuySellDetailsViewModelImplementation {
   
   func createModel() -> BuySellDetailsModel {
     let iconURL = buySellDetailsItem.iconURL
-    
     let iconImageDownloadTask = TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
       return imageLoader.loadImage(
         url: iconURL,
@@ -323,14 +289,18 @@ private extension BuySellDetailsViewModelImplementation {
       subtitle: buySellDetailsItem.serviceSubtitle,
       textFieldPay: BuySellDetailsModel.TextField(
         placeholder: "You Pay",
-        currencyCode: buySellDetailsItem.transaction.currencyPay.code
+        currencyCode: buySellTransactionModel.currencyPay.code
       ),
       textFieldGet: BuySellDetailsModel.TextField(
         placeholder: "You Get",
-        currencyCode: buySellDetailsItem.transaction.currencyGet.code
+        currencyCode: buySellTransactionModel.currencyGet.code
       ),
       convertedRate: createConvertedRateText(),
-      infoContainer: createInfoContainerModel(buySellDetailsItem.serviceInfo),
+      infoContainer: BuySellDetailsModel.InfoContainer(
+        description: "Service provided by \(buySellDetailsItem.serviceInfo.provider)",
+        leftButton: createInfoButton(buySellDetailsItem.serviceInfo.leftButton),
+        rightButton: createInfoButton(buySellDetailsItem.serviceInfo.rightButton)
+      ),
       continueButton: BuySellDetailsModel.Button(
         title: TKLocales.Actions.continue_action,
         isEnabled: !isResolving && isContinueEnable,
@@ -342,25 +312,17 @@ private extension BuySellDetailsViewModelImplementation {
     )
   }
   
-  func createInfoContainerModel(_ serviceInfo: BuySellDetailsItem.ServiceInfo) -> BuySellDetailsModel.InfoContainer {
-    BuySellDetailsModel.InfoContainer(
-      description: "Service provided by \(serviceInfo.provider)",
-      leftButton: createInfoButtonModel(serviceInfo.leftButton),
-      rightButton: createInfoButtonModel(serviceInfo.rightButton)
-    )
+  func createConvertedRateText() -> String {
+    let currencyPay = buySellTransactionModel.currencyPay
+    let currencyGet = buySellTransactionModel.currencyGet
+    return "\(convertedRate) \(currencyPay.code) for 1 \(currencyGet.code)"
   }
   
-  func createInfoButtonModel(_ button: BuySellDetailsItem.ServiceInfo.InfoButton?) -> BuySellDetailsModel.InfoContainer.InfoButton? {
+  func createInfoButton(_ button: BuySellDetailsItem.ServiceInfo.InfoButton?) -> BuySellDetailsModel.InfoContainer.InfoButton? {
     guard let button else { return nil }
     return .init(title: button.title) { [weak self] in
       self?.didTapInfoButton?(button.url)
     }
-  }
-  
-  func createConvertedRateText() -> String {
-    let currencyPay = buySellDetailsItem.transaction.currencyPay
-    let currencyGet = buySellDetailsItem.transaction.currencyGet
-    return "\(convertedRate) \(currencyPay.code) for 1 \(currencyGet.code)"
   }
   
   func processInputAmount(inputString string: String,
@@ -368,7 +330,6 @@ private extension BuySellDetailsViewModelImplementation {
                           onConverted: @escaping (String, String) -> Void) async {
     let formattedInput = formatInputString(string, from: inputField)
     let convertedOutput = await convertInputString(formattedInput: formattedInput, from: inputField)
-    
     await MainActor.run {
       onConverted(formattedInput, convertedOutput)
     }
@@ -398,9 +359,12 @@ private extension BuySellDetailsViewModelImplementation {
         amount: mapInputAmount(convertedInput.amount, from: inputField),
         fractionLength: convertedInput.fractionalDigits
       )
-      
-      let currency = buySellDetailsItem.transaction.operation.fiatCurrency
-      convertedOutput = await buySellDetailsController.convertAmountInput(input, currency: currency, outputFractionLenght: maximumFractionDigitsOuput)
+      convertedOutput = await buySellDetailsController.convertAmountInput(
+        input: input,
+        providerRate: buySellTransactionModel.providerRate,
+        currency: buySellTransactionModel.operation.fiatCurrency,
+        outputFractionLenght: maximumFractionDigitsOuput
+      )
     } else {
       convertedOutput = ""
     }
@@ -420,7 +384,7 @@ private extension BuySellDetailsViewModelImplementation {
   func maximumFractionDigits(forInputField inputField: InputField) -> Int {
     switch inputCurrencyType(forInputField: inputField) {
     case .token:
-      return TonInfo.fractionDigits
+      return buySellTransactionModel.token.fractionDigits
     case .fiat:
       return 2
     }
@@ -436,7 +400,7 @@ private extension BuySellDetailsViewModelImplementation {
   }
   
   func inputCurrencyType(forInputField inputField: InputField) -> InputCurrencyType {
-    switch (buySellDetailsItem.transaction.operation, inputField) {
+    switch (buySellTransactionModel.operation, inputField) {
     case (.buyTon, .pay):
       return .fiat
     case (.buyTon, .get):
