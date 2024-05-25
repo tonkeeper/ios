@@ -1,6 +1,8 @@
 import Foundation
+import BigInt
 
 public final class BuySellOperatorController {
+  
   public var didUpdateFiatOperatorItems: (([FiatOperator]) -> Void)?
   public var didUpdateActiveCurrency: ((Currency) -> Void)?
   public var didLoadListItems: ((Currency, [FiatOperator]) -> Void)?
@@ -95,13 +97,16 @@ private extension BuySellOperatorController {
       .map { $0.items }
       .flatMap { $0 }
     
-    let fiatRatesDict = Dictionary(uniqueKeysWithValues: fiatRates.map({ ($0.id, $0.rate) }))
+    let fiatRatesDict = Dictionary(uniqueKeysWithValues: fiatRates.map({ ($0.id, $0) }))
     
     var fiatOperatorItems = items
       .map { item in
         let fixedId = item.id.replacingOccurrences(of: "_sell", with: "")
-        let rate = fiatRatesDict[fixedId] ?? .zero
-        return mapFiatMethodItem(item, rate: rate, currency: activeCurrency)
+        return mapFiatMethodItem(
+          fiatMethodItem: item,
+          fiatMethodRate: fiatRatesDict[fixedId],
+          currency: activeCurrency
+        )
       }
       .sorted { lhs, rhs in
         guard lhs.rate > 0 else { return false }
@@ -126,17 +131,25 @@ private extension BuySellOperatorController {
     return fiatRates ?? []
   }
   
-  func mapFiatMethodItem(_ item: FiatMethodItem, rate: Decimal, currency: Currency) -> FiatOperator {
-    FiatOperator(
-      id: item.id,
-      title: item.title,
-      description: item.description ?? "",
+  func mapFiatMethodItem(fiatMethodItem: FiatMethodItem,
+                         fiatMethodRate: FiatMethodRate?,
+                         currency: Currency) -> FiatOperator {
+    let rate = fiatMethodRate?.rate ?? .zero
+    return FiatOperator(
+      id: fiatMethodItem.id,
+      title: fiatMethodItem.title,
+      description: fiatMethodItem.description ?? "",
+      badge: fiatMethodItem.badge,
+      iconURL: fiatMethodItem.iconURL,
+      actionTemplateURL: fiatMethodItem.actionButton.url,
+      infoButtons: fiatMethodItem.infoButtons.map { mapInfoButton($0) },
       rate: rate,
-      formattedRate: createFiatOperatorRate(rate: rate, currency: currency),
-      badge: item.badge,
-      iconURL: item.iconURL,
-      actionTemplateURL: item.actionButton.url,
-      infoButtons: item.infoButtons.map { mapInfoButton($0) }
+      formattedRate: createFiatOperatorRate(
+        rate: rate,
+        currency: currency
+      ),
+      minTonBuyAmount: mapMinAmount(fiatMethodRate?.minTonBuyAmount),
+      minTonSellAmount: mapMinAmount(fiatMethodRate?.minTonSellAmount)
     )
   }
   
@@ -147,6 +160,11 @@ private extension BuySellOperatorController {
   
   func mapInfoButton(_ button: FiatMethodItem.ActionButton) -> FiatOperator.InfoButton {
     FiatOperator.InfoButton(title: button.title, url: URL(string: button.url))
+  }
+  
+  func mapMinAmount(_ minAmount: UInt64?) -> BigUInt? {
+    guard let minAmount else { return nil }
+    return BigUInt(minAmount)
   }
 }
 

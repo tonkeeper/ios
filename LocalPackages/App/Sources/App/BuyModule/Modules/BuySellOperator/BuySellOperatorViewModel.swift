@@ -233,11 +233,22 @@ private extension BuySellOperatorViewModelImplementation {
     case .sell:
       transactionOperation = .sellTon(fiatCurrency: selectedCurrency)
     }
+    
+    let minimumLimits: BuySellTransactionModel.MinimumLimits
+    let minTonBuyAmount = selectedOperator.minTonBuyAmount
+    let minTonSellAmount = selectedOperator.minTonSellAmount
+    if let minTonBuyAmount, let minTonSellAmount {
+      minimumLimits = .amount(buy: minTonBuyAmount, sell: minTonSellAmount)
+    } else {
+      minimumLimits = .none
+    }
+    
     return BuySellTransactionModel(
       operation: transactionOperation,
       token: buySellOperatorItem.buySellModel.token,
       inputAmount: buySellOperatorItem.buySellModel.inputAmount,
-      providerRate: selectedOperator.rate
+      providerRate: selectedOperator.rate,
+      minimumLimits: minimumLimits
     )
   }
   
@@ -287,11 +298,13 @@ private extension FiatOperator {
     id: "0",
     title: "",
     description: "",
-    rate: .zero,
-    formattedRate: "",
     badge: nil,
     iconURL: nil,
     actionTemplateURL: nil,
-    infoButtons: []
+    infoButtons: [],
+    rate: .zero,
+    formattedRate: "",
+    minTonBuyAmount: nil,
+    minTonSellAmount: nil
   )
 }

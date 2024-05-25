@@ -43,28 +43,22 @@ final class BuySellDetailsViewController: ModalViewController<BuySellDetailsView
   
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
-    
     registerForKeyboardEvents()
   }
   
   public override func viewWillDisappear(_ animated: Bool) {
     super.viewWillDisappear(animated)
-    
     unregisterFromKeyboardEvents()
   }
   
   override func setupNavigationBarView() {
     super.setupNavigationBarView()
-    
     customView.scrollView.contentInset.top = ModalNavigationBarView.defaultHeight
   }
   
   public func keyboardWillShow(_ notification: Notification) {
-    guard let animationDuration = notification.keyboardAnimationDuration,
-          let keyboardHeight = notification.keyboardSize?.height
-    else {
-      return
-    }
+    guard let animationDuration = notification.keyboardAnimationDuration else { return }
+    guard let keyboardHeight = notification.keyboardSize?.height else { return }
     
     let contentInsetBottom = keyboardHeight + customView.continueButton.bounds.height
     let continueButtonTranslatedY = -keyboardHeight + view.safeAreaInsets.bottom + .continueButtonBottomOffset
@@ -105,20 +99,33 @@ private extension BuySellDetailsViewController {
     }
     
     viewModel.didUpdateAmountPay = { [weak customView] text in
+      guard customView?.payAmountTextField.text != text else { return }
       customView?.payAmountTextField.text = text
     }
     
     viewModel.didUpdateAmountGet = { [weak customView] text in
+      guard customView?.getAmountTextField.text != text else { return }
       customView?.getAmountTextField.text = text
+    }
+    
+    viewModel.didUpdateIsTokenAmountValid = { [weak self] isTokenAmountValid in
+      self?.updateActiveTextFieldState(isInputValid: isTokenAmountValid)
     }
     
     viewModel.didUpdateRateContainerModel = { [weak customView] rateContainerModel in
       customView?.rateContainerView.configure(model: rateContainerModel)
     }
+    
+    viewModel.didUpdateContinueButtonModel = { [weak customView] model in
+      customView?.continueButton.configuration.content.title = .plainString(model.title)
+      customView?.continueButton.configuration.isEnabled = model.isEnabled
+      customView?.continueButton.configuration.showsLoader = model.isActivity
+      customView?.continueButton.configuration.action = model.action
+    }
   }
   
   func setupGestures() {
-    customView.contentStackView.addGestureRecognizer(tapGestureRecognizer)
+    customView.addGestureRecognizer(tapGestureRecognizer)
   }
   
   func setupViewEvents() {
@@ -129,6 +136,27 @@ private extension BuySellDetailsViewController {
     customView.getAmountTextField.didUpdateText = { [weak self] text in
       self?.viewModel.didInputAmountGet(text)
     }
+  }
+  
+  func updateActiveTextFieldState(isInputValid: Bool) {
+    if customView.payAmountTextField.isActive {
+      updateTextFieldState(isValid: isInputValid, for: customView.payAmountTextField)
+    } else if customView.getAmountTextField.isActive {
+      updateTextFieldState(isValid: isInputValid, for: customView.getAmountTextField)
+    }
+  }
+  
+  func updateTextFieldState(isValid: Bool, for textField: TKTextField) {
+    let textFieldState = textField.textFieldState
+    let newState: TKTextFieldState
+    switch (textFieldState, isValid) {
+    case (_, true):
+      newState = textField.isActive ? .active : .inactive
+    case (_, false):
+      newState = textFieldState == .inactive ? .inactive : .error
+    }
+    guard textField.textFieldState != newState else { return }
+    textField.textFieldState = newState
   }
   
   @objc func resignGestureAction(sender: UITapGestureRecognizer) {

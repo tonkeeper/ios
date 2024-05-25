@@ -1,4 +1,5 @@
 import Foundation
+import BigInt
 
 public struct FiatOperator: Identifiable {
   public struct InfoButton {
@@ -9,31 +10,37 @@ public struct FiatOperator: Identifiable {
   public let id: String
   public let title: String
   public let description: String
-  public let rate: Decimal
-  public let formattedRate: String
   public var badge: String?
   public let iconURL: URL?
   public let actionTemplateURL: String?
   public let infoButtons: [InfoButton]
+  public let rate: Decimal
+  public let formattedRate: String
+  public let minTonBuyAmount: BigUInt?
+  public let minTonSellAmount: BigUInt?
   
-  public init(id: String, 
-              title: String,
-              description: String,
-              rate: Decimal,
-              formattedRate: String,
-              badge: String?,
-              iconURL: URL?,
-              actionTemplateURL: String?,
-              infoButtons: [InfoButton]) {
+  public init(id: String,
+             title: String,
+             description: String,
+             badge: String?,
+             iconURL: URL?,
+             actionTemplateURL: String?,
+             infoButtons: [InfoButton],
+             rate: Decimal,
+             formattedRate: String,
+             minTonBuyAmount: BigUInt?,
+             minTonSellAmount: BigUInt?) {
     self.id = id
     self.title = title
     self.description = description
-    self.rate = rate
-    self.formattedRate = formattedRate
     self.badge = badge
     self.iconURL = iconURL
     self.actionTemplateURL = actionTemplateURL
     self.infoButtons = infoButtons
+    self.rate = rate
+    self.formattedRate = formattedRate
+    self.minTonBuyAmount = minTonBuyAmount
+    self.minTonSellAmount = minTonSellAmount
   }
 }
 

@@ -34,7 +34,9 @@ protocol BuySellDetailsViewModel: AnyObject {
   var didUpdateModel: ((BuySellDetailsView.Model) -> Void)? { get set }
   var didUpdateAmountPay: ((String) -> Void)? { get set }
   var didUpdateAmountGet: ((String) -> Void)? { get set }
+  var didUpdateIsTokenAmountValid: ((Bool) -> Void)? { get set }
   var didUpdateRateContainerModel: ((ListDescriptionContainerView.Model) -> Void)? { get set }
+  var didUpdateContinueButtonModel: ((BuySellDetailsView.Model.Button) -> Void)? { get set }
   
   var payAmountTextFieldFormatter: InputAmountTextFieldFormatter { get }
   var getAmountTextFieldFormatter: InputAmountTextFieldFormatter { get }
@@ -68,7 +70,9 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   var didUpdateModel: ((BuySellDetailsView.Model) -> Void)?
   var didUpdateAmountPay: ((String) -> Void)?
   var didUpdateAmountGet: ((String) -> Void)?
+  var didUpdateIsTokenAmountValid: ((Bool) -> Void)?
   var didUpdateRateContainerModel: ((ListDescriptionContainerView.Model) -> Void)?
+  var didUpdateContinueButtonModel: ((BuySellDetailsView.Model.Button) -> Void)?
   
   func viewDidLoad() {
     update()
@@ -96,8 +100,7 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
         onConverted: { [weak self] formattedInput, convertedOutput in
           self?.amountPay = formattedInput
           self?.amountGet = convertedOutput
-          self?.didUpdateAmountPay?(formattedInput)
-          self?.didUpdateAmountGet?(convertedOutput)
+          self?.didUpdateAmounts(pay: formattedInput, get: convertedOutput)
         }
       )
     }
@@ -105,6 +108,7 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   
   func didInputAmountGet(_ string: String) {
     guard string != amountGet else { return }
+    
     Task {
       await processInputAmount(
         inputString: string,
@@ -114,6 +118,7 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
           self?.amountPay = convertedOutput
           self?.didUpdateAmountGet?(formattedInput)
           self?.didUpdateAmountPay?(convertedOutput)
+          self?.didUpdateAmounts(pay: convertedOutput, get: formattedInput)
         }
       )
     }
@@ -125,6 +130,14 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   private var amountGet = ""
   private var convertedRate = ""
   private var actionURL: URL?
+  
+  private var isTokenAmountValid: Bool = true {
+    didSet {
+      didUpdateIsTokenAmountValid?(isTokenAmountValid)
+      guard isTokenAmountValid != oldValue else { return }
+      updateContinueButton()
+    }
+  }
   
   private var isResolving = false {
     didSet {
@@ -141,7 +154,7 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   }
   
   private var isContinueEnable: Bool {
-    isActionUrlExists
+    isActionUrlExists && isTokenAmountValid
   }
   
   // MARK: - Formatters
@@ -212,14 +225,7 @@ private extension BuySellDetailsViewModelImplementation {
         leftButton: createInfoButton(buySellDetailsItem.serviceInfo.leftButton),
         rightButton: createInfoButton(buySellDetailsItem.serviceInfo.rightButton)
       ),
-      continueButton: BuySellDetailsView.Model.Button(
-        title: TKLocales.Actions.continue_action,
-        isEnabled: !isResolving && isContinueEnable,
-        isActivity: isResolving,
-        action: { [weak self] in
-          self?.didTapContinue?(self?.actionURL)
-        }
-      )
+      continueButton: createContinueButtonModel()
     )
   }
   
@@ -238,6 +244,22 @@ private extension BuySellDetailsViewModelImplementation {
       title: infoButton.title.withTextStyle(.body2, color: .Text.secondary),
       action: { [weak self] in
         self?.didTapInfoButton?(infoButton.url)
+      }
+    )
+  }
+  
+  func updateContinueButton() {
+    let model = createContinueButtonModel()
+    didUpdateContinueButtonModel?(model)
+  }
+  
+  func createContinueButtonModel() -> BuySellDetailsView.Model.Button {
+    return BuySellDetailsView.Model.Button(
+      title: TKLocales.Actions.continue_action,
+      isEnabled: !isResolving && isContinueEnable,
+      isActivity: isResolving,
+      action: { [weak self] in
+        self?.didTapContinue?(self?.actionURL)
       }
     )
   }
@@ -338,6 +360,33 @@ private extension BuySellDetailsViewModelImplementation {
     }
     
     return convertedOutput
+  }
+  
+  func didUpdateAmounts(pay amountPay: String, get amountGet: String) {
+    didUpdateAmountPay?(amountPay)
+    didUpdateAmountGet?(amountGet)
+    
+    guard case let .amount(minBuyAmount, minSellAmount) = buySellTransactionModel.minimumLimits else { return }
+    
+    let unformatted: String
+    switch buySellTransactionModel.operation {
+    case .buyTon:
+      unformatted = textFormatter(forInputField: .get).unformatString(amountGet) ?? "0"
+    case .sellTon:
+      unformatted = textFormatter(forInputField: .pay).unformatString(amountPay) ?? "0"
+    }
+    
+    let tokenAmount = buySellDetailsController.convertStringToAmount(
+      string: unformatted,
+      targetFractionalDigits: buySellTransactionModel.token.fractionDigits
+    ).amount
+    
+    switch buySellTransactionModel.operation {
+    case .buyTon:
+      isTokenAmountValid = tokenAmount >= minBuyAmount
+    case .sellTon:
+      isTokenAmountValid = tokenAmount >= minSellAmount
+    }
   }
   
   func textFormatter(forInputField inputField: InputField) -> InputAmountTextFieldFormatter {
