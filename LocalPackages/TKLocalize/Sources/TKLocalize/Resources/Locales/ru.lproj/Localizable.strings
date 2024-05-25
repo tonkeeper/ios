@@ -227,3 +227,4 @@
 "buy.button_buy" = "Купить";
 "buy.button_sell" = "Продать";
 "buy.min_amount" = "Мин. сумма: %@";
+"buy.rate" = "%@ %@ за 1 TON";

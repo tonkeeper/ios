@@ -67,20 +67,20 @@ private extension BuyCoordinator {
       self?.openCurrencyPicker()
     }
     
-    module.output.didContinue = { [weak self] exchangeOperator, transactionModel, currency in
-      self?.openTransactionAmountConfirmation(exchangeOperator: exchangeOperator, transactionModel: transactionModel, currency: currency)
+    module.output.didContinue = { [weak self] buySellItem, transactionModel, currency in
+      self?.openTransactionAmountConfirmation(buySellItem: buySellItem, transactionModel: transactionModel, currency: currency)
     }
     
     router.push(viewController: module.view, animated: true)
   }
   
   func openTransactionAmountConfirmation(
-    exchangeOperator: Operator,
+    buySellItem: BuySellItemModel,
     transactionModel: TransactionAmountModel,
     currency: Currency
   ) {
     let module = TransactionAssembly.module(
-      exchangeOperator: exchangeOperator,
+      buySellItem: buySellItem,
       transactionModel: transactionModel,
       currency: currency,
       buyListController: buyListController,

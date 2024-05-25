@@ -836,5 +836,9 @@ public enum TKLocales {
     public static func min_amount(_ p0: Any) -> String {
       return localizeWithArgs("buy.min_amount", String(describing: p0))
     }
+    /// %@ %@ for 1 TON
+    public static func rate(_ p0: Any, _ p1: Any) -> String {
+      return localizeWithArgs("buy.rate", String(describing: p0), String(describing: p1))
+    }
   }
 }
