@@ -5,7 +5,112 @@ protocol TabButtonContainerDelegate: AnyObject {
   func itemDidSelect(withId id: TabButtonItem.ID)
 }
 
-class TabButtonItem: UIControl, ConfigurableView, Identifiable {
+// MARK: - TabButtonsContainerView
+
+final class TabButtonsContainerView: UIView {
+  
+  var itemDidSelect: ((TabButtonItem.ID) -> Void)?
+  
+  private var selectedId: TabButtonItem.ID = 0
+  private var items: [TabButtonItem] = []
+  
+  private let itemsStackView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .horizontal
+    return stackView
+  }()
+  
+  private let line: UIView = {
+    let view = UIView()
+    view.backgroundColor = .Accent.blue
+    return view
+  }()
+  
+  init(model: Model) {
+    super.init(frame: CGRect(x: 0, y: 0, width: 262, height: 53))
+    self.items = model.tabButtons.map { mapTabButton($0) }
+    self.setup()
+  }
+  
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+  
+  override func sizeThatFits(_ size: CGSize) -> CGSize {
+    let width = items.reduce(0) { $0 + $1.sizeThatFits(bounds.size).width }
+    return CGSize(width: width, height: .tabButtonItemHeight)
+  }
+  
+  struct Model {
+    struct TabButton {
+      let id: Int
+      let title: String
+    }
+
+    let tabButtons: [TabButton]
+  }
+}
+
+private extension TabButtonsContainerView {
+  func setup() {
+    if let firstItem = items.first {
+      firstItem.isSelected = true
+      
+      let lineWidth = firstItem.sizeThatFits(bounds.size).width - .lineHorizontalPadding * 2
+      line.frame = CGRect(x: .lineHorizontalPadding, y: .titleViewHeight, width: lineWidth, height: 3)
+      line.layer.cornerRadius = line.bounds.height / 2
+    }
+    
+    items.forEach { itemsStackView.addArrangedSubview($0) }
+    
+    addSubview(itemsStackView)
+    addSubview(line)
+    
+    setupConstraints()
+  }
+  
+  func setupConstraints() {
+    itemsStackView.snp.makeConstraints { make in
+      make.edges.equalTo(self)
+    }
+  }
+  
+  func mapTabButton(_ tabButton: Model.TabButton) -> TabButtonItem {
+    let tabButtonItem = TabButtonItem(id: tabButton.id)
+    tabButtonItem.configure(model: .init(title: tabButton.title))
+    tabButtonItem.delegate = self
+    return tabButtonItem
+  }
+}
+
+extension TabButtonsContainerView: TabButtonContainerDelegate {
+  func itemDidSelect(withId id: TabButtonItem.ID) {
+    guard id != selectedId else { return }
+    
+    if let selectedItem = item(withId: id) {
+      let selectedFrame = convert(selectedItem.frame, to: self)
+      
+      UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 3, options: [.beginFromCurrentState, .curveEaseOut]) {
+        self.line.frame.origin.x = selectedFrame.origin.x + .lineHorizontalPadding
+        self.line.frame.size.width = selectedFrame.width - .lineHorizontalPadding * 2
+      }
+    }
+    
+    let itemToDeselect = item(withId: selectedId)
+    itemToDeselect?.deselectItem()
+    selectedId = id
+    itemDidSelect?(id)
+  }
+  
+  private func item(withId id: TabButtonItem.ID) -> TabButtonItem? {
+    return items.first(where: { $0.id == id })
+  }
+}
+
+// MARK: - TabButtonItem
+
+final class TabButtonItem: UIControl, ConfigurableView, Identifiable {
+  
   enum ItemState {
     case normal
     case selected
@@ -35,7 +140,7 @@ class TabButtonItem: UIControl, ConfigurableView, Identifiable {
   
   weak var delegate: TabButtonContainerDelegate?
   
-  override var intrinsicContentSize: CGSize { CGSize(width: preferredWidth(), height: .tabButtonItemHeight) }
+  override var intrinsicContentSize: CGSize { sizeThatFits(bounds.size) }
   
   let titleLabel = UILabel()
   let titleView = UIView()
@@ -52,8 +157,10 @@ class TabButtonItem: UIControl, ConfigurableView, Identifiable {
     fatalError("init(coder:) has not been implemented")
   }
   
-  func preferredWidth() -> CGFloat {
-    return titleLabel.sizeThatFits(bounds.size).width + .titleLabelHorizontalPadding * 2 + .titleViewHorizontalPadding * 2
+  override func sizeThatFits(_ size: CGSize) -> CGSize {
+    var width = titleLabel.sizeThatFits(size).width
+    width += .titleLabelHorizontalPadding * 2 + .titleViewHorizontalPadding * 2
+    return CGSize(width: width, height: .tabButtonItemHeight)
   }
   
   struct Model {
@@ -61,9 +168,7 @@ class TabButtonItem: UIControl, ConfigurableView, Identifiable {
   }
   
   func configure(model: Model) {
-    titleLabel.text = model.title
-    titleLabel.font = TKTextStyle.label1.font
-    titleLabel.textColor = .Text.secondary
+    titleLabel.attributedText = model.title.withTextStyle(.label1, color: .Text.secondary)
   }
   
   func selectItem() {
@@ -147,109 +252,6 @@ private extension TabButtonItem {
   }
 }
 
-class BuySellTabButtonsContainerView: UIView {
-  var itemDidSelect: ((TabButtonItem.ID) -> Void)?
-  
-  private var selectedId: TabButtonItem.ID = 0
-  private var items: [TabButtonItem] = []
-  
-  private let itemsStackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .horizontal
-    return stackView
-  }()
-  
-  private let line: UIView = {
-    let view = UIView()
-    view.backgroundColor = .Accent.blue
-    return view
-  }()
-  
-  init(model: Model) {
-    super.init(frame: CGRect(x: 0, y: 0, width: 262, height: 53))
-    self.items = mapModel(model)
-    self.setup()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  func preferredWidth() -> CGFloat {
-    items.reduce(0) { partialResult, item in
-      partialResult + item.preferredWidth()
-    }
-  }
-  
-  struct Model {
-    struct Item {
-      let id: Int
-      let title: String
-    }
-
-    let items: [Item]
-  }
-  
-  private func mapModel(_ model: Model) -> [TabButtonItem] {
-    return model.items.map { item in
-      let tabButtonItem = TabButtonItem(id: item.id)
-      tabButtonItem.configure(model: .init(title: item.title))
-      tabButtonItem.delegate = self
-      return tabButtonItem
-    }
-  }
-}
-
-private extension BuySellTabButtonsContainerView {
-  func setup() {
-    if let firstItem = items.first {
-      firstItem.isSelected = true
-      
-      let lineWidth = firstItem.preferredWidth() - .lineHorizontalPadding * 2
-      line.frame = CGRect(x: .lineHorizontalPadding, y: .titleViewHeight, width: lineWidth, height: 3)
-      line.layer.cornerRadius = line.bounds.height / 2
-    }
-    
-    items.forEach { itemsStackView.addArrangedSubview($0) }
-    
-    addSubview(itemsStackView)
-    addSubview(line)
-    
-    setupConstraints()
-  }
-  
-  func setupConstraints() {
-    itemsStackView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
-    }
-  }
-}
-
-extension BuySellTabButtonsContainerView: TabButtonContainerDelegate {
-  func itemDidSelect(withId id: TabButtonItem.ID) {
-    guard id != selectedId else { return }
-    
-    if let selectedItem = item(withId: id) {
-      let selectedFrame = convert(selectedItem.frame, to: self)
-      
-      UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 3, options: [.beginFromCurrentState, .curveEaseOut]) {
-        self.line.frame.origin.x = selectedFrame.origin.x + .lineHorizontalPadding
-        self.line.frame.size.width = selectedFrame.width - .lineHorizontalPadding * 2
-      }
-    }
-    
-    let itemToDeselect = item(withId: selectedId)
-    itemToDeselect?.deselectItem()
-    
-    selectedId = id
-    
-    itemDidSelect?(id)
-  }
-  
-  private func item(withId id: TabButtonItem.ID) -> TabButtonItem? {
-    return items.first(where: { $0.id == id })
-  }
-}
 
 private extension CGFloat {
   static let tabButtonItemHeight: CGFloat = 53

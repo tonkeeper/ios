@@ -134,6 +134,7 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
     setupBindings()
     setupGestures()
     setupViewEvents()
+    
     viewModel.viewDidLoad()
   }
   
@@ -147,7 +148,7 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
     super.viewDidAppear(animated)
     
     if !isViewDidAppearFirstTime {
-      customView.amountInputView.amountTextField.becomeFirstResponder()
+      customView.amountInputView.inputControl.amountTextField.becomeFirstResponder()
       isViewDidAppearFirstTime = true
     }
   }
@@ -215,12 +216,11 @@ private extension BuySellViewController {
     customView.collectionView.backgroundColor = .Background.page
     
     customView.amountInputView.backgroundColor = .Background.content
-    customView.amountInputView.amountTokenTitleLabel.textColor = .Text.secondary
     customView.amountInputView.convertedAmountLabel.textColor = .Text.secondary
     customView.amountInputView.convertedCurrencyLabel.textColor = .Text.secondary
     customView.amountInputView.minAmountLabel.textColor = .Text.tertiary
     
-    customView.amountInputView.amountTextField.delegate = viewModel.textFieldFormatter
+    customView.amountInputView.inputControl.amountTextField.delegate = viewModel.textFieldFormatter
   }
   
   func setupCollectionView() {
@@ -245,8 +245,8 @@ private extension BuySellViewController {
       
       if let amountModel = model.amount {
         customView.amountInputView.isHidden = false
-        customView.amountInputView.amountTextField.text = amountModel.text
-        customView.amountInputView.amountTokenTitleLabel.text = amountModel.token.title
+        customView.amountInputView.inputControl.amountTextField.text = amountModel.text
+        customView.amountInputView.inputControl.currencyLabel.text = amountModel.token.title
         customView.amountInputView.minAmountLabel.text = "Min. amount: \(amountModel.minimum) \(amountModel.token.title)"
       } else {
         customView.amountInputView.isHidden = true
@@ -278,7 +278,7 @@ private extension BuySellViewController {
   }
   
   func setupGestures() {
-    customView.amountInputView.addGestureRecognizer(tapGestureRecognizer)
+    customView.addGestureRecognizer(tapGestureRecognizer)
   }
   
   func setupViewEvents() {
@@ -291,8 +291,9 @@ private extension BuySellViewController {
       viewModel?.didChangeOperation(operation)
     }
     
-    customView.amountInputView.didUpdateText = { [weak viewModel] in
-      viewModel?.didInputAmount($0 ?? "")
+    customView.amountInputView.inputControl.didUpdateText = { [weak viewModel] text in
+      guard let text else { return }
+      viewModel?.didInputAmount(text)
     }
   }
   
@@ -354,7 +355,7 @@ private extension BuySellViewController {
   }
   
   @objc func resignGestureAction() {
-    customView.amountInputView.amountTextField.resignFirstResponder()
+    customView.amountInputView.inputControl.resignFirstResponder()
   }
 }
 

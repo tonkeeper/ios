@@ -5,6 +5,8 @@ final class AmountInputViewInputControl: UIControl {
   
   var didUpdateText: ((String?) -> Void)?
   
+  var isCurrencyLabelAlignedToLastBaseline = false
+  
   let amountTextField: UITextField = {
     let textField = UITextField()
     textField.font = .amountInputFont
@@ -58,6 +60,10 @@ final class AmountInputViewInputControl: UIControl {
       origin: CGPoint(x: currencyLabel.frame.maxX + .tokenPickerLeftInset, y: bounds.height/2 - .tokenPickerButtonSide/2 + 2),
       size: CGSize(width: .tokenPickerButtonSide, height: .tokenPickerButtonSide)
     )
+    
+    if isCurrencyLabelAlignedToLastBaseline {
+      alignCurrencyLabelToLastBaseline()
+    }
     
     var containerWidth = amountTextField.frame.width + currencyLabel.frame.width + .currencyInputLeftInset
     if !tokenPickerButton.isHidden {
@@ -130,6 +136,16 @@ private extension AmountInputViewInputControl {
     } else {
       return smallerFont
     }
+  }
+  
+  func alignCurrencyLabelToLastBaseline() {
+    guard let amountTextFieldFont = amountTextField.font else { return }
+    guard let currencyLabelFont = currencyLabel.font else { return }
+    let aspect = currencyLabel.transform.d
+    let amountTextFieldLastBaseline = amountTextFieldFont.withSize(amountTextFieldFont.pointSize * aspect).ascender
+    let currencyLabelLabelLastBaseline = currencyLabelFont.withSize(currencyLabelFont.pointSize * aspect).ascender
+    let currencyLabelOriginY = amountTextField.frame.origin.y + (amountTextFieldLastBaseline - currencyLabelLabelLastBaseline) + 1 * aspect
+    currencyLabel.frame.origin.y = currencyLabelOriginY
   }
 }
 

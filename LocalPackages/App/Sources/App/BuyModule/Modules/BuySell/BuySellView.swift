@@ -8,8 +8,8 @@ final class BuySellView: UIView {
   
   let amountInputView = BuySellAmountInputView()
   
-  let tabButtonsContainerView = BuySellTabButtonsContainerView(
-    model: .init(items: [
+  let tabButtonsContainerView = TabButtonsContainerView(
+    model: .init(tabButtons: [
       .init(id: 0, title: "Buy"),
       .init(id: 1, title: "Sell")
     ])
