@@ -26,7 +26,7 @@ class ExchangeConfirmationConverter {
   }
   
   func setup(transactionAmountModel: TransactionAmountModel) {
-    switch transactionAmountModel.mode {
+    switch transactionAmountModel.type {
     case .buy:
       // FIAT -> TON
       tonAmount = (transactionAmountModel.amount, TonInfo.fractionDigits)

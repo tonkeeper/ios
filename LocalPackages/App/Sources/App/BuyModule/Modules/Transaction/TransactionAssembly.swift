@@ -6,7 +6,7 @@ import BigInt
 struct TransactionAssembly {
   private init() {}
   static func module(
-    exchangeOperator: Operator,
+    buySellItem: BuySellItemModel,
     transactionModel: TransactionAmountModel,
     currency: Currency,
     buyListController: BuyListController,
@@ -16,13 +16,13 @@ struct TransactionAssembly {
     let exchangeConverter = ExchangeConfirmationConverter(
       bigIntAmountFormatter: bigIntAmountFormatter,
       rateConverter: RateConverter(),
-      rate: exchangeOperator.rate
+      rate: buySellItem.rate
     )
     
     exchangeConverter.setup(transactionAmountModel: transactionModel)
     
     let viewModel = TransactionViewModelImplementation(
-      exchangeOperator: exchangeOperator,
+      buySellItem: buySellItem,
       transactionModel: transactionModel,
       currency: currency,
       buyListController: buyListController,

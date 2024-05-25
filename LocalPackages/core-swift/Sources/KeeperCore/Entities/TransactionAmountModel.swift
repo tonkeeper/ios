@@ -1,17 +1,12 @@
 import Foundation
 import BigInt
 
-public enum TransactionMode: CaseIterable {
-  case buy
-  case sell
-}
-
 public struct TransactionAmountModel {
-  public let mode: TransactionMode
+  public let type: FiatMethodCategoryType
   public let amount: BigUInt
   
-  public init(mode: TransactionMode, amount: BigUInt) {
-    self.mode = mode
+  public init(type: FiatMethodCategoryType, amount: BigUInt) {
+    self.type = type
     self.amount = amount
   }
 }

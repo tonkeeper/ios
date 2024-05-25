@@ -7,12 +7,12 @@ import BigInt
 
 enum OperatorSelectionSection: Hashable {
   case currency
-  case items([AnyHashable])
+  case items
 }
 
 protocol OperatorSelectionViewModelOutput: AnyObject {
   var didTapCurrency: (() -> Void)? { get set }
-  var didContinue: ((Operator, TransactionAmountModel, Currency) -> Void)? { get set }
+  var didContinue: ((BuySellItemModel, TransactionAmountModel, Currency) -> Void)? { get set }
 }
 
 protocol OperatorSelectionViewModel: AnyObject {
@@ -36,7 +36,7 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
   // MARK: - OperatorSelectionViewModelOutput
   
   var didTapCurrency: (() -> Void)?
-  var didContinue: ((Operator, TransactionAmountModel, Currency) -> Void)?
+  var didContinue: ((BuySellItemModel, TransactionAmountModel, Currency) -> Void)?
   
   private let settingsController: SettingsController
   private let buyListController: BuyListController
@@ -44,13 +44,12 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
   private let currencyStore: CurrencyStore
   private let transactionModel: TransactionAmountModel
   
-  private var operators: [Operator] = []
-  private var selectedOperatorId: String? {
+  private var buySellModels: [BuySellItemModel] = []
+  private var selectedModelId: String? {
     didSet {
-      didUpdateSelection?(selectedOperatorId != nil)
+      didUpdateSelection?(selectedModelId != nil)
     }
   }
-  private var currency: Currency?
   
   init(
     settingsController: SettingsController,
@@ -67,32 +66,46 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
   }
   
   func viewDidLoad() {
-    loadOperators()
+    buyListController.didUpdateMethods = { [weak self] methods in
+      self?.didUpdateMethods(methods)
+    }
+    Task {
+      await startObservations()
+      let currency = await settingsController.activeCurrency()
+      
+      await MainActor.run {
+        didUpdateCurrency(currency)
+      }
+    }
     
     // TODO: setup loading snapshot?
   }
   
   func didTapContinueButton() {
     guard
-      let selectedOperatorId,
-      let exchangeOperator = operators.first(where: { $0.id == selectedOperatorId }),
-    let currency
+      let selectedModelId,
+      let buySellModel = buySellModels.first(where: { $0.id == selectedModelId })
     else {
       return
     }
-    didContinue?(exchangeOperator, transactionModel, currency)
+    didContinue?(buySellModel, transactionModel, buySellModel.currency)
   }
   
-  private func loadOperators() {
+  private func didUpdateCurrency(_ currency: Currency) {
+    update(currency: currency)
+    loadPaymentMethods(currency: currency)
+  }
+  
+  private func didUpdateMethods(_ methods: [BuySellItemModel]) {
+    Task { @MainActor in
+      buySellModels = methods
+      update(models: methods)
+    }
+  }
+  
+  private func loadPaymentMethods(currency: Currency) {
     Task {
-      await startObservations()
-      let currency = await settingsController.activeCurrency()
-      let operators = await buyListController.fetchOperators(mode: .buy, currency: currency)
-      await MainActor.run {
-        self.operators = operators
-        self.currency = currency
-        self.update(currency: currency, operators: operators)
-      }
+      await buyListController.loadBuySellMethods(type: transactionModel.type, currency: currency)
     }
   }
   
@@ -100,26 +113,25 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
     _ = await currencyStore.addEventObserver(self) { [weak self] observer, event in
       switch event {
       case .didChangeCurrency(let currency):
-        self?.currency = currency
-        self?.update(currency: currency, operators: nil)
-        self?.loadOperators()
+        self?.didUpdateCurrency(currency)
       }
     }
   }
   
-  private func update(currency: Currency, operators: [Operator]?) {
+  private func update(currency: Currency) {
     snapshot.deleteAllItems()
-    
     snapshot.appendSections([.currency])
     snapshot.appendItems([createCurrencyCell(currency: currency)])
-    if let operators {
-      let items = operators.map {
-        createOperatorCell(model: $0, currency: currency)
-      }
-      snapshot.appendSections([.items(items)])
-      snapshot.appendItems(items)
+    didUpdateSnapshot?(snapshot)
+  }
+  
+  private func update(models: [BuySellItemModel]) {
+    snapshot.deleteSections([.items])
+    snapshot.appendSections([.items])
+    let items = models.map {
+      createOperatorCell(model: $0)
     }
-    
+    snapshot.appendItems(items)
     didUpdateSnapshot?(snapshot)
   }
   
@@ -176,15 +188,15 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
     )
   }
   
-  private func createOperatorCell(model: Operator, currency: Currency) -> TKUIListItemCell.Configuration {
+  private func createOperatorCell(model: BuySellItemModel) -> TKUIListItemCell.Configuration {
     
-    let iconConfigurationImage: TKUIListItemImageIconView.Configuration.Image = .asyncImage(model.logo, TKCore.ImageDownloadTask(
+    let iconConfigurationImage: TKUIListItemImageIconView.Configuration.Image = .asyncImage(model.iconURL, TKCore.ImageDownloadTask(
       closure: {
         [imageLoader] imageView,
         size,
         cornerRadius in
         return imageLoader.loadImage(
-          url: model.logo,
+          url: model.iconURL,
           imageView: imageView,
           size: size,
           cornerRadius: cornerRadius
@@ -205,14 +217,14 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
       alignment: .center
     )
     
-    let title = model.name.withTextStyle(
+    let title = model.title.withTextStyle(
       .label1,
       color: .Text.primary,
       alignment: .left,
       lineBreakMode: .byTruncatingTail
     )
     
-    let rate = currencyRateFormatter.format(currency: currency, rate: model.rate)
+    let rate = currencyRateFormatter.format(currency: model.currency, rate: model.rate)
     
     let description = rate.withTextStyle(
       .body2,
@@ -244,7 +256,7 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
       selectionClosure: { [weak self] in
         guard let self else { return }
         
-        selectedOperatorId = model.id
+        selectedModelId = model.id
       }
     )
   }

@@ -33,7 +33,7 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
   
   // MARK: - State
   
-  private let exchangeOperator: Operator
+  private let buySellItem: BuySellItemModel
   private let transactionModel: TransactionAmountModel
   
   private var payAmountInput = ""
@@ -59,14 +59,14 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
   private let currency: Currency
   
   init(
-    exchangeOperator: Operator,
+    buySellItem: BuySellItemModel,
     transactionModel: TransactionAmountModel,
     currency: Currency,
     buyListController: BuyListController,
     exchangeConverter: ExchangeConfirmationConverter,
     currencyRateFormatter: CurrencyToTONFormatter
   ) {
-    self.exchangeOperator = exchangeOperator
+    self.buySellItem = buySellItem
     self.transactionModel = transactionModel
     self.currency = currency
     self.buyListController = buyListController
@@ -75,7 +75,7 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
   }
   
   func viewDidLoad() {
-    switch transactionModel.mode {
+    switch transactionModel.type {
     case .buy:
       payAmountInput = exchangeConverter.fiatInput
       getAmountInput = exchangeConverter.tonInput
@@ -90,7 +90,7 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
     guard string != payAmountInput else { return }
     let unformatted = sendAmountTextFieldFormatter.unformatString(string) ?? ""
     
-    switch transactionModel.mode {
+    switch transactionModel.type {
     case .buy:
       exchangeConverter.updateFiatInput(unformatted)
       payAmountInput = unformatted
@@ -107,7 +107,7 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
     guard string != getAmountInput else { return }
     let unformatted = sendAmountTextFieldFormatter.unformatString(string) ?? ""
     
-    switch transactionModel.mode {
+    switch transactionModel.type {
     case .buy:
       exchangeConverter.updateTonInput(unformatted)
       getAmountInput = unformatted
@@ -189,19 +189,19 @@ private extension TransactionViewModelImplementation {
   func createModel() -> TransactionView.Model {
     let imageTask = TKCore.ImageDownloadTask { [weak self, imageLoader] imageView, size, cornerRadius in
       return imageLoader.loadImage(
-        url: self?.exchangeOperator.logo,
+        url: self?.buySellItem.iconURL,
         imageView: imageView,
         size: size,
         cornerRadius: cornerRadius
       )
     }
     
-    let rate = currencyRateFormatter.format(currency: currency, rate: exchangeOperator.rate)
+    let rate = currencyRateFormatter.format(currency: currency, rate: buySellItem.rate)
     
     var payCurrency: String
     var getCurrency: String
     
-    switch transactionModel.mode {
+    switch transactionModel.type {
     case .buy:
       payCurrency = currency.rawValue
       getCurrency = TonInfo.symbol
@@ -212,8 +212,8 @@ private extension TransactionViewModelImplementation {
     
     return TransactionView.Model(
       image: .asyncImage(imageTask),
-      providerName: exchangeOperator.name,
-      providerDescription: "Some description",
+      providerName: buySellItem.title,
+      providerDescription: buySellItem.description,
       rate: rate,
       toPlaceholder: "You get",
       fromPlaceholder: "You pay",

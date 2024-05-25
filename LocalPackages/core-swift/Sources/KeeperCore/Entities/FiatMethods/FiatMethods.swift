@@ -1,4 +1,10 @@
 import Foundation
+import BigInt
+           
+public enum FiatMethodCategoryType: String, Codable, CaseIterable {
+  case buy
+  case sell
+}
 
 struct FiatMethodItem: Codable {
   typealias ID = String
@@ -37,12 +43,7 @@ struct FiatMethodItem: Codable {
 }
 
 struct FiatMethodCategory: Codable {
-  enum CategoryType: String, Codable {
-    case buy
-    case sell
-  }
-  
-  let type: CategoryType
+  let type: FiatMethodCategoryType
   let title: String?
   let subtitle: String?
   let items: [FiatMethodItem]

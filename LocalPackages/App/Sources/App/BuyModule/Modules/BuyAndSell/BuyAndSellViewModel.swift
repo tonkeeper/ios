@@ -41,7 +41,7 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
   private var amountInput = ""
   private var convertedValue = ""
   private var amount: BigUInt = 0
-  private var mode: TransactionMode = .buy {
+  private var mode: FiatMethodCategoryType = .buy {
     didSet {
       guard mode != oldValue else { return }
       update()
@@ -95,12 +95,12 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
   }
   
   func didTapContinueButton() {
-    let transactionModel = TransactionAmountModel(mode: mode, amount: amount)
+    let transactionModel = TransactionAmountModel(type: mode, amount: amount)
     didContinue?(transactionModel)
   }
   
   func didSelectSegment(at index: Int) {
-    mode = TransactionMode.allCases[index]
+    mode = FiatMethodCategoryType.allCases[index]
     print(mode)
   }
   
