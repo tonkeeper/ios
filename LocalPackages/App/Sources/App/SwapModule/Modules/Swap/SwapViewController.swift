@@ -62,9 +62,12 @@ private extension SwapViewController {
       let oldCenter = self.customView.inputView1.center
       self.customView.inputView1.swapField.inverse()
       self.customView.inputView2.swapField.inverse()
+
+      self.customView.collapseDetailView()
       UIView.spring {
         self.customView.inputView1.center = self.customView.inputView2.center
         self.customView.inputView2.center = oldCenter
+      } completion: { _ in
         self.viewModel.swapTokens()
       }
     }
@@ -85,8 +88,13 @@ private extension SwapViewController {
       self.customView.swapInputsButton.isEnabled = model.status.isValidReceiveToken
 
       if model.status.isValid {
-        self.showHint("", isValid: true)
-        self.customView.expandDetailView()
+        self.customView.sendView.resignFirstResponder()
+        self.customView.showLoading()
+        // TODO: - Add logic of retrieving swap providers
+        // Add API integration, otherwise no pause for showing extra loader needed
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+          self.customView.expandDetailView()
+        }
       } else {
         self.showHint(model.status.hint, isValid: model.status.isSendAmountValid)
       }

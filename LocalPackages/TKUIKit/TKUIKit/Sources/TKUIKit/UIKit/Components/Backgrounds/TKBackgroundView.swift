@@ -46,6 +46,7 @@ public final class TKBackgroundView: UIView {
 
   private func setup() {
     layer.addSublayer(shape)
+    backgroundColor = .red
   }
   
   private func createPath(for state: TKBackgroundView.State) -> CGPath {

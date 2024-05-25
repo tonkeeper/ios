@@ -14,6 +14,7 @@ final class SwapDetailsView: UIView {
   let backgroundView = TKBackgroundView()
 
   let statusLabel = UILabel()
+  let loader = TKLoaderView(size: .medium, style: .primary)
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -23,32 +24,36 @@ final class SwapDetailsView: UIView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-
-  override var intrinsicContentSize: CGSize {
-    return CGSize(width: UIView.noIntrinsicMetric, height: state == .notValid ? 56 : 280)
-  }
 }
 
 private extension SwapDetailsView {
   func setup() {
     addSubview(backgroundView)
     addSubview(statusLabel)
+    addSubview(loader)
+
+    backgroundColor = .Background.content
 
     statusLabel.font = TKTextStyle.label1.font
     statusLabel.textColor = .Button.secondaryForeground
     statusLabel.textAlignment = .center
+
+    loader.alpha = 0
 
     setupConstraints()
   }
 
   func setupConstraints() {
     backgroundView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
-      make.width.equalTo(self)
+      make.top.right.left.bottom.equalTo(self)
     }
     statusLabel.snp.makeConstraints { make in
       make.verticalEdges.equalTo(self)
       make.horizontalEdges.equalTo(self).inset(16)
+    }
+    loader.snp.makeConstraints { make in
+      make.centerX.equalTo(self)
+      make.top.equalTo(self).offset(16)
     }
   }
 }

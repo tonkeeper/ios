@@ -5,18 +5,6 @@ import TKUIKit
 final class SwapView: UIView {
 
   let scrollView = TKUIScrollView()
-  let stackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .vertical
-    stackView.isLayoutMarginsRelativeArrangement = true
-    stackView.directionalLayoutMargins = NSDirectionalEdgeInsets(
-      top: 0,
-      leading: 16,
-      bottom: 16,
-      trailing: 16
-    )
-    return stackView
-  }()
 
   var sendView: SwapInputView {
     [inputView1, inputView2].first(where: { $0.swapField == .send})!
@@ -29,6 +17,7 @@ final class SwapView: UIView {
   var inputView1 = SwapInputView(state: .send)
   var inputView2 = SwapInputView(state: .receive)
   let detailsView = SwapDetailsView()
+  let detailsViewContainer = UIView()
 
   lazy var swapInputsButton: TKButton = {
     var configuration = TKButton.Configuration.iconActionButton(
@@ -42,6 +31,8 @@ final class SwapView: UIView {
   let inputsDivider = UIView()
   let detailsDivider = UIView()
 
+  private var firstLoad = true
+
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
@@ -52,33 +43,61 @@ final class SwapView: UIView {
   }
 
   func expandDetailView() {
-    UIView.animate(withDuration: 0.3, delay: 0, options: []) {
-      self.detailsDivider.snp.remakeConstraints {make in
-        make.height.equalTo(0)
-      }
-      self.detailsView.backgroundView.state = .topMerge
-      self.receiveView.backgroundView.state = .bottomMerge
-      self.detailsView.state = .updating
-      self.detailsView.invalidateIntrinsicContentSize()
-      self.layoutIfNeeded()
+    detailsView.loader.stopAnimation()
+    detailsView.backgroundView.state = .topMerge
+    receiveView.backgroundView.state = .bottomMerge
+    detailsView.snp.updateConstraints { make in
+      make.top.equalTo(detailsViewContainer).offset(0)
+      make.height.equalTo(280)
+    }
+    UIView.spring {
+      self.detailsViewContainer.layoutIfNeeded()
+    } alphaAnimation: {
+      self.detailsView.loader.alpha = 0
+    }
+  }
+
+  func collapseDetailView() {
+    detailsView.loader.startAnimation()
+    detailsView.backgroundView.state = .separate
+    receiveView.backgroundView.state = .separate
+    sendView.backgroundView.state = .separate
+    
+    self.detailsView.snp.updateConstraints { make in
+      make.top.equalTo(detailsViewContainer).offset(40)
+      make.height.equalTo(56)
+    }
+    UIView.spring {
+      self.detailsViewContainer.layoutIfNeeded()
+    } alphaAnimation: {
+      self.detailsView.loader.alpha = 1
+    }
+  }
+
+  func showLoading() {
+    UIView.animate(withDuration: 0.2) {
+      self.detailsView.statusLabel.text = ""
+      self.detailsView.statusLabel.alpha = 0
+      self.detailsView.loader.alpha = 1
+      self.detailsView.loader.startAnimation()
     }
   }
 }
 
 private extension SwapView {
+
   func setup() {
     backgroundColor = .Background.page
 
     addSubview(scrollView)
-    scrollView.addSubview(stackView)
-    stackView.addArrangedSubview(inputView1)
-    stackView.addArrangedSubview(inputsDivider)
-    stackView.addArrangedSubview(inputView2)
-    stackView.addArrangedSubview(detailsDivider)
-    stackView.addArrangedSubview(detailsView)
-
+    scrollView.addSubview(inputView1)
+    scrollView.addSubview(inputView2)
     scrollView.addSubview(swapInputsButton)
+    scrollView.addSubview(detailsViewContainer)
+    detailsViewContainer.addSubview(detailsView)
 
+    detailsViewContainer.backgroundColor = .cyan
+  
     setupConstraints()
   }
 
@@ -87,24 +106,36 @@ private extension SwapView {
       make.edges.equalTo(self)
       make.width.equalTo(self)
     }
-    stackView.snp.makeConstraints { make in
-      make.top.equalTo(scrollView).offset(CGFloat.contentVerticalPadding)
-      make.left.right.bottom.equalTo(scrollView).priority(.high)
-      make.width.equalTo(scrollView)
+    inputView1.snp.makeConstraints { make in
+      make.top.equalTo(scrollView).offset(16)
+      make.left.right.equalTo(scrollView).inset(16).priority(.high)
+      make.width.equalTo(scrollView).inset(16)
+      make.height.equalTo(108)
     }
-    inputsDivider.snp.makeConstraints { make in
-      make.height.equalTo(8)
+
+    inputView2.snp.makeConstraints { make in
+      make.top.equalTo(scrollView.snp.top).offset(16+108+8)
+      make.left.right.equalTo(scrollView).inset(16).priority(.high)
+      make.width.equalTo(scrollView).inset(16)
+      make.height.equalTo(108)
     }
-    detailsDivider.snp.makeConstraints { make in
-      make.height.equalTo(32)
+
+    detailsViewContainer.snp.makeConstraints { make in
+      make.top.equalTo(scrollView).offset(16+2*108+8)
+      make.left.right.equalTo(scrollView).inset(16).priority(.high)
+      make.width.equalTo(scrollView).inset(16)
+      make.height.equalTo(320)
     }
+
+    detailsView.snp.makeConstraints { make in
+      make.top.equalTo(detailsViewContainer).offset(40)
+      make.left.right.equalTo(detailsViewContainer)
+      make.height.equalTo(56)
+    }
+
     swapInputsButton.snp.makeConstraints { make in
-      make.centerY.equalTo(inputsDivider)
-      make.right.equalTo(self).offset(-48)
+      make.centerY.equalTo(16+108+4)
+      make.right.equalTo(scrollView).offset(-48)
     }
   }
-}
-
-private extension CGFloat {
-  static let contentVerticalPadding: CGFloat = 16
 }

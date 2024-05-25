@@ -97,11 +97,11 @@ private extension SwapInputView {
       guard let self else { return }
       self.didTapChooseToken?(self.swapField)
     }
-    
     setupConstraints()
   }
 
   func setupConstraints() {
+    translatesAutoresizingMaskIntoConstraints = true
     backgroundView.snp.makeConstraints { make in
       make.edges.equalTo(self)
     }
@@ -153,18 +153,18 @@ private extension SwapInputView {
     headerView.snp.updateConstraints { make in
       make.top.equalTo(swapField == .send ? 0 : 12)
     }
-    UIView.animate(withDuration: 0.125, delay: 0, options: .overrideInheritedOptions) {
+    UIView.animate(withDuration: 0.125) {
       self.actionLabel.alpha = 0.5
     } completion: { _ in
       self.actionLabel.attributedText = (self.swapField == .send ? "Send" : "Receive").withTextStyle(
         .body2,
         color: .Text.secondary
       )
-      UIView.animate(withDuration: 0.125, delay: 0, options: .overrideInheritedOptions) {
+      UIView.animate(withDuration: 0.125) {
         self.actionLabel.alpha = 1
       }
     }
-    UIView.animate(withDuration: 0.25, delay: 0, options: .overrideInheritedOptions) {
+    UIView.animate(withDuration: 0.25) {
       self.maxButton.alpha = self.swapField == .send ? 1 : 0
       self.layoutIfNeeded()
     }
