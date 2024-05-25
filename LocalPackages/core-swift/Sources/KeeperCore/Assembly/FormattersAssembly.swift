@@ -4,6 +4,10 @@ public final class FormattersAssembly {
   public var amountFormatter: AmountFormatter {
     AmountFormatter(bigIntFormatter: bigIntAmountFormatter)
   }
+
+  public var amountFormatterV2: AmountFormatter {
+    AmountFormatter(bigIntFormatter: BigIntAmountFormatter(groupSeparator: ","))
+  }
   
   public var bigIntAmountFormatter: BigIntAmountFormatter {
     BigIntAmountFormatter()

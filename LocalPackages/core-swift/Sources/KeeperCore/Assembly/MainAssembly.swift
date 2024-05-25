@@ -348,10 +348,13 @@ public final class MainAssembly {
     )
   }
 
-  // TODO: - Refactor sendV3Controller + swapController
-  // There are lots of common logic, that might be moved to a separate common controller or to Service layer
   public func swapController() -> SwapController {
-    SwapController(ratesService: servicesAssembly.ratesService())
+    SwapController(
+      walletsStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      ratesService: servicesAssembly.ratesService(),
+      amountFormatter: formattersAssembly.amountFormatterV2
+    )
   }
   
   public func sendRecipientController(recipient: Recipient?) -> SendRecipientController {

@@ -13,4 +13,13 @@ struct SwapPair {
 enum SwapField {
   case send
   case receive
+
+  mutating func inverse() {
+    switch self {
+    case .send:
+      self = .receive
+    case .receive:
+      self = .send
+    }
+  }
 }

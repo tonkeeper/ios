@@ -2,7 +2,20 @@ import Foundation
 import BigInt
 
 public struct BigIntAmountFormatter {
-  
+
+  public let groupSeparator: String
+  public var fractionalSeparator: String {
+    String.fractionalSeparator ?? "."
+  }
+
+  public init(groupSeparator: String? = nil) {
+    if let separator = groupSeparator {
+      self.groupSeparator = separator
+    } else {
+      self.groupSeparator = String.defaultGroupSeparator
+    }
+  }
+
   enum Error: Swift.Error {
     case invalidInput(_ input: String)
   }
@@ -24,7 +37,7 @@ public struct BigIntAmountFormatter {
       let fractionalResult = String(fractional[fractional.startIndex..<fractional.index(fractional.startIndex, offsetBy: fractionalLength)])
         .replacingOccurrences(of: "0+$", with: "", options: .regularExpression)
       let integer = String(initialString.prefix(initialString.count - fractional.count))
-      let separatedInteger = groups(string: integer.isEmpty ? "0" : integer, size: .groupSize).joined(separator: .groupSeparator)
+      let separatedInteger = groups(string: integer.isEmpty ? "0" : integer, size: .groupSize).joined(separator: groupSeparator)
       var result = separatedInteger
       if fractionalResult.count > 0 {
         result += (.fractionalSeparator ?? ".") + fractionalResult
@@ -69,7 +82,7 @@ private extension Int {
 }
 
 private extension String {
-  static let groupSeparator = " "
+  static let defaultGroupSeparator = " "
   static var fractionalSeparator: String? {
     Locale.current.decimalSeparator
   }

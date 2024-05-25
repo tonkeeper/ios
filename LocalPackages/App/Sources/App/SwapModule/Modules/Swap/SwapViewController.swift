@@ -27,7 +27,6 @@ final class SwapViewController: GenericViewViewController<SwapView>, KeyboardObs
     super.viewWillAppear(animated)
     registerForKeyboardEvents()
     customView.sendView.amountTextField.becomeFirstResponder()
-    customView.receiveView.amountTextField.isEnabled = false
   }
 
   public override func viewWillDisappear(_ animated: Bool) {
@@ -61,11 +60,12 @@ private extension SwapViewController {
     customView.swapInputsButton.configuration.action = { [weak self] in
       guard let self else { return }
       let oldCenter = self.customView.inputView1.center
-      self.customView.inputView1.swapField = .receive
-      self.customView.inputView2.swapField = .send
+      self.customView.inputView1.swapField.inverse()
+      self.customView.inputView2.swapField.inverse()
       UIView.spring {
         self.customView.inputView1.center = self.customView.inputView2.center
         self.customView.inputView2.center = oldCenter
+        self.viewModel.swapTokens()
       }
     }
   }
@@ -80,6 +80,7 @@ private extension SwapViewController {
       self.customView.receiveView.chooseTokenView.token = model.receive.token
       self.customView.receiveView.amountTextField.text = model.receive.amount
       self.customView.receiveView.updateTotalBalance(model.receive.balance)
+      self.customView.receiveView.amountTextField.isEnabled = model.status.isValidReceiveToken
       
       self.customView.swapInputsButton.isEnabled = model.status.isValidReceiveToken
 
@@ -93,11 +94,17 @@ private extension SwapViewController {
   
   func setupViewEvents() {
     customView.sendView.amountTextField.didUpdateText = { [weak viewModel] in
-      viewModel?.didInputAmount($0)
+      viewModel?.didInputAmount($0, swapField: .send)
     }
 
-    customView.sendView.maxButton.configuration.action = { [weak viewModel] in
-      viewModel?.didTapMax()
+    customView.receiveView.amountTextField.didUpdateText = { [weak viewModel] in
+      viewModel?.didInputAmount($0, swapField: .receive)
+    }
+
+    [customView.inputView1, customView.inputView2].forEach {
+      $0.maxButton.configuration.action = { [weak viewModel] in
+        viewModel?.didTapMax()
+      }
     }
 
     [customView.inputView1, customView.inputView2].forEach {
