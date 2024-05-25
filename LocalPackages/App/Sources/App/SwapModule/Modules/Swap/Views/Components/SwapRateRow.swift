@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class SwapRateRow: UIView, ConfigurableView {
+final class SwapRateRow: UIControl, ConfigurableView {
   
   var isRefreshing: Bool = false {
     didSet {

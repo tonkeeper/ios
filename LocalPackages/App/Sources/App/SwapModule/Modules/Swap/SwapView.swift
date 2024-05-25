@@ -3,10 +3,23 @@ import TKUIKit
 
 final class SwapView: UIView, ConfigurableView {
   
+  enum DetailsPresentationState {
+    case hidden
+    case infoHidden
+    case visible
+  }
+  
+  private var detailsPresentationState: DetailsPresentationState = .hidden {
+    didSet {
+      guard detailsPresentationState != oldValue else { return }
+      didUpdateDetailsPresentationState()
+    }
+  }
+  
   var isDetailsHidden: Bool = true {
     didSet {
       guard isDetailsHidden != oldValue else { return }
-      didUpdateDetailsContainerState()
+      didUpdateIsDetailsHidden()
     }
   }
   
@@ -71,44 +84,6 @@ final class SwapView: UIView, ConfigurableView {
     titleView.configure(model: model.title)
     swapButton.configuration.action = model.swapButton.action
   }
-  
-  func showDetails(animated: Bool = false) {
-    contentView.layer.removeAllAnimations()
-    actionButton.layer.removeAllAnimations()
-    layoutIfNeeded()
-    
-    contentView.snp.remakeConstraints { make in
-      make.top.equalTo(scrollView)
-      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
-      make.centerX.equalTo(scrollView)
-      make.bottom.equalTo(swapDetailsContainerView)
-    }
-    
-    if animated {
-      UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
-        self.layoutIfNeeded()
-      }
-    }
-  }
-  
-  func hideDetails(animated: Bool = false) {
-    contentView.layer.removeAllAnimations()
-    actionButton.layer.removeAllAnimations()
-    layoutIfNeeded()
-    
-    contentView.snp.remakeConstraints { make in
-      make.top.equalTo(scrollView)
-      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
-      make.centerX.equalTo(scrollView)
-      make.bottom.equalTo(swapRecieveContainerView)
-    }
-    
-    if animated {
-      UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
-        self.layoutIfNeeded()
-      }
-    }
-  }
 }
 
 // MARK: - Setup
@@ -135,6 +110,10 @@ private extension SwapView {
       .normal : .Button.tertiaryBackground,
       .highlighted : .Button.tertiaryBackgroundHighlighted
     ]
+    
+    swapDetailsContainerView.swapRateRow.addAction(UIAction(handler: { [weak self] _ in
+      self?.didTapSwapRateRow()
+    }), for: .touchUpInside)
     
     contentView.addSubview(swapSendContainerView)
     contentView.addSubview(swapRecieveContainerView)
@@ -197,11 +176,87 @@ private extension SwapView {
     }
   }
   
-  func didUpdateDetailsContainerState() {
+  func didTapSwapRateRow() {
+    if detailsPresentationState == .visible {
+      detailsPresentationState = .infoHidden
+    } else if detailsPresentationState == .infoHidden {
+      detailsPresentationState = .visible
+    }
+  }
+  
+  func didUpdateIsDetailsHidden() {
     if isDetailsHidden {
-      hideDetails()
+      detailsPresentationState = .hidden
     } else {
+      detailsPresentationState = .visible
+    }
+  }
+  
+  func didUpdateDetailsPresentationState() {
+    switch detailsPresentationState {
+    case .hidden:
+      hideDetails()
+    case .infoHidden:
+      hideInfo(animated: true)
+    case .visible:
       showDetails(animated: true)
+    }
+  }
+  
+  func showDetails(animated: Bool = false) {
+    contentView.layer.removeAllAnimations()
+    actionButton.layer.removeAllAnimations()
+    layoutIfNeeded()
+    
+    contentView.snp.remakeConstraints { make in
+      make.top.equalTo(scrollView)
+      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
+      make.centerX.equalTo(scrollView)
+      make.bottom.equalTo(swapDetailsContainerView)
+    }
+    
+    if animated {
+      UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
+        self.layoutIfNeeded()
+      }
+    }
+  }
+  
+  func hideInfo(animated: Bool = false) {
+    contentView.layer.removeAllAnimations()
+    actionButton.layer.removeAllAnimations()
+    layoutIfNeeded()
+    
+    contentView.snp.remakeConstraints { make in
+      make.top.equalTo(scrollView)
+      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
+      make.centerX.equalTo(scrollView)
+      make.bottom.equalTo(swapDetailsContainerView.swapRateRow)
+    }
+    
+    if animated {
+      UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
+        self.layoutIfNeeded()
+      }
+    }
+  }
+  
+  func hideDetails(animated: Bool = false) {
+    contentView.layer.removeAllAnimations()
+    actionButton.layer.removeAllAnimations()
+    layoutIfNeeded()
+    
+    contentView.snp.remakeConstraints { make in
+      make.top.equalTo(scrollView)
+      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
+      make.centerX.equalTo(scrollView)
+      make.bottom.equalTo(swapRecieveContainerView)
+    }
+    
+    if animated {
+      UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
+        self.layoutIfNeeded()
+      }
     }
   }
 }
