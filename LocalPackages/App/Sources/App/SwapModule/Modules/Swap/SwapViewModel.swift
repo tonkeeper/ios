@@ -26,6 +26,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   init(swapItem: SwapPair.Item, swapController: SwapController) {
     self.swapPair = SwapPair(send: swapItem, receive: nil)
     self.swapController = swapController
+    sendAmountTextFieldFormatter = SendAmountTextFieldFormatterFactory.make(groupingSeparator: swapController.groupSeparatorForFormatting)
     sendAmountTextFieldFormatter.maximumFractionDigits = swapItem.token.tokenFractionalDigits
   }
 
@@ -124,7 +125,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   
   // MARK: - Formatters
   
-  private let sendAmountTextFieldFormatter = SendAmountTextFieldFormatterFactory.make(groupingSeparator: ",")
+  private let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter
 }
 
 private extension SwapViewModelImplementation {

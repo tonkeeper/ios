@@ -18,6 +18,10 @@ public final class SwapController {
     self.ratesService = ratesService
     self.amountFormatter = amountFormatter
   }
+
+  public var groupSeparatorForFormatting: String {
+    amountFormatter.groupSeparator
+  }
   
   public func calculateReceiveRate(
     sendToken: Token,

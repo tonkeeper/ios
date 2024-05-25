@@ -6,7 +6,11 @@ public final class FormattersAssembly {
   }
 
   public var amountFormatterV2: AmountFormatter {
-    AmountFormatter(bigIntFormatter: BigIntAmountFormatter(groupSeparator: ","))
+    if let separator = Locale.current.decimalSeparator, separator == "," {
+      return amountFormatter
+    } else {
+      return AmountFormatter(bigIntFormatter: BigIntAmountFormatter(groupSeparator: ","))
+    }
   }
   
   public var bigIntAmountFormatter: BigIntAmountFormatter {
