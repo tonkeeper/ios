@@ -11,24 +11,29 @@ public final class TKBackgroundView: UIView {
 
   public var state: TKBackgroundView.State = .separate {
     didSet {
-      let path = createPath(for: state)
-      let animation = CABasicAnimation(keyPath: "path")
-      animation.duration = 0.5
-      animation.fromValue = (shape.presentation())?.path ?? shape.path
-      animation.toValue = path
-      animation.timingFunction = .init(name: .easeIn)
-      animation.isRemovedOnCompletion = true
-      animation.fillMode = .forwards
-      shape.add(animation, forKey: "path")
-      shape.path = path
+      let topPath = createTopPath(for: state)
+      animatePath(path: topPath, shape: topShape)
+
+      let bottomPath = createBottomPath(for: state)
+      animatePath(path: bottomPath, shape: bottomShape)
     }
   }
 
-  private lazy var shape: CAShapeLayer = {
+  private lazy var topShape: CAShapeLayer = {
     let shape = CAShapeLayer()
     shape.fillColor = UIColor.Background.content.cgColor
     return shape
   }()
+
+  private lazy var bottomShape: CAShapeLayer = {
+    let shape = CAShapeLayer()
+    shape.fillColor = UIColor.Background.content.cgColor
+    return shape
+  }()
+
+  private let topView = UIView()
+  private let centerView = UIView()
+  private let bottomView = UIView()
 
   public override init(frame: CGRect) {
     super.init(frame: frame)
@@ -41,18 +46,29 @@ public final class TKBackgroundView: UIView {
 
   public override func layoutSubviews() {
     super.layoutSubviews()
-    shape.path = createPath(for: state)
+    topShape.path = createTopPath(for: state)
+    topView.frame = CGRectMake(0, 0, bounds.width, 8)
+
+    centerView.frame = CGRectMake(0, 8, bounds.width, bounds.height - 16)
+
+    bottomShape.path = createBottomPath(for: state)
+    bottomView.frame = CGRectMake(0, bounds.height - 8, bounds.width, 8)
   }
 
   private func setup() {
-    layer.addSublayer(shape)
-    backgroundColor = .red
+    addSubview(topView)
+    addSubview(centerView)
+    addSubview(bottomView)
+
+    centerView.backgroundColor = .Background.content
+    
+    topView.layer.addSublayer(topShape)
+    bottomView.layer.addSublayer(bottomShape)
   }
   
-  private func createPath(for state: TKBackgroundView.State) -> CGPath {
+  private func createTopPath(for state: TKBackgroundView.State) -> CGPath {
     let path = UIBezierPath()
     let radius: CGFloat = 8
-
     path.move(to: .init(x: 0, y: radius))
     
     if state == .topMerge || state == .bothMerge {
@@ -66,19 +82,59 @@ public final class TKBackgroundView: UIView {
       path.addLine(to: .init(x: frame.maxX - radius, y: 0))
       path.addArc(withCenter: .init(x: frame.maxX - radius, y: radius), radius: radius, startAngle: -.pi / 2, endAngle: 0, clockwise: true)
     }
-    path.addLine(to: .init(x: frame.maxX, y: frame.maxY - radius))
+    path.close()
+    return path.cgPath
+  }
+
+//  private func createBottomPath(for state: TKBackgroundView.State) -> CGPath {
+//    let path = UIBezierPath()
+//    let radius: CGFloat = 8
+//    path.move(to: .init(x: frame.maxX, y: frame.maxY - radius))
+//    
+//    if state == .bottomMerge || state == .bothMerge {
+//      path.addLine(to: .init(x: frame.maxX, y: frame.maxY))
+//      path.addLine(to: .init(x: frame.maxX - radius, y: frame.maxY))
+//      path.addLine(to: .init(x: radius, y: frame.maxY))
+//      path.addLine(to: .init(x: 0, y: frame.maxY))
+//      path.addLine(to: .init(x: 0, y: frame.maxY - radius))
+//    } else {
+//      path.addArc(withCenter: .init(x: frame.maxX - radius, y: frame.maxY - radius), radius: radius, startAngle: 0, endAngle: .pi / 2, clockwise: true)
+//      path.addLine(to: .init(x: radius, y: frame.maxY))
+//      path.addArc(withCenter: .init(x: radius, y: frame.maxY - radius), radius: radius, startAngle: .pi / 2 , endAngle: .pi, clockwise: true)
+//    }
+//    path.close()
+//    return path.cgPath
+//  }
+
+  private func createBottomPath(for state: TKBackgroundView.State) -> CGPath {
+    let path = UIBezierPath()
+    let radius: CGFloat = 8
+    path.move(to: .init(x: frame.maxX, y: 0))
+    
     if state == .bottomMerge || state == .bothMerge {
-      path.addLine(to: .init(x: frame.maxX, y: frame.maxY))
-      path.addLine(to: .init(x: frame.maxX - radius, y: frame.maxY))
-      path.addLine(to: .init(x: radius, y: frame.maxY))
-      path.addLine(to: .init(x: 0, y: frame.maxY))
-      path.addLine(to: .init(x: 0, y: frame.maxY - radius))
+      path.addLine(to: .init(x: frame.maxX, y: radius))
+      path.addLine(to: .init(x: frame.maxX - radius, y: radius))
+      path.addLine(to: .init(x: radius, y: radius))
+      path.addLine(to: .init(x: 0, y: radius))
+      path.addLine(to: .init(x: 0, y: 0))
     } else {
-      path.addArc(withCenter: .init(x: frame.maxX - radius, y: frame.maxY - radius), radius: radius, startAngle: 0, endAngle: .pi / 2, clockwise: true)
-      path.addLine(to: .init(x: radius, y: frame.maxY))
-      path.addArc(withCenter: .init(x: radius, y: frame.maxY - radius), radius: radius, startAngle: .pi / 2 , endAngle: .pi, clockwise: true)
+      path.addArc(withCenter: .init(x: frame.maxX - radius, y: 0), radius: radius, startAngle: 0, endAngle: .pi / 2, clockwise: true)
+      path.addLine(to: .init(x: radius, y: radius))
+      path.addArc(withCenter: .init(x: radius, y: 0), radius: radius, startAngle: .pi / 2 , endAngle: .pi, clockwise: true)
     }
     path.close()
     return path.cgPath
+  }
+
+  private func animatePath(path: CGPath, shape: CAShapeLayer) {
+    let animation = CABasicAnimation(keyPath: "path")
+    animation.duration = 0.5
+    animation.fromValue = (shape.presentation())?.path ?? shape.path
+    animation.toValue = path
+    animation.timingFunction = .init(name: .easeIn)
+    animation.isRemovedOnCompletion = true
+    animation.fillMode = .forwards
+    shape.add(animation, forKey: "path")
+    shape.path = path
   }
 }

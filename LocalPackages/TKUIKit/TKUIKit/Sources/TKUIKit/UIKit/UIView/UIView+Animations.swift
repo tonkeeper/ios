@@ -4,6 +4,8 @@ public extension UIView {
 
     static func spring(
         duration: TimeInterval = 1.0,
+        damping: CGFloat = 0.5,
+        velocity: CGFloat = 0.5,
         alphaDuration: TimeInterval = 0.4,
         _ animate: @escaping () -> Void,
         alphaAnimation: (() -> Void)? = nil,
@@ -12,8 +14,8 @@ public extension UIView {
         UIView.animate(
             withDuration: duration,
             delay: 0,
-            usingSpringWithDamping: 0.5,
-            initialSpringVelocity: 0.5,
+            usingSpringWithDamping: damping,
+            initialSpringVelocity: velocity,
             options: [.allowUserInteraction],
             animations: animate
         )

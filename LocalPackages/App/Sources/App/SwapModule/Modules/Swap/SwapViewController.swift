@@ -64,7 +64,7 @@ private extension SwapViewController {
       self.customView.inputView2.swapField.inverse()
 
       self.customView.collapseDetailView()
-      UIView.spring {
+      UIView.spring(damping: 0.75, velocity: 0.25) {
         self.customView.inputView1.center = self.customView.inputView2.center
         self.customView.inputView2.center = oldCenter
       } completion: { _ in

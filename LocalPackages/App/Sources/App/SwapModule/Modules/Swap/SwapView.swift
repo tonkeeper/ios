@@ -67,7 +67,7 @@ final class SwapView: UIView {
       make.top.equalTo(detailsViewContainer).offset(40)
       make.height.equalTo(56)
     }
-    UIView.spring {
+    UIView.spring(damping: 0.75, velocity: 0.2) {
       self.detailsViewContainer.layoutIfNeeded()
     } alphaAnimation: {
       self.detailsView.loader.alpha = 1
@@ -95,8 +95,6 @@ private extension SwapView {
     scrollView.addSubview(swapInputsButton)
     scrollView.addSubview(detailsViewContainer)
     detailsViewContainer.addSubview(detailsView)
-
-    detailsViewContainer.backgroundColor = .cyan
   
     setupConstraints()
   }

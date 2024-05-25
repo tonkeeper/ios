@@ -32,8 +32,6 @@ private extension SwapDetailsView {
     addSubview(statusLabel)
     addSubview(loader)
 
-    backgroundColor = .Background.content
-
     statusLabel.font = TKTextStyle.label1.font
     statusLabel.textColor = .Button.secondaryForeground
     statusLabel.textAlignment = .center
