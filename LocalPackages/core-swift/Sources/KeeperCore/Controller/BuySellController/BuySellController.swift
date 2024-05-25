@@ -65,6 +65,15 @@ public final class BuySellController {
     }
   }
   
+  public func convertAmountToString(amount: BigUInt, fractionDigits: Int) -> String {
+    return amountNewFormatter.formatAmount(
+      amount,
+      fractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+      currency: nil
+    )
+  }
+  
   public func convertStringToAmount(string: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
     return amountNewFormatter.amount(from: string, targetFractionalDigits: targetFractionalDigits)
   }

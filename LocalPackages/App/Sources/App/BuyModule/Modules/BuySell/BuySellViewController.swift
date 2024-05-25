@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import KeeperCore
 
 open class ModalViewController<View: UIView, NavigationBar: ModalNavigationBarView>: GenericViewViewController<View> {
   public let customNavigationBarView = NavigationBar()
@@ -240,25 +241,12 @@ private extension BuySellViewController {
   }
   
   func setupBindings() {
-    viewModel.didUpdateModel = { [weak self] model in
-      guard let customView = self?.customView else { return }
-      
-      if let amountModel = model.amount {
-        customView.amountInputView.isHidden = false
-        customView.amountInputView.inputControl.amountTextField.text = amountModel.text
-        customView.amountInputView.inputControl.currencyLabel.text = amountModel.token.title
-        customView.amountInputView.minAmountLabel.text = "Min. amount: \(amountModel.minimum) \(amountModel.token.title)"
-      } else {
-        customView.amountInputView.isHidden = true
-      }
-      
-      customView.amountInputView.convertedAmountLabel.text = model.fiatAmount.converted
-      customView.amountInputView.convertedCurrencyLabel.text = model.fiatAmount.currency.rawValue
-      
-      customView.continueButton.configuration.content = TKButton.Configuration.Content(title: .plainString(model.button.title))
-      customView.continueButton.configuration.isEnabled = model.button.isEnabled
-      customView.continueButton.configuration.showsLoader = model.button.isActivity
-      customView.continueButton.configuration.action = model.button.action
+    viewModel.didUpdateModel = { [weak customView] model in
+      customView?.configure(model: model)
+    }
+    
+    viewModel.didUpdateInputAmountText = { [weak customView] text in
+      customView?.amountInputView.inputControl.amountTextField.text = text
     }
     
     viewModel.didUpdateCountryCode = { [weak self] countryCode in
@@ -287,7 +275,7 @@ private extension BuySellViewController {
     }
     
     customView.tabButtonsContainerView.itemDidSelect = {[weak viewModel] itemId in
-      let operation: BuySellItem.Operation = itemId == 0 ? .buy : .sell
+      let operation: BuySellModel.Operation = itemId == 0 ? .buy : .sell
       viewModel?.didChangeOperation(operation)
     }
     
@@ -355,7 +343,7 @@ private extension BuySellViewController {
   }
   
   @objc func resignGestureAction() {
-    customView.amountInputView.inputControl.resignFirstResponder()
+    customView.amountInputView.inputControl.amountTextField.resignFirstResponder()
   }
 }
 

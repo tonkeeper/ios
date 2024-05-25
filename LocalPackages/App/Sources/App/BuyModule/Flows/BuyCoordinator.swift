@@ -55,20 +55,16 @@ private extension BuyCoordinator {
   }
 
   func openBuySell() {
-    let defaultBuySellItem = BuySellItem(
-      operation: .buy,
-      token: .ton,
-      inputAmount: "300",
-      minimumInputAmount: "50"
-    )
-    
     let module = BuySellAssembly.module(
       buySellController: keeperCoreMainAssembly.buySellController(
         wallet: wallet,
         isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
       ),
       appSettings: coreAssembly.appSettings,
-      buySellItem: defaultBuySellItem
+      buySellModel: .buyTon(
+        initialAmount: 50,
+        minAmount: 50
+      )
     )
     
     module.view.setupRightCloseButton { [weak self] in

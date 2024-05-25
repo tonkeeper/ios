@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class BuySellAmountInputView: UIView {
+final class BuySellAmountInputView: UIView, ConfigurableView {
   
   let inputControl: AmountInputViewInputControl = {
     let inputControl = AmountInputViewInputControl()
@@ -57,9 +57,34 @@ final class BuySellAmountInputView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  // MARK: - Setup
+  struct Model {
+    struct Amount {
+      let value: String
+      let currency: String
+    }
+    
+    struct Minimum {
+      let title: String
+      let amount: Amount
+    }
+    
+    let inputCurrency: String
+    let convertedAmount: Amount
+    let minimum: Minimum
+  }
   
-  private func setup() {
+  func configure(model: Model) {
+    inputControl.currencyLabel.text = model.inputCurrency
+    minAmountLabel.text = "\(model.minimum.title): \(model.minimum.amount.value) \(model.minimum.amount.currency)"
+    convertedAmountLabel.text = model.convertedAmount.value
+    convertedCurrencyLabel.text = model.convertedAmount.currency
+  }
+}
+
+// MARK: - Setup
+
+private extension BuySellAmountInputView {
+  func setup() {
     addSubview(inputControl)
     addSubview(minAmountLabel)
     addSubview(convertedContainer)
@@ -69,7 +94,7 @@ final class BuySellAmountInputView: UIView {
     setupConstraints()
   }
   
-  private func setupConstraints() {
+  func setupConstraints() {
     inputControl.snp.makeConstraints { make in
       make.top.equalTo(self).offset(CGFloat.inputControlTopPadding)
       make.left.right.equalTo(self).inset(8)
@@ -100,6 +125,7 @@ final class BuySellAmountInputView: UIView {
     }
   }
 }
+
 
 private extension CGFloat {
   static let height: CGFloat = 178

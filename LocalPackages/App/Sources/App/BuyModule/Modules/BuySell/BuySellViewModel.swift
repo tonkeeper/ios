@@ -5,47 +5,6 @@ import TKCore
 import KeeperCore
 import BigInt
 
-struct BuySellItem {
-  enum Operation: Hashable {
-    case buy
-    case sell
-  }
-  
-  var operation: Operation
-  var token: Token
-  var inputAmount: String
-  var minimumInputAmount: String
-}
-
-struct BuySellModel {
-  struct Amount {
-    struct Token {
-      let title: String
-    }
-    
-    let text: String
-    let fractionDigits: Int
-    let minimum: String
-    let token: Token
-  }
-  
-  struct FiatAmount {
-    let converted: String
-    let currency: Currency
-  }
-
-  struct Button {
-    let title: String
-    let isEnabled: Bool
-    let isActivity: Bool
-    let action: (() -> Void)
-  }
-  
-  let amount: Amount?
-  let fiatAmount: FiatAmount
-  let button: Button
-}
-
 public struct PaymentMethodItemsModel {
   public struct Item {
     public let id: String
@@ -65,7 +24,8 @@ protocol BuySellModuleOutput: AnyObject {
 }
 
 protocol BuySellViewModel: AnyObject {
-  var didUpdateModel: ((BuySellModel) -> Void)? { get set }
+  var didUpdateModel: ((BuySellView.Model) -> Void)? { get set }
+  var didUpdateInputAmountText: ((String) -> Void)? { get set }
   var didUpdateCountryCode: ((String?) -> Void)? { get set }
   var didUpdatePaymentMethodItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   
@@ -74,7 +34,7 @@ protocol BuySellViewModel: AnyObject {
   func viewDidLoad()
   func didInputAmount(_ string: String)
   func didSelectPaymentMethod(_ paymentMethod: PaymentMethodItemsModel.Item)
-  func didChangeOperation(_ operation: BuySellItem.Operation)
+  func didChangeOperation(_ operation: BuySellModel.Operation)
 }
 
 final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutput {
@@ -85,57 +45,36 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   
   // MARK: - BuySellModelViewModel
   
-  var didUpdateModel: ((BuySellModel) -> Void)?
+  var didUpdateModel: ((BuySellView.Model) -> Void)?
+  var didUpdateInputAmountText: ((String) -> Void)?
   var didUpdateCountryCode: ((String?) -> Void)?
   var didUpdatePaymentMethodItems: (([SelectionCollectionViewCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
-    updateAmountInputMinimum(with: buySellItem.minimumInputAmount)
-    updateAmountInput(with: buySellItem.inputAmount)
+    updateWithInitalData()
     updateCountryCode()
-    update()
-    
-    // TODO: Add BuySellController didChangeRegion
-    
-    let testItemsModel = PaymentMethodItemsModel(items: [
-      .creditCard,
-      .creditCardRUB,
-      .cryptocurrency,
-      .applePay
-    ])
-    
-    didUpdatePaymentMethodModel(testItemsModel)
+    updatePaymentMethodList()
   }
   
   func didInputAmount(_ string: String) {
     guard string != amountInput else { return }
     amountInput = string
     
-    Task {
-      let unformatted = textFieldFormatter.unformatString(string) ?? ""
-      let convertedInput = buySellController.convertStringToAmount(
-        string: unformatted,
-        targetFractionalDigits: tokenFractionalDigits(token: buySellItem.token)
-      )
-      let isAmountValid = minimumValidAmount <= convertedInput.amount
-      
-      await MainActor.run {
-        self.amountInput = unformatted
-        self.buySellItem.inputAmount = unformatted
-        self.amountInputValue = convertedInput.amount
-        self.isAmountValid = isAmountValid
-        updateConverted()
-        update()
-      }
-    }
+    let convertedAmount = convertStringToAmount(string)
+    buySellModel.inputAmount = convertedAmount
+    amountInputValue = convertedAmount
+    isAmountValid = minimumValidAmount <= convertedAmount
+    
+    updateConverted()
+    update()
   }
   
   func didSelectPaymentMethod(_ paymentMethod: PaymentMethodItemsModel.Item) {
     selectedPaymentMethod = paymentMethod
   }
   
-  func didChangeOperation(_ operation: BuySellItem.Operation) {
-    buySellItem.operation = operation
+  func didChangeOperation(_ operation: BuySellModel.Operation) {
+    buySellModel.operation = operation
     updatePaymentMethodList()
   }
   
@@ -144,8 +83,8 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   private var countryCode: String?
   private var amountInput = "0"
   private var amountInputMinimum = "0"
-  private var amountInputValue = BigUInt()
-  private var minimumValidAmount = BigUInt()
+  private var amountInputValue = BigUInt(0)
+  private var minimumValidAmount = BigUInt(0)
   private var convertedValue = "0"
   private var currency = Currency.USD
   private var selectedPaymentMethod = PaymentMethodItemsModel.Item.creditCard
@@ -179,14 +118,14 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   // MARK: - Dependencies
   
   private let buySellController: BuySellController
-  private var buySellItem: BuySellItem
+  private var buySellModel: BuySellModel
   
   // MARK: - Init
   
-  init(buySellController: BuySellController, appSettings: AppSettings, buySellItem: BuySellItem) {
+  init(buySellController: BuySellController, appSettings: AppSettings, buySellModel: BuySellModel) {
     self.buySellController = buySellController
-    self.buySellItem = buySellItem
-    self.textFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: buySellItem.token)
+    self.buySellModel = buySellModel
+    self.textFieldFormatter.maximumFractionDigits = buySellModel.token.fractionDigits
   }
   
   deinit {
@@ -197,59 +136,65 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
 // MARK: - Private
 
 private extension BuySellViewModelImplementation {
+  func updateWithInitalData() {
+    let minimumInputAmount = buySellController.convertAmountToString(
+      amount: buySellModel.minimumInputAmount,
+      fractionDigits: buySellModel.token.fractionDigits
+    )
+    let inputAmount = buySellController.convertAmountToString(
+      amount: buySellModel.inputAmount,
+      fractionDigits: buySellModel.token.fractionDigits
+    )
+    minimumValidAmount = buySellModel.minimumInputAmount
+    amountInputValue = buySellModel.inputAmount
+    updateAmountInputMinimum(minimumInputAmount)
+    didUpdateInputAmountText?(inputAmount)
+    didInputAmount(inputAmount)
+  }
+  
   func update() {
     let model = createModel()
     didUpdateModel?(model)
   }
   
-  func createModel() -> BuySellModel {
-    BuySellModel(
-      amount: createAmountModel(amountInput: amountInput, token: buySellItem.token),
-      fiatAmount: BuySellModel.FiatAmount(converted: "\(convertedValue)", currency: currency),
-      button: BuySellModel.Button(
+  func createModel() -> BuySellView.Model {
+    BuySellView.Model(
+      input: BuySellAmountInputView.Model(
+        inputCurrency: TonInfo.symbol,
+        convertedAmount: BuySellAmountInputView.Model.Amount(
+          value: convertedValue,
+          currency: currency.code
+        ),
+        minimum: BuySellAmountInputView.Model.Minimum(
+          title: "Min. amount",
+          amount: BuySellAmountInputView.Model.Amount(
+            value: amountInputMinimum,
+            currency: TonInfo.symbol
+          )
+        )
+      ),
+      button: BuySellView.Model.Button(
         title: TKLocales.Actions.continue_action,
         isEnabled: !isResolving && isContinueEnable,
         isActivity: isResolving,
         action: { [weak self] in
           guard let self else { return }
-          let buySellOperatorItem = createBuySellOperatorItem()
-          didContinueBuySell?(buySellOperatorItem)
+          didContinueBuySell?(createBuySellOperatorItem())
         }
       )
     )
   }
-    
-  func createAmountModel(amountInput: String, token: Token) -> BuySellModel.Amount {
-    BuySellModel.Amount(
-      text: textFieldFormatter.formatString(amountInput) ?? "",
-      fractionDigits: tokenFractionalDigits(token: token),
-      minimum: amountInputMinimum,
-      token: createTokenModel(token: token)
-    )
-  }
-  
-  func createTokenModel(token: Token) -> BuySellModel.Amount.Token {
-    let title: String
-    switch token {
-    case .ton:
-      title = "TON"
-    case .jetton(let item):
-      title = item.jettonInfo.symbol ?? ""
-    }
-    
-    return BuySellModel.Amount.Token(title: title)
-  }
   
   func createBuySellOperatorItem() -> BuySellOperatorItem {
-    let amount = textFieldFormatter.formatString(amountInput) ?? ""
+    let unformattedAmount = textFieldFormatter.unformatString(amountInput)
+    let amount = textFieldFormatter.formatString(unformattedAmount) ?? ""
     let buySellOperation: BuySellOperatorItem.Operation
-    switch buySellItem.operation {
+    switch buySellModel.operation {
     case .buy:
       buySellOperation = .buy(amount: amount)
     case .sell:
       buySellOperation = .sell(amount: amount)
     }
-    
     return BuySellOperatorItem(
       operation: buySellOperation,
       paymentMethod: .init(
@@ -260,18 +205,18 @@ private extension BuySellViewModelImplementation {
     )
   }
   
-  func updateAmountInputMinimum(with amount: String) {
-    amountInputMinimum = amount
-    updateMinimumValidAmount(with: amount)
+  func updateAmountInputMinimum(_ string: String) {
+    amountInputMinimum = string
+    minimumValidAmount = convertStringToAmount(string)
   }
-
-  func updateMinimumValidAmount(with amount: String) {
-    let unformatted = textFieldFormatter.unformatString(amount) ?? ""
+  
+  func convertStringToAmount(_ string: String) -> BigUInt {
+    let unformatted = textFieldFormatter.unformatString(string) ?? "0"
     let converted = buySellController.convertStringToAmount(
       string: unformatted,
-      targetFractionalDigits: tokenFractionalDigits(token: buySellItem.token)
+      targetFractionalDigits: buySellModel.token.fractionDigits
     )
-    minimumValidAmount = converted.amount
+    return converted.amount
   }
   
   func updateAmountInput(with inputAmount: String) {
@@ -281,7 +226,6 @@ private extension BuySellViewModelImplementation {
   func updateCountryCode() {
     Task {
       let countryCode = await buySellController.getCountryCode()
-      
       await MainActor.run {
         self.countryCode = countryCode
         didUpdateCountryCode?(countryCode)
@@ -290,12 +234,10 @@ private extension BuySellViewModelImplementation {
   }
   
   func updateConverted() {
+    let amountValue = amountInputValue
     Task {
-      let token = buySellItem.token
-      let amountValue = amountInputValue
       let currency = await buySellController.getActiveCurrency()
-      let convertedValue = await buySellController.convertTokenAmountToCurrency(token: token, amountValue, currency: currency)
-      
+      let convertedValue = await buySellController.convertTokenAmountToCurrency(token: .ton, amountValue, currency: currency)
       await MainActor.run {
         self.convertedValue = convertedValue
         self.currency = currency
@@ -305,14 +247,13 @@ private extension BuySellViewModelImplementation {
   }
   
   func updatePaymentMethodList() {
-    // TODO: Fetch data
     var items: [PaymentMethodItemsModel.Item] = [
       .creditCard,
       .creditCardRUB,
       .cryptocurrency
     ]
     
-    if buySellItem.operation == .buy {
+    if buySellModel.operation == .buy {
       items.append(.applePay)
     }
     
@@ -329,17 +270,6 @@ private extension BuySellViewModelImplementation {
     Task { @MainActor in
       didUpdatePaymentMethodItems?(paymentMethodItems)
     }
-  }
-  
-  func tokenFractionalDigits(token: Token) -> Int {
-    let fractionDigits: Int
-    switch token {
-    case .ton:
-      fractionDigits = TonInfo.fractionDigits
-    case .jetton(let jettonItem):
-      fractionDigits = jettonItem.jettonInfo.fractionDigits
-    }
-    return fractionDigits
   }
 }
 

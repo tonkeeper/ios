@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-final class BuySellView: UIView {
+final class BuySellView: UIView, ConfigurableView {
   
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
   
@@ -36,6 +36,26 @@ final class BuySellView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  struct Model {
+    struct Button {
+      let title: String
+      let isEnabled: Bool
+      let isActivity: Bool
+      let action: (() -> Void)
+    }
+    
+    let input: BuySellAmountInputView.Model
+    let button: Button
+  }
+  
+  func configure(model: Model) {
+    amountInputView.configure(model: model.input)
+    continueButton.configuration.content = TKButton.Configuration.Content(title: .plainString(model.button.title))
+    continueButton.configuration.isEnabled = model.button.isEnabled
+    continueButton.configuration.showsLoader = model.button.isActivity
+    continueButton.configuration.action = model.button.action
   }
 }
 

@@ -6,11 +6,11 @@ struct BuySellAssembly {
   private init() {}
   static func module(buySellController: BuySellController,
                      appSettings: AppSettings,
-                     buySellItem: BuySellItem) -> MVVMModule<BuySellViewController, BuySellModuleOutput, Void> {
+                     buySellModel: BuySellModel) -> MVVMModule<BuySellViewController, BuySellModuleOutput, Void> {
     let viewModel = BuySellViewModelImplementation(
       buySellController: buySellController,
       appSettings: appSettings,
-      buySellItem: buySellItem
+      buySellModel: buySellModel
     )
     
     let viewController = BuySellViewController(
