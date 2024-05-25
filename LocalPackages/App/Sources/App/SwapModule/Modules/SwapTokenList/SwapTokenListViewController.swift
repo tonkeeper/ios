@@ -14,6 +14,19 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
   typealias CellRegistration<T> = UICollectionView.CellRegistration<T, T.Configuration> where T: TKCollectionViewNewCell & TKConfigurableView
   typealias Snapshot = NSDiffableDataSourceSnapshot<SwapTokenListSection, AnyHashable>
   
+  private var isSearching: Bool = false {
+    didSet {
+      guard isSearching != oldValue else { return }
+      didUpdateSearchingState(newValue: isSearching)
+    }
+  }
+  
+  private lazy var tapGestureRecognizer: UITapGestureRecognizer = {
+    let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(resignGestureAction))
+    gestureRecognizer.cancelsTouchesInView = false
+    return gestureRecognizer
+  }()
+  
   // MARK: - List
   
   private lazy var layout: UICollectionViewCompositionalLayout = {
@@ -50,19 +63,6 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
   private lazy var otherTokensCellConfiguration: CellRegistration<TKUIListItemCell> = createDefaultCellRegistration()
   
   private var preSearchSnapshot: Snapshot?
-  
-  private var isSearching: Bool = false {
-    didSet {
-      guard isSearching != oldValue else { return }
-      didUpdateSearchingState(newValue: isSearching)
-    }
-  }
-  
-  private lazy var tapGestureRecognizer: UITapGestureRecognizer = {
-    let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(resignGestureAction))
-    gestureRecognizer.cancelsTouchesInView = false
-    return gestureRecognizer
-  }()
   
   // MARK: - Dependencies
   
@@ -184,14 +184,7 @@ private extension SwapTokenListViewController {
   
   func setupBindings() {
     viewModel.didUpdateModel = { [weak self] model in
-      guard let customView = self?.customView else { return }
-      
-      customView.titleView.configure(model: .init(title: model.title))
-      
-      customView.noSearchResultsLabel.attributedText = model.noSearchResultsTitle.withTextStyle(.body1, color: .Text.secondary)
-      
-      customView.closeButton.configuration.content = TKButton.Configuration.Content(title: .plainString(model.closeButton.title))
-      customView.closeButton.configuration.action = model.closeButton.action
+      self?.customView.configure(model: model)
     }
     
     viewModel.didUpdateListItems = { [weak self] suggestedTokenItems, otherTokenItems in

@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class SwapTokenListView: UIView {
+final class SwapTokenListView: UIView, ConfigurableView {
   
   var searchBarViewTopOffset: CGFloat = 64 {
     didSet {
@@ -48,6 +48,24 @@ final class SwapTokenListView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  struct Model {
+    struct Button {
+      let title: String
+      let action: (() -> Void)?
+    }
+    
+    let title: ModalTitleView.Model
+    let noSearchResultsTitle: NSAttributedString
+    let closeButton: Button
+  }
+  
+  func configure(model: Model) {
+    titleView.configure(model: model.title)
+    noSearchResultsLabel.attributedText = model.noSearchResultsTitle
+    closeButton.configuration.content.title = .plainString(model.closeButton.title)
+    closeButton.configuration.action = model.closeButton.action
   }
 }
 

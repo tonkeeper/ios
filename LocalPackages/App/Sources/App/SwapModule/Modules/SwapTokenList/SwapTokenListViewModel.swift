@@ -3,17 +3,6 @@ import TKUIKit
 import KeeperCore
 import TonSwift
 
-struct SwapTokenListModel {
-  struct Button {
-    let title: String
-    let action: (() -> Void)?
-  }
-  
-  let title: String
-  let noSearchResultsTitle: String
-  let closeButton: Button
-}
-
 struct SwapTokenListItem {
   var contractAddressForPair: Address?
 }
@@ -23,12 +12,8 @@ protocol SwapTokenListModuleOutput: AnyObject {
   var didChooseToken: ((SwapAsset) -> Void)? { get set }
 }
 
-protocol SwapTokenListModuleInput: AnyObject {
-  
-}
-
 protocol SwapTokenListViewModel: AnyObject {
-  var didUpdateModel: ((SwapTokenListModel) -> Void)? { get set }
+  var didUpdateModel: ((SwapTokenListView.Model) -> Void)? { get set }
   var didUpdateListItems: (([SuggestedTokenCell.Configuration], [TKUIListItemCell.Configuration]) -> Void)? { get set }
   var didUpdateSearchResultsItems: (([TKUIListItemCell.Configuration]) -> Void)? { get set }
   
@@ -38,18 +23,16 @@ protocol SwapTokenListViewModel: AnyObject {
   func didSelectToken(_ asset: SwapAsset)
 }
 
-final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTokenListModuleOutput, SwapTokenListModuleInput {
+final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTokenListModuleOutput {
 
   // MARK: - SwapTokenListModuleOutput
   
   var didFinish: (() -> Void)?
   var didChooseToken: ((SwapAsset) -> Void)?
   
-  // MARK: - SwapTokenListModuleInput
-  
   // MARK: - SwapTokenListViewModel
   
-  var didUpdateModel: ((SwapTokenListModel) -> Void)?
+  var didUpdateModel: ((SwapTokenListView.Model) -> Void)?
   var didUpdateListItems: (([SuggestedTokenCell.Configuration], [TKUIListItemCell.Configuration]) -> Void)?
   var didUpdateSearchResultsItems: (([TKUIListItemCell.Configuration]) -> Void)?
   
@@ -106,15 +89,6 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
     didFinish?()
   }
   
-  // MARK: - State
-  
-  private var isResolving = false {
-    didSet {
-      guard isResolving != oldValue else { return }
-      update()
-    }
-  }
-  
   // MARK: - Mapper
   
   private let itemMapper = SwapTokenListItemMapper()
@@ -144,11 +118,11 @@ private extension SwapTokenListViewModelImplementation {
     didUpdateModel?(model)
   }
   
-  func createModel() -> SwapTokenListModel {
-    SwapTokenListModel(
-      title: "Choose Token",
-      noSearchResultsTitle: "Your search returned no results",
-      closeButton: SwapTokenListModel.Button(
+  func createModel() -> SwapTokenListView.Model {
+    SwapTokenListView.Model(
+      title: ModalTitleView.Model(title: "Choose Token"),
+      noSearchResultsTitle: "Your search returned no results".withTextStyle(.body1, color: .Text.secondary),
+      closeButton: SwapTokenListView.Model.Button(
         title: "Close",
         action: { [weak self] in
           self?.didFinish?()
