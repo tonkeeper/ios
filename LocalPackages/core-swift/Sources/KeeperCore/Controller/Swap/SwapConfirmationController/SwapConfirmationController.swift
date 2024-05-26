@@ -197,7 +197,7 @@ private extension SwapConfirmationController {
     let toWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: to.toRaw(),
       owner: STONFI_CONSTANTS.RouterAddress,
-      isTestnet: wallet.isTestnet
+      isTestnet: false
     )
     
     return try await SwapMessageBuilder.sendSwap(
