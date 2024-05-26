@@ -21,12 +21,12 @@ final class SwapViewController: GenericViewViewController<SwapView>, KeyboardObs
     setupBindings()
     setupViewEvents()
     viewModel.viewDidLoad()
+    customView.sendView.amountTextField.becomeFirstResponder()
   }
   
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
     registerForKeyboardEvents()
-    customView.sendView.amountTextField.becomeFirstResponder()
   }
 
   public override func viewWillDisappear(_ animated: Bool) {
@@ -59,14 +59,17 @@ private extension SwapViewController {
   func setupSwapInputs() {
     customView.swapInputsButton.configuration.action = { [weak self] in
       guard let self else { return }
-      let oldCenter = self.customView.inputView1.center
+
       self.customView.inputView1.swapField.inverse()
       self.customView.inputView2.swapField.inverse()
 
-      self.customView.collapseDetailView()
+      [self.customView.inputView1, self.customView.inputView2].forEach { inputView in
+        inputView.snp.updateConstraints { make in
+          make.top.equalTo(inputView.swapField == .send ? SwapView.sendViewTop : SwapView.receiveViewTop)
+        }
+      }
       UIView.spring(damping: 0.75, velocity: 0.25) {
-        self.customView.inputView1.center = self.customView.inputView2.center
-        self.customView.inputView2.center = oldCenter
+        self.customView.layoutIfNeeded()
       } completion: { _ in
         self.viewModel.swapTokens()
       }
@@ -100,7 +103,15 @@ private extension SwapViewController {
       }
     }
     viewModel.shoudMakeActive = { [weak self] field in
-      self?.customView.sendView.amountTextField.becomeFirstResponder()
+      switch field {
+      case .send:
+        self?.customView.sendView.amountTextField.becomeFirstResponder()
+      case .receive:
+        self?.customView.receiveView.amountTextField.becomeFirstResponder()
+      }
+    }
+    viewModel.shouldReloadProvider = { [weak self] in
+      self?.customView.collapseDetailView()
     }
   }
   

@@ -3,14 +3,6 @@ import TKUIKit
 
 final class SwapDetailsView: UIView {
 
-  enum State {
-    case notValid
-    case updating
-    case fixed
-  }
-
-  var state: SwapDetailsView.State = .notValid
-
   let backgroundView = TKBackgroundView()
 
   let statusLabel = UILabel()

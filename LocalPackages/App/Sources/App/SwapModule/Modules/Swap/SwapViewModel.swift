@@ -14,6 +14,7 @@ protocol SwapModuleInput: AnyObject {
 protocol SwapViewModel: AnyObject {
   var didUpdateModel: ((SwapView.Model) -> Void)? { get set }
   var shoudMakeActive: ((SwapField) -> Void)? { get set }
+  var shouldReloadProvider: (() -> Void)? { get set }
   
   func viewDidLoad()
 
@@ -39,6 +40,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   // MARK: - SendV3ModuleInput
 
   func update(swapField: SwapField, token: Token) {
+    let firstTimeReceiveChoosen = swapField == .receive && swapPair.receive == nil
     switch swapField {
     case .send:
       swapPair = SwapPair(send: .init(token: token, amount: swapPair.send.amount), receive: swapPair.receive)
@@ -46,13 +48,19 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
       swapPair = SwapPair(send: swapPair.send, receive: .init(token: token, amount: swapPair.receive?.amount ?? 0))
     }
     didInputAmount(sendAmount, swapField: .send)
-    shoudMakeActive?(.send)
+    if !firstTimeReceiveChoosen {
+      shoudMakeActive?(.send)
+    }
+    if swapPair.receive != nil {
+      shouldReloadProvider?()
+    }
   }
 
   // MARK: - SwapViewModel
 
   var didUpdateModel: ((SwapView.Model) -> Void)?
   var shoudMakeActive: ((SwapField) -> Void)?
+  var shouldReloadProvider: (() -> Void)?
   
   func viewDidLoad() {
     didInputAmount("", swapField: .send)
@@ -72,6 +80,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
 
     didInputAmount(sendAmount, swapField: .send)
     shoudMakeActive?(.send)
+    shouldReloadProvider?()
   }
   func didTapTokenPicker(swapField: SwapField) {
     didTapToken?(swapField, swapField == .send ? swapPair.receive?.token : swapPair.send.token)

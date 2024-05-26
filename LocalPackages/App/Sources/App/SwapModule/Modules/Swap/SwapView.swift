@@ -31,7 +31,7 @@ final class SwapView: UIView {
   let inputsDivider = UIView()
   let detailsDivider = UIView()
 
-  private var firstLoad = true
+  private var expanded = false
 
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
@@ -43,6 +43,9 @@ final class SwapView: UIView {
   }
 
   func expandDetailView() {
+    expanded = true
+    scrollView.keyboardDismissMode = .onDrag
+    
     detailsView.loader.stopAnimation()
     detailsView.backgroundView.state = .topMerge
     receiveView.backgroundView.state = .bottomMerge
@@ -58,6 +61,7 @@ final class SwapView: UIView {
   }
 
   func collapseDetailView() {
+    expanded = false
     detailsView.loader.startAnimation()
     detailsView.backgroundView.state = .separate
     receiveView.backgroundView.state = .separate
@@ -75,6 +79,7 @@ final class SwapView: UIView {
   }
 
   func showLoading() {
+    if expanded { return }
     UIView.animate(withDuration: 0.2) {
       self.detailsView.statusLabel.text = ""
       self.detailsView.statusLabel.alpha = 0
@@ -105,21 +110,21 @@ private extension SwapView {
       make.width.equalTo(self)
     }
     inputView1.snp.makeConstraints { make in
-      make.top.equalTo(scrollView).offset(16)
+      make.top.equalTo(scrollView).offset(Self.sendViewTop)
       make.left.right.equalTo(scrollView).inset(16).priority(.high)
       make.width.equalTo(scrollView).inset(16)
       make.height.equalTo(108)
     }
 
     inputView2.snp.makeConstraints { make in
-      make.top.equalTo(scrollView.snp.top).offset(16+108+8)
+      make.top.equalTo(scrollView.snp.top).offset(Self.receiveViewTop)
       make.left.right.equalTo(scrollView).inset(16).priority(.high)
       make.width.equalTo(scrollView).inset(16)
       make.height.equalTo(108)
     }
 
     detailsViewContainer.snp.makeConstraints { make in
-      make.top.equalTo(scrollView).offset(16+2*108+8)
+      make.top.equalTo(scrollView).offset(Self.detailsViewContainerTop)
       make.left.right.equalTo(scrollView).inset(16).priority(.high)
       make.width.equalTo(scrollView).inset(16)
       make.height.equalTo(320)
@@ -132,8 +137,15 @@ private extension SwapView {
     }
 
     swapInputsButton.snp.makeConstraints { make in
-      make.centerY.equalTo(16+108+4)
+      make.centerY.equalTo(Self.swapButtonTop)
       make.right.equalTo(scrollView).offset(-48)
     }
   }
+}
+
+extension SwapView {
+  static let sendViewTop = 16
+  static let receiveViewTop = 16+108+8
+  static let detailsViewContainerTop = 16+2*108+8
+  static let swapButtonTop = 16+108+4
 }
