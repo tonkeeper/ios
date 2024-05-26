@@ -80,6 +80,7 @@ final class BuySellOperatorViewController: ModalViewController<BuySellOperatorVi
     super.setupNavigationBarView()
     
     customView.collectionView.contentInset.top = ModalNavigationBarView.defaultHeight
+    customView.collectionView.contentInset.bottom = .scrollViewContentInsetBottom
     
     customNavigationBarView.setupCenterBarItem(configuration: .init(view: customView.titleView))
   }
@@ -155,17 +156,14 @@ private extension BuySellOperatorViewController {
   func selectFirstItemCell<T: Hashable>(snapshot: NSDiffableDataSourceSnapshot<T, AnyHashable>,
                                         items: [SelectionCollectionViewCell.Configuration],
                                         inSection section: T) {
-    guard !items.isEmpty, let sectionIndex = snapshot.sectionIdentifiers.firstIndex(of: section) else {
-      return
-    }
+    guard !items.isEmpty else { return }
+    guard let sectionIndex = snapshot.sectionIdentifiers.firstIndex(of: section) else { return }
     
     let selectedIndexPath = IndexPath(row: 0, section: sectionIndex)
     let selectionClosure = items[0].selectionClosure
     
-    customView.collectionView.performBatchUpdates(nil) { [weak self] _ in
-      self?.customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: .top)
-      selectionClosure?()
-    }
+    customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: [])
+    selectionClosure?()
   }
   
   func createDataSource() -> UICollectionViewDiffableDataSource<BuySellOperatorSection, AnyHashable> {
@@ -329,4 +327,5 @@ private extension NSDirectionalEdgeInsets {
 private extension CGFloat {
   static let currencyPickerCellHeight: CGFloat = 56
   static let operatorCellHeight: CGFloat = 76
+  static let scrollViewContentInsetBottom: CGFloat = 56 + 16 * 2
 }

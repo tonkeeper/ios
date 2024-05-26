@@ -60,12 +60,12 @@ final class BuySellDetailsViewController: ModalViewController<BuySellDetailsView
     guard let animationDuration = notification.keyboardAnimationDuration else { return }
     guard let keyboardHeight = notification.keyboardSize?.height else { return }
     
-    let contentInsetBottom = keyboardHeight + customView.continueButton.bounds.height
-    let continueButtonTranslatedY = -keyboardHeight + view.safeAreaInsets.bottom + .continueButtonBottomOffset
+    let contentInsetBottom = keyboardHeight + customView.continueButtonContainer.bounds.height - view.safeAreaInsets.bottom
+    let buttonContainerTranslatedY = -keyboardHeight + view.safeAreaInsets.bottom + .continueButtonBottomOffset
     
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
       self.customView.scrollView.contentInset.bottom = contentInsetBottom
-      self.customView.continueButton.transform = CGAffineTransform(translationX: 0, y: continueButtonTranslatedY)
+      self.customView.continueButtonContainer.transform = CGAffineTransform(translationX: 0, y: buttonContainerTranslatedY)
     }
   }
   
@@ -74,7 +74,7 @@ final class BuySellDetailsViewController: ModalViewController<BuySellDetailsView
     
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
       self.customView.scrollView.contentInset.bottom = 0
-      self.customView.continueButton.transform = .identity
+      self.customView.continueButtonContainer.transform = .identity
     }
   }
 }

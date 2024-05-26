@@ -28,6 +28,11 @@ final class BuySellView: UIView, ConfigurableView {
       size: .large
     )
   )
+  let continueButtonContainer: TKPaddingContainerView = {
+    let container = TKPaddingContainerView()
+    container.padding = .continueButtonContainerPadding
+    return container
+  }()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -66,7 +71,8 @@ private extension BuySellView {
     amountInputView.layer.cornerRadius = .contentCornerRadius
     
     addSubview(collectionView)
-    addSubview(continueButton)
+    continueButtonContainer.setViews([continueButton])
+    addSubview(continueButtonContainer)
     
     changeCountryButton.configuration.content.title = .plainString("AA")
     
@@ -78,16 +84,17 @@ private extension BuySellView {
       make.edges.equalTo(self)
     }
       
-    continueButton.snp.makeConstraints { make in
-      make.bottom.equalTo(self.safeAreaLayoutGuide).inset(CGFloat.contentVerticalPadding)
-      make.leading.equalTo(self).offset(CGFloat.contentHorizontalMargin)
-      make.trailing.equalTo(self).inset(CGFloat.contentHorizontalMargin)
+    continueButtonContainer.snp.makeConstraints { make in
+      make.bottom.equalTo(self.safeAreaLayoutGuide)
+      make.left.right.equalTo(self)
     }
   }
 }
 
 private extension CGFloat {
   static let contentCornerRadius: CGFloat = 16
-  static let contentVerticalPadding: CGFloat = 16
-  static let contentHorizontalMargin: CGFloat = 16
+}
+
+private extension UIEdgeInsets {
+  static let continueButtonContainerPadding = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
 }

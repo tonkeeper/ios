@@ -30,6 +30,11 @@ final class BuySellDetailsView: UIView, ConfigurableView {
       size: .large
     )
   )
+  let continueButtonContainer: TKPaddingContainerView = {
+    let container = TKPaddingContainerView()
+    container.padding = .continueButtonContainerPadding
+    return container
+  }()
   
   let contentStackView: UIStackView = {
     let stackView = UIStackView()
@@ -106,7 +111,8 @@ private extension BuySellDetailsView {
     contentStackView.addArrangedSubview(getAmountTextField)
     contentStackView.addArrangedSubview(rateContainerView)
     
-    addSubview(continueButton)
+    continueButtonContainer.setViews([continueButton])
+    addSubview(continueButtonContainer)
     addSubview(serviceProvidedLabel)
     addSubview(infoButtonsContainer)
     
@@ -125,10 +131,9 @@ private extension BuySellDetailsView {
       make.width.equalTo(scrollView)
     }
     
-    continueButton.snp.makeConstraints { make in
-      make.bottom.equalTo(serviceProvidedLabel.snp.top).offset(-CGFloat.contentHorizontalPadding)
-      make.leading.equalTo(self).offset(CGFloat.contentHorizontalPadding)
-      make.trailing.equalTo(self).inset(CGFloat.contentHorizontalPadding)
+    continueButtonContainer.snp.makeConstraints { make in
+      make.bottom.equalTo(serviceProvidedLabel.snp.top)
+      make.left.right.equalTo(self)
     }
     
     serviceProvidedLabel.snp.makeConstraints { make in
@@ -189,8 +194,11 @@ private extension TKTextFieldInputView {
 
 private extension CGFloat {
   static let contentVerticalPadding: CGFloat = 16
-  static let contentHorizontalPadding: CGFloat = 16
   static let infoItemHeight: CGFloat = 20
+}
+
+private extension UIEdgeInsets {
+  static let continueButtonContainerPadding = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
 }
 
 private extension NSDirectionalEdgeInsets {
@@ -201,4 +209,3 @@ private extension NSDirectionalEdgeInsets {
     trailing: 16
   )
 }
-

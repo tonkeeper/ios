@@ -141,13 +141,11 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
   
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
-    
     registerForKeyboardEvents()
   }
   
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
-    
     if !isViewDidAppearFirstTime {
       customView.amountInputView.inputControl.amountTextField.becomeFirstResponder()
       isViewDidAppearFirstTime = true
@@ -156,7 +154,6 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
   
   public override func viewWillDisappear(_ animated: Bool) {
     super.viewWillDisappear(animated)
-    
     unregisterFromKeyboardEvents()
   }
   
@@ -183,18 +180,15 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
   }
   
   public func keyboardWillShow(_ notification: Notification) {
-    guard let animationDuration = notification.keyboardAnimationDuration,
-          let keyboardHeight = notification.keyboardSize?.height
-    else {
-      return
-    }
+    guard let animationDuration = notification.keyboardAnimationDuration else { return }
+    guard let keyboardHeight = notification.keyboardSize?.height else { return }
     
-    let collectionViewBottomInset = keyboardHeight + customView.continueButton.bounds.height
-    let continueButtonTranslatedY = -keyboardHeight + view.safeAreaInsets.bottom
+    let contentInsetBottom = keyboardHeight + customView.continueButtonContainer.bounds.height - view.safeAreaInsets.bottom
+    let buttonContainerTranslatedY = -keyboardHeight + view.safeAreaInsets.bottom
     
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
-      self.customView.collectionView.contentInset.bottom = collectionViewBottomInset
-      self.customView.continueButton.transform = CGAffineTransform(translationX: 0, y: continueButtonTranslatedY)
+      self.customView.collectionView.contentInset.bottom = contentInsetBottom
+      self.customView.continueButtonContainer.transform = CGAffineTransform(translationX: 0, y: buttonContainerTranslatedY)
     }
   }
   
@@ -203,7 +197,7 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
     
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
       self.customView.collectionView.contentInset.bottom = 0
-      self.customView.continueButton.transform = .identity
+      self.customView.continueButtonContainer.transform = .identity
     }
   }
 }
@@ -274,7 +268,7 @@ private extension BuySellViewController {
       self?.didTapChangeCountryButton?()
     }
     
-    customView.tabButtonsContainerView.itemDidSelect = {[weak viewModel] itemId in
+    customView.tabButtonsContainerView.itemDidSelect = { [weak viewModel] itemId in
       let operation: BuySellModel.Operation = itemId == 0 ? .buy : .sell
       viewModel?.didChangeOperation(operation)
     }
@@ -288,19 +282,14 @@ private extension BuySellViewController {
   func selectFirstItemCell<T: Hashable>(snapshot: NSDiffableDataSourceSnapshot<T, AnyHashable>,
                                         items: [SelectionCollectionViewCell.Configuration],
                                         inSection section: T) {
-    guard !items.isEmpty,
-          let sectionIndex = snapshot.sectionIdentifiers.firstIndex(of: section)
-    else {
-      return
-    }
+    guard !items.isEmpty else { return }
+    guard let sectionIndex = snapshot.sectionIdentifiers.firstIndex(of: section) else { return }
     
     let selectedIndexPath = IndexPath(row: 0, section: sectionIndex)
     let selectionClosure = items[0].selectionClosure
     
-    customView.collectionView.performBatchUpdates(nil) { [weak self] _ in
-      self?.customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: .top)
-      selectionClosure?()
-    }
+    customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: [])
+    selectionClosure?()
   }
   
   func createDataSource() -> UICollectionViewDiffableDataSource<BuySellSection, AnyHashable> {
@@ -342,7 +331,12 @@ private extension BuySellViewController {
     }
   }
   
-  @objc func resignGestureAction() {
+  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
+    let touchLocation = sender.location(in: customView.amountInputView)
+    let isTapInTextField = customView.amountInputView.inputControl.frame.contains(touchLocation)
+    
+    guard !isTapInTextField else { return }
+    
     customView.amountInputView.inputControl.amountTextField.resignFirstResponder()
   }
 }

@@ -128,10 +128,8 @@ private extension CurrencyListViewController {
     let selectedIndexPath = IndexPath(row: rowIndex, section: sectionIndex)
     let selectionClosure = items[rowIndex].selectionClosure
     
-    customView.collectionView.performBatchUpdates(nil) { [weak self] _ in
-      self?.customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: [])
-      selectionClosure?()
-    }
+    customView.collectionView.selectItem(at: selectedIndexPath, animated: false, scrollPosition: [])
+    selectionClosure?()
   }
   
   func createDataSource() -> UICollectionViewDiffableDataSource<CurrencyListSection, AnyHashable> {
