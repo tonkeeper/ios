@@ -10,6 +10,8 @@ public final class SwapCoordinator: RouterCoordinator<NavigationControllerRouter
     
   var didFinish: (() -> Void)?
   
+  private var externalSignHandler: ((Data) async -> Void)?
+  
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
@@ -27,6 +29,15 @@ public final class SwapCoordinator: RouterCoordinator<NavigationControllerRouter
   public override func start() {
     openSwap()
   }
+  
+  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+    guard let externalSignHandler else { return false }
+    Task {
+      await externalSignHandler(model.boc)
+    }
+    self.externalSignHandler = nil
+    return true
+  }
 }
 
 private extension SwapCoordinator {
@@ -43,7 +54,7 @@ private extension SwapCoordinator {
     
     module.output.didTapSwapSettings = { [weak self, weak view = module.view, weak input = module.input] currentSwapSettings in
       self?.openSwapSettings(
-        sourceViewController: view,
+        fromViewController: view,
         swapSettingsModel: currentSwapSettings,
         didUpdateSettingsClosure: { swapSettingsModel in
           input?.didUpdateSwapSettings(swapSettingsModel)
@@ -53,7 +64,7 @@ private extension SwapCoordinator {
     
     module.output.didTapTokenButton = { [weak self, weak view = module.view, weak input = module.input] contractAddressForPair, swapInput in
       self?.openSwapTokenList(
-        sourceViewController: view,
+        fromViewController: view,
         contractAddressForPair: contractAddressForPair,
         completion: { swapAsset in
           input?.didChooseToken(swapAsset, forInput: swapInput)
@@ -72,7 +83,7 @@ private extension SwapCoordinator {
     
     module.output.didTapContinue = { [weak self, weak view = module.view] swapModel in
       self?.openSwapConfirmation(
-        sourceViewController: view,
+        fromViewController: view,
         swapModel: swapModel,
         completion: nil
       )
@@ -81,7 +92,7 @@ private extension SwapCoordinator {
     router.push(viewController: module.view, animated: false)
   }
   
-  func openSwapSettings(sourceViewController: UIViewController?,
+  func openSwapSettings(fromViewController: UIViewController?,
                         swapSettingsModel: SwapSettingsModel,
                         didUpdateSettingsClosure: ((SwapSettingsModel) -> Void)?) {
     let module = SwapSettingsAssembly.module(
@@ -90,7 +101,7 @@ private extension SwapCoordinator {
     )
     
     module.view.setupRightCloseButton {
-      sourceViewController?.dismiss(animated: true)
+      fromViewController?.dismiss(animated: true)
     }
     
     module.output.didTapSave = { swapSettingsModel in
@@ -98,13 +109,13 @@ private extension SwapCoordinator {
     }
     
     module.output.didFinish = {
-      sourceViewController?.dismiss(animated: true)
+      fromViewController?.dismiss(animated: true)
     }
     
-    sourceViewController?.present(module.view, animated: true)
+    fromViewController?.present(module.view, animated: true)
   }
   
-  func openSwapTokenList(sourceViewController: UIViewController?,
+  func openSwapTokenList(fromViewController: UIViewController?,
                          contractAddressForPair: Address?,
                          completion: ((SwapAsset) -> Void)?) {
     let module = SwapTokenListAssembly.module(
@@ -115,21 +126,21 @@ private extension SwapCoordinator {
     )
     
     module.view.setupRightCloseButton {
-      sourceViewController?.dismiss(animated: true)
+      fromViewController?.dismiss(animated: true)
     }
     
     module.output.didFinish = {
-      sourceViewController?.dismiss(animated: true)
+      fromViewController?.dismiss(animated: true)
     }
     
     module.output.didChooseToken = { swapAsset in
       completion?(swapAsset)
     }
     
-    sourceViewController?.present(module.view, animated: true)
+    fromViewController?.present(module.view, animated: true)
   }
   
-  func openSwapConfirmation(sourceViewController: UIViewController?,
+  func openSwapConfirmation(fromViewController: UIViewController?,
                             swapModel: SwapModel,
                             completion: (() -> Void)?) {
     let module = SwapConfirmationAssembly.module(
@@ -141,18 +152,103 @@ private extension SwapCoordinator {
     )
     
     module.view.setupRightCloseButton {
-      sourceViewController?.dismiss(animated: true)
+      fromViewController?.dismiss(animated: true)
     }
     
     module.output.didFinish = {
-      sourceViewController?.dismiss(animated: true)
+      fromViewController?.dismiss(animated: true)
     }
     
-    module.output.didTapConfirm = {
-      print("didTapConfirm")
+    module.output.didRequireConfirmation = { [weak self, weak view = module.view] in
+      guard let self, let view else { return false }
+      return await self.openConfirmation(fromViewController: view)
     }
     
-    sourceViewController?.present(module.view, animated: true)
+    module.output.didSendTransaction = { [weak self] in
+      NotificationCenter.default.post(Notification(name: Notification.Name("DID SEND TRANSACTION")))
+      fromViewController?.presentingViewController?.dismiss(animated: true) {
+        self?.didFinish?()
+      }
+    }
+    
+    module.output.didRequireExternalWalletSign = { [weak self] transferURL, wallet in
+      guard let self else { return Data() }
+      return try await self.handleExternalSign(
+        url: transferURL,
+        wallet: wallet,
+        fromViewController: self.router.rootViewController
+      )
+    }
+    
+    fromViewController?.present(module.view, animated: true)
+  }
+  
+  func openConfirmation(fromViewController: UIViewController) async -> Bool {
+    return await Task<Bool, Never> { @MainActor in
+      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
+        guard let self = self else { return }
+        let coordinator = PasscodeModule(
+          dependencies: PasscodeModule.Dependencies(
+            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+          )
+        ).passcodeConfirmationCoordinator()
+        
+        coordinator.didCancel = { [weak self, weak coordinator] in
+          continuation.resume(returning: false)
+          coordinator?.router.dismiss(completion: {
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+          })
+        }
+        
+        coordinator.didConfirm = { [weak self, weak coordinator] in
+          continuation.resume(returning: true)
+          coordinator?.router.dismiss(completion: {
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+          })
+        }
+        
+        self.addChild(coordinator)
+        coordinator.start()
+        
+        fromViewController.present(coordinator.router.rootViewController, animated: true)
+      }
+    }.value
+  }
+  
+  func handleExternalSign(url: URL, wallet: Wallet, fromViewController: UIViewController) async throws -> Data? {
+    return try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue.main.async {
+        if self.coreAssembly.urlOpener().canOpen(url: url) {
+          self.externalSignHandler = { data in
+            continuation.resume(returning: data)
+          }
+          self.coreAssembly.urlOpener().open(url: url)
+        } else {
+          let module = SignerSignAssembly.module(
+            url: url,
+            wallet: wallet,
+            assembly: self.keeperCoreMainAssembly,
+            coreAssembly: self.coreAssembly
+          )
+          let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+          
+          bottomSheetViewController.didClose = { isInteractivly in
+            guard isInteractivly else { return }
+            continuation.resume(returning: nil)
+          }
+          
+          module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
+            bottomSheetViewController?.dismiss(completion: {
+              continuation.resume(returning: model.boc)
+            })
+          }
+          
+          bottomSheetViewController.present(fromViewController: fromViewController)
+        }
+      }
+    }
   }
   
   func openBuy(wallet: Wallet, completion: (() -> Void)?) {

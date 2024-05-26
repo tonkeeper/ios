@@ -4,40 +4,6 @@ import KeeperCore
 import BigInt
 import TonSwift
 
-extension SwapToken {
-  static let tonStub = SwapToken(
-    icon: .image(.TKCore.Icons.Size44.tonLogo),
-    asset: SwapAsset(
-      kind: .ton,
-      contractAddress: try! Address.parse("EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
-      symbol: TonInfo.symbol,
-      displayName: TonInfo.name,
-      fractionDigits: TonInfo.fractionDigits,
-      isWhitelisted: true
-    ),
-    balance: .testBalanceAmount,
-    inputAmount: "0"
-  )
-  
-  static let usdtStub = SwapToken(
-    icon: .asyncImage(URL(string: "https://asset.ston.fi/img/EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs")!),
-    asset: SwapAsset(
-      kind: .jetton,
-      contractAddress: try! Address.parse("EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"),
-      symbol: "USD₮",
-      displayName: "USD₮",
-      fractionDigits: 6,
-      isWhitelisted: true
-    ),
-    balance: .testBalanceAmount,
-    inputAmount: "0"
-  )
-}
-
-private extension BigUInt {
-  static let testBalanceAmount = BigUInt(stringLiteral: "100000010000000")
-}
-
 struct SwapStateModel {
   let sendTextFieldState: PlainTextField.TextFieldState
   let actionButton: SwapActionButtonModel
@@ -981,3 +947,37 @@ private extension SwapViewModelImplementation {
     }
   }
 }
+
+//extension SwapToken {
+//  static let tonStub = SwapToken(
+//    icon: .image(.TKCore.Icons.Size44.tonLogo),
+//    asset: SwapAsset(
+//      kind: .ton,
+//      contractAddress: try! Address.parse("EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
+//      symbol: TonInfo.symbol,
+//      displayName: TonInfo.name,
+//      fractionDigits: TonInfo.fractionDigits,
+//      isWhitelisted: true
+//    ),
+//    balance: .testBalanceAmount,
+//    inputAmount: "1 000"
+//  )
+//  
+//  static let usdtStub = SwapToken(
+//    icon: .asyncImage(URL(string: "https://asset.ston.fi/img/EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs")!),
+//    asset: SwapAsset(
+//      kind: .jetton,
+//      contractAddress: try! Address.parse("EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"),
+//      symbol: "USD₮",
+//      displayName: "USD₮",
+//      fractionDigits: 6,
+//      isWhitelisted: true
+//    ),
+//    balance: .testBalanceAmount,
+//    inputAmount: "6 010,01"
+//  )
+//}
+//
+//private extension BigUInt {
+//  static let testBalanceAmount = BigUInt(stringLiteral: "100000010000000")
+//}

@@ -5,14 +5,16 @@ import TonSwift
 public final class SwapConfirmationController {
   
   public enum Error: Swift.Error {
-    case failedToCalculateFee
+    case failedToEmulate
     case failedToSendTransaction
     case failedToSign
   }
   
+  public var didGetError: ((Error) -> Void)?
+  public var didEmulationSuccess: (() -> Void)?
   public var didGetExternalSign: ((URL) async throws -> Data?)?
   
-  private let wallet: Wallet
+  public let wallet: Wallet
   private let swapTransactionItem: SwapTransactionItem
   private let sendService: SendService
   private let blockchainService: BlockchainService
@@ -30,23 +32,66 @@ public final class SwapConfirmationController {
     self.mnemonicRepository = mnemonicRepository
   }
   
+  public func start() async {
+    await emulate()
+  }
+  
+  func emulate() async {
+    async let createTransactionBocTask = createEmulateTransactionBoc()
+    
+    do {
+      let transactionBoc = try await createTransactionBocTask
+      let transactionInfo = try await sendService.loadTransactionInfo(boc: transactionBoc)
+      let sendTransactionModel = SendTransactionModel(
+        accountEvent: transactionInfo.event,
+        risk: transactionInfo.risk,
+        transaction: transactionInfo.trace.transaction
+      )
+      print(sendTransactionModel)
+      Task { @MainActor in
+        didEmulationSuccess?()
+      }
+    } catch {
+      print(error)
+      Task { @MainActor in
+        didGetError?(.failedToEmulate)
+      }
+    }
+  }
+  
   public func sendTransaction() async throws {
-//    do {
-//      let transactionBoc = try await createTransactionBoc()
-//      let transactionInfo = try await sendService.loadTransactionInfo(boc: transactionBoc)
-//      NotificationCenter.default.post(
-//        name: NSNotification.Name(rawValue: "didSendTransaction"),
-//        object: nil,
-//        userInfo: ["Wallet": wallet]
-//      )
-//    } catch {
-//      throw error
-//    }
+    do {
+      let transactionBoc = try await createTransactionBoc()
+      try await sendService.sendTransaction(boc: transactionBoc)
+      NotificationCenter.default.post(
+        name: NSNotification.Name(rawValue: "didSendTransaction"),
+        object: nil,
+        userInfo: ["Wallet": wallet]
+      )
+    } catch {
+      throw error
+    }
+  }
+  
+  public func isNeedToConfirm() -> Bool {
+    return wallet.isRegular
   }
 }
 
 private extension SwapConfirmationController {
+  func createEmulateTransactionBoc() async throws -> String {
+    return try await createTransactionBoc { transfer in
+      return try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
+    }
+  }
+  
   func createTransactionBoc() async throws -> String {
+    return try await createTransactionBoc { transfer in
+      return try await signTransfer(transfer)
+    }
+  }
+  
+  func createTransactionBoc(signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let boc: String
     switch swapTransactionItem {
     case .jettonToJetton(let swapItem):
@@ -55,25 +100,22 @@ private extension SwapConfirmationController {
         to: swapItem.toAddress,
         minAskAmount: swapItem.minAskAmount,
         offerAmount: swapItem.offerAmount,
-        signClosure: { transfer in
-          return try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-        })
+        signClosure: signClosure
+      )
     case .jettonToTon(let swapItem):
       boc = try await createSwapTransactionBoc(
         from: swapItem.fromAddress,
         minAskAmount: swapItem.minAskAmount,
         offerAmount: swapItem.offerAmount,
-        signClosure: { transfer in
-          return try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-        })
+        signClosure: signClosure
+      )
     case .tonToJetton(let swapItem):
       boc = try await createSwapTransactionBoc(
         to: swapItem.toAddress,
         minAskAmount: swapItem.minAskAmount,
         offerAmount: swapItem.offerAmount,
-        signClosure: { transfer in
-          return try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-        })
+        signClosure: signClosure
+      )
     }
     return boc
   }

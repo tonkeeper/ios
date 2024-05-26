@@ -68,9 +68,13 @@ final class SwapConfirmationView: UIView, ConfigurableView {
     swapSendContainerView.configure(model: model.sendContainer)
     swapRecieveContainerView.configure(model: model.recieveContainer)
     swapInfoContainerView.configure(model: model.infoContainer)
+    
     cancelButton.configuration.content.title = .plainString(model.cancelButton.title)
     cancelButton.configuration.action = model.cancelButton.action
+    
     confirmButton.configuration.content.title = .plainString(model.confirmButton.title)
+    confirmButton.configuration.isEnabled = model.confirmButton.isEnabled
+    confirmButton.configuration.showsLoader = model.confirmButton.isActivity
     confirmButton.configuration.action = model.confirmButton.action
   }
 }

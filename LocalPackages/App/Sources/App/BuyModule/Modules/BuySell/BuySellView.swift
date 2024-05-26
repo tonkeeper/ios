@@ -52,7 +52,7 @@ final class BuySellView: UIView, ConfigurableView {
   
   func configure(model: Model) {
     amountInputView.configure(model: model.input)
-    continueButton.configuration.content = TKButton.Configuration.Content(title: .plainString(model.button.title))
+    continueButton.configuration.content.title = .plainString(model.button.title)
     continueButton.configuration.isEnabled = model.button.isEnabled
     continueButton.configuration.showsLoader = model.button.isActivity
     continueButton.configuration.action = model.button.action

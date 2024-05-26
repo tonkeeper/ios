@@ -11,6 +11,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   var didLogout: (() -> Void)?
   var didTapWalletButton: (() -> Void)?
   var didTapSend: ((Token) -> Void)?
+  var didTapSwap: ((Wallet) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -165,29 +166,7 @@ private extension WalletCoordinator {
   }
   
   func openSwap(wallet: Wallet) {
-    let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
-    
-    let coordinator = SwapModule(
-      dependencies: SwapModule.Dependencies(
-        keeperCoreMainAssembly: keeperCoreMainAssembly,
-        coreAssembly: coreAssembly
-      )
-    ).createSwapCoordinator(
-      router: NavigationControllerRouter(rootViewController: navigationController),
-      wallet: wallet
-    )
-    
-    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
-      navigationController?.dismiss(animated: true)
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    
-    addChild(coordinator)
-    coordinator.start()
-      
-    self.router.present(navigationController)
+    didTapSwap?(wallet)
   }
   
   func openBuy(wallet: Wallet) {
@@ -210,7 +189,7 @@ private extension WalletCoordinator {
     addChild(coordinator)
     coordinator.start()
       
-    self.router.present(navigationController)
+    router.present(navigationController)
   }
   
   func openHistoryEventDetails(event: AccountEventDetailsEvent) {

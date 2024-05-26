@@ -5,7 +5,7 @@ import KeeperCore
 struct SwapConfirmationAssembly {
   private init() {}
   static func module(swapConfirmationController: SwapConfirmationController,
-                     swapConfirmationItem: SwapConfirmationItem) -> MVVMModule<SwapConfirmationViewController, SwapConfirmationModuleOutput, SwapConfirmationModuleInput> {
+                     swapConfirmationItem: SwapConfirmationItem) -> MVVMModule<SwapConfirmationViewController, SwapConfirmationModuleOutput, Void> {
     let viewModel = SwapConfirmationViewModelImplementation(
       swapConfirmationController: swapConfirmationController,
       swapConfirmationItem: swapConfirmationItem
@@ -18,7 +18,7 @@ struct SwapConfirmationAssembly {
     return MVVMModule(
       view: viewController,
       output: viewModel,
-      input: viewModel
+      input: Void()
     )
   }
 }
