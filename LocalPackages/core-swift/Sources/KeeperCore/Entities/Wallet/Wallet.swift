@@ -59,7 +59,7 @@ public struct Wallet: Codable, Hashable, Identifiable {
   public var tag: String? {
     switch identity.kind {
     case .Regular:
-      return nil
+      return isTestnet ? "TESTNET" : nil
     case .Lockup:
       return nil
     case .Watchonly:
@@ -141,6 +141,25 @@ extension Wallet {
     }
   }
   
+  public var friendlyAddress: FriendlyAddress {
+    get throws {
+      let isTestnet = self.isTestnet
+      switch identity.kind {
+      case .Regular, .External:
+        return try contract.address().toFriendly(testOnly: isTestnet, bounceable: false)
+      case .Watchonly(let address):
+        switch address {
+        case .Resolved(let address):
+          return address.toFriendly(testOnly: isTestnet, bounceable: false)
+        case .Domain(_, let address):
+          return address.toFriendly(testOnly: isTestnet, bounceable: false)
+        }
+      case .Lockup:
+        throw Error.notAvailableWalletKind
+      }
+    }
+  }
+  
   public var isRegular: Bool {
     guard case .Regular = identity.kind else {
       return false
@@ -167,5 +186,9 @@ extension Wallet {
       return false
     }
     return true
+  }
+  
+  public var isTonconnectAvailable: Bool {
+    isRegular || isTestnet
   }
 }

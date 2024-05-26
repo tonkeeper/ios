@@ -212,7 +212,7 @@ private extension SettingsRootListItemsProvider {
       },
       cellContentModel: SettingsCellContentView.Model(
         title: .themeItemTitle,
-        value: appSettings.themeMode().title
+        value: TKThemeManager.shared.theme.title
       )
     )
   }

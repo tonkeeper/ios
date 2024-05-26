@@ -172,7 +172,7 @@ public final class SwapController {
   public func getBalanceAmount(swapAsset: SwapAsset) async -> BigUInt {
     let wallet = walletsStore.activeWallet
     do {
-      let balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address)
+      let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
       switch swapAsset {
       case .ton:
         // TODO: Remove stub

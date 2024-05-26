@@ -4,9 +4,21 @@ import KeeperCore
 
 struct TonConnectConnectAssembly {
   private init() {}
-  static func module(tonConnectConnectController: TonConnectConnectController) -> MVVMModule<TonConnectConnectViewController, TonConnectConnectViewModuleOutput, TonConnectConnectModuleInput> {
+  static func module(
+    parameters: TonConnectParameters,
+    manifest: TonConnectManifest,
+    walletsStore: WalletsStore,
+    showWalletPicker: Bool
+  ) -> MVVMModule<
+    TonConnectConnectViewController,
+    TonConnectConnectViewModuleOutput,
+    TonConnectConnectModuleInput
+  > {
     let viewModel = TonConnectConnectViewModelImplementation(
-      tonConnectConnectController: tonConnectConnectController
+      parameters: parameters,
+      manifest: manifest,
+      walletsStore: walletsStore,
+      showWalletPicker: showWalletPicker
     )
     let viewController = TonConnectConnectViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)

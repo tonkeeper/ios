@@ -62,7 +62,9 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   }
   
   func viewDidAppear() {
-    startRunning()
+    if didSetup {
+      startRunning()
+    }
   }
   
   func viewDidDisappear() {
@@ -89,6 +91,7 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   
   private let metadataOutputQueue = DispatchQueue(label: "metadata.capturesession.queue")
   private let captureSession = AVCaptureSession()
+  private var didSetup = false
   
   // MARK: - Dependencies
   
@@ -112,7 +115,7 @@ private extension ScannerViewModelImplementation {
     didUpdateTitle?(
       uiConfiguration.title?.withTextStyle(
         .h2,
-        color: .Text.primary,
+        color: .white,
         alignment: .center,
         lineBreakMode: .byTruncatingTail
       )
@@ -193,6 +196,7 @@ private extension ScannerViewModelImplementation {
     metadataOutput.metadataObjectTypes = [AVMetadataObject.ObjectType.qr]
     self.captureSession.commitConfiguration()
    
+    self.didSetup = true
     startRunning()
   }
   

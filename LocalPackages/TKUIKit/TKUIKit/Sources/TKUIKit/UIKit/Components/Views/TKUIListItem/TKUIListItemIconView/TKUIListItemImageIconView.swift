@@ -90,6 +90,7 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
     size = configuration.size
     cornerRadius = configuration.cornerRadius
     layer.cornerRadius = configuration.cornerRadius
+    
     setNeedsLayout()
   }
 }

@@ -1,14 +1,8 @@
 import UIKit
 import TKUIKit
+import SnapKit
 
 public final class TKRecoveryPhraseView: UIView, ConfigurableView {
-  
-  let scrollView: UIScrollView = {
-    let scrollView = TKUIScrollView()
-    scrollView.showsVerticalScrollIndicator = false
-    return scrollView
-  }()
-  
   let contentStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
@@ -85,12 +79,6 @@ public final class TKRecoveryPhraseView: UIView, ConfigurableView {
     }
     buttonsContainer.setViews(buttons)
   }
-  
-  public override func layoutSubviews() {
-    super.layoutSubviews()
-    
-    scrollView.contentInset.bottom = buttonsContainer.bounds.height
-  }
 }
 
 private extension TKRecoveryPhraseView {
@@ -98,8 +86,7 @@ private extension TKRecoveryPhraseView {
     backgroundColor = .Background.page
     directionalLayoutMargins.top = .topSpacing
     
-    addSubview(scrollView)
-    scrollView.addSubview(contentStackView)
+    addSubview(contentStackView)
     addSubview(buttonsContainer)
     
     contentStackView.addArrangedSubview(titleDescriptionView)
@@ -109,30 +96,15 @@ private extension TKRecoveryPhraseView {
   }
   
   func setupConstraints() {
-    scrollView.translatesAutoresizingMaskIntoConstraints = false
-    contentStackView.translatesAutoresizingMaskIntoConstraints = false
-    buttonsContainer.translatesAutoresizingMaskIntoConstraints = false
+    contentStackView.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
+      make.bottom.equalTo(buttonsContainer.snp.top).offset(-16)
+    }
     
-    NSLayoutConstraint.activate([
-      scrollView.topAnchor.constraint(equalTo: topAnchor),
-      scrollView.leftAnchor.constraint(equalTo: leftAnchor),
-      scrollView.rightAnchor.constraint(equalTo: rightAnchor),
-      scrollView.bottomAnchor.constraint(equalTo: bottomAnchor),
-      scrollView.widthAnchor.constraint(equalTo: widthAnchor),
-      
-      contentStackView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-      contentStackView.leftAnchor.constraint(equalTo: scrollView.leftAnchor),
-      contentStackView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor)
-        .withPriority(.defaultHigh),
-      contentStackView.rightAnchor.constraint(equalTo: scrollView.rightAnchor)
-        .withPriority(.defaultHigh),
-      contentStackView.widthAnchor.constraint(equalTo: scrollView.widthAnchor)
-        .withPriority(.defaultHigh),
-      
-      buttonsContainer.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
-      buttonsContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      buttonsContainer.rightAnchor.constraint(equalTo: rightAnchor)
-    ])
+    buttonsContainer.snp.makeConstraints { make in
+      make.bottom.equalTo(safeAreaLayoutGuide.snp.bottom)
+      make.left.right.equalTo(self)
+    }
   }
 }
 

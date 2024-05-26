@@ -42,7 +42,9 @@ public final class SendV3Controller {
     } else if let rawAddress = try? Address.parse(input) {
       return (Recipient(recipientAddress: .raw(rawAddress),
                         isMemoRequired: knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false))
-    } else if let domain = try? await dnsService.resolveDomainName(input) {
+    } else if let domain = try? await dnsService.resolveDomainName(
+      input,
+      isTestnet: walletsStore.activeWallet.isTestnet) {
       return Recipient(recipientAddress: .domain(domain),
                        isMemoRequired: knownAccounts.first(where: { $0.address == domain.friendlyAddress.address })?.requireMemo ?? false)
     } else {
@@ -87,7 +89,7 @@ public final class SendV3Controller {
   public func isAmountAvailableToSend(amount: BigUInt, token: Token) async -> Bool {
     let wallet = walletsStore.activeWallet
     do {
-      let balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address)
+      let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
       switch token {
       case .ton:
         return BigUInt(balance.walletBalance.balance.tonBalance.amount) >= amount
@@ -117,13 +119,13 @@ public final class SendV3Controller {
     case .jetton(let jettonItem):
       let wallet = walletsStore.activeWallet
       do {
-        let balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address)
+        let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
         guard let jettonBalance = balance.walletBalance.balance.jettonsBalance.first(where: {
           $0.item.jettonInfo == jettonItem.jettonInfo
         }) else { return "" }
         
         guard let rate = jettonBalance.rates[currency] else { return ""}
-        let converted = RateConverter().convert(amount: amount, amountFractionLength: TonInfo.fractionDigits, rate: rate)
+        let converted = RateConverter().convert(amount: amount, amountFractionLength: jettonItem.jettonInfo.fractionDigits, rate: rate)
         let formatted = amountFormatter.formatAmount(
           converted.amount,
           fractionDigits: converted.fractionLength,
@@ -147,7 +149,7 @@ public final class SendV3Controller {
     let tokenSymbol: String?
     let fractionalDigits: Int
     do {
-      let balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address)
+      let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
       switch token {
       case .ton:
         amount = BigUInt(balance.walletBalance.balance.tonBalance.amount)
@@ -181,7 +183,7 @@ public final class SendV3Controller {
   public func getMaximumAmount(token: Token) async -> BigUInt {
     let wallet = walletsStore.activeWallet
     do {
-      let balance = try await walletBalanceStore.getBalanceState(walletAddress: try wallet.address)
+      let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
       switch token {
       case .ton:
         return BigUInt(balance.walletBalance.balance.tonBalance.amount)

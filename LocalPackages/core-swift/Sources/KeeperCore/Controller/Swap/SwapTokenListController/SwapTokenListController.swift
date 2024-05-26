@@ -168,7 +168,7 @@ private extension SwapTokenListController {
   }
   
   func getAssetsBalanceDict() async -> [AssetKind : [AssetBalance]] {
-    let walletBalanceState = try? await walletBalanceStore.getBalanceState(walletAddress: wallet.address)
+    let walletBalanceState = try? await walletBalanceStore.getBalanceState(wallet: wallet)
     
     let balance: Balance
     if let walletBalance = walletBalanceState?.walletBalance {

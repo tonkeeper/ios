@@ -38,7 +38,7 @@ public struct AmountFormatter {
       fractionDigits: fractionDigits,
       maximumFractionDigits: maximumFractionDigits)
     if let symbol = symbol {
-      formatted = formatted + .Symbol.shortSpace + symbol
+      formatted = formatted + " " + symbol
     }
     return formatted
   }

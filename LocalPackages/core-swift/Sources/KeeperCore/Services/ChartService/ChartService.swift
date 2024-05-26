@@ -3,26 +3,29 @@ import Foundation
 protocol ChartService {
   func loadChartData(period: Period,
                      token: String,
-                     currency: Currency) async throws -> [Coordinate]
+                     currency: Currency,
+                     isTestnet: Bool) async throws -> [Coordinate]
   func getChartData(period: Period,
                     token: String,
-                    currency: Currency) -> [Coordinate]
+                    currency: Currency,
+                    isTestnet: Bool) -> [Coordinate]
 }
 
 final class ChartServiceImplementation: ChartService {
-  private let api: API
+  private let apiProvider: APIProvider
   private let repository: ChartDataRepository
   
-  init(api: API,
+  init(apiProvider: APIProvider,
        repository: ChartDataRepository) {
-    self.api = api
+    self.apiProvider = apiProvider
     self.repository = repository
   }
   
   func loadChartData(period: Period,
                      token: String,
-                     currency: Currency) async throws -> [Coordinate] {
-    let coordinates = try await api.getChart(
+                     currency: Currency,
+                     isTestnet: Bool) async throws -> [Coordinate] {
+    let coordinates = try await apiProvider.api(isTestnet).getChart(
       token: token,
       period: period,
       currency: currency
@@ -31,18 +34,21 @@ final class ChartServiceImplementation: ChartService {
       coordinates: coordinates,
       period: period,
       token: token,
-      currency: currency
+      currency: currency,
+      isTestnet: isTestnet
     )
     return coordinates
   }
   
   func getChartData(period: Period,
                     token: String,
-                    currency: Currency) -> [Coordinate] {
+                    currency: Currency,
+                    isTestnet: Bool) -> [Coordinate] {
     let coordinates = repository.getChartData(
       period: period,
       token: token,
-      currency: currency
+      currency: currency,
+      isTestnet: isTestnet
     )
     return coordinates
   }

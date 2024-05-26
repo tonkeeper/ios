@@ -35,11 +35,11 @@ public final class ScannerController {
 }
 
 private extension ScannerController {
-  func validateBodyBoc(_ bocString: String) throws {
+  func validateBodyBoc(_ boc: Data) throws {
     do {
-      _ = try Cell.fromBase64(src: bocString)
+      _ = try Cell.cellFromBoc(src: boc)
     } catch {
-      throw ScannerControllerError.invalidBoc(bocString)
+      throw ScannerControllerError.invalidBoc(boc.hexString())
     }
   }
 }

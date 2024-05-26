@@ -3,6 +3,7 @@ import SignerCore
 import SignerLocalize
 import UIKit
 import TKUIKit
+import TKQRCode
 import TonSwift
 
 protocol SignQRCodeModuleOutput: AnyObject {
@@ -25,7 +26,6 @@ final class SignQRCodeViewModelImplementation: SignQRCodeViewModel, SignQRCodeMo
   // MARK: - SignQRCodeViewModel
   
   var didUpdateModel: ((SignQRCodeView.Model) -> Void)?
-  var didGenerateQRCode: ((UIImage?) -> Void)?
 
   func viewDidLoad() {
     update()
@@ -35,14 +35,18 @@ final class SignQRCodeViewModelImplementation: SignQRCodeViewModel, SignQRCodeMo
     let url = signQRController.url
     self.createQrCodeTask?.cancel()
     let task = Task {
-      let image = await self.qrCodeGenerator.generate(
-        string: url.absoluteString,
-        size: CGSize(width: width, height: width)
-      )
-      guard !Task.isCancelled else { return }
-      await MainActor.run {
-        self.qrCodeImage = image
-        self.update()
+      do {
+        let qrCode = try await self.qrCodeGenerator.generateQRCode(
+          string: url.absoluteString,
+          size: CGSize(width: width, height: width),
+          type: .dynamic(charLimit: TKQRCode.defaultCharLimit)
+        )
+        await MainActor.run {
+          self.qrCode = qrCode
+          self.update()
+        }
+      } catch {
+        self.qrCode = nil
       }
     }
     self.createQrCodeTask = task
@@ -51,14 +55,14 @@ final class SignQRCodeViewModelImplementation: SignQRCodeViewModel, SignQRCodeMo
   // MARK: - State
   
   private var createQrCodeTask: Task<(), Never>?
-  private var qrCodeImage: UIImage?
+  private var qrCode: QRCode?
   
   // MARK: - Dependencies
   
-  private let qrCodeGenerator: QRCodeGenerator
+  private let qrCodeGenerator: TKQRCodeGenerator
   private let signQRController: SignQRController
   
-  init(qrCodeGenerator: QRCodeGenerator,
+  init(qrCodeGenerator: TKQRCodeGenerator,
        signQRController: SignQRController) {
     self.qrCodeGenerator = qrCodeGenerator
     self.signQRController = signQRController
@@ -76,10 +80,12 @@ private extension SignQRCodeViewModelImplementation {
       self?.didTapDone?()
     }
     
-    let hexBody = "\(signQRController.hexBody.prefix(4))...\(signQRController.hexBody.suffix(4))"
-    
-    let bottomString = "\(signQRController.walletKey.name.prefix(8)) / \(hexBody)"
-    
+    let hexBody = " / \(signQRController.hexBody.prefix(4))...\(signQRController.hexBody.suffix(4))"
+    var qrCodeImages = [UIImage]()
+    if let qrCode {
+      qrCodeImages = qrCode.images
+    }
+        
     didUpdateModel?(
       SignQRCodeView.Model(
         titleDescriptionModel: TKTitleDescriptionView.Model(
@@ -87,9 +93,10 @@ private extension SignQRCodeViewModelImplementation {
           bottomDescription: SignerLocalize.SignTransactionQr.caption
         ),
         qrCodeModel: TKFancyQRCodeView.Model(
-          images: qrCodeImage == nil ? [] : [qrCodeImage!],
+          images: qrCodeImages,
           topString: SignerLocalize.SignTransactionQr.signed_transaction,
-          bottomString: bottomString
+          bottomLeftString: signQRController.walletKey.name,
+          bottomRightString: hexBody
         ),
         doneButtonConfiguration: doneButtonConfiguration
       )

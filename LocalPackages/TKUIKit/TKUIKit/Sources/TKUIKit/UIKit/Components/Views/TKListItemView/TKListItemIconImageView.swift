@@ -20,7 +20,6 @@ public final class TKListItemIconImageView: UIView, ConfigurableView, ReusableVi
     super.layoutSubviews()
     
     imageView.frame = bounds
-    layer.cornerRadius = bounds.width/2
   }
   
   public override func sizeThatFits(_ size: CGSize) -> CGSize {

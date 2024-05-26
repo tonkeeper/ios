@@ -3,72 +3,74 @@ import TonAPI
 import TonSwift
 
 protocol HistoryService {
-  func cachedEvents(address: Address) throws -> AccountEvents
-  func cachedEvents(address: Address, jettonInfo: JettonInfo) throws -> AccountEvents
-  func loadEvents(address: Address,
+  func cachedEvents(wallet: Wallet) throws -> AccountEvents
+  func cachedEvents(wallet: Wallet, jettonInfo: JettonInfo) throws -> AccountEvents
+  func loadEvents(wallet: Wallet,
                   beforeLt: Int64?,
                   limit: Int) async throws -> AccountEvents
-  func loadEvents(address: Address,
+  func loadEvents(wallet: Wallet,
                   jettonInfo: JettonInfo,
                   beforeLt: Int64?,
                   limit: Int) async throws -> AccountEvents
-  func loadEvent(accountAddress: Address,
+  func loadEvent(wallet: Wallet,
                  eventId: String) async throws -> AccountEvent
 }
 
 final class HistoryServiceImplementation: HistoryService {
-  private let api: API
+  private let apiProvider: APIProvider
   private let repository: HistoryRepository
   
-  init(api: API,
+  init(apiProvider: APIProvider,
        repository: HistoryRepository) {
-    self.api = api
+    self.apiProvider = apiProvider
     self.repository = repository
   }
   
-  func cachedEvents(address: Address) throws -> AccountEvents {
-    try repository.getEvents(forKey: address.toRaw())
+  func cachedEvents(wallet: Wallet) throws -> AccountEvents {
+    try repository.getEvents(forKey: wallet.friendlyAddress.toShort())
   }
   
-  func cachedEvents(address: Address, jettonInfo: JettonInfo) throws -> AccountEvents {
-    let key = address.toRaw() + jettonInfo.address.toRaw()
+  func cachedEvents(wallet: Wallet, jettonInfo: JettonInfo) throws -> AccountEvents {
+    let key = try wallet.friendlyAddress.toShort() + jettonInfo.address.toRaw()
     return try repository.getEvents(forKey: key)
   }
   
-  func loadEvents(address: Address,
+  func loadEvents(wallet: Wallet,
                   beforeLt: Int64?,
                   limit: Int) async throws -> AccountEvents {
-    let events = try await api.getAccountEvents(
-      address: address,
+    let events = try await apiProvider.api(wallet.isTestnet).getAccountEvents(
+      address: wallet.address,
       beforeLt: beforeLt,
       limit: limit
     )
     if events.startFrom == 0 {
-      try? repository.saveEvents(events: events, forKey: address.toRaw())
+      try? repository.saveEvents(events: events, forKey: wallet.friendlyAddress.toString())
     }
     return events
   }
   
-  func loadEvents(address: Address,
+  func loadEvents(wallet: Wallet,
                   jettonInfo: JettonInfo,
                   beforeLt: Int64?,
                   limit: Int) async throws -> AccountEvents {
-    let events = try await api.getAccountJettonEvents(
-      address: address,
+    let events = try await apiProvider.api(wallet.isTestnet).getAccountJettonEvents(
+      address: wallet.address,
       jettonInfo: jettonInfo,
       beforeLt: beforeLt,
       limit: limit
     )
     if events.startFrom == 0 {
-      let key = address.toRaw() + jettonInfo.address.toRaw()
-      try? repository.saveEvents(events: events, forKey: key)
+      try? repository.saveEvents(
+        events: events,
+        forKey: wallet.friendlyAddress.toString() + jettonInfo.address.toRaw()
+      )
     }
     return events
   }
   
-  func loadEvent(accountAddress: Address,
+  func loadEvent(wallet: Wallet,
                  eventId: String) async throws -> AccountEvent {
-    try await api.getEvent(address: accountAddress,
-                           eventId: eventId)
+    try await apiProvider.api(wallet.isTestnet).getEvent(address: wallet.address,
+                                                         eventId: eventId)
   }
 }

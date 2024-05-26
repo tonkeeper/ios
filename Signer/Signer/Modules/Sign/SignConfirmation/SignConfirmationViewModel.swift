@@ -9,6 +9,7 @@ protocol SignConfirmationModuleOutput: AnyObject {
   var didSignTransaction: ((URL, WalletKey, String) -> Void)? { get set }
   var didRequirePassword: (( @escaping (String?) -> Void ) -> Void)? { get set }
   var didOpenEmulateURL: ((URL) -> Void)? { get set }
+  var didOpenEmulateQRCode: ((URL) -> Void)? { get set }
 }
 
 protocol SignConfirmationViewModel: AnyObject {
@@ -27,6 +28,7 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   var didSignTransaction: ((URL, WalletKey, String) -> Void)?
   var didRequirePassword: ((@escaping (String?) -> Void) -> Void)?
   var didOpenEmulateURL: ((URL) -> Void)?
+  var didOpenEmulateQRCode: ((URL) -> Void)?
   
   // MARK: - SignConfirmationViewModel
 
@@ -36,16 +38,12 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
   
   func viewDidLoad() {
     updateHeader()
-    do {
-      let transactionModel = try controller.getTransactionModel(
-        sendTitle: SignerLocalize.SignTransaction.send
-      )
-      let model = createModel(transactionModel: transactionModel)
-      
-      didUpdateModel?(model)
-    } catch {
-      print("FAILED TO PARSE TRANSACTION")
-    }
+    let transactionModel = controller.getTransactionModel(
+      sendTitle: SignerLocalize.SignTransaction.send
+    )
+    let model = createModel(transactionModel: transactionModel)
+    
+    didUpdateModel?(model)
   }
   
   func didConfirmTransaction() {
@@ -85,6 +83,15 @@ private extension SignConfirmationViewModelImplementation {
         transactionAction in
         SignConfirmationTransactionsView.Model.Action(
           configuration: SignConfirmationTransactionItemView.Model(
+            iconConfiguration: SignConfirmationTransactionItemView.IconView.Configuration(
+              imageModel: TKUIListItemImageIconView.Configuration(
+                image: .image(UIImage(named: "ic-tray-arrow-up-28")?.withRenderingMode(.alwaysTemplate)),
+                tintColor: .Icon.secondary,
+                backgroundColor: .Background.contentTint,
+                size: CGSize(width: 44, height: 44),
+                cornerRadius: 22
+              )
+            ),
             contentConfiguration: TKUIListItemContentView.Configuration(
               leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
                 title: transactionAction.title.withTextStyle(.label1, color: .Text.primary),
@@ -127,10 +134,29 @@ private extension SignConfirmationViewModelImplementation {
       ToastPresenter.showToast(configuration: .Signer.copied)
     }
     
+    var emulateQRCodeButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
+      category: .tertiary,
+      size: .small
+    )
+    emulateQRCodeButtonConfiguration.contentPadding = UIEdgeInsets(
+      top: 10,
+      left: 10,
+      bottom: 10,
+      right: 10
+    )
+    emulateQRCodeButtonConfiguration.content = TKButton.Configuration.Content(
+      icon: .TKUIKit.Icons.Size16.qrCode
+    )
+    emulateQRCodeButtonConfiguration.action = { [weak self] in
+      guard let url = self?.controller.createEmulationURL() else { return }
+      self?.didOpenEmulateQRCode?(url)
+    }
+    
     let bocModel = SignConfirmationBocView.Model(
       boc: transactionModel.boc,
       emulateButtonConfiguration: emulateButtonConfiguration,
-      copyButtonConfiguration: copyButtonConfiguration
+      copyButtonConfiguration: copyButtonConfiguration,
+      emulateQRCodeButtonConfiguration: emulateQRCodeButtonConfiguration
     )
     
     return SignConfirmationView.Model(

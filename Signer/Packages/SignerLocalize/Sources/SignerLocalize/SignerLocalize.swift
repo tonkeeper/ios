@@ -92,6 +92,12 @@ public enum SignerLocalize {
         }
       }
     }
+    public enum Confirmation {
+      /// Enter current Password
+      public static var title: String {
+        localize("password.confirmation.title")
+      }
+    }
   }
   public enum NameKey {
     /// Name your Key
@@ -223,11 +229,33 @@ public enum SignerLocalize {
       public static var legal: String {
         localize("settings.items.legal")
       }
+      /// Theme
+      public static var theme: String {
+        localize("settings.items.theme")
+      }
     }
     public enum Footer {
       /// Version %@
       public static func version(_ p0: Any) -> String {
         return localizeWithArgs("settings.footer.version", String(describing: p0))
+      }
+    }
+    public enum Themes {
+      /// Deep Blue
+      public static var deepblue: String {
+        localize("settings.themes.deepblue")
+      }
+      /// Dark
+      public static var dark: String {
+        localize("settings.themes.dark")
+      }
+      /// Light
+      public static var light: String {
+        localize("settings.themes.light")
+      }
+      /// System
+      public static var system: String {
+        localize("settings.themes.system")
       }
     }
     public enum Legal {
@@ -331,6 +359,18 @@ public enum SignerLocalize {
       localize("sign_transaction.send")
     }
   }
+  public enum EmulateTransactionQr {
+    /// Scan the QR code to open the transaction emulation
+    public static var title: String {
+      localize("emulate_transaction_qr.title")
+    }
+    public enum CloseButton {
+      /// Close
+      public static var title: String {
+        localize("emulate_transaction_qr.close_button.title")
+      }
+    }
+  }
   public enum SignTransactionQr {
     /// Scan the QR code with Tonkeeper
     public static var title: String {
@@ -347,6 +387,30 @@ public enum SignerLocalize {
     /// Done
     public static var done: String {
       localize("sign_transaction_qr.done")
+    }
+  }
+  public enum SignOut {
+    public enum Button {
+      /// Sign Out
+      public static var title: String {
+        localize("sign_out.button.title")
+      }
+    }
+    public enum Alert {
+      /// Sign Out?
+      public static var title: String {
+        localize("sign_out.alert.title")
+      }
+      /// This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase.
+      public static var caption: String {
+        localize("sign_out.alert.caption")
+      }
+      public enum Button {
+        /// Sign Out
+        public static var sign_out: String {
+          localize("sign_out.alert.button.sign_out")
+        }
+      }
     }
   }
 }

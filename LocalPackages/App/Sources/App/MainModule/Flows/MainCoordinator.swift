@@ -16,10 +16,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private let walletModule: WalletModule
   private let historyModule: HistoryModule
+  private let browserModule: BrowserModule
   private let collectiblesModule: CollectiblesModule
   
   private var walletCoordinator: WalletCoordinator?
   private var historyCoordinator: HistoryCoordinator?
+  private var browserCoordinator: BrowserCoordinator?
   private var collectiblesCoordinator: CollectiblesCoordinator?
   
   private weak var addWalletCoordinator: AddWalletCoordinator?
@@ -47,6 +49,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
     self.historyModule = HistoryModule(
       dependencies: HistoryModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    )
+    self.browserModule = BrowserModule(
+      dependencies: BrowserModule.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
@@ -81,6 +89,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       }
     setupTabBarTaps()
     setupChildCoordinators()
+    mainController.didUpdateBrowserAvailability = { [weak self] isBrowserAvailable in
+      guard let self = self else { return }
+      Task { await self.didUpdateBrowserAvailability(isAvailable: isBrowserAvailable) }
+    }
     Task {
       await mainController.start()
       await MainActor.run {
@@ -127,21 +139,32 @@ private extension MainCoordinator {
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
     
+    let browserCoordinator = browserModule.createBrowserCoordinator()
+    
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
 
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
+    self.browserCoordinator = browserCoordinator
     self.collectiblesCoordinator = collectiblesCoordinator
 
     let coordinators = [
       walletCoordinator,
       historyCoordinator,
+      browserCoordinator,
       collectiblesCoordinator
     ].compactMap { $0 }
     let viewControllers = coordinators.compactMap { $0.router.rootViewController }
     coordinators.forEach {
       addChild($0)
       $0.start()
+    }
+    
+    router.didSelectItem = { [weak self] index in
+      let isSeparatorVisible = index != 2
+      let isBlurVisible = index != 2
+      self?.router.rootViewController.configureAppearance(isSeparatorVisible: isSeparatorVisible)
+      (self?.router.rootViewController as? TKTabBarController)?.blurView.isHidden = !isBlurVisible
     }
     
     router.set(viewControllers: viewControllers, animated: false)
@@ -234,7 +257,7 @@ private extension MainCoordinator {
       }
     }
   }
-  
+    
   func openSwap(wallet: Wallet) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
@@ -260,9 +283,36 @@ private extension MainCoordinator {
     
     addChild(swapCoordinator)
     swapCoordinator.start()
-      
+    
     router.present(navigationController)
   }
+    
+//  func openSwap() {
+//    let navigationController = TKNavigationController()
+//    navigationController.configureDefaultAppearance()
+//    navigationController.setNavigationBarHidden(true, animated: false)
+//    
+//    let coordinator = WebSwapModule(
+//      dependencies: WebSwapModule.Dependencies(
+//        coreAssembly: coreAssembly,
+//        keeperCoreMainAssembly: keeperCoreMainAssembly
+//      )
+//    ).swapCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+//    
+//    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+//      navigationController?.dismiss(animated: true)
+//      guard let coordinator = coordinator else { return }
+//      self?.removeChild(coordinator)
+//    }
+//    
+//    addChild(coordinator)
+//    coordinator.start()
+//    
+//    router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+//      guard let coordinator = coordinator else { return }
+//      self?.removeChild(coordinator)
+//    })
+//  }
 }
 
 // MARK: - Deeplinks
@@ -302,8 +352,12 @@ private extension MainCoordinator {
             )
           ).createConnectCoordinator(
             router: ViewControllerRouter(rootViewController: router.rootViewController),
+            connector: DefaultTonConnectConnectCoordinatorConnector(
+              tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore
+            ),
             parameters: parameters,
-            manifest: manifest
+            manifest: manifest,
+            showWalletPicker: true
           )
           
           coordinator.didCancel = { [weak self, weak coordinator] in
@@ -369,6 +423,7 @@ private extension MainCoordinator {
       ).createPairSignerImportCoordinator(
         publicKey: publicKey,
         name: name,
+        passcode: nil,
         router: NavigationControllerRouter(
           rootViewController: navigationController
         )
@@ -430,7 +485,7 @@ private extension MainCoordinator {
       )
     )
     
-    let coordinator = module.createAddWalletCoordinator(options: [.createRegular, .importRegular, .importWatchOnly, .signer],
+    let coordinator = module.createAddWalletCoordinator(options: [.createRegular, .importRegular, .importWatchOnly, .importTestnet, .signer],
                                                         router: router)
     coordinator.didAddWallets = { [weak self, weak coordinator] in
       self?.addWalletCoordinator = nil
@@ -490,6 +545,27 @@ private extension MainCoordinator {
     } catch {
       print("Log: Wallet update failed")
     }
+  }
+  
+  @MainActor
+  private func didUpdateBrowserAvailability(isAvailable: Bool) {
+    let viewControllers: [UIViewController?] = {
+      if isAvailable {
+        return [
+          walletCoordinator?.router.rootViewController,
+          historyCoordinator?.router.rootViewController,
+          browserCoordinator?.router.rootViewController,
+          collectiblesCoordinator?.router.rootViewController
+        ]
+      } else {
+        return [
+          walletCoordinator?.router.rootViewController,
+          historyCoordinator?.router.rootViewController,
+          collectiblesCoordinator?.router.rootViewController
+        ]
+      }
+    }()
+    router.set(viewControllers: viewControllers.compactMap { $0 }, animated: false)
   }
 }
 

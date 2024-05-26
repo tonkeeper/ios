@@ -24,7 +24,13 @@ public final class FirebaseConfigurator {
   
   public var isMarketRegionPickerAvailable: Bool {
     remoteConfig
-      .configValue(forKey: FirebaseConfigurator.RemoteValueKeys.isMarketRegionPickerAvailable.rawValue)
+      .configValue(forKey: FirebaseConfigurator.RemoteValueKeys.isMarketRegionPickerAvailable.value)
+      .boolValue
+  }
+  
+  public var isBuySellLovely: Bool {
+    remoteConfig
+      .configValue(forKey: FirebaseConfigurator.RemoteValueKeys.isBuySellLovely.value)
       .boolValue
   }
 
@@ -52,5 +58,10 @@ public final class FirebaseConfigurator {
 extension FirebaseConfigurator {
   enum RemoteValueKeys: String {
     case isMarketRegionPickerAvailable = "isMarketRegionPickerAvailable"
+    case isBuySellLovely = "isBuySellLovely"
+    
+    var value: String {
+      "\(rawValue)_Debug"
+    }
   }
 }

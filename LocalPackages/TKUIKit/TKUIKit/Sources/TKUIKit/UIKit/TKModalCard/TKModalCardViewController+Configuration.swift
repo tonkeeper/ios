@@ -49,11 +49,18 @@ public extension TKModalCardViewController.Configuration {
     public let left: String
     public let rightTop: RightItem<String>
     public let rightBottom: RightItem<String?>
-    
-    public init(left: String, rightTop: RightItem<String>, rightBottom: RightItem<String?>) {
+    public let modelValue: String?
+
+    public init(
+      left: String,
+      rightTop: RightItem<String>,
+      rightBottom: RightItem<String?>, 
+      modelValue: String? = nil
+    ) {
       self.left = left
       self.rightTop = rightTop
       self.rightBottom = rightBottom
+      self.modelValue = modelValue
     }
   }
   

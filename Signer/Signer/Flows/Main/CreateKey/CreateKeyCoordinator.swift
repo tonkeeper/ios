@@ -30,6 +30,7 @@ private extension CreateKeyCoordinator {
     module.view.setupLeftCloseButton { [weak self] in
       self?.didFinish?()
     }
+    module.view.presentationMode = .sheet
     module.output.didEnterWalletName = { [weak self] walletName in
       self?.openEnterPassword(name: walletName)
     }
@@ -39,7 +40,7 @@ private extension CreateKeyCoordinator {
   func openEnterPassword(name: String) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
-      title: SignerLocalize.Password.Enter.title
+      title: SignerLocalize.Password.Confirmation.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.view.setupBackButton()

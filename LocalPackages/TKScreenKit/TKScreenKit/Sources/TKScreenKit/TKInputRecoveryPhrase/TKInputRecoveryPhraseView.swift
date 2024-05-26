@@ -36,6 +36,8 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
     return view
   }()
   
+  let gradientView = TKGradientView(color: .Background.page, direction: .topToBottom)
+  
   var inputTextFields = [TKMnemonicTextField]()
   
   let continueButton = TKButton()
@@ -48,7 +50,7 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
   var keyboardHeight: CGFloat = 0 {
     didSet {
       if keyboardHeight.isZero {
-        scrollView.contentInset.bottom = 0
+        scrollView.contentInset.bottom = safeAreaInsets.bottom
       } else {
         scrollView.contentInset.bottom = keyboardHeight - safeAreaInsets.bottom
       }
@@ -143,8 +145,18 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
     let scrollViewMaxOrigin = scrollView.contentSize.height
     - scrollView.frame.height
     + scrollView.contentInset.bottom
+    
+    let maxY: CGFloat
+    if let bannerView {
+      maxY = bannerView.frame.maxY - .afterWordInputSpacing
+    } else {
+      maxY = titleDescriptionView.frame.maxY
+    }
+    
     let originY = min(
-      convertedFrame.origin.y - titleDescriptionView.frame.maxY - convertedFrame.size.height,
+      convertedFrame.origin.y
+      - maxY
+      - convertedFrame.size.height,
       scrollViewMaxOrigin
     )
     UIView.animate(withDuration: animationDuration) {
@@ -180,12 +192,15 @@ private extension TKInputRecoveryPhraseView {
     
     addSubview(pasteButton)
     
+    addSubview(gradientView)
+    
     setupConstraints()
   }
   
   func setupConstraints() {
     scrollView.translatesAutoresizingMaskIntoConstraints = false
     contentStackView.translatesAutoresizingMaskIntoConstraints = false
+    gradientView.translatesAutoresizingMaskIntoConstraints = false
     
     pasteButton.snp.makeConstraints { make in
       make.centerX.equalTo(self)
@@ -193,6 +208,11 @@ private extension TKInputRecoveryPhraseView {
     }
     
     NSLayoutConstraint.activate([
+      gradientView.topAnchor.constraint(equalTo: topAnchor),
+      gradientView.leftAnchor.constraint(equalTo: leftAnchor),
+      gradientView.rightAnchor.constraint(equalTo: rightAnchor),
+      gradientView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
+      
       scrollView.topAnchor.constraint(equalTo: topAnchor),
       scrollView.leftAnchor.constraint(equalTo: leftAnchor),
       scrollView.rightAnchor.constraint(equalTo: rightAnchor),
@@ -209,7 +229,6 @@ private extension TKInputRecoveryPhraseView {
 }
 
 private extension CGFloat {
-  static let buttonsContainerSpacing: CGFloat = 16
   static let topSpacing: CGFloat = 44
   static let afterWordInputSpacing: CGFloat = 16
 }

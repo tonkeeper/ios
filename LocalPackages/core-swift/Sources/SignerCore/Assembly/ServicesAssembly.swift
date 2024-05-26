@@ -22,4 +22,11 @@ public final class ServicesAssembly {
       signerInfoRepository: repositoriesAssembly.signerInfoRepository()
     )
   }
+  
+  public func signOutService() -> SignOutService {
+    SignOutServiceImplementation(
+      signerInfoRepository: repositoriesAssembly.signerInfoRepository(),
+      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository()
+    )
+  }
 }

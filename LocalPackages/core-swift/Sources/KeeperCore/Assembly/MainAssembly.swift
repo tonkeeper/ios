@@ -17,10 +17,10 @@ public final class MainAssembly {
   let repositoriesAssembly: RepositoriesAssembly
   public let walletAssembly: WalletAssembly
   public let walletUpdateAssembly: WalletsUpdateAssembly
-  let servicesAssembly: ServicesAssembly
+  public let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
   public let formattersAssembly: FormattersAssembly
-  let configurationAssembly: ConfigurationAssembly
+  public let configurationAssembly: ConfigurationAssembly
   public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
   let apiAssembly: APIAssembly
@@ -71,7 +71,7 @@ public final class MainAssembly {
           TonDeeplinkParser(),
         ]
       ),
-      api: apiAssembly.api
+      apiProvider: apiAssembly.apiProvider
     )
   }
   
@@ -157,7 +157,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -174,7 +174,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -192,7 +192,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -239,6 +239,7 @@ public final class MainAssembly {
       loader: loadersAssembly.chartLoader,
       chartService: servicesAssembly.chartService(),
       currencyStore: storesAssembly.currencyStore,
+      walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
     )
   }
@@ -310,16 +311,6 @@ public final class MainAssembly {
   public func settingsSecurityController() -> SettingsSecurityController {
     SettingsSecurityController(
       securityStore: storesAssembly.securityStore
-    )
-  }
-  
-  public func tonConnectConnectController(parameters: TonConnectParameters,
-                                          manifest: TonConnectManifest) -> TonConnectConnectController {
-    TonConnectConnectController(
-      parameters: parameters,
-      manifest: manifest,
-      walletsStore: walletAssembly.walletStore,
-      tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
     )
   }
   
@@ -505,6 +496,17 @@ public final class MainAssembly {
   
   public func signerSignController(url: URL, wallet: Wallet) -> SignerSignController {
     SignerSignController(url: url, wallet: wallet)
+  }
+  
+  public func browserExploreController() -> BrowserExploreController {
+    BrowserExploreController(popularAppsService: servicesAssembly.popularAppsService())
+  }
+  
+  public func browserConnectedController() -> BrowserConnectedController {
+    BrowserConnectedController(
+      walletsStore: walletAssembly.walletStore,
+      tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
+    )
   }
 }
 

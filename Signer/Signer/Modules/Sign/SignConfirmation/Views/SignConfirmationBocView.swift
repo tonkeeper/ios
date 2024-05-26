@@ -25,10 +25,17 @@ final class SignConfirmationBocView: UIView, ConfigurableView {
   
   let emulateButton = TKButton()
   let copyButton = TKButton()
+  let emulateQRCodeButton = TKButton()
   
   private let buttonsStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.spacing = 8
+    return stackView
+  }()
+  private let buttonsWrapper: UIStackView = {
+    let stackView = UIStackView()
+    stackView.axis = .vertical
+    stackView.alignment = .leading
     return stackView
   }()
   private let containerView = UIView()
@@ -46,12 +53,14 @@ final class SignConfirmationBocView: UIView, ConfigurableView {
     let boc: String
     let emulateButtonConfiguration: TKButton.Configuration
     let copyButtonConfiguration: TKButton.Configuration
+    let emulateQRCodeButtonConfiguration: TKButton.Configuration
   }
   
   func configure(model: Model) {
     textView.text = model.boc
     emulateButton.configuration = model.emulateButtonConfiguration
     copyButton.configuration = model.copyButtonConfiguration
+    emulateQRCodeButton.configuration = model.emulateQRCodeButtonConfiguration
   }
 }
 
@@ -63,24 +72,26 @@ private extension SignConfirmationBocView {
     
     addSubview(containerView)
     containerView.addSubview(textView)
-    containerView.addSubview(buttonsStackView)
+    containerView.addSubview(buttonsWrapper)
+    buttonsWrapper.addArrangedSubview(buttonsStackView)
     buttonsStackView.addArrangedSubview(emulateButton)
     buttonsStackView.addArrangedSubview(copyButton)
+    buttonsStackView.addArrangedSubview(emulateQRCodeButton)
     
     setupConstraints()
   }
   
   func setupConstraints() {
     containerView.snp.makeConstraints { make in
-      make.edges.equalTo(UIEdgeInsets(top: 8, left: 16, bottom: 16, right: 16)).priority(.high)
+      make.edges.equalTo(UIEdgeInsets(top: 12, left: 16, bottom: 16, right: 16)).priority(.high)
     }
     
     textView.snp.makeConstraints { make in
       make.top.left.right.equalTo(containerView)
     }
     
-    buttonsStackView.snp.makeConstraints { make in
-      make.top.equalTo(textView.snp.bottom).offset(8)
+    buttonsWrapper.snp.makeConstraints { make in
+      make.top.equalTo(textView.snp.bottom).offset(12)
       make.left.right.bottom.equalTo(containerView)
     }
   }

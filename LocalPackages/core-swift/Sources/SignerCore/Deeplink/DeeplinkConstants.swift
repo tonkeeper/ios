@@ -7,7 +7,7 @@ public enum DeeplinkScheme: String {
 
 public enum DeeplinkParameter: String {
   case pk
-  case boc
+  case sign
   case v
   case network
   case `return`

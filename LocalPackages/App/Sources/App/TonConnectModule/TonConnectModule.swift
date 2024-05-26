@@ -11,12 +11,16 @@ struct TonConnectModule {
   }
   
   func createConnectCoordinator(router: ViewControllerRouter,
-                                     parameters: TonConnectParameters,
-                                     manifest: TonConnectManifest) -> TonConnectConnectCoordinator {
+                                connector: TonConnectConnectCoordinatorConnector,
+                                parameters: TonConnectParameters,
+                                manifest: TonConnectManifest,
+                                showWalletPicker: Bool) -> TonConnectConnectCoordinator {
     TonConnectConnectCoordinator(
       router: router,
+      connector: connector,
       parameters: parameters,
       manifest: manifest,
+      showWalletPicker: showWalletPicker,
       coreAssembly: dependencies.coreAssembly,
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly
     )
@@ -27,13 +31,19 @@ struct TonConnectModule {
     wallet: Wallet,
     appRequest: TonConnect.AppRequest,
     app: TonConnectApp
-  ) -> TonConnectConfirmationCoordinator {
-    TonConnectConfirmationCoordinator(
+  ) -> SignTransactionConfirmationCoordinator {
+    SignTransactionConfirmationCoordinator(
       router: WindowRouter(window: window),
+      wallet: wallet,
+      confirmator: DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator(
+        app: app,
+        appRequest: appRequest,
+        sendService: dependencies.keeperCoreMainAssembly.servicesAssembly.sendService(),
+        tonConnectService: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()
+      ),
       tonConnectConfirmationController: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmationController(
         wallet: wallet,
-        appRequest: appRequest,
-        app: app
+        signTransactionParams: appRequest.params
       ),
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
       coreAssembly: dependencies.coreAssembly

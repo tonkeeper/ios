@@ -57,11 +57,15 @@ public final class RepositoriesAssembly {
     ChartDataRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
+  func stonfiPairsStoreRepository() -> StonfiPairsRepository {
+    StonfiPairsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
   func stonfiAssetsRepository() -> StonfiAssetsRepository {
     StonfiAssetsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
-  func stonfiPairsStoreRepository() -> StonfiPairsRepository {
-    StonfiPairsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  func popularAppsRepository() -> PopularAppsRepository {
+    PopularAppsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
 }

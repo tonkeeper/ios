@@ -2,41 +2,34 @@ import Foundation
 import TonSwift
 
 struct LinkDeeplinkGenerator {
-  func generateAppDeeplink(network: Network, key: WalletKey) -> URL? {
-    guard let publicKey = key
-      .publicKey.data.base64EncodedString()
-      .percentEncoded,
-          let name = key.name.percentEncoded else {
-      return nil
-    }
-    
+  func generateAppDeeplink(network: Network, key: WalletKey, local: Bool) -> URL? {
+    let hexPublicKey = key.publicKey.data.hexString()
+    let hexName = key.name.data(using: .utf8)?.hexString()
+
     var components = URLComponents()
     components.scheme = "tonkeeper"
     components.host = "signer"
     components.path = "/link"
-    components.percentEncodedQueryItems = [
-      URLQueryItem(name: "pk", value: publicKey),
-      URLQueryItem(name: "name", value: name),
-      URLQueryItem(name: "network", value: network.rawValue)
+    components.queryItems = [
+      URLQueryItem(name: "pk", value: hexPublicKey),
+      URLQueryItem(name: "name", value: hexName),
+      URLQueryItem(name: "network", value: network.rawValue),
+      URLQueryItem(name: "local", value: "\(local)")
     ]
     return components.url
   }
   
   func generateWebDeeplink(network: Network, key: WalletKey) -> URL? {
-    guard let publicKey = key
-      .publicKey.data.base64EncodedString()
-      .percentEncoded,
-          let name = key.name.percentEncoded else {
-      return nil
-    }
+    let hexPublicKey = key.publicKey.data.hexString()
+    let hexName = key.name.data(using: .utf8)?.hexString()
     
     var components = URLComponents()
     components.scheme = "https"
     components.host = "wallet.tonkeeper.com"
     components.path = "/signer/link"
-    components.percentEncodedQueryItems = [
-      URLQueryItem(name: "pk", value: publicKey),
-      URLQueryItem(name: "name", value: name),
+    components.queryItems = [
+      URLQueryItem(name: "pk", value: hexPublicKey),
+      URLQueryItem(name: "name", value: hexName),
       URLQueryItem(name: "network", value: network.rawValue)
     ]
     return components.url

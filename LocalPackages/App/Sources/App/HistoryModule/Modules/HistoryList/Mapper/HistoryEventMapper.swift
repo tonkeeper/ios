@@ -118,12 +118,13 @@ struct HistoryEventMapper {
     
     let contentConfiguration = TKUIListItemContentView.Configuration(
       leftItemConfiguration: leftItemConfiguration,
-      rightItemConfiguration: rightItemConfiguration
+      rightItemConfiguration: rightItemConfiguration,
+      isVerticalCenter: false
     )
 
     var commentConfiguration: HistoryCellActionView.CommentView.Configuration?
     if let comment = action.comment {
-      commentConfiguration = HistoryCellActionView.CommentView.Configuration(comment: comment.withTextStyle(.body2, color: .Text.primary))
+      commentConfiguration = HistoryCellActionView.CommentView.Configuration(comment:comment)
     }
     
     var nftConfiguration: HistoryCellActionView.NFTView.Configuration?

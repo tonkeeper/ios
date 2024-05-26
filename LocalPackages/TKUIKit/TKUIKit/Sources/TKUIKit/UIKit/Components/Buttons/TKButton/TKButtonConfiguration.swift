@@ -79,6 +79,7 @@ public extension TKButton.Configuration {
       contentPadding: size.padding,
       textStyle: size.textStyle,
       textColor: category.titleColor,
+      iconTintColor: category.titleColor,
       backgroundColors: [
         .normal: category.backgroundColor,
         .highlighted: category.highlightedBackgroundColor,

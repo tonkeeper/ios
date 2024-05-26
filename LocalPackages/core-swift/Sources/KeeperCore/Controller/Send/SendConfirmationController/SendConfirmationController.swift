@@ -63,7 +63,7 @@ public final class SendConfirmationController {
   public func sendTransaction() async throws {
     do {
       let transactionBoc = try await createTransactionBoc()
-      try await sendService.sendTransaction(boc: transactionBoc)
+      try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
       NotificationCenter.default.post(
         name: NSNotification.Name(rawValue: "didSendTransaction"),
         object: nil,
@@ -217,7 +217,10 @@ private extension SendConfirmationController {
     
     do {
       let transactionBoc = try await createTransactionBocTask
-      let transactionInfo = try await sendService.loadTransactionInfo(boc: transactionBoc)
+      let transactionInfo = try await sendService.loadTransactionInfo(
+        boc: transactionBoc,
+        wallet: wallet
+      )
       let sendTransactionModel = SendTransactionModel(
         accountEvent: transactionInfo.event,
         risk: transactionInfo.risk,
@@ -264,7 +267,9 @@ private extension SendConfirmationController {
   }
   
   func createTokenTransactionBoc(token: Token, amount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+        
     switch token {
     case .ton:
       let isMax: Bool
@@ -281,6 +286,7 @@ private extension SendConfirmationController {
         recipientAddress: recipient.recipientAddress.address,
         isBounceable: recipient.recipientAddress.isBouncable,
         comment: comment,
+        timeout: timeout,
         signClosure: signClosure
       )
     case .jetton(let jettonItem):
@@ -292,6 +298,7 @@ private extension SendConfirmationController {
         recipientAddress: recipient.recipientAddress.address,
         isBounceable: recipient.recipientAddress.isBouncable,
         comment: comment,
+        timeout: timeout,
         signClosure: signClosure
       )
     }
@@ -299,16 +306,19 @@ private extension SendConfirmationController {
   
   /// Jetton to Jetton swap
   func createSwapTransactionBoc(from: Address, to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: from.toRaw(),
-      owner: wallet.address.toRaw()
+      owner: wallet.address.toRaw(),
+      isTestnet: wallet.isTestnet
     )
     
     let toWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: to.toRaw(),
-      owner: STONFI_CONSTANTS.RouterAddress
+      owner: STONFI_CONSTANTS.RouterAddress,
+      isTestnet: wallet.isTestnet
     )
     
     return try await SwapMessageBuilder.sendSwap(
@@ -320,22 +330,26 @@ private extension SendConfirmationController {
       jettonFromWalletAddress: fromWalletAddress,
       forwardAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_JETTON.ForwardGasAmount,
       attachedAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_JETTON.GasAmount,
+      timeout: timeout,
       signClosure: signClosure
     )
   }
   
   /// Jetton to TON swap
   func createSwapTransactionBoc(from: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
-    
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: from.toRaw(),
-      owner: wallet.address.toRaw()
+      owner: wallet.address.toRaw(),
+      isTestnet: wallet.isTestnet
     )
     
     let toWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: STONFI_CONSTANTS.TONProxyAddress,
-      owner: STONFI_CONSTANTS.RouterAddress
+      owner: STONFI_CONSTANTS.RouterAddress,
+      isTestnet: wallet.isTestnet
     )
     
     return try await SwapMessageBuilder.sendSwap(
@@ -347,22 +361,26 @@ private extension SendConfirmationController {
       jettonFromWalletAddress: fromWalletAddress,
       forwardAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_TON.ForwardGasAmount,
       attachedAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_TON.GasAmount,
+      timeout: timeout,
       signClosure: signClosure
     )
   }
   
   /// TON to Jetton swap
   func createSwapTransactionBoc(to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: STONFI_CONSTANTS.TONProxyAddress,
-      owner: STONFI_CONSTANTS.RouterAddress
+      owner: STONFI_CONSTANTS.RouterAddress,
+      isTestnet: wallet.isTestnet
     )
     
     let toWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: to.toRaw(),
-      owner: STONFI_CONSTANTS.RouterAddress
+      owner: STONFI_CONSTANTS.RouterAddress,
+      isTestnet: wallet.isTestnet
     )
     
     return try await SwapMessageBuilder.sendSwap(
@@ -374,19 +392,30 @@ private extension SendConfirmationController {
       jettonFromWalletAddress: fromWalletAddress,
       forwardAmount: STONFI_CONSTANTS.SWAP_TON_TO_JETTON.ForwardGasAmount,
       attachedAmount: STONFI_CONSTANTS.SWAP_TON_TO_JETTON.ForwardGasAmount + offerAmount,
+      timeout: timeout,
       signClosure: signClosure
     )
   }
   
   func createNFTEmulateTransactionBoc(nft: NFT) async throws -> String {
     let transferAmount = BigUInt(stringLiteral: "10000000000")
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    
+    
+    var commentCell: Cell?
+    if let comment = comment {
+        commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
+    }
+    
     return try await NFTTransferMessageBuilder.sendNFTTransfer(
         wallet: wallet,
         seqno: seqno,
         nftAddress: nft.address,
         recipientAddress: recipient.recipientAddress.address,
-        transferAmount: transferAmount) { transfer in
+        transferAmount: transferAmount,
+        timeout: timeout,
+        forwardPayload: commentCell) { transfer in
             try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
         }
   }
@@ -398,14 +427,23 @@ private extension SendConfirmationController {
     transferAmount = transferAmount < minimumTransferAmount
     ? minimumTransferAmount
     : transferAmount
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    
+    var commentCell: Cell?
+    if let comment = comment {
+        commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
+    }
     
     return try await NFTTransferMessageBuilder.sendNFTTransfer(
         wallet: wallet,
         seqno: seqno,
         nftAddress: nft.address,
         recipientAddress: recipient.recipientAddress.address,
-        transferAmount: transferAmount.magnitude) { transfer in
+        transferAmount: transferAmount.magnitude,
+        timeout: timeout,
+        forwardPayload: commentCell
+        ) { transfer in
           return try await signTransfer(transfer)
         }
   }

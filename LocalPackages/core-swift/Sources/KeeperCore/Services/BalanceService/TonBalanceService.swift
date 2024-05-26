@@ -3,19 +3,19 @@ import TonSwift
 import TonAPI
 
 protocol TonBalanceService {
-  func loadBalance(address: Address) async throws -> TonBalance
+  func loadBalance(wallet: Wallet) async throws -> TonBalance
 }
 
 final class TonBalanceServiceImplementation: TonBalanceService {
   
-  private let api: API
+  private let apiProvider: APIProvider
   
-  init(api: API) {
-    self.api = api
+  init(apiProvider: APIProvider) {
+    self.apiProvider = apiProvider
   }
   
-  func loadBalance(address: Address) async throws -> TonBalance {
-    let account = try await api.getAccountInfo(address: address.toRaw())
+  func loadBalance(wallet: Wallet) async throws -> TonBalance {
+    let account = try await apiProvider.api(wallet.isTestnet).getAccountInfo(address: wallet.address.toRaw())
     let tonBalance = TonBalance(amount: account.balance)
     return tonBalance
   }

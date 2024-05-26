@@ -24,8 +24,18 @@ public final class BuyCoordinator: RouterCoordinator<NavigationControllerRouter>
   }
   
   public override func start() {
-    //openBuyList()
     openBuySell()
+    
+//    Task {
+//      let isBuySellLovely = await coreAssembly.featureFlagsProvider.isBuySellLovely()
+//      await MainActor.run {
+//        if isBuySellLovely {
+//          openBuyList()
+//        } else {
+//          openUglyBuyList()
+//        }
+//      }
+//    }
   }
 }
 
@@ -163,6 +173,26 @@ private extension BuyCoordinator {
     }
     
     router.push(viewController: module.view, animated: true)
+  }
+  
+  func openUglyBuyList() {
+    let module = UglyBuyListAssembly.module(
+      buyListController: keeperCoreMainAssembly.buyListController(
+        wallet: wallet,
+        isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
+      ),
+      appSettings: coreAssembly.appSettings
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+      module.output.didSelectURL = { [weak self, weak bottomSheetViewController] url in
+          guard let bottomSheetViewController else { return }
+          bottomSheetViewController.dismiss()
+          self?.coreAssembly.urlOpener().open(url: url)
+      }
+
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
   func openWebView(url: URL, fromViewController: UIViewController) {

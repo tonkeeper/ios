@@ -19,6 +19,7 @@
 "password.change.enter_current.title" = "Enter current Password";
 "password.change.enter_new.title" = "Enter new Password";
 "password.change.reenter_new.title" = "Re-enter Password";
+"password.confirmation.title" = "Enter current Password";
 
 "name_key.title" = "Name your Key";
 "name_key.caption" = "It will simplify the search for the necessary key in the list of keys.";
@@ -49,7 +50,12 @@
 "settings.items.change_password" = "Change Password";
 "settings.items.support" = "Support";
 "settings.items.legal" = "Legal";
+"settings.items.theme" = "Theme";
 "settings.footer.version" = "Version %@";
+"settings.themes.deepblue" = "Deep Blue";
+"settings.themes.dark" = "Dark";
+"settings.themes.light" = "Light";
+"settings.themes.system" = "System";
 
 "settings.legal.title" = "Legal";
 "settings.legal.items.terms_of_service" = "Terms of service";
@@ -77,8 +83,16 @@
 "sign_transaction.slide_to_sign" = "Slide to Sign";
 "sign_transaction.send" = "Send";
 
+"emulate_transaction_qr.title" = "Scan the QR code to open the transaction emulation";
+"emulate_transaction_qr.close_button.title" = "Close";
+
 "sign_transaction_qr.title" = "Scan the QR code with Tonkeeper";
 "sign_transaction_qr.caption" = "After scanning, the transaction will be sent to the network.";
 "sign_transaction_qr.signed_transaction" = "Signed Transaction";
 "sign_transaction_qr.done" = "Done";
+
+"sign_out.button.title" = "Sign Out";
+"sign_out.alert.title" = "Sign Out?";
+"sign_out.alert.caption" = "This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase.";
+"sign_out.alert.button.sign_out" = "Sign Out";
 

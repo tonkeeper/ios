@@ -70,6 +70,7 @@ private extension KeyDetailsCoordinator {
       try? signerCoreAssembly.keysEditController().updateWalletKeyName(walletKey: walletKey, name: name)
       self?.router.dismiss()
     }
+    module.view.presentationMode = .sheet
     
     let navigationController = TKNavigationController(rootViewController: module.view)
     navigationController.configureTransparentAppearance()
@@ -100,7 +101,7 @@ private extension KeyDetailsCoordinator {
   func openEnterPassword(fromViewController: UIViewController, completion: @escaping (String?) -> Void) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository(),
-      title: SignerLocalize.Password.Enter.title
+      title: SignerLocalize.Password.Confirmation.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.output.didEnterPassword = { [weak view = module.view] password in

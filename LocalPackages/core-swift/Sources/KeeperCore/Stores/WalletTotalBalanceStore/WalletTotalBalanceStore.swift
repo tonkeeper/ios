@@ -4,10 +4,10 @@ import TonSwift
 actor WalletTotalBalanceStore {
   typealias ObservationClosure = (Event) -> Void
   enum Event {
-    case didUpdateTotalBalance(totalBalanceState: TotalBalanceState, walletAddress: Address)
+    case didUpdateTotalBalance(totalBalanceState: TotalBalanceState, wallet: Wallet)
   }
   
-  private var totalBalanceStates = [Currency: [Address: TotalBalanceState]]()
+  private var totalBalanceStates = [Currency: [FriendlyAddress: TotalBalanceState]]()
   
   private var balanceStoreObservationToken: ObservationToken?
   private var tonRatesStoreObservationToken: ObservationToken?
@@ -40,13 +40,14 @@ actor WalletTotalBalanceStore {
     tonRatesStoreObservationToken?.cancel()
   }
   
-  func getTotalBalanceState(walletAddress: Address) async throws -> TotalBalanceState? {
+  func getTotalBalanceState(wallet: Wallet) async throws -> TotalBalanceState? {
+    guard let address = try? wallet.friendlyAddress else { return nil }
     let activeCurrency = await currencyStore.getActiveCurrency()
-    if let totalBalanceState = totalBalanceStates[activeCurrency]?[walletAddress] {
+    if let totalBalanceState = totalBalanceStates[activeCurrency]?[address] {
       return totalBalanceState
     } else {
       return try await Task {
-        let walletBalanceState = try await walletBalanceStore.getBalanceState(walletAddress: walletAddress)
+        let walletBalanceState = try await walletBalanceStore.getBalanceState(wallet: wallet)
         let tonRates = await tonRatesStore.getTonRates()
         let totalBalanceState = calculateTotalBalanceState(
           walletBalanceState: walletBalanceState,
@@ -54,10 +55,10 @@ actor WalletTotalBalanceStore {
           tonRates: tonRates
         )
         if var walletTotalBalances = totalBalanceStates[activeCurrency] {
-          walletTotalBalances[walletAddress] = totalBalanceState
+          walletTotalBalances[address] = totalBalanceState
           totalBalanceStates[activeCurrency] = walletTotalBalances
         } else {
-          let walletTotalBalances = [walletAddress: totalBalanceState]
+          let walletTotalBalances = [address: totalBalanceState]
           totalBalanceStates[activeCurrency] = walletTotalBalances
         }
         return totalBalanceState
@@ -96,8 +97,8 @@ private extension WalletTotalBalanceStore {
   func startObservations() async {
     balanceStoreObservationToken = await walletBalanceStore.addEventObserver(self) { observer, event in
       switch event {
-      case .balanceUpdate(let balance, let walletAddress):
-        Task { await observer.didUpdateBalanceState(balance, walletAddress: walletAddress) }
+      case .balanceUpdate(let balance, let wallet):
+        Task { await observer.didUpdateBalanceState(balance, wallet: wallet) }
       }
     }
     
@@ -109,30 +110,30 @@ private extension WalletTotalBalanceStore {
     }
   }
   
-  func didUpdateBalanceState(_ balanceState: WalletBalanceState, walletAddress: Address) async {
+  func didUpdateBalanceState(_ balanceState: WalletBalanceState, wallet: Wallet) async {
     let tonRates = await tonRatesStore.getTonRates()
     await updateTotalBalance(
       walletBalanceState: balanceState,
-      walletAddress: walletAddress,
+      wallet: wallet,
       tonRates: tonRates
     )
   }
   
   func didUpdateTonRates(_ tonRates: [Rates.Rate]) async {
     for wallet in walletsStore.wallets {
-      guard let walletAddress = try? wallet.address else { return }
-      guard let balanceState = try? await walletBalanceStore.getBalanceState(walletAddress: walletAddress) else { continue }
+      guard let balanceState = try? await walletBalanceStore.getBalanceState(wallet: wallet) else { continue }
       await updateTotalBalance(
         walletBalanceState: balanceState,
-        walletAddress: walletAddress,
+        wallet: wallet,
         tonRates: tonRates
       )
     }
   }
   
   func updateTotalBalance(walletBalanceState: WalletBalanceState,
-                          walletAddress: Address,
+                          wallet: Wallet,
                           tonRates: [Rates.Rate]) async {
+    guard let address = try? wallet.friendlyAddress else { return }
     let currency = await currencyStore.getActiveCurrency()
     let totalBalanceState = calculateTotalBalanceState(
       walletBalanceState: walletBalanceState,
@@ -140,17 +141,17 @@ private extension WalletTotalBalanceStore {
       tonRates: tonRates
     )
     if var walletTotalBalances = totalBalanceStates[currency] {
-      walletTotalBalances[walletAddress] = totalBalanceState
+      walletTotalBalances[address] = totalBalanceState
       totalBalanceStates[currency] = walletTotalBalances
     } else {
-      let walletTotalBalances = [walletAddress: totalBalanceState]
+      let walletTotalBalances = [address: totalBalanceState]
       totalBalanceStates[currency] = walletTotalBalances
     }
     observations.values.forEach {
       $0(
         .didUpdateTotalBalance(
           totalBalanceState: totalBalanceState,
-          walletAddress: walletAddress
+          wallet: wallet
         )
       )
     }

@@ -7,14 +7,14 @@ public final class HistoryListController {
   
   private var didSendTransactionToken: NSObjectProtocol?
   
-  private let wallet: Wallet
+  private let walletsStore: WalletsStore
   private let paginator: HistoryListPaginator
   private let backgroundUpdateStore: BackgroundUpdateStore
   
-  init(wallet: Wallet,
+  init(walletsStore: WalletsStore,
        paginator: HistoryListPaginator,
        backgroundUpdateStore: BackgroundUpdateStore) {
-    self.wallet = wallet
+    self.walletsStore = walletsStore
     self.paginator = paginator
     self.backgroundUpdateStore = backgroundUpdateStore
   }
@@ -27,16 +27,26 @@ public final class HistoryListController {
         self?.didReceiveDidSendTransactionNotification()
       }
     
-    _ = await backgroundUpdateStore.addEventObserver(self) { [wallet] observer, event in
+    _ = await backgroundUpdateStore.addEventObserver(self) { [walletsStore] observer, event in
       switch event {
       case .didUpdateState:
         break
       case .didReceiveUpdateEvent(let backgroundUpdateEvent):
-        guard let walletAddress = try? wallet.address,
+        guard let walletAddress = try? walletsStore.activeWallet.address,
               backgroundUpdateEvent.accountAddress == walletAddress else { return }
         Task { await observer.didRecieveBackgroudUpdateEvent(backgroundUpdateEvent) }
       }
     }
+    
+    _ = walletsStore.addEventObserver(self) { observer, event in
+      switch event {
+      case .didUpdateActiveWallet:
+        Task { await observer.paginator.start() }
+      default:
+        break
+      }
+    }
+    
     await paginator.setEventHandler { [weak self] event in
       self?.didGetEvent(event)
     }

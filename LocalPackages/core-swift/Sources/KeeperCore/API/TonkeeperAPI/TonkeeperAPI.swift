@@ -12,6 +12,7 @@ protocol TonkeeperAPI {
   func loadChart(period: Period) async throws -> [Coordinate]
   func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
   func loadFiatRates(category: FiatMethodCategory.CategoryType, currency: Currency) async throws -> [FiatMethodRate]
+  func loadPopularApps(lang: String) async throws -> PopularAppsResponseData
 }
 
 struct TonkeeperAPIImplementation: TonkeeperAPI {
@@ -100,4 +101,22 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     let entity = try JSONDecoder().decode(FiatMethodsRatesResponse.self, from: data)
     return entity.items
   }
+  
+  func loadPopularApps(lang: String) async throws -> PopularAppsResponseData {
+      let url = host.appendingPathComponent("/apps/popular")
+      guard var components = URLComponents(
+        url: url,
+        resolvingAgainstBaseURL: false
+      ) else { throw TonkeeperAPIError.incorrectUrl }
+      
+      components.queryItems = [
+        .init(name: "lang", value: lang),
+        .init(name: "build", value: "3.4.0"),
+        .init(name: "platform", value: "ios_x")
+      ]
+      guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+      let (data, _) = try await urlSession.data(from: url)
+      let entity = try JSONDecoder().decode(PopularAppsResponse.self, from: data)
+      return entity.data
+    }
 }
