@@ -68,12 +68,12 @@ final class SwapSettingsViewController: ModalViewController<SwapSettingsView, Mo
     guard let animationDuration = notification.keyboardAnimationDuration else { return }
     guard let keyboardHeight = notification.keyboardSize?.height else { return }
     
-    let contentInsetBottom = keyboardHeight - view.safeAreaInsets.bottom
-    let continueButtonTranslatedY = -keyboardHeight + view.safeAreaInsets.bottom
+    let contentInsetBottom = keyboardHeight + customView.saveButtonContainer.bounds.height
+    let buttonContainerTranslatedY = -keyboardHeight + view.safeAreaInsets.bottom
     
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
       self.customView.scrollView.contentInset.bottom = contentInsetBottom
-      self.customView.saveButton.transform = CGAffineTransform(translationX: 0, y: continueButtonTranslatedY)
+      self.customView.saveButtonContainer.transform = CGAffineTransform(translationX: 0, y: buttonContainerTranslatedY)
     }
   }
   
@@ -82,7 +82,7 @@ final class SwapSettingsViewController: ModalViewController<SwapSettingsView, Mo
     
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
       self.customView.scrollView.contentInset.bottom = 0
-      self.customView.saveButton.transform = .identity
+      self.customView.saveButtonContainer.transform = .identity
     }
   }
 }

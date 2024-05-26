@@ -23,7 +23,7 @@ final class SwapSettingsView: UIView, ConfigurableView {
       size: .large
     )
   )
-  private let saveButtonContainer: TKPaddingContainerView = {
+  let saveButtonContainer: TKPaddingContainerView = {
     let container = TKPaddingContainerView()
     container.padding = .saveButtonContainerPadding
     return container

@@ -74,8 +74,10 @@ final class SwapViewController: ModalViewController<SwapView, ModalNavigationBar
     guard let animationDuration = notification.keyboardAnimationDuration else { return }
     guard let keyboardHeight = notification.keyboardSize?.height else { return }
     
+    let contentInsetBottom = keyboardHeight - view.safeAreaInsets.bottom
+    
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
-      self.customView.scrollView.contentInset.bottom = keyboardHeight
+      self.customView.scrollView.contentInset.bottom = contentInsetBottom
     }
   }
   
