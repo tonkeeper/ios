@@ -78,20 +78,20 @@ private extension TransactionViewController {
   }
   
   func setupViewEvents() {
-    customView.fromTextField.didUpdateText = { [weak viewModel] text in
+    customView.payTextField.didUpdateText = { [weak viewModel] text in
       viewModel?.didInputPayAmount(text)
     }
     
-    customView.toTextField.didUpdateText = { [weak viewModel] text in
+    customView.getTextField.didUpdateText = { [weak viewModel] text in
       viewModel?.didInputGetAmount(text)
     }
 //    customView.amountView.didUpdateText = { [weak viewModel] text in
 //      viewModel?.didInputAmount(text ?? "")
 //    }
 //    
-//    customView.continueButton.configuration.action = { [weak viewModel] in
-//      viewModel?.didTapContinueButton()
-//    }
+    customView.continueButton.configuration.action = { [weak viewModel] in
+      viewModel?.didTapContinueButton()
+    }
 //    
 //    segmentedControl.didChangeSegment = { [weak viewModel] selectedSegmentIndex in
 //      viewModel?.didSelectSegment(at: selectedSegmentIndex)

@@ -146,7 +146,8 @@ private extension BuyListController {
         guard availableFiatMethods.contains(categoryItem.id) else {
           continue
         }
-        guard let existingOperator = operators.first(where: { $0.id == categoryItem.id }) else {
+        // Using names here because Mercuryo's sell id is "mercuryo_sell", and does not match operators response
+        guard let existingOperator = operators.first(where: { $0.name == categoryItem.title }) else {
           continue
         }
         let item = BuySellItemModel(
@@ -206,6 +207,6 @@ private extension BuyListController {
   }
   
   private var availableFiatMethods: [FiatMethodItem.ID] {
-      ["mercuryo", "neocrypto", "moonpay"]
+      ["mercuryo", "mercuryo_sell", "neocrypto", "moonpay"]
   }
 }

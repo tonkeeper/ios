@@ -5,28 +5,28 @@ import SnapKit
 final class TransactionView: UIView, ConfigurableView {
   
   struct Model {
+    public struct InputField {
+      public let placeholder: String
+      public let currency: String
+      public let amount: String
+      public let isValid: Bool
+    }
+    
     public enum Image {
       case image(UIImage)
       case asyncImage(ImageDownloadTask)
     }
-    // Const???
+    
     public let image: Image
     public let providerName: String
     public let providerDescription: String?
     public let rate: String
-    public let toPlaceholder: String
-    public let fromPlaceholder: String
-    
-    // To Model
-    public let fromCurrency: String
-    public let toCurrency: String
-    
-    public let toAmountString: String
-    public let fromAmountString: String
+    public let payField: InputField
+    public let getField: InputField
     
     public let isContinueButtonEnabled: Bool
-    public let isMinAmountShown: Bool
-    public let minAmountDisclaimer: String
+    public let isErrorShown: Bool
+    public let errorMessage: String?
   }
   
   let logoImageView = UIImageView()
@@ -55,14 +55,14 @@ final class TransactionView: UIView, ConfigurableView {
     return label
   }()
   
-  lazy var insufficientFundsLabel: UILabel = {
+  lazy var errorMessageLabel: UILabel = {
     let label = UILabel()
     label.font = .insufficientFundsFont
     label.textColor = .Accent.red
     return label
   }()
   
-  lazy var fromTextField: TKTextField = {
+  lazy var payTextField: TKTextField = {
     let textFieldInputView = TKTextFieldInputView(
       textInputControl: TKTextInputTextFieldControl()
     )
@@ -72,7 +72,7 @@ final class TransactionView: UIView, ConfigurableView {
     )
   }()
   
-  lazy var toTextField: TKTextField = {
+  lazy var getTextField: TKTextField = {
     let textFieldInputView = TKTextFieldInputView(
       textInputControl: TKTextInputTextFieldControl()
     )
@@ -122,13 +122,19 @@ final class TransactionView: UIView, ConfigurableView {
     nameLabel.text = model.providerName
     descriptionLabel.text = model.providerDescription
     rateLabel.text = model.rate
-    fromTextField.placeholder = model.fromPlaceholder
-    toTextField.placeholder = model.toPlaceholder
     
-    fromTextField.text = model.fromAmountString
-    toTextField.text = model.toAmountString
+    payTextField.placeholder = model.payField.placeholder
+    payTextField.text = model.payField.amount
+    payTextField.isValid = model.payField.isValid
+    
+    getTextField.placeholder = model.getField.placeholder
+    getTextField.text = model.getField.amount
+    getTextField.isValid = model.getField.isValid
     
     continueButton.configuration.isEnabled = model.isContinueButtonEnabled
+    
+    errorMessageLabel.isHidden = !model.isErrorShown
+    errorMessageLabel.text = model.errorMessage
   }
   
   // MARK: - Init
@@ -154,10 +160,10 @@ private extension TransactionView {
     addSubview(logoImageView)
     addSubview(nameLabel)
     addSubview(descriptionLabel)
-    addSubview(fromTextField)
-    addSubview(toTextField)
+    addSubview(payTextField)
+    addSubview(getTextField)
     addSubview(rateLabel)
-    addSubview(insufficientFundsLabel)
+    addSubview(errorMessageLabel)
     
     logoImageView.snp.makeConstraints { make in
       make.top.equalTo(self.safeAreaLayoutGuide.snp.top)
@@ -178,21 +184,26 @@ private extension TransactionView {
       make.trailing.equalToSuperview().offset(-32)
     }
     
-    fromTextField.snp.makeConstraints { make in
+    payTextField.snp.makeConstraints { make in
       make.top.equalTo(descriptionLabel.snp.bottom).offset(32)
       make.leading.equalToSuperview().offset(16)
       make.trailing.equalToSuperview().offset(-16)
     }
     
-    toTextField.snp.makeConstraints { make in
-      make.top.equalTo(fromTextField.snp.bottom).offset(16)
+    getTextField.snp.makeConstraints { make in
+      make.top.equalTo(payTextField.snp.bottom).offset(16)
       make.leading.equalToSuperview().offset(16)
       make.trailing.equalToSuperview().offset(-16)
     }
     
     rateLabel.snp.makeConstraints { make in
-      make.top.equalTo(toTextField.snp.bottom).offset(12)
+      make.top.equalTo(getTextField.snp.bottom).offset(12)
       make.leading.equalToSuperview().offset(32)
+    }
+    
+    errorMessageLabel.snp.makeConstraints { make in
+      make.top.equalTo(getTextField.snp.bottom).offset(12)
+      make.trailing.equalToSuperview().offset(-32)
     }
 
     continueButtonContainer.snp.makeConstraints { make in

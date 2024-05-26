@@ -6,7 +6,7 @@ import TKLocalize
 import BigInt
 
 protocol TransactionViewModelOutput: AnyObject {
-  var didContinue: ((TransactionAmountModel) -> Void)? { get set }
+  var didContinue: ((TransactionItem) -> Void)? { get set }
 }
 
 protocol TransactionViewModel: AnyObject {
@@ -15,7 +15,6 @@ protocol TransactionViewModel: AnyObject {
   var sendAmountTextFieldFormatter: SendAmountTextFieldFormatter { get }
   
   func viewDidLoad()
-  func didInputAmount(_ string: String)
   func didInputPayAmount(_ string: String)
   func didInputGetAmount(_ string: String)
   func didTapContinueButton()
@@ -25,7 +24,7 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
   
   // MARK: - TransactionViewModelOutput
   
-  var didContinue: ((TransactionAmountModel) -> Void)?
+  var didContinue: ((TransactionItem) -> Void)?
   
   // MARK: - TransactionViewModel
   
@@ -37,23 +36,14 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
   private let transactionModel: TransactionAmountModel
   
   private var payAmountInput = ""
+  private var isPayAmountValid: Bool = false
+  
   private var getAmountInput = ""
+  private var isGetAmountValid: Bool = false
   
-  private var isAmountValid: Bool = false {
-    didSet {
-      guard isAmountValid != oldValue else { return }
-      update()
-    }
-  }
+  private var validationErrorMessage: String? = nil
   
-  private var isContinueEnabled: Bool = false {
-    didSet {
-      guard isContinueEnabled != oldValue else { return }
-      update()
-    }
-  }
-  
-  private let buyListController: BuyListController
+  private let inputValidator: BuySellInputValidator
   private let exchangeConverter: ExchangeConfirmationConverter
   private let currencyRateFormatter: CurrencyToTONFormatter
   private let currency: Currency
@@ -62,16 +52,16 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
     buySellItem: BuySellItemModel,
     transactionModel: TransactionAmountModel,
     currency: Currency,
-    buyListController: BuyListController,
     exchangeConverter: ExchangeConfirmationConverter,
-    currencyRateFormatter: CurrencyToTONFormatter
+    currencyRateFormatter: CurrencyToTONFormatter,
+    inputValidator: BuySellInputValidator
   ) {
     self.buySellItem = buySellItem
     self.transactionModel = transactionModel
     self.currency = currency
-    self.buyListController = buyListController
     self.exchangeConverter = exchangeConverter
     self.currencyRateFormatter = currencyRateFormatter
+    self.inputValidator = inputValidator
   }
   
   func viewDidLoad() {
@@ -83,7 +73,7 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
       payAmountInput = exchangeConverter.tonInput
       getAmountInput = exchangeConverter.fiatInput
     }
-    update()
+    validate()
   }
   
   func didInputPayAmount(_ string: String) {
@@ -100,7 +90,7 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
       payAmountInput = unformatted
       getAmountInput = exchangeConverter.fiatInput
     }
-    update()
+    validate()
   }
   
   func didInputGetAmount(_ string: String) {
@@ -117,43 +107,33 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
       payAmountInput = unformatted
       getAmountInput = exchangeConverter.tonInput
     }
-    update()
+    validate()
   }
   
-  func didInputAmount(_ string: String) {
-//    testCalculator(string)
-//    
-//    
-//    
-//    let amount = buyListController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: TonInfo.fractionDigits)
-//    let convertedAmount = convertAmount(amount.amount)
-//    
-//    
-//    switch transactionModel.mode {
-//    case .buy:
-//      let isAmountValid = !amount.amount.isZero
-//      self.payAmountInput = unformatted
-//      self.payAmount = amount.amount
-//      self.getAmountInput = sendAmountTextFieldFormatter.formatString(convertedAmount.description.string) ?? ""
-//      self.convertedAmount = convertedAmount
-//      self.isAmountValid = isAmountValid
-//      update()
-//    case .sell:
-//      Task {
-//        let isAmountValid = await buyListController.isAmountAvailableToSend(amount: amount.amount, token: .ton) && !amount.amount.isZero
-//        await MainActor.run {
-//          self.amountInput = unformatted
-//          self.amount = amount.amount
-//          self.isAmountValid = isAmountValid
-//          updateConverted()
-//          update()
-//        }
-//      }
-//    }
+  func validate() {
+    switch transactionModel.type {
+    case .buy:
+      let result = inputValidator.validateBuy(amount: exchangeConverter.tonAmount)
+      isPayAmountValid = true
+      isGetAmountValid = result.isValid
+      validationErrorMessage = result.message
+      update()
+    case .sell:
+      Task {
+        let result = await inputValidator.validateSell(amount: exchangeConverter.tonAmount)
+        await MainActor.run {
+          isPayAmountValid = result.isValid
+          isGetAmountValid = true
+          validationErrorMessage = result.message
+          update()
+        }
+      }
+    }
   }
   
   func didTapContinueButton() {
-    didContinue?(transactionModel)
+    let item = TransactionItem(buySellItem: buySellItem, amount: transactionModel.amount)
+    didContinue?(item)
   }
   
   // MARK: - Formatters
@@ -210,20 +190,30 @@ private extension TransactionViewModelImplementation {
       getCurrency = currency.rawValue
     }
     
+    let payField = TransactionView.Model.InputField(
+      placeholder: "You pay",
+      currency: payCurrency,
+      amount: payAmountInput,
+      isValid: isPayAmountValid
+    )
+    
+    let getField = TransactionView.Model.InputField(
+      placeholder: "You get",
+      currency: getCurrency,
+      amount: getAmountInput,
+      isValid: isGetAmountValid
+    )
+    
     return TransactionView.Model(
       image: .asyncImage(imageTask),
       providerName: buySellItem.title,
       providerDescription: buySellItem.description,
       rate: rate,
-      toPlaceholder: "You get",
-      fromPlaceholder: "You pay",
-      fromCurrency: payCurrency,
-      toCurrency: getCurrency,
-      toAmountString: getAmountInput,
-      fromAmountString: payAmountInput,
-      isContinueButtonEnabled: isContinueEnabled,
-      isMinAmountShown: false,
-      minAmountDisclaimer: "WAT"
+      payField: payField,
+      getField: getField,
+      isContinueButtonEnabled: isPayAmountValid && isGetAmountValid,
+      isErrorShown: validationErrorMessage != nil,
+      errorMessage: validationErrorMessage
     )
   }
 }
