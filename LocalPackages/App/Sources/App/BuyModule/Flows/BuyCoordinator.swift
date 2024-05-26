@@ -25,7 +25,6 @@ public final class BuyCoordinator: RouterCoordinator<NavigationControllerRouter>
   
   public override func start() {
     openBuySell()
-    
 //    Task {
 //      let isBuySellLovely = await coreAssembly.featureFlagsProvider.isBuySellLovely()
 //      await MainActor.run {
@@ -124,7 +123,7 @@ private extension BuyCoordinator {
     
     module.output.onOpenProviderUrl = { [weak self, weak view = module.view] providerUrl in
       guard let providerUrl, let fromViewController = view else { return }
-      self?.openWebView(url: providerUrl, fromViewController: fromViewController)
+      self?.openBridgeWebView(titledUrl: providerUrl, fromViewController: fromViewController)
     }
     
     router.push(viewController: module.view, animated: true)
@@ -164,12 +163,12 @@ private extension BuyCoordinator {
     
     module.output.didTapContinue = { [weak self, weak view = module.view] actionURL in
       guard let actionURL, let fromViewController = view else { return }
-      self?.openWebView(url: actionURL, fromViewController: fromViewController)
+      self?.openBridgeWebView(titledUrl: actionURL, fromViewController: fromViewController)
     }
     
     module.output.didTapInfoButton = { [weak self, weak view = module.view] url in
       guard let url, let fromViewController = view else { return }
-      self?.openWebView(url: url, fromViewController: fromViewController)
+      self?.openBridgeWebView(titledUrl: url, fromViewController: fromViewController)
     }
     
     router.push(viewController: module.view, animated: true)
@@ -185,14 +184,23 @@ private extension BuyCoordinator {
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    
-      module.output.didSelectURL = { [weak self, weak bottomSheetViewController] url in
-          guard let bottomSheetViewController else { return }
-          bottomSheetViewController.dismiss()
-          self?.coreAssembly.urlOpener().open(url: url)
-      }
+    module.output.didSelectURL = { [weak self, weak bottomSheetViewController] url in
+      guard let bottomSheetViewController else { return }
+      bottomSheetViewController.dismiss()
+      self?.coreAssembly.urlOpener().open(url: url)
+    }
 
     bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func openBridgeWebView(titledUrl: TitledURL, fromViewController: UIViewController) {
+    let bridgeWebViewController = TKBridgeWebViewController(
+      initialURL: titledUrl.url,
+      initialTitle: titledUrl.title,
+      jsInjection: nil
+    )
+    bridgeWebViewController.modalPresentationStyle = .fullScreen
+    fromViewController.present(bridgeWebViewController, animated: true)
   }
   
   func openWebView(url: URL, fromViewController: UIViewController) {

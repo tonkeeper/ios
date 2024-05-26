@@ -5,6 +5,22 @@ import TKCore
 import KeeperCore
 import BigInt
 
+public struct TitledURL {
+  public let title: String
+  public let url: URL
+  
+  public init(title: String, url: URL) {
+    self.title = title
+    self.url = url
+  }
+  
+  public init?(title: String, url: URL?) {
+    self.title = title
+    guard let url else { return nil }
+    self.url = url
+  }
+}
+
 struct BuySellDetailsItem {
   struct ServiceInfo {
     struct InfoButton {
@@ -25,9 +41,15 @@ struct BuySellDetailsItem {
   var serviceInfo: ServiceInfo
 }
 
+extension BuySellDetailsItem.ServiceInfo.InfoButton {
+  var titledUrl: TitledURL? {
+    TitledURL(title: title, url: url)
+  }
+}
+
 protocol BuySellDetailsModuleOutput: AnyObject {
-  var didTapContinue: ((URL?) -> Void)? { get set }
-  var didTapInfoButton: ((URL?) -> Void)? { get set }
+  var didTapContinue: ((TitledURL?) -> Void)? { get set }
+  var didTapInfoButton: ((TitledURL?) -> Void)? { get set }
 }
 
 protocol BuySellDetailsViewModel: AnyObject {
@@ -62,8 +84,8 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   
   // MARK: - BuySellDetailsModelModuleOutput
   
-  var didTapContinue: ((URL?) -> Void)?
-  var didTapInfoButton: ((URL?) -> Void)?
+  var didTapContinue: ((TitledURL?) -> Void)?
+  var didTapInfoButton: ((TitledURL?) -> Void)?
   
   // MARK: - BuySellDetailsModelViewModel
   
@@ -243,7 +265,7 @@ private extension BuySellDetailsViewModelImplementation {
     return InfoButtonsContainerView.Model.Button(
       title: infoButton.title.withTextStyle(.body2, color: .Text.secondary),
       action: { [weak self] in
-        self?.didTapInfoButton?(infoButton.url)
+        self?.didTapInfoButton?(infoButton.titledUrl)
       }
     )
   }
@@ -259,7 +281,9 @@ private extension BuySellDetailsViewModelImplementation {
       isEnabled: !isResolving && isContinueEnable,
       isActivity: isResolving,
       action: { [weak self] in
-        self?.didTapContinue?(self?.actionURL)
+        guard let self else { return }
+        let actionUrl = TitledURL(title: self.buySellDetailsItem.serviceTitle, url: self.actionURL)
+        self.didTapContinue?(actionUrl)
       }
     )
   }

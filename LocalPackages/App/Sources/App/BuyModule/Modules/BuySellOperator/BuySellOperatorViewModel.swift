@@ -38,7 +38,7 @@ extension BuySellModel.Operation {
 protocol BuySellOperatorModuleOutput: AnyObject {
   var didTapCurrencyPicker: ((CurrencyListItem) -> Void)? { get set }
   var onOpenDetails: ((BuySellDetailsItem, BuySellTransactionModel) -> Void)? { get set }
-  var onOpenProviderUrl: ((URL?) -> Void)? { get set }
+  var onOpenProviderUrl: ((TitledURL?) -> Void)? { get set }
 }
 
 protocol BuySellOperatorModuleInput: AnyObject {
@@ -60,7 +60,7 @@ final class BuySellOperatorViewModelImplementation: BuySellOperatorViewModel, Bu
   
   var didTapCurrencyPicker: ((CurrencyListItem) -> Void)?
   var onOpenDetails: ((BuySellDetailsItem, BuySellTransactionModel) -> Void)?
-  var onOpenProviderUrl: ((URL?) -> Void)?
+  var onOpenProviderUrl: ((TitledURL?) -> Void)?
   
   // MARK: - BuySellOperatorModelModuleInput
   
@@ -181,12 +181,13 @@ private extension BuySellOperatorViewModelImplementation {
     } else {
       isResolving = true
       Task {
-        let providerUrl = await buySellOperatorController.createActionUrl(
+        let url = await buySellOperatorController.createActionUrl(
           actionTemplateURL: selectedOperator.actionTemplateURL,
           operatorId: selectedOperator.id,
           currencyFrom: buySellTransactionModel.currencyPay,
           currencyTo: buySellTransactionModel.currencyGet
         )
+        let providerUrl = TitledURL(title: selectedOperator.title, url: url)
         await MainActor.run {
           onOpenProviderUrl?(providerUrl)
           isResolving = false
