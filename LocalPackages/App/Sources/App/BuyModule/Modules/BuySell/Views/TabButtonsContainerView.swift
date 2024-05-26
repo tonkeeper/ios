@@ -252,7 +252,6 @@ private extension TabButtonItem {
   }
 }
 
-
 private extension CGFloat {
   static let tabButtonItemHeight: CGFloat = 53
   static let titleLabelHeight: CGFloat = 24

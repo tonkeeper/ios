@@ -98,8 +98,7 @@ private extension SwapTokenListView {
     }
     
     searchBarContainer.snp.makeConstraints { make in
-      make.left.equalTo(self)
-      make.right.equalTo(self)
+      make.left.right.equalTo(self)
       make.top.equalTo(self).offset(searchBarViewTopOffset)
     }
     

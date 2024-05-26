@@ -175,10 +175,9 @@ public final class SwapController {
       let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
       switch swapAsset {
       case .ton:
-        // TODO: Remove stub
-        return BigUInt(stringLiteral: "100000010000000") // 100,000.01
-        //return BigUInt(balance.walletBalance.balance.tonBalance.amount)
+        return BigUInt(balance.walletBalance.balance.tonBalance.amount)
       case .jetton(let assetInfo):
+        // TODO: Remove stub
         if assetInfo.symbol == "USD₮" {
           return BigUInt(stringLiteral: "123450000") // 123.45
         }

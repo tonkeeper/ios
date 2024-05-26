@@ -42,6 +42,8 @@ final class SwapConfirmationViewModelImplementation: SwapConfirmationViewModel, 
   
   // MARK: - State
   
+  private var isEmulationFailed = false
+  
   private var isResolving = true {
     didSet {
       guard isResolving != oldValue else { return }
@@ -50,7 +52,7 @@ final class SwapConfirmationViewModelImplementation: SwapConfirmationViewModel, 
   }
   
   private var isConfirmEnabled: Bool {
-    true
+    !isEmulationFailed
   }
   
   // MARK: - Mapper
@@ -173,6 +175,7 @@ private extension SwapConfirmationViewModelImplementation {
     let title: String
     switch error {
     case .failedToEmulate:
+      isEmulationFailed = true
       title = "Failed to emulate transaction"
     case .failedToSendTransaction:
       title = "Failed to send transaction"

@@ -128,15 +128,13 @@ private extension SwapConfirmationView {
     }
     
     contentView.snp.makeConstraints { make in
-      make.top.equalTo(scrollView)
+      make.top.centerX.equalTo(scrollView)
       make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
-      make.centerX.equalTo(scrollView)
       make.bottom.equalTo(swapInfoContainerView)
     }
     
     swapSendContainerView.snp.makeConstraints { make in
-      make.top.equalTo(contentView)
-      make.left.right.equalTo(contentView)
+      make.top.left.right.equalTo(contentView)
       make.height.equalTo(CGFloat.swapContainerViewHeight)
     }
     
