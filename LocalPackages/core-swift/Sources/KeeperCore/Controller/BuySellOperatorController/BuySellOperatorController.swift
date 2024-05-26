@@ -108,11 +108,7 @@ private extension BuySellOperatorController {
           currency: activeCurrency
         )
       }
-      .sorted { lhs, rhs in
-        guard lhs.rate > 0 else { return false }
-        guard rhs.rate > 0 else { return true }
-        return lhs.rate < rhs.rate
-      }
+      .sorted(forCategory: fiatOperatorCategory)
     
     if !fiatOperatorItems.isEmpty && fiatOperatorItems[0].rate > 0 {
       fiatOperatorItems[0].badge = "BEST"
@@ -154,6 +150,7 @@ private extension BuySellOperatorController {
   }
   
   func createFiatOperatorRate(rate: Decimal, currency: Currency) -> String {
+    guard !rate.isZero else { return " " }
     let formattedRate = decimalAmountFormatter.format(amount: rate)
     return "\(formattedRate) \(currency.code) for 1 TON"
   }
@@ -177,6 +174,21 @@ public extension FiatOperator {
       return true
     } else {
       return false
+    }
+  }
+}
+
+private extension Array where Element == FiatOperator {
+  func sorted(forCategory category: FiatOperatorCategory) -> Self {
+    return self.sorted { lhs, rhs in
+      guard lhs.rate > 0 else { return false }
+      guard rhs.rate > 0 else { return true }
+      switch category {
+      case .buy:
+        return lhs.rate < rhs.rate
+      case .sell:
+        return lhs.rate > rhs.rate
+      }
     }
   }
 }
