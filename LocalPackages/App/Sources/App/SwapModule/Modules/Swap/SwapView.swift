@@ -28,8 +28,12 @@ final class SwapView: UIView {
     return TKButton(configuration: configuration)
   }()
 
-  let inputsDivider = UIView()
-  let detailsDivider = UIView()
+  let continueButton = TKButton(
+    configuration: .actionButtonConfiguration(
+      category: .primary,
+      size: .large
+    )
+  )
 
   private var expanded = false
 
@@ -57,12 +61,15 @@ final class SwapView: UIView {
       self.detailsViewContainer.layoutIfNeeded()
     } alphaAnimation: {
       self.detailsView.loader.alpha = 0
+      self.continueButton.alpha = 1
     }
+    self.continueButton.bounce(scale: 1.05)
   }
 
-  func collapseDetailView() {
+  func collapseDetailView(showLoader: Bool = true) {
     expanded = false
-    detailsView.loader.startAnimation()
+
+    if showLoader { detailsView.loader.startAnimation() }
     detailsView.backgroundView.state = .separate
     receiveView.backgroundView.state = .separate
     sendView.backgroundView.state = .separate
@@ -74,7 +81,8 @@ final class SwapView: UIView {
     UIView.spring(damping: 0.75, velocity: 0.2) {
       self.detailsViewContainer.layoutIfNeeded()
     } alphaAnimation: {
-      self.detailsView.loader.alpha = 1
+      if showLoader { self.detailsView.loader.alpha = 1 }
+      self.continueButton.alpha = 0
     }
   }
 
@@ -100,6 +108,9 @@ private extension SwapView {
     scrollView.addSubview(swapInputsButton)
     scrollView.addSubview(detailsViewContainer)
     detailsViewContainer.addSubview(detailsView)
+    scrollView.addSubview(continueButton)
+
+    continueButton.alpha = 0
   
     setupConstraints()
   }
@@ -127,7 +138,7 @@ private extension SwapView {
       make.top.equalTo(scrollView).offset(Self.detailsViewContainerTop)
       make.left.right.equalTo(scrollView).inset(16).priority(.high)
       make.width.equalTo(scrollView).inset(16)
-      make.height.equalTo(320)
+      make.height.equalTo(280)
     }
 
     detailsView.snp.makeConstraints { make in
@@ -139,6 +150,12 @@ private extension SwapView {
     swapInputsButton.snp.makeConstraints { make in
       make.centerY.equalTo(Self.swapButtonTop)
       make.right.equalTo(scrollView).offset(-48)
+    }
+
+    continueButton.snp.makeConstraints { make in
+      make.top.equalTo(detailsViewContainer.snp.bottom).offset(32)
+      make.left.right.equalTo(scrollView).inset(16).priority(.high)
+      make.width.equalTo(scrollView).inset(16)
     }
   }
 }

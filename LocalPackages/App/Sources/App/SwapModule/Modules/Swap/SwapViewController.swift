@@ -4,6 +4,7 @@ import TKLocalize
 
 final class SwapViewController: GenericViewViewController<SwapView>, KeyboardObserving {
   private let viewModel: SwapViewModel
+  private var delayedExpand: DispatchWorkItem?
   
   init(viewModel: SwapViewModel) {
     self.viewModel = viewModel
@@ -54,6 +55,8 @@ private extension SwapViewController {
   func setup() {
     title = TKLocales.Swap.title
     setupSwapInputs()
+
+    customView.continueButton.configuration.content = TKButton.Configuration.Content(title: .plainString("Continue"))
   }
 
   func setupSwapInputs() {
@@ -93,12 +96,23 @@ private extension SwapViewController {
       if model.status.isValid {
         self.customView.sendView.resignFirstResponder()
         self.customView.showLoading()
+        self.customView.continueButton.isEnabled = true
         // TODO: - Add logic of retrieving swap providers
         // Add API integration, otherwise no pause for showing extra loader needed
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-          self.customView.expandDetailView()
+        
+        self.delayedExpand?.cancel()
+        self.delayedExpand = DispatchWorkItem { [weak self] in
+          self?.customView.expandDetailView()
+        }
+        if let item = self.delayedExpand {
+          DispatchQueue.main.asyncAfter(deadline: .now() + 0.5, execute: item)
         }
       } else {
+        if model.receive.token != nil {
+          self.delayedExpand?.cancel()
+          self.customView.collapseDetailView(showLoader: false)
+        }
+        self.customView.continueButton.isEnabled = false
         self.showHint(model.status.hint, isValid: model.status.isSendAmountValid)
       }
     }
@@ -144,6 +158,11 @@ private extension SwapViewController {
 
   func showHint(_ hint: String, isValid: Bool) {
     let label = customView.detailsView.statusLabel
+    customView.detailsView.loader.stopAnimation()
+    UIView.animate(withDuration: 0.2) {
+      label.alpha = 1
+      self.customView.detailsView.loader.alpha = 0
+    }
     if label.text == nil {
       label.text = hint
       return

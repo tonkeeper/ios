@@ -28,20 +28,20 @@ public extension UIView {
         )
     }
 
-    func bounce() {
-        UIView.transition(
-            with: self,
-            duration: 0.2, options: [.transitionCrossDissolve, .overrideInheritedDuration]) {
-              self.transform = CGAffineTransformMakeScale(1.15, 1.15)
-            } completion: { _ in
-                UIView.animate(
-                    withDuration: 0.4,
-                    delay: 0,
-                    usingSpringWithDamping: 0.4,
-                    initialSpringVelocity: 0.2, options: [.overrideInheritedDuration], animations: {
-                        self.transform = CGAffineTransform.identity
-                })
-            }
+  func bounce(scale: CGFloat = 1.15) {
+    UIView.transition(
+        with: self,
+        duration: 0.2, options: [.transitionCrossDissolve, .overrideInheritedDuration]) {
+          self.transform = CGAffineTransformMakeScale(scale, scale)
+        } completion: { _ in
+            UIView.animate(
+                withDuration: 0.4,
+                delay: 0,
+                usingSpringWithDamping: 0.4,
+                initialSpringVelocity: 0.2, options: [.overrideInheritedDuration], animations: {
+                    self.transform = CGAffineTransform.identity
+            })
+        }
     }
 
     func shrink(down: Bool) {
