@@ -94,6 +94,7 @@ private extension SwapViewController {
       self.customView.swapInputsButton.isEnabled = model.status.isValidReceiveToken
 
       if model.status.isValid {
+        self.customView.detailsView.update(items: model.swapDetails, oneTokenPrice: model.oneTokenPrice)
         self.customView.sendView.resignFirstResponder()
         self.customView.showLoading()
         self.customView.continueButton.isEnabled = true

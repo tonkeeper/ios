@@ -55,13 +55,14 @@ final class SwapView: UIView {
     receiveView.backgroundView.state = .bottomMerge
     detailsView.snp.updateConstraints { make in
       make.top.equalTo(detailsViewContainer).offset(0)
-      make.height.equalTo(280)
+      make.height.equalTo(Self.maxDetailsHeight)
     }
     UIView.spring {
       self.detailsViewContainer.layoutIfNeeded()
     } alphaAnimation: {
       self.detailsView.loader.alpha = 0
       self.continueButton.alpha = 1
+      self.detailsView.contentView.alpha = 1
     }
     self.continueButton.bounce(scale: 1.05)
   }
@@ -83,6 +84,7 @@ final class SwapView: UIView {
     } alphaAnimation: {
       if showLoader { self.detailsView.loader.alpha = 1 }
       self.continueButton.alpha = 0
+      self.detailsView.contentView.alpha = 0
     }
   }
 
@@ -138,7 +140,7 @@ private extension SwapView {
       make.top.equalTo(scrollView).offset(Self.detailsViewContainerTop)
       make.left.right.equalTo(scrollView).inset(16).priority(.high)
       make.width.equalTo(scrollView).inset(16)
-      make.height.equalTo(280)
+      make.height.equalTo(Self.maxDetailsHeight)
     }
 
     detailsView.snp.makeConstraints { make in
@@ -165,4 +167,5 @@ extension SwapView {
   static let receiveViewTop = 16+108+8
   static let detailsViewContainerTop = 16+2*108+8
   static let swapButtonTop = 16+108+4
+  static let maxDetailsHeight = 244
 }

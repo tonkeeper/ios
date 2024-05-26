@@ -353,7 +353,8 @@ public final class MainAssembly {
       walletsStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
       ratesService: servicesAssembly.ratesService(),
-      amountFormatter: formattersAssembly.amountFormatterV2
+      amountFormatter: formattersAssembly.amountFormatterV2, 
+      currencyStore: storesAssembly.currencyStore
     )
   }
   

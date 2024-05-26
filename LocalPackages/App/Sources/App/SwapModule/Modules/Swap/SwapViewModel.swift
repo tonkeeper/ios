@@ -101,9 +101,11 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
         amount: amount.amount,
         token: swapPair.send.token
       )
+      let oneToken = try? await swapController.convertOneTokenAmountToCurrency(token: swapPair.send.token)
       let balance = await updateBalance(field: .send)
       let receiveData = await updateReceive(with: amount.amount)
       await MainActor.run {
+        oneTokenPrice = oneToken ?? ""
         isSendAmountValid = isAmountValid
         sendBalance = balance
         receiveBalance = receiveData.totalBalance
@@ -111,7 +113,8 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
           send: .init(token: swapPair.send.token, amount: amount.amount), 
           receive: swapPair.receive != nil ? .init(token: swapPair.receive!.token, amount: receiveData.receiveAmount) : nil
         )
-        receiveAmount = receiveData.amountFormatted
+        receiveAmount = receiveData.receiveFormatted
+        receiveMiminumAmount = receiveData.minimumFormatted
         update()
       }
     }
@@ -124,13 +127,16 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   // MARK: - State
 
   private var swapPair: SwapPair
+  private var priceChangeLimit: Double = 0.01 // 1%
 
   private var sendAmount = "0"
   private var sendBalance = ""
   private var isSendAmountValid = false
+  private var oneTokenPrice = ""
 
   private var receiveAmount = "0"
   private var receiveBalance = ""
+  private var receiveMiminumAmount = "0"
 
   // MARK: - Dependencies
   
@@ -144,24 +150,38 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
 
 private extension SwapViewModelImplementation {
   func update() {
+    let send = createFieldModel(field: .send)
+    let receive = createFieldModel(field: .receive)
     didUpdateModel?(SwapView.Model(
-      send: createFieldModel(field: .send),
-      receive: createFieldModel(field: .receive),
-      status: createStatusModel()
+      send: send,
+      receive: receive,
+      status: createStatusModel(),
+      oneTokenPrice: oneTokenPrice,
+      swapDetails: createSwapDetails()
     ))
   }
 
-  func updateReceive(with sendAmount: BigUInt) async -> (receiveAmount: BigUInt, amountFormatted: String, totalBalance: String) {
-    guard let receiveToken = swapPair.receive?.token else { return (0, "0", "") }
+  func updateReceive(with sendAmount: BigUInt) async -> (
+    receiveAmount: BigUInt,
+    minimumAmount: BigUInt,
+    receiveFormatted: String,
+    minimumFormatted: String,
+    totalBalance: String) {
+
+    guard let receiveToken = swapPair.receive?.token else { return (0, 0, "0", "0", "") }
     let totalAmount = await swapController.getMaximumAmount(token: receiveToken)
     let formattedTotal = swapController.convertAmountToInputString(amount: totalAmount, token: receiveToken)
-    let amount: BigUInt = (try? await swapController.calculateReceiveRate(
+    let receiveAmounts = (try? await swapController.calculateReceiveRate(
       sendToken: swapPair.send.token,
       amount: sendAmount,
-      receiveToken: receiveToken
-    )) ?? 0
-    let formattedAmount = swapController.convertAmountToInputString(amount: amount, token: receiveToken)
-    return (amount, formattedAmount, formattedTotal)
+      receiveToken: receiveToken,
+      priceChangeLimit: priceChangeLimit
+    ))
+    let receiveAmount = receiveAmounts?.expected ?? 0
+    let minimumAmount = receiveAmounts?.minimum ?? 0
+    let receiveAmountFormatted = swapController.convertAmountToInputString(amount: receiveAmount, token: receiveToken)
+    let minimumAmountFormatted = swapController.convertAmountToInputString(amount: minimumAmount, token: receiveToken)
+    return (receiveAmount, minimumAmount, receiveAmountFormatted, minimumAmountFormatted, formattedTotal)
   }
 
   func updateBalance(field: SwapField) async -> String {
@@ -178,6 +198,18 @@ private extension SwapViewModelImplementation {
       amount: field == .send ? sendAmount : receiveAmount,
       balance: field == .send ? "Balance: \(sendBalance)" : receiveBalance.isEmpty ? "" : "Balance: \(receiveBalance)"
     )
+  }
+
+  func createSwapDetails() -> [SwapDetailsView.Item] {
+    let sendTokenSymbol = swapPair.send.token.symbol ?? ""
+    let receiveTokenSymbol = swapPair.receive?.token.symbol ?? ""
+    return [
+      SwapDetailsView.Item(title: "Price impact", hint: nil, value: "\(priceChangeLimit * 100)%"),
+      SwapDetailsView.Item(title: "Minimum received", hint: nil, value: "\(receiveMiminumAmount) \(receiveTokenSymbol)"),
+      SwapDetailsView.Item(title: "Blockchain fee", hint: nil, value: "0.08-0.3 TON"),
+      SwapDetailsView.Item(title: "Route", hint: nil, value: "\(sendTokenSymbol) » \(receiveTokenSymbol)"),
+      SwapDetailsView.Item(title: "Provider", hint: nil, value: "STON.fi")
+    ]
   }
 
   func createStatusModel() -> SwapView.Model.Status {
@@ -236,5 +268,7 @@ extension SwapView {
     let send: Field
     let receive: Field
     let status: Status
+    let oneTokenPrice: String
+    let swapDetails: [SwapDetailsView.Item]
   }
 }

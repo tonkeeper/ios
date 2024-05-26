@@ -17,4 +17,11 @@ public extension Token {
     }
     return fractionDigits
   }
+
+  var symbol: String? {
+    switch self {
+    case .ton: return TonInfo.symbol
+    case .jetton(let jettonItem): return jettonItem.jettonInfo.symbol
+    }
+  }
 }

@@ -8,15 +8,18 @@ public final class SwapController {
   private let walletBalanceStore: WalletBalanceStore
   private let ratesService: RatesService
   private let amountFormatter: AmountFormatter
+  private let currencyStore: CurrencyStore
   
   init(walletsStore: WalletsStore,
        walletBalanceStore: WalletBalanceStore,
        ratesService: RatesService,
-       amountFormatter: AmountFormatter) {
+       amountFormatter: AmountFormatter,
+       currencyStore: CurrencyStore) {
     self.walletsStore = walletsStore
     self.walletBalanceStore = walletBalanceStore
     self.ratesService = ratesService
     self.amountFormatter = amountFormatter
+    self.currencyStore = currencyStore
   }
 
   public var groupSeparatorForFormatting: String {
@@ -26,22 +29,48 @@ public final class SwapController {
   public func calculateReceiveRate(
     sendToken: Token,
     amount: BigUInt,
-    receiveToken: Token
-  ) async throws -> BigUInt {
-    if amount == 0 { return 0 }
+    receiveToken: Token,
+    priceChangeLimit: Double
+  ) async throws -> (expected: BigUInt, minimum: BigUInt) {
+    if amount == 0 { return (0, 0) }
     let jettons: [JettonInfo] = [sendToken, receiveToken].compactMap {
       if case .jetton(let jettonItem) = $0 { return jettonItem.jettonInfo } else { return nil }
     }
     let rates = try await ratesService.loadRates(jettons: jettons, currencies: [.TON])
-    let tonSendRate = getTonRate(for: sendToken, tonRates: rates.ton, jettonRates: rates.jettonsRates)
-    let tonReceiveRate = getTonRate(for: receiveToken, tonRates: rates.ton, jettonRates: rates.jettonsRates)
+    let tonSendRate = getRate(for: sendToken, currency: .TON, tonRates: rates.ton, jettonRates: rates.jettonsRates)
+    let tonReceiveRate = getRate(for: receiveToken, currency: .TON, tonRates: rates.ton, jettonRates: rates.jettonsRates)
     let converter = RateConverter()
     let converted = converter.convert(amount: amount, amountFractionLength: sendToken.tokenFractionalDigits, rate: tonSendRate / tonReceiveRate)
+    let minimumRate = (tonSendRate / tonReceiveRate) * (100 - Decimal(priceChangeLimit * 100)) / 100
+    let convertedMinimum = converter.convert(amount: amount, amountFractionLength: sendToken.tokenFractionalDigits, rate: minimumRate)
     
-    let convertedPlainString = String(converted.amount)
-    let symbols = (convertedPlainString.count - converted.fractionLength) + receiveToken.tokenFractionalDigits
-    let final = convertedPlainString[..<convertedPlainString.index(convertedPlainString.startIndex, offsetBy: symbols)]
-    return BigUInt(stringLiteral: String(final))
+    return (
+      BigUInt(stringLiteral: getStringForConverted(converted, receiveToken: receiveToken)),
+      BigUInt(stringLiteral: getStringForConverted(convertedMinimum, receiveToken: receiveToken))
+    )
+  }
+
+  public func convertOneTokenAmountToCurrency(token: Token) async throws -> String {
+    let amount = BigUInt(stringLiteral: "1" + String(repeating: "0", count: token.tokenFractionalDigits))
+    let converted = try await convertTokenAmountToCurrency(token: token, amount)
+    return "1 \(token.symbol ?? "token") ≈ \(converted)"
+  }
+
+  public func convertTokenAmountToCurrency(token: Token, _ amount: BigUInt) async throws -> String {
+    let currency = await currencyStore.getActiveCurrency()
+    let jettons: [JettonInfo] = [token].compactMap {
+      if case .jetton(let jettonItem) = $0 { return jettonItem.jettonInfo } else { return nil }
+    }
+    let rates = try await ratesService.loadRates(jettons: jettons, currencies: [currency])
+    let rate = getRate(for: token, currency: currency, tonRates: rates.ton, jettonRates: rates.jettonsRates)
+    let converted = RateConverter().convert(amount: amount, amountFractionLength: token.tokenFractionalDigits, rate: rate)
+    let formatted = amountFormatter.formatAmount(
+      converted.amount,
+      fractionDigits: converted.fractionLength,
+      maximumFractionDigits: 2,
+      currency: currency
+    )
+    return formatted
   }
 
   public func convertAmountToInputString(amount: BigUInt, token: Token) -> String {
@@ -61,7 +90,7 @@ public final class SwapController {
   }
 
   // TODO: Refactor it
-  // Copy-pasted from SendV3Controller
+  // Initially copy-pasted from SendV3Controller
   // There are lots of common logic, that might be moved to a separate common controller or to Service layer
   // Tried the approach with a separate common controller, but got stuck, so sorry for a tech debt here
 
@@ -118,16 +147,24 @@ public final class SwapController {
 }
 
 private extension SwapController {
-  private func getTonRate(
+  private func getRate(
     for token: Token,
+    currency: Currency,
     tonRates: [Rates.Rate],
     jettonRates: [Rates.JettonRate]
   ) -> Decimal {
     switch token {
     case .ton:
-      return tonRates.first { $0.currency == .TON }?.rate ?? 0
+      return tonRates.first { $0.currency == currency }?.rate ?? 0
     case .jetton(let item):
-      return jettonRates.first { $0.jettonInfo == item.jettonInfo }?.rates.first { $0.currency == .TON }?.rate ?? 0
+      return jettonRates.first { $0.jettonInfo == item.jettonInfo }?.rates.first { $0.currency == currency }?.rate ?? 0
     }
+  }
+
+  private func getStringForConverted(_ converted: (amount: BigUInt, fractionLength: Int), receiveToken: Token) -> String {
+    let convertedPlainString = String(converted.amount)
+    let symbols = (convertedPlainString.count - converted.fractionLength) + receiveToken.tokenFractionalDigits
+    let final = convertedPlainString[..<convertedPlainString.index(convertedPlainString.startIndex, offsetBy: symbols)]
+    return String(final)
   }
 }
