@@ -7,7 +7,7 @@ protocol TabButtonContainerDelegate: AnyObject {
 
 // MARK: - TabButtonsContainerView
 
-final class TabButtonsContainerView: UIView {
+final class TabButtonsContainerView: UIView, ConfigurableView {
   
   var itemDidSelect: ((TabButtonItem.ID) -> Void)?
   
@@ -26,9 +26,8 @@ final class TabButtonsContainerView: UIView {
     return view
   }()
   
-  init(model: Model) {
+  init() {
     super.init(frame: CGRect(x: 0, y: 0, width: 262, height: 53))
-    self.items = model.tabButtons.map { mapTabButton($0) }
     self.setup()
   }
   
@@ -42,27 +41,29 @@ final class TabButtonsContainerView: UIView {
   }
   
   struct Model {
-    struct TabButton {
-      let id: Int
-      let title: String
-    }
-
-    let tabButtons: [TabButton]
+    let tabButtons: [TabButtonItem.Model]
   }
-}
-
-private extension TabButtonsContainerView {
-  func setup() {
+  
+  func configure(model: Model) {
+    items = model.tabButtons.enumerated().map { mapTabButton($1, withId: $0) }
+    
     if let firstItem = items.first {
       firstItem.isSelected = true
-      
       let lineWidth = firstItem.sizeThatFits(bounds.size).width - .lineHorizontalPadding * 2
       line.frame = CGRect(x: .lineHorizontalPadding, y: .titleViewHeight, width: lineWidth, height: 3)
       line.layer.cornerRadius = line.bounds.height / 2
     }
     
+    itemsStackView.arrangedSubviews.forEach { view in
+      itemsStackView.removeArrangedSubview(view)
+      view.removeFromSuperview()
+    }
     items.forEach { itemsStackView.addArrangedSubview($0) }
-    
+  }
+}
+
+private extension TabButtonsContainerView {
+  func setup() {
     addSubview(itemsStackView)
     addSubview(line)
     
@@ -75,9 +76,9 @@ private extension TabButtonsContainerView {
     }
   }
   
-  func mapTabButton(_ tabButton: Model.TabButton) -> TabButtonItem {
-    let tabButtonItem = TabButtonItem(id: tabButton.id)
-    tabButtonItem.configure(model: .init(title: tabButton.title))
+  func mapTabButton(_ tabButton: TabButtonItem.Model, withId id: TabButtonItem.ID) -> TabButtonItem {
+    let tabButtonItem = TabButtonItem(id: id)
+    tabButtonItem.configure(model: tabButton)
     tabButtonItem.delegate = self
     return tabButtonItem
   }
@@ -90,7 +91,13 @@ extension TabButtonsContainerView: TabButtonContainerDelegate {
     if let selectedItem = item(withId: id) {
       let selectedFrame = convert(selectedItem.frame, to: self)
       
-      UIView.animate(withDuration: 0.2, delay: 0, usingSpringWithDamping: 0.8, initialSpringVelocity: 3, options: [.beginFromCurrentState, .curveEaseOut]) {
+      UIView.animate(
+        withDuration: 0.2,
+        delay: 0,
+        usingSpringWithDamping: 0.8,
+        initialSpringVelocity: 3,
+        options: [.beginFromCurrentState, .curveEaseOut]
+      ) {
         self.line.frame.origin.x = selectedFrame.origin.x + .lineHorizontalPadding
         self.line.frame.size.width = selectedFrame.width - .lineHorizontalPadding * 2
       }
@@ -151,6 +158,7 @@ final class TabButtonItem: UIControl, ConfigurableView, Identifiable {
     self.id = id
     super.init(frame: .zero)
     self.setup()
+    self.setupActions()
   }
   
   required init?(coder: NSCoder) {
@@ -165,10 +173,15 @@ final class TabButtonItem: UIControl, ConfigurableView, Identifiable {
   
   struct Model {
     let title: String
+    let selectionClosure: (() -> Void)?
   }
   
   func configure(model: Model) {
     titleLabel.attributedText = model.title.withTextStyle(.label1, color: .Text.secondary)
+    
+    addAction(UIAction(handler: { _ in
+      model.selectionClosure?()
+    }), for: .touchUpInside)
   }
   
   func selectItem() {
@@ -189,22 +202,19 @@ private extension TabButtonItem {
     titleView.isUserInteractionEnabled = false
     
     setupConstraints()
-    setupActions()
   }
   
   func setupConstraints() {
     titleView.snp.makeConstraints { make in
-      make.top.equalTo(self)
       make.height.equalTo(CGFloat.titleViewHeight)
-      make.left.equalTo(self).offset(CGFloat.titleViewHorizontalPadding)
-      make.right.equalTo(self).inset(CGFloat.titleViewHorizontalPadding)
+      make.top.equalTo(self)
+      make.left.right.equalTo(self).inset(CGFloat.titleViewHorizontalPadding)
     }
     
     titleLabel.snp.makeConstraints { make in
-      make.top.equalTo(titleView).offset(CGFloat.titleLabelTopPadding)
       make.height.equalTo(CGFloat.titleLabelHeight)
-      make.left.equalTo(titleView).offset(CGFloat.titleLabelHorizontalPadding)
-      make.right.equalTo(titleView).inset(CGFloat.titleLabelHorizontalPadding)
+      make.top.equalTo(titleView).offset(CGFloat.titleLabelTopPadding)
+      make.left.right.equalTo(titleView).inset(CGFloat.titleLabelHorizontalPadding)
     }
   }
   

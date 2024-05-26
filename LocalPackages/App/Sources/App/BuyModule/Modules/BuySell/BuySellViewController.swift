@@ -243,8 +243,12 @@ private extension BuySellViewController {
       customView?.amountInputView.inputControl.amountTextField.text = text
     }
     
-    viewModel.didUpdateCountryCode = { [weak self] countryCode in
-      self?.customView.changeCountryButton.configuration.content.title = .plainString(countryCode ?? "🌍")
+    viewModel.didUpdateCountryCode = { [weak customView] countryCode in
+      customView?.changeCountryButton.configuration.content.title = .plainString(countryCode ?? "🌍")
+    }
+    
+    viewModel.didUpdateTabButtonsModel = { [weak customView] tabButtonsModel in
+      customView?.tabButtonsContainerView.configure(model: tabButtonsModel)
     }
     
     viewModel.didUpdatePaymentMethodItems = { [weak self] paymentMethodItems in
@@ -266,11 +270,6 @@ private extension BuySellViewController {
   func setupViewEvents() {
     customView.changeCountryButton.configuration.action = { [weak self] in
       self?.didTapChangeCountryButton?()
-    }
-    
-    customView.tabButtonsContainerView.itemDidSelect = { [weak viewModel] itemId in
-      let operation: BuySellModel.Operation = itemId == 0 ? .buy : .sell
-      viewModel?.didChangeOperation(operation)
     }
     
     customView.amountInputView.inputControl.didUpdateText = { [weak viewModel] text in

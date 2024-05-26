@@ -27,6 +27,7 @@ protocol BuySellViewModel: AnyObject {
   var didUpdateModel: ((BuySellView.Model) -> Void)? { get set }
   var didUpdateInputAmountText: ((String) -> Void)? { get set }
   var didUpdateCountryCode: ((String?) -> Void)? { get set }
+  var didUpdateTabButtonsModel: ((TabButtonsContainerView.Model) -> Void)? { get set }
   var didUpdatePaymentMethodItems: (([SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
   
   var textFieldFormatter: InputAmountTextFieldFormatter { get }
@@ -48,11 +49,13 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   var didUpdateModel: ((BuySellView.Model) -> Void)?
   var didUpdateInputAmountText: ((String) -> Void)?
   var didUpdateCountryCode: ((String?) -> Void)?
+  var didUpdateTabButtonsModel: ((TabButtonsContainerView.Model) -> Void)?
   var didUpdatePaymentMethodItems: (([SelectionCollectionViewCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
     updateWithInitalData()
     updateCountryCode()
+    updateTabButtonsContainer()
     updatePaymentMethodList()
   }
   
@@ -239,6 +242,18 @@ private extension BuySellViewModelImplementation {
         update()
       }
     }
+  }
+  
+  func updateTabButtonsContainer() {
+    let model = createTabButtonsContainerModel()
+    didUpdateTabButtonsModel?(model)
+  }
+  
+  func createTabButtonsContainerModel() -> TabButtonsContainerView.Model {
+    TabButtonsContainerView.Model(tabButtons: [
+      TabButtonItem.Model(title: "Buy") { [weak self] in self?.didChangeOperation(.buy) },
+      TabButtonItem.Model(title: "Sell") { [weak self] in self?.didChangeOperation(.sell) },
+    ])
   }
   
   func updatePaymentMethodList() {

@@ -6,14 +6,8 @@ final class BuySellView: UIView, ConfigurableView {
   
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: .init())
   
+  let tabButtonsContainerView = TabButtonsContainerView()
   let amountInputView = BuySellAmountInputView()
-  
-  let tabButtonsContainerView = TabButtonsContainerView(
-    model: .init(tabButtons: [
-      .init(id: 0, title: "Buy"),
-      .init(id: 1, title: "Sell")
-    ])
-  )
   
   let changeCountryButton = TKButton(
     configuration: .iconHeaderButtonConfiguration(
