@@ -35,7 +35,10 @@ public final class BuyCoordinator: RouterCoordinator<NavigationControllerRouter>
 
 private extension BuyCoordinator {
   func openBuyAndSell() {
-    let module = BuyAndSellAssembly.module(buyListController: buyListController)
+    let module = BuyAndSellAssembly.module(
+      buyListController: buyListController,
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
+    )
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()

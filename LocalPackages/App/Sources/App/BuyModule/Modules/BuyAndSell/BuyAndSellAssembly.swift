@@ -4,8 +4,14 @@ import KeeperCore
 
 struct BuyAndSellAssembly {
   private init() {}
-  static func module(buyListController: BuyListController) -> MVVMModule<BuyAndSellViewController, BuyAndSellViewModelOutput, Void> {
-    let viewModel = BuyAndSellViewModelImplementation(buyListController: buyListController)
+  static func module(
+    buyListController: BuyListController,
+    currencyStore: CurrencyStore
+  ) -> MVVMModule<BuyAndSellViewController, BuyAndSellViewModelOutput, Void> {
+    let viewModel = BuyAndSellViewModelImplementation(
+      buyListController: buyListController,
+      currencyStore: currencyStore
+    )
     
     let viewController = BuyAndSellViewController(viewModel: viewModel)
     

@@ -31,9 +31,11 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
   var didUpdateModel: ((BuyAndSellView.Model) -> Void)?
     
   private let buyListController: BuyListController
+  private let currencyStore: CurrencyStore
   
-  init(buyListController: BuyListController) {
+  init(buyListController: BuyListController, currencyStore: CurrencyStore) {
     self.buyListController = buyListController
+    self.currencyStore = currencyStore
   }
   
   // MARK: - State
@@ -65,6 +67,19 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
   func viewDidLoad() {
     update()
     updateConverted()
+    
+    Task {
+      await startObservations()
+    }
+  }
+  
+  private func startObservations() async {
+    _ = await currencyStore.addEventObserver(self) { [weak self] observer, event in
+      switch event {
+      case .didChangeCurrency:
+        self?.updateConverted()
+      }
+    }
   }
   
   func didInputAmount(_ string: String) {
