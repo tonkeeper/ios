@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TKTextInputTextFieldControl: UITextField, TKTextFieldInputViewControl {
+open class TKTextInputTextFieldControl: UITextField, TKTextFieldInputViewControl {
 
   public var didUpdateText: ((String) -> Void)?
   public var didBeginEditing: (() -> Void)?
@@ -32,7 +32,7 @@ public final class TKTextInputTextFieldControl: UITextField, TKTextFieldInputVie
     setup()
   }
   
-  required init?(coder: NSCoder) {
+  public required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
   

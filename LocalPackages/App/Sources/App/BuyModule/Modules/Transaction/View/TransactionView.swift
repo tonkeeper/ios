@@ -62,24 +62,47 @@ final class TransactionView: UIView, ConfigurableView {
     return label
   }()
   
+  lazy var payCurrencyLabel: UILabel = {
+    let label = UILabel()
+    label.font = .descriptionFont
+    label.textColor = .Text.secondary
+    return label
+  }()
+  
+  lazy var getCurrencyLabel: UILabel = {
+    let label = UILabel()
+    label.font = .descriptionFont
+    label.textColor = .Text.secondary
+    return label
+  }()
+  
   lazy var payTextField: TKTextField = {
+    let textInputControl = CurrencyPlaceholderTextFieldControl()
+    textInputControl.rightView = payCurrencyLabel
+    textInputControl.rightViewMode = .always
+    
     let textFieldInputView = TKTextFieldInputView(
-      textInputControl: TKTextInputTextFieldControl()
+      textInputControl: textInputControl
     )
     textFieldInputView.clearButtonMode = .never
-    return TKTextField(
+    let textField = TKTextField(
       textFieldInputView: textFieldInputView
     )
+    return textField
   }()
   
   lazy var getTextField: TKTextField = {
+    let textInputControl = CurrencyPlaceholderTextFieldControl()
+    textInputControl.rightView = getCurrencyLabel
+    textInputControl.rightViewMode = .always
     let textFieldInputView = TKTextFieldInputView(
-      textInputControl: TKTextInputTextFieldControl()
+      textInputControl: textInputControl
     )
     textFieldInputView.clearButtonMode = .never
-    return TKTextField(
+    let textField = TKTextField(
       textFieldInputView: textFieldInputView
     )
+    return textField
   }()
   
     
@@ -130,6 +153,9 @@ final class TransactionView: UIView, ConfigurableView {
     getTextField.placeholder = model.getField.placeholder
     getTextField.text = model.getField.amount
     getTextField.isValid = model.getField.isValid
+    
+    payCurrencyLabel.text = model.payField.currency
+    getCurrencyLabel.text = model.getField.currency
     
     continueButton.configuration.isEnabled = model.isContinueButtonEnabled
     
