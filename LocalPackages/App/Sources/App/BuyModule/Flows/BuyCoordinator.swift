@@ -132,10 +132,9 @@ private extension BuyCoordinator {
   
   func openWebView(url: URL, fromViewController: UIViewController) {
     let webViewController = TKWebViewController(url: url)
-    let navigationController = UINavigationController(rootViewController: webViewController)
-    navigationController.modalPresentationStyle = .fullScreen
-    navigationController.configureTransparentAppearance()
-    fromViewController.present(navigationController, animated: true)
+    webViewController.setupBackButton()
+    
+    router.push(viewController: webViewController, animated: true)
   }
   
   func openWarning(item: BuySellItemModel, fromViewController: UIViewController) {
