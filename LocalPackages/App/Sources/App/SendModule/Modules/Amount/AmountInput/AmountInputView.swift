@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-final class AmountInputView: UIView {
+class AmountInputView: UIView {
   
   let inputControl = AmountInputViewInputControl()
   
@@ -20,7 +20,7 @@ final class AmountInputView: UIView {
     return button
   }()
   
-  private let container = UIView()
+  let container = UIView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -37,9 +37,7 @@ final class AmountInputView: UIView {
     convertedButton.layoutIfNeeded()
     convertedButton.layer.cornerRadius = convertedButton.frame.height/2
   }
-}
-
-private extension AmountInputView {
+  
   func setup() {
     backgroundColor = .Background.content
     layer.cornerRadius = 16

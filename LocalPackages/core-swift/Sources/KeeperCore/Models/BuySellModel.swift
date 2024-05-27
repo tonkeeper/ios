@@ -15,23 +15,23 @@ public struct BuySellModel {
   
   public var operation: Operation
   public var token: Token
-  public var inputAmount: BigUInt
-  public var minimumInputAmount: BigUInt
+  public var tokenAmount: BigUInt
+  public var minimumTokenAmount: BigUInt
   
-  public init(operation: Operation, token: Token, inputAmount: BigUInt, minimumInputAmount: BigUInt) {
+  public init(operation: Operation, token: Token, tokenAmount: BigUInt, minimumInputAmount: BigUInt) {
     self.operation = operation
     self.token = token
-    self.inputAmount = inputAmount
-    self.minimumInputAmount = minimumInputAmount
+    self.tokenAmount = tokenAmount
+    self.minimumTokenAmount = minimumInputAmount
   }
 }
 
 extension BuySellModel {
-  public init(operation: Operation, token: Token, inputAmountUInt: UInt64, minimumInputAmountUInt: UInt64) {
+  public init(operation: Operation, token: Token, tokenAmountUInt: UInt64, minimumInputAmountUInt: UInt64) {
     self.operation = operation
     self.token = token
-    self.inputAmount = .createBigUInt(from: inputAmountUInt, fractionDigits: token.fractionDigits)
-    self.minimumInputAmount = .createBigUInt(from: minimumInputAmountUInt, fractionDigits: token.fractionDigits)
+    self.tokenAmount = .createBigUInt(from: tokenAmountUInt, fractionDigits: token.fractionDigits)
+    self.minimumTokenAmount = .createBigUInt(from: minimumInputAmountUInt, fractionDigits: token.fractionDigits)
   }
 }
 
@@ -40,7 +40,7 @@ extension BuySellModel {
     BuySellModel(
       operation: .buy,
       token: .ton,
-      inputAmountUInt: initialAmount,
+      tokenAmountUInt: initialAmount,
       minimumInputAmountUInt: minAmount
     )
   }
@@ -49,14 +49,14 @@ extension BuySellModel {
     BuySellModel(
       operation: .sell,
       token: .ton,
-      inputAmountUInt: initialAmount,
+      tokenAmountUInt: initialAmount,
       minimumInputAmountUInt: minAmount
     )
   }
 }
 
-private extension BuySellModel.Token {
-  static let ton = BuySellModel.Token(
+extension BuySellModel.Token {
+  public static let ton = BuySellModel.Token(
     symbol: TonInfo.symbol,
     title: TonInfo.name,
     fractionDigits: TonInfo.fractionDigits

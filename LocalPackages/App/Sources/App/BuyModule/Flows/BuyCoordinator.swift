@@ -69,7 +69,6 @@ private extension BuyCoordinator {
         wallet: wallet,
         isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
       ),
-      appSettings: coreAssembly.appSettings,
       buySellModel: .buyTon(
         initialAmount: 50,
         minAmount: 50

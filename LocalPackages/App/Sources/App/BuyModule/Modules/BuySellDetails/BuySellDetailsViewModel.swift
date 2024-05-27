@@ -290,7 +290,7 @@ private extension BuySellDetailsViewModelImplementation {
   
   func updateAmountTextFields() {
     let inputAmount = buySellDetailsController.convertAmountToString(
-      amount: buySellTransactionModel.inputAmount,
+      amount: buySellTransactionModel.tokenAmount,
       fractionDigits: buySellTransactionModel.token.fractionDigits
     )
     switch buySellTransactionModel.operation {

@@ -247,7 +247,7 @@ private extension BuySellOperatorViewModelImplementation {
     return BuySellTransactionModel(
       operation: transactionOperation,
       token: buySellOperatorItem.buySellModel.token,
-      inputAmount: buySellOperatorItem.buySellModel.inputAmount,
+      tokenAmount: buySellOperatorItem.buySellModel.tokenAmount,
       providerRate: selectedOperator.rate,
       minimumLimits: minimumLimits
     )

@@ -21,18 +21,18 @@ public struct BuySellTransactionModel {
   
   public let operation: Operation
   public let token: BuySellModel.Token
-  public var inputAmount: BigUInt
+  public var tokenAmount: BigUInt
   public let providerRate: Decimal
   public let minimumLimits: MinimumLimits
   
   public init(operation: Operation,
               token: BuySellModel.Token,
-              inputAmount: BigUInt,
+              tokenAmount: BigUInt,
               providerRate: Decimal,
               minimumLimits: MinimumLimits) {
     self.operation = operation
     self.token = token
-    self.inputAmount = inputAmount
+    self.tokenAmount = tokenAmount
     self.providerRate = providerRate
     self.minimumLimits = minimumLimits
   }

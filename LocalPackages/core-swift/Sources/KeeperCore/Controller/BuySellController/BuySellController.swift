@@ -26,17 +26,6 @@ public final class BuySellController {
     return await currencyStore.getActiveCurrency()
   }
   
-  public func convertTokenAmountToCurrency(token: BuySellModel.Token, amount: BigUInt, currency: Currency) async -> String {
-    guard !amount.isZero else { return "0" }
-    guard let rate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency }) else { return "0" }
-    let converted = RateConverter().convert(amount: amount, amountFractionLength: token.fractionDigits, rate: rate)
-    return amountNewFormatter.formatAmount(
-      converted.amount,
-      fractionDigits: converted.fractionLength,
-      maximumFractionDigits: 2
-    )
-  }
-  
   public func convertAmountToString(amount: BigUInt, fractionDigits: Int) -> String {
     return amountNewFormatter.formatAmount(
       amount,
@@ -47,6 +36,85 @@ public final class BuySellController {
   }
   
   public func convertStringToAmount(string: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
-    return amountNewFormatter.amount(from: string, targetFractionalDigits: targetFractionalDigits)
+    return amountNewFormatter.amount(
+      from: string,
+      targetFractionalDigits: targetFractionalDigits
+    )
+  }
+  
+  public func convertTokenToFiat(_ token: BuySellItem.Token, currency: Currency) async -> BuySellItem.Fiat {
+    let tonRate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency })
+    let rate = tonRate ?? Rates.Rate(currency: currency, rate: 0, diff24h: nil)
+    
+    let converted = convertAmount(
+      amount: token.amount,
+      usingRate: rate,
+      amountFractionLength: token.fractionDigits,
+      targetFractionLenght: 2
+    )
+    
+    return BuySellItem.Fiat(
+      amount: converted.amount,
+      amountString: converted.string,
+      currency: currency
+    )
+  }
+  
+  public func convertFiatToToken(_ fiat: BuySellItem.Fiat, token: BuySellModel.Token) async -> BuySellItem.Token {
+    let currency = fiat.currency
+    let tonRate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency })
+    var rate = tonRate ?? Rates.Rate(currency: currency, rate: 0, diff24h: nil)
+    
+    if !rate.rate.isZero {
+      rate = Rates.Rate(
+        currency: rate.currency,
+        rate: 1 / rate.rate,
+        diff24h: rate.diff24h
+      )
+    }
+    
+    let converted = convertAmount(
+      amount: fiat.amount,
+      usingRate: rate,
+      amountFractionLength: 2,
+      targetFractionLenght: token.fractionDigits
+    )
+    
+    return BuySellItem.Token(
+      amount: converted.amount,
+      amountString: converted.string,
+      token: token
+    )
+  }
+}
+
+private extension BuySellController {
+  func convertAmount(amount: BigUInt,
+                     usingRate rate: Rates.Rate,
+                     amountFractionLength: Int,
+                     targetFractionLenght: Int) -> (amount: BigUInt, string: String) {
+    let converted = RateConverter().convert(
+      amount: amount,
+      amountFractionLength: amountFractionLength,
+      rate: rate
+    )
+    let convertedAmount = truncateAmountFractionLenght(
+      amount: converted.amount,
+      currentLenght: converted.fractionLength,
+      targetLenght: targetFractionLenght
+    )
+    let convertedString = amountNewFormatter.formatAmount(
+      convertedAmount,
+      fractionDigits: targetFractionLenght,
+      maximumFractionDigits: targetFractionLenght
+    )
+    return (convertedAmount, convertedString)
+  }
+  
+  func truncateAmountFractionLenght(amount: BigUInt, currentLenght: Int, targetLenght: Int) -> BigUInt {
+    guard currentLenght > targetLenght else { return amount }
+    let digitsToRemove = currentLenght - targetLenght
+    let divisor = BigUInt(10).power(digitsToRemove)
+    return amount / divisor
   }
 }

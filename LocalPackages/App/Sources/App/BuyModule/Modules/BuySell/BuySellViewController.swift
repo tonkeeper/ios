@@ -207,13 +207,7 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
 private extension BuySellViewController {
   func setup() {
     view.backgroundColor = .Background.page
-    
     customView.collectionView.backgroundColor = .Background.page
-    
-    customView.amountInputView.backgroundColor = .Background.content
-    customView.amountInputView.convertedAmountLabel.textColor = .Text.secondary
-    customView.amountInputView.convertedCurrencyLabel.textColor = .Text.secondary
-    customView.amountInputView.minAmountLabel.textColor = .Text.tertiary
     
     customView.amountInputView.inputControl.amountTextField.delegate = viewModel.textFieldFormatter
   }
@@ -240,7 +234,7 @@ private extension BuySellViewController {
     }
     
     viewModel.didUpdateInputAmountText = { [weak customView] text in
-      customView?.amountInputView.inputControl.amountTextField.text = text
+      customView?.amountInputView.inputControl.setInputValue(text)
     }
     
     viewModel.didUpdateCountryCode = { [weak customView] countryCode in
@@ -275,6 +269,10 @@ private extension BuySellViewController {
     customView.amountInputView.inputControl.didUpdateText = { [weak viewModel] text in
       guard let text else { return }
       viewModel?.didInputAmount(text)
+    }
+    
+    customView.amountInputView.didTapConvertedButton = { [weak viewModel] in
+      viewModel?.didTapConvertedButton()
     }
   }
   
