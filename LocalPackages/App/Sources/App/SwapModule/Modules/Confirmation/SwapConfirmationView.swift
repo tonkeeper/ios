@@ -12,6 +12,8 @@ final class SwapConfirmationView: UIView {
   var receiveView = SwapInputView(state: .receive)
   let detailsView = SwapDetailsView()
 
+  let errorLabel = UILabel()
+
   let buttonsView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .horizontal
@@ -58,6 +60,7 @@ private extension SwapConfirmationView {
     containerView.addSubview(sendView)
     containerView.addSubview(receiveView)
     containerView.addSubview(detailsView)
+    containerView.addSubview(errorLabel)
 
     containerView.addSubview(buttonsView)
     buttonsView.addArrangedSubview(cancelButton)
@@ -75,6 +78,9 @@ private extension SwapConfirmationView {
     detailsView.loader.isHidden = true
     detailsView.hideRate()
     detailsView.contentView.alpha = 1
+
+    errorLabel.alpha = 0
+    errorLabel.numberOfLines = 0
   }
 
   func setupConstraints() {
@@ -107,6 +113,12 @@ private extension SwapConfirmationView {
       make.left.right.equalTo(self).inset(16).priority(.high)
       make.width.equalTo(self).inset(16)
       make.height.equalTo(SwapView.maxDetailsHeight - 48)
+    }
+
+    errorLabel.snp.makeConstraints { make in
+      make.top.equalTo(detailsView.snp.bottom).offset(16)
+      make.left.right.equalTo(self).inset(16).priority(.high)
+      make.width.equalTo(self).inset(16)
     }
 
     buttonsView.snp.makeConstraints { make in

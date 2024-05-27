@@ -4,6 +4,7 @@ import TKCore
 
 protocol SwapConfirmationViewModel: AnyObject {
   var didUpdateModel: ((SwapView.Model) -> Void)? { get set }
+  var didReceiveError: (() -> Void)? { get set }
 
   func viewDidLoad()
   func didTapConfirm()
@@ -30,6 +31,7 @@ final class SwapConfirmationViewModelImplementation: SwapConfirmationViewModel, 
   // MARK: - SwapConfirmationViewModel
 
   var didUpdateModel: ((SwapView.Model) -> Void)?
+  var didReceiveError: (() -> Void)?
   
   func viewDidLoad() {
     didUpdateModel?(swapDetails)
@@ -45,6 +47,8 @@ final class SwapConfirmationViewModelImplementation: SwapConfirmationViewModel, 
       await MainActor.run {
         if isSuccess {
           didSendTransaction?()
+        } else {
+          didReceiveError?()
         }
       }
     }

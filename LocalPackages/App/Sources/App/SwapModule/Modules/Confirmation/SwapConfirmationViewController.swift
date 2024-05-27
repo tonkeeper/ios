@@ -28,6 +28,7 @@ final class SwapConfirmationViewController: GenericViewViewController<SwapConfir
     customView.headerLabel.attributedText = "Confirm swap".withTextStyle(
       .h3, color: .Text.primary, alignment: .center
     )
+    customView.errorLabel.attributedText = "Something went wrong. Try later or create new swap transaction".withTextStyle(.label2, color: .Field.errorBorder, alignment: .center)
   }
 
   private func setupBindings() {
@@ -45,6 +46,13 @@ final class SwapConfirmationViewController: GenericViewViewController<SwapConfir
       self.customView.receiveView.updateTotalBalance(model.receive.balance)
 
       self.customView.detailsView.update(items: model.swapDetails, oneTokenPrice: model.oneTokenPrice)
+    }
+    viewModel.didReceiveError = { [weak self] in
+      guard let self else { return }
+      UIView.animate(withDuration: 0.2) {
+        self.customView.errorLabel.alpha = 1
+      }
+      self.customView.errorLabel.bounce()
     }
   }
 
