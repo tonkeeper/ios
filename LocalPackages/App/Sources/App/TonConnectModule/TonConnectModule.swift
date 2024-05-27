@@ -41,9 +41,11 @@ struct TonConnectModule {
         sendService: dependencies.keeperCoreMainAssembly.servicesAssembly.sendService(),
         tonConnectService: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectService()
       ),
-      tonConnectConfirmationController: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmationController(
+      confirmTransactionController: dependencies.keeperCoreMainAssembly.confirmTransactionController(
         wallet: wallet,
-        signTransactionParams: appRequest.params
+        bocProvider: dependencies.keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
+          signTransactionParams: appRequest.params
+        )
       ),
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
       coreAssembly: dependencies.coreAssembly

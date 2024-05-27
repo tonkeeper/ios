@@ -206,9 +206,11 @@ private extension BrowserCoordinator {
           completion(result)
         }
       ),
-      tonConnectConfirmationController: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmationController(
+      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
         wallet: wallet,
-        signTransactionParams: appRequest.params
+        bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
+          signTransactionParams: appRequest.params
+        )
       ),
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly

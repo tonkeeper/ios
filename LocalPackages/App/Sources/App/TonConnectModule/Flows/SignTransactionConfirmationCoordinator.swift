@@ -134,19 +134,19 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
   
   private let wallet: Wallet
   private let confirmator: SignTransactionConfirmationCoordinatorConfirmator
-  private let tonConnectConfirmationController: TonConnectConfirmationController
+  private let confirmTransactionController: ConfirmTransactionController
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   
   init(router: WindowRouter,
        wallet: Wallet,
        confirmator: SignTransactionConfirmationCoordinatorConfirmator,
-       tonConnectConfirmationController: TonConnectConfirmationController,
+       confirmTransactionController: ConfirmTransactionController,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        coreAssembly: TKCore.CoreAssembly) {
     self.wallet = wallet
     self.confirmator = confirmator
-    self.tonConnectConfirmationController = tonConnectConfirmationController
+    self.confirmTransactionController = confirmTransactionController
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
     super.init(router: router)
@@ -156,7 +156,7 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
     ToastPresenter.showToast(configuration: .loading)
     Task {
       do {
-        let model = try await tonConnectConfirmationController.createRequestModel()
+        let model = try await confirmTransactionController.createRequestModel()
         await MainActor.run {
           ToastPresenter.hideAll()
           openConfirmation(model: model)

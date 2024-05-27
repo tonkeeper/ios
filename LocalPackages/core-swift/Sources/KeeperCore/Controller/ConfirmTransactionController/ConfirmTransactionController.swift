@@ -2,10 +2,13 @@ import Foundation
 import TonSwift
 import BigInt
 
-public final class TonConnectConfirmationController {
+public protocol ConfirmTransactionControllerBocProvider {
+  func createBoc(wallet: Wallet, seqno: UInt64, timeout: UInt64) async throws -> String
+}
+
+public final class ConfirmTransactionController {
   private let wallet: Wallet
-  private let signTransactionParams: [SendTransactionParam]
-  private let tonConnectService: TonConnectService
+  private let bocProvider: ConfirmTransactionControllerBocProvider
   private let sendService: SendService
   private let nftService: NFTService
   private let ratesStore: RatesStore
@@ -13,16 +16,14 @@ public final class TonConnectConfirmationController {
   private let confirmTransactionMapper: ConfirmTransactionMapper
   
   init(wallet: Wallet,
-       signTransactionParams: [SendTransactionParam],
-       tonConnectService: TonConnectService,
+       bocProvider: ConfirmTransactionControllerBocProvider,
        sendService: SendService,
        nftService: NFTService,
        ratesStore: RatesStore,
        currencyStore: CurrencyStore,
        confirmTransactionMapper: ConfirmTransactionMapper) {
     self.wallet = wallet
-    self.signTransactionParams = signTransactionParams
-    self.tonConnectService = tonConnectService
+    self.bocProvider = bocProvider
     self.sendService = sendService
     self.nftService = nftService
     self.ratesStore = ratesStore
@@ -31,23 +32,20 @@ public final class TonConnectConfirmationController {
   }
   
   public func createRequestModel() async throws -> ConfirmTransactionModel {
-    guard let parameters = signTransactionParams.first else { throw NSError(domain: "", code: 3232) }
-    let model = try await emulateAppRequest(appRequestParam: parameters)
+    let model = try await emulate()
     return model
   }
 }
 
-private extension TonConnectConfirmationController {
-  func emulateAppRequest(appRequestParam: SendTransactionParam) async throws -> ConfirmTransactionModel {
+private extension ConfirmTransactionController {
+  func emulate() async throws -> ConfirmTransactionModel {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
-    let boc = try await tonConnectService.createEmulateRequestBoc(
+    let boc = try await bocProvider.createBoc(
       wallet: wallet,
       seqno: seqno,
-      timeout: timeout,
-      parameters: appRequestParam
+      timeout: timeout
     )
-    
     let currency = await currencyStore.getActiveCurrency()
     let rates = ratesStore.getRates(jettons: []).ton.first(where: { $0.currency == currency })
     let transactionInfo = try await sendService.loadTransactionInfo(boc: boc, wallet: wallet)
@@ -61,26 +59,6 @@ private extension TonConnectConfirmationController {
       nftsCollection: nfts,
       wallet: wallet
     )
-  }
-  
-  func createRequestTransactionBoc(parameters: SendTransactionParam,
-                                   signClosure: (WalletTransfer) async throws -> Data) async throws  -> String{
-    let seqno = try await sendService.loadSeqno(wallet: wallet)
-    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
-    let payloads = parameters.messages.map { message in
-        TonConnectTransferMessageBuilder.Payload(
-            value: BigInt(integerLiteral: message.amount),
-            recipientAddress: message.address,
-            stateInit: message.stateInit,
-            payload: message.payload)
-    }
-    return try await TonConnectTransferMessageBuilder.sendTonConnectTransfer(
-      wallet: wallet,
-      seqno: seqno,
-      payloads: payloads,
-      sender: parameters.from,
-      timeout: timeout,
-      signClosure: signClosure)
   }
   
   func loadEventNFTs(event: AccountEvent) async throws -> NFTsCollection {

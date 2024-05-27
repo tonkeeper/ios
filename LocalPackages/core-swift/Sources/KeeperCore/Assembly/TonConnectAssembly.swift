@@ -26,24 +26,10 @@ public final class TonConnectAssembly {
     self.formattersAssembly = formattersAssembly
   }
   
-  public func tonConnectConfirmationController(wallet: Wallet,
-                                               signTransactionParams: [SendTransactionParam]) -> TonConnectConfirmationController {
-    TonConnectConfirmationController(
-      wallet: wallet,
+  public func tonConnectConfirmTransactionControllerBocProvider(signTransactionParams: [SendTransactionParam]) -> TonConnectConfirmTransactionControllerBocProvider {
+    TonConnectConfirmTransactionControllerBocProvider(
       signTransactionParams: signTransactionParams,
-      tonConnectService: tonConnectService(),
-      sendService: servicesAssembly.sendService(),
-      nftService: servicesAssembly.nftService(),
-      ratesStore: storesAssembly.ratesStore,
-      currencyStore: storesAssembly.currencyStore,
-      confirmTransactionMapper: ConfirmTransactionMapper(
-        accountEventMapper: AccountEventMapper(
-          dateFormatter: formattersAssembly.dateFormatter,
-          amountFormatter: formattersAssembly.amountFormatter,
-          amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
-        ),
-        amountFormatter: formattersAssembly.amountFormatter
-      )
+      tonConnectService: tonConnectService()
     )
   }
   

@@ -69,9 +69,11 @@ private extension WebSwapCoordinator {
           completion(result)
         }
       ),
-      tonConnectConfirmationController: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmationController(
+      confirmTransactionController: keeperCoreMainAssembly.confirmTransactionController(
         wallet: wallet,
-        signTransactionParams: signRequest.params
+        bocProvider: keeperCoreMainAssembly.tonConnectAssembly.tonConnectConfirmTransactionControllerBocProvider(
+          signTransactionParams: signRequest.params
+        )
       ),
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly

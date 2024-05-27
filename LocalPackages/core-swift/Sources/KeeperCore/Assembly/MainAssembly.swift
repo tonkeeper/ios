@@ -423,6 +423,26 @@ public final class MainAssembly {
       tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
     )
   }
+  
+  public func confirmTransactionController(wallet: Wallet,
+                                           bocProvider: ConfirmTransactionControllerBocProvider) -> ConfirmTransactionController {
+    ConfirmTransactionController(
+      wallet: wallet,
+      bocProvider: bocProvider,
+      sendService: servicesAssembly.sendService(),
+      nftService: servicesAssembly.nftService(),
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      confirmTransactionMapper: ConfirmTransactionMapper(
+        accountEventMapper: AccountEventMapper(
+          dateFormatter: formattersAssembly.dateFormatter,
+          amountFormatter: formattersAssembly.amountFormatter,
+          amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
+        ),
+        amountFormatter: formattersAssembly.amountFormatter
+      )
+    )
+  }
 }
 
 private extension MainAssembly {
