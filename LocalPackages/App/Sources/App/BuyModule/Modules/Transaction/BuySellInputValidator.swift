@@ -2,6 +2,7 @@ import Foundation
 import BigInt
 import TKCore
 import KeeperCore
+import TKLocalize
 
 struct BuySellInputValidator {
   typealias Amount = (amount: BigUInt, fractionLength: Int)
@@ -39,7 +40,7 @@ struct BuySellInputValidator {
       return ValidationResult(isValid: true, message: nil)
     } else {
       let minAmount = bigIntAmountFormatter.format(amount: minTonBuyAmount, fractionDigits: TonInfo.fractionDigits, maximumFractionDigits: 2)
-      return ValidationResult(isValid: false, message: "Min amount: \(minAmount)")
+      return ValidationResult(isValid: false, message: TKLocales.Buy.min_amount(minAmount))
     }
   }
   
@@ -65,7 +66,7 @@ struct BuySellInputValidator {
         return ValidationResult(isValid: true, message: nil)
       } else {
         let minAmount = bigIntAmountFormatter.format(amount: minTonSellAmount, fractionDigits: TonInfo.fractionDigits, maximumFractionDigits: 2)
-        return ValidationResult(isValid: false, message: "Min amount: \(minAmount)")
+        return ValidationResult(isValid: false, message: TKLocales.Buy.min_amount(minAmount))
       }
     } else {
       return ValidationResult(isValid: !amount.isZero, message: nil)
