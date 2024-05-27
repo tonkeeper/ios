@@ -150,8 +150,8 @@ private extension BuyCoordinator {
   func openBuySellDetails(buySellDetailsItem: BuySellDetailsItem, buySellTransactionModel: BuySellTransactionModel) {
     let module = BuySellDetailsAssembly.module(
       buySellDetailsController: keeperCoreMainAssembly.buySellDetailsController(),
-      buySellDetailsItem: buySellDetailsItem,
-      buySellTransactionModel: buySellTransactionModel
+      buySellTransactionModel: buySellTransactionModel,
+      buySellDetailsItem: buySellDetailsItem
     )
     
     module.view.setupBackButton()

@@ -7,53 +7,38 @@ public struct BuySellTransactionModel {
     case none
   }
   
-  public enum Operation {
-    case buyTon(fiatCurrency: Currency)
-    case sellTon(fiatCurrency: Currency)
-    
-    public var fiatCurrency: Currency {
-      switch self {
-      case .buyTon(let fiatCurrency), .sellTon(let fiatCurrency):
-        return fiatCurrency
-      }
-    }
-  }
-  
-  public let operation: Operation
-  public let token: BuySellModel.Token
-  public var tokenAmount: BigUInt
-  public let providerRate: Decimal
+  public let operation: BuySellModel.Operation
+  public var buySellItem: BuySellItem
+  public let providerRate: Decimal?
   public let minimumLimits: MinimumLimits
   
-  public init(operation: Operation,
-              token: BuySellModel.Token,
-              tokenAmount: BigUInt,
-              providerRate: Decimal,
+  public init(operation: BuySellModel.Operation,
+              buySellItem: BuySellItem,
+              providerRate: Decimal?,
               minimumLimits: MinimumLimits) {
     self.operation = operation
-    self.token = token
-    self.tokenAmount = tokenAmount
+    self.buySellItem = buySellItem
     self.providerRate = providerRate
     self.minimumLimits = minimumLimits
   }
 }
 
 extension BuySellTransactionModel {
-  public var currencyPay: Currency {
+  public var itemBuy: BuySellItem.Item {
     switch operation {
-    case .buyTon(let fiatCurrency):
-      return fiatCurrency
-    case .sellTon:
-      return .TON
+    case .buy:
+      return buySellItem.tokenItem
+    case .sell:
+      return buySellItem.fiatItem
     }
   }
   
-  public var currencyGet: Currency {
+  public var itemSell: BuySellItem.Item {
     switch operation {
-    case .buyTon:
-      return .TON
-    case .sellTon(let fiatCurrency):
-      return fiatCurrency
+    case .buy:
+      return buySellItem.fiatItem
+    case .sell:
+      return buySellItem.tokenItem
     }
   }
 }

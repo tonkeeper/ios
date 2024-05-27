@@ -11,6 +11,12 @@ public struct BuySellModel {
     public let symbol: String
     public let title: String
     public let fractionDigits: Int
+    
+    public init(symbol: String, title: String, fractionDigits: Int) {
+      self.symbol = symbol
+      self.title = title
+      self.fractionDigits = fractionDigits
+    }
   }
   
   public var operation: Operation

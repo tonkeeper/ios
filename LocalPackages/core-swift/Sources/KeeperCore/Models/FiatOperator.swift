@@ -14,7 +14,7 @@ public struct FiatOperator: Identifiable {
   public let iconURL: URL?
   public let actionTemplateURL: String?
   public let infoButtons: [InfoButton]
-  public let rate: Decimal
+  public let rate: Decimal?
   public let formattedRate: String
   public let minTonBuyAmount: BigUInt?
   public let minTonSellAmount: BigUInt?
@@ -26,7 +26,7 @@ public struct FiatOperator: Identifiable {
              iconURL: URL?,
              actionTemplateURL: String?,
              infoButtons: [InfoButton],
-             rate: Decimal,
+             rate: Decimal?,
              formattedRate: String,
              minTonBuyAmount: BigUInt?,
              minTonSellAmount: BigUInt?) {

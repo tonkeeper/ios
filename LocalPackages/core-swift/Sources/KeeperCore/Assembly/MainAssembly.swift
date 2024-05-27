@@ -490,7 +490,8 @@ public final class MainAssembly {
       tonRatesStore: storesAssembly.tonRatesStore,
       walletsStore: walletAssembly.walletStore,
       configurationStore: configurationAssembly.remoteConfigurationStore,
-      amountNewFormatter: formattersAssembly.amountNewFormatter
+      amountNewFormatter: formattersAssembly.amountNewFormatter,
+      decimalAmountFormatter: formattersAssembly.decimalAmountNewFormatter
     )
   }
   
@@ -506,6 +507,17 @@ public final class MainAssembly {
     BrowserConnectedController(
       walletsStore: walletAssembly.walletStore,
       tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
+    )
+  }
+  
+  public func stakeController() -> StakeController {
+    StakeController(
+      walletsStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      currencyStore: storesAssembly.currencyStore,
+      ratesService: servicesAssembly.ratesService(),
+      amountNewFormatter: formattersAssembly.amountNewFormatter,
+      decimalAmountFormatter: formattersAssembly.decimalAmountNewFormatter
     )
   }
 }

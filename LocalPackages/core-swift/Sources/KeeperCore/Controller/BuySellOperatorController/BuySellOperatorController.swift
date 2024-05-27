@@ -55,16 +55,10 @@ public final class BuySellOperatorController {
   
   public func createActionUrl(actionTemplateURL: String?,
                               operatorId: String,
-                              currencyFrom: Currency,
-                              currencyTo: Currency) async -> URL? {
-    guard let actionTemplateURL,
-          let walletAddress = try? walletsStore.activeWallet.address.toString(bounceable: false)
-    else {
-      return nil
-    }
-    
-    let currencyFromCode = currencyFrom.code
-    let currencyToCode = currencyTo.code
+                              currencyFrom currencyFromCode: String,
+                              currencyTo currencyToCode: String) async -> URL? {
+    guard let actionTemplateURL else { return nil }
+    guard let walletAddress = try? walletsStore.activeWallet.address.toString(bounceable: false) else { return nil }
     
     var urlString = actionTemplateURL
       .replacingOccurrences(of: "{ADDRESS}", with: walletAddress)
@@ -110,7 +104,7 @@ private extension BuySellOperatorController {
       }
       .sorted(forCategory: fiatOperatorCategory)
     
-    if !fiatOperatorItems.isEmpty && fiatOperatorItems[0].rate > 0 {
+    if !fiatOperatorItems.isEmpty && fiatOperatorItems[0].rate != nil {
       fiatOperatorItems[0].badge = "BEST"
     }
     
@@ -130,8 +124,7 @@ private extension BuySellOperatorController {
   func mapFiatMethodItem(fiatMethodItem: FiatMethodItem,
                          fiatMethodRate: FiatMethodRate?,
                          currency: Currency) -> FiatOperator {
-    let rate = fiatMethodRate?.rate ?? .zero
-    return FiatOperator(
+    FiatOperator(
       id: fiatMethodItem.id,
       title: fiatMethodItem.title,
       description: fiatMethodItem.description ?? "",
@@ -139,9 +132,9 @@ private extension BuySellOperatorController {
       iconURL: fiatMethodItem.iconURL,
       actionTemplateURL: fiatMethodItem.actionButton.url,
       infoButtons: fiatMethodItem.infoButtons.map { mapInfoButton($0) },
-      rate: rate,
+      rate: fiatMethodRate?.rate,
       formattedRate: createFiatOperatorRate(
-        rate: rate,
+        rate: fiatMethodRate?.rate,
         currency: currency
       ),
       minTonBuyAmount: mapMinAmount(fiatMethodRate?.minTonBuyAmount),
@@ -149,8 +142,8 @@ private extension BuySellOperatorController {
     )
   }
   
-  func createFiatOperatorRate(rate: Decimal, currency: Currency) -> String {
-    guard !rate.isZero else { return " " }
+  func createFiatOperatorRate(rate: Decimal?, currency: Currency) -> String {
+    guard let rate else { return " " }
     let formattedRate = decimalAmountFormatter.format(amount: rate)
     return "\(formattedRate) \(currency.code) for 1 TON"
   }
@@ -181,13 +174,13 @@ public extension FiatOperator {
 private extension Array where Element == FiatOperator {
   func sorted(forCategory category: FiatOperatorCategory) -> Self {
     return self.sorted { lhs, rhs in
-      guard lhs.rate > 0 else { return false }
-      guard rhs.rate > 0 else { return true }
+      guard let lhsRate = lhs.rate else { return false }
+      guard let rhsRate = rhs.rate else { return true }
       switch category {
       case .buy:
-        return lhs.rate < rhs.rate
+        return lhsRate < rhsRate
       case .sell:
-        return lhs.rate > rhs.rate
+        return lhsRate > rhsRate
       }
     }
   }

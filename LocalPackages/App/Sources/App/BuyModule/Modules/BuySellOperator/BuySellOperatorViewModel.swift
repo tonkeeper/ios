@@ -16,6 +16,7 @@ struct BuySellOperatorItem {
   }
   
   let buySellModel: BuySellModel
+  let buySellItem: BuySellItem
   let paymentMethod: PaymentMethod
   let countryCode: String?
   
@@ -184,8 +185,8 @@ private extension BuySellOperatorViewModelImplementation {
         let url = await buySellOperatorController.createActionUrl(
           actionTemplateURL: selectedOperator.actionTemplateURL,
           operatorId: selectedOperator.id,
-          currencyFrom: buySellTransactionModel.currencyPay,
-          currencyTo: buySellTransactionModel.currencyGet
+          currencyFrom: buySellTransactionModel.itemSell.currencyCode,
+          currencyTo: buySellTransactionModel.itemBuy.currencyCode
         )
         let providerUrl = TitledURL(title: selectedOperator.title, url: url)
         await MainActor.run {
@@ -227,14 +228,6 @@ private extension BuySellOperatorViewModelImplementation {
   }
   
   func createBuySellTransaction() -> BuySellTransactionModel {
-    let transactionOperation: BuySellTransactionModel.Operation
-    switch buySellOperatorItem.buySellModel.operation {
-    case .buy:
-      transactionOperation = .buyTon(fiatCurrency: selectedCurrency)
-    case .sell:
-      transactionOperation = .sellTon(fiatCurrency: selectedCurrency)
-    }
-    
     let minimumLimits: BuySellTransactionModel.MinimumLimits
     let minTonBuyAmount = selectedOperator.minTonBuyAmount
     let minTonSellAmount = selectedOperator.minTonSellAmount
@@ -244,10 +237,12 @@ private extension BuySellOperatorViewModelImplementation {
       minimumLimits = .none
     }
     
+    var buySellItem = buySellOperatorItem.buySellItem
+    buySellItem.fiatItem.currency = selectedCurrency
+    
     return BuySellTransactionModel(
-      operation: transactionOperation,
-      token: buySellOperatorItem.buySellModel.token,
-      tokenAmount: buySellOperatorItem.buySellModel.tokenAmount,
+      operation: buySellOperatorItem.buySellModel.operation,
+      buySellItem: buySellItem,
       providerRate: selectedOperator.rate,
       minimumLimits: minimumLimits
     )

@@ -70,13 +70,6 @@ protocol BuySellDetailsViewModel: AnyObject {
 
 final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuySellDetailsModuleOutput {
   
-  typealias Input = BuySellDetailsController.Input
-  
-  enum InputCurrencyType {
-    case token
-    case fiat
-  }
-  
   enum InputField {
     case pay
     case get
@@ -109,47 +102,34 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
     
     Task {
       await buySellDetailsController.start()
-      await buySellDetailsController.loadRate(for: buySellTransactionModel.operation.fiatCurrency)
+      await buySellDetailsController.loadRate(for: buySellItem.fiatItem.currency)
     }
   }
   
   func didInputAmountPay(_ string: String) {
-    guard string != amountPay else { return }
-    Task {
-      await processInputAmount(
-        inputString: string,
-        inputField: .pay,
-        onConverted: { [weak self] formattedInput, convertedOutput in
-          self?.amountPay = formattedInput
-          self?.amountGet = convertedOutput
-          self?.didUpdateAmounts(pay: formattedInput, get: convertedOutput)
-        }
-      )
-    }
+    guard string != itemPay.amountString else { return }
+    updateBuySellItems(withInput: string, at: .pay)
   }
   
   func didInputAmountGet(_ string: String) {
-    guard string != amountGet else { return }
-    
-    Task {
-      await processInputAmount(
-        inputString: string,
-        inputField: .get,
-        onConverted: { [weak self] formattedInput, convertedOutput in
-          self?.amountGet = formattedInput
-          self?.amountPay = convertedOutput
-          self?.didUpdateAmountGet?(formattedInput)
-          self?.didUpdateAmountPay?(convertedOutput)
-          self?.didUpdateAmounts(pay: convertedOutput, get: formattedInput)
-        }
-      )
-    }
+    guard string != itemGet.amountString else { return }
+    updateBuySellItems(withInput: string, at: .get)
   }
   
   // MARK: - State
   
-  private var amountPay = ""
-  private var amountGet = ""
+  private var buySellItem: BuySellItem {
+    get { buySellTransactionModel.buySellItem }
+    set { buySellTransactionModel.buySellItem = newValue }
+  }
+  
+  private var itemPay: BuySellItem.Item {
+    buySellTransactionModel.itemSell
+  }
+  private var itemGet: BuySellItem.Item {
+    buySellTransactionModel.itemBuy
+  }
+  
   private var convertedRate = ""
   private var actionURL: URL?
   
@@ -189,15 +169,15 @@ final class BuySellDetailsViewModelImplementation: BuySellDetailsViewModel, BuyS
   private let imageLoader = ImageLoader()
   
   private let buySellDetailsController: BuySellDetailsController
-  private var buySellDetailsItem: BuySellDetailsItem
   private var buySellTransactionModel: BuySellTransactionModel
+  private var buySellDetailsItem: BuySellDetailsItem
   
   // MARK: - Init
-  
-  init(buySellDetailsController: BuySellDetailsController, buySellDetailsItem: BuySellDetailsItem, buySellTransactionModel: BuySellTransactionModel) {
+
+  init(buySellDetailsController: BuySellDetailsController, buySellTransactionModel: BuySellTransactionModel, buySellDetailsItem: BuySellDetailsItem) {
     self.buySellDetailsController = buySellDetailsController
-    self.buySellDetailsItem = buySellDetailsItem
     self.buySellTransactionModel = buySellTransactionModel
+    self.buySellDetailsItem = buySellDetailsItem
     self.payAmountTextFieldFormatter.maximumFractionDigits = maximumFractionDigits(forInputField: .pay)
     self.getAmountTextFieldFormatter.maximumFractionDigits = maximumFractionDigits(forInputField: .get)
     self.payAmountTextFieldFormatter.isAllowedEmptyInput = true
@@ -235,11 +215,11 @@ private extension BuySellDetailsViewModelImplementation {
       ),
       textFieldPay: BuySellDetailsView.Model.TextField(
         placeholder: "You Pay",
-        currencyCode: buySellTransactionModel.currencyPay.code
+        currencyCode: itemPay.currencyCode
       ),
       textFieldGet: BuySellDetailsView.Model.TextField(
         placeholder: "You Get",
-        currencyCode: buySellTransactionModel.currencyGet.code
+        currencyCode: itemGet.currencyCode
       ),
       rateContainer: createRateContainerModel(convertedRate: convertedRate),
       serviceProvidedTitle: "Service provided by \(buySellDetailsItem.serviceInfo.provider)".withTextStyle(.body2, color: .Text.tertiary),
@@ -252,9 +232,9 @@ private extension BuySellDetailsViewModelImplementation {
   }
   
   func createRateContainerModel(convertedRate: String) -> ListDescriptionContainerView.Model {
-    let currencyPay = buySellTransactionModel.currencyPay
-    let currencyGet = buySellTransactionModel.currencyGet
-    let description = "\(convertedRate) \(currencyPay.code) for 1 \(currencyGet.code)"
+    let fiatItemCurrencyCode = buySellItem.fiatItem.currencyCode
+    let tokenItemCurrencyCode = buySellItem.tokenItem.currencyCode
+    let description = "\(convertedRate) \(fiatItemCurrencyCode) for 1 \(tokenItemCurrencyCode)"
     return ListDescriptionContainerView.Model(
       description: description.withTextStyle(.body2, color: .Text.tertiary)
     )
@@ -289,30 +269,87 @@ private extension BuySellDetailsViewModelImplementation {
   }
   
   func updateAmountTextFields() {
+    let tokenItem = buySellItem.tokenItem
     let inputAmount = buySellDetailsController.convertAmountToString(
-      amount: buySellTransactionModel.tokenAmount,
-      fractionDigits: buySellTransactionModel.token.fractionDigits
+      amount: tokenItem.amount,
+      fractionDigits: tokenItem.fractionDigits
     )
     switch buySellTransactionModel.operation {
-    case .buyTon:
-      didInputAmountGet(inputAmount)
-    case .sellTon:
-      didInputAmountPay(inputAmount)
+    case .buy:
+      updateBuySellItems(withInput: inputAmount, at: .get)
+    case .sell:
+      updateBuySellItems(withInput: inputAmount, at: .pay)
     }
   }
   
-  func updateConvertedRate() {
+  func updateBuySellItems(withInput string: String, at inputField: InputField) {
+    let input = itemInput(atInputField: inputField)
+    let itemFractionDigits = buySellItem.getItem(forInput: input).fractionDigits
+    let inputAmount = convertStringToAmount(string, fromInput: inputField, targetFractionDigits: itemFractionDigits)
+    
+    let tokenItem = buySellItem.tokenItem
+    let fiatItem = buySellItem.fiatItem
+    let providerRate = buySellTransactionModel.providerRate
+    
     Task {
-      let amount = BigUInt(stringLiteral: "1")
-      let payAmount = mapInputAmount(amount, from: .get)
-      let payInput = Input(amount: payAmount, fractionLength: 0)
-      let currency = buySellTransactionModel.operation.fiatCurrency
-      let outputFractionLenght = maximumFractionDigits(forInputField: .pay)
-      let convertedRate = await buySellDetailsController.convertAmountInput(
-        input: payInput,
-        providerRate: buySellTransactionModel.providerRate,
-        currency: currency,
-        outputFractionLenght: outputFractionLenght
+      let updatedToken: BuySellItem.Token
+      let updatedFiat: BuySellItem.Fiat
+      
+      switch input {
+      case .token:
+        updatedToken = tokenItem.updated(amount: inputAmount, amountString: string)
+        updatedFiat = await buySellDetailsController.convertTokenToFiat(updatedToken, currency: fiatItem.currency, providerRate: providerRate)
+      case .fiat:
+        updatedFiat = fiatItem.updated(amount: inputAmount, amountString: string)
+        updatedToken = await buySellDetailsController.convertFiatToToken(updatedFiat, token: tokenItem.token, providerRate: providerRate)
+      }
+      
+      await MainActor.run {
+        buySellItem.tokenItem = updatedToken
+        buySellItem.fiatItem = updatedFiat
+        
+        var strings = amountStrings()
+        if updatedToken.amountString.isEmpty || updatedFiat.amountString.isEmpty {
+          strings = ("", "")
+        }
+        
+        didUpdateAmountGet?(strings.amountGet)
+        didUpdateAmountPay?(strings.amoutPay)
+        didUpdateTokenAmount(buySellItem.tokenItem.amount)
+      }
+    }
+  }
+  
+  func convertStringToAmount(_ string: String, fromInput input: InputField, targetFractionDigits: Int) -> BigUInt {
+    let unformatted = textFormatter(forInputField: input).unformatString(string) ?? "0"
+    let converted = buySellDetailsController.convertStringToAmount(
+      string: unformatted,
+      targetFractionalDigits: targetFractionDigits
+    )
+    return converted.amount
+  }
+  
+  func amountStrings() -> (amoutPay: String, amountGet: String) {
+    return (itemPay.amountString, itemGet.amountString)
+  }
+  
+  func updateConvertedRate() {
+    let tokenItem = buySellItem.tokenItem
+    let fiatItem = buySellItem.fiatItem
+    Task {
+      let oneToken = BuySellItem.Token(
+        amount: 1,
+        amountString: "1",
+        token: BuySellModel.Token(
+          symbol: tokenItem.token.symbol,
+          title: tokenItem.token.title,
+          fractionDigits: 0
+        )
+      )
+      let convertedRate = await buySellDetailsController.getConvertedRate(
+        token: oneToken,
+        currency: fiatItem.currency,
+        providerRate: buySellTransactionModel.providerRate
       )
       await MainActor.run {
         self.convertedRate = convertedRate
@@ -327,8 +364,8 @@ private extension BuySellDetailsViewModelImplementation {
       let actionURL = await buySellDetailsController.createActionUrl(
         actionTemplateURL: buySellDetailsItem.actionTemplateURL,
         operatorId: buySellDetailsItem.serviceInfo.id,
-        currencyFrom: buySellTransactionModel.currencyPay,
-        currencyTo: buySellTransactionModel.currencyGet
+        currencyFrom: itemPay.currencyCode,
+        currencyTo: itemGet.currencyCode
       )
       await MainActor.run {
         if let actionURL {
@@ -339,76 +376,13 @@ private extension BuySellDetailsViewModelImplementation {
     }
   }
   
-  func processInputAmount(inputString string: String,
-                          inputField: InputField,
-                          onConverted: @escaping (String, String) -> Void) async {
-    let formattedInput = formatInputString(string, from: inputField)
-    let convertedOutput = await convertInputString(formattedInput: formattedInput, from: inputField)
-    await MainActor.run {
-      onConverted(formattedInput, convertedOutput)
-    }
-  }
-  
-  func formatInputString(_ string: String, from inputField: InputField) -> String {
-    let textFormatter = textFormatter(forInputField: inputField)
-    let unformatted = textFormatter.unformatString(string) ?? ""
-    return textFormatter.formatString(unformatted) ?? ""
-  }
-  
-  func convertInputString(formattedInput: String, from inputField: InputField) async -> String {
-    let convertedOutput: String
-    if !formattedInput.isEmpty {
-      let unformatted = textFormatter(forInputField: inputField).unformatString(formattedInput) ?? ""
-      
-      let outputField: InputField = inputField == .pay ? .get : .pay
-      
-      let maximumFractionDigitsInput = maximumFractionDigits(forInputField: inputField)
-      let maximumFractionDigitsOuput = maximumFractionDigits(forInputField: outputField)
-      
-      let convertedInput = buySellDetailsController.convertStringToAmount(
-        string: unformatted,
-        targetFractionalDigits: maximumFractionDigitsInput
-      )
-      let input = Input(
-        amount: mapInputAmount(convertedInput.amount, from: inputField),
-        fractionLength: convertedInput.fractionalDigits
-      )
-      convertedOutput = await buySellDetailsController.convertAmountInput(
-        input: input,
-        providerRate: buySellTransactionModel.providerRate,
-        currency: buySellTransactionModel.operation.fiatCurrency,
-        outputFractionLenght: maximumFractionDigitsOuput
-      )
-    } else {
-      convertedOutput = ""
-    }
-    
-    return convertedOutput
-  }
-  
-  func didUpdateAmounts(pay amountPay: String, get amountGet: String) {
-    didUpdateAmountPay?(amountPay)
-    didUpdateAmountGet?(amountGet)
-    
+  func didUpdateTokenAmount(_ tokenAmount: BigUInt) {
     guard case let .amount(minBuyAmount, minSellAmount) = buySellTransactionModel.minimumLimits else { return }
     
-    let unformatted: String
     switch buySellTransactionModel.operation {
-    case .buyTon:
-      unformatted = textFormatter(forInputField: .get).unformatString(amountGet) ?? "0"
-    case .sellTon:
-      unformatted = textFormatter(forInputField: .pay).unformatString(amountPay) ?? "0"
-    }
-    
-    let tokenAmount = buySellDetailsController.convertStringToAmount(
-      string: unformatted,
-      targetFractionalDigits: buySellTransactionModel.token.fractionDigits
-    ).amount
-    
-    switch buySellTransactionModel.operation {
-    case .buyTon:
+    case .buy:
       isTokenAmountValid = tokenAmount >= minBuyAmount
-    case .sellTon:
+    case .sell:
       isTokenAmountValid = tokenAmount >= minSellAmount
     }
   }
@@ -423,32 +397,23 @@ private extension BuySellDetailsViewModelImplementation {
   }
   
   func maximumFractionDigits(forInputField inputField: InputField) -> Int {
-    switch inputCurrencyType(forInputField: inputField) {
+    switch itemInput(atInputField: inputField) {
     case .token:
-      return buySellTransactionModel.token.fractionDigits
+      return buySellTransactionModel.buySellItem.tokenItem.fractionDigits
     case .fiat:
-      return 2
+      return buySellTransactionModel.buySellItem.fiatItem.fractionDigits
     }
   }
   
-  func mapInputAmount(_ amount: BigUInt, from inputField: InputField) -> Input.Amount {
-    switch inputCurrencyType(forInputField: inputField) {
-    case .token:
-      return .ton(amount)
-    case .fiat:
-      return .fiat(amount)
-    }
-  }
-  
-  func inputCurrencyType(forInputField inputField: InputField) -> InputCurrencyType {
+  func itemInput(atInputField inputField: InputField) -> BuySellItem.Input {
     switch (buySellTransactionModel.operation, inputField) {
-    case (.buyTon, .pay):
+    case (.buy, .pay):
       return .fiat
-    case (.buyTon, .get):
+    case (.buy, .get):
       return .token
-    case (.sellTon, .pay):
+    case (.sell, .pay):
       return .token
-    case (.sellTon, .get):
+    case (.sell, .get):
       return .fiat
     }
   }

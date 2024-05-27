@@ -2,22 +2,8 @@ import Foundation
 import BigInt
 
 public final class BuySellDetailsController {
-  public var didUpdateRates: (() -> Void)?
   
-  public struct Input {
-    public enum Amount {
-      case ton(BigUInt)
-      case fiat(BigUInt)
-    }
-    
-    var amount: Amount
-    var fractionLength: Int
-    
-    public init(amount: Amount, fractionLength: Int) {
-      self.amount = amount
-      self.fractionLength = fractionLength
-    }
-  }
+  public var didUpdateRates: (() -> Void)?
   
   private let ratesService: RatesService
   private let tonRatesLoader: TonRatesLoader
@@ -25,69 +11,35 @@ public final class BuySellDetailsController {
   private let walletsStore: WalletsStore
   private let configurationStore: ConfigurationStore
   private let amountNewFormatter: AmountNewFormatter
+  private let decimalAmountFormatter: DecimalAmountFormatter
   
   init(ratesService: RatesService,
        tonRatesLoader: TonRatesLoader,
        tonRatesStore: TonRatesStore,
        walletsStore: WalletsStore,
        configurationStore: ConfigurationStore,
-       amountNewFormatter: AmountNewFormatter) {
+       amountNewFormatter: AmountNewFormatter,
+       decimalAmountFormatter: DecimalAmountFormatter) {
     self.ratesService = ratesService
     self.tonRatesLoader = tonRatesLoader
     self.tonRatesStore = tonRatesStore
     self.walletsStore = walletsStore
     self.configurationStore = configurationStore
     self.amountNewFormatter = amountNewFormatter
+    self.decimalAmountFormatter = decimalAmountFormatter
   }
   
   public func start() async {
     _ = await tonRatesStore.addEventObserver(self) { observer, event in
       switch event {
       case .didUpdateRates:
-        observer.didUpdateRates?()
+        Task { @MainActor in observer.didUpdateRates?() } 
       }
     }
   }
   
   public func loadRate(for currency: Currency) async {
     await tonRatesLoader.loadRate(currency: currency)
-  }
-  
-  public func convertAmountInput(input: Input, providerRate: Decimal, currency: Currency, outputFractionLenght: Int) async -> String {
-    let rate: Rates.Rate
-    if providerRate.isZero {
-      let tonRate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency })
-      rate = tonRate ?? Rates.Rate(currency: currency, rate: 0, diff24h: nil)
-    } else {
-      rate = Rates.Rate(currency: currency, rate: providerRate, diff24h: nil)
-    }
-    
-    let amount: BigUInt
-    let correctedRate: Rates.Rate
-    
-    switch input.amount {
-    case .ton(let value):
-      amount = value
-      correctedRate = rate
-    case .fiat(let value):
-      amount = value
-      guard rate.rate > 0 else {
-        correctedRate = rate
-        break
-      }
-      correctedRate = Rates.Rate(
-        currency: rate.currency,
-        rate: 1 / rate.rate,
-        diff24h: rate.diff24h
-      )
-    }
-    
-    let converted = RateConverter().convert(amount: amount, amountFractionLength: input.fractionLength, rate: correctedRate)
-    return amountNewFormatter.formatAmount(
-      converted.amount,
-      fractionDigits: converted.fractionLength,
-      maximumFractionDigits: outputFractionLenght
-    )
   }
   
   public func convertAmountToString(amount: BigUInt,
@@ -103,21 +55,79 @@ public final class BuySellDetailsController {
   }
   
   public func convertStringToAmount(string: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
-    return amountNewFormatter.amount(from: string, targetFractionalDigits: targetFractionalDigits)
+    return amountNewFormatter.amount(
+      from: string,
+      targetFractionalDigits: targetFractionalDigits
+    )
+  }
+  
+  public func getConvertedRate(token: BuySellItem.Token, currency: Currency, providerRate: Decimal? = nil) async -> String {
+    if let providerRate {
+      return decimalAmountFormatter.format(amount: providerRate)
+    } else {
+      return await convertTokenToFiat(token, currency: currency).amountString
+    }
+  }
+  
+  public func convertTokenToFiat(_ token: BuySellItem.Token, currency: Currency, providerRate: Decimal? = nil) async -> BuySellItem.Fiat {
+    let rate: Rates.Rate
+    if let providerRate {
+      rate = Rates.Rate(currency: currency, rate: providerRate, diff24h: nil)
+    } else {
+      rate = await getRate(currency: currency)
+    }
+    
+    let converted = convertAmount(
+      amount: token.amount,
+      usingRate: rate,
+      amountFractionLength: token.fractionDigits,
+      targetFractionLenght: 2
+    )
+    
+    return BuySellItem.Fiat(
+      amount: converted.amount,
+      amountString: converted.string,
+      currency: currency
+    )
+  }
+  
+  public func convertFiatToToken(_ fiat: BuySellItem.Fiat, token: BuySellModel.Token, providerRate: Decimal?) async -> BuySellItem.Token {
+    let currency = fiat.currency
+    var rate: Rates.Rate
+    if let providerRate {
+      rate = Rates.Rate(currency: currency, rate: providerRate, diff24h: nil)
+    } else {
+      rate = await getRate(currency: currency)
+    }
+    
+    if !rate.rate.isZero {
+      rate = Rates.Rate(
+        currency: rate.currency,
+        rate: 1 / rate.rate,
+        diff24h: rate.diff24h
+      )
+    }
+    
+    let converted = convertAmount(
+      amount: fiat.amount,
+      usingRate: rate,
+      amountFractionLength: 2,
+      targetFractionLenght: token.fractionDigits
+    )
+    
+    return BuySellItem.Token(
+      amount: converted.amount,
+      amountString: converted.string,
+      token: token
+    )
   }
   
   public func createActionUrl(actionTemplateURL: String?,
                               operatorId: String,
-                              currencyFrom: Currency,
-                              currencyTo: Currency) async -> URL? {
-    guard let actionTemplateURL,
-          let walletAddress = try? walletsStore.activeWallet.address.toString(bounceable: false)
-    else {
-      return nil
-    }
-    
-    let currencyFromCode = currencyFrom.code
-    let currencyToCode = currencyTo.code
+                              currencyFrom currencyFromCode: String,
+                              currencyTo currencyToCode: String) async -> URL? {
+    guard let actionTemplateURL else { return nil }
+    guard let walletAddress = try? walletsStore.activeWallet.address.toString(bounceable: false) else { return nil }
     
     var urlString = actionTemplateURL
       .replacingOccurrences(of: "{ADDRESS}", with: walletAddress)
@@ -137,5 +147,41 @@ public final class BuySellDetailsController {
     }
     
     return URL(string: urlString)
+  }
+}
+
+private extension BuySellDetailsController {
+  func convertAmount(amount: BigUInt,
+                     usingRate rate: Rates.Rate,
+                     amountFractionLength: Int,
+                     targetFractionLenght: Int) -> (amount: BigUInt, string: String) {
+    let converted = RateConverter().convert(
+      amount: amount,
+      amountFractionLength: amountFractionLength,
+      rate: rate
+    )
+    let convertedAmount = truncateAmountFractionLenght(
+      amount: converted.amount,
+      currentLenght: converted.fractionLength,
+      targetLenght: targetFractionLenght
+    )
+    let convertedString = amountNewFormatter.formatAmount(
+      convertedAmount,
+      fractionDigits: targetFractionLenght,
+      maximumFractionDigits: targetFractionLenght
+    )
+    return (convertedAmount, convertedString)
+  }
+  
+  func truncateAmountFractionLenght(amount: BigUInt, currentLenght: Int, targetLenght: Int) -> BigUInt {
+    guard currentLenght > targetLenght else { return amount }
+    let digitsToRemove = currentLenght - targetLenght
+    let divisor = BigUInt(10).power(digitsToRemove)
+    return amount / divisor
+  }
+  
+  func getRate(currency: Currency) async -> Rates.Rate {
+    let tonRate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency })
+    return tonRate ?? Rates.Rate(currency: currency, rate: 0, diff24h: nil)
   }
 }

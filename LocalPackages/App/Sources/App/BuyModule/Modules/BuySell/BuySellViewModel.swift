@@ -249,6 +249,7 @@ private extension BuySellViewModelImplementation {
   func createBuySellOperatorItem() -> BuySellOperatorItem {
     BuySellOperatorItem(
       buySellModel: buySellModel,
+      buySellItem: buySellItem,
       paymentMethod: .init(
         id: selectedPaymentMethod.id,
         title: selectedPaymentMethod.title

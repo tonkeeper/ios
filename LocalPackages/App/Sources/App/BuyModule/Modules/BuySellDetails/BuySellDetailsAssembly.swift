@@ -5,12 +5,12 @@ import KeeperCore
 struct BuySellDetailsAssembly {
   private init() {}
   static func module(buySellDetailsController: BuySellDetailsController,
-                     buySellDetailsItem: BuySellDetailsItem,
-                     buySellTransactionModel: BuySellTransactionModel) -> MVVMModule<BuySellDetailsViewController, BuySellDetailsModuleOutput, Void> {
+                     buySellTransactionModel: BuySellTransactionModel,
+                     buySellDetailsItem: BuySellDetailsItem) -> MVVMModule<BuySellDetailsViewController, BuySellDetailsModuleOutput, Void> {
     let viewModel = BuySellDetailsViewModelImplementation(
       buySellDetailsController: buySellDetailsController,
-      buySellDetailsItem: buySellDetailsItem,
-      buySellTransactionModel: buySellTransactionModel
+      buySellTransactionModel: buySellTransactionModel,
+      buySellDetailsItem: buySellDetailsItem
     )
     
     let viewController = BuySellDetailsViewController(
