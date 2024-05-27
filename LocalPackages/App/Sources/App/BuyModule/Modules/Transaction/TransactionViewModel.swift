@@ -236,14 +236,14 @@ private extension TransactionViewModelImplementation {
     }
     
     let payField = TransactionView.Model.InputField(
-      placeholder: "You pay",
+      placeholder: TKLocales.Buy.you_pay,
       currency: payCurrency,
       amount: payAmountInput,
       isValid: isPayAmountValid
     )
     
     let getField = TransactionView.Model.InputField(
-      placeholder: "You get",
+      placeholder: TKLocales.Buy.you_get,
       currency: getCurrency,
       amount: getAmountInput,
       isValid: isGetAmountValid

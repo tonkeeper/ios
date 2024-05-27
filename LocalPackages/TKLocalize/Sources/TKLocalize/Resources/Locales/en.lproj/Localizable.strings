@@ -231,3 +231,5 @@
 "buy.button_sell" = "Sell";
 "buy.min_amount" = "Min. amount: %@";
 "buy.rate" = "%@ %@ for 1 TON";
+"buy.you_pay" = "You pay";
+"buy.you_get" = "You get";

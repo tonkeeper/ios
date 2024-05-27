@@ -840,5 +840,13 @@ public enum TKLocales {
     public static func rate(_ p0: Any, _ p1: Any) -> String {
       return localizeWithArgs("buy.rate", String(describing: p0), String(describing: p1))
     }
+    /// You pay
+    public static var you_pay: String {
+      localize("buy.you_pay")
+    }
+    /// You get
+    public static var you_get: String {
+      localize("buy.you_get")
+    }
   }
 }
