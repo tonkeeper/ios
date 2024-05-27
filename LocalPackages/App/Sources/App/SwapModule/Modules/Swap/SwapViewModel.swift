@@ -101,9 +101,14 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
         amount: amount.amount,
         token: swapPair.send.token
       )
-      let oneToken = try? await swapController.convertOneTokenAmountToCurrency(token: swapPair.send.token)
-      let balance = await updateBalance(field: .send)
-      let receiveData = await updateReceive(with: amount.amount)
+      async let oneTokenAsync = try? swapController.convertOneTokenAmountToCurrency(token: swapPair.send.token)
+      async let balanceAsync = updateBalance(field: .send)
+      async let receiveDataAsync = updateReceive(with: amount.amount)
+
+      let oneToken = await oneTokenAsync
+      let balance = await balanceAsync
+      let receiveData = await receiveDataAsync
+      
       await MainActor.run {
         oneTokenPrice = oneToken ?? ""
         isSendAmountValid = isAmountValid
