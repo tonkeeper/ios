@@ -282,16 +282,26 @@ public extension UIImage.TKUIKit.Icons.Size28 {
 }
 
 public extension UIImage.TKUIKit.Images {
-  static var mastercardVisaCardsLogo: UIImage {
-    .imageWithName("Images/mastercardVisaCards-logo")
+  enum PaymentMethods {
+    public static var mastercardVisaCardsLogo: UIImage {
+      .imageWithName("Images/PaymentMethods/mastercardVisaCards-logo")
+    }
+    public static var mirCardLogo: UIImage {
+      .imageWithName("Images/PaymentMethods/mirCard-logo")
+    }
+    public static var cryptocyrrencyLogo: UIImage {
+      .imageWithName("Images/PaymentMethods/cryptocurrencies-logo")
+    }
+    public static var applePayCardLogo: UIImage {
+      .imageWithName("Images/PaymentMethods/applePayCard-logo")
+    }
   }
-  static var mirCardLogo: UIImage {
-    .imageWithName("Images/mirCard-logo")
-  }
-  static var cryptocyrrencyLogo: UIImage {
-    .imageWithName("Images/cryptocurrencies-logo")
-  }
-  static var applePayCardLogo: UIImage {
-    .imageWithName("Images/applePayCard-logo")
+}
+
+public extension UIImage.TKUIKit.Images {
+  enum Pools {
+    public static var tonstakers: UIImage {
+      .imageWithName("Images/Pools/Tonstakers")
+    }
   }
 }

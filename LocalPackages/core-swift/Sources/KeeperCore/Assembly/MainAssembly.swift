@@ -512,12 +512,12 @@ public final class MainAssembly {
   
   public func stakeController() -> StakeController {
     StakeController(
+      locationService: servicesAssembly.locationService(),
       walletsStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
+      tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      ratesService: servicesAssembly.ratesService(),
-      amountNewFormatter: formattersAssembly.amountNewFormatter,
-      decimalAmountFormatter: formattersAssembly.decimalAmountNewFormatter
+      amountNewFormatter: formattersAssembly.amountNewFormatter
     )
   }
 }

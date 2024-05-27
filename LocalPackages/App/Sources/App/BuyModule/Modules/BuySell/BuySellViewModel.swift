@@ -97,16 +97,16 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   private var minimumValidTokenAmount = BigUInt(0)
   private var selectedPaymentMethod = PaymentMethodItemsModel.Item.creditCard
   
-  private var isResolving = false {
+  private var isAmountValid: Bool = false {
     didSet {
-      guard isResolving != oldValue else { return }
+      guard isAmountValid != oldValue else { return }
       update()
     }
   }
   
-  private var isAmountValid: Bool = false {
+  private var isResolving = false {
     didSet {
-      guard isAmountValid != oldValue else { return }
+      guard isResolving != oldValue else { return }
       update()
     }
   }
@@ -336,21 +336,21 @@ private extension PaymentMethodItemsModel.Item {
   static let creditCard = PaymentMethodItemsModel.Item(
     id: "creditCard",
     title: "Credit Card",
-    image: .TKUIKit.Images.mastercardVisaCardsLogo
+    image: .TKUIKit.Images.PaymentMethods.mastercardVisaCardsLogo
   )
   static let creditCardRUB = PaymentMethodItemsModel.Item(
     id: "creditCardRub",
     title: "Credit Card  ·  RUB",
-    image: .TKUIKit.Images.mirCardLogo
+    image: .TKUIKit.Images.PaymentMethods.mirCardLogo
   )
   static let cryptocurrency = PaymentMethodItemsModel.Item(
     id: "cryptocurrency",
     title: "Cryptocurrency",
-    image: .TKUIKit.Images.cryptocyrrencyLogo
+    image: .TKUIKit.Images.PaymentMethods.cryptocyrrencyLogo
   )
   static let applePay = PaymentMethodItemsModel.Item(
     id: "creditCardRub",
     title: "Apple Pay",
-    image: .TKUIKit.Images.applePayCardLogo
+    image: .TKUIKit.Images.PaymentMethods.applePayCardLogo
   )
 }

@@ -13,6 +13,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapScan: (() -> Void)? { get set }
   var didTapSwap: ((Wallet) -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
+  var didTapStake: (() -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
@@ -47,6 +48,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapScan: (() -> Void)?
   var didTapSwap: ((Wallet) -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
+  var didTapStake: (() -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
   var didRequireConfirmation: (() async -> Bool)?
@@ -303,21 +305,21 @@ private extension WalletBalanceViewModelImplementation {
       isScanEnable = true
       isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     case .watchOnly:
       isSendEnable = false
       isReceiveEnable = true
       isScanEnable = false
       isSwapEnable = false
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     case .external:
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true
       isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     }
     
     return WalletBalanceHeaderButtonsView.Model(
@@ -360,7 +362,7 @@ private extension WalletBalanceViewModelImplementation {
         title: TKLocales.WalletButtons.stake,
         icon: .TKUIKit.Icons.Size28.stakingOutline,
         isEnabled: isStakeEnable,
-        action: {}
+        action: { [weak self] in self?.didTapStake?() }
       )
     )
   }
