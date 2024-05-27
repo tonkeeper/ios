@@ -181,7 +181,7 @@ private extension BuyListController {
     switch item.id {
     case "neocrypto", "moonpay":
       currTo = "TON"
-    case "mercuryo":
+    case "mercuryo", "mercuryo_sell":
       await handleUrlForMercuryo(urlString: &urlString, walletAddress: address)
       currTo = "TONCOIN"
     default:

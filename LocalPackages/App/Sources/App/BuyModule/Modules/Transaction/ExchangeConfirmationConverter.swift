@@ -25,25 +25,13 @@ class ExchangeConfirmationConverter {
     self.rate = rate
   }
   
-  func setup(transactionAmountModel: TransactionAmountModel) {
-    switch transactionAmountModel.type {
-    case .buy:
-      // FIAT -> TON
-      tonAmount = (transactionAmountModel.amount, TonInfo.fractionDigits)
-      fiatAmount = rateConverter.convert(
-        amount: transactionAmountModel.amount,
-        amountFractionLength: TonInfo.fractionDigits,
-        rate: rate
-      )
-    case .sell:
-      // TON -> FIAT
-      fiatAmount = (transactionAmountModel.amount, TonInfo.fractionDigits)
-      tonAmount = rateConverter.convert(
-        amount: transactionAmountModel.amount,
-        amountFractionLength: TonInfo.fractionDigits,
-        rate: 1/rate
-      )
-    }
+  func setup(amount: BigUInt) {
+    tonAmount = (amount, TonInfo.fractionDigits)
+    fiatAmount = rateConverter.convert(
+      amount: amount,
+      amountFractionLength: TonInfo.fractionDigits,
+      rate: rate
+    )
     
     updateStrings()
   }

@@ -6,7 +6,8 @@ import TKLocalize
 import BigInt
 
 protocol TransactionViewModelOutput: AnyObject {
-  var didContinue: ((TransactionItem) -> Void)? { get set }
+  var didContinueWithURL: ((URL) -> Void)? { get set }
+  var didContinueWithItem: ((BuySellItemModel) -> Void)? { get set }
 }
 
 protocol TransactionViewModel: AnyObject {
@@ -24,7 +25,8 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
   
   // MARK: - TransactionViewModelOutput
   
-  var didContinue: ((TransactionItem) -> Void)?
+  var didContinueWithURL: ((URL) -> Void)?
+  var didContinueWithItem: ((BuySellItemModel) -> Void)?
   
   // MARK: - TransactionViewModel
   
@@ -33,7 +35,7 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
   // MARK: - State
   
   private let buySellItem: BuySellItemModel
-  private let transactionModel: TransactionAmountModel
+  private let transactionType: FiatMethodCategoryType
   
   private var payAmountInput = ""
   private var isPayAmountValid: Bool = false
@@ -44,28 +46,31 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
   private var validationErrorMessage: String? = nil
   
   private let inputValidator: BuySellInputValidator
+  private let appSettings: AppSettings
   private let exchangeConverter: ExchangeConfirmationConverter
   private let currencyRateFormatter: CurrencyToTONFormatter
   private let currency: Currency
   
   init(
     buySellItem: BuySellItemModel,
-    transactionModel: TransactionAmountModel,
+    transactionType: FiatMethodCategoryType,
     currency: Currency,
     exchangeConverter: ExchangeConfirmationConverter,
     currencyRateFormatter: CurrencyToTONFormatter,
-    inputValidator: BuySellInputValidator
+    inputValidator: BuySellInputValidator,
+    appSettings: AppSettings
   ) {
     self.buySellItem = buySellItem
-    self.transactionModel = transactionModel
+    self.transactionType = transactionType
     self.currency = currency
     self.exchangeConverter = exchangeConverter
     self.currencyRateFormatter = currencyRateFormatter
     self.inputValidator = inputValidator
+    self.appSettings = appSettings
   }
   
   func viewDidLoad() {
-    switch transactionModel.type {
+    switch transactionType {
     case .buy:
       payAmountInput = exchangeConverter.fiatInput
       getAmountInput = exchangeConverter.tonInput
@@ -80,7 +85,7 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
     guard string != payAmountInput else { return }
     let unformatted = sendAmountTextFieldFormatter.unformatString(string) ?? ""
     
-    switch transactionModel.type {
+    switch transactionType {
     case .buy:
       exchangeConverter.updateFiatInput(unformatted)
       payAmountInput = unformatted
@@ -97,7 +102,7 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
     guard string != getAmountInput else { return }
     let unformatted = sendAmountTextFieldFormatter.unformatString(string) ?? ""
     
-    switch transactionModel.type {
+    switch transactionType {
     case .buy:
       exchangeConverter.updateTonInput(unformatted)
       getAmountInput = unformatted
@@ -110,8 +115,48 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
     validate()
   }
   
+  func didTapContinueButton() {
+    let modifiedItem = modifiedItem()
+    
+    if appSettings.isBuySellItemMarkedDoNotShowWarning(modifiedItem.id) {
+      if let actionURL = modifiedItem.actionURL {
+        didContinueWithURL?(actionURL)
+      }
+    } else {
+      didContinueWithItem?(modifiedItem)
+    }
+  }
+  
+  let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
+    let maximumIntegerDigits = 9
+    let numberFormatter = NumberFormatter()
+    numberFormatter.groupingSeparator = ","
+    numberFormatter.groupingSize = 3
+    numberFormatter.usesGroupingSeparator = true
+    numberFormatter.decimalSeparator = Locale.current.decimalSeparator
+    numberFormatter.maximumFractionDigits = 2
+    numberFormatter.roundingMode = .down
+    let amountInputFormatController = SendAmountTextFieldFormatter(
+      currencyFormatter: numberFormatter,
+      maximumIntegerDigits: maximumIntegerDigits
+    )
+    amountInputFormatController.shouldUpdateCursorLocation = false
+    return amountInputFormatController
+  }()
+  
+  // MARK: - Image Loader
+  
+  private let imageLoader = ImageLoader()
+}
+
+private extension TransactionViewModelImplementation {
+  func update() {
+    let model = createModel()
+    didUpdateModel?(model)
+  }
+  
   func validate() {
-    switch transactionModel.type {
+    switch transactionType {
     case .buy:
       let result = inputValidator.validateBuy(amount: exchangeConverter.tonAmount)
       isPayAmountValid = true
@@ -131,41 +176,41 @@ final class TransactionViewModelImplementation: TransactionViewModel, Transactio
     }
   }
   
-  func didTapContinueButton() {
-    let item = TransactionItem(buySellItem: buySellItem, amount: transactionModel.amount)
-    didContinue?(item)
+  func modifiedItem() -> BuySellItemModel {
+    var amount: String
+    switch transactionType {
+    case .buy:
+      amount = exchangeConverter.tonInput
+    case .sell:
+      amount = exchangeConverter.fiatInput
+    }
+    
+    guard let url = addAmount(amount, to: buySellItem.actionURL) else {
+      return buySellItem
+    }
+    
+    var newItem = buySellItem
+    newItem.actionURL = url
+    return newItem
   }
   
-  // MARK: - Formatters
-  
-  let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
-    let maximumIntegerDigits = 9
-    let numberFormatter = NumberFormatter()
-    numberFormatter.groupingSeparator = ","
-    numberFormatter.groupingSize = 3
-    numberFormatter.usesGroupingSeparator = true
-    numberFormatter.decimalSeparator = Locale.current.decimalSeparator
-    numberFormatter.maximumFractionDigits = 2
-    numberFormatter.roundingMode = .down
-    let amountInputFormatController = SendAmountTextFieldFormatter(
-      currencyFormatter: numberFormatter,
-      maximumIntegerDigits: maximumIntegerDigits
-    )
-    amountInputFormatController.shouldUpdateCursorLocation = false
-    return amountInputFormatController
-  }()
-  
-  private func update() {
-    let model = createModel()
-    didUpdateModel?(model)
+  func addAmount(_ amount: String, to url: URL?) -> URL? {
+    guard let url else {
+      return nil
+    }
+    
+    guard var urlComponents = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+      return nil
+    }
+    
+    let amountQueryItem = URLQueryItem(name: "amount", value: amount)
+    var queryItems = urlComponents.queryItems ?? []
+    queryItems.append(amountQueryItem)
+    urlComponents.queryItems = queryItems
+    
+    return urlComponents.url
   }
   
-  // MARK: - Image Loader
-  
-  private let imageLoader = ImageLoader()
-}
-
-private extension TransactionViewModelImplementation {
   func createModel() -> TransactionView.Model {
     let imageTask = TKCore.ImageDownloadTask { [weak self, imageLoader] imageView, size, cornerRadius in
       return imageLoader.loadImage(
@@ -181,7 +226,7 @@ private extension TransactionViewModelImplementation {
     var payCurrency: String
     var getCurrency: String
     
-    switch transactionModel.type {
+    switch transactionType {
     case .buy:
       payCurrency = currency.rawValue
       getCurrency = TonInfo.symbol

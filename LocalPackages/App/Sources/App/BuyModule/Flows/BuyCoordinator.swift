@@ -83,6 +83,7 @@ private extension BuyCoordinator {
       buySellItem: buySellItem,
       transactionModel: transactionModel,
       currency: currency,
+      appSettings: coreAssembly.appSettings,
       buyListController: buyListController,
       currencyRateFormatter: keeperCoreMainAssembly.formattersAssembly.currencyToTONFormatter,
       bigIntAmountFormatter: keeperCoreMainAssembly.formattersAssembly.bigIntAmountFormatter(
@@ -91,11 +92,25 @@ private extension BuyCoordinator {
       )
     )
     
+    let viewController = module.view
+    
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
     
     module.view.setupBackButton()
+    
+    module.output.didContinueWithURL = { [weak self, weak viewController] url in
+      guard let viewController else { return }
+      
+      self?.openWebView(url: url, fromViewController: viewController)
+    }
+    
+    module.output.didContinueWithItem = { [weak self, weak viewController] item in
+      guard let viewController else { return }
+      
+      self?.openWarning(item: item, fromViewController: viewController)
+    }
     
     router.push(viewController: module.view, animated: true)
   }

@@ -9,6 +9,7 @@ struct TransactionAssembly {
     buySellItem: BuySellItemModel,
     transactionModel: TransactionAmountModel,
     currency: Currency,
+    appSettings: AppSettings,
     buyListController: BuyListController,
     currencyRateFormatter: CurrencyToTONFormatter,
     bigIntAmountFormatter: BigIntAmountFormatter
@@ -18,6 +19,7 @@ struct TransactionAssembly {
       rateConverter: RateConverter(),
       rate: buySellItem.rate
     )
+    exchangeConverter.setup(amount: transactionModel.amount)
     
     let inputValidator = BuySellInputValidator(
       minTonBuyAmount: buySellItem.minTonBuyAmount,
@@ -26,15 +28,14 @@ struct TransactionAssembly {
       bigIntAmountFormatter: bigIntAmountFormatter
     )
     
-    exchangeConverter.setup(transactionAmountModel: transactionModel)
-    
     let viewModel = TransactionViewModelImplementation(
       buySellItem: buySellItem,
-      transactionModel: transactionModel,
+      transactionType: transactionModel.type,
       currency: currency,
       exchangeConverter: exchangeConverter,
       currencyRateFormatter: currencyRateFormatter,
-      inputValidator: inputValidator
+      inputValidator: inputValidator,
+      appSettings: appSettings
     )
     
     let viewController = TransactionViewController(viewModel: viewModel)
