@@ -2,11 +2,11 @@ import KeeperCore
 import TKLocalize
 
 protocol AccountEventActionContentProvider {
-  func title(actionType: HistoryEvent.Action.ActionType) -> String?
+  func title(actionType: AccountEventModel.Action.ActionType) -> String?
 }
 
 struct HistoryListAccountEventActionContentProvider: AccountEventActionContentProvider {
-  func title(actionType: HistoryEvent.Action.ActionType) -> String? {
+  func title(actionType: AccountEventModel.Action.ActionType) -> String? {
     switch actionType {
     case .sent:
       return TKLocales.ActionTypes.sent
@@ -61,7 +61,7 @@ struct HistoryListAccountEventActionContentProvider: AccountEventActionContentPr
 }
 
 struct TonConnectConfirmationAccountEventActionContentProvider: AccountEventActionContentProvider {
-  func title(actionType: HistoryEvent.Action.ActionType) -> String? {
+  func title(actionType: AccountEventModel.Action.ActionType) -> String? {
     switch actionType {
     case .sent:
       return TKLocales.ActionTypes.Future.send

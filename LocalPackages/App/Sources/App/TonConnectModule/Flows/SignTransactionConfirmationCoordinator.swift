@@ -171,7 +171,7 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
 }
 
 private extension SignTransactionConfirmationCoordinator {
-  func openConfirmation(model: TonConnectConfirmationController.Model) {
+  func openConfirmation(model: ConfirmTransactionModel) {
     let rootViewController = UIViewController()
     router.window.rootViewController = rootViewController
     router.window.makeKeyAndVisible()

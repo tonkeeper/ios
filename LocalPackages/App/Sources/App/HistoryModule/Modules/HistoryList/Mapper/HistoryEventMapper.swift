@@ -12,7 +12,7 @@ struct HistoryEventMapper {
     self.accountEventActionContentProvider = accountEventActionContentProvider
   }
   
-  func mapEvent(_ event: HistoryEvent, 
+  func mapEvent(_ event: AccountEventModel,
                 nftAction: @escaping (NFT) -> Void,
                 tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCell.Configuration {
     return HistoryCell.Configuration(
@@ -25,7 +25,7 @@ struct HistoryEventMapper {
     )
   }
   
-  func mapEventContentConfiguration(_ event: HistoryEvent,
+  func mapEventContentConfiguration(_ event: AccountEventModel,
                                    nftAction: @escaping (NFT) -> Void,
                                    tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCellContentView.Configuration {
     let actions = event.actions.enumerated().map { index, action in
@@ -39,7 +39,7 @@ struct HistoryEventMapper {
     return HistoryCellContentView.Configuration(actions: actions)
   }
 
-  func mapAction(_ action: HistoryEvent.Action, isInProgress: Bool, nftAction: @escaping (NFT) -> Void) -> HistoryCellActionView.Configuration {
+  func mapAction(_ action: AccountEventModel.Action, isInProgress: Bool, nftAction: @escaping (NFT) -> Void) -> HistoryCellActionView.Configuration {
     let imageModel = TKUIListItemImageIconView.Configuration(
       image: .image(action.eventType.icon),
       tintColor: .Icon.secondary,
@@ -160,7 +160,7 @@ struct HistoryEventMapper {
   }
 }
 
-extension HistoryEvent.Action.ActionType {
+extension AccountEventModel.Action.ActionType {
   var icon: UIImage? {
     switch self {
     case .sent:

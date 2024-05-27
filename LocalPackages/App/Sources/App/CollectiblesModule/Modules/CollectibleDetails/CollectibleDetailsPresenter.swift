@@ -143,25 +143,32 @@ private extension CollectibleDetailsPresenter {
     guard let linkedAddress = model.linkedAddress else { return nil }
     let title: String
     let isLoading: Bool
+    let isLinked: Bool?
     switch linkedAddress {
     case .value(let value):
       if let value = value {
         title = "Linked with \(value)"
+        isLinked = true
       } else {
         title = "Link domain"
+        isLinked = false
       }
       isLoading = false
     case .loading:
       title = ""
       isLoading = true
+      isLinked = nil
     }
 
     let buttonModel = CollectibleDetailsButtonsView.Model.Button(
       title: title,
       category: .secondary,
       size: .large,
-      isEnabled: false,
-      isLoading: isLoading, tapAction: {}, description: nil
+      isEnabled: true,
+      isLoading: isLoading, tapAction: { [weak self] in
+        guard let isLinked else { return }
+        self?.handleLinkButton(isLinked: isLinked)
+      }, description: nil
     )
     
     return buttonModel
@@ -229,6 +236,18 @@ private extension CollectibleDetailsPresenter {
       description: transferButtonDescription
     )
     return buttonModel
+  }
+  
+  func handleLinkButton(isLinked: Bool) {
+    isLinked ? unlinkDomain() : linkDomain()
+  }
+  
+  func linkDomain() {
+    
+  }
+  
+  func unlinkDomain() {
+    
   }
 }
 

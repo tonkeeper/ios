@@ -20,7 +20,7 @@ actor HistoryListPaginator {
   private let wallet: Wallet
   private let loader: HistoryListLoader
   private let nftService: NFTService
-  private let historyListMapper: HistoryListMapper
+  private let accountEventMapper: AccountEventMapper
   private let dateFormatter: DateFormatter
   
   // MARK: - Init
@@ -28,12 +28,12 @@ actor HistoryListPaginator {
   init(wallet: Wallet,
        loader: HistoryListLoader,
        nftService: NFTService,
-       historyListMapper: HistoryListMapper,
+       accountEventMapper: AccountEventMapper,
        dateFormatter: DateFormatter) {
     self.wallet = wallet
     self.loader = loader
     self.nftService = nftService
-    self.historyListMapper = historyListMapper
+    self.accountEventMapper = accountEventMapper
     self.dateFormatter = dateFormatter
   }
   
@@ -136,7 +136,7 @@ private extension HistoryListPaginator {
 
       guard let sectionDate = calendar.date(from: dateComponents) else { continue }
       
-      let eventModel = historyListMapper.mapHistoryEvent(
+      let eventModel = accountEventMapper.mapEvent(
         event,
         eventDate: eventDate,
         nftsCollection: nfts,
@@ -168,7 +168,7 @@ private extension HistoryListPaginator {
       } else {
         let section = HistoryListSection(
           date: sectionDate,
-          title: historyListMapper.mapEventsSectionDate(sectionDate),
+          title: accountEventMapper.mapEventsSectionDate(sectionDate),
           events: [eventModel]
         )
         updatedSections.append(section)

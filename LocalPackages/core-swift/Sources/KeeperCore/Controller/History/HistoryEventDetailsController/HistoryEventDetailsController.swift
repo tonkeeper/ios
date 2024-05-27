@@ -63,7 +63,7 @@ public final class HistoryEventDetailsController {
   }
   
   private let event: AccountEventDetailsEvent
-  private let amountMapper: HistoryListEventAmountMapper
+  private let amountMapper: AccountEventAmountMapper
   private let tonRatesStore: TonRatesStore
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
@@ -78,7 +78,7 @@ public final class HistoryEventDetailsController {
   }()
   
   init(event: AccountEventDetailsEvent,
-       amountMapper: HistoryListEventAmountMapper,
+       amountMapper: AccountEventAmountMapper,
        tonRatesStore: TonRatesStore,
        walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
@@ -254,7 +254,7 @@ private extension HistoryEventDetailsController {
                       feeListItem: Model.ListItem,
                       status: AccountEventStatus,
                       isTestnet: Bool) async -> Model {
-    let amountType: HistoryEventActionAmountMapperActionType
+    let amountType: AccountEventActionAmountMapperActionType
     let actionType: ActionTypeEnum
     
     let nameTitle: String
@@ -801,7 +801,7 @@ private extension HistoryEventDetailsController {
                          feeListItem: Model.ListItem,
                          status: AccountEventStatus,
                          isTestnet: Bool) async -> Model {
-    let amountType: HistoryEventActionAmountMapperActionType
+    let amountType: AccountEventActionAmountMapperActionType
     let actionType: ActionTypeEnum
     
     let nameTitle: String

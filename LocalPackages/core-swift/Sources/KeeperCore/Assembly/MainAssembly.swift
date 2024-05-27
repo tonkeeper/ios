@@ -153,7 +153,7 @@ public final class MainAssembly {
       wallet: wallet,
       loader: loader,
       nftService: servicesAssembly.nftService(),
-      historyListMapper: historyListMapper,
+      accountEventMapper: accountEventMapper,
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
@@ -170,7 +170,7 @@ public final class MainAssembly {
       wallet: wallet,
       loader: loader,
       nftService: servicesAssembly.nftService(),
-      historyListMapper: historyListMapper,
+      accountEventMapper: accountEventMapper,
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
@@ -188,7 +188,7 @@ public final class MainAssembly {
       wallet: wallet,
       loader: loader,
       nftService: servicesAssembly.nftService(),
-      historyListMapper: historyListMapper,
+      accountEventMapper: accountEventMapper,
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
@@ -255,7 +255,7 @@ public final class MainAssembly {
   public func historyEventDetailsController(event: AccountEventDetailsEvent) -> HistoryEventDetailsController {
     HistoryEventDetailsController(
       event: event,
-      amountMapper: AmountHistoryListEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
+      amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
       tonRatesStore: storesAssembly.tonRatesStore,
       walletsStore: walletAssembly.walletStore,
       currencyStore: storesAssembly.currencyStore,
@@ -452,12 +452,12 @@ private extension MainAssembly {
     )
   }
   
-  var historyListMapper: HistoryListMapper {
-    HistoryListMapper(
+  var accountEventMapper: AccountEventMapper {
+    AccountEventMapper(
       dateFormatter: formattersAssembly.dateFormatter,
       amountFormatter: formattersAssembly.amountFormatter,
-      amountMapper: SignedAmountHistoryListEventAmountMapper(
-        amountAccountHistoryListEventAmountMapper: AmountHistoryListEventAmountMapper(
+      amountMapper: SignedAccountEventAmountMapper(
+        plainAccountEventAmountMapper: PlainAccountEventAmountMapper(
           amountFormatter: formattersAssembly.amountFormatter
         )
       )

@@ -4,7 +4,9 @@ import KeeperCore
 
 struct TonConnectConfirmationAssembly {
   private init() {}
-  static func module(model: TonConnectConfirmationController.Model, historyEventMapper: HistoryEventMapper) -> MVVMModule<TonConnectConfirmationViewController, TonConnectConfirmationModuleOutput, Void> {
+  static func module(model: ConfirmTransactionModel,
+                     historyEventMapper: HistoryEventMapper
+  ) -> MVVMModule<TonConnectConfirmationViewController, TonConnectConfirmationModuleOutput, Void> {
     let viewModel = TonConnectConfirmationViewModelImplementation(
       model: model,
       historyEventMapper: historyEventMapper

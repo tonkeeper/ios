@@ -36,11 +36,11 @@ public final class TonConnectAssembly {
       nftService: servicesAssembly.nftService(),
       ratesStore: storesAssembly.ratesStore,
       currencyStore: storesAssembly.currencyStore,
-      tonConnectConfirmationMapper: TonConnectConfirmationMapper(
-        historyListMapper: HistoryListMapper(
+      confirmTransactionMapper: ConfirmTransactionMapper(
+        accountEventMapper: AccountEventMapper(
           dateFormatter: formattersAssembly.dateFormatter,
           amountFormatter: formattersAssembly.amountFormatter,
-          amountMapper: AmountHistoryListEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
+          amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
         ),
         amountFormatter: formattersAssembly.amountFormatter
       )

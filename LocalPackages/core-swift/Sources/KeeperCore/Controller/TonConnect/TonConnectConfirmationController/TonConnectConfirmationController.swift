@@ -3,12 +3,6 @@ import TonSwift
 import BigInt
 
 public final class TonConnectConfirmationController {
-  public struct Model {
-    public let event: HistoryEvent
-    public let fee: String
-    public let walletName: String
-  }
-  
   private let wallet: Wallet
   private let signTransactionParams: [SendTransactionParam]
   private let tonConnectService: TonConnectService
@@ -16,7 +10,7 @@ public final class TonConnectConfirmationController {
   private let nftService: NFTService
   private let ratesStore: RatesStore
   private let currencyStore: CurrencyStore
-  private let tonConnectConfirmationMapper: TonConnectConfirmationMapper
+  private let confirmTransactionMapper: ConfirmTransactionMapper
   
   init(wallet: Wallet,
        signTransactionParams: [SendTransactionParam],
@@ -25,7 +19,7 @@ public final class TonConnectConfirmationController {
        nftService: NFTService,
        ratesStore: RatesStore,
        currencyStore: CurrencyStore,
-       tonConnectConfirmationMapper: TonConnectConfirmationMapper) {
+       confirmTransactionMapper: ConfirmTransactionMapper) {
     self.wallet = wallet
     self.signTransactionParams = signTransactionParams
     self.tonConnectService = tonConnectService
@@ -33,10 +27,10 @@ public final class TonConnectConfirmationController {
     self.nftService = nftService
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
-    self.tonConnectConfirmationMapper = tonConnectConfirmationMapper
+    self.confirmTransactionMapper = confirmTransactionMapper
   }
   
-  public func createRequestModel() async throws -> Model {
+  public func createRequestModel() async throws -> ConfirmTransactionModel {
     guard let parameters = signTransactionParams.first else { throw NSError(domain: "", code: 3232) }
     let model = try await emulateAppRequest(appRequestParam: parameters)
     return model
@@ -44,7 +38,7 @@ public final class TonConnectConfirmationController {
 }
 
 private extension TonConnectConfirmationController {
-  func emulateAppRequest(appRequestParam: SendTransactionParam) async throws -> Model {
+  func emulateAppRequest(appRequestParam: SendTransactionParam) async throws -> ConfirmTransactionModel {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let boc = try await tonConnectService.createEmulateRequestBoc(
@@ -60,7 +54,7 @@ private extension TonConnectConfirmationController {
     let event = try AccountEvent(accountEvent: transactionInfo.event)
     let nfts = try await loadEventNFTs(event: event)
     
-    return try tonConnectConfirmationMapper.mapTransactionInfo(
+    return try confirmTransactionMapper.mapTransactionInfo(
       transactionInfo,
       tonRates: rates,
       currency: currency,

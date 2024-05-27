@@ -147,7 +147,7 @@ private extension HistoryListViewModelImplementation {
     }
   }
   
-  func mapEvent(_ event: HistoryEvent) async -> HistoryCell.Configuration {
+  func mapEvent(_ event: AccountEventModel) async -> HistoryCell.Configuration {
     if let cachedModel = await cachedModels.models[event.eventId] {
       return cachedModel
     } else {
