@@ -89,6 +89,7 @@ private extension BuyAndSellViewController {
       customView.amountView.minAmountLabel.text = model.minAmountDisclaimer
       customView.amountView.convertedAmountLabel.text = model.convertedAmount
       customView.amountView.amountTextField.placeholder = model.amount.placeholder
+      customView.amountView.convertedAmountLabel.isHidden = !model.isConvertedAmountShown
     }
   }
   

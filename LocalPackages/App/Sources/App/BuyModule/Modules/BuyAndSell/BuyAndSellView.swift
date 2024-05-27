@@ -13,6 +13,7 @@ final class BuyAndSellView: UIView {
     public let isContinueButtonEnabled: Bool
     public let minAmountDisclaimer: String
     public let amount: Amount
+    public let isConvertedAmountShown: Bool
     public let convertedAmount: String
   }
   

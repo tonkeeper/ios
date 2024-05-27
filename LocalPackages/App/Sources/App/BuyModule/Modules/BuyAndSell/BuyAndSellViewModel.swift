@@ -162,6 +162,7 @@ private extension BuyAndSellViewModelImplementation {
       isContinueButtonEnabled: self.isAmountValid,
       minAmountDisclaimer: TKLocales.Buy.min_amount(50),
       amount: amount,
+      isConvertedAmountShown: !convertedValue.isEmpty,
       convertedAmount: convertedValue
     )
   }
