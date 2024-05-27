@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class SwapConfirmationViewController: GenericViewViewController<SwapConfirmationView>, TKBottomSheetScrollContentViewController {
+final class SwapConfirmationViewController: GenericViewViewController<SwapConfirmationView> {
   
   private let viewModel: SwapConfirmationViewModel
   
@@ -16,20 +16,8 @@ final class SwapConfirmationViewController: GenericViewViewController<SwapConfir
   
   override func viewDidLoad() {
     super.viewDidLoad()
-    viewModel.viewDidLoad()
-  }
-
-  // MARK: - TKPullCardScrollableContent
-  
-  var scrollView: UIScrollView {
-    customView.scrollView
-  }
-  var didUpdateHeight: (() -> Void)?
-  var didUpdatePullCardHeaderItem: ((TKPullCardHeaderItem) -> Void)?
-  var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: "Confirm Swap")
-  }
-  func calculateHeight(withWidth width: CGFloat) -> CGFloat {
-    scrollView.contentSize.height
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+      self.viewModel.viewDidLoad()
+    }
   }
 }

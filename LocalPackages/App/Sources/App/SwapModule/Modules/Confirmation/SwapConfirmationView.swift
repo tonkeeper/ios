@@ -4,8 +4,6 @@ import TKUIKit
 
 final class SwapConfirmationView: UIView {
 
-  let scrollView = TKUIScrollView()
-
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
@@ -13,20 +11,21 @@ final class SwapConfirmationView: UIView {
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
+    setupConstraints()
   }
-
 }
 
 private extension SwapConfirmationView {
   func setup() {
-    addSubview(scrollView)
-    setupConstraints()
+    backgroundColor = .cyan
+//    addSubview(contentContainer)
+//    contentContainer.backgroundColor = .red
   }
 
   func setupConstraints() {
-    scrollView.snp.makeConstraints { make in
-      make.edges.equalTo(self)
-      make.width.equalTo(self)
-    }
+//    contentContainer.snp.makeConstraints { make in
+//      make.top.equalTo(self)
+//      make.left.bottom.right.equalTo(self).priority(.high)
+//    }
   }
 }

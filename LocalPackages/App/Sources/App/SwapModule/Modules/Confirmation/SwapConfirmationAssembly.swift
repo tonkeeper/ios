@@ -4,13 +4,13 @@ import KeeperCore
 
 struct SwapConfirmationAssembly {
   private init() {}
-  static func module(swapPair: SwapPair,
+  static func module(swapItem: SwapItem,
                      coreAssembly: TKCore.CoreAssembly,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly) -> MVVMModule<SwapConfirmationViewController, SwapConfirmationModuleOutput, SwapConfirmationModuleInput> {
     let viewModel = SwapConfirmationViewModelImplementation(
-      swapPair: swapPair,
+      swapItem: swapItem,
       swapController: keeperCoreMainAssembly.swapController(),
-      swapConfirmationController: keeperCoreMainAssembly.swapConfirmationController()
+      swapConfirmationController: keeperCoreMainAssembly.swapConfirmationController(item: swapItem)
     )
     let viewController = SwapConfirmationViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)

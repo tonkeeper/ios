@@ -5,7 +5,7 @@ import BigInt
 
 protocol SwapModuleOutput: AnyObject {
   var didTapToken: ((SwapField, Token?) -> Void)? { get set }
-  var didContinueSwap: ((SwapPair) -> Void)? { get set }
+  var didContinueSwap: ((SwapItem) -> Void)? { get set }
 }
 
 protocol SwapModuleInput: AnyObject {
@@ -38,7 +38,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   // MARK: - SendV3ModuleOutput
 
   var didTapToken: ((SwapField, Token?) -> Void)?
-  var didContinueSwap: ((SwapPair) -> Void)?
+  var didContinueSwap: ((SwapItem) -> Void)?
 
   // MARK: - SendV3ModuleInput
 
@@ -119,7 +119,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
         receiveBalance = receiveData.totalBalance
         swapPair = SwapPair(
           send: .init(token: swapPair.send.token, amount: amount.amount), 
-          receive: swapPair.receive != nil ? .init(token: swapPair.receive!.token, amount: receiveData.receiveAmount) : nil
+          receive: swapPair.receive != nil ? .init(token: swapPair.receive!.token, amount: receiveData.minimumAmount) : nil // minimum amount is already here, not the maximum
         )
         receiveAmount = receiveData.receiveFormatted
         receiveMiminumAmount = receiveData.minimumFormatted
@@ -133,7 +133,12 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   }
 
   func didTapContinue() {
-    didContinueSwap?(swapPair)
+    didContinueSwap?(SwapItem(
+      sendToken: swapPair.send.token,
+      sendAmount: swapPair.send.amount,
+      receiveToken: swapPair.receive!.token,
+      receiveAmount: swapPair.receive!.amount
+    ))
   }
 
   // MARK: - State
@@ -189,7 +194,7 @@ private extension SwapViewModelImplementation {
       receiveToken: receiveToken,
       priceChangeLimit: priceChangeLimit
     ))
-    let receiveAmount = receiveAmounts?.expected ?? 0
+    let receiveAmount = receiveAmounts?.expected ?? 0 // not used right now –> only minumum is intresting for swap
     let minimumAmount = receiveAmounts?.minimum ?? 0
     let receiveAmountFormatted = swapController.convertAmountToInputString(amount: receiveAmount, token: receiveToken)
     let minimumAmountFormatted = swapController.convertAmountToInputString(amount: minimumAmount, token: receiveToken)

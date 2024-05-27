@@ -248,11 +248,15 @@ private extension MainCoordinator {
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
 
-    swapTokenCoordinator.didFinish = { [weak self, weak swapTokenCoordinator, weak navigationController] in
+    swapTokenCoordinator.didFinish = { [weak self, weak swapTokenCoordinator, weak navigationController] completedSwap in
       self?.swapTokenCoordinator = nil
       navigationController?.dismiss(animated: true)
       guard let swapTokenCoordinator else { return }
       self?.removeChild(swapTokenCoordinator)
+
+      if completedSwap {
+        self?.router.select(index: 1)
+      }
     }
 
     self.swapTokenCoordinator = swapTokenCoordinator

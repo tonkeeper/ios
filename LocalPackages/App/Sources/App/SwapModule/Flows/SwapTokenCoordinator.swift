@@ -5,7 +5,8 @@ import TKUIKit
 import KeeperCore
 
 final class SwapTokenCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  var didFinish: (() -> Void)?
+  var didFinish: ((Bool) -> Void)?
+  private var externalSignHandler: ((Data) async -> Void)?
   private let token: Token
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -33,7 +34,7 @@ private extension SwapTokenCoordinator {
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     module.view.setupRightCloseButton { [weak self] in
-      self?.didFinish?()
+      self?.didFinish?(false)
     }
     module.output.didTapToken = { [weak self] (swapField, excludeToken) in
       guard let self else { return }
@@ -44,9 +45,9 @@ private extension SwapTokenCoordinator {
           module.input.update(swapField: swapField, token: token)
         })
     }
-    module.output.didContinueSwap = { [weak self] swapPair in
+    module.output.didContinueSwap = { [weak self] swapItem in
       guard let self else { return }
-      self.openSwapConfirmation(sourceViewController: self.router.rootViewController, swapPair: swapPair)
+      self.openSwapConfirmation(swapItem: swapItem)
     }
     router.push(viewController: module.view, animated: false)
   }
@@ -71,19 +72,100 @@ private extension SwapTokenCoordinator {
     bottomSheetViewController.present(fromViewController: sourceViewController)
   }
 
-  func openSwapConfirmation(sourceViewController: UIViewController, swapPair: SwapPair) {
+  func openSwapConfirmation(swapItem: SwapItem) {
     let module = SwapConfirmationAssembly.module(
-      swapPair: swapPair,
+      swapItem: swapItem,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
-    let bottomSheetViewController = TKBottomSheetViewController(
-      contentViewController: module.view,
-      configuration: .init(dragHalfWayToClose: true, bottomSpacing: 44)
-    )
-    module.output.didFinish = { [weak bottomSheetViewController] in
-      bottomSheetViewController?.dismiss()
+    module.output.didRequireConfirmation = { [weak self] in
+      guard let self else { return false }
+      return await self.openConfirmation(fromViewController: self.router.rootViewController)
     }
-    bottomSheetViewController.present(fromViewController: sourceViewController)
+    module.output.didSendTransaction = { [weak self] in
+      NotificationCenter.default.post(Notification(name: Notification.Name("DID SEND TRANSACTION")))
+      self?.router.dismiss(completion: {
+        self?.didFinish?(true)
+      })
+    }
+    module.output.didRequireExternalWalletSign = { [weak self] transferURL, wallet in
+      guard let self else { return Data() }
+      return try await self.handleExternalSign(url: transferURL,
+                                               wallet: wallet,
+                                               fromViewController: self.router.rootViewController)
+    }
+
+    module.view.setupBackButton()
+    router.push(viewController: module.view)
+  }
+
+  // TODO: - refactor it, duplicated from SentTokenCoordinator
+  func openConfirmation(fromViewController: UIViewController) async -> Bool {
+    return await Task<Bool, Never> { @MainActor in
+      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
+        guard let self = self else { return }
+        let coordinator = PasscodeModule(
+          dependencies: PasscodeModule.Dependencies(
+            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+          )
+        ).passcodeConfirmationCoordinator()
+        
+        coordinator.didCancel = { [weak self, weak coordinator] in
+          continuation.resume(returning: false)
+          coordinator?.router.dismiss(completion: {
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+          })
+        }
+        
+        coordinator.didConfirm = { [weak self, weak coordinator] in
+          continuation.resume(returning: true)
+          coordinator?.router.dismiss(completion: {
+            guard let coordinator else { return }
+            self?.removeChild(coordinator)
+          })
+        }
+        
+        self.addChild(coordinator)
+        coordinator.start()
+        
+        fromViewController.present(coordinator.router.rootViewController, animated: true)
+      }
+    }.value
+  }
+
+  // TODO: - refactor it, duplicated from SentTokenCoordinator
+  func handleExternalSign(url: URL, wallet: Wallet, fromViewController: UIViewController) async throws -> Data? {
+    return try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue.main.async {
+        if self.coreAssembly.urlOpener().canOpen(url: url) {
+          self.externalSignHandler = { data in
+            continuation.resume(returning: data)
+          }
+          self.coreAssembly.urlOpener().open(url: url)
+        } else {
+          let module = SignerSignAssembly.module(
+            url: url,
+            wallet: wallet,
+            assembly: self.keeperCoreMainAssembly,
+            coreAssembly: self.coreAssembly
+          )
+          let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+          
+          bottomSheetViewController.didClose = { isInteractivly in
+            guard isInteractivly else { return }
+            continuation.resume(returning: nil)
+          }
+          
+          module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
+            bottomSheetViewController?.dismiss(completion: {
+              continuation.resume(returning: model.boc)
+            })
+          }
+          
+          bottomSheetViewController.present(fromViewController: fromViewController)
+        }
+      }
+    }
   }
 }
