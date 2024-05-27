@@ -9,13 +9,19 @@ public final class TKBackgroundView: UIView {
     case bothMerge
   }
 
-  public var state: TKBackgroundView.State = .separate {
-    didSet {
-      let topPath = createTopPath(for: state)
-      animatePath(path: topPath, shape: topShape)
+  private var state: TKBackgroundView.State = .separate
 
-      let bottomPath = createBottomPath(for: state)
+  public func setState(_ state: TKBackgroundView.State, animated: Bool = true) {
+    self.state = state
+    let topPath = createTopPath(for: state)
+    let bottomPath = createBottomPath(for: state)
+
+    if animated {
+      animatePath(path: topPath, shape: topShape)
       animatePath(path: bottomPath, shape: bottomShape)
+    } else {
+      topShape.path = topPath
+      bottomShape.path = bottomPath
     }
   }
 
@@ -85,26 +91,6 @@ public final class TKBackgroundView: UIView {
     path.close()
     return path.cgPath
   }
-
-//  private func createBottomPath(for state: TKBackgroundView.State) -> CGPath {
-//    let path = UIBezierPath()
-//    let radius: CGFloat = 8
-//    path.move(to: .init(x: frame.maxX, y: frame.maxY - radius))
-//    
-//    if state == .bottomMerge || state == .bothMerge {
-//      path.addLine(to: .init(x: frame.maxX, y: frame.maxY))
-//      path.addLine(to: .init(x: frame.maxX - radius, y: frame.maxY))
-//      path.addLine(to: .init(x: radius, y: frame.maxY))
-//      path.addLine(to: .init(x: 0, y: frame.maxY))
-//      path.addLine(to: .init(x: 0, y: frame.maxY - radius))
-//    } else {
-//      path.addArc(withCenter: .init(x: frame.maxX - radius, y: frame.maxY - radius), radius: radius, startAngle: 0, endAngle: .pi / 2, clockwise: true)
-//      path.addLine(to: .init(x: radius, y: frame.maxY))
-//      path.addArc(withCenter: .init(x: radius, y: frame.maxY - radius), radius: radius, startAngle: .pi / 2 , endAngle: .pi, clockwise: true)
-//    }
-//    path.close()
-//    return path.cgPath
-//  }
 
   private func createBottomPath(for state: TKBackgroundView.State) -> CGPath {
     let path = UIBezierPath()

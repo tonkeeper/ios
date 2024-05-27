@@ -5,11 +5,12 @@ import KeeperCore
 struct SwapConfirmationAssembly {
   private init() {}
   static func module(swapItem: SwapItem,
+                     swapDetails: SwapView.Model,
                      coreAssembly: TKCore.CoreAssembly,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly) -> MVVMModule<SwapConfirmationViewController, SwapConfirmationModuleOutput, SwapConfirmationModuleInput> {
     let viewModel = SwapConfirmationViewModelImplementation(
       swapItem: swapItem,
-      swapController: keeperCoreMainAssembly.swapController(),
+      swapDetails: swapDetails,
       swapConfirmationController: keeperCoreMainAssembly.swapConfirmationController(item: swapItem)
     )
     let viewController = SwapConfirmationViewController(viewModel: viewModel)

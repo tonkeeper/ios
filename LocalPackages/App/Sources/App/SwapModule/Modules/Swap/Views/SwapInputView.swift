@@ -7,6 +7,12 @@ final class SwapInputView: UIView {
     didSet { updateViews() }
   }
 
+  var readonly: Bool = false {
+    didSet {
+      amountTextField.isUserInteractionEnabled = !readonly
+    }
+  }
+
   var didTapChooseToken: ((SwapField) -> Void)?
 
   let backgroundView = TKBackgroundView()
@@ -66,6 +72,25 @@ final class SwapInputView: UIView {
       alignment: .right
     )
   }
+
+  func updateViewsForReadonly(animated: Bool = true) {
+    balanceLabel.snp.remakeConstraints { make in
+      make.top.equalTo(16)
+      if readonly {
+        make.right.equalTo(headerView).inset(16)
+      } else {
+        make.right.equalTo(maxButton.snp.left).offset(-8)
+      }
+    }
+    if animated {
+      UIView.animate(withDuration: 0.25) {
+        self.maxButton.alpha = self.readonly ? 0 : 1
+        self.layoutIfNeeded()
+      }
+    } else {
+      maxButton.alpha = readonly ? 0 : 1
+    }
+  }
 }
 
 private extension SwapInputView {
@@ -89,6 +114,8 @@ private extension SwapInputView {
       .body2,
       color: .Text.secondary
     )
+
+    readonly = swapField == .receive
 
     headerView.clipsToBounds = false
     maxButton.clipsToBounds = false
@@ -142,17 +169,13 @@ private extension SwapInputView {
   }
 
   func updateViews() {
-    balanceLabel.snp.remakeConstraints { make in
-      make.top.equalTo(16)
-      if swapField == .send {
-        make.right.equalTo(maxButton.snp.left).offset(-8)
-      } else {
-        make.right.equalTo(headerView).inset(16)
-      }
-    }
+    readonly = swapField == .receive
+    updateViewsForReadonly(animated: true)
+
     headerView.snp.updateConstraints { make in
       make.top.equalTo(swapField == .send ? 0 : 12)
     }
+
     UIView.animate(withDuration: 0.125) {
       self.actionLabel.alpha = 0.5
     } completion: { _ in
@@ -163,10 +186,6 @@ private extension SwapInputView {
       UIView.animate(withDuration: 0.125) {
         self.actionLabel.alpha = 1
       }
-    }
-    UIView.animate(withDuration: 0.25) {
-      self.maxButton.alpha = self.swapField == .send ? 1 : 0
-      self.layoutIfNeeded()
     }
   }
 }

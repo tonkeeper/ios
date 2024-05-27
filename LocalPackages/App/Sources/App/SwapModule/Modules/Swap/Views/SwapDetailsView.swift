@@ -46,7 +46,7 @@ final class SwapDetailsView: UIView {
     for item in items {
       let horizontalStack = UIStackView()
       horizontalStack.axis = .horizontal
-      horizontalStack.spacing = 0
+      horizontalStack.distribution = .equalSpacing
       horizontalStack.isLayoutMarginsRelativeArrangement = true
 
       let title = UILabel()
@@ -62,6 +62,15 @@ final class SwapDetailsView: UIView {
       horizontalStack.addArrangedSubview(value)
 
       stackView.addArrangedSubview(horizontalStack)
+    }
+  }
+
+  func hideRate() {
+    rateLabel.isHidden = true
+    divider2.alpha = 0
+    stackView.snp.remakeConstraints { make in
+      make.top.equalTo(self).offset(8)
+      make.right.left.equalTo(self)
     }
   }
 }
@@ -123,10 +132,14 @@ private extension SwapDetailsView {
       make.top.equalTo(contentView).offset(47)
       make.height.equalTo(1 / scale)
     }
+    stackView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+    stackView.setContentHuggingPriority(.defaultLow, for: .vertical)
     stackView.snp.makeConstraints { make in
       make.top.equalTo(divider2).offset(8)
       make.right.left.equalTo(self)
+      make.bottom.equalTo(self).inset(8)
     }
+    stackView.clipsToBounds = true
   }
 }
 

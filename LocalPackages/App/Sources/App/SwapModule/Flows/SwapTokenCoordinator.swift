@@ -45,9 +45,9 @@ private extension SwapTokenCoordinator {
           module.input.update(swapField: swapField, token: token)
         })
     }
-    module.output.didContinueSwap = { [weak self] swapItem in
+    module.output.didContinueSwap = { [weak self] (swapItem, swapModel) in
       guard let self else { return }
-      self.openSwapConfirmation(swapItem: swapItem)
+      self.openSwapConfirmation(swapItem: swapItem, swapDetails: swapModel)
     }
     router.push(viewController: module.view, animated: false)
   }
@@ -72,9 +72,10 @@ private extension SwapTokenCoordinator {
     bottomSheetViewController.present(fromViewController: sourceViewController)
   }
 
-  func openSwapConfirmation(swapItem: SwapItem) {
+  func openSwapConfirmation(swapItem: SwapItem, swapDetails: SwapView.Model) {
     let module = SwapConfirmationAssembly.module(
       swapItem: swapItem,
+      swapDetails: swapDetails,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
@@ -93,6 +94,9 @@ private extension SwapTokenCoordinator {
       return try await self.handleExternalSign(url: transferURL,
                                                wallet: wallet,
                                                fromViewController: self.router.rootViewController)
+    }
+    module.output.didCancel = { [weak router] in
+      router?.pop()
     }
 
     module.view.setupBackButton()

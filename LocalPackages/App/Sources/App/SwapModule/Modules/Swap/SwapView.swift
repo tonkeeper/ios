@@ -51,8 +51,8 @@ final class SwapView: UIView {
     scrollView.keyboardDismissMode = .onDrag
     
     detailsView.loader.stopAnimation()
-    detailsView.backgroundView.state = .topMerge
-    receiveView.backgroundView.state = .bottomMerge
+    detailsView.backgroundView.setState(.topMerge)
+    receiveView.backgroundView.setState(.bottomMerge)
     detailsView.snp.updateConstraints { make in
       make.top.equalTo(detailsViewContainer).offset(0)
       make.height.equalTo(Self.maxDetailsHeight)
@@ -71,9 +71,9 @@ final class SwapView: UIView {
     expanded = false
 
     if showLoader { detailsView.loader.startAnimation() }
-    detailsView.backgroundView.state = .separate
-    receiveView.backgroundView.state = .separate
-    sendView.backgroundView.state = .separate
+    detailsView.backgroundView.setState(.separate)
+    receiveView.backgroundView.setState(.separate)
+    sendView.backgroundView.setState(.separate)
     
     self.detailsView.snp.updateConstraints { make in
       make.top.equalTo(detailsViewContainer).offset(40)

@@ -3,11 +3,16 @@ import KeeperCore
 import TKCore
 
 protocol SwapConfirmationViewModel: AnyObject {
+  var didUpdateModel: ((SwapView.Model) -> Void)? { get set }
+
   func viewDidLoad()
+  func didTapConfirm()
+  func didTapCancel()
 }
 
 protocol SwapConfirmationModuleOutput: AnyObject {
   var didRequireConfirmation: (() async -> Bool)? { get set }
+  var didCancel: (() -> Void)? { get set }
   var didSendTransaction: (() -> Void)? { get set }
   var didRequireExternalWalletSign: ((URL, Wallet) async throws -> Data?)? { get set }
 }
@@ -18,23 +23,23 @@ final class SwapConfirmationViewModelImplementation: SwapConfirmationViewModel, 
 
   // MARK: - SwapConfirmationModuleOutput
   var didRequireConfirmation: (() async -> Bool)?
+  var didCancel: (() -> Void)?
   var didSendTransaction: (() -> Void)?
   var didRequireExternalWalletSign: ((URL, Wallet) async throws -> Data?)?
 
-  init(swapItem: SwapItem,
-       swapController: SwapController,
-       swapConfirmationController: SwapConfirmationController) {
-    self.swapItem = swapItem
-    self.swapController = swapController
-    self.swapConfirmationController = swapConfirmationController
+  // MARK: - SwapConfirmationViewModel
 
-    self.swapConfirmationController.didGetExternalSign = { [weak self] url in
-      guard let self, let didRequireExternalWalletSign else { return Data() }
-      return try await didRequireExternalWalletSign(url, swapConfirmationController.wallet)
-    }
-  }
+  var didUpdateModel: ((SwapView.Model) -> Void)?
   
   func viewDidLoad() {
+    didUpdateModel?(swapDetails)
+  }
+
+  func didTapCancel() {
+    didCancel?()
+  }
+
+  func didTapConfirm() {
     Task {
       let isSuccess = await self.sendTransaction()
       await MainActor.run {
@@ -45,10 +50,24 @@ final class SwapConfirmationViewModelImplementation: SwapConfirmationViewModel, 
     }
   }
 
-  private let swapItem: SwapItem
-  private let swapController: SwapController
-  private let swapConfirmationController: SwapConfirmationController
+  init(swapItem: SwapItem,
+       swapDetails: SwapView.Model,
+       swapConfirmationController: SwapConfirmationController) {
+    self.swapItem = swapItem
+    self.swapDetails = swapDetails
+    self.swapConfirmationController = swapConfirmationController
+    self.swapConfirmationController.didGetExternalSign = { [weak self] url in
+      guard let self, let didRequireExternalWalletSign else { return Data() }
+      return try await didRequireExternalWalletSign(url, swapConfirmationController.wallet)
+    }
+  }
 
+  private let swapItem: SwapItem
+  private let swapDetails: SwapView.Model
+  private let swapConfirmationController: SwapConfirmationController
+}
+
+private extension SwapConfirmationViewModelImplementation {
   func sendTransaction() async -> Bool {
     if swapConfirmationController.isNeedToConfirm() {
       let isConfirmed = await didRequireConfirmation?() ?? false

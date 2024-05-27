@@ -5,7 +5,7 @@ import BigInt
 
 protocol SwapModuleOutput: AnyObject {
   var didTapToken: ((SwapField, Token?) -> Void)? { get set }
-  var didContinueSwap: ((SwapItem) -> Void)? { get set }
+  var didContinueSwap: ((SwapItem, SwapView.Model) -> Void)? { get set }
 }
 
 protocol SwapModuleInput: AnyObject {
@@ -38,7 +38,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   // MARK: - SendV3ModuleOutput
 
   var didTapToken: ((SwapField, Token?) -> Void)?
-  var didContinueSwap: ((SwapItem) -> Void)?
+  var didContinueSwap: ((SwapItem, SwapView.Model) -> Void)?
 
   // MARK: - SendV3ModuleInput
 
@@ -138,6 +138,12 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
       sendAmount: swapPair.send.amount,
       receiveToken: swapPair.receive!.token,
       receiveAmount: swapPair.receive!.amount
+    ), SwapView.Model(
+      send: createFieldModel(field: .send),
+      receive: createFieldModel(field: .receive),
+      status: createStatusModel(),
+      oneTokenPrice: oneTokenPrice,
+      swapDetails: createSwapDetails()
     ))
   }
 
@@ -167,11 +173,9 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
 
 private extension SwapViewModelImplementation {
   func update() {
-    let send = createFieldModel(field: .send)
-    let receive = createFieldModel(field: .receive)
     didUpdateModel?(SwapView.Model(
-      send: send,
-      receive: receive,
+      send: createFieldModel(field: .send),
+      receive: createFieldModel(field: .receive),
       status: createStatusModel(),
       oneTokenPrice: oneTokenPrice,
       swapDetails: createSwapDetails()
