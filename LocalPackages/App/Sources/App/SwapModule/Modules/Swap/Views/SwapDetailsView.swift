@@ -125,7 +125,6 @@ private extension SwapDetailsView {
     }
     stackView.snp.makeConstraints { make in
       make.top.equalTo(divider2).offset(8)
-      make.bottom.equalTo(self).inset(8)
       make.right.left.equalTo(self)
     }
   }

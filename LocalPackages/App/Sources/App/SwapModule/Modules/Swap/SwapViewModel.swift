@@ -5,6 +5,7 @@ import BigInt
 
 protocol SwapModuleOutput: AnyObject {
   var didTapToken: ((SwapField, Token?) -> Void)? { get set }
+  var didContinueSwap: ((SwapPair) -> Void)? { get set }
 }
 
 protocol SwapModuleInput: AnyObject {
@@ -22,6 +23,7 @@ protocol SwapViewModel: AnyObject {
   func didTapTokenPicker(swapField: SwapField)
   func didInputAmount(_ string: String, swapField: SwapField)
   func didTapMax()
+  func didTapContinue()
 }
 
 final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapModuleInput {
@@ -36,6 +38,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   // MARK: - SendV3ModuleOutput
 
   var didTapToken: ((SwapField, Token?) -> Void)?
+  var didContinueSwap: ((SwapPair) -> Void)?
 
   // MARK: - SendV3ModuleInput
 
@@ -127,6 +130,10 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
 
   func didTapMax() {
     didInputAmount(sendBalance, swapField: .send)
+  }
+
+  func didTapContinue() {
+    didContinueSwap?(swapPair)
   }
 
   // MARK: - State

@@ -152,6 +152,9 @@ private extension SwapViewController {
         viewModel?.didTapTokenPicker(swapField: swapField)
       }
     }
+    customView.continueButton.configuration.action = { [weak viewModel] in
+      viewModel?.didTapContinue()
+    }
   }
 }
 

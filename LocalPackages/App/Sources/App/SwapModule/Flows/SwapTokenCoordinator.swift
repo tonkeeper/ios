@@ -44,6 +44,10 @@ private extension SwapTokenCoordinator {
           module.input.update(swapField: swapField, token: token)
         })
     }
+    module.output.didContinueSwap = { [weak self] swapPair in
+      guard let self else { return }
+      self.openSwapConfirmation(sourceViewController: self.router.rootViewController, swapPair: swapPair)
+    }
     router.push(viewController: module.view, animated: false)
   }
 
@@ -61,6 +65,22 @@ private extension SwapTokenCoordinator {
       completion(token)
       bottomSheetViewController?.dismiss()
     }
+    module.output.didFinish = { [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
+    bottomSheetViewController.present(fromViewController: sourceViewController)
+  }
+
+  func openSwapConfirmation(sourceViewController: UIViewController, swapPair: SwapPair) {
+    let module = SwapConfirmationAssembly.module(
+      swapPair: swapPair,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+    let bottomSheetViewController = TKBottomSheetViewController(
+      contentViewController: module.view,
+      configuration: .init(dragHalfWayToClose: true, bottomSpacing: 44)
+    )
     module.output.didFinish = { [weak bottomSheetViewController] in
       bottomSheetViewController?.dismiss()
     }
