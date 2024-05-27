@@ -115,30 +115,6 @@ private extension BuyCoordinator {
     router.present(navigationController, animated: true)
   }
   
-  func openBuyList() {
-    let module = BuyListAssembly.module(
-      buyListController: keeperCoreMainAssembly.buyListController(
-        wallet: wallet,
-        isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
-      ),
-      appSettings: coreAssembly.appSettings
-    )
-    
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    
-    module.output.didSelectURL = { [weak self, weak bottomSheetViewController] url in
-      guard let bottomSheetViewController else { return }
-      self?.openWebView(url: url, fromViewController: bottomSheetViewController)
-    }
-    
-    module.output.didSelectItem = { [weak self, weak bottomSheetViewController] item in
-      guard let bottomSheetViewController else { return }
-      self?.openWarning(item: item, fromViewController: bottomSheetViewController)
-    }
-    
-    bottomSheetViewController.present(fromViewController: router.rootViewController)
-  }
-  
   func openWebView(url: URL, fromViewController: UIViewController) {
     let webViewController = TKWebViewController(url: url)
     let navigationController = UINavigationController(rootViewController: webViewController)
