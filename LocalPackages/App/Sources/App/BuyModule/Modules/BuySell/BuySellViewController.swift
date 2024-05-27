@@ -34,6 +34,8 @@ open class ModalViewController<View: UIView, NavigationBar: ModalNavigationBarVi
     updateRightBarItem()
   }
   
+
+  
   private func setupNavigationItemObservation() {
     leftNavigationItemObserveToken = navigationItem.observe(\.leftBarButtonItem) { [weak self] item, _ in
       self?.updateLeftBarItem()
@@ -63,6 +65,15 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
   typealias CellRegistration<T> = UICollectionView.CellRegistration<T, T.Configuration> where T: TKCollectionViewNewCell & TKConfigurableView
   
   var didTapChangeCountryButton: (() -> Void)?
+  
+  private var isViewDidAppearFirstTime = false
+  
+  private lazy var tapGestureRecognizer: UITapGestureRecognizer = {
+    let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(resignGestureAction))
+    gestureRecognizer.cancelsTouchesInView = false
+    gestureRecognizer.delegate = self
+    return gestureRecognizer
+  }()
   
   // MARK: - List
   
@@ -97,14 +108,6 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
   
   private lazy var dataSource = createDataSource()
   private lazy var paymentMethodCellConfiguration: CellRegistration<SelectionCollectionViewCell> = createDefaultCellRegistration()
-  
-  lazy var tapGestureRecognizer: UITapGestureRecognizer = {
-    let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(resignGestureAction))
-    gestureRecognizer.cancelsTouchesInView = false
-    return gestureRecognizer
-  }()
-  
-  private var isViewDidAppearFirstTime = false
   
   // MARK: - Dependencies
   
@@ -147,7 +150,7 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
     if !isViewDidAppearFirstTime {
-      customView.amountInputView.inputControl.amountTextField.becomeFirstResponder()
+      Task { @MainActor in customView.amountInputView.inputControl.amountTextField.becomeFirstResponder() }
       isViewDidAppearFirstTime = true
     }
   }
@@ -199,6 +202,17 @@ final class BuySellViewController: ModalViewController<BuySellView, ModalNavigat
       self.customView.collectionView.contentInset.bottom = 0
       self.customView.continueButtonContainer.transform = .identity
     }
+  }
+
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    guard !(touch.view is TKButton) else { return false }
+    guard !(touch.view is UIButton) else { return false }
+    guard !(touch.view is AmountInputViewInputControl) else { return false }
+    return true
+  }
+  
+  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
+    view.endEditing(true)
   }
 }
 
@@ -326,15 +340,6 @@ private extension BuySellViewController {
         return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
       }
     }
-  }
-  
-  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
-    let touchLocation = sender.location(in: customView.amountInputView)
-    let isTapInTextField = customView.amountInputView.inputControl.frame.contains(touchLocation)
-    
-    guard !isTapInTextField else { return }
-    
-    customView.amountInputView.inputControl.amountTextField.resignFirstResponder()
   }
 }
 

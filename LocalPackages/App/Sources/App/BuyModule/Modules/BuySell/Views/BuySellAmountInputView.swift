@@ -65,14 +65,14 @@ final class BuySellAmountInputView: AmountInputView, ConfigurableView {
     
     inputControl.snp.remakeConstraints { make in
       make.top.equalTo(container)
-      make.left.right.equalTo(container).inset(CGFloat.contentVerticalPadding)
+      make.left.right.equalTo(container).inset(CGFloat.contentHorizontalPadding)
       make.height.equalTo(CGFloat.inputControlHeight)
     }
     
     convertedButton.snp.remakeConstraints { make in
       make.top.equalTo(inputControl.snp.bottom)
-      make.left.greaterThanOrEqualTo(container).offset(CGFloat.contentVerticalPadding)
-      make.right.lessThanOrEqualTo(container).offset(-CGFloat.contentVerticalPadding)
+      make.left.greaterThanOrEqualTo(container).offset(CGFloat.contentHorizontalPadding)
+      make.right.lessThanOrEqualTo(container).offset(-CGFloat.contentHorizontalPadding)
       make.centerX.equalTo(container)
       make.height.equalTo(CGFloat.convertedButtonHeight)
     }
@@ -87,7 +87,7 @@ final class BuySellAmountInputView: AmountInputView, ConfigurableView {
 
 private extension CGFloat {
   static let height: CGFloat = 178
-  static let contentVerticalPadding: CGFloat = 16
+  static let contentHorizontalPadding: CGFloat = 16
   static let inputControlTopPadding: CGFloat = 24
   static let inputControlHeight: CGFloat = 70
   static let convertedButtonHeight: CGFloat = 40

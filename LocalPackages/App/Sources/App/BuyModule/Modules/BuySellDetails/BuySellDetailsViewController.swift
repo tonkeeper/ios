@@ -6,6 +6,7 @@ final class BuySellDetailsViewController: ModalViewController<BuySellDetailsView
   private lazy var tapGestureRecognizer: UITapGestureRecognizer = {
     let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(resignGestureAction))
     gestureRecognizer.cancelsTouchesInView = false
+    gestureRecognizer.delegate = self
     return gestureRecognizer
   }()
   
@@ -76,6 +77,17 @@ final class BuySellDetailsViewController: ModalViewController<BuySellDetailsView
       self.customView.scrollView.contentInset.bottom = 0
       self.customView.continueButtonContainer.transform = .identity
     }
+  }
+  
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    guard !(touch.view is TKButton) else { return false }
+    guard !(touch.view is TKTextField) else { return false }
+    guard !(touch.view is TKTextFieldInputView) else { return false }
+    return true
+  }
+  
+  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
+    view.endEditing(true)
   }
 }
 
@@ -157,18 +169,6 @@ private extension BuySellDetailsViewController {
     }
     guard textField.textFieldState != newState else { return }
     textField.textFieldState = newState
-  }
-  
-  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
-    let touchLocation = sender.location(in: customView.contentStackView)
-    let isTapInPayTextField = customView.payAmountTextField.frame.contains(touchLocation)
-    let isTapInGetTextField = customView.getAmountTextField.frame.contains(touchLocation)
-    let isTapInTextFields = isTapInPayTextField || isTapInGetTextField
-    
-    guard !isTapInTextFields else { return }
-    
-    customView.payAmountTextField.resignFirstResponder()
-    customView.getAmountTextField.resignFirstResponder()
   }
 }
 

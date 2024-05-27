@@ -6,6 +6,7 @@ final class SwapViewController: ModalViewController<SwapView, ModalNavigationBar
   private lazy var tapGestureRecognizer: UITapGestureRecognizer = {
     let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(resignGestureAction))
     gestureRecognizer.cancelsTouchesInView = false
+    gestureRecognizer.delegate = self
     return gestureRecognizer
   }()
   
@@ -87,6 +88,15 @@ final class SwapViewController: ModalViewController<SwapView, ModalNavigationBar
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
       self.customView.scrollView.contentInset.bottom = 0
     }
+  }
+  
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    guard !(touch.view is PlainTextField) else { return false }
+    return true
+  }
+  
+  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
+    view.endEditing(true)
   }
 }
 
@@ -174,10 +184,5 @@ private extension SwapViewController {
     customView.swapRecieveContainerView.textField.didUpdateText = { [weak self] text in
       self?.viewModel.didInputAmountRecieve(text)
     }
-  }
-  
-  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
-    customView.swapSendContainerView.textField.resignFirstResponder()
-    customView.swapRecieveContainerView.textField.resignFirstResponder()
   }
 }

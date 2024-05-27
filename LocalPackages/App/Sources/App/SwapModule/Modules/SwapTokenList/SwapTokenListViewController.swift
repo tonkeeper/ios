@@ -24,6 +24,7 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
   private lazy var tapGestureRecognizer: UITapGestureRecognizer = {
     let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(resignGestureAction))
     gestureRecognizer.cancelsTouchesInView = false
+    gestureRecognizer.delegate = self
     return gestureRecognizer
   }()
   
@@ -142,6 +143,15 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
       self.customView.collectionView.contentInset.bottom = contentInsetBottom
     }
+  }
+  
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    guard !(touch.view is SearchBar) else { return false }
+    return true
+  }
+  
+  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
+    view.endEditing(true)
   }
 }
 
@@ -334,15 +344,6 @@ private extension SwapTokenListViewController {
         viewModel.reloadListItems()
       }
     }
-  }
-  
-  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
-    let touchLocation = sender.location(in: customView.searchBarContainer)
-    let isTapInSearchBar = customView.searchBar.frame.contains(touchLocation)
-    
-    guard !isTapInSearchBar else { return }
-    
-    customView.searchBar.resignFirstResponder()
   }
 }
 

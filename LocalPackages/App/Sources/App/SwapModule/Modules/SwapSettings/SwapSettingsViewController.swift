@@ -6,6 +6,7 @@ final class SwapSettingsViewController: ModalViewController<SwapSettingsView, Mo
   private lazy var tapGestureRecognizer: UITapGestureRecognizer = {
     let gestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(resignGestureAction))
     gestureRecognizer.cancelsTouchesInView = false
+    gestureRecognizer.delegate = self
     return gestureRecognizer
   }()
   
@@ -85,6 +86,17 @@ final class SwapSettingsViewController: ModalViewController<SwapSettingsView, Mo
       self.customView.saveButtonContainer.transform = .identity
     }
   }
+  
+  func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+    guard !(touch.view is TKButton) else { return false }
+    guard !(touch.view is TKTextField) else { return false }
+    guard !(touch.view is TKTextFieldInputView) else { return false }
+    return true
+  }
+  
+  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
+    view.endEditing(true)
+  }
 }
 
 // MARK: - Setup
@@ -108,12 +120,5 @@ private extension SwapSettingsViewController {
   
   func setupGestures() {
     customView.contentView.addGestureRecognizer(tapGestureRecognizer)
-  }
-  
-  @objc func resignGestureAction(sender: UITapGestureRecognizer) {
-    let touchLocation = sender.location(in: customView.slippageInputContainer)
-    let isTapInTextField = customView.slippageInputContainer.customSlippageTextField.frame.contains(touchLocation)
-    guard !isTapInTextField else { return }
-    customView.slippageInputContainer.customSlippageTextField.resignFirstResponder()
   }
 }
