@@ -230,3 +230,4 @@
 "buy.rate" = "%@ %@ за 1 TON";
 "buy.you_pay" = "Вы платите";
 "buy.you_get" = "Вы получаете";
+"buy.service_provider" = "Сервис предоставлен %@";

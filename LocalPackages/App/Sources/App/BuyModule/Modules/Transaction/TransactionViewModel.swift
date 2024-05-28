@@ -211,6 +211,56 @@ private extension TransactionViewModelImplementation {
     return urlComponents.url
   }
   
+  func serviceDescriptionAttributedString() -> NSAttributedString {
+    let paragraph = NSMutableParagraphStyle()
+    paragraph.alignment = .center
+    
+    let descriptionTextAttributes: [NSAttributedString.Key: Any] = [
+      .font: TKTextStyle.body2.font,
+      .foregroundColor: UIColor.Text.tertiary
+    ]
+    let result = NSMutableAttributedString(string: TKLocales.Buy.service_provider("\(buySellItem.title)\n"), attributes: descriptionTextAttributes)
+    let attributedString = buttonsAttributedString(from: buySellItem.infoButtons)
+
+    result.append(attributedString)
+    let range = NSRange(location: 0, length: result.length)
+    result.addAttributes([.paragraphStyle: paragraph], range: range)
+    return result
+  }
+  
+  func buttonsAttributedString(
+    from buttons: [BuySellItemModel.Button]
+  ) -> NSAttributedString {
+    let attributedString = NSMutableAttributedString()
+    let separator = " · "
+    
+    let separatorAttributes: [NSAttributedString.Key: Any] = [
+      .font: TKTextStyle.body2.font,
+      .foregroundColor: UIColor.Text.tertiary
+    ]
+    
+    for (index, button) in buttons.enumerated() {
+      guard let urlString = button.url, let url = URL(string: urlString) else {
+        continue
+      }
+      let textAttributes: [NSAttributedString.Key: Any] = [
+        .font: TKTextStyle.body2.font,
+        .foregroundColor: UIColor.Text.secondary,
+        .link: url
+      ]
+      
+      let attributedText = NSAttributedString(string: button.title, attributes: textAttributes)
+      attributedString.append(attributedText)
+      
+      if index < buttons.count - 1 {
+        let attributedSeparator = NSAttributedString(string: separator, attributes: separatorAttributes)
+        attributedString.append(attributedSeparator)
+      }
+    }
+    
+    return attributedString
+  }
+  
   func createModel() -> TransactionView.Model {
     let imageTask = TKCore.ImageDownloadTask { [weak self, imageLoader] imageView, size, cornerRadius in
       return imageLoader.loadImage(
@@ -258,7 +308,8 @@ private extension TransactionViewModelImplementation {
       getField: getField,
       isContinueButtonEnabled: isPayAmountValid && isGetAmountValid,
       isErrorShown: validationErrorMessage != nil,
-      errorMessage: validationErrorMessage
+      errorMessage: validationErrorMessage, 
+      serviceDescription: serviceDescriptionAttributedString()
     )
   }
 }

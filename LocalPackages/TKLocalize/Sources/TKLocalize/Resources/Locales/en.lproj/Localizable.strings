@@ -233,3 +233,4 @@
 "buy.rate" = "%@ %@ for 1 TON";
 "buy.you_pay" = "You pay";
 "buy.you_get" = "You get";
+"buy.service_provider" = "Service provided by %@";

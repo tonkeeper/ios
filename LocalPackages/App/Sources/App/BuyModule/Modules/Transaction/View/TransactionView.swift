@@ -27,6 +27,8 @@ final class TransactionView: UIView, ConfigurableView {
     public let isContinueButtonEnabled: Bool
     public let isErrorShown: Bool
     public let errorMessage: String?
+    
+    public let serviceDescription: NSAttributedString?
   }
   
   let logoImageView = UIImageView()
@@ -105,6 +107,21 @@ final class TransactionView: UIView, ConfigurableView {
     return textField
   }()
   
+  lazy var descriptionTextView: UITextView = {
+    let textView = UITextView()
+    textView.isEditable = false
+    textView.isSelectable = true
+    textView.dataDetectorTypes = .link
+    textView.textAlignment = .center
+    textView.isScrollEnabled = false
+    textView.backgroundColor = .clear
+    textView.linkTextAttributes = [
+      .font: TKTextStyle.body2.font,
+      .foregroundColor: UIColor.Text.secondary,
+    ]
+    return textView
+  }()
+  
     
   let continueButton = TKButton()
   let continueButtonContainer: TKPaddingContainerView = {
@@ -114,16 +131,16 @@ final class TransactionView: UIView, ConfigurableView {
     return container
   }()
   
-  private var continueButtonContainerSafeAreaBottomConstraint: Constraint?
+  private var continueButtonContainerToTextViewBottomConstraint: Constraint?
   private var continueButtonContainerBottomConstraint: Constraint?
   
   var keyboardHeight: CGFloat = 0 {
     didSet {
       if keyboardHeight.isZero {
         continueButtonContainerBottomConstraint?.isActive = false
-        continueButtonContainerSafeAreaBottomConstraint?.isActive = true
+        continueButtonContainerToTextViewBottomConstraint?.isActive = true
       } else {
-        continueButtonContainerSafeAreaBottomConstraint?.isActive = false
+        continueButtonContainerToTextViewBottomConstraint?.isActive = false
         continueButtonContainerBottomConstraint?.update(inset: keyboardHeight)
         continueButtonContainerBottomConstraint?.isActive = true
       }
@@ -161,6 +178,8 @@ final class TransactionView: UIView, ConfigurableView {
     
     errorMessageLabel.isHidden = !model.isErrorShown
     errorMessageLabel.text = model.errorMessage
+    
+    descriptionTextView.attributedText = model.serviceDescription
   }
   
   // MARK: - Init
@@ -190,7 +209,8 @@ private extension TransactionView {
     addSubview(getTextField)
     addSubview(rateLabel)
     addSubview(errorMessageLabel)
-    
+    addSubview(descriptionTextView)
+        
     logoImageView.snp.makeConstraints { make in
       make.top.equalTo(self.safeAreaLayoutGuide.snp.top)
       make.centerX.equalToSuperview()
@@ -231,13 +251,22 @@ private extension TransactionView {
       make.top.equalTo(getTextField.snp.bottom).offset(12)
       make.trailing.equalToSuperview().offset(-32)
     }
+    
+    descriptionTextView.snp.makeConstraints { make in
+      make.leading.equalToSuperview().offset(32)
+      make.trailing.equalToSuperview().offset(-32)
+      make.bottom.equalTo(self.safeAreaLayoutGuide.snp.bottom).offset(-16)
+    }
 
     continueButtonContainer.snp.makeConstraints { make in
       make.leading.equalToSuperview()
       make.trailing.equalToSuperview()
-      self.continueButtonContainerBottomConstraint = make.bottom.equalTo(self.safeAreaLayoutGuide.snp.bottom).constraint
       self.continueButtonContainerBottomConstraint = make.bottom.equalTo(self.snp.bottom).constraint
+      self.continueButtonContainerToTextViewBottomConstraint = make.bottom.equalTo(self.descriptionTextView.snp.top).constraint
     }
+    
+    continueButtonContainerBottomConstraint?.isActive = false
+    continueButtonContainerToTextViewBottomConstraint?.isActive = true
   }
 }
 
