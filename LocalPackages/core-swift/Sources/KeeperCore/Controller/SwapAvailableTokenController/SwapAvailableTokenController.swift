@@ -33,7 +33,7 @@ public final class SwapAvailableTokenController {
   }
 
   public func receiveTokenList(exclude excludeToken: Token?) async -> [AvailableTokenModelItem] {
-//    async let availableJettons = try? jettonService.loadAvailable(wallet: wallet)
+    async let availableJettons = try? jettonService.loadAvailable(wallet: wallet)
     async let walletBalance = try? balanceService.getBalance(wallet: wallet)
     let activeCurrency = await currencyStore.getActiveCurrency()
     var availableTokens = [AvailableTokenModelItem]()
@@ -41,6 +41,7 @@ public final class SwapAvailableTokenController {
     if let balance = await walletBalance?.balance {
       let rates = ratesStore.getRates(jettons: balance.jettonsBalance.compactMap { $0.item.jettonInfo })
 
+      // Add TON
       if excludeToken != .ton {
         availableTokens.append(swapAvailableTokenMapper.mapTon(
           balance: balance.tonBalance,
@@ -48,6 +49,7 @@ public final class SwapAvailableTokenController {
         )
       }
 
+      // Add jettons from balances
       var excludeTokenAddress: Address? = nil
       if case let .jetton(item) = excludeToken {
         excludeTokenAddress = item.walletAddress
@@ -61,22 +63,36 @@ public final class SwapAvailableTokenController {
       )
       tokensOnBalance.forEach {
         if case let .jetton(item) = $0.token {
-          alreadyAddedTokens.insert(item.walletAddress)
+          alreadyAddedTokens.insert(item.jettonInfo.address)
         }
       }
       availableTokens.append(contentsOf: tokensOnBalance)
     }
+
+    availableTokens.append(contentsOf: receivePredefinedTokenList(excludeAddresses: alreadyAddedTokens))
+    // Add some random whitelisted jettons from blockchain
 //    if let jettons = await availableJettons {
 //      availableTokens.append(
 //        contentsOf: jettons.compactMap {
+//          $0.verification == .whitelist ?
 //          AvailableTokenModelItem(
 //            token: .jetton(.init(jettonInfo: $0, walletAddress: $0.address)),
-//            quantity: 0,
-//            rates: [:]
-//          )
+//            amount: "0",
+//            convertedAmount: "0"
+//          ) : nil
 //        }
 //      )
 //    }
     return availableTokens
+  }
+
+  private func receivePredefinedTokenList(excludeAddresses: Set<Address>) -> [AvailableTokenModelItem] {
+    var tokens: [Token?] = SwapAvailableTokenFactory.make()
+    return tokens.compactMap {
+      if let token = $0, case let .jetton(item) = token, !excludeAddresses.contains(item.jettonInfo.address) {
+        return AvailableTokenModelItem(token: token, amount: "0", convertedAmount: "0")
+      }
+      return nil
+    }
   }
 }

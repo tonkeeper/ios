@@ -8,7 +8,7 @@ final class SwapInputTokenView: UIControl {
 
   var token: SwapInputTokenView.Token? = nil {
     didSet {
-      label.text = token?.name ?? "Choose"
+      label.text = token?.name ?? "CHOOSE"
 
       if let image = token?.image {
         imageDownloadTask?.cancel()
