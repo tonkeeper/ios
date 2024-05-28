@@ -39,7 +39,6 @@ final class SwapDetailsContainerView: UIView, ConfigurableView {
   func configure(model: Model) {
     swapRateRow.configure(model: model.swapRate)
     swapInfoContainerView.configure(model: model.infoContainer)
-    
     setNeedsLayout()
     layoutIfNeeded()
   }
@@ -47,12 +46,13 @@ final class SwapDetailsContainerView: UIView, ConfigurableView {
 
 private extension SwapDetailsContainerView {
   func setup() {
+    swapRateRow.addSubview(.topDivider())
+    swapInfoContainerView.addSubview(.topDivider())
+    
     detailsStackView.addArrangedSubview(swapRateRow)
     detailsStackView.addArrangedSubview(swapInfoContainerView)
-    addSubview(detailsStackView)
     
-    swapRateRow.addTopDivider()
-    swapInfoContainerView.addTopDivider()
+    addSubview(detailsStackView)
     
     setupConstraints()
   }
@@ -60,32 +60,6 @@ private extension SwapDetailsContainerView {
   func setupConstraints() {
     detailsStackView.snp.makeConstraints { make in
       make.edges.equalTo(self)
-    }
-  }
-}
-
-extension UIView {
-  class DividerView: UIView {}
-  
-  func addTopDivider() {
-    let divider = createDivider()
-    addSubview(divider)
-    
-    divider.snp.makeConstraints { make in
-      make.left.right.top.equalTo(self)
-      make.height.equalTo(Constants.separatorWidth)
-    }
-  }
-  
-  func createDivider() -> DividerView {
-    let view = DividerView()
-    view.backgroundColor = .Separator.common
-    return view
-  }
-  
-  func removeAllDividers() {
-    for subview in subviews where subview is DividerView {
-      subview.removeFromSuperview()
     }
   }
 }

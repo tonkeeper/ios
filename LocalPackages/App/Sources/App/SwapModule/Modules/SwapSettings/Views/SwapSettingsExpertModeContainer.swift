@@ -47,6 +47,10 @@ final class SwapSettingsExpertModeContainer: UIView, ConfigurableView {
 
 private extension SwapSettingsExpertModeContainer {
   func setup() {
+    layer.cornerRadius = 16
+    backgroundColor = .Background.content
+    switchView.onTintColor = .Button.primaryBackground
+    
     contentStackView.addArrangedSubview(titleDescriptionView)
     contentStackView.addArrangedSubview(switchView)
     addSubview(contentStackView)

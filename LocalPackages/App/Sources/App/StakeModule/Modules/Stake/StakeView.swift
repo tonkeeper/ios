@@ -85,11 +85,11 @@ private extension StakeView {
     contentStackView.addArrangedSubview(footerView)
     contentStackView.setCustomSpacing(32, after: footerView)
     contentStackView.addArrangedSubview(selectedPoolContainer)
-    
     scrollView.addSubview(contentStackView)
-    addSubview(scrollView)
-    
+
     continueButtonContainer.setViews([continueButton])
+    
+    addSubview(scrollView)
     addSubview(continueButtonContainer)
     
     setupConstraints()
@@ -102,15 +102,12 @@ private extension StakeView {
     }
     
     scrollView.contentLayoutGuide.snp.makeConstraints { make in
-      make.top.equalTo(contentStackView)
-      make.width.equalTo(contentStackView)
-      make.bottom.equalTo(contentStackView)
+      make.top.bottom.width.equalTo(contentStackView)
     }
     
     contentStackView.snp.makeConstraints { make in
-      make.top.equalTo(scrollView)
+      make.top.centerX.equalTo(scrollView)
       make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
-      make.centerX.equalTo(scrollView)
     }
     
     continueButtonContainer.snp.makeConstraints { make in

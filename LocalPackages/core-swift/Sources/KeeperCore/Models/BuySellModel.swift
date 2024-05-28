@@ -20,24 +20,38 @@ public struct BuySellModel {
   }
   
   public var operation: Operation
-  public var token: Token
-  public var tokenAmount: BigUInt
+  public var buySellItem: BuySellItem
   public var minimumTokenAmount: BigUInt
   
-  public init(operation: Operation, token: Token, tokenAmount: BigUInt, minimumInputAmount: BigUInt) {
+  public var token: Token {
+    buySellItem.tokenItem.token
+  }
+  public var tokenAmount: BigUInt {
+    buySellItem.tokenItem.amount
+  }
+  
+  public init(operation: Operation,
+              token: Token,
+              tokenAmount: BigUInt,
+              minimumTokenAmount: BigUInt) {
     self.operation = operation
-    self.token = token
-    self.tokenAmount = tokenAmount
-    self.minimumTokenAmount = minimumInputAmount
+    self.minimumTokenAmount = minimumTokenAmount
+    self.buySellItem = BuySellItem(
+      input: .token,
+      tokenItem: BuySellItem.Token(amount: tokenAmount, amountString: "", token: token),
+      fiatItem: BuySellItem.Fiat(amount: 0, amountString: "", currency: .USD)
+    )
   }
 }
 
 extension BuySellModel {
-  public init(operation: Operation, token: Token, tokenAmountUInt: UInt64, minimumInputAmountUInt: UInt64) {
-    self.operation = operation
-    self.token = token
-    self.tokenAmount = .createBigUInt(from: tokenAmountUInt, fractionDigits: token.fractionDigits)
-    self.minimumTokenAmount = .createBigUInt(from: minimumInputAmountUInt, fractionDigits: token.fractionDigits)
+  public init(operation: Operation,
+              token: Token,
+              tokenAmountUInt: UInt64,
+              minimumTokenAmountUInt: UInt64) {
+    let tokenAmount = BigUInt.createBigUInt(from: tokenAmountUInt, fractionDigits: token.fractionDigits)
+    let minimumTokenAmount = BigUInt.createBigUInt(from: minimumTokenAmountUInt, fractionDigits: token.fractionDigits)
+    self.init(operation: operation, token: token, tokenAmount: tokenAmount, minimumTokenAmount: minimumTokenAmount)
   }
 }
 
@@ -47,7 +61,7 @@ extension BuySellModel {
       operation: .buy,
       token: .ton,
       tokenAmountUInt: initialAmount,
-      minimumInputAmountUInt: minAmount
+      minimumTokenAmountUInt: minAmount
     )
   }
   
@@ -56,7 +70,7 @@ extension BuySellModel {
       operation: .sell,
       token: .ton,
       tokenAmountUInt: initialAmount,
-      minimumInputAmountUInt: minAmount
+      minimumTokenAmountUInt: minAmount
     )
   }
 }

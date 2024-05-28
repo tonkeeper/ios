@@ -1,9 +1,6 @@
-import UIKit
+import Foundation
 import TKUIKit
-import TKCore
 import KeeperCore
-import BigInt
-import TonSwift
 
 protocol SwapConfirmationModuleOutput: AnyObject {
   var didFinish: (() -> Void)? { get set }
@@ -57,7 +54,7 @@ final class SwapConfirmationViewModelImplementation: SwapConfirmationViewModel, 
   
   // MARK: - Mapper
   
-  private let swapItemMapper = SwapItemMaper()
+  private let itemMapper = SwapItemMaper()
   
   // MARK: - Dependencies
   
@@ -107,10 +104,11 @@ private extension SwapConfirmationViewModelImplementation {
       ),
       sendContainer: SwapSendContainerView.Model(
         inputContainerModel: SwapInputContainerView.Model(
-          headerTitle: "Send",
-          balanceTitle: swapConfirmationItem.convertedFiatAmount,
-          maxButton: nil,
-          tokenButton: swapItemMapper.mapTokenButton(
+          header: itemMapper.mapAmountHeader(
+            title: "Send",
+            balanceTitle: swapConfirmationItem.convertedFiatAmount
+          ),
+          tokenButton: itemMapper.mapTokenButton(
             buttonToken: swapConfirmationItem.operationItem.sendToken,
             action: nil
           ),
@@ -122,10 +120,11 @@ private extension SwapConfirmationViewModelImplementation {
       ),
       recieveContainer: SwapRecieveContainerView.Model(
         inputContainerModel: SwapInputContainerView.Model(
-          headerTitle: "Recieve",
-          balanceTitle: swapConfirmationItem.convertedFiatAmount,
-          maxButton: nil,
-          tokenButton: swapItemMapper.mapTokenButton(
+          header: itemMapper.mapAmountHeader(
+            title: "Recieve",
+            balanceTitle: swapConfirmationItem.convertedFiatAmount
+          ),
+          tokenButton: itemMapper.mapTokenButton(
             buttonToken: swapConfirmationItem.operationItem.recieveToken,
             action: nil
           ),
@@ -135,7 +134,7 @@ private extension SwapConfirmationViewModelImplementation {
           )
         )
       ),
-      infoContainer: swapItemMapper.mapSwapSimulationInfo(swapConfirmationItem.simulationModel.info),
+      infoContainer: itemMapper.mapSwapSimulationInfo(swapConfirmationItem.simulationModel.info),
       cancelButton: SwapConfirmationView.Model.Button(
         title: "Cancel",
         isEnabled: true,
@@ -157,17 +156,39 @@ private extension SwapConfirmationViewModelImplementation {
   }
   
   func didTapConfirmButton() {
-    isResolving = true
     Task {
+      let isConfirmed = await confirmTransaction()
+      guard isConfirmed else {
+        await MainActor.run { handleError(.failedToConfirm) }
+        return
+      }
+      
+      await MainActor.run { isResolving = true }
+      
       let isSuccess = await sendTransaction()
       await MainActor.run {
         if isSuccess {
           didSendTransaction?()
-        } else  {
-          handleError(.failedToSendTransaction)
         }
         isResolving = false
       }
+    }
+  }
+  
+  func confirmTransaction() async -> Bool {
+    if swapConfirmationController.isNeedToConfirm() {
+      let isConfirmed = await didRequireConfirmation?() ?? false
+      return isConfirmed
+    }
+    return true
+  }
+  
+  func sendTransaction() async -> Bool {
+    do {
+      try await swapConfirmationController.sendTransaction()
+      return true
+    } catch {
+      return false
     }
   }
   
@@ -181,6 +202,8 @@ private extension SwapConfirmationViewModelImplementation {
       title = "Failed to send transaction"
     case .failedToSign:
       title = "Failed to sign transaction"
+    case .failedToConfirm:
+      title = "Failed to confirm transaction"
     }
     
     ToastPresenter.showToast(
@@ -191,67 +214,4 @@ private extension SwapConfirmationViewModelImplementation {
       )
     )
   }
-  
-  func sendTransaction() async -> Bool {
-    if swapConfirmationController.isNeedToConfirm() {
-      let isConfirmed = await didRequireConfirmation?() ?? false
-      guard isConfirmed else { return false }
-    }
-    do {
-      try await swapConfirmationController.sendTransaction()
-      return true
-    } catch {
-      return false
-    }
-  }
 }
-
-//extension SwapModel {
-//  static let testData = SwapModel(
-//    confirmationItem: .testData,
-//    transactionItem: .tonToJetton(
-//      SwapItem(
-//        fromAddress: try! Address.parse("EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c"),
-//        toAddress: try! Address.parse("EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"),
-//        minAskAmount: BigUInt("6010010000"),
-//        offerAmount: BigUInt("1000000000000")
-//      )
-//    )
-//  )
-//}
-//
-//extension SwapConfirmationItem {
-//  static let testData = SwapConfirmationItem(
-//    convertedFiatAmount: "$ 6,010.01",
-//    operationItem: SwapOperationItem(
-//      sendToken: .tonStub,
-//      recieveToken: .usdtStub
-//    ),
-//    simulationModel: SwapSimulationModel(
-//      offerAmount: SwapSimulationModel.Amount(
-//        amount: BigUInt(),
-//        converted: "1,000"
-//      ),
-//      askAmount: SwapSimulationModel.Amount(
-//        amount: BigUInt(),
-//        converted: "6,010.01"
-//      ),
-//      minAskAmount: SwapSimulationModel.Amount(
-//        amount: BigUInt(),
-//        converted: "6,010.01"
-//      ),
-//      swapRate: SwapSimulationModel.Rate(value: "0"),
-//      info: SwapSimulationModel.Info(
-//        priceImpact: "0.001",
-//        minimumRecieved: "6,000.01",
-//        liquidityProviderFee: "0.0000001",
-//        blockchainFee: "0.08 - 0.25 TON",
-//        route: SwapSimulationModel.Info.Route(
-//          tokenSymbolSend: "TON",
-//          tokenSymbolRecieve: "USD₮"
-//        ),
-//        providerName: "STON.fi"
-//      )
-//    )
-//  )
-//}

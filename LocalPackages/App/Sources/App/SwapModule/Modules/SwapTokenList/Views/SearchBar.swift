@@ -22,9 +22,7 @@ open class SearchBar: UISearchBar {
   
   var textFieldState: TextFieldState = .inactive {
     didSet {
-      UIView.animate(withDuration: 0.2) {
-        self.didUpdateState()
-      }
+      didUpdateState()
     }
   }
   
@@ -38,8 +36,10 @@ open class SearchBar: UISearchBar {
   required public init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-  
-  private func setup() {
+}
+
+private extension SearchBar {
+  func setup() {
     delegate = self
     
     backgroundImage = UIImage()
@@ -62,10 +62,11 @@ open class SearchBar: UISearchBar {
     let magnifyingGlassIcon = UIImage.TKUIKit.Icons.Size16.magnifyingGlass.withTintColor(.Icon.secondary, renderingMode: .alwaysOriginal)
     setImage(magnifyingGlassIcon, for: .search, state: .normal)
     
-    let clearButton = searchTextField.value(forKey: "clearButton") as? UIButton
-    let xmarkCircleIcon = UIImage.TKUIKit.Icons.Size16.xmarkCircle
-    clearButton?.setImage(xmarkCircleIcon, for: .normal)
-    clearButton?.tintColor = .Icon.secondary
+    if let clearButton = searchTextField.value(forKey: "clearButton") as? UIButton {
+      let xmarkCircleIcon = UIImage.TKUIKit.Icons.Size16.xmarkCircle
+      clearButton.setImage(xmarkCircleIcon, for: .normal)
+      clearButton.tintColor = .Icon.secondary
+    }
     
     searchTextField.addAction(UIAction(handler: { [weak self] _ in
       self?.editingDidBegin()
@@ -78,16 +79,18 @@ open class SearchBar: UISearchBar {
     didUpdateState()
   }
   
-  private func editingDidBegin() {
+  func editingDidBegin() {
     textFieldState = .active
   }
   
-  private func editingDidEnd() {
+  func editingDidEnd() {
     textFieldState = .inactive
   }
   
-  private func didUpdateState() {
-    layer.borderColor = textFieldState.borderColor.cgColor
+  func didUpdateState() {
+    UIView.animate(withDuration: 0.2) {
+      self.layer.borderColor = self.textFieldState.borderColor.cgColor
+    }
   }
 }
 

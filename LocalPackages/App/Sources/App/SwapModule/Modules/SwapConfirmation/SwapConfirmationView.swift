@@ -105,7 +105,7 @@ private extension SwapConfirmationView {
       .highlighted : .Button.secondaryBackgroundHighlighted
     ]
     
-    swapInfoContainerView.addTopDivider()
+    swapInfoContainerView.addSubview(.topDivider())
     
     buttonsContainer.setContainerAxis(.horizontal)
     buttonsContainer.setContainerDistribution(.fillEqually)
@@ -151,10 +151,6 @@ private extension SwapConfirmationView {
     
     buttonsContainer.snp.remakeConstraints { make in
       make.left.right.bottom.equalTo(self)
-    }
-    
-    scrollView.contentLayoutGuide.snp.makeConstraints { make in
-      make.bottom.equalTo(swapInfoContainerView).offset(CGFloat.horizontalContentPadding)
     }
   }
 }

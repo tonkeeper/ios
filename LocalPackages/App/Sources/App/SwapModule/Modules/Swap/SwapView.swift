@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import SnapKit
 
 final class SwapView: UIView, ConfigurableView {
   
@@ -120,8 +121,9 @@ private extension SwapView {
     contentView.addSubview(swapDetailsContainerView)
     contentView.addSubview(swapButton)
     
-    scrollView.addSubview(contentView)
     actionButtonContainer.setViews([actionButton])
+    
+    scrollView.addSubview(contentView)
     scrollView.addSubview(actionButtonContainer)
     addSubview(scrollView)
     
@@ -204,16 +206,8 @@ private extension SwapView {
   }
   
   func showDetails(animated: Bool = false) {
-    contentView.layer.removeAllAnimations()
-    actionButton.layer.removeAllAnimations()
-    layoutIfNeeded()
-    
-    contentView.snp.remakeConstraints { make in
-      make.top.equalTo(scrollView)
-      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
-      make.centerX.equalTo(scrollView)
-      make.bottom.equalTo(swapDetailsContainerView)
-    }
+    prepareForAnimation()
+    setContentViewBottomConstraint(equalTo: swapDetailsContainerView)
     
     if animated {
       UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
@@ -223,16 +217,8 @@ private extension SwapView {
   }
   
   func hideInfo(animated: Bool = false) {
-    contentView.layer.removeAllAnimations()
-    actionButton.layer.removeAllAnimations()
-    layoutIfNeeded()
-    
-    contentView.snp.remakeConstraints { make in
-      make.top.equalTo(scrollView)
-      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
-      make.centerX.equalTo(scrollView)
-      make.bottom.equalTo(swapDetailsContainerView.swapRateRow)
-    }
+    prepareForAnimation()
+    setContentViewBottomConstraint(equalTo: swapDetailsContainerView.swapRateRow)
     
     if animated {
       UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
@@ -242,16 +228,8 @@ private extension SwapView {
   }
   
   func hideDetails(animated: Bool = false) {
-    contentView.layer.removeAllAnimations()
-    actionButton.layer.removeAllAnimations()
-    layoutIfNeeded()
-    
-    contentView.snp.remakeConstraints { make in
-      make.top.equalTo(scrollView)
-      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
-      make.centerX.equalTo(scrollView)
-      make.bottom.equalTo(swapRecieveContainerView)
-    }
+    prepareForAnimation()
+    setContentViewBottomConstraint(equalTo: swapRecieveContainerView)
     
     if animated {
       UIView.animate(withDuration: 0.3, delay: 0, options: [.curveEaseInOut, .beginFromCurrentState]) {
@@ -259,16 +237,26 @@ private extension SwapView {
       }
     }
   }
+  
+  func prepareForAnimation() {
+    contentView.layer.removeAllAnimations()
+    actionButton.layer.removeAllAnimations()
+    layoutIfNeeded()
+  }
+  
+  func setContentViewBottomConstraint(equalTo bottomConstraintTarget: ConstraintRelatableTarget) {
+    contentView.snp.remakeConstraints { make in
+      make.top.centerX.equalTo(scrollView)
+      make.width.equalTo(scrollView).inset(CGFloat.horizontalContentPadding)
+      make.bottom.equalTo(bottomConstraintTarget)
+    }
+  }
 }
 
 private extension CGFloat {
   static let horizontalContentPadding: CGFloat = 16
-  static let verticalContentPadding: CGFloat = 16
   static let interContainerSpacing: CGFloat = 8
   static let swapContainerViewHeight: CGFloat = 108
-  static var contentContainerHeight: CGFloat {
-    2 * .swapContainerViewHeight + .interContainerSpacing
-  }
 }
 
 private extension CGSize {

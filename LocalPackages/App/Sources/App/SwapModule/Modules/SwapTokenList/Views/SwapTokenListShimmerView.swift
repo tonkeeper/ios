@@ -54,9 +54,9 @@ final class SwapTokenListShimmerView: UICollectionReusableView, ReusableView, TK
   func configure(model: Model) {}
   
   private func setup() {
-    otherCellsContainer.backgroundColor = .Background.content.withAlphaComponent(0.48)
-    otherCellsContainer.layer.masksToBounds = true
     otherCellsContainer.layer.cornerRadius = 16
+    otherCellsContainer.layer.masksToBounds = true
+    otherCellsContainer.backgroundColor = .Background.content.withAlphaComponent(0.48)
     
     addSubview(suggestedTitleShimmerView)
     addSubview(suggestedTokenButtonsStackView)
@@ -178,8 +178,8 @@ private final class SwapTokenButtonShimmerView: UIView {
   }
   
   private func setup() {
-    contentView.backgroundColor = .Background.content.withAlphaComponent(0.48)
     contentView.layer.cornerRadius = 18
+    contentView.backgroundColor = .Background.content.withAlphaComponent(0.48)
     
     addSubview(contentView)
     contentView.addSubview(iconShimmerView)

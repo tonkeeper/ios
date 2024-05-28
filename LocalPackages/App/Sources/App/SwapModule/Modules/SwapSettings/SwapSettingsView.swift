@@ -60,6 +60,7 @@ final class SwapSettingsView: UIView, ConfigurableView {
     slippageInputContainer.configure(model: model.slippageInputContainer)
     expertModeContainer.configure(model: model.expertModeContainer)
     saveButton.configuration.content.title = .plainString(model.saveButton.title)
+    saveButton.configuration.isEnabled = model.saveButton.isEnabled
     saveButton.configuration.action = model.saveButton.action
   }
 }
@@ -68,10 +69,6 @@ final class SwapSettingsView: UIView, ConfigurableView {
 
 private extension SwapSettingsView {
   func setup() {
-    expertModeContainer.layer.cornerRadius = 16
-    expertModeContainer.backgroundColor = .Background.content
-    expertModeContainer.switchView.onTintColor = .Button.primaryBackground
-    
     scrollView.delaysContentTouches = false
     scrollView.showsVerticalScrollIndicator = false
     scrollView.showsHorizontalScrollIndicator = false
@@ -99,9 +96,8 @@ private extension SwapSettingsView {
     }
     
     contentView.snp.makeConstraints { make in
-      make.top.equalTo(scrollView)
       make.left.right.bottom.equalTo(scrollView).priority(.high)
-      make.width.equalTo(scrollView)
+      make.top.width.equalTo(scrollView)
     }
     
     contentStackView.snp.makeConstraints { make in

@@ -1,4 +1,4 @@
-import UIKit
+import Foundation
 import BigInt
 import TonSwift
 
@@ -8,6 +8,7 @@ public final class SwapConfirmationController {
     case failedToEmulate
     case failedToSendTransaction
     case failedToSign
+    case failedToConfirm
   }
   
   public var didGetError: ((Error) -> Void)?
@@ -37,10 +38,8 @@ public final class SwapConfirmationController {
   }
   
   func emulate() async {
-    async let createTransactionBocTask = createEmulateTransactionBoc()
-    
     do {
-      let transactionBoc = try await createTransactionBocTask
+      let transactionBoc = try await createEmulateTransactionBoc()
       let transactionInfo = try await sendService.loadTransactionInfo(boc: transactionBoc, wallet: wallet)
       let sendTransactionModel = SendTransactionModel(
         accountEvent: transactionInfo.event,
@@ -52,7 +51,6 @@ public final class SwapConfirmationController {
         didEmulationSuccess?()
       }
     } catch {
-      print(error)
       Task { @MainActor in
         didGetError?(.failedToEmulate)
       }
@@ -69,6 +67,9 @@ public final class SwapConfirmationController {
         userInfo: ["Wallet": wallet]
       )
     } catch {
+      Task { @MainActor in
+        didGetError?(.failedToSendTransaction)
+      }
       print(error)
       throw error
     }

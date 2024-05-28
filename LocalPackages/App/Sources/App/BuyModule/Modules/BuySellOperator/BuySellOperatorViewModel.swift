@@ -16,7 +16,6 @@ struct BuySellOperatorItem {
   }
   
   let buySellModel: BuySellModel
-  let buySellItem: BuySellItem
   let paymentMethod: PaymentMethod
   let countryCode: String?
   
@@ -237,7 +236,7 @@ private extension BuySellOperatorViewModelImplementation {
       minimumLimits = .none
     }
     
-    var buySellItem = buySellOperatorItem.buySellItem
+    var buySellItem = buySellOperatorItem.buySellModel.buySellItem
     buySellItem.fiatItem.currency = selectedCurrency
     
     return BuySellTransactionModel(

@@ -26,13 +26,13 @@ final class SwapSettingsTitleDecriptionView: UIView, ConfigurableView {
   }
   
   struct Model {
-    let title: String
-    let description: String
+    let title: NSAttributedString
+    let description: NSAttributedString
   }
   
   func configure(model: Model) {
-    titleLabel.attributedText = model.title.withTextStyle(.label1, color: .Text.primary)
-    descriptionLabel.attributedText = model.description.withTextStyle(.body2, color: .Text.secondary)
+    titleLabel.attributedText = model.title
+    descriptionLabel.attributedText = model.description
     invalidateIntrinsicContentSize()
   }
 }

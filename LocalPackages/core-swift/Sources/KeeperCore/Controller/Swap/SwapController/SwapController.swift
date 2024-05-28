@@ -177,10 +177,6 @@ public final class SwapController {
       case .ton:
         return BigUInt(balance.walletBalance.balance.tonBalance.amount)
       case .jetton(let assetInfo):
-        // TODO: Remove stub
-        if assetInfo.symbol == "USD₮" {
-          return BigUInt(stringLiteral: "123450000") // 123.45
-        }
         return balance.walletBalance.balance.jettonsBalance
           .first(where: { $0.item.jettonInfo.address == assetInfo.contractAddress })?
           .quantity ?? 0

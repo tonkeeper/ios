@@ -37,37 +37,8 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
   var didUpdateSearchResultsItems: (([TKUIListItemCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
+    setupControllerBindings()
     update()
-    
-    swapTokenListController.didUpdateListItems = { [weak self] tokenButtonListItemsModel, tokenListItemsModel in
-      guard let self else { return }
-      
-      let suggestedItems = tokenButtonListItemsModel.items.map { item in
-        self.itemMapper.mapTokenButtonListItem(item) {
-          self.didSelectToken(item.asset)
-        }
-      }
-      
-      let otherItems = tokenListItemsModel.items.map { item in
-        self.itemMapper.mapTokenListItem(item) {
-          self.didSelectToken(item.asset)
-        }
-      }
-      
-      self.didUpdateListItems?(suggestedItems, otherItems)
-    }
-    
-    swapTokenListController.didUpdateSearchResultsItems = { [weak self] tokenListItemsModel in
-      guard let self else { return }
-      
-      let searchResultsItems = tokenListItemsModel.items.map { item in
-        self.itemMapper.mapTokenListItem(item) {
-          self.didSelectToken(item.asset)
-        }
-      }
-      
-      self.didUpdateSearchResultsItems?(searchResultsItems)
-    }
     
     Task {
       await swapTokenListController.start(contractAddressForPair: swapTokenListItem.contractAddressForPair)
@@ -113,6 +84,33 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
 // MARK: - Private
 
 private extension SwapTokenListViewModelImplementation {
+  func setupControllerBindings() {
+    swapTokenListController.didUpdateListItems = { [weak self] tokenButtonListItemsModel, tokenListItemsModel in
+      guard let self else { return }
+      let suggestedItems = tokenButtonListItemsModel.items.map { item in
+        self.itemMapper.mapTokenButtonListItem(item) {
+          self.didSelectToken(item.asset)
+        }
+      }
+      let otherItems = tokenListItemsModel.items.map { item in
+        self.itemMapper.mapTokenListItem(item) {
+          self.didSelectToken(item.asset)
+        }
+      }
+      self.didUpdateListItems?(suggestedItems, otherItems)
+    }
+    
+    swapTokenListController.didUpdateSearchResultsItems = { [weak self] tokenListItemsModel in
+      guard let self else { return }
+      let searchResultsItems = tokenListItemsModel.items.map { item in
+        self.itemMapper.mapTokenListItem(item) {
+          self.didSelectToken(item.asset)
+        }
+      }
+      self.didUpdateSearchResultsItems?(searchResultsItems)
+    }
+  }
+  
   func update() {
     let model = createModel()
     didUpdateModel?(model)

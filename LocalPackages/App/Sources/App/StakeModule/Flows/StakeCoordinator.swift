@@ -33,6 +33,10 @@ private extension StakeCoordinator {
       self?.didFinish?()
     }
     
+    module.output.didTapContinue = {
+      print("didTapContinue")
+    }
+    
     router.push(viewController: module.view, animated: false)
   }
 }

@@ -32,7 +32,7 @@ final class SwapTokenListItemMapper {
     let valueSubtitle = item.convertedAmount?.withTextStyle(.body2, color: .Text.secondary)
     
     let contentConfiguration = TKUIListItemContentView.Configuration(
-      leftItemConfiguration: .init(
+      leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
         title: title,
         tagViewModel: mapBadgeText(item.badge),
         subtitle: subtitle,
@@ -47,7 +47,7 @@ final class SwapTokenListItemMapper {
     
     let iconViewConfiguration = TKUIListItemIconView.Configuration(
       iconConfiguration: .image(
-        .init(
+        TKUIListItemImageIconView.Configuration(
           image: createTokenListIcon(item.image),
           tintColor: .clear,
           backgroundColor: .Background.contentTint,

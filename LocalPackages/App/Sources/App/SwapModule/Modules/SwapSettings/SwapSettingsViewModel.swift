@@ -82,7 +82,7 @@ private extension SwapSettingsViewModelImplementation {
       title: ModalTitleView.Model(
         title: "Settings"
       ),
-      slippageTitleDescription: SwapSettingsTitleDecriptionView.Model(
+      slippageTitleDescription: createTitleDescription(
         title: "Slippage",
         description: "The amount the price can change unfavorably before the trade reverts"
       ),
@@ -94,7 +94,7 @@ private extension SwapSettingsViewModelImplementation {
         }
       ),
       expertModeContainer: SwapSettingsExpertModeContainer.Model(
-        titleDescription: SwapSettingsTitleDecriptionView.Model(
+        titleDescription: createTitleDescription(
           title: "Expert Mode",
           description: "Allows high price impact trades. Use at your own risk."
         ),
@@ -114,6 +114,13 @@ private extension SwapSettingsViewModelImplementation {
           didFinish?()
         }
       )
+    )
+  }
+  
+  func createTitleDescription(title: String, description: String) -> SwapSettingsTitleDecriptionView.Model {
+    SwapSettingsTitleDecriptionView.Model(
+      title: title.withTextStyle(.label1, color: .Text.primary),
+      description: description.withTextStyle(.body2, color: .Text.secondary)
     )
   }
   

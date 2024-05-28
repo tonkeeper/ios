@@ -5,12 +5,12 @@ import TKUIKit
 
 final class SwapInfoContainerView: UIView, ConfigurableView {
   
-  let priceImpactRow = SwapInfoRow()
-  let minimumRecievedRow = SwapInfoRow()
-  let liquidityProviderFeeRow = SwapInfoRow()
-  let blockchainFeeRow = SwapInfoRow()
-  let routeRow = SwapInfoRow()
-  let providerRow = SwapInfoRow()
+  private let priceImpactRow = SwapInfoRow()
+  private let minimumRecievedRow = SwapInfoRow()
+  private let liquidityProviderFeeRow = SwapInfoRow()
+  private let blockchainFeeRow = SwapInfoRow()
+  private let routeRow = SwapInfoRow()
+  private let providerRow = SwapInfoRow()
   
   private let contentView = UIView()
   private let contentStackView: UIStackView = {
@@ -64,7 +64,7 @@ private extension SwapInfoContainerView {
     contentStackView.addArrangedSubview(blockchainFeeRow)
     contentStackView.addArrangedSubview(routeRow)
     contentStackView.addArrangedSubview(providerRow)
-    addSubview(contentStackView)
+    
     contentView.addSubview(contentStackView)
     addSubview(contentView)
     
@@ -78,8 +78,7 @@ private extension SwapInfoContainerView {
     
     contentStackView.snp.makeConstraints { make in
       make.left.right.equalTo(contentView)
-      make.top.equalTo(contentView).offset(CGFloat.containerVerticalPadding)
-      make.bottom.equalTo(contentView).inset(CGFloat.containerVerticalPadding)
+      make.top.bottom.equalTo(contentView).inset(CGFloat.containerVerticalPadding)
     }
   }
 }
@@ -88,8 +87,8 @@ private extension SwapInfoContainerView {
 
 final class SwapInfoRow: UIView, ConfigurableView {
   
-  let infoLabel = InfoLabel()
-  let valueLabel = UILabel()
+  private let infoLabel = InfoLabel()
+  private let valueLabel = UILabel()
   
   private let contentStackView: UIStackView = {
     let stackView = UIStackView()
@@ -139,10 +138,7 @@ final class SwapInfoRow: UIView, ConfigurableView {
     valueLabel.setContentHuggingPriority(.defaultLow, for: .vertical)
     
     contentStackView.snp.makeConstraints { make in
-      make.right.equalTo(self).inset(16)
-      make.left.equalTo(self).inset(16)
-      make.top.equalTo(self).offset(4)
-      make.bottom.equalTo(self).inset(4)
+      make.edges.equalTo(self).inset(UIEdgeInsets.infoRowContentPadding)
     }
     
     infoLabel.snp.makeConstraints { make in
@@ -155,8 +151,8 @@ final class SwapInfoRow: UIView, ConfigurableView {
 
 public final class InfoLabel: UIView, ConfigurableView {
   
-  let label = UILabel()
-  let infoButton = TKButton(configuration: .infoButtonConfiguration())
+  private let label = UILabel()
+  private let infoButton = TKButton(configuration: .infoButtonConfiguration())
   
   public override var intrinsicContentSize: CGSize { sizeThatFits(bounds.size) }
   
@@ -230,4 +226,8 @@ private extension TKButton.Configuration {
 private extension CGFloat {
   static let containerVerticalPadding: CGFloat = 8
   static let rowHeight: CGFloat = 36
+}
+
+private extension UIEdgeInsets {
+  static let infoRowContentPadding: UIEdgeInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
 }

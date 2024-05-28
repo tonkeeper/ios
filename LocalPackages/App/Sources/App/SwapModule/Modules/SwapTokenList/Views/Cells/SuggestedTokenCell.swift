@@ -56,18 +56,17 @@ final class SuggestedTokenCell: TKCollectionViewNewCell, TKConfigurableView {
   
   public func configure(configuration: Configuration) {
     tokenButtonContentView.configure(model: configuration.tokenButtonModel)
-    
     setNeedsLayout()
   }
 }
 
 private extension SuggestedTokenCell {
   func setup() {
+    layer.masksToBounds = true
+    
     backgroundColor = .Button.secondaryBackground
     hightlightColor = .Button.secondaryBackgroundHighlighted
     contentViewPadding = .zero
-    
-    layer.masksToBounds = true
     
     contentContainerView.addSubview(tokenButtonContentView)
   }

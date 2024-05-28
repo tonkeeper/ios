@@ -44,8 +44,8 @@ final class StakeViewController: ModalViewController<StakeView, ModalNavigationB
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
     if !isViewDidAppearFirstTime {
-      Task { @MainActor in customView.amountInputView.inputControl.amountTextField.becomeFirstResponder() }
       isViewDidAppearFirstTime = true
+      Task { @MainActor in customView.amountInputView.inputControl.amountTextField.becomeFirstResponder() }
     }
   }
   

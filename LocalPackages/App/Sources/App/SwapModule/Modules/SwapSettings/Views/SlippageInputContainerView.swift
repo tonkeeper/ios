@@ -8,10 +8,6 @@ final class SlippageInputContainerView: UIView, ConfigurableView {
       case one = 1
       case three = 3
       case five = 5
-      
-      var stringValue: String {
-        "\(rawValue)"
-      }
     }
     
     case customPercent(String)
@@ -22,7 +18,7 @@ final class SlippageInputContainerView: UIView, ConfigurableView {
       case .customPercent(let string):
         return string
       case .fixedPercent(let fixed):
-        return fixed.stringValue
+        return "\(fixed.rawValue)"
       }
     }
     
@@ -93,6 +89,7 @@ final class SlippageInputContainerView: UIView, ConfigurableView {
   
   func configure(model: Model) {
     customSlippageTextFieldPlaceholder.attributedText = model.textFieldplaceholder.withTextStyle(.body1, color: .Text.secondary)
+    
     slippageState = model.slippageState
     if case .customPercent(let string) = model.slippageState {
       didInputCustomSlippageText(string)

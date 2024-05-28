@@ -22,25 +22,16 @@ final class SwapInputContainerView: UIView, ConfigurableView {
   }
   
   struct Model {
-    typealias HeaderButton = SwapAmountHeaderView.Model.Button
     typealias TokenButton = SwapAmountInputView.Model.TokenButton
     typealias TextField = SwapAmountInputView.Model.TextField
     
-    let headerTitle: String
-    let balanceTitle: String?
-    let maxButton: HeaderButton?
+    let header: SwapAmountHeaderView.Model
     let tokenButton: TokenButton
     let textField: TextField
   }
   
   func configure(model: Model) {
-    amountHeaderView.configure(
-      model: SwapAmountHeaderView.Model(
-        leftTitle: model.headerTitle.withTextStyle(.body2, color: .Text.secondary, alignment: .left),
-        rightTitle: model.balanceTitle?.withTextStyle(.body2, color: .Text.secondary, alignment: .right),
-        button: model.maxButton
-      )
-    )
+    amountHeaderView.configure(model: model.header)
     
     amountInputView.configure(
       model: SwapAmountInputView.Model(

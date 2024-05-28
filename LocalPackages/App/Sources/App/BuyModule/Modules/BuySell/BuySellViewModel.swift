@@ -83,7 +83,10 @@ final class BuySellViewModelImplementation: BuySellViewModel, BuySellModuleOutpu
   
   // MARK: - State
   
-  private var buySellItem = BuySellItem(input: .token, tokenItem: .ton, fiatItem: .usd)
+  private var buySellItem: BuySellItem {
+    get { buySellModel.buySellItem }
+    set { buySellModel.buySellItem = newValue }
+  }
   
   private var inputItem: BuySellItem.Item {
     buySellItem.getItem(forInput: buySellItem.input)
@@ -147,11 +150,11 @@ private extension BuySellViewModelImplementation {
   func updateWithInitalData() {
     let minimumTokenAmountString = buySellController.convertAmountToString(
       amount: buySellModel.minimumTokenAmount,
-      fractionDigits: buySellModel.token.fractionDigits
+      fractionDigits: buySellModel.buySellItem.tokenItem.fractionDigits
     )
     let tokenAmountString = buySellController.convertAmountToString(
       amount: buySellModel.tokenAmount,
-      fractionDigits: buySellModel.token.fractionDigits
+      fractionDigits: buySellModel.buySellItem.tokenItem.fractionDigits
     )
     
     buySellItem = BuySellItem(
@@ -201,7 +204,6 @@ private extension BuySellViewModelImplementation {
         buySellItem.tokenItem = updatedToken
         buySellItem.fiatItem = updatedFiat
         
-        buySellModel.tokenAmount = updatedToken.amount
         isAmountValid = minimumValidTokenAmount <= updatedToken.amount
         
         update()
@@ -249,7 +251,6 @@ private extension BuySellViewModelImplementation {
   func createBuySellOperatorItem() -> BuySellOperatorItem {
     BuySellOperatorItem(
       buySellModel: buySellModel,
-      buySellItem: buySellItem,
       paymentMethod: .init(
         id: selectedPaymentMethod.id,
         title: selectedPaymentMethod.title

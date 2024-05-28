@@ -80,8 +80,7 @@ private extension BuyCoordinator {
     }
     
     module.view.didTapChangeCountryButton = {
-      // TODO: Add Change Country Screen
-      print("TODO: Add Change Country Screen")
+      print("didTapChangeCountryButton")
     }
     
     module.output.didContinueBuySell = { [weak self] buySellOperatorItem in

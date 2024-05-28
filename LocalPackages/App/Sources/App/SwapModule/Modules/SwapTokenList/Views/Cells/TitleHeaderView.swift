@@ -29,17 +29,20 @@ open class TitleHeaderCollectionView: UICollectionReusableView, ReusableView, TK
   public func configure(model: Model) {
     titleLabel.attributedText = model.title
   }
-  
-  private func setup() {
+}
+
+private extension TitleHeaderCollectionView {
+  func setup() {
     addSubview(titleLabel)
     
     setupConstraints()
   }
   
-  private func setupConstraints() {
+  func setupConstraints() {
     titleLabel.snp.makeConstraints { make in
       make.left.equalTo(self)
       make.centerY.equalTo(self)
     }
   }
 }
+

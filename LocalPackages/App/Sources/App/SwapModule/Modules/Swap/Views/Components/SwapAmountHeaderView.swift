@@ -4,15 +4,15 @@ import SnapKit
 
 final class SwapAmountHeaderView: UIView, ConfigurableView {
   
-  let contentStackView: UIStackView = {
+  let leftTitleLabel = UILabel()
+  let rightTitleLabel = UILabel()
+  let actionButton = TKButton(configuration: .headerAccentButtonConfiguration())
+  
+  private let contentStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .horizontal
     return stackView
   }()
-  
-  let leftTitleLabel = UILabel()
-  let rightTitleLabel = UILabel()
-  let actionButton = TKButton(configuration: .headerAccentButtonConfiguration())
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -33,7 +33,9 @@ final class SwapAmountHeaderView: UIView, ConfigurableView {
     let rightTitle: NSAttributedString?
     let button: Button?
     
-    init(leftTitle: NSAttributedString, rightTitle: NSAttributedString? = nil, button: Button? = nil) {
+    init(leftTitle: NSAttributedString,
+         rightTitle: NSAttributedString? = nil,
+         button: Button? = nil) {
       self.leftTitle = leftTitle
       self.rightTitle = rightTitle
       self.button = button
@@ -64,16 +66,16 @@ private extension SwapAmountHeaderView {
     contentStackView.setCustomSpacing(.horizontalSpacing, after: rightTitleLabel)
     contentStackView.addArrangedSubview(actionButton)
     
-    leftTitleLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
-    rightTitleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
-    actionButton.setContentHuggingPriority(.required, for: .horizontal)
-    
     addSubview(contentStackView)
     
     setupConstraints()
   }
   
   func setupConstraints() {
+    leftTitleLabel.setContentHuggingPriority(.defaultHigh, for: .horizontal)
+    rightTitleLabel.setContentHuggingPriority(.defaultLow, for: .horizontal)
+    actionButton.setContentHuggingPriority(.required, for: .horizontal)
+    
     contentStackView.snp.makeConstraints { make in
       make.height.equalTo(CGFloat.headerItemsHeight)
       make.left.right.equalTo(self)

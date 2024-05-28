@@ -6,6 +6,16 @@ struct SwapItemMaper {
   
   let imageLoader = ImageLoader()
   
+  func mapAmountHeader(title: String,
+                       balanceTitle: String?,
+                       maxButton: SwapAmountHeaderView.Model.Button? = nil) -> SwapAmountHeaderView.Model {
+    SwapAmountHeaderView.Model(
+      leftTitle: title.withTextStyle(.body2, color: .Text.secondary, alignment: .left),
+      rightTitle: balanceTitle?.withTextStyle(.body2, color: .Text.secondary, alignment: .right),
+      button: maxButton
+    )
+  }
+  
   func mapTokenButton(buttonToken: SwapToken?, action: (() -> Void)?) -> SwapInputContainerView.Model.TokenButton {
     if let buttonToken {
       return SwapInputContainerView.Model.TokenButton(
@@ -114,7 +124,6 @@ private extension SwapItemMaper {
     )
   }
 }
-
 
 private extension CGSize {
   static let iconSize = CGSize(width: 44, height: 44)
