@@ -37,7 +37,11 @@ private extension BuyCoordinator {
   func openBuyAndSell() {
     let module = BuyAndSellAssembly.module(
       buyListController: buyListController,
-      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+      bigIntAmountFormatter: keeperCoreMainAssembly.formattersAssembly.bigIntAmountFormatter(
+        groupSeparator: ",",
+        fractionalSeparator: "."
+      )
     )
     
     module.view.setupRightCloseButton { [weak self] in

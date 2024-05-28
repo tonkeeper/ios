@@ -77,9 +77,12 @@ private extension BuyAndSellView {
     continueButtonContainer.snp.makeConstraints { make in
       make.leading.equalToSuperview()
       make.trailing.equalToSuperview()
-      self.continueButtonContainerBottomConstraint = make.bottom.equalTo(self.safeAreaLayoutGuide.snp.bottom).constraint
-      self.continueButtonContainerBottomConstraint = make.bottom.equalTo(self.snp.bottom).constraint
+      continueButtonContainerSafeAreaBottomConstraint = make.bottom.equalTo(safeAreaLayoutGuide.snp.bottom).constraint
+      continueButtonContainerBottomConstraint = make.bottom.equalTo(snp.bottom).constraint
     }
+    
+    continueButtonContainerSafeAreaBottomConstraint?.isActive = true
+    continueButtonContainerBottomConstraint?.isActive = false
   }
 }
 

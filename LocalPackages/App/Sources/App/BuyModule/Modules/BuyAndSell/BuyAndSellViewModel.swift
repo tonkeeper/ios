@@ -32,39 +32,31 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
     
   private let buyListController: BuyListController
   private let currencyStore: CurrencyStore
+  private let bigIntAmountFormatter: BigIntAmountFormatter
   
-  init(buyListController: BuyListController, currencyStore: CurrencyStore) {
+  init(
+    buyListController: BuyListController,
+    currencyStore: CurrencyStore,
+    bigIntAmountFormatter: BigIntAmountFormatter
+  ) {
     self.buyListController = buyListController
     self.currencyStore = currencyStore
+    self.bigIntAmountFormatter = bigIntAmountFormatter
+    self.amountDisclaimer = minBuyAmountString
   }
   
   // MARK: - State
   
   private var amountInput = ""
   private var convertedValue = ""
+  private var amountDisclaimer = ""
   private var amount: BigUInt = 0
-  private var mode: FiatMethodCategoryType = .buy {
-    didSet {
-      guard mode != oldValue else { return }
-      update()
-    }
-  }
-  
-  private var isAmountValid: Bool = false {
-    didSet {
-      guard isAmountValid != oldValue else { return }
-      update()
-    }
-  }
-  
-  private var isContinueEnabled: Bool = false {
-    didSet {
-      guard isContinueEnabled != oldValue else { return }
-      update()
-    }
-  }
+  private var mode: FiatMethodCategoryType = .buy
+  private var isContinueEnabled: Bool = false
   
   func viewDidLoad() {
+    amountDisclaimer = minBuyAmountString
+    
     update()
     updateConverted()
     
@@ -83,29 +75,14 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
   }
   
   func didInputAmount(_ string: String) {
-    guard string != amountInput else { return }
     let unformatted = self.sendAmountTextFieldFormatter.unformatString(string) ?? ""
     let amount = buyListController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: TonInfo.fractionDigits)
     
     switch mode {
     case .buy:
-      let isAmountValid = !amount.amount.isZero
-      self.amountInput = unformatted
-      self.amount = amount.amount
-      self.isAmountValid = isAmountValid
-      updateConverted()
-      update()
+      processBuyInput(unformatted, amount: amount.amount)
     case .sell:
-      Task {
-        let isAmountValid = await buyListController.isAmountAvailableToSend(amount: amount.amount, token: .ton) && !amount.amount.isZero
-        await MainActor.run {
-          self.amountInput = unformatted
-          self.amount = amount.amount
-          self.isAmountValid = isAmountValid
-          updateConverted()
-          update()
-        }
-      }
+      processSellInput(unformatted, amount: amount.amount)
     }
   }
   
@@ -116,10 +93,8 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
   
   func didSelectSegment(at index: Int) {
     mode = FiatMethodCategoryType.allCases[index]
-    print(mode)
+    didInputAmount(amountInput)
   }
-  
-  // MARK: - Formatters
   
   let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
     let maximumIntegerDigits = 9
@@ -138,12 +113,32 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
     return amountInputFormatController
   }()
   
-  private func update() {
+  private lazy var minBuyAmountString: String = {
+    let formattedAmount = bigIntAmountFormatter.format(
+      amount: BigUInt.minBuyAmount,
+      fractionDigits: TonInfo.fractionDigits,
+      maximumFractionDigits: 2
+    )
+    return TKLocales.Buy.min_amount(formattedAmount)
+  }()
+  
+  private lazy var minSellAmountString: String = {
+    let formattedAmount = bigIntAmountFormatter.format(
+      amount: BigUInt.minSellAmount,
+      fractionDigits: TonInfo.fractionDigits,
+      maximumFractionDigits: 2
+    )
+    return TKLocales.Buy.min_amount(formattedAmount)
+  }()
+}
+
+private extension BuyAndSellViewModelImplementation {
+  func update() {
     let model = createModel()
     didUpdateModel?(model)
   }
   
-  private func updateConverted() {
+  func updateConverted() {
     Task {
       let converted = await buyListController.convertTokenAmountToCurrency(amount)
       await MainActor.run {
@@ -152,18 +147,49 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
       }
     }
   }
-}
-
-private extension BuyAndSellViewModelImplementation {
+  
+  func processBuyInput(_ unformattedInput: String, amount: BigUInt) {
+    let exceedsMinimum = amount >= BigUInt.minBuyAmount
+    
+    amountDisclaimer = minBuyAmountString
+    amountInput = unformattedInput
+    self.amount = amount
+    isContinueEnabled = exceedsMinimum
+    updateConverted()
+    update()
+  }
+  
+  func processSellInput(_ unformattedInput: String, amount: BigUInt) {
+    Task {
+      let hasEnoughBalance = await buyListController.isAmountAvailableToSend(amount: amount, token: .ton)
+      let exceedsMinimum = amount >= BigUInt.minSellAmount
+      let disclaimer = hasEnoughBalance ? minSellAmountString : "Insufficient funds"
+      
+      await MainActor.run {
+        amountDisclaimer = disclaimer
+        amountInput = unformattedInput
+        self.amount = amount
+        isContinueEnabled = exceedsMinimum && hasEnoughBalance
+        updateConverted()
+        update()
+      }
+    }
+  }
+  
   func createModel() -> BuyAndSellView.Model {
     let amount = BuyAndSellView.Model.Amount(placeholder: "0", text: sendAmountTextFieldFormatter.formatString(amountInput) ?? "")
     
     return BuyAndSellView.Model(
-      isContinueButtonEnabled: self.isAmountValid,
-      minAmountDisclaimer: TKLocales.Buy.min_amount(50),
+      isContinueButtonEnabled: isContinueEnabled,
+      minAmountDisclaimer: amountDisclaimer,
       amount: amount,
       isConvertedAmountShown: !convertedValue.isEmpty,
       convertedAmount: convertedValue
     )
   }
+}
+
+private extension BigUInt {
+  static var minBuyAmount = BigUInt(stringLiteral: "2500000000")
+  static var minSellAmount = BigUInt(stringLiteral: "5000000000")
 }

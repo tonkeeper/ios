@@ -28,7 +28,7 @@ final class BuyAndSellAmountView: UIView {
     label.textAlignment = .center
     return label
   }()
-  
+    
   lazy var amountTextField: UITextField = {
     let textField = UITextField()
     textField.font = .amountInputFont

@@ -87,6 +87,7 @@ private extension BuyAndSellViewController {
       
       customView.continueButton.configuration.isEnabled = model.isContinueButtonEnabled
       customView.amountView.minAmountLabel.text = model.minAmountDisclaimer
+      customView.amountView.minAmountLabel.textColor = model.isContinueButtonEnabled ? .Text.secondary : .Accent.red
       customView.amountView.convertedAmountLabel.text = model.convertedAmount
       customView.amountView.amountTextField.placeholder = model.amount.placeholder
       customView.amountView.convertedAmountLabel.isHidden = !model.isConvertedAmountShown
