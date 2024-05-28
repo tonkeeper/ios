@@ -257,7 +257,7 @@ private extension SwapView {
   
   func prepareForAnimation() {
     contentView.layer.removeAllAnimations()
-    actionButton.layer.removeAllAnimations()
+    actionButtonContainer.layer.removeAllAnimations()
     layoutIfNeeded()
   }
   

@@ -204,6 +204,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     
     if string == "0" {
       clearInput(.recieve)
+      currentSwapSimulationModel = nil
     }
     
     updateSendBalance()
@@ -218,6 +219,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
    
     if string == "0" {
       clearInput(.send)
+      currentSwapSimulationModel = nil
     }
     
     simulateSwap(.reverse)
@@ -558,9 +560,9 @@ private extension SwapViewModelImplementation {
     let hasSendToken = swapOperationItem.sendToken != nil
     let hasRecieveToken = swapOperationItem.recieveToken != nil
     
-    let inputsAreNotEmpty = amountSend != "0" && amountSend != "" && amountRecieve != "0" && amountRecieve != ""
+    let isNonZeroInputs = amountSend != "0" && amountRecieve != "0"
     let hasSwapSimulationModel = currentSwapSimulationModel != nil
-    let canContinueSwap = inputsAreNotEmpty && hasSwapSimulationModel && tokenSendBalanceRemaining != .insufficient
+    let canContinueSwap = isNonZeroInputs && hasSwapSimulationModel && tokenSendBalanceRemaining != .insufficient
     
     var swapState: SwapState
     switch (amountSend, amountRecieve, hasSendToken, hasRecieveToken) {
