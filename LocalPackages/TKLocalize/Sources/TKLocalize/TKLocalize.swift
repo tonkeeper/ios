@@ -823,4 +823,26 @@ public enum TKLocales {
       localize("action_types.wallet_initialize")
     }
   }
+  public enum Buysell {
+    public enum Method {
+      public enum Creditcard {
+        /// Credit Card
+        public static var global: String {
+          localize("buysell.method.creditcard.global")
+        }
+        /// Credit Card - RUB
+        public static var rub: String {
+          localize("buysell.method.creditcard.rub")
+        }
+      }
+      /// Cryptocurrency
+      public static var crypto: String {
+        localize("buysell.method.crypto")
+      }
+      /// Apple Pay
+      public static var applepay: String {
+        localize("buysell.method.applepay")
+      }
+    }
+  }
 }

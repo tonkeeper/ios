@@ -223,3 +223,8 @@
 "action_types.domain_renew" = "Продление домена";
 "action_types.unknown" = "Неизвестно";
 "action_types.wallet_initialize" = "Кошелёк инициализирован";
+
+"buysell.method.creditcard.global" = "Credit Card";
+"buysell.method.creditcard.rub" = "Credit Card - RUB";
+"buysell.method.crypto" = "Cryptocurrency";
+"buysell.method.applepay" = "Apple Pay";

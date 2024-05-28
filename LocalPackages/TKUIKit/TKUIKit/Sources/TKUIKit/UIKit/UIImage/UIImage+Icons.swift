@@ -182,6 +182,18 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-doc-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var radioSelected: UIImage {
+            .imageWithName("Icons/28/ic-radio-selected-28")
+            .withRenderingMode(.alwaysTemplate)
+        }
+        public static var radioUnselect: UIImage {
+            .imageWithName("Icons/28/ic-radio-unselect-28")
+            .withRenderingMode(.alwaysTemplate)
+        }
+        public static var done: UIImage {
+            .imageWithName("Icons/28/ic-done-28")
+            .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {
@@ -191,6 +203,20 @@ public extension UIImage {
         public static var exclamationmarkCircle: UIImage {
           .imageWithName("Icons/32/ic-exclamationmark-circle-32")
           .withRenderingMode(.alwaysTemplate)
+        }
+        public static var xmark: UIImage {
+            .imageWithName("Icons/32/ic-xmark-32")
+//            .withRenderingMode(.alwaysTemplate)
+        }
+        public static var chevronLeft: UIImage {
+            .imageWithName("Icons/32/ic-chevron-left-32")
+//             .withRenderingMode(.alwaysTemplate)
+        }
+        public static var info: UIImage {
+            .imageWithName("Icons/32/ic-info-32")
+        }
+        public static var slider: UIImage {
+            .imageWithName("Icons/32/ic-staking-slider-32")
         }
       }
       public enum Size36 {
@@ -211,12 +237,30 @@ public extension UIImage {
         public static var tonCurrency: UIImage {
           .imageWithName("Icons/44/ton_currency")
         }
+        
+        public static var bemo : UIImage { .imageWithName("Icons/44/ic.staking.bemo") }
+        public static var nominators : UIImage { .imageWithName("Icons/44/ic.staking.nominators") }
+        public static var tonstakers : UIImage { .imageWithName("Icons/44/ic.staking.tonstakers") }
+        public static var whalesliquid : UIImage { .imageWithName("Icons/44/ic.staking.whalesliquid") }
+        public static var tonkeeper : UIImage { .imageWithName("Icons/44/ic.staking.tonkeeper") }
       }
       public enum Size56 {
         public static var flashlightOff: UIImage {
           .imageWithName("Icons/56/ic-flashlight-off-56")
           .withRenderingMode(.alwaysTemplate)
         }
+          public static var applepay: UIImage {
+              .imageWithName("Icons/56/ic-buysell-applepay")
+          }
+          public static var creditcardGlobal: UIImage {
+              .imageWithName("Icons/56/ic-buysell-creditcard-global")
+          }
+          public static var creditcardRub: UIImage {
+              .imageWithName("Icons/56/ic-buysell-creditcard-rub")
+          }
+          public static var cryptocurrency: UIImage {
+              .imageWithName("Icons/56/ic-buysell-cryptocurrency")
+          }
       }
       public enum Size84 {
         public static var camera: UIImage {

@@ -226,3 +226,8 @@
 "action_types.domain_renew" = "Renew Domain";
 "action_types.unknown" = "Unknown";
 "action_types.wallet_initialize" = "Wallet initialized";
+
+"buysell.method.creditcard.global" = "Credit Card";
+"buysell.method.creditcard.rub" = "Credit Card - RUB";
+"buysell.method.crypto" = "Cryptocurrency";
+"buysell.method.applepay" = "Apple Pay";
