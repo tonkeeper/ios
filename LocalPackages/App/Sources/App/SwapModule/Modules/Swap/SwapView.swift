@@ -26,6 +26,7 @@ final class SwapView: UIView, ConfigurableView {
   
   let titleView = ModalTitleView()
   let scrollView = TKUIScrollView()
+  let shimmerView = SwapShimmerView()
   
   let contentView = UIView()
   let swapSendContainerView = SwapSendContainerView()
@@ -85,12 +86,22 @@ final class SwapView: UIView, ConfigurableView {
     titleView.configure(model: model.title)
     swapButton.configuration.action = model.swapButton.action
   }
+  
+  func hideShimmer() {
+    UIView.animate(withDuration: 0.2) {
+      self.shimmerView.alpha = 0
+    } completion: { _ in
+      self.shimmerView.isHidden = true
+    }
+  }
 }
 
 // MARK: - Setup
 
 private extension SwapView {
   func setup() {
+    shimmerView.startAnimation()
+    
     scrollView.delaysContentTouches = false
     scrollView.showsVerticalScrollIndicator = false
     scrollView.showsHorizontalScrollIndicator = false
@@ -125,6 +136,7 @@ private extension SwapView {
     
     scrollView.addSubview(contentView)
     scrollView.addSubview(actionButtonContainer)
+    scrollView.addSubview(shimmerView)
     addSubview(scrollView)
     
     setupConstraints()
@@ -175,6 +187,11 @@ private extension SwapView {
     actionButtonContainer.snp.remakeConstraints { make in
       make.top.equalTo(contentView.snp.bottom)
       make.left.right.equalTo(contentView)
+    }
+    
+    shimmerView.snp.makeConstraints { make in
+      make.top.left.right.equalTo(contentView)
+      make.bottom.equalTo(actionButtonContainer)
     }
   }
   

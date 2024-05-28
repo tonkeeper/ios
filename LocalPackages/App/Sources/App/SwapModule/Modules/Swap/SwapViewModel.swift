@@ -47,6 +47,7 @@ protocol SwapViewModel: AnyObject {
   var didUpdateRecieveTokenBalance: ((String) -> Void)? { get set }
   var didUpdateSwapSendContainer: ((SwapSendContainerView.Model) -> Void)? { get set }
   var didUpdateSwapRecieveContainer: ((SwapRecieveContainerView.Model) -> Void)? { get set }
+  var didLoadInitialData: (() -> Void)? { get set }
   
   var sendTextFieldFormatter: InputAmountTextFieldFormatter { get }
   var recieveTextFieldFormatter: InputAmountTextFieldFormatter { get }
@@ -153,6 +154,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
         updateSendBalance()
         updateRecieveBalance()
         reloadSimulation()
+        isInitialDataLoaded = true
       }
     }
   }
@@ -179,6 +181,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   var didUpdateRecieveTokenBalance: ((String) -> Void)?
   var didUpdateSwapSendContainer: ((SwapSendContainerView.Model) -> Void)?
   var didUpdateSwapRecieveContainer: ((SwapRecieveContainerView.Model) -> Void)?
+  var didLoadInitialData: (() -> Void)?
   
   func viewDidLoad() {
     update()
@@ -299,6 +302,13 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
       let fromInsufficientState = oldValue.isInsufficientBalance
       guard isNeedUpdate || toInsufficientState || fromInsufficientState else { return }
       updateSwapStateModel()
+    }
+  }
+  
+  private var isInitialDataLoaded = false {
+    didSet {
+      guard isInitialDataLoaded != oldValue, isInitialDataLoaded else { return }
+      didLoadInitialData?()
     }
   }
   

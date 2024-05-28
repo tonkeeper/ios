@@ -139,32 +139,36 @@ private extension SwapViewController {
       customView.isDetailsHidden = detailsModel == nil
     }
     
-    viewModel.didUpdateIsRefreshing = { [weak self] isRefreshing in
-      self?.customView.swapDetailsContainerView.swapRateRow.isRefreshing = isRefreshing
+    viewModel.didUpdateIsRefreshing = { [weak customView] isRefreshing in
+      customView?.swapDetailsContainerView.swapRateRow.isRefreshing = isRefreshing
     }
     
-    viewModel.didUpdateAmountSend = { [weak self] amountSend in
-      self?.customView.swapSendContainerView.textField.text = amountSend
+    viewModel.didUpdateAmountSend = { [weak customView] amountSend in
+      customView?.swapSendContainerView.textField.text = amountSend
     }
     
-    viewModel.didUpdateAmountRecieve = { [weak self] amountRecieve in
-      self?.customView.swapRecieveContainerView.textField.text = amountRecieve
+    viewModel.didUpdateAmountRecieve = { [weak customView] amountRecieve in
+      customView?.swapRecieveContainerView.textField.text = amountRecieve
     }
     
-    viewModel.didUpdateSendTokenBalance = { [weak self] balanceTitle in
-      self?.customView.swapSendContainerView.inputContainerView.setBalanceTitle(balanceTitle)
+    viewModel.didUpdateSendTokenBalance = { [weak customView] balanceTitle in
+      customView?.swapSendContainerView.inputContainerView.setBalanceTitle(balanceTitle)
     }
     
-    viewModel.didUpdateRecieveTokenBalance = { [weak self] balanceTitle in
-      self?.customView.swapRecieveContainerView.inputContainerView.setBalanceTitle(balanceTitle)
+    viewModel.didUpdateRecieveTokenBalance = { [weak customView] balanceTitle in
+      customView?.swapRecieveContainerView.inputContainerView.setBalanceTitle(balanceTitle)
     }
     
-    viewModel.didUpdateSwapSendContainer = { [weak self] model in
-      self?.customView.swapSendContainerView.configure(model: model)
+    viewModel.didUpdateSwapSendContainer = { [weak customView] model in
+      customView?.swapSendContainerView.configure(model: model)
     }
     
-    viewModel.didUpdateSwapRecieveContainer = { [weak self] model in
-      self?.customView.swapRecieveContainerView.configure(model: model)
+    viewModel.didUpdateSwapRecieveContainer = { [weak customView] model in
+      customView?.swapRecieveContainerView.configure(model: model)
+    }
+    
+    viewModel.didLoadInitialData = { [weak customView] in
+      customView?.hideShimmer()
     }
   }
   
