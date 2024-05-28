@@ -72,10 +72,7 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
     Task {
       await startObservations()
       let currency = await settingsController.activeCurrency()
-      
-      await MainActor.run {
-        didUpdateCurrency(currency)
-      }
+      didUpdateCurrency(currency)
     }
     
     // TODO: setup loading snapshot?
@@ -92,7 +89,9 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
   }
   
   private func didUpdateCurrency(_ currency: Currency) {
-    update(currency: currency)
+    Task { @MainActor in
+      update(currency: currency)
+    }
     loadPaymentMethods(currency: currency)
   }
   
