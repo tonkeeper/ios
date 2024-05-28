@@ -1,8 +1,8 @@
 import UIKit
-import TKUIKit
 import SnapKit
 
-final class ModalTitleView: UIView, ConfigurableView {
+public final class ModalTitleView: UIView, ConfigurableView {
+  
   private let titleLabel: UILabel = .centeredLabel()
   private let descriptionLabel: UILabel = .centeredLabel()
   private let stackView: UIStackView = {
@@ -12,7 +12,7 @@ final class ModalTitleView: UIView, ConfigurableView {
     return stackView
   }()
   
-  override var intrinsicContentSize: CGSize { sizeThatFits(bounds.size) }
+  public override var intrinsicContentSize: CGSize { sizeThatFits(bounds.size) }
   
   convenience init(model: Model) {
     self.init(frame: .zero)
@@ -28,7 +28,7 @@ final class ModalTitleView: UIView, ConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  override func sizeThatFits(_ size: CGSize) -> CGSize {
+  public override func sizeThatFits(_ size: CGSize) -> CGSize {
     let titleWidth = titleLabel.sizeThatFits(size).width
     let descriptionWidth = descriptionLabel.sizeThatFits(size).width
     let width = max(titleWidth, descriptionWidth)
@@ -43,17 +43,17 @@ final class ModalTitleView: UIView, ConfigurableView {
     return CGSize(width: width, height: height)
   }
   
-  struct Model {
+  public struct Model {
     let title: String
     let description: String?
     
-    init(title: String, description: String? = nil) {
+    public init(title: String, description: String? = nil) {
       self.title = title
       self.description = description
     }
   }
   
-  func configure(model: Model) {
+  public func configure(model: Model) {
     titleLabel.text = model.title
     if let subtitle = model.description {
       descriptionLabel.isHidden = false

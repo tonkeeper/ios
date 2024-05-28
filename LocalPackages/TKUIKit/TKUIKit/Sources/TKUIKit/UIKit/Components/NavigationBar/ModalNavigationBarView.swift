@@ -3,22 +3,22 @@ import SnapKit
 
 // MARK: - BarItemContainerView
 
-final class ModalNavigationBarItemContainerView: UIView {
+public final class ModalNavigationBarItemContainerView: UIView {
   
-  enum ContentAlignment {
+  public enum ContentAlignment {
     case center
     case left
     case right
   }
   
-  override var intrinsicContentSize: CGSize { getIntrinsicContentSize() }
+  public override var intrinsicContentSize: CGSize { sizeThatFits(bounds.size) }
   
   private let containedView: UIView
   
   private let height: CGFloat
   private let contentAlignment: ContentAlignment
   
-  init(customView: UIView, height: CGFloat, contentAlignment: ContentAlignment = .center) {
+  public init(customView: UIView, height: CGFloat, contentAlignment: ContentAlignment = .center) {
     self.containedView = customView
     self.height = height
     self.contentAlignment = contentAlignment
@@ -30,14 +30,12 @@ final class ModalNavigationBarItemContainerView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  private func getIntrinsicContentSize() -> CGSize {
+  public override func sizeThatFits(_ size: CGSize) -> CGSize {
     var width: CGFloat = containedView.bounds.width + .horizontalPadding * 2
-    
     if width < .minimumBarItemWidth {
-      let widthThatFits = containedView.sizeThatFits(bounds.size).width
+      let widthThatFits = containedView.sizeThatFits(size).width
       width = widthThatFits < .minimumBarItemWidth ? .minimumBarItemWidth : widthThatFits
     }
-    
     return CGSize(width: width, height: height)
   }
 }
@@ -78,7 +76,7 @@ open class ModalNavigationBarView: UIView {
     case bottom(_ padding: CGFloat)
   }
   
-  static let defaultHeight: CGFloat = 64
+  public static let defaultHeight: CGFloat = 64
   
   private let leftBarItemStack: UIStackView = .horizontalStack()
   private let centerBarItemStack: UIStackView = .horizontalStack()
@@ -111,10 +109,10 @@ open class ModalNavigationBarView: UIView {
     let containerAlignment: ContainerAlignment
     let contentAlignment: ContentAlignment
     
-    init(view: UIView,
-         containerHeight: CGFloat = .barItemHeight,
-         containerAlignment: ContainerAlignment = .center,
-         contentAlignment: ContentAlignment = .center) {
+    public init(view: UIView,
+                containerHeight: CGFloat = 48,
+                containerAlignment: ContainerAlignment = .center,
+                contentAlignment: ModalNavigationBarItemContainerView.ContentAlignment = .center) {
       self.view = view
       self.containerHeight = containerHeight
       self.containerAlignment = containerAlignment
@@ -222,7 +220,6 @@ private extension UIStackView {
 
 private extension CGFloat {
   static let horizontalPadding: CGFloat = 8
-  static let barItemHeight: CGFloat = 48
   static let minimumBarItemWidth: CGFloat = 48
   static let modalNavigationBarHeight: CGFloat = 64
   static let centerBarItemStackMaximumWidth: CGFloat = 200
