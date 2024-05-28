@@ -17,7 +17,16 @@ struct WalletBalanceListItemMapper {
       id = jettonItem.jettonInfo.address.toRaw()
     }
     
-    let title = item.title.withTextStyle(
+    let titleString: String
+    
+    switch item.stakingInfo {
+    case .none:
+      titleString = item.title
+    case .pool:
+      titleString = .stakeditemTitle
+    }
+    
+    let title = titleString.withTextStyle(
       .label1,
       color: .Text.primary,
       alignment: .left,
@@ -25,33 +34,46 @@ struct WalletBalanceListItemMapper {
     )
     
     let subtitle = NSMutableAttributedString()
-    switch item.verification {
+    switch item.stakingInfo {
     case .none:
-      subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
-    case .whitelist:
-      if let price = item.price?.withTextStyle(
-        .body2,
-        color: .Text.secondary,
-        alignment: .left,
-        lineBreakMode: .byTruncatingTail
-      ) {
-        subtitle.append(price)
-        subtitle.append(" ".withTextStyle(.body2, color: .Text.secondary))
+      switch item.verification {
+      case .none:
+        subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
+      case .whitelist:
+        if let price = item.price?.withTextStyle(
+          .body2,
+          color: .Text.secondary,
+          alignment: .left,
+          lineBreakMode: .byTruncatingTail
+        ) {
+          subtitle.append(price)
+          subtitle.append(" ".withTextStyle(.body2, color: .Text.secondary))
+        }
+        
+        if let diff = item.rateDiff {
+          let color: UIColor
+          if diff.hasPrefix("-") || diff.hasPrefix("−") {
+            color = .Accent.red
+          } else if diff.hasPrefix("+") {
+            color = .Accent.green
+          } else {
+            color = .Text.tertiary
+          }
+          subtitle.append(diff.withTextStyle(.body2, color: color, alignment: .left))
+        }
+      case .blacklist:
+        subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
       }
       
-      if let diff = item.rateDiff {
-        let color: UIColor
-        if diff.hasPrefix("-") || diff.hasPrefix("−") {
-          color = .Accent.red
-        } else if diff.hasPrefix("+") {
-          color = .Accent.green
-        } else {
-          color = .Text.tertiary
-        }
-        subtitle.append(diff.withTextStyle(.body2, color: color, alignment: .left))
-      }
-    case .blacklist:
-      subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
+    case .pool(let stakingPoolItem):
+      subtitle.append(
+        stakingPoolItem.name.withTextStyle(
+          .body2,
+          color: .Text.secondary,
+          alignment: .left,
+          lineBreakMode: .byTruncatingTail
+        )
+      )
     }
     
     let value = item.amount?.withTextStyle(
@@ -67,12 +89,12 @@ struct WalletBalanceListItemMapper {
       lineBreakMode: .byTruncatingTail
     )
     
-    let iconConfigurationImage: TKUIListItemImageIconView.Configuration.Image
+    let primaryIconConfigurationImage: TKUIListItemImageIconView.Configuration.Image
     switch item.image {
     case .ton:
-      iconConfigurationImage = .image(.TKCore.Icons.Size44.tonLogo)
+      primaryIconConfigurationImage = .image(.TKCore.Icons.Size44.tonLogo)
     case .url(let url):
-      iconConfigurationImage = .asyncImage(
+      primaryIconConfigurationImage = .asyncImage(
         url,
         TKCore.ImageDownloadTask(
           closure: {
@@ -90,18 +112,48 @@ struct WalletBalanceListItemMapper {
       )
     }
     
-    let iconConfiguration = TKUIListItemIconView.Configuration(
-      iconConfiguration: .image(
-        TKUIListItemImageIconView.Configuration(
-          image: iconConfigurationImage,
-          tintColor: .Icon.primary,
-          backgroundColor: .Background.contentTint,
-          size: .iconSize,
-          cornerRadius: CGSize.iconSize.height/2
-        )
-      ),
-      alignment: .center
-    )
+    let iconConfiguration: TKUIListItemIconView.Configuration
+    switch item.stakingInfo {
+    case .none:
+      iconConfiguration = .init(
+        iconConfiguration: .image(
+          TKUIListItemImageIconView.Configuration(
+            image: primaryIconConfigurationImage,
+            tintColor: .Icon.primary,
+            backgroundColor: .Background.contentTint,
+            size: .iconSize,
+            cornerRadius: CGSize.iconSize.height/2
+          )
+        ),
+        alignment: .center
+      )
+    case .pool(let stakingPoolItem):
+      let badgeImage = TKUIListItemImageIconView.Configuration.Image.image(stakingPoolItem.poolType.image)
+      let badgeIconConfiguration = TKUIListItemImageIconView.Configuration(
+        image: badgeImage,
+        tintColor: .Icon.primary,
+        backgroundColor: .Background.contentTint,
+        size: .badgeIconSize,
+        cornerRadius: CGSize.badgeIconSize.width/2,
+        borderWidth: .badgeBorderWidth,
+        borderColor: .Background.content,
+        contentMode: .scaleAspectFill
+      )
+      
+      iconConfiguration = .init(
+        iconConfiguration: .imageWithBadge(
+          TKUIListItemImageIconView.Configuration(
+            image: .image(.TKCore.Icons.Size44.tonLogo),
+            tintColor: .Icon.primary,
+            backgroundColor: .Background.contentTint,
+            size: .iconSize,
+            cornerRadius: CGSize.iconSize.height/2
+          ),
+          badgeIconConfiguration
+        ),
+        alignment: .center
+      )
+    }
     
     let listItemConfiguration = TKUIListItemView.Configuration(
       iconConfiguration: iconConfiguration,
@@ -286,14 +338,16 @@ struct WalletBalanceListItemMapper {
 
 private extension CGSize {
   static let iconSize = CGSize(width: 44, height: 44)
+  static let badgeIconSize = CGSize(width: 18, height: 18)
 }
 
 private extension CGFloat {
-  static let iconCornerRadius: CGFloat = 22
+  static let badgeBorderWidth: CGFloat = 2
 }
 
 private extension String {
   static let backupItemIdentifier = "BackupItem"
   static let biometryItemIdentifier = "BiometryItem"
+  static let stakeditemTitle = "Staked"
 }
 

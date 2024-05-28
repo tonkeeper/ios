@@ -15,7 +15,7 @@ public struct StakingConfirmationItem {
 public enum StakingConfirmationError: Swift.Error {
   case failedToCalculateFee
   case failedToSendTransaction
-  case failedToSign
+  case failedToSign(TransferSignServiceError)
 }
 
 public protocol StakingConfirmationController: AnyObject {

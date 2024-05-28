@@ -24,10 +24,12 @@ public final class TKLineChartView: UIView {
   public struct ChartData {
     public let mode: ChartMode
     public let coordinates: [Coordinate]
+    public let color: UIColor
     
-    public init(mode: ChartMode, coordinates: [Coordinate]) {
+    public init(mode: ChartMode, coordinates: [Coordinate], color: UIColor = .Accent.blue) {
       self.mode = mode
       self.coordinates = coordinates
+      self.color = color
     }
   }
   
@@ -67,10 +69,10 @@ public final class TKLineChartView: UIView {
     let entries = chartData.coordinates.map {
       ChartDataEntry(x: $0.x, y: $0.y)
     }
-    let gradient = CGGradient.with(easing: .easeInQuad, from: .Accent.blue, to: .clear)
+    let gradient = CGGradient.with(easing: .easeInQuad, from: chartData.color, to: .clear)
     let dataSet = LineChartDataSet(entries: entries)
     dataSet.circleRadius = 0
-    dataSet.setColor(.Accent.blue)
+    dataSet.setColor(chartData.color)
     dataSet.drawValuesEnabled = false
     dataSet.lineWidth = 2
     dataSet.fillAlpha = 0.24
@@ -78,7 +80,7 @@ public final class TKLineChartView: UIView {
     dataSet.drawFilledEnabled = true
     dataSet.drawHorizontalHighlightIndicatorEnabled = false
     dataSet.drawVerticalHighlightIndicatorEnabled = false
-    dataSet.highlightColor = .Accent.blue
+    dataSet.highlightColor = chartData.color
     dataSet.highlightLineWidth = 1
     switch chartData.mode {
     case .linear:
@@ -87,6 +89,8 @@ public final class TKLineChartView: UIView {
       dataSet.mode = .stepped
     }
     chartView.data = LineChartData(dataSet: dataSet)
+    verticalHighlightIndicatorView.backgroundColor = chartData.color
+    (chartView.marker as? ChartMarker)?.color = chartData.color
   }
   
   func getPointsY(xArray: [CGFloat]) -> [CGPoint] {
@@ -134,7 +138,6 @@ public final class TKLineChartView: UIView {
     chartView.gridBackgroundColor = .cyan
     
     chartView.addSubview(verticalHighlightIndicatorView)
-    verticalHighlightIndicatorView.backgroundColor = .Accent.blue
     verticalHighlightIndicatorView.isHidden = true
   }
   

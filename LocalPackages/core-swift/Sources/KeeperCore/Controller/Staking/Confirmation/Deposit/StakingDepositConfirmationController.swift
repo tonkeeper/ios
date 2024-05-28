@@ -15,10 +15,10 @@ public final class StakingDepositConfirmationController: StakingConfirmationCont
   private let ratesStore: RatesStore
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
-  private let mnemonicRepository: WalletMnemonicRepository
   private let amountFormatter: AmountFormatter
   private let decimalFormatter: DecimalAmountFormatter
   private let sendService: SendService
+  private let signService: TransferSignService
   
   init(
     depositModel: DepositModel,
@@ -27,7 +27,7 @@ public final class StakingDepositConfirmationController: StakingConfirmationCont
     balanceStore: BalanceStore,
     ratesStore: RatesStore,
     currencyStore: CurrencyStore,
-    mnemonicRepository: WalletMnemonicRepository,
+    signService: TransferSignService,
     amountFormatter: AmountFormatter,
     decimalFormatter: DecimalAmountFormatter,
     sendService: SendService
@@ -38,7 +38,7 @@ public final class StakingDepositConfirmationController: StakingConfirmationCont
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
-    self.mnemonicRepository = mnemonicRepository
+    self.signService = signService
     self.amountFormatter = amountFormatter
     self.decimalFormatter = decimalFormatter
     self.sendService = sendService
@@ -53,14 +53,15 @@ public final class StakingDepositConfirmationController: StakingConfirmationCont
   }
   
   public func sendTransaction() async throws {
+    signService.didGetExternalSign = didGetExternalSign
     do {
       let transactionBoc = try await createTransactionBoc {
-        try await signTransfer($0)
+        try await signService.getSign($0, wallet: walletsStore.activeWallet)
       }
       
       try await sendService.sendTransaction(boc: transactionBoc, wallet: walletsStore.activeWallet)
       NotificationCenter.default.post(
-        name: NSNotification.Name(rawValue: "didSendTransaction"),
+        name: NSNotification.Name(rawValue: "DID SEND TRANSACTION"),
         object: nil,
         userInfo: ["Wallet": walletsStore.activeWallet]
       )
@@ -203,6 +204,7 @@ private extension StakingDepositConfirmationController {
       poolImage: poolImage,
       wallet: walletsStore.activeWallet.model.emojiLabel,
       apyPercent: apyFormatted,
+      operationName: .depositOperation,
       amount: formattedAmount,
       amountConverted: formattedConvertedAmount,
       fee: fee,
@@ -210,26 +212,6 @@ private extension StakingDepositConfirmationController {
       kind: pool.implementation.type,
       tokenSymbol: depositModel.token.symbol
     )
-  }
-  
-  func signTransfer(_ transfer: WalletTransfer) async throws -> Data {
-    switch walletsStore.activeWallet.identity.kind {
-    case .Regular:
-      let mnemonic = try mnemonicRepository.getMnemonic(forWallet: walletsStore.activeWallet)
-      let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-      let privateKey = keyPair.privateKey
-      return try transfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
-    case .Lockup:
-      throw StakingConfirmationError.failedToSign
-    case .Watchonly:
-      throw StakingConfirmationError.failedToSign
-    case .External(let publicKey, let walletContractVersion):
-      return try await signExternal(
-        transfer: transfer.signingMessage.endCell().toBoc(),
-        publicKey: publicKey,
-        revision: walletContractVersion
-      )
-    }
   }
   
   func getDepositAmount() -> BigUInt {
@@ -244,26 +226,12 @@ private extension StakingDepositConfirmationController {
     }
   }
   
-  func signExternal(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) async throws -> Data {
-    guard let url = createTonSignURL(transfer: transfer, publicKey: publicKey, revision: revision),
-          let didGetExternalSign,
-          let signedData = try await didGetExternalSign(url) else {
-      throw StakingConfirmationError.failedToSign
-    }
-    return signedData
-  }
-  
-  func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) -> URL? {
-    guard let publicKey = publicKey.data.base64EncodedString().percentEncoded,
-          let body = transfer.base64EncodedString().percentEncoded else { return nil }
-    let v = revision.rawValue.lowercased()
-    
-    let string = "tonsign://?pk=\(publicKey)&body=\(body)&v=\(v)&return=\("tonkeeperx://publish".percentEncoded ?? "")"
-    return URL(string: string)
-  }
-  
   func makeFromattedAPY(_ pool: StakingPool) -> String {
     let apyPercents = decimalFormatter.format(amount: pool.apy, maximumFractionDigits: 2)
     return "≈ \(apyPercents)%"
   }
+}
+
+private extension String {
+  static let depositOperation = "Deposit"
 }

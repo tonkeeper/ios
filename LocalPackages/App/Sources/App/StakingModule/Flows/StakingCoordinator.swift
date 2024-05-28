@@ -23,10 +23,6 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
     super.init(router: router)
   }
   
-  override func start() {
-
-  }
-  
   func openWithdrawEditAmount(withdrawModel: WithdrawModel) {
     let editAmountModule = StakingWithdrawEditAmountAssembly.module(withdrawModel: withdrawModel, keeperCoreMainAssembly: keeperCoreMainAssembly)
   
@@ -113,6 +109,10 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
       confirmOutput?.didFinish = { [weak self] in
         self?.didFinish?()
       }
+    }
+    
+    editAmountModule.output.didTapBuy = { [weak self] wallet  in
+      self?.openBuy(wallet: wallet)
     }
     
     router.push(viewController: editAmountModule.view, animated: false)
@@ -204,5 +204,17 @@ private extension StakingCoordinator {
         fromViewController.present(coordinator.router.rootViewController, animated: true)
       }
     }.value
+  }
+  
+  func openBuy(wallet: Wallet) {
+    let coordinator = BuyCoordinator(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: ViewControllerRouter(rootViewController: self.router.rootViewController)
+    )
+    
+    addChild(coordinator)
+    coordinator.start()
   }
 }

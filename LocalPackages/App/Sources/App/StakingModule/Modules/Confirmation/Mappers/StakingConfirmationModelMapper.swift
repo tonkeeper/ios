@@ -98,7 +98,7 @@ private extension StakingConfirmationModelMapper {
     items.append(headerItem)
     
     let hintItem: TKModalCardViewController.Configuration.Item = .text(
-      .init(text: String.hint.withTextStyle(.body1, color: .Text.secondary, alignment: .center), numberOfLines: 1),
+      .init(text: model.operationName.withTextStyle(.body1, color: .Text.secondary, alignment: .center), numberOfLines: 1),
       bottomSpacing: 4
     )
     items.append(hintItem)
@@ -125,7 +125,6 @@ private extension StakingConfirmationModelMapper {
 
 private extension String {
   static let wallet = "Wallet"
-  static let hint = "Deposit"
   static let recipientTitle = "Recipient"
   static let apyTitle = "APY"
   static let feeTitle = "Fee"

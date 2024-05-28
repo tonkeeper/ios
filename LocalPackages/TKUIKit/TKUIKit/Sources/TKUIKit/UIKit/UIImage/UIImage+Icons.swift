@@ -222,6 +222,15 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-doc-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var plusOutline: UIImage {
+          .imageWithName("Icons/28/ic-plus-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        
+        public static var minusOutline: UIImage {
+          .imageWithName("Icons/28/ic-minus-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {

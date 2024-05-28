@@ -63,17 +63,27 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
     public let backgroundColor: UIColor
     public let size: CGSize
     public let cornerRadius: CGFloat
+    public let borderWidth: CGFloat?
+    public let borderColor: UIColor?
+    public let contentMode: ContentMode
     
     public init(image: Image,
                 tintColor: UIColor,
                 backgroundColor: UIColor,
                 size: CGSize,
-                cornerRadius: CGFloat) {
+                cornerRadius: CGFloat,
+                borderWidth: CGFloat? = nil,
+                borderColor: UIColor? = nil,
+                contentMode: ContentMode = .center
+    ) {
       self.image = image
       self.tintColor = tintColor
       self.backgroundColor = backgroundColor
       self.size = size
       self.cornerRadius = cornerRadius
+      self.borderColor = borderColor
+      self.borderWidth = borderWidth
+      self.contentMode = contentMode
     }
   }
   
@@ -85,12 +95,17 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
       imageDownloadTask.start(imageView: imageView, size: configuration.size, cornerRadius: configuration.cornerRadius)
       self.imageDownloadTask = imageDownloadTask
     }
+    imageView.contentMode = configuration.contentMode
     imageView.tintColor = configuration.tintColor
     backgroundColor = configuration.backgroundColor
     size = configuration.size
     cornerRadius = configuration.cornerRadius
     layer.cornerRadius = configuration.cornerRadius
-    
+    if let borderColor = configuration.borderColor, let borderWidth = configuration.borderWidth {
+      layer.borderWidth = borderWidth
+      layer.borderColor = borderColor.cgColor
+    }
+  
     setNeedsLayout()
   }
 }
@@ -98,7 +113,6 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
 private extension TKUIListItemImageIconView {
   func setup() {
     layer.masksToBounds = true
-    imageView.contentMode = .center
     addSubview(imageView)
   }
 }

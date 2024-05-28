@@ -28,15 +28,18 @@ public struct DepositModel {
 public protocol StakingEditAmountController: AnyObject {
   var didUpdateTitle: ((String) -> Void)? { get set }
   var didUpdateConvertedValue: ((String) -> Void)? { get set }
+  var didUpdatePrimaryAction: ((StakingEditAmountPrimaryAction) -> Void)? { get set }
   var didUpdateInputValue: ((String?) -> Void)? { get set }
   var didUpdateInputSymbol: ((String?) -> Void)? { get set }
   var didUpdateMaximumFractionDigits: ((Int) -> Void)? { get set }
-  var didUpdateIsContinueEnabled: ((Bool) -> Void)? { get set }
   var didUpdateRemaining: ((StakingRemaining) -> Void)? { get set }
   var didUpdateIsHiddenSwapIcon: ((Bool) -> Void)? { get set }
   var didUpdateProviderModel: ((ProviderModel) -> Void)? { get set }
   var didResetMax: (() -> Void)? { get set }
+  
   var stakingPool: StakingPool { get }
+  var primaryAction: StakingEditAmountPrimaryAction { get }
+  var wallet: Wallet { get }
   
   func start()
   func toggleMode()
@@ -45,6 +48,16 @@ public protocol StakingEditAmountController: AnyObject {
   func setInput(_ input: String)
   func getOptionsListModel() -> StakingOptionsListModel?
   func getStakeConfirmationItem() -> StakingConfirmationItem
+}
+
+public struct StakingEditAmountPrimaryAction {
+  public enum Action {
+    case confirm
+    case buy
+  }
+  
+  public var action: Action
+  public var isEnable: Bool
 }
 
 public struct StakingEditAmountPoolItem {

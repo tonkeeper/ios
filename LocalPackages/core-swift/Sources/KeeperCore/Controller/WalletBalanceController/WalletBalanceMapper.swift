@@ -34,6 +34,7 @@ struct WalletBalanceMapper {
   
   func mapBalance(balance: Balance,
                   rates: Rates,
+                  stakingPools: [StakingPool],
                   currency: Currency) -> WalletBalanceItemsModel {
     let tonItem = mapTon(
       tonBalance: balance.tonBalance,
@@ -44,6 +45,7 @@ struct WalletBalanceMapper {
     let jettonItems = mapJettons(
       jettonsBalance: balance.jettonsBalance,
       jettonsRates: rates.jettonsRates,
+      stakingPools: stakingPools,
       currency: currency
     )
     
@@ -93,11 +95,13 @@ struct WalletBalanceMapper {
       amount: amount,
       convertedAmount: convertedAmount,
       verification: .whitelist,
-      hasPrice: true)
+      hasPrice: true,
+      stakingInfo: .none)
   }
   
   func mapJettons(jettonsBalance: [JettonBalance],
                   jettonsRates: [Rates.JettonRate],
+                  stakingPools: [StakingPool],
                   currency: Currency) -> [WalletBalanceItemsModel.Item] {
     var unverified = [JettonBalance]()
     var verified = [JettonBalance]()
@@ -117,6 +121,7 @@ struct WalletBalanceMapper {
         return mapJetton(
           jettonBalance: jettonBalance,
           jettonRates: jettonRates,
+          stakingPools: stakingPools,
           currency: currency
         )
       }
@@ -124,6 +129,7 @@ struct WalletBalanceMapper {
   
   func mapJetton(jettonBalance: JettonBalance,
                  jettonRates: Rates.JettonRate?,
+                 stakingPools: [StakingPool],
                  currency: Currency) -> WalletBalanceItemsModel.Item {
     let amount = amountFormatter.formatAmount(
       jettonBalance.quantity,
@@ -135,6 +141,18 @@ struct WalletBalanceMapper {
     var convertedAmount: String?
     var diff: String?
     var hasPrice = false
+    
+    var stakingInfo: WalletBalanceItemsModel.StakingInfo = .none
+    if let stakingPool = stakingPools.first(where: { $0.jettonMaster == jettonBalance.item.jettonInfo.address }) {
+      stakingInfo = .pool(
+        .init(
+          name: stakingPool.name,
+          depositToken: .ton,
+          poolType: stakingPool.implementation.type
+        )
+      )
+    }
+    
     if let rate = jettonBalance.rates[currency] {
       let converted = rateConverter.convert(
         amount: jettonBalance.quantity,
@@ -164,7 +182,8 @@ struct WalletBalanceMapper {
       amount: amount,
       convertedAmount: convertedAmount,
       verification: jettonBalance.item.jettonInfo.verification,
-      hasPrice: hasPrice
+      hasPrice: hasPrice,
+      stakingInfo: stakingInfo
     )
   }
 }

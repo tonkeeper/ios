@@ -9,6 +9,7 @@ import KeeperCore
 protocol StakingEditAmountModuleOutput: AnyObject {
   var didTapContinue: ((StakingConfirmationItem) -> Void)? { get set }
   var didTapPoolPicker: ((StakingOptionsListModel, Address?) -> Void)? { get set }
+  var didTapBuy: ((Wallet) -> Void)? { get set }
 }
 
 protocol StakingEditAmountModuleInput: AnyObject {
@@ -23,19 +24,24 @@ protocol StakingEditAmountViewModel: AnyObject {
   var didUpdateMaximumFractionDigits: ((Int) -> Void)? { get set }
   var didUpdateRemaining: ((NSAttributedString) -> Void)? { get set }
   var didUpdateProviderInfo: ((StakingProviderView.Model) -> Void)? { get set }
-  var didUpdateIsContinueEnabled: ((Bool) -> Void)? { get set }
   var didUpdateSwapIcon: ((Bool) -> Void)? { get set }
   var didResetHighlightIsMax: (() -> Void)? { get set }
+  var didUpdatePrimaryButton:((String, Bool) -> Void)? { get set }
   
   func viewDidLoad()
   func didEditAmountInput(_ string: String?)
   func didToggleMaxAmount()
   func didTapPool()
   func didToggleInputMode()
-  func didTapContinueButton()
+  func didTapPrimaryButton()
 }
 
 final class StakingEditAmountViewModelImplementation: StakingEditAmountViewModel, StakingEditAmountModuleOutput, StakingEditAmountModuleInput {
+  
+  struct PrimaryButtonModel {
+    let title: String
+    let isEnable: String
+  }
   
   // MARK: - StakingModuleInput
   
@@ -47,6 +53,7 @@ final class StakingEditAmountViewModelImplementation: StakingEditAmountViewModel
   
   var didTapContinue: ((StakingConfirmationItem) -> Void)?
   var didTapPoolPicker: ((StakingOptionsListModel, Address?) -> Void)?
+  var didTapBuy: ((Wallet) -> Void)?
   
   // MARK: - StakingViewModel
   var didUpdateTitle: ((String) -> Void)?
@@ -57,8 +64,8 @@ final class StakingEditAmountViewModelImplementation: StakingEditAmountViewModel
   var didUpdateRemaining: ((NSAttributedString) -> Void)?
   var didUpdateProviderInfo: ((StakingProviderView.Model) -> Void)?
   var didUpdateSwapIcon: ((Bool) -> Void)?
-  var didUpdateIsContinueEnabled: ((Bool) -> Void)?
   var didResetHighlightIsMax: (() -> Void)?
+  var didUpdatePrimaryButton: ((String, Bool) -> Void)?
   
   func viewDidLoad() {
     setupControllerBindinds()
@@ -86,10 +93,14 @@ final class StakingEditAmountViewModelImplementation: StakingEditAmountViewModel
     didTapPoolPicker?(optionsListModel, controller.stakingPool.address)
   }
   
-  func didTapContinueButton() {
-    let item = controller.getStakeConfirmationItem()
-    
-    didTapContinue?(item)
+  func didTapPrimaryButton() {
+    switch controller.primaryAction.action {
+    case .buy:
+      didTapBuy?(controller.wallet)
+    case .confirm:
+      let item = controller.getStakeConfirmationItem()
+      didTapContinue?(item)
+    }
   }
   
   // MARK: - Dependencies
@@ -126,8 +137,9 @@ private extension StakingEditAmountViewModelImplementation {
       self?.didUpdateMaximumFractionDigits?(fractionDigits)
     }
     
-    controller.didUpdateIsContinueEnabled = { [weak self] in
-      self?.didUpdateIsContinueEnabled?($0)
+    controller.didUpdatePrimaryAction = { [weak self] action in
+      let title: String = action.action == .buy ? .primaryActionBuy : .primaryActionContinue
+      self?.didUpdatePrimaryButton?(title, action.isEnable)
     }
     
     controller.didUpdateRemaining = { [weak self] remaining in
@@ -195,8 +207,8 @@ private extension String {
   static let remainingPrefix = "Remaining:"
   static let insufficientPrefix = "Insufficient balance"
   static let minPrefix = "Minimum"
+  static let primaryActionBuy = "Buy"
+  static let primaryActionContinue = "Continue"
   
-  static let depositModuleTitle = "Stake"
-  static let withdrawModuleTitle = "Unstake"
   static let validationCycleInfoPrefix = "Unstake request will be processed after the end of the validation cycle in"
 }

@@ -14,7 +14,7 @@ final class StakingWithdrawConfirmationController: StakingConfirmationController
   private let ratesStore: RatesStore
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
-  private let mnemonicRepository: WalletMnemonicRepository
+  private let signService: TransferSignService
   private let amountFormatter: AmountFormatter
   private let decimalFormatter: DecimalAmountFormatter
   private let sendService: SendService
@@ -27,7 +27,7 @@ final class StakingWithdrawConfirmationController: StakingConfirmationController
     balanceStore: BalanceStore,
     ratesStore: RatesStore,
     currencyStore: CurrencyStore,
-    mnemonicRepository: WalletMnemonicRepository,
+    signService: TransferSignService,
     amountFormatter: AmountFormatter,
     decimalFormatter: DecimalAmountFormatter,
     sendService: SendService,
@@ -39,7 +39,7 @@ final class StakingWithdrawConfirmationController: StakingConfirmationController
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
-    self.mnemonicRepository = mnemonicRepository
+    self.signService = signService
     self.amountFormatter = amountFormatter
     self.decimalFormatter = decimalFormatter
     self.sendService = sendService
@@ -57,12 +57,12 @@ final class StakingWithdrawConfirmationController: StakingConfirmationController
   public func sendTransaction() async throws {
     do {
       let transactionBoc = try await createTransactionBoc {
-        try await signTransfer($0)
+        try await signService.getSign($0, wallet: walletsStore.activeWallet)
       }
       
       try await sendService.sendTransaction(boc: transactionBoc, wallet: walletsStore.activeWallet)
       NotificationCenter.default.post(
-        name: NSNotification.Name(rawValue: "didSendTransaction"),
+        name: NSNotification.Name(rawValue: "DID SEND TRANSACTION"),
         object: nil,
         userInfo: ["Wallet": walletsStore.activeWallet]
       )
@@ -187,6 +187,7 @@ private extension StakingWithdrawConfirmationController {
       poolImage: poolImage,
       wallet: walletsStore.activeWallet.model.emojiLabel,
       apyPercent: nil,
+      operationName: .withdrawTitle,
       amount: formattedAmount,
       amountConverted: formattedConvertedAmount,
       fee: fee,
@@ -222,42 +223,8 @@ private extension StakingWithdrawConfirmationController {
       signClosure: signClosure
       )
   }
-  
-  func signTransfer(_ transfer: WalletTransfer) async throws -> Data {
-    switch walletsStore.activeWallet.identity.kind {
-    case .Regular:
-      let mnemonic = try mnemonicRepository.getMnemonic(forWallet: walletsStore.activeWallet)
-      let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-      let privateKey = keyPair.privateKey
-      return try transfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
-    case .Lockup:
-      throw StakingConfirmationError.failedToSign
-    case .Watchonly:
-      throw StakingConfirmationError.failedToSign
-    case .External(let publicKey, let walletContractVersion):
-      return try await signExternal(
-        transfer: transfer.signingMessage.endCell().toBoc(),
-        publicKey: publicKey,
-        revision: walletContractVersion
-      )
-    }
-  }
-  
-  func signExternal(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) async throws -> Data {
-    guard let url = createTonSignURL(transfer: transfer, publicKey: publicKey, revision: revision),
-          let didGetExternalSign,
-          let signedData = try await didGetExternalSign(url) else {
-      throw StakingConfirmationError.failedToSign
-    }
-    return signedData
-  }
-  
-  func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) -> URL? {
-    guard let publicKey = publicKey.data.base64EncodedString().percentEncoded,
-          let body = transfer.base64EncodedString().percentEncoded else { return nil }
-    let v = revision.rawValue.lowercased()
-    
-    let string = "tonsign://?pk=\(publicKey)&body=\(body)&v=\(v)&return=\("tonkeeperx://publish".percentEncoded ?? "")"
-    return URL(string: string)
-  }
+}
+
+private extension String {
+  static let withdrawTitle = "Withdraw"
 }

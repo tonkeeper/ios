@@ -213,11 +213,18 @@ public final class MainAssembly {
     )
   }
   
-  public func jettonTokenDetailsController(jettonItem: JettonItem) -> TokenDetailsController {
-    let configurator = JettonTokenDetailsControllerConfigurator(
-      jettonItem: jettonItem,
-      mapper: tokenDetailsMapper
-    )
+  public func jettonTokenDetailsController(jettonItem: JettonItem, stakingPool: StakingPool?) -> TokenDetailsController {
+    
+    let configurator: TokenDetailsControllerConfigurator
+    if let stakingPool {
+        configurator = LPJettonDetailsControllerConfigurator(jettonItem: jettonItem, mapper: tokenDetailsMapper, stakingPool: stakingPool)
+    } else {
+      configurator = JettonTokenDetailsControllerConfigurator(
+        jettonItem: jettonItem,
+        mapper: tokenDetailsMapper
+      )
+    }
+  
     return TokenDetailsController(
       configurator: configurator,
       walletsStore: walletAssembly.walletStore,
@@ -245,6 +252,18 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
+    )
+  }
+  
+  public func lpTokenChartController(jetton: JettonItem, stakingPool: StakingPool, token: Token) -> LPTokenChartController {
+    LPTokenChartController(
+      token: token,
+      stakingPool: stakingPool,
+      jetton: jetton.jettonInfo,
+      walletsStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
+      bigIntFormatter: formattersAssembly.bigIntAmountFormatter
     )
   }
   
@@ -452,7 +471,7 @@ public final class MainAssembly {
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.ratesStore,
       currencyStore: storesAssembly.currencyStore,
-      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
+      signService: transferSignService,
       amountFormatter: formattersAssembly.amountFormatter,
       decimalFormatter: formattersAssembly.decimalAmountFormatter,
       sendService: servicesAssembly.sendService()
@@ -470,7 +489,7 @@ public final class MainAssembly {
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.ratesStore,
       currencyStore: storesAssembly.currencyStore,
-      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
+      signService: transferSignService,
       amountFormatter: formattersAssembly.amountFormatter,
       decimalFormatter: formattersAssembly.decimalAmountFormatter,
       sendService: servicesAssembly.sendService(),
@@ -570,5 +589,9 @@ private extension MainAssembly {
   
   var stakingEditAmountConverter: StakingEditAmountConverter {
     StakingEditAmountConverter(rateConverter: RateConverter())
+  }
+  
+  var transferSignService: TransferSignService {
+    TransferSignServiceImplementation(mnemonicRepository: repositoriesAssembly.mnemonicRepository())
   }
 }

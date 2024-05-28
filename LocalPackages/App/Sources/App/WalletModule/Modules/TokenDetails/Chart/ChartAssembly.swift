@@ -15,6 +15,28 @@ struct ChartAssembly {
         decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
       )
     )
+    
+    let viewController = ChartViewController(viewModel: viewModel)
+    return .init(view: viewController, output: viewModel, input: Void())
+  }
+  
+  // вынести
+  static func module(
+    jetton: JettonItem,
+    stakingPool: StakingPool,
+    token: Token,
+    coreAssembly: TKCore.CoreAssembly,
+    keeperCoreMainAssembly: KeeperCore.MainAssembly
+  ) -> MVVMModule<ChartViewController, ChartModuleOutput, Void> {
+    let viewModel = LPTokenChartViewModel(
+      controller: keeperCoreMainAssembly.lpTokenChartController(
+        jetton: jetton,
+        stakingPool: stakingPool,
+        token: token
+      ),
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+    )
+
     let viewController = ChartViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())
   }

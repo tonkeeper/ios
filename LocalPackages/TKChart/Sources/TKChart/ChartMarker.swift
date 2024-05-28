@@ -11,6 +11,7 @@ import DGCharts
 
 class ChartMarker: Marker {
   var offset: CGPoint = .zero
+  var color: UIColor = .Accent.blue
   
   func offsetForDrawing(atPoint: CGPoint) -> CGPoint { .zero }
   
@@ -31,11 +32,11 @@ class ChartMarker: Marker {
       width: .smallDiameter,
       height: .smallDiameter))
     
-    UIColor.Accent.blue.withAlphaComponent(.bigCircleAlpha).setFill()
+    color.withAlphaComponent(.bigCircleAlpha).setFill()
     bigCircle.fill()
     bigCircle.stroke()
     
-    UIColor.Accent.blue.setFill()
+    color.setFill()
     smallCircle.fill()
     smallCircle.stroke()
   }

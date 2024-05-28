@@ -2,9 +2,11 @@ import UIKit
 
 public final class TKUIListItemIconView: UIView, TKConfigurableView {
   
+  var badgeIconView: UIView?
+  
   private var iconView: UIView?
   private var alignment: Configuration.Alignment = .top
-
+  
   public struct Configuration: Hashable {
     public enum Alignment: Hashable {
       case top
@@ -15,6 +17,7 @@ public final class TKUIListItemIconView: UIView, TKConfigurableView {
       case none
       case image(TKUIListItemImageIconView.Configuration)
       case emoji(TKUIListItemEmojiIconView.Configuration)
+      case imageWithBadge(TKUIListItemImageIconView.Configuration, TKUIListItemImageIconView.Configuration)
     }
     
     public let iconConfiguration: IconConfiguration
@@ -34,11 +37,13 @@ public final class TKUIListItemIconView: UIView, TKConfigurableView {
       configure(imageIconConfiguration: configuration)
     case .emoji(let configuration):
       configure(emojiIconConfiguration: configuration)
+    case .imageWithBadge(let mainConfiguration, let badgeConfiguration):
+      configure(mainIconConfiguration: mainConfiguration, badgeIconConfiguration: badgeConfiguration)
     }
     self.alignment = configuration.alignment
     setNeedsLayout()
   }
-
+  
   public override func sizeThatFits(_ size: CGSize) -> CGSize {
     guard let iconView = iconView else { return .zero }
     return iconView.sizeThatFits(size)
@@ -46,7 +51,7 @@ public final class TKUIListItemIconView: UIView, TKConfigurableView {
   
   public override func layoutSubviews() {
     super.layoutSubviews()
-    if let iconView = iconView {
+    if let iconView {
       iconView.sizeToFit()
       switch alignment {
       case .top:
@@ -60,6 +65,19 @@ public final class TKUIListItemIconView: UIView, TKConfigurableView {
           y: bounds.height/2
         )
       }
+      
+      if let badgeIconView {
+        badgeIconView.sizeToFit()
+        badgeIconView.center = CGPoint(
+          x: iconView.frame.maxX - badgeIconView.frame.width / 3,
+          y: iconView.frame.maxY - badgeIconView.frame.width / 3
+        )
+        let size = CGSize(
+          width: badgeIconView.frame.width + badgeIconView.layer.borderWidth,
+          height: badgeIconView.frame.width + badgeIconView.layer.borderWidth
+        )
+        badgeIconView.frame.size = size
+      }
     }
   }
 }
@@ -68,6 +86,22 @@ private extension TKUIListItemIconView {
   func configureNone() {
     iconView?.removeFromSuperview()
     iconView = nil
+    badgeIconView?.removeFromSuperview()
+    badgeIconView = nil
+  }
+  
+  func configure(mainIconConfiguration: TKUIListItemImageIconView.Configuration, badgeIconConfiguration: TKUIListItemImageIconView.Configuration) {
+    configure(imageIconConfiguration: mainIconConfiguration)
+    
+    if let badgeImageIconView = badgeIconView as? TKUIListItemImageIconView {
+      badgeImageIconView.configure(configuration: badgeIconConfiguration)
+    } else {
+      badgeIconView?.removeFromSuperview()
+      let badgeIconView = TKUIListItemImageIconView()
+      badgeIconView.configure(configuration: badgeIconConfiguration)
+      addSubview(badgeIconView)
+      self.badgeIconView = badgeIconView
+    }
   }
   
   func configure(imageIconConfiguration: TKUIListItemImageIconView.Configuration) {

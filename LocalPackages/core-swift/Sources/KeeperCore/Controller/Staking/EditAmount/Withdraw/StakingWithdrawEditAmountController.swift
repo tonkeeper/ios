@@ -9,16 +9,20 @@ public final class StakingWithdrawEditAmountController: StakingEditAmountControl
   
   public var didUpdateTitle: ((String) -> Void)?
   public var didUpdateConvertedValue: ((String) -> Void)?
+  public var didUpdatePrimaryAction: ((StakingEditAmountPrimaryAction) -> Void)?
   public var didUpdateInputValue: ((String?) -> Void)?
   public var didUpdateInputSymbol: ((String?) -> Void)?
   public var didUpdateMaximumFractionDigits: ((Int) -> Void)?
-  public var didUpdateIsContinueEnabled: ((Bool) -> Void)?
   public var didUpdateRemaining: ((StakingRemaining) -> Void)?
   public var didUpdateIsHiddenSwapIcon: ((Bool) -> Void)?
   public var didUpdateProviderModel: ((ProviderModel) -> Void)?
   public var didResetMax: (() -> Void)?
   
   public var stakingPool: StakingPool
+  public private(set) var primaryAction: StakingEditAmountPrimaryAction = .init(action: .confirm, isEnable: false)
+  public var wallet: Wallet {
+    return walletStore.activeWallet
+  }
   
   public func start() {
     didUpdateTitle?(.moduleTitle)
@@ -230,7 +234,6 @@ private extension StakingWithdrawEditAmountController {
       
       await MainActor.run {
         updateRemaining(balance: balance)
-        updateContinueIsEnabled(balance: balance)
       }
     }
   }
@@ -254,20 +257,28 @@ private extension StakingWithdrawEditAmountController {
     }
     
     didUpdateRemaining?(remaining)
-    updateContinueIsEnabled(balance: balance)
+    updatePrimaryButton(remaining: remaining)
   }
   
-  func updateContinueIsEnabled(balance: Balance) {
+  func updatePrimaryButton(remaining: StakingRemaining) {
     let isEmptyInput = lpJettonAmount.isZero
     guard !isEmptyInput else {
-      didUpdateIsContinueEnabled?(false)
+      primaryAction.isEnable = false
+      primaryAction.action = .confirm
+      didUpdatePrimaryAction?(primaryAction)
       return
     }
     
-    let balanceAmount = balance.jettonsBalance.first(where: { $0.item.jettonInfo == lpJetton })?.quantity ?? 0
-    let isBalanceValid = balanceAmount >= lpJettonAmount
+    switch remaining {
+    case .insufficient:
+      primaryAction.action = .confirm
+      primaryAction.isEnable = false
+    case .lessThenMinDeposit, .remaining:
+      primaryAction.action = .confirm
+      primaryAction.isEnable = true
+    }
     
-    didUpdateIsContinueEnabled?(isBalanceValid)
+    didUpdatePrimaryAction?(primaryAction)
   }
   
   func updateConvertedValue() {

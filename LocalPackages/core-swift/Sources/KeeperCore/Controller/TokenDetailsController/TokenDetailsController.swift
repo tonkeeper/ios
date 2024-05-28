@@ -39,28 +39,6 @@ public final class TokenDetailsController {
     await startObservations()
     await setInitialState()
   }
-  
-  public func getWithDrawModel(for token: Token) -> WithdrawModel? {
-    var jetton: JettonInfo?
-    
-    switch token {
-    case .ton:
-      return nil
-    case .jetton(let jettonItem):
-      jetton = jettonItem.jettonInfo
-    }
-    
-    guard let jetton else { return nil }
-    
-    let wallet = walletsStore.activeWallet
-    let pools = (try? stakingPoolsService.getPools(address: wallet.address, isTestnet: wallet.isTestnet)) ?? []
-    
-    guard let pool = pools.first(where: { $0.jettonMaster == jetton.address }) else {
-      return nil
-    }
-      
-    return .init(pool: pool, lpJetton: jetton, token: .ton)
-  }
 }
 
 private extension TokenDetailsController {

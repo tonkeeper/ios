@@ -4,24 +4,29 @@ import BigInt
 import TKUIKit
 
 public final class StakingDepositEditAmountController: StakingEditAmountController {
+  public var didUpdatePrimaryAction: ((StakingEditAmountPrimaryAction) -> Void)?
   public var didUpdateTitle: ((String) -> Void)?
   public var didUpdateConvertedValue: ((String) -> Void)?
   public var didUpdateInputValue: ((String?) -> Void)?
   public var didUpdateInputSymbol: ((String?) -> Void)?
   public var didUpdateMaximumFractionDigits: ((Int) -> Void)?
-  public var didUpdateIsContinueEnabled: ((Bool) -> Void)?
   public var didUpdateRemaining: ((StakingRemaining) -> Void)?
   public var didUpdateIsHiddenSwapIcon: ((Bool) -> Void)?
   public var didUpdateProviderModel: ((ProviderModel) -> Void)?
   public var didResetMax: (() -> Void)?
 
-  private let token: Token
+  public private(set) var primaryAction: StakingEditAmountPrimaryAction = .init(action: .confirm, isEnable: false)
+  public var wallet: Wallet {
+    return walletStore.activeWallet
+  }
+  
   public var stakingPool: StakingPool {
     didSet {
       updateStakingPoolItem()
     }
   }
   
+  private let token: Token
   private var stakingPools: [StakingPool] = []
   private var rate: Rates.Rate?
   private var currency: Currency = .USD
@@ -207,6 +212,7 @@ private extension StakingDepositEditAmountController {
         tokenAmount = amountOfTokens
         updateInputValue()
         updateConvertedValue()
+        updateStakingPoolItem()
       }
     }
   }
@@ -223,7 +229,6 @@ private extension StakingDepositEditAmountController {
       
       await MainActor.run {
         updateRemaining(balance: balance)
-        updateContinueIsEnabled(balance: balance)
       }
     }
   }
@@ -268,30 +273,31 @@ private extension StakingDepositEditAmountController {
     }
     
     didUpdateRemaining?(remaining)
-    updateContinueIsEnabled(balance: balance)
+    updatePrimaryButton(remaining: remaining)
   }
   
-  func updateContinueIsEnabled(balance: Balance) {
+  func updatePrimaryButton(remaining: StakingRemaining) {
     let isEmptyInput = tokenAmount.isZero
     guard !isEmptyInput else {
-      didUpdateIsContinueEnabled?(false)
+      primaryAction.isEnable = false
+      primaryAction.action = .confirm
+      didUpdatePrimaryAction?(primaryAction)
       return
     }
     
-    let minDeposit = BigInt(integerLiteral: stakingPool.minStake)
-    let balanceAmount: BigUInt
-    
-    switch token {
-    case .ton:
-      balanceAmount = BigUInt(balance.tonBalance.amount)
-    case .jetton(let jettonItem):
-      balanceAmount = balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonItem.jettonInfo })?.quantity ?? 0
+    switch remaining {
+    case .insufficient:
+      primaryAction.action = .buy
+      primaryAction.isEnable = true
+    case .lessThenMinDeposit:
+      primaryAction.action = .confirm
+      primaryAction.isEnable = false
+    case .remaining:
+      primaryAction.action = .confirm
+      primaryAction.isEnable = true
     }
     
-    let isBalanceValid = balanceAmount >= tokenAmount
-    let isMoreThenMinimumDeposit = tokenAmount >= minDeposit
-    
-    didUpdateIsContinueEnabled?(isBalanceValid && isMoreThenMinimumDeposit)
+    didUpdatePrimaryAction?(primaryAction)
   }
   
   func didChangeInputMode() {

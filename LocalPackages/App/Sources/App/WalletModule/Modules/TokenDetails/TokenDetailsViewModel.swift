@@ -8,8 +8,8 @@ protocol TokenDetailsModuleOutput: AnyObject {
   var didTapSend: ((KeeperCore.Token) -> Void)? { get set }
   var didTapReceive: ((KeeperCore.Token) -> Void)? { get set }
   var didTapBuyOrSell: (() -> Void)? { get set }
-  
   var didTapWithdraw: ((WithdrawModel) -> Void)? { get set }
+  var didTapDeposit: ((DepositModel) -> Void)? { get set }
 }
 
 protocol TokenDetailsViewModel: AnyObject {
@@ -29,6 +29,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   var didTapReceive: ((KeeperCore.Token) -> Void)?
   var didTapBuyOrSell: (() -> Void)?
   var didTapWithdraw: ((WithdrawModel) -> Void)?
+  var didTapDeposit: ((DepositModel) -> Void)?
   
   // MARK: - TokenDetailsViewModel
   
@@ -93,15 +94,14 @@ private extension TokenDetailsViewModelImplementation {
           case .send(let token):
             self?.didTapSend?(token)
           case .receive(let token):
-            guard let withdrawModel = self?.tokenDetailsController.getWithDrawModel(for: token) else {
-              return
-            }
-            
-            self?.didTapWithdraw?(withdrawModel)
-            
-//            self?.didTapReceive?(token)
+            self?.didTapReceive?(token)
           case .buySell:
             self?.didTapBuyOrSell?()
+          case .withdraw(let jetton, let stakingPool):
+            self?.didTapWithdraw?(.init(pool: stakingPool, lpJetton: jetton.jettonInfo, token: .ton))
+          case .deposit(_, let stakingPool):
+            let model = DepositModel(pool: stakingPool, token: .ton)
+            self?.didTapDeposit?(model)
           default:
             break
           }

@@ -52,6 +52,13 @@ public class TKUIListItemCell: TKCollectionViewNewCell, TKConfigurableView {
     super.layoutSubviews()
     listItemView.frame = contentContainerView.bounds
   }
+  
+  public override func prepareForReuse() {
+    super.prepareForReuse()
+    
+    listItemView.iconView.badgeIconView?.removeFromSuperview()
+    listItemView.iconView.badgeIconView = nil
+  }
 }
 
 private extension TKUIListItemCell {

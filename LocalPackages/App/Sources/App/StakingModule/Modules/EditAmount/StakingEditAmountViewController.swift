@@ -73,8 +73,6 @@ private extension StakingEditAmountViewController {
       ),
       for: .touchUpInside
     )
-    
-    customView.continueButton.configuration.content = TKButton.Configuration.Content(title: .plainString(.continueButtonTitle))
   }
   
   func setupBindings() {
@@ -106,8 +104,9 @@ private extension StakingEditAmountViewController {
       self?.customView.providerView.configure(model: model)
     }
     
-    viewModel.didUpdateIsContinueEnabled = { [weak self] value in 
-      self?.customView.continueButton.configuration.isEnabled = value
+    viewModel.didUpdatePrimaryButton = { [weak self] title, isEnable in
+      self?.customView.continueButton.configuration.content.title = .plainString(title)
+      self?.customView.continueButton.isEnabled = isEnable
     }
     
     viewModel.didUpdateSwapIcon = { [weak self] isHidden in
@@ -130,7 +129,7 @@ private extension StakingEditAmountViewController {
     }
     
     customView.continueButton.configuration.action = { [weak viewModel] in
-      viewModel?.didTapContinueButton()
+      viewModel?.didTapPrimaryButton()
     }
   }
   
@@ -143,8 +142,6 @@ private extension StakingEditAmountViewController {
     return configuration
   }
 }
-
-// 282_580_171_787_705_651_200_000
 
 private extension String {
   static let maxButtonTitle = "MAX"

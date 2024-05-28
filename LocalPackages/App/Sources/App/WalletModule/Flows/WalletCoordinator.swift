@@ -110,7 +110,7 @@ private extension WalletCoordinator {
     router.push(viewController: module.view)
   }
   
-  func openJettonDetails(jettonItem: JettonItem, wallet: Wallet, hasPrice: Bool) {
+  func openJettonDetails(jettonItem: JettonItem, wallet: Wallet, hasPrice: Bool, stakingPool: StakingPool?) {
     let historyListModule = HistoryModule(
       dependencies: HistoryModule.Dependencies(
         coreAssembly: coreAssembly,
@@ -124,9 +124,22 @@ private extension WalletCoordinator {
     
     let module = TokenDetailsAssembly.module(
       tokenDetailsListContentViewController: historyListModule.view,
-      tokenDetailsController: keeperCoreMainAssembly.jettonTokenDetailsController(jettonItem: jettonItem),
+      tokenDetailsController: keeperCoreMainAssembly.jettonTokenDetailsController(jettonItem: jettonItem, stakingPool: stakingPool),
       chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
-        guard hasPrice else { return nil }
+        if let stakingPool {
+          return ChartAssembly.module(
+            jetton: jettonItem,
+            stakingPool: stakingPool,
+            token: .ton,
+            coreAssembly: coreAssembly,
+            keeperCoreMainAssembly: keeperCoreMainAssembly
+          ).view
+        }
+        
+        if !hasPrice {
+          return nil
+        }
+        
         return ChartAssembly.module(token: .jetton(jettonItem),
                                     coreAssembly: coreAssembly,
                                     keeperCoreMainAssembly: keeperCoreMainAssembly).view
@@ -144,6 +157,10 @@ private extension WalletCoordinator {
     
     module.output.didTapWithdraw = { [weak self] withdrawModel in
       self?.openWithdraw(model: withdrawModel)
+    }
+    
+    module.output.didTapDeposit = { [weak self] depositModel in
+      self?.openDeposit(model: depositModel)
     }
     
     router.push(viewController: module.view)
@@ -173,6 +190,30 @@ private extension WalletCoordinator {
     
     addChild(coordinator)
     coordinator.openWithdrawEditAmount(withdrawModel: model)
+    
+    self.router.present(navigationController)
+  }
+  
+  func openDeposit(model: DepositModel) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
+    let module = StakingModule(dependencies:
+        .init(
+          keeperCoreMainAssembly: keeperCoreMainAssembly,
+          coreAssembly: coreAssembly)
+    )
+    
+    let coordinator = module.createStakingCoordinator(router: router)
+    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.openDepositEditAmount(depositeModel: model)
     
     self.router.present(navigationController)
   }
@@ -235,33 +276,6 @@ private extension WalletCoordinator {
     coordinator.start()
   }
   
-  func openStakingDeposit(depositeModel: DepositModel) {
-    let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
-    let router = NavigationControllerRouter(rootViewController: navigationController)
-    
-    let module = StakingModule(
-      dependencies:
-          .init(
-            keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly
-          )
-    )
-    
-    let coordinator = module.createStakingCoordinator(router: router)
-    
-    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
-      navigationController?.dismiss(animated: true)
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    
-    addChild(coordinator)
-    coordinator.openDepositEditAmount(depositeModel: depositeModel)
-    
-    self.router.present(navigationController)
-  }
-  
   func openConfirmation() async -> Bool {
     return await Task<Bool, Never> { @MainActor in
       return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
@@ -305,7 +319,11 @@ private extension WalletCoordinator {
     }
     
     module.output.didSelectJetton = { [weak self] wallet, jettonItem, hasPrice in
-      self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet, hasPrice: hasPrice)
+      self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet, hasPrice: hasPrice, stakingPool: nil)
+    }
+    
+    module.output.didSelectLPJetton = { [weak self] wallet, jetton, stakingPool in
+      self?.openJettonDetails(jettonItem: jetton, wallet: wallet, hasPrice: true, stakingPool: stakingPool)
     }
     
     module.output.didTapSend = { [weak self] in
@@ -333,7 +351,7 @@ private extension WalletCoordinator {
     }
     
     module.output.didTapStake = { [weak self] model in
-      self?.openStakingDeposit(depositeModel: model)
+      self?.openDeposit(model: model)
     }
     
     module.output.didRequireConfirmation = { [weak self] in
