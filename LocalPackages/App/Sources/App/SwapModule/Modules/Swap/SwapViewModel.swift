@@ -870,87 +870,27 @@ private extension SwapViewModelImplementation {
   func createActionButton(forState swapState: SwapState) -> SwapActionButtonModel {
     switch swapState {
     case .enterAmount:
-      return createEnterAmountButton()
+      return itemMapper.createEnterAmountButton(isActivity: isResolving)
     case .chooseToken:
-      return createChoseTokenButton()
+      return itemMapper.createChoseTokenButton(isActivity: isResolving)
     case .insufficientBalanceTon:
-      return createInsufficientBalanceTonButton()
+      return itemMapper.createInsufficientBalanceTonButton(
+        isActivity: isResolving && currentSwapSimulationModel == nil,
+        action: { [weak self] in self?.didTapBuyTon?() }
+      )
     case .insufficientBalance:
-      return createInsufficientBalanceButton()
+      return itemMapper.createInsufficientBalanceButton(
+        tokenSymbol: swapOperationItem.sendToken?.asset.symbol ?? "",
+        isActivity: isResolving && currentSwapSimulationModel == nil
+      )
     case .continueSwap:
-      return createContinueButton()
+      return itemMapper.createContinueButton(
+        isEnabled: isContinueEnable,
+        isActivity: isResolving,
+        action: { [weak self] in self?.handleContinueButtonTap() }
+      )
     case .simulationFail:
-      return createSimulationFailButton()
+      return itemMapper.createSimulationFailButton()
     }
-  }
-  
-  func createEnterAmountButton() -> SwapActionButtonModel {
-    SwapActionButtonModel(
-      title: "Enter Amount",
-      backgroundColor: .Button.secondaryBackground,
-      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
-      isEnabled: !isResolving,
-      isActivity: isResolving,
-      action: nil
-    )
-  }
-  
-  func createChoseTokenButton() -> SwapActionButtonModel {
-    SwapActionButtonModel(
-      title: "Choose Token",
-      backgroundColor: .Button.secondaryBackground,
-      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
-      isEnabled: !isResolving,
-      isActivity: isResolving,
-      action: nil
-    )
-  }
-  
-  func createInsufficientBalanceTonButton() -> SwapActionButtonModel {
-    SwapActionButtonModel(
-      title: "Insufficient Balance. Buy TON",
-      backgroundColor: .Button.secondaryBackground,
-      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
-      isEnabled: true,
-      isActivity: isResolving && currentSwapSimulationModel == nil,
-      action: { [weak self] in
-        self?.didTapBuyTon?()
-      }
-    )
-  }
-  
-  func createInsufficientBalanceButton() -> SwapActionButtonModel {
-    SwapActionButtonModel(
-      title: "Insufficient \(swapOperationItem.sendToken?.asset.symbol ?? "") balance",
-      backgroundColor: .Button.secondaryBackground,
-      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
-      isEnabled: true,
-      isActivity: isResolving && currentSwapSimulationModel == nil,
-      action: nil
-    )
-  }
-  
-  func createContinueButton() -> SwapActionButtonModel {
-    SwapActionButtonModel(
-      title: "Continue",
-      backgroundColor: .Button.primaryBackground,
-      backgroundColorHighlighted: .Button.primaryBackgroundHighlighted,
-      isEnabled: !isResolving && isContinueEnable,
-      isActivity: isResolving,
-      action: { [weak self] in
-        self?.handleContinueButtonTap()
-      }
-    )
-  }
-  
-  func createSimulationFailButton() -> SwapActionButtonModel {
-    SwapActionButtonModel(
-      title: "Simulation fail",
-      backgroundColor: .Button.secondaryBackground,
-      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
-      isEnabled: true,
-      isActivity: false,
-      action: nil
-    )
   }
 }

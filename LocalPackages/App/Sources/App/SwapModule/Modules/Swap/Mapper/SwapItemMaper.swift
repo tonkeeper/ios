@@ -96,6 +96,72 @@ struct SwapItemMaper {
       )
     )
   }
+  
+  func createEnterAmountButton(isActivity: Bool) -> SwapActionButtonModel {
+    SwapActionButtonModel(
+      title: "Enter Amount",
+      backgroundColor: .Button.secondaryBackground,
+      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
+      isEnabled: !isActivity,
+      isActivity: isActivity,
+      action: nil
+    )
+  }
+  
+  func createChoseTokenButton(isActivity: Bool) -> SwapActionButtonModel {
+    SwapActionButtonModel(
+      title: "Choose Token",
+      backgroundColor: .Button.secondaryBackground,
+      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
+      isEnabled: !isActivity,
+      isActivity: isActivity,
+      action: nil
+    )
+  }
+  
+  func createInsufficientBalanceTonButton(isActivity: Bool, action: (() -> Void)?) -> SwapActionButtonModel {
+    SwapActionButtonModel(
+      title: "Insufficient Balance. Buy TON",
+      backgroundColor: .Button.secondaryBackground,
+      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
+      isEnabled: true,
+      isActivity: isActivity,
+      action: action
+    )
+  }
+  
+  func createInsufficientBalanceButton(tokenSymbol: String, isActivity: Bool) -> SwapActionButtonModel {
+    SwapActionButtonModel(
+      title: "Insufficient \(tokenSymbol) balance",
+      backgroundColor: .Button.secondaryBackground,
+      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
+      isEnabled: true,
+      isActivity: isActivity,
+      action: nil
+    )
+  }
+  
+  func createContinueButton(isEnabled: Bool, isActivity: Bool, action: (() -> Void)?) -> SwapActionButtonModel {
+    SwapActionButtonModel(
+      title: "Continue",
+      backgroundColor: .Button.primaryBackground,
+      backgroundColorHighlighted: .Button.primaryBackgroundHighlighted,
+      isEnabled: !isActivity && isEnabled,
+      isActivity: isActivity,
+      action: action
+    )
+  }
+  
+  func createSimulationFailButton() -> SwapActionButtonModel {
+    SwapActionButtonModel(
+      title: "Simulation fail",
+      backgroundColor: .Button.secondaryBackground,
+      backgroundColorHighlighted: .Button.secondaryBackgroundHighlighted,
+      isEnabled: true,
+      isActivity: false,
+      action: nil
+    )
+  }
 }
 
 private extension SwapItemMaper {
