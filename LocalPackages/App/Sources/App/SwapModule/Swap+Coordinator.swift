@@ -15,15 +15,13 @@ import KeeperCore
 
 public final class SwapCoordinator: RouterCoordinator<ViewControllerRouter> {
     
-    private let wallet: Wallet
+//    private let wallet: Wallet
     private let keeperCoreMainAssembly: KeeperCore.MainAssembly
     private let coreAssembly: TKCore.CoreAssembly
     
-    init(wallet: Wallet,
-         keeperCoreMainAssembly: KeeperCore.MainAssembly,
+    init(keeperCoreMainAssembly: KeeperCore.MainAssembly,
          coreAssembly: TKCore.CoreAssembly,
          router: ViewControllerRouter) {
-        self.wallet = wallet
         self.keeperCoreMainAssembly = keeperCoreMainAssembly
         self.coreAssembly = coreAssembly
         super.init(router: router)

@@ -2,7 +2,7 @@ import Foundation
 import TonAPI
 import TonSwift
 
-protocol SendService {
+public protocol SendService {
   func loadSeqno(wallet: Wallet) async throws -> UInt64
   func loadTransactionInfo(boc: String, wallet: Wallet) async throws -> Components.Schemas.MessageConsequences
   func sendTransaction(boc: String, wallet: Wallet) async throws
@@ -40,7 +40,7 @@ final class SendServiceImplementation: SendService {
   }
 }
 
-extension SendService {
+public extension SendService {
   func getTimeoutSafely(wallet: Wallet, TTL: UInt64 = 5 * 60) async -> UInt64 {
     return await getTimeoutSafely(wallet: wallet, TTL: TTL)
   }

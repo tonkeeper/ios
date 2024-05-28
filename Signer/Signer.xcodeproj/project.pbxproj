@@ -7,7 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		C30A3AF72BE23EC300D82A0B /* QRCodeGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30A3AF62BE23EC300D82A0B /* QRCodeGenerator.swift */; };
+		7D2D12FA2BFCB0040061BBD3 /* EmulateQRCodeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2D12F62BFCAF720061BBD3 /* EmulateQRCodeViewController.swift */; };
+		7D2D12FB2BFCB0040061BBD3 /* EmulateQRCodeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2D12F72BFCAF730061BBD3 /* EmulateQRCodeView.swift */; };
+		7D2D12FC2BFCB0040061BBD3 /* EmulateQRCodeAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2D12F92BFCAF730061BBD3 /* EmulateQRCodeAssembly.swift */; };
+		7D2D12FD2BFCB0040061BBD3 /* EmulateQRCodeViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D2D12F82BFCAF730061BBD3 /* EmulateQRCodeViewModel.swift */; };
+		7DF283722BFD055700FA69DA /* TKQRCode in Frameworks */ = {isa = PBXBuildFile; productRef = 7DF283712BFD055700FA69DA /* TKQRCode */; };
+		7DF283732BFD057400FA69DA /* TKQRCode in Embed Frameworks */ = {isa = PBXBuildFile; productRef = 7DF283712BFD055700FA69DA /* TKQRCode */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		C30B6CB12BE4DEBF00737397 /* NoCameraPermissionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CA82BE4DEBF00737397 /* NoCameraPermissionView.swift */; };
 		C30B6CB22BE4DEBF00737397 /* QRScannerSwipeDownButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CA92BE4DEBF00737397 /* QRScannerSwipeDownButton.swift */; };
 		C30B6CB32BE4DEBF00737397 /* ToggleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B6CAA2BE4DEBF00737397 /* ToggleButton.swift */; };
@@ -119,6 +124,7 @@
 			dstSubfolderSpec = 10;
 			files = (
 				C30F682A2BE5559800F1FC52 /* TKUIKitDynamic in Embed Frameworks */,
+				7DF283732BFD057400FA69DA /* TKQRCode in Embed Frameworks */,
 				C360CC3C2BE20F49007F62BA /* SignerCore in Embed Frameworks */,
 				C30F68192BE51A1D00F1FC52 /* SnapKit-Dynamic in Embed Frameworks */,
 			);
@@ -128,7 +134,11 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		C30A3AF62BE23EC300D82A0B /* QRCodeGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRCodeGenerator.swift; sourceTree = "<group>"; };
+		7D2D12F62BFCAF720061BBD3 /* EmulateQRCodeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulateQRCodeViewController.swift; sourceTree = "<group>"; };
+		7D2D12F72BFCAF730061BBD3 /* EmulateQRCodeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulateQRCodeView.swift; sourceTree = "<group>"; };
+		7D2D12F82BFCAF730061BBD3 /* EmulateQRCodeViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulateQRCodeViewModel.swift; sourceTree = "<group>"; };
+		7D2D12F92BFCAF730061BBD3 /* EmulateQRCodeAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmulateQRCodeAssembly.swift; sourceTree = "<group>"; };
+		7DF283702BFD021100FA69DA /* TKQRCode */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = TKQRCode; path = ../LocalPackages/TKQRCode; sourceTree = "<group>"; };
 		C30B6CA82BE4DEBF00737397 /* NoCameraPermissionView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NoCameraPermissionView.swift; sourceTree = "<group>"; };
 		C30B6CA92BE4DEBF00737397 /* QRScannerSwipeDownButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = QRScannerSwipeDownButton.swift; sourceTree = "<group>"; };
 		C30B6CAA2BE4DEBF00737397 /* ToggleButton.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ToggleButton.swift; sourceTree = "<group>"; };
@@ -242,18 +252,22 @@
 				C30F681F2BE51CCE00F1FC52 /* TKScreenKit in Frameworks */,
 				C360CC3B2BE20F49007F62BA /* SignerCore in Frameworks */,
 				C316144F2BEF8F4400D70977 /* SignerLocalize in Frameworks */,
+				7DF283722BFD055700FA69DA /* TKQRCode in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		C30A3AF52BE23EBA00D82A0B /* QRCoreGenerator */ = {
+		7D2D12F52BFCAF020061BBD3 /* EmulateQRCode */ = {
 			isa = PBXGroup;
 			children = (
-				C30A3AF62BE23EC300D82A0B /* QRCodeGenerator.swift */,
+				7D2D12F92BFCAF730061BBD3 /* EmulateQRCodeAssembly.swift */,
+				7D2D12F62BFCAF720061BBD3 /* EmulateQRCodeViewController.swift */,
+				7D2D12F82BFCAF730061BBD3 /* EmulateQRCodeViewModel.swift */,
+				7D2D12F72BFCAF730061BBD3 /* EmulateQRCodeView.swift */,
 			);
-			path = QRCoreGenerator;
+			path = EmulateQRCode;
 			sourceTree = "<group>";
 		};
 		C30B6CAB2BE4DEBF00737397 /* Views */ = {
@@ -298,6 +312,7 @@
 		C30B6CBC2BE4EA4600737397 /* Sign */ = {
 			isa = PBXGroup;
 			children = (
+				7D2D12F52BFCAF020061BBD3 /* EmulateQRCode */,
 				C35434C82BE8767E009FA8C0 /* SignQRCode */,
 				C30B6CC72BE4F88100737397 /* SignConfirmation */,
 			);
@@ -600,7 +615,6 @@
 			isa = PBXGroup;
 			children = (
 				C31614502BEFA50F00D70977 /* Toast */,
-				C30A3AF52BE23EBA00D82A0B /* QRCoreGenerator */,
 				C34C446B2B27570400D50343 /* Views */,
 			);
 			path = Library;
@@ -779,6 +793,7 @@
 		C3E6DE6A2B1F41C3005AA291 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
+				7DF283702BFD021100FA69DA /* TKQRCode */,
 				C335A0BB2BEF8D0400142422 /* SignerLocalize */,
 				C3F0D1182BE8998400DBA78E /* TKCoordinator */,
 				C30F681D2BE51C7F00F1FC52 /* TKScreenKit */,
@@ -834,6 +849,7 @@
 				C30F68282BE5559800F1FC52 /* TKUIKitDynamic */,
 				C3F0D1192BE899A000DBA78E /* TKCoordinator */,
 				C316144E2BEF8F4400D70977 /* SignerLocalize */,
+				7DF283712BFD055700FA69DA /* TKQRCode */,
 			);
 			productName = Signer;
 			productReference = C3E6DE532B1F40DB005AA291 /* Signer.app */;
@@ -902,6 +918,10 @@
 				C30F682E2BE56AF900F1FC52 /* KeyDetailsQRCodeCell.swift in Sources */,
 				C37671422BF18F7C003CD9CB /* SettingsRootItemsProvider.swift in Sources */,
 				C30B6CB62BE4DEBF00737397 /* ScannerViewController.swift in Sources */,
+				7D2D12FA2BFCB0040061BBD3 /* EmulateQRCodeViewController.swift in Sources */,
+				7D2D12FB2BFCB0040061BBD3 /* EmulateQRCodeView.swift in Sources */,
+				7D2D12FC2BFCB0040061BBD3 /* EmulateQRCodeAssembly.swift in Sources */,
+				7D2D12FD2BFCB0040061BBD3 /* EmulateQRCodeViewModel.swift in Sources */,
 				C35434C72BE874DF009FA8C0 /* SignCoordinator.swift in Sources */,
 				C31614542BEFAB7800D70977 /* InfoProvider.swift in Sources */,
 				C34C44A42B28CD0300D50343 /* SettingsViewController.swift in Sources */,
@@ -933,7 +953,6 @@
 				C30B6CB42BE4DEBF00737397 /* ScannerAssembly.swift in Sources */,
 				C34C447C2B27A84100D50343 /* KeyDetailsModuleAssembly.swift in Sources */,
 				C34C446F2B275AE800D50343 /* AccessoryListItemView.swift in Sources */,
-				C30A3AF72BE23EC300D82A0B /* QRCodeGenerator.swift in Sources */,
 				C34C44752B27A41E00D50343 /* EnterPasswordCoordinator.swift in Sources */,
 				C30FD95D2B223AB00045B58D /* EditWalletNameViewModel.swift in Sources */,
 				C30F682C2BE560FC00F1FC52 /* KeyDetailsSection.swift in Sources */,
@@ -1125,7 +1144,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development: Grigory Serebryanyy (XM75H6WXV7)";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1161,7 +1180,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Distribution: TONAPPS INC (CT523DK2KC)";
 				CODE_SIGN_STYLE = Manual;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 14;
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1225,6 +1244,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		7DF283712BFD055700FA69DA /* TKQRCode */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKQRCode;
+		};
 		C30F68172BE51A1D00F1FC52 /* SnapKit-Dynamic */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C30F680F2BE4FE8D00F1FC52 /* XCRemoteSwiftPackageReference "SnapKit" */;

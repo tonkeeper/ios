@@ -13,6 +13,7 @@
 
 "tabs.wallet" = "Кошелёк";
 "tabs.history" = "История";
+"tabs.browser" = "Браузер";
 "tabs.purchases" = "Покупки";
 
 "camera_permission.title" = "Разрешите доступ к камере, чтобы сканировать QR-коды";
@@ -26,6 +27,13 @@
 "history.placeholder.subtitle" = "Совершите первую транзакцию!";
 "history.placeholder.buttons.receive" = "Получить";
 "history.placeholder.buttons.buy" = "Купить Toncoin";
+
+"browser.tab.explore" = "Витрина";
+"browser.tab.connected" = "Подключенные";
+"browser.list.all" = "Все";
+"browser.search_field.placeholder" = "Поиск";
+"browser.search.title" = "Браузер";
+"browser.search.placeholder" = "Введите адрес или начните поиск";
 
 "event_details.received" = "Получено";
 "event_details.sent" = "Отправлено";

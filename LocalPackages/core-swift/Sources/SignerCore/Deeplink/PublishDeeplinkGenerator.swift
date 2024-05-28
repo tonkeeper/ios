@@ -1,10 +1,8 @@
 import Foundation
 
 struct PublishDeeplinkGenerator {
-  func generatePublishDeeplink(signature: Data, network: String?, version: String?, return: String?) -> URL? {
-    guard let signatureEncoded = signature
-      .base64EncodedString()
-      .percentEncoded else { return nil }
+  func generatePublishDeeplink(signature: Data, return: String?) -> URL? {
+    let hexSignature = signature.hexString()
     
     var urlString: String
     if let `return` {
@@ -14,12 +12,9 @@ struct PublishDeeplinkGenerator {
     }
     
     let parameters: [String] = [
-      DeeplinkParameter.boc.rawValue: signatureEncoded,
-      DeeplinkParameter.network.rawValue: network,
-      DeeplinkParameter.v.rawValue: version
-    ].compactMap {
-      guard let value = $0.value else { return nil }
-      return "\($0.key)=\(value)"
+      DeeplinkParameter.sign.rawValue: hexSignature,
+    ].map {
+      return "\($0.key)=\($0.value)"
     }
 
     urlString = "\(urlString)?\(parameters.joined(separator: "&"))"

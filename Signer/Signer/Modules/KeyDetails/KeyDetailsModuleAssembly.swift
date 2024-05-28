@@ -1,4 +1,5 @@
 import UIKit
+import TKQRCode
 import SignerCore
 
 struct KeyDetailsModuleAssembly {
@@ -7,7 +8,8 @@ struct KeyDetailsModuleAssembly {
     let viewModel = KeyDetailsViewModelImplementation(
       keyDetailsController: signerCoreAssembly.walletKeyDetailsController(
         walletKey: walletKey
-      )
+      ),
+      qrCodeGenerator: TKQRCode.qrCodeGenerator
     )
     let viewController = KeyDetailsViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())

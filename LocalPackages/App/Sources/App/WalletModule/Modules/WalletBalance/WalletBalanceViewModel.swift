@@ -11,9 +11,9 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapReceive: (() -> Void)? { get set }
   var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
-  var didTapSwap: ((Wallet)->Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
   var didTapStake: ((Wallet) -> Void)? { get set }
+  var didTapSwap: (() -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
@@ -45,9 +45,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapReceive: (() -> Void)?
   var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
-  var didTapSwap: ((Wallet) ->Void)?
   var didTapBuy: ((Wallet) -> Void)?
   var didTapStake: ((Wallet) -> Void)?
+  var didTapSwap: (() -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
   var didRequireConfirmation: (() async -> Bool)?
@@ -316,7 +316,7 @@ private extension WalletBalanceViewModelImplementation {
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true
-      isSwapEnable = false
+      isSwapEnable = true
       isBuyEnable = true
       isStakeEnable = false
     }
@@ -346,7 +346,8 @@ private extension WalletBalanceViewModelImplementation {
         isEnabled: isSwapEnable,
         action: { [weak self] in
             guard let wallet = self?.walletBalanceController.wallet else { return }
-            self?.didTapSwap?(wallet)
+            self?.didTapSwap?()
+            // self?.didTapSwap?()
         }
       ),
       buyButton: WalletBalanceHeaderButtonsView.Model.Button(

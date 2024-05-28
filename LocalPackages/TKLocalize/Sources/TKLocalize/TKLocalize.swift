@@ -56,6 +56,10 @@ public enum TKLocales {
     public static var history: String {
       localize("tabs.history")
     }
+    /// Browser
+    public static var browser: String {
+      localize("tabs.browser")
+    }
     /// Purchases
     public static var purchases: String {
       localize("tabs.purchases")
@@ -82,6 +86,10 @@ public enum TKLocales {
     }
   }
   public enum History {
+    /// History
+    public static var title: String {
+      localize("history.title")
+    }
     public enum Placeholder {
       /// Your history\nwill be shown here
       public static var title: String {
@@ -102,9 +110,39 @@ public enum TKLocales {
         }
       }
     }
-    /// History
-    public static var title: String {
-      localize("history.title")
+  }
+  public enum Browser {
+    public enum Tab {
+      /// Explore
+      public static var explore: String {
+        localize("browser.tab.explore")
+      }
+      /// Connected
+      public static var connected: String {
+        localize("browser.tab.connected")
+      }
+    }
+    public enum List {
+      /// All
+      public static var all: String {
+        localize("browser.list.all")
+      }
+    }
+    public enum SearchField {
+      /// Search or enter address
+      public static var placeholder: String {
+        localize("browser.search_field.placeholder")
+      }
+    }
+    public enum Search {
+      /// Browser
+      public static var title: String {
+        localize("browser.search.title")
+      }
+      /// Enter an address or search the web
+      public static var placeholder: String {
+        localize("browser.search.placeholder")
+      }
     }
   }
   public enum EventDetails {

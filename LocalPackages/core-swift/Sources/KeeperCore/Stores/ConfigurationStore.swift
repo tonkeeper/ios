@@ -1,6 +1,6 @@
 import Foundation
 
-actor ConfigurationStore {
+public actor ConfigurationStore {
   enum State {
     case idle
     case isLoading(Task<RemoteConfiguration, Swift.Error>)
@@ -33,7 +33,7 @@ actor ConfigurationStore {
     }
   }
   
-  func getConfiguration() async throws -> RemoteConfiguration {
+  public func getConfiguration() async throws -> RemoteConfiguration {
     switch state {
     case .idle:
       return try configurationService.getConfiguration()

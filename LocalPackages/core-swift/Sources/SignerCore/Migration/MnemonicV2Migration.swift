@@ -18,13 +18,14 @@ public struct MnemonicV2Migration {
   }
   
   public func migrateIfNeeded() {
-    guard let signerInfo = try? signerInfoRepository.getSignerInfo(),
-          let password = try? passwordRepository.getPassword() else { return }
-    signerInfo.walletKeys.forEach { walletKey in
-      guard let mnemonic = try? oldMnemonicRepository.getMnemonic(forWalletKey: walletKey) else { return }
-      try? mnemonicsRepository.saveMnemonic(mnemonic, walletKey: walletKey, password: password.hashed)
-      try? oldMnemonicRepository.deleteMnemonic(forWalletKey: walletKey)
+    if let signerInfo = try? signerInfoRepository.getSignerInfo(),
+       let password = try? passwordRepository.getPassword() {
+      signerInfo.walletKeys.forEach { walletKey in
+        guard let mnemonic = try? oldMnemonicRepository.getMnemonic(forWalletKey: walletKey) else { return }
+        try? mnemonicsRepository.saveMnemonic(mnemonic, walletKey: walletKey, password: password.hashed)
+        try? oldMnemonicRepository.deleteMnemonic(forWalletKey: walletKey)
+      }
+      try? passwordRepository.deletePassword()
     }
-    try? passwordRepository.deletePassword()
   }
 }
