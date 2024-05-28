@@ -443,6 +443,15 @@ public final class MainAssembly {
       )
     )
   }
+  
+  public func linkDNSController(wallet: Wallet, nft: NFT) -> LinkDNSController {
+    LinkDNSController(
+      wallet: wallet,
+      nft: nft,
+      sendService: servicesAssembly.sendService(),
+      mnemonicRepository: repositoriesAssembly.mnemonicRepository()
+    )
+  }
 }
 
 private extension MainAssembly {

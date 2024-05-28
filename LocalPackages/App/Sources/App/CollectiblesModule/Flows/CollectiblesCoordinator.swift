@@ -8,7 +8,9 @@ import TKLocalize
 
 public final class CollectiblesCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
-  private weak var sendTokenCoordinator: SendTokenCoordinator?
+  var didPerformTransaction: (() -> Void)?
+  
+  private weak var detailsCoordinator: CollectiblesDetailsCoordinator?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -28,14 +30,10 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
   }
   
   public func handleTonkeeperDeeplink(deeplink: TonkeeperDeeplink) -> Bool {
-    switch deeplink {
-    case let .publish(model):
-      if let sendTokenCoordinator = sendTokenCoordinator {
-        return sendTokenCoordinator.handleTonkeeperPublishDeeplink(model: model)
-      }
-      return false
-    default: return false
+    if let detailsCoordinator = detailsCoordinator {
+      return detailsCoordinator.handleTonkeeperDeeplink(deeplink: deeplink)
     }
+    return false
   }
 }
 
@@ -58,49 +56,32 @@ private extension CollectiblesCoordinator {
   }
   
   func openNFTDetails(nft: NFT) {
-    let module = CollectibleDetailsAssembly.module(
-      collectibleDetailsController: keeperCoreMainAssembly.collectibleDetailsController(nft: nft),
-      urlOpener: coreAssembly.urlOpener(),
-      output: self
-    )
-    
-    let navigationController = TKNavigationController(rootViewController: module.0)
-    navigationController.configureDefaultAppearance()
-    router.present(navigationController)
-  }
-}
-
-extension CollectiblesCoordinator: CollectibleDetailsModuleOutput {
-  func collectibleDetailsDidFinish(_ collectibleDetails: CollectibleDetailsModuleInput) {
-    
-  }
-  
-  func collectibleDetails(_ collectibleDetails: CollectibleDetailsModuleInput, transferNFT nft: NFT) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     
-    let sendTokenCoordinator = SendModule(
-      dependencies: SendModule.Dependencies(
-        coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
-      )
-    ).createSendTokenCoordinator(
+    let coordinator = CollectiblesDetailsCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
-      sendItem: .nft(nft)
+      nft: nft,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
-    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
-      self?.sendTokenCoordinator = nil
-      navigationController?.dismiss(animated: true)
-      guard let sendTokenCoordinator else { return }
-      self?.removeChild(sendTokenCoordinator)
+    coordinator.didPerformTransaction = { [weak self] in
+      self?.didPerformTransaction?()
     }
     
-    self.sendTokenCoordinator = sendTokenCoordinator
+    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
     
-    addChild(sendTokenCoordinator)
-    sendTokenCoordinator.start()
+    coordinator.start()
+    addChild(coordinator)
     
-    self.router.rootViewController.presentedViewController?.present(navigationController, animated: true)
+    router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    })
   }
 }

@@ -511,7 +511,7 @@ private extension HistoryEventDetailsController {
     listItems.append(Model.ListItem(title: "Operation", topValue: smartContractExec.operation))
     listItems.append(feeListItem)
     if let payload = smartContractExec.payload {
-      listItems.append(Model.ListItem(title: "Payload", topValue: payload))
+      listItems.append(Model.ListItem(title: "Payload", topValue: payload, topNumberOfLines: 0, isTopValueFullString: false))
     }
     
     return Model(

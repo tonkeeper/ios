@@ -97,44 +97,32 @@ private extension HistoryCoordinator {
   }
   
   func openNFTDetails(nft: NFT) {
-    let module = CollectibleDetailsAssembly.module(
-      collectibleDetailsController: keeperCoreMainAssembly.collectibleDetailsController(nft: nft),
-      urlOpener: coreAssembly.urlOpener(),
-      output: self
-    )
-    
-    let navigationController = TKNavigationController(rootViewController: module.0)
-    navigationController.configureDefaultAppearance()
-    router.present(navigationController)
-  }
-}
-
-extension HistoryCoordinator: CollectibleDetailsModuleOutput {
-  func collectibleDetailsDidFinish(_ collectibleDetails: CollectibleDetailsModuleInput) {}
-  
-  func collectibleDetails(_ collectibleDetails: CollectibleDetailsModuleInput, transferNFT nft: KeeperCore.NFT) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     
-    let sendTokenCoordinator = SendModule(
-      dependencies: SendModule.Dependencies(
-        coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
-      )
-    ).createSendTokenCoordinator(
+    let coordinator = CollectiblesDetailsCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
-      sendItem: .nft(nft)
+      nft: nft,
+      coreAssembly: coreAssembly,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
-    sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
-      navigationController?.dismiss(animated: true)
-      guard let sendTokenCoordinator else { return }
-      self?.removeChild(sendTokenCoordinator)
+    coordinator.didPerformTransaction = { [weak self] in
+//      self?.didPerformTransaction?()
     }
     
-    addChild(sendTokenCoordinator)
-    sendTokenCoordinator.start()
+    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
     
-    self.router.rootViewController.presentedViewController?.present(navigationController, animated: true)
+    coordinator.start()
+    addChild(coordinator)
+    
+    router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    })
   }
 }

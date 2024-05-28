@@ -146,6 +146,7 @@
 /* Begin PBXFileReference section */
 		509051DD2BE1661E00B41894 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		50ADFE3C2BE160D3000E1C0A /* TKLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLocalize; sourceTree = "<group>"; };
+		7D020A7B2C0486DD00AF3F4A /* ton-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = "ton-swift"; path = "../ton-swift"; sourceTree = "<group>"; };
 		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -402,6 +403,7 @@
 		7DB8FB592A1BCC92005B4B11 = {
 			isa = PBXGroup;
 			children = (
+				7D020A7B2C0486DD00AF3F4A /* ton-swift */,
 				C313EC0A2B50138D009DF825 /* LocalPackages */,
 				7DB8FB642A1BCC92005B4B11 /* Tonkeeper */,
 				7D3F25DD2AC19417002DF1B7 /* TonkeeperWidget */,

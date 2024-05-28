@@ -260,3 +260,88 @@ private extension SignTransactionConfirmationCoordinator {
     }.value
   }
 }
+
+// TODO: Extract
+
+struct PasscodePresenter {
+  private init() {}
+  static func presentPasscodeConfirmation(fromViewController: UIViewController,
+                                          parentCoordinator: Coordinator,
+                                          keeperCoreMainAssembly: KeeperCore.MainAssembly) async -> Bool {
+    return await Task<Bool, Never> { @MainActor in
+      return await withCheckedContinuation { [keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
+        let coordinator = PasscodeModule(
+          dependencies: PasscodeModule.Dependencies(
+            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+          )
+        ).passcodeConfirmationCoordinator()
+        
+        coordinator.didCancel = { [weak parentCoordinator, weak coordinator] in
+          continuation.resume(returning: false)
+          coordinator?.router.dismiss(completion: {
+            guard let coordinator else { return }
+            parentCoordinator?.removeChild(coordinator)
+          })
+        }
+        
+        coordinator.didConfirm = { [weak parentCoordinator, weak coordinator] in
+          continuation.resume(returning: true)
+          coordinator?.router.dismiss(completion: {
+            guard let coordinator else { return }
+            parentCoordinator?.removeChild(coordinator)
+          })
+        }
+        
+        parentCoordinator.addChild(coordinator)
+        coordinator.start()
+        
+        fromViewController.present(coordinator.router.rootViewController, animated: true)
+      }
+    }.value
+  }
+}
+
+final class ExternalSignHandler {
+  
+  private var signedDataHandler: ((Data) async -> Void)?
+  
+  init() {}
+  func performExternalSign(url: URL,
+                           wallet: Wallet,
+                           fromViewController: UIViewController,
+                           keeperCoreMainAssembly: KeeperCore.MainAssembly,
+                           coreAssembly: TKCore.CoreAssembly) async throws -> Data {
+    return try await withCheckedThrowingContinuation { continuation in
+      DispatchQueue.main.async {
+        if coreAssembly.urlOpener().canOpen(url: url) {
+          self.signedDataHandler = { data in
+            continuation.resume(returning: data)
+            self.signedDataHandler = nil
+          }
+          coreAssembly.urlOpener().open(url: url)
+        } else {
+          let module = SignerSignAssembly.module(
+            url: url,
+            wallet: wallet,
+            assembly: keeperCoreMainAssembly,
+            coreAssembly: coreAssembly
+          )
+          let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+          
+          bottomSheetViewController.didClose = { isInteractivly in
+            guard isInteractivly else { return }
+            continuation.resume(throwing: CancellationError())
+          }
+          
+          module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
+            bottomSheetViewController?.dismiss(completion: {
+              continuation.resume(returning: model.boc)
+            })
+          }
+          
+          bottomSheetViewController.present(fromViewController: fromViewController)
+        }
+      }
+    }
+  }
+}

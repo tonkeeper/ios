@@ -1,11 +1,3 @@
-//
-//  CollectibleDetailsCollectibleDetailsProtocols.swift
-//  Tonkeeper
-
-//  Tonkeeper
-//  Created by Grigory Serebryanyy on 21/08/2023.
-//
-
 import Foundation
 import TonSwift
 import KeeperCore
@@ -16,6 +8,8 @@ protocol CollectibleDetailsModuleOutput: AnyObject {
     _ collectibleDetails: CollectibleDetailsModuleInput,
     transferNFT nft: NFT
   )
+  func collectibleDetailsLinkDomain(_ collectibleDetails: CollectibleDetailsModuleInput, nft: NFT)
+  func collectibleDetailsUnlinkDomain(_ collectibleDetails: CollectibleDetailsModuleInput, nft: NFT)
 }
 
 protocol CollectibleDetailsModuleInput: AnyObject {}

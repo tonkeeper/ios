@@ -141,6 +141,10 @@ private extension MainCoordinator {
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
+    
+    collectiblesCoordinator.didPerformTransaction = { [weak self] in
+      self?.router.rootViewController.selectedIndex = 1
+    }
 
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator

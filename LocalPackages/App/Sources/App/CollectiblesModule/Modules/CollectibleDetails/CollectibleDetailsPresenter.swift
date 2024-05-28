@@ -243,11 +243,11 @@ private extension CollectibleDetailsPresenter {
   }
   
   func linkDomain() {
-    
+    output?.collectibleDetailsLinkDomain(self, nft: collectibleDetailsController.nft)
   }
   
   func unlinkDomain() {
-    
+    output?.collectibleDetailsUnlinkDomain(self, nft: collectibleDetailsController.nft)
   }
 }
 

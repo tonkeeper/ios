@@ -221,7 +221,7 @@ private extension SendConfirmationController {
         boc: transactionBoc,
         wallet: wallet
       )
-      let sendTransactionModel = SendTransactionModel(
+      let sendTransactionModel = try SendTransactionModel(
         accountEvent: transactionInfo.event,
         risk: transactionInfo.risk,
         transaction: transactionInfo.trace.transaction
