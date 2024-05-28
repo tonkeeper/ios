@@ -42,14 +42,13 @@ final class BuySellOperatorShimmerView: UICollectionReusableView, ReusableView, 
   func configure(model: Model) {}
   
   private func setup() {
-    pickerCellShimmerView.backgroundColor = .Background.content.withAlphaComponent(0.48)
-    cellsContainer.backgroundColor = .Background.content.withAlphaComponent(0.48)
-    
+    pickerCellShimmerView.layer.cornerRadius = 16
+    cellsContainer.layer.cornerRadius = 16
     pickerCellShimmerView.layer.masksToBounds = true
     cellsContainer.layer.masksToBounds = true
     
-    pickerCellShimmerView.layer.cornerRadius = 16
-    cellsContainer.layer.cornerRadius = 16
+    pickerCellShimmerView.backgroundColor = .Background.content.withAlphaComponent(0.48)
+    cellsContainer.backgroundColor = .Background.content.withAlphaComponent(0.48)
     
     addSubview(pickerCellShimmerView)
     addSubview(cellsContainer)
@@ -66,17 +65,13 @@ final class BuySellOperatorShimmerView: UICollectionReusableView, ReusableView, 
   
   private func setupConstraints() {
     pickerCellShimmerView.snp.makeConstraints { make in
-      make.top.equalTo(self)
-      make.left.equalTo(self)
-      make.right.equalTo(self)
+      make.top.left.right.equalTo(self)
       make.height.equalTo(CGFloat.pickerCellHeight)
     }
     
     cellsContainer.snp.makeConstraints { make in
       make.top.equalTo(pickerCellShimmerView.snp.bottom).offset(CGFloat.verticalPadding)
-      make.bottom.equalTo(self)
-      make.left.equalTo(self)
-      make.right.equalTo(self)
+      make.bottom.left.right.equalTo(self)
     }
     
     stackView.snp.makeConstraints { make in

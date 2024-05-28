@@ -52,9 +52,6 @@ public final class SwapTokenListController {
   private let currencyStore: CurrencyStore
   private let walletsStore: WalletsStore
   private let walletBalanceStore: WalletBalanceStore
-  private let stonfiAssetsLoader: StonfiAssetsLoader
-  private let stonfiPairsLoader: StonfiPairsLoader
-  private let stonfiPairsService: StonfiPairsService
   private let stonfiMapper: StonfiMapper
   private let swapTokenListMapper: SwapTokenListMapper
 
@@ -64,9 +61,6 @@ public final class SwapTokenListController {
        currencyStore: CurrencyStore,
        walletsStore: WalletsStore,
        walletBalanceStore: WalletBalanceStore,
-       stonfiAssetsLoader: StonfiAssetsLoader,
-       stonfiPairsLoader: StonfiPairsLoader,
-       stonfiPairsService: StonfiPairsService,
        stonfiMapper: StonfiMapper,
        swapTokenListMapper: SwapTokenListMapper) {
     self.stonfiAssetsStore = stonfiAssetsStore
@@ -75,9 +69,6 @@ public final class SwapTokenListController {
     self.currencyStore = currencyStore
     self.walletsStore = walletsStore
     self.walletBalanceStore = walletBalanceStore
-    self.stonfiAssetsLoader = stonfiAssetsLoader
-    self.stonfiPairsLoader = stonfiPairsLoader
-    self.stonfiPairsService = stonfiPairsService
     self.stonfiMapper = stonfiMapper
     self.swapTokenListMapper = swapTokenListMapper
     self.wallet = walletsStore.activeWallet
@@ -85,25 +76,12 @@ public final class SwapTokenListController {
   
   public func start(contractAddressForPair: Address?) async {
     self.contractAddressForPair = contractAddressForPair?.toString() ?? ""
-    
-    _ = await stonfiAssetsStore.addEventObserver(self) { [weak self] observer, event in
-      guard let self else { return }
-      switch event {
-      case .didUpdateAssets(let assets):
-        Task { await self.assetsDidUpdate(assets) }
-      }
-    }
-    
     await updateListItems()
   }
   
-  public func updateListItems(forceUpdate: Bool = false) async {
-    let storedAssets = await stonfiAssetsStore.getAssets()
-    if storedAssets.isValid && !forceUpdate {
-      await assetsDidUpdate(storedAssets)
-    } else {
-      await stonfiAssetsLoader.loadAssets()
-    }
+  public func updateListItems() async {
+    let assets = await stonfiAssetsStore.getAssets()
+    await assetsDidUpdate(assets)
   }
   
   public func performSearch(with query: String) {
@@ -130,7 +108,7 @@ public final class SwapTokenListController {
 
 private extension SwapTokenListController {
   func assetsDidUpdate(_ assets: StonfiAssets) async {
-    let pairs = await getStonfiPairs()
+    let pairs = await stonfiPairsStore.getPairs()
     let assetsBalanceDict = await getAssetsBalanceDict()
     
     let tokenListItems: [SwapTokenListItemsModel.Item] = assets.items
@@ -187,23 +165,6 @@ private extension SwapTokenListController {
       rates: rates,
       currency: currency
     )
-  }
-  
-  func getStonfiPairs() async -> StonfiPairs {
-    let storedPairs = await stonfiPairsStore.getPairs()
-    if storedPairs.isValid {
-      return storedPairs
-    } else {
-      return await loadStonfiPairs()
-    }
-  }
-  
-  func loadStonfiPairs() async -> StonfiPairs {
-    do {
-      return try await stonfiPairsService.loadPairs()
-    } catch {
-      return StonfiPairs()
-    }
   }
   
   var suggestedTokenSymbols: [String] {

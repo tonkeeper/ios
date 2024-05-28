@@ -45,7 +45,7 @@ extension StonfiAPI {
     let assets: [StonfiAsset]
   }
   
-  func getStonfiAssets() async throws -> [StonfiAsset] {
+  func getStonfiAssets(loadCommunity: Bool) async throws -> [StonfiAsset] {
     let configuration = try await configurationStore.getConfiguration()
     guard var components = URLComponents(string: configuration.stonfiJsonRpcEndpoint) else { return [] }
     components.path = "/rpc"
@@ -55,7 +55,7 @@ extension StonfiAPI {
     let request = try createJsonRpcRequest(
       url: url,
       method: .getAssetsList,
-      parameters: ["load_community" : false]
+      parameters: ["load_community" : loadCommunity]
     )
     
     let (data, response) = try await urlSession.data(for: request)

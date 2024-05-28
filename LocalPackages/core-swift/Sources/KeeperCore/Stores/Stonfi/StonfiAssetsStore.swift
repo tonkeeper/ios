@@ -24,7 +24,7 @@ actor StonfiAssetsStore {
       if storedAssets.isValid {
         assets = storedAssets
       } else {
-        assets = try await service.loadAssets()
+        assets = try await service.loadAssets(loadCommunity: false)
       }
     } catch {
       assets = StonfiAssets()

@@ -54,30 +54,4 @@ public final class LoadersAssembly {
   var chartLoader: ChartV2Loader {
     ChartV2Loader(chartService: servicesAssembly.chartService())
   }
-  
-  weak var _stonfiAssetsLoader: StonfiAssetsLoader?
-  var stonfiAssetsLoader: StonfiAssetsLoader {
-    if let _stonfiAssetsLoader {
-      return _stonfiAssetsLoader
-    }
-    let loader = StonfiAssetsLoader(
-      stonfiAssetsStore: storesAssembly.stonfiAssetsStore,
-      stonfiAssetsService: servicesAssembly.stonfiAssetsService()
-    )
-    _stonfiAssetsLoader = loader
-    return loader
-  }
-  
-  weak var _stonfiPairsLoader: StonfiPairsLoader?
-  var stonfiPairsLoader: StonfiPairsLoader {
-    if let _stonfiPairsLoader {
-      return _stonfiPairsLoader
-    }
-    let loader = StonfiPairsLoader(
-      stonfiPairsStore: storesAssembly.stonfiPairsStore,
-      stonfiPairsService: servicesAssembly.stonfiPairsService()
-    )
-    _stonfiPairsLoader = loader
-    return loader
-  }
 }

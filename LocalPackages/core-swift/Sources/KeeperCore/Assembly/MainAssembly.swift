@@ -420,9 +420,6 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       walletsStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
-      stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader,
-      stonfiPairsLoader: loadersAssembly.stonfiPairsLoader,
-      stonfiPairsService: servicesAssembly.stonfiPairsService(),
       stonfiMapper: stonfiMapper,
       swapTokenListMapper: swapTokenListMapper
     )

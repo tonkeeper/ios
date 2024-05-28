@@ -3,7 +3,7 @@ import TonSwift
 
 protocol StonfiAssetsService {
   func getAssets() async throws -> StonfiAssets
-  func loadAssets() async throws -> StonfiAssets
+  func loadAssets(loadCommunity: Bool) async throws -> StonfiAssets
   func loadAssetsInfo(addresses: [Address]) async throws -> [StonfiAsset]
 }
 
@@ -20,8 +20,8 @@ final class StonfiAssetsServiceImplementation: StonfiAssetsService {
     return try stonfiAssetsRepository.getAssets()
   }
   
-  func loadAssets() async throws -> StonfiAssets {
-    let items = try await stonfiApi.getStonfiAssets()
+  func loadAssets(loadCommunity: Bool) async throws -> StonfiAssets {
+    let items = try await stonfiApi.getStonfiAssets(loadCommunity: loadCommunity)
       .filter { isValidStonfiAsset($0) }
       .sorted { $0.symbol.localizedStandardCompare($1.symbol) == .orderedAscending }
     

@@ -70,7 +70,7 @@ final class SwapTokenListShimmerView: UICollectionReusableView, ReusableView, TK
       suggestedTokenButtonsStackView.addArrangedSubview(shimmerButton)
     }
     
-    (0..<4).forEach { _ in
+    (0..<8).forEach { _ in
       let cellShimmer = SwapTokenListShimmerCellView()
       otherCellsShimmerViews.append(cellShimmer)
       otherCellsStackView.addArrangedSubview(cellShimmer)
