@@ -406,8 +406,6 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       stonfiSwapService: servicesAssembly.stonfiSwapService(),
       ratesService: servicesAssembly.ratesService(),
-      stonfiAssetsLoader: loadersAssembly.stonfiAssetsLoader,
-      stonfiPairsLoader: loadersAssembly.stonfiPairsLoader,
       stonfiMapper: stonfiMapper,
       amountNewFormatter: formattersAssembly.amountNewFormatter,
       decimalAmountFormatter: formattersAssembly.decimalAmountNewFormatter

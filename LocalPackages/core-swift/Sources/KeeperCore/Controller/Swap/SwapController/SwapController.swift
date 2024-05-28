@@ -28,8 +28,6 @@ public final class SwapController {
   private let currencyStore: CurrencyStore
   private let stonfiSwapService: StonfiSwapService
   private let ratesService: RatesService
-  private let stonfiAssetsLoader: StonfiAssetsLoader
-  private let stonfiPairsLoader: StonfiPairsLoader
   private let stonfiMapper: StonfiMapper
   private let amountNewFormatter: AmountNewFormatter
   private let decimalAmountFormatter: DecimalAmountFormatter
@@ -41,8 +39,6 @@ public final class SwapController {
        currencyStore: CurrencyStore,
        stonfiSwapService: StonfiSwapService,
        ratesService: RatesService,
-       stonfiAssetsLoader: StonfiAssetsLoader,
-       stonfiPairsLoader: StonfiPairsLoader,
        stonfiMapper: StonfiMapper,
        amountNewFormatter: AmountNewFormatter,
        decimalAmountFormatter: DecimalAmountFormatter) {
@@ -53,8 +49,6 @@ public final class SwapController {
     self.currencyStore = currencyStore
     self.stonfiSwapService = stonfiSwapService
     self.ratesService = ratesService
-    self.stonfiAssetsLoader = stonfiAssetsLoader
-    self.stonfiPairsLoader = stonfiPairsLoader
     self.stonfiMapper = stonfiMapper
     self.amountNewFormatter = amountNewFormatter
     self.decimalAmountFormatter = decimalAmountFormatter

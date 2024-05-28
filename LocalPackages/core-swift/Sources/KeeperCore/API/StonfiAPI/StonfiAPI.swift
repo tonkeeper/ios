@@ -21,23 +21,6 @@ enum StonfiJsonRpcMethods: String {
   case getSwapOperationStatus = "dex.swap_status"
   case simulateDirectSwap = "dex.simulate_swap"
   case simulateReverseSwap = "dex.reverse_simulate_swap"
-  
-  func createHttpBodyWithoutParameters() -> Data? {
-    let requestBody: JsonRpcRequestBody<String> = createRequestBody(parameters: [:])
-    return try? JSONEncoder().encode(requestBody)
-  }
-  
-  func createHttpBody<T: Encodable>(parameters: Dictionary<String, T>) throws -> Data? {
-    let requestBody = createRequestBody(parameters: parameters)
-    return try JSONEncoder().encode(requestBody)
-  }
-  
-  func createRequestBody<T: Encodable>(parameters: Dictionary<String, T> = [:]) -> JsonRpcRequestBody<T> {
-    JsonRpcRequestBody(
-      method: rawValue,
-      params: parameters
-    )
-  }
 }
 
 struct StonfiAPI {
@@ -68,12 +51,12 @@ extension StonfiAPI {
     components.path = "/rpc"
     
     guard let url = components.url else { return [] }
-    var request = URLRequest(url: url)
-    request.httpMethod = "POST"
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.httpBody = try StonfiJsonRpcMethods.getAssetsList.createHttpBody(parameters: [
-      "load_community" : false
-    ])
+    
+    let request = try createJsonRpcRequest(
+      url: url,
+      method: .getAssetsList,
+      parameters: ["load_community" : false]
+    )
     
     let (data, response) = try await urlSession.data(for: request)
     guard let httpResponse = (response as? HTTPURLResponse) else {
@@ -97,12 +80,14 @@ extension StonfiAPI {
     components.path = "/rpc"
     
     guard let url = components.url else { return [] }
-    var request = URLRequest(url: url)
-    request.httpMethod = "POST"
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.httpBody = try StonfiJsonRpcMethods.getAssetsInfo.createHttpBody(parameters: [
-      "addresses" : addresses.map({ $0.toString() })
-    ])
+    
+    let parameters = ["addresses" : addresses.map({ $0.toString() })]
+    
+    let request = try createJsonRpcRequest(
+      url: url,
+      method: .getAssetsInfo,
+      parameters: parameters
+    )
     
     let (data, response) = try await urlSession.data(for: request)
     guard let httpResponse = (response as? HTTPURLResponse) else {
@@ -130,10 +115,11 @@ extension StonfiAPI {
     components.path = "/rpc"
     
     guard let url = components.url else { return [] }
-    var request = URLRequest(url: url)
-    request.httpMethod = "POST"
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.httpBody = StonfiJsonRpcMethods.getSwapPairsList.createHttpBodyWithoutParameters()
+    
+    let request = try createJsonRpcRequest(
+      url: url,
+      method: .getSwapPairsList
+    )
     
     let (data, response) = try await urlSession.data(for: request)
     guard let httpResponse = (response as? HTTPURLResponse) else {
@@ -150,72 +136,6 @@ extension StonfiAPI {
 
 // MARK: - Simulate Swap
 
-struct StonfiSwapSimulation {
-  let offerAddress: Address
-  let askAddress: Address
-  let routerAddress: Address
-  let poolAddress: Address
-  let offerUnits: BigUInt
-  let askUnits: BigUInt
-  let slippageTolerance: String
-  let minAskUnits: BigUInt
-  let swapRate: Decimal
-  let priceImpact: Decimal
-  let feeAddress: Address
-  let feeUnits: BigUInt
-  let feePercent: String
-}
-
-struct StonfiSwapSimulationResult: Codable {
-  let offerAddress: String
-  let askAddress: String
-  let routerAddress: String
-  let poolAddress: String
-  let offerUnits: String
-  let askUnits: String
-  let slippageTolerance: String
-  let minAskUnits: String
-  let swapRate: String
-  let priceImpact: String
-  let feeAddress: String
-  let feeUnits: String
-  let feePercent: String
-  
-  enum CodingKeys: String, CodingKey {
-    case offerAddress = "offer_address"
-    case askAddress = "ask_address"
-    case routerAddress = "router_address"
-    case poolAddress = "pool_address"
-    case offerUnits = "offer_units"
-    case askUnits = "ask_units"
-    case slippageTolerance = "slippage_tolerance"
-    case minAskUnits = "min_ask_units"
-    case swapRate = "swap_rate"
-    case priceImpact = "price_impact"
-    case feeAddress = "fee_address"
-    case feeUnits = "fee_units"
-    case feePercent = "fee_percent"
-  }
-}
-
-extension StonfiSwapSimulationResult {
-  init() {
-    self.offerAddress = ""
-    self.askAddress = ""
-    self.routerAddress = ""
-    self.poolAddress = ""
-    self.offerUnits = ""
-    self.askUnits = ""
-    self.slippageTolerance = ""
-    self.minAskUnits = ""
-    self.swapRate = ""
-    self.priceImpact = ""
-    self.feeAddress = ""
-    self.feeUnits = ""
-    self.feePercent = ""
-  }
-}
-
 extension StonfiAPI {
   func simulateDirectSwap(from: Address, to: Address, offerAmount: BigUInt, slippageTolerance: String, referral: Address? = nil) async throws -> StonfiSwapSimulationResult {
     let configuration = try await configurationStore.getConfiguration()
@@ -224,21 +144,21 @@ extension StonfiAPI {
     
     guard let url = components.url else { return StonfiSwapSimulationResult() }
     
-    let offerAddress = from.toString()
-    let askAddress = to.toString()
-    //let referralAddress = referral?.toString() ?? ""
-    
-    let offerUnits = offerAmount.description
-    
-    var request = URLRequest(url: url)
-    request.httpMethod = "POST"
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.httpBody = try StonfiJsonRpcMethods.simulateDirectSwap.createHttpBody(parameters: [
-      "offer_address" : offerAddress,
-      "offer_units" : offerUnits,
-      "ask_address" : askAddress,
+    var parameters = [
+      "offer_address" : from.toString(),
+      "offer_units" : offerAmount.description,
+      "ask_address" : to.toString(),
       "slippage_tolerance" : slippageTolerance
-    ])
+    ]
+    if let referral {
+      parameters.updateValue(referral.toString(), forKey: "referral_address")
+    }
+    
+    let request = try createJsonRpcRequest(
+      url: url,
+      method: .simulateDirectSwap,
+      parameters: parameters
+    )
     
     let (data, response) = try await urlSession.data(for: request)
     guard let httpResponse = (response as? HTTPURLResponse) else {
@@ -259,21 +179,21 @@ extension StonfiAPI {
     
     guard let url = components.url else { return StonfiSwapSimulationResult() }
     
-    let offerAddress = from.toString()
-    let askAddress = to.toString()
-    //let referralAddress = referral?.toString() ?? ""
-    
-    let askUnits = askAmount.description
-    
-    var request = URLRequest(url: url)
-    request.httpMethod = "POST"
-    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.httpBody = try StonfiJsonRpcMethods.simulateReverseSwap.createHttpBody(parameters: [
-      "offer_address" : offerAddress,
-      "ask_units" : askUnits,
-      "ask_address" : askAddress,
+    var parameters = [
+      "offer_address" : from.toString(),
+      "ask_units" : askAmount.description,
+      "ask_address" : to.toString(),
       "slippage_tolerance" : slippageTolerance
-    ])
+    ]
+    if let referral {
+      parameters.updateValue(referral.toString(), forKey: "referral_address")
+    }
+    
+    let request = try createJsonRpcRequest(
+      url: url,
+      method: .simulateReverseSwap,
+      parameters: parameters
+    )
     
     let (data, response) = try await urlSession.data(for: request)
     guard let httpResponse = (response as? HTTPURLResponse) else {
@@ -285,5 +205,33 @@ extension StonfiAPI {
     
     let directSwapSimulationResponse = try JSONDecoder().decode(JsonRpcResponse<StonfiSwapSimulationResult>.self, from: data)
     return directSwapSimulationResponse.result
+  }
+}
+
+private extension StonfiAPI {
+  func createJsonRpcRequest(url: URL, method: StonfiJsonRpcMethods) throws -> URLRequest {
+    return try createJsonRpcRequest(url: url, method: method, parameters: [String : String]())
+  }
+  
+  func createJsonRpcRequest<T: Encodable>(url: URL,
+                                          method: StonfiJsonRpcMethods,
+                                          parameters: Dictionary<String, T>) throws -> URLRequest {
+    var request = URLRequest(url: url)
+    request.httpMethod = "POST"
+    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    request.httpBody = try createHttpBody(method: method, parameters: parameters)
+    return request
+  }
+  
+  func createHttpBody<T: Encodable>(method: StonfiJsonRpcMethods, parameters: Dictionary<String, T>) throws -> Data? {
+    let requestBody = createRequestBody(method: method, parameters: parameters)
+    return try JSONEncoder().encode(requestBody)
+  }
+  
+  func createRequestBody<T: Encodable>(method: StonfiJsonRpcMethods, parameters: Dictionary<String, T> = [:]) -> JsonRpcRequestBody<T> {
+    JsonRpcRequestBody(
+      method: method.rawValue,
+      params: parameters
+    )
   }
 }
