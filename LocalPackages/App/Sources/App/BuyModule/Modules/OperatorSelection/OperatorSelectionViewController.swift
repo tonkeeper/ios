@@ -37,6 +37,16 @@ final class OperatorSelectionViewController: GenericViewViewController<OperatorS
   
   private lazy var dataSource = createDataSource()
   
+  private lazy var currencyCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration> { [weak self]
+    cell, indexPath, itemIdentifier in
+    cell.configure(configuration: itemIdentifier)
+    cell.isFirstInSection = { ip in ip.item == 0 }
+    cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
+      guard let collectionView = collectionView else { return false }
+      return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
+    }
+  }
+  
   private lazy var listItemCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration> { [weak self]
     cell, indexPath, itemIdentifier in
     cell.configure(configuration: itemIdentifier)
@@ -119,18 +129,29 @@ private extension OperatorSelectionViewController {
   
   func createDataSource() -> UICollectionViewDiffableDataSource<OperatorSelectionSection, AnyHashable> {
     let dataSource = UICollectionViewDiffableDataSource<OperatorSelectionSection, AnyHashable>(
-      collectionView: customView.collectionView) { [weak self, listItemCellConfiguration] collectionView, indexPath, itemIdentifier in
+      collectionView: customView.collectionView) { [weak self, listItemCellConfiguration, currencyCellConfiguration] collectionView, indexPath, itemIdentifier in
         guard let self else { return nil }
 
         switch itemIdentifier {
-        case let listCellConfiguration as TKUIListItemCell.Configuration:
-          let cell = collectionView.dequeueConfiguredReusableCell(using: listItemCellConfiguration, for: indexPath, item: listCellConfiguration)
-          if listCellConfiguration.id != viewModel.currencyCellId {
+        case let model as OperatorSelectionListModel:
+          switch model.type {
+          case .currency:
+            let cell = collectionView.dequeueConfiguredReusableCell(
+              using: currencyCellConfiguration,
+              for: indexPath,
+              item: model.configuration
+            )
+            return cell
+          case .transactionOperator:
+            let cell = collectionView.dequeueConfiguredReusableCell(
+              using: listItemCellConfiguration,
+              for: indexPath,
+              item: model.configuration
+            )
             cell.accessoryViews = self.createAccessoryViews()
             cell.selectionAccessoryViews = self.createSelectionAccessoryViews()
+            return cell
           }
-          
-          return cell
         default: return nil
         }
       }
@@ -192,8 +213,8 @@ extension OperatorSelectionViewController: UICollectionViewDelegate {
     let section = snapshot.sectionIdentifiers[indexPath.section]
     let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
     switch item {
-    case let model as TKUIListItemCell.Configuration:
-      model.selectionClosure?()
+    case let model as OperatorSelectionListModel:
+      model.configuration.selectionClosure?()
     default:
       return
     }

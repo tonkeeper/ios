@@ -82,6 +82,8 @@ final class TransactionView: UIView, ConfigurableView {
     let textInputControl = CurrencyPlaceholderTextFieldControl()
     textInputControl.rightView = payCurrencyLabel
     textInputControl.rightViewMode = .always
+    textInputControl.keyboardAppearance = .dark
+    textInputControl.keyboardType = .decimalPad
     
     let textFieldInputView = TKTextFieldInputView(
       textInputControl: textInputControl
@@ -97,6 +99,9 @@ final class TransactionView: UIView, ConfigurableView {
     let textInputControl = CurrencyPlaceholderTextFieldControl()
     textInputControl.rightView = getCurrencyLabel
     textInputControl.rightViewMode = .always
+    textInputControl.keyboardAppearance = .dark
+    textInputControl.keyboardType = .decimalPad
+    
     let textFieldInputView = TKTextFieldInputView(
       textInputControl: textInputControl
     )

@@ -12,6 +12,15 @@ enum OperatorSelectionSection: Hashable {
   case itemsShimmer
 }
 
+struct OperatorSelectionListModel: Hashable {
+  enum CellType: Hashable {
+    case currency
+    case transactionOperator
+  }
+  let type: CellType
+  let configuration: TKUIListItemCell.Configuration
+}
+
 protocol OperatorSelectionViewModelOutput: AnyObject {
   var didTapCurrency: (() -> Void)? { get set }
   var didContinue: ((BuySellItemModel, TransactionAmountModel, Currency) -> Void)? { get set }
@@ -145,7 +154,7 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
     didUpdateSnapshot?(snapshot)
   }
   
-  private func createCurrencyCell(currency: Currency) -> TKUIListItemCell.Configuration {
+  private func createCurrencyCell(currency: Currency) -> OperatorSelectionListModel {
     let title = NSMutableAttributedString()
     
     let code = "\(currency.code) ".withTextStyle(
@@ -187,7 +196,7 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
       )
     )
     
-    return TKUIListItemCell.Configuration(
+    let configuration = TKUIListItemCell.Configuration(
       id: currencyCellId,
       listItemConfiguration: listItemConfiguration,
       selectionClosure: { [weak self] in
@@ -196,9 +205,11 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
         didTapCurrency?()
       }
     )
+    
+    return OperatorSelectionListModel(type: .currency, configuration: configuration)
   }
   
-  private func createOperatorCell(model: BuySellItemModel) -> TKUIListItemCell.Configuration {
+  private func createOperatorCell(model: BuySellItemModel) -> OperatorSelectionListModel {
     
     let iconConfigurationImage: TKUIListItemImageIconView.Configuration.Image = .asyncImage(model.iconURL, TKCore.ImageDownloadTask(
       closure: {
@@ -260,7 +271,7 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
       accessoryConfiguration: TKUIListItemAccessoryView.Configuration.none
     )
     
-    return TKUIListItemCell.Configuration(
+    let configuration = TKUIListItemCell.Configuration(
       id: model.id,
       listItemConfiguration: listItemConfiguration,
       selectionClosure: { [weak self] in
@@ -269,6 +280,8 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
         selectedModelId = model.id
       }
     )
+    
+    return OperatorSelectionListModel(type: .transactionOperator, configuration: configuration)
   }
   
   // MARK: - State

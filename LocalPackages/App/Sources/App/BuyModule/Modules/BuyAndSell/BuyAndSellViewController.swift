@@ -79,7 +79,7 @@ private extension BuyAndSellViewController {
       make.height.equalTo(34)
     }
     
-    customView.amountView.amountTextField.delegate = viewModel.sendAmountTextFieldFormatter
+    customView.amountView.amountTextField.delegate = viewModel.amountTextFieldFormatter
     customView.amountView.tonLabel.text = TonInfo.symbol
   }
   
