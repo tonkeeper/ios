@@ -10,7 +10,8 @@ struct SwapConfirmationAssembly {
                      keeperCoreMainAssembly: KeeperCore.MainAssembly) -> MVVMModule<SwapConfirmationViewController, SwapConfirmationModuleOutput, SwapConfirmationModuleInput> {
     let viewModel = SwapConfirmationViewModelImplementation(
       swapItem: swapItem,
-      swapDetails: swapDetails,
+      swapDetails: swapDetails, 
+      swapController: keeperCoreMainAssembly.swapController(),
       swapConfirmationController: keeperCoreMainAssembly.swapConfirmationController(item: swapItem)
     )
     let viewController = SwapConfirmationViewController(viewModel: viewModel)

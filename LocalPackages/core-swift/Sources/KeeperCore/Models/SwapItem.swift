@@ -2,8 +2,8 @@ import Foundation
 import BigInt
 
 public struct SwapItem {
-  let sendToken: Token
-  let sendAmount: BigUInt
+  public let sendToken: Token
+  public let sendAmount: BigUInt
 
   let receiveToken: Token
   let receiveAmount: BigUInt // mimimum

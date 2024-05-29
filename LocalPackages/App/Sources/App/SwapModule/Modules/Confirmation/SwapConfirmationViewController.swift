@@ -38,12 +38,12 @@ final class SwapConfirmationViewController: GenericViewViewController<SwapConfir
       self.customView.sendView.chooseTokenView.token = model.send.token
       self.customView.sendView.chooseTokenView.isUserInteractionEnabled = false
       self.customView.sendView.amountTextField.text = model.send.amount
-      self.customView.sendView.updateTotalBalance(model.send.balance)
+      self.customView.sendView.updateTotalBalance("")
       
       self.customView.receiveView.chooseTokenView.token = model.receive.token
       self.customView.receiveView.chooseTokenView.isUserInteractionEnabled = false
       self.customView.receiveView.amountTextField.text = model.receive.amount
-      self.customView.receiveView.updateTotalBalance(model.receive.balance)
+      self.customView.receiveView.updateTotalBalance("")
 
       self.customView.detailsView.update(items: model.swapDetails, oneTokenPrice: model.oneTokenPrice)
     }
@@ -57,6 +57,10 @@ final class SwapConfirmationViewController: GenericViewViewController<SwapConfir
     }
     viewModel.didSucceed = {
       UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+    viewModel.didUpdateConvertedBalances = { [weak self] (sendBalance, receiveBalance) in
+      self?.customView.sendView.updateTotalBalance(sendBalance)
+      self?.customView.receiveView.updateTotalBalance(receiveBalance)
     }
   }
 

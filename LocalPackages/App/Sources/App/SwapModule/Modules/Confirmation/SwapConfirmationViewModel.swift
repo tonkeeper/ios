@@ -4,6 +4,7 @@ import TKCore
 
 protocol SwapConfirmationViewModel: AnyObject {
   var didUpdateModel: ((SwapView.Model) -> Void)? { get set }
+  var didUpdateConvertedBalances: ((String, String) -> Void)? { get set }
   var didReceiveError: (() -> Void)? { get set }
   var didSucceed: (() -> Void)? { get set }
 
@@ -32,11 +33,19 @@ final class SwapConfirmationViewModelImplementation: SwapConfirmationViewModel, 
   // MARK: - SwapConfirmationViewModel
 
   var didUpdateModel: ((SwapView.Model) -> Void)?
+  var didUpdateConvertedBalances: ((String, String) -> Void)?
   var didReceiveError: (() -> Void)?
   var didSucceed: (() -> Void)?
   
   func viewDidLoad() {
     didUpdateModel?(swapDetails)
+    Task {
+      async let sendConvertedAsync = swapController.convertTokenAmountToCurrency(token: swapItem.sendToken, swapItem.sendAmount)
+      let converted = try? await sendConvertedAsync
+      await MainActor.run {
+        didUpdateConvertedBalances?(converted ?? "", converted ?? "")
+      }
+    }
   }
 
   func didTapCancel() {
@@ -59,9 +68,11 @@ final class SwapConfirmationViewModelImplementation: SwapConfirmationViewModel, 
 
   init(swapItem: SwapItem,
        swapDetails: SwapView.Model,
+       swapController: SwapController,
        swapConfirmationController: SwapConfirmationController) {
     self.swapItem = swapItem
     self.swapDetails = swapDetails
+    self.swapController = swapController
     self.swapConfirmationController = swapConfirmationController
     self.swapConfirmationController.didGetExternalSign = { [weak self] url in
       guard let self, let didRequireExternalWalletSign else { return Data() }
@@ -71,6 +82,7 @@ final class SwapConfirmationViewModelImplementation: SwapConfirmationViewModel, 
 
   private let swapItem: SwapItem
   private let swapDetails: SwapView.Model
+  private let swapController: SwapController
   private let swapConfirmationController: SwapConfirmationController
 }
 
