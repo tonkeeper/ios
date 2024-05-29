@@ -99,7 +99,7 @@ public final class SwapController {
 
     let fractionalSeparator: String = amountFormatter.fractionalSeparator
 
-    let allowedCharacters = CharacterSet(charactersIn: "0123456789" + fractionalSeparator)
+    let allowedCharacters = CharacterSet(charactersIn: "0123456789" + fractionalSeparator + amountFormatter.groupSeparator)
     let prohibitedSymbols = input.unicodeScalars.filter { !allowedCharacters.contains($0) }
     if !prohibitedSymbols.isEmpty {
       return (0, targetFractionalDigits)

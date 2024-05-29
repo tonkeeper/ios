@@ -48,6 +48,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     switch swapField {
     case .send:
       swapPair = SwapPair(send: .init(token: token, amount: swapPair.send.amount), receive: swapPair.receive)
+      sendAmountTextFieldFormatter.maximumFractionDigits = token.tokenFractionalDigits
       didUpdateToken?(.send)
     case .receive:
       swapPair = SwapPair(send: swapPair.send, receive: .init(token: token, amount: swapPair.receive?.amount ?? 0))
@@ -76,6 +77,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   func swapTokens() {
     guard let receive = swapPair.receive else { return }
     swapPair = .init(send: receive, receive: swapPair.send)
+    sendAmountTextFieldFormatter.maximumFractionDigits = receive.token.tokenFractionalDigits
 
     let oldSendBalance = sendBalance
     sendBalance = receiveBalance
@@ -96,12 +98,13 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   func didInputAmount(_ string: String, swapField: SwapField) {
     let unformatted = sendAmountTextFieldFormatter.unformatString(string) ?? ""
     let formatted = sendAmountTextFieldFormatter.formatString(unformatted) ?? ""
+    let finalUnformatted = sendAmountTextFieldFormatter.unformatString(formatted) ?? ""
     sendAmount = formatted.count > 0 ? formatted : "0"
     update()
 
     Task {
       let amount = swapController.convertInputStringToAmount(
-        input: unformatted,
+        input: finalUnformatted,
         targetFractionalDigits: swapPair.send.token.tokenFractionalDigits
       )
       let isAmountValid = await swapController.isAmountAvailableToSend(

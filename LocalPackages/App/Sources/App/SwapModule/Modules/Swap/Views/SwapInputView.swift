@@ -105,8 +105,8 @@ private extension SwapInputView {
 
     maxButton.alpha = swapField == .send ? 1 : 0
 
-    tokenView.addSubview(chooseTokenView)
     tokenView.addSubview(amountTextField)
+    tokenView.addSubview(chooseTokenView)
 
     amountTextField.text = "0"
 

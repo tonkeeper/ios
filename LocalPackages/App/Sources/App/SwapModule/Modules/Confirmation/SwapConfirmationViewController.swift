@@ -52,7 +52,11 @@ final class SwapConfirmationViewController: GenericViewViewController<SwapConfir
       UIView.animate(withDuration: 0.2) {
         self.customView.errorLabel.alpha = 1
       }
+      UINotificationFeedbackGenerator().notificationOccurred(.error)
       self.customView.errorLabel.bounce()
+    }
+    viewModel.didSucceed = {
+      UINotificationFeedbackGenerator().notificationOccurred(.success)
     }
   }
 

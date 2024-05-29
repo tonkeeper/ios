@@ -164,6 +164,7 @@ private extension SwapViewController {
       }
     }
     customView.continueButton.configuration.action = { [weak viewModel] in
+      UINotificationFeedbackGenerator().notificationOccurred(.success)
       viewModel?.didTapContinue()
     }
   }
