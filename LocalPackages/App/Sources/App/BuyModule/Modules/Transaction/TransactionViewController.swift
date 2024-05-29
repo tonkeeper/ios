@@ -64,9 +64,6 @@ private extension TransactionViewController {
     )
     continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
     customView.continueButton.configuration = continueButtonConfiguration
-        
-//    customView.amountView.amountTextField.delegate = viewModel.sendAmountTextFieldFormatter
-//    customView.amountView.tonLabel.text = TonInfo.symbol
   }
   
   func setupBindings() {
@@ -85,17 +82,9 @@ private extension TransactionViewController {
     customView.getTextField.didUpdateText = { [weak viewModel] text in
       viewModel?.didInputGetAmount(text)
     }
-//    customView.amountView.didUpdateText = { [weak viewModel] text in
-//      viewModel?.didInputAmount(text ?? "")
-//    }
-//    
+    
     customView.continueButton.configuration.action = { [weak viewModel] in
       viewModel?.didTapContinueButton()
     }
-//    
-//    segmentedControl.didChangeSegment = { [weak viewModel] selectedSegmentIndex in
-//      viewModel?.didSelectSegment(at: selectedSegmentIndex)
-//    }
   }
-  
 }

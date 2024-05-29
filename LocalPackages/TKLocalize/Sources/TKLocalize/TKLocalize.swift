@@ -848,6 +848,10 @@ public enum TKLocales {
     public static var you_get: String {
       localize("buy.you_get")
     }
+    /// Operator
+    public static var transaction_operator: String {
+      localize("buy.transaction_operator")
+    }
     /// Service provided by %@
     public static func service_provider(_ p0: Any) -> String {
       return localizeWithArgs("buy.service_provider", String(describing: p0))

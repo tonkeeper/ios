@@ -44,6 +44,8 @@ class BuyAndSellViewController: GenericViewViewController<BuyAndSellView>, Keybo
     unregisterFromKeyboardEvents()
   }
   
+  // MARK: - Keyboard
+  
   public func keyboardWillShow(_ notification: Notification) {
     guard let animationDuration = notification.keyboardAnimationDuration,
     let keyboardHeight = notification.keyboardSize?.height else { return }

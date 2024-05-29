@@ -74,7 +74,7 @@ final class OperatorSelectionViewController: GenericViewViewController<OperatorS
 
 private extension OperatorSelectionViewController {
   func setup() {
-    title = "Operator"
+    title = TKLocales.Buy.transaction_operator
     view.backgroundColor = .Background.page
     
     customView.collectionView.setCollectionViewLayout(layout, animated: false)

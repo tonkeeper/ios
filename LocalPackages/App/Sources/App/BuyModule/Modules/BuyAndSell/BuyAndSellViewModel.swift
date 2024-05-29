@@ -12,7 +12,7 @@ protocol BuyAndSellViewModelOutput: AnyObject {
 protocol BuyAndSellViewModel: AnyObject {
   var didUpdateModel: ((BuyAndSellView.Model) -> Void)? { get set }
   
-  var sendAmountTextFieldFormatter: SendAmountTextFieldFormatter { get }
+  var amountTextFieldFormatter: SendAmountTextFieldFormatter { get }
   
   func viewDidLoad()
   func didInputAmount(_ string: String)
@@ -75,7 +75,7 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
   }
   
   func didInputAmount(_ string: String) {
-    let unformatted = self.sendAmountTextFieldFormatter.unformatString(string) ?? ""
+    let unformatted = amountTextFieldFormatter.unformatString(string) ?? ""
     let amount = buyListController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: TonInfo.fractionDigits)
     
     switch mode {
@@ -96,7 +96,7 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
     didInputAmount(amountInput)
   }
   
-  let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
+  let amountTextFieldFormatter: SendAmountTextFieldFormatter = {
     let maximumIntegerDigits = 9
     let numberFormatter = NumberFormatter()
     numberFormatter.groupingSeparator = ","
@@ -177,7 +177,7 @@ private extension BuyAndSellViewModelImplementation {
   }
   
   func createModel() -> BuyAndSellView.Model {
-    let amount = BuyAndSellView.Model.Amount(placeholder: "0", text: sendAmountTextFieldFormatter.formatString(amountInput) ?? "")
+    let amount = BuyAndSellView.Model.Amount(placeholder: "0", text: amountTextFieldFormatter.formatString(amountInput) ?? "")
     
     return BuyAndSellView.Model(
       isContinueButtonEnabled: isContinueEnabled,
