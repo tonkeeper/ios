@@ -28,4 +28,13 @@ public struct SwapItem {
       return asset.symbol
     }
   }
+  
+  public var decimals: Int {
+    switch token {
+    case .ton:
+      return 9
+    case .jetton(let asset):
+      return asset.decimals
+    }
+  }
 }

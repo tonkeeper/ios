@@ -217,6 +217,13 @@ public final class SwapItemsController {
       return .zero
     }
   }
+  
+  public func isPairValid(sellingContract: String, buyingContract: String) async -> Bool {
+    let pairs = try? await loadPairs()
+    return pairs?[sellingContract]?.contains(where: { peer2 in
+      peer2 == buyingContract
+    }) ?? false
+  }
 }
 
 private extension String {

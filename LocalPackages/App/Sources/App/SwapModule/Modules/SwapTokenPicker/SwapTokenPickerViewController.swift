@@ -267,6 +267,14 @@ private extension SwapTokenPickerViewController {
     snapshot.appendItems(suggestedItemsArray, toSection: .suggestedTokens)
     snapshot.reloadItems(suggestedItemsArray)
     dataSource.apply(snapshot)
+    if !tokenItemsArray.isEmpty, customView.searchBar.alpha == 0 {
+      UIView.animate(withDuration: 0.2) { [weak self] in
+        guard let self else {return}
+        customView.indicator.stopAnimating()
+        customView.searchBar.alpha = 1
+        customView.collectionView.alpha = 1
+      }
+    }
   }
 }
 

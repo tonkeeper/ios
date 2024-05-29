@@ -555,6 +555,11 @@ public enum TKLocales {
       localize("swap_confirmation.confirm")
     }
   }
+  public enum BuySell {
+    public static var creditCard: String {
+      localize("swap_confirmation.creditCard")
+    }
+  }
   public enum CustomizeWallet {
     /// Customize your Wallet
     public static var title: String {

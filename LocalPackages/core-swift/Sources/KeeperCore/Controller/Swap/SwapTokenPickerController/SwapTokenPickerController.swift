@@ -242,14 +242,15 @@ public final class SwapTokenPickerController {
                           balanceInBaseCurrency: "0")
       }) ?? []
       
-      let suggestedTokens = tokens.filter({ swapToken in
+      suggestedTokens = tokens.filter({ swapToken in
         switch swapToken {
         case .jetton(let asset):
           return asset.symbol == "jUSDT" || asset.symbol == "ANON"
         default:
           return false
         }
-      }).map({ swapToken in
+      })
+      let suggestedTokenModels = suggestedTokens.map({ swapToken in
         switch swapToken {
         case .ton:
           fatalError()
@@ -265,7 +266,7 @@ public final class SwapTokenPickerController {
       let tonSwapModelArray: [TokenModel] = isTonAvailable ? [tonModel] : []
       
       await MainActor.run {
-        didUpdateTokens?(suggestedTokens, tonSwapModelArray + jettonModels + notOwnedModels)
+        didUpdateTokens?(suggestedTokenModels, tonSwapModelArray + jettonModels + notOwnedModels)
         
         /*switch selectedToken {
          case .ton:

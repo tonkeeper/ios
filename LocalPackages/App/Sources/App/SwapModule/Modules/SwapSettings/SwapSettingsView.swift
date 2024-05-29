@@ -20,31 +20,50 @@ final class SwapSettingsView: UIView {
     return lbl
   }()
   
-  private lazy var textInputControl: TKTextInputTextFieldControl = {
+  lazy var slippageAmountTextField: TKTextField = {
     let textInputControl = TKTextInputTextFieldControl()
     textInputControl.keyboardType = .decimalPad
     textInputControl.font = TKTextStyle.num2.font
     textInputControl.textAlignment = .left
-    textInputControl.placeholder = ""
-    return textInputControl
-  }()
-  lazy var slippageAmountTextField = TKTextField(
-    textFieldInputView: TKTextFieldInputView(
-      textInputControl: textInputControl
+    textInputControl.placeholder = "0"
+    let percentageLabel = UILabel()
+    percentageLabel.text = "%"
+    percentageLabel.textColor = .Text.secondary
+    percentageLabel.sizeToFit()
+    textInputControl.rightView = percentageLabel
+    textInputControl.rightViewMode = .always
+    let tf = TKTextField(
+      textFieldInputView: TKTextFieldInputView(
+        textInputControl: textInputControl
+      )
     )
-  )
+    tf.didUpdateText = { [weak self] (text: String?) in
+      self?.validateSlippageAmount()
+    }
+    return tf
+  }()
+  private func validateSlippageAmount() {
+    guard let text = slippageAmountTextField.text, let value = Double(text) else {
+      saveButton.isEnabled = false
+      return
+    }
+    
+    let maxValue = expertModeSwitch.isOn ? 100.0 : 50.0
+    saveButton.configuration.isEnabled = (value > 0 && value < maxValue)
+  }
   
   private func percentButton(percent: Int) -> TKButton {
     let btn = TKButton(configuration: .titleHeaderButtonConfiguration(category: .secondary))
-    btn.configuration.padding.top = 0
-    btn.configuration.padding.bottom = 0
+    btn.configuration.padding = .zero
+    btn.configuration.contentPadding.top = 16
+    btn.configuration.contentPadding.bottom = 16
     btn.configuration.content = TKButton.Configuration.Content(
       title: .plainString("\(percent)%")
     )
     btn.tag = percent * 100
     btn.configuration.action = { [weak self] in
       guard let self else {return}
-      for b in slippageSuggestionsView.arrangedSubviews {
+      for b in self.slippageSuggestionsView.arrangedSubviews {
         if let b = b as? TKButton {
           b.isSelected = false
         }
@@ -55,7 +74,7 @@ final class SwapSettingsView: UIView {
     return btn
   }
 
-  var slippageSuggestionsView: UIStackView {
+  lazy var slippageSuggestionsView = {
     let stackView = UIStackView()
     stackView.distribution = .fillEqually
     stackView.alignment = .fill
@@ -63,11 +82,8 @@ final class SwapSettingsView: UIView {
     stackView.addArrangedSubview(percentButton(percent: 1))
     stackView.addArrangedSubview(percentButton(percent: 3))
     stackView.addArrangedSubview(percentButton(percent: 5))
-    NSLayoutConstraint.activate([
-      stackView.heightAnchor.constraint(equalToConstant: 56)
-    ])
     return stackView
-  }
+  }()
   
   private var expertModeLabels = {
     let stackView = UIStackView()
@@ -77,25 +93,37 @@ final class SwapSettingsView: UIView {
     titleLabel.font = TKTextStyle.label1.font
     titleLabel.textColor = .Text.primary
     stackView.addArrangedSubview(titleLabel)
+
+    titleLabel.setContentHuggingPriority(.defaultLow, for: .vertical)
+    titleLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+
     let subtitleLabel = UILabel()
     subtitleLabel.text = TKLocales.SwapSettings.expertModeSettings
     subtitleLabel.font = TKTextStyle.body3.font
     subtitleLabel.textColor = .Text.secondary
     subtitleLabel.numberOfLines = 0
     stackView.addArrangedSubview(subtitleLabel)
-    subtitleLabel.sizeToFit()
+
+    subtitleLabel.setContentHuggingPriority(.defaultLow, for: .vertical)
+    subtitleLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+    
     return stackView
   }()
 
-  lazy var exportModeSwitch = UISwitch()
+  lazy var expertModeSwitch = {
+    let s = UISwitch()
+    s.addTarget(self, action: #selector(expertModeChanged), for: .valueChanged)
+    return s
+  }()
 
   private lazy var expertModeView = {
     let stackView = UIStackView()
+    stackView.alignment = .center
     stackView.isLayoutMarginsRelativeArrangement = true
     stackView.layoutMargins = .init(top: 16, left: 16, bottom: 16, right: 16)
     stackView.backgroundColor = .Field.background
     stackView.addArrangedSubview(expertModeLabels)
-    stackView.addArrangedSubview(exportModeSwitch)
+    stackView.addArrangedSubview(expertModeSwitch)
     stackView.layer.cornerRadius = 16
     return stackView
   }()
@@ -133,6 +161,10 @@ final class SwapSettingsView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  @objc func expertModeChanged() {
+    validateSlippageAmount()
   }
 }
 

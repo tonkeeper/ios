@@ -149,6 +149,6 @@ private extension TKSwapTokenField {
       tokenView.imageView.isHidden = true
       tokenView.label.text = "CHOOSE"
     }
-    textInputControl.text = swapTokenFieldState.amount
+    textInputControl.text = (textInputControl.text != "0" && swapTokenFieldState.amount == "0") ? "" : swapTokenFieldState.amount
   }
 }

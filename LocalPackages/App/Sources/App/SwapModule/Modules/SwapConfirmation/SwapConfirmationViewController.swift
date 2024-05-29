@@ -62,6 +62,9 @@ private extension SwapConfirmationViewController {
       case nil:
         sellingAssetImage = .image(.TKCore.Icons.Size44.tonLogo)
         break
+      case Asset.toncoin.contractAddress:
+        sellingAssetImage = .image(.TKCore.Icons.Size44.tonLogo)
+        break
       default:
         sellingAssetImage = .asyncImage(ImageDownloadTask(closure: { [weak self] imageView, size, cornerRadius in
           self?.viewModel.imageLoader.loadImage(url: URL(string: sellingAsset.imageUrl),

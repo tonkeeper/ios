@@ -27,7 +27,7 @@ final class BuyListViewModelImplementation: BuyListViewModel, BuyListModuleOutpu
   
   func viewDidLoad() {
     Task {
-      buyListController.didUpdateMethods = { [weak self] methods in
+      buyListController.didUpdateMethods = { [weak self] (methods, currencies) in
         self?.didUpdateMethods(methods)
       }
       await buyListController.start()

@@ -36,14 +36,14 @@ private extension SwapSettingsViewController {
         (btn as? TKButton)?.isSelected = true
       }
     }
-    customView.exportModeSwitch.isOn = viewModel.settings.expertMode
+    customView.expertModeSwitch.isOn = viewModel.settings.expertMode
   }
   
   func setupBindings() {
     customView.saveButton.configuration.action = { [weak self] in
       guard let self else {return}
       viewModel.onSave(settings: SwapSettings(slippage: Float(customView.slippageAmountTextField.text ?? "1") ?? 1,
-                                              expertMode: customView.exportModeSwitch.isOn))
+                                              expertMode: customView.expertModeSwitch.isOn))
       dismiss(animated: true)
     }
   }

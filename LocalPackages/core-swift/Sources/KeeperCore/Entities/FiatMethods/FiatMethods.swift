@@ -1,7 +1,7 @@
 import Foundation
 
-struct FiatMethodItem: Codable {
-  typealias ID = String
+public struct FiatMethodItem: Codable {
+  public typealias ID = String
   
   struct ActionButton: Codable {
     let title: String
@@ -48,10 +48,10 @@ struct FiatMethodCategory: Codable {
   let items: [FiatMethodItem]
 }
 
-struct FiatMethodLayout: Codable {
-  let countryCode: String?
-  let currency: String?
-  let methods: [FiatMethodItem.ID]
+public struct FiatMethodLayout: Codable {
+  public let countryCode: String?
+  public let currency: String?
+  public let methods: [FiatMethodItem.ID]
 }
 
 struct FiatMethods: Codable {

@@ -170,7 +170,7 @@ private extension WalletCoordinator {
   }
   
   func openBuy(wallet: Wallet) {
-    let coordinator = BuyCoordinator(
+    let coordinator = BuySellCoordinator(
       wallet: wallet,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly,

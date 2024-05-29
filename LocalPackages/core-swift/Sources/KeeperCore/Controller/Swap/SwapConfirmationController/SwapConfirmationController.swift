@@ -11,31 +11,41 @@ public final class SwapConfirmationController {
   }
   
   private let wallet: Wallet
+  private let sellItem: SwapItem
+  private let buyItem: SwapItem
+  private let ratesService: RatesService
   private let sendService: SendService
   private let blockchainService: BlockchainService
   private let swapService: SwapService
-  private let tonRatesStore: TonRatesStore
+  private let ratesStore: RatesStore
   private let currencyStore: CurrencyStore
   private let mnemonicRepository: WalletMnemonicRepository
   private let amountFormatter: AmountFormatter
+  private var currency = Currency.USD
   
   public var didGetError: ((Error) -> Void)?
   public var didGetExternalSign: ((URL) async throws -> Data?)?
 
   init(
     wallet: Wallet,
+    sellItem: SwapItem,
+    buyItem: SwapItem,
+    ratesService: RatesService,
     sendService: SendService,
     blockchainService: BlockchainService,
     swapService: any SwapService,
-    tonRatesStore: TonRatesStore,
+    ratesStore: RatesStore,
     currencyStore: CurrencyStore,
     mnemonicRepository: WalletMnemonicRepository,
     amountFormatter: AmountFormatter) {
       self.wallet = wallet
+      self.sellItem = sellItem
+      self.buyItem = buyItem
+      self.ratesService = ratesService
       self.sendService = sendService
       self.blockchainService = blockchainService
       self.swapService = swapService
-      self.tonRatesStore = tonRatesStore
+      self.ratesStore = ratesStore
       self.currencyStore = currencyStore
       self.mnemonicRepository = mnemonicRepository
       self.amountFormatter = amountFormatter
@@ -73,6 +83,50 @@ public final class SwapConfirmationController {
       maximumFractionDigits: tokenFractionDigits
     )
     return formatted
+  }
+  
+  public func getConvertedValues() async -> (String, String) { // sell and buy converted strings
+    self.currency = await currencyStore.getActiveCurrency()
+    let convertedSell = await convertTokenAmountToCurrency(swapItem: sellItem)
+    let formattedSell = amountFormatter.formatAmount(
+      convertedSell.0,
+      fractionDigits: convertedSell.1,
+      maximumFractionDigits: 2
+    )
+    let convertedBuy = await convertTokenAmountToCurrency(swapItem: buyItem)
+    let formattedBuy = amountFormatter.formatAmount(
+      convertedBuy.0,
+      fractionDigits: convertedBuy.1,
+      maximumFractionDigits: 2
+    )
+    return ("\(formattedSell) \(currency.code)", "\(formattedBuy) \(currency.code)")
+  }
+  
+  func convertTokenAmountToCurrency(swapItem: SwapItem) async -> (BigUInt, Int) {
+    if let rate = await getRates(for: swapItem.token) {
+      return RateConverter().convert(
+        amount: swapItem.amount,
+        amountFractionLength: swapItem.decimals,
+        rate: rate
+      )
+    } else {
+      return (0, 2)
+    }
+  }
+  
+  func getRates(for token: SwapToken) async -> Rates.Rate? {
+    let rates: [Rates.Rate]
+    switch token {
+    case .ton:
+      rates = (try? await ratesService.loadRates(jettons: [], currencies: [currency]))?.ton ?? ratesStore.getRates(jettons: []).ton
+    case .jetton(let asset):
+      guard let jettonInfo = asset.jettonInfo else {
+        return nil
+      }
+      rates = (try? await ratesService.loadRates(jettons: [jettonInfo], currencies: [currency]))?.jettonsRates.first(where: { $0.jettonInfo == jettonInfo })?.rates ?? []
+      //rates = ratesStore.getRates(jettons: [jettonInfo]).jettonsRates.first(where: { $0.jettonInfo == jettonInfo })?.rates ?? []
+    }
+    return rates.first(where: { $0.currency == currency })
   }
   
   func signTransfer(_ transfer: WalletTransfer) async throws -> Data {

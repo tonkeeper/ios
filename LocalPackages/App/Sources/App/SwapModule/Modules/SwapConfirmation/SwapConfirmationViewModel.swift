@@ -146,9 +146,11 @@ private extension SwapConfirmationViewModelImplementation {
       )
     )
     Task {
-      // TODO:: Price in base currency
+      let (sellCurrency, buyCurrency) = await self.swapConfirmationController.getConvertedValues()
+      self.model.sellItem.amountInBaseCurrencyString = sellCurrency
+      self.model.buyItem.amountInBaseCurrencyString = buyCurrency
       await MainActor.run {
-        didUpdateModel?(model)
+        didUpdateModel?(self.model)
       }
     }
     return model

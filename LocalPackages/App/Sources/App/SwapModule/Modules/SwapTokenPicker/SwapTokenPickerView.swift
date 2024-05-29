@@ -20,6 +20,7 @@ final class SwapTokenPickerView: UIView {
 
   let collectionView = TKUICollectionView(frame: .zero,
                                           collectionViewLayout: UICollectionViewLayout())
+  let indicator = UIActivityIndicatorView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -39,10 +40,17 @@ private extension SwapTokenPickerView {
     
     // search bar
     searchBar.placeholder = TKLocales.Swap.search
+    searchBar.alpha = 0
     addSubview(searchBar)
 
     // collection view
+    collectionView.alpha = 0
     addSubview(collectionView)
+    
+    addSubview(indicator)
+    indicator.hidesWhenStopped = true
+    indicator.tintColor = .Text.primary
+    indicator.startAnimating()
     
     setupConstraints()
   }
@@ -62,6 +70,11 @@ private extension SwapTokenPickerView {
       collectionView.leftAnchor.constraint(equalTo: leftAnchor),
       collectionView.bottomAnchor.constraint(equalTo: bottomAnchor),
       collectionView.rightAnchor.constraint(equalTo: rightAnchor)
+    ])
+    indicator.translatesAutoresizingMaskIntoConstraints = false
+    NSLayoutConstraint.activate([
+      indicator.centerYAnchor.constraint(equalTo: centerYAnchor),
+      indicator.centerXAnchor.constraint(equalTo: centerXAnchor)
     ])
   }
 }

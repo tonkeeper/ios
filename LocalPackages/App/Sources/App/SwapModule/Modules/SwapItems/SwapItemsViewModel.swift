@@ -66,6 +66,9 @@ final class SwapItemsViewModelImplementation: SwapItemsViewModel, SwapItemsModul
   // MARK: - SwapItemsModuleInput
   func update(with settings: SwapSettings) {
     model.slippage = settings.slippage
+    Task {
+      await updateEstimations(changePosition: 1)
+    }
   }
 
   func updateWithToken(_ token: SwapToken, position: Int) {
@@ -82,6 +85,14 @@ final class SwapItemsViewModelImplementation: SwapItemsViewModel, SwapItemsModul
           token: model.sellItem.swapItem!.token
         )
         model.sellItem.balanceString = "\(TKLocales.Swap.balance): \(amountString) \(sellItem.symbol)"
+        // check if pair is valid
+        if let buyingContract = model.buyItem.swapItem?.contractAddress {
+          let isValidPair = await swapItemsController.isPairValid(sellingContract: model.sellItem.swapItem?.contractAddress ?? "",
+                                                            buyingContract: buyingContract)
+          if !isValidPair {
+            model.buyItem.swapItem = nil
+          }
+        }
       } else {
         model.sellItem.balanceString = ""
       }
@@ -183,7 +194,9 @@ final class SwapItemsViewModelImplementation: SwapItemsViewModel, SwapItemsModul
     settingsTapped?()
   }
   
+  private var estimationTimer: Timer?
   private func updateEstimations(changePosition: Int) async {
+    estimationTimer?.invalidate()
     // check if amount is entered
     if (changePosition == 1 && model.sellItem.swapItem?.amount ?? 0 < 1) ||
         (changePosition == 2 && model.buyItem.swapItem?.amount ?? 0 < 1) {
@@ -198,7 +211,7 @@ final class SwapItemsViewModelImplementation: SwapItemsViewModel, SwapItemsModul
     if await model.sellItem.swapItem!.amount > swapItemsController.getAmountAvailable(symbol: defaultSellItem.symbol) {
       model.button.isEnabled = false
       model.button.isActivity = false
-      model.button.title = TKLocales.Swap.insufficientBalance + defaultSellItem.symbol
+      model.button.title = TKLocales.Swap.insufficientBalance + (model.sellItem.swapItem?.symbol ?? "")
       await MainActor.run {
         didUpdateModel?(model)
       }
@@ -260,8 +273,19 @@ final class SwapItemsViewModelImplementation: SwapItemsViewModel, SwapItemsModul
     model.button.isActivity = false
     model.button.isEnabled = true
     model.button.title = TKLocales.Actions.continue_action
+    // HERE, Call this function again in 5 seconds, and cancel previous timer
     await MainActor.run {
       didUpdateModel?(model)
+    }
+    scheduleEstimationUpdate(changePosition: changePosition)
+  }
+
+  private func scheduleEstimationUpdate(changePosition: Int) {
+    estimationTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
+      guard let self = self else { return }
+      Task {
+        await self.updateEstimations(changePosition: 1)
+      }
     }
   }
   

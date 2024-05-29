@@ -92,7 +92,7 @@
 "wallet_buttons.send" = "Send";
 "wallet_buttons.receive" = "Receive";
 "wallet_buttons.scan" = "Scan";
-"wallet_buttons.buy" = "Buy TON";
+"wallet_buttons.buy" = "Buy or Sell";
 "wallet_buttons.swap" = "Swap";
 "wallet_buttons.stake" = "Stake";
 
@@ -145,6 +145,8 @@
 
 "swap_confirmation.title" = "Confirm Swap";
 "swap_confirmation.confirm" = "Confirm";
+
+"swap_confirmation.creditCard" = "Credit Card";
 
 "customize_wallet.title" = "Customize your Wallet";
 "customize_wallet.description" = "Wallet name and icon are stored locally on your device.";

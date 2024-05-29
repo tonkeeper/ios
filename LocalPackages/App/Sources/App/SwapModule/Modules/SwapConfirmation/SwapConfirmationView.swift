@@ -97,6 +97,7 @@ final class SwapConfirmationView: UIView {
       view.color = .Separator.common
       return view
     }
+    stackView.addArrangedSubview(separatorViewGenerator())
     stackView.addArrangedSubview(
       itemRowGenerator(title: TKLocales.Swap.priceImpact, label: priceImpactLabel, info: TKLocales.Swap.priceImpactInfo)
     )

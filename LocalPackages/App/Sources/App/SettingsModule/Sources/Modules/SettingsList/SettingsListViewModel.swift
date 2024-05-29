@@ -5,6 +5,7 @@ import KeeperCore
 
 public protocol SettingsListModuleOutput: AnyObject {
   var didTapEditWallet: ((Wallet) -> Void)? { get set }
+  var didSelectAnItem: ((String) -> Void)? { get set }
 }
 
 protocol SettingsListViewModel: AnyObject {
@@ -39,6 +40,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   // MARK: - SettingsListModuleOutput
   
   var didTapEditWallet: ((Wallet) -> Void)?
+  var didSelectAnItem: ((String) -> Void)?
   
   // MARK: - SettingsListViewModel
   var didUpdateTitle: ((String) -> Void)?
@@ -74,6 +76,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     switch section.items[index] {
     case let item as SettingsCell.Model:
       item.selectionHandler?()
+      didSelectAnItem?(item.identifier)
     case _ as SettingsTextCell.Model:
       break
     default:

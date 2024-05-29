@@ -1,7 +1,7 @@
 import Foundation
 
 public final class BuyListController {
-  public var didUpdateMethods: (([[BuySellItemModel]]) -> Void)?
+  public var didUpdateMethods: (([[BuySellItemModel]], [FiatMethodLayout]) -> Void)?
   
   private let wallet: Wallet
   private let buySellMethodsService: BuySellMethodsService
@@ -26,21 +26,21 @@ public final class BuyListController {
   
   public func start() async {
     if let cachedMethods = try? buySellMethodsService.getFiatMethods() {
-      let models = await mapFiatMethods(cachedMethods)
-      didUpdateMethods?(models)
+      let (models, currencies) = await mapFiatMethods(cachedMethods)
+      didUpdateMethods?(models, currencies)
     }
     
     do {
-      let models = try await loadFiatMethods()
-      didUpdateMethods?(models)
+      let (models, currencies) = try await loadFiatMethods()
+      didUpdateMethods?(models, currencies)
     } catch {
-      didUpdateMethods?([])
+      didUpdateMethods?([], [])
     }
   }
 }
 
 private extension BuyListController {
-  func loadFiatMethods() async throws -> [[BuySellItemModel]] {
+  func loadFiatMethods() async throws -> ([[BuySellItemModel]], [FiatMethodLayout]) {
     if await !isMarketRegionPickerAvailable() {
       return try await loadFiatMethodsByLocationRequired()
     } else {
@@ -48,24 +48,24 @@ private extension BuyListController {
     }
   }
   
-  func loadFiatMethodsByLocationRequired() async throws -> [[BuySellItemModel]]  {
+  func loadFiatMethodsByLocationRequired() async throws -> ([[BuySellItemModel]], [FiatMethodLayout]) {
     do {
       let countryCode = try await locationService.getCountryCodeByIp()
       let methods = try await buySellMethodsService.loadFiatMethods(countryCode: countryCode)
       try? buySellMethodsService.saveFiatMethods(methods)
       return await mapFiatMethods(methods)
     } catch {
-      return []
+      return ([], [])
     }
   }
   
-  func loadDefaultFiatMethods() async throws -> [[BuySellItemModel]]  {
+  func loadDefaultFiatMethods() async throws -> ([[BuySellItemModel]], [FiatMethodLayout]) {
     let methods = try await buySellMethodsService.loadFiatMethods(countryCode: nil)
     try? buySellMethodsService.saveFiatMethods(methods)
     return await mapFiatMethods(methods)
   }
   
-  func mapFiatMethods(_ fiatMethods: FiatMethods) async -> [[BuySellItemModel]] {
+  func mapFiatMethods(_ fiatMethods: FiatMethods) async -> ([[BuySellItemModel]], [FiatMethodLayout]) {
     let currency = await currencyStore.getActiveCurrency()
     var sections = [[BuySellItemModel]]()
     for category in fiatMethods.categories {
@@ -88,7 +88,7 @@ private extension BuyListController {
       }
       sections.append(items)
     }
-    return sections
+    return (sections, fiatMethods.layoutByCountry)
   }
   
   func actionUrl(for item: FiatMethodItem, currency: Currency) async -> URL? {

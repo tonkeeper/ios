@@ -1,4 +1,6 @@
 import Foundation
+import TonSwift
+import TonAPI
 
 public struct Asset: Codable, Equatable, Hashable {
   public let contractAddress: String?             // for simplicity, nil considered as toncoin!
@@ -40,7 +42,7 @@ public struct Asset: Codable, Equatable, Hashable {
       contractAddress = try container.decodeIfPresent(String.self, forKey: .contractAddress)
       symbol = try container.decode(String.self, forKey: .symbol)
       displayName = try container.decode(String.self, forKey: .displayName)
-      imageUrl = try container.decode(String.self, forKey: .imageUrl)
+      imageUrl = (try? container.decode(String.self, forKey: .imageUrl)) ?? ""
       decimals = try container.decode(Int.self, forKey: .decimals)
       kind = try container.decode(String.self, forKey: .kind)
       deprecated = try container.decodeIfPresent(Bool.self, forKey: .deprecated)
@@ -104,4 +106,16 @@ public struct Asset: Codable, Equatable, Hashable {
                                     kind: "ton",
                                     deprecated: nil, community: nil, blacklisted: nil, defaultSymbol: nil, thirdPartyUsdPrice: nil, thirdPartyPriceUsd: nil, dexUsdPrice: nil, dexPriceUsd: nil,
                                     isSwappable: true)
+  
+  public var jettonInfo: JettonInfo? {
+    guard let address = try? Address.parse(contractAddress ?? "") else {
+      return nil
+    }
+    return JettonInfo(address: address,
+                      fractionDigits: decimals,
+                      name: displayName,
+                      symbol: symbol,
+                      verification: .none,
+                      imageURL: URL(string: imageUrl))
+  }
 }

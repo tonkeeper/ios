@@ -15,11 +15,10 @@ struct SwapConfirmationAssembly {
       sellItem: sellItem,
       buyItem: buyItem,
       estimate: estimate,
-      swapConfirmationController: keeperCoreMainAssembly.swapConfirmationController(wallet: wallet),
+      swapConfirmationController: keeperCoreMainAssembly.swapConfirmationController(wallet: wallet, sellItem: sellItem, buyItem: buyItem),
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletStore
     )
     let viewController = SwapConfirmationViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)
   }
 }
-
