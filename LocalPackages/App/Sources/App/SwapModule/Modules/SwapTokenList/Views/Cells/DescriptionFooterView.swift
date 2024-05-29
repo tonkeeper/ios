@@ -2,9 +2,9 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-open class TitleHeaderCollectionView: UICollectionReusableView, ReusableView, TKCollectionViewSupplementaryContainerViewContentView {
+open class DescriptionFooterCollectionView: UICollectionReusableView, ReusableView, TKCollectionViewSupplementaryContainerViewContentView {
   
-  public let titleLabel = UILabel()
+  public let descriptionLabel = UILabel()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -28,21 +28,23 @@ open class TitleHeaderCollectionView: UICollectionReusableView, ReusableView, TK
   }
   
   public func configure(model: Model) {
-    titleLabel.attributedText = model.title
+    descriptionLabel.attributedText = model.title
   }
 }
 
-private extension TitleHeaderCollectionView {
+private extension DescriptionFooterCollectionView {
   func setup() {
-    addSubview(titleLabel)
+    descriptionLabel.numberOfLines = 0
+    
+    addSubview(descriptionLabel)
     
     setupConstraints()
   }
   
   func setupConstraints() {
-    titleLabel.snp.makeConstraints { make in
-      make.left.equalTo(self)
-      make.centerY.equalTo(self)
+    descriptionLabel.snp.makeConstraints { make in
+      make.left.right.equalTo(self)
+      make.top.equalTo(self).offset(12)
     }
   }
 }

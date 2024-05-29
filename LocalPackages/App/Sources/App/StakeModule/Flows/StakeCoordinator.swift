@@ -1,4 +1,5 @@
 import UIKit
+import TKScreenKit
 import TKCoordinator
 import TKCore
 import KeeperCore
@@ -33,8 +34,8 @@ private extension StakeCoordinator {
       self?.didFinish?()
     }
     
-    module.output.didTapStakePool = { [weak self, weak input = module.input] in
-      self?.openStakeOptions(didSelectPool: input?.didSelectPool)
+    module.output.didTapStakePool = { [weak self, weak input = module.input] selectedStakePool in
+      self?.openStakeOptions(selectedStakePool: selectedStakePool, didChoosePool: input?.didChoosePool)
     }
     
     module.output.didTapContinue = {
@@ -44,9 +45,10 @@ private extension StakeCoordinator {
     router.push(viewController: module.view, animated: false)
   }
   
-  func openStakeOptions(didSelectPool: ((StakePool) -> Void)?) {
+  func openStakeOptions(selectedStakePool: StakePool, didChoosePool: ((StakePool) -> Void)?) {
     let module = StakeOptionsAssembly.module(
-      stakeOptionsController: keeperCoreMainAssembly.stakeOptionsController()
+      stakeOptionsController: keeperCoreMainAssembly.stakeOptionsController(),
+      selectedStakePool: selectedStakePool
     )
     
     module.view.setupBackButton()
@@ -55,21 +57,20 @@ private extension StakeCoordinator {
       self?.didFinish?()
     }
     
-    module.output.didSelectOtherPool = { [weak self] poolTitle, seletedId, poolItems in
-      self?.openPoolList(poolTitle: poolTitle, selectedId: seletedId, poolItems: poolItems)
+    module.output.didTapOtherPoolCell = { [weak self] poolTitle, poolItems in
+      self?.openPoolList(poolTitle: poolTitle, poolItems: poolItems)
     }
     
-    module.output.didSelectNewPool = { pool in
-      didSelectPool?(pool)
+    module.output.onOpenPoolDetails = { [weak self] pool in
+      self?.openPoolDetails(pool: pool, didChoosePool: didChoosePool)
     }
     
     router.push(viewController: module.view, animated: true)
   }
   
-  func openPoolList(poolTitle: String, selectedId: String, poolItems: [SelectionCollectionViewCell.Configuration]) {
+  func openPoolList(poolTitle: String, poolItems: [SelectionCollectionViewCell.Configuration]) {
     let poolListView = StakeOptionsPoolListViewController(
       title: poolTitle,
-      selectedId: selectedId,
       poolItems: poolItems
     )
     
@@ -80,5 +81,40 @@ private extension StakeCoordinator {
     }
     
     router.push(viewController: poolListView, animated: true)
+  }
+  
+  func openPoolDetails(pool: StakePool, didChoosePool: ((StakePool) -> Void)?) {
+    let module = StakePoolDetailsAssembly.module(
+      stakePoolDetailsController: keeperCoreMainAssembly.stakePoolDetailsController(),
+      stakePool: pool
+    )
+    
+    module.view.setupBackButton()
+    
+    module.view.setupRightCloseButton { [weak self] in
+      self?.didFinish?()
+    }
+    
+    module.output.didTapLink = { [weak self, weak view = module.view] titledUrl in
+      guard let view else { return }
+      self?.openBridgeWebView(titledUrl: titledUrl, fromViewController: view)
+    }
+    
+    module.output.didChoosePool = { [weak self] newPool in
+      didChoosePool?(newPool)
+      self?.router.popToRoot(animated: true)
+    }
+    
+    router.push(viewController: module.view, animated: true)
+  }
+  
+  func openBridgeWebView(titledUrl: TitledURL, fromViewController: UIViewController) {
+    let bridgeWebViewController = TKBridgeWebViewController(
+      initialURL: titledUrl.url,
+      initialTitle: titledUrl.title,
+      jsInjection: nil
+    )
+    bridgeWebViewController.modalPresentationStyle = .fullScreen
+    fromViewController.present(bridgeWebViewController, animated: true)
   }
 }

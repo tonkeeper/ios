@@ -3,12 +3,12 @@ import TKUIKit
 import KeeperCore
 
 protocol StakeOptionsModuleOutput: AnyObject {
-  var didSelectOtherPool: ((String, String, [SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
-  var didSelectNewPool: ((StakePool) -> Void)? { get set }
+  var didTapOtherPoolCell: ((String, [SelectionCollectionViewCell.Configuration]) -> Void)? { get set }
+  var onOpenPoolDetails: ((StakePool) -> Void)? { get set }
 }
 
 protocol StakeOptionsModuleInput: AnyObject {
-  func didSelectPool(_ pool: StakePool)
+  func didTapPoolCell(_ pool: StakePool)
 }
 
 protocol StakeOptionsViewModel: AnyObject {
@@ -22,13 +22,13 @@ final class StakeOptionsViewModelImplementation: StakeOptionsViewModel, StakeOpt
   
   // MARK: - StakeOptionsModuleOutput
   
-  var didSelectOtherPool: ((String, String, [SelectionCollectionViewCell.Configuration]) -> Void)?
-  var didSelectNewPool: ((StakePool) -> Void)?
+  var didTapOtherPoolCell: ((String, [SelectionCollectionViewCell.Configuration]) -> Void)?
+  var onOpenPoolDetails: ((StakePool) -> Void)?
   
   // MARK: - StakeOptionsModuleInput
   
-  func didSelectPool(_ pool: StakePool) {
-    didSelectNewPool?(pool)
+  func didTapPoolCell(_ pool: StakePool) {
+    onOpenPoolDetails?(pool)
   }
   
   // MARK: - StakeOptionsViewModel
@@ -51,11 +51,13 @@ final class StakeOptionsViewModelImplementation: StakeOptionsViewModel, StakeOpt
   // MARK: - Dependencies
   
   private let stakeOptionsController: StakeOptionsController
+  private var selectedStakePool: StakePool
   
   // MARK: - Init
   
-  init(stakeOptionsController: StakeOptionsController) {
+  init(stakeOptionsController: StakeOptionsController, selectedStakePool: StakePool) {
     self.stakeOptionsController = stakeOptionsController
+    self.selectedStakePool = selectedStakePool
   }
   
   deinit {
@@ -67,33 +69,42 @@ final class StakeOptionsViewModelImplementation: StakeOptionsViewModel, StakeOpt
 
 private extension StakeOptionsViewModelImplementation {
   func updateWithInitialData() {
-    let liquidStakingPoolItemsModel = PoolItemsModel(items: StakePool.testData)
-    let otherPoolItemsModel = PoolListItemsModel(items: StakePoolList.testData)
+    var liquidStakePools = StakePool.testData
+    var otherPools = StakePoolList.testData
+    
+    liquidStakePools.updateSelected(selectPool: selectedStakePool)
+    otherPools.updateSelected(selectPool: selectedStakePool)
+    
+    let liquidStakingPoolItemsModel = PoolItemsModel(items: liquidStakePools)
+    let otherPoolItemsModel = PoolListItemsModel(items: otherPools)
     
     let liquidStakingListItems = liquidStakingPoolItemsModel.items.map { item in
       itemMapper.mapLiquidStakingPoolListItem(item) { [weak self] in
-        self?.didSelectPool(item)
+        self?.didTapPoolCell(item)
       }
     }
     
     let otherListItems = otherPoolItemsModel.items.map { item in
       itemMapper.mapOtherPoolListItem(item) { [weak self] in
         let poolsItems = item.pools.compactMap { pool in
-          self?.itemMapper.mapLiquidStakingPoolListItem(pool) { self?.didSelectPool(pool) }
+          let poolForMap = pool.updatedMinimum("")
+          return self?.itemMapper.mapLiquidStakingPoolListItem(poolForMap) { self?.didTapPoolCell(pool) }
         }
         let poolTitle = item.title
-        let selectedId = poolsItems.first?.id ?? ""
-        self?.didSelectOtherPool?(poolTitle, selectedId, poolsItems)
+        self?.didTapOtherPoolCell?(poolTitle, poolsItems)
       }
     }
     
-    let selectedItem = StakeOptionsSelectedItem(
-      id: otherListItems[0].id,
-      section: .liquidStaking
-    )
-    
     didUpdatePoolList?(liquidStakingListItems, otherListItems)
     update()
+  }
+  
+  func updatedSelectedItem(selectedPool: StakePool, in pools: [StakePool]) -> [StakePool] {
+    return pools.map { stakePool in
+      var updatedStakePool = stakePool
+      updatedStakePool.isSelected = stakePool.id == selectedPool.id
+      return updatedStakePool
+    }
   }
   
   func update() {
@@ -108,7 +119,15 @@ private extension StakeOptionsViewModelImplementation {
   }
 }
 
+// MARK: - TestData
+
 public extension StakePool {
+  func updatedMinimum(_ minimumDeposit: String) -> StakePool {
+    var updatedPool = self
+    updatedPool.minimumDeposit = minimumDeposit
+    return updatedPool
+  }
+  
   static let testData: [StakePool] = [
     .init(
       id: "poolTonstakers",
@@ -116,7 +135,8 @@ public extension StakePool {
       title: "Tonstakers",
       tag: "MAX APY",
       apy: "5.01",
-      minimumDeposit: "1 TON"
+      minimumDeposit: "1 TON",
+      links: .testLinks
     ),
     .init(
       id: "poolBemo",
@@ -124,7 +144,8 @@ public extension StakePool {
       title: "Bemo",
       tag: nil,
       apy: "5.01",
-      minimumDeposit: "1 TON"
+      minimumDeposit: "1 TON",
+      links: .testLinks
     ),
     .init(
       id: "poolTonWhales",
@@ -132,7 +153,8 @@ public extension StakePool {
       title: "Whales Liquid Pool",
       tag: nil,
       apy: "5.01",
-      minimumDeposit: "1 TON"
+      minimumDeposit: "1 TON",
+      links: .testLinks
     ),
   ]
 }
@@ -153,7 +175,8 @@ public extension StakePoolList {
           title: "Tonkeeper Queue #1",
           tag: nil,
           apy: "3.01",
-          minimumDeposit: nil
+          minimumDeposit: "50 TON",
+          links: .testLinks
         ),
         .init(
           id: "otherTonWhales_2",
@@ -161,7 +184,8 @@ public extension StakePoolList {
           title: "Tonkeeper Queue #2",
           tag: nil,
           apy: "3.01",
-          minimumDeposit: nil
+          minimumDeposit: "50 TON",
+          links: .testLinks
         )
       ]
     ),
@@ -179,7 +203,8 @@ public extension StakePoolList {
           title: "Tonkeeper Queue #3",
           tag: nil,
           apy: "3.01",
-          minimumDeposit: nil
+          minimumDeposit: "10K TON",
+          links: .testLinks
         ),
         .init(
           id: "otherTonNominators_2",
@@ -187,9 +212,44 @@ public extension StakePoolList {
           title: "Tonkeeper Queue #4",
           tag: nil,
           apy: "3.01",
-          minimumDeposit: nil
+          minimumDeposit: "10K TON",
+          links: .testLinks
         )
       ]
     ),
   ]
 }
+
+public extension Array where Element == StakePool.Link {
+  static let testLinks: [StakePool.Link] = [
+    .init(
+      icon: .TKUIKit.Icons.Size16.globe,
+      titledUrl: TitledURL(
+        title: "tonstakers.com",
+        url: URL(string: "https://tonstakers.com")!
+      )
+    ),
+    .init(
+      icon: .TKUIKit.Icons.Size16.twitter,
+      titledUrl: TitledURL(
+        title: "Twitter",
+        url: URL(string: "https://twitter.com/tonstakers")!
+      )
+    ),
+    .init(
+      icon: .TKUIKit.Icons.Size16.telegram,
+      titledUrl: TitledURL(
+        title: "Community",
+        url: URL(string: "https://t.me/tonstakers_community")!
+      )
+    ),
+    .init(
+      icon: .TKUIKit.Icons.Size16.magnifyingGlass,
+      titledUrl: TitledURL(
+        title: "tonviewer.com",
+        url: URL(string: "https://tonviewer.com")!
+      )
+    )
+  ]
+}
+

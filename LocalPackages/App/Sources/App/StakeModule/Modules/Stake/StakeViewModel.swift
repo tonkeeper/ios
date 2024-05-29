@@ -5,12 +5,12 @@ import KeeperCore
 import BigInt
 
 protocol StakeModuleOutput: AnyObject {
-  var didTapStakePool: (() -> Void)? { get set }
+  var didTapStakePool: ((StakePool) -> Void)? { get set }
   var didTapContinue: (() -> Void)? { get set }
 }
 
 protocol StakeModuleInput: AnyObject {
-  func didSelectPool(_ pool: StakePool)
+  func didChoosePool(_ pool: StakePool)
 }
 
 protocol StakeViewModel: AnyObject {
@@ -36,13 +36,13 @@ final class StakeViewModelImplementation: StakeViewModel, StakeModuleOutput, Sta
   
   // MARK: - StakeModuleOutput
   
-  var didTapStakePool: (() -> Void)?
+  var didTapStakePool: ((StakePool) -> Void)?
   var didTapContinue: (() -> Void)?
   
   // MARK: - StakeModuleInput
   
-  func didSelectPool(_ pool: StakePool) {
-    selectedPool = pool
+  func didChoosePool(_ pool: StakePool) {
+    stakePool = pool
     didUpdateSelectedPool?(createPoolContainerModel())
   }
   
@@ -87,6 +87,8 @@ final class StakeViewModelImplementation: StakeViewModel, StakeModuleOutput, Sta
   
   // MARK: - State
   
+  private var stakePool: StakePool = .emptyItem
+  
   private var stakeItem = BuySellItem(input: .token, tokenItem: .ton, fiatItem: .usd)
   
   private var inputItem: BuySellItem.Item {
@@ -98,8 +100,6 @@ final class StakeViewModelImplementation: StakeViewModel, StakeModuleOutput, Sta
   
   private var minimumValidTokenAmountString = "0"
   private var minimumValidTokenAmount = BigUInt(0)
-  
-  private var selectedPool: StakePool = .emptyItem
   
   private var remaining = Remaining.available(0) {
     didSet {
@@ -169,8 +169,9 @@ private extension StakeViewModelImplementation {
     updateMinimumValidAmount(minimumTokenAmountString)
     
     let tokenAmountString = "0"
-    
-    didSelectPool(.testData[0])
+    var initalStakePool = StakePool.testData[0]
+    initalStakePool.isSelected = true
+    didChoosePool(initalStakePool)
     
     update()
     updateFiatCurrency()
@@ -274,18 +275,18 @@ private extension StakeViewModelImplementation {
   }
   
   func createPoolContainerModel() -> StakePoolContainerView.Model {
-    let title = selectedPool.title.withTextStyle(.label1, color: .Text.primary)
+    let title = stakePool.title.withTextStyle(.label1, color: .Text.primary)
     var tagViewModel: TKUITagView.Configuration?
-    if let tagText = selectedPool.tag {
+    if let tagText = stakePool.tag {
       tagViewModel = TKUITagView.Configuration(text: tagText, textColor: .Accent.green, backgroundColor: .Accent.green.withAlphaComponent(0.16))
     }
     
-    let apyTitle = "APY ≈ \(selectedPool.apy)"
+    let apyTitle = "APY ≈ \(stakePool.apy)"
     let subtitleText = "\(apyTitle) · 50.01 TON"
     let subtitle = subtitleText.withTextStyle(.body2, color: .Text.secondary)
     
     let iconView = TKUIListItemImageIconView.Configuration(
-      image: .image(selectedPool.image),
+      image: .image(stakePool.image),
       tintColor: .clear,
       backgroundColor: .Background.contentTint,
       size: CGSize(width: 44, height: 44),
@@ -317,7 +318,8 @@ private extension StakeViewModelImplementation {
       content: contentConfiguration,
       accessory: .image(accessoryImageConfiguration),
       selectionClosure: { [weak self] in
-        self?.didTapStakePool?()
+        guard let self else { return }
+        self.didTapStakePool?(self.stakePool)
       }
     )
   }
@@ -345,5 +347,5 @@ private extension StakeViewModelImplementation {
 }
 
 private extension StakePool {
-  static let emptyItem = StakePool(id: "", image: .init(), title: "", tag: nil, apy: "", minimumDeposit: nil)
+  static let emptyItem = StakePool(id: "", image: .init(), title: "", tag: nil, apy: "", minimumDeposit: "")
 }

@@ -4,9 +4,11 @@ import KeeperCore
 
 struct StakeOptionsAssembly {
   private init() {}
-  static func module(stakeOptionsController: StakeOptionsController) -> MVVMModule<StakeOptionsViewController, StakeOptionsModuleOutput, StakeOptionsModuleInput> {
+  static func module(stakeOptionsController: StakeOptionsController,
+                     selectedStakePool: StakePool) -> MVVMModule<StakeOptionsViewController, StakeOptionsModuleOutput, StakeOptionsModuleInput> {
     let viewModel = StakeOptionsViewModelImplementation(
-      stakeOptionsController: stakeOptionsController
+      stakeOptionsController: stakeOptionsController,
+      selectedStakePool: selectedStakePool
     )
     
     let viewController = StakeOptionsViewController(

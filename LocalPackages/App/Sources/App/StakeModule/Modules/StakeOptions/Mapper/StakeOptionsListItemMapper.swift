@@ -7,12 +7,12 @@ struct StakeOptionsListItemMapper {
     let id = item.id
     let title = item.title.withTextStyle(.label1, color: .Text.primary)
     let tagViewModel = makeTagViewModel(item.tag)
-    var subtitle: NSAttributedString?
-    if let minimumDeposit = item.minimumDeposit {
-      subtitle = createMinimumDepositTitle(minimumDeposit)
-    }
     let apyTitle = "APY ≈ \(item.apy)"
     let description = apyTitle.withTextStyle(.body2, color: .Text.secondary)
+    var subtitle: NSAttributedString?
+    if !item.minimumDeposit.isEmpty {
+      subtitle = createMinimumDepositTitle(item.minimumDeposit)
+    }
     
     let iconConfiguration = TKUIListItemIconView.Configuration(
       iconConfiguration:
@@ -50,6 +50,7 @@ struct StakeOptionsListItemMapper {
       listItemConfiguration: listItemConfiguration,
       accesoryConfiguration: .init(accessoryType: .radioButton),
       accesoryAlignment: .right,
+      selectionMode: .configuration(isSelected: item.isSelected),
       selectionClosure: selectionClosure
     )
   }

@@ -268,6 +268,14 @@ public extension UIImage.TKUIKit.Icons.Size16 {
     .imageWithName("Icons/16/ic-information-circle-16")
     .withRenderingMode(.alwaysTemplate)
   }
+  static var twitter: UIImage {
+    .imageWithName("Icons/16/ic-twitter-16")
+    .withRenderingMode(.alwaysTemplate)
+  }
+  static var telegram: UIImage {
+    .imageWithName("Icons/16/ic-telegram-16")
+    .withRenderingMode(.alwaysTemplate)
+  }
 }
 
 public extension UIImage.TKUIKit.Icons.Size28 {

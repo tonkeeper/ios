@@ -40,14 +40,12 @@ final class StakeOptionsPoolListViewController: ModalViewController<StakeOptions
   
   // MARK: - Dependencies
   
-  let selectedId: String
   let poolItems: [SelectionCollectionViewCell.Configuration]
   
   // MARK: - Init
   
-  init(title: String, selectedId: String, poolItems: [SelectionCollectionViewCell.Configuration]) {
+  init(title: String, poolItems: [SelectionCollectionViewCell.Configuration]) {
     self.poolItems = poolItems
-    self.selectedId = selectedId
     super.init(nibName: nil, bundle: nil)
     self.customView.configure(
       model: StakeOptionsView.Model(

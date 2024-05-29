@@ -3,7 +3,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 
-final class SwapTokenListItemMapper {
+struct SwapTokenListItemMapper {
   
   let imageLoader = CachedMemoryImageLoader(cacheExpirationInMinutes: 3)
   

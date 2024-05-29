@@ -519,6 +519,10 @@ public final class MainAssembly {
   public func stakeOptionsController() -> StakeOptionsController {
     StakeOptionsController()
   }
+  
+  public func stakePoolDetailsController() -> StakePoolDetailsController {
+    StakePoolDetailsController()
+  }
 }
 
 private extension MainAssembly {
