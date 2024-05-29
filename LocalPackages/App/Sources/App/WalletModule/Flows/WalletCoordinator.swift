@@ -199,7 +199,6 @@ private extension WalletCoordinator {
     
     let coordinator = StakeCoordinator(
       keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly,
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     

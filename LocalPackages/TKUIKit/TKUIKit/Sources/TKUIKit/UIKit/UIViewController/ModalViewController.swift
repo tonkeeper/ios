@@ -1,7 +1,9 @@
 import UIKit
 import SnapKit
 
-open class ModalViewController<View: UIView, NavigationBar: ModalNavigationBarView>: GenericViewViewController<View> {
+open class ModalViewController<View: UIView, NavigationBar: ModalNavigationBarView>: GenericViewViewController<View>, UIAdaptivePresentationControllerDelegate {
+  
+  public var didDismiss: (() -> Void)?
   
   public let customNavigationBarView = NavigationBar()
   private var leftNavigationItemObserveToken: NSKeyValueObservation?
@@ -14,6 +16,7 @@ open class ModalViewController<View: UIView, NavigationBar: ModalNavigationBarVi
   
   open override func viewDidLoad() {
     super.viewDidLoad()
+    navigationController?.presentationController?.delegate = self
     setupNavigationBarView()
   }
   
@@ -33,7 +36,13 @@ open class ModalViewController<View: UIView, NavigationBar: ModalNavigationBarVi
     updateRightBarItem()
   }
   
-  private func setupNavigationItemObservation() {
+  public func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+    didDismiss?()
+  }
+}
+
+private extension ModalViewController {
+  func setupNavigationItemObservation() {
     leftNavigationItemObserveToken = navigationItem.observe(\.leftBarButtonItem) { [weak self] item, _ in
       self?.updateLeftBarItem()
     }
@@ -42,12 +51,12 @@ open class ModalViewController<View: UIView, NavigationBar: ModalNavigationBarVi
     }
   }
   
-  private func updateLeftBarItem() {
+  func updateLeftBarItem() {
     guard let leftItem = navigationItem.leftBarButtonItem?.customView else { return }
     customNavigationBarView.setupLeftBarItem(configuration: .init(view: leftItem))
   }
   
-  private func updateRightBarItem() {
+  func updateRightBarItem() {
     guard let rightItem = navigationItem.rightBarButtonItem?.customView else { return }
     customNavigationBarView.setupRightBarItem(configuration: .init(view: rightItem))
   }

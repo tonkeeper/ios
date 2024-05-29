@@ -48,6 +48,10 @@ private extension SwapCoordinator {
       swapSettingsModel: SwapSettingsModel()
     )
     
+    module.view.didDismiss = { [weak self] in
+      self?.didFinish?()
+    }
+    
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
@@ -272,6 +276,6 @@ private extension SwapCoordinator {
     addChild(coordinator)
     coordinator.start()
       
-    self.router.present(navigationController)
+    router.present(navigationController)
   }
 }

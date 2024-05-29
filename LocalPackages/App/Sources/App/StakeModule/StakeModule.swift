@@ -13,7 +13,6 @@ struct StakeModule {
   func createStakeCoordinator(router: NavigationControllerRouter) -> StakeCoordinator {
     let coordinator = StakeCoordinator(
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
-      coreAssembly: dependencies.coreAssembly,
       router: router
     )
     return coordinator
@@ -23,12 +22,9 @@ struct StakeModule {
 extension StakeModule {
   struct Dependencies {
     let keeperCoreMainAssembly: KeeperCore.MainAssembly
-    let coreAssembly: TKCore.CoreAssembly
     
-    init(keeperCoreMainAssembly: KeeperCore.MainAssembly,
-         coreAssembly: TKCore.CoreAssembly) {
+    init(keeperCoreMainAssembly: KeeperCore.MainAssembly) {
       self.keeperCoreMainAssembly = keeperCoreMainAssembly
-      self.coreAssembly = coreAssembly
     }
   }
 }

@@ -9,13 +9,10 @@ public final class StakeCoordinator: RouterCoordinator<NavigationControllerRoute
   var didFinish: (() -> Void)?
   
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
-  private let coreAssembly: TKCore.CoreAssembly
   
   init(keeperCoreMainAssembly: KeeperCore.MainAssembly,
-       coreAssembly: TKCore.CoreAssembly,
        router: NavigationControllerRouter) {
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
-    self.coreAssembly = coreAssembly
     super.init(router: router)
   }
   
@@ -29,6 +26,10 @@ private extension StakeCoordinator {
     let module = StakeAssembly.module(
       stakeController: keeperCoreMainAssembly.stakeController()
     )
+    
+    module.view.didDismiss = { [weak self] in
+      self?.didFinish?()
+    }
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
@@ -53,6 +54,10 @@ private extension StakeCoordinator {
     
     module.view.setupBackButton()
     
+    module.view.didDismiss = { [weak self] in
+      self?.didFinish?()
+    }
+    
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
@@ -76,6 +81,10 @@ private extension StakeCoordinator {
     
     poolListView.setupBackButton()
     
+    poolListView.didDismiss = { [weak self] in
+      self?.didFinish?()
+    }
+    
     poolListView.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
@@ -90,6 +99,10 @@ private extension StakeCoordinator {
     )
     
     module.view.setupBackButton()
+    
+    module.view.didDismiss = { [weak self] in
+      self?.didFinish?()
+    }
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()

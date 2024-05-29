@@ -75,6 +75,10 @@ private extension BuyCoordinator {
       )
     )
     
+    module.view.didDismiss = { [weak self] in
+      self?.didFinish?()
+    }
+    
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
     }
@@ -99,6 +103,10 @@ private extension BuyCoordinator {
     )
     
     module.view.setupBackButton()
+    
+    module.view.didDismiss = { [weak self] in
+      self?.didFinish?()
+    }
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
@@ -154,6 +162,10 @@ private extension BuyCoordinator {
     )
     
     module.view.setupBackButton()
+    
+    module.view.didDismiss = { [weak self] in
+      self?.didFinish?()
+    }
     
     module.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
