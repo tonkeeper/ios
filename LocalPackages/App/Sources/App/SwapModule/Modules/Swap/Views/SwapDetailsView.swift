@@ -13,19 +13,7 @@ final class SwapDetailsView: UIView {
   private let divider2 = UIView()
   private let rateLabel = UILabel()
 
-  let stackView: UIStackView = {
-    let stackView = UIStackView()
-    stackView.axis = .vertical
-    stackView.spacing = 16
-    stackView.isLayoutMarginsRelativeArrangement = true
-    stackView.directionalLayoutMargins = NSDirectionalEdgeInsets(
-      top: 8,
-      leading: 16,
-      bottom: 8,
-      trailing: 16
-    )
-    return stackView
-  }()
+  private let providerDetails = UILabel()
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -39,18 +27,28 @@ final class SwapDetailsView: UIView {
   func update(items: [SwapDetailsView.Item], oneTokenPrice: String) {
     rateLabel.attributedText = oneTokenPrice.withTextStyle(.label2, color: .Text.secondary)
 
-    stackView.arrangedSubviews.forEach {
-      stackView.removeArrangedSubview($0)
+    providerDetails.subviews.forEach {
       $0.removeFromSuperview()
     }
-    for item in items {
-      let horizontalStack = UIStackView()
-      horizontalStack.axis = .horizontal
-      horizontalStack.distribution = .equalSpacing
-      horizontalStack.isLayoutMarginsRelativeArrangement = true
+    for (index, item) in items.enumerated() {
 
       let title = UILabel()
       title.attributedText = item.title.withTextStyle(.label2, color: .Text.secondary)
+      title.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+
+      providerDetails.addSubview(title)
+      
+      let titleWidth: CGFloat = 150
+      title.snp.makeConstraints { make in
+        if (index == 0 || index == 5) {
+          make.top.equalTo(providerDetails).offset(CGFloat(index) * 36 + 8)
+        } else {
+          make.bottom.equalTo(providerDetails).inset(CGFloat(4 - index) * 36 + 16)
+        }
+        make.left.equalTo(providerDetails).offset(16)
+        make.width.equalTo(titleWidth)
+      }
+
       let value = UILabel()
       value.attributedText = item.value.withTextStyle(
         .label2,
@@ -58,19 +56,28 @@ final class SwapDetailsView: UIView {
         alignment: .right
       )
 
-      horizontalStack.addArrangedSubview(title)
-      horizontalStack.addArrangedSubview(value)
+      providerDetails.addSubview(value)
 
-      stackView.addArrangedSubview(horizontalStack)
+      value.snp.makeConstraints { make in
+        if (index == 0 || index == 5) {
+          make.top.equalTo(providerDetails).offset(CGFloat(index) * 36 + 8)
+        } else {
+          make.bottom.equalTo(providerDetails).inset(CGFloat(4 - index) * 36 + 16)
+        }
+        make.left.equalTo(providerDetails).offset(titleWidth + 8)
+        make.right.equalTo(providerDetails).inset(16)
+      }
     }
   }
 
   func hideRate() {
     rateLabel.isHidden = true
     divider2.alpha = 0
-    stackView.snp.remakeConstraints { make in
+
+    providerDetails.snp.remakeConstraints { make in
       make.top.equalTo(self).offset(8)
       make.right.left.equalTo(self)
+      make.bottom.equalTo(contentView)
     }
   }
 }
@@ -85,7 +92,7 @@ private extension SwapDetailsView {
     contentView.addSubview(divider1)
     contentView.addSubview(rateLabel)
     contentView.addSubview(divider2)
-    contentView.addSubview(stackView)
+    contentView.addSubview(providerDetails)
 
     statusLabel.font = TKTextStyle.label1.font
     statusLabel.textColor = .Button.secondaryForeground
@@ -132,14 +139,11 @@ private extension SwapDetailsView {
       make.top.equalTo(contentView).offset(47)
       make.height.equalTo(1 / scale)
     }
-    stackView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
-    stackView.setContentHuggingPriority(.defaultLow, for: .vertical)
-    stackView.snp.makeConstraints { make in
-      make.top.equalTo(divider2).offset(8)
-      make.right.left.equalTo(self)
-      make.bottom.equalTo(self).inset(8)
+    providerDetails.snp.makeConstraints { make in
+      make.top.equalTo(contentView).offset(56)
+      make.right.left.equalTo(contentView)
+      make.bottom.equalTo(contentView)
     }
-    stackView.clipsToBounds = true
   }
 }
 

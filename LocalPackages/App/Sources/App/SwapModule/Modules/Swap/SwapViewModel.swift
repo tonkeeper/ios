@@ -22,7 +22,7 @@ protocol SwapViewModel: AnyObject {
 
   func swapTokens()
   func didTapTokenPicker(swapField: SwapField)
-  func didInputAmount(_ string: String, swapField: SwapField)
+  func didInputAmount(_ string: String, swapField: SwapField, skipFirstUpdate: Bool)
   func didTapMax()
   func didTapContinue()
 }
@@ -54,7 +54,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
       swapPair = SwapPair(send: swapPair.send, receive: .init(token: token, amount: swapPair.receive?.amount ?? 0))
       didUpdateToken?(.receive)
     }
-    didInputAmount(sendAmount, swapField: .send)
+    didInputAmount(sendAmount, swapField: .send, skipFirstUpdate: true)
     if !firstTimeReceiveChoosen || swapPair.send.amount == 0 {
       shoudMakeActive?(.send)
     }
@@ -87,7 +87,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     sendAmount = receiveAmount
     receiveAmount = oldSendAmount
 
-    didInputAmount(sendAmount, swapField: .send)
+    didInputAmount(sendAmount, swapField: .send, skipFirstUpdate: true)
     shoudMakeActive?(.send)
     shouldReloadProvider?()
   }
@@ -95,12 +95,12 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     didTapToken?(swapField, swapField == .send ? swapPair.receive?.token : swapPair.send.token)
   }
 
-  func didInputAmount(_ string: String, swapField: SwapField) {
+  func didInputAmount(_ string: String, swapField: SwapField, skipFirstUpdate: Bool = false) {
     let unformatted = sendAmountTextFieldFormatter.unformatString(string) ?? ""
     let formatted = sendAmountTextFieldFormatter.formatString(unformatted) ?? ""
     let finalUnformatted = sendAmountTextFieldFormatter.unformatString(formatted) ?? ""
     sendAmount = formatted.count > 0 ? formatted : "0"
-    update()
+    if !skipFirstUpdate { update() }
 
     Task {
       let amount = swapController.convertInputStringToAmount(

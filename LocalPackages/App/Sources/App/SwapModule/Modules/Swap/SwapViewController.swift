@@ -138,11 +138,11 @@ private extension SwapViewController {
   
   func setupViewEvents() {
     customView.sendView.amountTextField.didUpdateText = { [weak viewModel] in
-      viewModel?.didInputAmount($0, swapField: .send)
+      viewModel?.didInputAmount($0, swapField: .send, skipFirstUpdate: false)
     }
 
     customView.receiveView.amountTextField.didUpdateText = { [weak viewModel] in
-      viewModel?.didInputAmount($0, swapField: .receive)
+      viewModel?.didInputAmount($0, swapField: .receive, skipFirstUpdate: false)
     }
 
     [customView.inputView1, customView.inputView2].forEach {
