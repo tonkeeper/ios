@@ -128,6 +128,12 @@ private extension SwapViewController {
     viewModel.shouldReloadProvider = { [weak self] in
       self?.customView.collapseDetailView()
     }
+    viewModel.didUpdateToken = { [weak self] swapField in
+      switch swapField {
+      case .send: self?.customView.sendView.chooseTokenView.bounce()
+      case .receive: self?.customView.receiveView.chooseTokenView.bounce()
+      }
+    }
   }
   
   func setupViewEvents() {
@@ -150,6 +156,11 @@ private extension SwapViewController {
         self?.customView.sendView.amountTextField.resignFirstResponder()
         self?.customView.receiveView.amountTextField.resignFirstResponder()
         viewModel?.didTapTokenPicker(swapField: swapField)
+
+        switch swapField {
+        case .send: self?.customView.sendView.chooseTokenView.bounce()
+        case .receive: self?.customView.receiveView.chooseTokenView.bounce()
+        }
       }
     }
     customView.continueButton.configuration.action = { [weak viewModel] in

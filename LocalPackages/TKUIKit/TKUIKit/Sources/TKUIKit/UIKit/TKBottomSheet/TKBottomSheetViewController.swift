@@ -4,9 +4,9 @@ public final class TKBottomSheetViewController: UIViewController {
 
   public struct Configuration {
     let dragHalfWayToClose: Bool
-    let bottomSpacing: CGFloat
+    let bottomSpacing: CGFloat?
 
-    public init(dragHalfWayToClose: Bool, bottomSpacing: CGFloat) {
+    public init(dragHalfWayToClose: Bool, bottomSpacing: CGFloat? = nil) {
       self.dragHalfWayToClose = dragHalfWayToClose
       self.bottomSpacing = bottomSpacing
     }

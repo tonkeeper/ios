@@ -14,6 +14,7 @@ protocol SwapModuleInput: AnyObject {
 
 protocol SwapViewModel: AnyObject {
   var didUpdateModel: ((SwapView.Model) -> Void)? { get set }
+  var didUpdateToken: ((SwapField) -> Void)? { get set }
   var shoudMakeActive: ((SwapField) -> Void)? { get set }
   var shouldReloadProvider: (() -> Void)? { get set }
   
@@ -47,8 +48,10 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
     switch swapField {
     case .send:
       swapPair = SwapPair(send: .init(token: token, amount: swapPair.send.amount), receive: swapPair.receive)
+      didUpdateToken?(.send)
     case .receive:
       swapPair = SwapPair(send: swapPair.send, receive: .init(token: token, amount: swapPair.receive?.amount ?? 0))
+      didUpdateToken?(.receive)
     }
     didInputAmount(sendAmount, swapField: .send)
     if !firstTimeReceiveChoosen {
@@ -62,6 +65,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
   // MARK: - SwapViewModel
 
   var didUpdateModel: ((SwapView.Model) -> Void)?
+  var didUpdateToken: ((SwapField) -> Void)?
   var shoudMakeActive: ((SwapField) -> Void)?
   var shouldReloadProvider: (() -> Void)?
   

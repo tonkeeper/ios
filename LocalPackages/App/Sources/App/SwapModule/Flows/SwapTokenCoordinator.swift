@@ -60,7 +60,7 @@ private extension SwapTokenCoordinator {
     )
     let bottomSheetViewController = TKBottomSheetViewController(
       contentViewController: module.view,
-      configuration: .init(dragHalfWayToClose: true, bottomSpacing: 44)
+      configuration: .init(dragHalfWayToClose: true)
     )
     module.output.didSelectToken = { [weak bottomSheetViewController] token in
       completion(token)
