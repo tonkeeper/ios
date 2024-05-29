@@ -100,7 +100,7 @@
 "wallet_buttons.send" = "Send";
 "wallet_buttons.receive" = "Receive";
 "wallet_buttons.scan" = "Scan";
-"wallet_buttons.buy" = "Buy TON";
+"wallet_buttons.buy" = "Buy or Sell";
 "wallet_buttons.swap" = "Swap";
 "wallet_buttons.stake" = "Stake";
 
@@ -123,6 +123,42 @@
 "confirm_send.recipient.title" = "Recipient";
 "confirm_send.recipient.address" = "Recipient address";
 "confirm_send.confirm_button" = "Confirm and send";
+
+"swap.title" = "Swap";
+"swap.send" = "Send";
+"swap.receive" = "Receive";
+"swap.choose" = "CHOOSE";
+"swap.balance" = "Balance";
+"swap.enterAmount" = "Enter Amount";
+"swap.chooseToken" = "Choose Token";
+"swap.suggested" = "Suggested";
+"swap.other" = "Other";
+"swap.insufficientBalance" = "Insufficient Balance. Buy ";
+"swap.priceImpact" = "Price impact";
+"swap.priceImpactInfo" = "The difference between the market price and estimated price due to trade size.";
+"swap.minimumReceived" = "Minimum received";
+"swap.minimumReceivedInfo" = "Your transaction will revert if there is a large, unfavorable price movement before it is confirmed.";
+"swap.liquidityProviderFee" = "Liquidity provider fee";
+"swap.liquidityProviderFeeInfo" = "A portion of each trade goes to liquidity providers as a protocol incentive.";
+"swap.blockchainFee" = "Blockchain fee";
+"swap.route" = "Route";
+"swap.provider" = "Provider";
+"swap.search" = "Search";
+
+"swap_settings.title" = "Settings";
+"swap_settings.slippage" = "Slippage";
+"swap_settings.description" = "The amount the price can change unfavorably before the trade reverts";
+"swap_settings.expertMode" = "Expert Mode";
+"swap_settings.expertModeSettings" = "Allows high price impact trades.\nUse at your own risk.";
+
+"swap_confirmation.title" = "Confirm Swap";
+"swap_confirmation.confirm" = "Confirm";
+
+"buy_sell.creditCard" = "Credit Card";
+"buy_sell.instantBuy" = "Instantly buy with a credit card";
+"buy_sell.instantSell" = "Instantly sell with a credit card";
+"buy_sell.youPay" = "You pay";
+"buy_sell.youGet" = "You get";
 
 "customize_wallet.title" = "Customize your Wallet";
 "customize_wallet.description" = "Wallet name and icon are stored locally on your device.";

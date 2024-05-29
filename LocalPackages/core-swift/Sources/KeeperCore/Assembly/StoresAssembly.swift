@@ -3,7 +3,7 @@ import TonSwift
 
 public final class StoresAssembly {
   
-  private let servicesAssembly: ServicesAssembly
+  let servicesAssembly: ServicesAssembly
   private let apiAssembly: APIAssembly
   private let coreAssembly: CoreAssembly
   private let repositoriesAssembly: RepositoriesAssembly
@@ -98,6 +98,17 @@ public final class StoresAssembly {
       let currencyStore = CurrencyStore(currencyService: servicesAssembly.currencyService())
       _currencyStore = currencyStore
       return currencyStore
+    }
+  }
+  
+  private weak var _assetsStore: AssetsStore?
+  public var assetsStore: AssetsStore {
+    if let assetsStore = _assetsStore {
+      return assetsStore
+    } else {
+      let assetsStore = AssetsStore(swapService: servicesAssembly.swapService())
+      _assetsStore = assetsStore
+      return assetsStore
     }
   }
   

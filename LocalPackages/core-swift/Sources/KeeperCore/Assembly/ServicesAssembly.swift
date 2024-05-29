@@ -6,17 +6,20 @@ public final class ServicesAssembly {
   private let apiAssembly: APIAssembly
   private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   private let locationAPIAsembly: LocationAPIAssembly
+  private let stonFiAPIAssembly: StonFiAPIAssembly
   private let coreAssembly: CoreAssembly
   
   init(repositoriesAssembly: RepositoriesAssembly,
        apiAssembly: APIAssembly,
        tonkeeperAPIAssembly: TonkeeperAPIAssembly,
        locationAPIAsembly: LocationAPIAssembly,
+       stonFiAPIAssembly: StonFiAPIAssembly,
        coreAssembly: CoreAssembly) {
     self.repositoriesAssembly = repositoriesAssembly
     self.apiAssembly = apiAssembly
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.locationAPIAsembly = locationAPIAsembly
+    self.stonFiAPIAssembly = stonFiAPIAssembly
     self.coreAssembly = coreAssembly
   }
   
@@ -141,6 +144,9 @@ public final class ServicesAssembly {
     LocationServiceImplementation(locationAPI: locationAPIAsembly.locationAPI())
   }
   
+  func swapService() -> SwapService {
+    SwapServiceImplementation(stonFiAPI: stonFiAPIAssembly.stonFiAPI())
+  }
   public func popularAppsService() -> PopularAppsService {
     PopularAppsServiceImplementation(api: tonkeeperAPIAssembly.api,
                                      popularAppsRepository: repositoriesAssembly.popularAppsRepository())

@@ -11,6 +11,7 @@ protocol TonkeeperAPI {
                          platform: String) async throws -> RemoteConfiguration
   func loadChart(period: Period) async throws -> [Coordinate]
   func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
+  func loadRates(currency: String) async throws -> BuySellRateItemsResponse
   func loadPopularApps(lang: String) async throws -> PopularAppsResponseData
 }
 
@@ -83,6 +84,21 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     return entity.data
   }
   
+  func loadRates(currency: String) async throws -> BuySellRateItemsResponse {
+    let url = URL(string: "https://boot.tonkeeper.com/widget/buy/rates")!
+    guard var components = URLComponents(
+      url: url,
+      resolvingAgainstBaseURL: false
+    ) else { throw TonkeeperAPIError.incorrectUrl }
+    
+    components.queryItems = [
+      .init(name: "currency", value: currency)
+    ]
+    guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
+    let (data, _) = try await urlSession.data(from: url)
+    let entity = try JSONDecoder().decode(BuySellRateItemsResponse.self, from: data)
+    return entity
+  }
   func loadPopularApps(lang: String) async throws -> PopularAppsResponseData {
     let url = host.appendingPathComponent("/apps/popular")
     guard var components = URLComponents(

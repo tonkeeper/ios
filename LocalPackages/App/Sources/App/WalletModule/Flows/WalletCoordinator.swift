@@ -148,7 +148,11 @@ private extension WalletCoordinator {
   func openSend(token: Token) {
     didTapSend?(token)
   }
-  
+    
+  func openSwap() {
+    didTapSwap?()
+  }
+
   func openReceive(token: Token) {
     let module = ReceiveModule(
       dependencies: ReceiveModule.Dependencies(
@@ -166,7 +170,7 @@ private extension WalletCoordinator {
   }
   
   func openBuy(wallet: Wallet) {
-    let coordinator = BuyCoordinator(
+    let coordinator = BuySellCoordinator(
       wallet: wallet,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly,
@@ -265,6 +269,10 @@ private extension WalletCoordinator {
       self?.didTapScan?()
     }
     
+    module.output.didTapSwap = { [weak self] in
+      self?.openSwap()
+    }
+
     module.output.didTapBuy = { [weak self] wallet in
       self?.openBuy(wallet: wallet)
     }

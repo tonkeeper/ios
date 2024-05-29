@@ -102,6 +102,16 @@ public extension TKTextStyle {
     lineHeight: 16
   )
   
+  static let label4: TKTextStyle = .init(
+    font: .montserratSemiBold(size: 10),
+    lineHeight: 16
+  )
+  
+  static let body0: TKTextStyle = .init(
+    font: .montserratMedium(size: 18),
+    lineHeight: 24
+  )
+  
   static let body1: TKTextStyle = .init(
     font: .montserratMedium(size: 16),
     lineHeight: 24

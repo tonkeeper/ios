@@ -7,6 +7,10 @@ public final class ToastPresenter {
       case `default`
       case duration(TimeInterval)
     }
+    public enum Position {
+      case top
+      case bottom
+    }
     
     public var title: String
     public var shape: ToastView.Model.Shape
@@ -14,19 +18,25 @@ public final class ToastPresenter {
     public var backgroundColor: UIColor
     public var foregroundColor: UIColor
     public var dismissRule: DismissRule
+    public var alignment: NSTextAlignment
+    public var position: Position
     
     public init(title: String,
                 shape: ToastView.Model.Shape = .oval,
                 isActivity: Bool = false,
                 backgroundColor: UIColor,
                 foregroundColor: UIColor,
-                dismissRule: DismissRule = .default) {
+                dismissRule: DismissRule = .default,
+                alignment: NSTextAlignment = .center,
+                position: Position = .top) {
       self.title = title
       self.shape = shape
       self.isActivity = isActivity
       self.backgroundColor = backgroundColor
       self.foregroundColor = foregroundColor
       self.dismissRule = dismissRule
+      self.alignment = alignment
+      self.position = position
     }
   }
   
@@ -104,7 +114,9 @@ public final class ToastPresenter {
       shape: configuration.shape,
       isActivity: configuration.isActivity,
       backgroundColor: configuration.backgroundColor,
-      foregroundColor: configuration.foregroundColor
+      foregroundColor: configuration.foregroundColor,
+      alignment: configuration.alignment,
+      position: configuration.position
     )
     
     let durationDismiss: (TimeInterval) -> Void = { duration in
@@ -165,8 +177,14 @@ public final class ToastPresenter {
     toastView.centerXAnchor.constraint(
       equalTo: toastWindow.centerXAnchor
     ).isActive = true
-    let topConstraint = toastView.topAnchor.constraint(
+    toastView.widthAnchor.constraint(
+      lessThanOrEqualTo: toastWindow.widthAnchor, constant: -32
+    ).isActive = true
+    let topConstraint = model.position == .top ? toastView.topAnchor.constraint(
       equalTo: toastWindow.safeAreaLayoutGuide.topAnchor,
+      constant: -toastView.intrinsicContentSize.height - .hideInset
+    ) : toastView.bottomAnchor.constraint(
+      equalTo: toastWindow.safeAreaLayoutGuide.bottomAnchor,
       constant: -toastView.intrinsicContentSize.height - .hideInset
     )
     toastViewTopConstraint = topConstraint

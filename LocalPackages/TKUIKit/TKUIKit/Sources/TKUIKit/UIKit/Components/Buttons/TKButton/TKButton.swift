@@ -118,6 +118,13 @@ private extension TKButton {
     buttonContentView.backgroundColor = configuration.backgroundColors[buttonState]
     buttonContentView.titleLabel.alpha = configuration.contentAlpha[buttonState] ?? 1
     buttonContentView.imageView.alpha = configuration.contentAlpha[buttonState] ?? 1
+    if buttonState == .selected {
+      buttonContentView.layer.borderWidth = 1
+      buttonContentView.layer.borderColor = UIColor.Field.activeBorder.cgColor
+    } else {
+      buttonContentView.layer.borderWidth = 0
+      buttonContentView.layer.borderColor = UIColor.clear.cgColor
+    }
   }
   
   func didUpdateControlState() {
