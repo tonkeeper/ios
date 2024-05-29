@@ -159,8 +159,9 @@ private extension SwapItemsViewController {
       }
 
       if self?.customView.scrollView.alpha == 0, sellingAsset != nil {
-        UIView.animate(withDuration: 0.2) {
+        UIView.animate(withDuration: 0.2, delay: 0.2) {
           self?.customView.scrollView.alpha = 1
+          self?.customView.indicator.stopAnimating()
           self?.view.layoutIfNeeded()
         }
       }

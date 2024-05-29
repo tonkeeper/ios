@@ -21,6 +21,7 @@ final class SwapItemsView: UIView {
   
   let sellItemField = TKSwapTokenField(mode: .sell)
   let buyItemField = TKSwapTokenField(mode: .buy)
+  let indicator = UIActivityIndicatorView()
   
   let switchButton = TKButton(configuration: .actionButtonConfiguration(category: .tertiary, size: .mediumMinus))
 
@@ -195,6 +196,15 @@ final class SwapItemsView: UIView {
       self.swapInfoViewHeightConstraint = make.height.lessThanOrEqualTo(0).constraint
     }
     buyItemField.bottomStackView.addArrangedSubview(swapInfoViewContainer)
+    
+    addSubview(indicator)
+    indicator.hidesWhenStopped = true
+    indicator.startAnimating()
+    indicator.translatesAutoresizingMaskIntoConstraints = false
+    indicator.snp.makeConstraints { make in
+      make.centerY.equalTo(snp.centerY)
+      make.centerX.equalTo(snp.centerX)
+    }
   }
 }
 

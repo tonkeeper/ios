@@ -220,7 +220,7 @@ class BuySellConfirmViewController: UIViewController {
     addViewsWithDots(to: urlsStackView, views: labels)
     urlsStackView.snp.makeConstraints { make in
       make.centerX.equalTo(scrollView.contentLayoutGuide.snp.centerX)
-      make.top.equalTo(serviceProviderLabel.snp.bottom).offset(16)
+      make.top.equalTo(serviceProviderLabel.snp.bottom).offset(4)
       make.bottom.equalTo(scrollView.contentLayoutGuide).offset(16)
     }
   }

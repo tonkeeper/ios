@@ -44,9 +44,33 @@ class BuySellOperatorViewController: UIViewController {
     )
   )
   
+  var bestRate: Double?
   override func viewDidLoad() {
     super.viewDidLoad()
 
+    // find min amount (best rate)
+    bestRate = showingOperators.filter({ it in
+      rates.items.contains { i in
+        it.id == i.id
+      }
+    }).map({ it in
+      return rates.items.first { i in
+        it.id == i.id
+      }!
+    }).map { it in
+      return it.rate
+    }.min()
+    // find best index
+    if let bestRate {
+      self.selectedIndex = IndexPath(item: showingOperators.firstIndex(where: { it in
+        let r = rates.items.first { i in
+          it.id == i.id
+        }
+        guard let r else {return false}
+        return r.rate == bestRate
+      }) ?? 0, section: 0)
+    }
+    
     title = "Operator"
     view.backgroundColor = .Background.page
 
@@ -80,7 +104,7 @@ class BuySellOperatorViewController: UIViewController {
       make.top.left.right.equalTo(view)
     }
     view.addSubview(continueButton)
-    continueButton.configuration.isEnabled = false
+    continueButton.configuration.isEnabled = selectedIndex != nil
     continueButton.configuration.content.title = .plainString(TKLocales.Actions.continue_action)
     continueButton.configuration.action = { [weak self] in
       guard let self else {return}
@@ -110,12 +134,14 @@ extension BuySellOperatorViewController: UITableViewDataSource {
     }
     let operatorObj = showingOperators[indexPath.row]
     cell.selectionStyle = .none
+    let rate = rates.items.first(where: { it in
+      it.id == operatorObj.id
+    })
     cell.configure(with: operatorObj,
                    position: indexPath.row == 0 ? .top : (indexPath.row == showingOperators.count - 1 ? .bottom : .middle),
                    isSelected: selectedIndex == indexPath,
-                   rate: rates.items.first(where: { it in
-      it.id == operatorObj.id
-    }))
+                   rate: rate,
+                   isBest: rate != nil && rate?.rate == bestRate)
     return cell
   }
   
@@ -151,6 +177,29 @@ private class OperatorCell: UITableViewCell {
     label.textColor = .Text.primary
     return label
   }()
+  
+  private let bestLabel: UILabel = {
+    let label = UILabel()
+    label.font = TKTextStyle.label4.font
+    label.backgroundColor = .Button.tertiaryBackground
+    label.textColor = .Button.primaryBackground
+    label.layer.cornerRadius = 4
+    label.layer.masksToBounds = true
+    label.snp.makeConstraints { make in
+      make.height.equalTo(20)
+    }
+    label.text = " BEST "
+    return label
+  }()
+  
+  private lazy var nameAndBestView: UIStackView = {
+    let stackView = UIStackView()
+    stackView.alignment = .center
+    stackView.spacing = 6
+    stackView.addArrangedSubview(nameLabel)
+    stackView.addArrangedSubview(bestLabel)
+    return stackView
+  }()
 
   private let rateLabel: UILabel = {
     let label = UILabel()
@@ -163,7 +212,7 @@ private class OperatorCell: UITableViewCell {
     let stackView = UIStackView()
     stackView.axis = .vertical
     stackView.alignment = .leading
-    stackView.addArrangedSubview(nameLabel)
+    stackView.addArrangedSubview(nameAndBestView)
     stackView.addArrangedSubview(rateLabel)
     return stackView
   }()
@@ -215,7 +264,11 @@ private class OperatorCell: UITableViewCell {
     ])
   }
   
-  func configure(with operatorObj: BuySellItemModel, position: Position, isSelected: Bool, rate: BuySellRateItem?) {
+  func configure(with operatorObj: BuySellItemModel,
+                 position: Position,
+                 isSelected: Bool,
+                 rate: BuySellRateItem?,
+                 isBest: Bool) {
     nameLabel.text = operatorObj.title
     if let rate {
       rateLabel.text = "\("\(rate.rate)".prefix(6)) \(rate.currency) for 1 TON"
@@ -236,5 +289,6 @@ private class OperatorCell: UITableViewCell {
       stackView.layer.maskedCorners = [.layerMinXMaxYCorner, .layerMaxXMaxYCorner]
     }
     checkBox.isChecked = isSelected
+    bestLabel.isHidden = !isBest
   }
 }
