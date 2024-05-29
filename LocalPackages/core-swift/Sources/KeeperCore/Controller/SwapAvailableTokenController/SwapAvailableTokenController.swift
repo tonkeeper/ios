@@ -33,7 +33,7 @@ public final class SwapAvailableTokenController {
   }
 
   public func receiveTokenList(exclude excludeToken: Token?) async -> [AvailableTokenModelItem] {
-    async let availableJettons = try? jettonService.loadAvailable(wallet: wallet)
+    // async let availableJettons = try? jettonService.loadAvailable(wallet: wallet)
     async let walletBalance = try? balanceService.getBalance(wallet: wallet)
     let activeCurrency = await currencyStore.getActiveCurrency()
     var availableTokens = [AvailableTokenModelItem]()
@@ -87,7 +87,7 @@ public final class SwapAvailableTokenController {
   }
 
   private func receivePredefinedTokenList(excludeAddresses: Set<Address>) -> [AvailableTokenModelItem] {
-    var tokens: [Token?] = SwapAvailableTokenFactory.make()
+    let tokens: [Token?] = SwapAvailableTokenFactory.make()
     return tokens.compactMap {
       if let token = $0, case let .jetton(item) = token, !excludeAddresses.contains(item.jettonInfo.address) {
         return AvailableTokenModelItem(token: token, amount: "0", convertedAmount: "0")

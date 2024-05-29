@@ -54,7 +54,7 @@ final class SwapViewModelImplementation: SwapViewModel, SwapModuleOutput, SwapMo
       didUpdateToken?(.receive)
     }
     didInputAmount(sendAmount, swapField: .send)
-    if !firstTimeReceiveChoosen {
+    if !firstTimeReceiveChoosen || swapPair.send.amount == 0 {
       shoudMakeActive?(.send)
     }
     if swapPair.receive != nil {

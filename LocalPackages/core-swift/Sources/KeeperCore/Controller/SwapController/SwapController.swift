@@ -96,17 +96,26 @@ public final class SwapController {
 
   public func convertInputStringToAmount(input: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
     guard !input.isEmpty else { return (0, targetFractionalDigits) }
+
     let fractionalSeparator: String = amountFormatter.fractionalSeparator
+
+    let allowedCharacters = CharacterSet(charactersIn: "0123456789" + fractionalSeparator)
+    let prohibitedSymbols = input.unicodeScalars.filter { !allowedCharacters.contains($0) }
+    if !prohibitedSymbols.isEmpty {
+      return (0, targetFractionalDigits)
+    }
+
     let components = input.components(separatedBy: fractionalSeparator)
     guard components.count < 3 else {
       return (0, targetFractionalDigits)
     }
-    
+
     var fractionalDigits = 0
     if components.count == 2 {
         let fractionalString = components[1]
         fractionalDigits = fractionalString.count
     }
+
     let zeroString = String(repeating: "0", count: max(0, targetFractionalDigits - fractionalDigits))
     let bigIntValue = BigUInt(stringLiteral: components.joined() + zeroString)
     return (bigIntValue, targetFractionalDigits)

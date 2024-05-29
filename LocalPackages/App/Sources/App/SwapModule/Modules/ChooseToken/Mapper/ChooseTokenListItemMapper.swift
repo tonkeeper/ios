@@ -19,8 +19,8 @@ struct ChooseTokenListItemMapper {
     switch availableToken.token {
     case .ton:
       id = "ton"
-      symbolString = "TON"
-      tokenName = "Toncoin"
+      symbolString = TonInfo.symbol
+      tokenName = TonInfo.name
       tokenImage = .ton
     case .jetton(let jettonItem):
       let jettonInfo = jettonItem.jettonInfo
@@ -95,9 +95,9 @@ struct ChooseTokenListItemMapper {
           subtitle: subtitle,
           description: nil
         ),
-        rightItemConfiguration: amount == "0" ? nil : TKUIListItemContentRightItem.Configuration(
+        rightItemConfiguration: TKUIListItemContentRightItem.Configuration(
           value: value,
-          subtitle: valueSubtitle,
+          subtitle: amount == "0" ? nil : valueSubtitle ,
           description: nil
         )
       ),
