@@ -32,7 +32,7 @@ final class HistoryEventDetailsNFTHeaderImageView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   struct Model {
-    let image: Image
+    let image: EnumImage
     let size: CGSize
   }
   

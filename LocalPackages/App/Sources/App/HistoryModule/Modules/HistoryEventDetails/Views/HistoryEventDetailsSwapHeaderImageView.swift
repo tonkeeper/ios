@@ -25,8 +25,8 @@ final class HistoryEventDetailsSwapHeaderImageView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   struct Model {
-    let leftImage: Image
-    let rightImage: Image
+    let leftImage: EnumImage
+    let rightImage: EnumImage
   }
   
   func configure(model: Model) {

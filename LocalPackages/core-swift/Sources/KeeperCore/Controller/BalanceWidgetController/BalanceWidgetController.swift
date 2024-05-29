@@ -84,4 +84,43 @@ public final class BalanceWidgetController {
       throw Error.failedToLoad
     }
   }
+
+    public func loadAllTokensBalance(walletIdentifier: String?,
+                                     currency: Currency) async throws -> Balance {
+        guard let wallets = try? walletService.getWallets(), !wallets.isEmpty else {
+          throw Error.noWallet
+        }
+
+        let wallet: Wallet
+        if let walletWithIdentifier = wallets.first(where: {
+          guard let walletId = try? $0.identity.identifier().string else { return false }
+          return walletId == walletIdentifier
+        }) {
+          wallet = walletWithIdentifier
+        } else {
+          wallet = wallets[0]
+        }
+
+        do {
+            return try await balanceService.loadWalletBalance(wallet: wallet, currency: currency).balance
+        } catch {
+          throw Error.failedToLoad
+        }
+    }
+
+    public func getRate(currency: Currency) async throws -> Rates {
+        do {
+            return try await ratesService.loadRates(jettons: [], currencies: [currency])
+        } catch {
+          throw Error.failedToLoad
+        }
+    }
+
+    public func formatBalance(_ amount: Int64) -> String {
+        return amountFormatter.formatAmount(
+          BigUInt(integerLiteral: UInt64(amount)),
+          fractionDigits: TonInfo.fractionDigits,
+          maximumFractionDigits: 2
+        )
+    }
 }

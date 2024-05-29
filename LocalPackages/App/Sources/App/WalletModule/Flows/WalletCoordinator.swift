@@ -4,6 +4,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import TKLocalize
+import SwiftUI
 
 public final class WalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -15,12 +16,21 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
-  
+  private let keeperCoreAssembly: KeeperCore.Assembly
+
   init(router: NavigationControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly) {
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
+
+    self.keeperCoreAssembly = KeeperCore.Assembly(
+        dependencies: Assembly.Dependencies(
+            cacheURL: coreAssembly.cacheURL,
+            sharedCacheURL: coreAssembly.sharedCacheURL
+        )
+    )
+
     super.init(router: router)
       router.rootViewController.tabBarItem.title = TKLocales.Tabs.wallet
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.wallet
@@ -166,17 +176,74 @@ private extension WalletCoordinator {
   }
   
   func openBuy(wallet: Wallet) {
-    let coordinator = BuyCoordinator(
-      wallet: wallet,
-      keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly,
-      router: ViewControllerRouter(rootViewController: self.router.rootViewController)
-    )
-    
-    addChild(coordinator)
-    coordinator.start()
+      let viewModel = BuySellViewModel()
+      let buySellMainVC = UIHostingController(rootView:BuySellMainView(viewModel: viewModel))
+
+      let navigationController = TKNavigationController(rootViewController: buySellMainVC)
+      navigationController.configureTransparentAppearance()
+      navigationController.setNavigationBarHidden(true, animated: true)
+      navigationController.modalPresentationStyle = .formSheet
+
+      self.router.rootViewController.present(navigationController, animated: true) {}
   }
   
+  func openSwap(wallet: Wallet) {
+    let viewModel = SwapMainViewModel(wallet: wallet,
+                                      keeperCoreAssembly: keeperCoreAssembly,
+                                      mainAssembly: keeperCoreMainAssembly)
+    let view = SwapMainView(viewModel: viewModel)
+    let swapMainVC = UIHostingController(rootView: view)
+
+    let navigationController = TKNavigationController(rootViewController: swapMainVC)
+    navigationController.configureTransparentAppearance()
+    navigationController.setNavigationBarHidden(true, animated: true)
+    navigationController.modalPresentationStyle = .formSheet
+      viewModel.closeAction = {
+          navigationController.dismiss(animated: true)
+      }
+
+      viewModel.swapConfirmationHandler = { [weak self, weak navigationController] in
+          guard let navigationController else { return false }
+          return (await self?.openConfirmation(fromViewController: navigationController)) ?? false
+        }
+
+    self.router.rootViewController.present(navigationController, animated: true) {}
+  }
+
+    func openConfirmation(fromViewController: UIViewController) async -> Bool {
+      return await Task<Bool, Never> { @MainActor in
+        return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
+          guard let self = self else { return }
+          let coordinator = PasscodeModule(
+            dependencies: PasscodeModule.Dependencies(
+              passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+            )
+          ).passcodeConfirmationCoordinator()
+
+          coordinator.didCancel = { [weak self, weak coordinator] in
+            continuation.resume(returning: false)
+            coordinator?.router.dismiss(completion: {
+              guard let coordinator else { return }
+              self?.removeChild(coordinator)
+            })
+          }
+
+          coordinator.didConfirm = { [weak self, weak coordinator] in
+            continuation.resume(returning: true)
+            coordinator?.router.dismiss(completion: {
+              guard let coordinator else { return }
+              self?.removeChild(coordinator)
+            })
+          }
+
+          self.addChild(coordinator)
+          coordinator.start()
+
+          fromViewController.present(coordinator.router.rootViewController, animated: true)
+        }
+      }.value
+    }
+
   func openHistoryEventDetails(event: AccountEventDetailsEvent) {
     let module = HistoryEventDetailsAssembly.module(
       historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(event: event),
@@ -268,11 +335,11 @@ private extension WalletCoordinator {
     module.output.didTapBuy = { [weak self] wallet in
       self?.openBuy(wallet: wallet)
     }
-    
-    module.output.didTapSwap = { [weak self] in
-      self?.didTapSwap?()
+
+    module.output.didTapSwap = { [weak self] wallet in
+      self?.openSwap(wallet: wallet)
     }
-    
+
     module.output.didTapBackup = { [weak self] wallet in
       self?.openBackup(wallet: wallet)
     }

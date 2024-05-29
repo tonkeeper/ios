@@ -24,7 +24,7 @@ final class HistoreEventDetailsTokenHeaderImageView: UIView, ConfigurableView {
   // MARK: - ConfigurableView
   
   struct Model {
-    let image: Image
+    let image: EnumImage
   }
   
   func configure(model: Model) {

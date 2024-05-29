@@ -26,6 +26,11 @@ public struct JettonBalance: Codable {
 public struct JettonItem: Codable, Equatable {
   public let jettonInfo: JettonInfo
   public let walletAddress: Address
+
+  public init(jettonInfo: JettonInfo, walletAddress: Address) {
+      self.jettonInfo = jettonInfo
+      self.walletAddress = walletAddress
+  }
 }
 
 public struct TonInfo {
@@ -55,5 +60,14 @@ public struct JettonInfo: Codable, Equatable, Hashable {
   
   public func hash(into hasher: inout Hasher) {
     hasher.combine(address)
+  }
+
+  public init(address: Address, fractionDigits: Int, name: String, symbol: String?, verification: Verification, imageURL: URL?) {
+      self.address = address
+      self.fractionDigits = fractionDigits
+      self.name = name
+      self.symbol = symbol
+      self.verification = verification
+      self.imageURL = imageURL
   }
 }
