@@ -60,7 +60,7 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
   }()
   
   private lazy var dataSource = createDataSource()
-  private lazy var suggestedTokenCellConfiguration: CellRegistration<SuggestedTokenCell> = createDefaultCellRegistration()
+  private lazy var suggestedTokenCellConfiguration: CellRegistration<IconButtonCell> = createDefaultCellRegistration()
   private lazy var otherTokensCellConfiguration: CellRegistration<TKUIListItemCell> = createDefaultCellRegistration()
   
   private var preSearchSnapshot: Snapshot?
@@ -239,7 +239,7 @@ private extension SwapTokenListViewController {
   }
   
   func configureDefaultSnapshot(snapshot: Snapshot,
-                                suggestedTokenItems: [SuggestedTokenCell.Configuration],
+                                suggestedTokenItems: [IconButtonCell.Configuration],
                                 otherTokenItems: [TKUIListItemCell.Configuration]) -> Snapshot {
     var newSnapshot = snapshot
     newSnapshot.prepareForItems(insSections: [.suggestedTokens, .otherTokens])
@@ -260,7 +260,7 @@ private extension SwapTokenListViewController {
     let dataSource = UICollectionViewDiffableDataSource<SwapTokenListSection, AnyHashable>(
       collectionView: customView.collectionView) { [suggestedTokenCellConfiguration, otherTokensCellConfiguration] collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
-        case let cellConfiguration as SuggestedTokenCell.Configuration:
+        case let cellConfiguration as IconButtonCell.Configuration:
           return collectionView.dequeueConfiguredReusableCell(using: suggestedTokenCellConfiguration, for: indexPath, item: cellConfiguration)
         case let cellConfiguration as TKUIListItemCell.Configuration:
           return collectionView.dequeueConfiguredReusableCell(using: otherTokensCellConfiguration, for: indexPath, item: cellConfiguration)
@@ -350,7 +350,7 @@ extension SwapTokenListViewController: UICollectionViewDelegate {
     let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
     
     switch item {
-    case let model as SuggestedTokenCell.Configuration:
+    case let model as IconButtonCell.Configuration:
       model.selectionClosure?()
     case let model as TKUIListItemCell.Configuration:
       model.selectionClosure?()

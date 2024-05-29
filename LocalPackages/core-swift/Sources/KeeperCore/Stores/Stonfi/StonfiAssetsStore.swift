@@ -18,19 +18,14 @@ actor StonfiAssetsStore {
   
   func getAssets() async -> StonfiAssets {
     let assets: StonfiAssets
+    let storedAssets = (try? repository.getAssets()) ?? StonfiAssets()
+    guard !storedAssets.isValid else { return storedAssets }
     
     do {
-      let storedAssets = try repository.getAssets()
-      if storedAssets.isValid {
-        assets = storedAssets
-      } else {
-        assets = try await service.loadAssets(loadCommunity: false)
-      }
+      return try await service.loadAssets(loadCommunity: false)
     } catch {
-      assets = StonfiAssets()
+      return storedAssets
     }
-    
-    return assets
   }
   
   func loadAssetsInfo(addresses: [Address]) async -> [StonfiAsset] {

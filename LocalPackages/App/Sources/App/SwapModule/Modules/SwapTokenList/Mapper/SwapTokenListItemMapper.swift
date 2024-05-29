@@ -7,17 +7,17 @@ struct SwapTokenListItemMapper {
   
   let imageLoader = CachedMemoryImageLoader(cacheExpirationInMinutes: 3)
   
-  func mapTokenButtonListItem(_ item: TokenButtonListItemsModel.Item, selectionClosure: @escaping (() -> Void)) -> SuggestedTokenCell.Configuration {
+  func mapTokenButtonListItem(_ item: TokenButtonListItemsModel.Item, selectionClosure: @escaping (() -> Void)) -> IconButtonCell.Configuration {
     let id = item.identifier
     
-    let tokenButtonModel = SwapTokenButtonContentView.Model(
+    let iconButtonModel = IconButttonContentView.Model(
       title: item.symbol.withTextStyle(.body2, color: .Button.tertiaryForeground),
       icon: createTokenButtonIcon(item.image)
     )
     
-    return SuggestedTokenCell.Configuration(
+    return IconButtonCell.Configuration(
       id: id,
-      tokenButtonModel: tokenButtonModel,
+      iconButton: iconButtonModel,
       selectionClosure: selectionClosure
     )
   }
@@ -83,7 +83,7 @@ private extension SwapTokenListItemMapper {
     }
   }
   
-  func createTokenButtonIcon(_ imageModel: ImageModel) -> SwapTokenButtonContentView.Model.Icon {
+  func createTokenButtonIcon(_ imageModel: ImageModel) -> IconButttonContentView.Model.Icon {
     switch imageModel {
     case .image(let image):
       return .image(image)

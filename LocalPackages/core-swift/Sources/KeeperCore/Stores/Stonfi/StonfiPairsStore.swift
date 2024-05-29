@@ -17,19 +17,14 @@ actor StonfiPairsStore {
   
   func getPairs() async -> StonfiPairs {
     let pairs: StonfiPairs
+    let storedPairs = (try? repository.getPairs()) ?? StonfiPairs()
+    guard !storedPairs.isValid else { return storedPairs }
     
     do {
-      let storedPairs = try repository.getPairs()
-      if storedPairs.isValid {
-        pairs = storedPairs
-      } else {
-        pairs = try await service.loadPairs()
-      }
+      return try await service.loadPairs()
     } catch {
-      pairs = StonfiPairs()
+      return storedPairs
     }
-    
-    return pairs
   }
   
   func setPairs(_ pairs: StonfiPairs) {

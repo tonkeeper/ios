@@ -14,7 +14,7 @@ protocol SwapTokenListModuleOutput: AnyObject {
 
 protocol SwapTokenListViewModel: AnyObject {
   var didUpdateModel: ((SwapTokenListView.Model) -> Void)? { get set }
-  var didUpdateListItems: (([SuggestedTokenCell.Configuration], [TKUIListItemCell.Configuration]) -> Void)? { get set }
+  var didUpdateListItems: (([IconButtonCell.Configuration], [TKUIListItemCell.Configuration]) -> Void)? { get set }
   var didUpdateSearchResultsItems: (([TKUIListItemCell.Configuration]) -> Void)? { get set }
   
   func viewDidLoad()
@@ -33,7 +33,7 @@ final class SwapTokenListViewModelImplementation: SwapTokenListViewModel, SwapTo
   // MARK: - SwapTokenListViewModel
   
   var didUpdateModel: ((SwapTokenListView.Model) -> Void)?
-  var didUpdateListItems: (([SuggestedTokenCell.Configuration], [TKUIListItemCell.Configuration]) -> Void)?
+  var didUpdateListItems: (([IconButtonCell.Configuration], [TKUIListItemCell.Configuration]) -> Void)?
   var didUpdateSearchResultsItems: (([TKUIListItemCell.Configuration]) -> Void)?
   
   func viewDidLoad() {

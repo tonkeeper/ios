@@ -64,8 +64,9 @@ private extension BuySellView {
   func setup() {
     amountInputView.layer.cornerRadius = .contentCornerRadius
     
-    addSubview(collectionView)
     continueButtonContainer.setViews([continueButton])
+    
+    addSubview(collectionView)
     addSubview(continueButtonContainer)
     
     changeCountryButton.configuration.content.title = .plainString("AA")
@@ -79,8 +80,8 @@ private extension BuySellView {
     }
       
     continueButtonContainer.snp.makeConstraints { make in
-      make.bottom.equalTo(self.safeAreaLayoutGuide)
       make.left.right.equalTo(self)
+      make.bottom.equalTo(self.safeAreaLayoutGuide)
     }
   }
 }

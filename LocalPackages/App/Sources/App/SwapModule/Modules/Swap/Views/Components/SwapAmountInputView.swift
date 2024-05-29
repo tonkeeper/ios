@@ -41,7 +41,7 @@ final class SwapAmountInputView: UIView, ConfigurableView {
   
   func configure(model: Model) {
     tokenButton.configure(
-      model: SwapTokenButtonContentView.Model(
+      model: IconButttonContentView.Model(
         title: model.tokenButton.title.withTextStyle(.label1, color: .Button.tertiaryForeground),
         icon: model.tokenButton.icon
       )
