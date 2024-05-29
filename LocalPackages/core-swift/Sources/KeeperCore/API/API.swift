@@ -205,6 +205,149 @@ extension API {
       imageURL: URL(string: entity.metadata.image ?? "")
     )
   }
+    
+    func getJettons(address: Address) async throws -> [JettonInfo] {
+        let response = try await tonAPIClient.getJettons(
+            Operations.getJettons.Input(query: .init(limit: 1000, offset: 6000))
+        )
+        let entities = try response.ok.body.json
+        
+        let jettons = try entities.jettons.compactMap {
+            let verification: JettonInfo.Verification
+            switch $0.verification {
+            case .none:
+                verification = .none
+            case .blacklist:
+                verification = .blacklist
+            case .whitelist:
+                verification = .whitelist
+            }
+            return JettonInfo(
+                address: try Address.parse($0.metadata.address),
+                fractionDigits: Int($0.metadata.decimals) ?? 0,
+                name: $0.metadata.name,
+                symbol: $0.metadata.symbol,
+                verification: verification,
+                imageURL: URL(string: $0.metadata.image ?? "")
+            )
+        }
+        return jettons
+    }
+}
+
+// MARK: - Staking
+
+extension API {
+    func getStakingNominatorPools(address: Address) async throws -> [AccountStakingInfo] {
+        let path = Operations.getAccountNominatorsPools.Input.Path(account_id: address.toRaw())
+        let response = try await tonAPIClient.getAccountNominatorsPools(path: path)
+        let json = try response.ok.body.json
+        return json.pools.compactMap {
+            AccountStakingInfo(
+                pool: $0.pool,
+                amount: BigUInt($0.amount),
+                pendingDeposit: BigUInt($0.pending_deposit),
+                pendingWithdraw: BigUInt($0.pending_withdraw),
+                readyWithdraw: BigUInt($0.ready_withdraw)
+            )
+        }
+    }
+    
+    func getStakingPools() async throws -> [PoolImplementation] {
+        let query = Operations.getStakingPools.Input.Query(include_unverified: false)
+        let response = try await tonAPIClient.getStakingPools(query: query)
+        let json = try response.ok.body.json
+        
+        var implementations: [PoolImplementationType: [PoolInfo]] = [:]
+        var maxApy: [PoolImplementationType: Double] = [:]
+        var maxPoolAddress = ""
+        
+        for pool in json.pools {
+            if let implementationType = PoolImplementationType(rawValue: pool.implementation.rawValue) {
+                let implementationMaxApy = maxApy[implementationType]
+                if implementationMaxApy == nil {
+                    maxApy[implementationType] = 0.0
+                }
+                if pool.apy > implementationMaxApy ?? 0 {
+                    maxApy[implementationType] = pool.apy
+                    maxPoolAddress = pool.address
+                }
+            }
+        }
+        
+        for pool in json.pools {
+            let poolInfo = PoolInfo(
+                address: pool.address,
+                name: pool.name,
+                implementationType: .init(rawValue: pool.implementation.rawValue),
+                apy: pool.apy,
+                isMax: maxPoolAddress == pool.address,
+                liquidJettonMaster: pool.liquid_jetton_master,
+                minStake: BigUInt(pool.min_stake)
+            )
+            if let implementationType = poolInfo.implementationType {
+                if implementations[implementationType] == nil {
+                    implementations[implementationType] = []
+                }
+                implementations[implementationType]?.append(poolInfo)
+            }
+        }
+        
+        var poolImplementations: [PoolImplementation] = []
+        
+        for (poolImplementationKey,poolImplementationValue) in json.implementations.additionalProperties {
+            if let implementationType = PoolImplementationType(rawValue: poolImplementationKey) {
+                let poolInfos = implementations[implementationType] ?? []
+                let poolMaxApy = maxApy[implementationType] ?? 0
+                let poolImplementation = PoolImplementation(
+                    name: poolImplementationValue.name,
+                    description: poolImplementationValue.description, 
+                    url: poolImplementationValue.url,
+                    socials: poolImplementationValue.socials,
+                    implementationType: implementationType,
+                    pools: poolInfos,
+                    maxPoolApy: poolMaxApy
+                )
+                poolImplementations.append(poolImplementation)
+            }
+        }
+        
+        return poolImplementations
+    }
+}
+
+// MARK: - Swap
+
+extension API {
+    func simulateSwap(sendAddress: Address, receiveAddress: Address, amount: BigUInt, tolerance: Double) async throws -> SimulateSwapInfo {
+      let configuration = "https://api.ston.fi"
+        guard var components = URLComponents(string: configuration) else { throw APIError.incorrectResponse }
+        
+        let offerAddress = sendAddress.toRaw()
+        let askAddress = receiveAddress.toRaw()
+        let units = "\(amount)"
+        
+      components.path = "/v1/swap/simulate"
+      components.queryItems = [
+        URLQueryItem(name: "offer_address", value: offerAddress),
+        URLQueryItem(name: "ask_address", value: askAddress),
+        URLQueryItem(name: "units", value: units),
+        URLQueryItem(name: "slippage_tolerance", value: "\(tolerance)")
+      ]
+      
+      guard let url = components.url else { throw APIError.incorrectResponse }
+      var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+      let (data, response) = try await urlSession.data(for: request)
+      guard let httpResponse = (response as? HTTPURLResponse) else {
+        throw APIError.incorrectResponse
+      }
+      guard (200..<300).contains(httpResponse.statusCode) else {
+        throw APIError.serverError(statusCode: httpResponse.statusCode)
+      }
+      let simulateSwapResponse = try JSONDecoder().decode(SimulateSwapInfo.self, from: data)
+      return simulateSwapResponse
+    }
 }
 
 // MARK: - Rates

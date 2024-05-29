@@ -9,8 +9,8 @@ final class SendAmountTextFieldFormatter: NSObject {
     }
   }
   
-  private let currencyFormatter: NumberFormatter
-  private let inputFormatter: SumTextInputFormatter
+  let currencyFormatter: NumberFormatter
+  let inputFormatter: SumTextInputFormatter
   
   init(currencyFormatter: NumberFormatter) {
     self.currencyFormatter = currencyFormatter

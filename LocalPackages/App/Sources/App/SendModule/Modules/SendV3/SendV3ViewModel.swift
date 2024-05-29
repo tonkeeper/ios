@@ -175,6 +175,8 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
       }
     case .nft:
       return
+    case .swap, .staking:
+        break
     }
   }
   
@@ -190,6 +192,8 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
       self.didTapPicker?(walletsStore.activeWallet, token)
     case .nft:
       break
+    case .swap, .staking:
+        break
     }
   }
   
@@ -209,6 +213,8 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
         }
       case .nft:
         break
+      case .swap, .staking:
+          break
       }
     }
   }
@@ -310,6 +316,8 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
       sendAmountTextFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: token)
     case .nft:
       break
+    case .swap, .staking:
+        break
     }
   }
 }
@@ -324,6 +332,8 @@ private extension SendV3ViewModelImplementation {
       amountModel = nil
     case .token(let token, _):
       amountModel = createAmountModel(token: token)
+    case .swap, .staking:
+        amountModel = nil
     }
     
     let remaining: Model.Balance.Remaining
@@ -461,6 +471,8 @@ private extension SendV3ViewModelImplementation {
           self.remaining = remaining
           update()
         }
+      case .swap, .staking:
+          break
       }
     }
   }
@@ -476,6 +488,8 @@ private extension SendV3ViewModelImplementation {
           self.convertedValue = converted
           update()
         }
+      case .swap, .staking
+          : break
       }
     }
   }
@@ -487,6 +501,8 @@ private extension SendV3ViewModelImplementation {
       isItemValid = true
     case .token:
       isItemValid = isAmountValid
+    case .swap, .staking:
+        isItemValid = true
     }
     
     return recipient != nil && (isCommentRequired && !commentInput.isEmpty || !isCommentRequired) && isItemValid

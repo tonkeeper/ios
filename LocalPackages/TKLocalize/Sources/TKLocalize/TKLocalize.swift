@@ -861,4 +861,16 @@ public enum TKLocales {
       localize("action_types.wallet_initialize")
     }
   }
+  public enum BuySell {
+    public enum Tabs {
+      /// Buy Tab
+      public static var buyTab: String {
+        localize("buy_sell.tabs.buy")
+      }
+      /// Sell Tab
+      public static var sellTab: String {
+        localize("buy_sell.tabs.sell")
+      }
+    }
+  }
 }

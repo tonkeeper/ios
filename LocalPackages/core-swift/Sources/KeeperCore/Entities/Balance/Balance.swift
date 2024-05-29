@@ -26,12 +26,23 @@ public struct JettonBalance: Codable {
 public struct JettonItem: Codable, Equatable {
   public let jettonInfo: JettonInfo
   public let walletAddress: Address
+    
+  public init(jettonInfo: JettonInfo, walletAddress: Address) {
+    self.jettonInfo = jettonInfo
+    self.walletAddress = walletAddress
+  }
+    
+  public init(jettonInfo: JettonInfo) {
+    self.jettonInfo = jettonInfo
+    self.walletAddress = jettonInfo.address
+  }
 }
 
 public struct TonInfo {
   public static let name = "Toncoin"
   public static let symbol = "TON"
   public static let fractionDigits = 9
+  public static let tokenAddress = try? Address.parse("EQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAM9c")
   private init() {}
 }
 
@@ -56,4 +67,12 @@ public struct JettonInfo: Codable, Equatable, Hashable {
   public func hash(into hasher: inout Hasher) {
     hasher.combine(address)
   }
+}
+
+public extension BigUInt {
+    func toTon() -> String {
+        let formatter = AmountFormatter(bigIntFormatter: BigIntAmountFormatter())
+        let amount = formatter.formatAmount(self, fractionDigits: TonInfo.fractionDigits, maximumFractionDigits: TonInfo.fractionDigits)
+        return amount
+    }
 }

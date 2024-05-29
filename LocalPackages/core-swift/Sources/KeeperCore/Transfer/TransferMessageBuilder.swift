@@ -222,3 +222,70 @@ public struct ExternalMessageTransferBuilder {
     return try cell.toBoc().base64EncodedString()
   }
 }
+
+public struct StakingMessageBuilder {
+    private init() {}
+    public static func sendStaking(wallet: Wallet,
+                                   seqno: UInt64,
+                                   amount: BigUInt,
+                                   fromWalletAddress: Address,
+                                   toWalletAddress: Address,
+                                   forwardAmount: BigUInt,
+                                   attachedAmount: BigUInt,
+                                   timeout: UInt64?,
+                                   signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
+        let internalMessage = try StonfiStakingMessage.internalMessage(
+            userWalletAddress: wallet.address,
+            amount: amount,
+            fromWalletAddress: fromWalletAddress,
+            toWalletAddress: toWalletAddress,
+            forwardAmount: forwardAmount,
+            attachedAmount: attachedAmount
+        )
+        
+        return try await ExternalMessageTransferBuilder
+            .externalMessageTransfer(
+                wallet: wallet,
+                sender: try wallet.address,
+                seqno: seqno, internalMessages: { sender in
+                    return [internalMessage]
+                },
+                timeout: timeout,
+                signClosure: signClosure)
+    }
+}
+
+private struct StonfiStakingMessage {
+    public static func internalMessage(userWalletAddress: Address,
+                                       amount: BigUInt,
+                                       fromWalletAddress: Address,
+                                       toWalletAddress: Address,
+                                       forwardAmount: BigUInt,
+                                       attachedAmount: BigUInt
+                                       ) throws -> MessageRelaxed {
+        let queryId = UInt64(Date().timeIntervalSince1970)
+                
+        let forwardPayloadBuilder = Builder()
+        try forwardPayloadBuilder.store(uint: 0x6ec9dc65, bits: 32)
+        try forwardPayloadBuilder.store(AnyAddress.internalAddr(toWalletAddress))
+        let forwardPayload = try forwardPayloadBuilder.endCell()
+        
+        let jettonTransferBuilder = Builder()
+        try jettonTransferBuilder.store(uint: OpCodes.JETTON_TRANSFER, bits: 32)
+        try jettonTransferBuilder.store(uint: queryId, bits: 64)
+        try jettonTransferBuilder.storeMaybe(Coins(rawValue: amount.magnitude))
+        try jettonTransferBuilder.store(AnyAddress.internalAddr(try! Address.parse(STONFI_CONSTANTS.RouterAddress)))
+        try jettonTransferBuilder.store(AnyAddress.internalAddr(userWalletAddress))
+        try jettonTransferBuilder.store(bit: false)
+        try jettonTransferBuilder.storeMaybe(Coins(rawValue: forwardAmount.magnitude))
+        try jettonTransferBuilder.storeMaybe(ref: forwardPayload)
+        let jettonTransferData = try jettonTransferBuilder.endCell()
+        
+        return MessageRelaxed.internal(
+            to: fromWalletAddress,
+            value: attachedAmount,
+            bounce: true,
+            body: try Builder().store(jettonTransferData).endCell()
+        )
+    }
+}

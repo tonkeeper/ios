@@ -19,6 +19,14 @@ final class AmountInputView: UIView {
     button.contentEdgeInsets = .convertedButtonContentInsets
     return button
   }()
+    
+  let descriptionLabel: UILabel = {
+    let label = UILabel()
+    label.font = TKTextStyle.label2.font
+    label.textColor = .Text.tertiary
+    label.textAlignment = .center
+    return label
+  }()
   
   private let container = UIView()
   
@@ -47,6 +55,7 @@ private extension AmountInputView {
     addSubview(container)
     container.addSubview(inputControl)
     container.addSubview(convertedButton)
+    container.addSubview(descriptionLabel)
     
     setupConstraints()
   }
@@ -64,6 +73,13 @@ private extension AmountInputView {
     
     convertedButton.snp.makeConstraints { make in
       make.top.equalTo(inputControl.snp.bottom).offset(CGFloat.convertedButtonTopSpace)
+      make.left.greaterThanOrEqualTo(container).offset(16)
+      make.right.lessThanOrEqualTo(container).offset(-16)
+      make.centerX.equalTo(container)
+    }
+      
+    descriptionLabel.snp.makeConstraints { make in
+      make.top.equalTo(convertedButton.snp.bottom).offset(12)
       make.left.greaterThanOrEqualTo(container).offset(16)
       make.right.lessThanOrEqualTo(container).offset(-16)
       make.bottom.equalTo(container)

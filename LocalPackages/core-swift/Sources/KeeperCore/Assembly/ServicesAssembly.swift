@@ -7,17 +7,20 @@ public final class ServicesAssembly {
   private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   private let locationAPIAsembly: LocationAPIAssembly
   private let coreAssembly: CoreAssembly
+  private let webViewApi: WKWebViewNetwork
   
   init(repositoriesAssembly: RepositoriesAssembly,
        apiAssembly: APIAssembly,
        tonkeeperAPIAssembly: TonkeeperAPIAssembly,
        locationAPIAsembly: LocationAPIAssembly,
-       coreAssembly: CoreAssembly) {
+       coreAssembly: CoreAssembly,
+       webViewApi: WKWebViewNetwork = .shared) {
     self.repositoriesAssembly = repositoriesAssembly
     self.apiAssembly = apiAssembly
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
     self.locationAPIAsembly = locationAPIAsembly
     self.coreAssembly = coreAssembly
+    self.webViewApi = webViewApi
   }
   
   func walletsService() -> WalletsService {
@@ -143,6 +146,21 @@ public final class ServicesAssembly {
   
   public func popularAppsService() -> PopularAppsService {
     PopularAppsServiceImplementation(api: tonkeeperAPIAssembly.api,
-                                     popularAppsRepository: repositoriesAssembly.popularAppsRepository())
+                                        popularAppsRepository: repositoriesAssembly.popularAppsRepository())
+  }
+    
+  func searchTokensService() -> SearchTokensService {
+    SearchTokensServiceImplementation(api: apiAssembly.api)
+  }
+    
+  func stakingService() -> StakingService {
+    StakingServiceImplementation(
+      api: apiAssembly.api,
+      stakingRepository: repositoriesAssembly.stakingRepository()
+    )
+  }
+    
+  func stonfiService() -> StonfiService {
+    StonfiServiceImplementation(webViewApi: webViewApi, api: apiAssembly.api)
   }
 }

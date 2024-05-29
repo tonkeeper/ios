@@ -205,6 +205,8 @@ public final class SendController {
       return .token(value: value)
     case .nft(let nft):
       return .nft(nft: NFTModel(nft: nft))
+    case .swap, .staking:
+        return .token(value: .init())
     }
   }
 
@@ -265,6 +267,8 @@ private extension SendController {
           return balance.jettonsBalance.contains(where: { $0.item.jettonInfo == jettonItem.jettonInfo })
         }
       }
+    case .swap, .staking:
+        fromWallets = []
     }
     guard !fromWallets.isEmpty else { return }
     selectedFromWallet = fromWallets.first(where: { $0 == selectedFromWallet }) ?? fromWallets[0]
@@ -279,6 +283,9 @@ private extension SendController {
       case .token:
         balance = getWalletBalance(wallet: wallet)
         isTokenPickerRequired = true
+      case .swap, .staking:
+          balance = nil
+          isTokenPickerRequired = false
       }
       return createWalletModel(wallet: wallet, balance: balance, isTokenPickerRequired: isTokenPickerRequired)
     }
@@ -299,6 +306,8 @@ private extension SendController {
         balance = nil
       case .token:
         balance = getWalletBalance(wallet: wallet)
+      case .swap, .staking:
+          balance = nil
       }
       return createWalletModel(wallet: wallet, balance: balance, isTokenPickerRequired: false)
     }
@@ -332,6 +341,8 @@ private extension SendController {
           let jettonBalance = balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonItem.jettonInfo })?.quantity ?? 0
           return jettonBalance >= amount
         }
+      case .swap, .staking:
+          return true
       }
     }()
     
@@ -383,6 +394,9 @@ private extension SendController {
         isPickerEnabled = isTokenPickerRequired
       }
       
+    case .swap, .staking:
+        balanceValue = nil
+        isPickerEnabled = false
     }
     return SendWalletModel(
       id: UUID().uuidString,
@@ -404,6 +418,8 @@ private extension SendController {
       } catch {
         balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
       }
+    case .swap, .staking:
+        balance = nil
     }
     return balance
   }

@@ -103,8 +103,16 @@ private extension WalletCoordinator {
       self?.openSend(token: token)
     }
     
-    module.output.didTapBuyOrSell = { [weak self] in
-      self?.openBuy(wallet: wallet)
+    module.output.didTapBuyOrSell = { [weak self] token in
+        self?.openBuySell(wallet: wallet, token: token)
+    }
+      
+    module.output.didTapStaking = { [weak self] token in
+        self?.openStaking(wallet: wallet, token: token)
+    }
+      
+    module.output.didTapSwap = { [weak self] token in
+        self?.openSwap(wallet: wallet, token: token)
     }
     
     router.push(viewController: module.view)
@@ -165,17 +173,87 @@ private extension WalletCoordinator {
     router.present(navigationController)
   }
   
-  func openBuy(wallet: Wallet) {
-    let coordinator = BuyCoordinator(
-      wallet: wallet,
-      keeperCoreMainAssembly: keeperCoreMainAssembly,
-      coreAssembly: coreAssembly,
-      router: ViewControllerRouter(rootViewController: self.router.rootViewController)
-    )
+    func openBuySell(wallet: Wallet, token: Token) {
+        let navigationController = TKNavigationController()
+        navigationController.configureDefaultAppearance()
+        
+        let buySellCoordinator = BuySellModule(
+            dependencies: BuySellModule.Dependencies(
+                coreAssembly: coreAssembly,
+                keeperCoreMainAssembly: keeperCoreMainAssembly
+            )
+        ).createBuySellCoordinator(
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            wallet: wallet,
+            token: token,
+            amount: 0
+        )
+        
+        buySellCoordinator.didFinish = { [weak self, weak buySellCoordinator] in
+            guard let buySellCoordinator else { return }
+            self?.removeChild(buySellCoordinator)
+            self?.router.dismiss()
+        }
+        
+        addChild(buySellCoordinator)
+        buySellCoordinator.start()
+        
+        self.router.present(navigationController)
+    }
     
-    addChild(coordinator)
-    coordinator.start()
-  }
+    func openStaking(wallet: Wallet, token: Token) {
+        let navigationController = TKNavigationController()
+        navigationController.configureDefaultAppearance()
+        
+        let stakingCoordinator = StakingModule(
+            dependencies: StakingModule.Dependencies(
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                coreAssembly: coreAssembly
+            )
+        ).createStakingCoordinator(
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            wallet: wallet
+        )
+        
+        stakingCoordinator.didFinish = { [weak self, weak stakingCoordinator] in
+            guard let stakingCoordinator else { return }
+            self?.removeChild(stakingCoordinator)
+            self?.router.dismiss()
+        }
+        
+        addChild(stakingCoordinator)
+        stakingCoordinator.start()
+        
+        self.router.present(navigationController)
+    }
+    
+    func openSwap(wallet: Wallet, token: Token) {
+        let navigationController = TKNavigationController()
+        navigationController.configureDefaultAppearance()
+        
+        let swapCoordinator = SwapModule(
+            dependencies: SwapModule.Dependencies(
+                keeperCoreMainAssembly: keeperCoreMainAssembly,
+                coreAssembly: coreAssembly
+            )
+        ).createSwapCoordinator(
+            router: NavigationControllerRouter(rootViewController: navigationController),
+            wallet: wallet,
+            token: token,
+            amount: 0
+        )
+        
+        swapCoordinator.didFinish = { [weak self, weak swapCoordinator] in
+            guard let swapCoordinator else { return }
+            self?.removeChild(swapCoordinator)
+            self?.router.dismiss()
+        }
+        
+        addChild(swapCoordinator)
+        swapCoordinator.start()
+        
+        self.router.present(navigationController)
+    }
   
   func openHistoryEventDetails(event: AccountEventDetailsEvent) {
     let module = HistoryEventDetailsAssembly.module(
@@ -265,12 +343,16 @@ private extension WalletCoordinator {
       self?.didTapScan?()
     }
     
-    module.output.didTapBuy = { [weak self] wallet in
-      self?.openBuy(wallet: wallet)
+    module.output.didTapBuyOrSell = { [weak self] wallet in
+      self?.openBuySell(wallet: wallet, token: .ton)
     }
-    
-    module.output.didTapSwap = { [weak self] in
-      self?.didTapSwap?()
+      
+    module.output.didTapStaking = { [weak self] wallet in
+      self?.openStaking(wallet: wallet, token: .ton)
+    }
+      
+    module.output.didTapSwap = { [weak self] wallet in
+      self?.openSwap(wallet: wallet, token: .ton)
     }
     
     module.output.didTapBackup = { [weak self] wallet in

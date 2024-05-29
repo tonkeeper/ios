@@ -7,7 +7,10 @@ import TKCore
 protocol TokenDetailsModuleOutput: AnyObject {
   var didTapSend: ((KeeperCore.Token) -> Void)? { get set }
   var didTapReceive: ((KeeperCore.Token) -> Void)? { get set }
-  var didTapBuyOrSell: (() -> Void)? { get set }
+    
+  var didTapBuyOrSell: ((KeeperCore.Token) -> Void)? { get set }
+  var didTapStaking: ((KeeperCore.Token) -> Void)? { get set }
+  var didTapSwap: ((KeeperCore.Token) -> Void)? { get set }
 }
 
 protocol TokenDetailsViewModel: AnyObject {
@@ -25,7 +28,10 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   
   var didTapSend: ((KeeperCore.Token) -> Void)?
   var didTapReceive: ((KeeperCore.Token) -> Void)?
-  var didTapBuyOrSell: (() -> Void)?
+    
+  var didTapBuyOrSell: ((KeeperCore.Token) -> Void)?
+  var didTapStaking: ((KeeperCore.Token) -> Void)?
+  var didTapSwap: ((KeeperCore.Token) -> Void)?
   
   // MARK: - TokenDetailsViewModel
   
@@ -91,8 +97,12 @@ private extension TokenDetailsViewModelImplementation {
             self?.didTapSend?(token)
           case .receive(let token):
             self?.didTapReceive?(token)
-          case .buySell:
-            self?.didTapBuyOrSell?()
+          case .buySell(let token):
+              self?.didTapBuyOrSell?(token)
+          case .stake(let token):
+              self?.didTapStaking?(token)
+          case .swap(let token):
+              self?.didTapSwap?(token)
           default:
             break
           }

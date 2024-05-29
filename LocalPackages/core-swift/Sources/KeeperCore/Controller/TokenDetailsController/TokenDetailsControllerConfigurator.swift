@@ -25,7 +25,7 @@ struct TonTokenDetailsControllerConfigurator: TokenDetailsControllerConfigurator
       image: .ton,
       tokenAmount: amount.tokenAmount,
       convertedAmount: amount.convertedAmount,
-      buttons: [.send(.ton), .receive(.ton), .buySell]
+      buttons: [.send(.ton), .receive(.ton), .buySell(.ton)]
     )
   }
 }
