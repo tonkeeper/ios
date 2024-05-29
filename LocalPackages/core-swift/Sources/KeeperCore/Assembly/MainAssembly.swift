@@ -387,7 +387,25 @@ public final class MainAssembly {
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
-  
+
+  public func sendConfirmationController(wallet: Wallet) -> SendConfirmationController {
+      let address = Recipient.RecipientAddress.raw(Address(workchain: 0, hash: Data()))
+
+      return SendConfirmationController(
+        wallet: wallet,
+        recipient: Recipient(recipientAddress: address, isMemoRequired: false),
+        sendItem: .token(.ton, amount: 1),
+        comment: nil,
+        sendService: servicesAssembly.sendService(),
+        blockchainService: servicesAssembly.blockchainService(),
+        balanceStore: storesAssembly.balanceStore,
+        ratesStore: storesAssembly.ratesStore,
+        currencyStore: storesAssembly.currencyStore,
+        mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
+        amountFormatter: formattersAssembly.amountFormatter
+      )
+  }
+
   public func tokenPickerController(wallet: Wallet, selectedToken: Token) -> TokenPickerController {
     TokenPickerController(
       wallet: wallet,

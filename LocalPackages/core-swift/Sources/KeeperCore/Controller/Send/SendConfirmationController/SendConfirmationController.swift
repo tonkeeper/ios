@@ -18,7 +18,12 @@ public final class SendConfirmationController {
   
   public  let wallet: Wallet
   private let recipient: Recipient
-  private let sendItem: SendItem
+  private var sendItem: SendItem
+
+  private var sendSwapItem: SendItem?
+  private var receiveSwapItem: SendItem?
+  private var minimalSwapAskAmount: BigUInt?
+
   private let comment: String?
   private let sendService: SendService
   private let blockchainService: BlockchainService
@@ -80,6 +85,59 @@ public final class SendConfirmationController {
   public func isNeedToConfirm() -> Bool {
     return wallet.isRegular
   }
+
+  public func startSwap() async {
+      let model = await buildInitialModel()
+      await MainActor.run {
+          didUpdateModel?(model)
+      }
+      await emulateSwap()
+  }
+
+  public func sendSwapTransaction() async throws {
+      do {
+          let transactionBoc = try await createSwapTransactionBoc()
+          try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
+          NotificationCenter.default.post(
+            name: NSNotification.Name(rawValue: "didSendTransaction"),
+            object: nil,
+            userInfo: ["Wallet": wallet]
+          )
+      } catch {
+          Task { @MainActor in
+              didGetError?(.failedToSendTransaction)
+          }
+          throw error
+      }
+  }
+
+  public func startSwapJettons(sendingItem: SendItem,
+                               recievingItem: SendItem,
+                               minimalSwapAskAmount: BigUInt) async {
+      self.sendSwapItem = sendingItem
+      self.receiveSwapItem = recievingItem
+      self.minimalSwapAskAmount = minimalSwapAskAmount
+
+      await startSwap()
+  }
+
+  public func startSwapTon(recievingItem: SendItem,
+                           minimalSwapAskAmount: BigUInt) async {
+      self.sendSwapItem = nil
+      self.receiveSwapItem = recievingItem
+      self.minimalSwapAskAmount = minimalSwapAskAmount
+
+      await startSwap()
+  }
+
+  public func startSwapJetton(sendingItem: SendItem,
+                              minimalSwapAskAmount: BigUInt) async {
+      self.sendSwapItem = sendingItem
+      self.receiveSwapItem = nil
+      self.minimalSwapAskAmount = minimalSwapAskAmount
+
+      await startSwap()
+  }
 }
 
 private extension SendConfirmationController {
@@ -132,7 +190,10 @@ private extension SendConfirmationController {
     let descriptionType: SendConfirmationModel.DescriptionType
     let formattedAmount: String?
     var formattedConvertedAmount: String?
-    switch sendItem {
+
+    let sendingItem = sendSwapItem ?? sendItem
+
+    switch sendingItem {
     case .token(let token, let amount):
       switch token {
       case .ton:
@@ -240,6 +301,34 @@ private extension SendConfirmationController {
     }
   }
   
+  func emulateSwap() async {
+      async let createTransactionBocTask = createEmulateSwapTransactionBoc()
+
+      do {
+          let transactionBoc = try await createTransactionBocTask
+          let transactionInfo = try await sendService.loadTransactionInfo(
+            boc: transactionBoc,
+            wallet: wallet
+          )
+          let sendTransactionModel = SendTransactionModel(
+            accountEvent: transactionInfo.event,
+            risk: transactionInfo.risk,
+            transaction: transactionInfo.trace.transaction
+          )
+          transactionEmulationExtra = sendTransactionModel.extra
+          let model = await buildEmulatedModel(fee: sendTransactionModel.fee)
+          Task { @MainActor in
+              didUpdateModel?(model)
+          }
+      } catch {
+          let model = await buildEmulatedModel(fee: nil)
+          Task { @MainActor in
+              didUpdateModel?(model)
+              didGetError?(.failedToCalculateFee)
+          }
+      }
+  }
+
   func createEmulateTransactionBoc() async throws -> String {
     let boc: String
     switch sendItem {
@@ -253,6 +342,58 @@ private extension SendConfirmationController {
     return boc
   }
   
+  func createEmulateSwapTransactionBoc() async throws -> String {
+      let boc: String
+
+      if let sendSwapItem,
+         let receiveSwapItem {
+          if case let .token(sendToken, sendAmount) = sendSwapItem,
+             case let .jetton(sendJettonItem) = sendToken,
+             case let .token(receiveToken, _) = receiveSwapItem,
+             case let .jetton(receiveJettonItem) = receiveToken {
+              let minAskAmount = minimalSwapAskAmount ?? sendAmount
+              boc = try await createSwapTransactionBoc(from: sendJettonItem.jettonInfo.address,
+                                                       to: receiveJettonItem.jettonInfo.address,
+                                                       minAskAmount: minAskAmount,
+                                                       offerAmount: sendAmount) { transfer in
+                  try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
+              }
+          } else {
+              boc = ""
+          }
+      } else if let sendSwapItem {
+          if case let .token(token, amount) = sendSwapItem,
+             case let .jetton(jettonItem) = token {
+              let minAskAmount = minimalSwapAskAmount ?? amount
+
+              boc = try await createSwapTransactionBoc(
+                from: jettonItem.jettonInfo.address,
+                minAskAmount: minAskAmount,
+                offerAmount: amount) { transfer in
+                    try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
+                }
+          } else {
+              boc = ""
+          }
+      } else if let receiveSwapItem {
+          if case let .token(token, amount) = receiveSwapItem,
+             case let .jetton(jettonItem) = token {
+              let minAskAmount = minimalSwapAskAmount ?? amount
+              boc = try await createSwapTransactionBoc(
+                to: jettonItem.jettonInfo.address,
+                minAskAmount: minAskAmount,
+                offerAmount: amount) { transfer in
+                    try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
+                }
+          } else {
+              boc = ""
+          }
+      } else {
+          boc = ""
+      }
+      return boc
+  }
+
   func createTransactionBoc() async throws -> String {
     let boc: String
     switch sendItem {
@@ -265,7 +406,55 @@ private extension SendConfirmationController {
     }
     return boc
   }
-  
+
+  func createSwapTransactionBoc() async throws -> String {
+      let boc: String
+
+      if let sendSwapItem,
+         let receiveSwapItem {
+          if case let .token(sendToken, sendAmount) = sendSwapItem,
+             case let .jetton(sendJettonItem) = sendToken,
+             case let .token(receiveToken, _) = receiveSwapItem,
+             case let .jetton(receiveJettonItem) = receiveToken {
+              boc = try await createSwapTransactionBoc(from: sendJettonItem.jettonInfo.address,
+                                                       to: receiveJettonItem.jettonInfo.address,
+                                                       minAskAmount: sendAmount,
+                                                       offerAmount: sendAmount) { transfer in
+                  return try await signTransfer(transfer)
+              }
+          } else {
+              boc = ""
+          }
+      } else if let sendSwapItem {
+          if case let .token(token, amount) = sendSwapItem,
+             case let .jetton(jettonItem) = token {
+              boc = try await createSwapTransactionBoc(
+                from: jettonItem.jettonInfo.address,
+                minAskAmount: amount,
+                offerAmount: amount) { transfer in
+                    return try await signTransfer(transfer)
+                }
+          } else {
+              boc = ""
+          }
+      } else if let receiveSwapItem {
+          if case let .token(token, amount) = receiveSwapItem,
+             case let .jetton(jettonItem) = token {
+              boc = try await createSwapTransactionBoc(
+                to: jettonItem.jettonInfo.address,
+                minAskAmount: amount,
+                offerAmount: amount) { transfer in
+                    return try await signTransfer(transfer)
+                }
+          } else {
+              boc = ""
+          }
+      } else {
+          boc = ""
+      }
+      return boc
+  }
+
   func createTokenTransactionBoc(token: Token, amount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
@@ -339,7 +528,7 @@ private extension SendConfirmationController {
   func createSwapTransactionBoc(from: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
-
+    
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: from.toRaw(),
       owner: wallet.address.toRaw(),

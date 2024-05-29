@@ -12,8 +12,8 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
-  var didTapSwap: (() -> Void)? { get set }
-  
+  var didTapSwap: ((Wallet) -> Void)? { get set }
+
   var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
 }
@@ -46,8 +46,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
-  var didTapSwap: (() -> Void)?
-  
+  var didTapSwap: ((Wallet) -> Void)?
+
   var didTapBackup: ((Wallet) -> Void)?
   var didRequireConfirmation: (() async -> Bool)?
   
@@ -315,7 +315,7 @@ private extension WalletBalanceViewModelImplementation {
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true
-      isSwapEnable = true
+      isSwapEnable = false
       isBuyEnable = true
       isStakeEnable = false
     }
@@ -343,9 +343,9 @@ private extension WalletBalanceViewModelImplementation {
         title: TKLocales.WalletButtons.swap,
         icon: .TKUIKit.Icons.Size28.swapHorizontalOutline,
         isEnabled: isSwapEnable,
-        action: { [weak self] in
-          self?.didTapSwap?()
-        }
+        action:  { [weak self] in
+            guard let wallet = self?.walletBalanceController.wallet else { return }
+            self?.didTapSwap?(wallet) }
       ),
       buyButton: WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.buy,
