@@ -53,7 +53,6 @@ private extension ReceiveViewController {
         activityItems: [address as Any],
         applicationActivities: nil
       )
-      activityViewController.overrideUserInterfaceStyle = .dark
       self?.present(
         activityViewController,
         animated: true

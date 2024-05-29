@@ -103,7 +103,7 @@ private final class TKHorizontalDividerView: UIView {
   }
   
   private func setup() {
-    solidView.backgroundColor = .Background.content
+    solidView.backgroundColor = .Separator.common
     
     addSubview(solidView)
     addSubview(leftGradientView)
@@ -154,7 +154,7 @@ private final class TKVerticalDividerView: UIView {
   }
   
   private func setup() {
-    solidView.backgroundColor = .Background.content
+    solidView.backgroundColor = .Separator.common
     
     addSubview(solidView)
     addSubview(topGradientView)

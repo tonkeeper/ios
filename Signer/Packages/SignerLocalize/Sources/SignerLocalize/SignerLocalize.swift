@@ -229,11 +229,33 @@ public enum SignerLocalize {
       public static var legal: String {
         localize("settings.items.legal")
       }
+      /// Theme
+      public static var theme: String {
+        localize("settings.items.theme")
+      }
     }
     public enum Footer {
       /// Version %@
       public static func version(_ p0: Any) -> String {
         return localizeWithArgs("settings.footer.version", String(describing: p0))
+      }
+    }
+    public enum Themes {
+      /// Deep Blue
+      public static var deepblue: String {
+        localize("settings.themes.deepblue")
+      }
+      /// Dark
+      public static var dark: String {
+        localize("settings.themes.dark")
+      }
+      /// Light
+      public static var light: String {
+        localize("settings.themes.light")
+      }
+      /// System
+      public static var system: String {
+        localize("settings.themes.system")
       }
     }
     public enum Legal {
@@ -335,6 +357,18 @@ public enum SignerLocalize {
     /// Send
     public static var send: String {
       localize("sign_transaction.send")
+    }
+  }
+  public enum EmulateTransactionQr {
+    /// Scan the QR code to open the transaction emulation
+    public static var title: String {
+      localize("emulate_transaction_qr.title")
+    }
+    public enum CloseButton {
+      /// Close
+      public static var title: String {
+        localize("emulate_transaction_qr.close_button.title")
+      }
     }
   }
   public enum SignTransactionQr {

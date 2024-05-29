@@ -6,7 +6,7 @@ public final class SignConfirmationController {
   
   public var hexBody: String {
     do {
-      let cell = try Cell.fromBase64(src: model.body)
+      let cell = try Cell.cellFromBoc(src: model.body)
       let hex = try cell.toBoc().hexString()
       return hex
     } catch {
@@ -32,10 +32,23 @@ public final class SignConfirmationController {
     self.amountFormatter = amountFormatter
   }
   
-  public func getTransactionModel(sendTitle: String) throws -> TransactionModel {
-    let transaction = try parseBoc(model.body)
-    let transactionModel = createTransactionModel(transaction, sendTitle: sendTitle)
-    return transactionModel
+  public func getTransactionModel(sendTitle: String) -> TransactionModel {
+    do {
+      let transaction = try parseBoc(model.body)
+      let transactionModel = createTransactionModel(transaction, sendTitle: sendTitle)
+      return transactionModel
+    } catch {
+      return TransactionModel(
+        items: [TransactionModel.Item(
+          title: "Unknown",
+          subtitle: " ",
+          value: nil,
+          valueSubtitle: nil,
+          comment: nil
+        )],
+        boc: model.body.hexString()
+      )
+    }
   }
   
   public func signTransaction(password: String) -> URL? {
@@ -45,13 +58,11 @@ public final class SignConfirmationController {
       let privateKey = keyPair.privateKey
       let signer = WalletTransferSecretKeySigner(secretKey: privateKey.data)
       
-      let messageCell = try Cell.fromBase64(src: model.body)
+      let messageCell = try Cell.cellFromBoc(src: model.body)
       let signature = try signer.signMessage(messageCell.hash())
       
       return deeplinkGenerator.generatePublishDeeplink(
         signature: signature,
-        network: model.network,
-        version: model.version,
         return: model.returnURL
       )
     } catch {
@@ -74,7 +85,7 @@ public final class SignConfirmationController {
       }
 
       let signer = WalletTransferEmptyKeySigner()
-      let messageCell = try Cell.fromBase64(src: model.body).toBuilder()
+      let messageCell = try Cell.cellFromBoc(src: model.body).toBuilder()
       let signature = try signer.signMessage(messageCell.endCell().hash())
       let body = Builder()
       try body.store(data: signature)
@@ -92,9 +103,9 @@ public final class SignConfirmationController {
     }
   }
   
-  private func parseBoc(_ bocString: String) throws -> Transaction {
-    let cell = try Cell.fromBase64(src: bocString)
-    let hex = try cell.toBoc().hexString()
+  private func parseBoc(_ boc: Data) throws -> Transaction {
+    let cell = try Cell.cellFromBoc(src: boc)
+    let hex = boc.hexString()
     let slice = try cell.toSlice()
     var transactionItems = [TransactionItem]()
     while slice.remainingRefs > 0 {
@@ -224,5 +235,15 @@ public final class SignConfirmationController {
   struct Transaction {
     let boc: String
     let items: [TransactionItem]
+  }
+}
+
+extension Cell {
+  static func cellFromBoc(src: Data) throws -> Cell {
+    let cells = try Cell.fromBoc(src: src)
+    guard cells.count == 1 else {
+      throw TonError.custom("Deserialized more than one cell")
+    }
+    return cells[0]
   }
 }

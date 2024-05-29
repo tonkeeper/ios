@@ -47,6 +47,10 @@
 	<false/>
 	<key>KEYCHAIN_ACCESS_GROUP</key>
 	<string>$(KEYCHAIN_ACCESS_GROUP)</string>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tonsign</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
@@ -90,10 +94,6 @@
 		</dict>
 	</dict>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
-  <key>LSApplicationQueriesSchemes</key>
-  <array>
-    <string>tonsign</string>
-  </array>
+	<true/>
 </dict>
 </plist>

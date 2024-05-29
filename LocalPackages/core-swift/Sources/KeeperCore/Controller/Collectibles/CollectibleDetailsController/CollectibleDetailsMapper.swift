@@ -92,9 +92,21 @@ struct CollectibleDetailsMapper {
   private func mapDetails(nft: NFT) -> CollectibleDetailsModel.Details {
     var items = [CollectibleDetailsModel.Details.Item]()
     if let owner = nft.owner {
-      items.append(.init(title: "Owner", value: owner.address.toShortString(bounceable: false)))
+      items.append(.init(
+        title: "Owner", 
+        value: .init(
+          short: owner.address.toShortString(bounceable: true),
+          full: owner.address.toString(bounceable: true)
+        )
+      ))
     }
-    items.append(.init(title: "Contract address", value: nft.address.toShortString(bounceable: true)))
+    items.append(.init(
+      title: "Contract address",
+      value: .init(
+        short: nft.address.toShortString(bounceable: true),
+        full: nft.address.toString(bounceable: true)
+      )
+    ))
     
     let url = URL.tonviewerURL.appendingPathComponent(nft.address.toRaw())
     return CollectibleDetailsModel.Details(items: items, url: url)

@@ -188,7 +188,9 @@ private extension WalletsListViewModelImplementation {
   func createHeaderItem() -> TKPullCardHeaderItem {
     var leftButton: TKPullCardHeaderItem.LeftButton?
     if model.isEditable {
-      let leftButtonModel = TKUIHeaderTitleIconButton.Model(title: isEditing ? TKLocales.Actions.done: TKLocales.Actions.edit)
+      let leftButtonModel = TKUIHeaderTitleIconButton.Model(
+        title: isEditing ? TKLocales.Actions.done: TKLocales.Actions.edit
+      )
       leftButton = TKPullCardHeaderItem.LeftButton(
         model: leftButtonModel) { [weak self] in
           self?.isEditing.toggle()

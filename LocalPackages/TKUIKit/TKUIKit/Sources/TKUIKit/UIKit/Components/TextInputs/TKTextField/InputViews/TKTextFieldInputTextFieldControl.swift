@@ -50,7 +50,6 @@ private extension TKTextInputTextFieldControl {
     keyboardType = .alphabet
     autocapitalizationType = .none
     autocorrectionType = .no
-    keyboardAppearance = .dark
     pasteDelegate = self
 
     addTarget(self, action: #selector(editingChanged), for: .editingChanged)

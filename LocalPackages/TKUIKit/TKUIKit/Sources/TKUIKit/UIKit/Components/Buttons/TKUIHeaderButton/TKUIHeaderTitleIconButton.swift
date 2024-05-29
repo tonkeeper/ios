@@ -17,13 +17,13 @@ public final class TKUIHeaderTitleIconButton: TKUIButton<TKUIButtonTitleIconCont
     switch buttonState {
     case .disabled:
       backgroundView.setBackgroundColor(.Button.secondaryBackground.withAlphaComponent(0.48))
-      buttonContentView.setForegroundColor(.Button.primaryForeground.withAlphaComponent(0.48))
+      buttonContentView.setForegroundColor(.Button.secondaryForeground.withAlphaComponent(0.48))
     case .highlighted:
       backgroundView.setBackgroundColor(.Button.secondaryBackground.withAlphaComponent(0.48))
-      buttonContentView.setForegroundColor(.Button.primaryForeground.withAlphaComponent(0.48))
+      buttonContentView.setForegroundColor(.Button.secondaryForeground.withAlphaComponent(0.48))
     case .normal:
       backgroundView.setBackgroundColor(.Button.secondaryBackground)
-      buttonContentView.setForegroundColor(.Button.primaryForeground)
+      buttonContentView.setForegroundColor(.Button.secondaryForeground)
     case .selected:
       break
     }

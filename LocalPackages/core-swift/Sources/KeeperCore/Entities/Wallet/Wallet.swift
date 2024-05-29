@@ -187,4 +187,8 @@ extension Wallet {
     }
     return true
   }
+  
+  public var isTonconnectAvailable: Bool {
+    isRegular || isTestnet
+  }
 }

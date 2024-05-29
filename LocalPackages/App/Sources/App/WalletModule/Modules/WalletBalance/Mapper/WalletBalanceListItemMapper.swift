@@ -19,7 +19,7 @@ struct WalletBalanceListItemMapper {
     
     let title = item.title.withTextStyle(
       .label1,
-      color: .white,
+      color: .Text.primary,
       alignment: .left,
       lineBreakMode: .byTruncatingTail
     )
@@ -56,7 +56,7 @@ struct WalletBalanceListItemMapper {
     
     let value = item.amount?.withTextStyle(
       .label1,
-      color: .white,
+      color: .Text.primary,
       alignment: .right,
       lineBreakMode: .byTruncatingTail
     )

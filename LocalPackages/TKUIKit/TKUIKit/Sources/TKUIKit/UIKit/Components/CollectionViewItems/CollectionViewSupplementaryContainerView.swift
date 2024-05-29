@@ -20,4 +20,10 @@ public final class CollectionViewSupplementaryContainerView: UICollectionReusabl
       contentView.rightAnchor.constraint(equalTo: rightAnchor)
     ])
   }
+  
+  public override func prepareForReuse() {
+    super.prepareForReuse()
+    contentView?.removeFromSuperview()
+    contentView = nil
+  }
 }

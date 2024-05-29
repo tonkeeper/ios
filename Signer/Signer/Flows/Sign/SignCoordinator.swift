@@ -63,6 +63,10 @@ private extension SignCoordinator {
     module.output.didOpenEmulateURL = { url in
       UIApplication.shared.open(url: url)
     }
+    module.output.didOpenEmulateQRCode = { [weak self, weak bottomSheetViewController] url in
+      guard let bottomSheetViewController else { return }
+      self?.openEmulateQRCode(url: url, fromViewController: bottomSheetViewController)
+    }
     
     bottomSheetViewController.present(fromViewController: rootViewController)
   }
@@ -124,5 +128,20 @@ private extension SignCoordinator {
     navigationController.modalTransitionStyle = .crossDissolve
     
     fromViewController.present(navigationController, animated: true)
+  }
+  
+  func openEmulateQRCode(url: URL, fromViewController: UIViewController) {
+    let module = EmulateQRCodeAssembly.module(
+      signerCoreAssembly: signerCoreAssembly,
+      url: url
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    module.output.didTapClose = { [weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss()
+    }
+    
+    bottomSheetViewController.present(fromViewController: fromViewController)
   }
 }

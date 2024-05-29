@@ -25,6 +25,7 @@ final class SignConfirmationBocView: UIView, ConfigurableView {
   
   let emulateButton = TKButton()
   let copyButton = TKButton()
+  let emulateQRCodeButton = TKButton()
   
   private let buttonsStackView: UIStackView = {
     let stackView = UIStackView()
@@ -52,12 +53,14 @@ final class SignConfirmationBocView: UIView, ConfigurableView {
     let boc: String
     let emulateButtonConfiguration: TKButton.Configuration
     let copyButtonConfiguration: TKButton.Configuration
+    let emulateQRCodeButtonConfiguration: TKButton.Configuration
   }
   
   func configure(model: Model) {
     textView.text = model.boc
     emulateButton.configuration = model.emulateButtonConfiguration
     copyButton.configuration = model.copyButtonConfiguration
+    emulateQRCodeButton.configuration = model.emulateQRCodeButtonConfiguration
   }
 }
 
@@ -73,6 +76,7 @@ private extension SignConfirmationBocView {
     buttonsWrapper.addArrangedSubview(buttonsStackView)
     buttonsStackView.addArrangedSubview(emulateButton)
     buttonsStackView.addArrangedSubview(copyButton)
+    buttonsStackView.addArrangedSubview(emulateQRCodeButton)
     
     setupConstraints()
   }

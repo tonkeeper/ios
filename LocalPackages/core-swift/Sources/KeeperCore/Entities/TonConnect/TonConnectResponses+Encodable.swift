@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 import TweetNacl
 
-extension TonConnect.ConnectEvent {
+public extension TonConnect.ConnectEvent {
   func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {
@@ -14,7 +14,7 @@ extension TonConnect.ConnectEvent {
   }
 }
 
-extension TonConnect.ConnectItemReply {
+public extension TonConnect.ConnectItemReply {
   func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {
@@ -26,7 +26,7 @@ extension TonConnect.ConnectItemReply {
   }
 }
 
-extension TonConnect.TonProofItemReply {
+public extension TonConnect.TonProofItemReply {
   func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {
@@ -38,7 +38,7 @@ extension TonConnect.TonProofItemReply {
   }
 }
 
-extension TonConnect.TonAddressItemReply {
+public extension TonConnect.TonAddressItemReply {
   enum CodingKeys: String, CodingKey {
     case name
     case address
@@ -61,7 +61,7 @@ extension TonConnect.TonAddressItemReply {
   }
 }
 
-extension TonConnect.TonProofItemReplySuccess.Signature {
+public extension TonConnect.TonProofItemReplySuccess.Signature {
   func data() -> Data {
     let string = "ton-proof-item-v2/".data(using: .utf8)!
     let addressWorkchain = UInt32(bigEndian: UInt32(address.workchain))
@@ -83,7 +83,7 @@ extension TonConnect.TonProofItemReplySuccess.Signature {
   }
 }
 
-extension TonConnect.TonProofItemReplySuccess.Proof {
+public extension TonConnect.TonProofItemReplySuccess.Proof {
   enum CodingKeys: String, CodingKey {
     case timestamp
     case domain
@@ -113,7 +113,7 @@ extension TonConnect.TonProofItemReplySuccess.Proof {
 }
 
 extension TonConnect.SendTransactionResponse: Encodable {
-  func encode(to encoder: Encoder) throws {
+  public func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {
     case .success(let success):

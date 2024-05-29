@@ -6,20 +6,28 @@ extension HistoryCellActionView {
     
     let textBackground: UIView = {
       let view = UIView()
-      view.backgroundColor = .Background.contentTint
+      view.backgroundColor = .Bubble.background
       view.layer.cornerRadius = .cornerRadius
       return view
     }()
     
     let textLabel: UILabel = {
       let label = UILabel()
-      label.backgroundColor = .Background.contentTint
+      label.backgroundColor = .Bubble.background
       label.numberOfLines = 0
       return label
     }()
     
     struct Configuration: Hashable {
       let comment: NSAttributedString
+      
+      init(comment: NSAttributedString) {
+        self.comment = comment
+      }
+      
+      init(comment: String) {
+        self.comment = comment.withTextStyle(.body2, color: .Bubble.foreground)
+      }
     }
     
     override init(frame: CGRect) {

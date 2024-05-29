@@ -315,7 +315,7 @@ private extension WalletBalanceViewModelImplementation {
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true
-      isSwapEnable = false
+      isSwapEnable = true
       isBuyEnable = true
       isStakeEnable = false
     }

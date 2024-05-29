@@ -85,13 +85,13 @@ extension HistoryCellActionView {
         self.imageUrl = imageUrl
         self.name = name?.withTextStyle(
           .body2,
-          color: .Text.primary,
+          color: .Bubble.foreground,
           alignment: .left,
           lineBreakMode: .byTruncatingTail
         )
         self.collectionName = collectionName?.withTextStyle(
           .body2,
-          color: .Text.secondary,
+          color: .Bubble.foreground.withAlphaComponent(0.64),
           alignment: .left,
           lineBreakMode: .byTruncatingTail
         )
@@ -143,7 +143,7 @@ private extension HistoryCellActionView.NFTView {
   func setup() {
     isExclusiveTouch = true
     
-    contentView.backgroundColor = .Background.contentTint
+    contentView.backgroundColor = .Bubble.background
     contentView.isUserInteractionEnabled = false
     
     contentView.layer.cornerRadius = .cornerRadius

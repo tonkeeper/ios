@@ -11,6 +11,7 @@ public struct TonTransferMessageBuilder {
                                      recipientAddress: Address,
                                      isBounceable: Bool = true,
                                      comment: String?,
+                                     timeout: UInt64?,
                                      signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     return try await ExternalMessageTransferBuilder.externalMessageTransfer(
       wallet: wallet,
@@ -31,6 +32,7 @@ public struct TonTransferMessageBuilder {
         }
         return [internalMessage]
       },
+      timeout: timeout,
       signClosure: signClosure)
   }
 }
@@ -59,6 +61,7 @@ public struct TonConnectTransferMessageBuilder {
                                             seqno: UInt64,
                                             payloads: [Payload],
                                             sender: Address? = nil,
+                                            timeout: UInt64?,
                                             signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let messages = try payloads.map { payload in
       var stateInit: StateInit?
@@ -87,6 +90,7 @@ public struct TonConnectTransferMessageBuilder {
         seqno: seqno, internalMessages: { sender in
           messages
         },
+        timeout: timeout,
         signClosure: signClosure)
   }
 }
@@ -100,6 +104,7 @@ public struct TokenTransferMessageBuilder {
                                        recipientAddress: Address,
                                        isBounceable: Bool = true,
                                        comment: String?,
+                                       timeout: UInt64?,
                                        signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     return try await ExternalMessageTransferBuilder
       .externalMessageTransfer(
@@ -116,6 +121,7 @@ public struct TokenTransferMessageBuilder {
           )
           return [internalMessage]
         },
+        timeout: timeout,
         signClosure: signClosure)
   }
 }
@@ -130,6 +136,7 @@ public struct SwapMessageBuilder {
                               jettonFromWalletAddress: Address,
                               forwardAmount: BigUInt,
                               attachedAmount: BigUInt,
+                              timeout: UInt64?,
                               signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     
         
@@ -150,6 +157,7 @@ public struct SwapMessageBuilder {
         seqno: seqno, internalMessages: { sender in
           return [internalMessage]
         },
+        timeout: timeout,
         signClosure: signClosure)
   }
 }
@@ -162,6 +170,8 @@ public struct NFTTransferMessageBuilder {
                                      recipientAddress: Address,
                                      isBounceable: Bool = true,
                                      transferAmount: BigUInt,
+                                     timeout: UInt64?,
+                                     forwardPayload: Cell?,
                                      signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     return try await ExternalMessageTransferBuilder
       .externalMessageTransfer(
@@ -174,9 +184,10 @@ public struct NFTTransferMessageBuilder {
             bounce: isBounceable,
             to: recipientAddress,
             from: sender,
-            forwardPayload: nil)
+            forwardPayload: forwardPayload)
           return [internalMessage]
         },
+        timeout: timeout,
         signClosure: signClosure)
   }
 }
@@ -188,13 +199,14 @@ public struct ExternalMessageTransferBuilder {
                                              sendMode: SendMode = .walletDefault(),
                                              seqno: UInt64,
                                              internalMessages: (_ sender: Address) throws -> [MessageRelaxed],
+                                             timeout: UInt64?,
                                              signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let internalMessages = try internalMessages(sender)
     let transferData = WalletTransferData(
       seqno: seqno,
       messages: internalMessages,
       sendMode: sendMode,
-      timeout: nil)
+      timeout: timeout)
     let contract = try wallet.contract
     let transfer = try contract.createTransfer(args: transferData)
     let signedTransfer = try await signClosure(transfer)
