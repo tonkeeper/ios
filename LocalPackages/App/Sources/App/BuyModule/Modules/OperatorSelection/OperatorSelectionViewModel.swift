@@ -7,7 +7,9 @@ import BigInt
 
 enum OperatorSelectionSection: Hashable {
   case currency
+  case currencyShimmer
   case items
+  case itemsShimmer
 }
 
 protocol OperatorSelectionViewModelOutput: AnyObject {
@@ -66,6 +68,8 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
   }
   
   func viewDidLoad() {
+    showInitialLoading()
+    
     buyListController.didUpdateMethods = { [weak self] methods in
       self?.didUpdateMethods(methods)
     }
@@ -74,8 +78,6 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
       let currency = await settingsController.activeCurrency()
       didUpdateCurrency(currency)
     }
-    
-    // TODO: setup loading snapshot?
   }
   
   func didTapContinueButton() {
@@ -117,14 +119,23 @@ final class OperatorSelectionViewModelImplementation: OperatorSelectionViewModel
     }
   }
   
+  private func showInitialLoading() {
+    snapshot.deleteAllItems()
+    snapshot.appendSections([.currencyShimmer])
+    snapshot.appendSections([.itemsShimmer])
+    didUpdateSnapshot?(snapshot)
+  }
+  
   private func update(currency: Currency) {
     snapshot.deleteAllItems()
     snapshot.appendSections([.currency])
     snapshot.appendItems([createCurrencyCell(currency: currency)])
+    snapshot.appendSections([.itemsShimmer])
     didUpdateSnapshot?(snapshot)
   }
   
   private func update(models: [BuySellItemModel]) {
+    snapshot.deleteSections([.itemsShimmer])
     snapshot.deleteSections([.items])
     snapshot.appendSections([.items])
     let items = models.map {

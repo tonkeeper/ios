@@ -3,6 +3,8 @@ import TKLocalize
 import TKUIKit
 
 final class OperatorSelectionViewController: GenericViewViewController<OperatorSelectionView> {
+  typealias CurrencyShimmerView = TKCollectionViewSupplementaryContainerView<OperatorSelectionCurrencyShimmerView>
+  typealias ListShimmerView = TKCollectionViewSupplementaryContainerView<OperatorsListShimmerView>
   
   // MARK: - Module
   
@@ -22,6 +24,10 @@ final class OperatorSelectionViewController: GenericViewViewController<OperatorS
           return .currencySection
         case .items:
           return .operatorSection
+        case .currencyShimmer:
+          return .currencyShimmerSection
+        case .itemsShimmer:
+          return .listShimmerSection
         }
       },
       configuration: configuration
@@ -81,11 +87,22 @@ private extension OperatorSelectionViewController {
     continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
     continueButtonConfiguration.isEnabled = false
     customView.continueButton.configuration = continueButtonConfiguration
+    
+    customView.collectionView.register(
+      CurrencyShimmerView.self,
+      forSupplementaryViewOfKind: .currencyShimmerSectionFooterElementKind,
+      withReuseIdentifier: CurrencyShimmerView.reuseIdentifier
+    )
+    customView.collectionView.register(
+      ListShimmerView.self,
+      forSupplementaryViewOfKind: .listShimmerSectionFooterElementKind,
+      withReuseIdentifier: ListShimmerView.reuseIdentifier
+    )
   }
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
-      self?.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+      self?.dataSource.apply(snapshot, animatingDifferences: true, completion: {
       })
     }
     
@@ -117,6 +134,33 @@ private extension OperatorSelectionViewController {
         default: return nil
         }
       }
+    
+    dataSource.supplementaryViewProvider = { [weak dataSource] collectionView, kind, indexPath -> UICollectionReusableView? in
+      guard let dataSource else { return nil }
+      
+      let snapshot = dataSource.snapshot()
+      let section = snapshot.sectionIdentifiers[indexPath.section]
+      switch section {
+      case .currencyShimmer:
+        let shimmerView = collectionView.dequeueReusableSupplementaryView(
+          ofKind: kind,
+          withReuseIdentifier: CurrencyShimmerView.reuseIdentifier,
+          for: indexPath
+        )
+        (shimmerView as? CurrencyShimmerView)?.contentView.startAnimation()
+        return shimmerView
+      case .itemsShimmer:
+        let shimmerView = collectionView.dequeueReusableSupplementaryView(
+          ofKind: kind,
+          withReuseIdentifier: ListShimmerView.reuseIdentifier,
+          for: indexPath
+        )
+        (shimmerView as? ListShimmerView)?.contentView.startAnimation()
+        return shimmerView
+      default:
+        return nil
+      }
+    }
     
     return dataSource
   }
@@ -154,6 +198,11 @@ extension OperatorSelectionViewController: UICollectionViewDelegate {
       return
     }
   }
+}
+
+private extension String {
+  static let currencyShimmerSectionFooterElementKind = "CurrencyShimmerSectionFooterElementKind"
+  static let listShimmerSectionFooterElementKind = "ListShimmerSectionFooterElementKind"
 }
 
 private extension NSCollectionLayoutSection {
@@ -206,6 +255,60 @@ private extension NSCollectionLayoutSection {
       bottom: 16,
       trailing: 16
     )
+    return section
+  }
+  
+  static var currencyShimmerSection: NSCollectionLayoutSection {
+    let item = NSCollectionLayoutItem(layoutSize: .init(widthDimension: .fractionalWidth(1.0),
+                                                        heightDimension: .absolute(1)))
+    let group = NSCollectionLayoutGroup.vertical(
+      layoutSize: .init(widthDimension: .fractionalWidth(1.0),
+                        heightDimension: .absolute(1)),
+      subitems: [item]
+    )
+    let section = NSCollectionLayoutSection(group: group)
+    let footerSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(56)
+    )
+    let footer = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: footerSize,
+      elementKind: .currencyShimmerSectionFooterElementKind,
+      alignment: .top
+    )
+    section.boundarySupplementaryItems = [footer]
+    section.contentInsets = NSDirectionalEdgeInsets(
+      top: 0,
+      leading: 0,
+      bottom: 16,
+      trailing: 0
+    )
+    
+    return section
+  }
+  
+  static var listShimmerSection: NSCollectionLayoutSection {
+    let item = NSCollectionLayoutItem(layoutSize: .init(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .absolute(1))
+    )
+    let group = NSCollectionLayoutGroup.vertical(
+      layoutSize: .init(widthDimension: .fractionalWidth(1.0),
+                        heightDimension: .absolute(1)),
+      subitems: [item]
+    )
+    let section = NSCollectionLayoutSection(group: group)
+    let footerSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(228)
+    )
+    let footer = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: footerSize,
+      elementKind: .listShimmerSectionFooterElementKind,
+      alignment: .bottom
+    )
+    section.boundarySupplementaryItems = [footer]
+    
     return section
   }
 }
