@@ -30,7 +30,11 @@ final class BuyAmountInputViewController: GenericViewViewController<BuyAmountInp
     }
   }
   
-  private let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
+  var amount: Double? {
+    Double(sendAmountTextFieldFormatter.unformatString(customView.inputControl.amountTextField.text) ?? "")
+  }
+  
+  let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
     let numberFormatter = NumberFormatter()
     numberFormatter.groupingSeparator = " "
     numberFormatter.groupingSize = 3

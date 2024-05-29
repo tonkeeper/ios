@@ -4,13 +4,11 @@ import BigInt
 
 protocol BuySellAmountModuleOutput: AnyObject {
   var didUpdateIsContinueEnable: ((Bool) -> Void)? { get set }
-  var didFinish: ((Token, BigUInt) -> Void)? { get set }
-  var didTapTokenPicker: ((Wallet, Token) -> Void)? { get set }
+  var didFinish: ((FiatMethods, [BuySellItemModel], String, BuySellRateItemsResponse, Double, Bool) -> Void)? { get set }
   var onOpenCurrencyPicker: (([FiatMethodLayout], String) -> Void)? { get set }
 }
 
 protocol BuySellAmountModuleInput: AnyObject {
-  func finish()
   func setToken(token: Token)
   func updateCurrency(to item: String)
 }
@@ -25,14 +23,16 @@ protocol BuySellAmountViewModel: AnyObject {
   var didUpdateRemaining: ((NSAttributedString) -> Void)? { get set }
   var didUpdateCurrency: ((Currency) -> Void)? { get set }
   func openCurrencyPicker()
+  var onUpdateMinAmountLabel: ((BuySellRateItemsResponse?) -> Void)? { get set }
   
   func viewDidLoad()
   func viewDidAppear()
   func viewWillDisappear()
   func didEditInput(_ input: String?)
   func toggleInputMode()
-  func toggleMax()
-  func didTapTokenPickerButton()
+  func finish(isBuying: Bool, amount: Double)
+  func format(amount: Int64) -> String
+  func refreshMinAmount()
   var currencies: [FiatMethodLayout] { get set }
 }
 
@@ -43,14 +43,20 @@ final class BuySellAmountViewModelImplementation: BuySellAmountViewModel,
   // MARK: - SendAmountModuleOutput
   
   var didUpdateIsContinueEnable: ((Bool) -> Void)?
-  var didFinish: ((Token, BigUInt) -> Void)?
-  var didTapTokenPicker: ((Wallet, Token) -> Void)?
+  var didFinish: ((FiatMethods, [BuySellItemModel], String, BuySellRateItemsResponse, Double, Bool) -> Void)?
   var onOpenCurrencyPicker: (([FiatMethodLayout], String) -> Void)?
+  var onUpdateMinAmountLabel: ((BuySellRateItemsResponse?) -> Void)?
   
   // MARK: - SendAmountModuleInput
   
-  func finish() {
-    didFinish?(buySellAmountController.getToken(), buySellAmountController.getTokenAmount())
+  func finish(isBuying: Bool, amount: Double) {
+    guard let rates = buySellAmountController.rates else {
+      return
+    }
+    guard let fiatMethods = buySellAmountController.fiatMethods else {
+      return
+    }
+    didFinish?(fiatMethods, isBuying ? methods[0] : methods[1], selectedCurrency.code, rates, amount, isBuying)
   }
   
   func setToken(token: Token) {
@@ -58,6 +64,7 @@ final class BuySellAmountViewModelImplementation: BuySellAmountViewModel,
   }
   
   func updateCurrency(to item: String) {
+    buySellAmountController.rates = nil
     Task {
       self.selectedCurrency = await buySellAmountController.getActiveCurrency()
       await MainActor.run {
@@ -68,9 +75,21 @@ final class BuySellAmountViewModelImplementation: BuySellAmountViewModel,
         }*/
         didUpdateCurrency?(self.selectedCurrency)
       }
+      await buySellAmountController.updateBuySellRates()
+      await MainActor.run {
+        onUpdateMinAmountLabel?(buySellAmountController.rates)
+      }
     }
   }
   
+  func format(amount: Int64) -> String {
+    return buySellAmountController.amountFormatter.formatAmount(BigUInt(amount), fractionDigits: 9, maximumFractionDigits: 9)
+  }
+
+  func refreshMinAmount() {
+    onUpdateMinAmountLabel?(buySellAmountController.rates)
+  }
+
   // MARK: - SendAmountViewModel
   
   var didUpdateConvertedValue: ((String) -> Void)?
@@ -80,6 +99,7 @@ final class BuySellAmountViewModelImplementation: BuySellAmountViewModel,
   var didUpdateIsTokenPickerAvailable: ((Bool) -> Void)?
   var didUpdateRemaining: ((NSAttributedString) -> Void)?
   var didUpdateCurrency: ((Currency) -> Void)?
+  var methods = [[BuySellItemModel]]()
   var currencies: [FiatMethodLayout] = []
   var selectedCurrency: Currency = .USD
   
@@ -133,7 +153,7 @@ final class BuySellAmountViewModelImplementation: BuySellAmountViewModel,
     
     buySellAmountController.didUpdateMethods = { [weak self] (methods, currencies) in
       guard let self else { return }
-      //self.methods = methods
+      self.methods = methods
       self.currencies = currencies
     }
     
@@ -159,10 +179,6 @@ final class BuySellAmountViewModelImplementation: BuySellAmountViewModel,
   
   func toggleMax() {
     buySellAmountController.toggleMax()
-  }
-  
-  func didTapTokenPickerButton() {
-    didTapTokenPicker?(buySellAmountController.wallet, buySellAmountController.token)
   }
   
   func openCurrencyPicker() {

@@ -7,6 +7,7 @@ final class BuySellAmountView: UIView {
   
   let container = UIView()
   let amountInputContainer = UIView()
+  var onModeChanged: (() -> Void)?
   
   let creditCardRow = {
     let stackView = UIStackView()
@@ -46,6 +47,11 @@ final class BuySellAmountView: UIView {
     return stackView
   }()
   
+  var isBuying = true {
+    didSet {
+      onModeChanged?()
+    }
+  }
   var buyButton: TKButton!
   var sellButton: TKButton!
   var selectedBuyItemLine: UIView!
@@ -62,6 +68,7 @@ final class BuySellAmountView: UIView {
       selectedSellItemLine.alpha = 0
       buyButton.configuration.textColor = .Text.primary
       sellButton.configuration.textColor = .Text.secondary
+      isBuying = true
     }
 
     sellButton = TKButton(configuration: .accentButtonConfiguration(padding: .zero))
@@ -73,6 +80,7 @@ final class BuySellAmountView: UIView {
       selectedSellItemLine.alpha = 1
       buyButton.configuration.textColor = .Text.secondary
       sellButton.configuration.textColor = .Text.primary
+      isBuying = false
     }
     
     selectedBuyItemLine = UIView()

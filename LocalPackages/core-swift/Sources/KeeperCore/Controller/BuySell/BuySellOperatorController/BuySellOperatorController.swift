@@ -1,7 +1,7 @@
 import Foundation
 import BigInt
 
-public final class BuySellAmountController {
+public final class BuySellOperatorController {
   
   public enum Remaining {
     case remaining(String)
@@ -16,7 +16,6 @@ public final class BuySellAmountController {
   public var didUpdateIsContinueEnabled: ((Bool) -> Void)?
   public var didUpdateRemaining: ((Remaining) -> Void)?
   public var didUpdateMethods: (([[BuySellItemModel]], [FiatMethodLayout]) -> Void)?
-  public var didUpdateRates: (() -> Void)?
   
   private var isTokenAmountInput = true {
     didSet {
@@ -47,7 +46,7 @@ public final class BuySellAmountController {
   private let rateConverter: RateConverter
   private let locationService: LocationService
   private let configurationStore: ConfigurationStore
-  public let amountFormatter: AmountFormatter
+  private let amountFormatter: AmountFormatter
   private let isMarketRegionPickerAvailable: () async -> Bool
   
   init(token: Token,
@@ -102,42 +101,22 @@ public final class BuySellAmountController {
       }
     }
     Task {
-      await updateFiatMethodData()
+      if let cachedMethods = try? buySellMethodsService.getFiatMethods() {
+        let models = await mapFiatMethods(cachedMethods)
+        didUpdateMethods?(models, cachedMethods.layoutByCountry)
+      }
+      
+      do {
+        let models = try await loadFiatMethods()
+        didUpdateMethods?(models.0, models.1)
+      } catch {
+        didUpdateMethods?([], [])
+      }
     }
-  }
-  
-  private func updateFiatMethodData() async {
-    if let cachedMethods = try? buySellMethodsService.getFiatMethods() {
-      let models = await mapFiatMethods(cachedMethods)
-      didUpdateMethods?(models, cachedMethods.layoutByCountry)
-    }
-    
-    do {
-      let models = try await loadFiatMethods()
-      didUpdateMethods?(models.0, models.1)
-    } catch {
-      didUpdateMethods?([], [])
-    }
-  }
-  
-  public var fiatMethods: FiatMethods? {
-    try? buySellMethodsService.getFiatMethods()
   }
   
   public func getActiveCurrency() async -> Currency {
-    self.currency = await currencyStore.getActiveCurrency()
-    updateRates()
-    return currency
-  }
-  
-  public var rates: BuySellRateItemsResponse? = nil
-  public func updateBuySellRates() async {
-    await updateFiatMethodData()
-    let rates = try? await buySellMethodsService.loadRate(currency: await getActiveCurrency().code)
-    self.rates = rates
-    await MainActor.run { [weak self] in
-      self?.didUpdateRates?()
-    }
+    await currencyStore.getActiveCurrency()
   }
   
   public func toggleMode() {
@@ -171,7 +150,7 @@ public final class BuySellAmountController {
   }
 }
 
-private extension BuySellAmountController {
+private extension BuySellOperatorController {
   func updateInputValue() {
     if isTokenAmountInput {
       let formatted = amountFormatter.formatAmount(
@@ -262,9 +241,6 @@ private extension BuySellAmountController {
       rates = ratesStore.getRates(jettons: [jettonItem.jettonInfo]).jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates ?? []
     }
     self.rate = rates.first(where: { $0.currency == currency })
-    DispatchQueue.main.async {
-      self.updateConvertedValue()
-    }
   }
   
   func convertInputStringToAmount(input: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
@@ -413,7 +389,7 @@ private extension String {
   }
 }
 
-private extension BuySellAmountController {
+private extension BuySellOperatorController {
   func loadFiatMethods() async throws -> ([[BuySellItemModel]], [FiatMethodLayout]) {
     if await !isMarketRegionPickerAvailable() {
       return try await loadFiatMethodsByLocationRequired()
@@ -472,7 +448,7 @@ func actionUrl(for item: FiatMethodItem, currency: Currency) async -> URL? {
   
   let currTo: String
   switch item.id {
-  case "neocrypto", "moonpay", "transak":
+  case "neocrypto", "moonpay":
     currTo = "TON"
   case "mercuryo":
     await handleUrlForMercuryo(urlString: &urlString, walletAddress: address)
@@ -500,6 +476,6 @@ func actionUrl(for item: FiatMethodItem, currency: Currency) async -> URL? {
   }
 
   private var availableFiatMethods: [FiatMethodItem.ID] {
-      ["mercuryo", "neocrypto", "moonpay", "transak"]
+      ["mercuryo", "neocrypto", "moonpay"]
   }
 }

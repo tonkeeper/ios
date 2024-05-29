@@ -557,7 +557,19 @@ public enum TKLocales {
   }
   public enum BuySell {
     public static var creditCard: String {
-      localize("swap_confirmation.creditCard")
+      localize("buy_sell.creditCard")
+    }
+    public static var instantBuy: String {
+      localize("buy_sell.instantBuy")
+    }
+    public static var instantSell: String {
+      localize("buy_sell.instantSell")
+    }
+    public static var youPay: String {
+      localize("buy_sell.youPay")
+    }
+    public static var youGet: String {
+      localize("buy_sell.youGet")
     }
   }
   public enum CustomizeWallet {

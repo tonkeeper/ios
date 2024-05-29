@@ -5,6 +5,7 @@ protocol BuySellMethodsService {
   func loadFiatMethods(countryCode: String?) async throws -> FiatMethods
   func getFiatMethods() throws -> FiatMethods
   func saveFiatMethods(_ fiatMethods: FiatMethods) throws
+  func loadRate(currency: String) async throws -> BuySellRateItemsResponse
 }
 
 final class BuySellMethodsServiceImplementation: BuySellMethodsService {
@@ -28,5 +29,9 @@ final class BuySellMethodsServiceImplementation: BuySellMethodsService {
   
   func saveFiatMethods(_ fiatMethods: FiatMethods) throws {
     try buySellMethodsRepository.saveFiatMethods(fiatMethods)
+  }
+  
+  func loadRate(currency: String) async throws -> BuySellRateItemsResponse {
+    try await api.loadRates(currency: currency)
   }
 }

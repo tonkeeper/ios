@@ -49,6 +49,16 @@ private extension BuySellCoordinator {
       })
     }
     
+    module.output.didFinish = { [weak self] fiatMethods, operators, selectedCurrency, rates, amount, isBuying in
+      self?.openOperatorPicker(on: nav,
+                               fiatMethods: fiatMethods,
+                               operators: operators,
+                               selectedCurrency: selectedCurrency,
+                               rates: rates,
+                               amount: amount,
+                               isBuying: isBuying)
+    }
+    
     router.rootViewController.present(nav, animated: true)
   }
   
@@ -62,5 +72,21 @@ private extension BuySellCoordinator {
     }
     
     nav.pushViewController(module.viewController, animated: true)
+  }
+  
+  func openOperatorPicker(on nav: UINavigationController,
+                          fiatMethods: FiatMethods,
+                          operators: [BuySellItemModel],
+                          selectedCurrency: String,
+                          rates: BuySellRateItemsResponse,
+                          amount: Double,
+                          isBuying: Bool) {
+    let operatorViewController = BuySellOperatorViewController(fiatMethods: fiatMethods,
+                                                               operators: operators,
+                                                               selectedCurrency: selectedCurrency,
+                                                               rates: rates,
+                                                               amount: amount,
+                                                               isBuying: isBuying)
+    nav.pushViewController(operatorViewController, animated: true)
   }
 }

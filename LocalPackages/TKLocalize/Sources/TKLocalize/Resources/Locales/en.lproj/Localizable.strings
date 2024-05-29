@@ -146,7 +146,11 @@
 "swap_confirmation.title" = "Confirm Swap";
 "swap_confirmation.confirm" = "Confirm";
 
-"swap_confirmation.creditCard" = "Credit Card";
+"buy_sell.creditCard" = "Credit Card";
+"buy_sell.instantBuy" = "Instantly buy with a credit card";
+"buy_sell.instantSell" = "Instantly sell with a credit card";
+"buy_sell.youPay" = "You pay";
+"buy_sell.youGet" = "You get";
 
 "customize_wallet.title" = "Customize your Wallet";
 "customize_wallet.description" = "Wallet name and icon are stored locally on your device.";

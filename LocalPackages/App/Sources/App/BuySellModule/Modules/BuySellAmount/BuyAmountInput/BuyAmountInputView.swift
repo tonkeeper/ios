@@ -20,6 +20,13 @@ final class BuyAmountInputView: UIView {
     return button
   }()
   
+  let minAmountLabel: UILabel = {
+    let lbl = UILabel()
+    lbl.font = TKTextStyle.body2.font
+    lbl.textColor = .Text.secondary
+    return lbl
+  }()
+  
   private let container = UIView()
   
   override init(frame: CGRect) {
@@ -47,6 +54,7 @@ private extension BuyAmountInputView {
     addSubview(container)
     container.addSubview(inputControl)
     container.addSubview(convertedButton)
+    container.addSubview(minAmountLabel)
     
     setupConstraints()
   }
@@ -67,6 +75,11 @@ private extension BuyAmountInputView {
       make.top.equalTo(inputControl.snp.bottom).offset(CGFloat.convertedButtonTopSpace)
       make.left.greaterThanOrEqualTo(container).offset(16)
       make.right.lessThanOrEqualTo(container).offset(-16)
+      make.centerX.equalTo(container)
+    }
+    
+    minAmountLabel.snp.makeConstraints { make in
+      make.top.equalTo(convertedButton.snp.bottom).offset(12)
       make.centerX.equalTo(container)
     }
   }

@@ -2,7 +2,7 @@ import UIKit
 
 public class TKCheckBox: UIView {
 
-  var isChecked: Bool = true {
+  public var isChecked: Bool = true {
     didSet {
       setNeedsDisplay()
     }
@@ -35,7 +35,7 @@ public class TKCheckBox: UIView {
     
     if let context = UIGraphicsGetCurrentContext() {
       // Draw outer circle
-      context.setStrokeColor(UIColor.systemBlue.cgColor)
+      context.setStrokeColor(isChecked ? UIColor.systemBlue.cgColor : UIColor.Text.secondary.cgColor)
       context.setLineWidth(2)
       context.strokeEllipse(in: outerCircleRect)
       

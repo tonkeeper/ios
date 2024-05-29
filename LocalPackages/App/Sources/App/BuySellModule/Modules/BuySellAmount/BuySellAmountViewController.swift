@@ -75,6 +75,27 @@ private extension BuySellAmountViewController {
     viewModel.didUpdateCurrency = { [weak self] currency in
       guard let self else {return}
       customView.currencyButton.configuration.content.title = .plainString(currency.code)
+      amountInputViewController
+    }
+
+    customView.continueButton.configuration.action = { [weak self] in
+      guard let self else {return}
+      viewModel.finish(isBuying: customView.isBuying, amount: amountInputViewController.amount ?? 0)
+    }
+    
+    viewModel.onUpdateMinAmountLabel = { [weak self] rates in
+      guard let self else {return}
+      guard let rates else {return}
+      let minAmount = rates.items.filter({ it in
+        return self.customView.isBuying ? it.minTonBuyAmount != nil : it.minTonSellAmount != nil
+      }).map { it in
+        return self.customView.isBuying ? it.minTonBuyAmount! : it.minTonSellAmount!
+      }.min()
+      guard let minAmount else {
+        amountInputViewController.customView.minAmountLabel.text = ""
+        return
+      }
+      amountInputViewController.customView.minAmountLabel.text = "Min amount: \(viewModel.format(amount: minAmount)) TON"
     }
   }
   
@@ -85,6 +106,10 @@ private extension BuySellAmountViewController {
     
     amountInputViewController.didToggle = { [weak viewModel] in
       viewModel?.toggleInputMode()
+    }
+    
+    customView.onModeChanged = { [weak self] in
+      self?.viewModel.refreshMinAmount()
     }
   }
 }

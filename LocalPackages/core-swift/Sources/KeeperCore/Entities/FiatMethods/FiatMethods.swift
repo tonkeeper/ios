@@ -14,12 +14,12 @@ public struct FiatMethodItem: Codable {
   }
   
   let id: ID
-  let title: String
+  public let title: String
   let isDisabled: Bool?
   let badge: String?
   let subtitle: String?
   let description: String?
-  let iconURL: URL?
+  public let iconURL: URL?
   let actionButton: ActionButton
   let infoButtons: [ActionButton]
   
@@ -36,7 +36,7 @@ public struct FiatMethodItem: Codable {
   }
 }
 
-struct FiatMethodCategory: Codable {
+public struct FiatMethodCategory: Codable {
   enum CategoryType: String, Codable {
     case buy
     case sell
@@ -54,10 +54,10 @@ public struct FiatMethodLayout: Codable {
   public let methods: [FiatMethodItem.ID]
 }
 
-struct FiatMethods: Codable {
-  let layoutByCountry: [FiatMethodLayout]
-  let defaultLayout: FiatMethodLayout
-  let categories: [FiatMethodCategory]
+public struct FiatMethods: Codable {
+  public let layoutByCountry: [FiatMethodLayout]
+  public let defaultLayout: FiatMethodLayout
+  public let categories: [FiatMethodCategory]
 }
 
 struct FiatMethodsResponse: Codable {
