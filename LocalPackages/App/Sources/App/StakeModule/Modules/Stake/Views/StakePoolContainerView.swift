@@ -10,6 +10,8 @@ final class StakePoolContainerView: UIControl, ConfigurableView {
     }
   }
   
+  private var didTapClosure: (() -> Void)?
+  
   private let listItemView = TKUIListItemView()
   private let highlightView = UIView()
 
@@ -41,27 +43,29 @@ final class StakePoolContainerView: UIControl, ConfigurableView {
         accessoryConfiguration: model.accessory
       )
     )
-    
-    addAction(UIAction(handler: { _ in
-      model.selectionClosure?()
-    }), for: .touchUpInside)
+  
+    didTapClosure = model.selectionClosure
   }
 }
 
 private extension StakePoolContainerView {
   func setup() {
-    backgroundColor = .Background.content
     layer.cornerRadius = 16
     layer.masksToBounds = true
     
     listItemView.isUserInteractionEnabled = false
     highlightView.isUserInteractionEnabled = false
 
+    backgroundColor = .Background.content
     highlightView.backgroundColor = .Background.highlighted
     highlightView.alpha = 0
     
     addSubview(highlightView)
     addSubview(listItemView)
+    
+    addAction(UIAction(handler: { [weak self] _ in
+      self?.didTapClosure?()
+    }), for: .touchUpInside)
     
     setupConstraints()
   }

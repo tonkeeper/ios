@@ -515,6 +515,10 @@ public final class MainAssembly {
       amountNewFormatter: formattersAssembly.amountNewFormatter
     )
   }
+  
+  public func stakeOptionsController() -> StakeOptionsController {
+    StakeOptionsController()
+  }
 }
 
 private extension MainAssembly {

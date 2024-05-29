@@ -303,5 +303,17 @@ public extension UIImage.TKUIKit.Images {
     public static var tonstakers: UIImage {
       .imageWithName("Images/Pools/Tonstakers")
     }
+    public static var bemo: UIImage {
+      .imageWithName("Images/Pools/Bemo")
+    }
+    public static var tonWhales: UIImage {
+      .imageWithName("Images/Pools/TONWhales")
+    }
+    public static var tonNominators: UIImage {
+      .imageWithName("Images/Pools/TONNominators")
+    }
+    public static var tonkeeperPool1: UIImage {
+      .imageWithName("Images/Pools/TonkeeperPool1")
+    }
   }
 }

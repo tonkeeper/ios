@@ -5,17 +5,19 @@ import KeeperCore
 import BigInt
 
 protocol StakeModuleOutput: AnyObject {
+  var didTapStakePool: (() -> Void)? { get set }
   var didTapContinue: (() -> Void)? { get set }
 }
 
 protocol StakeModuleInput: AnyObject {
-  
+  func didSelectPool(_ pool: StakePool)
 }
 
 protocol StakeViewModel: AnyObject {
   var didUpdateModel: ((StakeView.Model) -> Void)? { get set }
   var didUpdateInputAmountText: ((String) -> Void)? { get set }
   var didUpdateAvailableTitle: ((NSAttributedString) -> Void)? { get set }
+  var didUpdateSelectedPool: ((StakePoolContainerView.Model) -> Void)? { get set }
   
   var textFieldFormatter: InputAmountTextFieldFormatter { get }
   
@@ -34,15 +36,22 @@ final class StakeViewModelImplementation: StakeViewModel, StakeModuleOutput, Sta
   
   // MARK: - StakeModuleOutput
   
+  var didTapStakePool: (() -> Void)?
   var didTapContinue: (() -> Void)?
   
   // MARK: - StakeModuleInput
+  
+  func didSelectPool(_ pool: StakePool) {
+    selectedPool = pool
+    didUpdateSelectedPool?(createPoolContainerModel())
+  }
   
   // MARK: - StakeViewModel
   
   var didUpdateModel: ((StakeView.Model) -> Void)?
   var didUpdateInputAmountText: ((String) -> Void)?
   var didUpdateAvailableTitle: ((NSAttributedString) -> Void)?
+  var didUpdateSelectedPool: ((StakePoolContainerView.Model) -> Void)? 
   
   func viewDidLoad() {
     updateWithInitalData()
@@ -90,6 +99,8 @@ final class StakeViewModelImplementation: StakeViewModel, StakeModuleOutput, Sta
   private var minimumValidTokenAmountString = "0"
   private var minimumValidTokenAmount = BigUInt(0)
   
+  private var selectedPool: StakePool = .emptyItem
+  
   private var remaining = Remaining.available(0) {
     didSet {
       guard remaining != oldValue else { return }
@@ -113,7 +124,7 @@ final class StakeViewModelImplementation: StakeViewModel, StakeModuleOutput, Sta
   }
   
   private var isContinueEnable: Bool {
-    true
+    isAmountValid && remaining != .insufficient
   }
   
   // MARK: - Formatter
@@ -154,10 +165,12 @@ private extension StakeViewModelImplementation {
       )
     )
     
-    let minimumTokenAmountString = "50"
+    let minimumTokenAmountString = "1"
     updateMinimumValidAmount(minimumTokenAmountString)
     
     let tokenAmountString = "0"
+    
+    didSelectPool(.testData[0])
     
     update()
     updateFiatCurrency()
@@ -261,12 +274,18 @@ private extension StakeViewModelImplementation {
   }
   
   func createPoolContainerModel() -> StakePoolContainerView.Model {
-    let title = "Tonstakers".withTextStyle(.label1, color: .Text.primary)
-    let tag = TKUITagView.Configuration(text: "MAX APY", textColor: .Accent.green, backgroundColor: .Accent.green.withAlphaComponent(0.16))
-    let subtitle = "APY ≈ 5.01% · 50.01 TON".withTextStyle(.body2, color: .Text.secondary)
+    let title = selectedPool.title.withTextStyle(.label1, color: .Text.primary)
+    var tagViewModel: TKUITagView.Configuration?
+    if let tagText = selectedPool.tag {
+      tagViewModel = TKUITagView.Configuration(text: tagText, textColor: .Accent.green, backgroundColor: .Accent.green.withAlphaComponent(0.16))
+    }
+    
+    let apyTitle = "APY ≈ \(selectedPool.apy)"
+    let subtitleText = "\(apyTitle) · 50.01 TON"
+    let subtitle = subtitleText.withTextStyle(.body2, color: .Text.secondary)
     
     let iconView = TKUIListItemImageIconView.Configuration(
-      image: .image(.TKUIKit.Images.Pools.tonstakers),
+      image: .image(selectedPool.image),
       tintColor: .clear,
       backgroundColor: .Background.contentTint,
       size: CGSize(width: 44, height: 44),
@@ -280,7 +299,7 @@ private extension StakeViewModelImplementation {
     let contentConfiguration = TKUIListItemContentView.Configuration(
       leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
         title: title,
-        tagViewModel: tag,
+        tagViewModel: tagViewModel,
         subtitle: subtitle,
         description: nil
       ),
@@ -297,7 +316,9 @@ private extension StakeViewModelImplementation {
       icon: iconConfiguration,
       content: contentConfiguration,
       accessory: .image(accessoryImageConfiguration),
-      selectionClosure: { }
+      selectionClosure: { [weak self] in
+        self?.didTapStakePool?()
+      }
     )
   }
   
@@ -321,4 +342,8 @@ private extension StakeViewModelImplementation {
       }
     }
   }
+}
+
+private extension StakePool {
+  static let emptyItem = StakePool(id: "", image: .init(), title: "", tag: nil, apy: "", minimumDeposit: nil)
 }

@@ -170,12 +170,6 @@ private extension SwapTokenListViewController {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     
     customView.collectionView.register(
-      TKReusableContainerView.self,
-      forSupplementaryViewOfKind: .searchBarElementKind,
-      withReuseIdentifier: TKReusableContainerView.reuseIdentifier
-    )
-    
-    customView.collectionView.register(
       TitleHeaderCollectionView.self,
       forSupplementaryViewOfKind: .titleHeaderElementKind,
       withReuseIdentifier: TitleHeaderCollectionView.reuseIdentifier
@@ -469,7 +463,6 @@ private extension NSCollectionLayoutBoundarySupplementaryItem {
 private extension String {
   static let suggestedHeaderTitle = "Suggested"
   static let otherHeaderTitle = "Other"
-  static let searchBarElementKind = "SearchBarElementKind"
   static let titleHeaderElementKind = "TitleHeaderElementKind"
   static let shimmerSectionFooterElementKind = "ShimmerSectionFooterElementKind"
 }

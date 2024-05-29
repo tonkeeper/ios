@@ -119,6 +119,10 @@ private extension StakeViewController {
     viewModel.didUpdateAvailableTitle = { [weak customView] availableTitle in
       customView?.footerView.descriptionLabel.attributedText = availableTitle
     }
+    
+    viewModel.didUpdateSelectedPool = { [weak customView] selectedPoolContainerModel in
+      customView?.selectedPoolContainer.configure(model: selectedPoolContainerModel)
+    }
   }
   
   func setupViewEvents() {
