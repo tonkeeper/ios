@@ -50,5 +50,9 @@ private extension StakingConfirmationViewController {
     viewModel.didUpdateSliderActionModel = { [weak customView] model in
       customView?.sliderActionView.configure(model: model)
     }
+    
+    viewModel.showToast = { configuration in
+      ToastPresenter.showToast(configuration: configuration)
+    }
   }
 }

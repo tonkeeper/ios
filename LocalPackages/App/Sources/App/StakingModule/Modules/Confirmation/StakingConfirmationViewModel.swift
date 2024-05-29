@@ -16,6 +16,7 @@ protocol StakingConfirmationViewModel: AnyObject {
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)? { get set }
   var didUpdateSliderActionModel: ((SliderActionView.Model) -> Void)? { get set }
   var didUpdateSliderLoading: ((Bool) -> Void)? { get set }
+  var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -33,6 +34,7 @@ final class StakingConfirmationViewModelImplementation: StakingConfirmationViewM
   
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)?
   var didUpdateSliderActionModel: ((SliderActionView.Model) -> Void)?
+  var showToast: ((ToastPresenter.Configuration) -> Void)?
   
   func viewDidLoad() {
     setupControllerBindings()
@@ -84,7 +86,11 @@ private extension StakingConfirmationViewModelImplementation {
     }
     
     controller.didGetError = { error in
-      print("[PAG] Handle \(error)")
+      Task {
+        await MainActor.run {
+          self.showToast?(self.makeToastConfiguration())
+        }
+      }
     }
   }
   
@@ -134,6 +140,14 @@ private extension StakingConfirmationViewModelImplementation {
     } catch {
       return false
     }
+  }
+  
+  func makeToastConfiguration() -> ToastPresenter.Configuration {
+    .init(
+      title: "Failed to sign. Try one more time",
+      backgroundColor: .Background.contentTint,
+      foregroundColor: .Text.primary
+    )
   }
 }
 
