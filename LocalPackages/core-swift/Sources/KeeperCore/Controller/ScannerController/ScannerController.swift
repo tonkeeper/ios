@@ -2,13 +2,13 @@ import Foundation
 
 public final class ScannerController {
   
-  private let deeplinkParser: DeeplinkParser
+  private let configurator: ScannerControllerConfigurator
   
-  init(deeplinkParser: DeeplinkParser) {
-    self.deeplinkParser = deeplinkParser
+  init(configurator: ScannerControllerConfigurator) {
+    self.configurator = configurator
   }
   
   public func handleScannedQRCode(_ qrCodeString: String) throws -> Deeplink {
-    return try deeplinkParser.parse(string: qrCodeString)
+    return try configurator.handleQRCode(qrCodeString)
   }
 }

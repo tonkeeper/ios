@@ -3,8 +3,8 @@ import TonSwift
 import BigInt
 
 protocol BalanceService {
-  func loadWalletBalance(address: Address, currency: Currency) async throws -> WalletBalance
-  func getBalance(address: Address) throws -> WalletBalance
+  func loadWalletBalance(wallet: Wallet, currency: Currency) async throws -> WalletBalance
+  func getBalance(wallet: Wallet) throws -> WalletBalance
 }
 
 final class BalanceServiceImplementation: BalanceService {
@@ -20,9 +20,9 @@ final class BalanceServiceImplementation: BalanceService {
     self.walletBalanceRepository = walletBalanceRepository
   }
  
-  func loadWalletBalance(address: Address, currency: Currency) async throws -> WalletBalance {
-    async let tonBalanceTask = tonBalanceService.loadBalance(address: address)
-    async let jettonsBalanceTask = jettonsBalanceService.loadJettonsBalance(address: address, currency: currency)
+  func loadWalletBalance(wallet: Wallet, currency: Currency) async throws -> WalletBalance {
+    async let tonBalanceTask = tonBalanceService.loadBalance(wallet: wallet)
+    async let jettonsBalanceTask = jettonsBalanceService.loadJettonsBalance(wallet: wallet, currency: currency)
     
     let tonBalance = try await tonBalanceTask
     let jettonsBalance = try await jettonsBalanceTask
@@ -39,13 +39,13 @@ final class BalanceServiceImplementation: BalanceService {
     
     try? walletBalanceRepository.saveWalletBalance(
       walletBalance, 
-      for: address
+      for: wallet
     )
     
     return walletBalance
   }
   
-  func getBalance(address: Address) throws -> WalletBalance {
-    try walletBalanceRepository.getWalletBalance(address: address)
+  func getBalance(wallet: Wallet) throws -> WalletBalance {
+    try walletBalanceRepository.getWalletBalance(wallet: wallet)
   }
 }

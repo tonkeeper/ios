@@ -48,6 +48,18 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-sale-badge-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var reverse: UIImage {
+          .imageWithName("Icons/16/ic-reverse-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var info: UIImage {
+          .imageWithName("Icons/16/ic-info-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var settings: UIImage {
+          .imageWithName("Icons/16/ic-settings-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
@@ -70,6 +82,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-gear-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var exclamationmarkTriangle: UIImage {
+          .imageWithName("Icons/28/ic-exclamationmark-triangle-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var gearOutline: UIImage {
           .imageWithName("Icons/28/ic-gear-outline-28")
           .withRenderingMode(.alwaysTemplate)
@@ -78,8 +94,16 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-arrow-down-outline-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var arrowRightOutline: UIImage {
+          .imageWithName("Icons/28/ic-arrow-right-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var pencilOutline: UIImage {
           .imageWithName("Icons/28/ic-pencil-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var pencil: UIImage {
+          .imageWithName("Icons/28/ic-pencil-28")
           .withRenderingMode(.alwaysTemplate)
         }
         public static var arrowUpOutline: UIImage {
@@ -152,6 +176,22 @@ public extension UIImage {
         }
         public static var faceId: UIImage {
           .imageWithName("Icons/28/ic-faceid-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var globe: UIImage {
+          .imageWithName("Icons/28/ic-globe-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var plusThin: UIImage {
+          .imageWithName("Icons/28/ic-plus-thin-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var copy: UIImage {
+          .imageWithName("Icons/28/ic-copy-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var doc: UIImage {
+          .imageWithName("Icons/28/ic-doc-28")
           .withRenderingMode(.alwaysTemplate)
         }
       }

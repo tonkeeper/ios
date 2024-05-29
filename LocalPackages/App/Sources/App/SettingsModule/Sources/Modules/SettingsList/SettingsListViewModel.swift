@@ -5,6 +5,7 @@ import KeeperCore
 
 public protocol SettingsListModuleOutput: AnyObject {
   var didTapEditWallet: ((Wallet) -> Void)? { get set }
+  var didSelectAnItem: ((String) -> Void)? { get set }
 }
 
 protocol SettingsListViewModel: AnyObject {
@@ -39,30 +40,20 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   // MARK: - SettingsListModuleOutput
   
   var didTapEditWallet: ((Wallet) -> Void)?
+  var didSelectAnItem: ((String) -> Void)?
   
   // MARK: - SettingsListViewModel
   var didUpdateTitle: ((String) -> Void)?
   var didUpdateSettingsSections: (([SettingsListSection]) -> Void)?
   var didShowAlert: ((String, String?, [UIAlertAction]) -> Void)?
   var didSelectItem: ((IndexPath) -> Void)?
-  
-  private var token: NSObjectProtocol?
-  
+
   func viewDidLoad() {
-    token = NotificationCenter.default.addObserver(forName: .didChangeThemeMode, object: nil, queue: .main, using: { [weak self] _ in
-      guard let self = self else { return }
+    TKThemeManager.shared.addEventObserver(self) { observer, theme in
       Task {
-        //      self?.viewDidLoad()
-        let sections = await self.itemsProvider.getSections()
-        let initialSelectedIndexPath = await self.itemsProvider.initialSelectedIndexPath()
-        await MainActor.run {
-          self.didUpdateSettingsSections?(sections)
-          if let initialSelectedIndexPath = initialSelectedIndexPath {
-            self.didSelectItem?(initialSelectedIndexPath)
-          }
-        }
+        await observer.reloadSections()
       }
-    })
+    }
     
     didUpdateTitle?(itemsProvider.title)
     
@@ -77,14 +68,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     }
     
     Task {
-      let sections = await itemsProvider.getSections()
-      let initialSelectedIndexPath = await itemsProvider.initialSelectedIndexPath()
-      await MainActor.run {
-        didUpdateSettingsSections?(sections)
-        if let initialSelectedIndexPath = initialSelectedIndexPath {
-          didSelectItem?(initialSelectedIndexPath)
-        }
-      }
+      await reloadSections()
     }
   }
   
@@ -92,6 +76,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     switch section.items[index] {
     case let item as SettingsCell.Model:
       item.selectionHandler?()
+      didSelectAnItem?(item.identifier)
     case _ as SettingsTextCell.Model:
       break
     default:
@@ -116,6 +101,17 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   
   init(itemsProvider: SettingsListItemsProvider) {
     self.itemsProvider = itemsProvider
+  }
+  
+  private func reloadSections() async {
+    let sections = await itemsProvider.getSections()
+    let initialSelectedIndexPath = await itemsProvider.initialSelectedIndexPath()
+    await MainActor.run {
+      didUpdateSettingsSections?(sections)
+      if let initialSelectedIndexPath = initialSelectedIndexPath {
+        didSelectItem?(initialSelectedIndexPath)
+      }
+    }
   }
 }
 

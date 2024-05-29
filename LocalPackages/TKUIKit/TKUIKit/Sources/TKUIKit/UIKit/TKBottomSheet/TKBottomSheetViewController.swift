@@ -46,12 +46,6 @@ public final class TKBottomSheetViewController: UIViewController {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-
-  public override func viewDidLoad() {
-    super.viewDidLoad()
-    
-    setup()
-  }
   
   public override func viewDidLayoutSubviews() {
     super.viewDidLayoutSubviews()
@@ -66,6 +60,7 @@ public final class TKBottomSheetViewController: UIViewController {
     navigationController.modalPresentationStyle = .overFullScreen
     
     fromViewController.present(navigationController, animated: false) {
+      self.setup()
       self.performPresent()
     }
   }
@@ -87,12 +82,8 @@ private extension TKBottomSheetViewController {
     containerView.layer.cornerRadius = 16
     containerView.layer.masksToBounds = true
     
-    setupHeader()
-    setupContent()
-    
     view.addSubview(dimmingView)
     view.addSubview(containerView)
-    containerView.addSubview(headerView)
     
     dimmingView.addGestureRecognizer(tapGesture)
     containerView.addGestureRecognizer(panGesture)
@@ -109,6 +100,7 @@ private extension TKBottomSheetViewController {
   }
   
   func setupHeader() {
+    containerView.addSubview(headerView)
     headerView.configure(model: contentViewController.headerItem)
     contentViewController.didUpdatePullCardHeaderItem = { [headerView] in
       headerView.configure(model: $0)
@@ -138,6 +130,11 @@ private extension TKBottomSheetViewController {
   }
 
   func performPresent() {
+    view.setNeedsLayout()
+    view.layoutIfNeeded()
+    setupHeader()
+    setupContent()
+    containerView.frame.size.width = view.bounds.width
     let contentHeight = calculateContentHeight()
     
     let containerHeigth = contentHeight + headerHeight + bottomSpacing

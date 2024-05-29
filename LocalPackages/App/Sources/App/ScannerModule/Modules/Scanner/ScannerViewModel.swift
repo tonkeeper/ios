@@ -10,6 +10,9 @@ protocol ScannerViewModuleOutput: AnyObject {
 
 protocol ScannerViewModel: AnyObject {
   
+  var didUpdateTitle: ((NSAttributedString?) -> Void)? { get set }
+  var didUpdateSubtitle: ((NSAttributedString?) -> Void)? { get set }
+  var didUpdateIsFlashlightVisible: ((Bool) -> Void)? { get set }
   var didUpdateState: ((ScannerState) -> Void)? { get set }
   
   func viewDidLoad()
@@ -35,6 +38,12 @@ enum ScannerError: Swift.Error {
   }
 }
 
+struct ScannerUIConfiguration {
+  let title: String?
+  let subtitle: String?
+  let isFlashlightVisible: Bool
+}
+
 final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerViewModuleOutput {
   
   // MARK: - ScannerViewModuleOutput
@@ -43,6 +52,9 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   
   // MARK: - ScannerViewModel
   
+  var didUpdateTitle: ((NSAttributedString?) -> Void)?
+  var didUpdateSubtitle: ((NSAttributedString?) -> Void)?
+  var didUpdateIsFlashlightVisible: ((Bool) -> Void)?
   var didUpdateState: ((ScannerState) -> Void)?
  
   func viewDidLoad() {
@@ -50,7 +62,9 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   }
   
   func viewDidAppear() {
-    startRunning()
+    if didSetup {
+      startRunning()
+    }
   }
   
   func viewDidDisappear() {
@@ -77,23 +91,46 @@ final class ScannerViewModelImplementation: NSObject, ScannerViewModel, ScannerV
   
   private let metadataOutputQueue = DispatchQueue(label: "metadata.capturesession.queue")
   private let captureSession = AVCaptureSession()
+  private var didSetup = false
   
   // MARK: - Dependencies
   
   private let urlOpener: URLOpener
   private let scannerController: ScannerController
+  private let uiConfiguration: ScannerUIConfiguration
   
   // MARK: - Init
   
   init(urlOpener: URLOpener,
-       scannerController: ScannerController) {
+       scannerController: ScannerController,
+       uiConfiguration: ScannerUIConfiguration) {
     self.urlOpener = urlOpener
     self.scannerController = scannerController
+    self.uiConfiguration = uiConfiguration
   }
 }
 
 private extension ScannerViewModelImplementation {
   func setup() {
+    didUpdateTitle?(
+      uiConfiguration.title?.withTextStyle(
+        .h2,
+        color: .white,
+        alignment: .center,
+        lineBreakMode: .byTruncatingTail
+      )
+    )
+    
+    didUpdateSubtitle?(
+      uiConfiguration.subtitle?.withTextStyle(
+        .body1,
+        color: .white,
+        alignment: .center,
+        lineBreakMode: .byWordWrapping
+      )
+    )
+    didUpdateIsFlashlightVisible?(uiConfiguration.isFlashlightVisible)
+    
     let status = AVCaptureDevice.authorizationStatus(for: .video)
     switch status {
     case .authorized:
@@ -159,6 +196,7 @@ private extension ScannerViewModelImplementation {
     metadataOutput.metadataObjectTypes = [AVMetadataObject.ObjectType.qr]
     self.captureSession.commitConfiguration()
    
+    self.didSetup = true
     startRunning()
   }
   

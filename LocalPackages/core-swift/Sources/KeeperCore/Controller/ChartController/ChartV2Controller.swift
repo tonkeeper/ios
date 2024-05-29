@@ -5,6 +5,7 @@ public final class ChartV2Controller {
   private let loader: ChartV2Loader
   private let chartService: ChartService
   private let currencyStore: CurrencyStore
+  private let walletsService: WalletsService
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let dateFormatter = DateFormatter()
   
@@ -12,11 +13,13 @@ public final class ChartV2Controller {
        loader: ChartV2Loader,
        chartService: ChartService,
        currencyStore: CurrencyStore,
+       walletsService: WalletsService,
        decimalAmountFormatter: DecimalAmountFormatter) {
     self.token = token
     self.loader = loader
     self.chartService = chartService
     self.currencyStore = currencyStore
+    self.walletsService = walletsService
     self.decimalAmountFormatter = decimalAmountFormatter
   }
   
@@ -24,7 +27,8 @@ public final class ChartV2Controller {
     let coordinates = chartService.getChartData(
       period: period,
       token: token.tokenSymbol,
-      currency: currency
+      currency: currency,
+      isTestnet: (try? walletsService.getActiveWallet().isTestnet) ?? false
     )
     return coordinates
   }
@@ -33,7 +37,8 @@ public final class ChartV2Controller {
     let coordinates = try await chartService.loadChartData(
       period: period,
       token: token.tokenSymbol,
-      currency: currency
+      currency: currency,
+      isTestnet: (try? walletsService.getActiveWallet().isTestnet) ?? false
     )
     return coordinates
   }

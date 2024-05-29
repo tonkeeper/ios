@@ -3,29 +3,29 @@ import TonSwift
 import CoreComponents
 
 protocol WalletBalanceRepository {
-  func getWalletBalance(address: Address) throws -> WalletBalance
-  func saveWalletBalance(_ walletBalance: WalletBalance, for address: Address) throws
+  func getWalletBalance(wallet: Wallet) throws -> WalletBalance
+  func saveWalletBalance(_ walletBalance: WalletBalance, for wallet: Wallet) throws
 }
 
 struct WalletBalanceRepositoryImplementation: WalletBalanceRepository {
-  let fileSystemVault: FileSystemVault<WalletBalance, Address>
+  let fileSystemVault: FileSystemVault<WalletBalance, FriendlyAddress>
   
-  init(fileSystemVault: FileSystemVault<WalletBalance, Address>) {
+  init(fileSystemVault: FileSystemVault<WalletBalance, FriendlyAddress>) {
     self.fileSystemVault = fileSystemVault
   }
   
-  func getWalletBalance(address: TonSwift.Address) throws -> WalletBalance {
-    try fileSystemVault.loadItem(key: address)
+  func getWalletBalance(wallet: Wallet) throws -> WalletBalance {
+    try fileSystemVault.loadItem(key: wallet.friendlyAddress)
   }
   
   func saveWalletBalance(_ walletBalance: WalletBalance,
-                         for address: TonSwift.Address) throws{
-    try fileSystemVault.saveItem(walletBalance, key: address)
+                         for wallet: Wallet) throws{
+    try fileSystemVault.saveItem(walletBalance, key: wallet.friendlyAddress)
   }
 }
 
-extension Address: CustomStringConvertible {
+extension FriendlyAddress: CustomStringConvertible {
   public var description: String {
-    toRaw()
+    toString()
   }
 }

@@ -7,18 +7,21 @@ public final class SendConfirmationController {
   public enum Error: Swift.Error {
     case failedToCalculateFee
     case failedToSendTransaction
+    case failedToSign
   }
   
   public var didUpdateModel: ((SendConfirmationModel) -> Void)?
   public var didGetError: ((Error) -> Void)?
+  public var didGetExternalSign: ((URL) async throws -> Data?)?
   
   private var transactionEmulationExtra: Int64 = 0
   
-  private let wallet: Wallet
+  public  let wallet: Wallet
   private let recipient: Recipient
   private let sendItem: SendItem
   private let comment: String?
   private let sendService: SendService
+  private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
   private let ratesStore: RatesStore
   private let currencyStore: CurrencyStore
@@ -30,6 +33,7 @@ public final class SendConfirmationController {
        sendItem: SendItem,
        comment: String?,
        sendService: SendService,
+       blockchainService: BlockchainService,
        balanceStore: BalanceStore,
        ratesStore: RatesStore,
        currencyStore: CurrencyStore,
@@ -40,6 +44,7 @@ public final class SendConfirmationController {
     self.sendItem = sendItem
     self.comment = comment
     self.sendService = sendService
+    self.blockchainService = blockchainService
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
@@ -58,7 +63,7 @@ public final class SendConfirmationController {
   public func sendTransaction() async throws {
     do {
       let transactionBoc = try await createTransactionBoc()
-      try await sendService.sendTransaction(boc: transactionBoc)
+      try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
       NotificationCenter.default.post(
         name: NSNotification.Name(rawValue: "didSendTransaction"),
         object: nil,
@@ -70,6 +75,10 @@ public final class SendConfirmationController {
       }
       throw error
     }
+  }
+  
+  public func isNeedToConfirm() -> Bool {
+    return wallet.isRegular
   }
 }
 
@@ -208,7 +217,10 @@ private extension SendConfirmationController {
     
     do {
       let transactionBoc = try await createTransactionBocTask
-      let transactionInfo = try await sendService.loadTransactionInfo(boc: transactionBoc)
+      let transactionInfo = try await sendService.loadTransactionInfo(
+        boc: transactionBoc,
+        wallet: wallet
+      )
       let sendTransactionModel = SendTransactionModel(
         accountEvent: transactionInfo.event,
         risk: transactionInfo.risk,
@@ -247,18 +259,15 @@ private extension SendConfirmationController {
     case .nft(let nft):
       boc = try await createNFTTransactionBoc(nft: nft)
     case .token(let token, let amount):
-      let mnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
-      let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-      let privateKey = keyPair.privateKey
       boc = try await createTokenTransactionBoc(token: token, amount: amount) { transfer in
-        return try transfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
+        return try await signTransfer(transfer)
       }
     }
     return boc
   }
   
-  func createTokenTransactionBoc(token: Token, amount: BigUInt, signClosure: (WalletTransfer) async throws -> Cell) async throws -> String {
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
+  func createTokenTransactionBoc(token: Token, amount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
     switch token {
     case .ton:
       let isMax: Bool
@@ -293,13 +302,20 @@ private extension SendConfirmationController {
   
   func createNFTEmulateTransactionBoc(nft: NFT) async throws -> String {
     let transferAmount = BigUInt(stringLiteral: "10000000000")
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    
+    var commentCell: Cell?
+    if let comment = comment {
+        commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
+    }
+    
     return try await NFTTransferMessageBuilder.sendNFTTransfer(
         wallet: wallet,
         seqno: seqno,
         nftAddress: nft.address,
         recipientAddress: recipient.recipientAddress.address,
-        transferAmount: transferAmount) { transfer in
+        transferAmount: transferAmount,
+        forwardPayload: commentCell) { transfer in
             try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
         }
   }
@@ -311,18 +327,67 @@ private extension SendConfirmationController {
     transferAmount = transferAmount < minimumTransferAmount
     ? minimumTransferAmount
     : transferAmount
-    let seqno = try await sendService.loadSeqno(address: wallet.address)
-    let mnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
-    let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-    let privateKey = keyPair.privateKey
+    let seqno = try await sendService.loadSeqno(wallet: wallet)
+    
+    var commentCell: Cell?
+    if let comment = comment {
+        commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
+    }
     
     return try await NFTTransferMessageBuilder.sendNFTTransfer(
         wallet: wallet,
         seqno: seqno,
         nftAddress: nft.address,
         recipientAddress: recipient.recipientAddress.address,
-        transferAmount: transferAmount.magnitude) { transfer in
-          return try transfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
+        transferAmount: transferAmount.magnitude,
+        forwardPayload: commentCell
+        ) { transfer in
+          return try await signTransfer(transfer)
         }
+  }
+  
+  func signTransfer(_ transfer: WalletTransfer) async throws -> Data {
+    switch wallet.identity.kind {
+    case .Regular:
+      let mnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
+      let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+      let privateKey = keyPair.privateKey
+      return try transfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
+    case .Lockup:
+      throw Error.failedToSign
+    case .Watchonly:
+      throw Error.failedToSign
+    case .External(let publicKey, let walletContractVersion):
+      return try await signExternal(
+        transfer: transfer.signingMessage.endCell().toBoc(),
+        publicKey: publicKey,
+        revision: walletContractVersion
+      )
+    }
+  }
+  
+  func signExternal(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) async throws -> Data {
+    guard let url = createTonSignURL(transfer: transfer, publicKey: publicKey, revision: revision),
+          let didGetExternalSign,
+          let signedData = try await didGetExternalSign(url) else {
+      throw Error.failedToSign
+    }
+    return signedData
+  }
+  
+  func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) -> URL? {
+    guard let publicKey = publicKey.data.base64EncodedString().percentEncoded,
+          let body = transfer.base64EncodedString().percentEncoded else { return nil }
+    let v = revision.rawValue.lowercased()
+    
+    let string = "tonsign://?pk=\(publicKey)&body=\(body)&v=\(v)&return=\("tonkeeperx://publish".percentEncoded ?? "")"
+    return URL(string: string)
+  }
+}
+
+extension String {
+  var percentEncoded: String? {
+    let set = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+    return (self as NSString).addingPercentEncoding(withAllowedCharacters: set)
   }
 }

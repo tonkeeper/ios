@@ -2,6 +2,7 @@ import Foundation
 import KeeperCore
 import TKChart
 import TKCore
+import TKLocalize
 
 protocol ChartModuleOutput: AnyObject {}
 
@@ -255,7 +256,7 @@ private extension ChartViewModelImplementation {
     guard let coordinate = coordinates.last else {
       return emptyHeaderModel()
     }
-    return preparePointModel(coordinate: coordinate, coordinates: coordinates, currency: currency, date: "Price")
+    return preparePointModel(coordinate: coordinate, coordinates: coordinates, currency: currency, date: TKLocales.Chart.price)
   }
   
   func preparePointModel(index: Int, 

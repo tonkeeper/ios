@@ -2,26 +2,6 @@ import UIKit
 import TKUIKit
 
 final class ReceiveQRCodeView: UIView {
-  
-  var tagString: String? {
-    didSet {
-      if let tagString {
-        tagView.configure(
-          configuration: TKUITagView.Configuration(
-            text: tagString,
-            textColor: .black,
-            backgroundColor: .Accent.orange
-          )
-        )
-        addressButtonBottomConstraint.isActive = false
-        addressButtonBottomTagConstraint.isActive = true
-      } else {
-        addressButtonBottomTagConstraint.isActive = false
-        addressButtonBottomConstraint.isActive = true
-      }
-    }
-  }
-  
   let contentContainer = UIView()
   let qrCodeImageView = UIImageView()
   let addressButton = ReceiveAddressButton()
@@ -42,6 +22,17 @@ final class ReceiveQRCodeView: UIView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  func setTagModel(_ tagModel: TKUITagView.Configuration?) {
+    guard let tagModel else {
+      addressButtonBottomTagConstraint.isActive = false
+      addressButtonBottomConstraint.isActive = true
+      return
+    }
+    tagView.configure(configuration:tagModel)
+    addressButtonBottomConstraint.isActive = false
+    addressButtonBottomTagConstraint.isActive = true
   }
 }
 

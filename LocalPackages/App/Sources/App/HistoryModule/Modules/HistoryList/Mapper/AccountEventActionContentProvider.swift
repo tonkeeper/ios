@@ -1,4 +1,5 @@
 import KeeperCore
+import TKLocalize
 
 protocol AccountEventActionContentProvider {
   func title(actionType: HistoryEvent.Action.ActionType) -> String?
@@ -8,53 +9,53 @@ struct HistoryListAccountEventActionContentProvider: AccountEventActionContentPr
   func title(actionType: HistoryEvent.Action.ActionType) -> String? {
     switch actionType {
     case .sent:
-      return "Sent"
+      return TKLocales.ActionTypes.sent
     case .receieved:
-      return "Received"
+      return TKLocales.ActionTypes.received
     case .mint:
-      return "Received"
+      return TKLocales.ActionTypes.received
     case .burn:
-      return "Sent"
+      return TKLocales.ActionTypes.sent
     case .depositStake:
-      return "Stake"
+      return TKLocales.ActionTypes.stake
     case .withdrawStake:
-      return "Unstake"
+      return TKLocales.ActionTypes.unstake
     case .withdrawStakeRequest:
-      return "Unstake Request"
+      return TKLocales.ActionTypes.unstake_request
     case .jettonSwap:
-      return "Swap"
+      return TKLocales.ActionTypes.swap
     case .spam:
-      return "Spam"
+      return TKLocales.ActionTypes.spam
     case .bounced:
-      return "Bounced"
+      return TKLocales.ActionTypes.bounced
     case .subscribed:
-      return "Received"
+      return TKLocales.ActionTypes.received
     case .unsubscribed:
-      return "Unsubscribed"
+      return TKLocales.ActionTypes.unsubscribed
     case .walletInitialized:
-      return "Wallet initialized"
+      return TKLocales.ActionTypes.wallet_initialize
     case .contractExec:
-      return "Call contract"
+      return TKLocales.ActionTypes.contract_exec
     case .nftCollectionCreation:
-      return "NFT сollection creation"
+      return TKLocales.ActionTypes.nft_collection_deploy
     case .nftCreation:
-      return "NFT creation"
+      return TKLocales.ActionTypes.nft_deploy
     case .removalFromSale:
-      return "Removal from sale"
+      return TKLocales.ActionTypes.nft_sale_removal
     case .nftPurchase:
-      return "NFT purchase"
+      return TKLocales.ActionTypes.nft_purchase
     case .bid:
-      return "Bid"
+      return TKLocales.ActionTypes.bid
     case .putUpForAuction:
-      return "Put up for auction"
+      return TKLocales.ActionTypes.put_up_auction
     case .endOfAuction:
-      return "End of auction"
+      return TKLocales.ActionTypes.end_auction
     case .putUpForSale:
-      return "Put up for sale"
+      return TKLocales.ActionTypes.sent
     case .domainRenew:
-      return "Domain Renew"
+      return TKLocales.ActionTypes.domain_renew
     case .unknown:
-      return "Unknown"
+      return TKLocales.ActionTypes.unknown
     }
   }
 }
@@ -63,53 +64,53 @@ struct TonConnectConfirmationAccountEventActionContentProvider: AccountEventActi
   func title(actionType: HistoryEvent.Action.ActionType) -> String? {
     switch actionType {
     case .sent:
-      return "Send"
+      return TKLocales.ActionTypes.Future.send
     case .receieved:
-      return "Receive"
+      return TKLocales.ActionTypes.Future.receive
     case .mint:
-      return "Receive"
+      return TKLocales.ActionTypes.Future.receive
     case .burn:
-      return "Send"
+      return TKLocales.ActionTypes.Future.send
     case .depositStake:
-      return "Stake"
+      return TKLocales.ActionTypes.stake
     case .withdrawStake:
-      return "Unstake"
+      return TKLocales.ActionTypes.unstake
     case .withdrawStakeRequest:
-      return "Unstake Request"
+      return TKLocales.ActionTypes.unstake_request
     case .jettonSwap:
-      return "Swap"
+      return TKLocales.ActionTypes.swap
     case .spam:
-      return "Spam"
+      return TKLocales.ActionTypes.spam
     case .bounced:
-      return "Bounce"
+      return TKLocales.ActionTypes.bounced
     case .subscribed:
-      return "Receive"
+      return TKLocales.ActionTypes.subscribed
     case .unsubscribed:
-      return "Unsubscribe"
+      return TKLocales.ActionTypes.unsubscribed
     case .walletInitialized:
-      return "Wallet initialize"
+      return TKLocales.ActionTypes.wallet_initialize
     case .contractExec:
-      return "Call contract"
+      return TKLocales.ActionTypes.contract_exec
     case .nftCollectionCreation:
-      return "NFT сollection creation"
+      return TKLocales.ActionTypes.nft_collection_deploy
     case .nftCreation:
-      return "NFT creation"
+      return TKLocales.ActionTypes.nft_deploy
     case .removalFromSale:
-      return "Removal from sale"
+      return TKLocales.ActionTypes.nft_sale_removal
     case .nftPurchase:
-      return "NFT purchase"
+      return TKLocales.ActionTypes.nft_purchase
     case .bid:
-      return "Bid"
+      return TKLocales.ActionTypes.bid
     case .putUpForAuction:
-      return "Put up for auction"
+      return TKLocales.ActionTypes.put_up_auction
     case .endOfAuction:
-      return "End of auction"
+      return TKLocales.ActionTypes.end_auction
     case .putUpForSale:
-      return "Put up for sale"
+      return TKLocales.ActionTypes.sent
     case .domainRenew:
-      return "Renew Domain"
+      return TKLocales.ActionTypes.domain_renew
     case .unknown:
-      return "Unknown"
+      return TKLocales.ActionTypes.unknown
     }
   }
 }

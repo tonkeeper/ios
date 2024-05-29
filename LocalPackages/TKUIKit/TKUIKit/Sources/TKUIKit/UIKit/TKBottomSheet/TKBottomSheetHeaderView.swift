@@ -5,9 +5,13 @@ public final class TKBottomSheetHeaderView: UIView, ConfigurableView {
   let subtitleLabel = UILabel()
   let closeButton = TKUIHeaderIconButton()
   let leftButtonContainer = UIView()
+  let closeButtonContainer = UIView()
   private let titleVerticalStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
+    stackView.isLayoutMarginsRelativeArrangement = true
+    stackView.directionalLayoutMargins.top = 10
+    stackView.directionalLayoutMargins.bottom = 10
     return stackView
   }()
   private let titleHoriontalStackView: UIStackView = {
@@ -83,7 +87,8 @@ public final class TKBottomSheetHeaderView: UIView, ConfigurableView {
 private extension TKBottomSheetHeaderView {
   func setup() {
     backgroundColor = .Background.page
-    addSubview(closeButton)
+    closeButtonContainer.addSubview(closeButton)
+    addSubview(closeButtonContainer)
     addSubview(leftButtonContainer)
     addSubview(titleHoriontalStackView)
     
@@ -101,19 +106,25 @@ private extension TKBottomSheetHeaderView {
   func setupConstraints() {
     titleHoriontalStackView.translatesAutoresizingMaskIntoConstraints = false
     closeButton.translatesAutoresizingMaskIntoConstraints = false
+    closeButtonContainer.translatesAutoresizingMaskIntoConstraints = false
     leftButtonContainer.translatesAutoresizingMaskIntoConstraints = false
     
     closeButton.setContentCompressionResistancePriority(.required, for: .horizontal)
     leftButtonContainer.setContentCompressionResistancePriority(.required, for: .horizontal)
 
     NSLayoutConstraint.activate([
-      closeButton.topAnchor.constraint(equalTo: topAnchor, constant: 16),
-      closeButton.rightAnchor.constraint(equalTo: rightAnchor, constant: -16).withPriority(.defaultHigh),
-      closeButton.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16).withPriority(.defaultHigh),
+      closeButtonContainer.topAnchor.constraint(equalTo: topAnchor, constant: 16),
+      closeButtonContainer.rightAnchor.constraint(equalTo: rightAnchor, constant: -16).withPriority(.defaultHigh),
+      closeButtonContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -16).withPriority(.defaultHigh),
       
-      titleHoriontalStackView.topAnchor.constraint(equalTo: topAnchor),
-      titleHoriontalStackView.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
-      titleHoriontalStackView.rightAnchor.constraint(lessThanOrEqualTo: closeButton.leftAnchor),
+      closeButton.topAnchor.constraint(equalTo: closeButtonContainer.topAnchor),
+      closeButton.leftAnchor.constraint(equalTo: closeButtonContainer.leftAnchor),
+      closeButton.rightAnchor.constraint(equalTo: closeButtonContainer.rightAnchor),
+      closeButton.bottomAnchor.constraint(lessThanOrEqualTo: closeButtonContainer.bottomAnchor),
+      
+      titleHoriontalStackView.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+      titleHoriontalStackView.bottomAnchor.constraint(equalTo: bottomAnchor, constant: 8).withPriority(.defaultHigh),
+      titleHoriontalStackView.rightAnchor.constraint(lessThanOrEqualTo: closeButtonContainer.leftAnchor),
       titleHoriontalStackView.centerYAnchor.constraint(equalTo: centerYAnchor),
       
       leftButtonContainer.topAnchor.constraint(equalTo: topAnchor, constant: 16),

@@ -42,7 +42,7 @@ actor HistoryListPaginator {
   func start() async {
     state = .isLoading
     nextFrom = nil
-    if let cachedEvents = try? loader.cachedEvents(address: wallet.address), !cachedEvents.events.isEmpty {
+    if let cachedEvents = try? loader.cachedEvents(wallet: wallet), !cachedEvents.events.isEmpty {
       await handleCachedEvents(cachedEvents)
       eventHandler?(.cached(sections))
     } else {
@@ -143,7 +143,8 @@ private extension HistoryListPaginator {
         accountEventRightTopDescriptionProvider: HistoryAccountEventRightTopDescriptionProvider(
           dateFormatter: dateFormatter,
           dateFormat: dateFormat
-        )
+        ),
+        isTestnet: wallet.isTestnet
       )
       
       if let sectionIndex = sectionsMap[sectionDate],
@@ -180,7 +181,7 @@ private extension HistoryListPaginator {
   
   func loadNextPage() async throws -> AccountEvents {
     let events = try await loader.loadEvents(
-      address: wallet.address,
+      wallet: wallet,
       beforeLt: nextFrom,
       limit: limit
     )
@@ -201,13 +202,13 @@ private extension HistoryListPaginator {
         nftAddressesToLoad.insert(nftItemTransfer.nftAddress)
       case .nftPurchase(let nftPurchase):
         nfts[nftPurchase.nft.address] = nftPurchase.nft
-        try? nftService.saveNFT(nft: nftPurchase.nft)
+        try? nftService.saveNFT(nft: nftPurchase.nft, isTestnet: wallet.isTestnet)
       default: continue
       }
     }
     guard !nftAddressesToLoad.isEmpty else { return NFTsCollection(nfts: nfts) }
     
-    if let loadedNFTs = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad)) {
+    if let loadedNFTs = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad), isTestnet: wallet.isTestnet) {
       nfts = loadedNFTs
     }
     
@@ -220,10 +221,16 @@ private extension HistoryListPaginator {
     for action in actions {
       switch action.type {
       case .nftItemTransfer(let nftItemTransfer):
-        nfts[nftItemTransfer.nftAddress] = try? nftService.getNFT(address: nftItemTransfer.nftAddress)
+        nfts[nftItemTransfer.nftAddress] = try? nftService.getNFT(
+          address: nftItemTransfer.nftAddress,
+          isTestnet: wallet.isTestnet
+        )
       case .nftPurchase(let nftPurchase):
         nfts[nftPurchase.nft.address] = nftPurchase.nft
-        try? nftService.saveNFT(nft: nftPurchase.nft)
+        try? nftService.saveNFT(
+          nft: nftPurchase.nft,
+          isTestnet: wallet.isTestnet
+        )
       default: continue
       }
     }

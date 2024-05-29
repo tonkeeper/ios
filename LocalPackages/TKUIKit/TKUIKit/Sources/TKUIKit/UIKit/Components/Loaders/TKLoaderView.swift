@@ -159,7 +159,7 @@ extension TKLoaderView {
     var tintColor: UIColor {
       switch self {
       case .primary: return UIColor.Icon.primary
-      case .secondary: return UIColor.Icon.secondary
+      case .secondary: return UIColor.Icon.tertiary
       }
     }
   }

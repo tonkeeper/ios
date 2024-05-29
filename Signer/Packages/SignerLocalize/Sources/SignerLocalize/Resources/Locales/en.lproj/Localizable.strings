@@ -1,0 +1,95 @@
+"actions.continue_action" = "Continue";
+"actions.cancel" = "Cancel";
+"actions.copy" = "Copy";
+"actions.save" = "Save";
+"actions.paste" = "Paste";
+
+"toast.copied" = "Copied";
+"toast.password_changed" = "Password changed";
+"toast.failed" = "Failed";
+
+"app.name" = "Signer";
+
+"onboarding.caption" = "The storage place for your keys to sign transactions in Tonkeeper";
+
+"password.create.title" = "Create Password";
+"password.create.textfield.caption" = "Minimum 4 characters";
+"password.reenter.title" = "Re-enter Password";
+"password.enter.title" = "Enter Password";
+"password.change.enter_current.title" = "Enter current Password";
+"password.change.enter_new.title" = "Enter new Password";
+"password.change.reenter_new.title" = "Re-enter Password";
+"password.confirmation.title" = "Enter current Password";
+
+"name_key.title" = "Name your Key";
+"name_key.caption" = "It will simplify the search for the necessary key in the list of keys.";
+"name_key.textfield.placeholder" = "Name";
+
+"main.buttons.scan.title" = "Scan";
+"main.buttons.addKey.title" = "Add Key";
+"main.buttons.settings.title" = "Settings";
+
+"key_details.qr_header.title" = "Export to another device";
+"key_details.qr_header.caption" = "Open Tonkeeper » Add Wallet » Pair Tonsign";
+"key_details.buttons.export_to_tonkeeper" = "Export to Tonkeeper";
+"key_details.buttons.export_to_tonkeeper_web" = "Export to Tonkeeper Web";
+"key_details.buttons.name" = "Name";
+"key_details.buttons.hex_address" = "Hex Address";
+"key_details.buttons.recovery_phrase" = "Recovery Phrase";
+"key_details.buttons.delete_key" = "Delete Key";
+"key_details.delete_alert.title" = "Delete Key?";
+"key_details.delete_alert.description" = "This will erase key to the wallet. Make sure you have backed up your secret recovery phrase.";
+"key_details.delete_alert.buttons.delete_key" = "Delete Key";
+
+"add_key.title" = "Add Key";
+"add_key.caption" = "Create a new key or add an existing one.";
+"add_key.buttons.create_new" = "Create New Key";
+"add_key.buttons.import_existing" = "Import Existing Key";
+
+"settings.title" = "Settings";
+"settings.items.change_password" = "Change Password";
+"settings.items.support" = "Support";
+"settings.items.legal" = "Legal";
+"settings.items.theme" = "Theme";
+"settings.footer.version" = "Version %@";
+"settings.themes.deepblue" = "Deep Blue";
+"settings.themes.dark" = "Dark";
+"settings.themes.light" = "Light";
+"settings.themes.system" = "System";
+
+"settings.legal.title" = "Legal";
+"settings.legal.items.terms_of_service" = "Terms of service";
+"settings.legal.items.privacy_policy" = "Privacy policy";
+"settings.legal.items.montserrat_font" = "Montserrat font";
+"settings.legal.sections.licenses" = "Licences";
+
+"recovery.phrase.title" = "Recovery Phrase";
+"recovery.phrase.caption" = "Write these words with their numbers and store them in a safe place down. Do not enter it into unknown apps.";
+
+"recovery_input.title" = "Enter Recovery Phrase";
+"recovery_input.caption" = "When you created this wallet, you got a 24-word recovery phrase. Enter it to restore access to your wallet.";
+"recovery_input.banner.text" = "It's safer to create a new key in Signer. Your old key may have been compromised by you previously.";
+
+"scanner.title" = "Scan QR code";
+"scanner.caption" = "From Tonkeeper on the action confirmation page";
+
+"camera_permission.title" = "Enable access to your camera in order to can scan QR codes";
+"camera_permission.button" = "Open Settings";
+
+"sign_transaction.title" = "Sign Transaction";
+"sign_transaction.audit_transaction" = "Audit Transaction";
+"sign_transaction.emulate" = "Emulate in Browser";
+"sign_transaction.copy" = "Copy";
+"sign_transaction.slide_to_sign" = "Slide to Sign";
+"sign_transaction.send" = "Send";
+
+"sign_transaction_qr.title" = "Scan the QR code with Tonkeeper";
+"sign_transaction_qr.caption" = "After scanning, the transaction will be sent to the network.";
+"sign_transaction_qr.signed_transaction" = "Signed Transaction";
+"sign_transaction_qr.done" = "Done";
+
+"sign_out.button.title" = "Sign Out";
+"sign_out.alert.title" = "Sign Out?";
+"sign_out.alert.caption" = "This will erase keys to the wallet. Make sure you have backed up your secret recovery phrase.";
+"sign_out.alert.button.sign_out" = "Sign Out";
+

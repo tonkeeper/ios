@@ -5,10 +5,10 @@ public final class RootAssembly {
   private let servicesAssembly: ServicesAssembly
   private let storesAssembly: StoresAssembly
   private let coreAssembly: CoreAssembly
-  public  let formattersAssembly: FormattersAssembly
+  public let formattersAssembly: FormattersAssembly
   private let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
-  private let passcodeAssembly: PasscodeAssembly
+  public let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
 
@@ -44,6 +44,7 @@ public final class RootAssembly {
         remoteConfigurationStore: configurationAssembly.remoteConfigurationStore,
         knownAccountsStore: storesAssembly.knownAccountsStore,
         deeplinkParser: DefaultDeeplinkParser(parsers: [
+          TonkeeperDeeplinkParser(),
           TonDeeplinkParser(),
           TonConnectDeeplinkParser()
         ]),

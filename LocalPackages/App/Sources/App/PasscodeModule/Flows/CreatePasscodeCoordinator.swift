@@ -1,6 +1,7 @@
 import UIKit
 import TKCoordinator
 import TKUIKit
+import TKLocalize
 
 public final class CreatePasscodeCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -16,7 +17,6 @@ private extension CreatePasscodeCoordinator {
   func openCreatePasscode() {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
-    navigationController.interactivePopGestureEnabled = false
     
     let module = PasscodeAssembly.module(
       navigationController: navigationController,
@@ -96,7 +96,7 @@ public final class CreatePasscodeChildCoordinator: RouterCoordinator<NavigationC
 private extension CreatePasscodeChildCoordinator {
   func openCreatePasscode() {
     let passcodeInput = PasscodeInputAssembly.module(
-      title: "Create passcode",
+      title: TKLocales.Passcode.create,
       validator: CreatePasscodeInputValidator(),
       biometryProvider: BiometryProvider()
     )
@@ -126,7 +126,7 @@ private extension CreatePasscodeChildCoordinator {
 
   func openReenterPasscode(createdPasscode: String) {
     let passcodeInput = PasscodeInputAssembly.module(
-      title: "Re-enter passcode",
+      title: TKLocales.Passcode.reenter,
       validator: ReenterPasscodeInputValidator(createdPasscode: createdPasscode),
       biometryProvider: BiometryProvider()
     )

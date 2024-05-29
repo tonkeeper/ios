@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import KeeperCore
+import TKLocalize
 
 struct IconButtonModelMapper {
   func mapButton(model: KeeperCore.IconButton) -> TKUIIconButton.Model {
@@ -25,12 +26,12 @@ extension KeeperCore.IconButton {
   
   var title: String {
     switch self {
-    case .buySell: return "Buy or Sell"
-    case .receive: return "Receive"
-    case .scan: return "Scan"
-    case .send: return "Send"
-    case .stake: return "Stake"
-    case .swap: return "Swap"
+    case .buySell: return TKLocales.WalletButtons.buy
+    case .receive: return TKLocales.WalletButtons.receive
+    case .scan: return TKLocales.WalletButtons.scan
+    case .send: return TKLocales.WalletButtons.send
+    case .stake: return TKLocales.WalletButtons.stake
+    case .swap: return TKLocales.WalletButtons.swap
     }
   }
 }

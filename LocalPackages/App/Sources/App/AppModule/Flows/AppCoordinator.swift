@@ -24,12 +24,12 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
   }
   
   public override func start(deeplink: CoordinatorDeeplink? = nil) {
-    router.window.applyThemeMode(coreAssembly.appSettings.themeMode())
     openRoot(deeplink: deeplink)
   }
   
-  public override func handleDeeplink(deeplink: CoordinatorDeeplink?) {
-    rootCoordinator?.handleDeeplink(deeplink: deeplink)
+  public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    guard let rootCoordinator else { return false }
+    return rootCoordinator.handleDeeplink(deeplink: deeplink)
   }
 }
 

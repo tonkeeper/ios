@@ -39,7 +39,7 @@ public final class ChartController {
       async let coordinatesTask = self.chartService.loadChartData(
         period: period,
         token: "ton",
-        currency: currency)
+        currency: currency, isTestnet: false)
       let rates = await tonRatesStore.getTonRates()
       let coordinates = try await coordinatesTask
       
@@ -141,7 +141,7 @@ private extension ChartController {
     }
     
     dateFormatter.dateFormat = dateFormat
-    dateFormatter.locale = Locale.init(identifier: "EN")
+    dateFormatter.locale = Locale.current
     
     return dateFormatter.string(from: Date(timeIntervalSince1970: timeInterval))
   }

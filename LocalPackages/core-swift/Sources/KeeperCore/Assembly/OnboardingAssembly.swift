@@ -10,4 +10,8 @@ public final class OnboardingAssembly {
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.passcodeAssembly = passcodeAssembly
   }
+  
+  public func scannerAssembly() -> ScannerAssembly {
+    ScannerAssembly()
+  }
 }

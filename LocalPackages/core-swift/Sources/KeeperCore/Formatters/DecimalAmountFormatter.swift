@@ -30,9 +30,9 @@ public struct DecimalAmountFormatter {
     if let currency = currency {
       numberFormatter.currencySymbol = currency.symbol
       if currency.symbolOnLeft {
-        format = "¤ \(format)"
+        format = "¤\(String.Symbol.shortSpace)\(format)"
       } else {
-        format = "\(format) ¤"
+        format = "\(format)\(String.Symbol.shortSpace)¤"
       }
     }
     

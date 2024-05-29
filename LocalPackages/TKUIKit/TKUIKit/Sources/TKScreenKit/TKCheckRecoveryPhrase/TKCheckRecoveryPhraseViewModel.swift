@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 public protocol TKCheckRecoveryPhraseModuleOutput: AnyObject {
   var didCheckRecoveryPhrase: (() -> Void)? { get set }
@@ -68,7 +69,7 @@ final class TKCheckRecoveryPhraseViewModelImplementation: TKCheckRecoveryPhraseV
       category: .primary, 
       size: .large
     )
-    continueButtonConfiguration.content.title = .plainString("Continue")
+    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
     self.continueButtonConfiguration = continueButtonConfiguration
   }
 }

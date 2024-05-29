@@ -15,6 +15,7 @@ public struct OnboardingModule {
     
     let coordinator = OnboardingCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
+      coreAssembly: dependencies.coreAssembly,
       keeperCoreOnboardingAssembly: dependencies.keeperCoreOnboardingAssembly
     )
     return coordinator

@@ -1,5 +1,6 @@
 import UIKit
 import TKCoordinator
+import TKLocalize
 import TKUIKit
 import KeeperCore
 import TKCore
@@ -20,6 +21,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private var walletCoordinator: WalletCoordinator?
   private var historyCoordinator: HistoryCoordinator?
   private var collectiblesCoordinator: CollectiblesCoordinator?
+  
+  private weak var addWalletCoordinator: AddWalletCoordinator?
+  private weak var sendTokenCoordinator: SendTokenCoordinator?
+    private weak var swapTokensCoordinator: SwapTokensCoordinator?
   
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
@@ -79,17 +84,21 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     Task {
       await mainController.start()
       await MainActor.run {
-        handleDeeplink(deeplink: deeplink)
+        _ = handleDeeplink(deeplink: deeplink)
       }
     }
   }
 
-  override func handleDeeplink(deeplink: CoordinatorDeeplink?) {
-    do {
-      let deeplink = try mainController.parseDeeplink(deeplink: deeplink?.string)
-      handleCoreDeeplink(deeplink)
-    } catch {
-      return
+  override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    if let coreDeeplink = deeplink as? KeeperCore.Deeplink {
+      return handleCoreDeeplink(coreDeeplink)
+    } else {
+      do {
+        let deeplink = try mainController.parseDeeplink(deeplink: deeplink?.string)
+        return handleCoreDeeplink(deeplink)
+      } catch {
+        return false
+      }
     }
   }
 }
@@ -104,9 +113,22 @@ private extension MainCoordinator {
       self?.didLogout?()
     }
     
-    let historyCoordinator = historyModule.createHistoryCoordinator()
-    let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
+    walletCoordinator.didTapWalletButton = { [weak self] in
+      self?.openWalletPicker()
+    }
     
+    walletCoordinator.didTapSend = { [weak self] token in
+      self?.openSend(token: token)
+    }
+
+      walletCoordinator.didTapSwap = { [weak self] in
+        self?.openSwap()
+      }
+    
+    let historyCoordinator = historyModule.createHistoryCoordinator()
+    
+    let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
+
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
     self.collectiblesCoordinator = collectiblesCoordinator
@@ -136,23 +158,28 @@ private extension MainCoordinator {
     let scanModule = ScannerModule(
       dependencies: ScannerModule.Dependencies(
         coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
-    ).createScannerModule()
+    ).createScannerModule(
+      configurator: DefaultScannerControllerConfigurator(),
+      uiConfiguration: ScannerUIConfiguration(title: TKLocales.Scanner.title,
+                                              subtitle: nil,
+                                              isFlashlightVisible: true)
+    )
     
     let navigationController = TKNavigationController(rootViewController: scanModule.view)
     navigationController.configureTransparentAppearance()
     
     scanModule.output.didScanDeeplink = { [weak self] deeplink in
       self?.router.dismiss(completion: {
-        self?.handleCoreDeeplink(deeplink)
+        _ = self?.handleCoreDeeplink(deeplink)
       })
     }
     
     router.present(navigationController)
   }
   
-  func openSend(token: Token, recipient: Recipient) {
+  func openSend(token: Token, recipient: Recipient? = nil) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     
@@ -168,15 +195,20 @@ private extension MainCoordinator {
     )
     
     sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
+      self?.sendTokenCoordinator = nil
       navigationController?.dismiss(animated: true)
       guard let sendTokenCoordinator else { return }
       self?.removeChild(sendTokenCoordinator)
     }
     
+    self.sendTokenCoordinator = sendTokenCoordinator
+    
     addChild(sendTokenCoordinator)
     sendTokenCoordinator.start()
     
-    self.router.present(navigationController)
+    self.router.present(navigationController, onDismiss: { [weak self] in
+      self?.sendTokenCoordinator = nil
+    })
   }
   
   func openSend(recipient: String, jettonAddress: Address?) {
@@ -202,28 +234,64 @@ private extension MainCoordinator {
       }
     }
   }
+    
+    func openSwap() {
+      let navigationController = TKNavigationController()
+      navigationController.configureDefaultAppearance()
+      
+      let swapTokensCoordinator = SwapModule(
+        dependencies: SwapModule.Dependencies(
+          coreAssembly: coreAssembly,
+          keeperCoreMainAssembly: keeperCoreMainAssembly
+        )
+      ).createSwapTokenCoordinator(
+        router: NavigationControllerRouter(rootViewController: navigationController),
+        sellItem: SwapItem(token: .ton, amount: 0),
+        buyItem: nil
+      )
+      
+        swapTokensCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
+        self?.sendTokenCoordinator = nil
+        navigationController?.dismiss(animated: true)
+        guard let sendTokenCoordinator else { return }
+        self?.removeChild(sendTokenCoordinator)
+      }
+      
+      self.swapTokensCoordinator = swapTokensCoordinator
+      
+      addChild(swapTokensCoordinator)
+        swapTokensCoordinator.start()
+      
+      self.router.present(navigationController, onDismiss: { [weak self] in
+        self?.sendTokenCoordinator = nil
+      })
+    }
+    
 }
 
 // MARK: - Deeplinks
 
 private extension MainCoordinator {
-  func handleCoreDeeplink(_ deeplink: KeeperCore.Deeplink) {
+  func handleCoreDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
     switch deeplink {
     case .ton(let tonDeeplink):
-      handleTonDeeplink(tonDeeplink)
+      return handleTonDeeplink(tonDeeplink)
     case .tonConnect(let tonConnectDeeplink):
-      handleTonConnectDeeplink(tonConnectDeeplink)
+      return handleTonConnectDeeplink(tonConnectDeeplink)
+    case .tonkeeper(let tonkeeperDeeplink):
+      return handleTonkeeperDeeplink(tonkeeperDeeplink)
     }
   }
   
-  func handleTonDeeplink(_ deeplink: TonDeeplink) {
+  func handleTonDeeplink(_ deeplink: TonDeeplink) -> Bool {
     switch deeplink {
     case .transfer(let recipient, let jettonAddress):
       openSend(recipient: recipient, jettonAddress: jettonAddress)
+      return true
     }
   }
   
-  func handleTonConnectDeeplink(_ deeplink: TonConnectDeeplink) {
+  func handleTonConnectDeeplink(_ deeplink: TonConnectDeeplink) -> Bool {
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
     Task {
@@ -261,6 +329,72 @@ private extension MainCoordinator {
         }
       }
     }
+    return true
+  }
+  
+  func handleTonkeeperDeeplink(_ deeplink: TonkeeperDeeplink) -> Bool {
+    switch deeplink {
+    case .signer(let signerDeeplink):
+      if let addWalletCoordinator, addWalletCoordinator.handleDeeplink(deeplink: deeplink) {
+        return true
+      }
+      router.dismiss(animated: true) { [weak self] in
+        self?.handleSignerDeeplink(signerDeeplink)
+      }
+      return true
+    case let .publish(model):
+      if let sendTokenCoordinator = sendTokenCoordinator {
+        return sendTokenCoordinator.handleTonkeeperPublishDeeplink(model: model)
+      }
+      if let collectiblesCoordinator = collectiblesCoordinator, collectiblesCoordinator.handleTonkeeperDeeplink(deeplink: deeplink) {
+        return true
+      }
+      return false
+    }
+  }
+  
+  func handleSignerDeeplink(_ deeplink: TonkeeperDeeplink.SignerDeeplink) {
+
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    switch deeplink {
+    case .link(let publicKey, let name):
+      let coordinator = AddWalletModule(
+        dependencies: AddWalletModule.Dependencies(
+          walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+          coreAssembly: coreAssembly,
+          scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+          passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+        )
+      ).createPairSignerImportCoordinator(
+        publicKey: publicKey,
+        name: name,
+        passcode: nil,
+        router: NavigationControllerRouter(
+          rootViewController: navigationController
+        )
+      )
+      
+      coordinator.didPrepareForPresent = { [weak router] in
+        router?.present(navigationController)
+      }
+      
+      coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
+        navigationController?.dismiss(animated: true)
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+      
+      coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in 
+        navigationController?.dismiss(animated: true)
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+      
+      addChild(coordinator)
+      coordinator.start()
+    }
   }
   
   func openWalletPicker() {
@@ -289,19 +423,29 @@ private extension MainCoordinator {
   }
   
   func openAddWallet(router: ViewControllerRouter) {
-    let module = AddWalletModule(dependencies: AddWalletModule.Dependencies(
-      walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly)
+    let module = AddWalletModule(
+      dependencies: AddWalletModule.Dependencies(
+        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        coreAssembly: coreAssembly,
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+      )
     )
     
-    let coordinator = module.createAddWalletCoordinator(router: router)
+    let coordinator = module.createAddWalletCoordinator(options: [.createRegular, .importRegular, .importWatchOnly, .importTestnet, .signer],
+                                                        router: router)
     coordinator.didAddWallets = { [weak self, weak coordinator] in
+      self?.addWalletCoordinator = nil
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
     coordinator.didCancel = { [weak self, weak coordinator] in
+      self?.addWalletCoordinator = nil
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
+    
+    addWalletCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start()
@@ -310,7 +454,10 @@ private extension MainCoordinator {
   func openEditWallet(wallet: Wallet, fromViewController: UIViewController) {
     let addWalletModuleModule = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
-        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly
+        walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        coreAssembly: coreAssembly,
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
+        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
       )
     )
     

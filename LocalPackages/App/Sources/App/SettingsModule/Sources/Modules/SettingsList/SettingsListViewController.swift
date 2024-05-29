@@ -59,7 +59,6 @@ private extension SettingsListViewController {
         message: description,
         preferredStyle: .alert
       )
-      alertController.overrideUserInterfaceStyle = .dark
       actions.forEach { alertController.addAction($0) }
       self?.present(alertController, animated: true)
     }

@@ -1,7 +1,7 @@
 import Foundation
 
-struct FiatMethodItem: Codable {
-  typealias ID = String
+public struct FiatMethodItem: Codable {
+  public typealias ID = String
   
   struct ActionButton: Codable {
     let title: String
@@ -14,12 +14,12 @@ struct FiatMethodItem: Codable {
   }
   
   let id: ID
-  let title: String
+  public let title: String
   let isDisabled: Bool?
   let badge: String?
   let subtitle: String?
   let description: String?
-  let iconURL: URL?
+  public let iconURL: URL?
   let actionButton: ActionButton
   let infoButtons: [ActionButton]
   
@@ -36,7 +36,7 @@ struct FiatMethodItem: Codable {
   }
 }
 
-struct FiatMethodCategory: Codable {
+public struct FiatMethodCategory: Codable {
   enum CategoryType: String, Codable {
     case buy
     case sell
@@ -48,16 +48,16 @@ struct FiatMethodCategory: Codable {
   let items: [FiatMethodItem]
 }
 
-struct FiatMethodLayout: Codable {
-  let countryCode: String?
-  let currency: String?
-  let methods: [FiatMethodItem.ID]
+public struct FiatMethodLayout: Codable {
+  public let countryCode: String?
+  public let currency: String?
+  public let methods: [FiatMethodItem.ID]
 }
 
-struct FiatMethods: Codable {
-  let layoutByCountry: [FiatMethodLayout]
-  let defaultLayout: FiatMethodLayout
-  let categories: [FiatMethodCategory]
+public struct FiatMethods: Codable {
+  public let layoutByCountry: [FiatMethodLayout]
+  public let defaultLayout: FiatMethodLayout
+  public let categories: [FiatMethodCategory]
 }
 
 struct FiatMethodsResponse: Codable {

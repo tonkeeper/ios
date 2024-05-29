@@ -11,7 +11,7 @@ public struct TKTextStyle: Hashable {
   
   public var baselineOffset: CGFloat {
     let delimeter: CGFloat
-    if #available(iOS 16, *) {
+    if #available(iOS 16.4, *) {
       delimeter = 2
     } else {
       delimeter = 4
@@ -93,6 +93,16 @@ public extension TKTextStyle {
   static let label3: TKTextStyle = .init(
     font: .montserratSemiBold(size: 12),
     lineHeight: 16
+  )
+  
+  static let label4: TKTextStyle = .init(
+    font: .montserratSemiBold(size: 10),
+    lineHeight: 16
+  )
+  
+  static let body0: TKTextStyle = .init(
+    font: .montserratMedium(size: 18),
+    lineHeight: 24
   )
   
   static let body1: TKTextStyle = .init(

@@ -4,20 +4,23 @@ import TonAPI
 import BigInt
 
 protocol JettonBalanceService {
-  func loadJettonsBalance(address: Address, currency: Currency) async throws -> [JettonBalance]
+  func loadJettonsBalance(wallet: Wallet, currency: Currency) async throws -> [JettonBalance]
 }
 
 final class JettonBalanceServiceImplementation: JettonBalanceService {
   
-  private let api: API
+  private let apiProvider: APIProvider
   
-  init(api: API) {
-    self.api = api
+  init(apiProvider: APIProvider) {
+    self.apiProvider = apiProvider
   }
   
-  func loadJettonsBalance(address: Address, currency: Currency) async throws -> [JettonBalance] {
+  func loadJettonsBalance(wallet: Wallet, currency: Currency) async throws -> [JettonBalance] {
     let currencies = Array(Set([Currency.USD, Currency.TON, currency]))
-    let tokensBalance = try await api.getAccountJettonsBalances(address: address, currencies: currencies)
+    let tokensBalance = try await apiProvider.api(wallet.isTestnet).getAccountJettonsBalances(
+      address: wallet.address,
+      currencies: currencies
+    )
     return tokensBalance
   }
 }

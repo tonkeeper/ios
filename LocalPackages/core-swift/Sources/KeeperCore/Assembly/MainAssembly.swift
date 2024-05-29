@@ -50,6 +50,10 @@ public final class MainAssembly {
     self.loadersAssembly = loadersAssembly
   }
   
+  public func scannerAssembly() -> ScannerAssembly {
+    ScannerAssembly()
+  }
+  
   public func mainController() -> MainController {
     MainController(
       walletsStore: walletAssembly.walletStore,
@@ -62,11 +66,12 @@ public final class MainAssembly {
       tonConnectService: tonConnectAssembly.tonConnectService(),
       deeplinkParser: DefaultDeeplinkParser(
         parsers: [
+          TonkeeperDeeplinkParser(),
           TonConnectDeeplinkParser(),
-          TonDeeplinkParser()
+          TonDeeplinkParser(),
         ]
       ),
-      api: apiAssembly.api
+      apiProvider: apiAssembly.apiProvider
     )
   }
   
@@ -152,7 +157,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -169,7 +174,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -187,7 +192,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      wallet: wallet,
+      walletsStore: walletAssembly.walletStore,
       paginator: paginator,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
@@ -234,6 +239,7 @@ public final class MainAssembly {
       loader: loadersAssembly.chartLoader,
       chartService: servicesAssembly.chartService(),
       currencyStore: storesAssembly.currencyStore,
+      walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
     )
   }
@@ -308,15 +314,6 @@ public final class MainAssembly {
     )
   }
   
-  public func scannerController() -> ScannerController {
-    ScannerController(
-      deeplinkParser: DefaultDeeplinkParser(
-        parsers: [TonDeeplinkParser(),
-                 TonConnectDeeplinkParser()]
-      )
-    )
-  }
-  
   public func tonConnectConnectController(parameters: TonConnectParameters,
                                           manifest: TonConnectManifest) -> TonConnectConnectController {
     TonConnectConnectController(
@@ -350,7 +347,54 @@ public final class MainAssembly {
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
+    
+  public func swapItemsController() -> SwapItemsController {
+      SwapItemsController(
+        swapService: storesAssembly.servicesAssembly.swapService(),
+        assetsStore: storesAssembly.assetsStore,
+        walletsStore: walletAssembly.walletStore,
+        walletBalanceStore: storesAssembly.walletBalanceStore,
+        knownAccountsStore: storesAssembly.knownAccountsStore,
+        tonRatesStore: storesAssembly.tonRatesStore,
+        currencyStore: storesAssembly.currencyStore,
+        amountFormatter: formattersAssembly.amountFormatter
+      )
+  }
   
+  public func swapConfirmationController(wallet: Wallet, sellItem: SwapItem, buyItem: SwapItem) -> SwapConfirmationController {
+    SwapConfirmationController(
+      wallet: wallet,
+      sellItem: sellItem,
+      buyItem: buyItem,
+      ratesService: servicesAssembly.ratesService(),
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      swapService: storesAssembly.servicesAssembly.swapService(),
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
+      amountFormatter: formattersAssembly.amountFormatter
+    )
+}
+
+  public func swapTokenPickerController(wallet: Wallet, selectedToken: SwapToken?, selectedPairToken: SwapToken?) -> SwapTokenPickerController {
+    SwapTokenPickerController(
+      wallet: wallet,
+      selectedToken: selectedToken,
+      selectedPairToken: selectedPairToken,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      tonRatesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
+      assetsStore: storesAssembly.assetsStore,
+      amountFormatter: formattersAssembly.amountFormatter
+    )
+  }
+
+  public func swapSettingsController() -> SwapSettingsController {
+    SwapSettingsController(
+    )
+  }
+
   public func sendRecipientController(recipient: Recipient?) -> SendRecipientController {
     SendRecipientController(
       recipient: recipient,
@@ -392,6 +436,7 @@ public final class MainAssembly {
       sendItem: sendItem,
       comment: comment,
       sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.ratesStore,
       currencyStore: storesAssembly.currencyStore,
@@ -419,6 +464,28 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
     )
+  }
+  
+  public func buySellAmountController(token: Token,
+                                      tokenAmount: BigUInt,
+                                      wallet: Wallet,
+                                      isMarketRegionPickerAvailable: @escaping () async -> Bool) -> BuySellAmountController {
+    BuySellAmountController(token: token,
+                            tokenAmount: tokenAmount,
+                            wallet: wallet,
+                            balanceStore: storesAssembly.balanceStore,
+                            ratesStore: storesAssembly.ratesStore,
+                            currencyStore: storesAssembly.currencyStore,
+                            buySellMethodsService: servicesAssembly.buySellMethodsService(),
+                            locationService: servicesAssembly.locationService(),
+                            configurationStore: configurationAssembly.remoteConfigurationStore,
+                            rateConverter: RateConverter(),
+                            amountFormatter: formattersAssembly.amountFormatter,
+                            isMarketRegionPickerAvailable: isMarketRegionPickerAvailable)
+  }
+
+  public func signerSignController(url: URL, wallet: Wallet) -> SignerSignController {
+    SignerSignController(url: url, wallet: wallet)
   }
 }
 

@@ -189,7 +189,7 @@ private extension TonConnectServiceImplementation {
   func createRequestTransactionBoc(wallet: Wallet,
                                    seqno: UInt64,
                                    parameters: TonConnect.AppRequest.Param,
-                                   signClosure: (WalletTransfer) async throws -> Cell) async throws  -> String{
+                                   signClosure: (WalletTransfer) async throws -> Data) async throws  -> String{
     let payloads = parameters.messages.map { message in
         TonConnectTransferMessageBuilder.Payload(
             value: BigInt(integerLiteral: message.amount),

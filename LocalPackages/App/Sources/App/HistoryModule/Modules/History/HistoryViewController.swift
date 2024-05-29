@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import TKCoordinator
+import TKLocalize
 
 final class HistoryViewController: GenericViewViewController<HistoryView>, ScrollViewController {
   private let viewModel: HistoryViewModel
@@ -42,7 +43,7 @@ final class HistoryViewController: GenericViewViewController<HistoryView>, Scrol
 
 private extension HistoryViewController {
   func setup() {
-    customView.navigationBarView.title = "History"
+    customView.navigationBarView.title = TKLocales.History.title
   }
   
   func setupBindings() {

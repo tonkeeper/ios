@@ -2,6 +2,7 @@ import UIKit
 import KeeperCore
 import TKCore
 import BigInt
+import TKLocalize
 
 protocol SendV3ModuleOutput: AnyObject {
   var didContinueSend: ((SendModel) -> Void)? { get set }
@@ -342,7 +343,7 @@ private extension SendV3ViewModelImplementation {
       ),
       comment: commentModel,
       button: Model.Button(
-        title: "Continue",
+        title: TKLocales.Actions.continue_action,
         isEnabled: !isResolving && isContinueEnable,
         isActivity: isResolving,
         action: { [weak self] in
@@ -376,7 +377,7 @@ private extension SendV3ViewModelImplementation {
       }
     }
     return Model.Recipient(
-      placeholder: "Address or name",
+      placeholder: TKLocales.Send.Recepient.placeholder,
       text: text,
       isValid: isValid
     )
@@ -387,19 +388,19 @@ private extension SendV3ViewModelImplementation {
     let placeholder: String
     switch (isCommentRequired, commentInput.isEmpty) {
     case (false, true):
-      placeholder = "Comment"
+      placeholder = TKLocales.Send.Comment.placeholder
       description = nil
     case (false, false):
-      placeholder = "Comment"
-      description = "Will be visible to everyone.".withTextStyle(
+      placeholder = TKLocales.Send.Comment.placeholder
+      description = TKLocales.Send.Comment.description.withTextStyle(
         .body2,
         color: .Text.secondary,
         alignment: .left,
         lineBreakMode: .byWordWrapping
       )
     case (true, _):
-      placeholder = "Required comment"
-      description = "You must include the note from the exchange for transfer. Without it your funds will be lost."
+      placeholder = TKLocales.Send.RequiredComment.placeholder
+      description = TKLocales.Send.RequiredComment.description
         .withTextStyle(
           .body2,
           color: .Accent.orange,
@@ -418,7 +419,7 @@ private extension SendV3ViewModelImplementation {
   
   func createAmountModel(token: Token) -> Model.Amount {
     return Model.Amount(
-      placeholder: "Amount",
+      placeholder: TKLocales.Send.Amount.placeholder,
       text: sendAmountTextFieldFormatter.formatString(amountInput) ?? "",
       fractionDigits: tokenFractionalDigits(token: token),
       token: createTokenModel(token: token)

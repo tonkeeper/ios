@@ -10,7 +10,6 @@ final class AmountInputViewInputControl: UIControl {
     textField.font = .amountInputFont
     textField.textColor = .Text.primary
     textField.textAlignment = .right
-    textField.keyboardAppearance = .dark
     textField.keyboardType = .decimalPad
     textField.tintColor = .Accent.blue
     textField.setContentHuggingPriority(.required, for: .horizontal)

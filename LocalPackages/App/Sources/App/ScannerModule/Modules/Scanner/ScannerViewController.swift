@@ -73,5 +73,17 @@ private extension ScannerViewController {
         customView.setVideoPreviewLayer(layer)
       }
     }
+    
+    viewModel.didUpdateTitle = { [weak customView] title in
+      customView?.titleLabel.attributedText = title
+    }
+    
+    viewModel.didUpdateSubtitle = { [weak customView] subtitle in
+      customView?.subtitleLabel.attributedText = subtitle
+    }
+    
+    viewModel.didUpdateIsFlashlightVisible = { [weak customView] isVisible in
+      customView?.flashlightButton.isHidden = !isVisible
+    }
   }
 }

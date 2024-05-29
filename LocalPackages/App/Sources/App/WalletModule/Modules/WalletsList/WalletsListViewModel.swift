@@ -2,6 +2,7 @@ import Foundation
 import TKUIKit
 import UIKit
 import KeeperCore
+import TKLocalize
 
 protocol WalletsListModuleOutput: AnyObject {
   var didTapAddWalletButton: (() -> Void)? { get set }
@@ -122,17 +123,29 @@ private extension WalletsListViewModelImplementation {
   func createListItem(item: WalletListController.ItemModel,
                       isHighlightable: Bool) -> TKUIListItemCell.Configuration {
     let tagModel: TKUITagView.Configuration?
-    switch item.walletModel.walletType {
-    case .regular:
+    switch (item.walletModel.walletType, item.walletModel.isTestnet) {
+    case (.regular, false):
       tagModel = nil
-    case .watchOnly(let tag):
+    case (.regular, true):
       tagModel = TKUITagView.Configuration(
-        text: tag,
+        text: "TESTNET",
+        textColor: .Text.secondary,
+        backgroundColor: .Background.contentTint
+      )
+    case (.watchOnly, _):
+      tagModel = TKUITagView.Configuration(
+        text: TKLocales.WalletTags.watch_only,
+        textColor: .Text.secondary,
+        backgroundColor: .Background.contentTint
+      )
+    case (.external, _):
+      tagModel = TKUITagView.Configuration(
+        text: "SIGNER",
         textColor: .Text.secondary,
         backgroundColor: .Background.contentTint
       )
     }
-    
+
     let contentConfiguration = TKUIListItemContentView.Configuration(
       leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
         title: item.walletModel.label.withTextStyle(.label1, color: .Text.primary, alignment: .left),
@@ -175,20 +188,22 @@ private extension WalletsListViewModelImplementation {
   func createHeaderItem() -> TKPullCardHeaderItem {
     var leftButton: TKPullCardHeaderItem.LeftButton?
     if model.isEditable {
-      let leftButtonModel = TKUIHeaderTitleIconButton.Model(title: isEditing ? "Done": "Edit")
+      let leftButtonModel = TKUIHeaderTitleIconButton.Model(
+        title: isEditing ? TKLocales.Actions.done: TKLocales.Actions.edit
+      )
       leftButton = TKPullCardHeaderItem.LeftButton(
         model: leftButtonModel) { [weak self] in
           self?.isEditing.toggle()
         }
     }
     return TKPullCardHeaderItem(
-      title: "Wallets",
+      title: TKLocales.WalletsList.title,
       leftButton: leftButton)
   }
   
   func createFooterModel() -> WalletsListFooterView.Model {
     WalletsListFooterView.Model(
-      content: TKButton.Configuration.Content(title: .plainString("Add Wallet"))) { [weak self] in
+      content: TKButton.Configuration.Content(title: .plainString(TKLocales.WalletsList.add_wallet))) { [weak self] in
         self?.didTapAddWalletButton?()
       }
   }
