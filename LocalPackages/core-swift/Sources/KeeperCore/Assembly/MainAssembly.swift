@@ -465,7 +465,6 @@ public final class MainAssembly {
     BuySellOperatorController(
       fiatOperatorCategory: fiatOperatorCategory,
       buySellMethodsService: servicesAssembly.buySellMethodsService(),
-      locationService: servicesAssembly.locationService(),
       tonRatesLoader: loadersAssembly.tonRatesLoader,
       currencyStore: storesAssembly.currencyStore,
       walletsStore: walletAssembly.walletStore,

@@ -33,7 +33,7 @@ final class SwapTokenListViewController: ModalViewController<SwapTokenListView, 
   private lazy var layout: UICollectionViewCompositionalLayout = {
     let size = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(0)
+      heightDimension: .estimated(.tokenCellListHeight)
     )
     
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
@@ -467,13 +467,13 @@ private extension String {
   static let shimmerSectionFooterElementKind = "ShimmerSectionFooterElementKind"
 }
 
-private extension NSDirectionalEdgeInsets {
-  static let defaultSectionInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16)
-}
-
 private extension CGFloat {
   static let titleHeaderHeight: CGFloat = 48
   static let suggestedTokenInterGroupSpacing: CGFloat = 8
   static let suggestedTokenCellHeight: CGFloat = 36
   static let tokenCellListHeight: CGFloat = 76
+}
+
+private extension NSDirectionalEdgeInsets {
+  static let defaultSectionInsets = NSDirectionalEdgeInsets(top: 0, leading: 16, bottom: 16, trailing: 16)
 }

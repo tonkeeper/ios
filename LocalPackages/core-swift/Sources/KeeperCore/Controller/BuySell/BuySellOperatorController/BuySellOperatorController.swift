@@ -9,7 +9,6 @@ public final class BuySellOperatorController {
   
   private let fiatOperatorCategory: FiatOperatorCategory
   private let buySellMethodsService: BuySellMethodsService
-  private let locationService: LocationService
   private let tonRatesLoader: TonRatesLoader
   private let currencyStore: CurrencyStore
   private let walletsStore: WalletsStore
@@ -18,7 +17,6 @@ public final class BuySellOperatorController {
   
   init(fiatOperatorCategory: FiatOperatorCategory,
        buySellMethodsService: BuySellMethodsService,
-       locationService: LocationService,
        tonRatesLoader: TonRatesLoader,
        currencyStore: CurrencyStore,
        walletsStore: WalletsStore,
@@ -26,7 +24,6 @@ public final class BuySellOperatorController {
        decimalAmountFormatter: DecimalAmountFormatter) {
     self.fiatOperatorCategory = fiatOperatorCategory
     self.buySellMethodsService = buySellMethodsService
-    self.locationService = locationService
     self.tonRatesLoader = tonRatesLoader
     self.currencyStore = currencyStore
     self.walletsStore = walletsStore

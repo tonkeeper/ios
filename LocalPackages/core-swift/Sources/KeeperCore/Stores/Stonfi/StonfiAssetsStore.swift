@@ -17,7 +17,6 @@ actor StonfiAssetsStore {
   }
   
   func getAssets() async -> StonfiAssets {
-    let assets: StonfiAssets
     let storedAssets = (try? repository.getAssets()) ?? StonfiAssets()
     guard !storedAssets.isValid else { return storedAssets }
     

@@ -14,7 +14,7 @@ final class CurrencyListViewController: ModalViewController<CurrencyListView, Mo
   private lazy var layout: UICollectionViewCompositionalLayout = {
     let size = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(0)
+      heightDimension: .estimated(.currencyCellHeight)
     )
     
     let configuration = UICollectionViewCompositionalLayoutConfiguration()

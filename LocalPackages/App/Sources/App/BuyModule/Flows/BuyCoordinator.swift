@@ -25,16 +25,6 @@ public final class BuyCoordinator: RouterCoordinator<NavigationControllerRouter>
   
   public override func start() {
     openBuySell()
-//    Task {
-//      let isBuySellLovely = await coreAssembly.featureFlagsProvider.isBuySellLovely()
-//      await MainActor.run {
-//        if isBuySellLovely {
-//          openBuyList()
-//        } else {
-//          openUglyBuyList()
-//        }
-//      }
-//    }
   }
 }
 

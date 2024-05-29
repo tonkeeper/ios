@@ -16,7 +16,7 @@ final class StakePoolDetailsViewController: ModalViewController<StakePoolDetails
   private lazy var layout: UICollectionViewCompositionalLayout = {
     let size = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(0)
+      heightDimension: .estimated(.detailCellHeight)
     )
     
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
@@ -304,7 +304,7 @@ private extension String {
 private extension CGFloat {
   static let titleHeaderHeight: CGFloat = 56
   static let descriptionFooterHeight: CGFloat = 60
-  static let detailCellHeight: CGFloat = 44
+  static let detailCellHeight: CGFloat = 52
   static let linkCellHeight: CGFloat = 36
   static let linkCellInterGroupSpacing: CGFloat = 8
 }

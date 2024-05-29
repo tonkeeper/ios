@@ -16,7 +16,6 @@ actor StonfiPairsStore {
   }
   
   func getPairs() async -> StonfiPairs {
-    let pairs: StonfiPairs
     let storedPairs = (try? repository.getPairs()) ?? StonfiPairs()
     guard !storedPairs.isValid else { return storedPairs }
     

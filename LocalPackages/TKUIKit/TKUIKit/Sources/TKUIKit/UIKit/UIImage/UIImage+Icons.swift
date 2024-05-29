@@ -62,6 +62,26 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-qr-code-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var sliders: UIImage {
+          .imageWithName("Icons/16/ic-sliders-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var swapVertical: UIImage {
+          .imageWithName("Icons/16/ic-swap-vertical-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var informationCircle: UIImage {
+          .imageWithName("Icons/16/ic-information-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var twitter: UIImage {
+          .imageWithName("Icons/16/ic-twitter-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var telegram: UIImage {
+          .imageWithName("Icons/16/ic-telegram-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
@@ -204,6 +224,14 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-doc-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var radioButtonEnabled: UIImage {
+          .imageWithName("Icons/28/ic-radio-button-enabled")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var radioButtonDisabled: UIImage {
+          .imageWithName("Icons/28/ic-radio-button-disabled")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {
@@ -251,77 +279,6 @@ public extension UIImage {
           .imageWithName("Icons/96/ton_icon")
         }
       }
-    }
-  }
-}
-
-public extension UIImage.TKUIKit.Icons.Size16 {
-  static var sliders: UIImage {
-    .imageWithName("Icons/16/ic-sliders-16")
-    .withRenderingMode(.alwaysTemplate)
-  }
-  static var swapVertical: UIImage {
-    .imageWithName("Icons/16/ic-swap-vertical-16")
-    .withRenderingMode(.alwaysTemplate)
-  }
-  static var informationCircle: UIImage {
-    .imageWithName("Icons/16/ic-information-circle-16")
-    .withRenderingMode(.alwaysTemplate)
-  }
-  static var twitter: UIImage {
-    .imageWithName("Icons/16/ic-twitter-16")
-    .withRenderingMode(.alwaysTemplate)
-  }
-  static var telegram: UIImage {
-    .imageWithName("Icons/16/ic-telegram-16")
-    .withRenderingMode(.alwaysTemplate)
-  }
-}
-
-public extension UIImage.TKUIKit.Icons.Size28 {
-  static var radioButtonEnabled: UIImage {
-    .imageWithName("Icons/28/ic-radio-button-enabled")
-    .withRenderingMode(.alwaysTemplate)
-  }
-  static var radioButtonDisabled: UIImage {
-    .imageWithName("Icons/28/ic-radio-button-disabled")
-    .withRenderingMode(.alwaysTemplate)
-  }
-}
-
-public extension UIImage.TKUIKit.Images {
-  enum PaymentMethods {
-    public static var mastercardVisaCardsLogo: UIImage {
-      .imageWithName("Images/PaymentMethods/mastercardVisaCards-logo")
-    }
-    public static var mirCardLogo: UIImage {
-      .imageWithName("Images/PaymentMethods/mirCard-logo")
-    }
-    public static var cryptocyrrencyLogo: UIImage {
-      .imageWithName("Images/PaymentMethods/cryptocurrencies-logo")
-    }
-    public static var applePayCardLogo: UIImage {
-      .imageWithName("Images/PaymentMethods/applePayCard-logo")
-    }
-  }
-}
-
-public extension UIImage.TKUIKit.Images {
-  enum Pools {
-    public static var tonstakers: UIImage {
-      .imageWithName("Images/Pools/Tonstakers")
-    }
-    public static var bemo: UIImage {
-      .imageWithName("Images/Pools/Bemo")
-    }
-    public static var tonWhales: UIImage {
-      .imageWithName("Images/Pools/TONWhales")
-    }
-    public static var tonNominators: UIImage {
-      .imageWithName("Images/Pools/TONNominators")
-    }
-    public static var tonkeeperPool1: UIImage {
-      .imageWithName("Images/Pools/TonkeeperPool1")
     }
   }
 }

@@ -16,8 +16,12 @@ open class ModalViewController<View: UIView, NavigationBar: ModalNavigationBarVi
   
   open override func viewDidLoad() {
     super.viewDidLoad()
-    navigationController?.presentationController?.delegate = self
     setupNavigationBarView()
+  }
+  
+  open override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    navigationController?.presentationController?.delegate = self
   }
   
   open func setupNavigationBarView() {

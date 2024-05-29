@@ -17,7 +17,7 @@ final class BuySellOperatorViewController: ModalViewController<BuySellOperatorVi
   private lazy var layout: UICollectionViewCompositionalLayout = {
     let size = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(0)
+      heightDimension: .estimated(.operatorCellHeight)
     )
     
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
@@ -320,12 +320,12 @@ private extension String {
   static let shimmerSectionFooterElementKind = "ShimmerSectionFooterElementKind"
 }
 
-private extension NSDirectionalEdgeInsets {
-  static let defaultSectionInsets = NSDirectionalEdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16)
-}
-
 private extension CGFloat {
   static let currencyPickerCellHeight: CGFloat = 56
   static let operatorCellHeight: CGFloat = 76
   static let scrollViewContentInsetBottom: CGFloat = 56 + 16 * 2
+}
+
+private extension NSDirectionalEdgeInsets {
+  static let defaultSectionInsets = NSDirectionalEdgeInsets(top: 16, leading: 16, bottom: 16, trailing: 16)
 }
