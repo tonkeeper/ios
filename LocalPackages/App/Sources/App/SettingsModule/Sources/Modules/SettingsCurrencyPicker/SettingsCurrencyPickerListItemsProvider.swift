@@ -5,9 +5,11 @@ import TKLocalize
 
 final class SettingsCurrencyPickerListItemsProvider: SettingsListItemsProvider {
   private let settingsController: SettingsController
+  private let forBuySell: Bool
   
-  init(settingsController: SettingsController) {
+  init(settingsController: SettingsController, forBuySell: Bool = false) {
     self.settingsController = settingsController
+    self.forBuySell = forBuySell
   }
   
   var didUpdateSections: (() -> Void)?
@@ -42,7 +44,12 @@ final class SettingsCurrencyPickerListItemsProvider: SettingsListItemsProvider {
 
 private extension SettingsCurrencyPickerListItemsProvider {
   func createSection() -> SettingsListSection {
-    let currencies = settingsController.getAvailableCurrencies()
+    var currencies = settingsController.getAvailableCurrencies()
+    if forBuySell {
+      currencies = currencies.filter({ it in
+        it.code != "TON"
+      })
+    }
     let items = currencies.map { currency in
       let title = NSMutableAttributedString()
       

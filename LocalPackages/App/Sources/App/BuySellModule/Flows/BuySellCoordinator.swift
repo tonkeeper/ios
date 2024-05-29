@@ -63,7 +63,8 @@ private extension BuySellCoordinator {
   }
   
   func openCurrencyPicker(on nav: UINavigationController, onCompletion: ((String) -> Void)?) {
-    let itemsProvider = SettingsCurrencyPickerListItemsProvider(settingsController: keeperCoreMainAssembly.settingsController)
+    let itemsProvider = SettingsCurrencyPickerListItemsProvider(settingsController: keeperCoreMainAssembly.settingsController,
+                                                                forBuySell: true)
     //let itemsProvider = BuySellCurrencyListItemsProvider(items: items, selectedItem: selectedItem)
     let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
     
