@@ -31,16 +31,16 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
   var didUpdateModel: ((BuyAndSellView.Model) -> Void)?
     
   private let buyListController: BuyListController
-  private let currencyStore: CurrencyStore
+  private let tonRatesStore: TonRatesStore
   private let bigIntAmountFormatter: BigIntAmountFormatter
   
   init(
     buyListController: BuyListController,
-    currencyStore: CurrencyStore,
+    tonRatesStore: TonRatesStore,
     bigIntAmountFormatter: BigIntAmountFormatter
   ) {
     self.buyListController = buyListController
-    self.currencyStore = currencyStore
+    self.tonRatesStore = tonRatesStore
     self.bigIntAmountFormatter = bigIntAmountFormatter
     self.amountDisclaimer = minBuyAmountString
   }
@@ -66,9 +66,9 @@ final class BuyAndSellViewModelImplementation: BuyAndSellViewModel, BuyAndSellVi
   }
   
   private func startObservations() async {
-    _ = await currencyStore.addEventObserver(self) { [weak self] observer, event in
+    _ = await tonRatesStore.addEventObserver(self) { [weak self] observer, event in
       switch event {
-      case .didChangeCurrency:
+      case .didUpdateRates:
         self?.updateConverted()
       }
     }

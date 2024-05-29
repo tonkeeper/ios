@@ -83,8 +83,10 @@ private extension TransactionViewController {
       viewModel?.didInputGetAmount(text)
     }
     
-    customView.continueButton.configuration.action = { [weak viewModel] in
+    customView.continueButton.configuration.action = { [weak self, weak viewModel] in
       viewModel?.didTapContinueButton()
+      self?.customView.payTextField.resignFirstResponder()
+      self?.customView.getTextField.resignFirstResponder()
     }
   }
 }

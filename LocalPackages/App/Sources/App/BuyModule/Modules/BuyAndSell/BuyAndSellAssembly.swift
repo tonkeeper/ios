@@ -6,12 +6,12 @@ struct BuyAndSellAssembly {
   private init() {}
   static func module(
     buyListController: BuyListController,
-    currencyStore: CurrencyStore,
+    tonRatesStore: TonRatesStore,
     bigIntAmountFormatter: BigIntAmountFormatter
   ) -> MVVMModule<BuyAndSellViewController, BuyAndSellViewModelOutput, Void> {
     let viewModel = BuyAndSellViewModelImplementation(
       buyListController: buyListController,
-      currencyStore: currencyStore,
+      tonRatesStore: tonRatesStore,
       bigIntAmountFormatter: bigIntAmountFormatter
     )
     

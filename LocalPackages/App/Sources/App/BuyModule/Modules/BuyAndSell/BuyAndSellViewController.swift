@@ -92,7 +92,7 @@ private extension BuyAndSellViewController {
       customView.amountView.minAmountLabel.textColor = model.isContinueButtonEnabled ? .Text.secondary : .Accent.red
       customView.amountView.convertedAmountLabel.text = model.convertedAmount
       customView.amountView.amountTextField.placeholder = model.amount.placeholder
-      customView.amountView.convertedAmountLabel.isHidden = !model.isConvertedAmountShown
+      customView.amountView.convertedAmountContainer.isHidden = !model.isConvertedAmountShown
     }
   }
   
@@ -101,8 +101,9 @@ private extension BuyAndSellViewController {
       viewModel?.didInputAmount(text ?? "")
     }
     
-    customView.continueButton.configuration.action = { [weak viewModel] in
+    customView.continueButton.configuration.action = { [weak viewModel, weak self] in
       viewModel?.didTapContinueButton()
+      self?.customView.amountView.amountTextField.resignFirstResponder()
     }
     
     segmentedControl.didChangeSegment = { [weak viewModel] selectedSegmentIndex in

@@ -5,7 +5,7 @@ final class BuyAndSellAmountView: UIView {
   var didUpdateText: ((String?) -> Void)?
   
   private lazy var textFieldContainer = UIView()
-  private lazy var convertedAmountContainer = UIView()
+  lazy var convertedAmountContainer = UIView()
   
   lazy var tonLabel: UILabel = {
     let label = UILabel()
