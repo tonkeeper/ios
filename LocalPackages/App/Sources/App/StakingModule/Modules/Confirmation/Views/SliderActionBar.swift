@@ -3,12 +3,17 @@ import TKUIKit
 import TKCore
 
 final class SliderActionView: UIView, ConfigurableView {
-  let unlockSlider = UnlockSlider()
+  var model: Model = .init(title: "", unlockAction: nil, completionAction: nil) {
+    didSet {
+      update()
+    }
+  }
+  
+  private let unlockSlider = UnlockSlider()
   private let loaderView = TKLoaderView(size: .medium, style: .secondary)
   private let resultView = TKResultView(state: .success)
-  
-  var unlockAction: ((@escaping () -> Void, @escaping (_ isSuccess: Bool) -> Void) -> Void)?
-  var completionAction: ((Bool) -> Void)?
+  private var unlockAction: ((@escaping () -> Void, @escaping (_ isSuccess: Bool) -> Void) -> Void)?
+  private var completionAction: ((Bool) -> Void)?
   
   // MARK: - Init
   
@@ -21,23 +26,31 @@ final class SliderActionView: UIView, ConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  struct Model {
-    let title: NSAttributedString
-    let unlockAction: ((@escaping () -> Void, @escaping (_ isSuccess: Bool) -> Void) -> Void)?
-    let completionAction: ((Bool) -> Void)?
-  }
-  
   // MARK: - ConfigurableView
   func configure(model: Model) {
-    unlockSlider.title = model.title
-    unlockAction = model.unlockAction
-    completionAction = model.completionAction
+    self.model = model
   }
 }
 
 // MARK: - Private methods
 
 private extension SliderActionView {
+  private func update() {
+    unlockSlider.title = model.title.withTextStyle(
+      .label1,
+      color: .Text.secondary
+    )
+    unlockAction = model.unlockAction
+    completionAction = model.completionAction
+    
+    switch model.state {
+    case .idle:
+      showSlider()
+    case .loading:
+      showLoader()
+    }
+  }
+  
   func setup() {
     showSlider()
     
@@ -90,5 +103,28 @@ private extension SliderActionView {
     
     resultView.isHidden = false
     resultView.state = isSuccess ? .success : .failure
+  }
+}
+
+extension SliderActionView {
+  struct Model: Hashable {
+    enum State: Hashable {
+      case loading
+      case idle
+    }
+    
+    var title: String
+    var unlockAction: ((@escaping () -> Void, @escaping (_ isSuccess: Bool) -> Void) -> Void)?
+    var completionAction: ((Bool) -> Void)?
+    var state: State = .idle
+    
+    func hash(into hasher: inout Hasher) {
+      hasher.combine(title.string)
+      hasher.combine(state)
+    }
+    
+    static func == (lhs: SliderActionView.Model, rhs: SliderActionView.Model) -> Bool {
+      lhs.title == rhs.title && lhs.state == rhs.state
+    }
   }
 }

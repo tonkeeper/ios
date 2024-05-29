@@ -3,28 +3,6 @@ import TonSwift
 import BigInt
 import TKUIKit
 
-public struct WithdrawModel {
-  public let pool: StakingPool
-  public let lpJetton: JettonInfo
-  public let token: Token
-  
-  public init(pool: StakingPool, lpJetton: JettonInfo, token: Token) {
-    self.pool = pool
-    self.lpJetton = lpJetton
-    self.token = token
-  }
-}
-
-public struct DepositModel {
-  public let pool: StakingPool
-  public let token: Token
-  
-  public init(pool: StakingPool, token: Token) {
-    self.pool = pool
-    self.token = token
-  }
-}
-
 public protocol StakingEditAmountController: AnyObject {
   var didUpdateTitle: ((String) -> Void)? { get set }
   var didUpdateConvertedValue: ((String) -> Void)? { get set }

@@ -8,8 +8,11 @@ public final class StakingDepositConfirmationController: StakingConfirmationCont
   public var didGetError: ((StakingConfirmationError) -> Void)?
   public var didGetExternalSign: ((URL) async throws -> Data?)?
   
-  private let depositModel: DepositModel
+  private let stakingPool: StakingPool
+  
   private let amount: BigUInt
+  private var estimatedFee: Int64?
+  private let isMaxAmount: Bool
   
   private let balanceStore: BalanceStore
   private let ratesStore: RatesStore
@@ -21,8 +24,9 @@ public final class StakingDepositConfirmationController: StakingConfirmationCont
   private let signService: TransferSignService
   
   init(
-    depositModel: DepositModel,
+    stakingPool: StakingPool,
     amount: BigUInt,
+    isMax: Bool,
     walletsStore: WalletsStore,
     balanceStore: BalanceStore,
     ratesStore: RatesStore,
@@ -32,8 +36,9 @@ public final class StakingDepositConfirmationController: StakingConfirmationCont
     decimalFormatter: DecimalAmountFormatter,
     sendService: SendService
   ) {
-    self.depositModel = depositModel
+    self.stakingPool = stakingPool
     self.amount = amount
+    self.isMaxAmount = isMax
     self.walletsStore = walletsStore
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
@@ -76,6 +81,35 @@ public final class StakingDepositConfirmationController: StakingConfirmationCont
   public func isNeedToConfirm() -> Bool {
     return walletsStore.activeWallet.isRegular
   }
+  
+  public func checkTransactionSendingStatus() -> StakingTransactionSendingStatus {
+    let wallet = walletsStore.activeWallet
+    
+    guard let estimatedFee else {
+      return .feeIsNotSet
+    }
+    
+    let balance = (try? balanceStore.getBalance(wallet: wallet).balance.tonBalance.amount) ?? .zero
+    let refundedAmount = stakingPool.implementation.withdrawalFee
+    let balanceAmount = BigUInt(integerLiteral: UInt64(balance))
+    let totalDepositExpenses = getTotalDepositExpenses()
+    var estimatedFeeBigInt = BigUInt(estimatedFee)
+    if isMaxAmount {
+      estimatedFeeBigInt = .zero
+    }
+    
+    guard balanceAmount >= (totalDepositExpenses + estimatedFeeBigInt) else {
+      let model = StakingTransactionSendingStatus.InsufficientFunds(
+        estimatedFee: BigUInt(estimatedFee),
+        refundedAmount: refundedAmount,
+        token: .ton,
+        wallet: wallet
+      )
+      return .insufficientFunds(model)
+    }
+    
+    return .ready
+  }
 }
 
 // MARK: - Private methods
@@ -93,8 +127,8 @@ private extension StakingDepositConfirmationController {
         wallet: walletsStore.activeWallet
       )
       
-      let fee = transactionInfo.trace.transaction.total_fees
-      let model = await makeEmulatedModel(fee: fee)
+      estimatedFee = transactionInfo.trace.transaction.total_fees
+      let model = await makeEmulatedModel(fee: estimatedFee)
       
       Task { @MainActor in
         didUpdateModel?(model)
@@ -151,15 +185,16 @@ private extension StakingDepositConfirmationController {
   ) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: walletsStore.activeWallet)
     let timeout = await sendService.getTimeoutSafely(wallet: walletsStore.activeWallet)
-    let amount = getDepositAmount()
+    let amount = getTotalDepositExpenses()
   
     return try await StakingMessageBuilder.deposit(
       wallet: walletsStore.activeWallet,
       seqno: seqno,
-      poolAddress: depositModel.pool.address,
-      poolImplementation: depositModel.pool.implementation,
+      poolAddress: stakingPool.address,
+      poolImplementation: stakingPool.implementation,
       amount: amount,
       timeout: timeout,
+      isMax: isMaxAmount,
       signClosure: signClosure
     )
   }
@@ -168,7 +203,7 @@ private extension StakingDepositConfirmationController {
     fee: LoadableModelItem<String>,
     feeConverted: LoadableModelItem<String?>
   ) async -> StakingConfirmationModel {
-    let pool = depositModel.pool
+    let pool = stakingPool
     
     let poolName = pool.name
     let poolImage: StakingPoolImage = .fromResource
@@ -177,8 +212,8 @@ private extension StakingDepositConfirmationController {
     
     let formattedAmount = amountFormatter.formatAmount(
       amount,
-      fractionDigits: depositModel.token.fractionDigits,
-      maximumFractionDigits: depositModel.token.fractionDigits
+      fractionDigits: TonInfo.fractionDigits,
+      maximumFractionDigits: TonInfo.fractionDigits
     )
     
     let rates = ratesStore.getRates(jettons: []).ton
@@ -187,7 +222,7 @@ private extension StakingDepositConfirmationController {
       let rateConverter = RateConverter()
       let converted = rateConverter.convert(
         amount: amount,
-        amountFractionLength: depositModel.token.fractionDigits,
+        amountFractionLength: TonInfo.fractionDigits,
         rate: rates
       )
       
@@ -210,15 +245,15 @@ private extension StakingDepositConfirmationController {
       fee: fee,
       feeConverted: feeConverted,
       kind: pool.implementation.type,
-      tokenSymbol: depositModel.token.symbol
+      tokenSymbol: TonInfo.symbol
     )
   }
   
-  func getDepositAmount() -> BigUInt {
-    let pool = depositModel.pool
+  func getTotalDepositExpenses() -> BigUInt {
+    let pool = stakingPool
     switch pool.implementation.type {
     case .liquidTF:
-      return amount + pool.implementation.withdrawalFee
+      return isMaxAmount ? amount : amount + pool.implementation.withdrawalFee
     case .whales:
       return amount
     case .tf:

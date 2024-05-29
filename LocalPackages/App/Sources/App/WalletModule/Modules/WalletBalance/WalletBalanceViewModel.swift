@@ -7,13 +7,13 @@ import TKLocalize
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: ((Wallet) -> Void)? { get set }
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)? { get set }
-  var didSelectLPJetton: ((Wallet, JettonItem, StakingPool) -> Void)? { get set }
+  var didSelectLPJetton: ((Wallet, StakingBalance) -> Void)? { get set }
 
   var didTapReceive: (() -> Void)? { get set }
   var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
-  var didTapStake: ((DepositModel) -> Void)? { get set }
+  var didTapStake: ((StakingPool) -> Void)? { get set }
   var didTapSwap: (() -> Void)? { get set }
   var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
@@ -41,14 +41,14 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   var didSelectTon: ((Wallet) -> Void)?
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
-  var didSelectLPJetton: ((Wallet, JettonItem, StakingPool) -> Void)?
   var didUpdateFinishSetupItems: (([TKUIListItemCell.Configuration]) -> Void)?
+  var didSelectLPJetton: ((Wallet, StakingBalance) -> Void)?
   
   var didTapReceive: (() -> Void)?
   var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
-  var didTapStake: ((DepositModel) -> Void)?
+  var didTapStake: ((StakingPool) -> Void)?
   var didTapSwap: (() -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
@@ -128,18 +128,23 @@ private extension WalletBalanceViewModelImplementation {
         guard let wallet = self?.walletBalanceController.wallet else { return }
         switch jettonItem.token {
         case .ton:
-          self?.didSelectTon?(wallet)
-        case .jetton(let jettonInfo):
           switch jettonItem.stakingInfo {
           case .none:
-            self?.didSelectJetton?(wallet, jettonInfo, jettonItem.hasPrice)
-          case .pool:
-            guard let stakingPool = self?.walletBalanceController.getStakingPool(jetton: jettonInfo) else {
-              return
+            self?.didSelectTon?(wallet)
+          case .pool(let poolItem):
+            Task { [weak self] in
+              guard let self else { return }
+              guard let stakingBalance = await self.walletBalanceController.getStakingBalance(stakingPool: poolItem.pool) else {
+                return
+              }
+              
+              await MainActor.run {
+                self.didSelectLPJetton?(wallet, stakingBalance)
+              }
             }
-            
-            self?.didSelectLPJetton?(wallet, jettonInfo, stakingPool)
           }
+        case .jetton(let jettonInfo):
+          self?.didSelectJetton?(wallet, jettonInfo, jettonItem.hasPrice)
         }
       }
     }
@@ -379,7 +384,7 @@ private extension WalletBalanceViewModelImplementation {
               return
             }
             
-          self?.didTapStake?(.init(pool: stakingPool, token: .ton))
+          self?.didTapStake?(stakingPool)
         }
       )
     )

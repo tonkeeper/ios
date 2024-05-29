@@ -58,13 +58,13 @@ public final class StakingWithdrawEditAmountController: StakingEditAmountControl
     if isTokenAmountInput {
       let (amount, _) = amountConverter.inputStringToAmount(
         input: input,
-        targetFractionalDigits: withdrawToken.fractionDigits
+        targetFractionalDigits: TonInfo.fractionDigits
       )
       amountOfJettons = amount
     } else {
       let (amount, fractionalDigits) = amountConverter.inputStringToAmount(
         input: input,
-        targetFractionalDigits: withdrawToken.fractionDigits
+        targetFractionalDigits: TonInfo.fractionDigits
       )
       let converted = amountConverter.currencyAmountToToken(
         amount: amount,
@@ -73,7 +73,7 @@ public final class StakingWithdrawEditAmountController: StakingEditAmountControl
         currency: currency
       )
       
-      amountOfJettons = converted.0.short(to: converted.1 - lpJetton.fractionDigits)
+      amountOfJettons = converted.0.short(to: converted.1 - TonInfo.fractionDigits)
     }
     
     lpJettonAmount = amountOfJettons
@@ -86,8 +86,7 @@ public final class StakingWithdrawEditAmountController: StakingEditAmountControl
   }
   
   public func getStakeConfirmationItem() -> StakingConfirmationItem {
-    let withdrawModel = WithdrawModel(pool: stakingPool, lpJetton: lpJetton, token: Token.ton)
-    return .init(operatiom: .withdraw(withdrawModel), amount: lpJettonAmount)
+    return .init(operatiom: .withdraw(stakingPool), amount: lpJettonAmount, isMax: isMaxAmount)
   }
   
   private var isTokenAmountInput = true {
@@ -108,9 +107,6 @@ public final class StakingWithdrawEditAmountController: StakingEditAmountControl
     }
   }
   
-  private let withdrawToken: Token
-  private var lpJetton: JettonInfo
-  
   private var stakingPools: [StakingPool] = []
   private var rate: Rates.Rate?
   private var currency: Currency = .USD
@@ -130,7 +126,7 @@ public final class StakingWithdrawEditAmountController: StakingEditAmountControl
   private let amountConverter: StakingEditAmountConverter
   
   init(
-    withdrawModel: WithdrawModel,
+    stakingPool: StakingPool,
     walletStore: WalletsStore,
     walletBalanceStore: WalletBalanceStore,
     ratesStore: RatesStore,
@@ -140,9 +136,7 @@ public final class StakingWithdrawEditAmountController: StakingEditAmountControl
     amountConverter: StakingEditAmountConverter,
     stakingPoolsService: StakingPoolsService
   ) {
-    self.withdrawToken = withdrawModel.token
-    self.lpJetton = withdrawModel.lpJetton
-    self.stakingPool = withdrawModel.pool
+    self.stakingPool = stakingPool
     self.walletStore = walletStore
     self.walletBalanceStore = walletBalanceStore
     self.ratesStore = ratesStore
@@ -158,14 +152,7 @@ public final class StakingWithdrawEditAmountController: StakingEditAmountControl
 
 private extension StakingWithdrawEditAmountController {
   func updateRates() {
-    let rates: [Rates.Rate]
-    switch withdrawToken {
-    case .ton:
-      rates = ratesStore.getRates(jettons: []).ton
-    case .jetton(let jettonItem):
-      rates = ratesStore.getRates(jettons: [jettonItem.jettonInfo]).jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates ?? []
-    }
-    
+    let rates = ratesStore.getRates(jettons: []).ton
     rate = rates.first(where: { $0.currency == currency })
   }
   
@@ -179,7 +166,7 @@ private extension StakingWithdrawEditAmountController {
   func updateMaximumFractionDigits() {
     let fractionDigits: Int
     if isTokenAmountInput {
-      fractionDigits = withdrawToken.fractionDigits
+      fractionDigits = TonInfo.fractionDigits
     } else {
       fractionDigits = 2
     }
@@ -198,7 +185,7 @@ private extension StakingWithdrawEditAmountController {
       let symbol: String
       
       if isTokenAmountInput {
-        let fractionDigits = withdrawToken.fractionDigits
+        let fractionDigits = TonInfo.fractionDigits
         let formatted = amountFormatter.formatAmount(
           lpJettonAmount,
           fractionDigits: fractionDigits,
@@ -206,7 +193,7 @@ private extension StakingWithdrawEditAmountController {
         )
         
         inputValue = formatted
-        symbol = withdrawToken.symbol
+        symbol = TonInfo.symbol
       } else {
         let converted = amountConverter.tokenAmountToCurrency(amount: lpJettonAmount, token: .ton, rate: rate)
         let formatted = amountFormatter.formatAmount(
@@ -229,7 +216,7 @@ private extension StakingWithdrawEditAmountController {
       do {
         balance = try await walletBalanceStore.getBalanceState(wallet: wallet).walletBalance.balance
       } catch {
-        balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+        balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
       }
       
       await MainActor.run {
@@ -239,16 +226,16 @@ private extension StakingWithdrawEditAmountController {
   }
   
   func updateRemaining(balance: Balance) {
-    let balanceAmount = balance.jettonsBalance.first(where: { $0.item.jettonInfo == lpJetton })?.quantity ?? 0
+    let balanceAmount = balance.stakingBalance.first(where: { $0.pool.address == stakingPool.address })?.amount ?? 0
     
     let remaining: StakingRemaining
     if balanceAmount >= lpJettonAmount {
       let remainingAmount = balanceAmount - lpJettonAmount
       let formatted = amountFormatter.formatAmount(
         remainingAmount,
-        fractionDigits: withdrawToken.fractionDigits,
+        fractionDigits: TonInfo.fractionDigits,
         maximumFractionDigits: 2,
-        symbol: withdrawToken.symbol
+        symbol: TonInfo.symbol
       )
       
       remaining = .remaining(formatted)
@@ -286,7 +273,7 @@ private extension StakingWithdrawEditAmountController {
     if isTokenAmountInput {
       let converted =  amountConverter.tokenAmountToCurrency(
         amount: lpJettonAmount,
-        token: withdrawToken,
+        token: .ton,
         rate: rate
       )
       let formatted = amountFormatter.formatAmount(
@@ -299,11 +286,11 @@ private extension StakingWithdrawEditAmountController {
     } else {
       let formatted = amountFormatter.formatAmount(
         lpJettonAmount,
-        fractionDigits: lpJetton.fractionDigits,
+        fractionDigits: TonInfo.fractionDigits,
         maximumFractionDigits: 2
       )
       
-      convertedValue = "\(formatted) \(withdrawToken.symbol)"
+      convertedValue = "\(formatted) \(TonInfo.symbol)"
     }
     
     didUpdateIsHiddenSwapIcon?(lpJettonAmount != .zero)
@@ -324,10 +311,10 @@ private extension StakingWithdrawEditAmountController {
         do {
           balance = try await walletBalanceStore.getBalanceState(wallet: wallet).walletBalance.balance
         } catch {
-          balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+          balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
         }
         
-        lpJettonsAmount = balance.jettonsBalance.first(where: { $0.item.jettonInfo == lpJetton })?.quantity ?? 0
+        lpJettonsAmount = balance.stakingBalance.first(where: { $0.pool == stakingPool })?.amount ?? 0
       } else {
         lpJettonsAmount = .zero
       }

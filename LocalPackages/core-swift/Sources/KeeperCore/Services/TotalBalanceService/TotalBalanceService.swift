@@ -67,6 +67,23 @@ final class TotalBalanceServiceImplementation: TotalBalanceService {
       maximumFractionDigits = max(converted.fractionLength, maximumFractionDigits)
     }
     
+    // Staking
+    for stakingBalance in balance.stakingBalance {
+      guard let rate = rates.ton.first(where: { $0.currency == currency }) else {
+        continue
+      }
+      
+      let balanceAmount = stakingBalance.pendingDeposit + stakingBalance.pendingWithdraw + stakingBalance.amount
+      let converted = rateConverter.convert(
+        amount: balanceAmount,
+        amountFractionLength: TonInfo.fractionDigits,
+        rate: rate
+      )
+      
+      items.append(Item(amount: converted.amount, fractionDigits: converted.fractionLength))
+      maximumFractionDigits = max(converted.fractionLength, maximumFractionDigits)
+    }
+    
     var totalSum = BigUInt("0")
     for item in items {
       if item.fractionDigits < maximumFractionDigits {

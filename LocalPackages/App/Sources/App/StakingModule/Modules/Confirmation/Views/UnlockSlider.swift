@@ -9,7 +9,7 @@ final class UnlockSlider: UIControl {
   }
   
   var didUnlock: (() -> Void)?
-  var title: NSAttributedString = .init() {
+  var title: NSAttributedString? {
     didSet {
       label.attributedText = title
     }

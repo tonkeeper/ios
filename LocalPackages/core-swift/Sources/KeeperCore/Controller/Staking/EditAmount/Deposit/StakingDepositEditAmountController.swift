@@ -23,6 +23,7 @@ public final class StakingDepositEditAmountController: StakingEditAmountControll
   public var stakingPool: StakingPool {
     didSet {
       updateStakingPoolItem()
+      didUpdateTokenAmount()
     }
   }
   
@@ -60,7 +61,7 @@ public final class StakingDepositEditAmountController: StakingEditAmountControll
   }
   
   init(
-    depositModel: DepositModel,
+    stakingPool: StakingPool,
     walletStore: WalletsStore,
     walletBalanceStore: WalletBalanceStore,
     ratesStore: RatesStore,
@@ -70,8 +71,8 @@ public final class StakingDepositEditAmountController: StakingEditAmountControll
     amountConverter: StakingEditAmountConverter,
     stakingPoolsService: StakingPoolsService
   ) {
-    self.token = depositModel.token
-    self.stakingPool = depositModel.pool
+    self.token = .ton
+    self.stakingPool = stakingPool
     self.walletStore = walletStore
     self.walletBalanceStore = walletBalanceStore
     self.ratesStore = ratesStore
@@ -152,8 +153,7 @@ public final class StakingDepositEditAmountController: StakingEditAmountControll
   }
   
   public func getStakeConfirmationItem() -> StakingConfirmationItem {
-    let depositModel = DepositModel(pool: stakingPool, token: token)
-    return .init(operatiom: .deposit(depositModel), amount: tokenAmount)
+    return .init(operatiom: .deposit(stakingPool), amount: tokenAmount, isMax: isMaxAmount)
   }
 }
 
@@ -194,7 +194,7 @@ private extension StakingDepositEditAmountController {
         do {
           balance = try await walletBalanceStore.getBalanceState(wallet: wallet).walletBalance.balance
         } catch {
-          balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+          balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
         }
         
         switch token {
@@ -224,7 +224,7 @@ private extension StakingDepositEditAmountController {
       do {
         balance = try await walletBalanceStore.getBalanceState(wallet: wallet).walletBalance.balance
       } catch {
-        balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+        balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
       }
       
       await MainActor.run {

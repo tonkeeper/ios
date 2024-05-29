@@ -117,10 +117,12 @@ public final class WalletBalanceController {
     return availablePools.mostProfitablePool
   }
   
-  public func getStakingPool(jetton: JettonItem) -> StakingPool? {
-    let availablePools = (try? stakingPoolsService.getPools(address: wallet.address, isTestnet: wallet.isTestnet)) ?? []
+  public func getStakingBalance(stakingPool: StakingPool) async -> StakingBalance? {
+    guard let state = await balanceState.walletBalance else {
+      return nil
+    }
     
-    return availablePools.first(where: { $0.jettonMaster == jetton.jettonInfo.address })
+    return state.balance.stakingBalance.first(where: { $0.pool == stakingPool })
   }
 }
 
@@ -268,16 +270,14 @@ private extension WalletBalanceController {
     if let walletBalance = await balanceState.walletBalance {
       balance = walletBalance.balance
     } else {
-      balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+      balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
     }
 
     let rates = await tonRatesStore.getTonRates()
     let currency = await currencyStore.getActiveCurrency()
-    let availablePools = (try? stakingPoolsService.getPools(address: wallet.address, isTestnet: wallet.isTestnet)) ?? []
     return walletBalanceMapper.mapBalance(
       balance: balance,
       rates: Rates(ton: rates, jettonsRates: []),
-      stakingPools: availablePools,
       currency: currency
     )
   }

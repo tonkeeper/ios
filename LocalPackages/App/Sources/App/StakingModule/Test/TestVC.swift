@@ -12,11 +12,6 @@ final class TestVC: UIViewController, KeyboardObserving, UITextViewDelegate {
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    view.backgroundColor = .Background.page
-    let title = "Slide to confirm".withTextStyle(
-      .label1,
-      color: .Text.secondary
-    )
     
     sliderAction.layout(in: self.view) {
       $0.leading.equalToSuperview().offset(16)
@@ -27,7 +22,7 @@ final class TestVC: UIViewController, KeyboardObserving, UITextViewDelegate {
     
     sliderAction.configure(
       model: .init(
-        title: title,
+        title: "Slide to confirm",
         unlockAction: { [weak self] loadingClosure, isSuccessClosure in
           guard let self else { return }
           

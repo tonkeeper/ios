@@ -9,11 +9,13 @@ import KeeperCore
 protocol StakingConfirmationModuleOutput: AnyObject {
   var didRequireConfirmation: (() async -> Bool)? { get set }
   var didFinish: (() -> Void)? { get set }
+  var didReceiveInsufficientFunds: ((StakingTransactionSendingStatus.InsufficientFunds) -> Void)? { get set }
 }
 
 protocol StakingConfirmationViewModel: AnyObject {
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)? { get set }
   var didUpdateSliderActionModel: ((SliderActionView.Model) -> Void)? { get set }
+  var didUpdateSliderLoading: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -23,6 +25,8 @@ final class StakingConfirmationViewModelImplementation: StakingConfirmationViewM
   // MARK: - StakingConfirmationModuleOutput
   
   var didRequireConfirmation: (() async -> Bool)?
+  var didUpdateSliderLoading: ((Bool) -> Void)?
+  var didReceiveInsufficientFunds: ((StakingTransactionSendingStatus.InsufficientFunds) -> Void)?
   var didFinish: (() -> Void)?
 
   // MARK: - StakingViewModel
@@ -57,6 +61,9 @@ private extension StakingConfirmationViewModelImplementation {
   func setupControllerBindings() {
     controller.didUpdateModel = { [weak self] confirmationModel in
       guard let self else { return }
+      
+      self.didUpdateSliderLoading?(confirmationModel.fee.isLoading)
+      
       let configuration = self.modelMapper.map(
         model: confirmationModel
       ) { [weak self] isActivityClosure, isSuccessClosure in
@@ -82,13 +89,8 @@ private extension StakingConfirmationViewModelImplementation {
   }
   
   func createSliderActionModel() -> SliderActionView.Model {
-    let title = String.sliderTitle.withTextStyle(
-      .label1,
-      color: .Text.secondary
-    )
-    
     return .init(
-      title: title
+      title: String.sliderTitle
     ) { [weak self] loadingClosure, isSuccessClosure in
       guard let self = self else { return }
       
@@ -107,10 +109,25 @@ private extension StakingConfirmationViewModelImplementation {
   }
   
   func sendTransaction() async -> Bool {
+    let status = controller.checkTransactionSendingStatus()
+    
+    switch status {
+    case .ready:
+      break
+    case .feeIsNotSet:
+      return false
+    case .insufficientFunds(let fundsModel):
+      await MainActor.run {
+        didReceiveInsufficientFunds?(fundsModel)
+      }
+      return false
+    }
+    
     if controller.isNeedToConfirm() {
       let isConfirmed = await didRequireConfirmation?() ?? false
       guard isConfirmed else { return false }
     }
+    
     do {
       try await controller.sendTransaction()
       return true
@@ -122,4 +139,15 @@ private extension StakingConfirmationViewModelImplementation {
 
 private extension String {
   static let sliderTitle = "Slide to confirm"
+}
+
+private extension LoadableModelItem<String> {
+  var isLoading: Bool {
+    switch self {
+    case .loading:
+      return true
+    case .value:
+      return false
+    }
+  }
 }

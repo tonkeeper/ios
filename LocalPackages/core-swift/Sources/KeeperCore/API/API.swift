@@ -374,6 +374,30 @@ extension API {
     return parceJsonPayload(jsonPayload)
   }
   
+  func getAccountStakingInfo(address: Address) async throws -> [AccountStakingInfo] {
+    let input: Operations.getAccountNominatorsPools.Input = .init(
+      path: .init(account_id: address.toRaw())
+    )
+    
+    let response = try await tonAPIClient.getAccountNominatorsPools(input)
+    let jsonPayload = try response.ok.body.json
+    
+    return jsonPayload.pools.compactMap { accountInfo -> AccountStakingInfo? in
+      do {
+        let address = try Address.parse(accountInfo.pool)
+        return .init(
+          address: address,
+          amount: BigUInt(accountInfo.amount),
+          pendingDeposit: BigUInt(accountInfo.pending_deposit),
+          pendingWithdraw: BigUInt(accountInfo.pending_withdraw),
+          readyToWithdraw: BigUInt(accountInfo.ready_withdraw)
+        )
+      } catch {
+        return nil
+      }
+    }
+  }
+  
   private func parceJsonPayload(
     _ payload: Operations.getStakingPools.Output.Ok.Body.jsonPayload
   ) -> [StakingPool] {

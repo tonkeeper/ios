@@ -61,14 +61,15 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
             let jettonsBalance = (try? await jettonsBalanceTask) ?? []
             nfts = (try? await nftsTask) ?? []
             let tonBalance = TonBalance(amount: account.balance)
-            balance = Balance(tonBalance: tonBalance, jettonsBalance: jettonsBalance)
+            balance = Balance(tonBalance: tonBalance, jettonsBalance: jettonsBalance, stakingBalance: [])
             isActive = account.status == "active" || !balance.isEmpty
           } catch {
             isActive = revision == .currentVersion
             nfts = []
             balance = Balance(
               tonBalance: TonBalance(amount: 0),
-              jettonsBalance: []
+              jettonsBalance: [],
+              stakingBalance: []
             )
           }
           

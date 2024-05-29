@@ -213,18 +213,23 @@ public final class MainAssembly {
     )
   }
   
-  public func jettonTokenDetailsController(jettonItem: JettonItem, stakingPool: StakingPool?) -> TokenDetailsController {
-    
-    let configurator: TokenDetailsControllerConfigurator
-    if let stakingPool {
-        configurator = LPJettonDetailsControllerConfigurator(jettonItem: jettonItem, mapper: tokenDetailsMapper, stakingPool: stakingPool)
-    } else {
-      configurator = JettonTokenDetailsControllerConfigurator(
-        jettonItem: jettonItem,
-        mapper: tokenDetailsMapper
-      )
-    }
+  public func lpJettonTokenDetailsController(stakingBalance: StakingBalance) -> TokenDetailsController {
+    return TokenDetailsController(
+      configurator: LPJettonDetailsControllerConfigurator(stakingBalance: stakingBalance, mapper: tokenDetailsMapper),
+      walletsStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      currencyStore: storesAssembly.currencyStore,
+      tonRatesStore: storesAssembly.tonRatesStore,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
+    )
+  }
   
+  public func jettonTokenDetailsController(jettonItem: JettonItem) -> TokenDetailsController {
+    let configurator = JettonTokenDetailsControllerConfigurator(
+      jettonItem: jettonItem,
+      mapper: tokenDetailsMapper
+    )
+    
     return TokenDetailsController(
       configurator: configurator,
       walletsStore: walletAssembly.walletStore,
@@ -255,11 +260,9 @@ public final class MainAssembly {
     )
   }
   
-  public func lpTokenChartController(jetton: JettonItem, stakingPool: StakingPool, token: Token) -> LPTokenChartController {
+  public func lpTokenChartController(stakingPool: StakingPool) -> LPTokenChartController {
     LPTokenChartController(
-      token: token,
       stakingPool: stakingPool,
-      jetton: jetton.jettonInfo,
       walletsStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
@@ -432,9 +435,9 @@ public final class MainAssembly {
     )
   }
   
-  public func stakingDepositEditAmountController(depositModel: DepositModel) -> StakingEditAmountController {
+  public func stakingDepositEditAmountController(stakingPool: StakingPool) -> StakingEditAmountController {
     StakingDepositEditAmountController(
-      depositModel: depositModel,
+      stakingPool: stakingPool,
       walletStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
       ratesStore: storesAssembly.ratesStore,
@@ -446,9 +449,9 @@ public final class MainAssembly {
     )
   }
   
-  public func stakingWithdrawEditAmountController(withdrawModel: WithdrawModel) -> StakingEditAmountController {
+  public func stakingWithdrawEditAmountController(stakingPool: StakingPool) -> StakingEditAmountController {
     StakingWithdrawEditAmountController(
-      withdrawModel: withdrawModel,
+      stakingPool: stakingPool,
       walletStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
       ratesStore: storesAssembly.ratesStore,
@@ -461,12 +464,15 @@ public final class MainAssembly {
   }
   
   public func stakingConfirmationController(
-    depositModel: DepositModel,
-    amount: BigUInt
+//    depositModel: DepositModel,
+    stakingPool: StakingPool,
+    amount: BigUInt,
+    isMax: Bool
   ) -> StakingConfirmationController {
     StakingDepositConfirmationController(
-      depositModel: depositModel,
+      stakingPool: stakingPool,
       amount: amount,
+      isMax: isMax,
       walletsStore: walletAssembly.walletStore,
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.ratesStore,
@@ -479,12 +485,15 @@ public final class MainAssembly {
   }
   
   public func stakingWithdrawConfirmationController(
-    withdrawModel: WithdrawModel,
-    amount: BigUInt
+//    withdrawModel: WithdrawModel,
+    stakingPool: StakingPool,
+    amount: BigUInt,
+    isMax: Bool
   ) -> StakingConfirmationController {
     StakingWithdrawConfirmationController(
-      withdrawModel: withdrawModel,
+      stakingPool: stakingPool,
       amount: amount,
+      isMax: isMax,
       walletsStore: walletAssembly.walletStore,
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.ratesStore,

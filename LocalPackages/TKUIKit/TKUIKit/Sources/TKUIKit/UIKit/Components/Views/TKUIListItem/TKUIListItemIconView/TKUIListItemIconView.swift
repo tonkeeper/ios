@@ -55,9 +55,11 @@ public final class TKUIListItemIconView: UIView, TKConfigurableView {
       iconView.sizeToFit()
       switch alignment {
       case .top:
-        iconView.center = CGPoint(
-          x: bounds.width/2,
-          y: 0
+        iconView.frame = CGRect(
+          x: .zero,
+          y: .zero,
+          width: iconView.bounds.width,
+          height: iconView.bounds.height
         )
       case .center:
         iconView.center = CGPoint(

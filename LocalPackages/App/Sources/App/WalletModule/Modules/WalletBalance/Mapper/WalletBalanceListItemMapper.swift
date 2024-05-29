@@ -65,9 +65,9 @@ struct WalletBalanceListItemMapper {
         subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
       }
       
-    case .pool(let stakingPoolItem):
+    case .pool:
       subtitle.append(
-        stakingPoolItem.name.withTextStyle(
+        item.title.withTextStyle(
           .body2,
           color: .Text.secondary,
           alignment: .left,
@@ -128,7 +128,7 @@ struct WalletBalanceListItemMapper {
         alignment: .center
       )
     case .pool(let stakingPoolItem):
-      let badgeImage = TKUIListItemImageIconView.Configuration.Image.image(stakingPoolItem.poolType.image)
+      let badgeImage = TKUIListItemImageIconView.Configuration.Image.image(stakingPoolItem.pool.implementation.type.image)
       let badgeIconConfiguration = TKUIListItemImageIconView.Configuration(
         image: badgeImage,
         tintColor: .Icon.primary,
@@ -151,8 +151,37 @@ struct WalletBalanceListItemMapper {
           ),
           badgeIconConfiguration
         ),
-        alignment: .center
+        alignment: .top
       )
+    }
+    
+    var desсription: NSAttributedString?
+    switch item.stakingInfo {
+    case .none:
+      break
+    case .pool(let poolItem):
+      switch poolItem.operationState {
+      case .finish:
+        break
+      case .inOperation(let depositAmount, let withdrawAmount):
+        if let depositAmount {
+          desсription = "\(depositAmount) staked after the end of verification cycle".withTextStyle(
+            .body2,
+            color: .Text.primary,
+            alignment: .left,
+            lineBreakMode: .byTruncatingTail
+          )
+        }
+        
+        if let withdrawAmount {
+          desсription = "\(withdrawAmount) unstaked after the end of verification cycle".withTextStyle(
+            .body2,
+            color: .Text.primary,
+            alignment: .left,
+            lineBreakMode: .byTruncatingTail
+          )
+        }
+      }
     }
     
     let listItemConfiguration = TKUIListItemView.Configuration(
@@ -162,7 +191,7 @@ struct WalletBalanceListItemMapper {
           title: title,
           tagViewModel: nil,
           subtitle: subtitle,
-          description: nil
+          description: desсription
         ),
         rightItemConfiguration: TKUIListItemContentRightItem.Configuration(
           value: value,

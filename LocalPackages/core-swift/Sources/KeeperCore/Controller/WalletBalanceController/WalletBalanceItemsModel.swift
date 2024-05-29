@@ -32,8 +32,12 @@ public extension WalletBalanceItemsModel {
   }
   
   struct StakingPoolItem {
-    public let name: String
-    public let depositToken: Token
-    public let poolType: StakingPool.Implementation.Kind
+    public enum OperationState {
+      case finish
+      case inOperation(depositAmount: String?, withdrawAmount: String?)
+    }
+    
+    public let pool: StakingPool
+    public let operationState: OperationState
   }
 }

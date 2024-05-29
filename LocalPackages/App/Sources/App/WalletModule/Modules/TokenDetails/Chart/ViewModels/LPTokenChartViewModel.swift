@@ -75,12 +75,11 @@ private extension LPTokenChartViewModel {
     controller.diUpdateCurrentBalance = { [weak self] value in
       guard let self else { return }
       
-      let token = self.controller.token
-      let formatted =  amountFormatter.formatAmount(
+      let formatted = amountFormatter.formatAmount(
         value,
-        fractionDigits: token.fractionDigits,
-        maximumFractionDigits: token.fractionDigits,
-        symbol: token.symbol
+        fractionDigits: TonInfo.fractionDigits,
+        maximumFractionDigits: TonInfo.fractionDigits,
+        symbol: TonInfo.symbol
       )
       didUpdateHeader?(.init(balance: formatted))
     }
@@ -101,13 +100,12 @@ private extension LPTokenChartViewModel {
   }
   
   func createChartModel(profits: [LPTokenChartController.ProfitByMonth]) -> TKLineChartFullView.Model {
-    let token = controller.token
     let max = profits.last?.amount ?? .zero
     let min = profits.first?.amount ?? .zero
     let coordinates = controller.mapProfitsByMonth(profits)
     
-    let maxValue = amountFormatter.formatAmount(max, fractionDigits: token.fractionDigits, maximumFractionDigits: token.fractionDigits, symbol: token.symbol)
-    let minValue = amountFormatter.formatAmount(min, fractionDigits: token.fractionDigits, maximumFractionDigits: token.fractionDigits, symbol: token.symbol)
+    let maxValue = amountFormatter.formatAmount(max, fractionDigits: TonInfo.fractionDigits, maximumFractionDigits: TonInfo.fractionDigits, symbol: TonInfo.symbol)
+    let minValue = amountFormatter.formatAmount(min, fractionDigits: TonInfo.fractionDigits, maximumFractionDigits: TonInfo.fractionDigits, symbol: TonInfo.symbol)
     
     let chartData = TKLineChartView.ChartData(mode: .linear, coordinates: coordinates, color: .Accent.green)
     return .init(

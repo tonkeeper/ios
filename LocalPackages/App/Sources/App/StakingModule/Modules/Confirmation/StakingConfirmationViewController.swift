@@ -39,6 +39,10 @@ private extension StakingConfirmationViewController {
   }
   
   func setupBindings() {
+    viewModel.didUpdateSliderLoading = { [weak customView] isLoading in
+      customView?.sliderActionView.model.state = isLoading ? .loading : .idle
+    }
+    
     viewModel.didUpdateConfiguration = { [weak modalCardViewController] configuration in
       modalCardViewController?.configuration = configuration
     }

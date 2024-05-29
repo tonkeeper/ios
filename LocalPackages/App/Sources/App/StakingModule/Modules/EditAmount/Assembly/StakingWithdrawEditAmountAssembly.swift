@@ -6,11 +6,11 @@ public struct StakingWithdrawEditAmountAssembly {
   private init() {}
   
   static func module(
-    withdrawModel: WithdrawModel,
+    stakingPool: StakingPool,
     keeperCoreMainAssembly: KeeperCore.MainAssembly
   ) -> MVVMModule<StakingEditAmountViewController, StakingEditAmountModuleOutput, StakingEditAmountModuleInput> {
     let viewModel = StakingEditAmountViewModelImplementation(
-      controller: keeperCoreMainAssembly.stakingWithdrawEditAmountController(withdrawModel: withdrawModel),
+      controller: keeperCoreMainAssembly.stakingWithdrawEditAmountController(stakingPool: stakingPool),
       itemMapper: .init()
     )
     let viewController = StakingEditAmountViewController(viewModel: viewModel)

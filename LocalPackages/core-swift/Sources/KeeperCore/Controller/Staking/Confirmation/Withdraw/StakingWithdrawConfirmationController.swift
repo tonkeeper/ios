@@ -6,9 +6,11 @@ final class StakingWithdrawConfirmationController: StakingConfirmationController
   public var didUpdateModel: ((StakingConfirmationModel) -> Void)?
   public var didGetError: ((StakingConfirmationError) -> Void)?
   public var didGetExternalSign: ((URL) async throws -> Data?)?
+  private let stakingPool: StakingPool
   
-  private let withdrawModel: WithdrawModel
   private let amount: BigUInt
+  private let isMaxAmount: Bool
+  private var estimatedFee: Int64?
   
   private let balanceStore: BalanceStore
   private let ratesStore: RatesStore
@@ -21,8 +23,9 @@ final class StakingWithdrawConfirmationController: StakingConfirmationController
   private let blockchainService: BlockchainService
   
   init(
-    withdrawModel: WithdrawModel,
+    stakingPool: StakingPool,
     amount: BigUInt,
+    isMax: Bool,
     walletsStore: WalletsStore,
     balanceStore: BalanceStore,
     ratesStore: RatesStore,
@@ -33,8 +36,9 @@ final class StakingWithdrawConfirmationController: StakingConfirmationController
     sendService: SendService,
     blockchainService: BlockchainService
   ) {
-    self.withdrawModel = withdrawModel
+    self.stakingPool = stakingPool
     self.amount = amount
+    self.isMaxAmount = isMax
     self.walletsStore = walletsStore
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
@@ -77,6 +81,30 @@ final class StakingWithdrawConfirmationController: StakingConfirmationController
   public func isNeedToConfirm() -> Bool {
     return walletsStore.activeWallet.isRegular
   }
+  
+  func checkTransactionSendingStatus() -> StakingTransactionSendingStatus {
+    let wallet = walletsStore.activeWallet
+    
+    guard let estimatedFee else {
+      return .feeIsNotSet
+    }
+    
+    let balance = (try? balanceStore.getBalance(wallet: wallet).balance.tonBalance.amount) ?? .zero
+    let withdrawFee = stakingPool.implementation.withdrawalFee
+    let balanceAmount = BigUInt(integerLiteral: UInt64(balance))
+    
+    guard balanceAmount >= (withdrawFee + BigUInt(estimatedFee)) else {
+      let model = StakingTransactionSendingStatus.InsufficientFunds(
+        estimatedFee: BigUInt(estimatedFee),
+        refundedAmount: withdrawFee,
+        token: .ton,
+        wallet: wallet
+      )
+      return .insufficientFunds(model)
+    }
+    
+    return .ready
+  }
 }
 
 // MARK: - Private methods
@@ -94,8 +122,8 @@ private extension StakingWithdrawConfirmationController {
         wallet: walletsStore.activeWallet
       )
       
-      let fee = transactionInfo.trace.transaction.total_fees
-      let model = await makeEmulatedModel(fee: fee)
+      estimatedFee = transactionInfo.trace.transaction.total_fees
+      let model = await makeEmulatedModel(fee: estimatedFee)
       
       Task { @MainActor in
         didUpdateModel?(model)
@@ -115,8 +143,8 @@ private extension StakingWithdrawConfirmationController {
     if let fee = fee {
       let feeFormatted = amountFormatter.formatAmount(
         BigUInt(UInt64(fee)),
-        fractionDigits: withdrawModel.token.fractionDigits,
-        maximumFractionDigits: withdrawModel.token.fractionDigits,
+        fractionDigits: TonInfo.fractionDigits,
+        maximumFractionDigits: TonInfo.fractionDigits,
         symbol: TonInfo.symbol
       )
       feeItem = .value(feeFormatted)
@@ -126,7 +154,7 @@ private extension StakingWithdrawConfirmationController {
         let rateConverter = RateConverter()
         let converted = rateConverter.convert(
           amount: fee,
-          amountFractionLength: withdrawModel.token.fractionDigits,
+          amountFractionLength: TonInfo.fractionDigits,
           rate: rates
         )
         let convertedFeeFormatted = amountFormatter.formatAmount(
@@ -151,7 +179,7 @@ private extension StakingWithdrawConfirmationController {
     fee: LoadableModelItem<String>,
     feeConverted: LoadableModelItem<String?>
   ) async -> StakingConfirmationModel {
-    let pool = withdrawModel.pool
+    let pool = stakingPool
     
     let poolName = pool.name
     let poolImage: StakingPoolImage = .fromResource
@@ -160,8 +188,8 @@ private extension StakingWithdrawConfirmationController {
     
     let formattedAmount = amountFormatter.formatAmount(
       amount,
-      fractionDigits: withdrawModel.token.fractionDigits,
-      maximumFractionDigits: withdrawModel.token.fractionDigits
+      fractionDigits: TonInfo.fractionDigits,
+      maximumFractionDigits: TonInfo.fractionDigits
     )
     
     let rates = ratesStore.getRates(jettons: []).ton
@@ -170,7 +198,7 @@ private extension StakingWithdrawConfirmationController {
       let rateConverter = RateConverter()
       let converted = rateConverter.convert(
         amount: amount,
-        amountFractionLength: withdrawModel.token.fractionDigits,
+        amountFractionLength: TonInfo.fractionDigits,
         rate: rates
       )
       
@@ -193,35 +221,39 @@ private extension StakingWithdrawConfirmationController {
       fee: fee,
       feeConverted: feeConverted,
       kind: pool.implementation.type,
-      tokenSymbol: withdrawModel.token.symbol
+      tokenSymbol: TonInfo.symbol
     )
   }
   
   func createTransactionBoc(
     signClosure: (WalletTransfer) async throws -> Data
   ) async throws -> String {
-    let pool = withdrawModel.pool
+    let pool = stakingPool
     let wallet = walletsStore.activeWallet
-    let jettonRawAddress = withdrawModel.lpJetton.address.toRaw()
+    let jettonRawAddress = stakingPool.jettonMaster?.toRaw() ?? ""
     let withdrawFee = pool.implementation.withdrawalFee
     
     let seqno = try await sendService.loadSeqno(wallet: wallet)
-    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let jettonWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: jettonRawAddress,
       owner: wallet.address.toRaw(),
       isTestnet: wallet.isTestnet
     )
     
+    var withdrawAmount = amount
+    if pool.implementation.type == .whales, isMaxAmount {
+      withdrawAmount = .zero
+    }
+    
     return try await StakingMessageBuilder.withdraw(
       poolImplementation: pool.implementation,
       wallet: wallet,
       seqno: seqno,
       jettonWalletAddress: jettonWalletAddress,
-      amount: amount,
+      amount: withdrawAmount,
       withdrawFee: withdrawFee,
       signClosure: signClosure
-      )
+    )
   }
 }
 

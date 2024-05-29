@@ -2,7 +2,6 @@ import Foundation
 import TKCore
 import KeeperCore
 
-
 struct StakingConfirmationAssembly {
   static func module(
     stakeConfirmationItem: StakingConfirmationItem,
@@ -22,15 +21,17 @@ struct StakingConfirmationAssembly {
   ) -> StakingConfirmationController {
     let amount = confirmationItem.amount
     switch confirmationItem.operatiom {
-    case .deposit(let depositModel):
+    case .deposit(let pool):
       return keeperCoreAssembly.stakingConfirmationController(
-        depositModel: depositModel,
-        amount: amount
+        stakingPool: pool,
+        amount: amount,
+        isMax: confirmationItem.isMax
       )
-    case .withdraw(let withdrawModel):
+    case .withdraw(let pool):
       return keeperCoreAssembly.stakingWithdrawConfirmationController(
-        withdrawModel: withdrawModel,
-        amount: amount
+        stakingPool: pool,
+        amount: amount,
+        isMax: confirmationItem.isMax
       )
     }
   }

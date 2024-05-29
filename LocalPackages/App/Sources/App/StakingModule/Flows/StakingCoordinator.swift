@@ -23,8 +23,8 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
     super.init(router: router)
   }
   
-  func openWithdrawEditAmount(withdrawModel: WithdrawModel) {
-    let editAmountModule = StakingWithdrawEditAmountAssembly.module(withdrawModel: withdrawModel, keeperCoreMainAssembly: keeperCoreMainAssembly)
+  func openWithdrawEditAmount(stakingPool: StakingPool) {
+    let editAmountModule = StakingWithdrawEditAmountAssembly.module(stakingPool: stakingPool, keeperCoreMainAssembly: keeperCoreMainAssembly)
   
     editAmountModule.view.setupRightCloseButton { [weak self] in
       self?.didFinish?()
@@ -40,16 +40,30 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
       confirmOutput?.didFinish = { [weak self] in
         self?.didFinish?()
       }
+      
+      confirmOutput?.didReceiveInsufficientFunds = { [weak self] fundsModel in
+        guard let self else { return }
+        let insufficientFundsModule = StakingInsufficientFundsAssembly.module(
+          fundsModel: fundsModel,
+          keeperCoreMainAssembly: keeperCoreMainAssembly
+        )
+        
+        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: insufficientFundsModule.view)
+        bottomSheetViewController.present(fromViewController: router.rootViewController)
+        
+        insufficientFundsModule.output.didTapBuy = { [weak self] wallet in
+          self?.router.dismiss(animated: false) {
+            self?.openBuy(wallet: wallet)
+          }
+        }
+      }
     }
     
     router.push(viewController: editAmountModule.view, animated: false)
   }
   
-  func openDepositEditAmount(depositeModel: DepositModel) {
-//    let vc = TestVC()
-//    router.push(viewController: vc, animated: false)
-    
-    let editAmountModule = StakingDepositEditAmountAssembly.module(depositModel: depositeModel, keeperCoreMainAssembly: keeperCoreMainAssembly)
+  func openDepositEditAmount(stakingPool: StakingPool) {
+    let editAmountModule = StakingDepositEditAmountAssembly.module(stakingPool: stakingPool, keeperCoreMainAssembly: keeperCoreMainAssembly)
     
     editAmountModule.view.setupButton(icon: UIImage.TKUIKit.Icons.Size16.infoCircle, position: .left) { [weak self] in
       guard 
@@ -108,6 +122,23 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
       
       confirmOutput?.didFinish = { [weak self] in
         self?.didFinish?()
+      }
+      
+      confirmOutput?.didReceiveInsufficientFunds = { [weak self] fundsModel in
+        guard let self else { return }
+        let insufficientFundsModule = StakingInsufficientFundsAssembly.module(
+          fundsModel: fundsModel,
+          keeperCoreMainAssembly: keeperCoreMainAssembly
+        )
+        
+        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: insufficientFundsModule.view)
+        bottomSheetViewController.present(fromViewController: router.rootViewController)
+        
+        insufficientFundsModule.output.didTapBuy = { [weak self] wallet in
+          self?.router.dismiss(animated: false) {
+            self?.openBuy(wallet: wallet)
+          }
+        }
       }
     }
     

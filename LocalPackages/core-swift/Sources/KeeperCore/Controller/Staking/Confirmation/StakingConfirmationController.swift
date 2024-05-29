@@ -2,14 +2,28 @@ import Foundation
 import TonSwift
 import BigInt
 
+public enum StakingTransactionSendingStatus {
+  case ready
+  case feeIsNotSet
+  case insufficientFunds(InsufficientFunds)
+  
+  public struct InsufficientFunds {
+    public let estimatedFee: BigUInt
+    public let refundedAmount: BigUInt
+    public let token: Token
+    public let wallet: Wallet
+  }
+}
+
 public struct StakingConfirmationItem {
   public enum Operation {
-    case deposit(DepositModel)
-    case withdraw(WithdrawModel)
+    case deposit(StakingPool)
+    case withdraw(StakingPool)
   }
   
   public let operatiom: Operation
   public let amount: BigUInt
+  public let isMax: Bool
 }
 
 public enum StakingConfirmationError: Swift.Error {
@@ -26,4 +40,5 @@ public protocol StakingConfirmationController: AnyObject {
   func start() async
   func sendTransaction() async throws
   func isNeedToConfirm() -> Bool
+  func checkTransactionSendingStatus() -> StakingTransactionSendingStatus
 }

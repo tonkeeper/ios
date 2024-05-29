@@ -11,27 +11,20 @@ public final class LPTokenChartController {
   public var didUpdateErrorState: (() -> Void)?
   public var diUpdateCurrentBalance: ((BigUInt) -> Void)?
   
-  public let token: Token
-  
   private let stakingPool: StakingPool
-  private let jetton: JettonInfo
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let walletsStore: WalletsStore
   private let walletBalanceStore: WalletBalanceStore
   private let bigIntFormatter: BigIntAmountFormatter
   
   init(
-    token: Token,
     stakingPool: StakingPool,
-    jetton: JettonInfo,
     walletsStore: WalletsStore,
     walletBalanceStore: WalletBalanceStore,
     decimalAmountFormatter: DecimalAmountFormatter,
     bigIntFormatter: BigIntAmountFormatter
   ) {
-    self.token = token
     self.stakingPool = stakingPool
-    self.jetton = jetton
     self.walletsStore = walletsStore
     self.walletBalanceStore = walletBalanceStore
     self.decimalAmountFormatter = decimalAmountFormatter
@@ -53,7 +46,7 @@ public final class LPTokenChartController {
     profits.map {
       .init(
         x: $0.month,
-        y: convertToDecimal(amount: $0.amount, fractionDigits: token.fractionDigits).doubleValue
+        y: convertToDecimal(amount: $0.amount, fractionDigits: TonInfo.fractionDigits).doubleValue
       )
     }
   }
@@ -86,7 +79,7 @@ private extension LPTokenChartController {
   }
   
   func updateChartData(balance: Balance) async {
-    let jettonBalance = balance.jettonsBalance.first(where: { $0.item.jettonInfo == jetton })?.quantity ?? .zero
+    let jettonBalance = balance.stakingBalance.first(where: { $0.pool == stakingPool })?.amount ?? .zero
     
     let currentDate = Date()
     let apyPercents = stakingPool.apy
@@ -109,7 +102,7 @@ private extension LPTokenChartController {
   func updateSelectedBalance(index: Int) async {
     do {
       let balance = try await loadBalance()
-      let jettonBalance = balance.jettonsBalance.first(where: { $0.item.jettonInfo == jetton })?.quantity ?? .zero
+      let jettonBalance = balance.stakingBalance.first(where: { $0.pool == stakingPool })?.amount ?? .zero
       
       let currentDate = Date()
       let apyPercents = stakingPool.apy

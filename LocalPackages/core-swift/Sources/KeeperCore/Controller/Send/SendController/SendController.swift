@@ -261,7 +261,7 @@ private extension SendController {
         case .ton:
           return true
         case .jetton(let jettonItem):
-          let balance = (try? balanceStore.getBalance(wallet: wallet))?.balance ?? Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+          let balance = (try? balanceStore.getBalance(wallet: wallet))?.balance ?? Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
           return balance.jettonsBalance.contains(where: { $0.item.jettonInfo == jettonItem.jettonInfo })
         }
       }
@@ -323,7 +323,7 @@ private extension SendController {
         do {
           balance = try balanceStore.getBalance(wallet: selectedFromWallet).balance
         } catch {
-          balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+          balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
         }
         switch token {
         case .ton:
@@ -402,7 +402,7 @@ private extension SendController {
       do {
         balance = try balanceStore.getBalance(wallet: wallet).balance
       } catch {
-        balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+        balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
       }
     }
     return balance

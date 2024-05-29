@@ -71,44 +71,31 @@ struct JettonTokenDetailsControllerConfigurator: TokenDetailsControllerConfigura
   }
 }
 
-
 struct LPJettonDetailsControllerConfigurator: TokenDetailsControllerConfigurator {
-  private let jettonItem: JettonItem
-  private let mapper: TokenDetailsMapper
-  private let stakingPool: StakingPool
   
-  init(jettonItem: JettonItem, mapper: TokenDetailsMapper, stakingPool: StakingPool) {
-    self.jettonItem = jettonItem
+  private let stakingBalance: StakingBalance
+  private let mapper: TokenDetailsMapper
+  
+  init(stakingBalance: StakingBalance, mapper: TokenDetailsMapper) {
+    self.stakingBalance = stakingBalance
     self.mapper = mapper
-    self.stakingPool = stakingPool
   }
   
   func getTokenModel(balance: Balance, tonRates: [Rates.Rate], currency: Currency) -> TokenDetailsController.TokenModel {
-    let subtitle: String?
-    switch jettonItem.jettonInfo.verification {
-    case .whitelist:
-      subtitle = nil
-    case .none:
-      subtitle = TKLocales.Token.unverified
-    case .blacklist:
-      subtitle = TKLocales.Token.unverified
-    }
     
     let tokenAmount: String
     var convertedAmount: String?
-    if let jettonBalance = balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonItem.jettonInfo }) {
-     (tokenAmount, convertedAmount) = mapper.mapJettonBalance(jettonBalance: jettonBalance, currency: currency)
-    } else {
-      tokenAmount = "0"
-      convertedAmount = nil
-    }
+    (tokenAmount, convertedAmount) = mapper.mapLPJettonBalance(stakingBalance: stakingBalance, tonRates: tonRates, currency: currency)
+    
     return TokenDetailsController.TokenModel(
-      tokenTitle: jettonItem.jettonInfo.name,
-      tokenSubtitle: subtitle,
-      image: .url(jettonItem.jettonInfo.imageURL),
+      tokenTitle: stakingBalance.pool.name,
+      tokenSubtitle: nil,
+      image: .ton,
       tokenAmount: tokenAmount,
       convertedAmount: convertedAmount,
-      buttons: [.deposit(jettonItem, stakingPool), .withdraw(jettonItem, stakingPool)]
+      buttons: [.deposit(stakingBalance.pool), .withdraw(stakingBalance.pool)],
+      poolType: stakingBalance.pool.implementation.type
     )
   }
 }
+

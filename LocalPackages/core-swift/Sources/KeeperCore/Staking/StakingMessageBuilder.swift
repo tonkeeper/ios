@@ -10,6 +10,7 @@ public struct StakingMessageBuilder {
     poolImplementation: StakingPool.Implementation,
     amount: BigUInt,
     timeout: UInt64,
+    isMax: Bool,
     signClosure: (WalletTransfer) async throws -> Data
   ) async throws -> String {
     let internalMessage = try StakingInternalMessage.deposit(
@@ -17,9 +18,11 @@ public struct StakingMessageBuilder {
       poolImplementation: poolImplementation,
       amount: amount
     )
+    let sendMode: SendMode = isMax ? .sendMaxTon() : .walletDefault()
     let message = try await ExternalMessageTransferBuilder.externalMessageTransfer(
       wallet: wallet,
       sender: try wallet.address,
+      sendMode: sendMode,
       seqno: seqno,
       internalMessages: { _ in
         return [internalMessage]

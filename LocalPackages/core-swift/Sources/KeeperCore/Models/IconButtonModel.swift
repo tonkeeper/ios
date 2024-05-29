@@ -7,6 +7,6 @@ public enum IconButton {
   case swap
   case scan
   case stake
-  case deposit(JettonItem, StakingPool)
-  case withdraw(JettonItem, StakingPool)
+  case deposit(StakingPool)
+  case withdraw(StakingPool)
 }

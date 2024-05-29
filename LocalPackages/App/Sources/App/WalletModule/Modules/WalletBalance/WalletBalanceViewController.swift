@@ -207,13 +207,13 @@ private extension NSCollectionLayoutSection {
   static var balanceItemsSection: NSCollectionLayoutSection {
     let itemLayoutSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .absolute(76)
+      heightDimension: .estimated(76)
     )
     let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
     
     let groupLayoutSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
-      heightDimension: .absolute(76)
+      heightDimension: .estimated(76)
     )
     let group = NSCollectionLayoutGroup.horizontal(
       layoutSize: groupLayoutSize,
