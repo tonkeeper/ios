@@ -94,6 +94,6 @@
 		</dict>
 	</dict>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<false/>
+	<true/>
 </dict>
 </plist>
