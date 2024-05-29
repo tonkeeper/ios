@@ -1,4 +1,5 @@
 import UIKit
+import TKQRCode
 import SignerCore
 
 struct SignQRCodeAssembly {
@@ -8,7 +9,7 @@ struct SignQRCodeAssembly {
                      walletKey: WalletKey,
                      hexBody: String) -> Module<SignQRCodeViewController, SignQRCodeModuleOutput, Void> {
     let viewModel = SignQRCodeViewModelImplementation(
-      qrCodeGenerator: QRCodeGeneratorImplementation(),
+      qrCodeGenerator: TKQRCode.qrCodeGenerator,
       signQRController: signerCoreAssembly.signQRController(
         hexBody: hexBody,
         walletKey: walletKey,

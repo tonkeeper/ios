@@ -1,38 +1,101 @@
 import UIKit
 
-public enum Theme {
-  case blue
+public enum TKTheme: String, CaseIterable {
+  case deepBlue
   case dark
+  case light
+  case system
   
-  public var userInterfaceStyle: UIUserInterfaceStyle {
+  public var title: String {
     switch self {
-    case .blue:
-      return .light
+    case .deepBlue:
+      return "Deep Blue"
     case .dark:
-      return .dark
+      return "Dark"
+    case .light:
+      return "Light"
+    case .system:
+      return "System"
     }
   }
   
-  public var alertUserInterfaceStyle: UIUserInterfaceStyle {
+  public var userInterfaceStyle: UIUserInterfaceStyle {
     switch self {
-    case .blue:
+    case .deepBlue:
       return .dark
     case .dark:
       return .dark
+    case .light:
+      return .light
+    case .system:
+      return .unspecified
+    }
+  }
+  
+  var themeAppaearance: TKThemeAppearance {
+    switch self {
+    case .deepBlue:
+      return DeepBlueThemeAppearance()
+    case .dark:
+      return DarkThemeAppearance()
+    case .light:
+      return LightThemeAppearance()
+    case .system:
+      return SystemThemeAppearance()
     }
   }
 }
 
-public final class ThemeManager {
-  public static let shared = ThemeManager()
+public final class TKThemeManager {
+  public typealias didUpdateThemeClosure = (TKTheme) -> Void
   
-  public var theme: Theme = .blue {
+  public var theme: TKTheme {
     didSet {
-      NotificationCenter.default.post(Notification(name: Notification.Name.didChangeThemeMode))
+      didUpdateTheme()
     }
   }
   
-  private init() {
-    NotificationCenter.default.post(Notification(name: Notification.Name.didChangeThemeMode))
+  public static let shared = TKThemeManager()
+  
+  public private(set) var themeAppearance: TKThemeAppearance
+  
+  private let userDefaults = UserDefaults.standard
+  
+  init() {
+    guard let themeIdentifier = userDefaults.string(forKey: .themeKey),
+          let theme = TKTheme(rawValue: themeIdentifier) else {
+      self.theme = .deepBlue
+      self.themeAppearance = DeepBlueThemeAppearance()
+      return
+    }
+    self.theme = theme
+    self.themeAppearance = theme.themeAppaearance
   }
+  
+  private var observations = [UUID: didUpdateThemeClosure]()
+  
+  public func addEventObserver<T: AnyObject>(_ observer: T,
+                                             closure: @escaping (T, TKTheme) -> Void) {
+    let id = UUID()
+    let eventHandler: (TKTheme) -> Void = { [weak self, weak observer] theme in
+      guard let self else { return }
+      guard let observer else {
+        observations.removeValue(forKey: id)
+        return
+      }
+      
+      closure(observer, theme)
+    }
+    observations[id] = eventHandler
+  }
+  
+  private func didUpdateTheme() {
+    themeAppearance = theme.themeAppaearance
+    userDefaults.setValue(theme.rawValue, forKey: .themeKey)
+    observations.forEach { $0.value(theme) }
+  }
+}
+
+private extension String {
+  static let themeKey = "TKThemeIdentifier"
 }

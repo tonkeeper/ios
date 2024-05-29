@@ -66,7 +66,7 @@ private extension SwipeControl {
     dragView.layer.cornerCurve = .continuous
     
     imageView.image = .TKUIKit.Icons.Size28.arrowRightOutline
-    imageView.tintColor = .Icon.primary
+    imageView.tintColor = .Button.primaryForeground
     imageView.contentMode = .center
     
     addSubview(contentView)

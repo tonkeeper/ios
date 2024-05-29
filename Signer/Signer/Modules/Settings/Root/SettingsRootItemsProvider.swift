@@ -7,6 +7,8 @@ final class SettingsRootItemsProvider: SettingsLiteItemsProvider {
   var title: String {
     SignerLocalize.Settings.title
   }
+  var didUpdate: (() -> Void)?
+  var showPopupMenu: (([TKPopupMenuItem], Int?, IndexPath) -> Void)?
   
   var didTapChangePassword: (() -> Void)?
   var didTapLegal: (() -> Void)?
@@ -15,6 +17,9 @@ final class SettingsRootItemsProvider: SettingsLiteItemsProvider {
   
   init(urlOpener: URLOpener) {
     self.urlOpener = urlOpener
+    TKThemeManager.shared.addEventObserver(self) { observer, _ in
+      observer.didUpdate?()
+    }
   }
   
   func getSections() -> [SettingsSection] {
@@ -25,6 +30,7 @@ final class SettingsRootItemsProvider: SettingsLiteItemsProvider {
     return [
       createFirstSection(),
       createSecondSection(),
+      createThirdSection(),
       createFooterSection()
     ]
   }
@@ -34,7 +40,7 @@ final class SettingsRootItemsProvider: SettingsLiteItemsProvider {
       items: [
         createListItem(id: "ChangePasswordIdentifier",
                        title: SignerLocalize.Settings.Items.change_password,
-                       image: .TKUIKit.Icons.Size28.lock,
+                       accessory: .image(.TKUIKit.Icons.Size28.lock),
                        tintColor: .Accent.blue,
                        action: { [weak self] in
                          self?.didTapChangePassword?()
@@ -44,11 +50,34 @@ final class SettingsRootItemsProvider: SettingsLiteItemsProvider {
   }
   
   func createSecondSection() -> SettingsSection {
+    return SettingsSection(
+      items: [
+        createListItem(id: "ThemeIdentifier",
+                       title: SignerLocalize.Settings.Items.theme,
+                       accessory: .text(TKThemeManager.shared.theme.localizedTitle),
+                       tintColor: .Accent.blue,
+                       action: { [weak self] in
+                         let items = TKTheme.allCases.map { theme in
+                           TKPopupMenuItem(title: theme.localizedTitle,
+                                           value: nil,
+                                           description: nil,
+                                           icon: nil) {
+                             TKThemeManager.shared.theme = theme
+                           }
+                         }
+                         let selectedIndex = TKTheme.allCases.firstIndex(of: TKThemeManager.shared.theme)
+                         self?.showPopupMenu?(items, selectedIndex, IndexPath(item: 0, section: 1))
+                       })
+      ]
+    )
+  }
+  
+  func createThirdSection() -> SettingsSection {
     SettingsSection(
       items: [
         createListItem(id: "SupportIdentifier",
                        title: SignerLocalize.Settings.Items.support,
-                       image: .TKUIKit.Icons.Size28.messageBubble,
+                       accessory: .image(.TKUIKit.Icons.Size28.messageBubble),
                        tintColor: .Accent.blue,
                        action: { [urlOpener] in
                          guard let url = InfoProvider.supportURL() else { return }
@@ -56,7 +85,7 @@ final class SettingsRootItemsProvider: SettingsLiteItemsProvider {
                        }),
         createListItem(id: "LegalIdentifier",
                        title: SignerLocalize.Settings.Items.legal,
-                       image: .TKUIKit.Icons.Size28.doc,
+                       accessory: .image(.TKUIKit.Icons.Size28.doc),
                        tintColor: .Icon.secondary,
                        action: { [weak self] in
                          self?.didTapLegal?()
@@ -80,14 +109,28 @@ final class SettingsRootItemsProvider: SettingsLiteItemsProvider {
     ])
   }
   
-  func createListItem(id: String,
+  private enum Accessory {
+    case none
+    case text(String)
+    case image(UIImage)
+  }
+  private func createListItem(id: String,
                       title: String,
                       subtitle: String? = nil,
-                      image: UIImage?,
+                      accessory: Accessory,
                       tintColor: UIColor,
                       action: @escaping () -> Void) -> TKUIListItemCell.Configuration {
     let accessoryConfiguration: TKUIListItemAccessoryView.Configuration
-    if let image {
+    switch accessory {
+    case .none:
+      accessoryConfiguration = .none
+    case .text(let string):
+      accessoryConfiguration = .text(
+        TKUIListItemTextAccessoryView.Configuration(
+          text: string.withTextStyle(.label1, color: tintColor)
+        )
+      )
+    case .image(let image):
       accessoryConfiguration = .image(
         TKUIListItemImageAccessoryView.Configuration(
           image: image,
@@ -95,10 +138,8 @@ final class SettingsRootItemsProvider: SettingsLiteItemsProvider {
           padding: .zero
         )
       )
-    } else {
-      accessoryConfiguration = .none
     }
-    
+
     return TKUIListItemCell.Configuration(
       id: id,
       listItemConfiguration: TKUIListItemView.Configuration(
@@ -122,6 +163,21 @@ final class SettingsRootItemsProvider: SettingsLiteItemsProvider {
         action()
       }
     )
+  }
+}
+
+private extension TKTheme {
+  var localizedTitle: String {
+    switch self {
+    case .deepBlue:
+      return SignerLocalize.Settings.Themes.deepblue
+    case .dark:
+      return SignerLocalize.Settings.Themes.dark
+    case .light:
+      return SignerLocalize.Settings.Themes.light
+    case .system:
+      return SignerLocalize.Settings.Themes.system
+    }
   }
 }
 

@@ -1,11 +1,5 @@
-//
-//  SceneDelegate.swift
-//  Signer
-//
-//  Created by Grigory Serebryanyy on 05.12.2023.
-//
-
 import UIKit
+import TKUIKit
 import TKCoordinator
 import SignerCore
 
@@ -17,7 +11,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
     guard let windowScene = (scene as? UIWindowScene) else { return }
     
-    let window = UIWindow(windowScene: windowScene)
+    let window = TKWindow(windowScene: windowScene)
     let coordinator = AppCoordinator(
       router: WindowRouter(window: window),
       signerCoreAssembly: SignerCore.Assembly()

@@ -40,31 +40,25 @@ public struct TonsignDeeplinkParser: DeeplinkParser {
     case "tonsign":
       guard let queryItems = components.queryItems,
             !queryItems.isEmpty else { return .tonsign(.plain) }
+      
       guard let pk = queryItems.first(where: { $0.name == "pk" })?.value,
-            let publicKeyData = Data(base64Encoded: pk),
-            let body = queryItems.first(where: { $0.name == "body" })?.value?.removingPercentEncoding else {
+            let publicKeyData = Data(hex: pk),
+            let body = queryItems.first(where: { $0.name == "body" })?.value,
+            let bodyData = Data(hex: body) else {
         throw DeeplinkParserError.unsupportedDeeplink(string: string)
       }
       
-      let publicKey: TonSwift.PublicKey
-      if publicKeyData.count > 32 {
-        guard let data = Data(hex: pk) else {
-          throw DeeplinkParserError.incorrectPublicKey(pk)
-        }
-        publicKey = TonSwift.PublicKey(data: data)
-      } else {
-        publicKey = TonSwift.PublicKey(data: publicKeyData)
-      }
+      let publicKey = TonSwift.PublicKey(data: publicKeyData)
       
       let returnURL = queryItems.first(where: { $0.name == "return" })?.value
       let version = queryItems.first(where: { $0.name == "v" })?.value
       let network = queryItems.first(where: { $0.name == "network" })?.value
-      
+
       return .tonsign(
         .sign(
           TonSignModel(
             publicKey: publicKey,
-            body: body,
+            body: bodyData,
             returnURL: returnURL,
             version: version,
             network: network

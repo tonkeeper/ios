@@ -11,7 +11,7 @@ final class PasscodeDotView: UIView {
     
     var backgroundColor: UIColor {
       switch self {
-      case .empty: return .Background.content
+      case .empty: return .Icon.secondary.withAlphaComponent(0.24)
       case .filled: return .Accent.blue
       case .success: return .Accent.green
       case .failed: return .Accent.red

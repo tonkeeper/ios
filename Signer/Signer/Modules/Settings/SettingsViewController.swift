@@ -104,6 +104,16 @@ private extension SettingsViewController {
     viewModel.itemsListUpdate = { [weak dataSource] items in
       dataSource?.apply(items, animatingDifferences: false)
     }
+    
+    viewModel.showPopupMenu = { [weak self] items, selectedIndex, indexPath in
+      guard let cell = self?.customView.collectionView.cellForItem(at: indexPath) else { return }
+      TKPopupMenuController.show(
+        sourceView: cell,
+        position: .topRight,
+        width: 0,
+        items: items,
+        selectedIndex: selectedIndex)
+    }
   }
   
   func createDataSource() -> UICollectionViewDiffableDataSource<SettingsSection, AnyHashable> {
@@ -133,7 +143,6 @@ private extension SettingsViewController {
     dataSource.supplementaryViewProvider = { [dataSource] collectionView, kind, indexPath in
       let snapshot = dataSource.snapshot()
       let section = snapshot.sectionIdentifiers[indexPath.section]
-      guard let title = section.title else { return nil }
       let view = collectionView.dequeueReusableSupplementaryView(
         ofKind: .sectionHeaderKind,
         withReuseIdentifier: TKCollectionViewSupplementaryContainerView<TKListTitleView>.reuseIdentifier,

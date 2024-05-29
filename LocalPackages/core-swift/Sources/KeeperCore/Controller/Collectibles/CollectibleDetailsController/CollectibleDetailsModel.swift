@@ -18,10 +18,15 @@ public struct CollectibleDetailsModel {
     public let value: String
   }
   
+  public struct DetailsValue {
+    public let short: String
+    public let full: String?
+  }
+  
   public struct Details {
     public struct Item {
       public let title: String
-      public let value: String
+      public let value: DetailsValue
     }
     
     public let items: [Item]

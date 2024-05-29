@@ -2,6 +2,8 @@ import UIKit
 
 public final class TabBarControllerRouter: ContainerViewControllerRouter<UITabBarController> {
   
+  public var didSelectItem: ((Int) -> Void)?
+  
   public override init(rootViewController: UITabBarController) {
     super.init(rootViewController: rootViewController)
     rootViewController.delegate = self
@@ -48,6 +50,11 @@ extension TabBarControllerRouter: UITabBarControllerDelegate {
       (viewController as? ScrollViewController)?.scrollToTop()
     }
     return true
+  }
+  
+  public func tabBarController(_ tabBarController: UITabBarController, didSelect viewController: UIViewController) {
+    guard let index = tabBarController.viewControllers?.firstIndex(of: viewController) else { return }
+    didSelectItem?(index)
   }
 }
 

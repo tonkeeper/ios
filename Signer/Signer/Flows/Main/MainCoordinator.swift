@@ -181,7 +181,6 @@ private extension MainCoordinator {
   func openSign(model: TonSignModel, walletKey: WalletKey, scanner: Bool) {
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
-    window.applyThemeMode(.blue)
     
     let coordinator = SignCoordinator(
       router: WindowRouter(

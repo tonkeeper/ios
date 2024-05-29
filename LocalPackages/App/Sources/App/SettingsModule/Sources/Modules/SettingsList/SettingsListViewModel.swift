@@ -53,20 +53,11 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   private var token: NSObjectProtocol?
   
   func viewDidLoad() {
-    token = NotificationCenter.default.addObserver(forName: .didChangeThemeMode, object: nil, queue: .main, using: { [weak self] _ in
-      guard let self = self else { return }
+    TKThemeManager.shared.addEventObserver(self) { observer, theme in
       Task {
-        //      self?.viewDidLoad()
-        let sections = await self.itemsProvider.getSections()
-        let initialSelectedIndexPath = await self.itemsProvider.initialSelectedIndexPath()
-        await MainActor.run {
-          self.didUpdateSettingsSections?(sections)
-          if let initialSelectedIndexPath = initialSelectedIndexPath {
-            self.didSelectItem?(initialSelectedIndexPath)
-          }
-        }
+        await observer.reloadSections()
       }
-    })
+    }
     
     didUpdateTitle?(itemsProvider.title)
     
@@ -81,14 +72,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     }
     
     Task {
-      let sections = await itemsProvider.getSections()
-      let initialSelectedIndexPath = await itemsProvider.initialSelectedIndexPath()
-      await MainActor.run {
-        didUpdateSettingsSections?(sections)
-        if let initialSelectedIndexPath = initialSelectedIndexPath {
-          didSelectItem?(initialSelectedIndexPath)
-        }
-      }
+      await reloadSections()
     }
   }
   
@@ -121,6 +105,17 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   init(itemsProvider: SettingsListItemsProvider, showsBackButton: Bool) {
     self.itemsProvider = itemsProvider
     self.showsBackButton = showsBackButton
+  }
+  
+  private func reloadSections() async {
+    let sections = await itemsProvider.getSections()
+    let initialSelectedIndexPath = await itemsProvider.initialSelectedIndexPath()
+    await MainActor.run {
+      didUpdateSettingsSections?(sections)
+      if let initialSelectedIndexPath = initialSelectedIndexPath {
+        didSelectItem?(initialSelectedIndexPath)
+      }
+    }
   }
 }
 
