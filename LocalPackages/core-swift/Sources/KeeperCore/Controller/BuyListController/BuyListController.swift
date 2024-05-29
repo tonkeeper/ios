@@ -71,9 +71,9 @@ private extension BuyListController {
     for category in fiatMethods.categories {
       var items = [BuySellItemModel]()
       for categoryItem in category.items {
-        guard availableFiatMethods.contains(categoryItem.id) else {
+        /*guard availableFiatMethods.contains(categoryItem.id) else {
           continue
-        }
+        }*/ // TODO:: Add all to availableFiatMethods and make sure url works correctly. :)
         let item = BuySellItemModel(
           id: categoryItem.id,
           title: categoryItem.title,
