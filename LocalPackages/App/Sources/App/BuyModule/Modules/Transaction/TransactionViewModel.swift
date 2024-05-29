@@ -177,13 +177,7 @@ private extension TransactionViewModelImplementation {
   }
   
   func modifiedItem() -> BuySellItemModel {
-    var amount: String
-    switch transactionType {
-    case .buy:
-      amount = exchangeConverter.tonInput
-    case .sell:
-      amount = exchangeConverter.fiatInput
-    }
+    let amount = exchangeConverter.tonInput
     
     guard let url = addAmount(amount, to: buySellItem.actionURL) else {
       return buySellItem
