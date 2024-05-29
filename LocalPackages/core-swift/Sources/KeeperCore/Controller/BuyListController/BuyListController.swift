@@ -83,7 +83,11 @@ public final class BuyListController {
   }
   
   public func convertTokenAmountToCurrency(_ amount: BigUInt) async -> String {
-    let currency = await currencyStore.getActiveCurrency()
+    var currency = await currencyStore.getActiveCurrency()
+    // Because converting TON to TON looks ugly
+    if currency == .TON {
+      currency = .USD
+    }
     guard !amount.isZero else { return "0.00 \(currency.rawValue)" }
     guard let rate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency }) else { return ""}
     let converted = RateConverter().convert(amount: amount, amountFractionLength: TonInfo.fractionDigits, rate: rate)
