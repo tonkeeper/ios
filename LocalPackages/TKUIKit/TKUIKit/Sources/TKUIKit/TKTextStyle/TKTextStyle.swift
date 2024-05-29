@@ -4,6 +4,7 @@ public struct TKTextStyle: Hashable {
   public let font: UIFont
   public let lineHeight: CGFloat
   public let uppercased: Bool
+  public let underline: Bool
   
   public var adjustment: CGFloat {
     lineHeight > font.lineHeight ? 2.0 : 1.0
@@ -25,10 +26,12 @@ public struct TKTextStyle: Hashable {
   
   public init(font: UIFont,
               lineHeight: CGFloat,
-              uppercased: Bool = false) {
+              uppercased: Bool = false,
+              underline: Bool = false) {
     self.font = font
     self.lineHeight = lineHeight
     self.uppercased = uppercased
+    self.underline = underline
   }
   
   public func getAttributes(color: UIColor,
@@ -40,12 +43,16 @@ public struct TKTextStyle: Hashable {
     paragraphStyle.alignment = alignment
     paragraphStyle.lineBreakMode = lineBreakMode
 
-    let attributes: [NSAttributedString.Key: Any] = [
+    var attributes: [NSAttributedString.Key: Any] = [
       .font: font,
       .foregroundColor: color,
       .paragraphStyle: paragraphStyle,
-      .baselineOffset: baselineOffset
+      .baselineOffset: baselineOffset,
     ]
+    if underline {
+      attributes[.underlineStyle] = NSUnderlineStyle.single.rawValue
+    }
+    
     return attributes
   }
 }
@@ -117,6 +124,11 @@ public extension TKTextStyle {
   
   static let body3: TKTextStyle = .init(
     font: .montserratMedium(size: 12),
+    lineHeight: 16
+  )
+  
+  static let body3Alternate: TKTextStyle = .init(
+    font: .montserratMedium(size: 13),
     lineHeight: 16
   )
   

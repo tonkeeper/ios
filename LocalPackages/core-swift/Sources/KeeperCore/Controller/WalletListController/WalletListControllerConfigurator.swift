@@ -88,7 +88,7 @@ final class WalletSelectWalletListControllerConfigurator: WalletListControllerCo
   }
   
   func getWallets() -> [Wallet] {
-    walletsStore.wallets
+    walletsStore.wallets.filter { $0.isRegular || $0.isTestnet }
   }
   
   func getSelectedWalletIndex() -> Int? {

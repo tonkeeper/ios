@@ -24,9 +24,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     
     let window = TKWindow(windowScene: windowScene)
     let coordinator = App.AppCoordinator(router: TKCoordinator.WindowRouter(window: window),
-    coreAssembly: CoreAssembly(featureFlagsProvider: FeatureFlagsProvider(isMarketRegionPickerAvailable: {
+    coreAssembly: CoreAssembly(featureFlagsProvider: FeatureFlagsProvider(
+      isMarketRegionPickerAvailable: {
       FirebaseConfigurator.configurator.isMarketRegionPickerAvailable
-    })))
+      }, isBuySellLovely: {
+        FirebaseConfigurator.configurator.isBuySellLovely
+      })))
     
     if let deeplink = connectionOptions.urlContexts.first?.url.absoluteString {
       coordinator.start(deeplink: deeplink)

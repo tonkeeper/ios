@@ -68,8 +68,9 @@ private extension CollectibleDetailsPresenter {
     var listViewModel = model.details.items.map {
       TKModalCardViewController.Configuration.ListItem(
         left: $0.title,
-        rightTop: .value($0.value, numberOfLines: 1, isFullString: false),
-        rightBottom: .value(nil, numberOfLines: 1, isFullString: false)
+        rightTop: .value($0.value.short, numberOfLines: 1, isFullString: false),
+        rightBottom: .value(nil, numberOfLines: 1, isFullString: false),
+        modelValue: $0.value.full
       )
     }
     

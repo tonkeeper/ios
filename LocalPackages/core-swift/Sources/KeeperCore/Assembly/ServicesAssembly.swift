@@ -118,7 +118,7 @@ public final class ServicesAssembly {
     )
   }
   
-  func sendService() -> SendService {
+  public func sendService() -> SendService {
     SendServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
@@ -146,5 +146,9 @@ public final class ServicesAssembly {
   
   func swapService() -> SwapService {
     SwapServiceImplementation(stonFiAPI: stonFiAPIAssembly.stonFiAPI())
+  }
+  public func popularAppsService() -> PopularAppsService {
+    PopularAppsServiceImplementation(api: tonkeeperAPIAssembly.api,
+                                     popularAppsRepository: repositoriesAssembly.popularAppsRepository())
   }
 }

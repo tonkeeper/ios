@@ -13,6 +13,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapScan: (() -> Void)? { get set }
   var didTapSwap: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
+  var didTapSwap: (() -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
@@ -47,6 +48,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapScan: (() -> Void)?
   var didTapSwap: (() -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
+  var didTapSwap: (() -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
   var didRequireConfirmation: (() async -> Bool)?

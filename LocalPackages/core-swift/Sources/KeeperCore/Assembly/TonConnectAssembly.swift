@@ -27,12 +27,10 @@ public final class TonConnectAssembly {
   }
   
   public func tonConnectConfirmationController(wallet: Wallet,
-                                               appRequest: TonConnect.AppRequest,
-                                               app: TonConnectApp) -> TonConnectConfirmationController {
+                                               signTransactionParams: [SendTransactionParam]) -> TonConnectConfirmationController {
     TonConnectConfirmationController(
       wallet: wallet,
-      appRequest: appRequest,
-      app: app,
+      signTransactionParams: signTransactionParams,
       tonConnectService: tonConnectService(),
       sendService: servicesAssembly.sendService(),
       nftService: servicesAssembly.nftService(),
@@ -53,7 +51,7 @@ public final class TonConnectAssembly {
     TonConnectRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
-  func tonConnectService() -> TonConnectService {
+  public func tonConnectService() -> TonConnectService {
     TonConnectServiceImplementation(
       urlSession: .shared,
       apiClient: apiAssembly.tonConnectAPIClient(),
@@ -64,7 +62,7 @@ public final class TonConnectAssembly {
   }
   
   private weak var _tonConnectAppsStore: TonConnectAppsStore?
-  var tonConnectAppsStore: TonConnectAppsStore {
+  public var tonConnectAppsStore: TonConnectAppsStore {
     if let tonConnectAppsStore = _tonConnectAppsStore {
       return tonConnectAppsStore
     } else {

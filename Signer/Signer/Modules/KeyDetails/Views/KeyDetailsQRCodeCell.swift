@@ -1,11 +1,12 @@
 import UIKit
 import TKUIKit
+import TKQRCode
 
 final class KeyDetailsQRCodeCell: UICollectionViewCell, ReusableView, ConfigurableView {
 
   var padding: NSDirectionalEdgeInsets = .zero
 
-  private let imageView = UIImageView()
+  private let qrCodeImageView = TKQRCodeImageView(frame: .zero)
 
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -32,17 +33,17 @@ final class KeyDetailsQRCodeCell: UICollectionViewCell, ReusableView, Configurab
   // MARK: - ConfigurableView
 
   struct Model: Hashable {
-    let image: UIImage?
+    let qrCode: QRCode?
   }
 
   func configure(model: Model) {
-    imageView.image = model.image
+    qrCodeImageView.setQRCode(model.qrCode)
     setNeedsLayout()
   }
   
   override func prepareForReuse() {
     super.prepareForReuse()
-    imageView.image = nil
+    qrCodeImageView.setQRCode(nil)
   }
   
   override func layoutSubviews() {
@@ -64,19 +65,20 @@ final class KeyDetailsQRCodeCell: UICollectionViewCell, ReusableView, Configurab
 private extension KeyDetailsQRCodeCell {
   func setup() {
     backgroundColor = .white
+    qrCodeImageView.contentMode = .scaleAspectFit
 
-    contentView.addSubview(imageView)
+    contentView.addSubview(qrCodeImageView)
     setupConstraints()
   }
 
   func setupConstraints() {
-    imageView.translatesAutoresizingMaskIntoConstraints = false
+    qrCodeImageView.translatesAutoresizingMaskIntoConstraints = false
 
     NSLayoutConstraint.activate([
-      imageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
-      imageView.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: 24),
-      imageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24),
-      imageView.rightAnchor.constraint(equalTo: contentView.rightAnchor, constant: -24)
+      qrCodeImageView.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 24),
+      qrCodeImageView.leftAnchor.constraint(equalTo: contentView.leftAnchor, constant: 24),
+      qrCodeImageView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -24),
+      qrCodeImageView.rightAnchor.constraint(equalTo: contentView.rightAnchor, constant: -24)
     ])
   }
 }

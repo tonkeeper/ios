@@ -84,6 +84,9 @@
 "sign_transaction.slide_to_sign" = "Подписать";
 "sign_transaction.send" = "Отправить";
 
+"emulate_transaction_qr.title" = "Отсканируйте, чтобы открыть эмуляцию транзакции";
+"emulate_transaction_qr.close_button.title" = "Закрыть";
+
 "sign_transaction_qr.title" = "Отсканируйте QR-код с помощью Tonkeeper";
 "sign_transaction_qr.caption" = "После сканирования транзакция будет отправлена в сеть.";
 "sign_transaction_qr.signed_transaction" = "Подписанная транзакция";

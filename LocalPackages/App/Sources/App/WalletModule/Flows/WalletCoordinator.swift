@@ -277,6 +277,10 @@ private extension WalletCoordinator {
       self?.openBuy(wallet: wallet)
     }
     
+    module.output.didTapSwap = { [weak self] in
+      self?.didTapSwap?()
+    }
+    
     module.output.didTapBackup = { [weak self] wallet in
       self?.openBackup(wallet: wallet)
     }

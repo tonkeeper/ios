@@ -170,6 +170,7 @@ public final class SwapConfirmationController {
   /// Jetton to Jetton swap
   func createSwapTransactionBoc(from: Address, to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: from.toRaw(),
@@ -192,6 +193,7 @@ public final class SwapConfirmationController {
       jettonFromWalletAddress: fromWalletAddress,
       forwardAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_JETTON.ForwardGasAmount,
       attachedAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_JETTON.GasAmount,
+      timeout: timeout,
       signClosure: signClosure
     )
   }
@@ -199,7 +201,8 @@ public final class SwapConfirmationController {
   /// Jetton to TON swap
   func createSwapTransactionBoc(from: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
-    
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: from.toRaw(),
       owner: wallet.address.toRaw(),
@@ -221,6 +224,7 @@ public final class SwapConfirmationController {
       jettonFromWalletAddress: fromWalletAddress,
       forwardAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_TON.ForwardGasAmount,
       attachedAmount: STONFI_CONSTANTS.SWAP_JETTON_TO_TON.GasAmount,
+      timeout: timeout,
       signClosure: signClosure
     )
   }
@@ -228,6 +232,7 @@ public final class SwapConfirmationController {
   /// TON to Jetton swap
   func createSwapTransactionBoc(to: Address, minAskAmount: BigUInt, offerAmount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     
     let fromWalletAddress = try await blockchainService.getWalletAddress(
       jettonMaster: STONFI_CONSTANTS.TONProxyAddress,
@@ -250,6 +255,7 @@ public final class SwapConfirmationController {
       jettonFromWalletAddress: fromWalletAddress,
       forwardAmount: STONFI_CONSTANTS.SWAP_TON_TO_JETTON.ForwardGasAmount,
       attachedAmount: STONFI_CONSTANTS.SWAP_TON_TO_JETTON.ForwardGasAmount + offerAmount,
+      timeout: timeout,
       signClosure: signClosure
     )
   }

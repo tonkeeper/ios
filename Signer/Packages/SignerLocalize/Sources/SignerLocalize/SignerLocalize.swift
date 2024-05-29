@@ -359,6 +359,18 @@ public enum SignerLocalize {
       localize("sign_transaction.send")
     }
   }
+  public enum EmulateTransactionQr {
+    /// Scan the QR code to open the transaction emulation
+    public static var title: String {
+      localize("emulate_transaction_qr.title")
+    }
+    public enum CloseButton {
+      /// Close
+      public static var title: String {
+        localize("emulate_transaction_qr.close_button.title")
+      }
+    }
+  }
   public enum SignTransactionQr {
     /// Scan the QR code with Tonkeeper
     public static var title: String {
