@@ -166,8 +166,29 @@ private extension WalletCoordinator {
   }
   
   func openBuy(wallet: Wallet) {
-    let coordinator = BuyCoordinator(
-      wallet: wallet,
+//    let coordinator = BuyCoordinator(
+//      wallet: wallet,
+//      keeperCoreMainAssembly: keeperCoreMainAssembly,
+//      coreAssembly: coreAssembly,
+//      router: ViewControllerRouter(rootViewController: self.router.rootViewController)
+//    )
+//    
+//    addChild(coordinator)
+//    coordinator.start()
+      
+      let coordinator = BuySellCoordinator(
+        wallet: wallet,
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly,
+        router: ViewControllerRouter(rootViewController: self.router.rootViewController)
+      )
+      
+      addChild(coordinator)
+      coordinator.start()
+  }
+    
+  func openSwap() {
+    let coordinator = SwapCoordinator(
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly,
       router: ViewControllerRouter(rootViewController: self.router.rootViewController)
@@ -175,6 +196,18 @@ private extension WalletCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+  }
+
+  func openStake(wallet: Wallet) {
+      let coordinator = StakeCoordinator(
+        wallet: wallet,
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly,
+        router: ViewControllerRouter(rootViewController: self.router.rootViewController)
+      )
+      
+      addChild(coordinator)
+      coordinator.start()
   }
   
   func openHistoryEventDetails(event: AccountEventDetailsEvent) {
@@ -264,17 +297,25 @@ private extension WalletCoordinator {
     module.output.didTapScan = { [weak self] in
       self?.didTapScan?()
     }
+
+    module.output.didTapSwap = { [weak self] in
+      self?.openSwap()
+    }
     
     module.output.didTapBuy = { [weak self] wallet in
       self?.openBuy(wallet: wallet)
     }
     
-    module.output.didTapSwap = { [weak self] in
-      self?.didTapSwap?()
-    }
+//    module.output.didTapSwap = { [weak self] in
+//      self?.didTapSwap?()
+//    }
     
     module.output.didTapBackup = { [weak self] wallet in
       self?.openBackup(wallet: wallet)
+    }
+    
+    module.output.didTapStake = { [weak self] wallet in
+      self?.openStake(wallet: wallet)
     }
     
     module.output.didRequireConfirmation = { [weak self] in

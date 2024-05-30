@@ -144,6 +144,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		258F91DD2BFC54A900EBFC5E /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		258F91DF2BFC54B200EBFC5E /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		509051DD2BE1661E00B41894 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		50ADFE3C2BE160D3000E1C0A /* TKLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLocalize; sourceTree = "<group>"; };
 		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
@@ -262,6 +264,31 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		258F91DA2BFC549A00EBFC5E /* Firebase */ = {
+			isa = PBXGroup;
+			children = (
+				258F91DC2BFC54A100EBFC5E /* Debug */,
+				258F91DB2BFC549D00EBFC5E /* Release */,
+			);
+			path = Firebase;
+			sourceTree = "<group>";
+		};
+		258F91DB2BFC549D00EBFC5E /* Release */ = {
+			isa = PBXGroup;
+			children = (
+				258F91DF2BFC54B200EBFC5E /* GoogleService-Info.plist */,
+			);
+			path = Release;
+			sourceTree = "<group>";
+		};
+		258F91DC2BFC54A100EBFC5E /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				258F91DD2BFC54A900EBFC5E /* GoogleService-Info.plist */,
+			);
+			path = Debug;
+			sourceTree = "<group>";
+		};
 		7D143C372A4EC0DC00B5FCC0 /* Animations */ = {
 			isa = PBXGroup;
 			children = (
@@ -439,6 +466,7 @@
 		7DB8FB792A1BCFCD005B4B11 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				258F91DA2BFC549A00EBFC5E /* Firebase */,
 				7D143C372A4EC0DC00B5FCC0 /* Animations */,
 				7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */,
 				7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */,
