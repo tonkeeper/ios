@@ -53,6 +53,10 @@ public final class RepositoriesAssembly {
     BuySellMethodsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
+  func operatorsRepository() -> OperatorsRepository {
+    OperatorsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
   func chartDataRepository() -> ChartDataRepository {
     ChartDataRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }

@@ -410,7 +410,7 @@ public enum TKLocales {
     public static var scan: String {
       localize("wallet_buttons.scan")
     }
-    /// Buy TON
+    /// Buy or Sell
     public static var buy: String {
       localize("wallet_buttons.buy")
     }
@@ -859,6 +859,40 @@ public enum TKLocales {
     /// Wallet initialized
     public static var wallet_initialize: String {
       localize("action_types.wallet_initialize")
+    }
+  }
+  public enum Buy {
+    /// Buy
+    public static var button_buy: String {
+      localize("buy.button_buy")
+    }
+    /// Sell
+    public static var button_sell: String {
+      localize("buy.button_sell")
+    }
+    /// Min. amount: %@
+    public static func min_amount(_ p0: Any) -> String {
+      return localizeWithArgs("buy.min_amount", String(describing: p0))
+    }
+    /// %@ %@ for 1 TON
+    public static func rate(_ p0: Any, _ p1: Any) -> String {
+      return localizeWithArgs("buy.rate", String(describing: p0), String(describing: p1))
+    }
+    /// You pay
+    public static var you_pay: String {
+      localize("buy.you_pay")
+    }
+    /// You get
+    public static var you_get: String {
+      localize("buy.you_get")
+    }
+    /// Operator
+    public static var transaction_operator: String {
+      localize("buy.transaction_operator")
+    }
+    /// Service provided by %@
+    public static func service_provider(_ p0: Any) -> String {
+      return localizeWithArgs("buy.service_provider", String(describing: p0))
     }
   }
 }

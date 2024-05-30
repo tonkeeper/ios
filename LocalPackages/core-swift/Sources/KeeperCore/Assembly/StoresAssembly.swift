@@ -46,7 +46,7 @@ public final class StoresAssembly {
     return walletTotalBalanceStore
   }
   private weak var _tonRatesStore: TonRatesStore?
-  var tonRatesStore: TonRatesStore {
+  public var tonRatesStore: TonRatesStore {
     if let tonRatesStore = _tonRatesStore {
       return tonRatesStore
     } else {

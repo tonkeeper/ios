@@ -100,7 +100,7 @@
 "wallet_buttons.send" = "Отправить";
 "wallet_buttons.receive" = "Получить";
 "wallet_buttons.scan" = "Сканировать";
-"wallet_buttons.buy" = "Купить TON";
+"wallet_buttons.buy" = "Купить/продать";
 "wallet_buttons.swap" = "Обменять";
 "wallet_buttons.stake" = "Застейкать";
 
@@ -231,3 +231,12 @@
 "action_types.domain_renew" = "Продление домена";
 "action_types.unknown" = "Неизвестно";
 "action_types.wallet_initialize" = "Кошелёк инициализирован";
+
+"buy.button_buy" = "Купить";
+"buy.button_sell" = "Продать";
+"buy.min_amount" = "Мин. сумма: %@";
+"buy.rate" = "%@ %@ за 1 TON";
+"buy.you_pay" = "Вы платите";
+"buy.you_get" = "Вы получаете";
+"buy.transaction_operator" = "Оператор";
+"buy.service_provider" = "Сервис предоставлен %@";

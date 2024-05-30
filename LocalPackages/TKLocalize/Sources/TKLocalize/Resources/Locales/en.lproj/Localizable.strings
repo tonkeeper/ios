@@ -100,7 +100,7 @@
 "wallet_buttons.send" = "Send";
 "wallet_buttons.receive" = "Receive";
 "wallet_buttons.scan" = "Scan";
-"wallet_buttons.buy" = "Buy TON";
+"wallet_buttons.buy" = "Buy or Sell";
 "wallet_buttons.swap" = "Swap";
 "wallet_buttons.stake" = "Stake";
 
@@ -234,3 +234,12 @@
 "action_types.domain_renew" = "Renew Domain";
 "action_types.unknown" = "Unknown";
 "action_types.wallet_initialize" = "Wallet initialized";
+
+"buy.button_buy" = "Buy";
+"buy.button_sell" = "Sell";
+"buy.min_amount" = "Min. amount: %@";
+"buy.rate" = "%@ %@ for 1 TON";
+"buy.you_pay" = "You pay";
+"buy.you_get" = "You get";
+"buy.transaction_operator" = "Operator";
+"buy.service_provider" = "Service provided by %@";

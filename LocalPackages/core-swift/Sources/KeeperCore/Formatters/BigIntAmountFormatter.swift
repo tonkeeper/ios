@@ -7,6 +7,17 @@ public struct BigIntAmountFormatter {
     case invalidInput(_ input: String)
   }
   
+  private let groupSeparator: String
+  private let fractionalSeparator: String?
+  
+  public init(
+    groupSeparator: String = " ",
+    fractionalSeparator: String? = Locale.current.decimalSeparator
+  ) {
+    self.groupSeparator = groupSeparator
+    self.fractionalSeparator = fractionalSeparator
+  }
+  
   public func format(amount: BigUInt,
                      fractionDigits: Int,
                      maximumFractionDigits: Int) -> String {
@@ -17,25 +28,45 @@ public struct BigIntAmountFormatter {
       let nonSignificantLength = fractionDigits - significantLength
       let significantPart = initialString.prefix(maximumFractionDigits).filter { $0 != "0" }
       let string = String(repeating: "0", count: nonSignificantLength) + significantPart
-      return "0" + (.fractionalSeparator ?? ".") + string
+      return "0" + (fractionalSeparator ?? ".") + string
     } else {
       let fractional = String(initialString.suffix(fractionDigits))
       let fractionalLength = min(fractionDigits, maximumFractionDigits)
       let fractionalResult = String(fractional[fractional.startIndex..<fractional.index(fractional.startIndex, offsetBy: fractionalLength)])
         .replacingOccurrences(of: "0+$", with: "", options: .regularExpression)
       let integer = String(initialString.prefix(initialString.count - fractional.count))
-      let separatedInteger = groups(string: integer.isEmpty ? "0" : integer, size: .groupSize).joined(separator: .groupSeparator)
+      let separatedInteger = groups(string: integer.isEmpty ? "0" : integer, size: .groupSize).joined(separator: groupSeparator)
       var result = separatedInteger
       if fractionalResult.count > 0 {
-        result += (.fractionalSeparator ?? ".") + fractionalResult
+        result += (fractionalSeparator ?? ".") + fractionalResult
       }
       return result
     }
   }
   
   public func bigInt(string: String, targetFractionalDigits: Int) throws -> (amount: BigInt, fractionalDigits: Int) {
+    do {
+      let stringLiteral = try stringLiteral(string: string, targetFractionalDigits: targetFractionalDigits)
+      let bigInt = BigInt(stringLiteral: stringLiteral)
+      return (bigInt, targetFractionalDigits)
+    } catch {
+      throw error
+    }
+  }
+  
+  public func bigUInt(string: String, targetFractionalDigits: Int) throws -> (amount: BigUInt, fractionalDigits: Int) {
+    do {
+      let stringLiteral = try stringLiteral(string: string, targetFractionalDigits: targetFractionalDigits)
+      let bigUInt = BigUInt(stringLiteral: stringLiteral)
+      return (bigUInt, targetFractionalDigits)
+    } catch {
+      throw error
+    }
+  }
+  
+  private func stringLiteral(string: String, targetFractionalDigits: Int) throws -> String {
     guard !string.isEmpty else { throw Error.invalidInput(string) }
-    let fractionalSeparator: String = .fractionalSeparator ?? ""
+    let fractionalSeparator: String = fractionalSeparator ?? ""
     let components = string.components(separatedBy: fractionalSeparator)
     guard components.count < 3 else { throw Error.invalidInput(string) }
     
@@ -45,8 +76,8 @@ public struct BigIntAmountFormatter {
       fractionalDigits = fractionalString.count
     }
     let zeroString = String(repeating: "0", count: max(0, targetFractionalDigits - fractionalDigits))
-    let bigIntValue = BigInt(stringLiteral: components.joined() + zeroString)
-    return (bigIntValue, targetFractionalDigits)
+    let stringLiteral = components.joined() + zeroString
+    return stringLiteral
   }
 }
 
@@ -66,11 +97,4 @@ private extension BigIntAmountFormatter {
 
 private extension Int {
   static let groupSize = 3
-}
-
-private extension String {
-  static let groupSeparator = " "
-  static var fractionalSeparator: String? {
-    Locale.current.decimalSeparator
-  }
 }

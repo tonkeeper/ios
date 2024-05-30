@@ -133,7 +133,8 @@ public final class ServicesAssembly {
   func buySellMethodsService() -> BuySellMethodsService {
     BuySellMethodsServiceImplementation(
       api: tonkeeperAPIAssembly.api,
-      buySellMethodsRepository: repositoriesAssembly.buySellMethodsRepository()
+      buySellMethodsRepository: repositoriesAssembly.buySellMethodsRepository(),
+      operatorsRepository: repositoriesAssembly.operatorsRepository()
     )
   }
   

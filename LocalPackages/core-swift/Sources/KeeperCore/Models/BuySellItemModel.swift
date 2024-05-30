@@ -1,4 +1,5 @@
 import Foundation
+import BigInt
 
 public struct BuySellItemModel {
   public struct Button {
@@ -13,5 +14,9 @@ public struct BuySellItemModel {
   public let iconURL: URL?
   public let actionButton: Button?
   public let infoButtons: [Button]
-  public let actionURL: URL?
+  public var actionURL: URL?
+  public let rate: Decimal
+  public let currency: Currency
+  public let minTonBuyAmount: BigUInt?
+  public let minTonSellAmount: BigUInt?
 }

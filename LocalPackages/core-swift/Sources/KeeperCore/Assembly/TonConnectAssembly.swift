@@ -39,10 +39,10 @@ public final class TonConnectAssembly {
       tonConnectConfirmationMapper: TonConnectConfirmationMapper(
         historyListMapper: HistoryListMapper(
           dateFormatter: formattersAssembly.dateFormatter,
-          amountFormatter: formattersAssembly.amountFormatter,
-          amountMapper: AmountHistoryListEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
+          amountFormatter: formattersAssembly.amountFormatter(),
+          amountMapper: AmountHistoryListEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter())
         ),
-        amountFormatter: formattersAssembly.amountFormatter
+        amountFormatter: formattersAssembly.amountFormatter()
       )
     )
   }
