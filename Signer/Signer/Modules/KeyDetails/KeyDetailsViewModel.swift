@@ -10,6 +10,7 @@ protocol KeyDetailsViewModel: AnyObject {
   var itemsListUpdate: ((NSDiffableDataSourceSnapshot<KeyDetailsSection, AnyHashable>) -> Void)? { get set }
   var didSelectDelete: (() -> Void)? { get set }
   var didOpenUrl: ((URL) -> Void)? { get set }
+  var canOpenUrl: ((URL) -> Bool)? { get set }
   var didCopied: (() -> Void)? { get set }
   
   func viewDidLoad()
@@ -32,6 +33,7 @@ final class KeyDetailsViewModelImplementation: KeyDetailsViewModel, KeyDetailsMo
   var didTapEdit: (() -> Void)?
   var didTapOpenRecoveryPhrase: (() -> Void)?
   var didDeleteKey: (() -> Void)?
+  var canOpenUrl: ((URL) -> Bool)?
   var didOpenUrl: ((URL) -> Void)?
   var didCopied: (() -> Void)?
   var didRequireConfirmation: (( @escaping (Bool) -> Void) -> Void)?
@@ -273,7 +275,11 @@ private extension KeyDetailsViewModelImplementation {
       guard isConfirmed else { return }
       guard let self else { return }
       guard let url = self.keyDetailsController.appLinkDeeplinkUrl(isLocal: true) else { return }
-      self.didOpenUrl?(url)
+      if self.canOpenUrl?(url) == true {
+        self.didOpenUrl?(url)
+      } else if let appStoreUrl = InfoProvider.tonkeeperAppStoreURL() {
+        self.didOpenUrl?(appStoreUrl)
+      }
     }
     didRequireConfirmation?(completion)
   }
@@ -298,3 +304,6 @@ private extension String {
   static let linkToDeviceItemIdentifier = "LinkToDeviceItemIdentifier"
   static let qrCodeDescriptionItemIdentifier = "QRCodeDescriptionItemIdentifier"
 }
+
+
+

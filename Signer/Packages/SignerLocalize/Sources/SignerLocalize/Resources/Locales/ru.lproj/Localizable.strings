@@ -30,10 +30,10 @@
 "main.buttons.addKey.title" = "Новый ключ";
 "main.buttons.settings.title" = "Настройки";
 
-"key_details.qr_header.title" = "Добавить на другое устройство";
+"key_details.qr_header.title" = "Подключить на другом устройстве";
 "key_details.qr_header.caption" = "Откройте Tonkeeper » Добавить кошелёк » Подключить Signer";
-"key_details.buttons.export_to_tonkeeper" = "Добавить в Tonkeeper";
-"key_details.buttons.export_to_tonkeeper_web" = "Добавить в Tonkeeper Web";
+"key_details.buttons.export_to_tonkeeper" = "Подключить к Tonkeeper";
+"key_details.buttons.export_to_tonkeeper_web" = "Подключить к Tonkeeper Web";
 "key_details.buttons.name" = "Имя";
 "key_details.buttons.hex_address" = "Hex адрес";
 "key_details.buttons.recovery_phrase" = "Секретный ключ";

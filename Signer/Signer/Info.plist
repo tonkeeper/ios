@@ -60,5 +60,7 @@
 	<string>https://tonkeeper.com/terms</string>
 	<key>PrivacyPolicyURL</key>
 	<string>https://tonkeeper.com/privacy</string>
+	<key>TonkeeperAppStoreURL</key>
+	<string>https://apps.apple.com/ru/app/tonkeeper-ton-wallet/id1587742107</string>
 </dict>
 </plist>

@@ -139,21 +139,21 @@ public enum SignerLocalize {
   }
   public enum KeyDetails {
     public enum QrHeader {
-      /// Export to another device
+      /// Link with another device
       public static var title: String {
         localize("key_details.qr_header.title")
       }
-      /// Open Tonkeeper » Add Wallet » Pair Tonsign
+      /// Open Tonkeeper » Add Wallet » Pair Signer
       public static var caption: String {
         localize("key_details.qr_header.caption")
       }
     }
     public enum Buttons {
-      /// Export to Tonkeeper
+      /// Link with Tonkeeper
       public static var export_to_tonkeeper: String {
         localize("key_details.buttons.export_to_tonkeeper")
       }
-      /// Export to Tonkeeper Web
+      /// Link with Tonkeeper Web
       public static var export_to_tonkeeper_web: String {
         localize("key_details.buttons.export_to_tonkeeper_web")
       }

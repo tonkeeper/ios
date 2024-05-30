@@ -104,6 +104,10 @@ private extension KeyDetailsViewController {
       self?.openUrl(url: url)
     }
     
+    viewModel.canOpenUrl = { [weak self] url in
+      self?.canOpenUrl(url: url) ?? false
+    }
+    
     viewModel.didCopied = {
       ToastPresenter.showToast(configuration: .Signer.copied)
     }
@@ -135,6 +139,10 @@ private extension KeyDetailsViewController {
   
   func openUrl(url: URL) {
     UIApplication.shared.open(url)
+  }
+  
+  func canOpenUrl(url: URL) -> Bool {
+    UIApplication.shared.canOpenURL(url)
   }
   
   func createDataSource() -> UICollectionViewDiffableDataSource<KeyDetailsSection, AnyHashable> {

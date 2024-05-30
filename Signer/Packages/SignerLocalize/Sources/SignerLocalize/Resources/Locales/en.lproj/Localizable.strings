@@ -29,10 +29,10 @@
 "main.buttons.addKey.title" = "Add Key";
 "main.buttons.settings.title" = "Settings";
 
-"key_details.qr_header.title" = "Export to another device";
-"key_details.qr_header.caption" = "Open Tonkeeper » Add Wallet » Pair Tonsign";
-"key_details.buttons.export_to_tonkeeper" = "Export to Tonkeeper";
-"key_details.buttons.export_to_tonkeeper_web" = "Export to Tonkeeper Web";
+"key_details.qr_header.title" = "Link with another device";
+"key_details.qr_header.caption" = "Open Tonkeeper » Add Wallet » Pair Signer";
+"key_details.buttons.export_to_tonkeeper" = "Link with Tonkeeper";
+"key_details.buttons.export_to_tonkeeper_web" = "Link with Tonkeeper Web";
 "key_details.buttons.name" = "Name";
 "key_details.buttons.hex_address" = "Hex Address";
 "key_details.buttons.recovery_phrase" = "Recovery Phrase";
