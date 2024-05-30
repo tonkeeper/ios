@@ -22,7 +22,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
-      router.rootViewController.tabBarItem.title = TKLocales.Tabs.wallet
+    router.rootViewController.tabBarItem.title = TKLocales.Tabs.wallet
     router.rootViewController.tabBarItem.image = .TKUIKit.Icons.Size28.wallet
   }
   
@@ -263,6 +263,10 @@ private extension WalletCoordinator {
     
     module.output.didTapScan = { [weak self] in
       self?.didTapScan?()
+    }
+
+    module.output.didTapSwap = { [weak self] in
+      self?.didTapSwap?()
     }
     
     module.output.didTapBuy = { [weak self] wallet in

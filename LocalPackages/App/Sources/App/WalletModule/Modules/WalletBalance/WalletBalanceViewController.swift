@@ -111,7 +111,7 @@ private extension WalletBalanceViewController {
       var snapshot = dataSource.snapshot()
       snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .tonItems))
       snapshot.appendItems(tonItems, toSection: .tonItems)
-      dataSource.apply(snapshot,animatingDifferences: false)
+      dataSource.apply(snapshot, animatingDifferences: false)
     }
     
     viewModel.didUpdateJettonItems = { [weak dataSource] jettonItems in
@@ -119,7 +119,7 @@ private extension WalletBalanceViewController {
       var snapshot = dataSource.snapshot()
       snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .jettonsItems))
       snapshot.appendItems(jettonItems, toSection: .jettonsItems)
-      dataSource.apply(snapshot,animatingDifferences: false)
+      dataSource.apply(snapshot, animatingDifferences: false)
     }
     
     viewModel.didUpdateFinishSetupItems = { [weak dataSource] items in
@@ -130,10 +130,9 @@ private extension WalletBalanceViewController {
       if !items.isEmpty {
         snapshot.insertSections([.finishSetup], afterSection: .tonItems)
         snapshot.appendItems(items, toSection: .finishSetup)
-        snapshot.reloadSections([.finishSetup])
       }
       
-      dataSource.apply(snapshot,animatingDifferences: false)
+      dataSource.apply(snapshot, animatingDifferences: false)
     }
     
     viewModel.didCopy = { configuration in

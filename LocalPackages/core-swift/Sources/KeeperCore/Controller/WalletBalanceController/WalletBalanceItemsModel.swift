@@ -22,5 +22,18 @@ public extension WalletBalanceItemsModel {
     public let convertedAmount: String?
     public let verification: JettonInfo.Verification
     public let hasPrice: Bool
+
+    public init(identifier: String, token: Token, image: TokenImage, title: String, price: String?, rateDiff: String?, amount: String?, convertedAmount: String?, verification: JettonInfo.Verification, hasPrice: Bool) {
+      self.identifier = identifier
+      self.token = token
+      self.image = image
+      self.title = title
+      self.price = price
+      self.rateDiff = rateDiff
+      self.amount = amount
+      self.convertedAmount = convertedAmount
+      self.verification = verification
+      self.hasPrice = hasPrice
+    }
   }
 }

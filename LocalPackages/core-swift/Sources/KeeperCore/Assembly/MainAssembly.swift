@@ -337,6 +337,26 @@ public final class MainAssembly {
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
+
+  public func swapController() -> SwapController {
+    SwapController(
+      walletsStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      ratesService: servicesAssembly.ratesService(),
+      amountFormatter: formattersAssembly.amountFormatterV2, 
+      currencyStore: storesAssembly.currencyStore
+    )
+  }
+
+  public func swapConfirmationController(item: SwapItem) -> SwapConfirmationController {
+    SwapConfirmationController(
+      swapItem: item,
+      walletsStore: walletAssembly.walletStore,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      mnemonicRepository: repositoriesAssembly.mnemonicRepository()
+    )
+  }
   
   public func sendRecipientController(recipient: Recipient?) -> SendRecipientController {
     SendRecipientController(
@@ -396,6 +416,20 @@ public final class MainAssembly {
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
+
+  public func swapAvailableTokenController() -> SwapAvailableTokenController {
+    SwapAvailableTokenController(
+      // Why not to put activeWallet here?
+      wallet: walletAssembly.walletStore.activeWallet,
+      jettonService: servicesAssembly.jettonsService(),
+      balanceService: servicesAssembly.balanceService(),
+      ratesStore: storesAssembly.ratesStore,
+      tonRatesStore: storesAssembly.tonRatesStore,
+      swapAvailableTokenMapper: swapAvailableTokenMapper,
+      currencyStore: storesAssembly.currencyStore,
+      amountFormatter: formattersAssembly.amountFormatter
+    )
+  }
   
   public func buyListController(wallet: Wallet,
                                 isMarketRegionPickerAvailable: @escaping () async -> Bool) -> BuyListController {
@@ -448,7 +482,16 @@ private extension MainAssembly {
     WalletListMapper(
       amountFormatter: formattersAssembly.amountFormatter,
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
-      rateConverter: RateConverter()
+      rateConverter: RateConverter() // why this one is initialised and other reused?
+    )
+  }
+
+  var swapAvailableTokenMapper: SwapAvailableTokenMapper {
+    SwapAvailableTokenMapper(
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
+      rateConverter: RateConverter(),
+      dateFormatter: formattersAssembly.dateFormatter
     )
   }
   

@@ -3,7 +3,15 @@ import BigInt
 
 public struct AmountFormatter {
   private let bigIntFormatter: BigIntAmountFormatter
-  
+
+  public var fractionalSeparator: String {
+    bigIntFormatter.fractionalSeparator
+  }
+
+  public var groupSeparator: String {
+    return bigIntFormatter.groupSeparator
+  }
+
   init(bigIntFormatter: BigIntAmountFormatter) {
     self.bigIntFormatter = bigIntFormatter
   }

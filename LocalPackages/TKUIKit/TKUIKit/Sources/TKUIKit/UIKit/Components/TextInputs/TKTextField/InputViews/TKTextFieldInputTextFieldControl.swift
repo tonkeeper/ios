@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TKTextInputTextFieldControl: UITextField, TKTextFieldInputViewControl {
+public final class TKTextInputTextFieldControl: UITextField, TKTextFieldInputViewControl {  
 
   public var didUpdateText: ((String) -> Void)?
   public var didBeginEditing: (() -> Void)?

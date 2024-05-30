@@ -3,6 +3,7 @@ import SnapKit
 
 public protocol TKTextFieldInputViewControl: UIView {
   var isActive: Bool { get }
+  var textColor: UIColor? { get set }
   var inputText: String { get set }
   var textFieldState: TKTextFieldState { get set }
   var accessoryView: UIView? { get set }
@@ -13,7 +14,14 @@ public protocol TKTextFieldInputViewControl: UIView {
 }
 
 public final class TKTextFieldInputView: UIControl, TKTextFieldInputViewControl {
-  
+  public var textColor: UIColor? {
+    set {
+      textInputControl.textColor = newValue
+    } get {
+      textInputControl.textColor
+    }
+  }
+
   public enum ClearButtonMode {
     case never
     case whileEditingNotEmpty
@@ -30,6 +38,19 @@ public final class TKTextFieldInputView: UIControl, TKTextFieldInputViewControl 
   public var isActive: Bool {
     textInputControl.isActive
   }
+
+  public override var isEnabled: Bool {
+    didSet {
+      if isEnabled {
+        textInputControl.textColor = .Text.primary
+        textInputControl.isUserInteractionEnabled = true
+      } else {
+        textInputControl.textColor = .Text.tertiary
+        textInputControl.isUserInteractionEnabled = false
+      }
+    }
+  }
+
   public var inputText: String {
     get { textInputControl.inputText }
     set {

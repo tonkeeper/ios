@@ -343,9 +343,7 @@ private extension WalletBalanceViewModelImplementation {
         title: TKLocales.WalletButtons.swap,
         icon: .TKUIKit.Icons.Size28.swapHorizontalOutline,
         isEnabled: isSwapEnable,
-        action: { [weak self] in
-          self?.didTapSwap?()
-        }
+        action: { [weak self] in self?.didTapSwap?()}
       ),
       buyButton: WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.buy,

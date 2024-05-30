@@ -26,6 +26,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private weak var addWalletCoordinator: AddWalletCoordinator?
   private weak var sendTokenCoordinator: SendTokenCoordinator?
+  private weak var swapTokenCoordinator: SwapTokenCoordinator?
   
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
@@ -130,6 +131,10 @@ private extension MainCoordinator {
     
     walletCoordinator.didTapSend = { [weak self] token in
       self?.openSend(token: token)
+    }
+
+    walletCoordinator.didTapSwap = { [weak self] in
+      self?.openSwap()
     }
     
     walletCoordinator.didTapSwap = { [weak self] in
@@ -256,31 +261,38 @@ private extension MainCoordinator {
       }
     }
   }
-  
+
   func openSwap() {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
-    navigationController.setNavigationBarHidden(true, animated: false)
     
-    let coordinator = WebSwapModule(
-      dependencies: WebSwapModule.Dependencies(
+    let swapTokenCoordinator = SwapModule(
+      dependencies: SwapModule.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
-    ).swapCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
-    
-    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+    ).createSwapTokenCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController)
+    )
+
+    swapTokenCoordinator.didFinish = { [weak self, weak swapTokenCoordinator, weak navigationController] completedSwap in
+      self?.swapTokenCoordinator = nil
       navigationController?.dismiss(animated: true)
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
+      guard let swapTokenCoordinator else { return }
+      self?.removeChild(swapTokenCoordinator)
+
+      if completedSwap {
+        self?.router.select(index: 1)
+      }
     }
+
+    self.swapTokenCoordinator = swapTokenCoordinator
     
-    addChild(coordinator)
-    coordinator.start()
+    addChild(swapTokenCoordinator)
+    swapTokenCoordinator.start()
     
-    router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
+    self.router.present(navigationController, onDismiss: { [weak self] in
+      self?.swapTokenCoordinator = nil
     })
   }
 }

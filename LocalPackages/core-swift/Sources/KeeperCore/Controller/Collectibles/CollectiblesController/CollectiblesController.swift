@@ -60,7 +60,6 @@ public final class CollectiblesController {
 
 private extension CollectiblesController {
   func didChangeActiveWallet() async {
-    guard let address = try? wallet.address else { return }
     let nfts = await nftsStore.getNfts(wallet: wallet)
     didUpdateActiveWallet?()
     didUpdateIsEmpty?(nfts.isEmpty)

@@ -1,6 +1,26 @@
 import UIKit
 
 public class TKTextField: UIControl {
+
+  public struct Configuration {
+    let edgePaddings: UIEdgeInsets
+    let highlightBorder: Bool
+
+    public static let `default` = Configuration(
+      edgePaddings: UIEdgeInsets(
+        top: 20,
+        left: 16,
+        bottom: 20,
+        right: 16
+      ),
+      highlightBorder: true
+    )
+
+    public init(edgePaddings: UIEdgeInsets, highlightBorder: Bool) {
+      self.edgePaddings = edgePaddings
+      self.highlightBorder = highlightBorder
+    }
+  }
   
   public struct RightItem {
     public enum Mode {
@@ -62,10 +82,10 @@ public class TKTextField: UIControl {
   private let textFieldInputView: TKTextFieldInputView
   private let rightItemsContainer = UIStackView()
   
-  public init(textFieldInputView: TKTextFieldInputView) {
+  public init(textFieldInputView: TKTextFieldInputView, configuration: TKTextField.Configuration = .default) {
     self.textFieldInputView = textFieldInputView
     super.init(frame: .zero)
-    setup()
+    setup(configuration: configuration)
   }
   
   required init?(coder: NSCoder) {
@@ -81,10 +101,16 @@ public class TKTextField: UIControl {
   public override func resignFirstResponder() -> Bool {
     textFieldInputView.resignFirstResponder()
   }
+
+  public override var isEnabled: Bool {
+    didSet {
+      textFieldInputView.isEnabled = isEnabled
+    }
+  }
 }
 
 private extension TKTextField {
-  func setup() {
+  func setup(configuration: TKTextField.Configuration) {
     textFieldInputView.didUpdateText = { [weak self] text in
       self?.didUpdateText?(text)
       self?.updateRightItemsVisibility()
@@ -104,16 +130,12 @@ private extension TKTextField {
       self?.shouldPaste?($0) ?? true
     }
     
-    textFieldInputView.padding = UIEdgeInsets(
-      top: 20,
-      left: 16,
-      bottom: 20,
-      right: 16
-    )
+    textFieldInputView.padding = configuration.edgePaddings
     
     didUpdateState()
     
     backgroundView.isUserInteractionEnabled = false
+    backgroundView.highlightBorder = configuration.highlightBorder
     
     addSubview(backgroundView)
     addSubview(textFieldInputView)

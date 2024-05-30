@@ -10,7 +10,7 @@ final class SendV3AmountInputTokenView: UIControl {
     }
   }
   
-  var image: Model.Amount.Token.Image? {
+  var image: SendV3View.Model.Amount.Token.Image? {
     didSet {
       imageDownloadTask?.cancel()
       switch image {

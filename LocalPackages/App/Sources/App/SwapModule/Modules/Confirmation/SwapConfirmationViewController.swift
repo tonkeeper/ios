@@ -1,0 +1,75 @@
+import UIKit
+import TKUIKit
+
+final class SwapConfirmationViewController: GenericViewViewController<SwapConfirmationView> {
+  
+  private let viewModel: SwapConfirmationViewModel
+  
+  init(viewModel: SwapConfirmationViewModel) {
+    self.viewModel = viewModel
+    super.init(nibName: nil, bundle: nil)
+  }
+  
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+  
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    setup()
+    setupBindings()
+    setupViewEvents()
+    self.viewModel.viewDidLoad()
+  }
+
+  private func setup() {
+    customView.confirmButton.configuration.content = TKButton.Configuration.Content(title: .plainString("Confirm"))
+    customView.cancelButton.configuration.content = TKButton.Configuration.Content(title: .plainString("Cancel"))
+    customView.headerLabel.attributedText = "Confirm swap".withTextStyle(
+      .h3, color: .Text.primary, alignment: .center
+    )
+    customView.errorLabel.attributedText = "Something went wrong. Try later or create new swap transaction".withTextStyle(.label2, color: .Field.errorBorder, alignment: .center)
+  }
+
+  private func setupBindings() {
+    viewModel.didUpdateModel = { [weak self] model in
+      guard let self else { return }
+
+      self.customView.sendView.chooseTokenView.token = model.send.token
+      self.customView.sendView.chooseTokenView.isUserInteractionEnabled = false
+      self.customView.sendView.amountTextField.text = model.send.amount
+      self.customView.sendView.updateTotalBalance("")
+      
+      self.customView.receiveView.chooseTokenView.token = model.receive.token
+      self.customView.receiveView.chooseTokenView.isUserInteractionEnabled = false
+      self.customView.receiveView.amountTextField.text = model.receive.amount
+      self.customView.receiveView.updateTotalBalance("")
+
+      self.customView.detailsView.update(items: model.swapDetails, oneTokenPrice: model.oneTokenPrice)
+    }
+    viewModel.didReceiveError = { [weak self] in
+      guard let self else { return }
+      UIView.animate(withDuration: 0.2) {
+        self.customView.errorLabel.alpha = 1
+      }
+      UINotificationFeedbackGenerator().notificationOccurred(.error)
+      self.customView.errorLabel.bounce()
+    }
+    viewModel.didSucceed = {
+      UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+    viewModel.didUpdateConvertedBalances = { [weak self] (sendBalance, receiveBalance) in
+      self?.customView.sendView.updateTotalBalance(sendBalance)
+      self?.customView.receiveView.updateTotalBalance(receiveBalance)
+    }
+  }
+
+  private func setupViewEvents() {
+    customView.cancelButton.configuration.action = { [weak viewModel] in
+      viewModel?.didTapCancel()
+    }
+    customView.confirmButton.configuration.action = { [weak viewModel] in
+      viewModel?.didTapConfirm()
+    }
+  }
+}

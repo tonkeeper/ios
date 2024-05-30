@@ -208,16 +208,13 @@ struct WalletBalanceListItemMapper {
     
     let switchAccessoryConfiguration: TKUIListItemSwitchAccessoryView.Configuration = {
       let isOn: Bool
-      let isEnabled: Bool
       
       let result = biometryAuthentificator.canEvaluate(policy: .deviceOwnerAuthenticationWithBiometrics)
       switch result {
       case .success:
         isOn = biometry.isBiometryEnabled
-        isEnabled = true
       case .failure:
         isOn = false
-        isEnabled = false
       }
       return TKUIListItemSwitchAccessoryView.Configuration(
         isOn: isOn) { isOn in

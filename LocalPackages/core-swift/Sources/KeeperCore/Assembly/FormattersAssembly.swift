@@ -4,6 +4,14 @@ public final class FormattersAssembly {
   public var amountFormatter: AmountFormatter {
     AmountFormatter(bigIntFormatter: bigIntAmountFormatter)
   }
+
+  public var amountFormatterV2: AmountFormatter {
+    if let separator = Locale.current.decimalSeparator, separator == "," {
+      return amountFormatter
+    } else {
+      return AmountFormatter(bigIntFormatter: BigIntAmountFormatter(groupSeparator: ","))
+    }
+  }
   
   public var bigIntAmountFormatter: BigIntAmountFormatter {
     BigIntAmountFormatter()

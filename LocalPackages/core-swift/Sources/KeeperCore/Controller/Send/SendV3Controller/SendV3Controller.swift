@@ -143,7 +143,7 @@ public final class SendV3Controller {
     case insufficient
     case remaining(String)
   }
-  public func calculateRemaining(token: Token, tokenAmount: BigUInt) async -> Remaining {
+  public func calculateRemaining(token: Token, tokenAmount: BigUInt, showSymbol: Bool = true) async -> Remaining {
     let wallet = walletsStore.activeWallet
     let amount: BigUInt
     let tokenSymbol: String?
@@ -172,7 +172,7 @@ public final class SendV3Controller {
         remainingAmount,
         fractionDigits: fractionalDigits,
         maximumFractionDigits: fractionalDigits,
-        symbol: tokenSymbol
+        symbol: showSymbol ? tokenSymbol: nil
       )
       return .remaining(formatted)
     } else {

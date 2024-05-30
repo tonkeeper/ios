@@ -38,6 +38,10 @@ public final class ServicesAssembly {
   func jettonsBalanceService() -> JettonBalanceService {
     JettonBalanceServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
+
+  func jettonsService() -> JettonService {
+    JettonServiceImplementation(apiProvider: apiAssembly.apiProvider)
+  }
   
   func totalBalanceService() -> TotalBalanceService {
     TotalBalanceServiceImplementation(

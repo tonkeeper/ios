@@ -16,7 +16,7 @@ protocol SendV3ModuleInput: AnyObject {
 }
 
 protocol SendV3ViewModel: AnyObject {
-  var didUpdateModel: ((Model) -> Void)? { get set }
+  var didUpdateModel: ((SendV3View.Model) -> Void)? { get set }
   
   var sendAmountTextFieldFormatter: SendAmountTextFieldFormatter { get }
   
@@ -31,59 +31,6 @@ protocol SendV3ViewModel: AnyObject {
   func didTapRecipientScanButton()
 }
 
-struct Model {
-  struct Recipient {
-    let placeholder: String
-    let text: String
-    let isValid: Bool
-  }
-  
-  struct Amount {
-    struct Token {
-      enum Image {
-        case image(UIImage)
-        case asyncImage(ImageDownloadTask)
-      }
-      let image: Image
-      let title: String
-    }
-    
-    let placeholder: String
-    let text: String
-    let fractionDigits: Int
-    let token: Token
-  }
-  
-  struct Comment {
-    let placeholder: String
-    let text: String
-    let isValid: Bool
-    let description: NSAttributedString?
-  }
-  
-  struct Button {
-    let title: String
-    let isEnabled: Bool
-    let isActivity: Bool
-    let action: (() -> Void)
-  }
-  
-  struct Balance {
-    enum Remaining {
-      case insufficient
-      case remaining(String)
-    }
-    let converted: String
-    let remaining: Remaining
-  }
-  
-  let recipient: Recipient
-  let amount: Amount?
-  let balance: Balance
-  let comment: Comment
-  let button: Button
-}
-
 final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, SendV3ModuleInput {
   
   // MARK: - SendV3ModuleOutput
@@ -94,10 +41,10 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   
   // MARK: - SendV3ModuleInput
   
-  var didUpdateModel: ((Model) -> Void)?
+  var didUpdateModel: ((SendV3View.Model) -> Void)?
   
   func updateWithToken(_ token: Token) {
-    sendAmountTextFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: token)
+    sendAmountTextFieldFormatter.maximumFractionDigits = token.tokenFractionalDigits
     sendItem = .token(token, amount: 0)
     amountInput = ""
     isAmountValid = false
@@ -160,7 +107,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
       Task {
         guard string != amountInput else { return }
         let unformatted = self.sendAmountTextFieldFormatter.unformatString(string) ?? ""
-        let amount = sendController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: tokenFractionalDigits(token: token))
+        let amount = sendController.convertInputStringToAmount(input: unformatted, targetFractionalDigits: token.tokenFractionalDigits)
         let isAmountValid = await sendController.isAmountAvailableToSend(amount: amount.amount, token: token) && !amount.amount.isZero
         
         await MainActor.run {
@@ -274,19 +221,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   
   // MARK: - Formatters
   
-  let sendAmountTextFieldFormatter: SendAmountTextFieldFormatter = {
-    let numberFormatter = NumberFormatter()
-    numberFormatter.groupingSeparator = " "
-    numberFormatter.groupingSize = 3
-    numberFormatter.usesGroupingSeparator = true
-    numberFormatter.decimalSeparator = Locale.current.decimalSeparator
-    numberFormatter.maximumIntegerDigits = 16
-    numberFormatter.roundingMode = .down
-    let amountInputFormatController = SendAmountTextFieldFormatter(
-      currencyFormatter: numberFormatter
-    )
-    return amountInputFormatController
-  }()
+  let sendAmountTextFieldFormatter = SendAmountTextFieldFormatterFactory.make()
   
   // MARK: - Dependencies
   
@@ -307,7 +242,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     
     switch sendItem {
     case .token(let token, _):
-      sendAmountTextFieldFormatter.maximumFractionDigits = tokenFractionalDigits(token: token)
+      sendAmountTextFieldFormatter.maximumFractionDigits = token.tokenFractionalDigits
     case .nft:
       break
     }
@@ -315,10 +250,10 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
 }
 
 private extension SendV3ViewModelImplementation {
-  func createModel() -> Model {
+  func createModel() -> SendV3View.Model {
     
     let commentModel = createCommentModel()
-    let amountModel: Model.Amount?
+    let amountModel: SendV3View.Model.Amount?
     switch sendItem {
     case .nft:
       amountModel = nil
@@ -326,7 +261,7 @@ private extension SendV3ViewModelImplementation {
       amountModel = createAmountModel(token: token)
     }
     
-    let remaining: Model.Balance.Remaining
+    let remaining: SendV3View.Model.Balance.Remaining
     switch self.remaining {
     case .insufficient:
       remaining = .insufficient
@@ -334,15 +269,15 @@ private extension SendV3ViewModelImplementation {
       remaining = .remaining(string)
     }
     
-    return Model(
+    return SendV3View.Model(
       recipient: createRecipientModel(),
       amount: amountModel,
-      balance: Model.Balance(
+      balance: SendV3View.Model.Balance(
         converted: "\(convertedValue)",
         remaining: remaining
       ),
       comment: commentModel,
-      button: Model.Button(
+      button: SendV3View.Model.Button(
         title: TKLocales.Actions.continue_action,
         isEnabled: !isResolving && isContinueEnable,
         isActivity: isResolving,
@@ -358,7 +293,7 @@ private extension SendV3ViewModelImplementation {
     )
   }
   
-  func createRecipientModel() -> Model.Recipient {
+  func createRecipientModel() -> SendV3View.Model.Recipient {
     let text: String
     let isValid: Bool
     switch recipient {
@@ -376,14 +311,14 @@ private extension SendV3ViewModelImplementation {
         text = domain.domain
       }
     }
-    return Model.Recipient(
+    return SendV3View.Model.Recipient(
       placeholder: TKLocales.Send.Recepient.placeholder,
       text: text,
       isValid: isValid
     )
   }
   
-  func createCommentModel() -> Model.Comment {
+  func createCommentModel() -> SendV3View.Model.Comment {
     let description: NSAttributedString?
     let placeholder: String
     switch (isCommentRequired, commentInput.isEmpty) {
@@ -409,7 +344,7 @@ private extension SendV3ViewModelImplementation {
         )
     }
     
-    return Model.Comment(
+    return SendV3View.Model.Comment(
       placeholder: placeholder,
       text: commentInput,
       isValid: true,
@@ -417,18 +352,18 @@ private extension SendV3ViewModelImplementation {
     )
   }
   
-  func createAmountModel(token: Token) -> Model.Amount {
-    return Model.Amount(
+  func createAmountModel(token: Token) -> SendV3View.Model.Amount {
+    return SendV3View.Model.Amount(
       placeholder: TKLocales.Send.Amount.placeholder,
       text: sendAmountTextFieldFormatter.formatString(amountInput) ?? "",
-      fractionDigits: tokenFractionalDigits(token: token),
+      fractionDigits: token.tokenFractionalDigits,
       token: createTokenModel(token: token)
     )
   }
   
-  func createTokenModel(token: Token) -> Model.Amount.Token {
+  func createTokenModel(token: Token) -> SendV3View.Model.Amount.Token {
     let title: String
-    let image: Model.Amount.Token.Image
+    let image: SendV3View.Model.Amount.Token.Image
     switch token {
     case .ton:
       title = "TON"
@@ -440,7 +375,7 @@ private extension SendV3ViewModelImplementation {
       }))
     }
     
-    return Model.Amount.Token(
+    return SendV3View.Model.Amount.Token(
       image: image,
       title: title
     )
@@ -490,16 +425,5 @@ private extension SendV3ViewModelImplementation {
     }
     
     return recipient != nil && (isCommentRequired && !commentInput.isEmpty || !isCommentRequired) && isItemValid
-  }
-  
-  func tokenFractionalDigits(token: Token) -> Int {
-    let fractionDigits: Int
-    switch token {
-    case .ton:
-      fractionDigits = TonInfo.fractionDigits
-    case .jetton(let jettonItem):
-      fractionDigits = jettonItem.jettonInfo.fractionDigits
-    }
-    return fractionDigits
   }
 }

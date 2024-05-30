@@ -46,6 +46,18 @@ extension API {
         }
       }
   }
+
+  func getJettons(limit: Int32?, offset: Int32?) async throws -> [JettonInfo] {
+    let response = try await tonAPIClient.getJettons(query: .init(limit: limit, offset: offset))
+    return try response.ok.body.json.jettons
+      .compactMap { jetton in
+        do {
+          return try JettonInfo(jettonInfo: jetton)
+        } catch {
+          return nil
+        }
+      }
+  }
   
   private func mapJettonRates(rates: Components.Schemas.TokenRates?) -> [Currency: Rates.Rate] {
     var result = [Currency: Rates.Rate]()

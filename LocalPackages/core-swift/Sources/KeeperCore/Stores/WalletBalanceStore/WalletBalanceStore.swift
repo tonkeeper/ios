@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-actor WalletBalanceStore {
+public actor WalletBalanceStore {
   typealias ObservationClosure = (Event) -> Void
   enum Event {
     case balanceUpdate(balance: WalletBalanceState, wallet: Wallet)
