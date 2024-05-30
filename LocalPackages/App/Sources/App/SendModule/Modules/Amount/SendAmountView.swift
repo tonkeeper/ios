@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-final class SendAmountView: UIView {
+public final class SendAmountView: UIView {
   
   let container = UIView()
   let amountInputContainer = UIView()

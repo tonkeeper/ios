@@ -379,6 +379,7 @@ public final class MainAssembly {
       sendItem: sendItem,
       comment: comment,
       sendService: servicesAssembly.sendService(),
+      stonfiService: servicesAssembly.stonfiService(),
       blockchainService: servicesAssembly.blockchainService(),
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.ratesStore,
@@ -422,6 +423,82 @@ public final class MainAssembly {
       walletsStore: walletAssembly.walletStore,
       tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
     )
+  }
+    
+    public func confirmationInputController(wallet: Wallet) -> ConfirmationInputController {
+        ConfirmationInputController(
+            ratesService: servicesAssembly.ratesService(),
+            balanceStore: storesAssembly.balanceStore,
+            amountFormatter: formattersAssembly.amountFormatter,
+            wallet: wallet
+        )
+    }
+    
+    public func stakingOptionsController(wallet: Wallet) -> StakingOptionsController {
+        StakingOptionsController(
+            stakingService: servicesAssembly.stakingService(),
+            wallet: wallet
+        )
+    }
+    
+  public func stakingAmountController(wallet: Wallet) -> StakingAmountController {
+    StakingAmountController(
+        ratesService: servicesAssembly.ratesService(),
+        balanceStore: storesAssembly.balanceStore,
+        currencyStore: storesAssembly.currencyStore,
+        amountFormatter: formattersAssembly.amountFormatter,
+        wallet: wallet
+    )
+  }
+    
+  public func sellInputController(wallet: Wallet) -> SellInputController {
+    SellInputController(
+        ratesService: servicesAssembly.ratesService(),
+        balanceStore: storesAssembly.balanceStore,
+        currencyStore: storesAssembly.currencyStore,
+        amountFormatter: formattersAssembly.amountFormatter,
+        wallet: wallet
+    )
+  }
+    
+  public func buyInputController(wallet: Wallet) -> BuyInputController {
+    BuyInputController(
+        ratesService: servicesAssembly.ratesService(),
+        balanceStore: storesAssembly.balanceStore,
+        currencyStore: storesAssembly.currencyStore,
+        amountFormatter: formattersAssembly.amountFormatter,
+        wallet: wallet
+    )
+  }
+    
+  public func operatorsController(wallet: Wallet, isMarketRegionPickerAvailable: @escaping () async -> Bool) -> OperatorsController {
+    OperatorsController(
+        wallet: wallet,
+        buySellMethodsService: servicesAssembly.buySellMethodsService(),
+        locationService: servicesAssembly.locationService(),
+        configurationStore: configurationAssembly.remoteConfigurationStore,
+        currencyStore: storesAssembly.currencyStore,
+        isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
+    )
+  }
+    
+  public func swapSearchTokenController(wallet: Wallet) -> SwapSearchTokenController {
+    SwapSearchTokenController(wallet: wallet, searchTokensService: servicesAssembly.searchTokensService())
+  }
+    
+  public func swapInfoController(
+    token: Token,
+    tokenAmount: BigUInt,
+    wallet: Wallet
+  ) -> SwapInfoController {
+      SwapInfoController(
+        wallet: wallet,
+        balanceStore: storesAssembly.balanceStore,
+        amountFormatter: formattersAssembly.amountFormatter,
+        ratesService: servicesAssembly.ratesService(),
+        rateConverter: RateConverter(),
+        stonfiService: servicesAssembly.stonfiService()
+      )
   }
 }
 

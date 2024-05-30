@@ -21,6 +21,7 @@ public final class SendConfirmationController {
   private let sendItem: SendItem
   private let comment: String?
   private let sendService: SendService
+  private let stonfiService: StonfiService
   private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
   private let ratesStore: RatesStore
@@ -33,6 +34,7 @@ public final class SendConfirmationController {
        sendItem: SendItem,
        comment: String?,
        sendService: SendService,
+       stonfiService: StonfiService,
        blockchainService: BlockchainService,
        balanceStore: BalanceStore,
        ratesStore: RatesStore,
@@ -44,6 +46,7 @@ public final class SendConfirmationController {
     self.sendItem = sendItem
     self.comment = comment
     self.sendService = sendService
+    self.stonfiService = stonfiService
     self.blockchainService = blockchainService
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
@@ -65,7 +68,7 @@ public final class SendConfirmationController {
       let transactionBoc = try await createTransactionBoc()
       try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
       NotificationCenter.default.post(
-        name: NSNotification.Name(rawValue: "didSendTransaction"),
+        name: NSNotification.Name(rawValue: "DID SEND TRANSACTION"),
         object: nil,
         userInfo: ["Wallet": wallet]
       )
@@ -195,6 +198,12 @@ private extension SendConfirmationController {
       descriptionType = .nft(description)
       formattedAmount = nil
       formattedConvertedAmount = nil
+    case .swap, .staking:
+        image = .ton
+        titleType = .ton
+        descriptionType = .ton
+        formattedAmount = nil
+        formattedConvertedAmount = nil
     }
     
     return SendConfirmationModel(
@@ -249,6 +258,22 @@ private extension SendConfirmationController {
       boc = try await createTokenTransactionBoc(token: token, amount: amount) { transfer in
         try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
       }
+    case .swap(let swapType):
+        let signClosure: (WalletTransfer) async throws -> Data = { transfer in
+            try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
+        }
+        switch swapType {
+        case let .jettonJetton(from, to, minAskAmount, offerAmount):
+            boc = try await createSwapTransactionBoc(from: from, to: to, minAskAmount: minAskAmount, offerAmount: offerAmount, signClosure: signClosure)
+        case let .jettonTon(from, minAskAmount, offerAmount):
+            boc = try await createSwapTransactionBoc(from: from, minAskAmount: minAskAmount, offerAmount: offerAmount, signClosure: signClosure)
+        case let .tonJetton(to, minAskAmount, offerAmount):
+            boc = try await createSwapTransactionBoc(to: to, minAskAmount: minAskAmount, offerAmount: offerAmount, signClosure: signClosure)
+        }
+    case .staking(let pool, let token, let amount):
+        boc = try await testBoc(jettonAddress: token, amount: amount, pool: pool) { transfer in
+            return try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
+        }
     }
     return boc
   }
@@ -262,6 +287,22 @@ private extension SendConfirmationController {
       boc = try await createTokenTransactionBoc(token: token, amount: amount) { transfer in
         return try await signTransfer(transfer)
       }
+    case .swap(let swapType):
+        func signClosure(transfer: WalletTransfer) async throws -> Data {
+            return try await signTransfer(transfer)
+        }
+        switch swapType {
+        case let .jettonJetton(from, to, minAskAmount, offerAmount):
+            boc = try await createSwapTransactionBoc(from: from, to: to, minAskAmount: minAskAmount, offerAmount: offerAmount, signClosure: signClosure)
+        case let .jettonTon(from, minAskAmount, offerAmount):
+            boc = try await createSwapTransactionBoc(from: from, minAskAmount: minAskAmount, offerAmount: offerAmount, signClosure: signClosure)
+        case let .tonJetton(to, minAskAmount, offerAmount):
+            boc = try await createSwapTransactionBoc(to: to, minAskAmount: minAskAmount, offerAmount: offerAmount, signClosure: signClosure)
+        }
+    case .staking(let pool, let token, let amount):
+        boc = try await testBoc(jettonAddress: token, amount: amount, pool: pool) { transfer in
+            return try await signTransfer(transfer)
+        }
     }
     return boc
   }
@@ -485,6 +526,100 @@ private extension SendConfirmationController {
     let string = "tonsign://?pk=\(publicKey)&body=\(body)&v=\(v)&return=\("tonkeeperx://publish".percentEncoded ?? "")"
     return URL(string: string)
   }
+}
+
+private extension SendConfirmationController {
+    func testBoc(
+        jettonAddress: Address,
+        amount: BigUInt,
+        pool: PoolInfo,
+        signClosure: (WalletTransfer) async throws -> Data
+    ) async throws -> String {
+        let params = try createStakingSignRawMessage(
+            pool: pool,
+            amount: amount
+        )
+        
+        let seqno = try await sendService.loadSeqno(wallet: wallet)
+        let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+        
+        return try await ExternalMessageTransferBuilder
+          .externalMessageTransfer(
+            wallet: wallet,
+            sender: try wallet.address,
+            seqno: seqno,
+            internalMessages: { sender in
+                [.internal(to: params.to, value: amount, body: params.payload)]
+            },
+            timeout: timeout,
+            signClosure: signClosure
+          )
+    }
+}
+
+private extension SendConfirmationController {
+    // whales
+    func createWhalesAddStakeCommand() throws -> Cell {
+        let queryId = UInt64(Date().timeIntervalSince1970)
+        let builder = Builder()
+        try builder.store(uint: 2077040623, bits: 32)
+        try builder.store(uint: queryId, bits: 64)
+        try builder.storeMaybe(coins: Coins(rawValue: BigUInt("100000")))
+        return try builder.endCell()
+    }
+    
+    // liquid tf
+    func createLiquidTfAddStakeCommand() throws -> Cell {
+        let queryId = UInt64(Date().timeIntervalSince1970)
+        let builder = Builder()
+        try builder.store(uint: 0x47d54391, bits: 32)
+        try builder.store(uint: queryId, bits: 64)
+        try builder.store(uint: 0x000000000005b7ce, bits: 64)
+        return try builder.endCell()
+    }
+    
+    // tf
+    func createTfAddStakeCommand() throws -> Cell {
+        let builder = Builder()
+        try builder.store(uint: 0, bits: 32)
+        try builder.writeSnakeData(Data("d".utf8))
+        return try builder.endCell()
+    }
+    
+    // send
+    func createStakingSignRawMessage(
+        pool: PoolInfo,
+        amount: BigUInt
+    ) throws -> (to: Address, amount: BigUInt, payload: Cell) {
+        let withdrawalFee = getWithdrawalFee(pool: pool)
+        let address = try Address.parse(pool.address)
+        
+        switch pool.implementationType {
+        case .whales:
+            let payload = try createWhalesAddStakeCommand()
+            return (address, amount, payload)
+        case .liquidTF:
+            let payload = try createLiquidTfAddStakeCommand()
+            let amountWithFee = amount + withdrawalFee
+            return (address, amountWithFee, payload)
+        case .tf:
+            let payload = try createTfAddStakeCommand()
+            return (address, amount, payload)
+        default:
+            throw Error.failedToSign
+        }
+    }
+    
+    func getWithdrawalFee(pool: PoolInfo) -> BigUInt {
+        switch pool.implementationType {
+        case .whales:
+            return BigUInt("200000000")
+        case .liquidTF, .tf:
+            return BigUInt("1000000000")
+        default:
+            return BigUInt("0")
+        }
+    }
 }
 
 extension String {

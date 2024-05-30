@@ -30,6 +30,12 @@ final class AmountInputViewController: GenericViewViewController<AmountInputView
       sendAmountTextFieldFormatter.maximumFractionDigits = newValue
     }
   }
+    
+  var descriptionText = "" {
+    didSet {
+      customView.descriptionLabel.text = descriptionText
+    }
+  }
   
   var isTokenPickerAvailable: Bool = true {
     didSet {

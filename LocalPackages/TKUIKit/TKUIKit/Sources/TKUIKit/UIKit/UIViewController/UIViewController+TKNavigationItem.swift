@@ -72,4 +72,18 @@ public extension UINavigationItem {
     backButton.tapAreaInsets = UIEdgeInsets(top: -10, left: -10, bottom: -10, right: -10)
     leftBarButtonItem = UIBarButtonItem(customView: backButton)
   }
+    
+  func setupButton(with icon: UIImage, action: @escaping () -> Void) {
+    let backButton = TKUIHeaderIconButton()
+    backButton.configure(
+      model: TKUIHeaderButtonIconContentView.Model(
+        image: icon
+      )
+    )
+    
+    backButton.addTapAction(action)
+    
+    backButton.tapAreaInsets = UIEdgeInsets(top: -10, left: -10, bottom: -10, right: -10)
+    leftBarButtonItem = UIBarButtonItem(customView: backButton)
+  }
 }

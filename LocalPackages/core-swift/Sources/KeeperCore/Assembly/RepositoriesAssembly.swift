@@ -60,4 +60,8 @@ public final class RepositoriesAssembly {
   func popularAppsRepository() -> PopularAppsRepository {
     PopularAppsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
+    
+  func stakingRepository() -> StakingRepository {
+    StakingRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
 }

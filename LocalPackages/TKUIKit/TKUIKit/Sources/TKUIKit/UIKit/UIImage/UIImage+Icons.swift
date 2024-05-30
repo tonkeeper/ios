@@ -58,8 +58,29 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-magnifying-glass-16")
           .withRenderingMode(.alwaysTemplate)
         }
-        public static var qrCode: UIImage {
-          .imageWithName("Icons/16/ic-qr-code-16")
+          public static var qrCode: UIImage {
+              .imageWithName("Icons/16/ic-qr-code-16")
+          }
+        public static var informationCircle: UIImage {
+          .imageWithName("Icons/16/ic-information-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var sliders: UIImage {
+          .imageWithName("Icons/16/ic-sliders-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+      }
+      public enum Size24 {
+        public static var btcIcon: UIImage {
+          .imageWithName("Icons/24/btc_icon")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var ethIcon: UIImage {
+          .imageWithName("Icons/24/eth_icon")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var usdtIcon: UIImage {
+          .imageWithName("Icons/24/usdt_icon")
           .withRenderingMode(.alwaysTemplate)
         }
       }
@@ -228,10 +249,41 @@ public extension UIImage {
           .imageWithName("Icons/36/ic-fingerprint-36")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var appleCard: UIImage {
+          .imageWithName("Icons/36/apple_card")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var mastercardCard: UIImage {
+          .imageWithName("Icons/36/mastercard_card")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var visaCard: UIImage {
+          .imageWithName("Icons/36/visa_card")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var mirCard: UIImage {
+          .imageWithName("Icons/36/mir_card")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size44 {
         public static var tonCurrency: UIImage {
           .imageWithName("Icons/44/ton_currency")
+        }
+        public static var bemo: UIImage {
+          .imageWithName("Icons/44/bemo")
+        }
+        public static var tonNominators: UIImage {
+          .imageWithName("Icons/44/ton_nominators")
+        }
+        public static var tonStakers: UIImage {
+          .imageWithName("Icons/44/ton_stakers")
+        }
+        public static var tonWhales: UIImage {
+          .imageWithName("Icons/44/ton_whales")
+        }
+        public static var staking: UIImage {
+          .imageWithName("Icons/44/staking")
         }
       }
       public enum Size56 {

@@ -93,7 +93,7 @@ private extension SendTokenEditCoordinator {
           token: token,
           amount: amount
         )
-      case .nft:
+      case .nft, .swap, .staking:
         break
       }
     case .comment:
@@ -125,7 +125,7 @@ private extension SendTokenEditCoordinator {
       case .token(let token, let amount):
         self?.currentStep = .amount
         self?.openAmount(recipient: recipient, token: token, amount: amount)
-      case .nft:
+      case .nft, .swap, .staking:
         self?.currentStep = .comment
         self?.openComment(
           recipient: recipient,

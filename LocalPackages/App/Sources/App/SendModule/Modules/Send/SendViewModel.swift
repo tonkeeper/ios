@@ -92,7 +92,8 @@ final class SendViewModelImplementation: SendViewModel, SendModuleOutput, SendMo
   
   func didTapWalletTokenPicker(index: Int) {
     switch sendController.sendItem {
-    case .nft: break
+    case .nft, .swap, .staking:
+        break
     case .token(let token, _):
       didTapPicker?(sendController.selectedFromWallet, token)
     }
