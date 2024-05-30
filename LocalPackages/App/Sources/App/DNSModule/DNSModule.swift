@@ -22,6 +22,16 @@ struct DNSModule {
       coreAssembly: dependencies.coreAssembly
     )
   }
+  
+  func createRenewDNSCoordinator(window: UIWindow, wallet: Wallet, nft: NFT) -> RenewDNSCoordinator {
+    RenewDNSCoordinator(
+      router: WindowRouter(window: window),
+      nft: nft,
+      wallet: wallet,
+      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+      coreAssembly: dependencies.coreAssembly
+    )
+  }
 }
 
 extension DNSModule {

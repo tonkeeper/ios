@@ -124,7 +124,12 @@ struct HistoryEventMapper {
 
     var commentConfiguration: HistoryCellActionView.CommentView.Configuration?
     if let comment = action.comment {
-      commentConfiguration = HistoryCellActionView.CommentView.Configuration(comment:comment)
+      commentConfiguration = HistoryCellActionView.CommentView.Configuration(comment: comment)
+    }
+    
+    var descriptionConfiguration: HistoryCellActionView.CommentView.Configuration?
+    if let description = action.description {
+      descriptionConfiguration = HistoryCellActionView.CommentView.Configuration(comment: description)
     }
     
     var nftConfiguration: HistoryCellActionView.NFTView.Configuration?
@@ -154,6 +159,7 @@ struct HistoryEventMapper {
       iconConfiguration: iconConfiguration,
       contentConfiguration: contentConfiguration,
       commentConfiguration: commentConfiguration,
+      descriptionConfiguration: descriptionConfiguration,
       nftConfiguration: nftConfiguration,
       isInProgress: isInProgress
     )

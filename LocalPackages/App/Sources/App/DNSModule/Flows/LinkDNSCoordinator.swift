@@ -14,8 +14,8 @@ final class LinkDNSCoordinator: RouterCoordinator<WindowRouter> {
   
   var didCancel: (() -> Void)?
   var didFinish: (() -> Void)?
-  
-  private let externalSignHandler = ExternalSignHandler()
+    
+  private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
   private let wallet: Wallet
   private let flow: Flow
@@ -104,24 +104,28 @@ private extension LinkDNSCoordinator {
   }
   
   func performLink(fromViewController: UIViewController, dnsLink: DNSLink) async -> Bool {
-    let isConfirmed = await PasscodePresenter.presentPasscodeConfirmation(
-      fromViewController: fromViewController,
-      parentCoordinator: self,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
-    )
-    guard isConfirmed else { return false }
-    
     do {
-      try await linkDNSController.sendLinkTransaction(
-        dnsLink: dnsLink) { [externalSignHandler, keeperCoreMainAssembly, coreAssembly] url, wallet in
-          try await externalSignHandler.performExternalSign(
-            url: url,
-            wallet: wallet,
-            fromViewController: fromViewController,
-            keeperCoreMainAssembly: keeperCoreMainAssembly,
-            coreAssembly: coreAssembly
-          )
+      try await linkDNSController.sendLinkTransaction(dnsLink: dnsLink) { [weak self] walletTransfer in
+        guard let self = self else { return nil }
+        let coordinator = await WalletTransferSignCoordinator(
+          router: ViewControllerRouter(rootViewController: fromViewController),
+          wallet: wallet,
+          walletTransfer: walletTransfer,
+          keeperCoreMainAssembly: keeperCoreMainAssembly)
+        
+        self.walletTransferSignCoordinator = coordinator
+        
+        let result = await coordinator.handleSign(parentCoordinator: self)
+      
+        switch result {
+        case .signed(let data):
+          return data
+        case .cancel:
+          return nil
+        case .failed(let error):
+          throw error
         }
+      }
       return true
     } catch {
       return false

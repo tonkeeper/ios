@@ -14,7 +14,7 @@ public final class MainAssembly {
     }
   }
   
-  let repositoriesAssembly: RepositoriesAssembly
+  public let repositoriesAssembly: RepositoriesAssembly
   public let walletAssembly: WalletAssembly
   public let walletUpdateAssembly: WalletsUpdateAssembly
   public let servicesAssembly: ServicesAssembly

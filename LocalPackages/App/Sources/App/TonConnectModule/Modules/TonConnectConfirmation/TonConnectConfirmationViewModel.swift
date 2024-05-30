@@ -66,7 +66,7 @@ private extension TonConnectConfirmationViewModelImplementation {
       ]), bottomSpacing: 16, itemSpacing: 8)
     ]
     let configuration = TKModalCardViewController.Configuration(
-      header: .init(items: []),
+      header: nil,
       content: .init(items: contentItems),
       actionBar: .init(items: actionBarItems)
     )

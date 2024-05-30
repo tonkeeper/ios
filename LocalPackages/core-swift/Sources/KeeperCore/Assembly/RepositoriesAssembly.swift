@@ -9,7 +9,7 @@ public final class RepositoriesAssembly {
     self.coreAssembly = coreAssembly
   }
   
-  func mnemonicRepository() -> WalletMnemonicRepository {
+  public func mnemonicRepository() -> WalletMnemonicRepository {
     coreAssembly.mnemonicVault()
   }
   

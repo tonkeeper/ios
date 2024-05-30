@@ -94,7 +94,7 @@ private extension LinkDNSViewModelImplementation {
 
   func buildAmountItem() -> TKModalCardViewController.Configuration.ListItem {
     let feeFormatted = amountFormatter.formatAmount(
-      OP_AMOUNT.DNS_LINK,
+      OP_AMOUNT.CHANGE_DNS_RECORD,
       fractionDigits: TonInfo.fractionDigits,
       maximumFractionDigits: TonInfo.fractionDigits,
       symbol: TonInfo.symbol

@@ -38,6 +38,13 @@ struct CollectibleDetailsMapper {
       daysExpiration = nil
     }
     
+    let renewButtonDateItem: String?
+    if let renewButtonDate = Calendar.current.date(byAdding: .year, value: 1, to: Date()) {
+      renewButtonDateItem = dateFormatter.string(from: renewButtonDate)
+    } else {
+      renewButtonDateItem = nil
+    }
+    
     return CollectibleDetailsModel(
       title: nft.name ?? nft.address.toShortString(bounceable: false),
       collectibleDetails: mapCollectibleDetails(nft: nft),
@@ -48,6 +55,7 @@ struct CollectibleDetailsMapper {
       isDns: nft.dns != nil,
       isOnSale: nft.sale != nil,
       linkedAddress: linkedAddressItem,
+      renewButtonDateItem: renewButtonDateItem,
       expirationDateItem: expirationDateItem,
       daysExpiration: daysExpiration)
   }

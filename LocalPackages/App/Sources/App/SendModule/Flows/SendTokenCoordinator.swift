@@ -12,6 +12,8 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   
   private var externalSignHandler: ((Data) async -> Void)?
   
+  private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
+  
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let sendItem: SendItem
@@ -150,11 +152,6 @@ private extension SendTokenCoordinator {
       )
     )
     
-    module.output.didRequireConfirmation = { [weak self] in
-      guard let self else { return false }
-      return await self.openConfirmation(fromViewController: self.router.rootViewController)
-    }
-    
     module.output.didSendTransaction = { [weak self] in
       NotificationCenter.default.post(Notification(name: Notification.Name("DID SEND TRANSACTION")))
       self?.router.dismiss(completion: {
@@ -162,50 +159,31 @@ private extension SendTokenCoordinator {
       })
     }
     
-    module.output.didRequireExternalWalletSign = { [weak self] transferURL, wallet in
-      guard let self else { return Data() }
-      return try await self.handleExternalSign(url: transferURL,
-                                               wallet: wallet,
-                                               fromViewController: self.router.rootViewController)
+    module.output.didRequireSign = { [weak self] walletTransfer, wallet in
+      guard let self = self else { return nil }
+      let coordinator = await WalletTransferSignCoordinator(
+        router: ViewControllerRouter(rootViewController: router.rootViewController),
+        wallet: wallet,
+        walletTransfer: walletTransfer,
+        keeperCoreMainAssembly: keeperCoreMainAssembly)
+      
+      self.walletTransferSignCoordinator = coordinator
+      
+      let result = await coordinator.handleSign(parentCoordinator: self)
+    
+      switch result {
+      case .signed(let data):
+        return data
+      case .cancel:
+        return nil
+      case .failed(let error):
+        throw error
+      }
     }
     
     module.view.setupBackButton()
     
     router.push(viewController: module.view)
-  }
-  
-  func openConfirmation(fromViewController: UIViewController) async -> Bool {
-    return await Task<Bool, Never> { @MainActor in
-      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
-        guard let self = self else { return }
-        let coordinator = PasscodeModule(
-          dependencies: PasscodeModule.Dependencies(
-            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-          )
-        ).passcodeConfirmationCoordinator()
-        
-        coordinator.didCancel = { [weak self, weak coordinator] in
-          continuation.resume(returning: false)
-          coordinator?.router.dismiss(completion: {
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-          })
-        }
-        
-        coordinator.didConfirm = { [weak self, weak coordinator] in
-          continuation.resume(returning: true)
-          coordinator?.router.dismiss(completion: {
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-          })
-        }
-        
-        self.addChild(coordinator)
-        coordinator.start()
-        
-        fromViewController.present(coordinator.router.rootViewController, animated: true)
-      }
-    }.value
   }
   
   func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
@@ -251,38 +229,38 @@ private extension SendTokenCoordinator {
     
     router.present(navigationController)
   }
-  
-  func handleExternalSign(url: URL, wallet: Wallet, fromViewController: UIViewController) async throws -> Data? {
-    return try await withCheckedThrowingContinuation { continuation in
-      DispatchQueue.main.async {
-        if self.coreAssembly.urlOpener().canOpen(url: url) {
-          self.externalSignHandler = { data in
-            continuation.resume(returning: data)
-          }
-          self.coreAssembly.urlOpener().open(url: url)
-        } else {
-          let module = SignerSignAssembly.module(
-            url: url,
-            wallet: wallet,
-            assembly: self.keeperCoreMainAssembly,
-            coreAssembly: self.coreAssembly
-          )
-          let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-          
-          bottomSheetViewController.didClose = { isInteractivly in
-            guard isInteractivly else { return }
-            continuation.resume(returning: nil)
-          }
-          
-          module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
-            bottomSheetViewController?.dismiss(completion: {
-              continuation.resume(returning: model.boc)
-            })
-          }
-          
-          bottomSheetViewController.present(fromViewController: fromViewController)
-        }
-      }
-    }
-  }
+//  
+//  func handleExternalSign(url: URL, wallet: Wallet, fromViewController: UIViewController) async throws -> Data? {
+//    return try await withCheckedThrowingContinuation { continuation in
+//      DispatchQueue.main.async {
+//        if self.coreAssembly.urlOpener().canOpen(url: url) {
+//          self.externalSignHandler = { data in
+//            continuation.resume(returning: data)
+//          }
+//          self.coreAssembly.urlOpener().open(url: url)
+//        } else {
+//          let module = SignerSignAssembly.module(
+//            url: url,
+//            wallet: wallet,
+//            assembly: self.keeperCoreMainAssembly,
+//            coreAssembly: self.coreAssembly
+//          )
+//          let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+//          
+//          bottomSheetViewController.didClose = { isInteractivly in
+//            guard isInteractivly else { return }
+//            continuation.resume(returning: nil)
+//          }
+//          
+//          module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
+//            bottomSheetViewController?.dismiss(completion: {
+//              continuation.resume(returning: model.boc)
+//            })
+//          }
+//          
+//          bottomSheetViewController.present(fromViewController: fromViewController)
+//        }
+//      }
+//    }
+//  }
 }

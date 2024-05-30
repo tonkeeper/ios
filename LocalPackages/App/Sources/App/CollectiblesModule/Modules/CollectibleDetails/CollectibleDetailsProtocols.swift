@@ -10,6 +10,7 @@ protocol CollectibleDetailsModuleOutput: AnyObject {
   )
   func collectibleDetailsLinkDomain(_ collectibleDetails: CollectibleDetailsModuleInput, nft: NFT)
   func collectibleDetailsUnlinkDomain(_ collectibleDetails: CollectibleDetailsModuleInput, nft: NFT)
+  func collectibleDetailsRenewDomain(_ collectibleDetails: CollectibleDetailsModuleInput, nft: NFT)
 }
 
 protocol CollectibleDetailsModuleInput: AnyObject {}

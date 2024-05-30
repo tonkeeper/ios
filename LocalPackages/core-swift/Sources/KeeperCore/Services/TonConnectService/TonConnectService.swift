@@ -36,7 +36,8 @@ public protocol TonConnectService {
   func createConfirmTransactionBoc(wallet: Wallet,
                                    seqno: UInt64,
                                    timeout: UInt64,
-                                   parameters: SendTransactionParam) async throws -> String
+                                   parameters: SendTransactionParam,
+                                   signClosure: (WalletTransfer) async throws -> Data) async throws -> String
   
   func cancelRequest(appRequest: TonConnect.AppRequest,
                      app: TonConnectApp) async throws
@@ -51,7 +52,6 @@ public protocol TonConnectService {
 }
 
 final class TonConnectServiceImplementation: TonConnectService {
-  
   private let urlSession: URLSession
   private let apiClient: TonConnectAPI.Client
   private let mnemonicRepository: WalletMnemonicRepository
@@ -222,7 +222,8 @@ final class TonConnectServiceImplementation: TonConnectService {
   func createConfirmTransactionBoc(wallet: Wallet,
                                    seqno: UInt64,
                                    timeout: UInt64,
-                                   parameters: SendTransactionParam) async throws -> String {
+                                   parameters: SendTransactionParam,
+                                   signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let walletMnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
     let keyPair = try Mnemonic.mnemonicToPrivateKey(mnemonicArray: walletMnemonic.mnemonicWords)
     let privateKey = keyPair.privateKey
@@ -230,13 +231,7 @@ final class TonConnectServiceImplementation: TonConnectService {
       wallet: wallet,
       seqno: seqno,
       timeout: timeout,
-      parameters: parameters) { transfer in
-        if wallet.isRegular {
-            return try transfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
-        }
-        // TBD: External wallet sign
-        return try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-      }
+      parameters: parameters, signClosure: signClosure)
   }
   
   func confirmRequest(wallet: Wallet, appRequestParam: SendTransactionParam) async throws {}

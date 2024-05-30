@@ -149,4 +149,36 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
     addChild(coordinator)
     coordinator.start()
   }
+  
+  func collectibleDetailsRenewDomain(_ collectibleDetails: any CollectibleDetailsModuleInput, nft: NFT) {
+    let wallet = keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+    guard let windowScene = UIApplication.keyWindowScene else { return }
+    let window = TKWindow(windowScene: windowScene)
+    
+    let coordinator = DNSModule(
+      dependencies: DNSModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createRenewDNSCoordinator(
+      window: window,
+      wallet: wallet,
+      nft: nft
+    )
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.didPerformTransaction?()
+      self?.router.dismiss()
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
 }

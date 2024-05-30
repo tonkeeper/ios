@@ -39,9 +39,12 @@ public final class LinkDNSController {
   }
 
   public func sendLinkTransaction(dnsLink: DNSLink,
-                                  externalSign: ((URL, Wallet) async throws -> Data)) async throws {
+                                  signClosure: (WalletTransfer) async throws -> Data?) async throws {
     let boc = try await createBoc(dnsLink: dnsLink) { transfer in
-      try await self.signTransfer(transfer,  externalSign: externalSign)
+      guard let signedData = try await signClosure(transfer) else {
+        throw Error.failedToSign
+      }
+      return signedData
     }
     try await sendService.sendTransaction(boc: boc, wallet: wallet)
   }
@@ -51,7 +54,7 @@ private extension LinkDNSController {
   func createBoc(dnsLink: DNSLink, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
-    let linkAmount = OP_AMOUNT.DNS_LINK
+    let linkAmount = OP_AMOUNT.CHANGE_DNS_RECORD
     let linkAddress: Address?
     switch dnsLink {
     case .link(let address):
@@ -60,7 +63,7 @@ private extension LinkDNSController {
       linkAddress = nil
     }
     
-    return try await DNSLinkMessageBuilder.linkDNSMessage(
+    return try await ChangeDNSRecordMessageBuilder.linkDNSMessage(
       wallet: wallet,
       seqno: seqno,
       nftAddress: nft.address,
@@ -69,43 +72,8 @@ private extension LinkDNSController {
       timeout: timeout,
       signClosure: signClosure)
   }
-  
-  // TODO: Extract from here and SendConfirmationController
-  
-  func signTransfer(_ transfer: WalletTransfer,
-                    externalSign: ((URL, Wallet) async throws -> Data)) async throws -> Data {
-    switch wallet.identity.kind {
-    case .Regular:
-      let mnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
-      let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-      let privateKey = keyPair.privateKey
-      return try transfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
-    case .Lockup:
-      throw Error.failedToSign
-    case .Watchonly:
-      throw Error.failedToSign
-    case .External(let publicKey, let walletContractVersion):
-      guard let url = createTonSignURL(
-        transfer: try transfer.signingMessage.endCell().toBoc(),
-        publicKey: publicKey,
-        revision: walletContractVersion
-      ) else {
-        throw Error.failedToSign
-      }
-      return try await externalSign(url, wallet)
-    }
-  }
-  
-  func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) -> URL? {
-    guard let publicKey = publicKey.data.base64EncodedString().percentEncoded,
-          let body = transfer.base64EncodedString().percentEncoded else { return nil }
-    let v = revision.rawValue.lowercased()
-    
-    let string = "tonsign://?pk=\(publicKey)&body=\(body)&v=\(v)&return=\("tonkeeperx://publish".percentEncoded ?? "")"
-    return URL(string: string)
-  }
 }
 
 public enum OP_AMOUNT {
-  public static var DNS_LINK = BigUInt(stringLiteral: "020000000")
+  public static var CHANGE_DNS_RECORD = BigUInt(stringLiteral: "020000000")
 }

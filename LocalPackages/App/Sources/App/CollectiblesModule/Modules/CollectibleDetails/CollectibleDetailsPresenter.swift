@@ -190,21 +190,29 @@ private extension CollectibleDetailsPresenter {
   
     let title: String
     let isLoading: Bool
+    let isEnabled: Bool
     switch expirationDateItem {
-    case .value(let value):
-      title = "Renew until \(value)"
+    case .value:
+      title = "Renew until \(model.renewButtonDateItem ?? "")"
       isLoading = false
+      isEnabled = true
     case .loading:
       title = ""
       isLoading = true
+      isEnabled = false
     }
     
     let buttonModel = CollectibleDetailsButtonsView.Model.Button(
       title: title,
       category: .secondary,
       size: .large,
-      isEnabled: false,
-      isLoading: isLoading, tapAction: {}, description: daysExpirationDescription
+      isEnabled: isEnabled,
+      isLoading: isLoading,
+      tapAction: { [weak self] in
+        guard let self = self else { return }
+        self.output?.collectibleDetailsRenewDomain(self, nft: self.collectibleDetailsController.nft)
+      },
+      description: daysExpirationDescription
     )
 
     return buttonModel

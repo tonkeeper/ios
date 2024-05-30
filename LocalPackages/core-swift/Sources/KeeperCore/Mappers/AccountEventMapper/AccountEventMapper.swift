@@ -612,7 +612,7 @@ private extension AccountEventMapper {
       eventType: .domainRenew,
       amount: action.domain,
       subamount: nil,
-      leftTopDescription: action.renewer.value(isTestnet: isTestnet),
+      leftTopDescription: preview.accounts.first?.address.toShortString(bounceable: true),
       leftBottomDescription: nil,
       rightTopDescription: rightTopDescription,
       status: status,
