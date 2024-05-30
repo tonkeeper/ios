@@ -8,6 +8,8 @@ protocol TokenDetailsModuleOutput: AnyObject {
   var didTapSend: ((KeeperCore.Token) -> Void)? { get set }
   var didTapReceive: ((KeeperCore.Token) -> Void)? { get set }
   var didTapBuyOrSell: (() -> Void)? { get set }
+  var didTapWithdraw: ((StakingPool) -> Void)? { get set }
+  var didTapDeposit: ((StakingPool) -> Void)? { get set }
 }
 
 protocol TokenDetailsViewModel: AnyObject {
@@ -15,6 +17,7 @@ protocol TokenDetailsViewModel: AnyObject {
   var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)? { get set }
   var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)? { get set }
   var didUpdateChartViewController: ((UIViewController) -> Void)? { get set }
+  var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -26,6 +29,8 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   var didTapSend: ((KeeperCore.Token) -> Void)?
   var didTapReceive: ((KeeperCore.Token) -> Void)?
   var didTapBuyOrSell: (() -> Void)?
+  var didTapWithdraw: ((StakingPool) -> Void)?
+  var didTapDeposit: ((StakingPool) -> Void)?
   
   // MARK: - TokenDetailsViewModel
   
@@ -33,6 +38,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)?
   var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)?
   var didUpdateChartViewController: ((UIViewController) -> Void)?
+  var showToast: ((ToastPresenter.Configuration) -> Void)?
   
   func viewDidLoad() {
     Task {
@@ -93,6 +99,20 @@ private extension TokenDetailsViewModelImplementation {
             self?.didTapReceive?(token)
           case .buySell:
             self?.didTapBuyOrSell?()
+          case .withdraw(let stakingPool):
+            Task { [weak self] in
+              guard let self else { return  }
+              let can = await self.tokenDetailsController.canPerformWithdraw(stakingPool: stakingPool)
+              await MainActor.run {
+                if can {
+                  self.didTapWithdraw?(stakingPool)
+                } else {
+                  self.showToast?(self.makeToastConfiguration())
+                }
+              }
+            }
+          case .deposit(let stakingPool):
+            self?.didTapDeposit?(stakingPool)
           default:
             break
           }
@@ -121,12 +141,26 @@ private extension TokenDetailsViewModelImplementation {
       )
     }
     
+    var badgeImage: TokenDetailsInformationView.Model.Image?
+    if let image = model.poolType?.image {
+      badgeImage = .image(image)
+    }
+    
     didUpdateInformationView?(
       TokenDetailsInformationView.Model(
         image: image,
+        badgeImage: badgeImage,
         tokenAmount: model.tokenAmount,
         convertedAmount: model.convertedAmount
       )
+    )
+  }
+  
+  func makeToastConfiguration() -> ToastPresenter.Configuration {
+    .init(
+      title: "Nothing to withdraw",
+      backgroundColor: .Background.contentTint,
+      foregroundColor: .Text.primary
     )
   }
   

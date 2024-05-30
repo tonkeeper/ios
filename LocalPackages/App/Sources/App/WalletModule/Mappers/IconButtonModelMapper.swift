@@ -21,6 +21,8 @@ extension KeeperCore.IconButton {
     case .send: return .TKUIKit.Icons.Size28.arrowUpOutline
     case .stake: return .TKUIKit.Icons.Size28.stakingOutline
     case .swap: return .TKUIKit.Icons.Size28.swapHorizontalOutline
+    case .deposit: return .TKUIKit.Icons.Size28.plusOutline
+    case .withdraw: return .TKUIKit.Icons.Size28.minusOutline
     }
   }
   
@@ -32,6 +34,8 @@ extension KeeperCore.IconButton {
     case .send: return TKLocales.WalletButtons.send
     case .stake: return TKLocales.WalletButtons.stake
     case .swap: return TKLocales.WalletButtons.swap
+    case .deposit: return TKLocales.WalletButtons.stake
+    case .withdraw: return TKLocales.WalletButtons.unstake
     }
   }
 }

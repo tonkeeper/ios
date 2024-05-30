@@ -103,6 +103,7 @@
 "wallet_buttons.buy" = "Купить TON";
 "wallet_buttons.swap" = "Обменять";
 "wallet_buttons.stake" = "Застейкать";
+"wallet_buttons.unstake" = "Вывести";
 
 "send.title" = "Отправить";
 "send.recepient.placeholder" = "Адрес или имя";

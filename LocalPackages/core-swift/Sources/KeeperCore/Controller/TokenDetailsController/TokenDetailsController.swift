@@ -9,6 +9,7 @@ public final class TokenDetailsController {
     public let tokenAmount: String
     public let convertedAmount: String?
     public let buttons: [IconButton]
+    public var poolType: StakingPool.Implementation.Kind? = nil
   }
   
   public var didUpdate: ((TokenModel) -> Void)?
@@ -18,22 +19,33 @@ public final class TokenDetailsController {
   private let walletBalanceStore: WalletBalanceStore
   private let currencyStore: CurrencyStore
   private let tonRatesStore: TonRatesStore
+  private let stakingPoolsService: StakingPoolsService
   
   init(configurator: TokenDetailsControllerConfigurator, 
        walletsStore: WalletsStore,
        walletBalanceStore: WalletBalanceStore,
        currencyStore: CurrencyStore,
-       tonRatesStore: TonRatesStore) {
+       tonRatesStore: TonRatesStore,
+       stakingPoolsService: StakingPoolsService) {
     self.configurator = configurator
     self.walletsStore = walletsStore
     self.walletBalanceStore = walletBalanceStore
     self.currencyStore = currencyStore
     self.tonRatesStore = tonRatesStore
+    
+    self.stakingPoolsService = stakingPoolsService
   }
   
   public func start() async {
     await startObservations()
     await setInitialState()
+  }
+  
+  public func canPerformWithdraw(stakingPool: StakingPool) async -> Bool {
+    let balance = await getBalance()
+    let stakingBalance = balance.stakingBalance.first(where: { $0.pool == stakingPool })?.amount ?? .zero
+  
+    return stakingBalance != .zero
   }
 }
 
@@ -101,7 +113,7 @@ private extension TokenDetailsController {
         .walletBalance
         .balance
     } catch {
-      return Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+      return Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
     }
   }
 }

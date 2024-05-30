@@ -28,6 +28,26 @@ public struct AmountFormatter {
     return formatted
   }
   
+  public func formatAmount(_ amount: BigInt,
+                           fractionDigits: Int,
+                           maximumFractionDigits: Int,
+                           currency: Currency? = nil) -> String {
+    var formatted = bigIntFormatter.format(
+      amount: amount,
+      fractionDigits: fractionDigits,
+      maximumFractionDigits: maximumFractionDigits)
+    if let currency = currency {
+      let format: String
+      if currency.symbolOnLeft {
+        format = "\(currency.symbol)\(String.Symbol.shortSpace)%@"
+      } else {
+        format = "%@\(String.Symbol.shortSpace)\(currency.symbol)"
+      }
+      formatted = String(format: format, formatted)
+    }
+    return formatted
+  }
+  
   public func formatAmountWithoutFractionIfThousand(_ amount: BigUInt,
                                                     fractionDigits: Int,
                                                     maximumFractionDigits: Int,

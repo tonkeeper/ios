@@ -422,6 +422,11 @@ public enum TKLocales {
     public static var stake: String {
       localize("wallet_buttons.stake")
     }
+    
+    /// Unstake
+    public static var unstake: String {
+      localize("wallet_buttons.unstake")
+    }
   }
   public enum Send {
     /// Send

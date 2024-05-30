@@ -65,4 +65,34 @@ struct TokenDetailsMapper {
     }
     return (amount, convertedAmount)
   }
+  
+  func mapLPJettonBalance(
+    stakingBalance: StakingBalance,
+    tonRates: [Rates.Rate],
+    currency: Currency
+  ) -> (tokenAmount: String, convertedAmount: String?) {
+    let amount = amountFormatter.formatAmount(
+      stakingBalance.amount,
+      fractionDigits: TonInfo.fractionDigits,
+      maximumFractionDigits: TonInfo.fractionDigits,
+      symbol: TonInfo.symbol
+    )
+    
+    var convertedAmount: String?
+    if let rate = tonRates.first(where: { $0.currency == currency }) {
+      let converted = rateConverter.convert(
+        amount: stakingBalance.amount,
+        amountFractionLength: TonInfo.fractionDigits,
+        rate: rate
+      )
+      convertedAmount = amountFormatter.formatAmount(
+        converted.amount,
+        fractionDigits: converted.fractionLength,
+        maximumFractionDigits: 2,
+        currency: currency
+      )
+    }
+    
+    return (amount, convertedAmount)
+  }
 }

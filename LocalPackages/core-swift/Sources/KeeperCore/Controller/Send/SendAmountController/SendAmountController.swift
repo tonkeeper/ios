@@ -236,7 +236,7 @@ private extension SendAmountController {
     do {
       balance = try balanceStore.getBalance(wallet: wallet).balance
     } catch {
-      balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+      balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
     }
     
     updateRemaining(balance: balance)
@@ -299,7 +299,7 @@ private extension SendAmountController {
       do {
         balance = try balanceStore.getBalance(wallet: wallet).balance
       } catch {
-        balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+        balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
       }
       
       switch token {

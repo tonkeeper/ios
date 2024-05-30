@@ -70,3 +70,32 @@ struct JettonTokenDetailsControllerConfigurator: TokenDetailsControllerConfigura
     )
   }
 }
+
+struct LPJettonDetailsControllerConfigurator: TokenDetailsControllerConfigurator {
+  
+  private let stakingBalance: StakingBalance
+  private let mapper: TokenDetailsMapper
+  
+  init(stakingBalance: StakingBalance, mapper: TokenDetailsMapper) {
+    self.stakingBalance = stakingBalance
+    self.mapper = mapper
+  }
+  
+  func getTokenModel(balance: Balance, tonRates: [Rates.Rate], currency: Currency) -> TokenDetailsController.TokenModel {
+    
+    let tokenAmount: String
+    var convertedAmount: String?
+    (tokenAmount, convertedAmount) = mapper.mapLPJettonBalance(stakingBalance: stakingBalance, tonRates: tonRates, currency: currency)
+    
+    return TokenDetailsController.TokenModel(
+      tokenTitle: stakingBalance.pool.name,
+      tokenSubtitle: nil,
+      image: .ton,
+      tokenAmount: tokenAmount,
+      convertedAmount: convertedAmount,
+      buttons: [.deposit(stakingBalance.pool), .withdraw(stakingBalance.pool)],
+      poolType: stakingBalance.pool.implementation.type
+    )
+  }
+}
+

@@ -51,6 +51,10 @@ private extension TokenDetailsViewController {
     viewModel.didUpdateChartViewController = { [weak self] viewController in
       self?.headerViewController.embedChartViewController(viewController)
     }
+    
+    viewModel.showToast = { configuration in
+      ToastPresenter.showToast(configuration: configuration)
+    }
   }
   
   func setup() {

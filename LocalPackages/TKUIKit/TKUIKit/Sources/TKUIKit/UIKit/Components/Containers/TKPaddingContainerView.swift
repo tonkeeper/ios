@@ -25,7 +25,7 @@ public final class TKPaddingContainerView: UIView {
     }
   }
   
-  let stackView: UIStackView = {
+  public let stackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
     stackView.spacing = 16

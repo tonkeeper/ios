@@ -83,6 +83,7 @@ public final class MainAssembly {
       nftsLoader: loadersAssembly.nftsLoader,
       tonRatesLoader: loadersAssembly.tonRatesLoader,
       currencyStore: storesAssembly.currencyStore,
+      stakingPoolLoader: loadersAssembly.stakingPoolsLoader,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore
     )
   }
@@ -127,7 +128,8 @@ public final class MainAssembly {
       setupStore: storesAssembly.setupStore,
       securityStore: storesAssembly.securityStore,
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore,
-      walletBalanceMapper: walletBalanceMapper
+      walletBalanceMapper: walletBalanceMapper,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
     )
   }
   
@@ -206,7 +208,19 @@ public final class MainAssembly {
       walletsStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
       currencyStore: storesAssembly.currencyStore,
-      tonRatesStore: storesAssembly.tonRatesStore
+      tonRatesStore: storesAssembly.tonRatesStore,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
+    )
+  }
+  
+  public func lpJettonTokenDetailsController(stakingBalance: StakingBalance) -> TokenDetailsController {
+    return TokenDetailsController(
+      configurator: LPJettonDetailsControllerConfigurator(stakingBalance: stakingBalance, mapper: tokenDetailsMapper),
+      walletsStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      currencyStore: storesAssembly.currencyStore,
+      tonRatesStore: storesAssembly.tonRatesStore,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
     )
   }
   
@@ -215,12 +229,14 @@ public final class MainAssembly {
       jettonItem: jettonItem,
       mapper: tokenDetailsMapper
     )
+    
     return TokenDetailsController(
       configurator: configurator,
       walletsStore: walletAssembly.walletStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
       currencyStore: storesAssembly.currencyStore,
-      tonRatesStore: storesAssembly.tonRatesStore
+      tonRatesStore: storesAssembly.tonRatesStore,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
     )
   }
   
@@ -241,6 +257,16 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
+    )
+  }
+  
+  public func lpTokenChartController(stakingPool: StakingPool) -> LPTokenChartController {
+    LPTokenChartController(
+      stakingPool: stakingPool,
+      walletsStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
+      bigIntFormatter: formattersAssembly.bigIntAmountFormatter
     )
   }
   
@@ -409,6 +435,98 @@ public final class MainAssembly {
     )
   }
   
+  public func stakingDepositEditAmountController(stakingPool: StakingPool) -> StakingEditAmountController {
+    StakingDepositEditAmountController(
+      stakingPool: stakingPool,
+      walletStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter,
+      amountConverter: stakingEditAmountConverter,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
+    )
+  }
+  
+  public func stakingWithdrawEditAmountController(stakingPool: StakingPool) -> StakingEditAmountController {
+    StakingWithdrawEditAmountController(
+      stakingPool: stakingPool,
+      walletStore: walletAssembly.walletStore,
+      walletBalanceStore: storesAssembly.walletBalanceStore,
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter,
+      amountConverter: stakingEditAmountConverter,
+      stakingPoolsService: servicesAssembly.stakingPoolsService()
+    )
+  }
+  
+  public func stakingConfirmationController(
+//    depositModel: DepositModel,
+    stakingPool: StakingPool,
+    amount: BigUInt,
+    isMax: Bool
+  ) -> StakingConfirmationController {
+    StakingDepositConfirmationController(
+      stakingPool: stakingPool,
+      amount: amount,
+      isMax: isMax,
+      walletsStore: walletAssembly.walletStore,
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      signService: transferSignService,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter,
+      sendService: servicesAssembly.sendService()
+    )
+  }
+  
+  public func stakingWithdrawConfirmationController(
+//    withdrawModel: WithdrawModel,
+    stakingPool: StakingPool,
+    amount: BigUInt,
+    isMax: Bool
+  ) -> StakingConfirmationController {
+    StakingWithdrawConfirmationController(
+      stakingPool: stakingPool,
+      amount: amount,
+      isMax: isMax,
+      walletsStore: walletAssembly.walletStore,
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      signService: transferSignService,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter,
+      sendService: servicesAssembly.sendService(),
+      blockchainService: servicesAssembly.blockchainService()
+    )
+  }
+  
+  public func stakingOptionsListController(
+    listModel: StakingOptionsListModel,
+    selectedPoolAddress: Address?
+  ) -> StakingOptionsListController {
+    StakingOptionsListController(
+      listModel: listModel,
+      selectedPoolAddress: selectedPoolAddress,
+      mapper: stakingOptionsListMapper,
+      stakingPoolsService: servicesAssembly.stakingPoolsService(),
+      walletStore: walletAssembly.walletStore
+    )
+  }
+  
+  public func stakingOptionDetailsController(stakingPool: StakingPool) -> StakingOptionsDetailsController {
+    StakingOptionsDetailsController(
+      stakingPool: stakingPool,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter
+    )
+  }
+
   public func signerSignController(url: URL, wallet: Wallet) -> SignerSignController {
     SignerSignController(url: url, wallet: wallet)
   }
@@ -464,10 +582,25 @@ private extension MainAssembly {
     )
   }
   
+  var stakingOptionsListMapper: StakingOptionsListMapper {
+    StakingOptionsListMapper(
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter
+    )
+  }
+  
   var tokenDetailsMapper: TokenDetailsMapper {
     TokenDetailsMapper(
       amountFormatter: formattersAssembly.amountFormatter,
       rateConverter: RateConverter()
     )
+  }
+  
+  var stakingEditAmountConverter: StakingEditAmountConverter {
+    StakingEditAmountConverter(rateConverter: RateConverter())
+  }
+  
+  var transferSignService: TransferSignService {
+    TransferSignServiceImplementation(mnemonicRepository: repositoriesAssembly.mnemonicRepository())
   }
 }

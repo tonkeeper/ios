@@ -28,6 +28,8 @@ public final class ServicesAssembly {
     BalanceServiceImplementation(
       tonBalanceService: tonBalanceService(),
       jettonsBalanceService: jettonsBalanceService(),
+      stakingPoolService: stakingPoolsService(),
+      accountStakingInfoService: accountStakingInfoService(),
       walletBalanceRepository: repositoriesAssembly.walletBalanceRepository())
   }
   
@@ -141,8 +143,22 @@ public final class ServicesAssembly {
     LocationServiceImplementation(locationAPI: locationAPIAsembly.locationAPI())
   }
   
+  func stakingPoolsService() -> StakingPoolsService {
+    StakingPoolsServiceImplementation(
+      apiProvider: apiAssembly.apiProvider,
+      repository: repositoriesAssembly.stakingPoolsRepository()
+    )
+  }
+  
   public func popularAppsService() -> PopularAppsService {
     PopularAppsServiceImplementation(api: tonkeeperAPIAssembly.api,
                                      popularAppsRepository: repositoriesAssembly.popularAppsRepository())
+  }
+  
+  func accountStakingInfoService() -> AccountStakingInfoService {
+    AccountStakingInfoServiceImplementation(
+      apiProvider: apiAssembly.apiProvider,
+      repository: repositoriesAssembly.accountStakingInfoRepository()
+    )
   }
 }

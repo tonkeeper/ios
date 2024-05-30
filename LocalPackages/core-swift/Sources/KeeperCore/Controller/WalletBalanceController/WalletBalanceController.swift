@@ -58,6 +58,7 @@ public final class WalletBalanceController {
   private let securityStore: SecurityStore
   private let backgroundUpdateStore: BackgroundUpdateStore
   private let walletBalanceMapper: WalletBalanceMapper
+  private let stakingPoolsService: StakingPoolsService
   
   init(walletsStore: WalletsStore,
        walletBalanceStore: WalletBalanceStore,
@@ -67,7 +68,9 @@ public final class WalletBalanceController {
        setupStore: SetupStore,
        securityStore: SecurityStore,
        backgroundUpdateStore: BackgroundUpdateStore,
-       walletBalanceMapper: WalletBalanceMapper) {
+       walletBalanceMapper: WalletBalanceMapper,
+       stakingPoolsService: StakingPoolsService
+  ) {
     self.walletsStore = walletsStore
     self.walletBalanceStore = walletBalanceStore
     self.walletTotalBalanceStore = walletTotalBalanceStore
@@ -77,6 +80,7 @@ public final class WalletBalanceController {
     self.securityStore = securityStore
     self.backgroundUpdateStore = backgroundUpdateStore
     self.walletBalanceMapper = walletBalanceMapper
+    self.stakingPoolsService = stakingPoolsService
     
     self.wallet = walletsStore.activeWallet
   }
@@ -102,6 +106,23 @@ public final class WalletBalanceController {
   
   public func finishSetup() async {
     try? await setupStore.setSetupIsFinished()
+  }
+  
+  public func getMostPofitableStakingPool() -> StakingPool? {
+    let availablePools = (try? stakingPoolsService.getPools(
+      address: wallet.address,
+      isTestnet: wallet.isTestnet
+    )) ?? []
+    
+    return availablePools.mostProfitablePool
+  }
+  
+  public func getStakingBalance(stakingPool: StakingPool) async -> StakingBalance? {
+    guard let state = await balanceState.walletBalance else {
+      return nil
+    }
+    
+    return state.balance.stakingBalance.first(where: { $0.pool == stakingPool })
   }
 }
 
@@ -249,17 +270,14 @@ private extension WalletBalanceController {
     if let walletBalance = await balanceState.walletBalance {
       balance = walletBalance.balance
     } else {
-      balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+      balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
     }
 
     let rates = await tonRatesStore.getTonRates()
     let currency = await currencyStore.getActiveCurrency()
     return walletBalanceMapper.mapBalance(
       balance: balance,
-      rates: Rates(
-        ton: rates,
-        jettonsRates: []
-      ),
+      rates: Rates(ton: rates, jettonsRates: []),
       currency: currency
     )
   }

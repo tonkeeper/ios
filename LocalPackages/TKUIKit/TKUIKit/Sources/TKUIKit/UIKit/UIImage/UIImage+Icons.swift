@@ -54,6 +54,24 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-sale-badge-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var infoCircle: UIImage {
+          .imageWithName("Icons/16/ic-information-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var swapVertical: UIImage {
+          .imageWithName("Icons/16/ic-swap-vertical-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        
+        public static var twitter: UIImage {
+          .imageWithName("Icons/16/ic-twitter-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        
+        public static var telegram: UIImage {
+          .imageWithName("Icons/16/ic-telegram-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var magnifyingGlass: UIImage {
           .imageWithName("Icons/16/ic-magnifying-glass-16")
           .withRenderingMode(.alwaysTemplate)
@@ -204,6 +222,15 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-doc-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var plusOutline: UIImage {
+          .imageWithName("Icons/28/ic-plus-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        
+        public static var minusOutline: UIImage {
+          .imageWithName("Icons/28/ic-minus-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {
@@ -232,6 +259,18 @@ public extension UIImage {
       public enum Size44 {
         public static var tonCurrency: UIImage {
           .imageWithName("Icons/44/ton_currency")
+        }
+        
+        public static var tonNominatorsLogo: UIImage {
+          return .imageWithName("Icons/44/ton_nominators")
+        }
+        
+        public static var tonStakersLogo: UIImage {
+          .imageWithName("Icons/44/ton_stakers")
+        }
+        
+        public static var tonWhalesLogo: UIImage {
+          .imageWithName("Icons/44/ton_whales")
         }
       }
       public enum Size56 {

@@ -103,6 +103,7 @@
 "wallet_buttons.buy" = "Buy TON";
 "wallet_buttons.swap" = "Swap";
 "wallet_buttons.stake" = "Stake";
+"wallet_buttons.unstake" = "Unstake";
 
 "send.title" = "Send";
 "send.recepient.placeholder" = "Address or name";

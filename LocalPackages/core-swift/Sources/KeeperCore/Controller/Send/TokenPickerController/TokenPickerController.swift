@@ -60,7 +60,7 @@ private extension TokenPickerController {
     do {
       balance = try await walletBalanceStore.getBalanceState(wallet: wallet).walletBalance.balance
     } catch {
-      balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [])
+      balance = Balance(tonBalance: TonBalance(amount: 0), jettonsBalance: [], stakingBalance: [])
     }
     
     await MainActor.run {

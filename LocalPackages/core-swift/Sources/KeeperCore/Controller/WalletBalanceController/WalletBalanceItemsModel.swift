@@ -1,4 +1,5 @@
 import Foundation
+import TonSwift
 
 public struct WalletBalanceItemsModel {
   public let tonItems: [Item]
@@ -11,6 +12,11 @@ public struct WalletBalanceItemsModel {
 }
 
 public extension WalletBalanceItemsModel {
+  enum StakingInfo {
+    case none
+    case pool(StakingPoolItem)
+  }
+  
   struct Item {
     public let identifier: String
     public let token: Token
@@ -22,5 +28,16 @@ public extension WalletBalanceItemsModel {
     public let convertedAmount: String?
     public let verification: JettonInfo.Verification
     public let hasPrice: Bool
+    public let stakingInfo: StakingInfo
+  }
+  
+  struct StakingPoolItem {
+    public enum OperationState {
+      case finish
+      case inOperation(depositAmount: String?, withdrawAmount: String?)
+    }
+    
+    public let pool: StakingPool
+    public let operationState: OperationState
   }
 }

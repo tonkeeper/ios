@@ -5,6 +5,7 @@ import BigInt
 public struct Balance: Codable {
   public let tonBalance: TonBalance
   public let jettonsBalance: [JettonBalance]
+  public var stakingBalance: [StakingBalance]
 }
 
 public extension Balance {
@@ -21,6 +22,14 @@ public struct JettonBalance: Codable {
   public let item: JettonItem
   public let quantity: BigUInt
   public let rates: [Currency: Rates.Rate]
+}
+
+public struct StakingBalance: Codable {
+  public let pool: StakingPool
+  public let amount: BigUInt
+  public let pendingDeposit: BigUInt
+  public let pendingWithdraw: BigUInt
+  public let readyWithdraw: BigUInt
 }
 
 public struct JettonItem: Codable, Equatable {

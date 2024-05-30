@@ -7,13 +7,14 @@ import TKLocalize
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: ((Wallet) -> Void)? { get set }
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)? { get set }
+  var didSelectLPJetton: ((Wallet, StakingBalance) -> Void)? { get set }
 
   var didTapReceive: (() -> Void)? { get set }
   var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
+  var didTapStake: ((StakingPool) -> Void)? { get set }
   var didTapSwap: (() -> Void)? { get set }
-  
   var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
 }
@@ -41,11 +42,13 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didSelectTon: ((Wallet) -> Void)?
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
   var didUpdateFinishSetupItems: (([TKUIListItemCell.Configuration]) -> Void)?
+  var didSelectLPJetton: ((Wallet, StakingBalance) -> Void)?
   
   var didTapReceive: (() -> Void)?
   var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
+  var didTapStake: ((StakingPool) -> Void)?
   var didTapSwap: (() -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
@@ -125,7 +128,21 @@ private extension WalletBalanceViewModelImplementation {
         guard let wallet = self?.walletBalanceController.wallet else { return }
         switch jettonItem.token {
         case .ton:
-          self?.didSelectTon?(wallet)
+          switch jettonItem.stakingInfo {
+          case .none:
+            self?.didSelectTon?(wallet)
+          case .pool(let poolItem):
+            Task { [weak self] in
+              guard let self else { return }
+              guard let stakingBalance = await self.walletBalanceController.getStakingBalance(stakingPool: poolItem.pool) else {
+                return
+              }
+              
+              await MainActor.run {
+                self.didSelectLPJetton?(wallet, stakingBalance)
+              }
+            }
+          }
         case .jetton(let jettonInfo):
           self?.didSelectJetton?(wallet, jettonInfo, jettonItem.hasPrice)
         }
@@ -303,7 +320,7 @@ private extension WalletBalanceViewModelImplementation {
       isScanEnable = true
       isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     case .watchOnly:
       isSendEnable = false
       isReceiveEnable = true
@@ -359,7 +376,16 @@ private extension WalletBalanceViewModelImplementation {
         title: TKLocales.WalletButtons.stake,
         icon: .TKUIKit.Icons.Size28.stakingOutline,
         isEnabled: isStakeEnable,
-        action: {}
+        action: { [weak self] in
+            guard 
+              self?.walletBalanceController.wallet != nil,
+              let stakingPool = self?.walletBalanceController.getMostPofitableStakingPool()
+          else {
+              return
+            }
+            
+          self?.didTapStake?(stakingPool)
+        }
       )
     )
   }

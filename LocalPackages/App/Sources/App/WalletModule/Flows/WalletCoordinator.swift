@@ -110,6 +110,46 @@ private extension WalletCoordinator {
     router.push(viewController: module.view)
   }
   
+  func openLPJettonDetails(stakingBalance: StakingBalance, wallet: Wallet, hasPrice: Bool) {
+    let historyListModule = HistoryModule(
+      dependencies: HistoryModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createTonHistoryListModule(wallet: wallet)
+    
+    historyListModule.output.didSelectEvent = { [weak self] event in
+      self?.openHistoryEventDetails(event: event)
+    }
+    
+    historyListModule.output.didSelectEvent = { [weak self] event in
+      self?.openHistoryEventDetails(event: event)
+    }
+    
+    let module = TokenDetailsAssembly.module(
+      tokenDetailsListContentViewController: historyListModule.view,
+      tokenDetailsController: keeperCoreMainAssembly.lpJettonTokenDetailsController(stakingBalance: stakingBalance),
+      chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
+        ChartAssembly.module(
+          stakingPool: stakingBalance.pool,
+          coreAssembly: coreAssembly,
+          keeperCoreMainAssembly: keeperCoreMainAssembly
+        ).view
+      },
+      hasAbout: true
+    )
+    
+    module.output.didTapWithdraw = { [weak self] stakingPool in
+      self?.openWithdraw(stakingPool: stakingPool)
+    }
+    
+    module.output.didTapDeposit = { [weak self] stakingPool in
+      self?.openDeposit(stakingPool: stakingPool)
+    }
+    
+    router.push(viewController: module.view)
+  }
+  
   func openJettonDetails(jettonItem: JettonItem, wallet: Wallet, hasPrice: Bool) {
     let historyListModule = HistoryModule(
       dependencies: HistoryModule.Dependencies(
@@ -126,7 +166,10 @@ private extension WalletCoordinator {
       tokenDetailsListContentViewController: historyListModule.view,
       tokenDetailsController: keeperCoreMainAssembly.jettonTokenDetailsController(jettonItem: jettonItem),
       chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
-        guard hasPrice else { return nil }
+        if !hasPrice {
+          return nil
+        }
+        
         return ChartAssembly.module(token: .jetton(jettonItem),
                                     coreAssembly: coreAssembly,
                                     keeperCoreMainAssembly: keeperCoreMainAssembly).view
@@ -147,6 +190,54 @@ private extension WalletCoordinator {
   
   func openSend(token: Token) {
     didTapSend?(token)
+  }
+  
+  func openWithdraw(stakingPool: StakingPool) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
+    let module = StakingModule(dependencies:
+        .init(
+          keeperCoreMainAssembly: keeperCoreMainAssembly,
+          coreAssembly: coreAssembly)
+    )
+    
+    let coordinator = module.createStakingCoordinator(router: router)
+    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.openWithdrawEditAmount(stakingPool: stakingPool)
+    
+    self.router.present(navigationController)
+  }
+  
+  func openDeposit(stakingPool: StakingPool) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
+    let module = StakingModule(dependencies:
+        .init(
+          keeperCoreMainAssembly: keeperCoreMainAssembly,
+          coreAssembly: coreAssembly)
+    )
+    
+    let coordinator = module.createStakingCoordinator(router: router)
+    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
+      navigationController?.dismiss(animated: true)
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.openDepositEditAmount(stakingPool: stakingPool)
+    
+    self.router.present(navigationController)
   }
   
   func openReceive(token: Token) {
@@ -253,6 +344,10 @@ private extension WalletCoordinator {
       self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet, hasPrice: hasPrice)
     }
     
+    module.output.didSelectLPJetton = { [weak self] wallet, stakingBalance in
+      self?.openLPJettonDetails(stakingBalance: stakingBalance, wallet: wallet, hasPrice: true)
+    }
+    
     module.output.didTapSend = { [weak self] in
       self?.openSend(token: .ton)
     }
@@ -275,6 +370,10 @@ private extension WalletCoordinator {
     
     module.output.didTapBackup = { [weak self] wallet in
       self?.openBackup(wallet: wallet)
+    }
+    
+    module.output.didTapStake = { [weak self] stakingPool in
+      self?.openDeposit(stakingPool: stakingPool)
     }
     
     module.output.didRequireConfirmation = { [weak self] in
