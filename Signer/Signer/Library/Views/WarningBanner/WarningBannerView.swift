@@ -55,6 +55,7 @@ private extension WarningBannerView {
     label.numberOfLines = 0
     
     imageView.tintColor = .Accent.orange
+    imageView.tintAdjustmentMode = .normal
     imageView.contentMode = .center
     imageView.setContentCompressionResistancePriority(.required, for: .horizontal)
     

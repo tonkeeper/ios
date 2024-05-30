@@ -86,6 +86,7 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
       self.imageDownloadTask = imageDownloadTask
     }
     imageView.tintColor = configuration.tintColor
+    imageView.tintAdjustmentMode = .normal
     backgroundColor = configuration.backgroundColor
     size = configuration.size
     cornerRadius = configuration.cornerRadius

@@ -28,6 +28,7 @@ public final class TKUIListItemImageAccessoryView: UIView, TKConfigurableView {
   public func configure(configuration: Configuration) {
     imageView.image = configuration.image
     imageView.tintColor = configuration.tintColor
+    imageView.tintAdjustmentMode = .normal
     padding = configuration.padding
     setNeedsLayout()
   }

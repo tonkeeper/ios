@@ -151,7 +151,7 @@ struct DeepBlueColorScheme: ColorScheme {
     return UIColor(hex: "#FF4766")
   }
   var accentOrange: UIColor {
-    return UIColor(hex: "#FFFFFF")
+    return UIColor(hex: "#F5A73B")
   }
   var accentPurple: UIColor {
     return UIColor(hex: "#7665E5")
