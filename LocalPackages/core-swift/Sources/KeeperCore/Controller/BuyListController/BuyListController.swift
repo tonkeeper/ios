@@ -126,6 +126,6 @@ private extension BuyListController {
   }
   
   private var availableFiatMethods: [FiatMethodItem.ID] {
-      ["mercuryo", "neocrypto", "moonpay"]
+      ["dreamwalkers", "dreamwalkers_sell", "mercuryo", "neocrypto", "moonpay"]
   }
 }

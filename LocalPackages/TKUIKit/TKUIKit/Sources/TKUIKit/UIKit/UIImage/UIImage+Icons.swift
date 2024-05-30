@@ -62,6 +62,26 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-qr-code-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var sliders: UIImage {
+          .imageWithName("Icons/16/ic-sliders-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var swapVertical: UIImage {
+          .imageWithName("Icons/16/ic-swap-vertical-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var informationCircle: UIImage {
+          .imageWithName("Icons/16/ic-information-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var twitter: UIImage {
+          .imageWithName("Icons/16/ic-twitter-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var telegram: UIImage {
+          .imageWithName("Icons/16/ic-telegram-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
@@ -202,6 +222,14 @@ public extension UIImage {
         }
         public static var doc: UIImage {
           .imageWithName("Icons/28/ic-doc-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var radioButtonEnabled: UIImage {
+          .imageWithName("Icons/28/ic-radio-button-enabled")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var radioButtonDisabled: UIImage {
+          .imageWithName("Icons/28/ic-radio-button-disabled")
           .withRenderingMode(.alwaysTemplate)
         }
       }

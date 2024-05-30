@@ -161,4 +161,32 @@ public final class StoresAssembly {
       return knownAccountsStore
     }
   }
+  
+  private weak var _stonfiAssetsStore: StonfiAssetsStore?
+  var stonfiAssetsStore: StonfiAssetsStore {
+    if let stonfiAssetsStore = _stonfiAssetsStore {
+      return stonfiAssetsStore
+    } else {
+      let stonfiAssetsStore = StonfiAssetsStore(
+        service: servicesAssembly.stonfiAssetsService(),
+        repository: repositoriesAssembly.stonfiAssetsRepository()
+      )
+      _stonfiAssetsStore = stonfiAssetsStore
+      return stonfiAssetsStore
+    }
+  }
+  
+  private weak var _stonfiPairsStore: StonfiPairsStore?
+  var stonfiPairsStore: StonfiPairsStore {
+    if let stonfiPairsStore = _stonfiPairsStore {
+      return stonfiPairsStore
+    } else {
+      let stonfiPairsStore = StonfiPairsStore(
+        service: servicesAssembly.stonfiPairsService(),
+        repository: repositoriesAssembly.stonfiPairsStoreRepository()
+      )
+      _stonfiPairsStore = stonfiPairsStore
+      return stonfiPairsStore
+    }
+  }
 }

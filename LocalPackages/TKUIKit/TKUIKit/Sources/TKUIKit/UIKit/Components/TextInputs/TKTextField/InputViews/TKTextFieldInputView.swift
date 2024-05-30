@@ -32,10 +32,7 @@ public final class TKTextFieldInputView: UIControl, TKTextFieldInputViewControl 
   }
   public var inputText: String {
     get { textInputControl.inputText }
-    set {
-      textInputControl.inputText = newValue
-      updateTextAction()
-    }
+    set { didInputText(newValue) }
   }
   public var textFieldState: TKTextFieldState = .inactive {
     didSet {
@@ -66,13 +63,17 @@ public final class TKTextFieldInputView: UIControl, TKTextFieldInputViewControl 
   
   public var placeholder: String = "" {
     didSet {
-      placeholderLabel.attributedText = placeholder.withTextStyle(
+      let placeholderText = placeholder.withTextStyle(
         .body1,
         color: .Text.secondary,
         alignment: .left
       )
+      placeholderLabel.attributedText = placeholderText
+      placeholderWidth = placeholderText.size().width
     }
   }
+  
+  public var placeholderWidth: CGFloat = 0
   
   // MARK: - Subviews
   
@@ -131,6 +132,12 @@ public final class TKTextFieldInputView: UIControl, TKTextFieldInputViewControl 
   public override func layoutSubviews() {
     super.layoutSubviews()
     updateTextInputAndPlaceholderLayoutAndScale()
+  }
+  
+  public func didInputText(_ newText: String, animateTextActions: Bool = true) {
+    textInputControl.inputText = newText
+    updateTextAction(animated: animateTextActions)
+    updateCursorLabel(inputText: newText)
   }
 }
 
@@ -233,10 +240,16 @@ private extension TKTextFieldInputView {
     updateTextAction()
   }
   
-  func updateTextAction() {
-    UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseInOut) {
-      self.updateClearButtonVisibility()
-      self.updateTextInputAndPlaceholderLayoutAndScale()
+  func updateTextAction(animated: Bool = true) {
+    let updateClosure = { [weak self] in
+      self?.updateClearButtonVisibility()
+      self?.updateTextInputAndPlaceholderLayoutAndScale()
+    }
+    
+    if animated {
+      UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseInOut) { updateClosure() }
+    } else {
+      updateClosure()
     }
   }
   
@@ -246,6 +259,11 @@ private extension TKTextFieldInputView {
   
   func didSetClearButtonMode() {
     updateClearButtonVisibility()
+  }
+  
+  func updateCursorLabel(inputText: String) {
+    let textInputTextViewControl = textInputControl as? TKTextInputTextViewControl
+    textInputTextViewControl?.updateCursorLabel(placeholderWidth: placeholderWidth, inputText: inputText)
   }
 }
 

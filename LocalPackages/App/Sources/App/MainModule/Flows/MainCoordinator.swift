@@ -26,6 +26,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private weak var addWalletCoordinator: AddWalletCoordinator?
   private weak var sendTokenCoordinator: SendTokenCoordinator?
+  private weak var swapCoordinator: SwapCoordinator?
   
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
@@ -132,8 +133,8 @@ private extension MainCoordinator {
       self?.openSend(token: token)
     }
     
-    walletCoordinator.didTapSwap = { [weak self] in
-      self?.openSwap()
+    walletCoordinator.didTapSwap = { [weak self] wallet in
+      self?.openSwap(wallet: wallet)
     }
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
@@ -256,33 +257,62 @@ private extension MainCoordinator {
       }
     }
   }
-  
-  func openSwap() {
+    
+  func openSwap(wallet: Wallet) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
-    navigationController.setNavigationBarHidden(true, animated: false)
     
-    let coordinator = WebSwapModule(
-      dependencies: WebSwapModule.Dependencies(
-        coreAssembly: coreAssembly,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
+    let swapCoordinator = SwapModule(
+      dependencies: SwapModule.Dependencies(
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly
       )
-    ).swapCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+    ).createSwapCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      wallet: wallet
+    )
     
-    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+    swapCoordinator.didFinish = { [weak self, weak swapCoordinator, weak navigationController] in
+      self?.swapCoordinator = nil
       navigationController?.dismiss(animated: true)
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
+      guard let swapCoordinator else { return }
+      self?.removeChild(swapCoordinator)
     }
     
-    addChild(coordinator)
-    coordinator.start()
+    self.swapCoordinator = swapCoordinator
     
-    router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
-    })
+    addChild(swapCoordinator)
+    swapCoordinator.start()
+    
+    router.present(navigationController)
   }
+    
+//  func openSwap() {
+//    let navigationController = TKNavigationController()
+//    navigationController.configureDefaultAppearance()
+//    navigationController.setNavigationBarHidden(true, animated: false)
+//    
+//    let coordinator = WebSwapModule(
+//      dependencies: WebSwapModule.Dependencies(
+//        coreAssembly: coreAssembly,
+//        keeperCoreMainAssembly: keeperCoreMainAssembly
+//      )
+//    ).swapCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+//    
+//    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+//      navigationController?.dismiss(animated: true)
+//      guard let coordinator = coordinator else { return }
+//      self?.removeChild(coordinator)
+//    }
+//    
+//    addChild(coordinator)
+//    coordinator.start()
+//    
+//    router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+//      guard let coordinator = coordinator else { return }
+//      self?.removeChild(coordinator)
+//    })
+//  }
 }
 
 // MARK: - Deeplinks
@@ -365,6 +395,9 @@ private extension MainCoordinator {
     case let .publish(model):
       if let sendTokenCoordinator = sendTokenCoordinator {
         return sendTokenCoordinator.handleTonkeeperPublishDeeplink(model: model)
+      }
+      if let swapCoordinator = swapCoordinator {
+        return swapCoordinator.handleTonkeeperPublishDeeplink(model: model)
       }
       if let collectiblesCoordinator = collectiblesCoordinator, collectiblesCoordinator.handleTonkeeperDeeplink(deeplink: deeplink) {
         return true

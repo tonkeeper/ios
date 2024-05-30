@@ -12,6 +12,11 @@ public class TKUIListItemCell: TKCollectionViewNewCell, TKConfigurableView {
     fatalError("init(coder:) has not been implemented")
   }
   
+  public override func prepareForReuse() {
+    super.prepareForReuse()
+    listItemView.prepareForReuse()
+  }
+  
   public struct Configuration: Hashable {
     public let id: String
     public let listItemConfiguration: TKUIListItemView.Configuration

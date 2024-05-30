@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>API_KEY</key>
+	<string>AIzaSyCD9xEc2p9QNyTLUHYn3edQNgRA4lGnklU</string>
+	<key>GCM_SENDER_ID</key>
+	<string>843052406059</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.tonapps.tonkeeperx.debug</string>
+	<key>PROJECT_ID</key>
+	<string>tonkeepercontest2024</string>
+	<key>STORAGE_BUCKET</key>
+	<string>tonkeepercontest2024.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:843052406059:ios:5f0978b9acfcc0c14ee16e</string>
+</dict>
+</plist>

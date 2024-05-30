@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TKUIListItemView: UIView, TKConfigurableView {
+public final class TKUIListItemView: UIView, TKConfigurableView, ReusableView {
   
   let iconView = TKUIListItemIconView()
   let contentView = TKUIListItemContentView()
@@ -13,6 +13,10 @@ public final class TKUIListItemView: UIView, TKConfigurableView {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  public func prepareForReuse() {
+    iconView.prepareForReuse()
   }
   
   public struct Configuration: Hashable {

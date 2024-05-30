@@ -11,8 +11,9 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapReceive: (() -> Void)? { get set }
   var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
+  var didTapSwap: ((Wallet) -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
-  var didTapSwap: (() -> Void)? { get set }
+  var didTapStake: (() -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
   var didRequireConfirmation: (() async -> Bool)? { get set }
@@ -45,8 +46,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapReceive: (() -> Void)?
   var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
+  var didTapSwap: ((Wallet) -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
-  var didTapSwap: (() -> Void)?
+  var didTapStake: (() -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
   var didRequireConfirmation: (() async -> Bool)?
@@ -303,21 +305,21 @@ private extension WalletBalanceViewModelImplementation {
       isScanEnable = true
       isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     case .watchOnly:
       isSendEnable = false
       isReceiveEnable = true
       isScanEnable = false
       isSwapEnable = false
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     case .external:
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true
       isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     }
     
     return WalletBalanceHeaderButtonsView.Model(
@@ -344,7 +346,8 @@ private extension WalletBalanceViewModelImplementation {
         icon: .TKUIKit.Icons.Size28.swapHorizontalOutline,
         isEnabled: isSwapEnable,
         action: { [weak self] in
-          self?.didTapSwap?()
+          guard let wallet = self?.walletBalanceController.wallet else { return }
+          self?.didTapSwap?(wallet)
         }
       ),
       buyButton: WalletBalanceHeaderButtonsView.Model.Button(
@@ -359,7 +362,7 @@ private extension WalletBalanceViewModelImplementation {
         title: TKLocales.WalletButtons.stake,
         icon: .TKUIKit.Icons.Size28.stakingOutline,
         isEnabled: isStakeEnable,
-        action: {}
+        action: { [weak self] in self?.didTapStake?() }
       )
     )
   }

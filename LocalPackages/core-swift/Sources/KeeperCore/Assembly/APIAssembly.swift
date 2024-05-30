@@ -94,6 +94,15 @@ final class APIAssembly {
     return tonConnectAPIClient
   }
   
+  var stonfiApi: StonfiAPI {
+    StonfiAPI(
+      urlSession: URLSession(
+        configuration: urlSessionConfiguration
+      ),
+      configurationStore: configurationAssembly.remoteConfigurationStore
+    )
+  }
+  
   // MARK: - Private
   
   private lazy var transport: StreamURLSessionTransport = {

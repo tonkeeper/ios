@@ -141,6 +141,26 @@ public final class ServicesAssembly {
     LocationServiceImplementation(locationAPI: locationAPIAsembly.locationAPI())
   }
   
+  func stonfiAssetsService() -> StonfiAssetsService {
+    StonfiAssetsServiceImplementation(
+      stonfiApi: apiAssembly.stonfiApi,
+      stonfiAssetsRepository: repositoriesAssembly.stonfiAssetsRepository()
+    )
+  }
+  
+  func stonfiPairsService() -> StonfiPairsService {
+    StonfiPairsServiceImplementation(
+      stonfiApi: apiAssembly.stonfiApi,
+      stonfiPairsRepository: repositoriesAssembly.stonfiPairsStoreRepository()
+    )
+  }
+  
+  func stonfiSwapService() -> StonfiSwapService {
+    StonfiSwapServiceImplementation(
+      stonfiApi: apiAssembly.stonfiApi
+    )
+  }
+  
   public func popularAppsService() -> PopularAppsService {
     PopularAppsServiceImplementation(api: tonkeeperAPIAssembly.api,
                                      popularAppsRepository: repositoriesAssembly.popularAppsRepository())
