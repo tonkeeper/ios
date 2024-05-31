@@ -76,6 +76,8 @@ private extension CollectiblesCoordinator {
       self?.removeChild(coordinator)
     }
     
+    self.detailsCoordinator = coordinator
+    
     coordinator.start()
     addChild(coordinator)
     

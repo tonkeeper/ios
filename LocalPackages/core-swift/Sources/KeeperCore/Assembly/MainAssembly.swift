@@ -448,8 +448,7 @@ public final class MainAssembly {
     LinkDNSController(
       wallet: wallet,
       nft: nft,
-      sendService: servicesAssembly.sendService(),
-      mnemonicRepository: repositoriesAssembly.mnemonicRepository()
+      sendService: servicesAssembly.sendService()
     )
   }
 }

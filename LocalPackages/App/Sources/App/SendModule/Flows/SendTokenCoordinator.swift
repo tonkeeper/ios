@@ -10,8 +10,6 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   
   var didFinish: (() -> Void)?
   
-  private var externalSignHandler: ((Data) async -> Void)?
-  
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
   private let coreAssembly: TKCore.CoreAssembly
@@ -36,12 +34,16 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   }
   
   public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
-    guard let externalSignHandler else { return false }
-    Task {
-      await externalSignHandler(model.boc)
-    }
-    self.externalSignHandler = nil
+    guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
+    walletTransferSignCoordinator.externalSignHandler?(model.sign)
+    walletTransferSignCoordinator.externalSignHandler = nil
     return true
+  }
+  
+  override func didMoveTo(toParent parent: (any Coordinator)?) {
+    if parent == nil {
+      walletTransferSignCoordinator?.externalSignHandler?(nil)
+    }
   }
 }
 
@@ -159,13 +161,14 @@ private extension SendTokenCoordinator {
       })
     }
     
-    module.output.didRequireSign = { [weak self] walletTransfer, wallet in
+    module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
       guard let self = self else { return nil }
       let coordinator = await WalletTransferSignCoordinator(
         router: ViewControllerRouter(rootViewController: router.rootViewController),
         wallet: wallet,
         walletTransfer: walletTransfer,
-        keeperCoreMainAssembly: keeperCoreMainAssembly)
+        keeperCoreMainAssembly: keeperCoreMainAssembly, 
+        coreAssembly: coreAssembly)
       
       self.walletTransferSignCoordinator = coordinator
       
@@ -229,38 +232,4 @@ private extension SendTokenCoordinator {
     
     router.present(navigationController)
   }
-//  
-//  func handleExternalSign(url: URL, wallet: Wallet, fromViewController: UIViewController) async throws -> Data? {
-//    return try await withCheckedThrowingContinuation { continuation in
-//      DispatchQueue.main.async {
-//        if self.coreAssembly.urlOpener().canOpen(url: url) {
-//          self.externalSignHandler = { data in
-//            continuation.resume(returning: data)
-//          }
-//          self.coreAssembly.urlOpener().open(url: url)
-//        } else {
-//          let module = SignerSignAssembly.module(
-//            url: url,
-//            wallet: wallet,
-//            assembly: self.keeperCoreMainAssembly,
-//            coreAssembly: self.coreAssembly
-//          )
-//          let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-//          
-//          bottomSheetViewController.didClose = { isInteractivly in
-//            guard isInteractivly else { return }
-//            continuation.resume(returning: nil)
-//          }
-//          
-//          module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
-//            bottomSheetViewController?.dismiss(completion: {
-//              continuation.resume(returning: model.boc)
-//            })
-//          }
-//          
-//          bottomSheetViewController.present(fromViewController: fromViewController)
-//        }
-//      }
-//    }
-//  }
 }

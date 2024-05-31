@@ -12,6 +12,8 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
   var didPerformTransaction: (() -> Void)?
   
   private weak var sendTokenCoordinator: SendTokenCoordinator?
+  private weak var linkDNSCoordinator: LinkDNSCoordinator?
+  private weak var renewDNSCoordinator: RenewDNSCoordinator?
   
   private let nft: NFT
   private let coreAssembly: TKCore.CoreAssembly
@@ -36,6 +38,12 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
     case let .publish(model):
       if let sendTokenCoordinator = sendTokenCoordinator {
         return sendTokenCoordinator.handleTonkeeperPublishDeeplink(model: model)
+      }
+      if let linkDNSCoordinator = linkDNSCoordinator {
+        return linkDNSCoordinator.handleTonkeeperPublishDeeplink(model: model)
+      }
+      if let renewDNSCoordinator = renewDNSCoordinator {
+        return renewDNSCoordinator.handleTonkeeperPublishDeeplink(model: model)
       }
       return false
     default: return false
@@ -86,7 +94,7 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
     addChild(sendTokenCoordinator)
     sendTokenCoordinator.start()
     
-    self.router.rootViewController.presentedViewController?.present(navigationController, animated: true)
+    self.router.rootViewController.present(navigationController, animated: true)
   }
   
   func collectibleDetailsLinkDomain(_ collectibleDetails: CollectibleDetailsModuleInput, nft: NFT) {
@@ -118,6 +126,8 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
       self?.removeChild(coordinator)
     }
     
+    linkDNSCoordinator = coordinator
+    
     addChild(coordinator)
     coordinator.start()
   }
@@ -145,6 +155,8 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
+    
+    linkDNSCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start()
@@ -177,6 +189,8 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
+    
+    renewDNSCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start()

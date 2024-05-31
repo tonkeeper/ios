@@ -9,6 +9,8 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
   
   var didCancel: (() -> Void)?
   var didFinish: (() -> Void)?
+  
+  private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
     
   private let nft: NFT
   private let wallet: Wallet
@@ -25,6 +27,11 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
     super.init(router: router)
+  }
+  
+  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+    guard let signTransactionConfirmationCoordinator = signTransactionConfirmationCoordinator else { return false }
+    return signTransactionConfirmationCoordinator.handleTonkeeperPublishDeeplink(model: model)
   }
   
   override func start() {
@@ -51,16 +58,16 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
-      self?.didCancel?()
-      guard let coordinator else { return }
       self?.removeChild(coordinator)
+      self?.didCancel?()
     }
     
     coordinator.didConfirm = { [weak self, weak coordinator] in
-      self?.didFinish?()
-      guard let coordinator else { return }
       self?.removeChild(coordinator)
+      self?.didFinish?()
     }
+    
+    self.signTransactionConfirmationCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start()

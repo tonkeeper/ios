@@ -37,6 +37,13 @@ final class LinkDNSCoordinator: RouterCoordinator<WindowRouter> {
     super.init(router: router)
   }
   
+  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+    guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
+    walletTransferSignCoordinator.externalSignHandler?(model.sign)
+    walletTransferSignCoordinator.externalSignHandler = nil
+    return true
+  }
+  
   override func start() {
     ToastPresenter.showToast(configuration: .loading)
     Task {
@@ -59,6 +66,12 @@ final class LinkDNSCoordinator: RouterCoordinator<WindowRouter> {
           didCancel?()
         }
       }
+    }
+  }
+  
+  override func didMoveTo(toParent parent: (any Coordinator)?) {
+    if parent == nil {
+      walletTransferSignCoordinator?.externalSignHandler?(nil)
     }
   }
 }
@@ -105,13 +118,15 @@ private extension LinkDNSCoordinator {
   
   func performLink(fromViewController: UIViewController, dnsLink: DNSLink) async -> Bool {
     do {
-      try await linkDNSController.sendLinkTransaction(dnsLink: dnsLink) { [weak self] walletTransfer in
+      try await linkDNSController.sendLinkTransaction(dnsLink: dnsLink) { [weak self, keeperCoreMainAssembly, coreAssembly, wallet] walletTransfer in
+        
         guard let self = self else { return nil }
         let coordinator = await WalletTransferSignCoordinator(
           router: ViewControllerRouter(rootViewController: fromViewController),
           wallet: wallet,
           walletTransfer: walletTransfer,
-          keeperCoreMainAssembly: keeperCoreMainAssembly)
+          keeperCoreMainAssembly: keeperCoreMainAssembly,
+          coreAssembly: coreAssembly)
         
         self.walletTransferSignCoordinator = coordinator
         

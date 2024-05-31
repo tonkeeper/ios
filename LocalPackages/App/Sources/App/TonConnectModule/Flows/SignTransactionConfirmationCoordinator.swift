@@ -181,6 +181,13 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
     super.init(router: router)
   }
   
+  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+    guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
+    walletTransferSignCoordinator.externalSignHandler?(model.sign)
+    walletTransferSignCoordinator.externalSignHandler = nil
+    return true
+  }
+  
   override func start() {
     ToastPresenter.showToast(configuration: .loading)
     Task {
@@ -195,6 +202,12 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
           ToastPresenter.hideAll()
         }
       }
+    }
+  }
+  
+  override func didMoveTo(toParent parent: (any Coordinator)?) {
+    if parent == nil {
+      walletTransferSignCoordinator?.externalSignHandler?(nil)
     }
   }
 }
@@ -235,7 +248,6 @@ private extension SignTransactionConfirmationCoordinator {
     }
     
     module.output.didTapConfirmButton = { [weak self, weak bottomSheetViewController, wallet] in
-      //      guard let bottomSheetViewController, let self else { return false }
       do {
         try await self?.confirmator.confirm(wallet: wallet) { walletTransfer in
           guard let self, let bottomSheetViewController else { throw Error.failedToSign }
@@ -261,7 +273,8 @@ private extension SignTransactionConfirmationCoordinator {
       router: ViewControllerRouter(rootViewController: fromViewController),
       wallet: wallet,
       walletTransfer: walletTransfer,
-      keeperCoreMainAssembly: keeperCoreMainAssembly)
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly)
     
     self.walletTransferSignCoordinator = coordinator
     

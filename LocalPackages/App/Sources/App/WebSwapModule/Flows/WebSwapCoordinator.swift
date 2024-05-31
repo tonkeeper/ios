@@ -11,6 +11,8 @@ public final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRou
   
   var didClose: (() -> Void)?
   
+  private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
+  
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   
@@ -24,6 +26,13 @@ public final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRou
   
   public override func start() {
     openSwap()
+  }
+  
+  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+    if let signTransactionConfirmationCoordinator = signTransactionConfirmationCoordinator {
+      return signTransactionConfirmationCoordinator.handleTonkeeperPublishDeeplink(model: model)
+    }
+    return false
   }
 }
 
@@ -88,6 +97,8 @@ private extension WebSwapCoordinator {
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }
+    
+    self.signTransactionConfirmationCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start()

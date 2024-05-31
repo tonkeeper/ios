@@ -10,16 +10,13 @@ public final class LinkDNSController {
   private let wallet: Wallet
   private let nft: NFT
   private let sendService: SendService
-  private let mnemonicRepository: WalletMnemonicRepository
   
   init(wallet: Wallet, 
        nft: NFT,
-       sendService: SendService,
-       mnemonicRepository: WalletMnemonicRepository) {
+       sendService: SendService) {
     self.wallet = wallet
     self.nft = nft
     self.sendService = sendService
-    self.mnemonicRepository = mnemonicRepository
   }
   
   public func emulate(dnsLink: DNSLink) async throws -> SendTransactionModel {

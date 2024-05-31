@@ -224,9 +224,6 @@ final class TonConnectServiceImplementation: TonConnectService {
                                    timeout: UInt64,
                                    parameters: SendTransactionParam,
                                    signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
-    let walletMnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
-    let keyPair = try Mnemonic.mnemonicToPrivateKey(mnemonicArray: walletMnemonic.mnemonicWords)
-    let privateKey = keyPair.privateKey
     return try await createRequestTransactionBoc(
       wallet: wallet,
       seqno: seqno,
