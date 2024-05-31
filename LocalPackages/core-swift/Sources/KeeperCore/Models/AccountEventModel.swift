@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public struct HistoryEvent {
+public struct AccountEventModel {
   public struct Action {
     public enum ActionType {
       case sent

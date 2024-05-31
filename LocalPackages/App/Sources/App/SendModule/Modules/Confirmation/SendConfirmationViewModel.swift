@@ -6,9 +6,8 @@ import TKLocalize
 import TonSwift
 
 protocol SendConfirmationModuleOutput: AnyObject {
-  var didRequireConfirmation: (() async -> Bool)? { get set }
   var didSendTransaction: (() -> Void)? { get set }
-  var didRequireExternalWalletSign: ((URL, Wallet) async throws -> Data?)? { get set }
+  var didRequireSign: ((WalletTransfer, Wallet) async throws -> Data?)? { get set }
 }
 
 protocol SendConfirmationModuleInput: AnyObject {
@@ -27,9 +26,9 @@ final class SendConfirmationViewModelImplementation: SendConfirmationViewModel, 
   
   // MARK: - SendConfirmationModuleOutput
   
-  var didRequireConfirmation: (() async -> Bool)?
   var didSendTransaction: (() -> Void)?
-  var didRequireExternalWalletSign: ((URL, Wallet) async throws -> Data?)?
+  
+  var didRequireSign: ((WalletTransfer, Wallet) async throws -> Data?)?
   
   // MARK: - SendConfirmationModuleInput
   
@@ -71,9 +70,8 @@ private extension SendConfirmationViewModelImplementation {
       self.didUpdateConfiguration?(configuration)
     }
     
-    sendConfirmationController.didGetExternalSign = { [weak self] url in
-      guard let self, let didRequireExternalWalletSign else { return Data() }
-      return try await didRequireExternalWalletSign(url, sendConfirmationController.wallet)
+    sendConfirmationController.signHandler = { [weak self] walletTransfer, wallet in
+      try await self?.didRequireSign?(walletTransfer, wallet)
     }
   }
   
@@ -259,10 +257,6 @@ private extension SendConfirmationViewModelImplementation {
   }
   
   func sendTransaction() async -> Bool {
-    if sendConfirmationController.isNeedToConfirm() {
-      let isConfirmed = await didRequireConfirmation?() ?? false
-      guard isConfirmed else { return false }
-    }
     do {
       try await sendConfirmationController.sendTransaction()
       return true

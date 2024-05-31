@@ -13,6 +13,7 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
   let iconView = HistoryCellIconView()
   let contentView = TKUIListItemContentView()
   let commentView = CommentView()
+  let descriptionView = CommentView()
   let nftView = NFTView()
   let separatorView = TKSeparatorView()
   let inProgressLoaderView = HistoryCellLoaderView()
@@ -37,6 +38,7 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
     let iconConfiguration: HistoryCellIconView.Configuration
     let contentConfiguration: TKUIListItemContentView.Configuration
     let commentConfiguration: CommentView.Configuration?
+    let descriptionConfiguration: CommentView.Configuration?
     let nftConfiguration: NFTView.Configuration?
     let isInProgress: Bool
   }
@@ -49,6 +51,13 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
       commentView.configure(configuration: commentConfiguration)
     } else {
       commentView.isHidden = true
+    }
+    
+    if let descriptionConfiguration = configuration.descriptionConfiguration {
+      descriptionView.isHidden = false
+      descriptionView.configure(configuration: descriptionConfiguration)
+    } else {
+      descriptionView.isHidden = true
     }
     
     if let nftConfiguration = configuration.nftConfiguration {
@@ -87,6 +96,13 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
       commentSize = commentView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
     }
     
+    let descriptionSize: CGSize
+    if descriptionView.isHidden {
+      descriptionSize = .zero
+    } else {
+      descriptionSize = descriptionView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
+    }
+    
     let nftSize: CGSize
     if nftView.isHidden {
       nftSize = .zero
@@ -96,6 +112,7 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
     
     let height = contentSizeThatFits.height
     + commentSize.height
+    + descriptionSize.height
     + nftSize.height
     + UIEdgeInsets.contentPadding.top
     + UIEdgeInsets.contentPadding.bottom
@@ -149,6 +166,17 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
         size: .zero)
     }
     
+    if !descriptionView.isHidden {
+      descriptionView.frame = CGRect(
+        origin: CGPoint(x: contentViewX, y: commentView.frame.maxY),
+        size: descriptionView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
+      )
+    } else {
+      descriptionView.frame = CGRect(
+        origin: CGPoint(x: contentViewX, y: nftView.frame.maxY),
+        size: .zero)
+    }
+    
     separatorView.frame = CGRect(
       x: UIEdgeInsets.contentPadding.left,
       y: bounds.height - 0.5,
@@ -178,6 +206,7 @@ private extension HistoryCellActionView {
     iconView.isUserInteractionEnabled = false
     contentView.isUserInteractionEnabled = false
     commentView.isUserInteractionEnabled = false
+    descriptionView.isUserInteractionEnabled = false
     
     separatorView.color = .Separator.common
     backgroundColor = .Background.content
@@ -188,6 +217,7 @@ private extension HistoryCellActionView {
     contentContainer.addSubview(iconView)
     contentContainer.addSubview(contentView)
     contentContainer.addSubview(commentView)
+    contentContainer.addSubview(descriptionView)
     contentContainer.addSubview(nftView)
     contentContainer.addSubview(inProgressLoaderView)
     addSubview(separatorView)

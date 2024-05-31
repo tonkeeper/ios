@@ -1,11 +1,11 @@
 import Foundation
 
-enum AccountEventStatus: Codable {
+public enum AccountEventStatus: Codable {
   case ok
   case failed
   case unknown(String)
   
-  var rawValue: String? {
+  public var rawValue: String? {
     switch self {
     case .ok: return nil
     case .failed: return "Failed"

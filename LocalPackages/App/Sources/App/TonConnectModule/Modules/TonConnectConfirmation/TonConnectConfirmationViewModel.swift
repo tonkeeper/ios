@@ -42,10 +42,10 @@ final class TonConnectConfirmationViewModelImplementation: TonConnectConfirmatio
   
   // MARK: - Dependencies
   
-  private let model: TonConnectConfirmationController.Model
+  private let model: ConfirmTransactionModel
   private let historyEventMapper: HistoryEventMapper
   
-  init(model: TonConnectConfirmationController.Model,
+  init(model: ConfirmTransactionModel,
        historyEventMapper: HistoryEventMapper) {
     self.model = model
     self.historyEventMapper = historyEventMapper
@@ -66,7 +66,7 @@ private extension TonConnectConfirmationViewModelImplementation {
       ]), bottomSpacing: 16, itemSpacing: 8)
     ]
     let configuration = TKModalCardViewController.Configuration(
-      header: .init(items: []),
+      header: nil,
       content: .init(items: contentItems),
       actionBar: .init(items: actionBarItems)
     )
@@ -120,7 +120,7 @@ private extension TonConnectConfirmationViewModelImplementation {
     return .customView(view, bottomSpacing: 32)
   }
   
-  func mapEvent(_ event: HistoryEvent) -> HistoryCellContentView.Configuration {
+  func mapEvent(_ event: AccountEventModel) -> HistoryCellContentView.Configuration {
     return historyEventMapper.mapEventContentConfiguration(event, nftAction: { _ in }, tapAction: { _ in })
   }
 }

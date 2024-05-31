@@ -2,29 +2,29 @@ import Foundation
 import TonAPI
 import BigInt
 
-struct TonConnectConfirmationMapper {
-  private let historyListMapper: HistoryListMapper
+struct ConfirmTransactionMapper {
+  private let accountEventMapper: AccountEventMapper
   private let amountFormatter: AmountFormatter
   
-  init(historyListMapper: HistoryListMapper,
+  init(accountEventMapper: AccountEventMapper,
        amountFormatter: AmountFormatter) {
-    self.historyListMapper = historyListMapper
+    self.accountEventMapper = accountEventMapper
     self.amountFormatter = amountFormatter
   }
   
   func mapTransactionInfo(_ info: Components.Schemas.MessageConsequences,
                           tonRates: Rates.Rate?,
                           currency: Currency,
-                          nftsCollection: NFTsCollection, 
-                          wallet: Wallet) throws -> TonConnectConfirmationController.Model {
+                          nftsCollection: NFTsCollection,
+                          wallet: Wallet) throws -> ConfirmTransactionModel {
     let descriptionProvider = TonConnectConfirmationAccountEventRightTopDescriptionProvider(
       rates: tonRates,
       currency: currency,
       formatter: amountFormatter
     )
     
-    let eventModel = historyListMapper
-      .mapHistoryEvent(
+    let eventModel = accountEventMapper
+      .mapEvent(
         try AccountEvent(accountEvent: info.event),
         eventDate: Date(),
         nftsCollection: nftsCollection,
@@ -55,7 +55,7 @@ struct TonConnectConfirmationMapper {
       + formattedFeeConverted
     }
     
-    return TonConnectConfirmationController.Model(
+    return ConfirmTransactionModel(
       event: eventModel,
       fee: feeFormatted,
       walletName: wallet.metaData.emoji + wallet.metaData.label

@@ -143,25 +143,32 @@ private extension CollectibleDetailsPresenter {
     guard let linkedAddress = model.linkedAddress else { return nil }
     let title: String
     let isLoading: Bool
+    let isLinked: Bool?
     switch linkedAddress {
     case .value(let value):
       if let value = value {
         title = "Linked with \(value)"
+        isLinked = true
       } else {
         title = "Link domain"
+        isLinked = false
       }
       isLoading = false
     case .loading:
       title = ""
       isLoading = true
+      isLinked = nil
     }
 
     let buttonModel = CollectibleDetailsButtonsView.Model.Button(
       title: title,
       category: .secondary,
       size: .large,
-      isEnabled: false,
-      isLoading: isLoading, tapAction: {}, description: nil
+      isEnabled: true,
+      isLoading: isLoading, tapAction: { [weak self] in
+        guard let isLinked else { return }
+        self?.handleLinkButton(isLinked: isLinked)
+      }, description: nil
     )
     
     return buttonModel
@@ -183,21 +190,29 @@ private extension CollectibleDetailsPresenter {
   
     let title: String
     let isLoading: Bool
+    let isEnabled: Bool
     switch expirationDateItem {
-    case .value(let value):
-      title = "Renew until \(value)"
+    case .value:
+      title = "Renew until \(model.renewButtonDateItem ?? "")"
       isLoading = false
+      isEnabled = true
     case .loading:
       title = ""
       isLoading = true
+      isEnabled = false
     }
     
     let buttonModel = CollectibleDetailsButtonsView.Model.Button(
       title: title,
       category: .secondary,
       size: .large,
-      isEnabled: false,
-      isLoading: isLoading, tapAction: {}, description: daysExpirationDescription
+      isEnabled: isEnabled,
+      isLoading: isLoading,
+      tapAction: { [weak self] in
+        guard let self = self else { return }
+        self.output?.collectibleDetailsRenewDomain(self, nft: self.collectibleDetailsController.nft)
+      },
+      description: daysExpirationDescription
     )
 
     return buttonModel
@@ -229,6 +244,18 @@ private extension CollectibleDetailsPresenter {
       description: transferButtonDescription
     )
     return buttonModel
+  }
+  
+  func handleLinkButton(isLinked: Bool) {
+    isLinked ? unlinkDomain() : linkDomain()
+  }
+  
+  func linkDomain() {
+    output?.collectibleDetailsLinkDomain(self, nft: collectibleDetailsController.nft)
+  }
+  
+  func unlinkDomain() {
+    output?.collectibleDetailsUnlinkDomain(self, nft: collectibleDetailsController.nft)
   }
 }
 

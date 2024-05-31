@@ -14,7 +14,7 @@ public final class MainAssembly {
     }
   }
   
-  let repositoriesAssembly: RepositoriesAssembly
+  public let repositoriesAssembly: RepositoriesAssembly
   public let walletAssembly: WalletAssembly
   public let walletUpdateAssembly: WalletsUpdateAssembly
   public let servicesAssembly: ServicesAssembly
@@ -153,7 +153,7 @@ public final class MainAssembly {
       wallet: wallet,
       loader: loader,
       nftService: servicesAssembly.nftService(),
-      historyListMapper: historyListMapper,
+      accountEventMapper: accountEventMapper,
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
@@ -170,7 +170,7 @@ public final class MainAssembly {
       wallet: wallet,
       loader: loader,
       nftService: servicesAssembly.nftService(),
-      historyListMapper: historyListMapper,
+      accountEventMapper: accountEventMapper,
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
@@ -188,7 +188,7 @@ public final class MainAssembly {
       wallet: wallet,
       loader: loader,
       nftService: servicesAssembly.nftService(),
-      historyListMapper: historyListMapper,
+      accountEventMapper: accountEventMapper,
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
@@ -255,7 +255,7 @@ public final class MainAssembly {
   public func historyEventDetailsController(event: AccountEventDetailsEvent) -> HistoryEventDetailsController {
     HistoryEventDetailsController(
       event: event,
-      amountMapper: AmountHistoryListEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
+      amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
       tonRatesStore: storesAssembly.tonRatesStore,
       walletsStore: walletAssembly.walletStore,
       currencyStore: storesAssembly.currencyStore,
@@ -423,6 +423,34 @@ public final class MainAssembly {
       tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
     )
   }
+  
+  public func confirmTransactionController(wallet: Wallet,
+                                           bocProvider: ConfirmTransactionControllerBocProvider) -> ConfirmTransactionController {
+    ConfirmTransactionController(
+      wallet: wallet,
+      bocProvider: bocProvider,
+      sendService: servicesAssembly.sendService(),
+      nftService: servicesAssembly.nftService(),
+      ratesStore: storesAssembly.ratesStore,
+      currencyStore: storesAssembly.currencyStore,
+      confirmTransactionMapper: ConfirmTransactionMapper(
+        accountEventMapper: AccountEventMapper(
+          dateFormatter: formattersAssembly.dateFormatter,
+          amountFormatter: formattersAssembly.amountFormatter,
+          amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter)
+        ),
+        amountFormatter: formattersAssembly.amountFormatter
+      )
+    )
+  }
+  
+  public func linkDNSController(wallet: Wallet, nft: NFT) -> LinkDNSController {
+    LinkDNSController(
+      wallet: wallet,
+      nft: nft,
+      sendService: servicesAssembly.sendService()
+    )
+  }
 }
 
 private extension MainAssembly {
@@ -452,12 +480,12 @@ private extension MainAssembly {
     )
   }
   
-  var historyListMapper: HistoryListMapper {
-    HistoryListMapper(
+  var accountEventMapper: AccountEventMapper {
+    AccountEventMapper(
       dateFormatter: formattersAssembly.dateFormatter,
       amountFormatter: formattersAssembly.amountFormatter,
-      amountMapper: SignedAmountHistoryListEventAmountMapper(
-        amountAccountHistoryListEventAmountMapper: AmountHistoryListEventAmountMapper(
+      amountMapper: SignedAccountEventAmountMapper(
+        plainAccountEventAmountMapper: PlainAccountEventAmountMapper(
           amountFormatter: formattersAssembly.amountFormatter
         )
       )

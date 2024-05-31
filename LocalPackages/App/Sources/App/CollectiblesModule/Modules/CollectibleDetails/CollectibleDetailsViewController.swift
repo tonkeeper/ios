@@ -49,7 +49,9 @@ extension CollectibleDetailsViewController: CollectibleDetailsViewInput {
 private extension CollectibleDetailsViewController {
   func setup() {
     customView.collectibleView.imageLoader = imageLoader
-    setupSwipeDownButton()
+    setupSwipeDownButton { [weak self] in
+      self?.presenter.didTapSwipeButton()
+    }
     customView.detailsView.didTapOpenInExplorer = { [weak self] in
       self?.presenter.didTapOpenInExplorerButton()
     }

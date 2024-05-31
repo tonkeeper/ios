@@ -3,9 +3,14 @@ import KeeperCore
 import TKCoordinator
 import TKUIKit
 import TKCore
+import TonSwift
+
+enum SignTransactionConfirmationCoordinatorConfirmatorError: Swift.Error {
+  case failedToSign
+}
 
 protocol SignTransactionConfirmationCoordinatorConfirmator {
-  func confirm(wallet: Wallet) async throws
+  func confirm(wallet: Wallet, signClosure: (WalletTransfer) async throws -> Data?) async throws
   func cancel(wallet: Wallet) async
 }
 
@@ -25,7 +30,7 @@ struct DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignT
     self.tonConnectService = tonConnectService
   }
   
-  func confirm(wallet: Wallet) async throws {
+  func confirm(wallet: Wallet, signClosure: (WalletTransfer) async throws -> Data?) async throws {
     guard let parameters = appRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
@@ -34,7 +39,13 @@ struct DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignT
       wallet: wallet,
       seqno: seqno,
       timeout: timeout,
-      parameters: parameters
+      parameters: parameters,
+      signClosure: { walletTranfer in
+        guard let signedData = try await signClosure(walletTranfer) else {
+          throw SignTransactionConfirmationCoordinatorConfirmatorError.failedToSign
+        }
+        return signedData
+      }
     )
     
     try await sendService.sendTransaction(boc: boc, wallet: wallet)
@@ -62,7 +73,7 @@ struct BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignTr
     self.connectionResponseHandler = connectionResponseHandler
   }
   
-  func confirm(wallet: Wallet) async throws {
+  func confirm(wallet: Wallet, signClosure: (WalletTransfer) async throws -> Data?) async throws {
     guard let parameters = appRequest.params.first else { return }
     do {
       let seqno = try await sendService.loadSeqno(wallet: wallet)
@@ -71,7 +82,13 @@ struct BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignTr
         wallet: wallet,
         seqno: seqno,
         timeout: timeout,
-        parameters: parameters
+        parameters: parameters,
+        signClosure: { walletTranfer in
+          guard let signedData = try await signClosure(walletTranfer) else {
+            throw SignTransactionConfirmationCoordinatorConfirmatorError.failedToSign
+          }
+          return signedData
+        }
       )
       
       try await sendService.sendTransaction(boc: boc, wallet: wallet)
@@ -107,7 +124,7 @@ struct StonfiSwapSignTransactionConfirmationCoordinatorConfirmator: SignTransact
     self.responseHandler = responseHandler
   }
   
-  func confirm(wallet: KeeperCore.Wallet) async throws {
+  func confirm(wallet: KeeperCore.Wallet, signClosure: (WalletTransfer) async throws -> Data?) async throws {
     guard let parameters = signRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
@@ -115,7 +132,13 @@ struct StonfiSwapSignTransactionConfirmationCoordinatorConfirmator: SignTransact
       wallet: wallet,
       seqno: seqno,
       timeout: timeout,
-      parameters: parameters
+      parameters: parameters,
+      signClosure: { walletTranfer in
+        guard let signedData = try await signClosure(walletTranfer) else {
+          throw SignTransactionConfirmationCoordinatorConfirmatorError.failedToSign
+        }
+        return signedData
+      }
     )
     
     try await sendService.sendTransaction(boc: boc, wallet: wallet)
@@ -129,34 +152,47 @@ struct StonfiSwapSignTransactionConfirmationCoordinatorConfirmator: SignTransact
 
 final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRouter> {
   
+  enum Error: Swift.Error {
+    case failedToSign
+  }
+  
   var didCancel: (() -> Void)?
   var didConfirm: (() -> Void)?
   
+  private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
+  
   private let wallet: Wallet
   private let confirmator: SignTransactionConfirmationCoordinatorConfirmator
-  private let tonConnectConfirmationController: TonConnectConfirmationController
+  private let confirmTransactionController: ConfirmTransactionController
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   
   init(router: WindowRouter,
        wallet: Wallet,
        confirmator: SignTransactionConfirmationCoordinatorConfirmator,
-       tonConnectConfirmationController: TonConnectConfirmationController,
+       confirmTransactionController: ConfirmTransactionController,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        coreAssembly: TKCore.CoreAssembly) {
     self.wallet = wallet
     self.confirmator = confirmator
-    self.tonConnectConfirmationController = tonConnectConfirmationController
+    self.confirmTransactionController = confirmTransactionController
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
     super.init(router: router)
+  }
+  
+  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+    guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
+    walletTransferSignCoordinator.externalSignHandler?(model.sign)
+    walletTransferSignCoordinator.externalSignHandler = nil
+    return true
   }
   
   override func start() {
     ToastPresenter.showToast(configuration: .loading)
     Task {
       do {
-        let model = try await tonConnectConfirmationController.createRequestModel()
+        let model = try await confirmTransactionController.createRequestModel()
         await MainActor.run {
           ToastPresenter.hideAll()
           openConfirmation(model: model)
@@ -168,10 +204,16 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
       }
     }
   }
+  
+  override func didMoveTo(toParent parent: (any Coordinator)?) {
+    if parent == nil {
+      walletTransferSignCoordinator?.externalSignHandler?(nil)
+    }
+  }
 }
 
 private extension SignTransactionConfirmationCoordinator {
-  func openConfirmation(model: TonConnectConfirmationController.Model) {
+  func openConfirmation(model: ConfirmTransactionModel) {
     let rootViewController = UIViewController()
     router.window.rootViewController = rootViewController
     router.window.makeKeyAndVisible()
@@ -205,12 +247,12 @@ private extension SignTransactionConfirmationCoordinator {
       })
     }
     
-    module.output.didTapConfirmButton = { [weak self, weak bottomSheetViewController] in
-      guard let bottomSheetViewController, let self else { return false }
-      let isConfirmed = await self.openPasscodeConfirmation(fromViewController: bottomSheetViewController)
-      guard isConfirmed else { return false }
+    module.output.didTapConfirmButton = { [weak self, weak bottomSheetViewController, wallet] in
       do {
-        try await self.confirmator.confirm(wallet: self.wallet)
+        try await self?.confirmator.confirm(wallet: wallet) { walletTransfer in
+          guard let self, let bottomSheetViewController else { throw Error.failedToSign }
+          return try await self.performSign(walletTransfer: walletTransfer, wallet: wallet, fromViewController: bottomSheetViewController)
+        }
         return true
       } catch {
         return false
@@ -226,37 +268,25 @@ private extension SignTransactionConfirmationCoordinator {
     bottomSheetViewController.present(fromViewController: rootViewController)
   }
   
-  func openPasscodeConfirmation(fromViewController: UIViewController) async -> Bool {
-    return await Task<Bool, Never> { @MainActor in
-      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
-        guard let self = self else { return }
-        let coordinator = PasscodeModule(
-          dependencies: PasscodeModule.Dependencies(
-            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-          )
-        ).passcodeConfirmationCoordinator()
-        
-        coordinator.didCancel = { [weak self, weak coordinator] in
-          continuation.resume(returning: false)
-          coordinator?.router.dismiss(completion: {
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-          })
-        }
-        
-        coordinator.didConfirm = { [weak self, weak coordinator] in
-          continuation.resume(returning: true)
-          coordinator?.router.dismiss(completion: {
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-          })
-        }
-        
-        self.addChild(coordinator)
-        coordinator.start()
-        
-        fromViewController.present(coordinator.router.rootViewController, animated: true)
-      }
-    }.value
+  func performSign(walletTransfer: WalletTransfer, wallet: Wallet, fromViewController: UIViewController) async throws -> Data {
+    let coordinator = await WalletTransferSignCoordinator(
+      router: ViewControllerRouter(rootViewController: fromViewController),
+      wallet: wallet,
+      walletTransfer: walletTransfer,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly)
+    
+    self.walletTransferSignCoordinator = coordinator
+    
+    let result = await coordinator.handleSign(parentCoordinator: self)
+    
+    switch result {
+    case .signed(let data):
+      return data
+    case .cancel:
+      throw Error.failedToSign
+    case .failed(let error):
+      throw error
+    }
   }
 }

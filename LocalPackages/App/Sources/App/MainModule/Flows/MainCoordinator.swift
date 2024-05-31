@@ -26,6 +26,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private weak var addWalletCoordinator: AddWalletCoordinator?
   private weak var sendTokenCoordinator: SendTokenCoordinator?
+  private weak var webSwapCoordinator: WebSwapCoordinator?
   
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
@@ -141,6 +142,10 @@ private extension MainCoordinator {
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
+    
+    collectiblesCoordinator.didPerformTransaction = { [weak self] in
+      self?.router.rootViewController.selectedIndex = 1
+    }
 
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
@@ -160,8 +165,9 @@ private extension MainCoordinator {
     }
     
     router.didSelectItem = { [weak self] index in
-      let isSeparatorVisible = index != 2
-      let isBlurVisible = index != 2
+      let isTabBarTransparent = index == self?.router.rootViewController.viewControllers?.firstIndex(of: browserCoordinator.router.rootViewController)
+      let isSeparatorVisible = !isTabBarTransparent
+      let isBlurVisible = !isTabBarTransparent
       self?.router.rootViewController.configureAppearance(isSeparatorVisible: isSeparatorVisible)
       (self?.router.rootViewController as? TKTabBarController)?.blurView.isHidden = !isBlurVisible
     }
@@ -228,8 +234,10 @@ private extension MainCoordinator {
     addChild(sendTokenCoordinator)
     sendTokenCoordinator.start()
     
-    self.router.present(navigationController, onDismiss: { [weak self] in
+    self.router.present(navigationController, onDismiss: { [weak self, weak sendTokenCoordinator] in
       self?.sendTokenCoordinator = nil
+      guard let sendTokenCoordinator else { return }
+      self?.removeChild(sendTokenCoordinator)
     })
   }
   
@@ -274,6 +282,8 @@ private extension MainCoordinator {
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
     }
+    
+    self.webSwapCoordinator = coordinator
     
     addChild(coordinator)
     coordinator.start()
@@ -366,7 +376,12 @@ private extension MainCoordinator {
       if let sendTokenCoordinator = sendTokenCoordinator {
         return sendTokenCoordinator.handleTonkeeperPublishDeeplink(model: model)
       }
-      if let collectiblesCoordinator = collectiblesCoordinator, collectiblesCoordinator.handleTonkeeperDeeplink(deeplink: deeplink) {
+      if let collectiblesCoordinator = collectiblesCoordinator,
+         collectiblesCoordinator.handleTonkeeperDeeplink(deeplink: deeplink) {
+        return true
+      }
+      if let webSwapCoordinator = webSwapCoordinator, 
+          webSwapCoordinator.handleTonkeeperPublishDeeplink(model: model) {
         return true
       }
       return false

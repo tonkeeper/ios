@@ -23,7 +23,7 @@ struct TKModalCardViewBuilder {
   static func buildList(items: [TKModalCardViewController.Configuration.ListItem]) -> [UIView] {
     let view = TKModalCardListView()
     view.configure(model: items)
-    return [TKSpacingView(verticalSpacing: .constant(32)), view, TKSpacingView(verticalSpacing: .constant(32))]
+    return [view, TKSpacingView(verticalSpacing: .constant(32))]
   }
   
   static func buildViews(items: [TKModalCardViewController.Configuration.Item],

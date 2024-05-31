@@ -14,6 +14,8 @@ public final class SendConfirmationController {
   public var didGetError: ((Error) -> Void)?
   public var didGetExternalSign: ((URL) async throws -> Data?)?
   
+  public var signHandler: ((WalletTransfer, Wallet) async throws -> Data?)?
+  
   private var transactionEmulationExtra: Int64 = 0
   
   public  let wallet: Wallet
@@ -221,7 +223,7 @@ private extension SendConfirmationController {
         boc: transactionBoc,
         wallet: wallet
       )
-      let sendTransactionModel = SendTransactionModel(
+      let sendTransactionModel = try SendTransactionModel(
         accountEvent: transactionInfo.event,
         risk: transactionInfo.risk,
         transaction: transactionInfo.trace.transaction
@@ -449,45 +451,13 @@ private extension SendConfirmationController {
   }
   
   func signTransfer(_ transfer: WalletTransfer) async throws -> Data {
-    switch wallet.identity.kind {
-    case .Regular:
-      let mnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
-      let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-      let privateKey = keyPair.privateKey
-      return try transfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
-    case .Lockup:
-      throw Error.failedToSign
-    case .Watchonly:
-      throw Error.failedToSign
-    case .External(let publicKey, let walletContractVersion):
-      return try await signExternal(
-        transfer: transfer.signingMessage.endCell().toBoc(),
-        publicKey: publicKey,
-        revision: walletContractVersion
-      )
-    }
-  }
-  
-  func signExternal(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) async throws -> Data {
-    guard let url = createTonSignURL(transfer: transfer, publicKey: publicKey, revision: revision),
-          let didGetExternalSign,
-          let signedData = try await didGetExternalSign(url) else {
-      throw Error.failedToSign
-    }
+    guard let signHandler,
+          let signedData = try await signHandler(transfer, wallet) else { throw Error.failedToSign }
     return signedData
-  }
-  
-  func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) -> URL? {
-    guard let publicKey = publicKey.data.base64EncodedString().percentEncoded,
-          let body = transfer.base64EncodedString().percentEncoded else { return nil }
-    let v = revision.rawValue.lowercased()
-    
-    let string = "tonsign://?pk=\(publicKey)&body=\(body)&v=\(v)&return=\("tonkeeperx://publish".percentEncoded ?? "")"
-    return URL(string: string)
   }
 }
 
-extension String {
+public extension String {
   var percentEncoded: String? {
     let set = CharacterSet(charactersIn: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
     return (self as NSString).addingPercentEncoding(withAllowedCharacters: set)

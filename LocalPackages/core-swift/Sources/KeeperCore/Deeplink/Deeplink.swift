@@ -41,9 +41,7 @@ public struct TonConnectDeeplink {
 }
 
 public struct TonkeeperPublishModel {
-  public let boc: Data
-  public let v: String?
-  public let network: String?
+  public let sign: Data
 }
 
 public enum TonkeeperDeeplink {

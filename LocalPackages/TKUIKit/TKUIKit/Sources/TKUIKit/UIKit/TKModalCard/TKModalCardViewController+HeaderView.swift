@@ -30,6 +30,7 @@ extension TKModalCardViewController {
       TKModalCardViewBuilder.buildViews(items: model.items, viewController: viewController).forEach { view in
         stackView.addArrangedSubview(view)
       }
+      stackView.addArrangedSubview(TKSpacingView(verticalSpacing: .constant(32)))
     }
   }
 }

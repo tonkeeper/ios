@@ -42,6 +42,7 @@ public struct CollectibleDetailsModel {
   public let isDns: Bool
   public let isOnSale: Bool
   public let linkedAddress: LoadableModelItem<String?>?
+  public let renewButtonDateItem: String?
   public let expirationDateItem: LoadableModelItem<String>?
   public let daysExpiration: Int?
 }
