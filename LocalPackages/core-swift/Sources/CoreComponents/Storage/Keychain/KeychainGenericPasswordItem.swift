@@ -5,15 +5,18 @@ public struct KeychainGenericPasswordItem: KeychainQueryable {
   let account: String?
   let accessGroup: String?
   let accessible: KeychainAccessible
+  let isBiometry: Bool
   
   public init(service: String,
               account: String?,
               accessGroup: String?,
-              accessible: KeychainAccessible) {
+              accessible: KeychainAccessible,
+              isBiometry: Bool = false) {
     self.service = service
     self.account = account
     self.accessGroup = accessGroup
     self.accessible = accessible
+    self.isBiometry = isBiometry
   }
   
   public var query: [String : AnyObject] {
@@ -26,7 +29,17 @@ public struct KeychainGenericPasswordItem: KeychainQueryable {
     if let accessGroup = accessGroup {
       query[kSecAttrAccessGroup as String] = accessGroup as AnyObject
     }
-    query[kSecAttrAccessible as String] = accessible.keychainKey
+    if isBiometry {
+      let accessOptions = SecAccessControlCreateWithFlags(
+        kCFAllocatorDefault,
+        accessible.keychainKey,
+        SecAccessControlCreateFlags.biometryCurrentSet,
+        nil
+      )
+      query[kSecAttrAccessControl as String] = accessOptions
+    } else {
+      query[kSecAttrAccessible as String] = accessible.keychainKey
+    }
     return query
   }
 }

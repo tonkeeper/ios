@@ -5,7 +5,7 @@ import SignerCore
 import SignerLocalize
 
 final class EnterPasswordCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  var didEnterPassword: (() -> Void)?
+  var didEnterPassword: ((String) -> Void)?
   var didSignOut: (() -> Void)?
   
   private let assembly: SignerCore.Assembly
@@ -24,11 +24,12 @@ private extension EnterPasswordCoordinator {
   func openEnterPassword() {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
+      oldMnemonicRepository: assembly.repositoriesAssembly.oldMnemonicRepository(),
       title: SignerLocalize.Password.Confirmation.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
-    module.output.didEnterPassword = { [weak self] _ in
-      self?.didEnterPassword?()
+    module.output.didEnterPassword = { [weak self] password in
+      self?.didEnterPassword?(password)
     }
     
     let singOutButton = TKButton(configuration: .titleHeaderButtonConfiguration(category: .secondary))

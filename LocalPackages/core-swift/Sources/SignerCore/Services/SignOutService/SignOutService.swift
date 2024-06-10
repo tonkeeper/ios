@@ -1,7 +1,7 @@
 import Foundation
 
 public protocol SignOutService {
-  func signOut() throws
+  func signOut() async throws
 }
 
 final class SignOutServiceImplementation: SignOutService {
@@ -14,8 +14,8 @@ final class SignOutServiceImplementation: SignOutService {
     self.mnemonicsRepository = mnemonicsRepository
   }
   
-  func signOut() throws {
+  func signOut() async throws {
     try signerInfoRepository.removeSignerInfo()
-    try mnemonicsRepository.deleteAll()
+    try await mnemonicsRepository.deleteAll()
   }
 }

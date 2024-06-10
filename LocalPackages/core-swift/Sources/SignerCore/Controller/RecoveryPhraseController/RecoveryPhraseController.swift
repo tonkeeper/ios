@@ -11,9 +11,9 @@ public final class RecoveryPhraseController {
     self.mnemonicsRepository = mnemonicsRepository
   }
   
-  public func getRecoveryPhrase() -> [String] {
+  public func getRecoveryPhrase() async -> [String] {
     do {
-      let phrase = try mnemonicsRepository.getMnemonic(walletKey: key, password: password)
+      let phrase = try await mnemonicsRepository.getMnemonic(walletKey: key, password: password)
       return phrase.mnemonicWords
     } catch {
       return []

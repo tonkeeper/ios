@@ -50,8 +50,12 @@ final class SignConfirmationViewModelImplementation: SignConfirmationViewModel, 
     let completion: (String?) -> Void = { [weak self] password in
       guard let self else { return }
       if let password {
-        guard let signedURL = self.controller.signTransaction(password: password) else { return }
-        self.didSignTransaction?(signedURL, self.controller.walletKey, self.controller.hexBody)
+        Task {
+          guard let signedURL = await self.controller.signTransaction(password: password) else { return }
+          await MainActor.run {
+            self.didSignTransaction?(signedURL, self.controller.walletKey, self.controller.hexBody)
+          }
+        }
       } else {
         self.didCancel?()
       }

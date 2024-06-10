@@ -11,7 +11,7 @@ public protocol TKRecoveryPhraseModuleOutput: AnyObject {
 }
 
 public protocol TKRecoveryPhraseDataProvider {
-  var model: TKRecoveryPhraseView.Model { get }
+  var model: TKRecoveryPhraseView.Model { get async }
 }
 
 final class TKRecoveryPhraseViewModelImplementation: TKRecoveryPhraseViewModel, TKRecoveryPhraseModuleOutput {
@@ -23,7 +23,12 @@ final class TKRecoveryPhraseViewModelImplementation: TKRecoveryPhraseViewModel, 
   var didUpdateModel: ((TKRecoveryPhraseView.Model) -> Void)?
   
   func viewDidLoad() {
-    didUpdateModel?(provider.model)
+    Task {
+      let model = await provider.model
+      await MainActor.run {
+        didUpdateModel?(model)
+      }
+    }
   }
   
   // MARK: - Dependencies

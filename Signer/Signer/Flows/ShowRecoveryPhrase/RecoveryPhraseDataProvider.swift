@@ -7,7 +7,9 @@ import SignerLocalize
 struct RecoveryPhraseDataProvider: TKRecoveryPhraseDataProvider {
   
   var model: TKRecoveryPhraseView.Model {
-    createModel()
+    get async {
+      await createModel()
+    }
   }
   
   private let recoveryPhraseController: RecoveryPhraseController
@@ -18,8 +20,8 @@ struct RecoveryPhraseDataProvider: TKRecoveryPhraseDataProvider {
 }
 
 private extension RecoveryPhraseDataProvider {
-  func createModel() -> TKRecoveryPhraseView.Model {
-    let phraseListViewModel = TKRecoveryPhraseListView.Model(
+  func createModel() async -> TKRecoveryPhraseView.Model {
+    let phraseListViewModel = await TKRecoveryPhraseListView.Model(
       wordModels: recoveryPhraseController.getRecoveryPhrase()
         .enumerated()
         .map { index, word in
@@ -38,9 +40,14 @@ private extension RecoveryPhraseDataProvider {
           model: TKUIActionButton.Model(title: SignerLocalize.Actions.copy),
           category: .secondary,
           action: {
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            UIPasteboard.general.string = recoveryPhraseController.getRecoveryPhrase().joined(separator: "\n")
-            ToastPresenter.showToast(configuration: .Signer.copied)
+            Task {
+              let recoveryPhrase = await recoveryPhraseController.getRecoveryPhrase().joined(separator: "\n")
+              await MainActor.run {
+                UIPasteboard.general.string = recoveryPhrase
+                UINotificationFeedbackGenerator().notificationOccurred(.warning)
+                ToastPresenter.showToast(configuration: .Signer.copied)
+              }
+            }
           }
         )
       ]

@@ -7,7 +7,7 @@ protocol PasswordInputViewModelConfigurator: AnyObject {
   var showKeyboardWhileAppear: Bool { get }
   var textFieldCaption: String? { get }
   
-  func validateInput(_ input: String) -> Bool
+  func validateInput(_ input: String) async -> Bool
   func isContinueEnable(_ input: String) -> Bool
 }
 
@@ -33,7 +33,7 @@ final class CreatePasswordPasswordInputViewModelConfigurator: PasswordInputViewM
   var showKeyboardWhileAppear: Bool
   let title: String
   
-  func validateInput(_ input: String) -> Bool {
+  func validateInput(_ input: String) async -> Bool {
     input.count >= 4
   }
 }
@@ -57,10 +57,10 @@ final class ReenterPasswordPasswordInputViewModelConfigurator: PasswordInputView
     true
   }
   
-  func validateInput(_ input: String) -> Bool {
+  func validateInput(_ input: String) async -> Bool {
     let isValid = input == password
     if !isValid {
-      UINotificationFeedbackGenerator().notificationOccurred(.error)
+      await UINotificationFeedbackGenerator().notificationOccurred(.error)
     }
     return isValid
   }
@@ -72,11 +72,14 @@ final class EnterPasswordPasswordInputViewModelConfigurator: PasswordInputViewMo
     nil
   }
   private let mnemonicsRepository: MnemonicsRepository
+  private let oldMnemonicRepository: MnemonicsRepository
   let title: String
   
   init(mnemonicsRepository: MnemonicsRepository,
+       oldMnemonicRepository: MnemonicsRepository,
        title: String) {
     self.mnemonicsRepository = mnemonicsRepository
+    self.oldMnemonicRepository = oldMnemonicRepository
     self.title = title
   }
   
@@ -86,10 +89,14 @@ final class EnterPasswordPasswordInputViewModelConfigurator: PasswordInputViewMo
     true
   }
   
-  func validateInput(_ input: String) -> Bool {
-    let isValid = mnemonicsRepository.checkIfPasswordValid(input)
+  func validateInput(_ input: String) async -> Bool {
+    var isValid = await mnemonicsRepository.checkIfPasswordValid(input)
     if !isValid {
-      UINotificationFeedbackGenerator().notificationOccurred(.error)
+      isValid = await oldMnemonicRepository.checkIfPasswordValid(input)
+    }
+
+    if !isValid {
+      await UINotificationFeedbackGenerator().notificationOccurred(.error)
     }
     return isValid
   }

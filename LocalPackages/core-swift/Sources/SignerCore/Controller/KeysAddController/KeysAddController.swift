@@ -16,14 +16,14 @@ public final class KeysAddController {
     walletKeysStore.getWalletKeys()
   }
   
-  public func createWalletKey(name: String, password: String) throws {
+  public func createWalletKey(name: String, password: String) async throws {
     let mnemonic = try Mnemonic(mnemonicWords: TonSwift.Mnemonic.mnemonicNew(wordsCount: 24))
     let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
     )
     let walletKey = WalletKey(name: name, publicKey: keyPair.publicKey)
     
-    try mnemonicsRepositoty.saveMnemonic(
+    try await mnemonicsRepositoty.saveMnemonic(
       mnemonic,
       walletKey: walletKey,
       password: password
@@ -33,7 +33,7 @@ public final class KeysAddController {
   
   public func importWalletKey(phrase: [String],
                               name: String,
-                              password: String) throws {
+                              password: String) async throws {
     let mnemonic = try Mnemonic(mnemonicWords: phrase)
     let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
@@ -41,7 +41,7 @@ public final class KeysAddController {
 
     let walletKey = WalletKey(name: name, publicKey: keyPair.publicKey)
 
-    try mnemonicsRepositoty.saveMnemonic(
+    try await mnemonicsRepositoty.saveMnemonic(
       mnemonic,
       walletKey: walletKey,
       password: password

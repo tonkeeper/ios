@@ -76,16 +76,27 @@ private extension RootCoordinator {
       ),
       assembly: signerCoreAssembly
     )
-    enterPasswordCoodinator.didEnterPassword = { [weak self, unowned enterPasswordCoodinator] in
-      self?.removeChild(enterPasswordCoodinator)
-      self?.openMain(deeplink: self?.deeplink)
+    enterPasswordCoodinator.didEnterPassword = { [weak self, unowned enterPasswordCoodinator] password in
+      guard let self else { return }
+      Task {
+        try? await self.performMnemonicV2ToV3MigrationIfNeeded(password: password)
+        await MainActor.run {
+          self.removeChild(enterPasswordCoodinator)
+          self.openMain(deeplink: self.deeplink)
+        }
+      }
     }
     enterPasswordCoodinator.didSignOut = { [weak self, unowned enterPasswordCoodinator] in
-      do {
-        try self?.signerCoreAssembly.servicesAssembly.signOutService().signOut()
-        self?.removeChild(enterPasswordCoodinator)
-        self?.openOnboarding()
-      } catch {}
+      guard let self else { return }
+      Task {
+        do {
+          try await self.signerCoreAssembly.servicesAssembly.signOutService().signOut()
+          await MainActor.run {
+            self.removeChild(enterPasswordCoodinator)
+            self.openOnboarding()
+          }
+        } catch {}
+      }
     }
     
     self.passwordCoordinator = enterPasswordCoodinator
@@ -128,5 +139,14 @@ private extension RootCoordinator {
     ])
     
     router.rootViewController.setViewControllers([containerViewController], animated: true)
+  }
+  
+  func didEnterPassword(_ password: String) {
+    
+  }
+  
+  func performMnemonicV2ToV3MigrationIfNeeded(password: String) async throws {
+    let migration = signerCoreAssembly.repositoriesAssembly.mnemonicV2ToV3Migration()
+    try await migration.migrateIfNeeded(password: password)
   }
 }

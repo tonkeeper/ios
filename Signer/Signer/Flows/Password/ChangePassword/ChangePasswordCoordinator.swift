@@ -23,6 +23,7 @@ private extension ChangePasswordCoordinator {
   func openEnterCurrentPassword() {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
+      oldMnemonicRepository: assembly.repositoriesAssembly.oldMnemonicRepository(),
       title: SignerLocalize.Password.Change.EnterCurrent.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
@@ -59,12 +60,18 @@ private extension ChangePasswordCoordinator {
   
   func setNewPassword(oldPassword: String, newPassword: String) {
     let mnemonicsRepository = assembly.repositoriesAssembly.mnemonicsRepository()
-    do {
-      try mnemonicsRepository.changePassword(oldPassword: oldPassword, newPassword: newPassword)
-      didFinish?()
-      ToastPresenter.showToast(configuration: .Signer.passwordChanged)
-    } catch {
-      ToastPresenter.showToast(configuration: .Signer.passwordChangeFailed)
+    Task {
+      do {
+        try await mnemonicsRepository.changePassword(oldPassword: oldPassword, newPassword: newPassword)
+        await MainActor.run {
+          didFinish?()
+          ToastPresenter.showToast(configuration: .Signer.passwordChanged)
+        }
+      } catch {
+        await MainActor.run {
+          ToastPresenter.showToast(configuration: .Signer.passwordChangeFailed)
+        }
+      }
     }
   }
 }

@@ -109,6 +109,7 @@ private extension SignCoordinator {
   func openEnterPassword(fromViewController: UIViewController, completion: @escaping (String?) -> Void) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository(),
+      oldMnemonicRepository: signerCoreAssembly.repositoriesAssembly.oldMnemonicRepository(),
       title: SignerLocalize.Password.Confirmation.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)

@@ -71,6 +71,7 @@ private extension ImportKeyCoordinator {
   func openEnterPassword(phrase: [String], name: String) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
+      oldMnemonicRepository: assembly.repositoriesAssembly.oldMnemonicRepository(),
       title: SignerLocalize.Password.Confirmation.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
@@ -85,15 +86,19 @@ private extension ImportKeyCoordinator {
   
   func createKey(phrase: [String], name: String, password: String) {
     let keysAddController = assembly.keysAddController()
-    do {
-      try keysAddController.importWalletKey(
-        phrase: phrase,
-        name: name,
-        password: password
-      )
-      didImportKey?()
-    } catch {
-      print("Log: Key creation failed, error \(error)")
+    Task {
+      do {
+        try await keysAddController.importWalletKey(
+          phrase: phrase,
+          name: name,
+          password: password
+        )
+        await MainActor.run {
+          didImportKey?()
+        }
+      } catch {
+        print("Log: Key creation failed, error \(error)")
+      }
     }
   }
 }
