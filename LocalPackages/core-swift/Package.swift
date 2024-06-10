@@ -13,14 +13,16 @@ let package = Package(
   ],
   dependencies: [
     .package(path: "../TKLocalize"),
+    .package(path: "../TKCryptoSwift"),
     .package(url: "https://github.com/tonkeeper/ton-swift", from: "1.0.10"),
     .package(url: "https://github.com/tonkeeper/ton-api-swift", from: "0.1.1"),
-    .package(url: "https://github.com/apple/swift-openapi-runtime", .upToNextMinor(from: "0.3.0"))
+    .package(url: "https://github.com/apple/swift-openapi-runtime", .upToNextMinor(from: "0.3.0")),
   ],
   targets: [
     .target(name: "CoreComponents",
             dependencies: [
-              .product(name: "TonSwift", package: "ton-swift")
+              .product(name: "TonSwift", package: "ton-swift"),
+              .product(name: "TKCryptoSwift", package: "TKCryptoSwift"),
             ]),
     .testTarget(name: "CoreComponentsTests",
                 dependencies: [
