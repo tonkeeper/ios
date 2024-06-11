@@ -147,14 +147,12 @@ public struct TonkeeperDeeplinkParser: DeeplinkParser {
   func signerParse(string: String, host: String, path: String, queryItems: [URLQueryItem]) throws -> Deeplink {
     switch path {
     case "/link":
-      guard let pk = queryItems.first(where: { $0.name == "pk" })?.value,
-            let publicKeyData = Data(hex: pk),
-            let hexName = queryItems.first(where: { $0.name == "name" })?.value,
-            let hexNameData = Data(hex: hexName),
-            let name = String(data: hexNameData, encoding: .utf8)  else {
+      guard let pkHex = queryItems.first(where: { $0.name == "pk" })?.value,
+            let pkData = Data(hex: pkHex),
+            let name = queryItems.first(where: { $0.name == "name" })?.value else {
         throw DeeplinkParserError.unsupportedDeeplink(string: string)
       }
-      let publicKey = TonSwift.PublicKey(data: publicKeyData)
+      let publicKey = TonSwift.PublicKey(data: pkData)
       return .tonkeeper(TonkeeperDeeplink.signer(.link(publicKey: publicKey, name: name)))
     default:
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
