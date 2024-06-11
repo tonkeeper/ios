@@ -33,7 +33,9 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     handleState(state: rootController.getState())
     
     rootController.didUpdateState = {state in
-      handleState(state: state)
+      DispatchQueue.main.async {
+        handleState(state: state)
+      }
     }
     rootController.start()
   }
