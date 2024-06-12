@@ -40,6 +40,8 @@ struct AddWalletModule {
         return createImportWatchOnlyWalletCoordinator(router: router, passcode: passcode)
       }, pairSignerCoordinatorProvider: { router, passcode in
         return createPairSignerCoordinator(router: router, passcode: passcode)
+      }, pairLedgerCoordinatorProvider: { router, passcode in
+        return createLedgerPairCoordinator(router: router, passcode: passcode)
       }, createPasscodeCoordinatorProvider: createPasscodeCoordinatorProvider
     )
     
@@ -119,6 +121,14 @@ struct AddWalletModule {
       pairSignerImportCoordinatorProvider: { router, publicKey, name in
         self.createPairSignerImportCoordinator(publicKey: publicKey, name: name, passcode: passcode, router: router)
       }
+    )
+  }
+  
+  public func createLedgerPairCoordinator(router: ViewControllerRouter, passcode: String?) -> PairLedgerCoordinator {
+    PairLedgerCoordinator(
+      walletUpdateAssembly: dependencies.walletsUpdateAssembly,
+      coreAssembly: dependencies.coreAssembly,
+      router: router
     )
   }
 }

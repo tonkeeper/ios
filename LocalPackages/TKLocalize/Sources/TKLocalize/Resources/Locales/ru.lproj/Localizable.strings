@@ -234,3 +234,5 @@
 "action_types.domain_renew" = "Продление домена";
 "action_types.unknown" = "Неизвестно";
 "action_types.wallet_initialize" = "Кошелёк инициализирован";
+
+"ledger_connect.title" = "Подключить Ledger";

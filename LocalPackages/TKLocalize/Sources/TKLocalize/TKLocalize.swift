@@ -871,4 +871,10 @@ public enum TKLocales {
       localize("action_types.wallet_initialize")
     }
   }
+  public enum LedgerConnect {
+    /// Connect Ledger
+    public static var title: String {
+      localize("ledger_connect.title")
+    }
+  }
 }

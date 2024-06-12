@@ -16,6 +16,7 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
   private let importWalletCoordinatorProvider: (NavigationControllerRouter, _ passcode: String?, _ isTestnet: Bool) -> ImportWalletCoordinator
   private let importWatchOnlyWalletCoordinatorProvider: (NavigationControllerRouter, _ passcode: String?) -> ImportWatchOnlyWalletCoordinator
   private let pairSignerCoordinatorProvider: (NavigationControllerRouter, _ passcode: String?) -> PairSignerCoordinator
+  private let pairLedgerCoordinatorProvider: (ViewControllerRouter, _ passcode: String?) -> PairLedgerCoordinator
   private let createPasscodeCoordinatorProvider: ((NavigationControllerRouter) -> CreatePasscodeCoordinator)?
   
   init(router: ViewControllerRouter,
@@ -25,6 +26,7 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
        importWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ passcode: String?, _ isTestnet: Bool) -> ImportWalletCoordinator,
        importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ passcode: String?) -> ImportWatchOnlyWalletCoordinator,
        pairSignerCoordinatorProvider: @escaping (NavigationControllerRouter, _ passcode: String?) -> PairSignerCoordinator,
+       pairLedgerCoordinatorProvider: @escaping (ViewControllerRouter, _ passcode: String?) -> PairLedgerCoordinator,
        createPasscodeCoordinatorProvider: ((NavigationControllerRouter) -> CreatePasscodeCoordinator)?) {
     self.walletAddController = walletAddController
     self.options = options
@@ -32,6 +34,7 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
     self.importWalletCoordinatorProvider = importWalletCoordinatorProvider
     self.importWatchOnlyWalletCoordinatorProvider = importWatchOnlyWalletCoordinatorProvider
     self.pairSignerCoordinatorProvider = pairSignerCoordinatorProvider
+    self.pairLedgerCoordinatorProvider = pairLedgerCoordinatorProvider
     self.createPasscodeCoordinatorProvider = createPasscodeCoordinatorProvider
     super.init(router: router)
   }
@@ -121,7 +124,13 @@ private extension AddWalletCoordinator {
     case .signer:
       openPairSigner(router: router, passcode: passcode)
     case .ledger:
-      openPairLedger()
+      router.dismiss(animated: true) { [weak self] in
+        guard let self else { return }
+        self.openPairLedger(
+          router: ViewControllerRouter(rootViewController: self.router.rootViewController),
+          passcode: passcode
+        )
+      }
     }
   }
   
@@ -227,7 +236,10 @@ private extension AddWalletCoordinator {
     coordinator.start()
   }
   
-  func openPairLedger() {
+  func openPairLedger(router: ViewControllerRouter, passcode: String?) {
+    let coordinator = pairLedgerCoordinatorProvider(router, passcode)
     
+    addChild(coordinator)
+    coordinator.start()
   }
 }
