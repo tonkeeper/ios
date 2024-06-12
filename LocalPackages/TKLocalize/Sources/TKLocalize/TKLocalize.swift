@@ -683,6 +683,16 @@ public enum TKLocales {
           localize("add_wallet.items.pair_signer.subtitle")
         }
       }
+      public enum PairLedger {
+        /// Pair with Ledger
+        public static var title: String {
+          localize("add_wallet.items.pair_ledger.title")
+        }
+        /// Hardware module, Bluetooth, limited TON features
+        public static var subtitle: String {
+          localize("add_wallet.items.pair_ledger.subtitle")
+        }
+      }
     }
   }
   public enum Scanner {

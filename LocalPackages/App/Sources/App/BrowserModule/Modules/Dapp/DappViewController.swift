@@ -40,7 +40,6 @@ private extension DappViewController {
         initialTitle: title,
         jsInjection: self.viewModel.jsInjection
       )
-      print(self.viewModel.jsInjection)
       bridgeWebViewController.didLoadInitialURLHandler = { [weak self] in
         self?.viewModel.didLoadInitialRequest()
       }

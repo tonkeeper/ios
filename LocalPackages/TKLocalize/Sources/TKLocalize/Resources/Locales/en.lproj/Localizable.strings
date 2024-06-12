@@ -176,6 +176,9 @@
 "add_wallet.items.pair_signer.title" = "Pair Signer";
 "add_wallet.items.pair_signer.subtitle" = "A higher level of control and security";
 
+"add_wallet.items.pair_ledger.title" = "Pair with Ledger";
+"add_wallet.items.pair_ledger.subtitle" = "Hardware module, Bluetooth, limited TON features";
+
 "scanner.title" = "Scan QR code";
 
 "signer.scan.subtitle" = "Open Signer » Select the required key » Scan QR code";

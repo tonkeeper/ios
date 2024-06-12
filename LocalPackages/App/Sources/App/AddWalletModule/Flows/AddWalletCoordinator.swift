@@ -120,6 +120,8 @@ private extension AddWalletCoordinator {
       openAddWallet(router: router, passcode: passcode, isTestnet: true)
     case .signer:
       openPairSigner(router: router, passcode: passcode)
+    case .ledger:
+      openPairLedger()
     }
   }
   
@@ -223,5 +225,9 @@ private extension AddWalletCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+  }
+  
+  func openPairLedger() {
+    
   }
 }

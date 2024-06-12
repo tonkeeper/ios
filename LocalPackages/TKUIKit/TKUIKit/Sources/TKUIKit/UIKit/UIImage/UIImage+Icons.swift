@@ -204,6 +204,14 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-doc-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var ledger: UIImage {
+          .imageWithName("Icons/28/ic-ledger-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var signer: UIImage {
+          .imageWithName("Icons/28/ic-signer-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {
