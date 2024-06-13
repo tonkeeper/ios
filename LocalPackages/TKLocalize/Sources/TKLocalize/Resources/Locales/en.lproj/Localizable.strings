@@ -239,3 +239,11 @@
 "action_types.wallet_initialize" = "Wallet initialized";
 
 "ledger_connect.title" = "Connect Ledger";
+"ledger_connect.steps.bluetooth_connect.description" = "Connect Ledger to your device via Bluetooth";
+"ledger_connect.steps.ton_app.description" = "Unlock it and open TON App";
+"ledger_connect.steps.ton_app.link" = "Install TON App";
+
+"ledger_confirm.title" = "Confirm Action";
+"ledger_confirm.steps.bluetooth_connect.description" = "Connect Ledger to your device via Bluetooth";
+"ledger_confirm.steps.ton_app.description" = "Unlock it and open TON App";
+"ledger_confirm.steps.confirm.description" = "Confirm your transaction on Ledger";

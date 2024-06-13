@@ -239,6 +239,12 @@ private extension AddWalletCoordinator {
   func openPairLedger(router: ViewControllerRouter, passcode: String?) {
     let coordinator = pairLedgerCoordinatorProvider(router, passcode)
     
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      self?.didCancel?()
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
     addChild(coordinator)
     coordinator.start()
   }

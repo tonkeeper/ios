@@ -62,6 +62,14 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-qr-code-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var done: UIImage {
+          .imageWithName("Icons/16/ic-done-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var dote: UIImage {
+          .imageWithName("Icons/16/ic-dote-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {

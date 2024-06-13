@@ -236,3 +236,11 @@
 "action_types.wallet_initialize" = "Кошелёк инициализирован";
 
 "ledger_connect.title" = "Подключить Ledger";
+"ledger_connect.items.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
+"ledger_connect.items.ton_app.description" = "Разблокируйте его и откройте приложение TON";
+"ledger_connect.items.ton_app.link" = "Установить приложение";
+
+"ledger_confirm.title" = "Подтвердить действие";
+"ledger_confirm.items.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
+"ledger_confirm.items.ton_app.description" = "Разблокируйте его и откройте приложение TON";
+"ledger_confirm.items.confirm" = "Подтвердите транзакцию в Ledger";

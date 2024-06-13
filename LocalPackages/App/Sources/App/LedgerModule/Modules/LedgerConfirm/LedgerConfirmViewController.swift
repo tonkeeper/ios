@@ -2,15 +2,15 @@ import UIKit
 import TKUIKit
 import TKLocalize
 
-final class LedgerConnectViewController: GenericViewViewController<LedgerConnectView>, TKBottomSheetContentViewController {
-  private let viewModel: LedgerConnectViewModel
+final class LedgerConfirmViewController: GenericViewViewController<LedgerConfirmView>, TKBottomSheetContentViewController {
+  private let viewModel: LedgerConfirmViewModel
   
   // MARK: - TKBottomSheetContentViewController
   
   var didUpdateHeight: (() -> Void)?
   
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: TKLocales.LedgerConnect.title)
+    TKUIKit.TKPullCardHeaderItem(title: TKLocales.LedgerConfirm.title)
   }
   
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?
@@ -26,7 +26,7 @@ final class LedgerConnectViewController: GenericViewViewController<LedgerConnect
     ).height
   }
   
-  init(viewModel: LedgerConnectViewModel) {
+  init(viewModel: LedgerConfirmViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
   }

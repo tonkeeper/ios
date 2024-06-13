@@ -876,5 +876,49 @@ public enum TKLocales {
     public static var title: String {
       localize("ledger_connect.title")
     }
+    public enum Steps {
+      public enum BluetoothConnect {
+        /// Connect Ledger to your device via Bluetooth
+        public static var description: String {
+          localize("ledger_connect.steps.bluetooth_connect.description")
+        }
+      }
+      public enum TonApp {
+        /// Unlock it and open TON App
+        public static var description: String {
+          localize("ledger_connect.steps.ton_app.description")
+        }
+        /// Install TON App
+        public static var link: String {
+          localize("ledger_connect.steps.ton_app.link")
+        }
+      }
+    }
+  }
+  public enum LedgerConfirm {
+    /// Confirm Action
+    public static var title: String {
+      localize("ledger_confirm.title")
+    }
+    public enum Steps {
+      public enum BluetoothConnect {
+        /// Connect Ledger to your device via Bluetooth
+        public static var description: String {
+          localize("ledger_confirm.steps.bluetooth_connect.description")
+        }
+      }
+      public enum TonApp {
+        /// Unlock it and open TON App
+        public static var description: String {
+          localize("ledger_confirm.steps.ton_app.description")
+        }
+      }
+      public enum Confirm {
+        /// Confirm your transaction on Ledger
+        public static var description: String {
+          localize("ledger_confirm.steps.confirm.description")
+        }
+      }
+    }
   }
 }

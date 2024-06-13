@@ -143,8 +143,9 @@ private extension WalletTransferSignCoordinator {
       }
       coreAssembly.urlOpener().open(url: url)
     } else {
-      
+      // TODO:
     }
+    // DON'T DELETE
             //    if self.coreAssembly.urlOpener().canOpen(url: url) {
 //      self.externalSignHandler = { data in
 //        continuation.resume(returning: data)

@@ -38,6 +38,12 @@ private extension PairLedgerCoordinator {
         return
       }
     }
+    
+    module.output.didCancel = { [weak self, weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss(completion: {
+        self?.didCancel?()
+      })
+    }
 
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }

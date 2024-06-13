@@ -2,21 +2,22 @@ import Foundation
 import TKUIKit
 import TKLocalize
 
-protocol LedgerConnectModuleOutput: AnyObject {
+protocol LedgerConfirmModuleOutput: AnyObject {
   var didCancel: (() -> Void)? { get set }
 }
 
-protocol LedgerConnectViewModel: AnyObject {
-  var didUpdateModel: ((LedgerConnectView.Model) -> Void)? { get set }
+protocol LedgerConfirmViewModel: AnyObject {
+  var didUpdateModel: ((LedgerConfirmView.Model) -> Void)? { get set }
   
   func viewDidLoad()
 }
 
-final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, LedgerConnectModuleOutput {
+final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, LedgerConfirmModuleOutput {
   enum State {
     case idle
     case bluetoothConnected
-    case appConnected
+    case tonAppOpened
+    case confirmed
   }
   
   // MARK: - LedgerConnectModuleOutput
@@ -25,7 +26,7 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   
   // MARK: - LedgerConnectViewModel
   
-  var didUpdateModel: ((LedgerConnectView.Model) -> Void)?
+  var didUpdateModel: ((LedgerConfirmView.Model) -> Void)?
   
   func viewDidLoad() {
     updateModel()
@@ -46,13 +47,20 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   func setConnected() {
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
       self.state = .bluetoothConnected
-      self.setReady()
+      self.setTonAppOpened()
     }
   }
   
-  func setReady() {
+  func setTonAppOpened() {
     DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-      self.state = .appConnected
+      self.state = .tonAppOpened
+      self.setConfirmed()
+    }
+  }
+  
+  func setConfirmed() {
+    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+      self.state = .confirmed
       self.setDisconnected()
     }
   }
@@ -70,18 +78,18 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   // MARK: - Init
 }
 
-private extension LedgerConnectViewModelImplementation {
+private extension LedgerConfirmViewModelImplementation {
   func updateModel() {
-    let model = LedgerConnectView.Model(
+    let model = LedgerConfirmView.Model(
       contentViewModel: LedgerContentView.Model(
         bluetoothViewModel: createBluetoothModel(),
         stepModels: [
           createConnectStepModel(),
-          createTonAppStepModel()
+          createTonAppStepModel(),
+          createConfirmStepModel()
         ]
       ),
-      cancelButton: createCancelButtonModel(),
-      continuteButton: createContinueButtonModel()
+      cancelButton: createCancelButtonModel()
     )
     didUpdateModel?(model)
   }
@@ -97,7 +105,9 @@ private extension LedgerConnectViewModelImplementation {
       bluetoothState = .disconnected
     case .bluetoothConnected:
       bluetoothState = .ready
-    case .appConnected:
+    case .tonAppOpened:
+      bluetoothState = .ready
+    case .confirmed:
       bluetoothState = .ready
     }
     return LedgerBluetoothView.Model(state: bluetoothState)
@@ -112,25 +122,6 @@ private extension LedgerConnectViewModelImplementation {
     return configuration
   }
   
-  func createContinueButtonModel() -> TKButton.Configuration {
-    let isEnabled: Bool
-    switch state {
-    case .idle:
-      isEnabled = false
-    case .bluetoothConnected:
-      isEnabled = false
-    case .appConnected:
-      isEnabled = true
-    }
-    var configuration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    configuration.content.title = .plainString(TKLocales.Actions.continue_action)
-    configuration.isEnabled = isEnabled
-    configuration.action = {
-      print("Continue")
-    }
-    return configuration
-  }
-  
   func createConnectStepModel() -> LedgerStepView.Model {
     let stepState: LedgerStepView.State
     switch state {
@@ -138,11 +129,13 @@ private extension LedgerConnectViewModelImplementation {
       stepState = .inProgress
     case .bluetoothConnected:
       stepState = .done
-    case .appConnected:
+    case .tonAppOpened:
+      stepState = .done
+    case .confirmed:
       stepState = .done
     }
     return LedgerStepView.Model(
-      content: TKLocales.LedgerConnect.Steps.BluetoothConnect.description,
+      content: TKLocales.LedgerConfirm.Steps.BluetoothConnect.description,
       linkButton: nil,
       state: stepState
     )
@@ -155,17 +148,33 @@ private extension LedgerConnectViewModelImplementation {
       stepState = .idle
     case .bluetoothConnected:
       stepState = .inProgress
-    case .appConnected:
+    case .tonAppOpened:
+      stepState = .done
+    case .confirmed:
       stepState = .done
     }
     return LedgerStepView.Model(
-      content: TKLocales.LedgerConnect.Steps.TonApp.description,
-      linkButton: LedgerStepView.LinkButton.Model(
-        title: TKLocales.LedgerConnect.Steps.TonApp.link,
-        tapClosure: {
-          print("Install TON App")
-        }
-      ),
+      content: TKLocales.LedgerConfirm.Steps.TonApp.description,
+      linkButton: nil,
+      state: stepState
+    )
+  }
+  
+  func createConfirmStepModel() -> LedgerStepView.Model {
+    let stepState: LedgerStepView.State
+    switch state {
+    case .idle:
+      stepState = .idle
+    case .bluetoothConnected:
+      stepState = .idle
+    case .tonAppOpened:
+      stepState = .inProgress
+    case .confirmed:
+      stepState = .done
+    }
+    return LedgerStepView.Model(
+      content: TKLocales.LedgerConfirm.Steps.Confirm.description,
+      linkButton: nil,
       state: stepState
     )
   }
