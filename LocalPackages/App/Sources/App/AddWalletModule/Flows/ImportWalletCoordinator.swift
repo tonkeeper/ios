@@ -97,7 +97,7 @@ private extension ImportWalletCoordinator {
         isTestnet: isTestnet)
       didImportWallets?()
     } catch {
-      print("Log: Wallet import failed")
+      print("Log: Wallet import failed, error: \(error)")
     }
   }
 }

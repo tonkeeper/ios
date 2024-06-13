@@ -105,6 +105,8 @@ extension Wallet {
       }
       
       switch contractVersion {
+      case .v5R1:
+        return WalletV5R1(publicKey: publicKey.data, walletId: WalletId(networkGlobalId: Int32(isTestnet ? Network.testnet.rawValue : Network.mainnet.rawValue), workchain: 0))
       case .v4R2:
         return WalletV4R2(publicKey: publicKey.data)
       case .v4R1:
