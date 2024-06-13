@@ -389,7 +389,6 @@ private extension MainCoordinator {
   }
   
   func handleSignerDeeplink(_ deeplink: TonkeeperDeeplink.SignerDeeplink) {
-
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
@@ -402,28 +401,21 @@ private extension MainCoordinator {
           scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
           passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
         )
-      ).createPairSignerImportCoordinator(
+      ).createPairSignerDeeplinkCoordinator(
         publicKey: publicKey,
         name: name,
-        passcode: nil,
         router: NavigationControllerRouter(
           rootViewController: navigationController
         )
       )
       
-      coordinator.didPrepareForPresent = { [weak router] in
-        router?.present(navigationController)
+      coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in
+        navigationController?.dismiss(animated: true)
+        self?.removeChild(coordinator)
       }
       
       coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
         navigationController?.dismiss(animated: true)
-        guard let coordinator else { return }
-        self?.removeChild(coordinator)
-      }
-      
-      coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in 
-        navigationController?.dismiss(animated: true)
-        guard let coordinator else { return }
         self?.removeChild(coordinator)
       }
       

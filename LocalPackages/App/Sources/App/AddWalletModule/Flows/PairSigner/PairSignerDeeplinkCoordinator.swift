@@ -5,22 +5,25 @@ import TKCore
 import TKCoordinator
 import TonSwift
 
-public final class PairSignerCoordinator: RouterCoordinator<NavigationControllerRouter> {
+public final class PairSignerDeeplinkCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   public var didCancel: (() -> Void)?
   public var didPaired: (() -> Void)?
   
-  private let scannerAssembly: KeeperCore.ScannerAssembly
+  private let publicKey: TonSwift.PublicKey
+  private let name: String
   private let walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly
   private let coreAssembly: TKCore.CoreAssembly
   private let publicKeyImportCoordinatorProvider: (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator
   
-  init(scannerAssembly: KeeperCore.ScannerAssembly,
+  init(publicKey: TonSwift.PublicKey,
+       name: String,
        walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
        coreAssembly: TKCore.CoreAssembly,
        router: NavigationControllerRouter,
        publicKeyImportCoordinatorProvider: @escaping (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator) {
-    self.scannerAssembly = scannerAssembly
+    self.publicKey = publicKey
+    self.name = name
     self.walletUpdateAssembly = walletUpdateAssembly
     self.coreAssembly = coreAssembly
     self.publicKeyImportCoordinatorProvider = publicKeyImportCoordinatorProvider
@@ -28,42 +31,12 @@ public final class PairSignerCoordinator: RouterCoordinator<NavigationController
   }
   
   public override func start() {
-    openScanner()
-  }
-  
-  public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
-    guard let signerDeeplink = deeplink as? TonkeeperDeeplink.SignerDeeplink else { return false }
-    switch signerDeeplink {
-    case let .link(publicKey, name):
-      openImportCoordinator(publicKey: publicKey, name: name)
-      return true
-    }
+    openImport()
   }
 }
 
-private extension PairSignerCoordinator {
-  func openScanner() {
-    let module = SignerImportScanAssembly.module(
-      scannerAssembly: scannerAssembly,
-      coreAssembly: coreAssembly
-    )
-    
-    module.output.didScanLinkQRCode = { [weak self] publicKey, name in
-      self?.openImportCoordinator(publicKey: publicKey, name: name)
-    }
-    
-    if router.rootViewController.viewControllers.isEmpty {
-      module.view.setupSwipeDownButton() { [weak self] in
-        self?.didCancel?()
-      }
-    } else {
-      module.view.setupBackButton()
-    }
-    
-    router.push(viewController: module.view, animated: false)
-  }
-  
-  func openImportCoordinator(publicKey: TonSwift.PublicKey, name: String) {
+private extension PairSignerDeeplinkCoordinator {
+  func openImport() {
     let coordinator = publicKeyImportCoordinatorProvider(router, publicKey, name)
     
     coordinator.didCancel = { [weak self, weak coordinator] in

@@ -6,31 +6,25 @@ import TKUIKit
 import TKScreenKit
 import TonSwift
 
-public final class PairSignerImportCoordinator: RouterCoordinator<NavigationControllerRouter> {
+public final class PublicKeyImportCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   public var didPrepareForPresent: (() -> Void)?
   public var didCancel: (() -> Void)?
-  public var didPaired: (() -> Void)?
+  public var didImport: ((_ publicKey: TonSwift.PublicKey, _ revisions: [WalletContractVersion], _ model: CustomizeWalletModel) -> Void)?
   
   private let publicKey: TonSwift.PublicKey
-  private let name: String
+  private let name: String?
   private let walletsUpdateAssembly: WalletsUpdateAssembly
-  private let passcodeAssembly: KeeperCore.PasscodeAssembly
-  private let passcode: String?
   private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
   init(publicKey: TonSwift.PublicKey,
-       name: String,
+       name: String?,
        router: NavigationControllerRouter,
        walletsUpdateAssembly: WalletsUpdateAssembly,
-       passcodeAssembly: KeeperCore.PasscodeAssembly,
-       passcode: String?,
        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
     self.publicKey = publicKey
     self.name = name
     self.walletsUpdateAssembly = walletsUpdateAssembly
-    self.passcodeAssembly = passcodeAssembly
-    self.passcode = passcode
     self.customizeWalletModule = customizeWalletModule
     super.init(router: router)
   }
@@ -41,20 +35,18 @@ public final class PairSignerImportCoordinator: RouterCoordinator<NavigationCont
       do {
         let activeWalletModels = try await detectActiveWallets(publicKey: publicKey)
         await MainActor.run {
-          if activeWalletModels.count > 1 {
-            ToastPresenter.hideAll()
-            openChooseWalletToAdd(publicKey: publicKey, activeWalletModels: activeWalletModels)
-            didPrepareForPresent?()
+          ToastPresenter.hideAll()
+          if activeWalletModels.count == 1, activeWalletModels[0].revision == WalletContractVersion.currentVersion {
+            openCustomizeWallet(publicKey: publicKey, revisions: [.currentVersion])
           } else {
-            ToastPresenter.hideAll()
-            openCustomizeWallet(publicKey: publicKey, revisions: [.currentVersion], animated: true)
-            didPrepareForPresent?()
+            openChooseWalletToAdd(publicKey: publicKey, activeWalletModels: activeWalletModels)
           }
+          didPrepareForPresent?()
         }
       } catch {
         await MainActor.run {
           ToastPresenter.hideAll()
-          openCustomizeWallet(publicKey: publicKey, revisions: [.currentVersion], animated: true)
+          openCustomizeWallet(publicKey: publicKey, revisions: [.currentVersion])
           didPrepareForPresent?()
         }
       }
@@ -62,7 +54,7 @@ public final class PairSignerImportCoordinator: RouterCoordinator<NavigationCont
   }
 }
 
-private extension PairSignerImportCoordinator {
+private extension PublicKeyImportCoordinator {
   func detectActiveWallets(publicKey: TonSwift.PublicKey) async throws -> [ActiveWalletModel] {
     try await walletsUpdateAssembly.walletImportController().findActiveWallets(publicKey: publicKey, isTestnet: false)
   }
@@ -72,7 +64,7 @@ private extension PairSignerImportCoordinator {
     let module = ChooseWalletToAddAssembly.module(controller: controller)
     
     module.output.didSelectRevisions = { [weak self] revisions in
-      self?.openCustomizeWallet(publicKey: publicKey, revisions: revisions, animated: true)
+      self?.openCustomizeWallet(publicKey: publicKey, revisions: revisions)
     }
     
     if router.rootViewController.viewControllers.isEmpty {
@@ -90,13 +82,11 @@ private extension PairSignerImportCoordinator {
       completion: nil)
   }
   
-  func openCustomizeWallet(publicKey: TonSwift.PublicKey, revisions: [WalletContractVersion], animated: Bool) {
+  func openCustomizeWallet(publicKey: TonSwift.PublicKey, revisions: [WalletContractVersion]) {
     let module = customizeWalletModule()
     
     module.output.didCustomizeWallet = { [weak self] model in
-      self?.importWallet(publicKey: publicKey,
-                         revisions: revisions,
-                         model: model)
+      self?.didImport?(publicKey, revisions, model)
     }
     
     if router.rootViewController.viewControllers.isEmpty {
@@ -107,30 +97,6 @@ private extension PairSignerImportCoordinator {
       module.view.setupBackButton()
     }
     
-    router.push(viewController: module.view, animated: animated)
-  }
-  
-  func importWallet(publicKey: TonSwift.PublicKey,
-                    revisions: [WalletContractVersion],
-                    model: CustomizeWalletModel) {
-    
-    let addController = walletsUpdateAssembly.walletAddController()
-    let metaData = WalletMetaData(
-      label: model.name,
-      tintColor: model.tintColor,
-      emoji: model.emoji)
-    do {
-      if let passcode {
-        try passcodeAssembly.passcodeCreateController().createPasscode(passcode)
-      }
-      try addController.importExternalWallet(
-        publicKey: publicKey,
-        revisions: revisions,
-        metaData: metaData
-      )
-      didPaired?()
-    } catch {
-      print("Log: External wallet import failed")
-    }
+    router.push(viewController: module.view, animated: true)
   }
 }

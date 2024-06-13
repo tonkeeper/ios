@@ -5,68 +5,122 @@ import TKCoordinator
 import TKUIKit
 import TKScreenKit
 
-public final class CreateWalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  
+public final class CreateWalletCoordinator: RouterCoordinator<ViewControllerRouter> {
+
   public var didCancel: (() -> Void)?
   public var didCreateWallet: (() -> Void)?
   
   private let walletsUpdateAssembly: WalletsUpdateAssembly
-  private let passcodeAssembly: KeeperCore.PasscodeAssembly
-  private let passcode: String?
   private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
-  init(router: NavigationControllerRouter,
+  init(router: ViewControllerRouter,
        walletsUpdateAssembly: WalletsUpdateAssembly,
-       passcodeAssembly: KeeperCore.PasscodeAssembly,
-       passcode: String?,
        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
     self.walletsUpdateAssembly = walletsUpdateAssembly
-    self.passcodeAssembly = passcodeAssembly
-    self.passcode = passcode
     self.customizeWalletModule = customizeWalletModule
     super.init(router: router)
   }
 
   public override func start() {
-    openCustomizeWallet()
+    if walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository().hasMnemonics() {
+      openConfirmPasscode()
+    } else {
+      openCreatePasscode()
+    }
   }
 }
 
 private extension CreateWalletCoordinator {
-  func openCustomizeWallet() {
+  func openCreatePasscode() {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
+    PasscodeCreateCoordinator.present(
+      parentCoordinator: self,
+      parentRouter: router,
+      repositoriesAssembly: walletsUpdateAssembly.repositoriesAssembly,
+      onCancel: { [weak self] in
+        self?.router.dismiss(animated: true, completion: {
+          self?.didCancel?()
+        })
+      },
+      onCreate: { [weak self] passcode in
+        self?.openCustomizeWallet(
+          router: router,
+          animated: true,
+          passcode: passcode
+        )
+      }
+    )
+
+    self.router.present(navigationController, onDismiss: { [weak self] in
+      self?.didCancel?()
+    })
+  }
+  
+  func openConfirmPasscode() {
+    PasscodeInputCoordinator.present(
+      parentCoordinator: self,
+      parentRouter: self.router,
+      repositoriesAssembly: walletsUpdateAssembly.repositoriesAssembly,
+      onCancel: { [weak self] in
+        self?.didCancel?()
+      },
+      onInput: { [weak self] passcode in
+        let navigationController = TKNavigationController()
+        navigationController.configureTransparentAppearance()
+        self?.openCustomizeWallet(
+          router: NavigationControllerRouter(rootViewController: navigationController), 
+          animated: false,
+          passcode: passcode
+        )
+        self?.router.present(navigationController, onDismiss: { [weak self] in
+          self?.didCancel?()
+        })
+      }
+    )
+  }
+  
+  func openCustomizeWallet(router: NavigationControllerRouter,
+                           animated: Bool,
+                           passcode: String) {
     let module = customizeWalletModule()
     
     module.output.didCustomizeWallet = { [weak self] model in
-      self?.createWallet(model: model)
+      guard let self else { return }
+      Task {
+        do {
+          try await self.createWallet(model: model, passcode: passcode)
+          await MainActor.run {
+            self.didCreateWallet?()
+            router.dismiss(animated: true)
+          }
+        } catch {
+          print("Log: Wallet creation failed \(error)")
+        }
+      }
     }
     
     if router.rootViewController.viewControllers.isEmpty {
       module.view.setupLeftCloseButton { [weak self] in
-        self?.didCancel?()
+        router.dismiss(animated: true) {
+          self?.didCancel?()
+        }
       }
     } else {
       module.view.setupBackButton()
     }
     
-    router.push(viewController: module.view, onPopClosures: { [weak self] in
-      self?.didCancel?()
-    })
+    router.push(viewController: module.view, animated: animated)
   }
   
-  func createWallet(model: CustomizeWalletModel) {
+  func createWallet(model: CustomizeWalletModel, passcode: String) async throws {
     let addController = walletsUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
       emoji: model.emoji)
-    do {
-      if let passcode {
-        try passcodeAssembly.passcodeCreateController().createPasscode(passcode)
-      }
-      try addController.createWallet(metaData: metaData)
-      didCreateWallet?()
-    } catch {
-      print("Log: Wallet creation failed")
-    }
+    try await addController.createWallet(metaData: metaData, passcode: passcode)
   }
 }

@@ -7,11 +7,11 @@ import TweetNacl
 public struct MnemonicsV3Vault {
   public typealias Identifier = String
   public struct EncryptedMnemonics: Codable {
-    let N: Int
-    let r: Int
-    let p: Int
-    let salt: String
-    let ct: String
+    public let N: Int
+    public let r: Int
+    public let p: Int
+    public let salt: String
+    public let ct: String
   }
   public typealias Mnemonics = [Identifier: Mnemonic]
   
@@ -28,6 +28,15 @@ public struct MnemonicsV3Vault {
               seedProvider: @escaping () -> String) {
     self.keychainVault = keychainVault
     self.seedProvider = seedProvider
+  }
+  
+  public func hasMnemonics() -> Bool {
+    do {
+      let encryptedMnemonics = try loadEncryptedMnemonics()
+      return true
+    } catch {
+      return false
+    }
   }
 
   public func addMnemonic(_ mnemonic: Mnemonic, 

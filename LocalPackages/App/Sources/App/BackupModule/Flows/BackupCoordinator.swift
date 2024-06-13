@@ -23,31 +23,33 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
   }
   
   public override func start() {
-    let confirmationCoordinator = PasscodeModule(
-      dependencies: PasscodeModule.Dependencies(
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-      )
-    ).passcodeConfirmationCoordinator()
-    confirmationCoordinator.didCancel = { [weak self, weak confirmationCoordinator] in
-      confirmationCoordinator?.router.dismiss(completion: {
-        self?.didFinish?()
-        guard let confirmationCoordinator else { return }
-        self?.removeChild(confirmationCoordinator)
-      })
-    }
+    // TODO: FIX!
     
-    confirmationCoordinator.didConfirm = { [weak self, weak confirmationCoordinator] in
-      confirmationCoordinator?.router.dismiss(completion: {
-        self?.openCheck()
-        guard let confirmationCoordinator else { return }
-        self?.removeChild(confirmationCoordinator)
-      })
-    }
-    
-    addChild(confirmationCoordinator)
-    confirmationCoordinator.start()
-    
-    router.present(confirmationCoordinator.router.rootViewController)
+//    let confirmationCoordinator = PasscodeModule(
+//      dependencies: PasscodeModule.Dependencies(
+//        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+//      )
+//    ).passcodeConfirmationCoordinator()
+//    confirmationCoordinator.didCancel = { [weak self, weak confirmationCoordinator] in
+//      confirmationCoordinator?.router.dismiss(completion: {
+//        self?.didFinish?()
+//        guard let confirmationCoordinator else { return }
+//        self?.removeChild(confirmationCoordinator)
+//      })
+//    }
+//    
+//    confirmationCoordinator.didConfirm = { [weak self, weak confirmationCoordinator] in
+//      confirmationCoordinator?.router.dismiss(completion: {
+//        self?.openCheck()
+//        guard let confirmationCoordinator else { return }
+//        self?.removeChild(confirmationCoordinator)
+//      })
+//    }
+//    
+//    addChild(confirmationCoordinator)
+//    confirmationCoordinator.start()
+//    
+//    router.present(confirmationCoordinator.router.rootViewController)
   }
   
   func openCheck() {

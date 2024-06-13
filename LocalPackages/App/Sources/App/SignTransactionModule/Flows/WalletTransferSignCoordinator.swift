@@ -90,40 +90,31 @@ private extension WalletTransferSignCoordinator {
   }
   
   func handleRegularSign() {
-    let coordinator = PasscodeModule(
-      dependencies: PasscodeModule.Dependencies(
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-      )
-    ).passcodeConfirmationCoordinator()
-    
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      coordinator?.router.dismiss(completion: {
+    PasscodeInputCoordinator.present(
+      parentCoordinator: self,
+      parentRouter: router,
+      repositoriesAssembly: keeperCoreMainAssembly.repositoriesAssembly,
+      onCancel: { [weak self] in
         self?.didCancel?()
-        guard let coordinator else { return }
-        self?.removeChild(coordinator)
-      })
-    }
-    
-    coordinator.didConfirm = { [weak self, weak coordinator, keeperCoreMainAssembly, wallet, walletTransfer] in
-      do {
-        let mnemonic = try keeperCoreMainAssembly.repositoriesAssembly.mnemonicRepository().getMnemonic(forWallet: wallet)
-        let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-        let privateKey = keyPair.privateKey
-        let signed = try walletTransfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
-        self?.didSign?(signed)
-      } catch {
-        self?.didFail?(.failedToSign(error))
+      },
+      onInput: { [weak self, wallet, keeperCoreMainAssembly, walletTransfer] passcode in
+        guard let self else { return }
+        Task {
+          do {
+            let mnemonic = try await keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository().getMnemonic(
+              wallet: wallet,
+              password: passcode
+            )
+            let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+            let privateKey = keyPair.privateKey
+            let signed = try walletTransfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
+            self.didSign?(signed)
+          } catch {
+            self.didFail?(.failedToSign(error))
+          }
+        }
       }
-      coordinator?.router.dismiss(completion: {
-        guard let coordinator else { return }
-        self?.removeChild(coordinator)
-      })
-    }
-    
-    addChild(coordinator)
-    coordinator.start()
-    
-    router.rootViewController.present(coordinator.router.rootViewController, animated: true)
+    )
   }
   
   func handleExternalSign(transfer: WalletTransfer,

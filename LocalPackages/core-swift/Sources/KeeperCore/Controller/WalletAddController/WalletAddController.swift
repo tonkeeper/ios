@@ -5,15 +5,15 @@ import TonSwift
 public final class WalletAddController {
 
   private let walletsStoreUpdate: WalletsStoreUpdate
-  private let mnemonicRepositoty: WalletMnemonicRepository
+  private let mnemonicsRepository: MnemonicsRepository
   
   init(walletsStoreUpdate: WalletsStoreUpdate,
-       mnemonicRepositoty: WalletMnemonicRepository) {
+       mnemonicsRepositoty: MnemonicsRepository) {
     self.walletsStoreUpdate = walletsStoreUpdate
-    self.mnemonicRepositoty = mnemonicRepositoty
+    self.mnemonicsRepository = mnemonicsRepositoty
   }
   
-  public func createWallet(metaData: WalletMetaData) throws {
+  public func createWallet(metaData: WalletMetaData, passcode: String) async throws {
     let mnemonic = try Mnemonic(mnemonicWords: TonSwift.Mnemonic.mnemonicNew(wordsCount: 24))
     let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
@@ -28,7 +28,7 @@ public final class WalletAddController {
       setupSettings: WalletSetupSettings(backupDate: nil)
     )
     
-    try mnemonicRepositoty.saveMnemonic(mnemonic, forWallet: wallet)
+    try await mnemonicsRepository.saveMnemonic(mnemonic, wallet: wallet, password: passcode)
     try walletsStoreUpdate.addWallets([wallet])
     
     try walletsStoreUpdate.makeWalletActive(wallet)
@@ -37,7 +37,8 @@ public final class WalletAddController {
   public func importWallets(phrase: [String],
                             revisions: [WalletContractVersion],
                             metaData: WalletMetaData,
-                            isTestnet: Bool) throws {
+                            passcode: String,
+                            isTestnet: Bool) async throws {
     let mnemonic = try Mnemonic(mnemonicWords: phrase)
     let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
@@ -65,10 +66,12 @@ public final class WalletAddController {
         metaData: revisionMetaData,
         setupSettings: WalletSetupSettings(backupDate: Date()))
     }
-
-    try wallets.forEach { wallet in
-      try mnemonicRepositoty.saveMnemonic(mnemonic, forWallet: wallet)
-    }
+    
+    try await mnemonicsRepository.saveMnemonic(
+      mnemonic,
+      wallets: wallets,
+      password: passcode
+    )
     try walletsStoreUpdate.addWallets(wallets)
     try walletsStoreUpdate.makeWalletActive(wallets[0])
   }

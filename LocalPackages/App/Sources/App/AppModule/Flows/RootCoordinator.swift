@@ -33,12 +33,13 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     rootController.loadConfiguration()
     rootController.loadKnownAccounts()
     rootController.loadBuySellMethods()
-    switch rootController.getState() {
-    case .onboarding:
-      openOnboarding(deeplink: try? rootController.parseDeeplink(string: deeplink?.string))
-    case let .main(wallets, activeWallet):
-      openMain(wallets: wallets, activeWallet: activeWallet, deeplink: try? rootController.parseDeeplink(string: deeplink?.string))
-    }
+
+      switch rootController.getState() {
+      case .onboarding:
+        openOnboarding(deeplink: try? rootController.parseDeeplink(string: deeplink?.string))
+      case let .main(wallets, activeWallet):
+        openMain(wallets: wallets, activeWallet: activeWallet, deeplink: try? rootController.parseDeeplink(string: deeplink?.string))
+      }
   }
   
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -128,7 +129,7 @@ private extension RootCoordinator {
       viewController.view.bottomAnchor.constraint(equalTo: containerViewController.view.bottomAnchor),
       viewController.view.rightAnchor.constraint(equalTo: containerViewController.view.rightAnchor)
     ])
-    router.setViewControllers([(containerViewController , nil)])
+    router.setViewControllers([(containerViewController , nil)], animated: animated)
   }
 }
 

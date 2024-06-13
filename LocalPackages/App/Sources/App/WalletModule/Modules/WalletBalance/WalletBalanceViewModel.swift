@@ -15,7 +15,6 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapSwap: (() -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
-  var didRequireConfirmation: (() async -> Bool)? { get set }
 }
 
 protocol WalletBalanceModuleInput: AnyObject {}
@@ -154,13 +153,14 @@ private extension WalletBalanceViewModelImplementation {
         self?.didTapBackup?(wallet)
       },
       biometryHandler: { [weak self] isOn in
-        guard let self = self else { return !isOn }
-        let didConfirm = await self.didRequireConfirmation?() ?? false
-        guard didConfirm else { return !isOn }
-        let isOnResult = await walletBalanceController.setIsBiometryEnabled(isOn)
-        return await Task { @MainActor in
-          return isOnResult
-        }.value
+        return false
+//        guard let self = self else { return !isOn }
+//        let didConfirm = await self.didRequireConfirmation?() ?? false
+//        guard didConfirm else { return !isOn }
+//        let isOnResult = await walletBalanceController.setIsBiometryEnabled(isOn)
+//        return await Task { @MainActor in
+//          return isOnResult
+//        }.value
       }
     )
     Task { @MainActor in

@@ -24,6 +24,12 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
   }
   
   public override func start(deeplink: CoordinatorDeeplink? = nil) {
+    var settingsRepository = keeperCoreAssembly.repositoriesAssembly.settingsRepository()
+    if settingsRepository.isFirstRun {
+      settingsRepository.isFirstRun = false
+      settingsRepository.seed = UUID().uuidString
+    }
+    
     openRoot(deeplink: deeplink)
   }
   

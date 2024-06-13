@@ -27,7 +27,7 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
         openOnboarding()
       case .main:
         self.deeplink = deeplink
-        openEnterPassword()
+        openMain(deeplink: deeplink)
       }
     }
     handleState(state: rootController.getState())
@@ -68,47 +68,6 @@ private extension RootCoordinator {
     showViewController(navigationController, animated: false)
   }
   
-  func openEnterPassword() {
-    let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
-    
-    let enterPasswordCoodinator = EnterPasswordCoordinator(
-      router: NavigationControllerRouter(
-        rootViewController: navigationController
-      ),
-      assembly: signerCoreAssembly
-    )
-    enterPasswordCoodinator.didEnterPassword = { [weak self, unowned enterPasswordCoodinator] password in
-      guard let self else { return }
-      Task {
-        try? await self.performMnemonicV2ToV3MigrationIfNeeded(password: password)
-        await MainActor.run {
-          self.removeChild(enterPasswordCoodinator)
-          self.openMain(deeplink: self.deeplink)
-        }
-      }
-    }
-    enterPasswordCoodinator.didSignOut = { [weak self, unowned enterPasswordCoodinator] in
-      guard let self else { return }
-      Task {
-        do {
-          try await self.signerCoreAssembly.servicesAssembly.signOutService().signOut()
-          await MainActor.run {
-            self.removeChild(enterPasswordCoodinator)
-            self.openOnboarding()
-          }
-        } catch {}
-      }
-    }
-    
-    self.passwordCoordinator = enterPasswordCoodinator
-    
-    addChild(enterPasswordCoodinator)
-    enterPasswordCoodinator.start()
-    
-    showViewController(navigationController, animated: false)
-  }
-  
   func openMain(deeplink: CoordinatorDeeplink?) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
@@ -141,14 +100,5 @@ private extension RootCoordinator {
     ])
     
     router.rootViewController.setViewControllers([containerViewController], animated: true)
-  }
-  
-  func didEnterPassword(_ password: String) {
-    
-  }
-  
-  func performMnemonicV2ToV3MigrationIfNeeded(password: String) async throws {
-    let migration = signerCoreAssembly.repositoriesAssembly.mnemonicV2ToV3Migration()
-    try await migration.migrateIfNeeded(password: password)
   }
 }

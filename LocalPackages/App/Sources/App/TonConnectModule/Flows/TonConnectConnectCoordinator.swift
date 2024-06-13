@@ -138,37 +138,39 @@ private extension TonConnectConnectCoordinator {
   }
   
   func openConfirmation(fromViewController: UIViewController) async -> Bool {
-    return await Task<Bool, Never> { @MainActor in
-      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
-        guard let self = self else { return }
-        let coordinator = PasscodeModule(
-          dependencies: PasscodeModule.Dependencies(
-            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-          )
-        ).passcodeConfirmationCoordinator()
-        
-        coordinator.didCancel = { [weak self, weak coordinator] in
-          continuation.resume(returning: false)
-          coordinator?.router.dismiss(completion: {
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-          })
-        }
-        
-        coordinator.didConfirm = { [weak self, weak coordinator] in
-          continuation.resume(returning: true)
-          coordinator?.router.dismiss(completion: {
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-          })
-        }
-        
-        self.addChild(coordinator)
-        coordinator.start()
-        
-        fromViewController.present(coordinator.router.rootViewController, animated: true)
-      }
-    }.value
+    // TODO: FIX!
+    return true
+//    return await Task<Bool, Never> { @MainActor in
+//      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
+//        guard let self = self else { return }
+//        let coordinator = PasscodeModule(
+//          dependencies: PasscodeModule.Dependencies(
+//            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+//          )
+//        ).passcodeConfirmationCoordinator()
+//        
+//        coordinator.didCancel = { [weak self, weak coordinator] in
+//          continuation.resume(returning: false)
+//          coordinator?.router.dismiss(completion: {
+//            guard let coordinator else { return }
+//            self?.removeChild(coordinator)
+//          })
+//        }
+//        
+//        coordinator.didConfirm = { [weak self, weak coordinator] in
+//          continuation.resume(returning: true)
+//          coordinator?.router.dismiss(completion: {
+//            guard let coordinator else { return }
+//            self?.removeChild(coordinator)
+//          })
+//        }
+//        
+//        self.addChild(coordinator)
+//        coordinator.start()
+//        
+//        fromViewController.present(coordinator.router.rootViewController, animated: true)
+//      }
+//    }.value
   }
   
   func openWalletPicker(wallet: Wallet, fromViewController: UIViewController, didSelectWallet: @escaping (Wallet) -> Void) {

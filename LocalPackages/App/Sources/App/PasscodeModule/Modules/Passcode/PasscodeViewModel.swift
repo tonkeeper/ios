@@ -1,47 +1,54 @@
 import UIKit
 import TKUIKit
 
-public protocol PasscodeModuleOutput: AnyObject {
+protocol PasscodeModuleOutput: AnyObject {
   var didTapDigit: ((Int) -> Void)? { get set }
   var didTapBackspace: (() -> Void)? { get set }
   var didTapBiometry: (() -> Void)? { get set }
-  var didReset: (() -> Void)? { get set }
+}
+
+protocol PasscodeModuleInput: AnyObject {
+  func disableInput()
+  func enableInput()
 }
 
 protocol PasscodeViewModel: AnyObject {
-  var didUpdateModel: ((PasscodeView.Model) -> Void)? { get set }
+  var didUpdateBiometry: ((TKKeyboardView.Biometry) -> Void)? { get set }
+  var didEnableInput: (() -> Void)? { get set }
+  var didDisableInput: (() -> Void)? { get set }
   
   func viewDidLoad()
-  func viewDidDisappear()
   func didTapDigitButton(_ digit: Int)
   func didTapBackspaceButton()
   func didTapBiometryButton()
 }
 
-final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOutput {
+final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOutput, PasscodeModuleInput {
   
   // MARK: - PasscodeModuleOutput
   
   var didTapDigit: ((Int) -> Void)?
   var didTapBackspace: (() -> Void)?
   var didTapBiometry: (() -> Void)?
-  var didReset: (() -> Void)?
+  
+  // MARK: - PasscodeModuleInput
+  
+  func enableInput() {
+    didEnableInput?()
+  }
+  
+  func disableInput() {
+    didDisableInput?()
+  }
   
   // MARK: - PasscodeViewModel
   
-  var didUpdateModel: ((PasscodeView.Model) -> Void)?
+  var didUpdateBiometry: ((TKKeyboardView.Biometry) -> Void)?
+  var didEnableInput: (() -> Void)?
+  var didDisableInput: (() -> Void)?
   
   func viewDidLoad() {
-    Task {
-      let model = await createModel()
-      await MainActor.run {
-        didUpdateModel?(model)
-      }
-    }
-  }
-  
-  func viewDidDisappear() {
-    didReset?()
+    
   }
   
   func didTapDigitButton(_ digit: Int) {
@@ -58,42 +65,17 @@ final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOu
   
   // MARK: - State
   
-  private var input = "" {
-    didSet {
-      handleInputUpdate()
-    }
+  private var isBiometryEnable = false
+  
+  // MARK: - Dependencies
+  
+  private let isBiometryTurnedOn: Bool
+  
+  init(isBiometryTurnedOn: Bool) {
+    self.isBiometryTurnedOn = isBiometryTurnedOn
   }
   
-  let biometryProvider: PasscodeInputBiometryProvider
-  
-  // MARK: - Init
-  
-  init(biometryProvider: PasscodeInputBiometryProvider) {
-    self.biometryProvider = biometryProvider
+  private func checkIfBiometryEnable() async -> Bool {
+    return false
   }
-}
-
-private extension PasscodeViewModelImplementation {
-  func createModel() async -> PasscodeView.Model {
-    
-    let biometry: TKKeyboardView.Configuration.Biometry?
-    switch await biometryProvider.checkBiometryStatus() {
-    case .touchId:
-      biometry = .touchId
-    case .faceId:
-      biometry = .faceId
-    case .none:
-      biometry = nil
-    }
-    
-    return PasscodeView.Model(
-      keyboardConfiguration: .passcodeConfiguration(biometry: biometry)
-    )
-  }
-  
-  func handleInputUpdate() {}
-}
-
-private extension Int {
-  static let passcodeLength = 4
 }

@@ -13,7 +13,7 @@ public final class Assembly {
   }
   
   private let coreAssembly: CoreAssembly
-  private lazy var repositoriesAssembly = RepositoriesAssembly(coreAssembly: coreAssembly)
+  public lazy var repositoriesAssembly = RepositoriesAssembly(coreAssembly: coreAssembly)
   private lazy var configurationAssembly = ConfigurationAssembly(
     tonkeeperApiAssembly: tonkeeperApiAssembly,
     coreAssembly: coreAssembly

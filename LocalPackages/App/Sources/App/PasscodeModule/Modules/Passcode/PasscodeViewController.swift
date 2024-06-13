@@ -1,13 +1,14 @@
 import UIKit
 import TKUIKit
 
-public final class PasscodeViewController: GenericViewViewController<PasscodeView> {
+final class PasscodeViewController: GenericViewViewController<PasscodeView> {
   private let viewModel: PasscodeViewModel
-  private let passcodeNavigationController: UINavigationController
+  private let inputNavigationController: UINavigationController
   
-  init(viewModel: PasscodeViewModel, passcodeNavigationController: UINavigationController) {
+  init(viewModel: PasscodeViewModel, 
+       inputNavigationController: UINavigationController) {
     self.viewModel = viewModel
-    self.passcodeNavigationController = passcodeNavigationController
+    self.inputNavigationController = inputNavigationController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -15,58 +16,44 @@ public final class PasscodeViewController: GenericViewViewController<PasscodeVie
     fatalError("init(coder:) has not been implemented")
   }
   
-  public override func viewDidLoad() {
+  override func viewDidLoad() {
     super.viewDidLoad()
     
     setup()
     setupBindings()
-    setupActions()
     viewModel.viewDidLoad()
-  }
-  
-  public override func viewDidDisappear(_ animated: Bool) {
-    super.viewDidDisappear(animated)
-    
-    viewModel.viewDidDisappear()
   }
 }
 
 private extension PasscodeViewController {
   func setup() {
-    addChild(passcodeNavigationController)
-    customView.topContainer.addSubview(passcodeNavigationController.view)
-    passcodeNavigationController.view.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-      passcodeNavigationController.view.topAnchor.constraint(equalTo: customView.topContainer.topAnchor),
-      passcodeNavigationController.view.leftAnchor.constraint(equalTo: customView.topContainer.leftAnchor),
-      passcodeNavigationController.view.bottomAnchor.constraint(equalTo: customView.topContainer.bottomAnchor),
-      passcodeNavigationController.view.rightAnchor.constraint(equalTo: customView.topContainer.rightAnchor)
-    ])
+    addChild(inputNavigationController)
+    customView.topContainer.addSubview(inputNavigationController.view)
+    inputNavigationController.didMove(toParent: self)
     
-    passcodeNavigationController.didMove(toParent: self)
+    inputNavigationController.view.snp.makeConstraints { make in
+      make.edges.equalTo(customView.topContainer)
+    }
   }
   
   func setupBindings() {
-    viewModel.didUpdateModel = { [customView] model in
-      customView.configure(model: model)
-    }
-  }
-  
-  func setupActions() {
-    customView.keyboardView.didTapDigit = { [viewModel] digit in
-      viewModel.didTapDigitButton(digit)
+    viewModel.didEnableInput = { [weak self] in
+      self?.customView.isUserInteractionEnabled = true
     }
     
-    customView.keyboardView.didTapBackspace = { [viewModel] in
-      viewModel.didTapBackspaceButton()
+    viewModel.didDisableInput = { [weak self] in
+      self?.customView.isUserInteractionEnabled = false
     }
     
-    customView.keyboardView.didTapBiometry = { [viewModel] in
-      viewModel.didTapBiometryButton()
+    customView.keyboardView.didTapButton = { [weak self] type in
+      switch type {
+      case .digit(let digit):
+        self?.viewModel.didTapDigitButton(digit)
+      case .backspace:
+        self?.viewModel.didTapBackspaceButton()
+      case .biometry:
+        self?.viewModel.didTapBiometryButton()
+      }
     }
   }
-}
-
-private extension Int {
-  static let dotsCount = 4
 }

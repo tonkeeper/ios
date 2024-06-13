@@ -6,7 +6,6 @@ import TKLocalize
 
 final class SettingsSecurityListItemsProvider: SettingsListItemsProvider {
   
-  var didRequireConfirmation: (() async -> Bool)?
   var didTapChangePasscode: (() -> Void)?
   
   private let settingsSecurityController: SettingsSecurityController
@@ -62,12 +61,13 @@ private extension SettingsSecurityListItemsProvider {
         isOn: isOn,
         isEnabled: isEnabled,
         action: { [weak self] isOn in
-          guard let self else { return !isOn }
-          if isOn {
-            let isConfirmed = (await self.didRequireConfirmation?()) ?? false
-            guard isConfirmed else { return !isOn }
-          }
-          return await settingsSecurityController.setIsBiometryEnabled(isOn)
+          return false
+//          guard let self else { return !isOn }
+//          if isOn {
+//            let isConfirmed = (await self.didRequireConfirmation?()) ?? false
+//            guard isConfirmed else { return !isOn }
+//          }
+//          return await settingsSecurityController.setIsBiometryEnabled(isOn)
         }
       )
     }()

@@ -1,12 +1,16 @@
-import Foundation
 import UIKit
+import TKCore
 
-public struct PasscodeAssembly {
+struct PasscodeAssembly {
   private init() {}
-  public static func module(navigationController: UINavigationController, biometryProvider: PasscodeInputBiometryProvider)
-  -> (viewController: PasscodeViewController, output: PasscodeModuleOutput) {
-    let viewModel = PasscodeViewModelImplementation(biometryProvider: biometryProvider)
-    let viewController = PasscodeViewController(viewModel: viewModel, passcodeNavigationController: navigationController)
-    return (viewController, viewModel)
+  public static func module(navigationController: UINavigationController,
+                            isBiometryTurnedOn: Bool)
+  -> MVVMModule<PasscodeViewController, PasscodeModuleOutput, PasscodeModuleInput> {
+    let viewModel = PasscodeViewModelImplementation(isBiometryTurnedOn: isBiometryTurnedOn)
+    let viewController = PasscodeViewController(
+      viewModel: viewModel,
+      inputNavigationController: navigationController
+    )
+    return MVVMModule(view: viewController, output: viewModel, input: viewModel)
   }
 }
