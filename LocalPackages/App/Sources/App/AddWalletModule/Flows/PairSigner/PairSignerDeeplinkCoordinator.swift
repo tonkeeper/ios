@@ -7,6 +7,7 @@ import TonSwift
 
 public final class PairSignerDeeplinkCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
+  public var didPrepareToPresent: (() -> Void)?
   public var didCancel: (() -> Void)?
   public var didPaired: (() -> Void)?
   
@@ -38,6 +39,10 @@ public final class PairSignerDeeplinkCoordinator: RouterCoordinator<NavigationCo
 private extension PairSignerDeeplinkCoordinator {
   func openImport() {
     let coordinator = publicKeyImportCoordinatorProvider(router, publicKey, name)
+    
+    coordinator.didPrepareForPresent = { [weak self] in
+      self?.didPrepareToPresent?()
+    }
     
     coordinator.didCancel = { [weak self, weak coordinator] in
       guard let coordinator else { return }
