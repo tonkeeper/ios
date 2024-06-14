@@ -134,50 +134,30 @@ private extension WalletTransferSignCoordinator {
       }
       coreAssembly.urlOpener().open(url: url)
     } else {
+      let module = SignerSignAssembly.module(
+        url: url,
+        wallet: wallet,
+        assembly: self.keeperCoreMainAssembly,
+        coreAssembly: self.coreAssembly
+      )
+      let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
       
+      bottomSheetViewController.didClose = { [weak self, weak bottomSheetViewController] isInteractivly in
+        guard isInteractivly else { return }
+        bottomSheetViewController?.dismiss(completion: {
+          self?.didCancel?()
+          return
+        })
+      }
+      
+      module.output.didScanSignedTransaction = { [weak self, weak bottomSheetViewController] model in
+        bottomSheetViewController?.dismiss {
+          self?.didSign?(model.sign)
+        }
+      }
+      
+      bottomSheetViewController.present(fromViewController: router.rootViewController)
     }
-            //    if self.coreAssembly.urlOpener().canOpen(url: url) {
-//      self.externalSignHandler = { data in
-//        continuation.resume(returning: data)
-//      }
-//      self.coreAssembly.urlOpener().open(url: url)
-//    } else {
-    
-    //
-    //  func handleExternalSign(url: URL, wallet: Wallet, fromViewController: UIViewController) async throws -> Data? {
-    //    return try await withCheckedThrowingContinuation { continuation in
-    //      DispatchQueue.main.async {
-//            if self.coreAssembly.urlOpener().canOpen(url: url) {
-//              self.externalSignHandler = { data in
-//                continuation.resume(returning: data)
-//              }
-//              self.coreAssembly.urlOpener().open(url: url)
-//            } else {
-    //          let module = SignerSignAssembly.module(
-    //            url: url,
-    //            wallet: wallet,
-    //            assembly: self.keeperCoreMainAssembly,
-    //            coreAssembly: self.coreAssembly
-    //          )
-    //          let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    //
-    //          bottomSheetViewController.didClose = { isInteractivly in
-    //            guard isInteractivly else { return }
-    //            continuation.resume(returning: nil)
-    //          }
-    //
-    //          module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
-    //            bottomSheetViewController?.dismiss(completion: {
-    //              continuation.resume(returning: model.boc)
-    //            })
-    //          }
-    //
-    //          bottomSheetViewController.present(fromViewController: fromViewController)
-    //        }
-    //      }
-    //    }
-    //  }
-
   }
   
   func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) -> URL? {
