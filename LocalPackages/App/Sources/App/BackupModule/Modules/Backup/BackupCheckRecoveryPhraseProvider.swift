@@ -15,13 +15,9 @@ struct BackupCheckRecoveryPhraseProvider: TKCheckRecoveryPhraseProvider {
     "Done"
   }
   
-  var phrase: [String] {
-    recoveryPhraseController.getRecoveryPhrase()
-  }
+  let phrase: [String]
   
-  private let recoveryPhraseController: RecoveryPhraseController
-  
-  init(recoveryPhraseController: RecoveryPhraseController) {
-    self.recoveryPhraseController = recoveryPhraseController
+  init(phrase: [String]) {
+    self.phrase = phrase
   }
 }
