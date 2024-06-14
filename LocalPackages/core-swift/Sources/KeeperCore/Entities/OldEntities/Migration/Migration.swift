@@ -47,6 +47,7 @@ public struct KeeperInfoMigration {
       }
       
       let wallet = Wallet(
+        id: UUID().uuidString,
         identity: WalletIdentity(
           network: .mainnet,
           kind: walletKind

@@ -35,7 +35,7 @@ public final class WalletListController {
   
   public struct ItemModel {
     public let id: String
-    public let walletModel: WalletModel
+    public let wallet: Wallet
     public let totalBalance: String
   }
   
@@ -108,7 +108,9 @@ private extension WalletListController {
   func setInitialState() async {
     let wallets = configurator.getWallets()
     let selectedWallet = configurator.getSelectedWallet()
-    let models = wallets.map { ItemModel(id: $0.id, walletModel: $0.model, totalBalance: "-") }
+    let models = wallets.map {
+      ItemModel(id: $0.id, wallet: $0, totalBalance: "-")
+    }
     
     await state.setWallets(wallets)
     await state.setSelectedWallet(selectedWallet)
@@ -158,11 +160,19 @@ private extension WalletListController {
           walletTotalBalanceState.totalBalance,
           currency: currency
         )
-        let model = ItemModel(id: wallet.id, walletModel: wallet.model, totalBalance: balance)
+        let model = ItemModel(
+          id: wallet.id,
+          wallet: wallet,
+          totalBalance: balance
+        )
         modelsWithBalance.append(model)
 
       } else {
-        let model = ItemModel(id: wallet.id, walletModel: wallet.model, totalBalance: "-")
+        let model = ItemModel(
+          id: wallet.id,
+          wallet: wallet,
+          totalBalance: "-"
+        )
         modelsWithBalance.append(model)
       }
     }

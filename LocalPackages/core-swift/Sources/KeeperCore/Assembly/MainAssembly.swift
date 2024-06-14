@@ -101,9 +101,9 @@ public final class MainAssembly {
     )
   }
   
-  public func walletSelectWalletLisController(selectedWallet: Wallet, 
-                                              didSelectWallet: ((Wallet) -> Void)?) -> WalletListController {
-    let configurator = WalletSelectWalletListControllerConfigurator(
+  public func tonConnectWalletSelectWalletLisController(selectedWallet: Wallet,
+                                                        didSelectWallet: ((Wallet) -> Void)?) -> WalletListController {
+    let configurator = TonConnectWalletSelectWalletListControllerConfigurator(
       selectedWallet: selectedWallet,
       walletsStore: walletAssembly.walletStore
     )

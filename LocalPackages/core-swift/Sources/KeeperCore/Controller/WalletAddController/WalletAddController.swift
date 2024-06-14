@@ -23,6 +23,7 @@ public final class WalletAddController {
       kind: .Regular(keyPair.publicKey, .v4R2)
     )
     let wallet = Wallet(
+      id: UUID().uuidString,
       identity: walletIdentity,
       metaData: metaData,
       setupSettings: WalletSetupSettings(backupDate: nil)
@@ -62,6 +63,7 @@ public final class WalletAddController {
       )
       
       return Wallet(
+        id: UUID().uuidString,
         identity: walletIdentity,
         metaData: revisionMetaData,
         setupSettings: WalletSetupSettings(backupDate: Date()))
@@ -79,6 +81,7 @@ public final class WalletAddController {
   public func importWatchOnlyWallet(resolvableAddress: ResolvableAddress,
                                     metaData: WalletMetaData) throws {
     let wallet = Wallet(
+      id: UUID().uuidString,
       identity: WalletIdentity(network: .mainnet, kind: .Watchonly(resolvableAddress)),
       metaData: metaData,
       setupSettings: WalletSetupSettings(backupDate: nil)
@@ -106,6 +109,7 @@ public final class WalletAddController {
       )
       
       return Wallet(
+        id: UUID().uuidString,
         identity: walletIdentity,
         metaData: revisionMetaData,
         setupSettings: WalletSetupSettings(backupDate: Date()))

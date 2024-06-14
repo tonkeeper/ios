@@ -91,7 +91,7 @@ private extension SettingsRootListItemsProvider {
     if settingsController.hasSecurity() {
       securitySectionItems.append(setupSecurityItem())
     }
-    switch settingsController.activeWallet().model.walletType {
+    switch settingsController.activeWallet().kind {
     case .regular:
       securitySectionItems.append(setupBackupItem())
     default: break
@@ -123,8 +123,8 @@ private extension SettingsRootListItemsProvider {
     ))
     
     var logoutSectionItems = [AnyHashable]()
-    switch settingsController.activeWallet().model.walletType {
-    case .watchOnly:
+    switch settingsController.activeWallet().kind {
+    case .watchonly:
       logoutSectionItems.append(setupDeleteWatchOnlyAccount())
     default:
       logoutSectionItems.append(setupDeleteAccountItem())
@@ -141,12 +141,12 @@ private extension SettingsRootListItemsProvider {
   }
   
   func setupWalletSection() -> SettingsListSection {
-    let walletModel = settingsController.activeWalletModel()
+    let wallet = settingsController.activeWallet()
     let cellContentModel = WalletsListWalletCellContentView.Model(
-      emoji: walletModel.emoji,
-      backgroundColor: walletModel.tintColor.uiColor,
-      walletName: walletModel.label,
-      walletTag: walletModel.tag,
+      emoji: wallet.emoji,
+      backgroundColor: wallet.tintColor.uiColor,
+      walletName: wallet.label,
+      walletTag: wallet.tag,
       balance: TKLocales.Settings.Items.setup_wallet_description
     )
     

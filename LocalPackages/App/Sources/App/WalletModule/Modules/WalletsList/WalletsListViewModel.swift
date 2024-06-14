@@ -122,34 +122,11 @@ private extension WalletsListViewModelImplementation {
   
   func createListItem(item: WalletListController.ItemModel,
                       isHighlightable: Bool) -> TKUIListItemCell.Configuration {
-    let tagModel: TKUITagView.Configuration?
-    switch (item.walletModel.walletType, item.walletModel.isTestnet) {
-    case (.regular, false):
-      tagModel = nil
-    case (.regular, true):
-      tagModel = TKUITagView.Configuration(
-        text: "TESTNET",
-        textColor: .Text.secondary,
-        backgroundColor: .Background.contentTint
-      )
-    case (.watchOnly, _):
-      tagModel = TKUITagView.Configuration(
-        text: TKLocales.WalletTags.watch_only,
-        textColor: .Text.secondary,
-        backgroundColor: .Background.contentTint
-      )
-    case (.external, _):
-      tagModel = TKUITagView.Configuration(
-        text: "SIGNER",
-        textColor: .Text.secondary,
-        backgroundColor: .Background.contentTint
-      )
-    }
 
     let contentConfiguration = TKUIListItemContentView.Configuration(
       leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-        title: item.walletModel.label.withTextStyle(.label1, color: .Text.primary, alignment: .left),
-        tagViewModel: tagModel,
+        title: item.wallet.label.withTextStyle(.label1, color: .Text.primary, alignment: .left),
+        tagViewModel: item.wallet.listTagConfiguration(),
         subtitle: item.totalBalance.withTextStyle(.body2, color: .Text.secondary, alignment: .left),
         description: nil
       ),
@@ -159,8 +136,8 @@ private extension WalletsListViewModelImplementation {
     let iconConfiguration = TKUIListItemIconView.Configuration(
       iconConfiguration: .emoji(
         TKUIListItemEmojiIconView.Configuration(
-          emoji: item.walletModel.emoji,
-          backgroundColor: item.walletModel.tintColor.uiColor
+          emoji: item.wallet.emoji,
+          backgroundColor: item.wallet.tintColor.uiColor
         )
       ),
       alignment: .center

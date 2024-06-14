@@ -250,11 +250,7 @@ private extension SendController {
     case .token(let token, _):
       fromWallets = walletsStore.wallets
         .filter {
-          switch $0.model.walletType {
-          case .regular: return true
-          case .watchOnly: return false
-          case .external: return true
-          }
+          $0.isSendAvailable
         }
         .filter { wallet in
         switch token {

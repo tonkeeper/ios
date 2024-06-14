@@ -35,7 +35,7 @@ final class WalletStoreWalletListControllerConfigurator: WalletListControllerCon
   }
   
   func getSelectedWalletIndex() -> Int? {
-    walletsStore.wallets.firstIndex(where: { $0.identity == walletsStore.activeWallet.identity })
+    walletsStore.wallets.firstIndex(where: { $0.id == walletsStore.activeWallet.id })
   }
   
   func selectWallet(at index: Int) {
@@ -76,7 +76,7 @@ final class WalletStoreWalletListControllerConfigurator: WalletListControllerCon
   }
 }
 
-final class WalletSelectWalletListControllerConfigurator: WalletListControllerConfigurator {
+final class TonConnectWalletSelectWalletListControllerConfigurator: WalletListControllerConfigurator {
   
   var didSelectWallet: ((Wallet) -> Void)?
   
@@ -88,11 +88,11 @@ final class WalletSelectWalletListControllerConfigurator: WalletListControllerCo
   }
   
   func getWallets() -> [Wallet] {
-    walletsStore.wallets.filter { $0.isRegular || $0.isTestnet }
+    walletsStore.wallets.filter { $0.isTonconnectAvailable }
   }
   
   func getSelectedWalletIndex() -> Int? {
-    walletsStore.wallets.firstIndex(where: { $0.identity == selectedWallet.identity })
+    walletsStore.wallets.firstIndex(where: { $0.id == selectedWallet.id })
   }
   
   func selectWallet(at index: Int) {

@@ -36,7 +36,7 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
   
   func viewDidLoad() {
     receiveController.didUpdateModel = { [weak self] model in
-      self?.createModel(model: model)
+      self?.model = model
     }
     
     receiveController.createModel()
@@ -55,7 +55,17 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
   }
   
   // MARK: - Image Loading
+  
   private let imageLoader = ImageLoader()
+  
+  // MARK: - State
+  
+  private var model: ReceiveController.Model? {
+    didSet {
+      guard let model else { return }
+      didUpdateModel?(createModel(model: model))
+    }
+  }
 
   // MARK: - Dependencies
   
@@ -70,7 +80,7 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
 }
 
 private extension ReceiveViewModelImplementation {
-  func createModel(model: KeeperCore.ReceiveController.Model) {
+  func createModel(model: KeeperCore.ReceiveController.Model) -> ReceiveView.Model {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
       title: TKLocales.Receive.title(model.tokenName),
       bottomDescription: TKLocales.Receive.description(model.descriptionTokenName)
@@ -86,7 +96,7 @@ private extension ReceiveViewModelImplementation {
       ),
       copyButtonAction: {
         [weak self] in
-        self?.copyButtonAction(string: model.address)
+        self?.copyButtonAction(wallet: model.wallet)
       },
       shareButtonConfiguration: TKButton.Configuration(
         content: TKButton.Configuration.Content(icon: .TKUIKit.Icons.Size16.share),
@@ -96,7 +106,7 @@ private extension ReceiveViewModelImplementation {
         backgroundColors: [.normal: .Button.secondaryBackground, .highlighted: .Button.secondaryBackgroundHighlighted],
         cornerRadius: 24,
         action: { [weak self] in
-          self?.didTapShare?(model.address)
+          self?.didTapShare?(try? model.wallet.friendlyAddress.toString())
         }
       )
     )
@@ -111,55 +121,23 @@ private extension ReceiveViewModelImplementation {
       }))
     }
     
-    let tagModel: TKUITagView.Configuration?
-    switch (model.walletModel.walletType, model.walletModel.isTestnet) {
-    case (.regular, false):
-      tagModel = nil
-    case (.regular, true):
-      tagModel = TKUITagView.Configuration(
-        text: "TESTNET",
-        textColor: .black,
-        backgroundColor: .Accent.orange
-      )
-    case (.watchOnly, _):
-      tagModel = TKUITagView.Configuration(
-        text: TKLocales.WalletTags.watch_only,
-        textColor: .black,
-        backgroundColor: .Accent.orange
-      )
-    case (.external, _):
-      tagModel = TKUITagView.Configuration(
-        text: "SIGNER",
-        textColor: .Accent.purple,
-        backgroundColor: .Accent.purple.withAlphaComponent(0.48)
-      )
-    }
-    
     let receiveModel = ReceiveView.Model(
       titleDescriptionModel: titleDescriptionModel,
       buttonsModel: buttonsModel,
-      address: model.address,
+      address: try? model.wallet.friendlyAddress.toString(),
       addressButtonAction: { [weak self] in
-        self?.copyButtonAction(string: model.address)
+        self?.copyButtonAction(wallet: model.wallet)
       },
       image: image,
-      tag: tagModel
+      tag: model.wallet.receiveTagConfiguration()
     )
     
-    didUpdateModel?(receiveModel)
+    return receiveModel
   }
   
-  func copyButtonAction(string: String?) {
-    didTapCopy?(string)
-    var configuration = ToastPresenter.Configuration.copied
-    switch receiveController.wallet.model.walletType {
-    case .regular:
-      configuration.backgroundColor = .Background.contentTint
-    case .external:
-      configuration.backgroundColor = .Accent.purple
-    case .watchOnly:
-      configuration.backgroundColor = .Accent.orange
-    }
-    showToast?(configuration)
+  func copyButtonAction(wallet: Wallet) {
+    guard let address = try? wallet.friendlyAddress.toString() else { return }
+    didTapCopy?(address)
+    showToast?(wallet.copyToastConfiguration())
   }
 }

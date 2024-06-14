@@ -40,11 +40,6 @@ public final class SettingsController {
     walletsStore.activeWallet
   }
   
-  public func activeWalletModel() -> WalletModel {
-    let wallet = walletsStore.activeWallet
-    return wallet.model
-  }
-  
   public func activeCurrency() async -> Currency {
     await currencyStore.getActiveCurrency()
   }

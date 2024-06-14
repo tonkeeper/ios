@@ -84,10 +84,11 @@ final class TonConnectServiceImplementation: TonConnectService {
   func buildReconnectConnectEventSuccessResponse(
     wallet: Wallet,
     manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess {
-      guard wallet.isRegular else { throw
-        TonConnectServiceError.unsupportedWalletKind(
-          walletKind: wallet.identity.kind
-        )
+      guard wallet.isTonconnectAvailable else {
+        throw
+          TonConnectServiceError.unsupportedWalletKind(
+            walletKind: wallet.identity.kind
+          )
       }
       let successResponse = try TonConnectResponseBuilder.buildReconnectConnectEventSuccessResponse(
         wallet: wallet,
@@ -101,10 +102,11 @@ final class TonConnectServiceImplementation: TonConnectService {
     passcode: String,
     parameters: TonConnectParameters,
     manifest: TonConnectManifest) async throws -> TonConnect.ConnectEventSuccess {
-      guard wallet.isRegular else { throw
-        TonConnectServiceError.unsupportedWalletKind(
-          walletKind: wallet.identity.kind
-        )
+      guard wallet.isTonconnectAvailable else {
+        throw
+          TonConnectServiceError.unsupportedWalletKind(
+            walletKind: wallet.identity.kind
+          )
       }
       let mnemonic = try await mnemonicsRepository.getMnemonic(wallet: wallet, password: passcode)
       let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)

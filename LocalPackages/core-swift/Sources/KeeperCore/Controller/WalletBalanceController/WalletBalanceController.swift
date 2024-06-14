@@ -27,7 +27,7 @@ public final class WalletBalanceController {
     public let totalBalance: String
     public let stateDate: String?
     public let backgroundUpdateState: BackgroundUpdateState
-    public let walletModel: WalletModel
+    public let wallet: Wallet
     public let shortAddress: String?
     public let fullAddress: String?
   }
@@ -238,7 +238,7 @@ private extension WalletBalanceController {
       totalBalance: formattedTotalBalance,
       stateDate: stateDate,
       backgroundUpdateState: await state.backgroundUpdateState,
-      walletModel: wallet.model,
+      wallet: wallet,
       shortAddress: try? wallet.friendlyAddress.toShort(),
       fullAddress: try? wallet.friendlyAddress.toString()
     )
@@ -265,7 +265,7 @@ private extension WalletBalanceController {
   }
   
   func getSetupModel(wallet: Wallet) async -> WalletBalanceSetupModel? {
-    guard wallet.isRegular else { return nil }
+    guard wallet.kind == .regular else { return nil }
     
     let didBackup = wallet.setupSettings.backupDate != nil
     let didFinishSetup = await setupStore.isSetupFinished

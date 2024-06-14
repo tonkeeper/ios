@@ -4,7 +4,7 @@ import TonSwift
 
 public final class WalletMainController {
   private var didUpdateActiveWallet: ((Wallet) -> Void)?
-  private var didUpdateWalletMetaData: ((WalletModel) -> Void)?
+  private var didUpdateWalletMetaData: ((Wallet) -> Void)?
   
   private let walletsStore: WalletsStore
   private let walletBalanceLoader: WalletBalanceLoader
@@ -31,7 +31,7 @@ public final class WalletMainController {
   }
   
   public func start(didUpdateActiveWallet: ((Wallet) -> Void)?,
-                    didUpdateWalletMetaData: ((WalletModel) -> Void)?) async {
+                    didUpdateWalletMetaData: ((Wallet) -> Void)?) async {
     self.didUpdateActiveWallet = didUpdateActiveWallet
     self.didUpdateWalletMetaData = didUpdateWalletMetaData
     await startObservations()
@@ -39,7 +39,7 @@ public final class WalletMainController {
     
     let activeWallet = walletsStore.activeWallet
     didUpdateActiveWallet?(activeWallet)
-    didUpdateWalletMetaData?(activeWallet.model)
+    didUpdateWalletMetaData?(activeWallet)
   }
 }
 
@@ -83,11 +83,11 @@ private extension WalletMainController {
   func didUpdateActiveWallet() async {
     let wallet = walletsStore.activeWallet
     didUpdateActiveWallet?(wallet)
-    didUpdateWalletMetaData?(wallet.model)
+    didUpdateWalletMetaData?(wallet)
   }
   
   func didUpdateWalletMetaData(wallet: Wallet) async {
-    didUpdateWalletMetaData?(wallet.model)
+    didUpdateWalletMetaData?(wallet)
   }
   
   func didUpdateBackgroundUpdateState(_ backgroundUpdateState: BackgroundUpdateState) async {

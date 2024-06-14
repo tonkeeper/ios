@@ -204,80 +204,26 @@ private extension WalletBalanceViewModelImplementation {
         textColor: .Text.secondary,
         contentAlpha: [.normal: 1, .highlighted: 0.48],
         action: { [weak self] in
-          self?.didTapCopy(
-            walletAddress: model.fullAddress, 
-            walletType: model.walletModel.walletType
-          )
+          self?.didTapCopy(wallet: model.wallet)
         }
       ),
       connectionStatusModel: createConnectionStatusModel(backgroundUpdateState: model.backgroundUpdateState),
-      tagConfiguration: createTagConfiguration(
-        walletType: model.walletModel.walletType,
-        isTestnet: model.walletModel.isTestnet
-      ),
+      tagConfiguration: model.wallet.balanceTagConfiguration(),
       stateDate: stateDate
     )
     
     return WalletBalanceHeaderView.Model(
       balanceModel: balanceModel,
-      buttonsViewModel: createHeaderButtonsModel(walletType: model.walletModel.walletType)
+      buttonsViewModel: createHeaderButtonsModel(wallet: model.wallet)
     )
   }
   
-  func createTagConfiguration(walletType: WalletModel.WalletType, isTestnet: Bool) -> TKUITagView.Configuration? {
-    switch (walletType, isTestnet) {
-    case (.regular, false):
-      return nil
-    case (.regular, true):
-      return TKUITagView.Configuration(
-        text: "TESTNET",
-        textColor: .Accent.orange,
-        backgroundColor: UIColor.init(
-          hex: "332d24"
-        )
-      )
-    case (.watchOnly, _):
-      return TKUITagView.Configuration(
-        text: TKLocales.WalletTags.watch_only,
-        textColor: .Accent.orange,
-        backgroundColor: UIColor.init(
-          hex: "332d24"
-        )
-      )
-    case (.external, _):
-      return TKUITagView.Configuration(
-        text: "SIGNER",
-        textColor: .Accent.purple,
-        backgroundColor: .Accent.purple.withAlphaComponent(0.16)
-      )
-    }
-  }
-
-  func didTapCopy(walletAddress: String?,
-                  walletType: WalletModel.WalletType) {
+  func didTapCopy(wallet: Wallet) {
+    guard let address = wallet.addressToCopy else { return }
     UINotificationFeedbackGenerator().notificationOccurred(.warning)
-    UIPasteboard.general.string = walletAddress
-    
-    let backgroundColor: UIColor
-    let foregroundColor: UIColor
-    switch walletType {
-    case .regular:
-      backgroundColor = .Background.contentTint
-      foregroundColor = .Text.primary
-    case .watchOnly:
-      backgroundColor = .Accent.orange
-      foregroundColor = .Text.primary
-    case .external:
-      backgroundColor = .Accent.purple
-      foregroundColor = .Text.primary
-    }
-    let configuration = ToastPresenter.Configuration(
-      title: TKLocales.Actions.copied,
-      backgroundColor: backgroundColor,
-      foregroundColor: foregroundColor,
-      dismissRule: .default
-    )
-    didCopy?(configuration)
+    UIPasteboard.general.string = address
+
+    didCopy?(wallet.copyToastConfiguration())
   }
 
   func createConnectionStatusModel(backgroundUpdateState: KeeperCore.BackgroundUpdateState) -> ConnectionStatusView.Model? {
@@ -305,7 +251,7 @@ private extension WalletBalanceViewModelImplementation {
     }
   }
   
-  func createHeaderButtonsModel(walletType: WalletModel.WalletType) -> WalletBalanceHeaderButtonsView.Model {
+  func createHeaderButtonsModel(wallet: Wallet) -> WalletBalanceHeaderButtonsView.Model {
     let isSendEnable: Bool
     let isReceiveEnable: Bool
     let isScanEnable: Bool
@@ -313,7 +259,7 @@ private extension WalletBalanceViewModelImplementation {
     let isBuyEnable: Bool
     let isStakeEnable: Bool
     
-    switch walletType {
+    switch wallet.kind {
     case .regular:
       isSendEnable = true
       isReceiveEnable = true
@@ -321,14 +267,28 @@ private extension WalletBalanceViewModelImplementation {
       isSwapEnable = true
       isBuyEnable = true
       isStakeEnable = false
-    case .watchOnly:
+    case .lockup:
+      isSendEnable = false
+      isReceiveEnable = false
+      isScanEnable = false
+      isSwapEnable = false
+      isBuyEnable = false
+      isStakeEnable = false
+    case .watchonly:
       isSendEnable = false
       isReceiveEnable = true
       isScanEnable = false
       isSwapEnable = false
       isBuyEnable = true
       isStakeEnable = false
-    case .external:
+    case .signer:
+      isSendEnable = true
+      isReceiveEnable = true
+      isScanEnable = true
+      isSwapEnable = true
+      isBuyEnable = true
+      isStakeEnable = false
+    case .ledger:
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true
