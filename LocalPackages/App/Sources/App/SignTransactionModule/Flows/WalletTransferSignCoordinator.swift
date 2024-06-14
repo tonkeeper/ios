@@ -78,8 +78,20 @@ private extension WalletTransferSignCoordinator {
     switch wallet.identity.kind {
     case .Regular:
       handleRegularSign()
-    case .External(let publicKey, let walletContractVersion):
-      handleExternalSign(
+    case .SignerDevice(let publicKey, let walletContractVersion):
+      handleSignerSignOnDevice(
+        transfer: walletTransfer,
+        publicKey: publicKey,
+        revision: walletContractVersion
+      )
+    case .Signer(let publicKey, let walletContractVersion):
+      handleSignerSign(
+        transfer: walletTransfer,
+        publicKey: publicKey,
+        revision: walletContractVersion
+      )
+    case .Ledger(let publicKey, let walletContractVersion):
+      handleLedgerSign(
         transfer: walletTransfer,
         publicKey: publicKey,
         revision: walletContractVersion
@@ -118,47 +130,57 @@ private extension WalletTransferSignCoordinator {
     )
   }
   
-  func handleExternalSign(transfer: WalletTransfer,
-                          publicKey: TonSwift.PublicKey,
-                          revision: WalletContractVersion) {
+  func handleLedgerSign(transfer: WalletTransfer,
+                        publicKey: TonSwift.PublicKey,
+                        revision: WalletContractVersion) {
+    
+  }
+  
+  func handleSignerSign(transfer: WalletTransfer,
+                        publicKey: TonSwift.PublicKey,
+                        revision: WalletContractVersion) {
     guard let url = try? createTonSignURL(transfer: transfer.signingMessage.endCell().toBoc(),
                                           publicKey: publicKey,
                                           revision: revision) else { return }
+    let module = SignerSignAssembly.module(
+      url: url,
+      wallet: wallet,
+      assembly: self.keeperCoreMainAssembly,
+      coreAssembly: self.coreAssembly
+    )
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
-    if coreAssembly.urlOpener().canOpen(url: url) {
-      externalSignHandler = { [weak self] data in
-        guard let data else {
-          self?.didCancel?()
-          return
-        }
-        self?.didSign?(data)
-      }
-      coreAssembly.urlOpener().open(url: url)
-    } else {
-      let module = SignerSignAssembly.module(
-        url: url,
-        wallet: wallet,
-        assembly: self.keeperCoreMainAssembly,
-        coreAssembly: self.coreAssembly
-      )
-      let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-      
-      bottomSheetViewController.didClose = { [weak self, weak bottomSheetViewController] isInteractivly in
-        guard isInteractivly else { return }
-        bottomSheetViewController?.dismiss(completion: {
-          self?.didCancel?()
-          return
-        })
-      }
-      
-      module.output.didScanSignedTransaction = { [weak self, weak bottomSheetViewController] model in
-        bottomSheetViewController?.dismiss {
-          self?.didSign?(model.sign)
-        }
-      }
-      
-      bottomSheetViewController.present(fromViewController: router.rootViewController)
+    bottomSheetViewController.didClose = { [weak self, weak bottomSheetViewController] isInteractivly in
+      guard isInteractivly else { return }
+      bottomSheetViewController?.dismiss(completion: {
+        self?.didCancel?()
+        return
+      })
     }
+    
+    module.output.didScanSignedTransaction = { [weak self, weak bottomSheetViewController] model in
+      bottomSheetViewController?.dismiss {
+        self?.didSign?(model.sign)
+      }
+    }
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func handleSignerSignOnDevice(transfer: WalletTransfer,
+                                publicKey: TonSwift.PublicKey,
+                                revision: WalletContractVersion) {
+    guard let url = try? createTonSignURL(transfer: transfer.signingMessage.endCell().toBoc(),
+                                          publicKey: publicKey,
+                                          revision: revision) else { return }
+    externalSignHandler = { [weak self] data in
+      guard let data else {
+        self?.didCancel?()
+        return
+      }
+      self?.didSign?(data)
+    }
+    coreAssembly.urlOpener().open(url: url)
   }
   
   func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) -> URL? {

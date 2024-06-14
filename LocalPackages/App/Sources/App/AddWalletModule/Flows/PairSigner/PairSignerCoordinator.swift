@@ -35,7 +35,7 @@ public final class PairSignerCoordinator: RouterCoordinator<NavigationController
     guard let signerDeeplink = deeplink as? TonkeeperDeeplink.SignerDeeplink else { return false }
     switch signerDeeplink {
     case let .link(publicKey, name):
-      openImportCoordinator(publicKey: publicKey, name: name)
+      openImportCoordinator(publicKey: publicKey, name: name, isDevice: true)
       return true
     }
   }
@@ -49,7 +49,7 @@ private extension PairSignerCoordinator {
     )
     
     module.output.didScanLinkQRCode = { [weak self] publicKey, name in
-      self?.openImportCoordinator(publicKey: publicKey, name: name)
+      self?.openImportCoordinator(publicKey: publicKey, name: name, isDevice: false)
     }
     
     if router.rootViewController.viewControllers.isEmpty {
@@ -63,7 +63,7 @@ private extension PairSignerCoordinator {
     router.push(viewController: module.view, animated: false)
   }
   
-  func openImportCoordinator(publicKey: TonSwift.PublicKey, name: String) {
+  func openImportCoordinator(publicKey: TonSwift.PublicKey, name: String, isDevice: Bool) {
     let coordinator = publicKeyImportCoordinatorProvider(router, publicKey, name)
     
     coordinator.didCancel = { [weak self, weak coordinator] in
@@ -78,7 +78,8 @@ private extension PairSignerCoordinator {
           try await self.importWallet(
             publicKey: publicKey,
             revisions: revisions,
-            model: model)
+            model: model, 
+            isDevice: isDevice)
           await MainActor.run {
             self.didPaired?()
           }
@@ -94,16 +95,17 @@ private extension PairSignerCoordinator {
   
   func importWallet(publicKey: TonSwift.PublicKey,
                     revisions: [WalletContractVersion],
-                    model: CustomizeWalletModel) async throws {
+                    model: CustomizeWalletModel,
+                    isDevice: Bool) async throws {
     let addController = walletUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
       emoji: model.emoji)
-    try addController.importExternalWallet(
-      publicKey: publicKey,
-      revisions: revisions,
-      metaData: metaData
+    try addController.importSignerWallet(publicKey: publicKey,
+                                         revisions: revisions,
+                                         metaData: metaData,
+                                         isDevice: isDevice
     )
   }
 }

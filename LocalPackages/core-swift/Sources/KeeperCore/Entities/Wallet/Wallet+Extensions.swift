@@ -22,8 +22,12 @@ public extension Wallet {
       return .lockup
     case .Watchonly:
       return .watchonly
-    case .External:
+    case .Signer:
       return .signer
+    case .SignerDevice:
+      return .signer
+    case .Ledger:
+      return .ledger
     }
   }
   
@@ -43,7 +47,11 @@ public extension Wallet {
         return publicKey
       case .Watchonly:
         throw Error.invalidWalletKind
-      case .External(let publicKey, _):
+      case .Signer(let publicKey, _):
+        return publicKey
+      case .SignerDevice(let publicKey, _):
+        return publicKey
+      case .Ledger(let publicKey, _):
         return publicKey
       }
     }
@@ -58,7 +66,11 @@ public extension Wallet {
         throw Error.invalidWalletKind
       case .Watchonly:
         throw Error.invalidWalletKind
-      case .External(_, let contractVersion):
+      case .Signer(_, let contractVersion):
+        return contractVersion
+      case .SignerDevice(_, let contractVersion):
+        return contractVersion
+      case .Ledger(_, let contractVersion):
         return contractVersion
       }
     }
@@ -101,7 +113,9 @@ public extension Wallet {
         case .Domain(_, let address):
           return address
         }
-      case .External:
+      case .Signer, .SignerDevice:
+        return try contract.address()
+      case .Ledger:
         return try contract.address()
       }
     }

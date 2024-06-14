@@ -78,10 +78,9 @@ private extension PairSignerDeeplinkCoordinator {
       label: model.name,
       tintColor: model.tintColor,
       emoji: model.emoji)
-    try addController.importExternalWallet(
-      publicKey: publicKey,
-      revisions: revisions,
-      metaData: metaData
+    try addController.importSignerWallet(publicKey: publicKey,
+                                         revisions: revisions,
+                                         metaData: metaData, isDevice: true
     )
   }
 }

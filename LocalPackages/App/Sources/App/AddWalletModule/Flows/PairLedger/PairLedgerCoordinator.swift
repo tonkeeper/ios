@@ -91,15 +91,15 @@ private extension PairLedgerCoordinator {
   func importWallet(publicKey: TonSwift.PublicKey,
                     revisions: [WalletContractVersion],
                     model: CustomizeWalletModel) async throws {
-//    let addController = walletUpdateAssembly.walletAddController()
-//    let metaData = WalletMetaData(
-//      label: model.name,
-//      tintColor: model.tintColor,
-//      emoji: model.emoji)
-//    try addController.importExternalWallet(
-//      publicKey: publicKey,
-//      revisions: revisions,
-//      metaData: metaData
-//    )
+    let addController = walletUpdateAssembly.walletAddController()
+    let metaData = WalletMetaData(
+      label: model.name,
+      tintColor: model.tintColor,
+      emoji: model.emoji)
+    try addController.importLedgerWallet(
+      publicKey: publicKey,
+      revisions: revisions,
+      metaData: metaData
+    )
   }
 }

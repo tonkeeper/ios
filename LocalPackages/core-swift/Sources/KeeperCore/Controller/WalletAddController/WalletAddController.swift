@@ -90,11 +90,12 @@ public final class WalletAddController {
     try walletsStoreUpdate.makeWalletActive(wallet)
   }
   
-  public func importExternalWallet(publicKey: TonSwift.PublicKey, 
-                                   revisions: [WalletContractVersion],
-                                   metaData: WalletMetaData) throws {
+  public func importSignerWallet(publicKey: TonSwift.PublicKey,
+                                 revisions: [WalletContractVersion],
+                                 metaData: WalletMetaData,
+                                 isDevice: Bool) throws {
     let addPostfix = revisions.count > 1
-
+    
     let wallets = revisions.map { revision in
       let label = addPostfix ? "\(metaData.label) \(revision.rawValue)" : metaData.label
       let revisionMetaData = WalletMetaData(
@@ -103,14 +104,53 @@ public final class WalletAddController {
         emoji: metaData.emoji
       )
       
-      let walletIdentity = WalletIdentity(
+      
+      let identity: WalletIdentity
+      if isDevice {
+        identity = WalletIdentity(
+          network: .mainnet,
+          kind: .SignerDevice(publicKey, revision)
+        )
+      } else {
+        identity = WalletIdentity(
+          network: .mainnet,
+          kind: .Signer(publicKey, revision)
+        )
+      }
+      
+      return Wallet(
+        id: UUID().uuidString,
+        identity: identity,
+        metaData: revisionMetaData,
+        setupSettings: WalletSetupSettings(backupDate: Date()))
+    }
+
+    try walletsStoreUpdate.addWallets(wallets)
+    try walletsStoreUpdate.makeWalletActive(wallets[0])
+  }
+  
+  public func importLedgerWallet(publicKey: TonSwift.PublicKey,
+                                 revisions: [WalletContractVersion],
+                                 metaData: WalletMetaData) throws {
+    let addPostfix = revisions.count > 1
+    
+    let wallets = revisions.map { revision in
+      let label = addPostfix ? "\(metaData.label) \(revision.rawValue)" : metaData.label
+      let revisionMetaData = WalletMetaData(
+        label: label,
+        tintColor: metaData.tintColor,
+        emoji: metaData.emoji
+      )
+      
+      
+      let identity = WalletIdentity(
         network: .mainnet,
-        kind: .External(publicKey, revision)
+        kind: .Ledger(publicKey, revision)
       )
       
       return Wallet(
         id: UUID().uuidString,
-        identity: walletIdentity,
+        identity: identity,
         metaData: revisionMetaData,
         setupSettings: WalletSetupSettings(backupDate: Date()))
     }
