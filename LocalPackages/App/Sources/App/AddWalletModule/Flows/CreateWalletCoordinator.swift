@@ -11,13 +11,16 @@ public final class CreateWalletCoordinator: RouterCoordinator<ViewControllerRout
   public var didCreateWallet: (() -> Void)?
   
   private let walletsUpdateAssembly: WalletsUpdateAssembly
+  private let storesAssembly: StoresAssembly
   private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
   init(router: ViewControllerRouter,
        walletsUpdateAssembly: WalletsUpdateAssembly,
+       storesAssembly: StoresAssembly,
        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.customizeWalletModule = customizeWalletModule
+    self.storesAssembly = storesAssembly
     super.init(router: router)
   }
 
@@ -63,7 +66,8 @@ private extension CreateWalletCoordinator {
     PasscodeInputCoordinator.present(
       parentCoordinator: self,
       parentRouter: self.router,
-      repositoriesAssembly: walletsUpdateAssembly.repositoriesAssembly,
+      mnemonicsRepository: walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: storesAssembly.securityStore,
       onCancel: { [weak self] in
         self?.didCancel?()
       },

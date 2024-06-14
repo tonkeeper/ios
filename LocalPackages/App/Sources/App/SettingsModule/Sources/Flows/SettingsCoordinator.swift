@@ -78,9 +78,9 @@ private extension SettingsCoordinator {
     let addWalletModuleModule = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        storesAssembly: keeperCoreMainAssembly.storesAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
     )
     
@@ -151,12 +151,17 @@ private extension SettingsCoordinator {
   
   func openSecurity() {
     let itemsProvider = SettingsSecurityListItemsProvider(
-      settingsSecurityController: keeperCoreMainAssembly.settingsSecurityController(),
-      biometryAuthentificator: BiometryAuthentificator()
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      biometryProvider: BiometryProvider()
     )
     
     itemsProvider.didTapChangePasscode = { [weak self] in
       self?.openChangePasscode()
+    }
+    
+    itemsProvider.didRequirePasscode = { [weak self] in
+      await self?.getPasscode()
     }
     
     let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
@@ -232,5 +237,14 @@ private extension SettingsCoordinator {
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     })
+  }
+  
+  func getPasscode() async -> String? {
+    return await PasscodeInputCoordinator.getPasscode(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+    )
   }
 }

@@ -29,8 +29,8 @@ struct AddWalletModule {
       importWalletCoordinatorProvider: { router, isTestnet in
         return createImportWalletCoordinator(router: router, isTestnet: isTestnet)
       },
-      importWatchOnlyWalletCoordinatorProvider: { router, passcode in
-        return createImportWatchOnlyWalletCoordinator(router: router, passcode: passcode)
+      importWatchOnlyWalletCoordinatorProvider: { router in
+        return createImportWatchOnlyWalletCoordinator(router: router)
       }, pairSignerCoordinatorProvider: { router in
         return createPairSignerCoordinator(router: router)
       }
@@ -43,6 +43,7 @@ struct AddWalletModule {
     let coordinator = CreateWalletCoordinator(
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      storesAssembly: dependencies.storesAssembly,
       customizeWalletModule: {
         self.createCustomizeWalletModule(
           name: nil,
@@ -59,6 +60,7 @@ struct AddWalletModule {
     let coordinator = ImportWalletCoordinator(
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      storesAssembly: dependencies.storesAssembly,
       isTestnet: isTestnet,
       customizeWalletModule: {
         self.createCustomizeWalletModule(
@@ -133,12 +135,10 @@ struct AddWalletModule {
 }
 
 private extension AddWalletModule {
-  func createImportWatchOnlyWalletCoordinator(router: NavigationControllerRouter, passcode: String?) -> ImportWatchOnlyWalletCoordinator {
+  func createImportWatchOnlyWalletCoordinator(router: NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator {
     let coordinator = ImportWatchOnlyWalletCoordinator(
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
-      passcodeAssembly: dependencies.passcodeAssembly,
-      passcode: passcode,
       customizeWalletModule: { name in
         self.createCustomizeWalletModule(
           name: name,
@@ -156,18 +156,18 @@ private extension AddWalletModule {
 extension AddWalletModule {
   struct Dependencies {
     let walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly
+    let storesAssembly: KeeperCore.StoresAssembly
     let coreAssembly: TKCore.CoreAssembly
     let scannerAssembly: KeeperCore.ScannerAssembly
-    let passcodeAssembly: KeeperCore.PasscodeAssembly
     
     public init(walletsUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
+                storesAssembly: KeeperCore.StoresAssembly,
                 coreAssembly: TKCore.CoreAssembly,
-                scannerAssembly: KeeperCore.ScannerAssembly,
-                passcodeAssembly: KeeperCore.PasscodeAssembly) {
+                scannerAssembly: KeeperCore.ScannerAssembly) {
       self.walletsUpdateAssembly = walletsUpdateAssembly
+      self.storesAssembly = storesAssembly
       self.coreAssembly = coreAssembly
       self.scannerAssembly = scannerAssembly
-      self.passcodeAssembly = passcodeAssembly
     }
   }
 }

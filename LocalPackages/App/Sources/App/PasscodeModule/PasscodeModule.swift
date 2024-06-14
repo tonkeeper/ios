@@ -8,37 +8,6 @@ public struct PasscodeModule {
   init(dependencies: Dependencies) {
     self.dependencies = dependencies
   }
-  
-//  public func createCreatePasscodeCoordinator(router: NavigationControllerRouter) -> CreatePasscodeCoordinator {
-//    let coordinator = CreatePasscodeCoordinator(router: router)
-//    return coordinator
-//  }
-  
-//  public func passcodeConfirmationCoordinator() -> PasscodeConfirmationCoordinator {
-//    let navigationController = TKNavigationController()
-//    navigationController.configureTransparentAppearance()
-//    
-//    let coordinator = PasscodeConfirmationCoordinator(
-//      router: NavigationControllerRouter(
-//        rootViewController: navigationController
-//      ),
-//      passcodeConfirmationController: dependencies.passcodeAssembly.passcodeConfirmationController()
-//    )
-//    return coordinator
-//  }
-  
-//  public func changePasscodeCoordinator() -> ChangePasscodeCoordinator {
-//    let navigationController = TKNavigationController()
-//    navigationController.configureTransparentAppearance()
-//    
-//    let coordinator = ChangePasscodeCoordinator(
-//      router: NavigationControllerRouter(
-//        rootViewController: navigationController
-//      ),
-//      passcodeConfirmationController: dependencies.passcodeAssembly.passcodeConfirmationController()
-//    )
-//    return coordinator
-//  }
 }
 
 extension PasscodeModule {

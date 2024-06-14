@@ -26,7 +26,8 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
     PasscodeInputCoordinator.present(
       parentCoordinator: self,
       parentRouter: router,
-      repositoriesAssembly: keeperCoreMainAssembly.repositoriesAssembly,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
       onCancel: { [weak self] in
         self?.didFinish?()
       },

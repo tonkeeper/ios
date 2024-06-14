@@ -397,9 +397,9 @@ private extension MainCoordinator {
       let coordinator = AddWalletModule(
         dependencies: AddWalletModule.Dependencies(
           walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+          storesAssembly: keeperCoreMainAssembly.storesAssembly,
           coreAssembly: coreAssembly,
-          scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
-          passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+          scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
         )
       ).createPairSignerDeeplinkCoordinator(
         publicKey: publicKey,
@@ -453,9 +453,9 @@ private extension MainCoordinator {
     let module = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        storesAssembly: keeperCoreMainAssembly.storesAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
     )
     
@@ -482,9 +482,9 @@ private extension MainCoordinator {
     let addWalletModuleModule = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        storesAssembly: keeperCoreMainAssembly.storesAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
     )
     

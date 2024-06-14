@@ -14,8 +14,9 @@ public protocol TonConnectService {
   func loadTonConnectConfiguration(with deeplink: TonConnectDeeplink) async throws -> (TonConnectParameters, TonConnectManifest)
   func buildConnectEventSuccessResponse(
     wallet: Wallet,
+    passcode: String,
     parameters: TonConnectParameters,
-    manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess
+    manifest: TonConnectManifest) async throws -> TonConnect.ConnectEventSuccess
   func encryptSuccessResponse(
     _ successResponse: TonConnect.ConnectEventSuccess,
     parameters: TonConnectParameters,
@@ -54,18 +55,18 @@ public protocol TonConnectService {
 final class TonConnectServiceImplementation: TonConnectService {
   private let urlSession: URLSession
   private let apiClient: TonConnectAPI.Client
-  private let mnemonicRepository: WalletMnemonicRepository
+  private let mnemonicsRepository: MnemonicsRepository
   private let tonConnectAppsVault: TonConnectAppsVault
   private let tonConnectRepository: TonConnectRepository
   
   init(urlSession: URLSession,
        apiClient: TonConnectAPI.Client,
-       mnemonicRepository: WalletMnemonicRepository,
+       mnemonicsRepository: MnemonicsRepository,
        tonConnectAppsVault: TonConnectAppsVault,
        tonConnectRepository: TonConnectRepository) {
     self.urlSession = urlSession
     self.apiClient = apiClient
-    self.mnemonicRepository = mnemonicRepository
+    self.mnemonicsRepository = mnemonicsRepository
     self.tonConnectAppsVault = tonConnectAppsVault
     self.tonConnectRepository = tonConnectRepository
   }
@@ -97,14 +98,15 @@ final class TonConnectServiceImplementation: TonConnectService {
   
   func buildConnectEventSuccessResponse(
     wallet: Wallet,
+    passcode: String,
     parameters: TonConnectParameters,
-    manifest: TonConnectManifest) throws -> TonConnect.ConnectEventSuccess {
+    manifest: TonConnectManifest) async throws -> TonConnect.ConnectEventSuccess {
       guard wallet.isRegular else { throw
         TonConnectServiceError.unsupportedWalletKind(
           walletKind: wallet.identity.kind
         )
       }
-      let mnemonic = try mnemonicRepository.getMnemonic(forWallet: wallet)
+      let mnemonic = try await mnemonicsRepository.getMnemonic(wallet: wallet, password: passcode)
       let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
       let privateKey = keyPair.privateKey
       let successResponse = try TonConnectResponseBuilder

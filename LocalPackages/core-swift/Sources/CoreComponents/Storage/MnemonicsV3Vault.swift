@@ -32,7 +32,7 @@ public struct MnemonicsV3Vault {
   
   public func hasMnemonics() -> Bool {
     do {
-      let encryptedMnemonics = try loadEncryptedMnemonics()
+      _ = try loadEncryptedMnemonics()
       return true
     } catch {
       return false
@@ -76,6 +76,7 @@ public struct MnemonicsV3Vault {
   
   public func deleteAll() async throws {
     try keychainVault.deleteItem(getMnemonicsVaultQuery())
+    try deletePassword()
   }
   
   public func changePassword(oldPassword: String,
@@ -99,6 +100,11 @@ public struct MnemonicsV3Vault {
   public func savePassword(_ password: String) throws {
     let query = getPasswordQuery()
     try keychainVault.saveValue(password, to: query)
+  }
+  
+  public func getPassword() throws -> String {
+    let query = getPasswordQuery()
+    return try keychainVault.readValue(query)
   }
   
   public func deletePassword() throws {

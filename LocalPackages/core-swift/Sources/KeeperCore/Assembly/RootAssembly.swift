@@ -49,6 +49,7 @@ public final class RootAssembly {
           TonConnectDeeplinkParser()
         ]),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
+        mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
         buySellMethodsService: servicesAssembly.buySellMethodsService(),
         locationService: servicesAssembly.locationService()
       )
@@ -60,7 +61,8 @@ public final class RootAssembly {
   public func onboardingAssembly() -> OnboardingAssembly {
     OnboardingAssembly(
       walletsUpdateAssembly: walletsUpdateAssembly,
-      passcodeAssembly: passcodeAssembly
+      passcodeAssembly: passcodeAssembly,
+      storesAssembly: storesAssembly
     )
   }
   

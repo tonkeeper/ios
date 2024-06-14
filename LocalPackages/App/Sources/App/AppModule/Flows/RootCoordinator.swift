@@ -98,13 +98,17 @@ private extension RootCoordinator {
     )
     let coordinator = module.createMainCoordinator()
     coordinator.didLogout = { [weak self, weak coordinator] in
-      self?.mainCoordinator = nil
       guard let self, let coordinator else { return }
       Task {
-        await self.rootController.logout()
-        await MainActor.run {
-          self.start(deeplink: nil)
-          self.removeChild(coordinator)
+        do {
+          try await self.rootController.logout()
+          await MainActor.run {
+            self.mainCoordinator = nil
+            self.start(deeplink: nil)
+            self.removeChild(coordinator)
+          }
+        } catch {
+          print("Log: Logout failed")
         }
       }
     }

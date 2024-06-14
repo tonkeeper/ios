@@ -56,7 +56,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   
   var didUpdateSections: (() -> Void)?
   
-  var title: String { TKLocales.Tabs.history }
+  var title: String { TKLocales.Settings.title }
   
   func getSections() async -> [SettingsListSection] {
     await setupSettingsSections()
@@ -83,6 +83,44 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
 
 private extension SettingsRootListItemsProvider {
   func setupSettingsSections() async -> [SettingsListSection] {
+    var sections = [SettingsListSection]()
+    
+    sections.append(setupWalletSection())
+
+    var securitySectionItems = [SettingsCell.Model]()
+    if settingsController.hasSecurity() {
+      securitySectionItems.append(setupSecurityItem())
+    }
+    switch settingsController.activeWallet().model.walletType {
+    case .regular:
+      securitySectionItems.append(setupBackupItem())
+    default: break
+    }
+    
+    if !securitySectionItems.isEmpty {
+      sections.append(SettingsListSection(
+        padding: .sectionPadding,
+        items: securitySectionItems
+      ))
+    }
+    
+    await sections.append(SettingsListSection(
+      padding: .sectionPadding,
+      items: [
+        await setupCurrencyItem(),
+        setupThemeItem(),
+      ]
+    ))
+    
+    sections.append(SettingsListSection(
+      padding: .sectionPadding,
+      items: [
+        setupSupportItem(),
+        setupTonkeeperNewsItem(),
+        setupContactUsItem(),
+        setupRateItem(),
+      ]
+    ))
     
     var logoutSectionItems = [AnyHashable]()
     switch settingsController.activeWallet().model.walletType {
@@ -93,40 +131,13 @@ private extension SettingsRootListItemsProvider {
     }
     logoutSectionItems.append(setupLogoutItem())
     
-    var securitySectionItems = [setupSecurityItem()]
-    switch settingsController.activeWallet().model.walletType {
-    case .regular:
-      securitySectionItems.append(setupBackupItem())
-    default: break
-    }
-    
-    return await [setupWalletSection(),
-     SettingsListSection(
-      padding: .sectionPadding,
-      items: securitySectionItems
-     ),
-     SettingsListSection(
-      padding: .sectionPadding,
-      items: [
-        await setupCurrencyItem(),
-        setupThemeItem(),
-      ]
-     ),
-     SettingsListSection(
-      padding: .sectionPadding,
-      items: [
-        setupSupportItem(),
-        setupTonkeeperNewsItem(),
-        setupContactUsItem(),
-        setupRateItem(),
-      ]
-     ),
-     SettingsListSection(
+    sections.append(SettingsListSection(
       padding: .sectionPadding,
       items:
         logoutSectionItems
-     )
-    ]
+    ))
+    
+    return sections
   }
   
   func setupWalletSection() -> SettingsListSection {

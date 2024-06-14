@@ -14,13 +14,16 @@ final class ImportWalletCoordinator: RouterCoordinator<NavigationControllerRoute
   
   private let isTestnet: Bool
   private let walletsUpdateAssembly: WalletsUpdateAssembly
+  private let storesAssembly: StoresAssembly
   private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
   init(router: NavigationControllerRouter,
        walletsUpdateAssembly: WalletsUpdateAssembly,
+       storesAssembly: StoresAssembly,
        isTestnet: Bool,
        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
     self.walletsUpdateAssembly = walletsUpdateAssembly
+    self.storesAssembly = storesAssembly
     self.isTestnet = isTestnet
     self.customizeWalletModule = customizeWalletModule
     super.init(router: router)
@@ -145,7 +148,8 @@ private extension ImportWalletCoordinator {
     PasscodeInputCoordinator.present(
       parentCoordinator: self,
       parentRouter: self.router,
-      repositoriesAssembly: walletsUpdateAssembly.repositoriesAssembly,
+      mnemonicsRepository: walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: storesAssembly.securityStore,
       onCancel: {},
       onInput: { [weak self] passcode in
         self?.openCustomizeWallet(

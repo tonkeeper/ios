@@ -45,6 +45,10 @@ private extension PasscodeViewController {
       self?.customView.isUserInteractionEnabled = false
     }
     
+    viewModel.didUpdateBiometry = { [weak self] in
+      self?.customView.keyboardView.biometry = $0
+    }
+    
     customView.keyboardView.didTapButton = { [weak self] type in
       switch type {
       case .digit(let digit):

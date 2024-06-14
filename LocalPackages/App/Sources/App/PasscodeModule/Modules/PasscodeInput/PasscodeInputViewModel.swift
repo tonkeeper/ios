@@ -16,7 +16,7 @@ protocol PasscodeInputModuleOutput: AnyObject {
 protocol PasscodeInputModuleInput: AnyObject {
   func didTapDigit(_ digit: Int)
   func didTapBackspace()
-  func didTapBiometry()
+  func didSetInput(_ input: String)
 }
 
 protocol PasscodeInputViewModel: AnyObject {
@@ -47,8 +47,9 @@ final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, Passco
     didUpdateInput()
   }
   
-  func didTapBiometry() {
-    
+  func didSetInput(_ input: String) {
+    self.input = input
+    didUpdateInput()
   }
 
   // MARK: - PasscodeInputViewModel

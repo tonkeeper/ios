@@ -52,9 +52,9 @@ private extension OnboardingCoordinator {
     let coordinator = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreOnboardingAssembly.walletsUpdateAssembly,
+        storesAssembly: keeperCoreOnboardingAssembly.storesAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly(),
-        passcodeAssembly: keeperCoreOnboardingAssembly.passcodeAssembly
+        scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly()
       )
     ).createCreateWalletCoordinator(
       router: ViewControllerRouter(rootViewController: router.rootViewController)
@@ -79,9 +79,9 @@ private extension OnboardingCoordinator {
     let module = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreOnboardingAssembly.walletsUpdateAssembly,
+        storesAssembly: keeperCoreOnboardingAssembly.storesAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly(),
-        passcodeAssembly: keeperCoreOnboardingAssembly.passcodeAssembly
+        scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly()
       )
     )
     
@@ -136,9 +136,9 @@ private extension OnboardingCoordinator {
       let coordinator = AddWalletModule(
         dependencies: AddWalletModule.Dependencies(
           walletsUpdateAssembly: keeperCoreOnboardingAssembly.walletsUpdateAssembly,
+          storesAssembly: keeperCoreOnboardingAssembly.storesAssembly,
           coreAssembly: coreAssembly,
-          scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly(),
-          passcodeAssembly: keeperCoreOnboardingAssembly.passcodeAssembly
+          scannerAssembly: keeperCoreOnboardingAssembly.scannerAssembly()
         )
       ).createPairSignerDeeplinkCoordinator(
         publicKey: publicKey,

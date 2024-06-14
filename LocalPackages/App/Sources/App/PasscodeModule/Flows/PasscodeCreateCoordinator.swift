@@ -25,8 +25,7 @@ final class PasscodeCreateCoordinator: RouterCoordinator<NavigationControllerRou
 private extension PasscodeCreateCoordinator {
   func open() {
     let passcodeModule = PasscodeAssembly.module(
-      navigationController: passcodeNavigationController,
-      isBiometryTurnedOn: false
+      navigationController: passcodeNavigationController
     )
     
     passcodeModule.output.didTapBackspace = { [weak self] in
@@ -35,10 +34,6 @@ private extension PasscodeCreateCoordinator {
     
     passcodeModule.output.didTapDigit = { [weak self] digit in
       self?.passcodeInputs.last?.didTapDigit(digit)
-    }
-    
-    passcodeModule.output.didTapBiometry = { [weak self] in
-      self?.passcodeInputs.last?.didTapBiometry()
     }
     
     if router.rootViewController.viewControllers.isEmpty {

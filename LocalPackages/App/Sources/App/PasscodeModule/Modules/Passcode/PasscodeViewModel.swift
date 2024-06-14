@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 
 protocol PasscodeModuleOutput: AnyObject {
+  var biometryProvider: (() async -> TKKeyboardView.Biometry)? { get set }
   var didTapDigit: ((Int) -> Void)? { get set }
   var didTapBackspace: (() -> Void)? { get set }
   var didTapBiometry: (() -> Void)? { get set }
@@ -26,7 +27,8 @@ protocol PasscodeViewModel: AnyObject {
 final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOutput, PasscodeModuleInput {
   
   // MARK: - PasscodeModuleOutput
-  
+
+  var biometryProvider: (() async -> TKKeyboardView.Biometry)?
   var didTapDigit: ((Int) -> Void)?
   var didTapBackspace: (() -> Void)?
   var didTapBiometry: (() -> Void)?
@@ -48,7 +50,13 @@ final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOu
   var didDisableInput: (() -> Void)?
   
   func viewDidLoad() {
-    
+    Task {
+      let biometry = await biometryProvider?() ?? .none
+      await MainActor.run {
+        didUpdateBiometry?(biometry)
+        didTapBiometryButton()
+      }
+    }
   }
   
   func didTapDigitButton(_ digit: Int) {
@@ -61,21 +69,5 @@ final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOu
   
   func didTapBiometryButton() {
     didTapBiometry?()
-  }
-  
-  // MARK: - State
-  
-  private var isBiometryEnable = false
-  
-  // MARK: - Dependencies
-  
-  private let isBiometryTurnedOn: Bool
-  
-  init(isBiometryTurnedOn: Bool) {
-    self.isBiometryTurnedOn = isBiometryTurnedOn
-  }
-  
-  private func checkIfBiometryEnable() async -> Bool {
-    return false
   }
 }

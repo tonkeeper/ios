@@ -14,7 +14,7 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
   private let walletAddController: WalletAddController
   private let createWalletCoordinatorProvider: (ViewControllerRouter) -> CreateWalletCoordinator
   private let importWalletCoordinatorProvider: (NavigationControllerRouter, _ isTestnet: Bool) -> ImportWalletCoordinator
-  private let importWatchOnlyWalletCoordinatorProvider: (NavigationControllerRouter, _ passcode: String?) -> ImportWatchOnlyWalletCoordinator
+  private let importWatchOnlyWalletCoordinatorProvider: (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator
   private let pairSignerCoordinatorProvider: (NavigationControllerRouter) -> PairSignerCoordinator
   
   init(router: ViewControllerRouter,
@@ -22,7 +22,7 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
        walletAddController: WalletAddController,
        createWalletCoordinatorProvider: @escaping (ViewControllerRouter) -> CreateWalletCoordinator,
        importWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ isTestnet: Bool) -> ImportWalletCoordinator,
-       importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ passcode: String?) -> ImportWatchOnlyWalletCoordinator,
+       importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator,
        pairSignerCoordinatorProvider: @escaping (NavigationControllerRouter) -> PairSignerCoordinator) {
     self.walletAddController = walletAddController
     self.options = options
@@ -79,7 +79,7 @@ private extension AddWalletCoordinator {
     case .importRegular:
       openAddWallet(isTestnet: false)
     case .importWatchOnly:
-      break
+      openAddWatchOnlyWallet()
     case .importTestnet:
       openAddWallet(isTestnet: true)
     case .signer:
@@ -106,9 +106,13 @@ private extension AddWalletCoordinator {
     coordinator.start()
   }
 
-  func openAddWatchOnlyWallet(router: NavigationControllerRouter, passcode: String?) {
+  func openAddWatchOnlyWallet() {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
     let coordinator = importWatchOnlyWalletCoordinatorProvider(
-      router, passcode
+      router
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
@@ -129,6 +133,10 @@ private extension AddWalletCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+    
+    self.router.present(navigationController, onDismiss: { [weak self] in
+      self?.didCancel?()
+    })
   }
 
   func openAddWallet(isTestnet: Bool) {

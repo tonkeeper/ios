@@ -14,10 +14,19 @@ final class PasscodeInputCoordinator: RouterCoordinator<NavigationControllerRout
   var didCancel: (() -> Void)?
   
   private let validator: PasscodeValidator
+  private let biometryProvider: BiometryProvider
+  private let mnemonicsRepository: MnemonicsRepository
+  private let securityStore: SecurityStore
     
   init(router: NavigationControllerRouter,
-       validator: PasscodeValidator) {
+       validator: PasscodeValidator,
+       biometryProvider: BiometryProvider,
+       mnemonicsRepository: MnemonicsRepository,
+       securityStore: SecurityStore) {
     self.validator = validator
+    self.biometryProvider = biometryProvider
+    self.mnemonicsRepository = mnemonicsRepository
+    self.securityStore = securityStore
     super.init(router: router)
     router.rootViewController.modalPresentationStyle = .fullScreen
     router.rootViewController.modalTransitionStyle = .crossDissolve
@@ -38,8 +47,7 @@ private extension PasscodeInputCoordinator {
     )
     
     let passcodeModule = PasscodeAssembly.module(
-      navigationController: navigationController,
-      isBiometryTurnedOn: false
+      navigationController: navigationController
     )
     
     passcodeInputModule.output.didFinishInput = { [weak self] passcode in
@@ -68,8 +76,18 @@ private extension PasscodeInputCoordinator {
       passcodeInputModule.input.didTapDigit(digit)
     }
     
-    passcodeModule.output.didTapBiometry = {
-      passcodeInputModule.input.didTapBiometry()
+    passcodeModule.output.didTapBiometry = { [weak self] in
+      guard let self else { return }
+      Task {
+        let passcode = try self.mnemonicsRepository.getPassword()
+        await MainActor.run {
+          passcodeInputModule.input.didSetInput(passcode)
+        }
+      }
+    }
+    
+    passcodeModule.output.biometryProvider = { [weak self] in
+      await self?.getBiometry() ?? .none
     }
     
     passcodeModule.view.setupLeftCloseButton { [weak self] in
@@ -80,22 +98,46 @@ private extension PasscodeInputCoordinator {
     
     router.push(viewController: passcodeModule.view)
   }
+  
+  func getBiometry() async -> TKKeyboardView.Biometry {
+    guard await securityStore.isBiometryEnabled else {
+      return .none
+    }
+    switch biometryProvider.getBiometryState(policy: .deviceOwnerAuthenticationWithBiometrics) {
+    case .failure:
+      return .none
+    case .success(let state):
+      switch state {
+      case .faceID: return .faceId
+      case .touchID: return .touchId
+      case .none: return .none
+      }
+    }
+  }
 }
 
 extension PasscodeInputCoordinator {
   static func confirmationCoordinator(router: NavigationControllerRouter, 
-                                      repositoriesAssembly: KeeperCore.RepositoriesAssembly) -> PasscodeInputCoordinator {
+                                      mnemonicsRepository: MnemonicsRepository,
+                                      securityStore: SecurityStore) -> PasscodeInputCoordinator {
     let validator = PasscodeConfirmationValidator(
-      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository()
+      mnemonicsRepository: mnemonicsRepository
     )
-    return PasscodeInputCoordinator(router: router, validator: validator)
+    return PasscodeInputCoordinator(
+      router: router,
+      validator: validator,
+      biometryProvider: BiometryProvider(),
+      mnemonicsRepository: mnemonicsRepository,
+      securityStore: securityStore
+    )
   }
 }
 
 extension PasscodeInputCoordinator {
   static func present<ParentRouterViewController: UIViewController>(parentCoordinator: Coordinator,
                                                                     parentRouter: ContainerViewControllerRouter<ParentRouterViewController>,
-                                                                    repositoriesAssembly: KeeperCore.RepositoriesAssembly,
+                                                                    mnemonicsRepository: MnemonicsRepository,
+                                                                    securityStore: SecurityStore,
                                                                     onCancel: @escaping () -> Void,
                                                                     onInput: @escaping (String) -> Void) {
     let navigationController = TKNavigationController()
@@ -107,7 +149,8 @@ extension PasscodeInputCoordinator {
       router: NavigationControllerRouter(
         rootViewController: navigationController
       ),
-      repositoriesAssembly: repositoriesAssembly
+      mnemonicsRepository: mnemonicsRepository,
+      securityStore: securityStore
     )
     
     coordinator.didCancel = { [weak coordinator, weak parentCoordinator] in
@@ -130,5 +173,29 @@ extension PasscodeInputCoordinator {
     parentRouter.present(
       navigationController,
       animated: true)
+  }
+}
+
+extension PasscodeInputCoordinator {
+  static func getPasscode<ParentRouterViewController: UIViewController>(parentCoordinator: Coordinator,
+                                                                        parentRouter: ContainerViewControllerRouter<ParentRouterViewController>,
+                                                                        mnemonicsRepository: MnemonicsRepository,
+                                                                        securityStore: SecurityStore) async -> String? {
+    return await Task { @MainActor in
+      return await withCheckedContinuation { continuation in
+        PasscodeInputCoordinator.present(
+          parentCoordinator: parentCoordinator,
+          parentRouter: parentRouter,
+          mnemonicsRepository: mnemonicsRepository,
+          securityStore: securityStore,
+          onCancel: {
+            continuation.resume(returning: nil)
+          },
+          onInput: {
+            continuation.resume(returning: $0)
+          }
+        )
+      }
+    }.value
   }
 }

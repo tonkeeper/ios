@@ -7,6 +7,7 @@ import TKCore
 
 public protocol TonConnectConnectCoordinatorConnector {
   func connect(wallet: Wallet,
+               passcode: String,
                parameters: TonConnectParameters,
                manifest: TonConnectManifest) async throws
 }
@@ -14,8 +15,13 @@ public protocol TonConnectConnectCoordinatorConnector {
 public struct DefaultTonConnectConnectCoordinatorConnector: TonConnectConnectCoordinatorConnector {
   private let tonConnectAppsStore: TonConnectAppsStore
   
-  public func connect(wallet: Wallet, parameters: TonConnectParameters, manifest: TonConnectManifest) async throws {
-    try await tonConnectAppsStore.connect(wallet: wallet, parameters: parameters, manifest: manifest)
+  public func connect(wallet: Wallet, passcode: String, parameters: TonConnectParameters, manifest: TonConnectManifest) async throws {
+    try await tonConnectAppsStore.connect(
+      wallet: wallet,
+      passcode: passcode,
+      parameters: parameters,
+      manifest: manifest
+    )
   }
   
   public init(tonConnectAppsStore: TonConnectAppsStore) {
@@ -32,9 +38,10 @@ public struct BridgeTonConnectConnectCoordinatorConnector: TonConnectConnectCoor
     self.connectionResponseHandler = connectionResponseHandler
   }
   
-  public func connect(wallet: Wallet, parameters: TonConnectParameters, manifest: TonConnectManifest) async throws {
-    let response = tonConnectAppsStore.connectBridgeDapp(
+  public func connect(wallet: Wallet, passcode: String, parameters: TonConnectParameters, manifest: TonConnectManifest) async throws {
+    let response = await tonConnectAppsStore.connectBridgeDapp(
       wallet: wallet,
+      passcode: passcode,
       parameters: parameters,
       manifest: manifest
     )
@@ -122,12 +129,16 @@ private extension TonConnectConnectCoordinator {
     parameters: TonConnectConnectParameters,
     fromViewController: UIViewController
   ) async -> Bool {
-    guard await openConfirmation(fromViewController: fromViewController) else {
-      return false
-    }
+    guard let passcode = await PasscodeInputCoordinator.getPasscode(
+      parentCoordinator: self,
+      parentRouter: ViewControllerRouter(rootViewController: fromViewController),
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+    ) else { return false }
     do {
       try await connector.connect(
         wallet: parameters.wallet,
+        passcode: passcode,
         parameters: parameters.parameters,
         manifest: parameters.manifest
       )
@@ -135,42 +146,6 @@ private extension TonConnectConnectCoordinator {
     } catch {
       return false
     }
-  }
-  
-  func openConfirmation(fromViewController: UIViewController) async -> Bool {
-    // TODO: FIX!
-    return true
-//    return await Task<Bool, Never> { @MainActor in
-//      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
-//        guard let self = self else { return }
-//        let coordinator = PasscodeModule(
-//          dependencies: PasscodeModule.Dependencies(
-//            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-//          )
-//        ).passcodeConfirmationCoordinator()
-//        
-//        coordinator.didCancel = { [weak self, weak coordinator] in
-//          continuation.resume(returning: false)
-//          coordinator?.router.dismiss(completion: {
-//            guard let coordinator else { return }
-//            self?.removeChild(coordinator)
-//          })
-//        }
-//        
-//        coordinator.didConfirm = { [weak self, weak coordinator] in
-//          continuation.resume(returning: true)
-//          coordinator?.router.dismiss(completion: {
-//            guard let coordinator else { return }
-//            self?.removeChild(coordinator)
-//          })
-//        }
-//        
-//        self.addChild(coordinator)
-//        coordinator.start()
-//        
-//        fromViewController.present(coordinator.router.rootViewController, animated: true)
-//      }
-//    }.value
   }
   
   func openWalletPicker(wallet: Wallet, fromViewController: UIViewController, didSelectWallet: @escaping (Wallet) -> Void) {
@@ -201,9 +176,9 @@ private extension TonConnectConnectCoordinator {
     let module = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        storesAssembly: keeperCoreMainAssembly.storesAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
     )
     

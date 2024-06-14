@@ -30,8 +30,7 @@ final class PasscodeChangeCoordinator: RouterCoordinator<NavigationControllerRou
 private extension PasscodeChangeCoordinator {
   func open() {
     let passcodeModule = PasscodeAssembly.module(
-      navigationController: passcodeNavigationController,
-      isBiometryTurnedOn: false
+      navigationController: passcodeNavigationController
     )
     
     passcodeModuleInput = passcodeModule.input
@@ -42,10 +41,6 @@ private extension PasscodeChangeCoordinator {
     
     passcodeModule.output.didTapDigit = { [weak self] digit in
       self?.passcodeInputs.last?.didTapDigit(digit)
-    }
-    
-    passcodeModule.output.didTapBiometry = { [weak self] in
-      self?.passcodeInputs.last?.didTapBiometry()
     }
     
     if router.rootViewController.viewControllers.isEmpty {
@@ -132,6 +127,8 @@ private extension PasscodeChangeCoordinator {
           oldPassword: oldPasscode,
           newPassword: newPasscode
         )
+        try? self.keeperCoreAssembly.repositoriesAssembly.mnemonicsRepository().deletePassword()
+        try? await self.keeperCoreAssembly.storesAssembly.securityStore.setIsBiometryEnabled(false)
         await MainActor.run {
           self.didChangePasscode?()
         }

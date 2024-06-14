@@ -28,10 +28,12 @@ public final class TonConnectAppsStore {
   }
   
   public func connect(wallet: Wallet,
+                      passcode: String,
                       parameters: TonConnectParameters,
                       manifest: TonConnectManifest) async throws {
-    let connectEventSuccessResponse = try tonConnectService.buildConnectEventSuccessResponse(
+    let connectEventSuccessResponse = try await tonConnectService.buildConnectEventSuccessResponse(
       wallet: wallet,
+      passcode: passcode,
       parameters: parameters,
       manifest: manifest
     )
@@ -58,11 +60,13 @@ public final class TonConnectAppsStore {
   }
   
   public func connectBridgeDapp(wallet: Wallet,
+                                passcode: String,
                                 parameters: TonConnectParameters,
-                                manifest: TonConnectManifest) -> ConnectResult {
+                                manifest: TonConnectManifest) async -> ConnectResult {
     do {
-      let connectEventSuccessResponse = try tonConnectService.buildConnectEventSuccessResponse(
+      let connectEventSuccessResponse = try await tonConnectService.buildConnectEventSuccessResponse(
         wallet: wallet,
+        passcode: passcode,
         parameters: parameters,
         manifest: manifest
       )

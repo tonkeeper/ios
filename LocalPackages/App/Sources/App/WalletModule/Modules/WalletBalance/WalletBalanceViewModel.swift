@@ -15,6 +15,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapSwap: (() -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
+  var didRequirePasscode: (() async -> String?)? { get set }
 }
 
 protocol WalletBalanceModuleInput: AnyObject {}
@@ -48,7 +49,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapSwap: (() -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
-  var didRequireConfirmation: (() async -> Bool)?
+  var didRequirePasscode: (() async -> String?)?
   
   // MARK: - WalletBalanceViewModel
   
@@ -90,11 +91,17 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   // MARK: - Dependencies
   
   private let walletBalanceController: WalletBalanceController
+  private let mnemonicsRepository: MnemonicsRepository
+  private let securityStore: SecurityStore
   
   // MARK: - Init
   
-  init(walletBalanceController: WalletBalanceController) {
+  init(walletBalanceController: WalletBalanceController,
+       mnemonicsRepository: MnemonicsRepository,
+       securityStore: SecurityStore) {
     self.walletBalanceController = walletBalanceController
+    self.mnemonicsRepository = mnemonicsRepository
+    self.securityStore = securityStore
   }
 }
 
@@ -153,14 +160,24 @@ private extension WalletBalanceViewModelImplementation {
         self?.didTapBackup?(wallet)
       },
       biometryHandler: { [weak self] isOn in
-        return false
-//        guard let self = self else { return !isOn }
-//        let didConfirm = await self.didRequireConfirmation?() ?? false
-//        guard didConfirm else { return !isOn }
-//        let isOnResult = await walletBalanceController.setIsBiometryEnabled(isOn)
-//        return await Task { @MainActor in
-//          return isOnResult
-//        }.value
+        guard let self else { return !isOn }
+        return await Task { @MainActor in
+          do {
+            if isOn {
+              guard let passcode = await self.didRequirePasscode?() else {
+                return !isOn
+              }
+              try self.mnemonicsRepository.savePassword(passcode)
+              try await self.securityStore.setIsBiometryEnabled(true)
+            } else {
+              try self.mnemonicsRepository.deletePassword()
+              try await self.securityStore.setIsBiometryEnabled(false)
+            }
+            return isOn
+          } catch {
+            return !isOn
+          }
+        }.value
       }
     )
     Task { @MainActor in
