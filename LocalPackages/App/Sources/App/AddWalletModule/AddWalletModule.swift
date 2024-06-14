@@ -6,12 +6,6 @@ import KeeperCore
 import TonSwift
 
 struct AddWalletModule {
-  
-  enum AddWalletFlow {
-    case initial
-    case add
-  }
-  
   private let dependencies: Dependencies
   init(dependencies: Dependencies) {
     self.dependencies = dependencies
@@ -33,6 +27,8 @@ struct AddWalletModule {
         return createImportWatchOnlyWalletCoordinator(router: router)
       }, pairSignerCoordinatorProvider: { router in
         return createPairSignerCoordinator(router: router)
+      }, pairLedgerCoordinatorProvider: { router in
+        return createLedgerPairCoordinator(router: router)
       }
     )
     
@@ -131,6 +127,17 @@ struct AddWalletModule {
           self.createPublicKeyImportCoordinator(publicKey: publicKey, name: name, router: router)
         }
       )
+  }
+
+public func createLedgerPairCoordinator(router: ViewControllerRouter) -> PairLedgerCoordinator {
+    PairLedgerCoordinator(
+      walletUpdateAssembly: dependencies.walletsUpdateAssembly,
+      coreAssembly: dependencies.coreAssembly,
+      router: router,
+      publicKeyImportCoordinatorProvider: { router, publicKey, name in
+        self.createPublicKeyImportCoordinator(publicKey: publicKey, name: name, router: router)
+      }
+    )
   }
 }
 

@@ -1,0 +1,105 @@
+import UIKit
+import TKUIKit
+import KeeperCore
+import TKCore
+import TKCoordinator
+import TonSwift
+
+public final class PairLedgerCoordinator: RouterCoordinator<ViewControllerRouter> {
+  
+  public var didCancel: (() -> Void)?
+  public var didPaired: (() -> Void)?
+  
+  private let walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly
+  private let coreAssembly: TKCore.CoreAssembly
+  private let publicKeyImportCoordinatorProvider: (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator
+  
+  init(walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
+       coreAssembly: TKCore.CoreAssembly,
+       router: ViewControllerRouter,
+       publicKeyImportCoordinatorProvider: @escaping (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator) {
+    self.walletUpdateAssembly = walletUpdateAssembly
+    self.coreAssembly = coreAssembly
+    self.publicKeyImportCoordinatorProvider = publicKeyImportCoordinatorProvider
+    super.init(router: router)
+  }
+  
+  public override func start() {
+    openConnectLedger()
+  }
+}
+
+private extension PairLedgerCoordinator {
+  func openConnectLedger() {
+    let module = LedgerConnectAssembly.module(coreAssembly: coreAssembly)
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    bottomSheetViewController.didClose = { [weak self] isInteractivly in
+      guard !isInteractivly else {
+        self?.didCancel?()
+        return
+      }
+    }
+    
+    module.output.didCancel = { [weak self, weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss(completion: {
+        self?.didCancel?()
+      })
+    }
+
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func openImportCoordinator(publicKey: TonSwift.PublicKey, name: String) {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    let coordinator = publicKeyImportCoordinatorProvider(
+      NavigationControllerRouter(
+        rootViewController: navigationController
+      ),
+      publicKey,
+      name
+    )
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didImport = { [weak self] publicKey, revisions, model in
+      guard let self else { return }
+      Task {
+        do {
+          try await self.importWallet(
+            publicKey: publicKey,
+            revisions: revisions,
+            model: model)
+          await MainActor.run {
+            self.didPaired?()
+          }
+        } catch {
+          print("Log: Wallet import failed \(error)")
+        }
+      }
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
+  func importWallet(publicKey: TonSwift.PublicKey,
+                    revisions: [WalletContractVersion],
+                    model: CustomizeWalletModel) async throws {
+//    let addController = walletUpdateAssembly.walletAddController()
+//    let metaData = WalletMetaData(
+//      label: model.name,
+//      tintColor: model.tintColor,
+//      emoji: model.emoji)
+//    try addController.importExternalWallet(
+//      publicKey: publicKey,
+//      revisions: revisions,
+//      metaData: metaData
+//    )
+  }
+}

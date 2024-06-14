@@ -62,6 +62,14 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-qr-code-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var done: UIImage {
+          .imageWithName("Icons/16/ic-done-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var dote: UIImage {
+          .imageWithName("Icons/16/ic-dote-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
@@ -202,6 +210,14 @@ public extension UIImage {
         }
         public static var doc: UIImage {
           .imageWithName("Icons/28/ic-doc-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var ledger: UIImage {
+          .imageWithName("Icons/28/ic-ledger-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var signer: UIImage {
+          .imageWithName("Icons/28/ic-signer-28")
           .withRenderingMode(.alwaysTemplate)
         }
       }

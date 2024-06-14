@@ -16,6 +16,7 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
   private let importWalletCoordinatorProvider: (NavigationControllerRouter, _ isTestnet: Bool) -> ImportWalletCoordinator
   private let importWatchOnlyWalletCoordinatorProvider: (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator
   private let pairSignerCoordinatorProvider: (NavigationControllerRouter) -> PairSignerCoordinator
+  private let pairLedgerCoordinatorProvider: (ViewControllerRouter) -> PairLedgerCoordinator
   
   init(router: ViewControllerRouter,
        options: [AddWalletOption],
@@ -23,13 +24,15 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
        createWalletCoordinatorProvider: @escaping (ViewControllerRouter) -> CreateWalletCoordinator,
        importWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ isTestnet: Bool) -> ImportWalletCoordinator,
        importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator,
-       pairSignerCoordinatorProvider: @escaping (NavigationControllerRouter) -> PairSignerCoordinator) {
+       pairSignerCoordinatorProvider: @escaping (NavigationControllerRouter) -> PairSignerCoordinator,
+       pairLedgerCoordinatorProvider: @escaping (ViewControllerRouter) -> PairLedgerCoordinator) {
     self.walletAddController = walletAddController
     self.options = options
     self.createWalletCoordinatorProvider = createWalletCoordinatorProvider
     self.importWalletCoordinatorProvider = importWalletCoordinatorProvider
     self.importWatchOnlyWalletCoordinatorProvider = importWatchOnlyWalletCoordinatorProvider
     self.pairSignerCoordinatorProvider = pairSignerCoordinatorProvider
+    self.pairLedgerCoordinatorProvider = pairLedgerCoordinatorProvider
     super.init(router: router)
   }
   
@@ -84,6 +87,8 @@ private extension AddWalletCoordinator {
       openAddWallet(isTestnet: true)
     case .signer:
       openPairSigner()
+    case .ledger:
+      openPairLedger()
     }
   }
   
@@ -206,5 +211,18 @@ private extension AddWalletCoordinator {
     self.router.present(navigationController, onDismiss: { [weak self] in
       self?.didCancel?()
     })
+  }
+  
+  func openPairLedger() {
+    let coordinator = pairLedgerCoordinatorProvider(router)
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      self?.didCancel?()
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
   }
 }

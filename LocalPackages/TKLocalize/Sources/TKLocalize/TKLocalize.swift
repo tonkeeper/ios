@@ -683,6 +683,16 @@ public enum TKLocales {
           localize("add_wallet.items.pair_signer.subtitle")
         }
       }
+      public enum PairLedger {
+        /// Pair with Ledger
+        public static var title: String {
+          localize("add_wallet.items.pair_ledger.title")
+        }
+        /// Hardware module, Bluetooth, limited TON features
+        public static var subtitle: String {
+          localize("add_wallet.items.pair_ledger.subtitle")
+        }
+      }
     }
   }
   public enum Scanner {
@@ -859,6 +869,56 @@ public enum TKLocales {
     /// Wallet initialized
     public static var wallet_initialize: String {
       localize("action_types.wallet_initialize")
+    }
+  }
+  public enum LedgerConnect {
+    /// Connect Ledger
+    public static var title: String {
+      localize("ledger_connect.title")
+    }
+    public enum Steps {
+      public enum BluetoothConnect {
+        /// Connect Ledger to your device via Bluetooth
+        public static var description: String {
+          localize("ledger_connect.steps.bluetooth_connect.description")
+        }
+      }
+      public enum TonApp {
+        /// Unlock it and open TON App
+        public static var description: String {
+          localize("ledger_connect.steps.ton_app.description")
+        }
+        /// Install TON App
+        public static var link: String {
+          localize("ledger_connect.steps.ton_app.link")
+        }
+      }
+    }
+  }
+  public enum LedgerConfirm {
+    /// Confirm Action
+    public static var title: String {
+      localize("ledger_confirm.title")
+    }
+    public enum Steps {
+      public enum BluetoothConnect {
+        /// Connect Ledger to your device via Bluetooth
+        public static var description: String {
+          localize("ledger_confirm.steps.bluetooth_connect.description")
+        }
+      }
+      public enum TonApp {
+        /// Unlock it and open TON App
+        public static var description: String {
+          localize("ledger_confirm.steps.ton_app.description")
+        }
+      }
+      public enum Confirm {
+        /// Confirm your transaction on Ledger
+        public static var description: String {
+          localize("ledger_confirm.steps.confirm.description")
+        }
+      }
     }
   }
 }

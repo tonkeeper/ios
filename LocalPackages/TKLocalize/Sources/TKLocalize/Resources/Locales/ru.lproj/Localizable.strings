@@ -173,6 +173,9 @@
 "add_wallet.items.pair_signer.title" = "Пара для Signer";
 "add_wallet.items.pair_signer.subtitle" = "Более высокий уровень контроля и безопасности";
 
+"add_wallet.items.pair_ledger.title" = "Подключить Ledger";
+"add_wallet.items.pair_ledger.subtitle" = "Аппаратный модуль, Bluetooth, ограниченные функции TON";
+
 "scanner.title" = "Отсканируйте QR-код";
 
 "signer.scan.subtitle" = "Откройте Signer » Выберите нужный ключ » Отсканируйте QR-код";
@@ -231,3 +234,13 @@
 "action_types.domain_renew" = "Продление домена";
 "action_types.unknown" = "Неизвестно";
 "action_types.wallet_initialize" = "Кошелёк инициализирован";
+
+"ledger_connect.title" = "Подключить Ledger";
+"ledger_connect.items.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
+"ledger_connect.items.ton_app.description" = "Разблокируйте его и откройте приложение TON";
+"ledger_connect.items.ton_app.link" = "Установить приложение";
+
+"ledger_confirm.title" = "Подтвердить действие";
+"ledger_confirm.items.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
+"ledger_confirm.items.ton_app.description" = "Разблокируйте его и откройте приложение TON";
+"ledger_confirm.items.confirm" = "Подтвердите транзакцию в Ledger";

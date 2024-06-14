@@ -25,6 +25,7 @@ enum AddWalletOption: String {
   case importWatchOnly
   case importTestnet
   case signer
+  case ledger
   
   var title: String {
     switch self {
@@ -36,8 +37,10 @@ enum AddWalletOption: String {
       return TKLocales.AddWallet.Items.WatchOnly.title
     case .importTestnet:
       return TKLocales.AddWallet.Items.Testnet.title
-	case .signer:
+    case .signer:
       return TKLocales.AddWallet.Items.PairSigner.title
+    case .ledger:
+      return TKLocales.AddWallet.Items.PairLedger.title
     }
   }
   
@@ -51,8 +54,10 @@ enum AddWalletOption: String {
       return TKLocales.AddWallet.Items.WatchOnly.subtitle
     case .importTestnet:
       return TKLocales.AddWallet.Items.Testnet.subtitle
-	case .signer:
+    case .signer:
       return TKLocales.AddWallet.Items.PairSigner.subtitle
+    case .ledger:
+      return TKLocales.AddWallet.Items.PairLedger.subtitle
     }
   }
   
@@ -67,7 +72,9 @@ enum AddWalletOption: String {
     case .importTestnet:
       return .TKUIKit.Icons.Size28.testnet
     case .signer:
-      return .TKUIKit.Icons.Size28.globe
+      return .TKUIKit.Icons.Size28.signer
+    case .ledger:
+      return .TKUIKit.Icons.Size28.ledger
     }
   }
 }
