@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct InfoProvider {
+public struct InfoProvider {
   enum Keys: String {
     case appVersion = "CFBundleShortVersionString"
     case buildVersion = "CFBundleVersion"
@@ -22,27 +22,31 @@ struct InfoProvider {
     Bundle.main.object(forInfoDictionaryKey: key.rawValue) as? T
   }
   
-  static func appVersion() -> String? {
+  public static func appVersion() -> String? {
     self.value(key: .appVersion)
   }
   
-  static func buildVersion() -> String? {
+  public static func buildVersion() -> String? {
     self.value(key: .buildVersion)
   }
   
-  static func appGroupName() -> String? {
+  public static func appGroupName() -> String? {
     self.value(key: .appGroupName)
   }
   
-  static func appName() -> String? {
-    self.value(key: .appName)
+  public static func appName() -> String {
+    self.value(key: .appName) ?? .defaultAppName
   }
   
-  static func keychainAccessGroup() -> String? {
+  public static func keychainAccessGroup() -> String? {
     self.value(key: .keychainAccessGroup)
   }
   
-  static func appIdentifierPrefix() -> String? {
+  public static func appIdentifierPrefix() -> String? {
     self.value(key: .appIdentifierPrefix)
   }
+}
+
+private extension String {
+  static let defaultAppName = "Tonkeeper"
 }

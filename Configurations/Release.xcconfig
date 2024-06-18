@@ -1,9 +1,0 @@
-//
-//  Release.xcconfig
-//  Tonkeeper
-//
-//  Created by Grigory on 29.9.23..
-//
-
-#include "Base.xcconfig"
-#include "Signing/SignRelease.xcconfig"
