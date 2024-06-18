@@ -47,6 +47,12 @@ private extension PairLedgerCoordinator {
         self?.didCancel?()
       })
     }
+    
+    module.output.didConnect = { [weak self, weak bottomSheetViewController] publicKey, name in
+      bottomSheetViewController?.dismiss(completion: {
+        self?.openImportCoordinator(publicKey: publicKey, name: name)
+      })
+    }
 
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
@@ -84,6 +90,11 @@ private extension PairLedgerCoordinator {
       }
     }
     
+    coordinator.didPrepareForPresent = { [weak self, weak navigationController] in
+      guard let navigationController else { return }
+      self?.router.present(navigationController)
+    }
+    
     addChild(coordinator)
     coordinator.start()
   }
@@ -95,7 +106,7 @@ private extension PairLedgerCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      emoji: model.emoji)
+      icon: .emoji(model.emoji))
     try addController.importLedgerWallet(
       publicKey: publicKey,
       revisions: revisions,

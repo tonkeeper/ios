@@ -2,8 +2,8 @@ import Foundation
 
 public final class PasscodeAssembly {
   
-  let repositoriesAssembly: RepositoriesAssembly
-  let storesAssembly: StoresAssembly
+  public let repositoriesAssembly: RepositoriesAssembly
+  public let storesAssembly: StoresAssembly
   
   init(repositoriesAssembly: RepositoriesAssembly,
        storesAssembly: StoresAssembly) {

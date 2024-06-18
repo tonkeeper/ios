@@ -19,6 +19,10 @@ public struct PasscodeVault {
   public func save(_ passcode: Passcode) throws {
     try keychainVault.saveValue(passcode, to: Passcode.query())
   }
+  
+  public func delete() throws {
+    try keychainVault.deleteItem(Passcode.query())
+  }
 }
 
 private extension Passcode {

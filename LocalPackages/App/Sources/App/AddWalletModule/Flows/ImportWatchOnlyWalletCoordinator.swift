@@ -80,7 +80,7 @@ private extension ImportWatchOnlyWalletCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      emoji: model.emoji)
+      icon: .emoji(model.emoji))
     do {
       try addController.importWatchOnlyWallet(
         resolvableAddress: resolvableAddress,

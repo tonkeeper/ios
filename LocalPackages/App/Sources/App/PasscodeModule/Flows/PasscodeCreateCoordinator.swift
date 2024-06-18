@@ -54,11 +54,11 @@ private extension PasscodeCreateCoordinator {
       title: TKLocales.Passcode.create
     )
     
-    passcodeInput.output.didFinishInput = { passcode in
+    passcodeInput.output.validateInput = { passcode in
       return .none
     }
     
-    passcodeInput.output.didEnterPasscode = { [weak self] passcode in
+    passcodeInput.output.didFinish = { [weak self] passcode in
       self?.openReenterPasscode(enteredPasscode: passcode)
     }
     
@@ -75,11 +75,11 @@ private extension PasscodeCreateCoordinator {
       title: TKLocales.Passcode.reenter
     )
     
-    passcodeInput.output.didFinishInput = { passcode in
+    passcodeInput.output.validateInput = { passcode in
       return passcode == enteredPasscode ? .success : .failed
     }
     
-    passcodeInput.output.didEnterPasscode = { [weak self] passcode in
+    passcodeInput.output.didFinish = { [weak self] passcode in
       self?.didCreatePasscode?(passcode)
     }
     

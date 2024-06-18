@@ -1,8 +1,10 @@
 import Foundation
 import TKUIKit
 import TKLocalize
+import TonSwift
 
 protocol LedgerConnectModuleOutput: AnyObject {
+  var didConnect: ((_ publicKey: TonSwift.PublicKey, _ name: String) -> Void)? { get set }
   var didCancel: (() -> Void)? { get set }
 }
 
@@ -21,6 +23,7 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   
   // MARK: - LedgerConnectModuleOutput
   
+  var didConnect: ((_ publicKey: TonSwift.PublicKey, _ name: String) -> Void)?
   var didCancel: (() -> Void)?
   
   // MARK: - LedgerConnectViewModel
@@ -125,8 +128,15 @@ private extension LedgerConnectViewModelImplementation {
     var configuration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
     configuration.content.title = .plainString(TKLocales.Actions.continue_action)
     configuration.isEnabled = isEnabled
-    configuration.action = {
-      print("Continue")
+    configuration.action = { [weak self] in
+      // For debug
+      do {
+        let mnemonic = TonSwift.Mnemonic.mnemonicNew(wordsCount: 24)
+        let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
+          mnemonicArray: mnemonic
+        )
+        self?.didConnect?(keyPair.publicKey, "ledger")
+      } catch {}
     }
     return configuration
   }

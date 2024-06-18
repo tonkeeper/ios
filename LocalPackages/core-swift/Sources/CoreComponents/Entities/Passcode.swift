@@ -6,7 +6,7 @@ public struct Passcode: Codable, Equatable {
     }
     
     public static let length = 4
-    private let value: String
+    public let value: String
     
     public init(value: String) throws {
         guard value.count == Passcode.length else {

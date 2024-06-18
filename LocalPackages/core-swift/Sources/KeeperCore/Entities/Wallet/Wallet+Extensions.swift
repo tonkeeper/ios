@@ -183,7 +183,12 @@ public extension Wallet {
   }
   
   var emoji: String {
-    metaData.emoji
+    switch metaData.icon {
+    case .emoji(let string):
+      return string
+    case .icon(let string):
+      return "👎🏽"
+    }
   }
   
   var tintColor: WalletTintColor {

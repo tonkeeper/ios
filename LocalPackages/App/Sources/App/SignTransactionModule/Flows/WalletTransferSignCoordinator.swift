@@ -133,7 +133,30 @@ private extension WalletTransferSignCoordinator {
   func handleLedgerSign(transfer: WalletTransfer,
                         publicKey: TonSwift.PublicKey,
                         revision: WalletContractVersion) {
+    let module = LedgerConfirmAssembly.module(coreAssembly: coreAssembly)
     
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    bottomSheetViewController.didClose = { [weak self] isInteractivly in
+      guard !isInteractivly else {
+        self?.didCancel?()
+        return
+      }
+    }
+    
+    module.output.didCancel = { [weak self, weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss(completion: {
+        self?.didCancel?()
+      })
+    }
+    
+    module.output.didSign = { [weak self, weak bottomSheetViewController] data in
+      bottomSheetViewController?.dismiss(completion: {
+        self?.didSign?(data)
+      })
+    }
+  
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
   func handleSignerSign(transfer: WalletTransfer,

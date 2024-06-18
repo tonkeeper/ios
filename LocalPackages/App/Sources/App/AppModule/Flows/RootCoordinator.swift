@@ -25,21 +25,31 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
-    KeeperInfoMigration(
-      keeperInfoDirectory: dependencies.coreAssembly.sharedCacheURL,
-      sharedKeychainGroup: dependencies.coreAssembly.keychainAccessGroupIdentifier
-    ).migrateKeeperInfoIfNeeded()
-    
     rootController.loadConfiguration()
     rootController.loadKnownAccounts()
     rootController.loadBuySellMethods()
-
-      switch rootController.getState() {
+    
+    func startStandartFlow() {
+      switch self.rootController.getState() {
       case .onboarding:
-        openOnboarding(deeplink: try? rootController.parseDeeplink(string: deeplink?.string))
+        self.openOnboarding(deeplink: try? self.rootController.parseDeeplink(string: deeplink?.string))
       case let .main(wallets, activeWallet):
-        openMain(wallets: wallets, activeWallet: activeWallet, deeplink: try? rootController.parseDeeplink(string: deeplink?.string))
+        self.openMain(wallets: wallets,
+                      activeWallet: activeWallet,
+                      deeplink: try? self.rootController.parseDeeplink(string: deeplink?.string))
       }
+    }
+    
+    let migrationController = dependencies.keeperCoreRootAssembly.migrationController(
+      sharedCacheURL: dependencies.coreAssembly.sharedCacheURL,
+      keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier
+    )
+    
+    if migrationController.checkIfNeedToMigrate() {
+      openMigration(migrationController: migrationController)
+    } else {
+      startStandartFlow()
+    }
   }
   
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -80,7 +90,7 @@ private extension RootCoordinator {
     addChild(coordinator)
     coordinator.start(deeplink: deeplink)
     
-    showViewController(coordinator.router.rootViewController, animated: true)
+    showViewController(coordinator.router.rootViewController, animated: false)
   }
   
   func openMain(wallets: [Wallet], activeWallet: Wallet, deeplink: CoordinatorDeeplink?) {
@@ -101,12 +111,8 @@ private extension RootCoordinator {
       guard let self, let coordinator else { return }
       Task {
         do {
-          try await self.rootController.logout()
-          await MainActor.run {
-            self.mainCoordinator = nil
-            self.start(deeplink: nil)
-            self.removeChild(coordinator)
-          }
+          try await self.logout()
+          self.removeChild(coordinator)
         } catch {
           print("Log: Logout failed")
         }
@@ -117,7 +123,36 @@ private extension RootCoordinator {
     addChild(coordinator)
     coordinator.start(deeplink: deeplink)
     
-    showViewController(coordinator.router.rootViewController, animated: true)
+    showViewController(coordinator.router.rootViewController, animated: false)
+  }
+  
+  func openMigration(migrationController: MigrationController) {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    let migrationCoordinator = MigrationCoordinator(
+      migrationController: migrationController,
+      router: NavigationControllerRouter(rootViewController: navigationController)
+    )
+    migrationCoordinator.didFinish = { [weak self, weak migrationCoordinator] in
+      self?.removeChild(migrationCoordinator)
+      self?.start(deeplink: nil)
+    }
+    migrationCoordinator.didLogout = { [weak self, weak migrationCoordinator] in
+      guard let self, let migrationCoordinator else { return }
+      Task {
+        do {
+          try await self.logout()
+          self.removeChild(migrationCoordinator)
+        } catch {
+          print("Log: Logout failed")
+        }
+      }
+    }
+    addChild(migrationCoordinator)
+    migrationCoordinator.start(deeplink: nil)
+    
+    showViewController(navigationController, animated: false)
   }
   
   func showViewController(_ viewController: UIViewController, animated: Bool) {
@@ -134,6 +169,14 @@ private extension RootCoordinator {
       viewController.view.rightAnchor.constraint(equalTo: containerViewController.view.rightAnchor)
     ])
     router.setViewControllers([(containerViewController , nil)], animated: animated)
+  }
+  
+  func logout() async throws {
+    try await self.rootController.logout()
+    await MainActor.run {
+      self.mainCoordinator = nil
+      self.start(deeplink: nil)
+    }
   }
 }
 

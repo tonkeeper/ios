@@ -23,7 +23,7 @@ class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentH
     let walletsService = widgetAssembly.walletsService
     let wallets = try walletsService.getWallets()
     let widgetWallets = wallets.compactMap {
-      let display = $0.metaData.emoji + $0.metaData.label
+      let display = $0.emoji + $0.label
       return try? WidgetWallet(identifier: $0.identity.identifier().string, display: display)
     }
     let collection = INObjectCollection(items: widgetWallets)

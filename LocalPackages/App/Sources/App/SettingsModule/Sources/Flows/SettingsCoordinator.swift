@@ -85,9 +85,9 @@ private extension SettingsCoordinator {
     )
     
     let module = addWalletModuleModule.createCustomizeWalletModule(
-      name: wallet.metaData.label,
-      tintColor: wallet.metaData.tintColor,
-      emoji: wallet.metaData.emoji,
+      name: wallet.label,
+      tintColor: wallet.tintColor,
+      emoji: wallet.emoji,
       configurator: EditWalletCustomizeWalletViewModelConfigurator()
     )
     
@@ -109,7 +109,7 @@ private extension SettingsCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      emoji: model.emoji)
+      icon: .emoji(model.emoji))
     do {
       try controller.updateWallet(wallet: wallet, metaData: metaData)
     } catch {

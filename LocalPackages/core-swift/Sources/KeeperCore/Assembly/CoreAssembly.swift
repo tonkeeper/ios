@@ -2,8 +2,8 @@ import Foundation
 import CoreComponents
 
 public struct CoreAssembly {
-  private let cacheURL: URL
-  private let sharedCacheURL: URL
+  let cacheURL: URL
+  let sharedCacheURL: URL
   
   init(cacheURL: URL, sharedCacheURL: URL) {
     self.cacheURL = cacheURL

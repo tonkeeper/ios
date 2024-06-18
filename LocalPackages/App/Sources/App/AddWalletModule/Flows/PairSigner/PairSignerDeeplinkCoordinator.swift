@@ -77,7 +77,7 @@ private extension PairSignerDeeplinkCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      emoji: model.emoji)
+      icon: .emoji(model.emoji))
     try addController.importSignerWallet(publicKey: publicKey,
                                          revisions: revisions,
                                          metaData: metaData, isDevice: true

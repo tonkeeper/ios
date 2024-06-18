@@ -14,7 +14,7 @@ public final class WalletsUpdateAssembly {
     self.formattersAssembly = formattersAssembly
   }
   
-  lazy var walletsStoreUpdate: WalletsStoreUpdate = {
+  public lazy var walletsStoreUpdate: WalletsStoreUpdate = {
     WalletsStoreUpdate(walletsService: servicesAssembly.walletsService())
   }()
   

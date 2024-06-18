@@ -51,7 +51,7 @@ public struct RepositoriesAssembly {
     AccountNFTRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
-  func passcodeRepository() -> PasscodeRepository {
+  public func passcodeRepository() -> PasscodeRepository {
     PasscodeRepositoryImplementation(passcodeVault: coreAssembly.passcodeVault())
   }
   

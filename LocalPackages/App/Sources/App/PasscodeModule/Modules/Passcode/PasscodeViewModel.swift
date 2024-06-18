@@ -8,15 +8,10 @@ protocol PasscodeModuleOutput: AnyObject {
   var didTapBiometry: (() -> Void)? { get set }
 }
 
-protocol PasscodeModuleInput: AnyObject {
-  func disableInput()
-  func enableInput()
-}
+protocol PasscodeModuleInput: AnyObject {}
 
 protocol PasscodeViewModel: AnyObject {
   var didUpdateBiometry: ((TKKeyboardView.Biometry) -> Void)? { get set }
-  var didEnableInput: (() -> Void)? { get set }
-  var didDisableInput: (() -> Void)? { get set }
   
   func viewDidLoad()
   func didTapDigitButton(_ digit: Int)
@@ -34,15 +29,7 @@ final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOu
   var didTapBiometry: (() -> Void)?
   
   // MARK: - PasscodeModuleInput
-  
-  func enableInput() {
-    didEnableInput?()
-  }
-  
-  func disableInput() {
-    didDisableInput?()
-  }
-  
+
   // MARK: - PasscodeViewModel
   
   var didUpdateBiometry: ((TKKeyboardView.Biometry) -> Void)?

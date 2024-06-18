@@ -37,14 +37,6 @@ private extension PasscodeViewController {
   }
   
   func setupBindings() {
-    viewModel.didEnableInput = { [weak self] in
-      self?.customView.isUserInteractionEnabled = true
-    }
-    
-    viewModel.didDisableInput = { [weak self] in
-      self?.customView.isUserInteractionEnabled = false
-    }
-    
     viewModel.didUpdateBiometry = { [weak self] in
       self?.customView.keyboardView.biometry = $0
     }

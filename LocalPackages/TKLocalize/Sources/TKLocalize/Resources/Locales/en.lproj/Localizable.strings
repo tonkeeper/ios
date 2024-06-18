@@ -7,6 +7,7 @@
 "actions.done" = "Done";
 "actions.edit" = "Edit";
 "actions.copy" = "Copy";
+"actions.sign_out" = "Sign Out";
 
 "dates.today" = "Today";
 "dates.yesterday" = "Yesterday";
@@ -247,3 +248,7 @@
 "ledger_confirm.steps.bluetooth_connect.description" = "Connect Ledger to your device via Bluetooth";
 "ledger_confirm.steps.ton_app.description" = "Unlock it and open TON App";
 "ledger_confirm.steps.confirm.description" = "Confirm your transaction on Ledger";
+
+"sign_out_full.title" = "🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?";
+"sign_out_full.description" = "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.";
+

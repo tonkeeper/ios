@@ -61,24 +61,17 @@ private extension PasscodeChangeCoordinator {
       title: TKLocales.Passcode.enter
     )
     
-    passcodeInput.output.didFinishInput = { [weak self] passcode in
+    passcodeInput.output.validateInput = { [weak self] input in
       guard let self else { return .failed }
-      await MainActor.run {
-        self.passcodeModuleInput?.disableInput()
-      }
-      let result = await Task<PasscodeInputValidationResult, Never> {
+      return await Task<PasscodeInputValidationResult, Never> {
         let isValid = await self.keeperCoreAssembly.repositoriesAssembly.mnemonicsRepository().checkIfPasswordValid(
-          passcode
+          input
         )
         return isValid ? .success : .failed
       }.value
-      await MainActor.run {
-        self.passcodeModuleInput?.enableInput()
-      }
-      return result
     }
     
-    passcodeInput.output.didEnterPasscode = { [weak self] passcode in
+    passcodeInput.output.didFinish = { [weak self] passcode in
       self?.openCreatePasscode(oldPasscode: passcode)
     }
     
@@ -95,11 +88,11 @@ private extension PasscodeChangeCoordinator {
       title: TKLocales.Passcode.create
     )
     
-    passcodeInput.output.didFinishInput = { passcode in
+    passcodeInput.output.validateInput = { passcode in
       return .none
     }
     
-    passcodeInput.output.didEnterPasscode = { [weak self] passcode in
+    passcodeInput.output.didFinish = { [weak self] passcode in
       self?.openReenterPasscode(oldPasscode: oldPasscode, newPasscode: passcode)
     }
     
@@ -116,11 +109,11 @@ private extension PasscodeChangeCoordinator {
       title: TKLocales.Passcode.reenter
     )
     
-    passcodeInput.output.didFinishInput = { passcode in
+    passcodeInput.output.validateInput = { passcode in
       return passcode == newPasscode ? .success : .failed
     }
     
-    passcodeInput.output.didEnterPasscode = { [weak self] passcode in
+    passcodeInput.output.didFinish = { [weak self] passcode in
       guard let self else { return }
       Task {
         try await self.keeperCoreAssembly.repositoriesAssembly.mnemonicsRepository().changePassword(

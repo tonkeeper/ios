@@ -1,12 +1,12 @@
 import Foundation
 
 public final class RootAssembly {
-  private let repositoriesAssembly: RepositoriesAssembly
+  public let repositoriesAssembly: RepositoriesAssembly
   private let servicesAssembly: ServicesAssembly
-  private let storesAssembly: StoresAssembly
+  public let storesAssembly: StoresAssembly
   private let coreAssembly: CoreAssembly
   public let formattersAssembly: FormattersAssembly
-  private let walletsUpdateAssembly: WalletsUpdateAssembly
+  public let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
   public let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
@@ -56,6 +56,15 @@ public final class RootAssembly {
       self._rootController = rootController
       return rootController
     }
+  }
+  
+  public func migrationController(sharedCacheURL: URL,
+                                  keychainAccessGroupIdentifier: String) -> MigrationController {
+    MigrationController(
+      sharedCacheURL: sharedCacheURL,
+      keychainAccessGroupIdentifier: keychainAccessGroupIdentifier,
+      rootAssembly: self
+    )
   }
   
   public func onboardingAssembly() -> OnboardingAssembly {

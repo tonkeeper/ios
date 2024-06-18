@@ -200,7 +200,7 @@ private extension ImportWalletCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      emoji: model.emoji)
+      icon: .emoji(model.emoji))
     try await addController.importWallets(
       phrase: phrase,
       revisions: revisions,

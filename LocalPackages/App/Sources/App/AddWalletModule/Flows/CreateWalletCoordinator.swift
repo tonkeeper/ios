@@ -124,7 +124,7 @@ private extension CreateWalletCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      emoji: model.emoji)
+      icon: .emoji(model.emoji))
     try await addController.createWallet(metaData: metaData, passcode: passcode)
   }
 }

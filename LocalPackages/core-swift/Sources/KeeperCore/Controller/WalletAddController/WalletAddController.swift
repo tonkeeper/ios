@@ -54,7 +54,7 @@ public final class WalletAddController {
       let revisionMetaData = WalletMetaData(
         label: label,
         tintColor: metaData.tintColor,
-        emoji: metaData.emoji
+        icon: metaData.icon
       )
       
       let walletIdentity = WalletIdentity(
@@ -101,7 +101,7 @@ public final class WalletAddController {
       let revisionMetaData = WalletMetaData(
         label: label,
         tintColor: metaData.tintColor,
-        emoji: metaData.emoji
+        icon: metaData.icon
       )
       
       
@@ -139,7 +139,7 @@ public final class WalletAddController {
       let revisionMetaData = WalletMetaData(
         label: label,
         tintColor: metaData.tintColor,
-        emoji: metaData.emoji
+        icon: metaData.icon
       )
       
       

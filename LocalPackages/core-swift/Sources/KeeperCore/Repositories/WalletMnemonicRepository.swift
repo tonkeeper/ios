@@ -3,18 +3,20 @@ import CoreComponents
 import TonSwift
 
 public enum WalletMnemonicRepositoryError: Swift.Error {
-  case incorrectWalletIdentity(wallet: Wallet)
-  case noMnemonic(wallet: Wallet)
+  case incorrectWalletIdentity(wallet: Version11V1.Wallet)
+  case noMnemonic(wallet: Version11V1.Wallet)
   case other(Swift.Error)
 }
 
 public protocol WalletMnemonicRepository {
-  func getMnemonic(forWallet wallet: Wallet) throws -> CoreComponents.Mnemonic
-  func saveMnemonic(_ mnemonic: CoreComponents.Mnemonic, forWallet wallet: Wallet) throws
+  func getMnemonic(forWallet wallet: Version11V1.Wallet) throws -> CoreComponents.Mnemonic
+  func saveMnemonic(_ mnemonic: CoreComponents.Mnemonic, forWallet wallet: Version11V1.Wallet) throws
+  func deleteMnemonic(for wallet: Version11V1.Wallet) throws
+  func deleteAll() throws
 }
 
 extension MnemonicVault: WalletMnemonicRepository {
-  public func getMnemonic(forWallet wallet: Wallet) throws -> CoreComponents.Mnemonic {
+  public func getMnemonic(forWallet wallet: Version11V1.Wallet) throws -> CoreComponents.Mnemonic {
     do {
       let walletKey = try wallet.identity.identifier().string
       return try loadValue(key: walletKey)
@@ -28,7 +30,7 @@ extension MnemonicVault: WalletMnemonicRepository {
   }
   
   public func saveMnemonic(_ mnemonic: CoreComponents.Mnemonic,
-                           forWallet wallet: Wallet) throws {
+                           forWallet wallet: Version11V1.Wallet) throws {
     do {
       let walletKey = try wallet.identity.identifier().string
       try saveValue(mnemonic, for: walletKey)
@@ -37,5 +39,14 @@ extension MnemonicVault: WalletMnemonicRepository {
     } catch {
       throw WalletMnemonicRepositoryError.other(error)
     }
+  }
+  
+  public func deleteMnemonic(for wallet: Version11V1.Wallet) throws {
+    let walletKey = try wallet.identity.identifier().string
+    try deleteValue(for: walletKey)
+  }
+  
+  public func deleteAll() throws {
+    try deleteAllValues()
   }
 }

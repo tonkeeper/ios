@@ -8,8 +8,8 @@ enum PasscodeInputValidationResult {
 }
 
 protocol PasscodeInputModuleOutput: AnyObject {
-  var didFinishInput: ((String) async -> PasscodeInputValidationResult)? { get set }
-  var didEnterPasscode: ((String) -> Void)? { get set }
+  var validateInput: ((String) async -> PasscodeInputValidationResult)? { get set }
+  var didFinish: ((String) -> Void)? { get set }
   var didFailed: (() -> Void)? { get set }
 }
 
@@ -31,23 +31,26 @@ final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, Passco
   
   // MARK: - PasscodeInputModuleOutput
   
-  var didFinishInput: ((String) async -> PasscodeInputValidationResult)?
-  var didEnterPasscode: ((String) -> Void)?
+  var validateInput: ((String) async -> PasscodeInputValidationResult)?
+  var didFinish: ((String) -> Void)?
   var didFailed: (() -> Void)?
   
   // MARK: - PasscodeInputModuleInput
   
   func didTapDigit(_ digit: Int) {
+    guard isInputEnable else { return }
     input += "\(digit)"
     didUpdateInput()
   }
   
   func didTapBackspace() {
+    guard isInputEnable else { return }
     input = String(input.dropLast(1))
     didUpdateInput()
   }
   
   func didSetInput(_ input: String) {
+    guard isInputEnable else { return }
     self.input = input
     didUpdateInput()
   }
@@ -70,6 +73,7 @@ final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, Passco
   // MARK: - State
   
   private var input = ""
+  private var isInputEnable = true
   
   // MARK: - Dependencies
   
@@ -94,12 +98,15 @@ private extension PasscodeInputViewModelImplementation {
       state = .input(inputCount)
       didUpdateState?(state, nil)
       
+      isInputEnable = false
+      guard let validateInput else {
+        isInputEnable = true
+        return
+      }
       Task {
-        guard let validationResult = await didFinishInput?(input) else {
-          return
-        }
+        let result = await validateInput(input)
         let state: PasscodeInputView.State
-        switch validationResult {
+        switch result {
         case .success:
           state = .success
         case .failed:
@@ -110,9 +117,10 @@ private extension PasscodeInputViewModelImplementation {
         
         await MainActor.run {
           didUpdateState?(state, { [weak self] in
-            switch validationResult {
+            self?.isInputEnable = true
+            switch result {
             case .success, .none:
-              self?.didEnterPasscode?(input)
+              self?.didFinish?(input)
             case .failed:
               self?.didFailed?()
             }

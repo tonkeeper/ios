@@ -4,8 +4,12 @@ import TKUIKit
 import KeeperCore
 import TKLocalize
 
-protocol PasscodeValidator {
+protocol PasscodeInputValidator {
   func validate(passcode: String) async -> PasscodeInputValidationResult
+}
+
+protocol PasscodeInputBiometryProvider {
+  func getBiometryState() async -> TKKeyboardView.Biometry
 }
 
 final class PasscodeInputCoordinator: RouterCoordinator<NavigationControllerRouter> {
@@ -13,14 +17,14 @@ final class PasscodeInputCoordinator: RouterCoordinator<NavigationControllerRout
   var didInputPasscode: ((String) -> Void)?
   var didCancel: (() -> Void)?
   
-  private let validator: PasscodeValidator
-  private let biometryProvider: BiometryProvider
+  private let validator: PasscodeInputValidator
+  private let biometryProvider: PasscodeInputBiometryProvider
   private let mnemonicsRepository: MnemonicsRepository
   private let securityStore: SecurityStore
     
   init(router: NavigationControllerRouter,
-       validator: PasscodeValidator,
-       biometryProvider: BiometryProvider,
+       validator: PasscodeInputValidator,
+       biometryProvider: PasscodeInputBiometryProvider,
        mnemonicsRepository: MnemonicsRepository,
        securityStore: SecurityStore) {
     self.validator = validator
@@ -50,24 +54,17 @@ private extension PasscodeInputCoordinator {
       navigationController: navigationController
     )
     
-    passcodeInputModule.output.didFinishInput = { [weak self] passcode in
+    passcodeInputModule.output.validateInput = { [weak self] input in
       guard let self else { return .failed }
-      await MainActor.run {
-        passcodeModule.view.customView.isUserInteractionEnabled = false
-      }
       let result = await Task {
-        await self.validator.validate(passcode: passcode)
+        await self.validator.validate(passcode: input)
       }.value
-      await MainActor.run {
-        passcodeModule.view.customView.isUserInteractionEnabled = true
-      }
       return result
     }
     
-    passcodeInputModule.output.didEnterPasscode = { [weak self] passcode in
+    passcodeInputModule.output.didFinish = { [weak self] passcode in
       self?.didInputPasscode?(passcode)
     }
-
     passcodeModule.output.didTapBackspace = {
       passcodeInputModule.input.didTapBackspace()
     }
@@ -87,7 +84,7 @@ private extension PasscodeInputCoordinator {
     }
     
     passcodeModule.output.biometryProvider = { [weak self] in
-      await self?.getBiometry() ?? .none
+      await self?.biometryProvider.getBiometryState() ?? .none
     }
     
     passcodeModule.view.setupLeftCloseButton { [weak self] in
@@ -97,22 +94,6 @@ private extension PasscodeInputCoordinator {
     navigationController.pushViewController(passcodeInputModule.viewController, animated: false)
     
     router.push(viewController: passcodeModule.view)
-  }
-  
-  func getBiometry() async -> TKKeyboardView.Biometry {
-    guard await securityStore.isBiometryEnabled else {
-      return .none
-    }
-    switch biometryProvider.getBiometryState(policy: .deviceOwnerAuthenticationWithBiometrics) {
-    case .failure:
-      return .none
-    case .success(let state):
-      switch state {
-      case .faceID: return .faceId
-      case .touchID: return .touchId
-      case .none: return .none
-      }
-    }
   }
 }
 
@@ -126,7 +107,10 @@ extension PasscodeInputCoordinator {
     return PasscodeInputCoordinator(
       router: router,
       validator: validator,
-      biometryProvider: BiometryProvider(),
+      biometryProvider: PasscodeBiometryProvider(
+        biometryProvider: BiometryProvider(),
+        securityStore: securityStore
+      ),
       mnemonicsRepository: mnemonicsRepository,
       securityStore: securityStore
     )

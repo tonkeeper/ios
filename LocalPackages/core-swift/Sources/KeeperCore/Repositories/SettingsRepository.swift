@@ -25,6 +25,15 @@ public struct SettingsRepository {
       settingsVault.setValue(newValue, key: .seed)
     }
   }
+  
+  public var didMigrateV2: Bool {
+    get {
+      settingsVault.value(key: .didMigrateV2) ?? false
+    }
+    set {
+      settingsVault.setValue(newValue, key: .didMigrateV2)
+    }
+  }
 }
 
 public enum SettingsKey: String, CustomStringConvertible {
@@ -34,4 +43,5 @@ public enum SettingsKey: String, CustomStringConvertible {
   
   case seed
   case isFirstRun
+  case didMigrateV2
 }

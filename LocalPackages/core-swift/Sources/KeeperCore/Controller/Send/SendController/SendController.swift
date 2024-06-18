@@ -341,7 +341,7 @@ private extension SendController {
   }
 
   func createWalletModel(wallet: Wallet, balance: Balance?, isTokenPickerRequired: Bool) -> SendWalletModel {
-    let name = "\(wallet.metaData.emoji)\(wallet.metaData.label)"
+    let name = "\(wallet.emoji)\(wallet.label)"
     let balanceValue: String?
     let isPickerEnabled: Bool
     switch sendItem {
@@ -383,7 +383,7 @@ private extension SendController {
     return SendWalletModel(
       id: UUID().uuidString,
       name: name,
-      tintColor: wallet.metaData.tintColor,
+      tintColor: wallet.tintColor,
       balance: balanceValue,
       isPickerEnabled: isPickerEnabled
     )

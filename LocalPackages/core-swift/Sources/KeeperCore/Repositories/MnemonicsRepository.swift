@@ -20,6 +20,7 @@ public protocol MnemonicsRepository {
   func savePassword(_ password: String) throws
   func getPassword() throws -> String
   func deletePassword() throws
+  func importMnemonics(_ mnemonics: Mnemonics, password: String) async throws
 }
 
 extension MnemonicsV3Vault: MnemonicsRepository {

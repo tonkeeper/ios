@@ -7,38 +7,42 @@
 
 import Foundation
 
-public enum InfoProviderError: Swift.Error {
-  case failedToGetValue(key: String)
-}
+struct InfoProvider {
+  enum Keys: String {
+    case appVersion = "CFBundleShortVersionString"
+    case buildVersion = "CFBundleVersion"
+    case appGroupName = "APP_GROUP_IDENTIFIER"
+    case appName = "APP_NAME"
+    case keychainAccessGroup = "KEYCHAIN_ACCESS_GROUP"
+    case appIdentifierPrefix = "AppIdentifierPrefix"
 
-public enum InfoKey: String {
-  case appGroupName = "APP_GROUP_IDENTIFIER"
-  case oldAppGroupName = "OLD_APP_GROUP_IDENTIFIER"
-  case appName = "APP_NAME"
-  case appVersion = "CFBundleShortVersionString"
-  case buildVersion = "CFBundleVersion"
-  case keychainAccessGroup = "KEYCHAIN_ACCESS_GROUP"
-  case oldKeychainAccessGroup = "OLD_KEYCHAIN_ACCESS_GROUP"
-  case appIdentifierPrefix = "AppIdentifierPrefix"
-}
-
-public protocol InfoProvider {
-  func value<Value>(for key: String) throws -> Value
-  func value<Value>(for key: InfoKey) throws -> Value
-}
-
-public struct InfoProviderImplemenetation: InfoProvider {
-  
-  public init() {}
-  
-  public func value<Value>(for key: String) throws -> Value {
-    guard let value = Bundle.main.object(forInfoDictionaryKey: key) as? Value else {
-      throw InfoProviderError.failedToGetValue(key: key)
-    }
-    return value
   }
   
-  public func value<Value>(for key: InfoKey) throws -> Value {
-    return try value(for: key.rawValue)
+  static func value<T>(key: Keys) -> T? {
+    Bundle.main.object(forInfoDictionaryKey: key.rawValue) as? T
+  }
+  
+  static func appVersion() -> String? {
+    self.value(key: .appVersion)
+  }
+  
+  static func buildVersion() -> String? {
+    self.value(key: .buildVersion)
+  }
+  
+  static func appGroupName() -> String? {
+    self.value(key: .appGroupName)
+  }
+  
+  static func appName() -> String? {
+    self.value(key: .appName)
+  }
+  
+  static func keychainAccessGroup() -> String? {
+    self.value(key: .keychainAccessGroup)
+  }
+  
+  static func appIdentifierPrefix() -> String? {
+    self.value(key: .appIdentifierPrefix)
   }
 }

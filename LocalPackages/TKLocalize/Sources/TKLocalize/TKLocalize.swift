@@ -36,6 +36,10 @@ public enum TKLocales {
     public static var copy: String {
       localize("actions.copy")
     }
+    /// Sign Out
+    public static var sign_out: String {
+      localize("actions.sign_out")
+    }
   }
   public enum Dates {
     /// Today
@@ -919,6 +923,16 @@ public enum TKLocales {
           localize("ledger_confirm.steps.confirm.description")
         }
       }
+    }
+  }
+  public enum SignOutFull {
+    /// 🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?
+    public static var title: String {
+      localize("sign_out_full.title")
+    }
+    /// This will erase keys to all wallets. Make sure you have backed up your recovery phrases.
+    public static var description: String {
+      localize("sign_out_full.description")
     }
   }
 }

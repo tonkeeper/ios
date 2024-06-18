@@ -4,8 +4,10 @@ import CryptoKit
 import CryptoSwift
 import TweetNacl
 
+public typealias MnemonicIdentifier = String
+public typealias Mnemonics = [MnemonicIdentifier: Mnemonic]
+
 public struct MnemonicsV3Vault {
-  public typealias Identifier = String
   public struct EncryptedMnemonics: Codable {
     public let N: Int
     public let r: Int
@@ -13,7 +15,6 @@ public struct MnemonicsV3Vault {
     public let salt: String
     public let ct: String
   }
-  public typealias Mnemonics = [Identifier: Mnemonic]
   
   public enum Error: Swift.Error {
     case mnemonicsCorrupted
@@ -40,7 +41,7 @@ public struct MnemonicsV3Vault {
   }
 
   public func addMnemonic(_ mnemonic: Mnemonic, 
-                          identifier: Identifier,
+                          identifier: MnemonicIdentifier,
                           password: String) async throws {
     do {
       let encryptedMnemonics = try loadEncryptedMnemonics()
@@ -55,7 +56,7 @@ public struct MnemonicsV3Vault {
     }
   }
   
-  public func getMnemonic(identifier: Identifier,
+  public func getMnemonic(identifier: MnemonicIdentifier,
                           password: String) async throws -> Mnemonic {
     let encryptedMnemonics = try loadEncryptedMnemonics()
     let mnemonics = try await decryptMnemonics(encryptedMnemonics, password: password)
@@ -65,7 +66,7 @@ public struct MnemonicsV3Vault {
     return mnemonic
   }
   
-  public func deleteMnemonic(identifier: Identifier,
+  public func deleteMnemonic(identifier: MnemonicIdentifier,
                              password: String) async throws {
     let encryptedMnemonics = try loadEncryptedMnemonics()
     var mnemonics = try await decryptMnemonics(encryptedMnemonics, password: password)

@@ -1,7 +1,7 @@
 import Foundation
 import KeeperCore
 
-struct PasscodeConfirmationValidator: PasscodeValidator {
+struct PasscodeConfirmationValidator: PasscodeInputValidator {
   
   private let mnemonicsRepository: MnemonicsRepository
   

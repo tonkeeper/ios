@@ -222,6 +222,14 @@ private extension AddWalletCoordinator {
       self?.removeChild(coordinator)
     }
     
+    coordinator.didPaired = {[weak self, weak coordinator] in
+      self?.router.dismiss(animated: true) {
+        self?.didAddWallets?()
+      }
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
     addChild(coordinator)
     coordinator.start()
   }
