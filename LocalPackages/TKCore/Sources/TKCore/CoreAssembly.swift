@@ -12,9 +12,12 @@ public struct CoreAssembly {
   public let appStateTracker = AppStateTracker()
   public let reachabilityTracker = ReachabilityTracker()
   public let featureFlagsProvider: FeatureFlagsProvider
+  public let isTonkeeperX: Bool
   
-  public init(featureFlagsProvider: FeatureFlagsProvider = FeatureFlagsProvider()) {
+  public init(featureFlagsProvider: FeatureFlagsProvider = FeatureFlagsProvider(),
+              isTonkeeperX: Bool = false) {
     self.featureFlagsProvider = featureFlagsProvider
+    self.isTonkeeperX = isTonkeeperX
   }
   
   public var cacheURL: URL {

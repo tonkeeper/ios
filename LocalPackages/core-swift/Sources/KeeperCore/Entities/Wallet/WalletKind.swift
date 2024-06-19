@@ -7,7 +7,7 @@ public enum WalletKind: Codable, Equatable {
   case Watchonly(ResolvableAddress)
   case Signer(TonSwift.PublicKey, WalletContractVersion)
   case SignerDevice(TonSwift.PublicKey, WalletContractVersion)
-  case Ledger(TonSwift.PublicKey, WalletContractVersion)
+  case Ledger(TonSwift.PublicKey, WalletContractVersion, Wallet.LedgerDevice)
   
   public static func == (lhs: WalletKind, rhs: WalletKind) -> Bool {
     switch (lhs, rhs) {
@@ -21,8 +21,8 @@ public enum WalletKind: Codable, Equatable {
       return lpk == rpk && lv == rv
     case (.SignerDevice(let lpk, let lv), .SignerDevice(let rpk, let rv)):
       return lpk == rpk && lv == rv
-    case (.Ledger(let lpk, let lv), .Ledger(let rpk, let rv)):
-      return lpk == rpk && lv == rv
+    case (.Ledger(let lpk, let lv, let lledger), .Ledger(let rpk, let rv, let rledger)):
+      return lpk == rpk && lv == rv && lledger == rledger
     default: return false
     }
   }
@@ -56,10 +56,11 @@ extension WalletKind: CellCodable {
       try builder.store(uint: 4, bits: 5)
       try publicKey.storeTo(builder: builder)
       try contractVersion.storeTo(builder: builder)
-    case let .Ledger(publicKey, contractVersion):
+    case let .Ledger(publicKey, contractVersion, device):
       try builder.store(uint: 5, bits: 5)
       try publicKey.storeTo(builder: builder)
       try contractVersion.storeTo(builder: builder)
+      try device.storeTo(builder: builder)
     }
   }
   
@@ -89,7 +90,8 @@ extension WalletKind: CellCodable {
       case 5:
         let publicKey: TonSwift.PublicKey = try s.loadType()
         let contractVersion: WalletContractVersion = try s.loadType()
-        return .Ledger(publicKey, contractVersion)
+        let device: Wallet.LedgerDevice = try s.loadType()
+        return .Ledger(publicKey, contractVersion, device)
       default:
         throw TonError.custom("Invalid WalletKind type");
       }

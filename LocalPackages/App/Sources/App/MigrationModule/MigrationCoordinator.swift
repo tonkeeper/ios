@@ -18,6 +18,10 @@ final class MigrationCoordinator: RouterCoordinator<NavigationControllerRouter> 
   }
   
   override func start(deeplink: (any CoordinatorDeeplink)? = nil) {
+    performMigration()
+  }
+  
+  private func performMigration() {
     Task {
       try await migrationController.migrate { validation in
         return await withCheckedContinuation { continuation in

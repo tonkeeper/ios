@@ -2,9 +2,10 @@ import Foundation
 import TKUIKit
 import TKLocalize
 import TonSwift
+import KeeperCore
 
 protocol LedgerConnectModuleOutput: AnyObject {
-  var didConnect: ((_ publicKey: TonSwift.PublicKey, _ name: String) -> Void)? { get set }
+  var didConnect: ((_ publicKey: TonSwift.PublicKey, _ name: String, _ device: Wallet.LedgerDevice) -> Void)? { get set }
   var didCancel: (() -> Void)? { get set }
 }
 
@@ -23,7 +24,7 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   
   // MARK: - LedgerConnectModuleOutput
   
-  var didConnect: ((_ publicKey: TonSwift.PublicKey, _ name: String) -> Void)?
+  var didConnect: ((_ publicKey: TonSwift.PublicKey, _ name: String, _ device: Wallet.LedgerDevice) -> Void)?
   var didCancel: (() -> Void)?
   
   // MARK: - LedgerConnectViewModel
@@ -135,7 +136,7 @@ private extension LedgerConnectViewModelImplementation {
         let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
           mnemonicArray: mnemonic
         )
-        self?.didConnect?(keyPair.publicKey, "ledger")
+        self?.didConnect?(keyPair.publicKey, "ledger", Wallet.LedgerDevice(deviceId: "DeviceId", deviceModel: "DeviceModel", accountIndex: 3))
       } catch {}
     }
     return configuration

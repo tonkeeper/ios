@@ -20,8 +20,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
   func scene(_ scene: UIScene,
              willConnectTo session: UISceneSession,
              options connectionOptions: UIScene.ConnectionOptions) {
-    guard let windowScene = (scene as? UIWindowScene) else { return }
+    let isTonkeeperX: Bool
+#if TonkeeperX
+    isTonkeeperX = true
+#else
+    isTonkeeperX = false
+#endif
     
+    guard let windowScene = (scene as? UIWindowScene) else { return }
     let window = TKWindow(windowScene: windowScene)
     let coordinator = App.AppCoordinator(router: TKCoordinator.WindowRouter(window: window),
     coreAssembly: CoreAssembly(featureFlagsProvider: FeatureFlagsProvider(
@@ -29,7 +35,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
       FirebaseConfigurator.configurator.isMarketRegionPickerAvailable
       }, isBuySellLovely: {
         FirebaseConfigurator.configurator.isBuySellLovely
-      })))
+      }), isTonkeeperX: isTonkeeperX)
+    )
     
     if let deeplink = connectionOptions.urlContexts.first?.url.absoluteString {
       coordinator.start(deeplink: deeplink)

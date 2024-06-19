@@ -409,6 +409,11 @@ private extension MainCoordinator {
         )
       )
       
+      coordinator.didPrepareToPresent = { [weak self, weak navigationController] in
+        guard let navigationController else { return }
+        self?.router.present(navigationController)
+      }
+      
       coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in
         navigationController?.dismiss(animated: true)
         self?.removeChild(coordinator)

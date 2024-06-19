@@ -4,7 +4,7 @@ public final class RootAssembly {
   public let repositoriesAssembly: RepositoriesAssembly
   private let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
-  private let coreAssembly: CoreAssembly
+  public let coreAssembly: CoreAssembly
   public let formattersAssembly: FormattersAssembly
   public let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
@@ -59,11 +59,13 @@ public final class RootAssembly {
   }
   
   public func migrationController(sharedCacheURL: URL,
-                                  keychainAccessGroupIdentifier: String) -> MigrationController {
+                                  keychainAccessGroupIdentifier: String,
+                                  isTonkeeperX: Bool) -> MigrationController {
     MigrationController(
       sharedCacheURL: sharedCacheURL,
       keychainAccessGroupIdentifier: keychainAccessGroupIdentifier,
-      rootAssembly: self
+      rootAssembly: self,
+      isTonkeeperX: isTonkeeperX
     )
   }
   

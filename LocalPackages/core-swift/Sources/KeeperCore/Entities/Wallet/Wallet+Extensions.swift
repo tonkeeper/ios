@@ -51,7 +51,7 @@ public extension Wallet {
         return publicKey
       case .SignerDevice(let publicKey, _):
         return publicKey
-      case .Ledger(let publicKey, _):
+      case .Ledger(let publicKey, _, _):
         return publicKey
       }
     }
@@ -70,7 +70,7 @@ public extension Wallet {
         return contractVersion
       case .SignerDevice(_, let contractVersion):
         return contractVersion
-      case .Ledger(_, let contractVersion):
+      case .Ledger(_, let contractVersion, _):
         return contractVersion
       }
     }

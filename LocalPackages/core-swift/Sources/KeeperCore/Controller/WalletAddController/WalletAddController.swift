@@ -131,6 +131,7 @@ public final class WalletAddController {
   
   public func importLedgerWallet(publicKey: TonSwift.PublicKey,
                                  revisions: [WalletContractVersion],
+                                 device: Wallet.LedgerDevice,
                                  metaData: WalletMetaData) throws {
     let addPostfix = revisions.count > 1
     
@@ -145,7 +146,7 @@ public final class WalletAddController {
       
       let identity = WalletIdentity(
         network: .mainnet,
-        kind: .Ledger(publicKey, revision)
+        kind: .Ledger(publicKey, revision, device)
       )
       
       return Wallet(

@@ -90,7 +90,7 @@ private extension WalletTransferSignCoordinator {
         publicKey: publicKey,
         revision: walletContractVersion
       )
-    case .Ledger(let publicKey, let walletContractVersion):
+    case .Ledger(let publicKey, let walletContractVersion, _):
       handleLedgerSign(
         transfer: walletTransfer,
         publicKey: publicKey,

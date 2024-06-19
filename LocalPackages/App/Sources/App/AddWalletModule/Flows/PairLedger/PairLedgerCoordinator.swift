@@ -48,16 +48,16 @@ private extension PairLedgerCoordinator {
       })
     }
     
-    module.output.didConnect = { [weak self, weak bottomSheetViewController] publicKey, name in
+    module.output.didConnect = { [weak self, weak bottomSheetViewController] publicKey, name, device in
       bottomSheetViewController?.dismiss(completion: {
-        self?.openImportCoordinator(publicKey: publicKey, name: name)
+        self?.openImportCoordinator(publicKey: publicKey, name: name, device: device)
       })
     }
 
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func openImportCoordinator(publicKey: TonSwift.PublicKey, name: String) {
+  func openImportCoordinator(publicKey: TonSwift.PublicKey, name: String, device: Wallet.LedgerDevice) {
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     let coordinator = publicKeyImportCoordinatorProvider(
@@ -80,6 +80,7 @@ private extension PairLedgerCoordinator {
           try await self.importWallet(
             publicKey: publicKey,
             revisions: revisions,
+            device: device,
             model: model)
           await MainActor.run {
             self.didPaired?()
@@ -101,6 +102,7 @@ private extension PairLedgerCoordinator {
   
   func importWallet(publicKey: TonSwift.PublicKey,
                     revisions: [WalletContractVersion],
+                    device: Wallet.LedgerDevice,
                     model: CustomizeWalletModel) async throws {
     let addController = walletUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
@@ -110,6 +112,7 @@ private extension PairLedgerCoordinator {
     try addController.importLedgerWallet(
       publicKey: publicKey,
       revisions: revisions,
+      device: device,
       metaData: metaData
     )
   }

@@ -42,7 +42,8 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     
     let migrationController = dependencies.keeperCoreRootAssembly.migrationController(
       sharedCacheURL: dependencies.coreAssembly.sharedCacheURL,
-      keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier
+      keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier,
+      isTonkeeperX: dependencies.coreAssembly.isTonkeeperX
     )
     
     if migrationController.checkIfNeedToMigrate() {
