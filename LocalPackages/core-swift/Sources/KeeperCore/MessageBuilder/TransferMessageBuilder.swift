@@ -208,11 +208,19 @@ public struct ExternalMessageTransferBuilder {
       sendMode: sendMode,
       timeout: timeout)
     let contract = try wallet.contract
-    let transfer = try contract.createTransfer(args: transferData)
+    let transfer = try contract.createTransfer(args: transferData, messageType: .ext)
     let signedTransfer = try await signClosure(transfer)
     let body = Builder()
-    try body.store(data: signedTransfer)
-    try body.store(transfer.signingMessage)
+    
+    switch transfer.signaturePosition {
+    case .front:
+      try body.store(data: signedTransfer)
+      try body.store(transfer.signingMessage)
+    case .tail:
+      try body.store(transfer.signingMessage)
+      try body.store(data: signedTransfer)
+      
+    }
     let transferCell = try body.endCell()
     
     let externalMessage = Message.external(to: sender,

@@ -180,13 +180,31 @@ public struct RNMigration {
     case .v4R2:
       contractVersion = .v4R2
     case .v5R1:
-      throw MigrateError.failedMigrateWallet
+      contractVersion = .v5R1
     case .LockupV1:
       contractVersion = .v3R1
+    }
+    
+    let network: Network
+    switch walletConfig.network {
+    case .mainnet:
+      network = .mainnet
+    case .testnet:
+      network = .testnet
     }
 
     let contract: WalletContract
     switch contractVersion {
+    case .v5R1:
+      contract = WalletV5R1(
+        publicKey: publicKey.data,
+        walletId: WalletId(
+          networkGlobalId: Int32(
+            network.rawValue
+          ),
+          workchain: 0
+        )
+      )
     case .v4R2:
       contract = WalletV4R2(publicKey: publicKey.data)
     case .v4R1:
@@ -204,7 +222,7 @@ public struct RNMigration {
         throw MigrateError.failedMigrateWallet
       }
       kind = .Ledger(
-        publicKey, 
+        publicKey,
         contractVersion,
         Wallet.LedgerDevice(deviceId: ledgerDevice.deviceId,
                             deviceModel: ledgerDevice.deviceModel,
@@ -220,15 +238,6 @@ public struct RNMigration {
       kind = .SignerDevice(publicKey, contractVersion)
     case .WatchOnly:
       kind = .Watchonly(.Resolved(try contract.address()))
-    }
-
-
-    let network: Network
-    switch walletConfig.network {
-    case .mainnet:
-      network = .mainnet
-    case .testnet:
-      network = .testnet
     }
     
     let icon: WalletIcon
