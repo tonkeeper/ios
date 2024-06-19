@@ -2,8 +2,8 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-public final class PasscodeView: UIView, ConfigurableView {
-  let keyboardView = TKKeyboardView(configuration: .passcodeConfiguration(biometry: nil))
+final class PasscodeView: UIView {
+  let keyboardView = TKKeyboardView()
   let topContainer = UIView()
   
   override init(frame: CGRect) {
@@ -14,27 +14,15 @@ public final class PasscodeView: UIView, ConfigurableView {
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
   }
-  
-  public struct Model {
-    let keyboardConfiguration: TKKeyboardView.Configuration
-  }
-  
-  public func configure(model: Model) {
-    keyboardView.configuration = model.keyboardConfiguration
-  }
 }
 
 private extension PasscodeView {
   func setup() {
     backgroundColor = .Background.page
     
-    addSubview(keyboardView)
     addSubview(topContainer)
+    addSubview(keyboardView)
     
-    setupConstraints()
-  }
-  
-  func setupConstraints() {
     keyboardView.snp.makeConstraints { make in
       make.bottom.equalTo(safeAreaLayoutGuide).inset(16)
       make.left.right.equalTo(self).inset(16)

@@ -1,4 +1,5 @@
 import Foundation
+import CoreComponents
 
 public final class Assembly {
   let coreAssembly: CoreAssembly

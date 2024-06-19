@@ -77,6 +77,7 @@ final class WalletsServiceImplementation: WalletsService {
   
   func updateWallet(wallet: Wallet, metaData: WalletMetaData) throws {
     let updatedWallet = Wallet(
+      id: wallet.id,
       identity: wallet.identity,
       metaData: metaData,
       setupSettings: wallet.setupSettings,
@@ -101,6 +102,7 @@ final class WalletsServiceImplementation: WalletsService {
   
   func updateWallet(wallet: Wallet, setupSettings: WalletSetupSettings) throws {
     let updatedWallet = Wallet(
+      id: wallet.id,
       identity: wallet.identity,
       metaData: wallet.metaData,
       setupSettings: setupSettings,

@@ -12,27 +12,27 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
   
   private let options: [AddWalletOption]
   private let walletAddController: WalletAddController
-  private let createWalletCoordinatorProvider: (NavigationControllerRouter, _ passcode: String?) -> CreateWalletCoordinator
-  private let importWalletCoordinatorProvider: (NavigationControllerRouter, _ passcode: String?, _ isTestnet: Bool) -> ImportWalletCoordinator
-  private let importWatchOnlyWalletCoordinatorProvider: (NavigationControllerRouter, _ passcode: String?) -> ImportWatchOnlyWalletCoordinator
-  private let pairSignerCoordinatorProvider: (NavigationControllerRouter, _ passcode: String?) -> PairSignerCoordinator
-  private let createPasscodeCoordinatorProvider: ((NavigationControllerRouter) -> CreatePasscodeCoordinator)?
+  private let createWalletCoordinatorProvider: (ViewControllerRouter) -> CreateWalletCoordinator
+  private let importWalletCoordinatorProvider: (NavigationControllerRouter, _ isTestnet: Bool) -> ImportWalletCoordinator
+  private let importWatchOnlyWalletCoordinatorProvider: (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator
+  private let pairSignerCoordinatorProvider: (NavigationControllerRouter) -> PairSignerCoordinator
+  private let pairLedgerCoordinatorProvider: (ViewControllerRouter) -> PairLedgerCoordinator
   
   init(router: ViewControllerRouter,
        options: [AddWalletOption],
        walletAddController: WalletAddController,
-       createWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ passcode: String?) -> CreateWalletCoordinator,
-       importWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ passcode: String?, _ isTestnet: Bool) -> ImportWalletCoordinator,
-       importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ passcode: String?) -> ImportWatchOnlyWalletCoordinator,
-       pairSignerCoordinatorProvider: @escaping (NavigationControllerRouter, _ passcode: String?) -> PairSignerCoordinator,
-       createPasscodeCoordinatorProvider: ((NavigationControllerRouter) -> CreatePasscodeCoordinator)?) {
+       createWalletCoordinatorProvider: @escaping (ViewControllerRouter) -> CreateWalletCoordinator,
+       importWalletCoordinatorProvider: @escaping (NavigationControllerRouter, _ isTestnet: Bool) -> ImportWalletCoordinator,
+       importWatchOnlyWalletCoordinatorProvider: @escaping (NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator,
+       pairSignerCoordinatorProvider: @escaping (NavigationControllerRouter) -> PairSignerCoordinator,
+       pairLedgerCoordinatorProvider: @escaping (ViewControllerRouter) -> PairLedgerCoordinator) {
     self.walletAddController = walletAddController
     self.options = options
     self.createWalletCoordinatorProvider = createWalletCoordinatorProvider
     self.importWalletCoordinatorProvider = importWalletCoordinatorProvider
     self.importWatchOnlyWalletCoordinatorProvider = importWatchOnlyWalletCoordinatorProvider
     self.pairSignerCoordinatorProvider = pairSignerCoordinatorProvider
-    self.createPasscodeCoordinatorProvider = createPasscodeCoordinatorProvider
+    self.pairLedgerCoordinatorProvider = pairLedgerCoordinatorProvider
     super.init(router: router)
   }
   
@@ -76,81 +76,48 @@ private extension AddWalletCoordinator {
   }
   
   func handleSelectedOption(_ option: AddWalletOption) {
-    let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
-    let router = NavigationControllerRouter(rootViewController: navigationController)
-    
-    if let createPasscodeCoordinator = createPasscodeCoordinatorProvider?(router) {
-      createPasscodeCoordinator.didCreatePasscode = { [weak self] passcode in
-        self?.openOption(option: option, passcode: passcode, router: router)
-      }
-      
-      createPasscodeCoordinator.didCancel = { [weak self, weak createPasscodeCoordinator] in
-        navigationController.dismiss(animated: true) {
-          self?.didCancel?()
-        }
-        guard let coordinator = createPasscodeCoordinator else { return }
-        self?.removeChild(coordinator)
-      }
-      
-      addChild(createPasscodeCoordinator)
-      createPasscodeCoordinator.start()
-      self.router.present(navigationController, onDismiss: { [weak self, weak createPasscodeCoordinator] in
-        self?.didCancel?()
-        guard let coordinator = createPasscodeCoordinator else { return }
-        self?.removeChild(coordinator)
-      })
-    } else {
-      openOption(option: option, passcode: nil, router: router)
-      self.router.present(navigationController, onDismiss: { [weak self] in
-        self?.didCancel?()
-      })
-    }
-  }
-  
-  func openOption(option: AddWalletOption, passcode: String?, router: NavigationControllerRouter) {
     switch option {
     case .createRegular:
-      openCreateRegularWallet(router: router, passcode: passcode)
+      openCreateRegularWallet(router: router)
     case .importRegular:
-      openAddWallet(router: router, passcode: passcode, isTestnet: false)
+      openAddWallet(isTestnet: false)
     case .importWatchOnly:
-      openAddWatchOnlyWallet(router: router, passcode: passcode)
+      openAddWatchOnlyWallet()
     case .importTestnet:
-      openAddWallet(router: router, passcode: passcode, isTestnet: true)
+      openAddWallet(isTestnet: true)
     case .signer:
-      openPairSigner(router: router, passcode: passcode)
+      openPairSigner()
+    case .ledger:
+      openPairLedger()
     }
   }
   
-  func openCreateRegularWallet(router: NavigationControllerRouter, passcode: String?) {
+  func openCreateRegularWallet(router: ViewControllerRouter) {
     let coordinator = createWalletCoordinatorProvider(
-      router, passcode
+      router
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      router.dismiss(animated: true, completion: {
-        self?.didCancel?()
-      })
+      self?.didCancel?()
     }
     
     coordinator.didCreateWallet = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      router.dismiss(animated: true, completion :{
-        self?.didAddWallets?()
-      })
+      self?.didAddWallets?()
     }
     
     addChild(coordinator)
     coordinator.start()
   }
 
-  func openAddWatchOnlyWallet(router: NavigationControllerRouter, passcode: String?) {
+  func openAddWatchOnlyWallet() {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
     let coordinator = importWatchOnlyWalletCoordinatorProvider(
-      router, passcode
+      router
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
@@ -171,17 +138,26 @@ private extension AddWalletCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+    
+    self.router.present(navigationController, onDismiss: { [weak self] in
+      self?.didCancel?()
+    })
   }
 
-  func openAddWallet(router: NavigationControllerRouter, passcode: String?, isTestnet: Bool) {
+  func openAddWallet(isTestnet: Bool) {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
     let coordinator = importWalletCoordinatorProvider(
-      router, passcode, isTestnet
+      router, isTestnet
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      self?.didCancel?()
+      self?.router.dismiss(animated: true, completion: {
+        self?.didCancel?()
+      })
     }
     
     coordinator.didImportWallets = { [weak self, weak coordinator] in
@@ -194,11 +170,19 @@ private extension AddWalletCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+    
+    self.router.present(navigationController, onDismiss: { [weak self] in
+      self?.didCancel?()
+    })
   }
   
-  func openPairSigner(router: NavigationControllerRouter, passcode: String?) {
+  func openPairSigner() {
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
     let coordinator = pairSignerCoordinatorProvider(
-      router, passcode
+      router
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
@@ -220,6 +204,31 @@ private extension AddWalletCoordinator {
     }
     
     self.pairSignerCoordinator = coordinator
+    
+    addChild(coordinator)
+    coordinator.start()
+    
+    self.router.present(navigationController, onDismiss: { [weak self] in
+      self?.didCancel?()
+    })
+  }
+  
+  func openPairLedger() {
+    let coordinator = pairLedgerCoordinatorProvider(router)
+    
+    coordinator.didCancel = { [weak self, weak coordinator] in
+      self?.didCancel?()
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    coordinator.didPaired = {[weak self, weak coordinator] in
+      self?.router.dismiss(animated: true) {
+        self?.didAddWallets?()
+      }
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
     
     addChild(coordinator)
     coordinator.start()

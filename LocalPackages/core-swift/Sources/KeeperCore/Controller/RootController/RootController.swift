@@ -11,6 +11,7 @@ public final class RootController {
   private let knownAccountsStore: KnownAccountsStore
   private let deeplinkParser: DeeplinkParser
   private let keeperInfoRepository: KeeperInfoRepository
+  private let mnemonicsRepository: MnemonicsRepository
   private let buySellMethodsService: BuySellMethodsService
   private let locationService: LocationService
   
@@ -19,6 +20,7 @@ public final class RootController {
        knownAccountsStore: KnownAccountsStore,
        deeplinkParser: DeeplinkParser,
        keeperInfoRepository: KeeperInfoRepository,
+       mnemonicsRepository: MnemonicsRepository,
        buySellMethodsService: BuySellMethodsService,
        locationService: LocationService) {
     self.walletsService = walletsService
@@ -26,6 +28,7 @@ public final class RootController {
     self.knownAccountsStore = knownAccountsStore
     self.deeplinkParser = deeplinkParser
     self.keeperInfoRepository = keeperInfoRepository
+    self.mnemonicsRepository = mnemonicsRepository
     self.buySellMethodsService = buySellMethodsService
     self.locationService = locationService
   }
@@ -64,7 +67,8 @@ public final class RootController {
     try deeplinkParser.parse(string: string)
   }
   
-  public func logout() async {
-    try? keeperInfoRepository.removeKeeperInfo()
+  public func logout() async throws {
+    try await mnemonicsRepository.deleteAll()
+    try keeperInfoRepository.removeKeeperInfo()
   }
 }

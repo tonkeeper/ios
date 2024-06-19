@@ -17,10 +17,9 @@ struct WalletListMapper {
   
   func mapWalletModel(wallet: Wallet,
                       balance: String) -> WalletListController.ItemModel {
-    let walletModel = wallet.model
     return WalletListController.ItemModel(
-      id: walletModel.identifier,
-      walletModel: walletModel,
+      id: wallet.id,
+      wallet: wallet,
       totalBalance: balance
     )
   }

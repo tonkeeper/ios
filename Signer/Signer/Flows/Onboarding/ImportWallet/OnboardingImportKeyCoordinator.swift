@@ -87,15 +87,21 @@ private extension OnboardingImportKeyCoordinator {
   
   func createKey(phrase: [String], password: String, name: String) {
     let keysAddController = assembly.keysAddController()
-    do {
-      try keysAddController.importWalletKey(
-        phrase: phrase,
-        name: name,
-        password: password
-      )
-      didImportKey?()
-    } catch {
-      print("Log: Key import failed, error \(error)")
+    Task {
+      do {
+        try await keysAddController.importWalletKey(
+          phrase: phrase,
+          name: name,
+          password: password
+        )
+        await MainActor.run {
+          didImportKey?()
+        }
+      } catch {
+        await MainActor.run {
+          print("Log: Key import failed, error \(error)")
+        }
+      }
     }
   }
 }

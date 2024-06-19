@@ -146,6 +146,7 @@
 /* Begin PBXFileReference section */
 		509051DD2BE1661E00B41894 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		50ADFE3C2BE160D3000E1C0A /* TKLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLocalize; sourceTree = "<group>"; };
+		7D11105E2C1B54650083B944 /* TKCryptoSwift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCryptoSwift; sourceTree = "<group>"; };
 		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -165,14 +166,6 @@
 		7D3F26092AC1990C002DF1B7 /* RateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateChartWidgetView.swift; sourceTree = "<group>"; };
 		7D4C14632AD98E44002B2922 /* diamond.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = diamond.json; sourceTree = "<group>"; };
 		7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppAssembly.swift; sourceTree = "<group>"; };
-		7D7CF6C02AC7041A00EB0BFF /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
-		7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
-		7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
-		7D7CF6C32AC7043F00EB0BFF /* WidgetBase.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetBase.xcconfig; sourceTree = "<group>"; };
-		7D7CF6C42AC7044700EB0BFF /* WidgetDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetDebug.xcconfig; sourceTree = "<group>"; };
-		7D7CF6C52AC7045000EB0BFF /* WidgetRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = WidgetRelease.xcconfig; sourceTree = "<group>"; };
-		7D7CF6C72AC7050600EB0BFF /* SignDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SignDebug.xcconfig; sourceTree = "<group>"; };
-		7D7CF6C82AC7050D00EB0BFF /* SignRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = SignRelease.xcconfig; sourceTree = "<group>"; };
 		7D8A50922AC709F800AA396C /* Tonkeeper.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Tonkeeper.entitlements; sourceTree = "<group>"; };
 		7D8A50932AC709FF00AA396C /* TonkeeperWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperWidgetExtension.entitlements; sourceTree = "<group>"; };
 		7D8A50A12AC861AE00AA396C /* BalanceWidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceWidgetEntry.swift; sourceTree = "<group>"; };
@@ -189,19 +182,20 @@
 		7DB46DF22AC2238F006E9F71 /* HomeScreenSmallRateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenSmallRateChartWidgetView.swift; sourceTree = "<group>"; };
 		7DB46DF42AC232E8006E9F71 /* RateChartWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateChartWidget.swift; sourceTree = "<group>"; };
 		7DB46DF62AC233EA006E9F71 /* HomeScreenMediumRateChartWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenMediumRateChartWidgetView.swift; sourceTree = "<group>"; };
-		7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Tonkeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7DB8FB622A1BCC92005B4B11 /* Tonkeeper X Debug.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Tonkeeper X Debug.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DB8FB652A1BCC92005B4B11 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		7DB8FB6E2A1BCC92005B4B11 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7DB8FB712A1BCC92005B4B11 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		7DB8FB732A1BCC92005B4B11 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		7DC4AC782C21A45E001742C3 /* TonkeeperDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = TonkeeperDebug.xcconfig; sourceTree = "<group>"; };
+		7DD14F1A2C219DCF0077E03C /* Tonkeeper.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Tonkeeper.xcconfig; sourceTree = "<group>"; };
+		7DD14F1B2C219DCF0077E03C /* TonkeeperX.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = TonkeeperX.xcconfig; sourceTree = "<group>"; };
+		7DD14F1C2C219DCF0077E03C /* TonkeeperXDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = TonkeeperXDebug.xcconfig; sourceTree = "<group>"; };
 		7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TonkeeperIntents.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Intents.framework; path = System/Library/Frameworks/Intents.framework; sourceTree = SDKROOT; };
 		7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntentHandler.swift; sourceTree = "<group>"; };
 		7DDBBFF12ACCA10E00F811A5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		7DDBC0012ACCAFE200F811A5 /* IntentsBase.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsBase.xcconfig; sourceTree = "<group>"; };
-		7DDBC0022ACCAFEF00F811A5 /* IntentsDebug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsDebug.xcconfig; sourceTree = "<group>"; };
-		7DDBC0032ACCAFF700F811A5 /* IntentsRelease.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = IntentsRelease.xcconfig; sourceTree = "<group>"; };
 		C313EC0B2B50138D009DF825 /* TKCoordinator */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCoordinator; sourceTree = "<group>"; };
 		C313EC0D2B50138D009DF825 /* TKCore */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCore; sourceTree = "<group>"; };
 		C313EC0E2B50138D009DF825 /* TKChart */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKChart; sourceTree = "<group>"; };
@@ -344,27 +338,12 @@
 			isa = PBXGroup;
 			children = (
 				7D8A50942AC70A2500AA396C /* Entitlements */,
-				7D7CF6C62AC704F900EB0BFF /* Signing */,
-				7D7CF6C02AC7041A00EB0BFF /* Base.xcconfig */,
-				7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */,
-				7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */,
-				7D7CF6C32AC7043F00EB0BFF /* WidgetBase.xcconfig */,
-				7D7CF6C42AC7044700EB0BFF /* WidgetDebug.xcconfig */,
-				7D7CF6C52AC7045000EB0BFF /* WidgetRelease.xcconfig */,
-				7DDBC0012ACCAFE200F811A5 /* IntentsBase.xcconfig */,
-				7DDBC0022ACCAFEF00F811A5 /* IntentsDebug.xcconfig */,
-				7DDBC0032ACCAFF700F811A5 /* IntentsRelease.xcconfig */,
+				7DD14F1A2C219DCF0077E03C /* Tonkeeper.xcconfig */,
+				7DC4AC782C21A45E001742C3 /* TonkeeperDebug.xcconfig */,
+				7DD14F1B2C219DCF0077E03C /* TonkeeperX.xcconfig */,
+				7DD14F1C2C219DCF0077E03C /* TonkeeperXDebug.xcconfig */,
 			);
 			path = Configurations;
-			sourceTree = "<group>";
-		};
-		7D7CF6C62AC704F900EB0BFF /* Signing */ = {
-			isa = PBXGroup;
-			children = (
-				7D7CF6C72AC7050600EB0BFF /* SignDebug.xcconfig */,
-				7D7CF6C82AC7050D00EB0BFF /* SignRelease.xcconfig */,
-			);
-			path = Signing;
 			sourceTree = "<group>";
 		};
 		7D8A50942AC70A2500AA396C /* Entitlements */ = {
@@ -417,7 +396,7 @@
 		7DB8FB632A1BCC92005B4B11 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */,
+				7DB8FB622A1BCC92005B4B11 /* Tonkeeper X Debug.app */,
 				7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */,
 				7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */,
 			);
@@ -460,6 +439,7 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				7D11105E2C1B54650083B944 /* TKCryptoSwift */,
 				50ADFE3C2BE160D3000E1C0A /* TKLocalize */,
 				C39560142B737F12003303C7 /* App */,
 				C34C705F2BE1151300143AC8 /* core-swift */,
@@ -536,7 +516,7 @@
 				C3CC74432BE11F08006022FE /* TKUIKitDynamic */,
 			);
 			productName = Tonkeeper;
-			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper.app */;
+			productReference = 7DB8FB622A1BCC92005B4B11 /* Tonkeeper X Debug.app */;
 			productType = "com.apple.product-type.application";
 		};
 		7DDBBFEA2ACCA10E00F811A5 /* TonkeeperIntents */ = {
@@ -765,18 +745,17 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		7D3F25E82AC19418002DF1B7 /* Debug */ = {
+		7D3F25E82AC19418002DF1B7 /* TonkeeperXDebug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/TonkeeperWidgetExtension.entitlements;
-				CODE_SIGN_IDENTITY = "$(WIDGET_CODE_SIGN_IDENTITY)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -793,27 +772,26 @@
 				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "$(WIDGET_PROVISIONING_PROFILE_SPECIFIER)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
-			name = Debug;
+			name = TonkeeperXDebug;
 		};
-		7D3F25E92AC19418002DF1B7 /* Release */ = {
+		7D3F25E92AC19418002DF1B7 /* TonkeeperXRelease */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/TonkeeperWidgetExtension.entitlements;
-				CODE_SIGN_IDENTITY = "$(WIDGET_CODE_SIGN_IDENTITY)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -836,11 +814,11 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
-			name = Release;
+			name = TonkeeperXRelease;
 		};
-		7DB8FB742A1BCC92005B4B11 /* Debug */ = {
+		7DB8FB742A1BCC92005B4B11 /* TonkeeperXDebug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */;
+			baseConfigurationReference = 7DD14F1C2C219DCF0077E03C /* TonkeeperXDebug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
@@ -891,7 +869,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -899,11 +877,11 @@
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
-			name = Debug;
+			name = TonkeeperXDebug;
 		};
-		7DB8FB752A1BCC92005B4B11 /* Release */ = {
+		7DB8FB752A1BCC92005B4B11 /* TonkeeperXRelease */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */;
+			baseConfigurationReference = 7DD14F1B2C219DCF0077E03C /* TonkeeperX.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
@@ -948,7 +926,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -956,24 +934,23 @@
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
 			};
-			name = Release;
+			name = TonkeeperXRelease;
 		};
-		7DB8FB772A1BCC92005B4B11 /* Debug */ = {
+		7DB8FB772A1BCC92005B4B11 /* TonkeeperXDebug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
-				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -987,9 +964,156 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = "$(APP_VERSION)";
+				OTHER_SWIFT_FLAGS = "";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
+				PRODUCT_NAME = "$(BUNDLE_DISPLAY_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG TonkeeperX";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = TonkeeperXDebug;
+		};
+		7DB8FB782A1BCC92005B4B11 /* TonkeeperXRelease */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = "";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(APP_VERSION)";
+				OTHER_SWIFT_FLAGS = "";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(BUNDLE_DISPLAY_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "RELEASE TonkeeperX";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = TonkeeperXRelease;
+		};
+		7DD14F1E2C219E2D0077E03C /* TonkeeperDebug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7DD14F1A2C219DCF0077E03C /* Tonkeeper.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = "";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = TonkeeperDebug;
+		};
+		7DD14F1F2C219E2D0077E03C /* TonkeeperDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIMainStoryboardFile = "";
+				INFOPLIST_KEY_UIStatusBarStyle = UIStatusBarStyleLightContent;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = "$(APP_VERSION)";
+				OTHER_SWIFT_FLAGS = "";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(BUNDLE_DISPLAY_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
@@ -997,24 +1121,149 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
-			name = Debug;
+			name = TonkeeperDebug;
 		};
-		7DB8FB782A1BCC92005B4B11 /* Release */ = {
+		7DD14F202C219E2D0077E03C /* TonkeeperDebug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/TonkeeperWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TonkeeperWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TonkeeperWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(WIDGET_PROVISIONING_PROFILE_SPECIFIER)";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = TonkeeperDebug;
+		};
+		7DD14F212C219E2D0077E03C /* TonkeeperDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = TonkeeperIntents/TonkeeperIntents.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TonkeeperIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TonkeeperIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = TonkeeperDebug;
+		};
+		7DD14F222C219E350077E03C /* TonkeeperRelease */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7DD14F1A2C219DCF0077E03C /* Tonkeeper.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = "";
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = TonkeeperRelease;
+		};
+		7DD14F232C219E350077E03C /* TonkeeperRelease */ = {
+			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/Tonkeeper.entitlements;
-				CODE_SIGN_IDENTITY = "$(CODE_SIGN_IDENTITY)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
-				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = CT523DK2KC;
+				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -1029,9 +1278,8 @@
 				);
 				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(PRODUCT_BUNDLE_IDENTIFIER)";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "$(PROVISIONING_PROFILE_SPECIFIER)";
-				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "TonkeeperX-AppStore";
+				PRODUCT_NAME = "$(BUNDLE_DISPLAY_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = YES;
@@ -1040,18 +1288,52 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
-			name = Release;
+			name = TonkeeperRelease;
 		};
-		7DDBBFF62ACCA10E00F811A5 /* Debug */ = {
+		7DD14F242C219E350077E03C /* TonkeeperRelease */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7D7CF6C12AC7042400EB0BFF /* Debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = Configurations/Entitlements/TonkeeperWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TonkeeperWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TonkeeperWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(WIDGET_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "$(WIDGET_PROVISIONING_PROFILE_SPECIFIER)";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = TonkeeperRelease;
+		};
+		7DD14F252C219E350077E03C /* TonkeeperRelease */ = {
+			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_ENTITLEMENTS = TonkeeperIntents/TonkeeperIntents.entitlements;
-				CODE_SIGN_IDENTITY = "$(INTENTS_CODE_SIGN_IDENTITY)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1068,25 +1350,57 @@
 				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "$(INTENTS_PROVISIONING_PROFILE_SPECIFIER)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = TonkeeperRelease;
+		};
+		7DDBBFF62ACCA10E00F811A5 /* TonkeeperXDebug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CODE_SIGN_ENTITLEMENTS = TonkeeperIntents/TonkeeperIntents.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = TonkeeperIntents/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = TonkeeperIntents;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = "$(APP_VERSION)";
+				PRODUCT_BUNDLE_IDENTIFIER = "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
-			name = Debug;
+			name = TonkeeperXDebug;
 		};
-		7DDBBFF72ACCA10E00F811A5 /* Release */ = {
+		7DDBBFF72ACCA10E00F811A5 /* TonkeeperXRelease */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 7D7CF6C22AC7042B00EB0BFF /* Release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CODE_SIGN_ENTITLEMENTS = TonkeeperIntents/TonkeeperIntents.entitlements;
-				CODE_SIGN_IDENTITY = "$(INTENTS_CODE_SIGN_IDENTITY)";
-				CODE_SIGN_STYLE = Manual;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = "$(BUILD_NUMBER)";
-				DEVELOPMENT_TEAM = "$(DEVELOPMENT_TEAM)";
+				DEVELOPMENT_TEAM = CT523DK2KC;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1103,13 +1417,13 @@
 				MARKETING_VERSION = "$(APP_VERSION)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(INTENTS_PRODUCT_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				PROVISIONING_PROFILE_SPECIFIER = "$(INTENTS_PROVISIONING_PROFILE_SPECIFIER)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
-			name = Release;
+			name = TonkeeperXRelease;
 		};
 /* End XCBuildConfiguration section */
 
@@ -1117,38 +1431,46 @@
 		7D3F25EA2AC19418002DF1B7 /* Build configuration list for PBXNativeTarget "TonkeeperWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				7D3F25E82AC19418002DF1B7 /* Debug */,
-				7D3F25E92AC19418002DF1B7 /* Release */,
+				7D3F25E82AC19418002DF1B7 /* TonkeeperXDebug */,
+				7DD14F202C219E2D0077E03C /* TonkeeperDebug */,
+				7D3F25E92AC19418002DF1B7 /* TonkeeperXRelease */,
+				7DD14F242C219E350077E03C /* TonkeeperRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = TonkeeperXRelease;
 		};
 		7DB8FB5D2A1BCC92005B4B11 /* Build configuration list for PBXProject "Tonkeeper" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				7DB8FB742A1BCC92005B4B11 /* Debug */,
-				7DB8FB752A1BCC92005B4B11 /* Release */,
+				7DB8FB742A1BCC92005B4B11 /* TonkeeperXDebug */,
+				7DD14F1E2C219E2D0077E03C /* TonkeeperDebug */,
+				7DB8FB752A1BCC92005B4B11 /* TonkeeperXRelease */,
+				7DD14F222C219E350077E03C /* TonkeeperRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = TonkeeperXRelease;
 		};
 		7DB8FB762A1BCC92005B4B11 /* Build configuration list for PBXNativeTarget "Tonkeeper" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				7DB8FB772A1BCC92005B4B11 /* Debug */,
-				7DB8FB782A1BCC92005B4B11 /* Release */,
+				7DB8FB772A1BCC92005B4B11 /* TonkeeperXDebug */,
+				7DD14F1F2C219E2D0077E03C /* TonkeeperDebug */,
+				7DB8FB782A1BCC92005B4B11 /* TonkeeperXRelease */,
+				7DD14F232C219E350077E03C /* TonkeeperRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = TonkeeperXRelease;
 		};
 		7DDBBFF52ACCA10E00F811A5 /* Build configuration list for PBXNativeTarget "TonkeeperIntents" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				7DDBBFF62ACCA10E00F811A5 /* Debug */,
-				7DDBBFF72ACCA10E00F811A5 /* Release */,
+				7DDBBFF62ACCA10E00F811A5 /* TonkeeperXDebug */,
+				7DD14F212C219E2D0077E03C /* TonkeeperDebug */,
+				7DDBBFF72ACCA10E00F811A5 /* TonkeeperXRelease */,
+				7DD14F252C219E350077E03C /* TonkeeperRelease */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
+			defaultConfigurationName = TonkeeperXRelease;
 		};
 /* End XCConfigurationList section */
 

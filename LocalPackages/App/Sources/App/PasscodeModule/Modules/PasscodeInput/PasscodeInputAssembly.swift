@@ -1,15 +1,10 @@
 import Foundation
 
-public struct PasscodeInputAssembly {
+struct PasscodeInputAssembly {
   private init() {}
-  public static func module(title: String,
-                            validator: PasscodeInputValidator,
-                            biometryProvider: PasscodeInputBiometryProvider)
+  static func module(title: String)
   -> (viewController: PasscodeInputViewController, output: PasscodeInputModuleOutput, input: PasscodeInputModuleInput) {
-    let viewModel = PasscodeInputViewModelImplementation(
-      title: title,
-      validator: validator,
-      biometryProvider: biometryProvider)
+    let viewModel = PasscodeInputViewModelImplementation(title: title)
     let viewController = PasscodeInputViewController(viewModel: viewModel)
     return (viewController, viewModel, viewModel)
   }

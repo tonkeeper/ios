@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "7DB8FB612A1BCC92005B4B11"
-               BuildableName = "Tonkeeper.app"
+               BuildableName = "Tonkeeper X.app"
                BlueprintName = "Tonkeeper"
                ReferencedContainer = "container:Tonkeeper.xcodeproj">
             </BuildableReference>
@@ -23,14 +23,14 @@
       </BuildActionEntries>
    </BuildAction>
    <TestAction
-      buildConfiguration = "Debug"
+      buildConfiguration = "TonkeeperDebug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       shouldUseLaunchSchemeArgsEnv = "YES"
       shouldAutocreateTestPlan = "YES">
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Debug"
+      buildConfiguration = "TonkeeperDebug"
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
@@ -44,14 +44,14 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7DB8FB612A1BCC92005B4B11"
-            BuildableName = "Tonkeeper.app"
+            BuildableName = "Tonkeeper X.app"
             BlueprintName = "Tonkeeper"
             ReferencedContainer = "container:Tonkeeper.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
    <ProfileAction
-      buildConfiguration = "Release"
+      buildConfiguration = "TonkeeperRelease"
       shouldUseLaunchSchemeArgsEnv = "YES"
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"
@@ -61,17 +61,17 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "7DB8FB612A1BCC92005B4B11"
-            BuildableName = "Tonkeeper.app"
+            BuildableName = "Tonkeeper X.app"
             BlueprintName = "Tonkeeper"
             ReferencedContainer = "container:Tonkeeper.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
-      buildConfiguration = "Debug">
+      buildConfiguration = "TonkeeperDebug">
    </AnalyzeAction>
    <ArchiveAction
-      buildConfiguration = "Release"
+      buildConfiguration = "TonkeeperRelease"
       revealArchiveInOrganizer = "YES">
    </ArchiveAction>
 </Scheme>

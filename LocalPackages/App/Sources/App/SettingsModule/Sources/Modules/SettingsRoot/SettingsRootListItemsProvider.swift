@@ -56,7 +56,7 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   
   var didUpdateSections: (() -> Void)?
   
-  var title: String { TKLocales.Tabs.history }
+  var title: String { TKLocales.Settings.title }
   
   func getSections() async -> [SettingsListSection] {
     await setupSettingsSections()
@@ -83,36 +83,36 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
 
 private extension SettingsRootListItemsProvider {
   func setupSettingsSections() async -> [SettingsListSection] {
+    var sections = [SettingsListSection]()
     
-    var logoutSectionItems = [AnyHashable]()
-    switch settingsController.activeWallet().model.walletType {
-    case .watchOnly:
-      logoutSectionItems.append(setupDeleteWatchOnlyAccount())
-    default:
-      logoutSectionItems.append(setupDeleteAccountItem())
+    sections.append(setupWalletSection())
+
+    var securitySectionItems = [SettingsCell.Model]()
+    if settingsController.hasSecurity() {
+      securitySectionItems.append(setupSecurityItem())
     }
-    logoutSectionItems.append(setupLogoutItem())
-    
-    var securitySectionItems = [setupSecurityItem()]
-    switch settingsController.activeWallet().model.walletType {
+    switch settingsController.activeWallet().kind {
     case .regular:
       securitySectionItems.append(setupBackupItem())
     default: break
     }
     
-    return await [setupWalletSection(),
-     SettingsListSection(
-      padding: .sectionPadding,
-      items: securitySectionItems
-     ),
-     SettingsListSection(
+    if !securitySectionItems.isEmpty {
+      sections.append(SettingsListSection(
+        padding: .sectionPadding,
+        items: securitySectionItems
+      ))
+    }
+    
+    await sections.append(SettingsListSection(
       padding: .sectionPadding,
       items: [
         await setupCurrencyItem(),
         setupThemeItem(),
       ]
-     ),
-     SettingsListSection(
+    ))
+    
+    sections.append(SettingsListSection(
       padding: .sectionPadding,
       items: [
         setupSupportItem(),
@@ -120,22 +120,33 @@ private extension SettingsRootListItemsProvider {
         setupContactUsItem(),
         setupRateItem(),
       ]
-     ),
-     SettingsListSection(
+    ))
+    
+    var logoutSectionItems = [AnyHashable]()
+    switch settingsController.activeWallet().kind {
+    case .watchonly:
+      logoutSectionItems.append(setupDeleteWatchOnlyAccount())
+    default:
+      logoutSectionItems.append(setupDeleteAccountItem())
+    }
+    logoutSectionItems.append(setupLogoutItem())
+    
+    sections.append(SettingsListSection(
       padding: .sectionPadding,
       items:
         logoutSectionItems
-     )
-    ]
+    ))
+    
+    return sections
   }
   
   func setupWalletSection() -> SettingsListSection {
-    let walletModel = settingsController.activeWalletModel()
+    let wallet = settingsController.activeWallet()
     let cellContentModel = WalletsListWalletCellContentView.Model(
-      emoji: walletModel.emoji,
-      backgroundColor: walletModel.tintColor.uiColor,
-      walletName: walletModel.label,
-      walletTag: walletModel.tag,
+      emoji: wallet.emoji,
+      backgroundColor: wallet.tintColor.uiColor,
+      walletName: wallet.label,
+      walletTag: wallet.tag,
       balance: TKLocales.Settings.Items.setup_wallet_description
     )
     

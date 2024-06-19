@@ -78,16 +78,16 @@ private extension SettingsCoordinator {
     let addWalletModuleModule = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        storesAssembly: keeperCoreMainAssembly.storesAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
     )
     
     let module = addWalletModuleModule.createCustomizeWalletModule(
-      name: wallet.metaData.label,
-      tintColor: wallet.metaData.tintColor,
-      emoji: wallet.metaData.emoji,
+      name: wallet.label,
+      tintColor: wallet.tintColor,
+      emoji: wallet.emoji,
       configurator: EditWalletCustomizeWalletViewModelConfigurator()
     )
     
@@ -109,7 +109,7 @@ private extension SettingsCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      emoji: model.emoji)
+      icon: .emoji(model.emoji))
     do {
       try controller.updateWallet(wallet: wallet, metaData: metaData)
     } catch {
@@ -151,16 +151,17 @@ private extension SettingsCoordinator {
   
   func openSecurity() {
     let itemsProvider = SettingsSecurityListItemsProvider(
-      settingsSecurityController: keeperCoreMainAssembly.settingsSecurityController(),
-      biometryAuthentificator: BiometryAuthentificator()
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      biometryProvider: BiometryProvider()
     )
-    
-    itemsProvider.didRequireConfirmation = { [weak self] in
-      return (await self?.openConfirmation()) ?? false
-    }
     
     itemsProvider.didTapChangePasscode = { [weak self] in
       self?.openChangePasscode()
+    }
+    
+    itemsProvider.didRequirePasscode = { [weak self] in
+      await self?.getPasscode()
     }
     
     let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
@@ -206,11 +207,15 @@ private extension SettingsCoordinator {
   }
   
   func openChangePasscode() {
-    let coordinator = PasscodeModule(
-      dependencies: PasscodeModule.Dependencies(
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-      )
-    ).changePasscodeCoordinator()
+    let navigationController = TKNavigationController()
+    navigationController.configureTransparentAppearance()
+    
+    let coordinator = PasscodeChangeCoordinator(
+      router: NavigationControllerRouter(
+        rootViewController: navigationController
+      ),
+      keeperCoreAssembly: keeperCoreMainAssembly
+    )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
       guard let coordinator else { return }
@@ -218,15 +223,10 @@ private extension SettingsCoordinator {
       self?.router.dismiss(animated: true)
     }
     
-    coordinator.didChangePasscode = { [weak self, weak coordinator, keeperCoreMainAssembly] passcode in
-      do {
-        try keeperCoreMainAssembly.passcodeAssembly.passcodeCreateController().createPasscode(passcode)
-        guard let coordinator else { return }
-        self?.removeChild(coordinator)
-        self?.router.dismiss(animated: true)
-      } catch {
-        print("Log: Passcode change failed")
-      }
+    coordinator.didChangePasscode = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+      self?.router.dismiss(animated: true)
     }
     
     addChild(coordinator)
@@ -239,37 +239,12 @@ private extension SettingsCoordinator {
     })
   }
   
-  func openConfirmation() async -> Bool {
-    return await Task<Bool, Never> { @MainActor in
-      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
-        guard let self = self else { return }
-        let coordinator = PasscodeModule(
-          dependencies: PasscodeModule.Dependencies(
-            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-          )
-        ).passcodeConfirmationCoordinator()
-        
-        coordinator.didCancel = { [weak self, weak coordinator] in
-          continuation.resume(returning: false)
-          coordinator?.router.dismiss(completion: {
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-          })
-        }
-        
-        coordinator.didConfirm = { [weak self, weak coordinator] in
-          continuation.resume(returning: true)
-          coordinator?.router.dismiss(completion: {
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-          })
-        }
-        
-        self.addChild(coordinator)
-        coordinator.start()
-        
-        self.router.present(coordinator.router.rootViewController)
-      }
-    }.value
+  func getPasscode() async -> String? {
+    return await PasscodeInputCoordinator.getPasscode(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+    )
   }
 }

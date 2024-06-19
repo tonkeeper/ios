@@ -1,6 +1,7 @@
 import Foundation
 import TonSwift
 import CryptoKit
+import TweetNacl
 
 public struct MnemonicsV2Vault {
   
@@ -24,6 +25,18 @@ public struct MnemonicsV2Vault {
     self.seedProvider = seedProvider
     self.keychainVault = keychainVault
     self.accessGroup = accessGroup
+  }
+  
+  public func getAllMnemonics(password: String) throws -> [String: Mnemonic] {
+    guard let encryptedMnemonics: Data = try? keychainVault.readValue(
+      query(
+        key: mnemonicsKey,
+        accessGroup: accessGroup
+      )
+    ) else { return [:] }
+    let salt: Data = try keychainVault.readValue(saltQuery())
+    let decryptedMnemonics = try decryptMnemonics(encryptedMnemonics, password: password, salt: salt)
+    return decryptedMnemonics
   }
   
   public func saveMnemonic(_ mnemonic: Mnemonic, key: String, password: String) throws {

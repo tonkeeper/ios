@@ -78,10 +78,6 @@ public final class SendConfirmationController {
       throw error
     }
   }
-  
-  public func isNeedToConfirm() -> Bool {
-    return wallet.isRegular
-  }
 }
 
 private extension SendConfirmationController {
@@ -203,7 +199,7 @@ private extension SendConfirmationController {
       image: image,
       titleType: titleType,
       descriptionType: descriptionType,
-      wallet: wallet.model.emojiLabel,
+      wallet: wallet.emojiLabel,
       recipientAddress: recipient.recipientAddress.shortAddressString,
       recipientName: recipient.recipientAddress.name,
       amount: formattedAmount,

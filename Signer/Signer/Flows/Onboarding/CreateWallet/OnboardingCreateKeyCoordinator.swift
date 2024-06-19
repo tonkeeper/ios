@@ -56,11 +56,17 @@ private extension OnboardingCreateKeyCoordinator {
   
   func createKey(password: String, name: String) {
     let keysAddController = assembly.keysAddController()
-    do {
-      try keysAddController.createWalletKey(name: name, password: password)
-      didCreateKey?()
-    } catch {
-      print("Log: Key creation failed, error \(error)")
+    Task {
+      do {
+        try await keysAddController.createWalletKey(name: name, password: password)
+        await MainActor.run {
+          didCreateKey?()
+        }
+      } catch {
+        await MainActor.run {
+          print("Log: Key creation failed, error \(error)")
+        }
+      }
     }
   }
 }

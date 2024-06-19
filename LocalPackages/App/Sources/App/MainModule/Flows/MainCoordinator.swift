@@ -389,7 +389,6 @@ private extension MainCoordinator {
   }
   
   func handleSignerDeeplink(_ deeplink: TonkeeperDeeplink.SignerDeeplink) {
-
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
@@ -398,32 +397,30 @@ private extension MainCoordinator {
       let coordinator = AddWalletModule(
         dependencies: AddWalletModule.Dependencies(
           walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+          storesAssembly: keeperCoreMainAssembly.storesAssembly,
           coreAssembly: coreAssembly,
-          scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
-          passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+          scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
         )
-      ).createPairSignerImportCoordinator(
+      ).createPairSignerDeeplinkCoordinator(
         publicKey: publicKey,
         name: name,
-        passcode: nil,
         router: NavigationControllerRouter(
           rootViewController: navigationController
         )
       )
       
-      coordinator.didPrepareForPresent = { [weak router] in
-        router?.present(navigationController)
+      coordinator.didPrepareToPresent = { [weak self, weak navigationController] in
+        guard let navigationController else { return }
+        self?.router.present(navigationController)
+      }
+      
+      coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in
+        navigationController?.dismiss(animated: true)
+        self?.removeChild(coordinator)
       }
       
       coordinator.didCancel = { [weak self, weak coordinator, weak navigationController] in
         navigationController?.dismiss(animated: true)
-        guard let coordinator else { return }
-        self?.removeChild(coordinator)
-      }
-      
-      coordinator.didPaired = { [weak self, weak coordinator, weak navigationController] in 
-        navigationController?.dismiss(animated: true)
-        guard let coordinator else { return }
         self?.removeChild(coordinator)
       }
       
@@ -461,13 +458,13 @@ private extension MainCoordinator {
     let module = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        storesAssembly: keeperCoreMainAssembly.storesAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
     )
     
-    let coordinator = module.createAddWalletCoordinator(options: [.createRegular, .importRegular, .importWatchOnly, .importTestnet, .signer],
+    let coordinator = module.createAddWalletCoordinator(options: [.createRegular, .importRegular, .signer, .ledger, .importWatchOnly, .importTestnet, ],
                                                         router: router)
     coordinator.didAddWallets = { [weak self, weak coordinator] in
       self?.addWalletCoordinator = nil
@@ -490,16 +487,16 @@ private extension MainCoordinator {
     let addWalletModuleModule = AddWalletModule(
       dependencies: AddWalletModule.Dependencies(
         walletsUpdateAssembly: keeperCoreMainAssembly.walletUpdateAssembly,
+        storesAssembly: keeperCoreMainAssembly.storesAssembly,
         coreAssembly: coreAssembly,
-        scannerAssembly: keeperCoreMainAssembly.scannerAssembly(),
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
+        scannerAssembly: keeperCoreMainAssembly.scannerAssembly()
       )
     )
     
     let module = addWalletModuleModule.createCustomizeWalletModule(
-      name: wallet.metaData.label,
-      tintColor: wallet.metaData.tintColor,
-      emoji: wallet.metaData.emoji,
+      name: wallet.label,
+      tintColor: wallet.tintColor,
+      emoji: wallet.emoji,
       configurator: EditWalletCustomizeWalletViewModelConfigurator()
     )
     
@@ -521,7 +518,7 @@ private extension MainCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      emoji: model.emoji)
+      icon: .emoji(model.emoji))
     do {
       try controller.updateWallet(wallet: wallet, metaData: metaData)
     } catch {

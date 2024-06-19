@@ -1,8 +1,8 @@
 import Foundation
 
-actor SecurityStore {
-  typealias ObservationClosure = (Event) -> Void
-  enum Event {
+public actor SecurityStore {
+  public typealias ObservationClosure = (Event) -> Void
+  public enum Event {
     case didUpdateSecuritySettings
   }
   
@@ -12,19 +12,19 @@ actor SecurityStore {
     self.securityService = securityService
   }
   
-  var isBiometryEnabled: Bool {
+  public var isBiometryEnabled: Bool {
     securityService.isBiometryTurnedOn
   }
   
-  func setIsBiometryEnabled(_ isBiometryEnabled: Bool) throws {
+  public func setIsBiometryEnabled(_ isBiometryEnabled: Bool) throws {
     try securityService.updateBiometry(isBiometryEnabled)
     observations.values.forEach { $0(.didUpdateSecuritySettings) }
   }
   
   private var observations = [UUID: ObservationClosure]()
   
-  func addEventObserver<T: AnyObject>(_ observer: T,
-                                      closure: @escaping (T, Event) -> Void) -> ObservationToken {
+  public func addEventObserver<T: AnyObject>(_ observer: T,
+                                             closure: @escaping (T, Event) -> Void) -> ObservationToken {
     let id = UUID()
     let eventHandler: (Event) -> Void = { [weak self, weak observer] event in
       guard let self else { return }

@@ -11,17 +11,17 @@ struct BackupRecoveryPhraseDataProvider: TKRecoveryPhraseDataProvider {
     createModel()
   }
   
-  private let recoveryPhraseController: RecoveryPhraseController
+  private let phrase: [String]
   
-  init(recoveryPhraseController: RecoveryPhraseController) {
-    self.recoveryPhraseController = recoveryPhraseController
+  init(phrase: [String]) {
+    self.phrase = phrase
   }
 }
 
 private extension BackupRecoveryPhraseDataProvider {
   func createModel() -> TKRecoveryPhraseView.Model {
     let phraseListViewModel = TKRecoveryPhraseListView.Model(
-      wordModels: recoveryPhraseController.getRecoveryPhrase()
+      wordModels: phrase
         .enumerated()
         .map { index, word in
           TKRecoveryPhraseItemView.Model(index: index + 1, word: word)

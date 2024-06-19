@@ -78,9 +78,9 @@ struct TonConnectConnectMapper {
     
     if showWalletPicker {
       let model = TonConnectConnectWalletButtonContentView.Model(
-        emoji: wallet.metaData.emoji,
-        backgroundColor: wallet.metaData.tintColor.uiColor,
-        walletName: wallet.metaData.label,
+        emoji: wallet.emoji,
+        backgroundColor: wallet.tintColor.uiColor,
+        walletName: wallet.label,
         address: address
       )
       if let walletPickerView = walletPickerView(model) {

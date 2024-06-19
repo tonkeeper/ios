@@ -40,6 +40,7 @@ private extension CreateKeyCoordinator {
   func openEnterPassword(name: String) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: assembly.repositoriesAssembly.mnemonicsRepository(),
+      oldMnemonicRepository: assembly.repositoriesAssembly.oldMnemonicRepository(),
       title: SignerLocalize.Password.Confirmation.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
@@ -54,11 +55,17 @@ private extension CreateKeyCoordinator {
   
   func createKey(name: String, password: String) {
     let keysAddController = assembly.keysAddController()
-    do {
-      try keysAddController.createWalletKey(name: name, password: password)
-      didCreateKey?()
-    } catch {
-      print("Log: Key creation failed, error \(error)")
+    Task {
+      do {
+        try await keysAddController.createWalletKey(name: name, password: password)
+        await MainActor.run {
+          didCreateKey?()
+        }
+      } catch {
+        await MainActor.run {
+          print("Log: Key creation failed, error \(error)")
+        }
+      }
     }
   }
 }

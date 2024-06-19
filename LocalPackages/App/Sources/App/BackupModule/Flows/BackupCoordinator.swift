@@ -23,39 +23,42 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
   }
   
   public override func start() {
-    let confirmationCoordinator = PasscodeModule(
-      dependencies: PasscodeModule.Dependencies(
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-      )
-    ).passcodeConfirmationCoordinator()
-    confirmationCoordinator.didCancel = { [weak self, weak confirmationCoordinator] in
-      confirmationCoordinator?.router.dismiss(completion: {
+    PasscodeInputCoordinator.present(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+      onCancel: { [weak self] in
         self?.didFinish?()
-        guard let confirmationCoordinator else { return }
-        self?.removeChild(confirmationCoordinator)
-      })
-    }
-    
-    confirmationCoordinator.didConfirm = { [weak self, weak confirmationCoordinator] in
-      confirmationCoordinator?.router.dismiss(completion: {
-        self?.openCheck()
-        guard let confirmationCoordinator else { return }
-        self?.removeChild(confirmationCoordinator)
-      })
-    }
-    
-    addChild(confirmationCoordinator)
-    confirmationCoordinator.start()
-    
-    router.present(confirmationCoordinator.router.rootViewController)
+      },
+      onInput: { [weak self, wallet, keeperCoreMainAssembly] passcode in
+        guard let self else { return }
+        Task {
+          do {
+            let mnemonic = try await keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository().getMnemonic(
+              wallet: wallet,
+              password: passcode
+            )
+            await MainActor.run {
+              self.openCheck(phrase: mnemonic.mnemonicWords)
+            }
+          } catch {
+            await MainActor.run {
+              ToastPresenter.showToast(configuration: .failed)
+            }
+          }
+        }
+      }
+    )
   }
   
-  func openCheck() {
+  func openCheck(phrase: [String]) {
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
     let checkCoordinator = BackupCheckCoordinator(
       wallet: wallet,
+      phrase: phrase,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly,
       router: NavigationControllerRouter(rootViewController: navigationController)

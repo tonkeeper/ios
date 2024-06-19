@@ -51,9 +51,9 @@ public final class SignConfirmationController {
     }
   }
   
-  public func signTransaction(password: String) -> URL? {
+  public func signTransaction(password: String) async -> URL? {
     do {
-      let mnemonic = try mnemonicsRepository.getMnemonic(walletKey: walletKey, password: password)
+      let mnemonic = try await mnemonicsRepository.getMnemonic(walletKey: walletKey, password: password)
       let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
       let privateKey = keyPair.privateKey
       let signer = WalletTransferSecretKeySigner(secretKey: privateKey.data)

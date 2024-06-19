@@ -56,11 +56,15 @@ final class KeyDetailsViewModelImplementation: KeyDetailsViewModel, KeyDetailsMo
   
   func didConfirmDelete() {
     let completion: (String?) -> Void = { [weak self] password in
-      guard let password else { return }
-      do {
-        try self?.keyDetailsController.deleteKey(password: password)
-        self?.didDeleteKey?()
-      } catch {}
+      guard let self, let password else { return }
+      Task {
+        do {
+          try await self.keyDetailsController.deleteKey(password: password)
+          await MainActor.run {
+            self.didDeleteKey?()
+          }
+        } catch {}
+      }
     }
     
     didRequirePassword?(completion)

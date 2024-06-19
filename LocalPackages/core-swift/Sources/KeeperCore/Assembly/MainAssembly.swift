@@ -101,9 +101,9 @@ public final class MainAssembly {
     )
   }
   
-  public func walletSelectWalletLisController(selectedWallet: Wallet, 
-                                              didSelectWallet: ((Wallet) -> Void)?) -> WalletListController {
-    let configurator = WalletSelectWalletListControllerConfigurator(
+  public func tonConnectWalletSelectWalletLisController(selectedWallet: Wallet,
+                                                        didSelectWallet: ((Wallet) -> Void)?) -> WalletListController {
+    let configurator = TonConnectWalletSelectWalletListControllerConfigurator(
       selectedWallet: selectedWallet,
       walletsStore: walletAssembly.walletStore
     )
@@ -136,7 +136,8 @@ public final class MainAssembly {
       walletsStore: walletAssembly.walletStore,
       updateStore: walletUpdateAssembly.walletsStoreUpdate,
       currencyStore: storesAssembly.currencyStore,
-      configurationStore: configurationAssembly.remoteConfigurationStore
+      configurationStore: configurationAssembly.remoteConfigurationStore,
+      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository()
     )
   }
   
@@ -289,13 +290,6 @@ public final class MainAssembly {
       nftService: servicesAssembly.nftService(),
       dnsService: servicesAssembly.dnsService(),
       collectibleDetailsMapper: CollectibleDetailsMapper(dateFormatter: formattersAssembly.dateFormatter)
-    )
-  }
-  
-  public func recoveryPhraseController(wallet: Wallet) -> RecoveryPhraseController {
-    RecoveryPhraseController(
-      wallet: wallet,
-      mnemonicRepository: repositoriesAssembly.mnemonicRepository()
     )
   }
   

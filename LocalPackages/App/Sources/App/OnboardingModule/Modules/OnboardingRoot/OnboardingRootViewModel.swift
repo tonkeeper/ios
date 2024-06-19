@@ -1,6 +1,7 @@
 import Foundation
 import TKUIKit
 import TKLocalize
+import TKCore
 
 protocol OnboardingRootModuleOutput: AnyObject {
   var didTapCreateButton: (() -> Void)? { get set }
@@ -33,7 +34,7 @@ private extension OnboardingRootViewModelImplementation {
   func createModel() -> OnboardingRootView.Model {
     
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: "Tonkeeper",
+      title: InfoProvider.appName(),
       bottomDescription: TKLocales.Onboarding.caption
     )
     

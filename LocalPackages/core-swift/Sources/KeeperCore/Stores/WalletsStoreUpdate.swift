@@ -1,7 +1,7 @@
 import Foundation
 import CoreComponents
 
-final class WalletsStoreUpdate {
+public final class WalletsStoreUpdate {
   typealias ObservationClosure = (Event) -> Void
   enum Event {
     case didAddWallets([Wallet])
@@ -18,27 +18,27 @@ final class WalletsStoreUpdate {
     self.walletsService = walletsService
   }
   
-  func addWallets(_ wallets: [Wallet]) throws {
+  public func addWallets(_ wallets: [Wallet]) throws {
     try walletsService.addWallets(wallets)
     observations.values.forEach { $0(.didAddWallets(wallets)) }
   }
   
-  func makeWalletActive(_ wallet: Wallet) throws {
+  public func makeWalletActive(_ wallet: Wallet) throws {
     try walletsService.setWalletActive(wallet)
     observations.values.forEach { $0(.didUpdateActiveWallet) }
   }
   
-  func moveWallet(fromIndex: Int, toIndex: Int) throws {
+  public func moveWallet(fromIndex: Int, toIndex: Int) throws {
     try walletsService.moveWallet(fromIndex: fromIndex, toIndex: toIndex)
     observations.values.forEach { $0(.didUpdateWalletsOrder) }
   }
   
-  func updateWallet(_ wallet: Wallet, metaData: WalletMetaData) throws {
+  public func updateWallet(_ wallet: Wallet, metaData: WalletMetaData) throws {
     try walletsService.updateWallet(wallet: wallet, metaData: metaData)
     observations.values.forEach { $0(.didUpdateWalletMetadata(wallet, metaData)) }
   }
   
-  func deleteWallet(_ wallet: Wallet) throws {
+  public func deleteWallet(_ wallet: Wallet) throws {
     let result = try walletsService.deleteWallet(wallet: wallet)
     switch result {
     case .deletedWallet:

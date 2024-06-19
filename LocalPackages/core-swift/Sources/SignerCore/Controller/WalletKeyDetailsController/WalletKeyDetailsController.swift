@@ -23,7 +23,9 @@ public final class WalletKeyDetailsController {
         observer.walletKey = walletKey
         observer.didUpdateWalletKey?(walletKey)
       case .didDeleteAll:
-        try? observer.mnemonicsRepository.deleteAll()
+        Task {
+          try? await observer.mnemonicsRepository.deleteAll()
+        }
       default:
         break
       }
@@ -43,8 +45,8 @@ public final class WalletKeyDetailsController {
     LinkDeeplinkGenerator().generateWebDeeplink(network: .ton, key: walletKey)
   }
   
-  public func deleteKey(password: String) throws {
+  public func deleteKey(password: String) async throws {
     try walletKeysStore.deleteKey(walletKey)
-    try mnemonicsRepository.deleteMnemonic(walletKey: walletKey, password: password)
+    try await mnemonicsRepository.deleteMnemonic(walletKey: walletKey, password: password)
   }
 }

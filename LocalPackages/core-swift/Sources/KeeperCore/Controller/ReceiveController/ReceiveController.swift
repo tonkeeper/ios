@@ -3,22 +3,14 @@ import TonSwift
 
 public final class ReceiveController {
   public struct Model {
-    public let walletModel: WalletModel
+    public let wallet: Wallet
     public let tokenName: String
     public let descriptionTokenName: String
-    public let address: String?
     public let image: TokenImage
   }
   
   public var didUpdateModel: ((Model) -> Void)?
-  public var isRegularWallet: Bool {
-    walletsStore.activeWallet.isRegular
-  }
-  
-  public var wallet: Wallet {
-    walletsStore.activeWallet
-  }
-  
+
   private let token: Token
   private let walletsStore: WalletsStore
   private let deeplinkGenerator: DeeplinkGenerator
@@ -66,10 +58,9 @@ public final class ReceiveController {
     
     didUpdateModel?(
       Model(
-        walletModel: wallet.model,
+        wallet: walletsStore.activeWallet,
         tokenName: tokenName,
         descriptionTokenName: descriptionTokenName,
-        address: try? walletsStore.activeWallet.friendlyAddress.toString(),
         image: image
       )
     )

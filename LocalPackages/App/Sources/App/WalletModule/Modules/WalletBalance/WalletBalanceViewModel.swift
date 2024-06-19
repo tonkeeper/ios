@@ -15,7 +15,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapSwap: (() -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
-  var didRequireConfirmation: (() async -> Bool)? { get set }
+  var didRequirePasscode: (() async -> String?)? { get set }
 }
 
 protocol WalletBalanceModuleInput: AnyObject {}
@@ -49,7 +49,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapSwap: (() -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
-  var didRequireConfirmation: (() async -> Bool)?
+  var didRequirePasscode: (() async -> String?)?
   
   // MARK: - WalletBalanceViewModel
   
@@ -91,11 +91,17 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   // MARK: - Dependencies
   
   private let walletBalanceController: WalletBalanceController
+  private let mnemonicsRepository: MnemonicsRepository
+  private let securityStore: SecurityStore
   
   // MARK: - Init
   
-  init(walletBalanceController: WalletBalanceController) {
+  init(walletBalanceController: WalletBalanceController,
+       mnemonicsRepository: MnemonicsRepository,
+       securityStore: SecurityStore) {
     self.walletBalanceController = walletBalanceController
+    self.mnemonicsRepository = mnemonicsRepository
+    self.securityStore = securityStore
   }
 }
 
@@ -154,12 +160,23 @@ private extension WalletBalanceViewModelImplementation {
         self?.didTapBackup?(wallet)
       },
       biometryHandler: { [weak self] isOn in
-        guard let self = self else { return !isOn }
-        let didConfirm = await self.didRequireConfirmation?() ?? false
-        guard didConfirm else { return !isOn }
-        let isOnResult = await walletBalanceController.setIsBiometryEnabled(isOn)
+        guard let self else { return !isOn }
         return await Task { @MainActor in
-          return isOnResult
+          do {
+            if isOn {
+              guard let passcode = await self.didRequirePasscode?() else {
+                return !isOn
+              }
+              try self.mnemonicsRepository.savePassword(passcode)
+              try await self.securityStore.setIsBiometryEnabled(true)
+            } else {
+              try self.mnemonicsRepository.deletePassword()
+              try await self.securityStore.setIsBiometryEnabled(false)
+            }
+            return isOn
+          } catch {
+            return !isOn
+          }
         }.value
       }
     )
@@ -187,80 +204,26 @@ private extension WalletBalanceViewModelImplementation {
         textColor: .Text.secondary,
         contentAlpha: [.normal: 1, .highlighted: 0.48],
         action: { [weak self] in
-          self?.didTapCopy(
-            walletAddress: model.fullAddress, 
-            walletType: model.walletModel.walletType
-          )
+          self?.didTapCopy(wallet: model.wallet)
         }
       ),
       connectionStatusModel: createConnectionStatusModel(backgroundUpdateState: model.backgroundUpdateState),
-      tagConfiguration: createTagConfiguration(
-        walletType: model.walletModel.walletType,
-        isTestnet: model.walletModel.isTestnet
-      ),
+      tagConfiguration: model.wallet.balanceTagConfiguration(),
       stateDate: stateDate
     )
     
     return WalletBalanceHeaderView.Model(
       balanceModel: balanceModel,
-      buttonsViewModel: createHeaderButtonsModel(walletType: model.walletModel.walletType)
+      buttonsViewModel: createHeaderButtonsModel(wallet: model.wallet)
     )
   }
   
-  func createTagConfiguration(walletType: WalletModel.WalletType, isTestnet: Bool) -> TKUITagView.Configuration? {
-    switch (walletType, isTestnet) {
-    case (.regular, false):
-      return nil
-    case (.regular, true):
-      return TKUITagView.Configuration(
-        text: "TESTNET",
-        textColor: .Accent.orange,
-        backgroundColor: UIColor.init(
-          hex: "332d24"
-        )
-      )
-    case (.watchOnly, _):
-      return TKUITagView.Configuration(
-        text: TKLocales.WalletTags.watch_only,
-        textColor: .Accent.orange,
-        backgroundColor: UIColor.init(
-          hex: "332d24"
-        )
-      )
-    case (.external, _):
-      return TKUITagView.Configuration(
-        text: "SIGNER",
-        textColor: .Accent.purple,
-        backgroundColor: .Accent.purple.withAlphaComponent(0.16)
-      )
-    }
-  }
-
-  func didTapCopy(walletAddress: String?,
-                  walletType: WalletModel.WalletType) {
+  func didTapCopy(wallet: Wallet) {
+    guard let address = wallet.addressToCopy else { return }
     UINotificationFeedbackGenerator().notificationOccurred(.warning)
-    UIPasteboard.general.string = walletAddress
-    
-    let backgroundColor: UIColor
-    let foregroundColor: UIColor
-    switch walletType {
-    case .regular:
-      backgroundColor = .Background.contentTint
-      foregroundColor = .Text.primary
-    case .watchOnly:
-      backgroundColor = .Accent.orange
-      foregroundColor = .Text.primary
-    case .external:
-      backgroundColor = .Accent.purple
-      foregroundColor = .Text.primary
-    }
-    let configuration = ToastPresenter.Configuration(
-      title: TKLocales.Actions.copied,
-      backgroundColor: backgroundColor,
-      foregroundColor: foregroundColor,
-      dismissRule: .default
-    )
-    didCopy?(configuration)
+    UIPasteboard.general.string = address
+
+    didCopy?(wallet.copyToastConfiguration())
   }
 
   func createConnectionStatusModel(backgroundUpdateState: KeeperCore.BackgroundUpdateState) -> ConnectionStatusView.Model? {
@@ -288,7 +251,7 @@ private extension WalletBalanceViewModelImplementation {
     }
   }
   
-  func createHeaderButtonsModel(walletType: WalletModel.WalletType) -> WalletBalanceHeaderButtonsView.Model {
+  func createHeaderButtonsModel(wallet: Wallet) -> WalletBalanceHeaderButtonsView.Model {
     let isSendEnable: Bool
     let isReceiveEnable: Bool
     let isScanEnable: Bool
@@ -296,7 +259,7 @@ private extension WalletBalanceViewModelImplementation {
     let isBuyEnable: Bool
     let isStakeEnable: Bool
     
-    switch walletType {
+    switch wallet.kind {
     case .regular:
       isSendEnable = true
       isReceiveEnable = true
@@ -304,14 +267,28 @@ private extension WalletBalanceViewModelImplementation {
       isSwapEnable = true
       isBuyEnable = true
       isStakeEnable = false
-    case .watchOnly:
+    case .lockup:
+      isSendEnable = false
+      isReceiveEnable = false
+      isScanEnable = false
+      isSwapEnable = false
+      isBuyEnable = false
+      isStakeEnable = false
+    case .watchonly:
       isSendEnable = false
       isReceiveEnable = true
       isScanEnable = false
       isSwapEnable = false
       isBuyEnable = true
       isStakeEnable = false
-    case .external:
+    case .signer:
+      isSendEnable = true
+      isReceiveEnable = true
+      isScanEnable = true
+      isSwapEnable = true
+      isBuyEnable = true
+      isStakeEnable = false
+    case .ledger:
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true

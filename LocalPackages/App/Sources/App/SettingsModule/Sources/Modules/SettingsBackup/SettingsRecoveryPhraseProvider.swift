@@ -9,17 +9,17 @@ struct SettingsRecoveryPhraseProvider: TKRecoveryPhraseDataProvider {
     createModel()
   }
   
-  private let recoveryPhraseController: RecoveryPhraseController
+  private let phrase: [String]
   
-  init(recoveryPhraseController: RecoveryPhraseController) {
-    self.recoveryPhraseController = recoveryPhraseController
+  init(phrase: [String]) {
+    self.phrase = phrase
   }
 }
 
 private extension SettingsRecoveryPhraseProvider {
   func createModel() -> TKRecoveryPhraseView.Model {
     let phraseListViewModel = TKRecoveryPhraseListView.Model(
-      wordModels: recoveryPhraseController.getRecoveryPhrase()
+      wordModels: phrase
         .enumerated()
         .map { index, word in
           TKRecoveryPhraseItemView.Model(index: index + 1, word: word)
@@ -38,7 +38,7 @@ private extension SettingsRecoveryPhraseProvider {
           category: .secondary,
           action: {
             UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            UIPasteboard.general.string = recoveryPhraseController.getRecoveryPhrase().joined(separator: "\n")
+            UIPasteboard.general.string = phrase.joined(separator: "\n")
             ToastPresenter.showToast(configuration: .copied)
           }
         )

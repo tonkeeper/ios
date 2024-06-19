@@ -6,16 +6,25 @@ import TKLocalize
 
 final class SettingsSecurityListItemsProvider: SettingsListItemsProvider {
   
-  var didRequireConfirmation: (() async -> Bool)?
+  var didRequirePasscode: (() async -> String?)?
   var didTapChangePasscode: (() -> Void)?
   
-  private let settingsSecurityController: SettingsSecurityController
-  private let biometryAuthentificator: BiometryAuthentificator
+  private let securityStore: SecurityStore
+  private let mnemonicsRepository: MnemonicsRepository
+  private let biometryProvider: BiometryProvider
 
-  init(settingsSecurityController: SettingsSecurityController,
-       biometryAuthentificator: BiometryAuthentificator) {
-    self.settingsSecurityController = settingsSecurityController
-    self.biometryAuthentificator = biometryAuthentificator
+  init(securityStore: SecurityStore,
+       mnemonicsRepository: MnemonicsRepository,
+       biometryProvider: BiometryProvider) {
+    self.securityStore = securityStore
+    self.mnemonicsRepository = mnemonicsRepository
+    self.biometryProvider = biometryProvider
+    
+    Task {
+      await securityStore.addEventObserver(self) { observer, event in
+        observer.didUpdateSections?()
+      }
+    }
   }
   
   var didUpdateSections: (() -> Void)?
@@ -43,44 +52,58 @@ private extension SettingsSecurityListItemsProvider {
   }
   
   func createBiometrySection() async -> SettingsListSection {
-    let isBiometryEnabled = await settingsSecurityController.isBiometryEnabled
+    let isEnable: Bool
+    let isOn: Bool
+    let title: String
+    
+    switch biometryProvider.getBiometryState(policy: .deviceOwnerAuthenticationWithBiometrics) {
+    case .success(let state):
+      switch state {
+      case .none:
+        title = .biometryUnavailable
+        isEnable = false
+        isOn = false
+      case .faceID:
+        title = TKLocales.Security.use(String.faceId)
+        isEnable = true
+        isOn = await securityStore.isBiometryEnabled
+      case .touchID:
+        title = TKLocales.Security.use(String.touchId)
+        isEnable = true
+        isOn = await securityStore.isBiometryEnabled
+      }
+    case .failure:
+      title = .biometryUnavailable
+      isEnable = false
+      isOn = false
+    }
     
     let switchModel: TKListItemSwitchView.Model = {
-      let isOn: Bool
-      let isEnabled: Bool
-      
-      let result = biometryAuthentificator.canEvaluate(policy: .deviceOwnerAuthenticationWithBiometrics)
-      switch result {
-      case .success:
-        isOn = isBiometryEnabled
-        isEnabled = true
-      case .failure:
-        isOn = false
-        isEnabled = false
-      }
       return TKListItemSwitchView.Model(
         isOn: isOn,
-        isEnabled: isEnabled,
+        isEnabled: isEnable,
         action: { [weak self] isOn in
           guard let self else { return !isOn }
-          if isOn {
-            let isConfirmed = (await self.didRequireConfirmation?()) ?? false
-            guard isConfirmed else { return !isOn }
-          }
-          return await settingsSecurityController.setIsBiometryEnabled(isOn)
+          return await Task { @MainActor in
+            do {
+              if isOn {
+                guard let passcode = await self.didRequirePasscode?() else {
+                  return !isOn
+                }
+                try self.mnemonicsRepository.savePassword(passcode)
+                try await self.securityStore.setIsBiometryEnabled(true)
+              } else {
+                try self.mnemonicsRepository.deletePassword()
+                try await self.securityStore.setIsBiometryEnabled(false)
+              }
+              return isOn
+            } catch {
+              return !isOn
+            }
+          }.value
         }
       )
     }()
-    
-    let title: String
-    switch biometryAuthentificator.biometryType {
-    case .touchID:
-      title = TKLocales.Security.use(String.touchId)
-    case .faceID:
-      title = TKLocales.Security.use(String.faceId)
-    default:
-      title = .biometryUnavailable
-    }
     
     return SettingsListSection(
       padding: NSDirectionalEdgeInsets(top: 14, leading: 16, bottom: 0, trailing: 16),

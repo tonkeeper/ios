@@ -1,12 +1,12 @@
 import Foundation
 
 public final class RootAssembly {
-  private let repositoriesAssembly: RepositoriesAssembly
+  public let repositoriesAssembly: RepositoriesAssembly
   private let servicesAssembly: ServicesAssembly
-  private let storesAssembly: StoresAssembly
-  private let coreAssembly: CoreAssembly
+  public let storesAssembly: StoresAssembly
+  public let coreAssembly: CoreAssembly
   public let formattersAssembly: FormattersAssembly
-  private let walletsUpdateAssembly: WalletsUpdateAssembly
+  public let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
   public let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
@@ -49,6 +49,7 @@ public final class RootAssembly {
           TonConnectDeeplinkParser()
         ]),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
+        mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
         buySellMethodsService: servicesAssembly.buySellMethodsService(),
         locationService: servicesAssembly.locationService()
       )
@@ -57,10 +58,22 @@ public final class RootAssembly {
     }
   }
   
+  public func migrationController(sharedCacheURL: URL,
+                                  keychainAccessGroupIdentifier: String,
+                                  isTonkeeperX: Bool) -> MigrationController {
+    MigrationController(
+      sharedCacheURL: sharedCacheURL,
+      keychainAccessGroupIdentifier: keychainAccessGroupIdentifier,
+      rootAssembly: self,
+      isTonkeeperX: isTonkeeperX
+    )
+  }
+  
   public func onboardingAssembly() -> OnboardingAssembly {
     OnboardingAssembly(
       walletsUpdateAssembly: walletsUpdateAssembly,
-      passcodeAssembly: passcodeAssembly
+      passcodeAssembly: passcodeAssembly,
+      storesAssembly: storesAssembly
     )
   }
   

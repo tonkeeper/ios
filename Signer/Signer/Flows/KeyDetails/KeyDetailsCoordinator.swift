@@ -101,7 +101,8 @@ private extension KeyDetailsCoordinator {
   func openEnterPassword(fromViewController: UIViewController, completion: @escaping (String?) -> Void) {
     let configurator = EnterPasswordPasswordInputViewModelConfigurator(
       mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository(),
-      title: SignerLocalize.Password.Confirmation.title
+      oldMnemonicRepository: signerCoreAssembly.repositoriesAssembly.oldMnemonicRepository(),
+      title: SignerLocalize.Password.Enter.title
     )
     let module = PasswordInputModuleAssembly.module(configurator: configurator)
     module.output.didEnterPassword = { [weak view = module.view] password in

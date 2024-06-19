@@ -25,6 +25,13 @@ public struct MnemonicVault: KeyValueVault {
     try keychainVault.readValue(query(key: key, accessGroup: accessGroup))
   }
   
+  public func deleteAllValues() throws {
+    try keychainVault.deleteItem(KeychainGenericPasswordItem(service: "MnemonicVault",
+                                                             account: nil,
+                                                             accessGroup: accessGroup,
+                                                             accessible: .whenUnlockedThisDeviceOnly))
+  }
+  
   private func query(key: StoreKey,
                      accessGroup: String?) -> KeychainQueryable {
     KeychainGenericPasswordItem(service: "MnemonicVault",

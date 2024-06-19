@@ -2,8 +2,8 @@ import Foundation
 import CoreComponents
 
 public struct CoreAssembly {
-  private let cacheURL: URL
-  private let sharedCacheURL: URL
+  let cacheURL: URL
+  let sharedCacheURL: URL
   
   init(cacheURL: URL, sharedCacheURL: URL) {
     self.cacheURL = cacheURL
@@ -12,6 +12,13 @@ public struct CoreAssembly {
   
   func mnemonicVault() -> MnemonicVault {
     MnemonicVault(keychainVault: keychainVault, accessGroup: nil)
+  }
+  
+  func mnemonicsV3Vault(seedProvider: @escaping () -> String) -> MnemonicsV3Vault {
+    MnemonicsV3Vault(
+      keychainVault: keychainVault,
+      seedProvider: seedProvider
+    )
   }
   
   func passcodeVault() -> PasscodeVault {
@@ -29,6 +36,14 @@ public struct CoreAssembly {
   func sharedFileSystemVault<T, K>() -> FileSystemVault<T, K> {
     return FileSystemVault(fileManager: fileManager, directory: sharedCacheURL)
   }
+  
+  var keychainVault: KeychainVault {
+    KeychainVaultImplementation(keychain: keychain)
+  }
+  
+  func settingsVault() -> SettingsVault<SettingsKey> {
+    return SettingsVault(userDefaults: userDefaults)
+  }
 }
 
 private extension CoreAssembly {
@@ -36,11 +51,11 @@ private extension CoreAssembly {
     .default
   }
   
-  var keychainVault: KeychainVault {
-    KeychainVaultImplementation(keychain: keychain)
-  }
-  
   var keychain: Keychain {
     KeychainImplementation()
+  }
+  
+  var userDefaults: UserDefaults {
+    UserDefaults.standard
   }
 }

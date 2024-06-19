@@ -1,163 +1,133 @@
 import UIKit
 import TKUIKit
 
-public protocol PasscodeInputModuleOutput: AnyObject {
-  var didInputPasscode: ((String) -> Void)? { get set }
+enum PasscodeInputValidationResult {
+  case success
+  case failed
+  case none
+}
+
+protocol PasscodeInputModuleOutput: AnyObject {
+  var validateInput: ((String) async -> PasscodeInputValidationResult)? { get set }
+  var didFinish: ((String) -> Void)? { get set }
   var didFailed: (() -> Void)? { get set }
 }
 
-public protocol PasscodeInputModuleInput: AnyObject {
+protocol PasscodeInputModuleInput: AnyObject {
   func didTapDigit(_ digit: Int)
   func didTapBackspace()
-  func didTapBiometry()
+  func didSetInput(_ input: String)
 }
 
 protocol PasscodeInputViewModel: AnyObject {
-  var didUpdateModel: ((PasscodeInputView.Model) -> Void)? { get set }
-  var didUpdatePasscodeInputState: ((PasscodeDotRowView.InputState) -> Void)? { get set }
-  var didUpdatePasscodeValidationState: ((PasscodeDotRowView.ValidationState, (() -> Void)?) -> Void)? { get set }
+  var didUpdateTitle: ((String?) -> Void)? { get set }
+  var didUpdateState: ((PasscodeInputView.State, (() -> Void)?) -> Void)? { get set }
   
   func viewDidLoad()
   func viewDidDisappear()
 }
 
-public enum PasscodeInputValidatorResult {
-  case none
-  case success
-  case failed
-}
-
-public protocol PasscodeInputValidator {
-  func validatePasscodeInput(_ input: String) -> PasscodeInputValidatorResult
-}
-
-public enum PasscodeInputBiometryProviderState {
-  case touchId
-  case faceId
-  case none
-}
-
-public protocol PasscodeInputBiometryProvider {
-  var didSuccessBiometry: (() -> Void)? { get set }
-  var didFailedBiometry: (() -> Void)? { get set }
-  
-  func checkBiometryStatus() async -> PasscodeInputBiometryProviderState
-  func evaluateBiometry()
-}
-
-final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, PasscodeInputModuleOutput, PasscodeInputModuleInput {
+final class PasscodeInputViewModelImplementation: PasscodeInputViewModel, PasscodeInputModuleInput, PasscodeInputModuleOutput {
   
   // MARK: - PasscodeInputModuleOutput
   
-  var didInputPasscode: ((String) -> Void)?
+  var validateInput: ((String) async -> PasscodeInputValidationResult)?
+  var didFinish: ((String) -> Void)?
   var didFailed: (() -> Void)?
   
-  // MARK: - PasscodeInputViewModel
-  
-  var didUpdateModel: ((PasscodeInputView.Model) -> Void)?
-  var didUpdatePasscodeInputState: ((PasscodeDotRowView.InputState) -> Void)?
-  var didUpdatePasscodeValidationState: ((PasscodeDotRowView.ValidationState, (() -> Void)?) -> Void)?
-  
-  func viewDidLoad() {
-    Task {
-      let model = await createModel()
-      await MainActor.run {
-        didUpdateModel?(model)
-      }
-      switch await biometryProvider.checkBiometryStatus() {
-      case .faceId, .touchId: biometryProvider.evaluateBiometry()
-      case .none: break
-      }
-    }
-  }
-  
-  func viewDidDisappear() {
-    reset()
-  }
+  // MARK: - PasscodeInputModuleInput
   
   func didTapDigit(_ digit: Int) {
+    guard isInputEnable else { return }
     input += "\(digit)"
+    didUpdateInput()
   }
   
   func didTapBackspace() {
+    guard isInputEnable else { return }
     input = String(input.dropLast(1))
+    didUpdateInput()
   }
   
-  func didTapBiometry() {
-    biometryProvider.evaluateBiometry()
+  func didSetInput(_ input: String) {
+    guard isInputEnable else { return }
+    self.input = input
+    didUpdateInput()
   }
+
+  // MARK: - PasscodeInputViewModel
   
-  func reset() {
+  var didUpdateTitle: ((String?) -> Void)?
+  var didUpdateState: ((PasscodeInputView.State, (() -> Void)?) -> Void)?
+
+  func viewDidLoad() {
     input = ""
+    didUpdateTitle?(title)
+  }
+  
+  func viewDidDisappear() {
+    input = ""
+    didUpdateState?(.input(0), nil)
   }
   
   // MARK: - State
   
-  private var input = "" {
-    didSet {
-      handleInputUpdate()
-    }
-  }
+  private var input = ""
+  private var isInputEnable = true
   
-  // MARK: - Configuration
+  // MARK: - Dependencies
   
-  let title: String
-  let validator: PasscodeInputValidator
-  let biometryProvider: PasscodeInputBiometryProvider
+  private let title: String
   
-  // MARK: - Init
-  
-  init(title: String,
-       validator: PasscodeInputValidator,
-       biometryProvider: PasscodeInputBiometryProvider) {
+  init(title: String) {
     self.title = title
-    self.validator = validator
-    self.biometryProvider = biometryProvider
   }
 }
 
 private extension PasscodeInputViewModelImplementation {
-  func createModel() async -> PasscodeInputView.Model {
+  func didUpdateInput() {
+    let input = input
+    let inputCount = input.count
+    let state: PasscodeInputView.State
     
-    let biometry: TKKeyboardView.Configuration.Biometry?
-    switch await biometryProvider.checkBiometryStatus() {
-    case .touchId:
-      biometry = .touchId
-    case .faceId:
-      biometry = .faceId
-    case .none:
-      biometry = nil
-    }
-    
-    return PasscodeInputView.Model(
-      title: title,
-      keyboardConfiguration: .passcodeConfiguration(biometry: biometry)
-    )
-  }
-  
-  func handleInputUpdate() {
-    switch input.count {
+    switch inputCount {
     case 0..<Int.passcodeLength:
-      didUpdatePasscodeInputState?(.input(count: input.count))
-      didUpdatePasscodeValidationState?(.none, nil)
+      state = .input(inputCount)
+      didUpdateState?(state, nil)
     case Int.passcodeLength:
-      didUpdatePasscodeInputState?(.input(count: input.count))
-      let validationResult = validator.validatePasscodeInput(input)
-      switch validationResult {
-      case .none:
-        didUpdatePasscodeValidationState?(.none, nil)
-        didInputPasscode?(input)
-      case .success:
-        didUpdatePasscodeValidationState?(.success, { [weak self, input] in
-          self?.didInputPasscode?(input)
-        })
-      case .failed:
-        didUpdatePasscodeValidationState?(.failed, { [weak self] in
-          self?.didFailed?()
-          self?.reset()
-        })
-      }
+      state = .input(inputCount)
+      didUpdateState?(state, nil)
       
+      isInputEnable = false
+      guard let validateInput else {
+        isInputEnable = true
+        return
+      }
+      Task {
+        let result = await validateInput(input)
+        let state: PasscodeInputView.State
+        switch result {
+        case .success:
+          state = .success
+        case .failed:
+          state = .failed(inputCount)
+        case .none:
+          state = .input(inputCount)
+        }
+        
+        await MainActor.run {
+          didUpdateState?(state, { [weak self] in
+            self?.isInputEnable = true
+            switch result {
+            case .success, .none:
+              self?.didFinish?(input)
+            case .failed:
+              self?.didFailed?()
+            }
+            self?.input = ""
+          })
+        }
+      }
     default:
       break
     }

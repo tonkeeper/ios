@@ -9,14 +9,17 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
   var didFinish: (() -> Void)?
   
   private let wallet: Wallet
+  private let phrase: [String]
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   
   init(wallet: Wallet,
+       phrase: [String],
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        coreAssembly: TKCore.CoreAssembly,
        router: NavigationControllerRouter) {
     self.wallet = wallet
+    self.phrase = phrase
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
     super.init(router: router)
@@ -24,7 +27,7 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
   
   override func start() {
     var provider = BackupRecoveryPhraseDataProvider(
-      recoveryPhraseController: keeperCoreMainAssembly.recoveryPhraseController(wallet: wallet)
+      phrase: phrase
     )
     
     provider.didTapNext = { [weak self] in
@@ -50,10 +53,7 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
   
   func openCheckInput() {
     let module = TKCheckRecoveryPhraseAssembly.module(
-      provider: BackupCheckRecoveryPhraseProvider(
-        recoveryPhraseController: keeperCoreMainAssembly.recoveryPhraseController(
-          wallet: wallet
-        )
+      provider: BackupCheckRecoveryPhraseProvider(phrase: phrase
       )
     )
     

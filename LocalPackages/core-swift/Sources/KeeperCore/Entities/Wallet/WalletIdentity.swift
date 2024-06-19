@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public struct WalletIdentity: Equatable, Identifiable {
+public struct WalletIdentity: Equatable {
   public let network: Network
   public let kind: WalletKind
   
@@ -9,10 +9,6 @@ public struct WalletIdentity: Equatable, Identifiable {
     let builder = Builder()
     try builder.store(self)
     return WalletID(hash: try builder.endCell().representationHash())
-  }
-  
-  public var id: String {
-    kind.id + String(network.rawValue)
   }
 }
 

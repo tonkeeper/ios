@@ -1,9 +1,10 @@
 import Foundation
 import CoreComponents
 
-protocol PasscodeRepository {
+public protocol PasscodeRepository {
   func savePasscode(_ passcode: Passcode) throws
   func getPasscode() throws -> Passcode
+  func deletePasscode() throws
 }
 
 struct PasscodeRepositoryImplementation: PasscodeRepository {
@@ -20,5 +21,9 @@ struct PasscodeRepositoryImplementation: PasscodeRepository {
   
   func getPasscode() throws -> Passcode {
     try passcodeVault.load()
+  }
+  
+  func deletePasscode() throws {
+    try passcodeVault.delete()
   }
 }

@@ -14,28 +14,30 @@ public final class SettingsController {
   private let updateStore: WalletsStoreUpdate
   private let currencyStore: CurrencyStore
   private let configurationStore: ConfigurationStore
+  private let mnemonicsRepository: MnemonicsRepository
   
   init(walletsStore: WalletsStore,
        updateStore: WalletsStoreUpdate,
        currencyStore: CurrencyStore,
-       configurationStore: ConfigurationStore) {
+       configurationStore: ConfigurationStore,
+       mnemonicsRepository: MnemonicsRepository) {
     self.walletsStore = walletsStore
     self.updateStore = updateStore
     self.currencyStore = currencyStore
     self.configurationStore = configurationStore
+    self.mnemonicsRepository = mnemonicsRepository
     
     walletsStoreToken = walletsStore.addEventObserver(self) { observer, event in
       observer.didGetWalletsStoreEvent(event)
     }
   }
   
-  public func activeWallet() -> Wallet {
-    walletsStore.activeWallet
+  public func hasSecurity() -> Bool {
+    mnemonicsRepository.hasMnemonics()
   }
   
-  public func activeWalletModel() -> WalletModel {
-    let wallet = walletsStore.activeWallet
-    return wallet.model
+  public func activeWallet() -> Wallet {
+    walletsStore.activeWallet
   }
   
   public func activeCurrency() async -> Currency {

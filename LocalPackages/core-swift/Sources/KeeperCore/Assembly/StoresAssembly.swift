@@ -115,7 +115,7 @@ public final class StoresAssembly {
   }
   
   private weak var _securityStore: SecurityStore?
-  var securityStore: SecurityStore {
+  public var securityStore: SecurityStore {
     if let securityStore = _securityStore {
       return securityStore
     } else {

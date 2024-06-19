@@ -1,103 +1,212 @@
 import UIKit
 import KeeperCore
+import TonSwift
 import TKCore
 import TKCoordinator
 import TKUIKit
 import TKScreenKit
+import TKLocalize
 
-public final class ImportWalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
+final class ImportWalletCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
-  public var didCancel: (() -> Void)?
-  public var didImportWallets: (() -> Void)?
+  var didCancel: (() -> Void)?
+  var didImportWallets: (() -> Void)?
   
-  private let walletsUpdateAssembly: WalletsUpdateAssembly
-  private let passcodeAssembly: KeeperCore.PasscodeAssembly
-  private let passcode: String?
   private let isTestnet: Bool
+  private let walletsUpdateAssembly: WalletsUpdateAssembly
+  private let storesAssembly: StoresAssembly
   private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
   init(router: NavigationControllerRouter,
        walletsUpdateAssembly: WalletsUpdateAssembly,
-       passcodeAssembly: KeeperCore.PasscodeAssembly,
-       passcode: String?,
+       storesAssembly: StoresAssembly,
        isTestnet: Bool,
        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
     self.walletsUpdateAssembly = walletsUpdateAssembly
-    self.passcodeAssembly = passcodeAssembly
-    self.passcode = passcode
+    self.storesAssembly = storesAssembly
     self.isTestnet = isTestnet
     self.customizeWalletModule = customizeWalletModule
     super.init(router: router)
   }
-
-  public override func start() {
-    openInputRecoveryPhrase()
+  
+  override func start() {
+    openRecoveryPhraseInput()
   }
 }
 
 private extension ImportWalletCoordinator {
-  func openInputRecoveryPhrase() {
-    let coordinator = RecoveryPhraseCoordinator(
-      router: router,
-      walletsUpdateAssembly: walletsUpdateAssembly,
-      isTestnet: isTestnet
+  func openRecoveryPhraseInput() {
+    let inputRecoveryPhrase = TKInputRecoveryPhraseAssembly.module(
+      title: TKLocales.ImportWallet.title,
+      caption: TKLocales.ImportWallet.description,
+      continueButtonTitle: TKLocales.Actions.continue_action,
+      pasteButtonTitle: TKLocales.Actions.paste,
+      validator: AddWalletInputRecoveryPhraseValidator(),
+      suggestsProvider: AddWalletInputRecoveryPhraseSuggestsProvider()
+    )
+    
+    inputRecoveryPhrase.output.didInputRecoveryPhrase = { [weak self] phrase, completion in
+      guard let self = self else { return }
+      self.detectActiveWallets(phrase: phrase, completion: completion)
+    }
+    
+    if router.rootViewController.viewControllers.isEmpty {
+      inputRecoveryPhrase.viewController.setupLeftCloseButton { [weak self] in
+        self?.didCancel?()
+      }
+    } else {
+      inputRecoveryPhrase.viewController.setupBackButton()
+    }
+    
+    router.push(
+      viewController: inputRecoveryPhrase.viewController,
+      animated: true,
+      onPopClosures: { [weak self] in
+        self?.didCancel?()
+      },
+      completion: nil)
+  }
+  
+  func detectActiveWallets(phrase: [String], completion: @escaping () -> Void) {
+    Task {
+      do {
+        let activeWallets = try await walletsUpdateAssembly.walletImportController().findActiveWallets(
+          phrase: phrase,
+          isTestnet: isTestnet
+        )
+        await MainActor.run {
+          completion()
+          handleActiveWallets(phrase: phrase, activeWalletModels: activeWallets)
+        }
+      } catch {
+        await MainActor.run {
+          completion()
+        }
+      }
+    }
+  }
+  
+  func handleActiveWallets(phrase: [String], activeWalletModels: [ActiveWalletModel]) {
+    if activeWalletModels.count == 1, activeWalletModels[0].revision == WalletContractVersion.currentVersion {
+      handleDidChooseRevisions(phrase: phrase, revisions: [WalletContractVersion.currentVersion])
+    } else {
+      openChooseWalletToAdd(phrase: phrase, activeWalletModels: activeWalletModels)
+    }
+  }
+  
+  func openChooseWalletToAdd(phrase: [String], activeWalletModels: [ActiveWalletModel]) {
+    let controller = walletsUpdateAssembly.chooseWalletController(activeWalletModels: activeWalletModels)
+    let module = ChooseWalletToAddAssembly.module(controller: controller)
+    
+    module.output.didSelectRevisions = { [weak self] revisions in
+      self?.handleDidChooseRevisions(phrase: phrase, revisions: revisions)
+    }
+    
+    module.view.setupBackButton()
+    
+    router.push(
+      viewController: module.view,
+      animated: true,
+      onPopClosures: {},
+      completion: nil)
+  }
+  
+  func handleDidChooseRevisions(phrase: [String], revisions: [WalletContractVersion]) {
+    if walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository().hasMnemonics() {
+      openConfirmPasscode(phrase: phrase, revisions: revisions)
+    } else {
+      openCreatePasscode(phrase: phrase, revisions: revisions)
+    }
+  }
+
+  func openCreatePasscode(phrase: [String], revisions: [WalletContractVersion]) {
+    let coordinator = PasscodeCreateCoordinator(
+      router: router
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      self?.didCancel?()
+      self?.router.dismiss(animated: true, completion: {
+        self?.didCancel?()
+      })
     }
     
-    coordinator.didImportWallets = { [weak self] phrase, revisions in
-      self?.openCustomizeWallet(phrase: phrase, revisions: revisions)
+    coordinator.didCreatePasscode = { [weak self] passcode in
+      self?.openCustomizeWallet(
+        phrase: phrase,
+        revisions: revisions,
+        passcode: passcode,
+        animated: true
+      )
     }
     
     addChild(coordinator)
     coordinator.start()
   }
   
-  func openCustomizeWallet(phrase: [String], revisions: [WalletContractVersion]) {
+  func openConfirmPasscode(phrase: [String], revisions: [WalletContractVersion]) {
+    PasscodeInputCoordinator.present(
+      parentCoordinator: self,
+      parentRouter: self.router,
+      mnemonicsRepository: walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: storesAssembly.securityStore,
+      onCancel: {},
+      onInput: { [weak self] passcode in
+        self?.openCustomizeWallet(
+          phrase: phrase,
+          revisions: revisions,
+          passcode: passcode,
+          animated: true
+        )
+      }
+    )
+  }
+  
+  func openCustomizeWallet(phrase: [String],
+                           revisions: [WalletContractVersion],
+                           passcode: String,
+                           animated: Bool) {
     let module = customizeWalletModule()
     
     module.output.didCustomizeWallet = { [weak self] model in
-      self?.importWallet(phrase: phrase,
-                         revisions: revisions,
-                         model: model)
-    }
-    
-    if router.rootViewController.viewControllers.isEmpty {
-      module.view.setupLeftCloseButton { [weak self] in
-        self?.didCancel?()
+      guard let self else { return }
+      Task {
+        do {
+          try await self.importWallet(
+            phrase: phrase,
+            revisions: revisions,
+            model: model,
+            passcode: passcode
+          )
+          await MainActor.run {
+            self.didImportWallets?()
+          }
+        } catch {
+          print("Log: Wallet import failed \(error)")
+        }
       }
-    } else {
-      module.view.setupBackButton()
     }
     
-    router.push(viewController: module.view)
+    module.view.setupBackButton()
+    router.push(viewController: module.view, animated: animated)
   }
   
   func importWallet(phrase: [String],
                     revisions: [WalletContractVersion],
-                    model: CustomizeWalletModel) {
+                    model: CustomizeWalletModel,
+                    passcode: String) async throws {
     
     let addController = walletsUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      emoji: model.emoji)
-    do {
-      if let passcode {
-        try passcodeAssembly.passcodeCreateController().createPasscode(passcode)
-      }
-      try addController.importWallets(
-        phrase: phrase,
-        revisions: revisions,
-        metaData: metaData,
-        isTestnet: isTestnet)
-      didImportWallets?()
-    } catch {
-      print("Log: Wallet import failed, error: \(error)")
-    }
+      icon: .emoji(model.emoji))
+    try await addController.importWallets(
+      phrase: phrase,
+      revisions: revisions,
+      metaData: metaData,
+      passcode: passcode,
+      isTestnet: isTestnet
+    )
   }
 }

@@ -3,7 +3,7 @@ import Foundation
 public final class WalletsUpdateAssembly {
   
   private let servicesAssembly: ServicesAssembly
-  private let repositoriesAssembly: RepositoriesAssembly
+  public let repositoriesAssembly: RepositoriesAssembly
   private let formattersAssembly: FormattersAssembly
   
   init(servicesAssembly: ServicesAssembly,
@@ -14,14 +14,14 @@ public final class WalletsUpdateAssembly {
     self.formattersAssembly = formattersAssembly
   }
   
-  lazy var walletsStoreUpdate: WalletsStoreUpdate = {
+  public lazy var walletsStoreUpdate: WalletsStoreUpdate = {
     WalletsStoreUpdate(walletsService: servicesAssembly.walletsService())
   }()
   
   public func walletAddController() -> WalletAddController {
     WalletAddController(
       walletsStoreUpdate: walletsStoreUpdate,
-      mnemonicRepositoty: repositoriesAssembly.mnemonicRepository()
+      mnemonicsRepositoty: repositoriesAssembly.mnemonicsRepository()
     )
   }
   

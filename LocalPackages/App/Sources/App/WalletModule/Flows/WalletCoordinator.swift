@@ -206,44 +206,9 @@ private extension WalletCoordinator {
     addChild(coordinator)
     coordinator.start()
   }
-  
-  func openConfirmation() async -> Bool {
-    return await Task<Bool, Never> { @MainActor in
-      return await withCheckedContinuation { [weak self, keeperCoreMainAssembly] (continuation: CheckedContinuation<Bool, Never>) in
-        guard let self = self else { return }
-        let coordinator = PasscodeModule(
-          dependencies: PasscodeModule.Dependencies(
-            passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-          )
-        ).passcodeConfirmationCoordinator()
-        
-        coordinator.didCancel = { [weak self, weak coordinator] in
-          continuation.resume(returning: false)
-          coordinator?.router.dismiss(completion: {
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-          })
-        }
-        
-        coordinator.didConfirm = { [weak self, weak coordinator] in
-          continuation.resume(returning: true)
-          coordinator?.router.dismiss(completion: {
-            guard let coordinator else { return }
-            self?.removeChild(coordinator)
-          })
-        }
-        
-        self.addChild(coordinator)
-        coordinator.start()
-        
-        self.router.present(coordinator.router.rootViewController)
-      }
-    }.value
-  }
 
   func createWalletBalanceModule() -> WalletBalanceModule {
-    let walletBalanceController = keeperCoreMainAssembly.walletBalanceController()
-    let module = WalletBalanceAssembly.module(walletBalanceController: walletBalanceController)
+    let module = WalletBalanceAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
     
     module.output.didSelectTon = { [weak self] wallet in
       self?.openTonDetails(wallet: wallet)
@@ -277,10 +242,19 @@ private extension WalletCoordinator {
       self?.openBackup(wallet: wallet)
     }
     
-    module.output.didRequireConfirmation = { [weak self] in
-      return (await self?.openConfirmation()) ?? false
+    module.output.didRequirePasscode = { [weak self] in
+      await self?.getPasscode()
     }
-    
+
     return module
+  }
+  
+  func getPasscode() async -> String? {
+    return await PasscodeInputCoordinator.getPasscode(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+    )
   }
 }

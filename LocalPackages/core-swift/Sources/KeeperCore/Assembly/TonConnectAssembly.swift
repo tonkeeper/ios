@@ -41,7 +41,7 @@ public final class TonConnectAssembly {
     TonConnectServiceImplementation(
       urlSession: .shared,
       apiClient: apiAssembly.tonConnectAPIClient(),
-      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
+      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
       tonConnectAppsVault: coreAssembly.tonConnectAppsVault(),
       tonConnectRepository: tonConnectRepository()
     )

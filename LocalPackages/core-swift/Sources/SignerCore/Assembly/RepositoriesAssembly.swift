@@ -14,13 +14,17 @@ public final class RepositoriesAssembly {
   }
   
   public func mnemonicsRepository() -> MnemonicsRepository {
-    coreAssembly.mnemonicsV2Vault { [weak self] in
+    coreAssembly.mnemonicsV3Vault { [weak self] in
       guard let self else { return "" }
       return self.settingsRepository().seed
     }
   }
-  public func oldMnemonicRepository() -> WalletKeyMnemonicRepository {
-    coreAssembly.mnemonicVault()
+  
+  public func oldMnemonicRepository() -> MnemonicsRepository {
+    coreAssembly.mnemonicsV2Vault { [weak self] in
+      guard let self else { return "" }
+      return self.settingsRepository().seed
+    }
   }
   
   public func signerInfoRepository() -> SignerInfoRepository {
@@ -29,5 +33,18 @@ public final class RepositoriesAssembly {
   
   public func passwordRepository() -> PasswordRepository {
     PasswordRepositoryImplementation(passwordVault: coreAssembly.passwordVault())
+  }
+  
+  public func mnemonicV2ToV3Migration() -> MnemonicV2ToV3Migration {
+    let seedProvider = { [weak self] in
+      guard let self else { return "" }
+      return self.settingsRepository().seed
+    }
+    return MnemonicV2ToV3Migration(
+      migration: CoreComponents.MnemonicV2ToV3Migration(
+        v2Vault: coreAssembly.mnemonicsV2Vault(seedProvider: seedProvider),
+        v3Vault: coreAssembly.mnemonicsV3Vault(seedProvider: seedProvider)
+      )
+    )
   }
 }

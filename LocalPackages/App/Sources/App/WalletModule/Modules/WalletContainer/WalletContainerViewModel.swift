@@ -35,8 +35,8 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
     Task {
       await walletMainController.start(didUpdateActiveWallet: { _ in
         
-      }, didUpdateWalletMetaData: { [weak self] walletModel in
-        self?.didUpdateActiveWalletMetaData(walletModel: walletModel)
+      }, didUpdateWalletMetaData: { [weak self] wallet in
+        self?.didUpdateActiveWalletMetaData(wallet: wallet)
       })
     }
   }
@@ -54,15 +54,15 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 }
 
 private extension WalletContainerViewModelImplementation {
-  func didUpdateActiveWalletMetaData(walletModel: WalletModel) {
+  func didUpdateActiveWalletMetaData(wallet: Wallet) {
     Task { @MainActor in
-      didUpdateModel?(createModel(walletModel: walletModel))
+      didUpdateModel?(createModel(wallet: wallet))
     }
   }
   
-  func createModel(walletModel: WalletModel) -> WalletContainerView.Model {
+  func createModel(wallet: Wallet) -> WalletContainerView.Model {
     let walletButtonConfiguration = TKButton.Configuration(
-      content: TKButton.Configuration.Content(title: .plainString(walletModel.emojiLabel),
+      content: TKButton.Configuration.Content(title: .plainString(wallet.emojiLabel),
                                               icon: .TKUIKit.Icons.Size16.chevronDown),
       contentPadding: UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12),
       padding: .zero,
@@ -71,8 +71,8 @@ private extension WalletContainerViewModelImplementation {
       textColor: .Button.primaryForeground,
       iconPosition: .right,
       iconTintColor: .Button.primaryForeground,
-      backgroundColors: [.normal: walletModel.tintColor.uiColor,
-                         .highlighted: walletModel.tintColor.uiColor.withAlphaComponent(0.88)],
+      backgroundColors: [.normal: wallet.tintColor.uiColor,
+                         .highlighted: wallet.tintColor.uiColor.withAlphaComponent(0.88)],
       contentAlpha: [.normal: 1],
       cornerRadius: 20) { [weak self] in
         UIImpactFeedbackGenerator(style: .heavy).impactOccurred()

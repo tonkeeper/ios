@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-public final class PasscodeInputViewController: GenericViewViewController<PasscodeInputView> {
+final class PasscodeInputViewController: GenericViewViewController<PasscodeInputView> {
   private let viewModel: PasscodeInputViewModel
   
   init(viewModel: PasscodeInputViewModel) {
@@ -13,62 +13,30 @@ public final class PasscodeInputViewController: GenericViewViewController<Passco
     fatalError("init(coder:) has not been implemented")
   }
   
-  public override func viewDidLoad() {
+  override func viewDidLoad() {
     super.viewDidLoad()
     
     setupBindings()
     viewModel.viewDidLoad()
   }
   
-  public override func viewDidDisappear(_ animated: Bool) {
+  override func viewDidDisappear(_ animated: Bool) {
     super.viewDidDisappear(animated)
     
     viewModel.viewDidDisappear()
   }
+  
+  override func didMove(toParent parent: UIViewController?) {}
 }
 
 private extension PasscodeInputViewController {
   func setupBindings() {
-    viewModel.didUpdateModel = { [customView] model in
-      customView.configure(model: model)
+    viewModel.didUpdateTitle = { [weak customView] title in
+      customView?.title = title
     }
     
-    viewModel.didUpdatePasscodeInputState = { [customView] inputState in
-      customView.passcodeView.inputState = inputState
-      switch inputState {
-      case .input(let count):
-        customView.isUserInteractionEnabled = count < .dotsCount
-      }
-    }
-    
-    viewModel.didUpdatePasscodeValidationState = { [weak self, customView] validationState, completion in
-      customView.passcodeView.validationState = validationState
-      switch validationState {
-      case .failed:
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-          self?.removeDotRowInput {
-            completion?()
-          }
-        }
-      case .success:
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-          completion?()
-        }
-      case .none: break
-      }
-    }
-  }
-  
-  func removeDotRowInput(completion: @escaping () -> Void) {
-    var count = Int.dotsCount
-    Timer.scheduledTimer(withTimeInterval: 0.15, repeats: true) { [weak self] timer in
-      self?.customView.passcodeView.inputState = .input(count: count)
-      count -= 1
-      if count < 0 {
-        timer.invalidate()
-        self?.customView.passcodeView.validationState = .none
-        completion()
-      }
+    viewModel.didUpdateState = { [weak customView] state, completion in
+      customView?.setState(state, completion: { completion?() })
     }
   }
 }

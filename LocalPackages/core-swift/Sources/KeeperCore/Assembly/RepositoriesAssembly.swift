@@ -1,7 +1,7 @@
 import Foundation
 import CoreComponents
 
-public final class RepositoriesAssembly {
+public struct RepositoriesAssembly {
   
   private let coreAssembly: CoreAssembly
   
@@ -11,6 +11,16 @@ public final class RepositoriesAssembly {
   
   public func mnemonicRepository() -> WalletMnemonicRepository {
     coreAssembly.mnemonicVault()
+  }
+  
+  public func mnemonicsRepository() -> MnemonicsRepository {
+    coreAssembly.mnemonicsV3Vault {
+      settingsRepository().seed
+    }
+  }
+  
+  public func settingsRepository() -> SettingsRepository {
+    SettingsRepository(settingsVault: coreAssembly.settingsVault())
   }
   
   func keeperInfoRepository() -> KeeperInfoRepository {
@@ -41,7 +51,7 @@ public final class RepositoriesAssembly {
     AccountNFTRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
-  func passcodeRepository() -> PasscodeRepository {
+  public func passcodeRepository() -> PasscodeRepository {
     PasscodeRepositoryImplementation(passcodeVault: coreAssembly.passcodeVault())
   }
   

@@ -78,8 +78,20 @@ private extension WalletTransferSignCoordinator {
     switch wallet.identity.kind {
     case .Regular:
       handleRegularSign()
-    case .External(let publicKey, let walletContractVersion):
-      handleExternalSign(
+    case .SignerDevice(let publicKey, let walletContractVersion):
+      handleSignerSignOnDevice(
+        transfer: walletTransfer,
+        publicKey: publicKey,
+        revision: walletContractVersion
+      )
+    case .Signer(let publicKey, let walletContractVersion):
+      handleSignerSign(
+        transfer: walletTransfer,
+        publicKey: publicKey,
+        revision: walletContractVersion
+      )
+    case .Ledger(let publicKey, let walletContractVersion, _):
+      handleLedgerSign(
         transfer: walletTransfer,
         publicKey: publicKey,
         revision: walletContractVersion
@@ -90,103 +102,108 @@ private extension WalletTransferSignCoordinator {
   }
   
   func handleRegularSign() {
-    let coordinator = PasscodeModule(
-      dependencies: PasscodeModule.Dependencies(
-        passcodeAssembly: keeperCoreMainAssembly.passcodeAssembly
-      )
-    ).passcodeConfirmationCoordinator()
-    
-    coordinator.didCancel = { [weak self, weak coordinator] in
-      coordinator?.router.dismiss(completion: {
+    PasscodeInputCoordinator.present(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+      onCancel: { [weak self] in
         self?.didCancel?()
-        guard let coordinator else { return }
-        self?.removeChild(coordinator)
-      })
-    }
-    
-    coordinator.didConfirm = { [weak self, weak coordinator, keeperCoreMainAssembly, wallet, walletTransfer] in
-      do {
-        let mnemonic = try keeperCoreMainAssembly.repositoriesAssembly.mnemonicRepository().getMnemonic(forWallet: wallet)
-        let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
-        let privateKey = keyPair.privateKey
-        let signed = try walletTransfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
-        self?.didSign?(signed)
-      } catch {
-        self?.didFail?(.failedToSign(error))
+      },
+      onInput: { [weak self, wallet, keeperCoreMainAssembly, walletTransfer] passcode in
+        guard let self else { return }
+        Task {
+          do {
+            let mnemonic = try await keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository().getMnemonic(
+              wallet: wallet,
+              password: passcode
+            )
+            let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
+            let privateKey = keyPair.privateKey
+            let signed = try walletTransfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
+            self.didSign?(signed)
+          } catch {
+            self.didFail?(.failedToSign(error))
+          }
+        }
       }
-      coordinator?.router.dismiss(completion: {
-        guard let coordinator else { return }
-        self?.removeChild(coordinator)
-      })
-    }
-    
-    addChild(coordinator)
-    coordinator.start()
-    
-    router.rootViewController.present(coordinator.router.rootViewController, animated: true)
+    )
   }
   
-  func handleExternalSign(transfer: WalletTransfer,
-                          publicKey: TonSwift.PublicKey,
-                          revision: WalletContractVersion) {
+  func handleLedgerSign(transfer: WalletTransfer,
+                        publicKey: TonSwift.PublicKey,
+                        revision: WalletContractVersion) {
+    let module = LedgerConfirmAssembly.module(coreAssembly: coreAssembly)
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    bottomSheetViewController.didClose = { [weak self] isInteractivly in
+      guard !isInteractivly else {
+        self?.didCancel?()
+        return
+      }
+    }
+    
+    module.output.didCancel = { [weak self, weak bottomSheetViewController] in
+      bottomSheetViewController?.dismiss(completion: {
+        self?.didCancel?()
+      })
+    }
+    
+    module.output.didSign = { [weak self, weak bottomSheetViewController] data in
+      bottomSheetViewController?.dismiss(completion: {
+        self?.didSign?(data)
+      })
+    }
+  
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func handleSignerSign(transfer: WalletTransfer,
+                        publicKey: TonSwift.PublicKey,
+                        revision: WalletContractVersion) {
     guard let url = try? createTonSignURL(transfer: transfer.signingMessage.endCell().toBoc(),
                                           publicKey: publicKey,
                                           revision: revision) else { return }
+    let module = SignerSignAssembly.module(
+      url: url,
+      wallet: wallet,
+      assembly: self.keeperCoreMainAssembly,
+      coreAssembly: self.coreAssembly
+    )
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
-    if coreAssembly.urlOpener().canOpen(url: url) {
-      externalSignHandler = { [weak self] data in
-        guard let data else {
-          self?.didCancel?()
-          return
-        }
-        self?.didSign?(data)
-      }
-      coreAssembly.urlOpener().open(url: url)
-    } else {
-      
+    bottomSheetViewController.didClose = { [weak self, weak bottomSheetViewController] isInteractivly in
+      guard isInteractivly else { return }
+      bottomSheetViewController?.dismiss(completion: {
+        self?.didCancel?()
+        return
+      })
     }
-            //    if self.coreAssembly.urlOpener().canOpen(url: url) {
-//      self.externalSignHandler = { data in
-//        continuation.resume(returning: data)
-//      }
-//      self.coreAssembly.urlOpener().open(url: url)
-//    } else {
     
-    //
-    //  func handleExternalSign(url: URL, wallet: Wallet, fromViewController: UIViewController) async throws -> Data? {
-    //    return try await withCheckedThrowingContinuation { continuation in
-    //      DispatchQueue.main.async {
-//            if self.coreAssembly.urlOpener().canOpen(url: url) {
-//              self.externalSignHandler = { data in
-//                continuation.resume(returning: data)
-//              }
-//              self.coreAssembly.urlOpener().open(url: url)
-//            } else {
-    //          let module = SignerSignAssembly.module(
-    //            url: url,
-    //            wallet: wallet,
-    //            assembly: self.keeperCoreMainAssembly,
-    //            coreAssembly: self.coreAssembly
-    //          )
-    //          let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    //
-    //          bottomSheetViewController.didClose = { isInteractivly in
-    //            guard isInteractivly else { return }
-    //            continuation.resume(returning: nil)
-    //          }
-    //
-    //          module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
-    //            bottomSheetViewController?.dismiss(completion: {
-    //              continuation.resume(returning: model.boc)
-    //            })
-    //          }
-    //
-    //          bottomSheetViewController.present(fromViewController: fromViewController)
-    //        }
-    //      }
-    //    }
-    //  }
-
+    module.output.didScanSignedTransaction = { [weak self, weak bottomSheetViewController] model in
+      bottomSheetViewController?.dismiss {
+        self?.didSign?(model.sign)
+      }
+    }
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func handleSignerSignOnDevice(transfer: WalletTransfer,
+                                publicKey: TonSwift.PublicKey,
+                                revision: WalletContractVersion) {
+    guard let url = try? createTonSignURL(transfer: transfer.signingMessage.endCell().toBoc(),
+                                          publicKey: publicKey,
+                                          revision: revision) else { return }
+    externalSignHandler = { [weak self] data in
+      guard let data else {
+        self?.didCancel?()
+        return
+      }
+      self?.didSign?(data)
+    }
+    coreAssembly.urlOpener().open(url: url)
   }
   
   func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) -> URL? {

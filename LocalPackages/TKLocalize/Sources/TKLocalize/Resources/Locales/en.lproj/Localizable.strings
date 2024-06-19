@@ -7,6 +7,7 @@
 "actions.done" = "Done";
 "actions.edit" = "Edit";
 "actions.copy" = "Copy";
+"actions.sign_out" = "Sign Out";
 
 "dates.today" = "Today";
 "dates.yesterday" = "Yesterday";
@@ -176,6 +177,9 @@
 "add_wallet.items.pair_signer.title" = "Pair Signer";
 "add_wallet.items.pair_signer.subtitle" = "A higher level of control and security";
 
+"add_wallet.items.pair_ledger.title" = "Pair with Ledger";
+"add_wallet.items.pair_ledger.subtitle" = "Hardware module, Bluetooth, limited TON features";
+
 "scanner.title" = "Scan QR code";
 
 "signer.scan.subtitle" = "Open Signer » Select the required key » Scan QR code";
@@ -234,3 +238,17 @@
 "action_types.domain_renew" = "Renew Domain";
 "action_types.unknown" = "Unknown";
 "action_types.wallet_initialize" = "Wallet initialized";
+
+"ledger_connect.title" = "Connect Ledger";
+"ledger_connect.steps.bluetooth_connect.description" = "Connect Ledger to your device via Bluetooth";
+"ledger_connect.steps.ton_app.description" = "Unlock it and open TON App";
+"ledger_connect.steps.ton_app.link" = "Install TON App";
+
+"ledger_confirm.title" = "Confirm Action";
+"ledger_confirm.steps.bluetooth_connect.description" = "Connect Ledger to your device via Bluetooth";
+"ledger_confirm.steps.ton_app.description" = "Unlock it and open TON App";
+"ledger_confirm.steps.confirm.description" = "Confirm your transaction on Ledger";
+
+"sign_out_full.title" = "🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?";
+"sign_out_full.description" = "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.";
+

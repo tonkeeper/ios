@@ -21,12 +21,7 @@ final class AppCoordinator: RouterCoordinator<WindowRouter> {
       settingsRepository.isFirstRun = false
       settingsRepository.seed = UUID().uuidString
     }
-    MnemonicV2Migration(
-      signerInfoRepository: signerCoreAssembly.repositoriesAssembly.signerInfoRepository(),
-      oldMnemonicRepository: signerCoreAssembly.repositoriesAssembly.oldMnemonicRepository(),
-      mnemonicsRepository: signerCoreAssembly.repositoriesAssembly.mnemonicsRepository(),
-      passwordRepository: signerCoreAssembly.repositoriesAssembly.passwordRepository()
-    ).migrateIfNeeded()
+    
     openRoot(deeplink: deeplink)
   }
   
