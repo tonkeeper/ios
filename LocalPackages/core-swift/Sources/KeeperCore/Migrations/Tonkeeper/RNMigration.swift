@@ -268,6 +268,21 @@ private struct RNWalletsStoreState: Decodable {
   let selectedIdentifier: String
   let biometryEnabled: Bool
   let lockScreenEnabled: Bool
+  
+  enum CodingKeys: CodingKey {
+    case wallets
+    case selectedIdentifier
+    case biometryEnabled
+    case lockScreenEnabled
+  }
+  
+  init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.wallets = try container.decode([RNWalletConfig].self, forKey: .wallets)
+    self.selectedIdentifier = try container.decode(String.self, forKey: .selectedIdentifier)
+    self.biometryEnabled = try container.decode(Bool.self, forKey: .biometryEnabled)
+    self.lockScreenEnabled = try container.decodeIfPresent(Bool.self, forKey: .lockScreenEnabled) ?? false
+  }
 }
 
 private struct RNWalletConfig: Decodable {
