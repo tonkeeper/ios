@@ -82,13 +82,15 @@ private extension WalletTransferSignCoordinator {
       handleSignerSignOnDevice(
         transfer: walletTransfer,
         publicKey: publicKey,
-        revision: walletContractVersion
+        revision: walletContractVersion,
+        network: wallet.identity.network
       )
     case .Signer(let publicKey, let walletContractVersion):
       handleSignerSign(
         transfer: walletTransfer,
         publicKey: publicKey,
-        revision: walletContractVersion
+        revision: walletContractVersion,
+        network: wallet.identity.network
       )
     case .Ledger(let publicKey, let walletContractVersion, _):
       handleLedgerSign(
@@ -161,10 +163,12 @@ private extension WalletTransferSignCoordinator {
   
   func handleSignerSign(transfer: WalletTransfer,
                         publicKey: TonSwift.PublicKey,
-                        revision: WalletContractVersion) {
+                        revision: WalletContractVersion,
+                        network: Network) {
     guard let url = try? createTonSignURL(transfer: transfer.signingMessage.endCell().toBoc(),
                                           publicKey: publicKey,
-                                          revision: revision) else { return }
+                                          revision: revision,
+                                          network: network) else { return }
     let module = SignerSignAssembly.module(
       url: url,
       wallet: wallet,
@@ -192,10 +196,12 @@ private extension WalletTransferSignCoordinator {
   
   func handleSignerSignOnDevice(transfer: WalletTransfer,
                                 publicKey: TonSwift.PublicKey,
-                                revision: WalletContractVersion) {
+                                revision: WalletContractVersion,
+                                network: Network) {
     guard let url = try? createTonSignURL(transfer: transfer.signingMessage.endCell().toBoc(),
                                           publicKey: publicKey,
-                                          revision: revision) else { return }
+                                          revision: revision,
+                                          network: network) else { return }
     externalSignHandler = { [weak self] data in
       guard let data else {
         self?.didCancel?()
@@ -206,12 +212,15 @@ private extension WalletTransferSignCoordinator {
     coreAssembly.urlOpener().open(url: url)
   }
   
-  func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion) -> URL? {
+  func createTonSignURL(transfer: Data, 
+                        publicKey: TonSwift.PublicKey,
+                        revision: WalletContractVersion,
+                        network: Network) -> URL? {
     let hexPublicKey = publicKey.data.hexString()
     let hexBody = transfer.hexString()
     let v = revision.rawValue.lowercased()
     
-    let string = "tonsign://?pk=\(hexPublicKey)&body=\(hexBody)&v=\(v)&return=\("tonkeeperx://publish".percentEncoded ?? "")"
+    let string = "tonsign://v1/?pk=\(hexPublicKey)&body=\(hexBody)&v=\(v)&tn=\(network.rawValue)&return=\("tonkeeperx://publish".percentEncoded ?? "")"
     return URL(string: string)
   }
 }
