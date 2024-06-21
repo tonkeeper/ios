@@ -4,12 +4,12 @@ import TonSwift
 
 public final class WalletAddController {
 
-  private let walletsStoreUpdate: WalletsStoreUpdate
+  private let walletsStoreUpdater: WalletsStoreUpdater
   private let mnemonicsRepository: MnemonicsRepository
   
-  init(walletsStoreUpdate: WalletsStoreUpdate,
+  init(walletsStoreUpdater: WalletsStoreUpdater,
        mnemonicsRepositoty: MnemonicsRepository) {
-    self.walletsStoreUpdate = walletsStoreUpdate
+    self.walletsStoreUpdater = walletsStoreUpdater
     self.mnemonicsRepository = mnemonicsRepositoty
   }
   
@@ -30,9 +30,8 @@ public final class WalletAddController {
     )
     
     try await mnemonicsRepository.saveMnemonic(mnemonic, wallet: wallet, password: passcode)
-    try walletsStoreUpdate.addWallets([wallet])
-    
-    try walletsStoreUpdate.makeWalletActive(wallet)
+    await walletsStoreUpdater.addWallets([wallet])
+    await walletsStoreUpdater.setWalletActive(wallet)
   }
   
   public func importWallets(phrase: [String],
@@ -74,26 +73,26 @@ public final class WalletAddController {
       wallets: wallets,
       password: passcode
     )
-    try walletsStoreUpdate.addWallets(wallets)
-    try walletsStoreUpdate.makeWalletActive(wallets[0])
+    await walletsStoreUpdater.addWallets(wallets)
+    await walletsStoreUpdater.setWalletActive(wallets[0])
   }
   
   public func importWatchOnlyWallet(resolvableAddress: ResolvableAddress,
-                                    metaData: WalletMetaData) throws {
+                                    metaData: WalletMetaData) async throws {
     let wallet = Wallet(
       id: UUID().uuidString,
       identity: WalletIdentity(network: .mainnet, kind: .Watchonly(resolvableAddress)),
       metaData: metaData,
       setupSettings: WalletSetupSettings(backupDate: nil)
     )
-    try walletsStoreUpdate.addWallets([wallet])
-    try walletsStoreUpdate.makeWalletActive(wallet)
+    await walletsStoreUpdater.addWallets([wallet])
+    await walletsStoreUpdater.setWalletActive(wallet)
   }
   
   public func importSignerWallet(publicKey: TonSwift.PublicKey,
                                  revisions: [WalletContractVersion],
                                  metaData: WalletMetaData,
-                                 isDevice: Bool) throws {
+                                 isDevice: Bool) async throws {
     let addPostfix = revisions.count > 1
     
     let wallets = revisions.map { revision in
@@ -125,14 +124,14 @@ public final class WalletAddController {
         setupSettings: WalletSetupSettings(backupDate: Date()))
     }
 
-    try walletsStoreUpdate.addWallets(wallets)
-    try walletsStoreUpdate.makeWalletActive(wallets[0])
+    await walletsStoreUpdater.addWallets(wallets)
+    await walletsStoreUpdater.setWalletActive(wallets[0])
   }
   
   public func importLedgerWallet(publicKey: TonSwift.PublicKey,
                                  revisions: [WalletContractVersion],
                                  device: Wallet.LedgerDevice,
-                                 metaData: WalletMetaData) throws {
+                                 metaData: WalletMetaData) async throws {
     let addPostfix = revisions.count > 1
     
     let wallets = revisions.map { revision in
@@ -156,7 +155,7 @@ public final class WalletAddController {
         setupSettings: WalletSetupSettings(backupDate: Date()))
     }
 
-    try walletsStoreUpdate.addWallets(wallets)
-    try walletsStoreUpdate.makeWalletActive(wallets[0])
+    await walletsStoreUpdater.addWallets(wallets)
+    await walletsStoreUpdater.setWalletActive(wallets[0])
   }
 }

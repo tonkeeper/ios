@@ -57,10 +57,13 @@ private extension ImportWatchOnlyWalletCoordinator {
     let module = customizeWalletModule(name)
     
     module.output.didCustomizeWallet = { [weak self] model in
-      self?.importWallet(
-        resolvableAddress: resolvableAddress,
-        model: model
-      )
+      guard let self else { return }
+      Task {
+        await self.importWallet(
+          resolvableAddress: resolvableAddress,
+          model: model
+        )
+      }
     }
     
     if router.rootViewController.viewControllers.isEmpty {
@@ -75,14 +78,14 @@ private extension ImportWatchOnlyWalletCoordinator {
   }
   
   func importWallet(resolvableAddress: ResolvableAddress,
-                    model: CustomizeWalletModel) {
+                    model: CustomizeWalletModel) async {
     let addController = walletsUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
       icon: .emoji(model.emoji))
     do {
-      try addController.importWatchOnlyWallet(
+      try await addController.importWatchOnlyWallet(
         resolvableAddress: resolvableAddress,
         metaData: metaData
       )

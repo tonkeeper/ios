@@ -23,6 +23,8 @@ public final class MainAssembly {
   public let configurationAssembly: ConfigurationAssembly
   public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
+  public let mainStoresAssembly: MainStoresAssembly
+  public let mainLoadersAssembly: MainLoadersAssembly
   let apiAssembly: APIAssembly
   let loadersAssembly: LoadersAssembly
   
@@ -35,6 +37,8 @@ public final class MainAssembly {
        configurationAssembly: ConfigurationAssembly,
        passcodeAssembly: PasscodeAssembly,
        tonConnectAssembly: TonConnectAssembly,
+       mainStoresAssembly: MainStoresAssembly,
+       mainLoadersAssembly: MainLoadersAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly) {
     self.repositoriesAssembly = repositoriesAssembly
@@ -46,6 +50,8 @@ public final class MainAssembly {
     self.configurationAssembly = configurationAssembly
     self.passcodeAssembly = passcodeAssembly
     self.tonConnectAssembly = tonConnectAssembly
+    self.mainStoresAssembly = mainStoresAssembly
+    self.mainLoadersAssembly = mainLoadersAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
   }
@@ -71,19 +77,20 @@ public final class MainAssembly {
           TonDeeplinkParser(),
         ]
       ),
-      apiProvider: apiAssembly.apiProvider
+      apiProvider: apiAssembly.apiProvider,
+      walletBalanceLoader: mainLoadersAssembly.walletBalanceLoaderV2
     )
   }
   
   public func walletMainController() -> WalletMainController {
     WalletMainController(
-      walletsStore: walletAssembly.walletStore,
-      walletBalanceLoader: loadersAssembly.walletBalanceLoader,
-      nftsStore: storesAssembly.nftsStore,
-      nftsLoader: loadersAssembly.nftsLoader,
-      tonRatesLoader: loadersAssembly.tonRatesLoader,
-      currencyStore: storesAssembly.currencyStore,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore
+      walletsStore: walletAssembly.walletsStoreV2,
+      currencyStore: storesAssembly.currencyStoreV2
+//      walletBalanceLoader: loadersAssembly.walletBalanceLoader,
+//      nftsStore: storesAssembly.nftsStore,
+//      nftsLoader: loadersAssembly.nftsLoader,
+//      tonRatesLoader: loadersAssembly.tonRatesLoader,
+//      backgroundUpdateStore: storesAssembly.backgroundUpdateStore
     )
   }
   

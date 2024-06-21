@@ -1,6 +1,6 @@
 import Foundation
 
-enum TotalBalanceState {
+enum TotalBalanceState: Equatable {
   case current(TotalBalance)
   case previous(TotalBalance)
   

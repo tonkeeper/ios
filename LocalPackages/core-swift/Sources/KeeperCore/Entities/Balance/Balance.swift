@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 import BigInt
 
-public struct Balance: Codable {
+public struct Balance: Codable, Equatable {
   public let tonBalance: TonBalance
   public let jettonsBalance: [JettonBalance]
 }
@@ -13,11 +13,11 @@ public extension Balance {
   }
 }
 
-public struct TonBalance: Codable {
+public struct TonBalance: Codable, Equatable {
   public let amount: Int64
 }
 
-public struct JettonBalance: Codable {
+public struct JettonBalance: Codable, Equatable {
   public let item: JettonItem
   public let quantity: BigUInt
   public let rates: [Currency: Rates.Rate]

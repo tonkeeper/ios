@@ -102,10 +102,10 @@ private extension PairSignerCoordinator {
       label: model.name,
       tintColor: model.tintColor,
       icon: .emoji(model.emoji))
-    try addController.importSignerWallet(publicKey: publicKey,
-                                         revisions: revisions,
-                                         metaData: metaData,
-                                         isDevice: isDevice
+    try await addController.importSignerWallet(publicKey: publicKey,
+                                               revisions: revisions,
+                                               metaData: metaData,
+                                               isDevice: isDevice
     )
   }
 }

@@ -1,6 +1,6 @@
 import Foundation
 
-public struct WalletMetaData: Codable {
+public struct WalletMetaData: Codable, Equatable {
   public let label: String
   public let tintColor: WalletTintColor
   public let icon: WalletIcon
@@ -14,12 +14,12 @@ public struct WalletMetaData: Codable {
   }
 }
 
-public enum WalletIcon: Codable {
+public enum WalletIcon: Codable, Equatable {
   case emoji(String)
   case icon(String)
 }
 
-public enum WalletTintColor: String, Codable, CaseIterable {
+public enum WalletTintColor: String, Codable, CaseIterable, Equatable {
   case SteelGray
   case LightSteelGray
   case Gray

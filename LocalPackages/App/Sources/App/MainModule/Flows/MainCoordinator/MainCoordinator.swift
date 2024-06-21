@@ -13,6 +13,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   private let mainController: KeeperCore.MainController
+  private let mainCoordinatorStateManager: MainCoordinatorStateManager
   
   private let walletModule: WalletModule
   private let historyModule: HistoryModule
@@ -68,6 +69,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     self.appStateTracker = appStateTracker
     self.reachabilityTracker = reachabilityTracker
     
+    self.mainCoordinatorStateManager = MainCoordinatorStateManager(walletsStoreV2: keeperCoreMainAssembly.walletAssembly.walletsStoreV2)
+    
     super.init(router: router)
     
     mainController.didReceiveTonConnectRequest = { [weak self] request, wallet, app in
@@ -79,26 +82,27 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
-    didSendTransactionToken = NotificationCenter.default.addObserver(
-      forName: NSNotification.Name(
-        "DID SEND TRANSACTION"
-      ),
-      object: nil,
-      queue: .main) { [weak self] _ in
-        self?.router.rootViewController.selectedIndex = 1
-      }
-    setupTabBarTaps()
+//    didSendTransactionToken = NotificationCenter.default.addObserver(
+//      forName: NSNotification.Name(
+//        "DID SEND TRANSACTION"
+//      ),
+//      object: nil,
+//      queue: .main) { [weak self] _ in
+//        self?.router.rootViewController.selectedIndex = 1
+//      }
+//    setupTabBarTaps()
     setupChildCoordinators()
-    mainController.didUpdateBrowserAvailability = { [weak self] isBrowserAvailable in
-      guard let self = self else { return }
-      Task { await self.didUpdateBrowserAvailability(isAvailable: isBrowserAvailable) }
+    
+    mainCoordinatorStateManager.didUpdateState = { [weak self] state in
+      self?.handleStateUpdate(state)
     }
-    Task {
-      await mainController.start()
-      await MainActor.run {
-        _ = handleDeeplink(deeplink: deeplink)
-      }
-    }
+    mainCoordinatorStateManager.setInitialState()
+//    Task {
+//      await mainController.start()
+//      await MainActor.run {
+//        _ = handleDeeplink(deeplink: deeplink)
+//      }
+//    }
   }
 
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -151,30 +155,35 @@ private extension MainCoordinator {
     self.historyCoordinator = historyCoordinator
     self.browserCoordinator = browserCoordinator
     self.collectiblesCoordinator = collectiblesCoordinator
-
-    let coordinators = [
-      walletCoordinator,
-      historyCoordinator,
-      browserCoordinator,
-      collectiblesCoordinator
-    ].compactMap { $0 }
-    let viewControllers = coordinators.compactMap { $0.router.rootViewController }
-    coordinators.forEach {
-      addChild($0)
-      $0.start()
-    }
     
-    router.didSelectItem = { [weak self] index in
-      let isTabBarTransparent = index == self?.router.rootViewController.viewControllers?.firstIndex(of: browserCoordinator.router.rootViewController)
-      let isSeparatorVisible = !isTabBarTransparent
-      let isBlurVisible = !isTabBarTransparent
-      self?.router.rootViewController.configureAppearance(isSeparatorVisible: isSeparatorVisible)
-      (self?.router.rootViewController as? TKTabBarController)?.blurView.isHidden = !isBlurVisible
-    }
+    addChild(walletCoordinator)
+    addChild(historyCoordinator)
+    addChild(browserCoordinator)
+    addChild(collectiblesCoordinator)
     
-    router.set(viewControllers: viewControllers, animated: false)
+    walletCoordinator.start()
+    historyCoordinator.start()
+    browserCoordinator.start()
+    collectiblesCoordinator.start()
   }
   
+  func handleStateUpdate(_ state: MainCoordinatorStateManager.State) {
+    let viewControllers = state.tabs.compactMap { tab -> RouterCoordinator<NavigationControllerRouter>? in
+      switch tab {
+      case .wallet:
+        return walletCoordinator
+      case .history:
+        return historyCoordinator
+      case .browser:
+        return browserCoordinator
+      case .purchases:
+        return collectiblesCoordinator
+      }
+    }.map { $0.router.rootViewController }
+
+    router.rootViewController.setViewControllers(viewControllers, animated: false)
+  }
+
   func setupTabBarTaps() {
     (router.rootViewController as? TKTabBarController)?.didLongPressTabBarItem = { [weak self] index in
       guard index == 0 else { return }
@@ -524,27 +533,6 @@ private extension MainCoordinator {
     } catch {
       print("Log: Wallet update failed")
     }
-  }
-  
-  @MainActor
-  private func didUpdateBrowserAvailability(isAvailable: Bool) {
-    let viewControllers: [UIViewController?] = {
-      if isAvailable {
-        return [
-          walletCoordinator?.router.rootViewController,
-          historyCoordinator?.router.rootViewController,
-          browserCoordinator?.router.rootViewController,
-          collectiblesCoordinator?.router.rootViewController
-        ]
-      } else {
-        return [
-          walletCoordinator?.router.rootViewController,
-          historyCoordinator?.router.rootViewController,
-          collectiblesCoordinator?.router.rootViewController
-        ]
-      }
-    }()
-    router.set(viewControllers: viewControllers.compactMap { $0 }, animated: false)
   }
 }
 

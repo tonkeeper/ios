@@ -11,8 +11,6 @@ public final class MainController {
     }
   }
   
-  public var didUpdateNftsAvailability: ((Bool) -> Void)?
-  public var didUpdateBrowserAvailability: ((Bool) -> Void)?
   public var didReceiveTonConnectRequest: ((TonConnect.AppRequest, Wallet, TonConnectApp) -> Void)?
   
   private var walletsStoreObservationToken: ObservationToken?
@@ -30,6 +28,8 @@ public final class MainController {
   // TODO: wrap to service
   private let apiProvider: APIProvider
   
+  private let walletBalanceLoader: WalletBalanceLoaderV2
+
   private var state = State()
   
   private var nftStateTask: Task<Void, Never>?
@@ -43,7 +43,8 @@ public final class MainController {
        dnsService: DNSService,
        tonConnectService: TonConnectService,
        deeplinkParser: DeeplinkParser,
-       apiProvider: APIProvider) {
+       apiProvider: APIProvider,
+       walletBalanceLoader: WalletBalanceLoaderV2) {
     self.walletsStore = walletsStore
     self.accountNFTService = accountNFTService
     self.backgroundUpdateStore = backgroundUpdateStore
@@ -54,6 +55,7 @@ public final class MainController {
     self.tonConnectService = tonConnectService
     self.deeplinkParser = deeplinkParser
     self.apiProvider = apiProvider
+    self.walletBalanceLoader = walletBalanceLoader
   }
   
   deinit {
@@ -66,14 +68,11 @@ public final class MainController {
       switch state {
       case .didUpdateState(let backgroundUpdateState):
         switch backgroundUpdateState {
-        case .connected:
-          Task { await observer.updateNfts() }
         default: break
         }
       case .didReceiveUpdateEvent(let backgroundUpdateEvent):
         Task {
           guard try backgroundUpdateEvent.accountAddress == observer.walletsStore.activeWallet.address else { return }
-          await observer.updateNfts()
         }
       }
     }
@@ -82,9 +81,6 @@ public final class MainController {
       switch event {
       case .didAddWallets:
         Task { await observer.startBackgroundUpdate() }
-      case .didUpdateActiveWallet:
-        self.didUpdateActiveWallet()
-        Task { await observer.updateNfts() }
       default: break
       }
     }
@@ -92,11 +88,8 @@ public final class MainController {
     await tonConnectEventsStore.addObserver(self)
     
     await startBackgroundUpdate()
-    didUpdateActiveWallet()
   }
-  
-  public func updateNfts() async {}
-  
+    
   public func startBackgroundUpdate() async {
     await backgroundUpdateStore.start(addresses: walletsStore.wallets.compactMap { try? $0.address })
     await tonConnectEventsStore.start()
@@ -157,10 +150,6 @@ public final class MainController {
       return jettonItem
     }
     return nil
-  }
-  
-  private func didUpdateActiveWallet() {
-    didUpdateBrowserAvailability?(walletsStore.activeWallet.isBrowserAvailable)
   }
 }
 

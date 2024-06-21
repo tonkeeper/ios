@@ -1,7 +1,7 @@
 import Foundation
 
 /// Shared security settings for all wallets in the app
-struct SecuritySettings {
+struct SecuritySettings: Equatable {
   let isBiometryEnabled: Bool
 }
 

@@ -15,11 +15,16 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   private let dependencies: Dependencies
   private let rootController: RootController
+  
+  private let stateManager: RootCoordinatorStateManager
 
   init(router: NavigationControllerRouter,
        dependencies: Dependencies) {
     self.dependencies = dependencies
     self.rootController = dependencies.keeperCoreRootAssembly.rootController()
+    self.stateManager = RootCoordinatorStateManager(
+      keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
+    )
     super.init(router: router)
     router.rootViewController.setNavigationBarHidden(true, animated: false)
   }
@@ -29,27 +34,8 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     rootController.loadKnownAccounts()
     rootController.loadBuySellMethods()
     
-    func startStandartFlow() {
-      switch self.rootController.getState() {
-      case .onboarding:
-        self.openOnboarding(deeplink: try? self.rootController.parseDeeplink(string: deeplink?.string))
-      case let .main(wallets, activeWallet):
-        self.openMain(wallets: wallets,
-                      activeWallet: activeWallet,
-                      deeplink: try? self.rootController.parseDeeplink(string: deeplink?.string))
-      }
-    }
-    
-    let migrationController = dependencies.keeperCoreRootAssembly.migrationController(
-      sharedCacheURL: dependencies.coreAssembly.sharedCacheURL,
-      keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier,
-      isTonkeeperX: dependencies.coreAssembly.isTonkeeperX
-    )
-    
-    if migrationController.checkIfNeedToMigrate() {
-      openMigration(migrationController: migrationController)
-    } else {
-      startStandartFlow()
+    stateManager.didUpdateState = { [weak self] state in
+      self?.handleStateUpdate(state: state, deeplink: deeplink)
     }
   }
   
@@ -70,6 +56,15 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
 }
 
 private extension RootCoordinator {
+  func handleStateUpdate(state: RootCoordinatorStateManager.State, deeplink: CoordinatorDeeplink? = nil) {
+    switch state {
+    case .onboarding:
+      openOnboarding(deeplink: deeplink)
+    case .main(let walletsState):
+      openMain(wallets: walletsState.wallets, activeWallet: walletsState.activeWallet, deeplink: deeplink)
+    }
+  }
+  
   func openOnboarding(deeplink: CoordinatorDeeplink?) {
     let module = OnboardingModule(
       dependencies: OnboardingModule.Dependencies(
@@ -95,6 +90,7 @@ private extension RootCoordinator {
   }
   
   func openMain(wallets: [Wallet], activeWallet: Wallet, deeplink: CoordinatorDeeplink?) {
+    print("open main")
     let mainAssemblyDependencies = MainAssembly.Dependencies(
       wallets: wallets, 
       activeWallet: activeWallet

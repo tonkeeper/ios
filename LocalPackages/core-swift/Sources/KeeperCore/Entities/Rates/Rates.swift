@@ -1,13 +1,13 @@
 import Foundation
 
-public struct Rates: Codable {
-  public struct Rate: Codable {
+public struct Rates: Codable, Equatable {
+  public struct Rate: Codable, Equatable {
     public let currency: Currency
     public let rate: Decimal
     public let diff24h: String?
   }
   
-  public struct JettonRate: Codable {
+  public struct JettonRate: Codable, Equatable {
     public let jettonInfo: JettonInfo
     public var rates: [Rate]
   }

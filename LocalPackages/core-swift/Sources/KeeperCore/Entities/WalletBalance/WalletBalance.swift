@@ -1,7 +1,7 @@
 import Foundation
 import BigInt
 
-struct WalletBalance: Codable {
+public struct WalletBalance: Codable, Equatable {
   let date: Date
   let balance: Balance
 }

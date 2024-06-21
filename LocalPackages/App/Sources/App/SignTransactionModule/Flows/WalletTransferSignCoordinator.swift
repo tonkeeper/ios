@@ -212,10 +212,7 @@ private extension WalletTransferSignCoordinator {
     coreAssembly.urlOpener().open(url: url)
   }
   
-  func createTonSignURL(transfer: Data, 
-                        publicKey: TonSwift.PublicKey,
-                        revision: WalletContractVersion,
-                        network: Network) -> URL? {
+  func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion, network: Network) -> URL? {
     let hexPublicKey = publicKey.data.hexString()
     let hexBody = transfer.hexString()
     let v = revision.rawValue.lowercased()

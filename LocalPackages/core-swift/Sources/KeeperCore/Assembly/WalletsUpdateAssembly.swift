@@ -2,13 +2,16 @@ import Foundation
 
 public final class WalletsUpdateAssembly {
   
+  private let storesAssembly: StoresAssembly
   private let servicesAssembly: ServicesAssembly
   public let repositoriesAssembly: RepositoriesAssembly
   private let formattersAssembly: FormattersAssembly
   
-  init(servicesAssembly: ServicesAssembly,
+  init(storesAssembly: StoresAssembly,
+       servicesAssembly: ServicesAssembly,
        repositoriesAssembly: RepositoriesAssembly,
        formattersAssembly: FormattersAssembly) {
+    self.storesAssembly = storesAssembly
     self.servicesAssembly = servicesAssembly
     self.repositoriesAssembly = repositoriesAssembly
     self.formattersAssembly = formattersAssembly
@@ -18,9 +21,13 @@ public final class WalletsUpdateAssembly {
     WalletsStoreUpdate(walletsService: servicesAssembly.walletsService())
   }()
   
+  public var walletsStoreUpdater: WalletsStoreUpdater {
+    WalletsStoreUpdater(keeperInfoStore: storesAssembly.keeperInfoStore)
+  }
+  
   public func walletAddController() -> WalletAddController {
     WalletAddController(
-      walletsStoreUpdate: walletsStoreUpdate,
+      walletsStoreUpdater: walletsStoreUpdater,
       mnemonicsRepositoty: repositoriesAssembly.mnemonicsRepository()
     )
   }

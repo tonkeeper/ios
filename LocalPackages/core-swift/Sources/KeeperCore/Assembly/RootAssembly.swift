@@ -93,6 +93,10 @@ public final class RootAssembly {
       coreAssembly: coreAssembly,
       formattersAssembly: formattersAssembly
     )
+    let mainStoresAssembly = MainStoresAssembly(
+      walletsAssembly: walletAssembly,
+      repositoriesAssembly: repositoriesAssembly
+    )
     return MainAssembly(
       repositoriesAssembly: repositoriesAssembly,
       walletAssembly: walletAssembly,
@@ -103,6 +107,13 @@ public final class RootAssembly {
       configurationAssembly: configurationAssembly,
       passcodeAssembly: passcodeAssembly,
       tonConnectAssembly: tonConnectAssembly,
+      mainStoresAssembly: mainStoresAssembly,
+      mainLoadersAssembly: MainLoadersAssembly(
+        servicesAssembly: servicesAssembly, 
+        storesAssembly: storesAssembly,
+        mainStoresAssembly: mainStoresAssembly,
+        walletAssembly: walletAssembly
+      ),
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly
     )

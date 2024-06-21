@@ -23,12 +23,16 @@ public struct RepositoriesAssembly {
     SettingsRepository(settingsVault: coreAssembly.settingsVault())
   }
   
-  func keeperInfoRepository() -> KeeperInfoRepository {
+  public func keeperInfoRepository() -> KeeperInfoRepository {
     coreAssembly.sharedFileSystemVault()
   }
   
   func walletBalanceRepository() -> WalletBalanceRepository {
     WalletBalanceRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
+  func walletBalanceRepositoryV2() -> WalletBalanceRepositoryV2 {
+    WalletBalanceRepositoryV2implementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
   func totalBalanceRepository() -> TotalBalanceRepository {

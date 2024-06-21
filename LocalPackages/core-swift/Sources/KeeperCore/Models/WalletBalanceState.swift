@@ -1,6 +1,6 @@
 import Foundation
 
-enum WalletBalanceState {
+public enum WalletBalanceState: Equatable {
   case current(WalletBalance)
   case previous(WalletBalance)
   

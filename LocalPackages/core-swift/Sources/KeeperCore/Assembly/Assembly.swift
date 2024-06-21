@@ -41,6 +41,7 @@ public final class Assembly {
   private lazy var formattersAssembly = FormattersAssembly()
   private var walletUpdateAssembly: WalletsUpdateAssembly {
     WalletsUpdateAssembly(
+      storesAssembly: storesAssembly,
       servicesAssembly: servicesAssembly,
       repositoriesAssembly: repositoriesAssembly,
       formattersAssembly: formattersAssembly

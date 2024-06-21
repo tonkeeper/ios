@@ -18,6 +18,26 @@ public final class StoresAssembly {
     self.repositoriesAssembly = repositoriesAssembly
   }
   
+  private weak var _keeperInfoStore: KeeperInfoStore?
+  public var keeperInfoStore: KeeperInfoStore {
+    if let _keeperInfoStore {
+      return _keeperInfoStore
+    }
+    let store = KeeperInfoStore(keeperInfoRepository: repositoriesAssembly.keeperInfoRepository())
+    _keeperInfoStore = store
+    return store
+  }
+  
+  private weak var _currencyStoreV2: CurrencyStoreV2?
+  public var currencyStoreV2: CurrencyStoreV2 {
+    if let _currencyStoreV2 {
+      return _currencyStoreV2
+    }
+    let store = CurrencyStoreV2(keeperInfoStore: keeperInfoStore)
+    _currencyStoreV2 = store
+    return store
+  }
+  
   private weak var _walletBalanceStore: WalletBalanceStore?
   var walletBalanceStore: WalletBalanceStore {
     if let _walletBalanceStore {

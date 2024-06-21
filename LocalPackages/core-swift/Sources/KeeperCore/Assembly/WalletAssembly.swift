@@ -7,6 +7,7 @@ public final class WalletAssembly {
   private let walletUpdateAssembly: WalletsUpdateAssembly
   
   public let walletStore: WalletsStore
+  public let walletsStoreV2: WalletsStoreV2
   
   init(servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
@@ -23,6 +24,11 @@ public final class WalletAssembly {
       walletsService: servicesAssembly.walletsService(),
       backupStore: storesAssembly.backupStore,
       walletsStoreUpdate: walletUpdateAssembly.walletsStoreUpdate
+    )
+    
+    self.walletsStoreV2 = WalletsStoreV2(
+      state: WalletsState(wallets: wallets, activeWallet: activeWallet),
+      keeperInfoStore: storesAssembly.keeperInfoStore
     )
   }
 }

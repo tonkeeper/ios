@@ -32,12 +32,21 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   var didUpdateWalletBalanceViewController: ((_ viewController: UIViewController, _ animated: Bool) -> Void)?
   
   func viewDidLoad() {
-    Task {
-      await walletMainController.start(didUpdateActiveWallet: { _ in
-        
-      }, didUpdateWalletMetaData: { [weak self] wallet in
-        self?.didUpdateActiveWalletMetaData(wallet: wallet)
-      })
+    walletMainController.didUpdateActiveWallet = { [weak self] wallet in
+      DispatchQueue.main.async {
+        self?.wallet = wallet
+      }
+    }
+    walletMainController.start()
+  }
+  
+  // MARK: - State
+  
+  private var wallet: Wallet? {
+    didSet {
+      guard let wallet,
+            wallet.metaData != oldValue?.metaData else { return }
+      didUpdateModel?(createModel(wallet: wallet))
     }
   }
 
@@ -54,12 +63,6 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 }
 
 private extension WalletContainerViewModelImplementation {
-  func didUpdateActiveWalletMetaData(wallet: Wallet) {
-    Task { @MainActor in
-      didUpdateModel?(createModel(wallet: wallet))
-    }
-  }
-  
   func createModel(wallet: Wallet) -> WalletContainerView.Model {
     let walletButtonConfiguration = TKButton.Configuration(
       content: TKButton.Configuration.Content(title: .plainString(wallet.emojiLabel),
