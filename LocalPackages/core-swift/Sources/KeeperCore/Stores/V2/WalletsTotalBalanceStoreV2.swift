@@ -3,11 +3,11 @@ import TonSwift
 
 public final class WalletsTotalBalanceStoreV2: Store<WalletsTotalBalanceStoreV2.State> {
   public struct State: Equatable {
-    let wallets: [Wallet]
-    let balanceStates: [Wallet: WalletBalanceState]
-    let currency: Currency
-    let tonRates: [Rates.Rate]
-    let totalBalances: [Wallet: TotalBalanceState]
+    public let wallets: [Wallet]
+    public let balanceStates: [Wallet: WalletBalanceState]
+    public let currency: Currency
+    public let tonRates: [Rates.Rate]
+    public let totalBalances: [Wallet: TotalBalanceState]
   }
   
   private let walletsStore: WalletsStoreV2

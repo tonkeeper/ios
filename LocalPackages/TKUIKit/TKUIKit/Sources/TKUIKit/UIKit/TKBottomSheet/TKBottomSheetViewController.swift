@@ -9,6 +9,7 @@ public final class TKBottomSheetViewController: UIViewController {
   let headerView = TKBottomSheetHeaderView()
   let contentViewController: TKBottomSheetContentViewController
   
+  private var isDismissing = false
   private let scrollController = TKBottomSheetScrollController()
   
   private lazy var tapGesture = UITapGestureRecognizer(
@@ -95,6 +96,7 @@ private extension TKBottomSheetViewController {
     contentViewController.didMove(toParent: self)
     
     contentViewController.didUpdateHeight = { [weak self] in
+      guard self?.isDismissing != true else { return }
       self?.updateContentHeight()
     }
   }
@@ -162,12 +164,14 @@ private extension TKBottomSheetViewController {
   }
   
   func performDismiss(completion: (() -> Void)? = nil) {
+    isDismissing = true
     dimmingView.prepareForDimissalTransition()
     animateDragging {
       self.containerView.frame.origin.y = self.view.bounds.height
       self.dimmingView.performDismissalTransition()
-    } completion: { _ in
+    } completion: { [weak self] _ in
       completion?()
+      self?.isDismissing = false
     }
   }
   

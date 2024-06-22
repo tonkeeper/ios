@@ -13,7 +13,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   private let mainController: KeeperCore.MainController
+  
   private let mainCoordinatorStateManager: MainCoordinatorStateManager
+  private let walletsStoreUpdater: WalletsStoreUpdater
   
   private let walletModule: WalletModule
   private let historyModule: HistoryModule
@@ -70,6 +72,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     self.reachabilityTracker = reachabilityTracker
     
     self.mainCoordinatorStateManager = MainCoordinatorStateManager(walletsStoreV2: keeperCoreMainAssembly.walletAssembly.walletsStoreV2)
+    self.walletsStoreUpdater = keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater
     
     super.init(router: router)
     
@@ -440,12 +443,17 @@ private extension MainCoordinator {
   
   func openWalletPicker() {
     let module = WalletsListAssembly.module(
-      walletListController: keeperCoreMainAssembly.walletStoreWalletListController()
+      model: WalletsPickerListModel(
+        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+        walletsUpdater: keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater
+      ),
+      totalBalancesStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     
-    module.output.didTapAddWalletButton = { [weak self, unowned bottomSheetViewController] in
+    module.output.addButtonEvent = { [weak self, unowned bottomSheetViewController] in
       bottomSheetViewController.dismiss {
         guard let self else { return }
         self.openAddWallet(router: ViewControllerRouter(rootViewController: self.router.rootViewController))
@@ -510,7 +518,15 @@ private extension MainCoordinator {
     )
     
     module.output.didCustomizeWallet = { [weak self] model in
-      self?.updateWallet(wallet: wallet, model: model)
+      guard let self else { return }
+      Task {
+        await self.walletsStoreUpdater.updateWalletMetaData(
+          wallet,
+          metaData: WalletMetaData(
+            customizeWalletModel: model
+          )
+        )
+      }
     }
     
     let navigationController = TKNavigationController(rootViewController: module.view)
@@ -520,19 +536,6 @@ private extension MainCoordinator {
     }
     
     fromViewController.present(navigationController, animated: true)
-  }
-  
-  func updateWallet(wallet: Wallet, model: CustomizeWalletModel) {
-    let controller = keeperCoreMainAssembly.walletUpdateAssembly.walletUpdateController()
-    let metaData = WalletMetaData(
-      label: model.name,
-      tintColor: model.tintColor,
-      icon: .emoji(model.emoji))
-    do {
-      try controller.updateWallet(wallet: wallet, metaData: metaData)
-    } catch {
-      print("Log: Wallet update failed")
-    }
   }
 }
 

@@ -93,37 +93,7 @@ public final class MainAssembly {
 //      backgroundUpdateStore: storesAssembly.backgroundUpdateStore
     )
   }
-  
-  public func walletStoreWalletListController() -> WalletListController {
-    let configurator = WalletStoreWalletListControllerConfigurator(
-      walletsStore: walletAssembly.walletStore,
-      walletsStoreUpdate: walletUpdateAssembly.walletsStoreUpdate
-    )
-    return WalletListController(
-      walletsStore: walletAssembly.walletStore,
-      walletTotalBalanceStore: storesAssembly.walletTotalBalanceStore(walletsStore: walletAssembly.walletStore),
-      currencyStore: storesAssembly.currencyStore,
-      configurator: configurator,
-      walletListMapper: walletListMapper
-    )
-  }
-  
-  public func tonConnectWalletSelectWalletLisController(selectedWallet: Wallet,
-                                                        didSelectWallet: ((Wallet) -> Void)?) -> WalletListController {
-    let configurator = TonConnectWalletSelectWalletListControllerConfigurator(
-      selectedWallet: selectedWallet,
-      walletsStore: walletAssembly.walletStore
-    )
-    configurator.didSelectWallet = didSelectWallet
-    return WalletListController(
-      walletsStore: walletAssembly.walletStore,
-      walletTotalBalanceStore: storesAssembly.walletTotalBalanceStore(walletsStore: walletAssembly.walletStore),
-      currencyStore: storesAssembly.currencyStore,
-      configurator: configurator,
-      walletListMapper: walletListMapper
-    )
-  }
-  
+
   public func walletBalanceController() -> WalletBalanceController {
     WalletBalanceController(
       walletsStore: walletAssembly.walletStore,
@@ -455,30 +425,12 @@ public final class MainAssembly {
 }
 
 private extension MainAssembly {
-  func walletListController(configurator: WalletStoreWalletListControllerConfigurator) -> WalletListController {
-    return WalletListController(
-      walletsStore: walletAssembly.walletStore,
-      walletTotalBalanceStore: storesAssembly.walletTotalBalanceStore(walletsStore: walletAssembly.walletStore),
-      currencyStore: storesAssembly.currencyStore,
-      configurator: configurator,
-      walletListMapper: walletListMapper
-    )
-  }
-  
   var walletBalanceMapper: WalletBalanceMapper {
     WalletBalanceMapper(
       amountFormatter: formattersAssembly.amountFormatter,
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
       rateConverter: RateConverter(),
       dateFormatter: formattersAssembly.dateFormatter)
-  }
-  
-  var walletListMapper: WalletListMapper {
-    WalletListMapper(
-      amountFormatter: formattersAssembly.amountFormatter,
-      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
-      rateConverter: RateConverter()
-    )
   }
   
   var accountEventMapper: AccountEventMapper {

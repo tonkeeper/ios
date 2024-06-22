@@ -57,6 +57,8 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
 
 private extension RootCoordinator {
   func handleStateUpdate(state: RootCoordinatorStateManager.State, deeplink: CoordinatorDeeplink? = nil) {
+    self.mainCoordinator = nil
+    self.onboardingCoordinator = nil
     switch state {
     case .onboarding:
       openOnboarding(deeplink: deeplink)
@@ -90,7 +92,6 @@ private extension RootCoordinator {
   }
   
   func openMain(wallets: [Wallet], activeWallet: Wallet, deeplink: CoordinatorDeeplink?) {
-    print("open main")
     let mainAssemblyDependencies = MainAssembly.Dependencies(
       wallets: wallets, 
       activeWallet: activeWallet

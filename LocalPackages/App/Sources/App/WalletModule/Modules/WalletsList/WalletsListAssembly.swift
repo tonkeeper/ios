@@ -4,8 +4,14 @@ import KeeperCore
 
 struct WalletsListAssembly {
   private init() {}
-  static func module(walletListController: WalletListController) -> MVVMModule<WalletsListViewController, WalletsListModuleOutput, Void> {
-    let viewModel = WalletsListViewModelImplementation(walletListController: walletListController)
+  static func module(model: WalletsListModel,
+                     totalBalancesStore: WalletsTotalBalanceStoreV2,
+                     amountFormatter: AmountFormatter) -> MVVMModule<WalletsListViewController, WalletsListModuleOutput, Void> {
+    let viewModel = WalletsListViewModelImplementation(
+      model: model,
+      totalBalancesStore: totalBalancesStore,
+      amountFormatter: amountFormatter
+    )
     
     let viewController = WalletsListViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())

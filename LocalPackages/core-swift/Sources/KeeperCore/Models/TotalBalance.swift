@@ -2,7 +2,7 @@ import Foundation
 import BigInt
 
 public struct TotalBalance: Codable, Equatable {
-  let amount: BigUInt
-  let fractionalDigits: Int
-  let date: Date
+  public let amount: BigUInt
+  public let fractionalDigits: Int
+  public let date: Date
 }

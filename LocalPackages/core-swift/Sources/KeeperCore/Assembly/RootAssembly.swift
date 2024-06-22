@@ -95,7 +95,9 @@ public final class RootAssembly {
     )
     let mainStoresAssembly = MainStoresAssembly(
       walletsAssembly: walletAssembly,
-      repositoriesAssembly: repositoriesAssembly
+      repositoriesAssembly: repositoriesAssembly,
+      servicesAssembly: servicesAssembly,
+      storesAssembly: storesAssembly
     )
     return MainAssembly(
       repositoriesAssembly: repositoriesAssembly,

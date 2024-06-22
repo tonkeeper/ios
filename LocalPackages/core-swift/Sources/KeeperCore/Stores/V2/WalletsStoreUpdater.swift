@@ -46,11 +46,11 @@ public final class WalletsStoreUpdater {
         addressBook: wallet.addressBook
       )
       var wallets = keeperInfo.wallets
-      guard let index = wallets.firstIndex(of: wallet) else { return keeperInfo }
+      guard let index = wallets.firstIndex(where: { $0.id == wallet.id }) else { return keeperInfo }
       wallets.remove(at: index)
       wallets.insert(updatedWallet, at: index)
       var updatedKeeperInfo = keeperInfo.setWallets(wallets)
-      if keeperInfo.currentWallet == wallet {
+      if keeperInfo.currentWallet.id == wallet.id {
         updatedKeeperInfo = updatedKeeperInfo.setActiveWallet(updatedWallet)
       }
       return updatedKeeperInfo
@@ -70,7 +70,7 @@ public final class WalletsStoreUpdater {
         addressBook: wallet.addressBook
       )
       var wallets = keeperInfo.wallets
-      guard let index = wallets.firstIndex(of: wallet) else { return keeperInfo }
+      guard let index = wallets.firstIndex(where: { $0.id == wallet.id }) else { return keeperInfo }
       wallets.remove(at: index)
       wallets.insert(updatedWallet, at: index)
       let updatedKeeperInfo = keeperInfo.setWallets(wallets)

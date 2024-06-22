@@ -89,7 +89,9 @@ private extension ImportWatchOnlyWalletCoordinator {
         resolvableAddress: resolvableAddress,
         metaData: metaData
       )
-      didImportWallet?()
+      await MainActor.run {
+        didImportWallet?()
+      }
     } catch {
       print("Log: Watch only wallet import failed")
     }

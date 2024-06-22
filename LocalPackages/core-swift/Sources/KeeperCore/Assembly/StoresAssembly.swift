@@ -38,6 +38,19 @@ public final class StoresAssembly {
     return store
   }
   
+  private weak var _tonRatesStoreV2: TonRatesStoreV2?
+  var tonRatesStoreV2: TonRatesStoreV2 {
+    if let tonRatesStore = _tonRatesStoreV2 {
+      return tonRatesStore
+    } else {
+      let tonRatesStore = TonRatesStoreV2(
+        repository: repositoriesAssembly.ratesRepository()
+      )
+      _tonRatesStoreV2 = tonRatesStore
+      return tonRatesStore
+    }
+  }
+  
   private weak var _walletBalanceStore: WalletBalanceStore?
   var walletBalanceStore: WalletBalanceStore {
     if let _walletBalanceStore {
@@ -65,6 +78,7 @@ public final class StoresAssembly {
     _walletTotalBalanceStore = walletTotalBalanceStore
     return walletTotalBalanceStore
   }
+  
   private weak var _tonRatesStore: TonRatesStore?
   var tonRatesStore: TonRatesStore {
     if let tonRatesStore = _tonRatesStore {
