@@ -101,7 +101,7 @@ private extension PairSignerCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      icon: .emoji(model.emoji))
+      icon: model.icon)
     try addController.importSignerWallet(publicKey: publicKey,
                                          revisions: revisions,
                                          metaData: metaData,

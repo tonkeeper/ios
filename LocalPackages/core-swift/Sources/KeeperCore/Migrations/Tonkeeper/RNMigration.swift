@@ -244,7 +244,8 @@ public struct RNMigration {
     if walletConfig.emoji.count == 1 {
       icon = .emoji(walletConfig.emoji)
     } else {
-      icon = .icon(walletConfig.emoji)
+      // TODO: set correct icon
+      icon = .icon(.bankCard)
     }
     
     let tintColor = WalletTintColor(rawValue: walletConfig.color) ?? .defaultColor

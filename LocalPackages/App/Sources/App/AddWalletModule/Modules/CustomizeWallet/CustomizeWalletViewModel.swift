@@ -7,7 +7,7 @@ import TKLocalize
 public struct CustomizeWalletModel {
   public let name: String
   public let tintColor: WalletTintColor
-  public let emoji: String
+  public let icon: WalletIcon
 }
 
 public protocol CustomizeWalletModuleOutput: AnyObject {
@@ -17,11 +17,13 @@ public protocol CustomizeWalletModuleOutput: AnyObject {
 protocol CustomizeWalletViewModel: AnyObject {
   var didUpdateModel: ((CustomizeWalletView.Model) -> Void)? { get set }
   var didSelectEmoji: ((EmojisDataSource.Emoji) -> Void)? { get set }
+  var didSelectWalletIcon: ((WalletColorIconBadgeView.Model) -> Void)? { get set }
   var didSelectColor: ((UIColor) -> Void)? { get set }
   var didUpdateContinueButtonIsEnabled: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
   func setWalletName(_ name: String)
+  func setIcon(_ walletIcon: WalletIcon)
 }
 
 final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, CustomizeWalletModuleOutput {
@@ -34,18 +36,21 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
   
   var didUpdateModel: ((CustomizeWalletView.Model) -> Void)?
   var didSelectEmoji: ((EmojisDataSource.Emoji) -> Void)?
+  var didSelectWalletIcon: ((WalletColorIconBadgeView.Model) -> Void)?
   var didSelectColor: ((UIColor) -> Void)?
   var didUpdateContinueButtonIsEnabled: ((Bool) -> Void)?
   
   func viewDidLoad() {
-    didUpdateModel?(createModel(emojiPickerItems: []))
+    didUpdateModel?(createModel(items: []))
     didUpdateContinueButtonIsEnabled?(true)
     Task {
-      let items = await createEmojiPickerItems()
+      let items = await createIconPickerItems()
       guard !items.isEmpty else { return }
       await MainActor.run {
-        didSelectEmoji?(items.first(where: { $0.emoji.emoji == self.emoji })?.emoji ?? items[0].emoji)
-        didUpdateModel?(createModel(emojiPickerItems: items))
+        didSelectWalletIcon?((items.first(where: { $0 == self.icon }) ?? items[0]).colorIconBadgeViewModel)
+//        didSelectEmoji?(items.first(where: { $0 == self.icon })?.emoji ?? items[0])
+//        didSelectEmoji
+        didUpdateModel?(createModel(items: items))
         didSelectColor?(self.tintColor.uiColor)
       }
     }
@@ -58,6 +63,12 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
     configurator.didEditName()
   }
   
+  func setIcon(_ walletIcon: WalletIcon) {
+    self.icon = walletIcon
+    self.didSelectWalletIcon?(walletIcon.colorIconBadgeViewModel)
+    self.configurator.didSelectColor()
+  }
+  
   // MARK: - Data Source
   
   private var emojiDataSource = EmojisDataSource()
@@ -66,17 +77,16 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
   
   private var name: String
   private var tintColor: WalletTintColor
-  private var emoji: String
+  private var icon: WalletIcon
   private let configurator: CustomizeWalletViewModelConfigurator
-  
   
   init(name: String? = nil,
        tintColor: WalletTintColor? = nil,
-       emoji: String? = nil,
+       icon: WalletIcon? = nil,
        configurator: CustomizeWalletViewModelConfigurator) {
     self.name = name ?? .defaultWalletName
     self.tintColor = tintColor ?? .defaultColor
-    self.emoji = emoji ?? .defaultEmoji
+    self.icon = icon ?? .default
     self.configurator = configurator
     
     configurator.didCustomizeWallet = { [weak self] in
@@ -86,7 +96,7 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
 }
 
 private extension CustomizeWalletViewModelImplementation {
-  func createModel(emojiPickerItems: [WalletEmojiPickerView.Model.Item]) -> CustomizeWalletView.Model {
+  func createModel(items: [WalletIcon]) -> CustomizeWalletView.Model {
     let titleDescriptionModel = TKTitleDescriptionView.Model(
       title: TKLocales.CustomizeWallet.title,
       bottomDescription: TKLocales.CustomizeWallet.description
@@ -95,7 +105,7 @@ private extension CustomizeWalletViewModelImplementation {
     let walletNameTextFieldPlaceholder = TKLocales.CustomizeWallet.input_placeholder
     
     let colorPickerModel = createColorPickerModel()
-    let emojiPicketModel = WalletEmojiPickerView.Model(items: emojiPickerItems)
+    let iconPickerModel = WalletIconPickerView.Model(items: items)
     
     var continueButtonConfiguration: TKButton.Configuration?
     switch configurator.continueButtonMode {
@@ -116,7 +126,7 @@ private extension CustomizeWalletViewModelImplementation {
       walletNameTextFieldPlaceholder: walletNameTextFieldPlaceholder,
       walletNameDefaultValue: name,
       colorPickerModel: colorPickerModel,
-      emojiPicketModel: emojiPicketModel
+      iconPickerModel: iconPickerModel
     )
   }
   
@@ -141,29 +151,37 @@ private extension CustomizeWalletViewModelImplementation {
     )
   }
   
-  func createEmojiPickerItems() async -> [WalletEmojiPickerView.Model.Item] {
+  func createIconPickerItems() async -> [WalletIcon] {
     let emojis = await emojiDataSource.loadData()
-    guard !emojis.isEmpty else { return [] }
-    let items = emojis.map { emoji in
-      WalletEmojiPickerView.Model.Item(
-        emoji: emoji,
-        selectHandler: { [weak self] in
-          self?.emoji = emoji.emoji
-          self?.didSelectEmoji?(emoji)
-          self?.configurator.didSelectColor()
-        }
-      )
+    let images = WalletIcon.Image.allCases
+
+    let imageItems = images.map { image in
+      WalletIcon.icon(image)
     }
-    return items
+    let emojiItems = emojis.map { emoji in
+      WalletIcon.emoji(emoji.emoji)
+    }
+    return imageItems + emojiItems
   }
   
   func didFinishCustomization() {
     let model = CustomizeWalletModel(
       name: name,
       tintColor: tintColor,
-      emoji: emoji
+      icon: icon
     )
     didCustomizeWallet?(model)
+  }
+}
+
+private extension WalletIcon {
+  var colorIconBadgeViewModel: WalletColorIconBadgeView.Model {
+    switch self {
+    case .emoji(let string):
+      return .emoji(string)
+    case .icon(let image):
+      return .image(image.image)
+    }
   }
 }
 
@@ -171,7 +189,12 @@ private extension Int {
   static let colorsCount = 26
 }
 
+private extension WalletIcon {
+  static var `default`: WalletIcon {
+    .icon(.wallet)
+  }
+}
+
 private extension String {
   static let defaultWalletName = TKLocales.CustomizeWallet.default_wallet_name
-  static let defaultEmoji = "😀"
 }

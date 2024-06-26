@@ -29,12 +29,12 @@ final class CustomizeWalletView: UIView, ConfigurableView {
     return container
   }()
   
-  let badgeView = WalletColorEmojiBadgeView()
+  let badgeView = WalletColorIconBadgeView()
   
   let colorPickerView = WalletColorPickerView()
   
-  let emojiPickerView = WalletEmojiPickerView()
-  let emojiPicketContainer: TKPaddingContainerView = {
+  let iconPickerView = WalletIconPickerView()
+  let iconPickerContainer: TKPaddingContainerView = {
     let container = TKPaddingContainerView()
     container.padding = .emojiPickerViewPadding
     return container
@@ -73,7 +73,7 @@ final class CustomizeWalletView: UIView, ConfigurableView {
     let walletNameTextFieldPlaceholder: String
     let walletNameDefaultValue: String
     let colorPickerModel: WalletColorPickerView.Model
-    let emojiPicketModel: WalletEmojiPickerView.Model
+    let iconPickerModel: WalletIconPickerView.Model
   }
   
   func configure(model: Model) {
@@ -81,7 +81,7 @@ final class CustomizeWalletView: UIView, ConfigurableView {
     walletNameTextField.placeholder = model.walletNameTextFieldPlaceholder
     walletNameTextField.text = model.walletNameDefaultValue
     colorPickerView.configure(model: model.colorPickerModel)
-    emojiPickerView.configure(model: model.emojiPicketModel)
+    iconPickerView.configure(model: model.iconPickerModel)
     if let continueButtonConfiguration = model.continueButtonConfiguration {
       continueButton.configuration = continueButtonConfiguration
       continueButton.isHidden = false
@@ -111,7 +111,7 @@ private extension CustomizeWalletView {
     contentStackView.addArrangedSubview(titleDescriptionView)
     contentStackView.addArrangedSubview(walletNameTextFieldContainer)
     contentStackView.addArrangedSubview(colorPickerView)
-    contentStackView.addArrangedSubview(emojiPicketContainer)
+    contentStackView.addArrangedSubview(iconPickerContainer)
     
     
     walletNameTextField.rightItems = [TKTextField.RightItem(
@@ -120,7 +120,7 @@ private extension CustomizeWalletView {
     )]
     
     walletNameTextFieldContainer.setViews([walletNameTextField])
-    emojiPicketContainer.setViews([emojiPickerView])
+    iconPickerContainer.setViews([iconPickerView])
     continueButtonContainer.setViews([continueButton])
     
     setupConstraints()

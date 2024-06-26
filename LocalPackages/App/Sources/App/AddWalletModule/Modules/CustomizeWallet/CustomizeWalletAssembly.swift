@@ -7,12 +7,12 @@ struct CustomizeWalletAssembly {
   private init() {}
   static func module(name: String?,
                      tintColor: WalletTintColor?,
-                     emoji: String?,
+                     icon: WalletIcon?,
                      configurator: CustomizeWalletViewModelConfigurator) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
     let viewModel = CustomizeWalletViewModelImplementation(
       name: name,
       tintColor: tintColor,
-      emoji: emoji,
+      icon: icon,
       configurator: configurator
     )
     let viewController = CustomizeWalletViewController(viewModel: viewModel)
