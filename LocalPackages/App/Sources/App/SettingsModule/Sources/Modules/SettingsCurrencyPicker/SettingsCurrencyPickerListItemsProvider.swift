@@ -19,14 +19,7 @@ final class SettingsCurrencyPickerListItemsProvider: SettingsListItemsProvider {
     [createSection()]
   }
   
-  func selectItem(section: SettingsListSection, index: Int) {
-    switch section.items[index] {
-    case let walletModel as WalletsListWalletCell.Model:
-      walletModel.selectionHandler?()
-    default:
-      break
-    }
-  }
+  func selectItem(section: SettingsListSection, index: Int) {}
   
   func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell? {
     nil

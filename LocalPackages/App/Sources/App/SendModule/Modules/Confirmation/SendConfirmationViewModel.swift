@@ -142,16 +142,22 @@ private extension SendConfirmationViewModelImplementation {
     )
     
     var listItems = [TKModalCardViewController.Configuration.ListItem]()
+    
+    let senderWalletName = sendConfirmationModel.wallet.iconWithName(
+      attributes: TKTextStyle.label1.getAttributes(color: .Text.primary, alignment: .right, lineBreakMode: .byTruncatingTail),
+      iconColor: .Icon.primary,
+      iconSide: 20
+    )
     listItems.append(
       TKModalCardViewController.Configuration.ListItem(
         left: TKLocales.ConfirmSend.wallet,
-        rightTop: .value(sendConfirmationModel.wallet, numberOfLines: 0, isFullString: false),
+        rightTop: .value(senderWalletName, numberOfLines: 0, isFullString: false),
         rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
       )
     )
     if let recipientName = sendConfirmationModel.recipientName {
       listItems.append(
-        TKModalCardViewController.Configuration.ListItem(
+        TKModalCardViewController.Configuration.ListItem.defaultItem(
           left: TKLocales.ConfirmSend.Recipient.title,
           rightTop: .value(recipientName, numberOfLines: 0, isFullString: true),
           rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
@@ -160,7 +166,7 @@ private extension SendConfirmationViewModelImplementation {
     }
     if let recipientAddress = sendConfirmationModel.recipientAddress {
       listItems.append(
-        TKModalCardViewController.Configuration.ListItem(
+        TKModalCardViewController.Configuration.ListItem.defaultItem(
           left: TKLocales.ConfirmSend.Recipient.address,
           rightTop: .value(recipientAddress, numberOfLines: 1, isFullString: false),
           rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
@@ -176,7 +182,7 @@ private extension SendConfirmationViewModelImplementation {
         rightBottom = .value(value, numberOfLines: 1, isFullString: false)
       }
       listItems.append(
-        TKModalCardViewController.Configuration.ListItem(
+        TKModalCardViewController.Configuration.ListItem.defaultItem(
           left: TKLocales.ConfirmSend.amount,
           rightTop: .value(amount, numberOfLines: 0, isFullString: false),
           rightBottom: rightBottom
@@ -199,7 +205,7 @@ private extension SendConfirmationViewModelImplementation {
       feeRightBottom = .value(value, numberOfLines: 1, isFullString: false)
     }
     listItems.append(
-      TKModalCardViewController.Configuration.ListItem(
+      TKModalCardViewController.Configuration.ListItem.defaultItem(
         left: TKLocales.ConfirmSend.fee,
         rightTop: feeRightTop,
         rightBottom: feeRightBottom
@@ -208,7 +214,7 @@ private extension SendConfirmationViewModelImplementation {
     
     if let comment = sendConfirmationModel.comment, !comment.isEmpty {
       listItems.append(
-        TKModalCardViewController.Configuration.ListItem(
+        TKModalCardViewController.Configuration.ListItem.defaultItem(
           left: TKLocales.ConfirmSend.comment,
           rightTop: .value(comment, numberOfLines: 0, isFullString: false),
           rightBottom: .value(nil, numberOfLines: 0, isFullString: false)

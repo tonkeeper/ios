@@ -16,8 +16,8 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
   }()
   
   private let contentContainerView = UIView()
-  private let walletButton = TKButton()
-  private let settingsButton = TKButton()
+  let walletButton = WalletContainerWalletButton()
+  let settingsButton = TKButton()
   private let blurView: UIVisualEffectView = {
     let blurEffect = UIBlurEffect(style: .systemUltraThinMaterialDark)
     let blurView = UIVisualEffectView(effect: blurEffect)
@@ -39,12 +39,12 @@ final class WalletContainerTopBarView: UIView, ConfigurableView {
   }
   
   struct Model {
-    let walletButtonConfiguration: TKButton.Configuration
+    let walletButtonConfiguration: WalletContainerWalletButton.Model
     let settingButtonConfiguration: TKButton.Configuration
   }
   
   func configure(model: Model) {
-    walletButton.configuration = model.walletButtonConfiguration
+    walletButton.configure(model: model.walletButtonConfiguration)
     settingsButton.configuration = model.settingButtonConfiguration
   }
 }
@@ -72,15 +72,15 @@ private extension WalletContainerTopBarView {
     }
     
     walletButton.snp.makeConstraints { make in
-      make.top.equalTo(contentContainerView).inset(CGFloat.walletButtonTopInset)
-      make.bottom.equalTo(contentContainerView).inset(CGFloat.walletButtonBottomInset)
       make.centerX.equalTo(contentContainerView)
+      make.centerY.equalTo(contentContainerView)
       make.width.lessThanOrEqualTo(CGFloat.walletButtonMaxWidth)
     }
     
     contentContainerView.snp.makeConstraints { make in
       make.top.equalTo(safeAreaLayoutGuide)
       make.left.right.bottom.equalTo(self)
+      make.height.equalTo(64)
     }
     
     settingsButton.snp.makeConstraints { make in

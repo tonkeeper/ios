@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class TonConnectConnectWalletButton: UIControl {
+final class TonConnectConnectWalletButton: UIControl, ConfigurableView {
   override var isHighlighted: Bool {
     didSet {
       highlightView.isHighlighted = isHighlighted
@@ -9,7 +9,7 @@ final class TonConnectConnectWalletButton: UIControl {
   }
   
   let highlightView = TKHighlightView()
-  let contentView = TonConnectConnectWalletButtonContentView()
+  let contentView = TKUIListItemView()
   let switchView: UIImageView = {
     let imageView = UIImageView()
     imageView.contentMode = .center
@@ -19,6 +19,10 @@ final class TonConnectConnectWalletButton: UIControl {
   }()
   
   let padding = UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+  
+  func configure(model: TKUIListItemView.Configuration) {
+    contentView.configure(configuration: model)
+  }
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -67,80 +71,5 @@ final class TonConnectConnectWalletButton: UIControl {
   
   override var intrinsicContentSize: CGSize {
     CGSize(width: UIView.noIntrinsicMetric, height: 76)
-  }
-}
-
-final class TonConnectConnectWalletButtonContentView: UIView, ConfigurableView {
-  let iconView = TKListItemIconEmojiView()
-  let contentView = TKListItemContentView()
-  
-  lazy var layout = TKListItemLayout(iconView: iconView, contentView: contentView, valueView: nil)
-  
-  override init(frame: CGRect) {
-    super.init(frame: frame)
-    setup()
-  }
-  
-  required init?(coder: NSCoder) {
-    fatalError("init(coder:) has not been implemented")
-  }
-  
-  override func layoutSubviews() {
-    super.layoutSubviews()
-    layout.layouSubviews(bounds: bounds)
-  }
-  
-  override func sizeThatFits(_ size: CGSize) -> CGSize {
-    return layout.calculateSize(targetSize: size)
-  }
-  
-  struct Model {
-    let iconModel: TKListItemIconEmojiView.Model
-    let contentModel: TKListItemContentView.Model
-    
-    init(emoji: String,
-         backgroundColor: UIColor,
-         walletName: String,
-         address: String?) {
-      iconModel = TKListItemIconEmojiView.Model(
-        emoji: emoji,
-        backgroundColor: backgroundColor
-      )
-      
-      let leftContentStackViewModel = TKListItemContentStackView.Model(
-        titleSubtitleModel: TKListItemTitleSubtitleView.Model(
-          title: walletName.withTextStyle(
-            .label1,
-            color: .Text.primary,
-            alignment: .left,
-            lineBreakMode: .byTruncatingTail
-          ),
-          subtitle: address?.withTextStyle(
-            .body2,
-            color: .Text.secondary,
-            alignment: .left,
-            lineBreakMode: .byTruncatingTail
-          )
-        ),
-        description: nil
-      )
-      
-      contentModel = TKListItemContentView.Model(
-        leftContentStackViewModel: leftContentStackViewModel,
-        rightContentStackViewModel: nil
-      )
-    }
-  }
-  
-  func configure(model: Model) {
-    iconView.configure(model: model.iconModel)
-    contentView.configure(model: model.contentModel)
-  }
-}
-
-private extension TonConnectConnectWalletButtonContentView {
-  func setup() {
-    addSubview(iconView)
-    addSubview(contentView)
   }
 }

@@ -65,7 +65,7 @@ private extension LinkDNSViewModelImplementation {
     switch dnsLink {
     case .link(let address):
       items.append(
-        TKModalCardViewController.Configuration.ListItem(
+        TKModalCardViewController.Configuration.ListItem.defaultItem(
           left: "Wallet address",
           rightTop: .value(address.shortAddressString, numberOfLines: 1, isFullString: false),
           rightBottom: .value(nil, numberOfLines: 0, isFullString: false)
@@ -100,7 +100,7 @@ private extension LinkDNSViewModelImplementation {
       symbol: TonInfo.symbol
     )
     
-    return TKModalCardViewController.Configuration.ListItem(
+    return TKModalCardViewController.Configuration.ListItem.defaultItem(
       left: "Amount",
       rightTop: .value(feeFormatted, numberOfLines: 1, isFullString: false),
       rightBottom: .value(nil, numberOfLines: 1, isFullString: false)
@@ -115,7 +115,7 @@ private extension LinkDNSViewModelImplementation {
       symbol: TonInfo.symbol
     )
     
-    return TKModalCardViewController.Configuration.ListItem(
+    return TKModalCardViewController.Configuration.ListItem.defaultItem(
       left: "Fee",
       rightTop: .value(feeFormatted, numberOfLines: 1, isFullString: false),
       rightBottom: .value(nil, numberOfLines: 1, isFullString: false)

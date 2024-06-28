@@ -48,8 +48,6 @@ final class CustomizeWalletViewModelImplementation: CustomizeWalletViewModel, Cu
       guard !items.isEmpty else { return }
       await MainActor.run {
         didSelectWalletIcon?((items.first(where: { $0 == self.icon }) ?? items[0]).colorIconBadgeViewModel)
-//        didSelectEmoji?(items.first(where: { $0 == self.icon })?.emoji ?? items[0])
-//        didSelectEmoji
         didUpdateModel?(createModel(items: items))
         didSelectColor?(self.tintColor.uiColor)
       }

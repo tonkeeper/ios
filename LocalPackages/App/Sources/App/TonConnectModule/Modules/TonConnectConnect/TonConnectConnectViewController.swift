@@ -72,7 +72,7 @@ private extension TonConnectConnectViewController {
     viewModel.walletPickerView = { model in
       let view = TonConnectConnectWalletButton()
       view.contentView.configure(
-        model: model
+        configuration: model
       )
       return view
     }

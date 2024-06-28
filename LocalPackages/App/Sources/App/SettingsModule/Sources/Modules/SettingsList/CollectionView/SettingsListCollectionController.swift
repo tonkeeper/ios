@@ -6,6 +6,7 @@ final class SettingsListCollectionController: TKCollectionController<SettingsLis
   typealias SettingsCellRegistration = UICollectionView.CellRegistration<SettingsCell, SettingsCell.Model>
   typealias SettingsTextCellRegistration = UICollectionView.CellRegistration<SettingsTextCell, SettingsTextCell.Model>
   typealias SettingsButtonCellRegistration = UICollectionView.CellRegistration<SettingsButtonCell, SettingsButtonCell.Model>
+  typealias ListItemCellRegistration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration>
   
   private let settingsCellRegistration: SettingsCellRegistration
   private let settingsTextCellRegistration: SettingsTextCellRegistration
@@ -27,6 +28,15 @@ final class SettingsListCollectionController: TKCollectionController<SettingsLis
       cell.configure(model: itemIdentifier)
     }
     self.settingsButtonCellRegistration = settingsButtonCellRegistration
+    
+    let listItemCellRegistration = ListItemCellRegistration { cell, indexPath, itemIdentifier in
+      cell.configure(configuration: itemIdentifier)
+      cell.isFirstInSection = { ip in ip.item == 0 }
+      cell.isLastInSection = { [weak collectionView] ip in
+        guard let collectionView = collectionView else { return false }
+        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
+      }
+    }
 
     super.init(
       collectionView: collectionView, cellProvider: { collectionView, indexPath, itemIdentifier in
@@ -39,6 +49,8 @@ final class SettingsListCollectionController: TKCollectionController<SettingsLis
           return cell
         case let model as SettingsButtonCell.Model:
           return collectionView.dequeueConfiguredReusableCell(using: settingsButtonCellRegistration, for: indexPath, item: model)
+        case let configuration as TKUIListItemCell.Configuration:
+          return collectionView.dequeueConfiguredReusableCell(using: listItemCellRegistration, for: indexPath, item: configuration)
         default: return cellProvider?(collectionView, indexPath, itemIdentifier)
         }
       })

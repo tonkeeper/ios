@@ -244,8 +244,7 @@ public struct RNMigration {
     if walletConfig.emoji.count == 1 {
       icon = .emoji(walletConfig.emoji)
     } else {
-      // TODO: set correct icon
-      icon = .icon(.bankCard)
+      icon = .icon(WalletIcon.Image(rnIconString: walletConfig.emoji))
     }
     
     let tintColor = WalletTintColor(rawValue: walletConfig.color) ?? .defaultColor
@@ -257,7 +256,6 @@ public struct RNMigration {
       setupSettings: WalletSetupSettings(backupDate: Date())
     )
   }
-  
 }
 
 private struct RNManifest: Decodable {
@@ -331,6 +329,57 @@ private struct RNWalletConfig: Decodable {
 private struct RNMnemonic: Decodable {
   let identifier: String
   let mnemonic: String
+}
+
+private extension WalletIcon.Image {
+  init(rnIconString: String) {
+    switch rnIconString {
+     case "ic-wallet-32":
+      self = .wallet
+     case "ic-leaf-32":
+      self = .leaf
+     case "ic-lock-32":
+      self = .lock
+     case "ic-key-32":
+      self = .key
+     case "ic-inbox-32":
+      self = .inbox
+     case "ic-snowflake-32":
+      self = .snowflake
+     case "ic-sparkles-32":
+      self = .sparkles
+     case "ic-sun-32":
+      self = .sun
+     case "ic-hare-32":
+      self = .hare
+     case "ic-flash-32":
+      self = .flash
+     case "ic-bank-card-32":
+      self = .bankCard
+     case "ic-gear-32":
+      self = .gear
+     case "ic-hand-raised-32":
+      self = .handRaised
+     case "ic-magnifying-glass-circle-32":
+      self = .magnifyingGlassCircle
+     case "ic-flash-circle-32":
+      self = .flashCircle
+     case "ic-dollar-circle-32":
+      self = .dollarCircle
+     case "ic-euro-circle-32":
+      self = .euroCircle
+     case "ic-sterling-circle-32":
+      self = .sterlingCircle
+     case "ic-chinese-yuan-circle-32":
+      self = .yuanCircle
+     case "ic-ruble-circle-32":
+      self = .rubleCircle
+     case "ic-indian-rupee-circle-32":
+      self = .indianRupeeCircle
+    default:
+      self = .wallet
+    }
+  }
 }
 
 private func key(string: String) -> String {

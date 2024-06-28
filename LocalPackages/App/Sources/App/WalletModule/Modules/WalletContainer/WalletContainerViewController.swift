@@ -63,5 +63,9 @@ private extension WalletContainerViewController {
     viewModel.didUpdateModel = { [customView] model in
       customView.configure(model: model)
     }
+    
+    customView.topBarView.walletButton.didTap = { [weak viewModel] in
+      viewModel?.didTapWalletButton()
+    }
   }
 }

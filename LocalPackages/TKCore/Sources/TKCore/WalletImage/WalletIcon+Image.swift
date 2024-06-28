@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import KeeperCore
 
-extension WalletIcon.Image {
+public extension WalletIcon.Image {
   var image: UIImage? {
     switch self {
     case .wallet:

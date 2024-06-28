@@ -194,12 +194,12 @@ private extension SendConfirmationController {
       formattedAmount = nil
       formattedConvertedAmount = nil
     }
-    
+  
     return SendConfirmationModel(
       image: image,
       titleType: titleType,
       descriptionType: descriptionType,
-      wallet: wallet.emojiLabel,
+      wallet: wallet,
       recipientAddress: recipient.recipientAddress.shortAddressString,
       recipientName: recipient.recipientAddress.name,
       amount: formattedAmount,

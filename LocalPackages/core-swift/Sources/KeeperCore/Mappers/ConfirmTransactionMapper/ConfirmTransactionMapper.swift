@@ -58,7 +58,7 @@ struct ConfirmTransactionMapper {
     return ConfirmTransactionModel(
       event: eventModel,
       fee: feeFormatted,
-      walletName: wallet.emoji + wallet.label
+      wallet: wallet
     )
   }
 }

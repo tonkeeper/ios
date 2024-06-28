@@ -74,6 +74,8 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     switch section.items[index] {
     case let item as SettingsCell.Model:
       item.selectionHandler?()
+    case let item as TKUIListItemCell.Configuration:
+      item.selectionClosure?()
     case _ as SettingsTextCell.Model:
       break
     default:

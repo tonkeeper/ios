@@ -34,7 +34,7 @@ public final class TKModalCardListView: UIView, ConfigurableView {
         if (item.modelValue != nil) {
           UIPasteboard.general.string = item.modelValue
         } else {
-          UIPasteboard.general.string = item.rightTop.value
+          UIPasteboard.general.string = item.rightTop.value?.string
         }
         ToastPresenter.showToast(configuration: .copied)
         UINotificationFeedbackGenerator().notificationOccurred(.warning)

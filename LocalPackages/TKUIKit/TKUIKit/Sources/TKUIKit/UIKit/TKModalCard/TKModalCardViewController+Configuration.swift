@@ -47,20 +47,66 @@ public extension TKModalCardViewController.Configuration {
     }
     
     public let left: String
-    public let rightTop: RightItem<String>
-    public let rightBottom: RightItem<String?>
+    public let rightTop: RightItem<NSAttributedString>
+    public let rightBottom: RightItem<NSAttributedString?>
     public let modelValue: String?
 
     public init(
       left: String,
-      rightTop: RightItem<String>,
-      rightBottom: RightItem<String?>, 
+      rightTop: RightItem<NSAttributedString>,
+      rightBottom: RightItem<NSAttributedString?>,
       modelValue: String? = nil
     ) {
       self.left = left
       self.rightTop = rightTop
       self.rightBottom = rightBottom
       self.modelValue = modelValue
+    }
+    
+    public static func defaultItem(
+      left: String,
+      rightTop: RightItem<String>,
+      rightBottom: RightItem<String?>,
+      modelValue: String? = nil
+    ) -> ListItem {
+      let rightTopAttributed: RightItem<NSAttributedString>
+      switch rightTop {
+      case .loading:
+        rightTopAttributed = .loading
+      case let .value(value, numberOfLines, isFullString):
+        rightTopAttributed = .value(
+          value.withTextStyle(
+            .label1,
+            color: .Text.primary,
+            alignment: numberOfLines == 0 ? .right : .left,
+            lineBreakMode: .byTruncatingMiddle
+          ),
+          numberOfLines: numberOfLines,
+          isFullString: isFullString
+        )
+      }
+      
+      let rightBottomAttributed: RightItem<NSAttributedString?>
+      switch rightBottom {
+      case .loading:
+        rightBottomAttributed = .loading
+      case let .value(value, numberOfLines, isFullString):
+        rightBottomAttributed = .value(
+          value?.withTextStyle(.body2,
+                               color: .Text.secondary,
+                               alignment: .left,
+                               lineBreakMode: .byTruncatingMiddle),
+          numberOfLines: numberOfLines,
+          isFullString: isFullString
+        )
+      }
+      
+      return ListItem(
+        left: left,
+        rightTop: rightTopAttributed,
+        rightBottom: rightBottomAttributed,
+        modelValue: modelValue
+      )
     }
   }
   

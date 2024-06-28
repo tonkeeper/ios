@@ -119,7 +119,7 @@ private extension HistoryEventDetailsViewModelImplementation {
         }
         
         let listItems = model.listItems.map {
-          TKModalCardViewController.Configuration.ListItem(
+          TKModalCardViewController.Configuration.ListItem.defaultItem(
             left: $0.title,
             rightTop: .value($0.topValue, numberOfLines: $0.topNumberOfLines, isFullString: $0.isTopValueFullString),
             rightBottom: .value($0.bottomValue, numberOfLines: 1, isFullString: false))

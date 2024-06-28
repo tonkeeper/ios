@@ -5,6 +5,7 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
   private let imageView = UIImageView()
   
   private var size: CGSize = .zero
+  private var imageSize: CGSize = .zero
   private var cornerRadius: CGFloat = 0
   private var imageDownloadTask: ImageDownloadTask?
   
@@ -20,7 +21,8 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
   public override func layoutSubviews() {
     super.layoutSubviews()
     
-    imageView.frame = bounds
+    imageView.frame.size = imageSize
+    imageView.center = CGPoint(x: bounds.midX, y: bounds.midY)
   }
   
   public override func sizeThatFits(_ size: CGSize) -> CGSize {
@@ -63,17 +65,23 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
     public let backgroundColor: UIColor
     public let size: CGSize
     public let cornerRadius: CGFloat
+    public let contentMode: UIImageView.ContentMode
+    public let imageSize: CGSize
     
     public init(image: Image,
                 tintColor: UIColor,
                 backgroundColor: UIColor,
                 size: CGSize,
-                cornerRadius: CGFloat) {
+                cornerRadius: CGFloat,
+                contentMode: UIImageView.ContentMode = .center,
+                imageSize: CGSize? = nil) {
       self.image = image
       self.tintColor = tintColor
       self.backgroundColor = backgroundColor
       self.size = size
       self.cornerRadius = cornerRadius
+      self.contentMode = contentMode
+      self.imageSize = imageSize ?? size
     }
   }
   
@@ -91,6 +99,8 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
     size = configuration.size
     cornerRadius = configuration.cornerRadius
     layer.cornerRadius = configuration.cornerRadius
+    imageView.contentMode = configuration.contentMode
+    imageSize = configuration.imageSize
     
     setNeedsLayout()
   }

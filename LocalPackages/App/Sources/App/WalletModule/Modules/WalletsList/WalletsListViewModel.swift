@@ -122,31 +122,10 @@ private extension WalletsListViewModelImplementation {
   
   func createListItem(item: WalletListController.ItemModel,
                       isHighlightable: Bool) -> TKUIListItemCell.Configuration {
-
-    let contentConfiguration = TKUIListItemContentView.Configuration(
-      leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-        title: item.wallet.label.withTextStyle(.label1, color: .Text.primary, alignment: .left),
-        tagViewModel: item.wallet.listTagConfiguration(),
-        subtitle: item.totalBalance.withTextStyle(.body2, color: .Text.secondary, alignment: .left),
-        description: nil
-      ),
-      rightItemConfiguration: nil
-    )
-    
-    let iconConfiguration = TKUIListItemIconView.Configuration(
-      iconConfiguration: .emoji(
-        TKUIListItemEmojiIconView.Configuration(
-          emoji: item.wallet.emoji,
-          backgroundColor: item.wallet.tintColor.uiColor
-        )
-      ),
-      alignment: .center
-    )
-    
-    let listItemConfiguration = TKUIListItemView.Configuration(
-      iconConfiguration: iconConfiguration,
-      contentConfiguration: contentConfiguration,
-      accessoryConfiguration: TKUIListItemAccessoryView.Configuration.none
+    let listItemConfiguration = TKUIListItemView.Configuration.configuration(
+      wallet: item.wallet,
+      subtitle: item.totalBalance,
+      accessoryConfiguration: .none
     )
     
     return TKUIListItemCell.Configuration(

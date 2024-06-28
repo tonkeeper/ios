@@ -7,7 +7,9 @@
 
 import Intents
 import KeeperCore
+import UIKit
 import TKCore
+import TKUIKit
 
 class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentHandling {
   func provideWalletOptionsCollection(for intent: BalanceWidgetIntent) async throws -> INObjectCollection<WidgetWallet> {
@@ -22,9 +24,22 @@ class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentH
     let widgetAssembly = keeperCoreAssembly.widgetAssembly()
     let walletsService = widgetAssembly.walletsService
     let wallets = try walletsService.getWallets()
-    let widgetWallets = wallets.compactMap {
-      let display = $0.emoji + $0.label
-      return try? WidgetWallet(identifier: $0.identity.identifier().string, display: display)
+    let widgetWallets = wallets.compactMap { wallet in
+      let display: String
+      var image: INImage?
+      switch wallet.icon {
+      case .emoji(let emoji):
+        display = "\(emoji)    \(wallet.label)"
+        image = nil
+      case .icon(let icon):
+        if let data = icon.image?.pngData() {
+          image = INImage(imageData: data)
+        }
+        display = wallet.label
+      }
+      let item = try? WidgetWallet(identifier: wallet.identity.identifier().string, display: display)
+      item?.displayImage = image
+      return item
     }
     let collection = INObjectCollection(items: widgetWallets)
     return collection

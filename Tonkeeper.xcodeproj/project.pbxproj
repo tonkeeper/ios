@@ -11,6 +11,7 @@
 		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
+		7D3143A02C2EC8C70022B33B /* TKUIKitDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 7D31439F2C2EC8C70022B33B /* TKUIKitDynamic */; };
 		7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */; };
 		7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */; };
 		7D3F25DF2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25DE2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift */; };
@@ -247,6 +248,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D3143A02C2EC8C70022B33B /* TKUIKitDynamic in Frameworks */,
 				C34C70672BE1157F00143AC8 /* WalletCore in Frameworks */,
 				7DDBBFED2ACCA10E00F811A5 /* Intents.framework in Frameworks */,
 				C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */,
@@ -536,6 +538,7 @@
 			packageProductDependencies = (
 				C32C7C462BCD0D8E00785B6A /* TKCore */,
 				C34C70662BE1157F00143AC8 /* WalletCore */,
+				7D31439F2C2EC8C70022B33B /* TKUIKitDynamic */,
 			);
 			productName = TonkeeperIntents;
 			productReference = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */;
@@ -1518,6 +1521,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */;
 			productName = Lottie;
+		};
+		7D31439F2C2EC8C70022B33B /* TKUIKitDynamic */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKitDynamic;
 		};
 		7D5A18112A5406CB00793769 /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;

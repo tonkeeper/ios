@@ -65,7 +65,7 @@ final class WalletColorIconBadgeView: UIView {
   private let iconImageView: UIImageView = {
     let imageView = UIImageView()
     imageView.contentMode = .scaleAspectFit
-    imageView.tintColor = .Icon.primary
+    imageView.tintColor = .white
     imageView.isHidden = true
     return imageView
   }()
