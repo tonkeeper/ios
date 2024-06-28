@@ -22,15 +22,18 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   private let urlOpener: URLOpener
   private let appStoreReviewer: AppStoreReviewer
   private let appSettings: AppSettings
+  private let analyticsProvider: AnalyticsProvider
   
   init(settingsController: SettingsController,
        urlOpener: URLOpener,
        appStoreReviewer: AppStoreReviewer,
-       appSettings: AppSettings) {
+       appSettings: AppSettings,
+       analyticsProvider: AnalyticsProvider) {
     self.settingsController = settingsController
     self.appStoreReviewer = appStoreReviewer
     self.urlOpener = urlOpener
     self.appSettings = appSettings
+    self.analyticsProvider = analyticsProvider
     
     let walletCellRegistration = WalletCellRegistration { cell, indexPath, itemIdentifier in
       cell.configure(model: itemIdentifier)
@@ -321,6 +324,7 @@ private extension SettingsRootListItemsProvider {
         let actions = [
           UIAlertAction(title: .deleteDeleteButtonTitle, style: .destructive, handler: { [weak self] _ in
             do {
+              self?.analyticsProvider.logEvent(eventKey: .deleteWallet)
               try self?.settingsController.deleteAccount()
               self?.didTapDeleteAccount?()
             } catch {}
@@ -353,6 +357,7 @@ private extension SettingsRootListItemsProvider {
         let actions = [
           UIAlertAction(title: .deleteWatchTitle, style: .destructive, handler: { [weak self] _ in
             do {
+              self?.analyticsProvider.logEvent(eventKey: .deleteWallet)
               try self?.settingsController.deleteAccount()
               self?.didTapDeleteAccount?()
             } catch {}
@@ -378,6 +383,7 @@ private extension SettingsRootListItemsProvider {
         
         let actions = [
           UIAlertAction(title: .deleteDeleteButtonTitle, style: .destructive, handler: { [weak self] _ in
+            self?.analyticsProvider.logEvent(eventKey: .resetWallet)
             self?.didTapLogout?()
           }),
           UIAlertAction(title: .deleteCancelButtonTitle, style: .cancel)

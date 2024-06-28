@@ -10,13 +10,16 @@ public final class ImportWatchOnlyWalletCoordinator: RouterCoordinator<Navigatio
   public var didImportWallet: (() -> Void)?
   
   private let walletsUpdateAssembly: WalletsUpdateAssembly
+  private let analyticsProvider: AnalyticsProvider
   private let customizeWalletModule: (_ name: String?) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
   init(router: NavigationControllerRouter,
+       analyticsProvider: AnalyticsProvider,
        walletsUpdateAssembly: WalletsUpdateAssembly,
        customizeWalletModule: @escaping (_ name: String?) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.customizeWalletModule = customizeWalletModule
+    self.analyticsProvider = analyticsProvider
     super.init(router: router)
   }
 
@@ -82,6 +85,7 @@ private extension ImportWatchOnlyWalletCoordinator {
       tintColor: model.tintColor,
       icon: .emoji(model.emoji))
     do {
+      analyticsProvider.logEvent(eventKey: .importWatchOnly)
       try addController.importWatchOnlyWallet(
         resolvableAddress: resolvableAddress,
         metaData: metaData

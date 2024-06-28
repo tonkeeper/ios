@@ -28,6 +28,15 @@
       }
     },
     {
+      "identity" : "aptabase-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/aptabase/aptabase-swift.git",
+      "state" : {
+        "revision" : "6a6063441d662ddf09af70329e4fa966c43af61c",
+        "version" : "0.3.9"
+      }
+    },
+    {
       "identity" : "bigint",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/attaswift/BigInt",

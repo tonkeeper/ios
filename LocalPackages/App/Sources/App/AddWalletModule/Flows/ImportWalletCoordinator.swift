@@ -13,15 +13,18 @@ final class ImportWalletCoordinator: RouterCoordinator<NavigationControllerRoute
   var didImportWallets: (() -> Void)?
   
   private let isTestnet: Bool
+  private let analyticsProvider: AnalyticsProvider
   private let walletsUpdateAssembly: WalletsUpdateAssembly
   private let storesAssembly: StoresAssembly
   private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
   init(router: NavigationControllerRouter,
+       analyticsProvider: AnalyticsProvider,
        walletsUpdateAssembly: WalletsUpdateAssembly,
        storesAssembly: StoresAssembly,
        isTestnet: Bool,
        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
+    self.analyticsProvider = analyticsProvider
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.storesAssembly = storesAssembly
     self.isTestnet = isTestnet
@@ -195,6 +198,8 @@ private extension ImportWalletCoordinator {
                     revisions: [WalletContractVersion],
                     model: CustomizeWalletModel,
                     passcode: String) async throws {
+    
+    self.analyticsProvider.logEvent(eventKey: .importWallet)
     
     let addController = walletsUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(

@@ -7,13 +7,17 @@
 
 import UIKit
 import FirebaseCore
+import Aptabase
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
   
   func application(_ application: UIApplication,
                    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    
     FirebaseConfigurator.configurator.configure()
+    AptabaseConfigurator.configurator.configure()
+    
     return true
   }
   

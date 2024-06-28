@@ -11,14 +11,17 @@ public final class CreateWalletCoordinator: RouterCoordinator<ViewControllerRout
   public var didCreateWallet: (() -> Void)?
   
   private let walletsUpdateAssembly: WalletsUpdateAssembly
+  private let analyticsProvider: AnalyticsProvider
   private let storesAssembly: StoresAssembly
   private let customizeWalletModule: () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>
   
   init(router: ViewControllerRouter,
+       analyticsProvider: AnalyticsProvider,
        walletsUpdateAssembly: WalletsUpdateAssembly,
        storesAssembly: StoresAssembly,
        customizeWalletModule: @escaping () -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void>) {
     self.walletsUpdateAssembly = walletsUpdateAssembly
+    self.analyticsProvider = analyticsProvider
     self.customizeWalletModule = customizeWalletModule
     self.storesAssembly = storesAssembly
     super.init(router: router)
@@ -95,6 +98,7 @@ private extension CreateWalletCoordinator {
       guard let self else { return }
       Task {
         do {
+          self.analyticsProvider.logEvent(eventKey: .generateWallet)
           try await self.createWallet(model: model, passcode: passcode)
           await MainActor.run {
             self.didCreateWallet?()

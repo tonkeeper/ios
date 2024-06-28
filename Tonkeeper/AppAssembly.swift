@@ -14,6 +14,9 @@ final class AppAssembly {
       isMarketRegionPickerAvailable: {
         FirebaseConfigurator.configurator.isMarketRegionPickerAvailable
       }
+    ),
+    analyticsProvider: AnalyticsProvider(
+      analyticsServices: AptabaseService()
     )
   )
 }

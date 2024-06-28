@@ -38,6 +38,7 @@ struct AddWalletModule {
   func createCreateWalletCoordinator(router: ViewControllerRouter) -> CreateWalletCoordinator {
     let coordinator = CreateWalletCoordinator(
       router: router,
+      analyticsProvider: dependencies.coreAssembly.analyticsProvider,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
       storesAssembly: dependencies.storesAssembly,
       customizeWalletModule: {
@@ -55,6 +56,7 @@ struct AddWalletModule {
   func createImportWalletCoordinator(router: NavigationControllerRouter, isTestnet: Bool) -> ImportWalletCoordinator {
     let coordinator = ImportWalletCoordinator(
       router: router,
+      analyticsProvider: dependencies.coreAssembly.analyticsProvider,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
       storesAssembly: dependencies.storesAssembly,
       isTestnet: isTestnet,
@@ -145,6 +147,7 @@ private extension AddWalletModule {
   func createImportWatchOnlyWalletCoordinator(router: NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator {
     let coordinator = ImportWatchOnlyWalletCoordinator(
       router: router,
+      analyticsProvider: dependencies.coreAssembly.analyticsProvider,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
       customizeWalletModule: { name in
         self.createCustomizeWalletModule(
