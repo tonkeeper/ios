@@ -39,7 +39,7 @@ public final class StoresAssembly {
   }
   
   private weak var _tonRatesStoreV2: TonRatesStoreV2?
-  var tonRatesStoreV2: TonRatesStoreV2 {
+  public var tonRatesStoreV2: TonRatesStoreV2 {
     if let tonRatesStore = _tonRatesStoreV2 {
       return tonRatesStore
     } else {

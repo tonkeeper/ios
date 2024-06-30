@@ -78,19 +78,8 @@ public final class MainAssembly {
         ]
       ),
       apiProvider: apiAssembly.apiProvider,
-      walletBalanceLoader: mainLoadersAssembly.walletBalanceLoaderV2
-    )
-  }
-  
-  public func walletMainController() -> WalletMainController {
-    WalletMainController(
-      walletsStore: walletAssembly.walletsStoreV2,
-      currencyStore: storesAssembly.currencyStoreV2
-//      walletBalanceLoader: loadersAssembly.walletBalanceLoader,
-//      nftsStore: storesAssembly.nftsStore,
-//      nftsLoader: loadersAssembly.nftsLoader,
-//      tonRatesLoader: loadersAssembly.tonRatesLoader,
-//      backgroundUpdateStore: storesAssembly.backgroundUpdateStore
+      walletBalanceLoader: mainLoadersAssembly.walletBalanceLoaderV2,
+      tonRatesLoader: loadersAssembly.tonRatesLoaderV2
     )
   }
 
@@ -112,7 +101,7 @@ public final class MainAssembly {
     SettingsController(
       walletsStore: walletAssembly.walletStore,
       updateStore: walletUpdateAssembly.walletsStoreUpdate,
-      currencyStore: storesAssembly.currencyStore,
+      currencyStore: storesAssembly.currencyStoreV2,
       configurationStore: configurationAssembly.remoteConfigurationStore,
       mnemonicsRepository: repositoriesAssembly.mnemonicsRepository()
     )

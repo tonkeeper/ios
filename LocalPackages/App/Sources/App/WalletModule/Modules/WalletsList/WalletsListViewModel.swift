@@ -3,6 +3,7 @@ import TKUIKit
 import UIKit
 import KeeperCore
 import TKLocalize
+import TonSwift
 
 protocol WalletsListModuleOutput: AnyObject {
   var addButtonEvent: (() -> Void)? { get set }
@@ -45,8 +46,8 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
       self?.didUpdateWalletsState(walletsState)
     }
     model.setInitialState()
-    totalBalancesStore.addObserver(self, notifyOnAdded: true) { [weak self] observer, state in
-      self?.didUpdateTotalBalanceState(state)
+    totalBalancesStore.addObserver(self, notifyOnAdded: true) { [weak self] observer, state, _ in
+      self?.didUpdateTotalBalances(state)
     }
   }
   
@@ -116,7 +117,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   private var snapshot = NSDiffableDataSourceSnapshot<WalletsListSection, String>()
   private var itemModels = [String: AnyHashable]()
   private var walletsState: WalletsState?
-  private var totalBalanceState: WalletsTotalBalanceStoreV2.State?
+  private var totalBalances = [FriendlyAddress: TotalBalanceState]()
   private var isEditing: Bool = false {
     didSet {
       didUpdateIsEditing?(isEditing)
@@ -138,16 +139,19 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   // MARK: - Dependencies
   
   private let model: WalletsListModel
-  private let totalBalancesStore: WalletsTotalBalanceStoreV2
+  private let totalBalancesStore: TotalBalanceStoreV2
+  private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
   // MARK: - Init
   
   init(model: WalletsListModel,
-       totalBalancesStore: WalletsTotalBalanceStoreV2,
+       totalBalancesStore: TotalBalanceStoreV2,
+       decimalAmountFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.model = model
     self.totalBalancesStore = totalBalancesStore
+    self.decimalAmountFormatter = decimalAmountFormatter
     self.amountFormatter = amountFormatter
   }
 }
@@ -156,19 +160,22 @@ private extension WalletsListViewModelImplementation {
   func didUpdateWalletsState(_ walletsState: WalletsState) {
     queue.async {
       guard walletsState != self.walletsState else { return }
-      self.update(walletsState, self.totalBalanceState)
+      self.update(walletsState, totalBalances: self.totalBalances)
+      self.walletsState = walletsState
     }
   }
   
-  func didUpdateTotalBalanceState(_ totalBalanceState: WalletsTotalBalanceStoreV2.State) {
+  func didUpdateTotalBalances(_ totalBalances: [FriendlyAddress: TotalBalanceState]) {
     queue.async {
-      guard totalBalanceState != self.totalBalanceState else { return }
-      self.update(self.walletsState, totalBalanceState)
+      guard totalBalances != self.totalBalances else { return }
+      self.update(self.walletsState, totalBalances: totalBalances)
+      self.totalBalances = totalBalances
     }
   }
   
-  func update(_ walletsState: WalletsState?, _ totalBalanceState: WalletsTotalBalanceStoreV2.State?) {
+  func update(_ walletsState: WalletsState?, totalBalances: [FriendlyAddress: TotalBalanceState]) {
     guard let walletsState else { return }
+  
     var snapshot = NSDiffableDataSourceSnapshot<WalletsListSection, WalletsListItem>()
     snapshot.appendSections([.wallets, .addWallet])
     
@@ -176,18 +183,18 @@ private extension WalletsListViewModelImplementation {
     var models = [String: AnyHashable]()
     var updatedItems = [WalletsListItem]()
     for wallet in walletsState.wallets {
+      guard let address = try? wallet.friendlyAddress else { continue }
       snapshot.appendItems([.wallet(wallet.id)], toSection: .wallets)
       let isWalletMetaDataUpdated = {
         wallet.metaData != self.walletsState?.wallets.first(where: { $0.id == wallet.id })?.metaData
       }()
       let isWalletBalanceUpdated = {
-        totalBalanceState?.totalBalances[wallet] != self.totalBalanceState?.totalBalances[wallet]
+        totalBalances[address] != self.totalBalances[address]
       }()
       if isWalletMetaDataUpdated || isWalletBalanceUpdated {
         models[wallet.id] = createWalletModel(
           wallet,
-          totalBalance: totalBalanceState?.totalBalances[wallet]?.totalBalance,
-          currency: totalBalanceState?.currency,
+          totalBalance: totalBalances[address]?.totalBalance,
           isHighlightable: isHighlightable
         )
         updatedItems.append(.wallet(wallet.id))
@@ -203,11 +210,8 @@ private extension WalletsListViewModelImplementation {
     
     let isEditable = walletsState.wallets.count > 1 && model.isEditable
     let selectedIndex = walletsState.wallets.firstIndex(of: walletsState.activeWallet)
-    let isAnimated = self.walletsState != nil && self.totalBalanceState != nil
-    
-    self.walletsState = walletsState
-    self.totalBalanceState = totalBalanceState
-    
+    let isAnimated = self.walletsState != nil && !self.totalBalances.isEmpty
+
     DispatchQueue.main.async {
       self.isEditable = isEditable
       self.itemModels.merge(models) { _, value in
@@ -220,15 +224,13 @@ private extension WalletsListViewModelImplementation {
   
   func createWalletModel(_ wallet: Wallet,
                          totalBalance: TotalBalance?,
-                         currency: Currency?,
                          isHighlightable: Bool) -> TKUIListItemCell.Configuration {
     let subtitle: String
     if let totalBalance {
-      subtitle = amountFormatter.formatAmountWithoutFractionIfThousand(
-        totalBalance.amount,
-        fractionDigits: totalBalance.fractionalDigits,
+      subtitle = decimalAmountFormatter.format(
+        amount: totalBalance.amount,
         maximumFractionDigits: 2,
-        currency: currency
+        currency: totalBalance.currency
       )
     } else {
       subtitle = "-"

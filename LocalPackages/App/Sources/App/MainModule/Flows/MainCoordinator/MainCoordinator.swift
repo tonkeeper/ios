@@ -99,7 +99,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     mainCoordinatorStateManager.didUpdateState = { [weak self] state in
       self?.handleStateUpdate(state)
     }
-    mainCoordinatorStateManager.setInitialState()
+    mainController.start()
 //    Task {
 //      await mainController.start()
 //      await MainActor.run {
@@ -448,6 +448,7 @@ private extension MainCoordinator {
         walletsUpdater: keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater
       ),
       totalBalancesStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
+      decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
     

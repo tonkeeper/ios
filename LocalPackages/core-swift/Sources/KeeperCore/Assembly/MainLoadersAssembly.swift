@@ -24,7 +24,7 @@ public final class MainLoadersAssembly {
       return _walletBalanceLoaderV2
     }
     let loader = WalletBalanceLoaderV2(
-      balanceStore: mainStoresAssembly.walletsBalanceStore,
+      balanceStore: mainStoresAssembly.balanceStore,
       currencyStore: storesAssembly.currencyStoreV2,
       walletsStore: walletAssembly.walletsStoreV2,
       balanceService: servicesAssembly.balanceService()

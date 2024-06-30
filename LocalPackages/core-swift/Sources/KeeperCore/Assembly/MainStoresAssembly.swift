@@ -18,30 +18,38 @@ public final class MainStoresAssembly {
     self.storesAssembly = storesAssembly
   }
   
-  private weak var _walletsBalanceStore: WalletsBalanceStoreV2?
-  public var walletsBalanceStore: WalletsBalanceStoreV2 {
-    if let _walletsBalanceStore {
-      return _walletsBalanceStore
+  private weak var _balanceStore: BalanceStoreV2?
+  public var balanceStore: BalanceStoreV2 {
+    if let _balanceStore {
+      return _balanceStore
     }
-    let store = WalletsBalanceStoreV2(walletsStore: walletsAssembly.walletsStoreV2,
-                                      repository: repositoriesAssembly.walletBalanceRepositoryV2()
+    let store = BalanceStoreV2(walletsStore: walletsAssembly.walletsStoreV2,
+                               repository: repositoriesAssembly.walletBalanceRepositoryV2()
     )
-    _walletsBalanceStore = store
+    _balanceStore = store
     return store
   }
   
-  private weak var _walletsTotalBalanceStore: WalletsTotalBalanceStoreV2?
-  public var walletsTotalBalanceStore: WalletsTotalBalanceStoreV2 {
+  private weak var _convertedBalanceStore: ConvertedBalanceStoreV2?
+  public var convertedBalanceStore: ConvertedBalanceStoreV2 {
+    if let _convertedBalanceStore {
+      return _convertedBalanceStore
+    }
+    let store = ConvertedBalanceStoreV2(
+      balanceStore: balanceStore,
+      tonRatesStore: storesAssembly.tonRatesStoreV2,
+      currencyStore: storesAssembly.currencyStoreV2
+    )
+    _convertedBalanceStore = store
+    return store
+  }
+  
+  private weak var _walletsTotalBalanceStore: TotalBalanceStoreV2?
+  public var walletsTotalBalanceStore: TotalBalanceStoreV2 {
     if let _walletsTotalBalanceStore {
       return _walletsTotalBalanceStore
     }
-    let store = WalletsTotalBalanceStoreV2(
-      walletsStore: walletsAssembly.walletsStoreV2,
-      balanceStore: walletsBalanceStore,
-      tonRatesStore: storesAssembly.tonRatesStoreV2,
-      currencyStore: storesAssembly.currencyStoreV2,
-      totalBalanceService: servicesAssembly.totalBalanceService()
-    )
+    let store = TotalBalanceStoreV2(convertedBalanceStore: convertedBalanceStore)
     _walletsTotalBalanceStore = store
     return store
   }

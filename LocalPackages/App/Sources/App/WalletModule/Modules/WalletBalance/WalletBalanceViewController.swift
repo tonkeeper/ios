@@ -3,6 +3,12 @@ import TKUIKit
 import TKCoordinator
 
 final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView>, ScrollViewController, WalletContainerBalanceViewController {
+  typealias Section = WalletBalanceSection
+  typealias Item = AnyHashable
+  typealias DataSource = UICollectionViewDiffableDataSource<WalletBalanceSection.ID, Item>
+  typealias Snapshot = NSDiffableDataSourceSnapshot<WalletBalanceSection.ID, Item>
+  typealias BalanceItemCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, WalletBalanceBalanceItem>
+  
   var didScroll: ((CGFloat) -> Void)?
   
   private let viewModel: WalletBalanceViewModel
@@ -27,11 +33,9 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
       sectionProvider: { [dataSource] sectionIndex, _ in
         let snapshot = dataSource.snapshot()
         switch snapshot.sectionIdentifiers[sectionIndex] {
-        case .tonItems:
+        case .balance:
           return .balanceItemsSection
-        case .jettonsItems:
-          return .balanceItemsSection
-        case .finishSetup:
+        case .setup:
           return .finishSetupItemsSection
         }
       },
@@ -40,24 +44,24 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
     return layout
   }()
   
-  private lazy var dataSource = createDataSource()
-  private lazy var listItemCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration> { [weak self]
-    cell, indexPath, itemIdentifier in
-    cell.configure(configuration: itemIdentifier)
-    cell.isFirstInSection = { ip in ip.item == 0 }
-    cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
-      guard let collectionView = collectionView else { return false }
-      return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
-    }
-  }
-  private lazy var finishSetupSectionHeaderRegistration = UICollectionView.SupplementaryRegistration<TKCollectionViewSupplementaryContainerView<TKListTitleView>>(
-    elementKind: .finishSetupSectionHeaderElementKind) { [weak viewModel] supplementaryView, elementKind, indexPath in
-      guard let viewModel else { return }
-      supplementaryView.configure(model: viewModel.finishSetupSectionHeaderModel)
-      supplementaryView.contentView.didTapButton = {
-        viewModel.didTapFinishSetupButton()
-      }
-  }
+  private lazy var dataSource: DataSource = createDataSource()
+//  private lazy var listItemCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration> { [weak self]
+//    cell, indexPath, itemIdentifier in
+//    cell.configure(configuration: itemIdentifier)
+//    cell.isFirstInSection = { ip in ip.item == 0 }
+//    cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
+//      guard let collectionView = collectionView else { return false }
+//      return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
+//    }
+//  }
+//  private lazy var finishSetupSectionHeaderRegistration = UICollectionView.SupplementaryRegistration<TKCollectionViewSupplementaryContainerView<TKListTitleView>>(
+//    elementKind: .finishSetupSectionHeaderElementKind) { [weak viewModel] supplementaryView, elementKind, indexPath in
+//      guard let viewModel else { return }
+//      supplementaryView.configure(model: viewModel.finishSetupSectionHeaderModel)
+//      supplementaryView.contentView.didTapButton = {
+//        viewModel.didTapFinishSetupButton()
+//      }
+//  }
 
   init(viewModel: WalletBalanceViewModel) {
     self.viewModel = viewModel
@@ -91,10 +95,6 @@ private extension WalletBalanceViewController {
     )
     customView.collectionView.delegate = self
     customView.collectionView.showsVerticalScrollIndicator = false
-    
-    var snapshot = dataSource.snapshot()
-    snapshot.appendSections([.tonItems, .jettonsItems])
-    dataSource.apply(snapshot,animatingDifferences: false)
   }
   
   func setupBindings() {
@@ -106,52 +106,59 @@ private extension WalletBalanceViewController {
       customView?.headerView.configure(model: model)
     }
     
-    viewModel.didUpdateTonItems = { [weak dataSource] tonItems in
-      guard let dataSource else { return }
-      var snapshot = dataSource.snapshot()
-      snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .tonItems))
-      snapshot.appendItems(tonItems, toSection: .tonItems)
-      dataSource.apply(snapshot,animatingDifferences: false)
+    viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in
+      self?.dataSource.apply(snapshot, animatingDifferences: isAnimated)
     }
-    
-    viewModel.didUpdateJettonItems = { [weak dataSource] jettonItems in
-      guard let dataSource else { return }
-      var snapshot = dataSource.snapshot()
-      snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .jettonsItems))
-      snapshot.appendItems(jettonItems, toSection: .jettonsItems)
-      dataSource.apply(snapshot,animatingDifferences: false)
-    }
-    
-    viewModel.didUpdateFinishSetupItems = { [weak dataSource] items in
-      guard let dataSource else { return }
-      var snapshot = dataSource.snapshot()
-      snapshot.deleteSections([.finishSetup])
-      
-      if !items.isEmpty {
-        snapshot.insertSections([.finishSetup], afterSection: .tonItems)
-        snapshot.appendItems(items, toSection: .finishSetup)
-        snapshot.reloadSections([.finishSetup])
-      }
-      
-      dataSource.apply(snapshot,animatingDifferences: false)
-    }
-    
+
     viewModel.didCopy = { configuration in
       ToastPresenter.showToast(configuration: configuration)
     }
   }
   
-  func createDataSource() -> UICollectionViewDiffableDataSource<WalletBalanceSection, AnyHashable> {
-    let dataSource = UICollectionViewDiffableDataSource<WalletBalanceSection, AnyHashable>(
-      collectionView: customView.collectionView) { [listItemCellConfiguration] collectionView, indexPath, itemIdentifier in
+  func createDataSource() -> DataSource {
+    let balanceItemCellConfiguration = BalanceItemCellConfiguration
+    { [weak viewModel, weak collectionView = self.customView.collectionView] cell, indexPath, identifier in
+      guard let model = viewModel?.getBalanceCellModel(item: identifier) else { return }
+      cell.configure(configuration: model)
+      cell.isFirstInSection = { ip in ip.item == 0 }
+      cell.isLastInSection = { ip in
+        guard let collectionView = collectionView else { return false }
+        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
+      }
+    }
+    
+    let dataSource = DataSource(
+      collectionView: customView.collectionView) { [balanceItemCellConfiguration] collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
-        case let listCellConfiguration as TKUIListItemCell.Configuration:
-          return collectionView.dequeueConfiguredReusableCell(using: listItemCellConfiguration, for: indexPath, item: listCellConfiguration)
-        default: return nil
+        case let balanceItem as WalletBalanceBalanceItem:
+          return collectionView.dequeueConfiguredReusableCell(
+            using: balanceItemCellConfiguration,
+            for: indexPath,
+            item: balanceItem
+          )
+        default:
+          return nil
         }
+//        switch itemIdentifier {
+//        case .ton:
+//          return collectionView.dequeueConfiguredReusableCell(
+//            using: balanceItemCellConfiguration,
+//            for: indexPath,
+//            item: itemIdentifier
+//          )
+//        case .jetton:
+//          return collectionView.dequeueConfiguredReusableCell(
+//            using: balanceItemCellConfiguration,
+//            for: indexPath,
+//            item: itemIdentifier
+//          )
+//        case let listCellConfiguration as TKUIListItemCell.Configuration:
+//          return collectionView.dequeueConfiguredReusableCell(using: listItemCellConfiguration, for: indexPath, item: listCellConfiguration)
+//        default: return nil
+//        }
       }
     
-    dataSource.supplementaryViewProvider = { [weak headerView = customView.headerView, finishSetupSectionHeaderRegistration] collectionView, kind, indexPath -> UICollectionReusableView? in
+    dataSource.supplementaryViewProvider = { [weak headerView = customView.headerView] collectionView, kind, indexPath -> UICollectionReusableView? in
       switch kind {
       case String.balanceHeaderElementKind:
         let view = collectionView.dequeueReusableSupplementaryView(
@@ -161,8 +168,6 @@ private extension WalletBalanceViewController {
         ) as? TKReusableContainerView
         view?.setContentView(headerView)
         return view
-      case String.finishSetupSectionHeaderElementKind:
-        return collectionView.dequeueConfiguredReusableSupplementary(using: finishSetupSectionHeaderRegistration, for: indexPath)
       default: return nil
       }
     }

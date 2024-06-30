@@ -29,6 +29,10 @@ public final class MainController {
   private let apiProvider: APIProvider
   
   private let walletBalanceLoader: WalletBalanceLoaderV2
+  private let tonRatesLoader: TonRatesLoaderV2
+  
+  private var walletsBalanceLoadTimer: Timer?
+  private var tonRatesLoadTimer: Timer?
 
   private var state = State()
   
@@ -44,7 +48,8 @@ public final class MainController {
        tonConnectService: TonConnectService,
        deeplinkParser: DeeplinkParser,
        apiProvider: APIProvider,
-       walletBalanceLoader: WalletBalanceLoaderV2) {
+       walletBalanceLoader: WalletBalanceLoaderV2,
+       tonRatesLoader: TonRatesLoaderV2) {
     self.walletsStore = walletsStore
     self.accountNFTService = accountNFTService
     self.backgroundUpdateStore = backgroundUpdateStore
@@ -56,38 +61,69 @@ public final class MainController {
     self.deeplinkParser = deeplinkParser
     self.apiProvider = apiProvider
     self.walletBalanceLoader = walletBalanceLoader
+    self.tonRatesLoader = tonRatesLoader
   }
   
   deinit {
-    walletsStoreObservationToken?.cancel()
-    backgroundUpdateStoreObservationToken?.cancel()
+    stopTonRatesLoadTimer()
+    stopWalletBalancesLoadTimer()
+//    walletsStoreObservationToken?.cancel()
+//    backgroundUpdateStoreObservationToken?.cancel()
   }
   
-  public func start() async {
-    _ = await backgroundUpdateStore.addEventObserver(self) { observer, state in
-      switch state {
-      case .didUpdateState(let backgroundUpdateState):
-        switch backgroundUpdateState {
-        default: break
-        }
-      case .didReceiveUpdateEvent(let backgroundUpdateEvent):
-        Task {
-          guard try backgroundUpdateEvent.accountAddress == observer.walletsStore.activeWallet.address else { return }
-        }
-      }
+  public func start() {
+    startTonRatesLoadTimer()
+    startWalletBalancesLoadTimer()
+//    _ = await backgroundUpdateStore.addEventObserver(self) { observer, state in
+//      switch state {
+//      case .didUpdateState(let backgroundUpdateState):
+//        switch backgroundUpdateState {
+//        default: break
+//        }
+//      case .didReceiveUpdateEvent(let backgroundUpdateEvent):
+//        Task {
+//          guard try backgroundUpdateEvent.accountAddress == observer.walletsStore.activeWallet.address else { return }
+//        }
+//      }
+//    }
+//    
+//    _ = walletsStore.addEventObserver(self) { observer, event in
+//      switch event {
+//      case .didAddWallets:
+//        Task { await observer.startBackgroundUpdate() }
+//      default: break
+//      }
+//    }
+//    
+//    await tonConnectEventsStore.addObserver(self)
+//    
+//    await startBackgroundUpdate()
+  }
+  
+  private func startTonRatesLoadTimer() {
+    self.tonRatesLoadTimer?.invalidate()
+    let timer = Timer(timeInterval: 15, repeats: true, block: { [weak self] _ in
+      self?.tonRatesLoader.reloadRates()
+    })
+    RunLoop.main.add(timer, forMode: .common)
+    self.tonRatesLoadTimer = timer
+  }
+  
+  private func stopTonRatesLoadTimer() {
+    self.tonRatesLoadTimer?.invalidate()
+  }
+  
+  private func startWalletBalancesLoadTimer() {
+    self.walletsBalanceLoadTimer?.invalidate()
+    let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
+      self?.walletBalanceLoader.reloadBalance()
     }
-    
-    _ = walletsStore.addEventObserver(self) { observer, event in
-      switch event {
-      case .didAddWallets:
-        Task { await observer.startBackgroundUpdate() }
-      default: break
-      }
-    }
-    
-    await tonConnectEventsStore.addObserver(self)
-    
-    await startBackgroundUpdate()
+    RunLoop.main.add(timer, forMode: .common)
+    self.walletsBalanceLoadTimer = timer
+  }
+  
+  private func stopWalletBalancesLoadTimer() {
+    self.walletsBalanceLoadTimer?.invalidate()
   }
     
   public func startBackgroundUpdate() async {

@@ -12,13 +12,13 @@ public final class SettingsController {
   
   private let walletsStore: WalletsStore
   private let updateStore: WalletsStoreUpdate
-  private let currencyStore: CurrencyStore
+  private let currencyStore: CurrencyStoreV2
   private let configurationStore: ConfigurationStore
   private let mnemonicsRepository: MnemonicsRepository
   
   init(walletsStore: WalletsStore,
        updateStore: WalletsStoreUpdate,
-       currencyStore: CurrencyStore,
+       currencyStore: CurrencyStoreV2,
        configurationStore: ConfigurationStore,
        mnemonicsRepository: MnemonicsRepository) {
     self.walletsStore = walletsStore
@@ -41,7 +41,7 @@ public final class SettingsController {
   }
   
   public func activeCurrency() async -> Currency {
-    await currencyStore.getActiveCurrency()
+    await currencyStore.getCurrency()
   }
   
   public func getAvailableCurrencies() -> [Currency] {
@@ -49,7 +49,7 @@ public final class SettingsController {
   }
   
   public func setCurrency(_ currency: Currency) async {
-    await currencyStore.setActiveCurrency(currency)
+    await currencyStore.setCurrency(currency)
   }
   
   public func canDeleteAccount() -> Bool {

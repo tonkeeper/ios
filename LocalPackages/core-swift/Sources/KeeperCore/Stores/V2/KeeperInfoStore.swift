@@ -6,25 +6,27 @@ public final class KeeperInfoStore: Store<KeeperInfo?> {
   
   init(keeperInfoRepository: KeeperInfoRepository) {
     self.keeperInfoRepository = keeperInfoRepository
-    super.init(
-      item: nil
-    )
-    Task {
-      await updateItem { _ in
-        return try? keeperInfoRepository.getKeeperInfo()
-      }
-    }
+    super.init(state: nil)
+    self.setInitialState()
   }
   
   func updateKeeperInfo(_ block: @escaping (KeeperInfo?) -> KeeperInfo?) async {
-    await updateItem { [keeperInfoRepository] keeperInfo in
+    await updateState { [keeperInfoRepository] keeperInfo in
       let updated = block(keeperInfo)
       if let updated {
         try? keeperInfoRepository.saveKeeperInfo(updated)
       } else {
         try? keeperInfoRepository.removeKeeperInfo()
       }
-      return updated
+      return StateUpdate(newState: updated)
+    }
+  }
+  
+  private func setInitialState() {
+    Task {
+      await updateState { _ in
+        StateUpdate(newState: try? self.keeperInfoRepository.getKeeperInfo())
+      }
     }
   }
 }

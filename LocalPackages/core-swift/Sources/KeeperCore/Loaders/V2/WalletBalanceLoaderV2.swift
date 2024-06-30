@@ -17,12 +17,12 @@ actor WalletBalanceLoaderV2 {
     }
   }
 
-  private let balanceStore: WalletsBalanceStoreV2
+  private let balanceStore: BalanceStoreV2
   private let currencyStore: CurrencyStoreV2
   private let walletsStore: WalletsStoreV2
   private let balanceService: BalanceService
   
-  init(balanceStore: WalletsBalanceStoreV2, 
+  init(balanceStore: BalanceStoreV2, 
        currencyStore: CurrencyStoreV2,
        walletsStore: WalletsStoreV2,
        balanceService: BalanceService) {
@@ -30,11 +30,23 @@ actor WalletBalanceLoaderV2 {
     self.currencyStore = currencyStore
     self.walletsStore = walletsStore
     self.balanceService = balanceService
-    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState in
+    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState, _ in
       Task { await observer.didUpdateWalletsState(walletsState) }
     }
-    currencyStore.addObserver(self, notifyOnAdded: true) { observer, currency in
+    currencyStore.addObserver(self, notifyOnAdded: true) { observer, currency, _ in
       Task { await observer.didUpdateCurrency(currency) }
+    }
+  }
+  
+  nonisolated
+  func reloadBalance() {
+    Task {
+      let state = await state
+      guard let currency = state.currency,
+            let wallets = state.walletsState?.wallets else {
+        return
+      }
+      await self.reloadBalance(wallets: wallets, currency: currency)
     }
   }
 }
@@ -90,11 +102,11 @@ private extension WalletBalanceLoaderV2 {
       do {
         let balance = try await balanceService.loadWalletBalance(wallet: wallet, currency: currency)
         guard !Task.isCancelled else { return }
-        await balanceStore.setBalanceState(.current(balance), wallet: wallet)
+        await balanceStore.setBalanceState(.current(balance), address: address)
       } catch {
         guard !error.isCancelledError else { return }
-        guard let balanceState = await balanceStore.getBalanceState(wallet: wallet) else { return }
-        await balanceStore.setBalanceState(.previous(balanceState.walletBalance), wallet: wallet)
+        guard let balanceState = await balanceStore.getBalanceState(address: address) else { return }
+        await balanceStore.setBalanceState(.previous(balanceState.walletBalance), address: address)
       }
     }
     tasksInProgress[address] = task

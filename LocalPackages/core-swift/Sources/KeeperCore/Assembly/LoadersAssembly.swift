@@ -12,29 +12,17 @@ public final class LoadersAssembly {
     self.storesAssembly = storesAssembly
   }
   
-  private weak var _walletBalanceLoader: WalletBalanceLoader?
-  var walletBalanceLoader: WalletBalanceLoader {
-    if let _walletBalanceLoader {
-      return _walletBalanceLoader
+  private weak var _tonRatesLoaderV2: TonRatesLoaderV2?
+  var tonRatesLoaderV2: TonRatesLoaderV2 {
+    if let _tonRatesLoaderV2 {
+      return _tonRatesLoaderV2
     }
-    let loader = WalletBalanceLoader(
-      walletBalanceStore: storesAssembly.walletBalanceStore,
-      balanceService: servicesAssembly.balanceService()
+    let loader = TonRatesLoaderV2(
+      tonRatesStore: storesAssembly.tonRatesStoreV2,
+      ratesService: servicesAssembly.ratesService(),
+      currencyStore: storesAssembly.currencyStoreV2
     )
-    _walletBalanceLoader = loader
-    return loader
-  }
-  
-  private weak var _tonRatesLoader: TonRatesLoader?
-  var tonRatesLoader: TonRatesLoader {
-    if let _tonRatesLoader {
-      return _tonRatesLoader
-    }
-    let loader = TonRatesLoader(
-      tonRatesStore: storesAssembly.tonRatesStore,
-      ratesService: servicesAssembly.ratesService()
-    )
-    _tonRatesLoader = loader
+    _tonRatesLoaderV2 = loader
     return loader
   }
   

@@ -24,12 +24,13 @@ struct WalletBalanceMapper {
   }
   
   func mapTotalBalance(_ totalBalance: TotalBalance, currency: Currency) -> String {
-    amountFormatter.formatAmountWithoutFractionIfThousand(
-      totalBalance.amount,
-      fractionDigits: totalBalance.fractionalDigits,
-      maximumFractionDigits: 2,
-      currency: currency
-    )
+    ""
+//    amountFormatter.formatAmountWithoutFractionIfThousand(
+//      totalBalance.amount,
+//      fractionDigits: totalBalance.fractionalDigits,
+//      maximumFractionDigits: 2,
+//      currency: currency
+//    )
   }
   
   func mapBalance(balance: Balance,

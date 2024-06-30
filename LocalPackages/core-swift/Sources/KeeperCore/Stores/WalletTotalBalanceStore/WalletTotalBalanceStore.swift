@@ -160,17 +160,18 @@ private extension WalletTotalBalanceStore {
   func calculateTotalBalanceState(walletBalanceState: WalletBalanceState,
                                   currency: Currency,
                                   tonRates: [Rates.Rate]) -> TotalBalanceState {
-    let balance = walletBalanceState.walletBalance.balance
-    let totalBalance = totalBalanceService.calculateTotalBalance(
-      balance: balance,
-      currency: currency,
-      rates: Rates(ton: tonRates, jettonsRates: [])
-    )
-    switch walletBalanceState {
-    case .current:
-      return .current(totalBalance)
-    case .previous:
-      return .previous(totalBalance)
-    }
+    .current(.init(amount: 1, currency: .AED, date: Date()))
+//    let balance = walletBalanceState.walletBalance.balance
+//    let totalBalance = totalBalanceService.calculateTotalBalance(
+//      balance: balance,
+//      currency: currency,
+//      rates: Rates(ton: tonRates, jettonsRates: [])
+//    )
+//    switch walletBalanceState {
+//    case .current:
+//      return .current(totalBalance)
+//    case .previous:
+//      return .previous(totalBalance)
+//    }
   }
 }

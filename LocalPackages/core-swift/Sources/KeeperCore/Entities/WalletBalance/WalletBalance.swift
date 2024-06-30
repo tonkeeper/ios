@@ -2,6 +2,6 @@ import Foundation
 import BigInt
 
 public struct WalletBalance: Codable, Equatable {
-  let date: Date
-  let balance: Balance
+  public let date: Date
+  public let balance: Balance
 }

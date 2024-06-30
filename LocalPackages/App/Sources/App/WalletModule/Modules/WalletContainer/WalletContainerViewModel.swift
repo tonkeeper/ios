@@ -10,13 +10,8 @@ protocol WalletContainerModuleOutput: AnyObject {
 
 protocol WalletContainerViewModel: AnyObject {
   var didUpdateModel: ((WalletContainerView.Model) -> Void)? { get set }
-  var didUpdateWalletBalanceViewController: ((_ viewController: UIViewController, _ animated: Bool) -> Void)? { get set }
   
   func viewDidLoad()
-}
-
-protocol WalletContainerViewModelChildModuleProvider {
-  func getWalletBalanceModuleView(wallet: Wallet) -> UIViewController
 }
 
 final class WalletContainerViewModelImplementation: WalletContainerViewModel, WalletContainerModuleOutput {
@@ -29,15 +24,13 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   // MARK: - WalletContainerViewModel
   
   var didUpdateModel: ((WalletContainerView.Model) -> Void)?
-  var didUpdateWalletBalanceViewController: ((_ viewController: UIViewController, _ animated: Bool) -> Void)?
   
   func viewDidLoad() {
-    walletMainController.didUpdateActiveWallet = { [weak self] wallet in
+    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsStore, _ in
       DispatchQueue.main.async {
-        self?.wallet = wallet
+        self.wallet = walletsStore.activeWallet
       }
     }
-    walletMainController.start()
   }
   
   // MARK: - State
@@ -52,13 +45,12 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 
   // MARK: - Dependencies
   
-  private let walletBalanceModuleInput: WalletBalanceModuleInput
-  private let walletMainController: WalletMainController
+  private let walletsStore: WalletsStoreV2
   
-  init(walletBalanceModuleInput: WalletBalanceModuleInput,
-       walletMainController: WalletMainController) {
-    self.walletBalanceModuleInput = walletBalanceModuleInput
-    self.walletMainController = walletMainController
+  // MARK: - Init
+  
+  init(walletsStore: WalletsStoreV2) {
+    self.walletsStore = walletsStore
   }
 }
 

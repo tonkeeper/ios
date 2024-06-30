@@ -1,93 +1,76 @@
 import Foundation
 
-open class Store<Item: Equatable> {
-  public typealias ObservationClosure = (Item) -> Void
+open class Store<State: Equatable> {
+  public struct StateUpdate {
+    public let newState: State
+    public init(newState: State) {
+      self.newState = newState
+    }
+  }
+
+  public typealias ObservationClosure = (_ newState: State, _ oldState: State?) -> Void
   
-  fileprivate var observations = [UUID: ObservationClosure]()
-  fileprivate lazy var queue = DispatchQueue(label: "\(Self.self)Queue",
-                                         attributes: .concurrent,
-                                         target: .global(qos: .userInitiated))
+  private var observations = [UUID: ObservationClosure]()
+  private lazy var queue = DispatchQueue(label: "\(String(describing: self))SyncQueue")
   
-  var item: Item {
+  private var state: State {
     didSet {
-      guard item != oldValue else { return }
-      observations.forEach { $0.value(item) }
+      guard state != oldValue else { return }
+      observations.forEach { $0.value(state, oldValue) }
     }
   }
   
-  init(item: Item) {
-    self.item = item
-    queue.async(flags: .barrier) {
-      self.restoreInitialState()
-    }
+  init(state: State) {
+    self.state = state
   }
   
-  public func getItem() -> Item {
-    queue.sync {
-      return self.item
-    }
-  }
-  
-  public func getItem() async -> Item {
+  public func getState() async -> State {
     await withCheckedContinuation { continuation in
       queue.async {
-        continuation.resume(returning: self.item)
+        let state = self.state
+        continuation.resume(returning: state)
       }
     }
   }
   
-  public func updateItemSync(_ block: @escaping (Item) -> Item) {
-    queue.sync(flags: .barrier) {
-      let updated = block(self.item)
-      self.item = updated
-    }
-  }
-  
-  public func updateItem(_ block: @escaping (Item) -> Item) async {
+  public func updateState(_ update: @escaping (State) -> StateUpdate?) async {
     await withCheckedContinuation { continuation in
-      queue.async(flags: .barrier) {
-        let updated = block(self.item)
-        guard self.item != updated else {
+      queue.async {
+        guard let update = update(self.state) else {
           continuation.resume()
           return
         }
-        self.item = updated
+        guard update.newState != self.state else {
+          continuation.resume()
+          return
+        }
+        self.state = update.newState
         continuation.resume()
       }
     }
   }
-
-  public func addObserver<T: AnyObject>(_ observer: T,
-                                        sync: Bool = false,
-                                        notifyOnAdded: Bool,
-                                        closure: @escaping (T, Item) -> Void,
-                                        observationTokenClosure: ((ObservationToken) -> Void)? = nil) {
-    let operation = { [weak self] in
-      guard let self else { return }
+  
+  public func addObserver<T: AnyObject>(_ observer: T, 
+                                        notifyOnAdded: Bool = true,
+                                        closure: @escaping (T, _ newState: State, _ oldState: State?) -> Void) {
+    let operation = {
       let id = UUID()
-      let handler: ObservationClosure = { [weak self, weak observer] item in
+      let handler: ObservationClosure = { [weak self, weak observer] newState, oldState in
         guard let observer else {
           self?.removeObservation(key: id)
           return
         }
-        closure(observer, item)
+        closure(observer, newState, oldState)
       }
       self.observations[id] = handler
-      let observationToken = ObservationToken { [weak self] in
-        self?.removeObservation(key: id)
-      }
-      observationTokenClosure?(observationToken)
       if notifyOnAdded {
-        handler(item)
+        let state = self.state
+        handler(state, nil)
       }
     }
-    sync
-    ? queue.sync(flags: .barrier, execute: operation)
-    : queue.async(flags: .barrier, execute: operation)
+    
+    queue.async(execute: operation)
   }
-  
-  func updateItemHandler(newItem: Item, oldItem: Item) {}
-  func restoreInitialState() {}
   
   private func removeObservation(key: UUID) {
     observations.removeValue(forKey: key)

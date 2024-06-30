@@ -3,6 +3,7 @@ import TKUIKit
 import KeeperCore
 import UIKit
 import TKLocalize
+import TonSwift
 
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: ((Wallet) -> Void)? { get set }
@@ -21,26 +22,28 @@ protocol WalletBalanceModuleOutput: AnyObject {
 protocol WalletBalanceModuleInput: AnyObject {}
 
 protocol WalletBalanceViewModel: AnyObject {
+  var didUpdateSnapshot: ((_ snapshot: WalletBalanceViewController.Snapshot, _ isAnimated: Bool) -> Void)? { get set }
+  
   var didChangeWallet: (() -> Void)? { get set }
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)? { get set }
-  var didUpdateTonItems: (([TKUIListItemCell.Configuration]) -> Void)? { get set }
-  var didUpdateJettonItems: (([TKUIListItemCell.Configuration]) -> Void)? { get set }
-  var didUpdateFinishSetupItems: (([TKUIListItemCell.Configuration]) -> Void)? { get set }
   var didCopy: ((ToastPresenter.Configuration) -> Void)? { get set }
 
   var finishSetupSectionHeaderModel: TKListTitleView.Model { get }
   
   func viewDidLoad()
   func didTapFinishSetupButton()
+  func getBalanceCellModel(item: WalletBalanceBalanceItem) -> TKUIListItemCell.Configuration?
+  func getSetupCellModel(item: WalletBalanceSetupItem) -> TKUIListItemCell.Configuration?
 }
 
 final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput, WalletBalanceModuleInput {
   
   // MARK: - WalletBalanceModuleOutput
   
+  var didUpdateSnapshot: ((_ snapshot: WalletBalanceViewController.Snapshot, _ isAnimated: Bool) -> Void)?
+  
   var didSelectTon: ((Wallet) -> Void)?
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
-  var didUpdateFinishSetupItems: (([TKUIListItemCell.Configuration]) -> Void)?
   
   var didTapReceive: (() -> Void)?
   var didTapSend: (() -> Void)?
@@ -55,199 +58,154 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   var didChangeWallet: (() -> Void)?
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)?
-  var didUpdateTonItems: (([TKUIListItemCell.Configuration]) -> Void)?
-  var didUpdateJettonItems: (([TKUIListItemCell.Configuration]) -> Void)?
   var didCopy: ((ToastPresenter.Configuration) -> Void)?
   
   var finishSetupSectionHeaderModel = TKListTitleView.Model(title: "", textStyle: .label1, buttonContent: nil)
-
+  
   func viewDidLoad() {
-    Task {
-      walletBalanceController.didChangeWallet = { [weak self] in
-        guard let self else { return }
-        Task { @MainActor in
-          self.didChangeWallet?()
-        }
-      }
-      
-      await walletBalanceController.start(didUpdateState: { [weak self] stateModel in
-        self?.didUpdateStateModel(stateModel)
-      }, didUpdateBalanceState: { [weak self] model in
-        self?.didUpdateBalanceStateModel(model)
-      }, didUpdateSetupState: { [weak self] model in
-        self?.didUpdateSetupState(model)
-      })
+    balanceListModel.didUpdateItems = { [weak self] items in
+      self?.didUpdateBalanceItems(items)
+    }
+    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState, oldWalletsState in
+      observer.didUpdateWalletsState(walletsState, oldWalletsState)
+    }
+    totalBalanceStore.addObserver(self, notifyOnAdded: true) { observer, state, oldState in
+      observer.didUpdateTotalBalanceState(state, oldState)
     }
   }
   
-  func didTapFinishSetupButton() {
-    Task { await walletBalanceController.finishSetup() }
+  func getBalanceCellModel(item: WalletBalanceBalanceItem) -> TKUIListItemCell.Configuration? {
+    balanceItemCellModels[item]
   }
+  
+  func getSetupCellModel(item: WalletBalanceSetupItem) -> TKUIListItemCell.Configuration? {
+    setupItemCellModels[item]
+  }
+  
+  func didTapFinishSetupButton() {
+    
+  }
+  
+  // MARK: - State
+
+  private let actor = SerialActor()
+  
+  private var balanceItems = [WalletBalanceBalanceItem]()
+  private var setupItems = [WalletBalanceSetupItem]()
+  
+  private var balanceItemCellModels = [WalletBalanceBalanceItem: TKUIListItemCell.Configuration]()
+  private var setupItemCellModels = [WalletBalanceSetupItem: TKUIListItemCell.Configuration]()
   
   // MARK: - Mapper
   
-  private let listItemMapper = WalletBalanceListItemMapper()
-  
   // MARK: - Dependencies
   
-  private let walletBalanceController: WalletBalanceController
-  private let mnemonicsRepository: MnemonicsRepository
-  private let securityStore: SecurityStore
+  private let balanceListModel: BalanceListModel
+  private let walletsStore: WalletsStoreV2
+  private let totalBalanceStore: TotalBalanceStoreV2
+  private let listMapper: WalletBalanceListMapper
+  private let headerMapper: WalletBalanceHeaderMapper
   
-  // MARK: - Init
-  
-  init(walletBalanceController: WalletBalanceController,
-       mnemonicsRepository: MnemonicsRepository,
-       securityStore: SecurityStore) {
-    self.walletBalanceController = walletBalanceController
-    self.mnemonicsRepository = mnemonicsRepository
-    self.securityStore = securityStore
+  init(balanceListModel: BalanceListModel,
+       walletsStore: WalletsStoreV2,
+       totalBalanceStore: TotalBalanceStoreV2,
+       listMapper: WalletBalanceListMapper,
+       headerMapper: WalletBalanceHeaderMapper) {
+    self.balanceListModel = balanceListModel
+    self.walletsStore = walletsStore
+    self.totalBalanceStore = totalBalanceStore
+    self.listMapper = listMapper
+    self.headerMapper = headerMapper
   }
 }
 
 private extension WalletBalanceViewModelImplementation {
-  func didUpdateStateModel(_ model: WalletBalanceController.StateModel) {
-    let headerModel = createHeaderModel(model)
-    Task { @MainActor in
-      didUpdateHeader?(headerModel)
+  func didUpdateWalletsState(_ walletsState: WalletsState,
+                             _ oldWalletsState: WalletsState?) {
+    Task {
+      guard walletsState.activeWallet != oldWalletsState?.activeWallet else { return }
+      guard let address = try? walletsState.activeWallet.friendlyAddress else { return }
+      let totalBalanceState = await self.totalBalanceStore.getState()[address]
+      updateBalanceHeader(wallet: walletsState.activeWallet, totalBalanceState: totalBalanceState)
     }
   }
   
-  func didUpdateBalanceStateModel(_ model: WalletBalanceItemsModel) {
-    let tonItems = model.tonItems.map { tonItem in
-      listItemMapper.mapBalanceItem(tonItem) { [weak self] in
-        guard let wallet = self?.walletBalanceController.wallet else { return }
-        switch tonItem.token {
-        case .ton:
-          self?.didSelectTon?(wallet)
-        case .jetton(let jettonInfo):
-          self?.didSelectJetton?(wallet, jettonInfo, false)
-        }
-      }
-    }
-    
-    let jettonsItems = model.jettonsItems.map { jettonItem in
-      listItemMapper.mapBalanceItem(jettonItem) { [weak self] in
-        guard let wallet = self?.walletBalanceController.wallet else { return }
-        switch jettonItem.token {
-        case .ton:
-          self?.didSelectTon?(wallet)
-        case .jetton(let jettonInfo):
-          self?.didSelectJetton?(wallet, jettonInfo, jettonItem.hasPrice)
-        }
-      }
-    }
-    
-    Task { @MainActor in
-      didUpdateTonItems?(tonItems)
-      didUpdateJettonItems?(jettonsItems)
+  func didUpdateTotalBalanceState(_ totalBalances: [FriendlyAddress: TotalBalanceState],
+                                  _ oldTotalBalances: [FriendlyAddress: TotalBalanceState]?) {
+    Task {
+      let wallet = await walletsStore.getState().activeWallet
+      guard let address = try? wallet.friendlyAddress else { return }
+      guard totalBalances[address] != oldTotalBalances?[address] else { return }
+      updateBalanceHeader(wallet: wallet, totalBalanceState: totalBalances[address])
     }
   }
   
-  func didUpdateSetupState(_ model: WalletBalanceSetupModel?) {
-    guard let model = model else {
-      Task { @MainActor in
-        didUpdateFinishSetupItems?([])
-      }
-      return
+  func didUpdateBalanceItems(_ items: [BalanceListModel.BalanceListItem]) {
+    Task {
+      await self.actor.addTask(block: {
+        var balanceItems = [WalletBalanceBalanceItem]()
+        var cellModels = [WalletBalanceBalanceItem: TKUIListItemCell.Configuration]()
+        for item in items {
+          let identifier = WalletBalanceBalanceItem(id: item.id)
+          let cellModel = self.listMapper.mapItem(item)
+          balanceItems.append(identifier)
+          cellModels[identifier] = cellModel
+        }
+        
+        await MainActor.run { [balanceItems, cellModels] in
+          self.balanceItems = balanceItems
+          self.balanceItemCellModels = cellModels
+          self.updateList()
+        }
+      })
+    }
+  }
+  
+  func updateList() {
+    var snapshot = WalletBalanceViewController.Snapshot()
+    snapshot.appendSections([.balance])
+    snapshot.appendItems(balanceItems, toSection: .balance)
+    if #available(iOS 15.0, *) {
+      snapshot.reconfigureItems(snapshot.itemIdentifiers)
+    } else {
+      snapshot.reloadItems(snapshot.itemIdentifiers)
     }
     
-    let finishSetupItems = listItemMapper.mapFinishSetup(
-      model: model,
-      biometryAuthentificator: BiometryAuthentificator(),
-      backupHandler: { [weak self] in
-        guard let wallet = self?.walletBalanceController.wallet else { return }
-        self?.didTapBackup?(wallet)
-      },
-      biometryHandler: { [weak self] isOn in
-        guard let self else { return !isOn }
-        return await Task { @MainActor in
-          do {
-            if isOn {
-              guard let passcode = await self.didRequirePasscode?() else {
-                return !isOn
-              }
-              try self.mnemonicsRepository.savePassword(passcode)
-              try await self.securityStore.setIsBiometryEnabled(true)
-            } else {
-              try self.mnemonicsRepository.deletePassword()
-              try await self.securityStore.setIsBiometryEnabled(false)
-            }
-            return isOn
-          } catch {
-            return !isOn
-          }
-        }.value
+    self.didUpdateSnapshot?(snapshot, false)
+  }
+
+  func updateBalanceHeader(wallet: Wallet, totalBalanceState: TotalBalanceState?) {
+    guard let address = try? wallet.friendlyAddress else { return }
+  
+    let totalBalance = totalBalanceState?.totalBalance
+    
+    let totalBalanceMapped = headerMapper.mapTotalBalance(totalBalance: totalBalance)
+    
+    let addressButtonConfiguration = TKButton.Configuration(
+      content: TKButton.Configuration.Content(title: .plainString(address.toShort())),
+      textStyle: .body2,
+      textColor: .Text.secondary,
+      contentAlpha: [.normal: 1, .highlighted: 0.48],
+      action: { [weak self] in
+        self?.didTapCopy(address: address.toString(), toastConfiguration: wallet.copyToastConfiguration())
       }
     )
-    Task { @MainActor in
-      var buttonContent: TKButton.Configuration.Content?
-      if model.isFinishSetupAvailable {
-        buttonContent = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.done))
-      }
-      finishSetupSectionHeaderModel = TKListTitleView.Model(title: TKLocales.FinishSetup.title, textStyle: .label1, buttonContent: buttonContent)
-      didUpdateFinishSetupItems?(finishSetupItems)
-    }
-  }
-  
-  func createHeaderModel(_ model: WalletBalanceController.StateModel) -> WalletBalanceHeaderView.Model {
-    var stateDate: String?
-    if let modelStateDate = model.stateDate {
-      stateDate = TKLocales.ConnectionStatus.updated_at(modelStateDate)
-    }
-
+    
     let balanceModel = WalletBalanceHeaderBalanceView.Model(
-      balance: model.totalBalance,
-      addressButtonConfiguration: TKButton.Configuration(
-        content: TKButton.Configuration.Content(title: .plainString(model.shortAddress ?? "")),
-        textStyle: .body2,
-        textColor: .Text.secondary,
-        contentAlpha: [.normal: 1, .highlighted: 0.48],
-        action: { [weak self] in
-          self?.didTapCopy(wallet: model.wallet)
-        }
-      ),
-      connectionStatusModel: createConnectionStatusModel(backgroundUpdateState: model.backgroundUpdateState),
-      tagConfiguration: model.wallet.balanceTagConfiguration(),
-      stateDate: stateDate
+      balance: totalBalanceMapped,
+      addressButtonConfiguration: addressButtonConfiguration,
+      connectionStatusModel: nil,
+      tagConfiguration: wallet.balanceTagConfiguration(),
+      stateDate: nil
     )
     
-    return WalletBalanceHeaderView.Model(
+    let model = WalletBalanceHeaderView.Model(
       balanceModel: balanceModel,
-      buttonsViewModel: createHeaderButtonsModel(wallet: model.wallet)
+      buttonsViewModel: createHeaderButtonsModel(wallet: wallet)
     )
-  }
-  
-  func didTapCopy(wallet: Wallet) {
-    guard let address = wallet.addressToCopy else { return }
-    UINotificationFeedbackGenerator().notificationOccurred(.warning)
-    UIPasteboard.general.string = address
-
-    didCopy?(wallet.copyToastConfiguration())
-  }
-
-  func createConnectionStatusModel(backgroundUpdateState: KeeperCore.BackgroundUpdateState) -> ConnectionStatusView.Model? {
-    switch backgroundUpdateState {
-    case .connecting:
-      return ConnectionStatusView.Model(
-        title: TKLocales.ConnectionStatus.updating,
-        titleColor: .Text.secondary,
-        isLoading: true
-      )
-    case .connected:
-      return nil
-    case .disconnected:
-      return ConnectionStatusView.Model(
-        title: TKLocales.ConnectionStatus.updating,
-        titleColor: .Text.secondary,
-        isLoading: true
-      )
-    case .noConnection:
-      return ConnectionStatusView.Model(
-        title: TKLocales.ConnectionStatus.no_internet,
-        titleColor: .Accent.orange,
-        isLoading: false
-      )
+    
+    DispatchQueue.main.async {
+      self.didUpdateHeader?(model)
     }
   }
   
@@ -329,8 +287,8 @@ private extension WalletBalanceViewModelImplementation {
         icon: .TKUIKit.Icons.Size28.usd,
         isEnabled: isBuyEnable,
         action: { [weak self] in
-          guard let wallet = self?.walletBalanceController.wallet else { return }
-          self?.didTapBuy?(wallet) }
+          self?.didTapBuy?(wallet)
+        }
       ),
       stakeButton: WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.stake,
@@ -339,5 +297,12 @@ private extension WalletBalanceViewModelImplementation {
         action: {}
       )
     )
+  }
+  
+  func didTapCopy(address: String, toastConfiguration: ToastPresenter.Configuration) {
+    UINotificationFeedbackGenerator().notificationOccurred(.warning)
+    UIPasteboard.general.string = address
+
+    didCopy?(toastConfiguration)
   }
 }

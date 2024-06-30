@@ -37,19 +37,13 @@ final class MainCoordinatorStateManager {
     self.walletsStoreV2 = walletsStoreV2
     walletsStoreV2.addObserver(
       self,
-      notifyOnAdded: true) { observer, walletsState in
+      notifyOnAdded: true) { observer, walletsState, _ in
         DispatchQueue.main.async {
           observer.walletsState = walletsState
         }
       }
   }
-  
-  func setInitialState() {
-//    walletsStoreV2.getItem(sync: true) { [weak self] walletsState in
-//      self?.walletsState = walletsState
-//    }
-  }
-  
+
   private func updateState() {
     guard let activeWallet = walletsState?.activeWallet else { return }
     

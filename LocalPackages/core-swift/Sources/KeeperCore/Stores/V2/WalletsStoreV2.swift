@@ -17,10 +17,10 @@ public final class WalletsStoreV2: Store<WalletsState> {
   
   init(state: WalletsState, keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
-    super.init(item: state)
+    super.init(state: state)
     keeperInfoStore.addObserver(
       self,
-      notifyOnAdded: false) { observer, keeperInfo in
+      notifyOnAdded: false) { observer, keeperInfo, _ in
         observer.didUpdateKeeperInfo(keeperInfo)
       }
   }
@@ -30,12 +30,12 @@ private extension WalletsStoreV2 {
   func didUpdateKeeperInfo(_ keeperInfo: KeeperInfo?) {
     guard let keeperInfo else { return }
     Task {
-      await updateItem { state in
-        let newState = WalletsState(
+      await updateState { walletsState in
+        let newWalletsState = WalletsState(
           wallets: keeperInfo.wallets,
           activeWallet: keeperInfo.currentWallet
         )
-        return newState
+        return StateUpdate(newState: newWalletsState)
       }
     }
   }

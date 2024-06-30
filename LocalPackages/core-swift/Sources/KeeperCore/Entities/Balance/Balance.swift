@@ -5,6 +5,12 @@ import BigInt
 public struct Balance: Codable, Equatable {
   public let tonBalance: TonBalance
   public let jettonsBalance: [JettonBalance]
+  
+  public init(tonBalance: TonBalance,
+              jettonsBalance: [JettonBalance]) {
+    self.tonBalance = tonBalance
+    self.jettonsBalance = jettonsBalance
+  }
 }
 
 public extension Balance {
@@ -15,15 +21,27 @@ public extension Balance {
 
 public struct TonBalance: Codable, Equatable {
   public let amount: Int64
+  
+  public init(amount: Int64) {
+    self.amount = amount
+  }
 }
 
 public struct JettonBalance: Codable, Equatable {
   public let item: JettonItem
   public let quantity: BigUInt
   public let rates: [Currency: Rates.Rate]
+  
+  public init(item: JettonItem, 
+              quantity: BigUInt,
+              rates: [Currency : Rates.Rate]) {
+    self.item = item
+    self.quantity = quantity
+    self.rates = rates
+  }
 }
 
-public struct JettonItem: Codable, Equatable {
+public struct JettonItem: Codable, Equatable, Hashable {
   public let jettonInfo: JettonInfo
   public let walletAddress: Address
 }
@@ -55,5 +73,15 @@ public struct JettonInfo: Codable, Equatable, Hashable {
   
   public func hash(into hasher: inout Hasher) {
     hasher.combine(address)
+  }
+}
+
+public extension JettonInfo {
+  var isTonUSDT: Bool {
+    do {
+      return try self.address == Address.parse("0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe")
+    } catch {
+      return false
+    }
   }
 }

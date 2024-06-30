@@ -27,7 +27,7 @@ final class WalletsPickerListModel: WalletsListModel {
   var didUpdateWalletsState: ((KeeperCore.WalletsState) -> Void)?
   
   func setInitialState() {
-    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState in
+    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState, _ in
       observer.didUpdateWalletsState?(walletsState)
     }
   }
@@ -62,7 +62,7 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   var didUpdateWalletsState: ((KeeperCore.WalletsState) -> Void)?
   
   func setInitialState() {
-    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState in
+    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState, _ in
       let wallets = walletsState.wallets.filter { $0.isTonconnectAvailable }
       guard !wallets.isEmpty else { return }
       guard let activeWallet = (wallets.first(where: { $0 == walletsState.activeWallet }) ?? wallets.first) else {

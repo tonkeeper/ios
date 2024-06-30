@@ -37,7 +37,7 @@ final class RootCoordinatorStateManager {
   
   init(keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
-    keeperInfoStore.addObserver(self, notifyOnAdded: true) { observer, keeperInfo in
+    keeperInfoStore.addObserver(self, notifyOnAdded: true) { observer, keeperInfo, _ in
       DispatchQueue.main.async {
         observer.keeperInfo = keeperInfo
       }
