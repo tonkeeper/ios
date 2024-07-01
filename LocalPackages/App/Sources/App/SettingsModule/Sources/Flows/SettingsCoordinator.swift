@@ -30,7 +30,8 @@ private extension SettingsCoordinator {
       settingsController: keeperCoreMainAssembly.settingsController,
       urlOpener: coreAssembly.urlOpener(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
-      appSettings: coreAssembly.appSettings
+      appSettings: coreAssembly.appSettings,
+      analyticsProvider: coreAssembly.analyticsProvider
     )
     let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
     

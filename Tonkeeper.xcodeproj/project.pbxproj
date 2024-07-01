@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		50C356522BE39C0500539266 /* TKLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = 50C356512BE39C0500539266 /* TKLocalize */; };
+		50F04B8A2C2E9B660043EE4B /* AptabaseConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F04B892C2E9B660043EE4B /* AptabaseConfigurator.swift */; };
 		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
@@ -147,6 +148,7 @@
 /* Begin PBXFileReference section */
 		509051DD2BE1661E00B41894 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		50ADFE3C2BE160D3000E1C0A /* TKLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLocalize; sourceTree = "<group>"; };
+		50F04B892C2E9B660043EE4B /* AptabaseConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AptabaseConfigurator.swift; sourceTree = "<group>"; };
 		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -413,6 +415,7 @@
 				7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */,
 				7DB8FB792A1BCFCD005B4B11 /* Resources */,
 				C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */,
+				50F04B892C2E9B660043EE4B /* AptabaseConfigurator.swift */,
 			);
 			path = Tonkeeper;
 			sourceTree = "<group>";
@@ -706,6 +709,7 @@
 				7D3F260F2AC19F79002DF1B7 /* RateWidget.intentdefinition in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
+				50F04B8A2C2E9B660043EE4B /* AptabaseConfigurator.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				C37DDDB82BCEA5AB002A486E /* FirebaseConfigurator.swift in Sources */,
 			);
