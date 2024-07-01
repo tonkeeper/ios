@@ -102,7 +102,7 @@ private extension LedgerStepView {
       }
     }
     
-    private let loaderView = TKLoaderView(size: .xSmall, style: .secondary)
+    private let loaderView = TKLoaderView(size: .small, style: .secondary)
     private let imageView = UIImageView()
     
     override func setup() {
