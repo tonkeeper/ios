@@ -78,8 +78,8 @@ extension Wallet {
       textColor = .Accent.purple
       backgroundColor = .Accent.purple.withAlphaComponent(0.16)
     case .ledger:
-      textColor = .Accent.purple
-      backgroundColor = .Accent.purple.withAlphaComponent(0.16)
+      textColor = .Accent.green
+      backgroundColor = .Accent.green.withAlphaComponent(0.16)
     }
     
     guard let tag, let textColor, let backgroundColor else { return nil }

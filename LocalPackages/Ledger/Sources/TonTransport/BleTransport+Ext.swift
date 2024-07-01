@@ -75,3 +75,26 @@ public enum TransportStatusCodes: UInt16 {
   case userRefusedOnDevice = 0x5501
   case notEnoughSpace = 0x5102
 }
+
+extension BleTransportError: Equatable {
+    public static func == (lhs: BleTransportError, rhs: BleTransportError) -> Bool {
+        switch (lhs, rhs) {
+        case (.pendingActionOnDevice, .pendingActionOnDevice),
+             (.userRefusedOnDevice, .userRefusedOnDevice),
+             (.scanningTimedOut, .scanningTimedOut),
+             (.bluetoothNotAvailable, .bluetoothNotAvailable):
+            return true
+        case let (.connectError(desc1), .connectError(desc2)),
+             let (.currentConnectedError(desc1), .currentConnectedError(desc2)),
+             let (.writeError(desc1), .writeError(desc2)),
+             let (.readError(desc1), .readError(desc2)),
+             let (.listenError(desc1), .listenError(desc2)),
+             let (.scanError(desc1), .scanError(desc2)),
+             let (.pairingError(desc1), .pairingError(desc2)),
+             let (.lowerLevelError(desc1), .lowerLevelError(desc2)):
+            return desc1 == desc2
+        default:
+            return false
+        }
+    }
+}

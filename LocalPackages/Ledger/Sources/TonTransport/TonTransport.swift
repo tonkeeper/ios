@@ -11,6 +11,7 @@ public class TonTransport {
   static let LEDGER_SYSTEM: UInt8 = 0xB0
   static let LEDGER_CLA: UInt8 = 0xE0
   static let INS_VERSION: UInt8 = 0x03
+  static let INS_OPEN_APP: UInt8 = 0xd8
   static let INS_ADDRESS: UInt8 = 0x05
   static let INS_SIGN_TX: UInt8 = 0x06
   static let INS_PROOF: UInt8 = 0x08
@@ -79,7 +80,18 @@ public class TonTransport {
   
   public func isAppOpen() async throws -> Bool {
     let app = try await getCurrentApp()
-    return app.0 == "TON"
+    
+    switch app.0 {
+    case "TON":
+      return true
+    case "BOLOS":
+      do {
+        let _ = try await doRequest(ins: TonTransport.INS_OPEN_APP, p1: 0x00, p2: 0x00, data: Data("TON".utf8))
+      } catch {}
+      return false
+    default:
+      return false
+    }
   }
   
   public func getVersion() async throws -> String {

@@ -13,12 +13,12 @@ public final class PairLedgerCoordinator: RouterCoordinator<ViewControllerRouter
   
   private let walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly
   private let coreAssembly: TKCore.CoreAssembly
-  private let ledgerImportCoordinatorProvider: (NavigationControllerRouter, [LedgerAccount], [ActiveWalletModel], String, String) -> LedgerImportCoordinator
+  private let ledgerImportCoordinatorProvider: (NavigationControllerRouter, [LedgerAccount], [ActiveWalletModel], String) -> LedgerImportCoordinator
   
   init(walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
        coreAssembly: TKCore.CoreAssembly,
        router: ViewControllerRouter,
-       ledgerImportCoordinatorProvider: @escaping (NavigationControllerRouter, [LedgerAccount], [ActiveWalletModel], String, String) -> LedgerImportCoordinator) {
+       ledgerImportCoordinatorProvider: @escaping (NavigationControllerRouter, [LedgerAccount], [ActiveWalletModel], String) -> LedgerImportCoordinator) {
     self.walletUpdateAssembly = walletUpdateAssembly
     self.coreAssembly = coreAssembly
     self.ledgerImportCoordinatorProvider = ledgerImportCoordinatorProvider
@@ -49,7 +49,7 @@ private extension PairLedgerCoordinator {
       })
     }
     
-    module.output.didConnect = { [weak self, weak bottomSheetViewController] accounts, deviceId, completion in
+    module.output.didConnect = { [weak self, weak bottomSheetViewController] accounts, deviceId, deviceProductName, completion in
       guard let self, let bottomSheetViewController else { return }
       Task {
         do {
@@ -57,7 +57,7 @@ private extension PairLedgerCoordinator {
           await MainActor.run {
             completion()
             bottomSheetViewController.dismiss(completion: {
-              self.openImportCoordinator(accounts: accounts, deviceId: deviceId, activeWalletModels: activeWallets)
+              self.openImportCoordinator(accounts: accounts, deviceId: deviceId, deviceProductName: deviceProductName, activeWalletModels: activeWallets)
             })
           }
         } catch {
@@ -71,7 +71,7 @@ private extension PairLedgerCoordinator {
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func openImportCoordinator(accounts: [LedgerAccount], deviceId: String, activeWalletModels: [ActiveWalletModel]) {
+  func openImportCoordinator(accounts: [LedgerAccount], deviceId: String, deviceProductName: String, activeWalletModels: [ActiveWalletModel]) {
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     let coordinator = ledgerImportCoordinatorProvider(
@@ -80,8 +80,7 @@ private extension PairLedgerCoordinator {
       ),
       accounts,
       activeWalletModels,
-      deviceId,
-      "NAME TODO"
+      deviceProductName
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
@@ -89,13 +88,14 @@ private extension PairLedgerCoordinator {
       self?.removeChild(coordinator)
     }
     
-    coordinator.didImport = { [weak self] accounts, deviceId, model in
+    coordinator.didImport = { [weak self] accounts, model in
       guard let self else { return }
       Task {
         do {
           try await self.importWallet(
             accounts: accounts,
             deviceId: deviceId,
+            deviceProductName: deviceProductName,
             model: model)
           await MainActor.run {
             self.didPaired?()
@@ -113,6 +113,7 @@ private extension PairLedgerCoordinator {
   
   func importWallet(accounts: [LedgerAccount],
                     deviceId: String,
+                    deviceProductName: String,
                     model: CustomizeWalletModel) async throws {
     let addController = walletUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
@@ -122,6 +123,7 @@ private extension PairLedgerCoordinator {
     try addController.importLedgerWallets(
       accounts: accounts,
       deviceId: deviceId,
+      deviceProductName: deviceProductName,
       metaData: metaData
     )
   }

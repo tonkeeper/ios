@@ -135,14 +135,12 @@ struct AddWalletModule {
   public func createLedgerImportCoordinator(
     accounts: [LedgerAccount],
     activeWalletModels: [ActiveWalletModel],
-    deviceId: String,
     name: String,
     router: NavigationControllerRouter
   ) -> LedgerImportCoordinator {
     LedgerImportCoordinator(
       ledgerAccounts: accounts,
       activeWalletModels: activeWalletModels,
-      deviceId: deviceId,
       name: name,
       router: router,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
@@ -162,8 +160,8 @@ struct AddWalletModule {
       walletUpdateAssembly: dependencies.walletsUpdateAssembly,
       coreAssembly: dependencies.coreAssembly,
       router: router,
-      ledgerImportCoordinatorProvider: { router, accounts, activeWalletModels, deviceId, name in
-        self.createLedgerImportCoordinator(accounts: accounts, activeWalletModels: activeWalletModels, deviceId: deviceId, name: name, router: router)
+      ledgerImportCoordinatorProvider: { router, accounts, activeWalletModels, name in
+        self.createLedgerImportCoordinator(accounts: accounts, activeWalletModels: activeWalletModels, name: name, router: router)
       }
     )
   }

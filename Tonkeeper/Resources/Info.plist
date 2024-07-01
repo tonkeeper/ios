@@ -54,6 +54,7 @@
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>tonsign</string>
+    <string>ledgerlive</string>
 	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>

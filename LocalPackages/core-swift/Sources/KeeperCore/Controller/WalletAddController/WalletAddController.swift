@@ -132,6 +132,7 @@ public final class WalletAddController {
   
   public func importLedgerWallets(accounts: [LedgerAccount],
                                   deviceId: String,
+                                  deviceProductName: String,
                                   metaData: WalletMetaData) throws {
     let addPostfix = accounts.count > 1
     
@@ -143,7 +144,7 @@ public final class WalletAddController {
         icon: metaData.icon
       )
       
-      let device = Wallet.LedgerDevice(deviceId: deviceId, deviceModel: "TODO", accountIndex: Int16(account.path.index))
+      let device = Wallet.LedgerDevice(deviceId: deviceId, deviceModel: deviceProductName, accountIndex: Int16(account.path.index))
       
       let identity = WalletIdentity(
         network: .mainnet,

@@ -42,6 +42,10 @@ final class LedgerConnectViewController: GenericViewViewController<LedgerConnect
     setupBindings()
     viewModel.viewDidLoad()
   }
+
+  deinit {
+    viewModel.stopTasks()
+  }
 }
 
 private extension LedgerConnectViewController {

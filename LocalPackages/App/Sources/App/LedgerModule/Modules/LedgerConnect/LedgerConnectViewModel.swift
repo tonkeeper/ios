@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import TKUIKit
+import TKCore
 import TKLocalize
 import TonSwift
 import KeeperCore
@@ -8,7 +9,7 @@ import TonTransport
 import BleTransport
 
 protocol LedgerConnectModuleOutput: AnyObject {
-  var didConnect: ((_ accounts: [LedgerAccount], _ deviceId: String, @escaping (() -> Void)) -> Void)? { get set }
+  var didConnect: ((_ accounts: [LedgerAccount], _ deviceId: String, _ deviceProductName: String, @escaping (() -> Void)) -> Void)? { get set }
   var didCancel: (() -> Void)? { get set }
 }
 
@@ -18,6 +19,7 @@ protocol LedgerConnectViewModel: AnyObject {
   var didShowBluetoothAuthorisationAlert: (() -> Void)? { get set }
   
   func viewDidLoad()
+  func stopTasks()
 }
 
 final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, LedgerConnectModuleOutput {
@@ -29,7 +31,7 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   
   // MARK: - LedgerConnectModuleOutput
   
-  var didConnect: ((_ accounts: [LedgerAccount], _ deviceId: String, @escaping (() -> Void)) -> Void)?
+  var didConnect: ((_ accounts: [LedgerAccount], _ deviceId: String, _ deviceProductName: String, @escaping (() -> Void)) -> Void)?
   var didCancel: (() -> Void)?
   
   // MARK: - LedgerConnectViewModel
@@ -40,10 +42,13 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   
   private var pollTonAppTask: Task<Void, Never>? = nil
   private var disconnectTask: Task<Void, Never>? = nil
+  private var accountsTask: Task<Void, Never>? = nil
   
   private var transport: BleTransportProtocol = BleTransport.shared
   private var tonTransport: TonTransport? = nil
   private var connectedDeviceId: String? = nil
+  private var connectedDeviceProductName: String? = nil
+  private var isClosed: Bool = false
   
   func viewDidLoad() {
     updateModel()
@@ -52,8 +57,44 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
     listenBluetoothState()
   }
   
+  func stopTasks() {
+    isClosed = true
+    
+    pollTonAppTask?.cancel()
+    disconnectTask?.cancel()
+    accountsTask?.cancel()
+    
+    transport.stopScanning()
+    transport.disconnect(completion: nil)
+  }
+  
+  // MARK: - State
+  
+  private var state: State = .idle {
+    didSet {
+      didUpdateState()
+    }
+  }
+  private var isLoading: Bool = false {
+    didSet {
+      didUpdateState()
+    }
+  }
+  
+  // MARK: - Dependencies
+  
+  private let urlOpener: URLOpener
+  
+  // MARK: - Init
+  
+  init(urlOpener: URLOpener) {
+    self.urlOpener = urlOpener
+  }
+}
+
+private extension LedgerConnectViewModelImplementation {
   func listenBluetoothState() {
-    BleTransport.shared.bluetoothStateCallback { state in
+    transport.bluetoothStateCallback { state in
       switch state {
       case .poweredOn:
         self.startScan()
@@ -67,33 +108,66 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
     }
   }
   
-  func startScan() {
-    self.transport.create(scanDuration: TimeInterval.infinity, disconnectedCallback: {
-      print("Log: Ledger disconnected")
+  func connect(peripheralInfo: PeripheralInfoTuple) {
+    print("Connecting to \(peripheralInfo.peripheral.name)...")
+    transport.connect(toPeripheralID: peripheralInfo.peripheral, disconnectedCallback: {
+      print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
+      if self.isClosed { return }
+      
       self.pollTonAppTask?.cancel()
+      self.accountsTask?.cancel()
       self.startScan()
       
       self.disconnectTask = Task {
         do {
           try await Task.sleep(nanoseconds: 2_000_000_000)
+          try Task.checkCancellation()
           await MainActor.run {
             self.setDisconnected()
           }
         } catch {}
       }
     }, success: { result in
-      print("Connected to \(result.name)")
+      print("Connected to \(result.name), udid: \(result.uuid)")
+      self.transport.stopScanning()
       self.disconnectTask?.cancel()
-      self.setConnected(deviceId: result.uuid.uuidString)
+      self.setConnected(peripheralInfo: peripheralInfo)
       self.waitForAppOpen()
     }, failure: { error in
       print("Error connecting to device: \(error.localizedDescription)")
+      self.startScan()
       self.setDisconnected()
     })
   }
   
+  func startScan() {
+    print("Start scanning bluetooth devices")
+    self.transport.stopScanning()
+    
+    var connecting = false
+    
+    self.transport.scan(duration: 5.0) { discoveries in
+      guard let firstDiscovery = discoveries.first else { return }
+      if !connecting {
+        connecting = true
+        self.connect(peripheralInfo: firstDiscovery)
+      }
+    } stopped: { error in
+      if let error = error {
+        if error == .scanningTimedOut {
+          print("Bluetooth scan timed out.")
+          if !connecting {
+            self.startScan()
+          }
+        } else {
+          print("Bluetooth scan error: \(error.localizedDescription)")
+        }
+      }
+    }
+  }
+  
   func waitForAppOpen() {
-    let tonTransport = TonTransport(transport: BleTransport.shared)
+    let tonTransport = TonTransport(transport: transport)
     self.pollTonAppTask = Task {
       do {
         while true {
@@ -112,30 +186,40 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   }
   
   func didTapContinueButton() {
-    guard let tonTransport = tonTransport, let deviceId = connectedDeviceId else { return }
+    guard let tonTransport = tonTransport, let deviceId = connectedDeviceId, let deviceProductName = connectedDeviceProductName else { return }
     self.isLoading = true
-    Task {
+    self.accountsTask = Task {
       do {
         var accounts: [LedgerAccount] = []
         
         for index in 0..<10 {
+          try Task.checkCancellation()
           let account = try await tonTransport.getAccount(path: AccountPath(index: index))
           accounts.append(account)
         }
         
         await MainActor.run { [accounts] in
-          self.didConnect?(accounts, deviceId, {
+          self.didConnect?(accounts, deviceId, deviceProductName, {
             self.isLoading = false
           })
         }
       } catch {
-        print("Failed to get accounts:", error)
+        print("get accounts error: \(error.localizedDescription)")
         await MainActor.run {
           self.isLoading = false
         }
       }
     }
+  }
+  
+  func didTapInstallTonApp() {
+    guard let ledgerLiveURL = URL(string: "ledgerlive://myledger?installApp=TON") else { return }
     
+    if urlOpener.canOpen(url: ledgerLiveURL) {
+      urlOpener.open(url: ledgerLiveURL)
+    } else if let ledgerLiveStoreURL = URL(string: "https://apps.apple.com/app/ledger-live/id1361671700") {
+      urlOpener.open(url: ledgerLiveStoreURL)
+    }
   }
   
   func setDisconnected() {
@@ -143,8 +227,10 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
     self.state = .idle
   }
   
-  func setConnected(deviceId: String) {
-    self.connectedDeviceId = deviceId
+  func setConnected(peripheralInfo: PeripheralInfoTuple) {
+    let deviceModel = Devices.fromServiceUuid(serviceUuid: peripheralInfo.serviceUUID)
+    self.connectedDeviceProductName = deviceModel.productName
+    self.connectedDeviceId = peripheralInfo.peripheral.uuid.uuidString
     self.state = .bluetoothConnected
   }
   
@@ -153,25 +239,6 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
     self.state = .appConnected
   }
   
-  // MARK: - State
-  
-  private var state: State = .idle {
-    didSet {
-      didUpdateState()
-    }
-  }
-  private var isLoading: Bool = false {
-    didSet {
-      didUpdateState()
-    }
-  }
-  
-  // MARK: - Dependencies
-  
-  // MARK: - Init
-}
-
-private extension LedgerConnectViewModelImplementation {
   func updateModel() {
     let model = LedgerConnectView.Model(
       contentViewModel: LedgerContentView.Model(
@@ -265,8 +332,8 @@ private extension LedgerConnectViewModelImplementation {
       content: TKLocales.LedgerConnect.Steps.TonApp.description,
       linkButton: LedgerStepView.LinkButton.Model(
         title: TKLocales.LedgerConnect.Steps.TonApp.link,
-        tapClosure: {
-          print("Install TON App")
+        tapClosure: { [weak self] in
+          self?.didTapInstallTonApp()
         }
       ),
       state: stepState
