@@ -282,7 +282,6 @@ private extension SendConfirmationController {
       } else {
         isMax = false
       }
-      print(isMax)
       return try await TonTransferMessageBuilder.sendTonTransfer(
         wallet: wallet,
         seqno: seqno,
