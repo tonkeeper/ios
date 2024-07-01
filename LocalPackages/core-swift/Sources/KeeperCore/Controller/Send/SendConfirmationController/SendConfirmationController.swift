@@ -23,6 +23,7 @@ public final class SendConfirmationController {
   private let sendItem: SendItem
   private let comment: String?
   private let sendService: SendService
+  private let accountService: AccountService
   private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
   private let ratesStore: RatesStore
@@ -35,6 +36,7 @@ public final class SendConfirmationController {
        sendItem: SendItem,
        comment: String?,
        sendService: SendService,
+       accountService: AccountService,
        blockchainService: BlockchainService,
        balanceStore: BalanceStore,
        ratesStore: RatesStore,
@@ -46,6 +48,7 @@ public final class SendConfirmationController {
     self.sendItem = sendItem
     self.comment = comment
     self.sendService = sendService
+    self.accountService = accountService
     self.blockchainService = blockchainService
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
@@ -267,9 +270,12 @@ private extension SendConfirmationController {
   func createTokenTransactionBoc(token: Token, amount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
-        
+                
     switch token {
     case .ton:
+      let account = try? await accountService.loadAccount(isTestnet: wallet.isTestnet, address: recipient.recipientAddress.address)
+      let shouldForceBounceFalse = ["empty", "uninit", "nonexist"].contains(account?.status)
+      
       let isMax: Bool
       if let balance = try? balanceStore.getBalance(wallet: wallet) {
         isMax = BigUInt(balance.balance.tonBalance.amount) == amount
@@ -282,7 +288,7 @@ private extension SendConfirmationController {
         value: amount,
         isMax: isMax,
         recipientAddress: recipient.recipientAddress.address,
-        isBounceable: recipient.recipientAddress.isBouncable,
+        isBounceable: shouldForceBounceFalse ? false : recipient.recipientAddress.isBouncable,
         comment: comment,
         timeout: timeout,
         signClosure: signClosure
