@@ -20,3 +20,6 @@ BUILD_NUMBER = 2
 
 ASSOCIATED_DOMAIN_APPLINKS_FIRST = applinks:app.tonkeeper.com
 ASSOCIATED_DOMAIN_APPLINKS_SECOND = applinks:app.tonkeeper.org
+
+APTABASE_KEY = A-SH-6199502298
+APTABASE_ENDPOINT = https://anonymous-analytics.tonkeeper.com

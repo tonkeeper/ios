@@ -9,7 +9,10 @@ public final class AptabaseConfigurator {
   private init() {}
   
   public func configure() {
-    Aptabase.shared.initialize(appKey: "A-SH-6199502298", with: InitOptions(host: "https://anonymous-analytics.tonkeeper.com"))
+    Aptabase.shared.initialize(
+      appKey: InfoProvider.aptabaseKey()!,
+      with: InitOptions(host: InfoProvider.aptabaseEndpoint())
+    )
   }
 }
 
