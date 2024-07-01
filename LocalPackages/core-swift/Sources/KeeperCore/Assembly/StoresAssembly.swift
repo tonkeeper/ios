@@ -51,6 +51,28 @@ public final class StoresAssembly {
     }
   }
   
+  private weak var _securityStoreV2: SecurityStoreV2?
+  public var securityStoreV2: SecurityStoreV2 {
+    if let securityStore = _securityStoreV2 {
+      return securityStore
+    } else {
+      let securityStore = SecurityStoreV2(keeperInfoStore: keeperInfoStore)
+      _securityStoreV2 = securityStore
+      return securityStore
+    }
+  }
+  
+  private weak var _setupStoreV2: SetupStoreV2?
+  public var setupStoreV2: SetupStoreV2 {
+    if let setupStore = _setupStoreV2 {
+      return setupStore
+    } else {
+      let setupStore = SetupStoreV2(keeperInfoStore: keeperInfoStore)
+      _setupStoreV2 = setupStore
+      return setupStore
+    }
+  }
+  
   private weak var _walletBalanceStore: WalletBalanceStore?
   var walletBalanceStore: WalletBalanceStore {
     if let _walletBalanceStore {

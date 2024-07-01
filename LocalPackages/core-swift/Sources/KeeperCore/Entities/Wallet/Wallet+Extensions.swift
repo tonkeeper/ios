@@ -62,7 +62,7 @@ public extension Wallet {
       switch identity.kind {
       case .Regular(_, let contractVersion):
         return contractVersion
-      case .Lockup(let publicKey, _):
+      case .Lockup(_, _):
         throw Error.invalidWalletKind
       case .Watchonly:
         throw Error.invalidWalletKind
@@ -185,6 +185,24 @@ public extension Wallet {
       return true
     case .ledger:
       return true
+    }
+  }
+  
+  var isBiometryAvailable: Bool {
+    switch kind {
+    case .regular: 
+      return true
+    default: 
+      return false
+    }
+  }
+  
+  var isBackupAvailable: Bool {
+    switch kind {
+    case .regular:
+      return true
+    default:
+      return false
     }
   }
   

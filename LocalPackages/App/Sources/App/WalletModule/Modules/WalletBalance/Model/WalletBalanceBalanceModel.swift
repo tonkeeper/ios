@@ -3,7 +3,7 @@ import KeeperCore
 import BigInt
 import TonSwift
 
-final class BalanceListModel {
+final class WalletBalanceBalanceModel {
   struct BalanceListItem {
     enum Image {
       case ton

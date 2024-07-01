@@ -58,7 +58,13 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
     )
     
     module.output.didCheckRecoveryPhrase = { [weak self] in
-      self?.setDidBackup()
+      guard let self else { return }
+      Task {
+        await self.setDidBackup()
+        await MainActor.run(body: {
+          self.didFinish?()
+        })
+      }
     }
     
     module.viewController.setupBackButton()
@@ -66,12 +72,10 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
     router.push(viewController: module.viewController)
   }
   
-  func setDidBackup() {
-    do {
-      try keeperCoreMainAssembly.backupController(wallet: wallet).setDidBackup()
-      didFinish?()
-    } catch {
-      print("Log: Backup failed failed")
-    }
+  func setDidBackup() async {
+    await keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater.updateWallet(
+      wallet,
+      setupSettings: WalletSetupSettings(backupDate: Date())
+    )
   }
 }

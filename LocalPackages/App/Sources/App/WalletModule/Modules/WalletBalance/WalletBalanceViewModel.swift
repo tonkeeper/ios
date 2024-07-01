@@ -37,7 +37,7 @@ protocol WalletBalanceViewModel: AnyObject {
 final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput, WalletBalanceModuleInput {
   
   private struct State {
-    let balanceItems: [BalanceListModel.BalanceListItem]
+    let balanceItems: [WalletBalanceBalanceModel.BalanceListItem]
     let setupState: WalletBalanceSetupModel.State
   }
   
@@ -84,7 +84,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   func didTapFinishSetupButton() {
-    didUpdateSetupState(WalletBalanceSetupModel.State.none)
+    setupModel.finishSetup()
   }
   
   func didSelectItem(_ item: WalletBalanceItem) {
@@ -101,14 +101,14 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   // MARK: - Dependencies
   
-  private let balanceListModel: BalanceListModel
+  private let balanceListModel: WalletBalanceBalanceModel
   private let setupModel: WalletBalanceSetupModel
   private let walletsStore: WalletsStoreV2
   private let totalBalanceStore: TotalBalanceStoreV2
   private let listMapper: WalletBalanceListMapper
   private let headerMapper: WalletBalanceHeaderMapper
   
-  init(balanceListModel: BalanceListModel,
+  init(balanceListModel: WalletBalanceBalanceModel,
        setupModel: WalletBalanceSetupModel,
        walletsStore: WalletsStoreV2,
        totalBalanceStore: TotalBalanceStoreV2,
@@ -144,7 +144,7 @@ private extension WalletBalanceViewModelImplementation {
     }
   }
   
-  func didUpdateBalanceItems(_ items: [BalanceListModel.BalanceListItem]) {
+  func didUpdateBalanceItems(_ items: [WalletBalanceBalanceModel.BalanceListItem]) {
     Task {
       await self.actor.addTask(block: {
         let wallet = await self.walletsStore.getState().activeWallet
@@ -201,7 +201,7 @@ private extension WalletBalanceViewModelImplementation {
         self.state = state
         await MainActor.run { [snapshot] in
           self.cellModels.merge(models) { $1 }
-          self.didUpdateSnapshot?(snapshot, true)
+          self.didUpdateSnapshot?(snapshot, false)
         }
       })
     }
@@ -217,7 +217,9 @@ private extension WalletBalanceViewModelImplementation {
         if setup.isBiometryVisible {
           items.append(WalletBalanceItem(id: WalletBalanceSetupItem.biometry.rawValue))
         }
-        items.append(WalletBalanceItem(id: WalletBalanceSetupItem.telegramChannel.rawValue))
+        if setup.isTelegramChannelVisible {
+          items.append(WalletBalanceItem(id: WalletBalanceSetupItem.telegramChannel.rawValue))
+        }
         if setup.isBackupVisible {
           items.append(WalletBalanceItem(id: WalletBalanceSetupItem.backup.rawValue))
         }

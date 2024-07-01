@@ -8,11 +8,15 @@ struct WalletBalanceAssembly {
   private init() {}
   static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly) -> WalletBalanceModule {
     let viewModel = WalletBalanceViewModelImplementation(
-      balanceListModel: BalanceListModel(
+      balanceListModel: WalletBalanceBalanceModel(
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
         convertedBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore
       ),
-      setupModel: WalletBalanceSetupModel(),
+      setupModel: WalletBalanceSetupModel(
+        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+        setupStore: keeperCoreMainAssembly.storesAssembly.setupStoreV2,
+        securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2
+      ),
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
       totalBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
       listMapper:

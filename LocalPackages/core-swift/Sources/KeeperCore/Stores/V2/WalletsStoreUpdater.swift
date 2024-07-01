@@ -73,7 +73,10 @@ public final class WalletsStoreUpdater {
       guard let index = wallets.firstIndex(where: { $0.id == wallet.id }) else { return keeperInfo }
       wallets.remove(at: index)
       wallets.insert(updatedWallet, at: index)
-      let updatedKeeperInfo = keeperInfo.setWallets(wallets)
+      var updatedKeeperInfo = keeperInfo.setWallets(wallets)
+      if keeperInfo.currentWallet.id == wallet.id {
+        updatedKeeperInfo = updatedKeeperInfo.setActiveWallet(updatedWallet)
+      }
       return updatedKeeperInfo
     }
   }

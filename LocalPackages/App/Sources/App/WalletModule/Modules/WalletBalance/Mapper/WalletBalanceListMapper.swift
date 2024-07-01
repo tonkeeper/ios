@@ -21,7 +21,7 @@ struct WalletBalanceListMapper {
     self.rateConverter = rateConverter
   }
   
-  func mapItem(_ item: BalanceListModel.BalanceListItem,
+  func mapItem(_ item: WalletBalanceBalanceModel.BalanceListItem,
                selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
     let amount = amountFormatter.formatAmount(
       item.amount,
