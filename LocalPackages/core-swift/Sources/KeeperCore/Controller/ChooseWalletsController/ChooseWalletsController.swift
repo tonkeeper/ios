@@ -9,6 +9,7 @@ public final class ChooseWalletsController {
     public let address: String
     public let subtitle: String
     public let isSelected: Bool
+    public let isEnable: Bool
   }
   
   public var models: [WalletModel] {
@@ -66,13 +67,25 @@ private extension ChooseWalletsController {
       subtitle.append(" · " + TKLocales.ChooseWallets.alreadyAdded)
     }
     
-    let isSelected = isLedger ? !activeWallet.isLedgerAdded && !activeWallet.balance.isEmpty : activeWallet.revision == .currentVersion || !activeWallet.balance.isEmpty
+    let isEnable: Bool = {
+      guard isLedger else { return true }
+      return !activeWallet.isLedgerAdded
+    }()
+    let isSelected: Bool = {
+      guard isEnable else { return false }
+      if isLedger {
+        return !activeWallet.isLedgerAdded && !activeWallet.balance.isEmpty
+      } else {
+        return activeWallet.revision == .currentVersion || !activeWallet.balance.isEmpty
+      }
+    }()
     
     return WalletModel(
       identifier: identifier,
       address: address,
       subtitle: subtitle,
-      isSelected: isSelected
+      isSelected: isSelected,
+      isEnable: isEnable
     )
   }
 }

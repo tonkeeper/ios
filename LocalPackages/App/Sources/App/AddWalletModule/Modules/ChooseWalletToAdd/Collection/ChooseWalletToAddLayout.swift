@@ -8,7 +8,6 @@ public struct ChooseWalletToAddLayout {
   
   public static func createLayout() -> UICollectionViewLayout {
     let header = createHeaderSupplementaryItem()
-    header.pinToVisibleBounds = true
     
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
     configuration.scrollDirection = .vertical

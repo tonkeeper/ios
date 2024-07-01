@@ -95,7 +95,8 @@ private extension ChooseWalletToAddViewModelImplementation {
           textWithTagModel: TKTextWithTagView.Model(
             title: model.address),
           subtitle: model.subtitle)
-      )
+      ),
+      isEnable: model.isEnable
     )
     return cellModel
   }
