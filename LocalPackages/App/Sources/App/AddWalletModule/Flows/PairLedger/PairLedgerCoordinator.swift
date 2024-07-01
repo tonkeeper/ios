@@ -4,6 +4,7 @@ import KeeperCore
 import TKCore
 import TKCoordinator
 import TonSwift
+import TonTransport
 
 public final class PairLedgerCoordinator: RouterCoordinator<ViewControllerRouter> {
   
@@ -12,15 +13,15 @@ public final class PairLedgerCoordinator: RouterCoordinator<ViewControllerRouter
   
   private let walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly
   private let coreAssembly: TKCore.CoreAssembly
-  private let publicKeyImportCoordinatorProvider: (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator
+  private let ledgerImportCoordinatorProvider: (NavigationControllerRouter, [LedgerAccount], [ActiveWalletModel], String, String) -> LedgerImportCoordinator
   
   init(walletUpdateAssembly: KeeperCore.WalletsUpdateAssembly,
        coreAssembly: TKCore.CoreAssembly,
        router: ViewControllerRouter,
-       publicKeyImportCoordinatorProvider: @escaping (NavigationControllerRouter, TonSwift.PublicKey, String) -> PublicKeyImportCoordinator) {
+       ledgerImportCoordinatorProvider: @escaping (NavigationControllerRouter, [LedgerAccount], [ActiveWalletModel], String, String) -> LedgerImportCoordinator) {
     self.walletUpdateAssembly = walletUpdateAssembly
     self.coreAssembly = coreAssembly
-    self.publicKeyImportCoordinatorProvider = publicKeyImportCoordinatorProvider
+    self.ledgerImportCoordinatorProvider = ledgerImportCoordinatorProvider
     super.init(router: router)
   }
   
@@ -48,24 +49,41 @@ private extension PairLedgerCoordinator {
       })
     }
     
-    module.output.didConnect = { [weak self, weak bottomSheetViewController] publicKey, name, device in
-      bottomSheetViewController?.dismiss(completion: {
-        self?.openImportCoordinator(publicKey: publicKey, name: name, device: device)
-      })
+    module.output.didConnect = { [weak self, weak bottomSheetViewController] accounts, deviceId, completion in
+      guard let self, let bottomSheetViewController else { return }
+      Task {
+        do {
+          let activeWallets = try await self.walletUpdateAssembly.walletImportController().findActiveWallets(ledgerAccounts: accounts, deviceId: deviceId)
+          print("activeWallets", activeWallets)
+          await MainActor.run {
+            completion()
+            bottomSheetViewController.dismiss(completion: {
+              self.openImportCoordinator(accounts: accounts, deviceId: deviceId, activeWalletModels: activeWallets)
+            })
+          }
+        } catch {
+          print("didConnect error", error.localizedDescription)
+          await MainActor.run {
+            completion()
+          }
+        }
+      }
     }
-
+    
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func openImportCoordinator(publicKey: TonSwift.PublicKey, name: String, device: Wallet.LedgerDevice) {
+  func openImportCoordinator(accounts: [LedgerAccount], deviceId: String, activeWalletModels: [ActiveWalletModel]) {
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
-    let coordinator = publicKeyImportCoordinatorProvider(
+    let coordinator = ledgerImportCoordinatorProvider(
       NavigationControllerRouter(
         rootViewController: navigationController
       ),
-      publicKey,
-      name
+      accounts,
+      activeWalletModels,
+      deviceId,
+      "NAME TODO"
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
@@ -73,14 +91,13 @@ private extension PairLedgerCoordinator {
       self?.removeChild(coordinator)
     }
     
-    coordinator.didImport = { [weak self] publicKey, revisions, model in
+    coordinator.didImport = { [weak self] accounts, deviceId, model in
       guard let self else { return }
       Task {
         do {
           try await self.importWallet(
-            publicKey: publicKey,
-            revisions: revisions,
-            device: device,
+            accounts: accounts,
+            deviceId: deviceId,
             model: model)
           await MainActor.run {
             self.didPaired?()
@@ -91,28 +108,22 @@ private extension PairLedgerCoordinator {
       }
     }
     
-    coordinator.didPrepareForPresent = { [weak self, weak navigationController] in
-      guard let navigationController else { return }
-      self?.router.present(navigationController)
-    }
-    
     addChild(coordinator)
     coordinator.start()
+    self.router.present(navigationController)
   }
   
-  func importWallet(publicKey: TonSwift.PublicKey,
-                    revisions: [WalletContractVersion],
-                    device: Wallet.LedgerDevice,
+  func importWallet(accounts: [LedgerAccount],
+                    deviceId: String,
                     model: CustomizeWalletModel) async throws {
     let addController = walletUpdateAssembly.walletAddController()
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
       icon: model.icon)
-    try addController.importLedgerWallet(
-      publicKey: publicKey,
-      revisions: revisions,
-      device: device,
+    try addController.importLedgerWallets(
+      accounts: accounts,
+      deviceId: deviceId,
       metaData: metaData
     )
   }

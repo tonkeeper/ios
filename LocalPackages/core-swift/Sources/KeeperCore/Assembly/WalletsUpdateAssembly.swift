@@ -37,9 +37,10 @@ public final class WalletsUpdateAssembly {
     WatchOnlyWalletAddressInputController(addressResolver: AddressResolver(dnsService: servicesAssembly.dnsService()))
   }
   
-  public func chooseWalletController(activeWalletModels: [ActiveWalletModel]) -> ChooseWalletsController {
+  public func chooseWalletController(activeWalletModels: [ActiveWalletModel], isLedger: Bool = false) -> ChooseWalletsController {
     ChooseWalletsController(
       activeWalletModels: activeWalletModels,
+      isLedger: isLedger,
       amountFormatter: formattersAssembly.amountFormatter
     )
   }

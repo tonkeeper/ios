@@ -10,18 +10,20 @@ public final class ChooseWalletsController {
     public let subtitle: String
     public let isSelected: Bool
   }
-
+  
   public var models: [WalletModel] {
     getModels()
   }
   
   private let activeWalletModels: [ActiveWalletModel]
   private let amountFormatter: AmountFormatter
+  private let isLedger: Bool
   
   init(activeWalletModels: [ActiveWalletModel],
+       isLedger: Bool,
        amountFormatter: AmountFormatter) {
-    self.activeWalletModels = activeWalletModels
-      .sorted(by: { $0.revision > $1.revision })
+    self.activeWalletModels = activeWalletModels.sorted(by: { isLedger ? $0.ledgerIndex < $1.ledgerIndex : $0.revision > $1.revision })
+    self.isLedger = isLedger
     self.amountFormatter = amountFormatter
   }
   
@@ -31,8 +33,14 @@ public final class ChooseWalletsController {
       .map { activeWalletModels[$0] }
       .map { $0.revision }
   }
+  
+  public func walletModels(indexes: [Int]) -> [ActiveWalletModel] {
+    indexes
+      .filter { activeWalletModels.count > $0 }
+      .map { activeWalletModels[$0] }
+  }
 }
- 
+
 private extension ChooseWalletsController {
   func getModels() -> [WalletModel] {
     activeWalletModels
@@ -50,12 +58,15 @@ private extension ChooseWalletsController {
     )
     let identifier = activeWallet.address.toRaw()
     let address = activeWallet.address.toShortString(bounceable: false)
-    var subtitle = "\(activeWallet.revision.rawValue) · \(tonAmount)"
+    var subtitle = isLedger ? tonAmount : "\(activeWallet.revision.rawValue) · \(tonAmount)"
     if !activeWallet.balance.jettonsBalance.isEmpty || !activeWallet.nfts.isEmpty {
       subtitle.append(", " + TKLocales.ChooseWallets.tokens)
     }
+    if (activeWallet.isLedgerAdded) {
+      subtitle.append(" · " + TKLocales.ChooseWallets.alreadyAdded)
+    }
     
-    let isSelected = activeWallet.revision == .currentVersion || !activeWallet.balance.isEmpty
+    let isSelected = isLedger ? !activeWallet.isLedgerAdded && !activeWallet.balance.isEmpty : activeWallet.revision == .currentVersion || !activeWallet.balance.isEmpty
     
     return WalletModel(
       identifier: identifier,

@@ -598,6 +598,10 @@ public enum TKLocales {
     public static var tokens: String {
       localize("choose_wallets.tokens")
     }
+    /// Already added
+    public static var alreadyAdded: String {
+      localize("choose_wallets.alreadyAdded")
+    }
   }
   public enum FinishSetup {
     /// Finish setting up

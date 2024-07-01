@@ -42,10 +42,31 @@ final class LedgerConnectViewController: GenericViewViewController<LedgerConnect
     setupBindings()
     viewModel.viewDidLoad()
   }
-  
+}
+
+private extension LedgerConnectViewController {
   func setupBindings() {
     viewModel.didUpdateModel = { [weak self] model in
       self?.customView.configure(model: model)
     }
+    
+    viewModel.didShowTurnOnBluetoothAlert = { [weak self] in
+      self?.showTurnOnBluetoothAlert()
+    }
+  }
+  
+  func showTurnOnBluetoothAlert() {
+    let alertController = UIAlertController(
+      title: "Bluetooth is off",
+      message: "Please turn on Bluetooth to use this feature",
+      preferredStyle: .alert
+    )
+    alertController.addAction(UIAlertAction(title: "Open Settings", style: .default, handler: { _ in
+      if let url = URL(string: UIApplication.openSettingsURLString) {
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+      }
+    }))
+    alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+    self.present(alertController, animated: true)
   }
 }

@@ -1,6 +1,7 @@
 import Foundation
 import CoreComponents
 import TonSwift
+import TonTransport
 
 public final class WalletImportController {
   
@@ -20,5 +21,9 @@ public final class WalletImportController {
   
   public func findActiveWallets(publicKey: TonSwift.PublicKey, isTestnet: Bool) async throws -> [ActiveWalletModel] {
     return try await activeWalletService.loadActiveWallets(publicKey: publicKey, isTestnet: isTestnet)
+  }
+  
+  public func findActiveWallets(ledgerAccounts: [LedgerAccount], deviceId: String) async throws -> [ActiveWalletModel] {
+    return try await activeWalletService.loadActiveWallets(ledgerAccounts: ledgerAccounts, deviceId: deviceId)
   }
 }

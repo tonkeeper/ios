@@ -150,6 +150,7 @@
 "choose_wallets.title" = "Choose Wallets";
 "choose_wallets.description" = "Choose wallets you want to add.";
 "choose_wallets.tokens" = "tokens";
+"choose_wallets.alreadyAdded" = "Already added";
 
 "finish_setup.title" = "Finish setting up";
 "finish_setup.setup_biometry" = "Use %@ to approve transactions";

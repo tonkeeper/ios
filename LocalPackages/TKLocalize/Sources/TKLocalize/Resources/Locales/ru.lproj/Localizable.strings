@@ -150,6 +150,7 @@
 "choose_wallets.title" = "Выберите кошельки";
 "choose_wallets.description" = "Выберите кошельки, которые вы хотите добавить.";
 "choose_wallets.tokens" = "токены";
+"choose_wallets.alreadyAdded" = "Уже добавлен";
 
 "finish_setup.title" = "Завершить установку";
 "finish_setup.setup_biometry" = "Включите %@ для подтверждения транзакций";

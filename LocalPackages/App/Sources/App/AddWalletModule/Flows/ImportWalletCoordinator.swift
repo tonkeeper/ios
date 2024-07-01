@@ -101,7 +101,7 @@ private extension ImportWalletCoordinator {
     let controller = walletsUpdateAssembly.chooseWalletController(activeWalletModels: activeWalletModels)
     let module = ChooseWalletToAddAssembly.module(controller: controller)
     
-    module.output.didSelectRevisions = { [weak self] revisions in
+    module.output.didSelectRevisions = { [weak self] revisions, _ in
       self?.handleDidChooseRevisions(phrase: phrase, revisions: revisions)
     }
     

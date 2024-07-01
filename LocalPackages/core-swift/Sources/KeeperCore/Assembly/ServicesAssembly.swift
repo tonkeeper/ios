@@ -55,7 +55,8 @@ public final class ServicesAssembly {
       apiProvider: apiAssembly.apiProvider,
       jettonsBalanceService: jettonsBalanceService(),
       accountNFTService: accountNftService(),
-      currencyService: currencyService()
+      currencyService: currencyService(),
+      walletsService: walletsService()
     )
   }
   
