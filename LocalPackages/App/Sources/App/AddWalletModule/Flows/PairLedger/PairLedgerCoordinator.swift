@@ -54,7 +54,6 @@ private extension PairLedgerCoordinator {
       Task {
         do {
           let activeWallets = try await self.walletUpdateAssembly.walletImportController().findActiveWallets(ledgerAccounts: accounts, deviceId: deviceId)
-          print("activeWallets", activeWallets)
           await MainActor.run {
             completion()
             bottomSheetViewController.dismiss(completion: {
@@ -62,7 +61,6 @@ private extension PairLedgerCoordinator {
             })
           }
         } catch {
-          print("didConnect error", error.localizedDescription)
           await MainActor.run {
             completion()
           }

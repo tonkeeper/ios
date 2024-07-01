@@ -6,7 +6,7 @@ import CryptoKit
 
 public class TonTransport {
   private let transport: BleTransportProtocol
-  private let lockQueue = DispatchQueue(label: "com.example.TonTransport.lockQueue")
+  private let lockQueue = DispatchQueue(label: "TonTransportQueue")
   
   static let LEDGER_SYSTEM: UInt8 = 0xB0
   static let LEDGER_CLA: UInt8 = 0xE0

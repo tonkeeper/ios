@@ -123,10 +123,8 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
           accounts.append(account)
         }
         
-        let accountsCopy = accounts
-        
-        await MainActor.run {
-          self.didConnect?(accountsCopy, deviceId, {
+        await MainActor.run { [accounts] in
+          self.didConnect?(accounts, deviceId, {
             self.isLoading = false
           })
         }

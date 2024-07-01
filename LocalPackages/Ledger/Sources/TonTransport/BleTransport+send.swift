@@ -12,8 +12,6 @@ public extension BleTransportProtocol {
     buffer.append(UInt8(data.count))
     buffer.append(data)
     
-    print("sending data:", buffer.hexString())
-    
     let apdu = try APDU(bluetoothData: buffer)
     
     let response = try await exchange(apdu: apdu)
