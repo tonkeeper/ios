@@ -12,6 +12,7 @@ struct WalletBalanceAssembly {
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
         convertedBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore
       ),
+      setupModel: WalletBalanceSetupModel(),
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
       totalBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
       listMapper:

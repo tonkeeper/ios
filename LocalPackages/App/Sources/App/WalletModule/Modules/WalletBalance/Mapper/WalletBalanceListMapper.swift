@@ -21,7 +21,8 @@ struct WalletBalanceListMapper {
     self.rateConverter = rateConverter
   }
   
-  func mapItem(_ item: BalanceListModel.BalanceListItem) -> TKUIListItemCell.Configuration {
+  func mapItem(_ item: BalanceListModel.BalanceListItem,
+               selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
     let amount = amountFormatter.formatAmount(
       item.amount,
       fractionDigits: TonInfo.fractionDigits,
@@ -68,10 +69,35 @@ struct WalletBalanceListMapper {
       verification: verification
     )
     
-    return mapItemModel(itemModel)
+    return mapItemModel(itemModel, selectionHandler: selectionHandler)
+  }
+  
+  func mapSetupState(_ state: WalletBalanceSetupModel.State,
+                     biometrySelectionHandler: @escaping () -> Void,
+                     telegramChannelSelectionHandler: @escaping () -> Void,
+                     backupSelectionHandler: @escaping () -> Void) -> [WalletBalanceItem: TKUIListItemCell.Configuration] {
+    switch state {
+    case .none:
+      return [:]
+    case .setup(let setup):
+      var items = [WalletBalanceItem: TKUIListItemCell.Configuration]()
+      items[WalletBalanceItem(id: WalletBalanceSetupItem.telegramChannel.rawValue)] = createTelegramChannelItem(
+        selectionHandler: telegramChannelSelectionHandler
+      )
+      if setup.isBiometryVisible {
+        items[WalletBalanceItem(id: WalletBalanceSetupItem.biometry.rawValue)] = createBiometryItem(selectionHandler: biometrySelectionHandler)
+      }
+      if setup.isBackupVisible {
+        items[WalletBalanceItem(id: WalletBalanceSetupItem.backup.rawValue)] = createBackupItem(
+          selectionHandler: backupSelectionHandler
+        )
+      }
+      return items
+    }
   }
 
-  private func mapItemModel(_ itemModel: ItemModel) -> TKUIListItemCell.Configuration {
+  private func mapItemModel(_ itemModel: ItemModel,
+                            selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
     let title = itemModel.title.withTextStyle(
       .label1,
       color: .Text.primary,
@@ -189,7 +215,127 @@ struct WalletBalanceListMapper {
     return TKUIListItemCell.Configuration(
       id: "",
       listItemConfiguration: listItemConfiguration,
-      selectionClosure: nil
+      selectionClosure: selectionHandler
+    )
+  }
+  
+  private func createTelegramChannelItem(selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+    createSetupItem(
+      description: "Join Tonkeeper channel",
+      icon: .TKUIKit.Icons.Size28.telegram,
+      iconColor: .Accent.blue,
+      accessory: .chevron,
+      selectionHandler: selectionHandler
+    )
+  }
+  
+  private func createBiometryItem(selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+    let title: String
+    let icon: UIImage
+    
+    let biometryProvider = BiometryProvider()
+    let state = biometryProvider.getBiometryState(policy: .deviceOwnerAuthenticationWithBiometrics)
+    switch state {
+    case .success(let success):
+      switch success {
+      case .faceID:
+        title = TKLocales.FinishSetup.setup_biometry("Face ID")
+        icon = .TKUIKit.Icons.Size28.faceId
+      case .touchID:
+        title = TKLocales.FinishSetup.setup_biometry("Touch ID")
+        icon = .TKUIKit.Icons.Size28.faceId
+      case .none:
+        title = TKLocales.FinishSetup.biometry_unavailable
+        icon = .TKUIKit.Icons.Size28.faceId
+      }
+    case .failure:
+      title = TKLocales.FinishSetup.biometry_unavailable
+      icon = .TKUIKit.Icons.Size28.faceId
+    }
+    
+    let switchAccessoryConfiguration = TKUIListItemSwitchAccessoryView.Configuration(
+      isOn: false,
+      handler: {
+        selectionHandler()
+        return $0
+      })
+    
+    return createSetupItem(
+      description: title,
+      icon: icon,
+      iconColor: .Accent.green,
+      accessory: .switchControl(switchAccessoryConfiguration),
+      selectionHandler: selectionHandler
+    )
+  }
+  
+  private func createBackupItem(selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+    createSetupItem(
+      description: TKLocales.FinishSetup.backup,
+      icon: .TKUIKit.Icons.Size28.key,
+      iconColor: .Accent.orange,
+      accessory: .chevron,
+      selectionHandler: selectionHandler
+    )
+  }
+  
+  private func createSetupItem(description: String,
+                               icon: UIImage,
+                               iconColor: UIColor,
+                               accessory: TKUIListItemAccessoryView.Configuration,
+                               selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+    let leftItemConfiguration = TKUIListItemContentLeftItem.Configuration(
+      title: nil,
+      tagViewModel: nil,
+      subtitle: nil,
+      description: description.withTextStyle(
+        .body2,
+        color: .Text.primary,
+        alignment: .left,
+        lineBreakMode: .byWordWrapping
+      )
+    )
+    
+    let contentConfiguration = TKUIListItemContentView.Configuration(
+      leftItemConfiguration: leftItemConfiguration,
+      rightItemConfiguration: nil
+    )
+    
+    let iconConfiguration = TKUIListItemIconView.Configuration(
+      iconConfiguration: .image(
+        TKUIListItemImageIconView.Configuration(
+          image: .image(icon),
+          tintColor: iconColor,
+          backgroundColor: iconColor.withAlphaComponent(0.12),
+          size: .iconSize,
+          cornerRadius: CGSize.iconSize.height/2
+        )
+      ),
+      alignment: .center
+    )
+    
+    let listItemConfiguration = TKUIListItemView.Configuration(
+      iconConfiguration: iconConfiguration,
+      contentConfiguration: contentConfiguration,
+      accessoryConfiguration: accessory
+    )
+    
+    return TKUIListItemCell.Configuration(
+      id: "",
+      listItemConfiguration: listItemConfiguration,
+      selectionClosure: selectionHandler
+    )
+  }
+}
+
+private extension TKUIListItemAccessoryView.Configuration {
+  static var chevron: TKUIListItemAccessoryView.Configuration {
+    .image(
+      TKUIListItemImageAccessoryView.Configuration(
+        image: .TKUIKit.Icons.Size16.chevronRight,
+        tintColor: .Text.tertiary,
+        padding: .zero
+      )
     )
   }
 }

@@ -27,16 +27,19 @@ protocol WalletBalanceViewModel: AnyObject {
   var didChangeWallet: (() -> Void)? { get set }
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)? { get set }
   var didCopy: ((ToastPresenter.Configuration) -> Void)? { get set }
-
-  var finishSetupSectionHeaderModel: TKListTitleView.Model { get }
   
   func viewDidLoad()
   func didTapFinishSetupButton()
-  func getBalanceCellModel(item: WalletBalanceBalanceItem) -> TKUIListItemCell.Configuration?
-  func getSetupCellModel(item: WalletBalanceSetupItem) -> TKUIListItemCell.Configuration?
+  func getBalanceItemCellModel(item: WalletBalanceItem) -> TKUIListItemCell.Configuration?
+  func didSelectItem(_ item: WalletBalanceItem)
 }
 
 final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput, WalletBalanceModuleInput {
+  
+  private struct State {
+    let balanceItems: [BalanceListModel.BalanceListItem]
+    let setupState: WalletBalanceSetupModel.State
+  }
   
   // MARK: - WalletBalanceModuleOutput
   
@@ -60,12 +63,14 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)?
   var didCopy: ((ToastPresenter.Configuration) -> Void)?
   
-  var finishSetupSectionHeaderModel = TKListTitleView.Model(title: "", textStyle: .label1, buttonContent: nil)
-  
   func viewDidLoad() {
     balanceListModel.didUpdateItems = { [weak self] items in
       self?.didUpdateBalanceItems(items)
     }
+    setupModel.didUpdateState = { [weak self] state in
+      self?.didUpdateSetupState(state)
+    }
+    
     walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState, oldWalletsState in
       observer.didUpdateWalletsState(walletsState, oldWalletsState)
     }
@@ -74,44 +79,43 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }
   }
   
-  func getBalanceCellModel(item: WalletBalanceBalanceItem) -> TKUIListItemCell.Configuration? {
-    balanceItemCellModels[item]
-  }
-  
-  func getSetupCellModel(item: WalletBalanceSetupItem) -> TKUIListItemCell.Configuration? {
-    setupItemCellModels[item]
+  func getBalanceItemCellModel(item: WalletBalanceItem) -> TKUIListItemCell.Configuration? {
+    return cellModels[item]
   }
   
   func didTapFinishSetupButton() {
-    
+    didUpdateSetupState(WalletBalanceSetupModel.State.none)
+  }
+  
+  func didSelectItem(_ item: WalletBalanceItem) {
+    cellModels[item]?.selectionClosure?()
   }
   
   // MARK: - State
 
   private let actor = SerialActor()
-  
-  private var balanceItems = [WalletBalanceBalanceItem]()
-  private var setupItems = [WalletBalanceSetupItem]()
-  
-  private var balanceItemCellModels = [WalletBalanceBalanceItem: TKUIListItemCell.Configuration]()
-  private var setupItemCellModels = [WalletBalanceSetupItem: TKUIListItemCell.Configuration]()
-  
+  private var state = State(balanceItems: [], setupState: .none)
+  private var cellModels = [WalletBalanceItem: TKUIListItemCell.Configuration]()
+
   // MARK: - Mapper
   
   // MARK: - Dependencies
   
   private let balanceListModel: BalanceListModel
+  private let setupModel: WalletBalanceSetupModel
   private let walletsStore: WalletsStoreV2
   private let totalBalanceStore: TotalBalanceStoreV2
   private let listMapper: WalletBalanceListMapper
   private let headerMapper: WalletBalanceHeaderMapper
   
   init(balanceListModel: BalanceListModel,
+       setupModel: WalletBalanceSetupModel,
        walletsStore: WalletsStoreV2,
        totalBalanceStore: TotalBalanceStoreV2,
        listMapper: WalletBalanceListMapper,
        headerMapper: WalletBalanceHeaderMapper) {
     self.balanceListModel = balanceListModel
+    self.setupModel = setupModel
     self.walletsStore = walletsStore
     self.totalBalanceStore = totalBalanceStore
     self.listMapper = listMapper
@@ -143,35 +147,110 @@ private extension WalletBalanceViewModelImplementation {
   func didUpdateBalanceItems(_ items: [BalanceListModel.BalanceListItem]) {
     Task {
       await self.actor.addTask(block: {
-        var balanceItems = [WalletBalanceBalanceItem]()
-        var cellModels = [WalletBalanceBalanceItem: TKUIListItemCell.Configuration]()
-        for item in items {
-          let identifier = WalletBalanceBalanceItem(id: item.id)
-          let cellModel = self.listMapper.mapItem(item)
-          balanceItems.append(identifier)
-          cellModels[identifier] = cellModel
+        let wallet = await self.walletsStore.getState().activeWallet
+        let models = items.reduce([WalletBalanceItem: TKUIListItemCell.Configuration]()) { result, item in
+          var result = result
+          result[WalletBalanceItem(id: item.id)] = self.listMapper.mapItem(item, selectionHandler: {
+            switch item.type {
+            case .ton:
+              self.didSelectTon?(wallet)
+            case .jetton(let jettonItem):
+              self.didSelectJetton?(wallet, jettonItem, !item.price.isZero)
+            }
+          })
+          return result
         }
         
-        await MainActor.run { [balanceItems, cellModels] in
-          self.balanceItems = balanceItems
-          self.balanceItemCellModels = cellModels
-          self.updateList()
+        let state = State(balanceItems: items,
+                          setupState: self.state.setupState)
+        let snapshot = self.createSnapshot(state: state)
+        
+        self.state = state
+        await MainActor.run { [snapshot, models] in
+          self.cellModels.merge(models) { $1 }
+          self.didUpdateSnapshot?(snapshot, false)
         }
       })
     }
   }
   
-  func updateList() {
+  func didUpdateSetupState(_ state: WalletBalanceSetupModel.State) {
+    Task {
+      await self.actor.addTask(block: {
+        let models = self.listMapper.mapSetupState(
+          state,
+          biometrySelectionHandler: {
+            
+          },
+          telegramChannelSelectionHandler: {
+            
+          },
+          backupSelectionHandler: { [weak self] in
+            guard let self else { return }
+            Task {
+              let wallet = await self.walletsStore.getState().activeWallet
+              await MainActor.run {
+                self.didTapBackup?(wallet)
+              }
+            }
+          }
+        )
+        let state = State(balanceItems: self.state.balanceItems,
+                          setupState: state)
+        let snapshot = self.createSnapshot(state: state)
+        self.state = state
+        await MainActor.run { [snapshot] in
+          self.cellModels.merge(models) { $1 }
+          self.didUpdateSnapshot?(snapshot, true)
+        }
+      })
+    }
+  }
+  
+  private func createSnapshot(state: State) -> WalletBalanceViewController.Snapshot {
     var snapshot = WalletBalanceViewController.Snapshot()
+    
+    switch state.setupState {
+    case .setup(let setup):
+      let items: [WalletBalanceItem] = {
+        var items = [WalletBalanceItem]()
+        if setup.isBiometryVisible {
+          items.append(WalletBalanceItem(id: WalletBalanceSetupItem.biometry.rawValue))
+        }
+        items.append(WalletBalanceItem(id: WalletBalanceSetupItem.telegramChannel.rawValue))
+        if setup.isBackupVisible {
+          items.append(WalletBalanceItem(id: WalletBalanceSetupItem.backup.rawValue))
+        }
+        return items
+      }()
+      var buttonContent: TKButton.Configuration.Content?
+      if setup.isFinishEnable {
+        buttonContent = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.done))
+      }
+      let model = TKListTitleView.Model(
+        title: TKLocales.FinishSetup.title,
+        textStyle: .label1,
+        buttonContent: buttonContent
+      )
+      let section = WalletBalanceSection.setup(model)
+      snapshot.appendSections([section])
+      snapshot.appendItems(items, toSection: section)
+    case .none:
+      break
+    }
+    
+    let items = state.balanceItems.map { WalletBalanceItem(id: $0.id) }
+
     snapshot.appendSections([.balance])
-    snapshot.appendItems(balanceItems, toSection: .balance)
+    snapshot.appendItems(items, toSection: .balance)
+    
     if #available(iOS 15.0, *) {
       snapshot.reconfigureItems(snapshot.itemIdentifiers)
     } else {
       snapshot.reloadItems(snapshot.itemIdentifiers)
     }
     
-    self.didUpdateSnapshot?(snapshot, false)
+    return snapshot
   }
 
   func updateBalanceHeader(wallet: Wallet, totalBalanceState: TotalBalanceState?) {

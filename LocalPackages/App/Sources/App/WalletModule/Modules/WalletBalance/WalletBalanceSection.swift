@@ -1,28 +1,23 @@
 import Foundation
+import TKUIKit
 import KeeperCore
 
-//enum WalletBalanceSection: Hashable {
-//  case balance(items: [WalletBalanceBalanceItem])
-//  case setup(items: [WalletBalanceSetupItem])
-//}
-
-struct WalletBalanceSection: Identifiable {
-  enum Identifier: String {
-    case balance
-    case setup
-  }
-  
-  let id: Identifier
-  let items: [AnyHashable]
+enum WalletBalanceSection: Hashable {
+  case balance
+  case setup(TKListTitleView.Model)
 }
 
-struct WalletBalanceBalanceItem: Hashable {
+struct WalletBalanceSetupSection: Hashable {
+  let title: String
+  let isFinishEnable: Bool
+}
+
+struct WalletBalanceItem: Hashable {
   let id: String
 }
 
-enum WalletBalanceSetupItem: Hashable {
-  case notifications
+enum WalletBalanceSetupItem: String, Hashable {
   case biometry
-  case tonkeeperChannel
+  case telegramChannel
   case backup
 }

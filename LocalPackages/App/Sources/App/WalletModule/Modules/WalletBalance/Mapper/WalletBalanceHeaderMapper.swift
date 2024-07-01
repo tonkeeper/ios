@@ -21,25 +21,5 @@ struct WalletBalanceHeaderMapper {
     } else {
       return "-"
     }
-//    ""
-//    let maximumFractionDigits = 2
-//    
-//    let amount: BigUInt
-//    let fractionDigits: Int
-//    
-//    if let balance = totalBalanceState?.totalBalance {
-//      amount = balance.amount
-//      fractionDigits = balance.fractionalDigits
-//    } else {
-//      amount = 0
-//      fractionDigits = 0
-//    }
-//    
-//    return amountFormatter.formatAmountWithoutFractionIfThousand(
-//      amount,
-//      fractionDigits: fractionDigits,
-//      maximumFractionDigits: maximumFractionDigits,
-//      currency: currency
-//    )
   }
 }
