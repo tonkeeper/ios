@@ -39,14 +39,20 @@ public final class LedgerImportCoordinator: RouterCoordinator<NavigationControll
 
 private extension LedgerImportCoordinator {
   func openChooseWalletToAdd() {
-    let controller = walletsUpdateAssembly.chooseWalletController(activeWalletModels: activeWalletModels, isLedger: true)
+    let controller = walletsUpdateAssembly.chooseWalletController(
+      activeWalletModels: activeWalletModels,
+      configuration: ChooseWalletsController.Configuration(
+        showRevision: false,
+        selectLastRevision: false
+      )
+    )
     let module = ChooseWalletToAddAssembly.module(controller: controller)
     
-    module.output.didSelectRevisions = { [weak self] _, selectedWalletModels in
+    module.output.didSelectWallets = { [weak self] selectedWalletModels in
       guard let self else { return }
-      let selectedIndexes = selectedWalletModels.map { $0.ledgerIndex }
-      let selectedAccounts = self.ledgerAccounts.filter { selectedIndexes.contains($0.path.index) }
-      self.openCustomizeWallet(accounts: selectedAccounts)
+      let selectedIds = selectedWalletModels.map { $0.id }
+      let selectedLedgerAccounts = self.ledgerAccounts.filter { selectedIds.contains($0.id) }
+      self.openCustomizeWallet(accounts: selectedLedgerAccounts)
     }
     
     if router.rootViewController.viewControllers.isEmpty {

@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public struct AccountPath: Codable {
+public struct AccountPath: Codable, Hashable {
   public let index: Int
   public let isTestnet: Bool
   public let workchain: Int8

@@ -116,9 +116,8 @@ public class TonTransport {
     }
     
     let publicKey = PublicKey(data: response)
-    let contract = path.contract(publicKey: publicKey)
     
-    return LedgerAccount(address: try contract.address(), publicKey: publicKey, path: path)
+    return LedgerAccount(publicKey: publicKey, revision: .v4R2, path: path)
   }
   
   public func signTransaction(path: AccountPath, transaction: Transaction) async throws -> Cell {

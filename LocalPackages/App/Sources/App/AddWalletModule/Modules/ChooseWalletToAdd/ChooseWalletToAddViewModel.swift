@@ -5,7 +5,7 @@ import KeeperCore
 import TKLocalize
 
 public protocol ChooseWalletToAddModuleOutput: AnyObject {
-  var didSelectRevisions: (([WalletContractVersion], [ActiveWalletModel]) -> Void)? { get set }
+  var didSelectWallets: (([ActiveWalletModel]) -> Void)? { get set }
 }
 
 protocol ChooseWalletToAddViewModel: AnyObject {
@@ -23,7 +23,7 @@ final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel
   
   // MARK: - ChooseWalletToAddModuleOutput
   
-  var didSelectRevisions: (([WalletContractVersion], [ActiveWalletModel]) -> Void)?
+  var didSelectWallets: (([ActiveWalletModel]) -> Void)?
   
   // MARK: - ChooseWalletToAddViewModel
   
@@ -67,9 +67,8 @@ private extension ChooseWalletToAddViewModelImplementation {
       continueButtonModel: TKUIActionButton.Model(title: TKLocales.Actions.continue_action),
       continueButtonAction: { [weak self] in
         guard let self = self else { return }
-        let revisions = self.controller.revisions(indexes: Array(selectedIndexes.sorted(by: >)))
         let walletModels = self.controller.walletModels(indexes: Array(selectedIndexes.sorted(by: >)))
-        self.didSelectRevisions?(revisions, walletModels)
+        self.didSelectWallets?(walletModels)
       },
       isContinueButtonEnabled: !selectedIndexes.isEmpty
     )

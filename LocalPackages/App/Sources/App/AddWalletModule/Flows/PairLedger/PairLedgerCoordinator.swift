@@ -49,15 +49,29 @@ private extension PairLedgerCoordinator {
       })
     }
     
-    module.output.didConnect = { [weak self, weak bottomSheetViewController] accounts, deviceId, deviceProductName, completion in
+    module.output.didConnect = { [weak self, weak bottomSheetViewController] ledgerAccounts, deviceId, deviceProductName, completion in
       guard let self, let bottomSheetViewController else { return }
       Task {
         do {
-          let activeWallets = try await self.walletUpdateAssembly.walletImportController().findActiveWallets(ledgerAccounts: accounts, deviceId: deviceId)
+          let accounts: [(String, Address, WalletContractVersion)] = ledgerAccounts.compactMap {
+            guard let contractVersion = WalletContractVersion(revision: $0.revision) else { return nil }
+            do {
+              let contract = try self.createContract(ledgerAccount: $0)
+              return (id: $0.id, try contract.address(), contractVersion)
+            } catch {
+              return nil
+            }
+          }
+          let activeWallets = try await self.walletUpdateAssembly
+            .walletImportController()
+            .findActiveWallets(accounts: accounts, isTestnet: false)
+          let handledActiveWallets = self.handleActiveWallets(activeWalletModels: activeWallets,
+                                                              ledgerAccounts: ledgerAccounts,
+                                                              deviceId: deviceId)
           await MainActor.run {
             completion()
             bottomSheetViewController.dismiss(completion: {
-              self.openImportCoordinator(accounts: accounts, deviceId: deviceId, deviceProductName: deviceProductName, activeWalletModels: activeWallets)
+              self.openImportCoordinator(accounts: ledgerAccounts, deviceId: deviceId, deviceProductName: deviceProductName, activeWalletModels: handledActiveWallets)
             })
           }
         } catch {
@@ -126,5 +140,60 @@ private extension PairLedgerCoordinator {
       deviceProductName: deviceProductName,
       metaData: metaData
     )
+  }
+  
+  private func handleActiveWallets(activeWalletModels: [ActiveWalletModel],
+                                   ledgerAccounts: [LedgerAccount],
+                                   deviceId: String) -> [ActiveWalletModel] {
+    let sorted = activeWalletModels.sorted { lModel, rModel in
+      guard let lLedgerAccount = ledgerAccounts.first(where: { $0.id == lModel.id }),
+            let rLedgetAcccount = ledgerAccounts.first(where: { $0.id == rModel.id }) else {
+        return true
+      }
+      return lLedgerAccount.path.index < rLedgetAcccount.path.index
+    }
+    do {
+      let wallets = try walletUpdateAssembly.servicesAssembly.walletsService().getWallets()
+      let addedIds = wallets.compactMap { wallet -> Int? in
+        guard case let .Ledger(_, _, device) = wallet.identity.kind,
+              device.deviceId == deviceId else { return nil }
+        return Int(device.accountIndex)
+      }
+      let mapped = sorted.map { model in
+        let isAdded: Bool = {
+          guard let account = ledgerAccounts
+            .first(where: { $0.id == model.id }) else { return false }
+          return addedIds.contains(account.path.index)
+        }()
+        return ActiveWalletModel(
+          id: model.id,
+          revision: model.revision,
+          address: model.address,
+          isActive: model.isActive,
+          balance: model.balance,
+          nfts: model.nfts,
+          isAdded: isAdded
+        )
+      }
+      return mapped
+    } catch {
+      return sorted
+    }
+  }
+  
+  private func createContract(ledgerAccount: LedgerAccount) throws -> WalletContract {
+    switch ledgerAccount.revision {
+    case .v4R2:
+      return WalletV4R2(publicKey: ledgerAccount.publicKey.data)
+    }
+  }
+}
+
+extension WalletContractVersion {
+  init?(revision: LedgerWalletRevision) {
+    switch revision {
+    case .v4R2:
+      self = .v4R2
+    }
   }
 }

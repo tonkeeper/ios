@@ -20,7 +20,7 @@ public final class ServicesAssembly {
     self.coreAssembly = coreAssembly
   }
   
-  func walletsService() -> WalletsService {
+  public func walletsService() -> WalletsService {
     WalletsServiceImplementation(keeperInfoRepository: repositoriesAssembly.keeperInfoRepository())
   }
   

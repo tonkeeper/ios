@@ -98,10 +98,17 @@ private extension ImportWalletCoordinator {
   }
   
   func openChooseWalletToAdd(phrase: [String], activeWalletModels: [ActiveWalletModel]) {
-    let controller = walletsUpdateAssembly.chooseWalletController(activeWalletModels: activeWalletModels)
+    let controller = walletsUpdateAssembly.chooseWalletController(
+      activeWalletModels: activeWalletModels,
+      configuration: ChooseWalletsController.Configuration(
+        showRevision: true,
+        selectLastRevision: true
+      )
+    )
     let module = ChooseWalletToAddAssembly.module(controller: controller)
     
-    module.output.didSelectRevisions = { [weak self] revisions, _ in
+    module.output.didSelectWallets = { [weak self] wallets in
+      let revisions = wallets.map { $0.revision }
       self?.handleDidChooseRevisions(phrase: phrase, revisions: revisions)
     }
     
