@@ -146,6 +146,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		504D92722C32A46E00B12DA6 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92732C32A48100B12DA6 /* uz */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uz; path = uz.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92742C32A48600B12DA6 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92752C32A48F00B12DA6 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92762C32A4B300B12DA6 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/LaunchScreen.strings"; sourceTree = "<group>"; };
+		504D92772C32A74D00B12DA6 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		509051DD2BE1661E00B41894 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		50ADFE3C2BE160D3000E1C0A /* TKLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLocalize; sourceTree = "<group>"; };
 		50F04B892C2E9B660043EE4B /* AptabaseConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AptabaseConfigurator.swift; sourceTree = "<group>"; };
@@ -576,6 +582,12 @@
 				en,
 				Base,
 				ru,
+				tr,
+				uz,
+				id,
+				uk,
+				"zh-Hans",
+				de,
 			);
 			mainGroup = 7DB8FB592A1BCC92005B4B11;
 			packageReferences = (
@@ -745,6 +757,12 @@
 			children = (
 				7DB8FB712A1BCC92005B4B11 /* Base */,
 				509051DD2BE1661E00B41894 /* ru */,
+				504D92722C32A46E00B12DA6 /* tr */,
+				504D92732C32A48100B12DA6 /* uz */,
+				504D92742C32A48600B12DA6 /* id */,
+				504D92752C32A48F00B12DA6 /* uk */,
+				504D92762C32A4B300B12DA6 /* zh-Hans */,
+				504D92772C32A74D00B12DA6 /* de */,
 			);
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
