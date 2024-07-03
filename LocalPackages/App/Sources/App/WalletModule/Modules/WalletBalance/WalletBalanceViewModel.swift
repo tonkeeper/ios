@@ -1,5 +1,6 @@
 import Foundation
 import TKUIKit
+import TKCore
 import KeeperCore
 import UIKit
 import TKLocalize
@@ -64,18 +65,14 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didCopy: ((ToastPresenter.Configuration) -> Void)?
   
   func viewDidLoad() {
-    balanceListModel.didUpdateItems = { [weak self] items in
-      self?.didUpdateBalanceItems(items)
+    balanceListModel.didUpdateItems = { [weak self] items, isSecure in
+      self?.didUpdateBalanceItems(items, isSecure: isSecure)
     }
     setupModel.didUpdateState = { [weak self] state in
       self?.didUpdateSetupState(state)
     }
-    
-    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState, oldWalletsState in
-      observer.didUpdateWalletsState(walletsState, oldWalletsState)
-    }
-    totalBalanceStore.addObserver(self, notifyOnAdded: true) { observer, state, oldState in
-      observer.didUpdateTotalBalanceState(state, oldState)
+    totalBalanceModel.didUpdateState = { [weak self] state in
+      self?.didUpdateTotalBalanceState(state)
     }
   }
   
@@ -103,54 +100,84 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   private let balanceListModel: WalletBalanceBalanceModel
   private let setupModel: WalletBalanceSetupModel
+  private let totalBalanceModel: WalletTotalBalanceModel
   private let walletsStore: WalletsStoreV2
-  private let totalBalanceStore: TotalBalanceStoreV2
   private let listMapper: WalletBalanceListMapper
   private let headerMapper: WalletBalanceHeaderMapper
+  private let secureMode: SecureMode
   
   init(balanceListModel: WalletBalanceBalanceModel,
        setupModel: WalletBalanceSetupModel,
+       totalBalanceModel: WalletTotalBalanceModel,
        walletsStore: WalletsStoreV2,
-       totalBalanceStore: TotalBalanceStoreV2,
        listMapper: WalletBalanceListMapper,
-       headerMapper: WalletBalanceHeaderMapper) {
+       headerMapper: WalletBalanceHeaderMapper,
+       secureMode : SecureMode) {
     self.balanceListModel = balanceListModel
     self.setupModel = setupModel
+    self.totalBalanceModel = totalBalanceModel
     self.walletsStore = walletsStore
-    self.totalBalanceStore = totalBalanceStore
     self.listMapper = listMapper
     self.headerMapper = headerMapper
+    self.secureMode = secureMode
   }
 }
 
 private extension WalletBalanceViewModelImplementation {
-  func didUpdateWalletsState(_ walletsState: WalletsState,
-                             _ oldWalletsState: WalletsState?) {
+  func didUpdateTotalBalanceState(_ state: WalletTotalBalanceModel.State) {
     Task {
-      guard walletsState.activeWallet != oldWalletsState?.activeWallet else { return }
-      guard let address = try? walletsState.activeWallet.friendlyAddress else { return }
-      let totalBalanceState = await self.totalBalanceStore.getState()[address]
-      updateBalanceHeader(wallet: walletsState.activeWallet, totalBalanceState: totalBalanceState)
+      await actor.addTask(block: {
+        let totalBalanceMapped = self.headerMapper.mapTotalBalance(totalBalance: state.totalBalanceState?.totalBalance)
+        
+        let addressButtonConfiguration = TKButton.Configuration(
+          content: TKButton.Configuration.Content(title: .plainString(state.address.toShort())),
+          textStyle: .body2,
+          textColor: .Text.secondary,
+          contentAlpha: [.normal: 1, .highlighted: 0.48],
+          action: { [weak self] in
+            self?.didTapCopy(address: state.address.toString(),
+                             toastConfiguration: state.wallet.copyToastConfiguration())
+          }
+        )
+        
+        let secureState: WalletBalanceHeaderBalanceButton.State = state.isSecure ? .secure : .unsecure
+        
+        let balanceModel = WalletBalanceHeaderBalanceView.Model(
+          balanceButtonModel: WalletBalanceHeaderBalanceButton.Model(
+            balance: totalBalanceMapped,
+            state: secureState,
+            tapHandler: { [weak self] in
+              guard let self else { return }
+              Task {
+                await self.secureMode.toggle()
+              }
+            }
+          ),
+          addressButtonConfiguration: addressButtonConfiguration,
+          connectionStatusModel: nil,
+          tagConfiguration: state.wallet.balanceTagConfiguration(),
+          stateDate: nil
+        )
+        
+        let model = WalletBalanceHeaderView.Model(
+          balanceModel: balanceModel,
+          buttonsViewModel: self.createHeaderButtonsModel(wallet: state.wallet)
+        )
+        
+        await MainActor.run {
+          self.didUpdateHeader?(model)
+        }
+      })
     }
   }
-  
-  func didUpdateTotalBalanceState(_ totalBalances: [FriendlyAddress: TotalBalanceState],
-                                  _ oldTotalBalances: [FriendlyAddress: TotalBalanceState]?) {
-    Task {
-      let wallet = await walletsStore.getState().activeWallet
-      guard let address = try? wallet.friendlyAddress else { return }
-      guard totalBalances[address] != oldTotalBalances?[address] else { return }
-      updateBalanceHeader(wallet: wallet, totalBalanceState: totalBalances[address])
-    }
-  }
-  
-  func didUpdateBalanceItems(_ items: [WalletBalanceBalanceModel.BalanceListItem]) {
+
+  func didUpdateBalanceItems(_ items: [WalletBalanceBalanceModel.BalanceListItem], isSecure: Bool) {
     Task {
       await self.actor.addTask(block: {
         let wallet = await self.walletsStore.getState().activeWallet
         let models = items.reduce([WalletBalanceItem: TKUIListItemCell.Configuration]()) { result, item in
           var result = result
-          result[WalletBalanceItem(id: item.id)] = self.listMapper.mapItem(item, selectionHandler: {
+          result[WalletBalanceItem(id: item.id)] = self.listMapper.mapItem(item, isSecure: isSecure, selectionHandler: {
             switch item.type {
             case .ton:
               self.didSelectTon?(wallet)
@@ -273,7 +300,16 @@ private extension WalletBalanceViewModelImplementation {
     )
     
     let balanceModel = WalletBalanceHeaderBalanceView.Model(
-      balance: totalBalanceMapped,
+      balanceButtonModel: WalletBalanceHeaderBalanceButton.Model(
+        balance: totalBalanceMapped,
+        state: .secure,
+        tapHandler: { [weak self] in
+          guard let self else { return }
+          Task {
+            await self.secureMode.toggle()
+          }
+        }
+      ),
       addressButtonConfiguration: addressButtonConfiguration,
       connectionStatusModel: nil,
       tagConfiguration: wallet.balanceTagConfiguration(),

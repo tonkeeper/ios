@@ -6,19 +6,24 @@ typealias WalletBalanceModule = MVVMModule<WalletBalanceViewController, WalletBa
 
 struct WalletBalanceAssembly {
   private init() {}
-  static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly) -> WalletBalanceModule {
+  static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly, coreAssembly: TKCore.CoreAssembly) -> WalletBalanceModule {
     let viewModel = WalletBalanceViewModelImplementation(
       balanceListModel: WalletBalanceBalanceModel(
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
-        convertedBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore
+        convertedBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
+        secureMode: coreAssembly.secureMode
       ),
       setupModel: WalletBalanceSetupModel(
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
         setupStore: keeperCoreMainAssembly.storesAssembly.setupStoreV2,
         securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2
       ),
+      totalBalanceModel: WalletTotalBalanceModel(
+        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+        totalBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
+        secureMode: coreAssembly.secureMode
+      ),
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
-      totalBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
       listMapper:
         WalletBalanceListMapper(
         amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
@@ -27,7 +32,8 @@ struct WalletBalanceAssembly {
       ),
       headerMapper: WalletBalanceHeaderMapper(
         decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
-      )
+      ),
+      secureMode: coreAssembly.secureMode
     )
     let viewController = WalletBalanceViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)

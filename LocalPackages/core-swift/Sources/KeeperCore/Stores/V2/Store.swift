@@ -20,7 +20,7 @@ open class Store<State: Equatable> {
     }
   }
   
-  init(state: State) {
+  public init(state: State) {
     self.state = state
   }
   

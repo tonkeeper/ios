@@ -208,7 +208,8 @@ private extension WalletCoordinator {
   }
 
   func createWalletBalanceModule() -> WalletBalanceModule {
-    let module = WalletBalanceAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
+    let module = WalletBalanceAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly,
+                                              coreAssembly: coreAssembly)
     
     module.output.didSelectTon = { [weak self] wallet in
       self?.openTonDetails(wallet: wallet)

@@ -7,12 +7,13 @@
 
 import UIKit
 
-public struct CoreAssembly {
+public final class CoreAssembly {
   
   public let appStateTracker = AppStateTracker()
   public let reachabilityTracker = ReachabilityTracker()
   public let featureFlagsProvider: FeatureFlagsProvider
   public let isTonkeeperX: Bool
+  public lazy var secureMode = SecureMode(appSettings: appSettings)
   
   public init(featureFlagsProvider: FeatureFlagsProvider = FeatureFlagsProvider(),
               isTonkeeperX: Bool = false) {

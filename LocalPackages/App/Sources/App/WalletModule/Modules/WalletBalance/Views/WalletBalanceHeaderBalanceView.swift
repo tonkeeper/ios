@@ -4,7 +4,7 @@ import SnapKit
 
 final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
   
-  private let balanceLabel = UILabel()
+  private let balanceButton = WalletBalanceHeaderBalanceButton()
   private let statusView = ConnectionStatusView()
   private let addressButton = TKButton()
   private let tagView = TKUITagView()
@@ -24,7 +24,7 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
   }
 
   struct Model {
-    let balance: String
+    let balanceButtonModel: WalletBalanceHeaderBalanceButton.Model
     let addressButtonConfiguration: TKButton.Configuration
     let connectionStatusModel: ConnectionStatusView.Model?
     let tagConfiguration: TKUITagView.Configuration?
@@ -32,7 +32,7 @@ final class WalletBalanceHeaderBalanceView: UIView, ConfigurableView {
   }
   
   func configure(model: Model) {
-    balanceLabel.attributedText = model.balance.withTextStyle(.balance, color: .Text.primary, alignment: .center)
+    balanceButton.configure(model: model.balanceButtonModel)
     addressButton.configuration = model.addressButtonConfiguration
     stateDateLabel.attributedText = model.stateDate?.withTextStyle(.body2, color: .Text.secondary, alignment: .center)
     
@@ -64,7 +64,7 @@ private extension WalletBalanceHeaderBalanceView {
     addressTagContainer.alignment = .center
     
     addSubview(stackView)
-    stackView.addArrangedSubview(balanceLabel)
+    stackView.addArrangedSubview(balanceButton)
     stackView.addArrangedSubview(addressTagStatusContainer)
     addressTagContainer.addArrangedSubview(addressButton)
     addressTagContainer.addArrangedSubview(tagView)
@@ -76,7 +76,7 @@ private extension WalletBalanceHeaderBalanceView {
   }
   
   func setupConstraints() {
-    balanceLabel.snp.makeConstraints { make in
+    balanceButton.snp.makeConstraints { make in
       make.height.equalTo(CGFloat.balanceLabelHeight)
     }
     

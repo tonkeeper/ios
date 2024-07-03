@@ -22,6 +22,7 @@ struct WalletBalanceListMapper {
   }
   
   func mapItem(_ item: WalletBalanceBalanceModel.BalanceListItem,
+               isSecure: Bool,
                selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
     let amount = amountFormatter.formatAmount(
       item.amount,
@@ -69,7 +70,9 @@ struct WalletBalanceListMapper {
       verification: verification
     )
     
-    return mapItemModel(itemModel, selectionHandler: selectionHandler)
+    return mapItemModel(itemModel,
+                        isSecure: isSecure,
+                        selectionHandler: selectionHandler)
   }
   
   func mapSetupState(_ state: WalletBalanceSetupModel.State,
@@ -97,6 +100,7 @@ struct WalletBalanceListMapper {
   }
 
   private func mapItemModel(_ itemModel: ItemModel,
+                            isSecure: Bool,
                             selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
     let title = itemModel.title.withTextStyle(
       .label1,
@@ -136,13 +140,16 @@ struct WalletBalanceListMapper {
       subtitle.append(TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange, alignment: .left, lineBreakMode: .byTruncatingTail))
     }
     
-    let value = itemModel.amount?.withTextStyle(
+    let amount = isSecure ? String.secureModeValue : itemModel.amount
+    let convertedAmount = isSecure ? String.secureModeValue : itemModel.convertedAmount
+    
+    let value = amount?.withTextStyle(
       .label1,
       color: .Text.primary,
       alignment: .right,
       lineBreakMode: .byTruncatingTail
     )
-    let valueSubtitle = itemModel.convertedAmount?.withTextStyle(
+    let valueSubtitle = convertedAmount?.withTextStyle(
       .body2,
       color: .Text.secondary,
       alignment: .right,
@@ -357,5 +364,9 @@ private extension CGSize {
 
 private extension CGFloat {
   static let iconCornerRadius: CGFloat = 22
+}
+
+private extension String {
+  static let secureModeValue = "* * *"
 }
 

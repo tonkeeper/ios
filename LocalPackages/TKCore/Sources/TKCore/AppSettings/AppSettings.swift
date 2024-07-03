@@ -17,8 +17,18 @@ public final class AppSettings {
     let key = String.buySellItemDoNotShowKey + "_\(buySellItemId)"
     userDefaults.set(doNotShow, forKey: key)
   }
+  
+  public var isSecureMode: Bool {
+    get {
+      userDefaults.bool(forKey: .isSecureModeKey)
+    }
+    set {
+      userDefaults.setValue(newValue, forKey: .isSecureModeKey)
+    }
+  }
 }
 
 private extension String {
   static let buySellItemDoNotShowKey = "buy_sell_item_do_not_show_warning"
+  static let isSecureModeKey = "is_secure_mode"
 }

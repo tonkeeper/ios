@@ -43,6 +43,15 @@ public struct SettingsRepository {
       settingsVault.setValue(newValue, key: .didMigrateRN)
     }
   }
+  
+  public var isSecureMode: Bool {
+    get {
+      settingsVault.value(key: .isSecureMode) ?? false
+    }
+    set {
+      settingsVault.setValue(newValue, key: .isSecureMode)
+    }
+  }
 }
 
 public enum SettingsKey: String, CustomStringConvertible {
@@ -54,4 +63,5 @@ public enum SettingsKey: String, CustomStringConvertible {
   case isFirstRun
   case didMigrateV2
   case didMigrateRN
+  case isSecureMode
 }

@@ -2,6 +2,7 @@ import Foundation
 import KeeperCore
 import BigInt
 import TonSwift
+import TKCore
 
 final class WalletBalanceBalanceModel {
   struct BalanceListItem {
@@ -37,14 +38,15 @@ final class WalletBalanceBalanceModel {
   
   private let actor = SerialActor()
 
-  var didUpdateItems: (([BalanceListItem]) -> Void)? {
+  var didUpdateItems: (([BalanceListItem], _ isSecure: Bool) -> Void)? {
     didSet {
       Task {
         await self.actor.addTask(block: {
           let activeWallet = await self.walletsStore.getState().activeWallet
           guard let address = try? activeWallet.friendlyAddress else { return }
           let balance = await self.convertedBalanceStore.getState()[address]?.balance
-          self.update(balance: balance)
+          let isSecure = await self.secureMode.isSecure
+          self.update(balance: balance, isSecure: isSecure)
         })
       }
     }
@@ -52,44 +54,63 @@ final class WalletBalanceBalanceModel {
   
   private let walletsStore: WalletsStoreV2
   private let convertedBalanceStore: ConvertedBalanceStoreV2
+  private let secureMode: SecureMode
   
   init(walletsStore: WalletsStoreV2,
-       convertedBalanceStore: ConvertedBalanceStoreV2) {
+       convertedBalanceStore: ConvertedBalanceStoreV2,
+       secureMode: SecureMode) {
     self.walletsStore = walletsStore
     self.convertedBalanceStore = convertedBalanceStore
-    self.walletsStore.addObserver(self, notifyOnAdded: true) { observer, newWalletsState, oldWalletsState in
-      observer.didUpdateWalletsState(newWalletsState: newWalletsState, oldWalletsState: oldWalletsState)
+    self.secureMode = secureMode
+    walletsStore.addObserver(self, notifyOnAdded: true) { observer, newWalletsState, oldWalletsState in
+      Task {
+        await observer.didUpdateWalletsState(newWalletsState: newWalletsState, oldWalletsState: oldWalletsState)
+      }
     }
-    self.convertedBalanceStore.addObserver(self, notifyOnAdded: true) { observer, newState, oldState in
-      observer.didUpdateBalances(newState, oldState)
+    convertedBalanceStore.addObserver(self, notifyOnAdded: true) { observer, newState, oldState in
+      Task {
+        await observer.didUpdateBalances(newState, oldState)
+      }
+    }
+    secureMode.addObserver(self, notifyOnAdded: false) { observer, newState, _ in
+      Task {
+        await observer.didUpdateSecureMode(newState)
+      }
     }
   }
   
-  private func didUpdateWalletsState(newWalletsState: WalletsState, 
-                                     oldWalletsState: WalletsState?) {
-    Task {
+  private func didUpdateWalletsState(newWalletsState: WalletsState,
+                                     oldWalletsState: WalletsState?) async {
+    await actor.addTask(block: {
       guard newWalletsState.activeWallet != oldWalletsState?.activeWallet else { return }
       guard let address = try? newWalletsState.activeWallet.friendlyAddress else { return }
-      let balance = await convertedBalanceStore.getState()[address]?.balance
-      await actor.addTask(block: {
-        self.update(balance: balance)
-      })
-    }
+      let balance = await self.convertedBalanceStore.getState()[address]?.balance
+      let isSecure = await self.secureMode.isSecure
+      self.update(balance: balance, isSecure: isSecure)
+    })
   }
   
   private func didUpdateBalances(_ newBalances: [FriendlyAddress: ConvertedBalanceState],
-                                 _ oldBalances: [FriendlyAddress: ConvertedBalanceState]?) {
-    Task {
+                                 _ oldBalances: [FriendlyAddress: ConvertedBalanceState]?) async {
+    await actor.addTask(block: {
       let activeWallet = await self.walletsStore.getState().activeWallet
       guard let address = try? activeWallet.friendlyAddress else { return }
       guard newBalances[address] != oldBalances?[address] else { return }
-      await actor.addTask(block: {
-        self.update(balance: newBalances[address]?.balance)
-      })
-    }
+      let isSecure = await self.secureMode.isSecure
+      self.update(balance: newBalances[address]?.balance, isSecure: isSecure)
+    })
   }
   
-  private func update(balance: ConvertedBalance?) {
+  private func didUpdateSecureMode(_ isSecure: Bool) async {
+    await actor.addTask(block: {
+      let activeWallet = await self.walletsStore.getState().activeWallet
+      guard let address = try? activeWallet.friendlyAddress else { return }
+      let balance = await self.convertedBalanceStore.getState()[address]?.balance
+      self.update(balance: balance, isSecure: isSecure)
+    })
+  }
+  
+  private func update(balance: ConvertedBalance?, isSecure: Bool) {
     var items = [BalanceListItem]()
     if let balance {
       let tonItem = BalanceListItem(
@@ -146,6 +167,6 @@ final class WalletBalanceBalanceModel {
       }
       items.append(contentsOf: jettonItems)
     }
-    didUpdateItems?(items)
+    didUpdateItems?(items, isSecure)
   }
 }
