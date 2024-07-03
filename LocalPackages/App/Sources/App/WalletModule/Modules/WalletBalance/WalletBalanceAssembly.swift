@@ -11,6 +11,7 @@ struct WalletBalanceAssembly {
       balanceListModel: WalletBalanceBalanceModel(
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
         convertedBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
+        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
         secureMode: coreAssembly.secureMode
       ),
       setupModel: WalletBalanceSetupModel(

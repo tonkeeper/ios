@@ -21,6 +21,7 @@ public struct ConvertedBalance: Equatable {
   public let currency: Currency
   public let tonBalance: ConvertedTonBalance
   public let jettonsBalance: [ConvertedJettonBalance]
+  public let stackingBalance: [ConvertedStakingBalance]
 }
 
 public struct ConvertedTonBalance: Equatable {
@@ -35,4 +36,10 @@ public struct ConvertedJettonBalance: Equatable {
   public let converted: Decimal
   public let price: Decimal
   public let diff: String?
+}
+
+public struct ConvertedStakingBalance: Equatable {
+  public let stackingInfo: AccountStackingInfo
+  public let converted: Decimal
+  public let price: Decimal
 }

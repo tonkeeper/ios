@@ -28,6 +28,7 @@ public final class ServicesAssembly {
     BalanceServiceImplementation(
       tonBalanceService: tonBalanceService(),
       jettonsBalanceService: jettonsBalanceService(),
+      stackingService: stackingService(),
       walletBalanceRepository: repositoriesAssembly.walletBalanceRepository())
   }
   
@@ -37,6 +38,10 @@ public final class ServicesAssembly {
   
   func jettonsBalanceService() -> JettonBalanceService {
     JettonBalanceServiceImplementation(apiProvider: apiAssembly.apiProvider)
+  }
+  
+  func stackingService() -> StakingService {
+    StakingServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
   func totalBalanceService() -> TotalBalanceService {

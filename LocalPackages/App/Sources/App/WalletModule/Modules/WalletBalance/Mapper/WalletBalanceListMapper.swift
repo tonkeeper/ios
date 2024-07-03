@@ -26,7 +26,7 @@ struct WalletBalanceListMapper {
                selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
     let amount = amountFormatter.formatAmount(
       item.amount,
-      fractionDigits: TonInfo.fractionDigits,
+      fractionDigits: item.fractionalDigits,
       maximumFractionDigits: 2
     )
     
@@ -36,14 +36,26 @@ struct WalletBalanceListMapper {
       currency: item.currency
     )
     
-    let price = decimalAmountFormatter.format(
-      amount: item.price,
-      currency: item.currency
-    )
-    
+    let price: String = {
+      switch item.type {
+      case .ton, .jetton:
+        return decimalAmountFormatter.format(
+          amount: item.price,
+          currency: item.currency
+        )
+      case .stacking(_, let poolInfo):
+        return poolInfo?.name ?? decimalAmountFormatter.format(
+          amount: item.price,
+          currency: item.currency
+        )
+      }
+    }()
+
     let verification: JettonInfo.Verification = {
       switch item.type {
       case .ton:
+        return .whitelist
+      case .stacking:
         return .whitelist
       case .jetton(let jettonItem):
         return jettonItem.jettonInfo.verification

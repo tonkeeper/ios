@@ -76,12 +76,7 @@ public struct JettonInfo: Codable, Equatable, Hashable {
   }
 }
 
-public extension JettonInfo {
-  var isTonUSDT: Bool {
-    do {
-      return try self.address == Address.parse("0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe")
-    } catch {
-      return false
-    }
-  }
+public enum JettonMasterAddress {
+  public static let tonUSDT = try! Address.parse("0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe")
+  public static let tonstakers = try! Address.parse("0:bdf3fa8098d129b54b4f73b5bac5d1e1fd91eb054169c3916dfc8ccd536d1000")
 }

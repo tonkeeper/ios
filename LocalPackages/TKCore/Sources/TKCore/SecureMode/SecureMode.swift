@@ -18,8 +18,10 @@ public final class SecureMode: Store<Bool> {
   }
   
   public func toggle() async {
-    await updateState { state in
-      return StateUpdate(newState: !state)
+    await updateState { [appSettings] state in
+      let updatedState = !state
+      appSettings.isSecureMode = updatedState
+      return StateUpdate(newState: updatedState)
     }
   }
 }

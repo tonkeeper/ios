@@ -183,6 +183,8 @@ private extension WalletBalanceViewModelImplementation {
               self.didSelectTon?(wallet)
             case .jetton(let jettonItem):
               self.didSelectJetton?(wallet, jettonItem, !item.price.isZero)
+            case .stacking(let info):
+              print("OPEN STACKING")
             }
           })
           return result

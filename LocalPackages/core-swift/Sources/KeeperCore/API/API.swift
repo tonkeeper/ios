@@ -331,6 +331,37 @@ extension API {
   }
 }
 
+// MARK: - Staking
+
+extension API {
+  func getPools(address: Address) async throws -> [StackingPoolInfo]{
+    let response = try await tonAPIClient.getStakingPools(
+      query: Operations.getStakingPools.Input.Query(
+        available_for: address.toRaw(),
+        include_unverified: false
+      )
+    )
+    
+    let entity = try response.ok.body.json
+    let result = entity.pools.compactMap {
+      try? StackingPoolInfo(accountStakingInfo: $0)
+    }
+    return result
+  }
+  
+  func getNominators(address: Address) async throws -> [AccountStackingInfo] {
+    let response = try await tonAPIClient.getAccountNominatorsPools(
+      path: Operations.getAccountNominatorsPools.Input.Path(
+        account_id: address.toRaw()
+      )
+    )
+    
+    let entity = try response.ok.body.json
+    let result = entity.pools.compactMap { try? AccountStackingInfo(accountStakingInfo: $0) }
+    return result
+  }
+}
+
 // MARK: - Blockchain
 
 extension API {

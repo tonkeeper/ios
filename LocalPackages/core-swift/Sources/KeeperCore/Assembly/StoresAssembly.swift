@@ -73,6 +73,17 @@ public final class StoresAssembly {
     }
   }
   
+  private weak var _stackingPoolsStore: StakingPoolsStore?
+  public var stackingPoolsStore: StakingPoolsStore {
+    if let store = _stackingPoolsStore {
+      return store
+    } else {
+      let store = StakingPoolsStore()
+      _stackingPoolsStore = store
+      return store
+    }
+  }
+  
   private weak var _walletBalanceStore: WalletBalanceStore?
   var walletBalanceStore: WalletBalanceStore {
     if let _walletBalanceStore {

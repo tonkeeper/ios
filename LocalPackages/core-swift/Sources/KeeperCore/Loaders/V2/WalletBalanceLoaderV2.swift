@@ -20,16 +20,22 @@ actor WalletBalanceLoaderV2 {
   private let balanceStore: BalanceStoreV2
   private let currencyStore: CurrencyStoreV2
   private let walletsStore: WalletsStoreV2
+  private let stakingPoolsStore: StakingPoolsStore
   private let balanceService: BalanceService
+  private let stackingService: StakingService
   
   init(balanceStore: BalanceStoreV2, 
        currencyStore: CurrencyStoreV2,
        walletsStore: WalletsStoreV2,
-       balanceService: BalanceService) {
+       stakingPoolsStore: StakingPoolsStore,
+       balanceService: BalanceService,
+       stackingService: StakingService) {
     self.balanceStore = balanceStore
     self.currencyStore = currencyStore
+    self.stakingPoolsStore = stakingPoolsStore
     self.walletsStore = walletsStore
     self.balanceService = balanceService
+    self.stackingService = stackingService
     walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState, _ in
       Task { await observer.didUpdateWalletsState(walletsState) }
     }
@@ -100,8 +106,19 @@ private extension WalletBalanceLoaderV2 {
     }
     let task = Task {
       do {
-        let balance = try await balanceService.loadWalletBalance(wallet: wallet, currency: currency)
+        async let balanceTask = balanceService.loadWalletBalance(wallet: wallet, currency: currency)
+        async let stakingPoolsTask = stackingService.loadStakingPools(wallet: wallet)
+        
+        let balance = try await balanceTask
+        let pools: [StackingPoolInfo]
+        do {
+          pools = try await stakingPoolsTask
+        } catch {
+          pools = []
+        }
+        
         guard !Task.isCancelled else { return }
+        await stakingPoolsStore.setStackingPools(pools: pools, address: address)
         await balanceStore.setBalanceState(.current(balance), address: address)
       } catch {
         guard !error.isCancelledError else { return }

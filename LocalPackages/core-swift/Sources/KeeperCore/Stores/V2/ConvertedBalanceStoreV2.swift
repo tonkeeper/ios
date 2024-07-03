@@ -72,11 +72,19 @@ public final class ConvertedBalanceStoreV2: Store<[FriendlyAddress: ConvertedBal
       calculateJettonBalance($0, currency: currency)
     }
     
+    let stackingItems = balance.stacking.map {
+      calculateStakingBalance(
+        $0,
+        tonRate: tonRate
+      )
+    }
+    
     let convertedBalance = ConvertedBalance(
       date: balance.date,
       currency: currency,
       tonBalance: tonItem,
-      jettonsBalance: jettonItems
+      jettonsBalance: jettonItems,
+      stackingBalance: stackingItems
     )
     
     switch balanceState {
@@ -138,6 +146,29 @@ public final class ConvertedBalanceStoreV2: Store<[FriendlyAddress: ConvertedBal
       converted: converted,
       price: price,
       diff: diff
+    )
+  }
+  
+  private func calculateStakingBalance(_ accountStackingInfo: AccountStackingInfo,
+                                       tonRate: Rates.Rate?) -> ConvertedStakingBalance {
+    let converted: Decimal
+    let price: Decimal
+    if let tonRate = tonRate {
+      converted = RateConverter().convertToDecimal(
+        amount: BigUInt(accountStackingInfo.amount),
+        amountFractionLength: TonInfo.fractionDigits,
+        rate: tonRate
+      )
+      price = tonRate.rate
+    } else {
+      converted = 0
+      price = 0
+    }
+    
+    return ConvertedStakingBalance(
+      stackingInfo: accountStackingInfo,
+      converted: converted,
+      price: price
     )
   }
 }

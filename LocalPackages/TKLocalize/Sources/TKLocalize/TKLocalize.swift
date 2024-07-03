@@ -755,6 +755,14 @@ public enum TKLocales {
       localize("wallet_tags.watch_only")
     }
   }
+  public enum BalanceList {
+    public enum StackingItem {
+      /// Staked
+      public static var title: String {
+        localize("balance_list.stacking_item.title")
+      }
+    }
+  }
   public enum Receive {
     /// Receive %@
     public static func title(_ p0: Any) -> String {

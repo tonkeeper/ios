@@ -196,6 +196,8 @@
 
 "wallet_tags.watch_only" = "Watch only";
 
+"balance_list.stacking_item.title" = "Staked";
+
 "receive.title" = "Receive %@";
 "receive.description" = "Send only %@ and tokens in TON network to this address, or you might lose your funds.";
 

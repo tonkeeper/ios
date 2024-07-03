@@ -27,7 +27,9 @@ public final class MainLoadersAssembly {
       balanceStore: mainStoresAssembly.balanceStore,
       currencyStore: storesAssembly.currencyStoreV2,
       walletsStore: walletAssembly.walletsStoreV2,
-      balanceService: servicesAssembly.balanceService()
+      stakingPoolsStore: storesAssembly.stackingPoolsStore,
+      balanceService: servicesAssembly.balanceService(),
+      stackingService: servicesAssembly.stackingService()
     )
     _walletBalanceLoaderV2 = loader
     return loader

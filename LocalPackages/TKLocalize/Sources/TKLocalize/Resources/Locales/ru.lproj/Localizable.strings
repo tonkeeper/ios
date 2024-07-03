@@ -193,6 +193,8 @@
 
 "wallet_tags.watch_only" = "Просмотр";
 
+"balance_list.stacking_item.title" = "Стейкинг";
+
 "receive.title" = "Получить %@";
 "receive.description" = "Отправляйте на этот адрес только %@ и токены в сети TON, иначе вы можете потерять свои средства.";
 
