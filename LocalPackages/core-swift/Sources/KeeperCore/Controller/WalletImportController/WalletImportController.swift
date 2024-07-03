@@ -6,9 +6,12 @@ import TonTransport
 public final class WalletImportController {
   
   private let activeWalletService: ActiveWalletsService
+  private let currencyService: CurrencyService
   
-  init(activeWalletService: ActiveWalletsService) {
+  init(activeWalletService: ActiveWalletsService,
+       currencyService: CurrencyService) {
     self.activeWalletService = activeWalletService
+    self.currencyService = currencyService
   }
   
   public func findActiveWallets(phrase: [String], isTestnet: Bool) async throws -> [ActiveWalletModel] {
@@ -16,14 +19,30 @@ public final class WalletImportController {
     let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(
       mnemonicArray: mnemonic.mnemonicWords
     )
-    return try await activeWalletService.loadActiveWallets(publicKey: keyPair.publicKey, isTestnet: isTestnet)
+    let currency = (try? currencyService.getActiveCurrency()) ?? .USD
+    return try await activeWalletService.loadActiveWallets(
+      publicKey: keyPair.publicKey,
+      isTestnet: isTestnet,
+      currency: currency
+    )
   }
   
   public func findActiveWallets(publicKey: TonSwift.PublicKey, isTestnet: Bool) async throws -> [ActiveWalletModel] {
-    return try await activeWalletService.loadActiveWallets(publicKey: publicKey, isTestnet: isTestnet)
+    let currency = (try? currencyService.getActiveCurrency()) ?? .USD
+    return try await activeWalletService.loadActiveWallets(
+      publicKey: publicKey,
+      isTestnet: isTestnet,
+      currency: currency
+    )
   }
   
-  public func findActiveWallets(ledgerAccounts: [LedgerAccount], deviceId: String) async throws -> [ActiveWalletModel] {
-    return try await activeWalletService.loadActiveWallets(ledgerAccounts: ledgerAccounts, deviceId: deviceId)
+  public func findActiveWallets(accounts: [(id: String, address: Address, revision: WalletContractVersion)], 
+                                isTestnet: Bool) async throws -> [ActiveWalletModel] {
+    let currency = (try? currencyService.getActiveCurrency()) ?? .USD
+    return try await activeWalletService.loadActiveWallets(
+      accounts: accounts,
+      isTestnet: isTestnet,
+      currency: currency
+    )
   }
 }

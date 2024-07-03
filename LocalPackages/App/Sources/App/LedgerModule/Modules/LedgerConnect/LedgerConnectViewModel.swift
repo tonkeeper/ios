@@ -40,7 +40,7 @@ final class LedgerConnectViewModelImplementation: LedgerConnectViewModel, Ledger
   var didShowTurnOnBluetoothAlert: (() -> Void)?
   var didShowBluetoothAuthorisationAlert: (() -> Void)?
   
-  private var pollTonAppTask: Task<Void, Never>? = nil
+  private var pollTonAppTask: Task<Void, Swift.Error>? = nil
   private var disconnectTask: Task<Void, Never>? = nil
   private var accountsTask: Task<Void, Never>? = nil
   
@@ -168,21 +168,26 @@ private extension LedgerConnectViewModelImplementation {
   
   func waitForAppOpen() {
     let tonTransport = TonTransport(transport: transport)
-    self.pollTonAppTask = Task {
-      do {
-        while true {
-          try Task.checkCancellation()
-          let isAppOpened = try await tonTransport.isAppOpen()
-          if isAppOpened {
-            await MainActor.run {
-              self.setReady(tonTransport: tonTransport)
-            }
-            break
-          }
+    
+    @Sendable func startPollTask() {
+      let task = Task {
+        let isAppOpened = try await tonTransport.isAppOpen()
+        try Task.checkCancellation()
+        guard isAppOpened else {
           try await Task.sleep(nanoseconds: 1_000_000_000)
+          try Task.checkCancellation()
+          await MainActor.run {
+            startPollTask()
+          }
+          return
         }
-      } catch {}
+        await MainActor.run {
+          self.setReady(tonTransport: tonTransport)
+        }
+      }
+      self.pollTonAppTask = task
     }
+    startPollTask()
   }
   
   func didTapContinueButton() {

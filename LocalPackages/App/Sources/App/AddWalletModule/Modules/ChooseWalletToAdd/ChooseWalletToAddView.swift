@@ -40,6 +40,13 @@ final class ChooseWalletToAddView: UIView, ConfigurableView {
     continueButton.addTapAction(model.continueButtonAction)
     continueButton.isEnabled = model.isContinueButtonEnabled
   }
+  
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    
+    continueButtonContainer.layoutIfNeeded()
+    collectionView.contentInset.bottom = continueButtonContainer.bounds.height - safeAreaInsets.bottom
+  }
 }
 
 private extension ChooseWalletToAddView {
@@ -66,7 +73,7 @@ private extension ChooseWalletToAddView {
       collectionView.bottomAnchor.constraint(equalTo: bottomAnchor),
       collectionView.rightAnchor.constraint(equalTo: rightAnchor),
       
-      continueButtonContainer.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor),
+      continueButtonContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
       continueButtonContainer.leftAnchor.constraint(equalTo: leftAnchor),
       continueButtonContainer.rightAnchor.constraint(equalTo: rightAnchor)
     ])

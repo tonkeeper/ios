@@ -85,7 +85,7 @@ private extension TKPaddingContainerView {
     NSLayoutConstraint.activate([
       backgroundView.topAnchor.constraint(equalTo: topAnchor).withPriority(.defaultHigh),
       backgroundView.leftAnchor.constraint(equalTo: leftAnchor).withPriority(.defaultHigh),
-      backgroundView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor).withPriority(.defaultHigh),
+      backgroundView.bottomAnchor.constraint(equalTo: bottomAnchor).withPriority(.defaultHigh),
       backgroundView.rightAnchor.constraint(equalTo: rightAnchor).withPriority(.defaultHigh),
     ])
   }

@@ -3,29 +3,43 @@ import TonSwift
 import CoreComponents
 import TonTransport
 
-public struct ActiveWalletModel {
+public struct ActiveWalletModel: Identifiable {
+  public let id: String
   public let revision: WalletContractVersion
   public let address: Address
   public let isActive: Bool
   public let balance: Balance
   public let nfts: [NFT]
-  public let ledgerIndex: Int
-  public let isLedgerAdded: Bool
+  public let isAdded: Bool
   
-  public init(revision: WalletContractVersion, address: Address, isActive: Bool, balance: Balance, nfts: [NFT], ledgerIndex: Int = 0, isLedgerAdded: Bool = false) {
+  public init(id: String, 
+              revision: WalletContractVersion,
+              address: Address,
+              isActive: Bool,
+              balance: Balance,
+              nfts: [NFT],
+              isAdded: Bool = false) {
+    self.id = id
     self.revision = revision
     self.address = address
     self.isActive = isActive
     self.balance = balance
     self.nfts = nfts
-    self.ledgerIndex = ledgerIndex
-    self.isLedgerAdded = isLedgerAdded
+    self.isAdded = isAdded
   }
 }
 
 protocol ActiveWalletsService {
-  func loadActiveWallets(publicKey: TonSwift.PublicKey, isTestnet: Bool) async throws -> [ActiveWalletModel]
-  func loadActiveWallets(ledgerAccounts: [LedgerAccount], deviceId: String) async throws -> [ActiveWalletModel]
+  func loadActiveWallets(publicKey: TonSwift.PublicKey,
+                         isTestnet: Bool,
+                         currency: Currency) async throws -> [ActiveWalletModel]
+  func loadActiveWalletModel(address: Address,
+                             revision: WalletContractVersion,
+                             isTestnet: Bool,
+                             currency: Currency) async throws -> ActiveWalletModel
+  func loadActiveWallets(accounts: [(id: String, address: Address, revision: WalletContractVersion)],
+                         isTestnet: Bool,
+                         currency: Currency) async throws -> [ActiveWalletModel]
 }
 
 final class ActiveWalletsServiceImplementation: ActiveWalletsService {
@@ -48,10 +62,45 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
     self.walletsService = walletsService
   }
   
-  func loadActiveWallets(publicKey: TonSwift.PublicKey, isTestnet: Bool) async throws -> [ActiveWalletModel] {
+  func loadActiveWalletModel(address: Address,
+                             revision: WalletContractVersion,
+                             isTestnet: Bool,
+                             currency: Currency) async throws -> ActiveWalletModel {
+    async let accountTask = self.apiProvider.api(isTestnet).getAccountInfo(address: address.toRaw())
+    async let jettonsBalanceTask = try await self.apiProvider.api(isTestnet).getAccountJettonsBalances(
+      address: address,
+      currencies: [currency]
+    )
+    async let nftsTask = self.apiProvider.api(isTestnet).getAccountNftItems(
+      address: address,
+      collectionAddress: nil,
+      limit: nil,
+      offset: nil,
+      isIndirectOwnership: true
+    )
+
+    let account = try await accountTask
+    let jettonsBalance = (try? await jettonsBalanceTask) ?? []
+    let nfts = (try? await nftsTask) ?? []
+    let tonBalance = TonBalance(amount: account.balance)
+    let balance = Balance(tonBalance: tonBalance, jettonsBalance: jettonsBalance)
+    let isActive = account.status == "active" || !balance.isEmpty
+    
+    return ActiveWalletModel(
+      id: address.toRaw(),
+      revision: revision,
+      address: address,
+      isActive: isActive,
+      balance: balance,
+      nfts: nfts)
+  }
+  
+  func loadActiveWallets(publicKey: TonSwift.PublicKey, 
+                         isTestnet: Bool,
+                         currency: Currency) async throws -> [ActiveWalletModel] {
     let revisions = WalletContractVersion.allCases
     
-    let models = try await withThrowingTaskGroup(of: ActiveWalletModel.self, returning: [ActiveWalletModel].self) { [currencyService] taskGroup in
+    let models = try await withThrowingTaskGroup(of: ActiveWalletModel.self, returning: [ActiveWalletModel].self) { taskGroup in
       for revision in revisions {
         let address = try createAddress(
           publicKey: publicKey,
@@ -59,43 +108,25 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
           networkId: isTestnet ? .testnet : .mainnet
         )
         taskGroup.addTask {
-          async let accountTask = self.apiProvider.api(isTestnet).getAccountInfo(address: address.toRaw())
-          async let jettonsBalanceTask = try await self.apiProvider.api(isTestnet).getAccountJettonsBalances(
-            address: address,
-            currencies: [(try? currencyService.getActiveCurrency()) ?? .USD]
-          )
-          async let nftsTask = self.apiProvider.api(isTestnet).getAccountNftItems(
-            address: address,
-            collectionAddress: nil,
-            limit: nil,
-            offset: nil,
-            isIndirectOwnership: true
-          )
-          let isActive: Bool
-          let balance: Balance
-          let nfts: [NFT]
           do {
-            let account = try await accountTask
-            let jettonsBalance = (try? await jettonsBalanceTask) ?? []
-            nfts = (try? await nftsTask) ?? []
-            let tonBalance = TonBalance(amount: account.balance)
-            balance = Balance(tonBalance: tonBalance, jettonsBalance: jettonsBalance)
-            isActive = account.status == "active" || !balance.isEmpty
+            return try await self.loadActiveWalletModel(
+              address: address,
+              revision: revision,
+              isTestnet: isTestnet,
+              currency: currency)
           } catch {
-            isActive = revision == .currentVersion
-            nfts = []
-            balance = Balance(
-              tonBalance: TonBalance(amount: 0),
-              jettonsBalance: []
+            return ActiveWalletModel(
+              id: address.toRaw(),
+              revision: revision,
+              address: address,
+              isActive: revision == .currentVersion,
+              balance: Balance(
+                tonBalance: TonBalance(amount: 0),
+                jettonsBalance: []
+              ),
+              nfts: []
             )
           }
-          
-          return ActiveWalletModel(
-            revision: revision,
-            address: address,
-            isActive: isActive,
-            balance: balance,
-            nfts: nfts)
         }
       }
       
@@ -115,75 +146,36 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
     return models
   }
   
-  func loadActiveWallets(ledgerAccounts: [LedgerAccount], deviceId: String) async throws -> [ActiveWalletModel] {
-    let addedDeviceAccountIndexes: [Int]
-    
-    do {
-      addedDeviceAccountIndexes = try walletsService.getWallets().compactMap { wallet -> Int? in
-        if case let .Ledger(_, _, ledgerDevice) = wallet.identity.kind, ledgerDevice.deviceId == deviceId {
-          return Int(ledgerDevice.accountIndex)
-        } else {
-          return nil
-        }
-      }
-    } catch {
-      addedDeviceAccountIndexes = []
-    }
-    
-    let models = try await withThrowingTaskGroup(of: ActiveWalletModel.self, returning: [ActiveWalletModel].self) { [currencyService] taskGroup in
-      for account in ledgerAccounts {
-        let address = account.address
+  func loadActiveWallets(accounts: [(id: String, address: Address, revision: WalletContractVersion)],
+                         isTestnet: Bool,
+                         currency: Currency) async throws -> [ActiveWalletModel] {
+    let models = try await withThrowingTaskGroup(of: ActiveWalletModel.self, returning: [ActiveWalletModel].self) { taskGroup in
+      for account in accounts {
         taskGroup.addTask {
-          async let accountTask = self.apiProvider.api(false).getAccountInfo(address: address.toRaw())
-          async let jettonsBalanceTask = try await self.apiProvider.api(false).getAccountJettonsBalances(
-            address: address,
-            currencies: [(try? currencyService.getActiveCurrency()) ?? .USD]
-          )
-          async let nftsTask = self.apiProvider.api(false).getAccountNftItems(
-            address: address,
-            collectionAddress: nil,
-            limit: nil,
-            offset: nil,
-            isIndirectOwnership: true
-          )
-          let isAdded = addedDeviceAccountIndexes.contains(account.path.index)
-          let isActive: Bool
-          let balance: Balance
-          let nfts: [NFT]
           do {
-            let account = try await accountTask
-            let jettonsBalance = (try? await jettonsBalanceTask) ?? []
-            nfts = (try? await nftsTask) ?? []
-            let tonBalance = TonBalance(amount: account.balance)
-            balance = Balance(tonBalance: tonBalance, jettonsBalance: jettonsBalance)
-            isActive = (account.status == "active" || !balance.isEmpty) && !isAdded
+            return try await self.loadActiveWalletModel(
+              address: account.address,
+              revision: account.revision,
+              isTestnet: isTestnet,
+              currency: currency)
           } catch {
-            isActive = false
-            nfts = []
-            balance = Balance(
-              tonBalance: TonBalance(amount: 0),
-              jettonsBalance: []
+            return ActiveWalletModel(
+              id: account.id,
+              revision: account.revision,
+              address: account.address,
+              isActive: false,
+              balance: Balance(
+                tonBalance: TonBalance(amount: 0),
+                jettonsBalance: []
+              ),
+              nfts: []
             )
           }
-          
-          
-          return ActiveWalletModel(
-            revision: .v4R2,
-            address: address,
-            isActive: isActive,
-            balance: balance,
-            nfts: nfts,
-            ledgerIndex: account.path.index,
-            isLedgerAdded: isAdded)
         }
       }
       
       var resultModels = [ActiveWalletModel]()
       for try await result in taskGroup {
-        guard result.revision != WalletContractVersion.currentVersion else {
-          resultModels.append(result)
-          continue
-        }
         guard result.isActive else {
           continue
         }

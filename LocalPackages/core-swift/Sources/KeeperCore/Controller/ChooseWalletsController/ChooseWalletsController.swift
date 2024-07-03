@@ -4,6 +4,16 @@ import BigInt
 import TKLocalize
 
 public final class ChooseWalletsController {
+  public struct Configuration {
+    public let showRevision: Bool
+    public let selectLastRevision: Bool
+    
+    public init(showRevision: Bool, selectLastRevision: Bool) {
+      self.showRevision = showRevision
+      self.selectLastRevision = selectLastRevision
+    }
+  }
+  
   public struct WalletModel: Equatable {
     public let identifier: String
     public let address: String
@@ -18,14 +28,14 @@ public final class ChooseWalletsController {
   
   private let activeWalletModels: [ActiveWalletModel]
   private let amountFormatter: AmountFormatter
-  private let isLedger: Bool
+  private let configuration: Configuration
   
   init(activeWalletModels: [ActiveWalletModel],
-       isLedger: Bool,
-       amountFormatter: AmountFormatter) {
-    self.activeWalletModels = activeWalletModels.sorted(by: { isLedger ? $0.ledgerIndex < $1.ledgerIndex : $0.revision > $1.revision })
-    self.isLedger = isLedger
+       amountFormatter: AmountFormatter,
+       configuration: Configuration) {
+    self.activeWalletModels = activeWalletModels
     self.amountFormatter = amountFormatter
+    self.configuration = configuration
   }
   
   public func revisions(indexes: [Int]) -> [WalletContractVersion] {
@@ -59,25 +69,18 @@ private extension ChooseWalletsController {
     )
     let identifier = activeWallet.address.toRaw()
     let address = activeWallet.address.toShortString(bounceable: false)
-    var subtitle = isLedger ? tonAmount : "\(activeWallet.revision.rawValue) · \(tonAmount)"
+    var subtitle = !configuration.showRevision ? tonAmount : "\(activeWallet.revision.rawValue) · \(tonAmount)"
     if !activeWallet.balance.jettonsBalance.isEmpty || !activeWallet.nfts.isEmpty {
       subtitle.append(", " + TKLocales.ChooseWallets.tokens)
     }
-    if (activeWallet.isLedgerAdded) {
+    if (activeWallet.isAdded) {
       subtitle.append(" · " + TKLocales.ChooseWallets.alreadyAdded)
     }
     
-    let isEnable: Bool = {
-      guard isLedger else { return true }
-      return !activeWallet.isLedgerAdded
-    }()
+    let isEnable = !activeWallet.isAdded
     let isSelected: Bool = {
       guard isEnable else { return false }
-      if isLedger {
-        return !activeWallet.isLedgerAdded && !activeWallet.balance.isEmpty
-      } else {
-        return activeWallet.revision == .currentVersion || !activeWallet.balance.isEmpty
-      }
+      return !activeWallet.balance.isEmpty || (activeWallet.revision == .currentVersion && configuration.selectLastRevision)
     }()
     
     return WalletModel(
