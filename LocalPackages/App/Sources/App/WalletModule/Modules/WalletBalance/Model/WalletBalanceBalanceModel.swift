@@ -44,41 +44,7 @@ final class WalletBalanceBalanceModel {
     let jettonsItems: [BalanceListJettonItem]
     let stakingItems: [BalanceListStakingItem]
   }
-//  
-//  struct BalanceListItem {
-//    enum Image {
-//      case ton
-//      case url(URL?)
-//    }
-//    enum ItemType {
-//      case ton
-//      case jetton(JettonItem)
-//      case stacking(AccountStackingInfo, poolInfo: StackingPoolInfo?)
-//    }
-//    
-//    var id: String {
-//      switch type {
-//      case .ton:
-//        return TonInfo.symbol
-//      case .jetton(let jettonItem):
-//        return jettonItem.jettonInfo.address.toString()
-//      case .stacking(let stackingInfo, _):
-//        return stackingInfo.pool.toString()
-//      }
-//    }
-//    
-//    let type: ItemType
-//    let title: String
-//    let image: Image
-//    let amount: BigUInt
-//    let tag: String?
-//    let fractionalDigits: Int
-//    let currency: Currency
-//    let converted: Decimal
-//    let price: Decimal
-//    let diff: String?
-//  }
-  
+
   private let actor = SerialActor()
 
   var didUpdateItems: ((BalanceListItems, _ isSecure: Bool) -> Void)? {
@@ -317,17 +283,6 @@ final class WalletBalanceBalanceModel {
       jettonsItems: jettonItems,
       stakingItems: stakingItems
     )
-//    var items = [BalanceListItem]()
-//    items.append(tonItem)
-//    if let tonUSDTItem {
-//      items.append(tonUSDTItem)
-//    }
-//    items.append(contentsOf: stackingItems)
-//    if let tonstakersItem {
-//      items.append(tonstakersItem)
-//    }
-//    items.append(contentsOf: jettonItems)
-//    
     didUpdateItems?(item, isSecure)
   }
 }

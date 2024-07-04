@@ -334,15 +334,15 @@ public final class MainAssembly {
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
-  
-  public func tokenPickerController(wallet: Wallet, selectedToken: Token) -> TokenPickerController {
-    TokenPickerController(
-      wallet: wallet,
-      selectedToken: selectedToken,
-      walletBalanceStore: storesAssembly.walletBalanceStore,
-      amountFormatter: formattersAssembly.amountFormatter
-    )
-  }
+//  
+//  public func tokenPickerController(wallet: Wallet, selectedToken: Token) -> TokenPickerController {
+//    TokenPickerController(
+//      wallet: wallet,
+//      selectedToken: selectedToken,
+//      walletBalanceStore: storesAssembly.walletBalanceStore,
+//      amountFormatter: formattersAssembly.amountFormatter
+//    )
+//  }
   
   public func buyListController(wallet: Wallet,
                                 isMarketRegionPickerAvailable: @escaping () async -> Bool) -> BuyListController {

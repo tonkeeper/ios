@@ -191,10 +191,10 @@ private extension SendTokenCoordinator {
   
   func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
     let module = TokenPickerAssembly.module(
-      tokenPickerController: keeperCoreMainAssembly.tokenPickerController(
-        wallet: wallet,
-        selectedToken: token
-      )
+      wallet: wallet,
+      selectedToken: token,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
