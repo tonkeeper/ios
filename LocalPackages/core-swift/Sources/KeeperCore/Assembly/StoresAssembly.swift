@@ -96,22 +96,6 @@ public final class StoresAssembly {
     return walletBalanceStore
   }
   
-  private weak var _walletTotalBalanceStore: WalletTotalBalanceStore?
-  func walletTotalBalanceStore(walletsStore: WalletsStore) -> WalletTotalBalanceStore {
-    if let _walletTotalBalanceStore {
-      return _walletTotalBalanceStore
-    }
-    let walletTotalBalanceStore = WalletTotalBalanceStore(
-      walletsStore: walletsStore,
-      walletBalanceStore: walletBalanceStore,
-      tonRatesStore: tonRatesStore,
-      currencyStore: currencyStore,
-      totalBalanceService: servicesAssembly.totalBalanceService()
-    )
-    _walletTotalBalanceStore = walletTotalBalanceStore
-    return walletTotalBalanceStore
-  }
-  
   private weak var _tonRatesStore: TonRatesStore?
   var tonRatesStore: TonRatesStore {
     if let tonRatesStore = _tonRatesStore {

@@ -83,20 +83,6 @@ public final class MainAssembly {
     )
   }
 
-  public func walletBalanceController() -> WalletBalanceController {
-    WalletBalanceController(
-      walletsStore: walletAssembly.walletStore,
-      walletBalanceStore: storesAssembly.walletBalanceStore,
-      walletTotalBalanceStore: storesAssembly.walletTotalBalanceStore(walletsStore: walletAssembly.walletStore),
-      tonRatesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
-      setupStore: storesAssembly.setupStore,
-      securityStore: storesAssembly.securityStore,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore,
-      walletBalanceMapper: walletBalanceMapper
-    )
-  }
-  
   public var settingsController: SettingsController {
     SettingsController(
       walletsStore: walletAssembly.walletStore,
@@ -415,14 +401,6 @@ public final class MainAssembly {
 }
 
 private extension MainAssembly {
-  var walletBalanceMapper: WalletBalanceMapper {
-    WalletBalanceMapper(
-      amountFormatter: formattersAssembly.amountFormatter,
-      decimalAmountFormatter: formattersAssembly.decimalAmountFormatter,
-      rateConverter: RateConverter(),
-      dateFormatter: formattersAssembly.dateFormatter)
-  }
-  
   var accountEventMapper: AccountEventMapper {
     AccountEventMapper(
       dateFormatter: formattersAssembly.dateFormatter,
