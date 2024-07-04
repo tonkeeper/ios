@@ -15,7 +15,8 @@ public struct InfoProvider {
     case appName = "APP_NAME"
     case keychainAccessGroup = "KEYCHAIN_ACCESS_GROUP"
     case appIdentifierPrefix = "AppIdentifierPrefix"
-
+    case aptabaseKey = "APTABASE_KEY"
+    case aptabaseEndpoint = "APTABASE_ENDPOINT"
   }
   
   static func value<T>(key: Keys) -> T? {
@@ -24,6 +25,14 @@ public struct InfoProvider {
   
   public static func appVersion() -> String? {
     self.value(key: .appVersion)
+  }
+  
+  public static func aptabaseKey() -> String? {
+    self.value(key: .aptabaseKey)
+  }
+  
+  public static func aptabaseEndpoint() -> String? {
+    self.value(key: .aptabaseEndpoint)
   }
   
   public static func buildVersion() -> String? {

@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>APTABASE_KEY</key>
+	<string>$(APTABASE_KEY)</string>
+	<key>APTABSE_ENDPOINT</key>
+	<string>$(APTABASE_ENDPOINT)</string>
 	<key>APP_GROUP_IDENTIFIER</key>
 	<string>$(APP_GROUP_IDENTIFIER)</string>
 	<key>APP_NAME</key>

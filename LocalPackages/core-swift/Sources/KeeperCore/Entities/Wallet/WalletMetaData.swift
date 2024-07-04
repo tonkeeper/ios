@@ -16,7 +16,31 @@ public struct WalletMetaData: Codable, Equatable {
 
 public enum WalletIcon: Codable, Equatable {
   case emoji(String)
-  case icon(String)
+  case icon(Image)
+  
+  public enum Image: String, Codable, CaseIterable {
+    case wallet
+    case leaf
+    case lock
+    case key
+    case inbox
+    case snowflake
+    case sparkles
+    case sun
+    case hare
+    case flash
+    case bankCard
+    case gear
+    case handRaised
+    case magnifyingGlassCircle
+    case flashCircle
+    case dollarCircle
+    case euroCircle
+    case sterlingCircle
+    case yuanCircle
+    case rubleCircle
+    case indianRupeeCircle
+  }
 }
 
 public enum WalletTintColor: String, Codable, CaseIterable, Equatable {
@@ -48,3 +72,4 @@ public enum WalletTintColor: String, Codable, CaseIterable, Equatable {
     .SteelGray
   }
 }
+

@@ -22,7 +22,7 @@ public struct SendConfirmationModel {
   public let image: Image
   public let titleType: TitleType
   public let descriptionType: DescriptionType
-  public let wallet: String
+  public let wallet: Wallet
   public let recipientAddress: String?
   public let recipientName: String?
   public let amount: String?

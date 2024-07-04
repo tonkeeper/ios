@@ -339,6 +339,7 @@ public final class MainAssembly {
       sendItem: sendItem,
       comment: comment,
       sendService: servicesAssembly.sendService(),
+      accountService: servicesAssembly.accountService(),
       blockchainService: servicesAssembly.blockchainService(),
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.ratesStore,

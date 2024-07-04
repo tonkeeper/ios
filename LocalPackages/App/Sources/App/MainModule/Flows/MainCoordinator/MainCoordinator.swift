@@ -514,7 +514,7 @@ private extension MainCoordinator {
     let module = addWalletModuleModule.createCustomizeWalletModule(
       name: wallet.label,
       tintColor: wallet.tintColor,
-      emoji: wallet.emoji,
+      icon: wallet.metaData.icon,
       configurator: EditWalletCustomizeWalletViewModelConfigurator()
     )
     

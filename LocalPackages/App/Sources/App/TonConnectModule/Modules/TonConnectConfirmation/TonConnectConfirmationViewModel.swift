@@ -13,7 +13,7 @@ protocol TonConnectConfirmationModuleOutput: AnyObject {
 protocol TonConnectConfirmationViewModel: AnyObject {
   var contentView: ((TonConnectConfirmationContentView.Model) -> TonConnectConfirmationContentView)? { get set }
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)? { get set }
-  var didUpdateHeader: ((String, String?) -> Void)? { get set }
+  var didUpdateHeader: ((String, NSAttributedString?) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -30,12 +30,30 @@ final class TonConnectConfirmationViewModelImplementation: TonConnectConfirmatio
   
   var contentView: ((TonConnectConfirmationContentView.Model) -> TonConnectConfirmationContentView)?
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)?
-  var didUpdateHeader: ((String, String?) -> Void)?
+  var didUpdateHeader: ((String, NSAttributedString?) -> Void)?
   
   func viewDidLoad() {
+    let wallet = "Wallet: ".withTextStyle(
+      .body2,
+      color: .Text.secondary,
+      alignment: .left,
+      lineBreakMode: .byWordWrapping
+    )
+    let walletName = model.wallet.iconWithName(
+      attributes: TKTextStyle.body2.getAttributes(
+        color: .Text.secondary,
+        alignment: .left,
+        lineBreakMode: .byTruncatingTail
+      ),
+      iconColor: .Icon.primary,
+      iconSide: 16
+    )
+    let subtitle = NSMutableAttributedString(attributedString: wallet)
+    subtitle.append(walletName)
+    
     didUpdateHeader?(
       "Confirm Action",
-      "Wallet: \(model.walletName)"
+      subtitle
     )
     prepareContent()
   }

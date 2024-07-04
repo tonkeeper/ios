@@ -8,7 +8,7 @@ struct TonConnectConnectMapper {
     manifest: TonConnectManifest,
     showWalletPicker: Bool,
     headerView: (String?, URL?) -> UIView?,
-    walletPickerView: (TonConnectConnectWalletButtonContentView.Model) -> UIControl?,
+    walletPickerView: (TonConnectConnectWalletButton.Model) -> UIControl?,
     walletPickerAction: (() -> Void)?,
     connectAction: @escaping () async -> Bool,
     completionAction: @escaping () -> Void
@@ -77,12 +77,8 @@ struct TonConnectConnectMapper {
     )
     
     if showWalletPicker {
-      let model = TonConnectConnectWalletButtonContentView.Model(
-        emoji: wallet.emoji,
-        backgroundColor: wallet.tintColor.uiColor,
-        walletName: wallet.label,
-        address: address
-      )
+      let model = TonConnectConnectWalletButton.Model.configuration(wallet: wallet,
+                                                                    subtitle: address)
       if let walletPickerView = walletPickerView(model) {
         walletPickerView.addAction(UIAction(handler: { _ in
           walletPickerAction?()

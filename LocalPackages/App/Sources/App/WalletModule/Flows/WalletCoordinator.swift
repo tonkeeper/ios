@@ -38,7 +38,7 @@ private extension WalletCoordinator {
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2
     )
     
-    module.output.didTapWalletButton = { [weak self] in
+    module.output.walletButtonHandler = { [weak self] in
       self?.didTapWalletButton?()
     }
     

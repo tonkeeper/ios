@@ -5,8 +5,6 @@ import KeeperCore
 import TKLocalize
 
 final class SettingsRootListItemsProvider: SettingsListItemsProvider {
-  typealias WalletCellRegistration = UICollectionView.CellRegistration<WalletsListWalletCell, WalletsListWalletCell.Model>
-  
   var didTapEditWallet: ((Wallet) -> Void)?
   var didTapCurrency: (() -> Void)?
   var didTapTheme: (() -> Void)?
@@ -15,27 +13,23 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   var didShowAlert: ((_ title: String, _ description: String?, _ actions: [UIAlertAction]) -> Void)?
   var didTapLogout: (() -> Void)?
   var didTapDeleteAccount: (() -> Void)?
-  
-  private let walletCellRegistration: WalletCellRegistration
-  
+    
   private let settingsController: SettingsController
   private let urlOpener: URLOpener
   private let appStoreReviewer: AppStoreReviewer
   private let appSettings: AppSettings
+  private let analyticsProvider: AnalyticsProvider
   
   init(settingsController: SettingsController,
        urlOpener: URLOpener,
        appStoreReviewer: AppStoreReviewer,
-       appSettings: AppSettings) {
+       appSettings: AppSettings,
+       analyticsProvider: AnalyticsProvider) {
     self.settingsController = settingsController
     self.appStoreReviewer = appStoreReviewer
     self.urlOpener = urlOpener
     self.appSettings = appSettings
-    
-    let walletCellRegistration = WalletCellRegistration { cell, indexPath, itemIdentifier in
-      cell.configure(model: itemIdentifier)
-    }
-    self.walletCellRegistration = walletCellRegistration
+    self.analyticsProvider = analyticsProvider
     
     settingsController.didUpdateActiveWallet = { [weak self] in
       self?.didUpdateSections?()
@@ -62,22 +56,10 @@ final class SettingsRootListItemsProvider: SettingsListItemsProvider {
     await setupSettingsSections()
   }
   
-  func selectItem(section: SettingsListSection, index: Int) {
-    switch section.items[index] {
-    case let walletModel as WalletsListWalletCell.Model:
-      walletModel.selectionHandler?()
-    default:
-      break
-    }
-  }
+  func selectItem(section: SettingsListSection, index: Int) {}
   
   func cell(collectionView: UICollectionView, indexPath: IndexPath, itemIdentifier: AnyHashable) -> UICollectionViewCell? {
-    switch itemIdentifier {
-    case let model as WalletsListWalletCell.Model:
-      let cell = collectionView.dequeueConfiguredReusableCell(using: walletCellRegistration, for: indexPath, item: model)
-      return cell
-    default: return nil
-    }
+    return nil
   }
 }
 
@@ -142,27 +124,64 @@ private extension SettingsRootListItemsProvider {
   
   func setupWalletSection() -> SettingsListSection {
     let wallet = settingsController.activeWallet()
-    let cellContentModel = WalletsListWalletCellContentView.Model(
-      emoji: wallet.emoji,
-      backgroundColor: wallet.tintColor.uiColor,
-      walletName: wallet.label,
-      walletTag: wallet.tag,
-      balance: TKLocales.Settings.Items.setup_wallet_description
+    let contentConfiguration = TKUIListItemContentView.Configuration(
+      leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
+        title: wallet.label.withTextStyle(
+          .label1,
+          color: .Text.primary,
+          alignment: .left
+        ),
+        tagViewModel: wallet.listTagConfiguration(),
+        subtitle: TKLocales.Settings.Items.setup_wallet_description.withTextStyle(
+          .body2,
+          color: .Text.secondary,
+          alignment: .left
+        ),
+        description: nil
+      ),
+      rightItemConfiguration: nil
     )
     
-    let cellModel = WalletsListWalletCell.Model(
-      identifier: "wallet",
-      accessoryType: .disclosureIndicator,
-      selectionHandler: { [weak self] in
+    let iconConfiguration: TKUIListItemIconView.Configuration.IconConfiguration
+    switch wallet.icon {
+    case .emoji(let emoji):
+      iconConfiguration = .emoji(TKUIListItemEmojiIconView.Configuration(
+        emoji: emoji,
+        backgroundColor: wallet.tintColor.uiColor
+      ))
+    case .icon(let image):
+      iconConfiguration = .image(TKUIListItemImageIconView.Configuration(
+        image: .image(image.image),
+        tintColor: .white,
+        backgroundColor: wallet.tintColor.uiColor,
+        size: CGSize(width: 44, height: 44),
+        cornerRadius: 22,
+        contentMode: .scaleAspectFit,
+        imageSize: CGSize(width: 22, height: 22)
+      ))
+    }
+
+    let listItemConfiguration = TKUIListItemView.Configuration(
+      iconConfiguration: TKUIListItemIconView.Configuration(
+        iconConfiguration: iconConfiguration,
+        alignment: .center
+      ),
+      contentConfiguration: contentConfiguration,
+      accessoryConfiguration: TKUIListItemAccessoryView.Configuration.none
+    )
+    
+    let configuration = TKUIListItemCell.Configuration(
+      id: "wallet",
+      listItemConfiguration: listItemConfiguration,
+      isHighlightable: true,
+      selectionClosure: { [weak self] in
         guard let self = self else { return }
         self.didTapEditWallet?(self.settingsController.activeWallet())
-      },
-      cellContentModel: cellContentModel
+      }
     )
-    
     return SettingsListSection(
       padding: NSDirectionalEdgeInsets(top: 14, leading: 16, bottom: 16, trailing: 16),
-      items: [cellModel]
+      items: [configuration]
     )
   }
   
@@ -321,6 +340,7 @@ private extension SettingsRootListItemsProvider {
         let actions = [
           UIAlertAction(title: .deleteDeleteButtonTitle, style: .destructive, handler: { [weak self] _ in
             do {
+              self?.analyticsProvider.logEvent(eventKey: .deleteWallet)
               try self?.settingsController.deleteAccount()
               self?.didTapDeleteAccount?()
             } catch {}
@@ -353,6 +373,7 @@ private extension SettingsRootListItemsProvider {
         let actions = [
           UIAlertAction(title: .deleteWatchTitle, style: .destructive, handler: { [weak self] _ in
             do {
+              self?.analyticsProvider.logEvent(eventKey: .deleteWallet)
               try self?.settingsController.deleteAccount()
               self?.didTapDeleteAccount?()
             } catch {}
@@ -378,6 +399,7 @@ private extension SettingsRootListItemsProvider {
         
         let actions = [
           UIAlertAction(title: .deleteDeleteButtonTitle, style: .destructive, handler: { [weak self] _ in
+            self?.analyticsProvider.logEvent(eventKey: .resetWallet)
             self?.didTapLogout?()
           }),
           UIAlertAction(title: .deleteCancelButtonTitle, style: .cancel)

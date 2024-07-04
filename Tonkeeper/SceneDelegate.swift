@@ -30,12 +30,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     guard let windowScene = (scene as? UIWindowScene) else { return }
     let window = TKWindow(windowScene: windowScene)
     let coordinator = App.AppCoordinator(router: TKCoordinator.WindowRouter(window: window),
-    coreAssembly: CoreAssembly(featureFlagsProvider: FeatureFlagsProvider(
-      isMarketRegionPickerAvailable: {
-      FirebaseConfigurator.configurator.isMarketRegionPickerAvailable
-      }, isBuySellLovely: {
-        FirebaseConfigurator.configurator.isBuySellLovely
-      }), isTonkeeperX: isTonkeeperX)
+                                         coreAssembly: CoreAssembly(featureFlagsProvider: FeatureFlagsProvider(
+                                          isMarketRegionPickerAvailable: {
+                                            FirebaseConfigurator.configurator.isMarketRegionPickerAvailable
+                                          }, isBuySellLovely: {
+                                            FirebaseConfigurator.configurator.isBuySellLovely
+                                          }), analyticsProvider: AnalyticsProvider(analyticsServices: AptabaseService()), isTonkeeperX: isTonkeeperX)
     )
     
     if let deeplink = connectionOptions.urlContexts.first?.url.absoluteString {

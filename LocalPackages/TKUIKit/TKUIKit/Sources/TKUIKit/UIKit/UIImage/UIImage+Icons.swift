@@ -267,6 +267,92 @@ public extension UIImage {
           .imageWithName("Icons/96/ton_icon")
         }
       }
+      public enum WalletIcons {
+        public static var bankCard: UIImage {
+          .imageWithName("Icons/WalletIcons/bank-card-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var chineseYuanCircle: UIImage {
+          .imageWithName("Icons/WalletIcons/chinese-yuan-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var dollarCircle: UIImage {
+          .imageWithName("Icons/WalletIcons/dollar-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var euroCircle: UIImage {
+          .imageWithName("Icons/WalletIcons/euro-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var flash: UIImage {
+          .imageWithName("Icons/WalletIcons/flash-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var flashCircle: UIImage {
+          .imageWithName("Icons/WalletIcons/flash-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var gear: UIImage {
+          .imageWithName("Icons/WalletIcons/gear-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var handRaised: UIImage {
+          .imageWithName("Icons/WalletIcons/hand-raised-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var hare: UIImage {
+          .imageWithName("Icons/WalletIcons/hare-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var inbox: UIImage {
+          .imageWithName("Icons/WalletIcons/inbox-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var indianRupeeCircle: UIImage {
+          .imageWithName("Icons/WalletIcons/indian-rupee-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var key: UIImage {
+          .imageWithName("Icons/WalletIcons/key-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var leaf: UIImage {
+          .imageWithName("Icons/WalletIcons/leaf-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var lock: UIImage {
+          .imageWithName("Icons/WalletIcons/lock-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var magnifyingGlassCircle: UIImage {
+          .imageWithName("Icons/WalletIcons/magnifying-glass-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var rubleCircle: UIImage {
+          .imageWithName("Icons/WalletIcons/ruble-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var snowflake: UIImage {
+          .imageWithName("Icons/WalletIcons/snowflake-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var sparkles: UIImage {
+          .imageWithName("Icons/WalletIcons/sparkles-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var sterlingCircle: UIImage {
+          .imageWithName("Icons/WalletIcons/sterling-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var sun: UIImage {
+          .imageWithName("Icons/WalletIcons/sun-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var wallet: UIImage {
+          .imageWithName("Icons/WalletIcons/wallet-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+      }
     }
   }
 }

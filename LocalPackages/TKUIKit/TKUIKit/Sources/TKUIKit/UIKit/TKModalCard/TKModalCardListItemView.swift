@@ -45,12 +45,6 @@ final class TKModalCardListItemView: UIControl, ConfigurableView {
     case .value(let value, let numberOfLines, let isFullString):
       isRightTopFullString = isFullString
       rightTopLabel.attributedText = value
-        .withTextStyle(
-          .label1,
-          color: .Text.primary,
-          alignment: numberOfLines == 0 ? .right : .left,
-          lineBreakMode: .byTruncatingMiddle
-        )
       rightTopLabel.isHidden = false
       rightTopLabel.numberOfLines = numberOfLines
       rightTopShimmerView.isHidden = true
@@ -64,8 +58,7 @@ final class TKModalCardListItemView: UIControl, ConfigurableView {
     
     switch model.rightBottom {
     case .value(let value, let numberOfLines, _):
-      rightBottomLabel.attributedText = value?
-        .withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingMiddle)
+      rightBottomLabel.attributedText = value
       rightBottomLabel.isHidden = false
       rightBottomLabel.numberOfLines = numberOfLines
       rightBottomShimmerView.isHidden = true

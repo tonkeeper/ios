@@ -30,7 +30,8 @@ private extension SettingsCoordinator {
       settingsController: keeperCoreMainAssembly.settingsController,
       urlOpener: coreAssembly.urlOpener(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
-      appSettings: coreAssembly.appSettings
+      appSettings: coreAssembly.appSettings,
+      analyticsProvider: coreAssembly.analyticsProvider
     )
     let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
     
@@ -87,7 +88,7 @@ private extension SettingsCoordinator {
     let module = addWalletModuleModule.createCustomizeWalletModule(
       name: wallet.label,
       tintColor: wallet.tintColor,
-      emoji: wallet.emoji,
+      icon: wallet.metaData.icon,
       configurator: EditWalletCustomizeWalletViewModelConfigurator()
     )
     
@@ -109,7 +110,7 @@ private extension SettingsCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      icon: .emoji(model.emoji))
+      icon: model.icon)
     do {
       try controller.updateWallet(wallet: wallet, metaData: metaData)
     } catch {

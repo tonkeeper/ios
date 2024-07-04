@@ -8,9 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		50C356522BE39C0500539266 /* TKLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = 50C356512BE39C0500539266 /* TKLocalize */; };
+		50F04B8A2C2E9B660043EE4B /* AptabaseConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F04B892C2E9B660043EE4B /* AptabaseConfigurator.swift */; };
 		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
+		7D3143A02C2EC8C70022B33B /* TKUIKitDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 7D31439F2C2EC8C70022B33B /* TKUIKitDynamic */; };
 		7D3F25DB2AC19417002DF1B7 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */; };
 		7D3F25DC2AC19417002DF1B7 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D19EB642ABDB58C00BDE7FA /* SwiftUI.framework */; };
 		7D3F25DF2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25DE2AC19417002DF1B7 /* TonkeeperWidgetBundle.swift */; };
@@ -144,8 +146,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		504D92722C32A46E00B12DA6 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92732C32A48100B12DA6 /* uz */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uz; path = uz.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92742C32A48600B12DA6 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92752C32A48F00B12DA6 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
+		504D92762C32A4B300B12DA6 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/LaunchScreen.strings"; sourceTree = "<group>"; };
+		504D92772C32A74D00B12DA6 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		509051DD2BE1661E00B41894 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		50ADFE3C2BE160D3000E1C0A /* TKLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLocalize; sourceTree = "<group>"; };
+		50F04B892C2E9B660043EE4B /* AptabaseConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AptabaseConfigurator.swift; sourceTree = "<group>"; };
 		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -247,6 +256,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7D3143A02C2EC8C70022B33B /* TKUIKitDynamic in Frameworks */,
 				C34C70672BE1157F00143AC8 /* WalletCore in Frameworks */,
 				7DDBBFED2ACCA10E00F811A5 /* Intents.framework in Frameworks */,
 				C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */,
@@ -411,6 +421,7 @@
 				7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */,
 				7DB8FB792A1BCFCD005B4B11 /* Resources */,
 				C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */,
+				50F04B892C2E9B660043EE4B /* AptabaseConfigurator.swift */,
 			);
 			path = Tonkeeper;
 			sourceTree = "<group>";
@@ -536,6 +547,7 @@
 			packageProductDependencies = (
 				C32C7C462BCD0D8E00785B6A /* TKCore */,
 				C34C70662BE1157F00143AC8 /* WalletCore */,
+				7D31439F2C2EC8C70022B33B /* TKUIKitDynamic */,
 			);
 			productName = TonkeeperIntents;
 			productReference = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */;
@@ -570,6 +582,12 @@
 				en,
 				Base,
 				ru,
+				tr,
+				uz,
+				id,
+				uk,
+				"zh-Hans",
+				de,
 			);
 			mainGroup = 7DB8FB592A1BCC92005B4B11;
 			packageReferences = (
@@ -703,6 +721,7 @@
 				7D3F260F2AC19F79002DF1B7 /* RateWidget.intentdefinition in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
+				50F04B8A2C2E9B660043EE4B /* AptabaseConfigurator.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
 				C37DDDB82BCEA5AB002A486E /* FirebaseConfigurator.swift in Sources */,
 			);
@@ -738,6 +757,12 @@
 			children = (
 				7DB8FB712A1BCC92005B4B11 /* Base */,
 				509051DD2BE1661E00B41894 /* ru */,
+				504D92722C32A46E00B12DA6 /* tr */,
+				504D92732C32A48100B12DA6 /* uz */,
+				504D92742C32A48600B12DA6 /* id */,
+				504D92752C32A48F00B12DA6 /* uk */,
+				504D92762C32A4B300B12DA6 /* zh-Hans */,
+				504D92772C32A74D00B12DA6 /* de */,
 			);
 			name = LaunchScreen.storyboard;
 			sourceTree = "<group>";
@@ -1518,6 +1543,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */;
 			productName = Lottie;
+		};
+		7D31439F2C2EC8C70022B33B /* TKUIKitDynamic */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TKUIKitDynamic;
 		};
 		7D5A18112A5406CB00793769 /* Kingfisher */ = {
 			isa = XCSwiftPackageProductDependency;

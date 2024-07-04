@@ -168,7 +168,8 @@ private extension WalletTransferSignCoordinator {
     guard let url = try? createTonSignURL(transfer: transfer.signingMessage.endCell().toBoc(),
                                           publicKey: publicKey,
                                           revision: revision,
-                                          network: network) else { return }
+                                          network: network,
+                                          isOnDevice: false) else { return }
     let module = SignerSignAssembly.module(
       url: url,
       wallet: wallet,
@@ -201,7 +202,8 @@ private extension WalletTransferSignCoordinator {
     guard let url = try? createTonSignURL(transfer: transfer.signingMessage.endCell().toBoc(),
                                           publicKey: publicKey,
                                           revision: revision,
-                                          network: network) else { return }
+                                          network: network,
+                                          isOnDevice: true) else { return }
     externalSignHandler = { [weak self] data in
       guard let data else {
         self?.didCancel?()
@@ -212,12 +214,19 @@ private extension WalletTransferSignCoordinator {
     coreAssembly.urlOpener().open(url: url)
   }
   
-  func createTonSignURL(transfer: Data, publicKey: TonSwift.PublicKey, revision: WalletContractVersion, network: Network) -> URL? {
+  func createTonSignURL(transfer: Data, 
+                        publicKey: TonSwift.PublicKey,
+                        revision: WalletContractVersion,
+                        network: Network,
+                        isOnDevice: Bool) -> URL? {
     let hexPublicKey = publicKey.data.hexString()
     let hexBody = transfer.hexString()
     let v = revision.rawValue.lowercased()
     
-    let string = "tonsign://v1/?pk=\(hexPublicKey)&body=\(hexBody)&v=\(v)&tn=\(network.rawValue)&return=\("tonkeeperx://publish".percentEncoded ?? "")"
+    var string = "tonsign://v1/?pk=\(hexPublicKey)&body=\(hexBody)&v=\(v)&tn=\(network.rawValue)"
+    if isOnDevice {
+      string.append("&return=\("tonkeeperx://publish".percentEncoded ?? "")")
+    }
     return URL(string: string)
   }
 }

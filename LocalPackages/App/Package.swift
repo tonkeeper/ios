@@ -11,6 +11,7 @@ let package = Package(
       targets: ["App"]),
   ],
   dependencies: [
+    .package(url: "https://github.com/aptabase/aptabase-swift.git", .upToNextMajor(from: "0.3.9")),
     .package(url: "https://github.com/luximetr/AnyFormatKit.git", .upToNextMajor(from: "2.5.2")),
     .package(path: "../core-swift"),
     .package(path: "../TKCore"),
@@ -23,6 +24,7 @@ let package = Package(
     .target(
       name: "App",
       dependencies: [
+        .product(name: "Aptabase", package: "aptabase-swift"),
         .product(name: "AnyFormatKit", package: "AnyFormatKit"),
         .product(name: "TKUIKitDynamic", package: "TKUIKit"),
         .product(name: "TKScreenKit", package: "TKScreenKit"),

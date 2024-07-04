@@ -24,7 +24,7 @@ protocol TonConnectConnectModuleInput: AnyObject {
 
 protocol TonConnectConnectViewModel: AnyObject {
   var headerView: ((String?, URL?) -> UIView)? { get set }
-  var walletPickerView: ((TonConnectConnectWalletButtonContentView.Model) -> UIControl)? { get set }
+  var walletPickerView: ((TonConnectConnectWalletButton.Model) -> UIControl)? { get set }
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)? { get set }
   
   func viewDidLoad()
@@ -48,7 +48,7 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   // MARK: - TonConnectConnectViewModel
   
   var headerView: ((String?, URL?) -> UIView)?
-  var walletPickerView: ((TonConnectConnectWalletButtonContentView.Model) -> UIControl)?
+  var walletPickerView: ((TonConnectConnectWalletButton.Model) -> UIControl)?
   var didUpdateConfiguration: ((TKModalCardViewController.Configuration) -> Void)?
  
   func viewDidLoad() {

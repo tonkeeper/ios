@@ -66,7 +66,7 @@ private extension CollectibleDetailsPresenter {
     }
     
     var listViewModel = model.details.items.map {
-      TKModalCardViewController.Configuration.ListItem(
+      TKModalCardViewController.Configuration.ListItem.defaultItem(
         left: $0.title,
         rightTop: .value($0.value.short, numberOfLines: 1, isFullString: false),
         rightBottom: .value(nil, numberOfLines: 1, isFullString: false),
@@ -75,7 +75,7 @@ private extension CollectibleDetailsPresenter {
     }
     
     if let expirationDateItem = model.expirationDateItem, case let .value(value) = expirationDateItem {
-      let listItem = TKModalCardViewController.Configuration.ListItem(
+      let listItem = TKModalCardViewController.Configuration.ListItem.defaultItem(
         left: .expirationDateTitle,
         rightTop: .value(value, numberOfLines: 1, isFullString: false),
         rightBottom: .value(nil, numberOfLines: 1, isFullString: false)

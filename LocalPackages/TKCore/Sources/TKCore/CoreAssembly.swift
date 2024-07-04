@@ -12,12 +12,15 @@ public final class CoreAssembly {
   public let appStateTracker = AppStateTracker()
   public let reachabilityTracker = ReachabilityTracker()
   public let featureFlagsProvider: FeatureFlagsProvider
+  public let analyticsProvider: AnalyticsProvider
   public let isTonkeeperX: Bool
   public lazy var secureMode = SecureMode(appSettings: appSettings)
   
   public init(featureFlagsProvider: FeatureFlagsProvider = FeatureFlagsProvider(),
+              analyticsProvider: AnalyticsProvider = AnalyticsProvider(),
               isTonkeeperX: Bool = false) {
     self.featureFlagsProvider = featureFlagsProvider
+    self.analyticsProvider = analyticsProvider
     self.isTonkeeperX = isTonkeeperX
   }
   

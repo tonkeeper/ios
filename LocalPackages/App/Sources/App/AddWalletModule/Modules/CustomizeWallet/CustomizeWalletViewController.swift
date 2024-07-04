@@ -44,7 +44,7 @@ final class CustomizeWalletViewController: GenericViewViewController<CustomizeWa
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
       self.customView.keyboardHeight = keyboardHeight
       self.customView.colorPickerView.alpha = 0.32
-      self.customView.emojiPickerView.alpha = 0.32
+      self.customView.iconPickerView.alpha = 0.32
     }
   }
   
@@ -53,7 +53,7 @@ final class CustomizeWalletViewController: GenericViewViewController<CustomizeWa
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
       self.customView.keyboardHeight = 0
       self.customView.colorPickerView.alpha = 1
-      self.customView.emojiPickerView.alpha = 1
+      self.customView.iconPickerView.alpha = 1
     }
   }
 }
@@ -64,9 +64,13 @@ private extension CustomizeWalletViewController {
       customView?.configure(model: model)
     }
     
-    viewModel.didSelectEmoji = { [weak customView] emoji in
-      customView?.badgeView.emoji = emoji.emoji
+    viewModel.didSelectWalletIcon = { [weak customView] icon in
+      customView?.badgeView.icon = icon
     }
+    
+//    viewModel.didSelectEmoji = { [weak customView] emoji in
+//      customView?.badgeView.emoji = emoji.emoji
+//    }
     
     viewModel.didSelectColor = { [weak customView] color in
       customView?.badgeView.color = color
@@ -84,18 +88,22 @@ private extension CustomizeWalletViewController {
   func setupViewActions() {
     customView.walletNameTextField.didBeginEditing = { [weak self] in
       self?.customView.colorPickerView.isUserInteractionEnabled = false
-      self?.customView.emojiPickerView.isUserInteractionEnabled = false
+      self?.customView.iconPickerView.isUserInteractionEnabled = false
       self?.tapGestureRecognizer.isEnabled = true
     }
     
     customView.walletNameTextField.didEndEditing = { [weak self] in
       self?.customView.colorPickerView.isUserInteractionEnabled = true
-      self?.customView.emojiPickerView.isUserInteractionEnabled = true
+      self?.customView.iconPickerView.isUserInteractionEnabled = true
       self?.tapGestureRecognizer.isEnabled = false
     }
     
     customView.walletNameTextField.didUpdateText = { [weak self] in
       self?.viewModel.setWalletName($0)
+    }
+    
+    customView.iconPickerView.didSelectIcon = { [weak self] in
+      self?.viewModel.setIcon($0)
     }
   }
   

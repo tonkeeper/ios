@@ -1,8 +1,12 @@
 import UIKit
 import TKUIKit
 import TKCore
+import KeeperCore
 
-final class WalletEmojiPickerView: UIView, ConfigurableView {
+final class WalletIconPickerView: UIView, ConfigurableView {
+  
+  var didSelectIcon: ((WalletIcon) -> Void)?
+  
   lazy var collectionView: UICollectionView = {
     let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: createLayout())
     return collectionView
@@ -11,8 +15,16 @@ final class WalletEmojiPickerView: UIView, ConfigurableView {
   private let topGradientView = TKGradientView(color: .Background.page, direction: .topToBottom)
   private let bottomGradientView = TKGradientView(color: .Background.page, direction: .bottomToTop)
   
-  private let cellConfig = UICollectionView.CellRegistration<WalletEmojiPickerViewCell, Model.Item> { cell, indexPath, itemIdentifier in
-    cell.configure(model: itemIdentifier)
+  private let cellConfig = UICollectionView.CellRegistration<WalletIconPickerViewCell, WalletIcon> { cell, indexPath, itemIdentifier in
+    let model: WalletIconPickerViewCell.Model
+    switch itemIdentifier {
+    case .emoji(let emoji):
+      model = .emoji(emoji)
+    case .icon(let image):
+      model = .image(image.image)
+    }
+    
+    cell.configure(model: model)
   }
   
   private var model = Model(items: [])
@@ -20,7 +32,7 @@ final class WalletEmojiPickerView: UIView, ConfigurableView {
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
-    collectionView.register(WalletEmojiPickerViewCell.self, forCellWithReuseIdentifier: "cell")
+    collectionView.register(WalletIconPickerViewCell.self, forCellWithReuseIdentifier: "cell")
   }
   
   required init?(coder: NSCoder) {
@@ -28,12 +40,7 @@ final class WalletEmojiPickerView: UIView, ConfigurableView {
   }
   
   struct Model {
-    struct Item {
-      let emoji: EmojisDataSource.Emoji
-      let selectHandler: (() -> Void)?
-    }
-    
-    let items: [Item]
+    let items: [WalletIcon]
   }
   
   func configure(model: Model) {
@@ -42,7 +49,7 @@ final class WalletEmojiPickerView: UIView, ConfigurableView {
   }
 }
 
-private extension WalletEmojiPickerView {
+private extension WalletIconPickerView {
   func setup() {
     topGradientView.isUserInteractionEnabled = false
     bottomGradientView.isUserInteractionEnabled = false
@@ -120,7 +127,7 @@ private extension WalletEmojiPickerView {
   }
 }
 
-extension WalletEmojiPickerView: UICollectionViewDataSource {
+extension WalletIconPickerView: UICollectionViewDataSource {
   func collectionView(_ collectionView: UICollectionView,
                       numberOfItemsInSection section: Int) -> Int {
     return model.items.count
@@ -137,14 +144,14 @@ extension WalletEmojiPickerView: UICollectionViewDataSource {
   }
 }
 
-extension WalletEmojiPickerView: UICollectionViewDelegate {
+extension WalletIconPickerView: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView,
                       didSelectItemAt indexPath: IndexPath) {
     collectionView.scrollToItem(
       at: indexPath,
       at: .centeredVertically,
       animated: true)
-    model.items[indexPath.row].selectHandler?()
+    didSelectIcon?(model.items[indexPath.row])
   }
 }
 

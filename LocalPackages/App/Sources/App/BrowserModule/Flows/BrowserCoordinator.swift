@@ -43,6 +43,8 @@ private extension BrowserCoordinator {
       self?.openDapp(dapp, fromViewController: router.rootViewController)
     }
     
+    self.coreAssembly.analyticsProvider.logEvent(eventKey: .openBrowser)
+    
     router.push(viewController: module.view, animated: false)
   }
   
@@ -60,7 +62,7 @@ private extension BrowserCoordinator {
   
   func openDapp(_ dapp: Dapp, fromViewController: UIViewController) {
     let messageHandler = DefaultDappMessageHandler()
-    let module = DappAssembly.module(dapp: dapp, messageHandler: messageHandler)
+    let module = DappAssembly.module(dapp: dapp, analyticsProvider: coreAssembly.analyticsProvider, messageHandler: messageHandler)
     
     messageHandler.connect = { [weak self, weak moduleView = module.view] protocolVersion, payload, completion in
       guard let moduleView else { 

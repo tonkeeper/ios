@@ -108,8 +108,8 @@ private extension PairLedgerCoordinator {
     let metaData = WalletMetaData(
       label: model.name,
       tintColor: model.tintColor,
-      icon: .emoji(model.emoji))
-    try await addController.importLedgerWallet(
+      icon: model.icon)
+    try addController.importLedgerWallet(
       publicKey: publicKey,
       revisions: revisions,
       device: device,

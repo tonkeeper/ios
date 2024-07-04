@@ -4,7 +4,7 @@ import UIKit
 import KeeperCore
 
 protocol WalletContainerModuleOutput: AnyObject {
-  var didTapWalletButton: (() -> Void)? { get set }
+  var walletButtonHandler: (() -> Void)? { get set }
   var didTapSettingsButton: (() -> Void)? { get set }
 }
 
@@ -12,13 +12,14 @@ protocol WalletContainerViewModel: AnyObject {
   var didUpdateModel: ((WalletContainerView.Model) -> Void)? { get set }
   
   func viewDidLoad()
+  func didTapWalletButton()
 }
 
 final class WalletContainerViewModelImplementation: WalletContainerViewModel, WalletContainerModuleOutput {
   
   // MARK: - WalletContainerModuleOutput
   
-  var didTapWalletButton: (() -> Void)?
+  var walletButtonHandler: (() -> Void)?
   var didTapSettingsButton: (() -> Void)?
   
   // MARK: - WalletContainerViewModel
@@ -42,6 +43,10 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
       didUpdateModel?(createModel(wallet: wallet))
     }
   }
+  
+  func didTapWalletButton() {
+    walletButtonHandler?()
+  }
 
   // MARK: - Dependencies
   
@@ -56,24 +61,20 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 
 private extension WalletContainerViewModelImplementation {
   func createModel(wallet: Wallet) -> WalletContainerView.Model {
-    let walletButtonConfiguration = TKButton.Configuration(
-      content: TKButton.Configuration.Content(title: .plainString(wallet.emojiLabel),
-                                              icon: .TKUIKit.Icons.Size16.chevronDown),
-      contentPadding: UIEdgeInsets(top: 10, left: 12, bottom: 10, right: 12),
-      padding: .zero,
-      spacing: 6,
-      textStyle: .label2,
-      textColor: .Button.primaryForeground,
-      iconPosition: .right,
-      iconTintColor: .Button.primaryForeground,
-      backgroundColors: [.normal: wallet.tintColor.uiColor,
-                         .highlighted: wallet.tintColor.uiColor.withAlphaComponent(0.88)],
-      contentAlpha: [.normal: 1],
-      cornerRadius: 20) { [weak self] in
-        UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-        self?.didTapWalletButton?()
-      }
+    let icon: WalletContainerWalletButton.Model.Icon
+    switch wallet.icon {
+    case .emoji(let emoji):
+      icon = .emoji(emoji)
+    case .icon(let image):
+      icon = .image(image.image)
+    }
     
+    let walletButtonConfiguration = WalletContainerWalletButton.Model(
+      title: wallet.label,
+      icon: icon,
+      color: wallet.tintColor.uiColor
+    )
+
     var settingsButtonConfiguration = TKButton.Configuration.accentButtonConfiguration(
       padding: UIEdgeInsets(
         top: 10,

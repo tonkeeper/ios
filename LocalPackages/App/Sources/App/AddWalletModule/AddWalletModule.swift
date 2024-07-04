@@ -38,13 +38,14 @@ struct AddWalletModule {
   func createCreateWalletCoordinator(router: ViewControllerRouter) -> CreateWalletCoordinator {
     let coordinator = CreateWalletCoordinator(
       router: router,
+      analyticsProvider: dependencies.coreAssembly.analyticsProvider,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
       storesAssembly: dependencies.storesAssembly,
       customizeWalletModule: {
         self.createCustomizeWalletModule(
           name: nil,
           tintColor: nil,
-          emoji: nil,
+          icon: nil,
           configurator: AddWalletCustomizeWalletViewModelConfigurator()
         )
       }
@@ -55,6 +56,7 @@ struct AddWalletModule {
   func createImportWalletCoordinator(router: NavigationControllerRouter, isTestnet: Bool) -> ImportWalletCoordinator {
     let coordinator = ImportWalletCoordinator(
       router: router,
+      analyticsProvider: dependencies.coreAssembly.analyticsProvider,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
       storesAssembly: dependencies.storesAssembly,
       isTestnet: isTestnet,
@@ -62,7 +64,7 @@ struct AddWalletModule {
         self.createCustomizeWalletModule(
           name: nil,
           tintColor: nil,
-          emoji: nil,
+          icon: nil,
           configurator: AddWalletCustomizeWalletViewModelConfigurator()
         )
       }
@@ -72,12 +74,12 @@ struct AddWalletModule {
   
   func createCustomizeWalletModule(name: String? = nil,
                                    tintColor: WalletTintColor? = nil,
-                                   emoji: String? = nil,
+                                   icon: WalletIcon? = nil,
                                    configurator: CustomizeWalletViewModelConfigurator) -> MVVMModule<UIViewController, CustomizeWalletModuleOutput, Void> {
     return CustomizeWalletAssembly.module(
       name: name,
       tintColor: tintColor,
-      emoji: emoji,
+      icon: icon,
       configurator: configurator
     )
   }
@@ -94,7 +96,7 @@ struct AddWalletModule {
         self.createCustomizeWalletModule(
           name: name,
           tintColor: nil,
-          emoji: nil,
+          icon: nil,
           configurator: AddWalletCustomizeWalletViewModelConfigurator()
         )
       }
@@ -145,12 +147,13 @@ private extension AddWalletModule {
   func createImportWatchOnlyWalletCoordinator(router: NavigationControllerRouter) -> ImportWatchOnlyWalletCoordinator {
     let coordinator = ImportWatchOnlyWalletCoordinator(
       router: router,
+      analyticsProvider: dependencies.coreAssembly.analyticsProvider,
       walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
       customizeWalletModule: { name in
         self.createCustomizeWalletModule(
           name: name,
           tintColor: nil,
-          emoji: nil,
+          icon: nil,
           configurator: AddWalletCustomizeWalletViewModelConfigurator()
         )
       }
