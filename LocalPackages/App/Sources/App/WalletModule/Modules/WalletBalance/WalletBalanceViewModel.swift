@@ -25,26 +25,30 @@ protocol WalletBalanceModuleInput: AnyObject {}
 protocol WalletBalanceViewModel: AnyObject {
   var didUpdateSnapshot: ((_ snapshot: WalletBalanceViewController.Snapshot, _ isAnimated: Bool) -> Void)? { get set }
   
+  var didUpdateItems: (([WalletBalanceItem: WalletBalanceListCell.Model]) -> Void)? { get set }
+  
   var didChangeWallet: (() -> Void)? { get set }
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)? { get set }
   var didCopy: ((ToastPresenter.Configuration) -> Void)? { get set }
   
   func viewDidLoad()
   func didTapFinishSetupButton()
-  func getBalanceItemCellModel(item: WalletBalanceItem) -> TKUIListItemCell.Configuration?
+  func getBalanceItemCellModel(item: WalletBalanceItem) -> WalletBalanceListCell.Model?
   func didSelectItem(_ item: WalletBalanceItem)
 }
 
 final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput, WalletBalanceModuleInput {
   
   private struct State {
-    let balanceItems: [WalletBalanceBalanceModel.BalanceListItem]
+    let balanceItems: WalletBalanceBalanceModel.BalanceListItems
     let setupState: WalletBalanceSetupModel.State
   }
   
   // MARK: - WalletBalanceModuleOutput
   
   var didUpdateSnapshot: ((_ snapshot: WalletBalanceViewController.Snapshot, _ isAnimated: Bool) -> Void)?
+  
+  var didUpdateItems: (([WalletBalanceItem: WalletBalanceListCell.Model]) -> Void)?
   
   var didSelectTon: ((Wallet) -> Void)?
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
@@ -76,7 +80,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }
   }
   
-  func getBalanceItemCellModel(item: WalletBalanceItem) -> TKUIListItemCell.Configuration? {
+  func getBalanceItemCellModel(item: WalletBalanceItem) -> WalletBalanceListCell.Model? {
     return cellModels[item]
   }
   
@@ -91,8 +95,13 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   // MARK: - State
 
   private let actor = SerialActor()
-  private var state = State(balanceItems: [], setupState: .none)
-  private var cellModels = [WalletBalanceItem: TKUIListItemCell.Configuration]()
+  private var state = State(
+    balanceItems: WalletBalanceBalanceModel.BalanceListItems(
+      tonItem: nil, usdtItem: nil, jettonsItems: [], stakingItems: []
+    ),
+    setupState: .none)
+  private var cellModels = [WalletBalanceItem: WalletBalanceListCell.Model]()
+  private var stakingUpdateTimer: Timer?
 
   // MARK: - Mapper
   
@@ -171,25 +180,62 @@ private extension WalletBalanceViewModelImplementation {
     }
   }
 
-  func didUpdateBalanceItems(_ items: [WalletBalanceBalanceModel.BalanceListItem], isSecure: Bool) {
+  func didUpdateBalanceItems(_ items: WalletBalanceBalanceModel.BalanceListItems, isSecure: Bool) {
     Task {
       await self.actor.addTask(block: {
+        self.stakingUpdateTimer?.invalidate()
+        self.stakingUpdateTimer = nil
+        
         let wallet = await self.walletsStore.getState().activeWallet
-        let models = items.reduce([WalletBalanceItem: TKUIListItemCell.Configuration]()) { result, item in
-          var result = result
-          result[WalletBalanceItem(id: item.id)] = self.listMapper.mapItem(item, isSecure: isSecure, selectionHandler: {
-            switch item.type {
-            case .ton:
-              self.didSelectTon?(wallet)
-            case .jetton(let jettonItem):
-              self.didSelectJetton?(wallet, jettonItem, !item.price.isZero)
-            case .stacking(let info):
-              print("OPEN STACKING")
-            }
-          })
-          return result
+        var models = [WalletBalanceItem: WalletBalanceListCell.Model]()
+        
+        if let tonItem = items.tonItem {
+          models[WalletBalanceItem(id: tonItem.id)] = self.listMapper.mapTonItem(
+            tonItem,
+            isSecure: isSecure,
+            selectionHandler: { [weak self] in
+              self?.didSelectTon?(wallet)
+            })
         }
         
+        if let tonUSDTItem = items.usdtItem {
+          models[WalletBalanceItem(id: tonUSDTItem.id)] = self.listMapper.mapJettonItem(
+            tonUSDTItem,
+            isSecure: isSecure,
+            selectionHandler: { [weak self] in
+              self?.didSelectJetton?(wallet, tonUSDTItem.jetton, !tonUSDTItem.price.isZero)
+            })
+        }
+        
+        items.stakingItems.forEach { item in
+          models[WalletBalanceItem(id: item.id)] = self.listMapper.mapStakingItem(
+            item,
+            isSecure: isSecure,
+            selectionHandler: {
+              print("Open staking")
+            },
+            stakingCollectHandler: {
+              print("Collect")
+            })
+        }
+        
+        if !items.stakingItems.isEmpty {
+          let timer = Timer(timeInterval: 1, repeats: true) { [weak self, stakingItems = items.stakingItems] timer in
+            self?.updateStakingItemsOnTimer(stakingItems: stakingItems)
+          }
+          timer.tolerance = 0.1
+          RunLoop.main.add(timer, forMode: .common)
+          self.stakingUpdateTimer = timer
+        }
+        
+        items.jettonsItems.forEach { item in
+          models[WalletBalanceItem(id: item.id)] = self.listMapper.mapJettonItem(
+            item,
+            isSecure: isSecure) { [weak self] in
+              self?.didSelectJetton?(wallet, item.jetton, !item.price.isZero)
+            }
+        }
+
         let state = State(balanceItems: items,
                           setupState: self.state.setupState)
         let snapshot = self.createSnapshot(state: state)
@@ -270,7 +316,15 @@ private extension WalletBalanceViewModelImplementation {
       break
     }
     
-    let items = state.balanceItems.map { WalletBalanceItem(id: $0.id) }
+    var items = [WalletBalanceItem]()
+    if let tonItem = state.balanceItems.tonItem {
+      items.append(WalletBalanceItem(id: tonItem.id))
+    }
+    if let usdtItem = state.balanceItems.usdtItem {
+      items.append(WalletBalanceItem(id: usdtItem.id))
+    }
+    items.append(contentsOf: state.balanceItems.stakingItems.map { WalletBalanceItem(id: $0.id) })
+    items.append(contentsOf: state.balanceItems.jettonsItems.map { WalletBalanceItem(id: $0.id) })
 
     snapshot.appendSections([.balance])
     snapshot.appendItems(items, toSection: .balance)
@@ -325,6 +379,32 @@ private extension WalletBalanceViewModelImplementation {
     
     DispatchQueue.main.async {
       self.didUpdateHeader?(model)
+    }
+  }
+  
+  func updateStakingItemsOnTimer(stakingItems: [WalletBalanceBalanceModel.BalanceListStakingItem]) {
+    let cellModels = self.cellModels
+    Task {
+      await self.actor.addTask(block: {
+        var models = cellModels
+        let isSecure = await self.secureMode.isSecure
+        stakingItems.forEach { item in
+          models[WalletBalanceItem(id: item.id)] = self.listMapper.mapStakingItem(
+            item,
+            isSecure: isSecure,
+            selectionHandler: {
+              print("Open staking")
+            },
+            stakingCollectHandler: {
+              print("Collect")
+            })
+        }
+        
+        await MainActor.run { [models] in
+          self.cellModels = models
+          self.didUpdateItems?(models)
+        }
+      })
     }
   }
   

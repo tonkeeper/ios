@@ -9,6 +9,12 @@ struct WalletBalanceListMapper {
   
   let imageLoader = ImageLoader()
   
+  private let dateComponentsFormatter: DateComponentsFormatter = {
+    let formatter = DateComponentsFormatter()
+    formatter.allowedUnits = [.hour, .minute, .second]
+    return formatter
+  }()
+  
   private let amountFormatter: AmountFormatter
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let rateConverter: RateConverter
@@ -21,9 +27,9 @@ struct WalletBalanceListMapper {
     self.rateConverter = rateConverter
   }
   
-  func mapItem(_ item: WalletBalanceBalanceModel.BalanceListItem,
-               isSecure: Bool,
-               selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+  func mapTonItem(_ item: WalletBalanceBalanceModel.BalanceListTonItem,
+                  isSecure: Bool,
+                  selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
     let amount = amountFormatter.formatAmount(
       item.amount,
       fractionDigits: item.fractionalDigits,
@@ -36,50 +42,20 @@ struct WalletBalanceListMapper {
       currency: item.currency
     )
     
-    let price: String = {
-      switch item.type {
-      case .ton, .jetton:
-        return decimalAmountFormatter.format(
-          amount: item.price,
-          currency: item.currency
-        )
-      case .stacking(_, let poolInfo):
-        return poolInfo?.name ?? decimalAmountFormatter.format(
-          amount: item.price,
-          currency: item.currency
-        )
-      }
-    }()
-
-    let verification: JettonInfo.Verification = {
-      switch item.type {
-      case .ton:
-        return .whitelist
-      case .stacking:
-        return .whitelist
-      case .jetton(let jettonItem):
-        return jettonItem.jettonInfo.verification
-      }
-    }()
-    
-    let image: TokenImage = {
-      switch item.image {
-      case .ton:
-        return .ton
-      case .url(let url):
-        return .url(url)
-      }
-    }()
-    
+    let price = decimalAmountFormatter.format(
+      amount: item.price,
+      currency: item.currency
+    )
     let itemModel = ItemModel(
       title: item.title,
-      tag: item.tag,
-      image: image,
+      tag: nil,
+      image: .ton,
       price: price,
       rateDiff: item.diff,
       amount: amount,
       convertedAmount: converted,
-      verification: verification
+      verification: .whitelist,
+      comment: nil
     )
     
     return mapItemModel(itemModel,
@@ -87,15 +63,145 @@ struct WalletBalanceListMapper {
                         selectionHandler: selectionHandler)
   }
   
+  func mapJettonItem(_ item: WalletBalanceBalanceModel.BalanceListJettonItem,
+                     isSecure: Bool,
+                     selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
+    let amount = amountFormatter.formatAmount(
+      item.amount,
+      fractionDigits: item.fractionalDigits,
+      maximumFractionDigits: 2
+    )
+    
+    let converted = decimalAmountFormatter.format(
+      amount: item.converted,
+      maximumFractionDigits: 2,
+      currency: item.currency
+    )
+    
+    let price = decimalAmountFormatter.format(
+      amount: item.price,
+      currency: item.currency
+    )
+
+    let verification: JettonInfo.Verification = {
+      item.jetton.jettonInfo.verification
+    }()
+    
+    let itemModel = ItemModel(
+      title: item.jetton.jettonInfo.symbol ?? item.jetton.jettonInfo.name,
+      tag: item.tag,
+      image: .url(item.jetton.jettonInfo.imageURL),
+      price: price,
+      rateDiff: item.diff,
+      amount: amount,
+      convertedAmount: converted,
+      verification: verification,
+      comment: nil
+    )
+    
+    return mapItemModel(itemModel,
+                        isSecure: isSecure,
+                        selectionHandler: selectionHandler)
+  }
+  
+  func mapStakingItem(_ item: WalletBalanceBalanceModel.BalanceListStakingItem,
+                      isSecure: Bool,
+                      selectionHandler: @escaping () -> Void,
+                      stakingCollectHandler: (() -> Void)?) -> WalletBalanceListCell.Model {
+    let amount = amountFormatter.formatAmount(
+      BigUInt(item.info.amount),
+      fractionDigits: TonInfo.fractionDigits,
+      maximumFractionDigits: 2
+    )
+    
+    let converted = decimalAmountFormatter.format(
+      amount: item.converted,
+      maximumFractionDigits: 2,
+      currency: item.currency
+    )
+    
+    let price = item.poolInfo?.name ?? decimalAmountFormatter.format(
+      amount: item.price,
+      currency: item.currency
+    )
+
+    let itemModel = ItemModel(
+      title: TKLocales.BalanceList.StackingItem.title,
+      tag: nil,
+      image: .ton,
+      price: price,
+      rateDiff: nil,
+      amount: amount,
+      convertedAmount: converted,
+      verification: .whitelist,
+      comment: mapStakingItemComment(item, stakingCollectHandler: stakingCollectHandler)
+    )
+    
+    return mapItemModel(itemModel,
+                        isSecure: isSecure,
+                        selectionHandler: selectionHandler)
+  }
+  
+  private func mapStakingItemComment(_ item: WalletBalanceBalanceModel.BalanceListStakingItem,
+                                     stakingCollectHandler: (() -> Void)?) -> ItemModel.Comment? {
+    
+    let estimate: String = {
+      if item.poolInfo?.liquidJettonMaster == JettonMasterAddress.tonstakers {
+        return " after the end of the cycle "
+      }
+      if let poolInfo = item.poolInfo, 
+          let formattedEstimatedTime = formatCycleEnd(timestamp: poolInfo.cycleEnd) {
+        return "\nin \(formattedEstimatedTime)"
+      }
+      return ""
+    }()
+    
+    if item.info.pendingDeposit > 0 {
+      let amount = amountFormatter.formatAmount(
+        BigUInt(item.info.pendingDeposit),
+        fractionDigits: TonInfo.fractionDigits,
+        maximumFractionDigits: 2,
+        symbol: TonInfo.symbol
+      )
+      let comment = "\(amount) stacked\(estimate)"
+      return ItemModel.Comment(text: comment, tapHandler: nil)
+    }
+    
+    if item.info.pendingWithdraw > 0 {
+      let amount = amountFormatter.formatAmount(
+        BigUInt(item.info.pendingWithdraw),
+        fractionDigits: TonInfo.fractionDigits,
+        maximumFractionDigits: 2,
+        symbol: TonInfo.symbol
+      )
+      let comment = "\(amount) unstacked\(estimate)"
+      return ItemModel.Comment(text: comment, tapHandler: nil)
+    }
+    
+    if item.info.readyWithdraw > 0 {
+      let amount = amountFormatter.formatAmount(
+        BigUInt(item.info.readyWithdraw),
+        fractionDigits: TonInfo.fractionDigits,
+        maximumFractionDigits: 2,
+        symbol: TonInfo.symbol
+      )
+      
+      let comment = "\(amount) ready.\nTap to collect"
+      return ItemModel.Comment(text: comment, tapHandler: stakingCollectHandler)
+    }
+    return nil
+  }
+
+  
   func mapSetupState(_ state: WalletBalanceSetupModel.State,
                      biometrySelectionHandler: @escaping () -> Void,
                      telegramChannelSelectionHandler: @escaping () -> Void,
-                     backupSelectionHandler: @escaping () -> Void) -> [WalletBalanceItem: TKUIListItemCell.Configuration] {
+                     backupSelectionHandler: @escaping () -> Void) -> [WalletBalanceItem: WalletBalanceListCell.Model] {
     switch state {
     case .none:
       return [:]
     case .setup(let setup):
-      var items = [WalletBalanceItem: TKUIListItemCell.Configuration]()
+      var items = [WalletBalanceItem: WalletBalanceListCell.Model]()
       items[WalletBalanceItem(id: WalletBalanceSetupItem.telegramChannel.rawValue)] = createTelegramChannelItem(
         selectionHandler: telegramChannelSelectionHandler
       )
@@ -113,7 +219,7 @@ struct WalletBalanceListMapper {
 
   private func mapItemModel(_ itemModel: ItemModel,
                             isSecure: Bool,
-                            selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+                            selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
     let title = itemModel.title.withTextStyle(
       .label1,
       color: .Text.primary,
@@ -231,14 +337,19 @@ struct WalletBalanceListMapper {
       accessoryConfiguration: .none
     )
     
-    return TKUIListItemCell.Configuration(
-      id: "",
+    var commentConfiguration: TKCommentView.Model?
+    if let comment = itemModel.comment {
+      commentConfiguration = TKCommentView.Model(comment: comment.text, tapClosure: comment.tapHandler)
+    }
+    
+    return WalletBalanceListCell.Model(
       listItemConfiguration: listItemConfiguration,
+      commentConfiguration: commentConfiguration,
       selectionClosure: selectionHandler
     )
   }
   
-  private func createTelegramChannelItem(selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+  private func createTelegramChannelItem(selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
     createSetupItem(
       description: "Join Tonkeeper channel",
       icon: .TKUIKit.Icons.Size28.telegram,
@@ -248,7 +359,7 @@ struct WalletBalanceListMapper {
     )
   }
   
-  private func createBiometryItem(selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+  private func createBiometryItem(selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
     let title: String
     let icon: UIImage
     
@@ -288,7 +399,7 @@ struct WalletBalanceListMapper {
     )
   }
   
-  private func createBackupItem(selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+  private func createBackupItem(selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
     createSetupItem(
       description: TKLocales.FinishSetup.backup,
       icon: .TKUIKit.Icons.Size28.key,
@@ -302,7 +413,7 @@ struct WalletBalanceListMapper {
                                icon: UIImage,
                                iconColor: UIColor,
                                accessory: TKUIListItemAccessoryView.Configuration,
-                               selectionHandler: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+                               selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
     let leftItemConfiguration = TKUIListItemContentLeftItem.Configuration(
       title: nil,
       tagViewModel: nil,
@@ -339,11 +450,19 @@ struct WalletBalanceListMapper {
       accessoryConfiguration: accessory
     )
     
-    return TKUIListItemCell.Configuration(
-      id: "",
+    return WalletBalanceListCell.Model(
       listItemConfiguration: listItemConfiguration,
       selectionClosure: selectionHandler
     )
+  }
+  
+  func formatCycleEnd(timestamp: TimeInterval) -> String? {
+    let estimateDate = Date(timeIntervalSince1970: timestamp)
+    let components = Calendar.current.dateComponents(
+      [.hour, .minute, .second], from: Date(),
+      to: estimateDate
+    )
+    return dateComponentsFormatter.string(from: components)
   }
 }
 
@@ -360,14 +479,20 @@ private extension TKUIListItemAccessoryView.Configuration {
 }
 
 private struct ItemModel {
-  public let title: String
-  public let tag: String?
-  public let image: TokenImage
-  public let price: String?
-  public let rateDiff: String?
-  public let amount: String?
-  public let convertedAmount: String?
-  public let verification: JettonInfo.Verification
+  struct Comment {
+    let text: String
+    let tapHandler: (() -> Void)?
+  }
+  
+  let title: String
+  let tag: String?
+  let image: TokenImage
+  let price: String?
+  let rateDiff: String?
+  let amount: String?
+  let convertedAmount: String?
+  let verification: JettonInfo.Verification
+  let comment: Comment?
 }
 
 private extension CGSize {
@@ -381,4 +506,3 @@ private extension CGFloat {
 private extension String {
   static let secureModeValue = "* * *"
 }
-
