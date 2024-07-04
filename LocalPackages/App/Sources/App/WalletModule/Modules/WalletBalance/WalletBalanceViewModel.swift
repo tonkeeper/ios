@@ -101,7 +101,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     ),
     setupState: .none)
   private var cellModels = [WalletBalanceItem: WalletBalanceListCell.Model]()
-  private var stakingUpdateTimer: Timer?
+  private var stakingUpdateTimer: DispatchSourceTimer?
 
   // MARK: - Mapper
   
@@ -183,8 +183,7 @@ private extension WalletBalanceViewModelImplementation {
   func didUpdateBalanceItems(_ items: WalletBalanceBalanceModel.BalanceListItems, isSecure: Bool) {
     Task {
       await self.actor.addTask(block: {
-        self.stakingUpdateTimer?.invalidate()
-        self.stakingUpdateTimer = nil
+        self.stopStakingItemsUpdateTimer()
         
         let wallet = await self.walletsStore.getState().activeWallet
         var models = [WalletBalanceItem: WalletBalanceListCell.Model]()
@@ -220,12 +219,7 @@ private extension WalletBalanceViewModelImplementation {
         }
         
         if !items.stakingItems.isEmpty {
-          let timer = Timer(timeInterval: 1, repeats: true) { [weak self, stakingItems = items.stakingItems] timer in
-            self?.updateStakingItemsOnTimer(stakingItems: stakingItems)
-          }
-          timer.tolerance = 0.1
-          RunLoop.main.add(timer, forMode: .common)
-          self.stakingUpdateTimer = timer
+          self.startStakingItemsUpdateTimer(stakingItems: items.stakingItems)
         }
         
         items.jettonsItems.forEach { item in
@@ -382,11 +376,26 @@ private extension WalletBalanceViewModelImplementation {
     }
   }
   
+  func startStakingItemsUpdateTimer(stakingItems: [WalletBalanceBalanceModel.BalanceListStakingItem]) {
+    let queue = DispatchQueue(label: "WalletBalanceStakingItemsTimerQueue", qos: .background)
+    let timer: DispatchSourceTimer = DispatchSource.makeTimerSource(flags: .strict, queue: queue)
+    timer.schedule(deadline: .now(), repeating: 1, leeway: .milliseconds(100))
+    timer.resume()
+    timer.setEventHandler(handler: { [weak self] in
+      self?.updateStakingItemsOnTimer(stakingItems: stakingItems)
+    })
+    self.stakingUpdateTimer = timer
+  }
+  
+  func stopStakingItemsUpdateTimer() {
+    self.stakingUpdateTimer?.cancel()
+    self.stakingUpdateTimer = nil
+  }
+  
   func updateStakingItemsOnTimer(stakingItems: [WalletBalanceBalanceModel.BalanceListStakingItem]) {
-    let cellModels = self.cellModels
     Task {
       await self.actor.addTask(block: {
-        var models = cellModels
+        var models = [WalletBalanceItem: WalletBalanceListCell.Model]()
         let isSecure = await self.secureMode.isSecure
         stakingItems.forEach { item in
           models[WalletBalanceItem(id: item.id)] = self.listMapper.mapStakingItem(
@@ -401,7 +410,7 @@ private extension WalletBalanceViewModelImplementation {
         }
         
         await MainActor.run { [models] in
-          self.cellModels = models
+          self.cellModels.merge(models) { $1 }
           self.didUpdateItems?(models)
         }
       })

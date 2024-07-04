@@ -7,11 +7,16 @@ open class Store<State: Equatable> {
       self.newState = newState
     }
   }
+  
+  private static var queueName: String {
+    String(describing: Self.self)
+  }
 
   public typealias ObservationClosure = (_ newState: State, _ oldState: State?) -> Void
   
   private var observations = [UUID: ObservationClosure]()
-  private lazy var queue = DispatchQueue(label: "\(String(describing: self))SyncQueue")
+
+  private let queue = DispatchQueue(label: "\(queueName)SyncQueue")
   
   private var state: State {
     didSet {

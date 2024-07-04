@@ -178,7 +178,7 @@ private extension TKBottomSheetViewController {
   private func calculateContentHeight() -> CGFloat {
     if let scrollableContent = contentViewController as? TKBottomSheetScrollContentViewController {
       scrollableContent.view.frame = view.bounds
-      if scrollableContent.scrollView.contentSize == .zero {
+      if scrollableContent.scrollView.contentSize.height == .zero {
         scrollableContent.scrollView.frame = view.bounds
         scrollableContent.scrollView.setNeedsLayout()
         scrollableContent.scrollView.layoutIfNeeded()
