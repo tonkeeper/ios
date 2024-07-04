@@ -113,6 +113,7 @@
 
 "send.comment.placeholder" = "Comment";
 "send.comment.description" = "Will be visible to everyone.";
+"send.comment.ascii_error" = "Use only ASCII characters: digits, latin alphabet letters and punctuation marks.";
 
 "send.required_comment.placeholder" = "Required comment";
 "send.required_comment.description" = "You must include the note from the exchange for transfer. Without it your funds will be lost.";

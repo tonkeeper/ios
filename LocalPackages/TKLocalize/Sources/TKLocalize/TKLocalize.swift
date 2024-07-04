@@ -459,6 +459,10 @@ public enum TKLocales {
       public static var description: String {
         localize("send.comment.description")
       }
+      /// Use only ASCII characters: digits, latin alphabet letters and punctuation marks.
+      public static var ascii_error: String {
+        localize("send.comment.ascii_error")
+      }
     }
     public enum RequiredComment {
       /// Required comment

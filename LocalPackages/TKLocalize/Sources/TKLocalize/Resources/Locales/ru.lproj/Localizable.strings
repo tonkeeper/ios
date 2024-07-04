@@ -113,6 +113,7 @@
 
 "send.comment.placeholder" = "Комментарий";
 "send.comment.description" = "Будет виден всем.";
+"send.comment.ascii_error" = "Используйте только ASCII символы: цифры, буквы латинского алфавита и знаки пунктуации.";
 
 "send.required_comment.placeholder" = "Комментарий";
 "send.required_comment.description" = "Обязательно укажите memo или тег при отправке на биржу.";
