@@ -89,7 +89,7 @@ private extension ImportWatchOnlyWalletCoordinator {
       icon: model.icon)
     do {
       analyticsProvider.logEvent(eventKey: .importWatchOnly)
-      try addController.importWatchOnlyWallet(
+      try await addController.importWatchOnlyWallet(
         resolvableAddress: resolvableAddress,
         metaData: metaData
       )

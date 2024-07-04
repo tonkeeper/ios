@@ -6,7 +6,7 @@ extension WalletMetaData {
     self.init(
       label: customizeWalletModel.name,
       tintColor: customizeWalletModel.tintColor,
-      icon: .emoji(customizeWalletModel.emoji)
+      icon: customizeWalletModel.icon
     )
   }
 }

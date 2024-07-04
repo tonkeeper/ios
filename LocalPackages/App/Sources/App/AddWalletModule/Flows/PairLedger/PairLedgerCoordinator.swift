@@ -109,7 +109,7 @@ private extension PairLedgerCoordinator {
       label: model.name,
       tintColor: model.tintColor,
       icon: model.icon)
-    try addController.importLedgerWallet(
+    try await addController.importLedgerWallet(
       publicKey: publicKey,
       revisions: revisions,
       device: device,

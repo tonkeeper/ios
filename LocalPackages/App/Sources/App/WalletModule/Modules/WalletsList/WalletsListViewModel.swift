@@ -246,18 +246,30 @@ private extension WalletsListViewModelImplementation {
       rightItemConfiguration: nil
     )
     
-    let iconConfiguration = TKUIListItemIconView.Configuration(
-      iconConfiguration: .emoji(
-        TKUIListItemEmojiIconView.Configuration(
-          emoji: wallet.emoji,
-          backgroundColor: wallet.tintColor.uiColor
-        )
-      ),
-      alignment: .center
-    )
+    let iconConfiguration: TKUIListItemIconView.Configuration.IconConfiguration
+    switch wallet.icon {
+    case .emoji(let emoji):
+      iconConfiguration = .emoji(TKUIListItemEmojiIconView.Configuration(
+        emoji: emoji,
+        backgroundColor: wallet.tintColor.uiColor
+      ))
+    case .icon(let image):
+      iconConfiguration = .image(TKUIListItemImageIconView.Configuration(
+        image: .image(image.image),
+        tintColor: .white,
+        backgroundColor: wallet.tintColor.uiColor,
+        size: CGSize(width: 44, height: 44),
+        cornerRadius: 22,
+        contentMode: .scaleAspectFit,
+        imageSize: CGSize(width: 22, height: 22)
+      ))
+    }
     
     let listItemConfiguration = TKUIListItemView.Configuration(
-      iconConfiguration: iconConfiguration,
+      iconConfiguration: TKUIListItemIconView.Configuration(
+        iconConfiguration: iconConfiguration,
+        alignment: .center
+      ),
       contentConfiguration: contentConfiguration,
       accessoryConfiguration: TKUIListItemAccessoryView.Configuration.none
     )
