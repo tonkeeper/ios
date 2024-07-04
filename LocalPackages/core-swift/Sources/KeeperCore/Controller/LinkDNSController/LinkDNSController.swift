@@ -20,8 +20,10 @@ public final class LinkDNSController {
   }
   
   public func emulate(dnsLink: DNSLink) async throws -> SendTransactionModel {
-    let boc = try await createBoc(dnsLink: dnsLink) { transfer in
-      try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
+    let boc = try await createBoc(dnsLink: dnsLink) { transferMessageBuilder in
+      try await transferMessageBuilder.externalSign(wallet: wallet) { walletTransfer in
+        try walletTransfer.signMessage(signer: WalletTransferEmptyKeySigner())
+      }
     }
     let transactionInfo = try await sendService.loadTransactionInfo(
       boc: boc,
@@ -36,19 +38,20 @@ public final class LinkDNSController {
   }
 
   public func sendLinkTransaction(dnsLink: DNSLink,
-                                  signClosure: (WalletTransfer) async throws -> Data?) async throws {
-    let boc = try await createBoc(dnsLink: dnsLink) { transfer in
-      guard let signedData = try await signClosure(transfer) else {
+                                  signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
+    let boc = try await createBoc(dnsLink: dnsLink) { transferMessageBuilder in
+      guard let boc = try await signClosure(transferMessageBuilder) else {
         throw Error.failedToSign
       }
-      return signedData
+      return boc
     }
+
     try await sendService.sendTransaction(boc: boc, wallet: wallet)
   }
 }
 
 private extension LinkDNSController {
-  func createBoc(dnsLink: DNSLink, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
+  func createBoc(dnsLink: DNSLink, signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let linkAmount = OP_AMOUNT.CHANGE_DNS_RECORD
@@ -60,14 +63,19 @@ private extension LinkDNSController {
       linkAddress = nil
     }
     
-    return try await ChangeDNSRecordMessageBuilder.linkDNSMessage(
-      wallet: wallet,
-      seqno: seqno,
-      nftAddress: nft.address,
-      linkAddress: linkAddress,
-      linkAmount: linkAmount,
-      timeout: timeout,
-      signClosure: signClosure)
+    return try await TransferMessageBuilder(
+      transferData: .changeDNSRecord(
+        .link(
+          TransferData.ChangeDNSRecord.LinkDNS(
+            seqno: seqno,
+            nftAddress: nft.address,
+            linkAddress: linkAddress,
+            linkAmount: linkAmount,
+            timeout: timeout
+          )
+        )
+      )
+    ).createBoc(signClosure: signClosure)
   }
 }
 

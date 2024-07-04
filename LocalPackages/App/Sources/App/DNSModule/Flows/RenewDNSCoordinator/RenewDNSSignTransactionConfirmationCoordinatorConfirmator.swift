@@ -16,25 +16,29 @@ struct RenewDNSSignTransactionConfirmationCoordinatorConfirmator: SignTransactio
     self.sendService = sendService
   }
   
-  func confirm(wallet: Wallet, signClosure: (WalletTransfer) async throws -> Data?) async throws {
+  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let amount = OP_AMOUNT.CHANGE_DNS_RECORD
     
-    let boc = try await ChangeDNSRecordMessageBuilder.renewDNSMessage(
-      wallet: wallet,
-      seqno: seqno,
-      nftAddress: nft.address,
-      linkAmount: amount,
-      timeout: timeout,
-      signClosure: { walletTranfer in
-        guard let signedData = try await signClosure(walletTranfer) else {
-          throw SignTransactionConfirmationCoordinatorConfirmatorError.failedToSign
-        }
-        return signedData
+    let boc = try await TransferMessageBuilder(
+      transferData: .changeDNSRecord(
+        .renew(
+          TransferData.ChangeDNSRecord.RenewDNS(
+            seqno: seqno,
+            nftAddress: nft.address,
+            linkAmount: amount,
+            timeout: timeout
+          )
+        )
+      )
+    ).createBoc { transferMessageBuilder in
+      guard let signedBoc = try await signClosure(transferMessageBuilder) else {
+        throw SignTransactionConfirmationCoordinatorConfirmatorError.failedToSign
       }
-    )
-    
+      return signedBoc
+    }
+
     try await sendService.sendTransaction(boc: boc, wallet: wallet)
   }
   

@@ -4,7 +4,7 @@ import TKLocalize
 
 protocol LedgerConfirmModuleOutput: AnyObject {
   var didCancel: (() -> Void)? { get set }
-  var didSign: ((Data) -> Void)? { get set }
+  var didSign: ((String) -> Void)? { get set }
 }
 
 protocol LedgerConfirmViewModel: AnyObject {
@@ -24,7 +24,7 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   // MARK: - LedgerConnectModuleOutput
   
   var didCancel: (() -> Void)?
-  var didSign: ((Data) -> Void)?
+  var didSign: ((String) -> Void)?
   
   // MARK: - LedgerConnectViewModel
   
