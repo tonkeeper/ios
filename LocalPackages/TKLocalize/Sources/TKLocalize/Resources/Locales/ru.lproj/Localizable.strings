@@ -193,7 +193,11 @@
 
 "wallet_tags.watch_only" = "Просмотр";
 
-"balance_list.stacking_item.title" = "Стейкинг";
+"balance_list.staking_item.title" = "Стейкинг";
+"balance_list.staking_item.comment.ready" = "%@ TON готовы к выводу.\nНажмите, чтобы вывести";
+"balance_list.staking_item.comment.staked" = "%@ TON будет зачислено";
+"balance_list.staking_item.comment.unstaked" = "%@ TON будет выведено";
+"balance_list.staking_item.comment.time_estimate" = "через %@";
 
 "receive.title" = "Получить %@";
 "receive.description" = "Отправляйте на этот адрес только %@ и токены в сети TON, иначе вы можете потерять свои средства.";

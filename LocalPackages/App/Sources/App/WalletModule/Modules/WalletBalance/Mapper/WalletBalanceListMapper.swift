@@ -126,7 +126,7 @@ struct WalletBalanceListMapper {
     )
 
     let itemModel = ItemModel(
-      title: TKLocales.BalanceList.StackingItem.title,
+      title: TKLocales.BalanceList.StakingItem.title,
       tag: nil,
       image: .ton,
       price: price,
@@ -146,12 +146,9 @@ struct WalletBalanceListMapper {
                                      stakingCollectHandler: (() -> Void)?) -> ItemModel.Comment? {
     
     let estimate: String = {
-      if item.poolInfo?.liquidJettonMaster == JettonMasterAddress.tonstakers {
-        return " after the end of the cycle "
-      }
-      if let poolInfo = item.poolInfo, 
-          let formattedEstimatedTime = formatCycleEnd(timestamp: poolInfo.cycleEnd) {
-        return "\nin \(formattedEstimatedTime)"
+      if let poolInfo = item.poolInfo,
+         let formattedEstimatedTime = formatCycleEnd(timestamp: poolInfo.cycleEnd) {
+        return "\n\(TKLocales.BalanceList.StakingItem.Comment.time_estimate(formattedEstimatedTime))"
       }
       return ""
     }()
@@ -160,10 +157,8 @@ struct WalletBalanceListMapper {
       let amount = amountFormatter.formatAmount(
         BigUInt(item.info.pendingDeposit),
         fractionDigits: TonInfo.fractionDigits,
-        maximumFractionDigits: 2,
-        symbol: TonInfo.symbol
-      )
-      let comment = "\(amount) stacked\(estimate)"
+        maximumFractionDigits: 2)
+      let comment = "\(TKLocales.BalanceList.StakingItem.Comment.staked(amount))\(estimate)"
       return ItemModel.Comment(text: comment, tapHandler: nil)
     }
     
@@ -171,10 +166,8 @@ struct WalletBalanceListMapper {
       let amount = amountFormatter.formatAmount(
         BigUInt(item.info.pendingWithdraw),
         fractionDigits: TonInfo.fractionDigits,
-        maximumFractionDigits: 2,
-        symbol: TonInfo.symbol
-      )
-      let comment = "\(amount) unstacked\(estimate)"
+        maximumFractionDigits: 2)
+      let comment = "\(TKLocales.BalanceList.StakingItem.Comment.unstaked(amount))\(estimate)"
       return ItemModel.Comment(text: comment, tapHandler: nil)
     }
     
@@ -182,11 +175,9 @@ struct WalletBalanceListMapper {
       let amount = amountFormatter.formatAmount(
         BigUInt(item.info.readyWithdraw),
         fractionDigits: TonInfo.fractionDigits,
-        maximumFractionDigits: 2,
-        symbol: TonInfo.symbol
-      )
+        maximumFractionDigits: 2)
       
-      let comment = "\(amount) ready.\nTap to collect"
+      let comment = TKLocales.BalanceList.StakingItem.Comment.ready(amount)
       return ItemModel.Comment(text: comment, tapHandler: stakingCollectHandler)
     }
     return nil

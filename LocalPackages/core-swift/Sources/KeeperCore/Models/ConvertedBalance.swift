@@ -40,6 +40,9 @@ public struct ConvertedJettonBalance: Equatable {
 
 public struct ConvertedStakingBalance: Equatable {
   public let stackingInfo: AccountStackingInfo
-  public let converted: Decimal
+  public let amountConverted: Decimal
+  public let pendingDepositConverted: Decimal
+  public let pendingWithdrawConverted: Decimal
+  public let readyWithdrawConverted: Decimal
   public let price: Decimal
 }

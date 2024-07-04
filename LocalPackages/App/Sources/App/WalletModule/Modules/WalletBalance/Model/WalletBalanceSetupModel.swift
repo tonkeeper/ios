@@ -64,7 +64,7 @@ final class WalletBalanceSetupModel {
 
 private extension WalletBalanceSetupModel {
   func didUpdateWalletsState(_ walletsState: WalletsState, oldWalletsState: WalletsState?) {
-    guard walletsState.activeWallet.setupSettings != oldWalletsState?.activeWallet.setupSettings else { return }
+    guard walletsState.activeWallet != oldWalletsState?.activeWallet else { return }
     Task {
       await actor.addTask {
         let isSetupFinished = await self.setupStore.getIsSetupFinished()
@@ -114,7 +114,7 @@ private extension WalletBalanceSetupModel {
   }
   
   func calculateState(wallet: Wallet, isSetupFinished: Bool, isBiometryEnable: Bool) -> State {
-    if isSetupFinished && wallet.setupSettings.backupDate != nil {
+    if isSetupFinished && (!wallet.isBackupAvailable || wallet.hasBackup)  {
       return .none
     }
     

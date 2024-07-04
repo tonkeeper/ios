@@ -756,10 +756,28 @@ public enum TKLocales {
     }
   }
   public enum BalanceList {
-    public enum StackingItem {
+    public enum StakingItem {
       /// Staked
       public static var title: String {
-        localize("balance_list.stacking_item.title")
+        localize("balance_list.staking_item.title")
+      }
+      public enum Comment {
+        /// %@ TON ready.\nTap to collect.
+        public static func ready(_ p0: Any) -> String {
+          return localizeWithArgs("balance_list.staking_item.comment.ready", String(describing: p0))
+        }
+        /// %@ TON staked
+        public static func staked(_ p0: Any) -> String {
+          return localizeWithArgs("balance_list.staking_item.comment.staked", String(describing: p0))
+        }
+        /// %@ TON unstaked
+        public static func unstaked(_ p0: Any) -> String {
+          return localizeWithArgs("balance_list.staking_item.comment.unstaked", String(describing: p0))
+        }
+        /// in %@
+        public static func time_estimate(_ p0: Any) -> String {
+          return localizeWithArgs("balance_list.staking_item.comment.time_estimate", String(describing: p0))
+        }
       }
     }
   }

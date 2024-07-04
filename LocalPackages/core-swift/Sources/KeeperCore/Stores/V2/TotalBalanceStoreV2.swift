@@ -33,7 +33,10 @@ public final class TotalBalanceStoreV2: Store<[FriendlyAddress: TotalBalanceStat
     let jettonsTotal = balance.jettonsBalance.reduce(Decimal(0)) { partialResult, item in
       return partialResult + item.converted
     }
-    let total = jettonsTotal + balance.tonBalance.converted
+    let stakingTotal = balance.stackingBalance.reduce(Decimal(0)) { partialResult, item in
+      return partialResult + item.amountConverted + item.pendingDepositConverted + item.pendingWithdrawConverted + item.readyWithdrawConverted
+    }
+    let total = jettonsTotal + stakingTotal + balance.tonBalance.converted
     switch convertedBalanceState {
     case .current:
       return .current(TotalBalance(amount: total,

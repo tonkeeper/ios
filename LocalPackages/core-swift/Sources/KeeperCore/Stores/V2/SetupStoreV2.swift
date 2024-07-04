@@ -22,7 +22,7 @@ public final class SetupStoreV2: Store<SetupStoreV2.State> {
   }
   
   public func setIsSetupFinished(_ isSetupFinished: Bool) async {
-    await updateState { _ in StateUpdate(newState: State(isSetupFinished: isSetupFinished)) }
+//    await updateState { _ in StateUpdate(newState: State(isSetupFinished: isSetupFinished)) }
     await keeperInfoStore.updateKeeperInfo { keeperInfo in
       let updatedKeeperInfo = keeperInfo?.setIsSetupFinished(isSetupFinished)
       return updatedKeeperInfo

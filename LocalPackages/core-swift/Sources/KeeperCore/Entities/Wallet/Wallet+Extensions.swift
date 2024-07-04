@@ -206,6 +206,10 @@ public extension Wallet {
     }
   }
   
+  var hasBackup: Bool {
+    setupSettings.backupDate != nil
+  }
+  
   var label: String {
     metaData.label
   }

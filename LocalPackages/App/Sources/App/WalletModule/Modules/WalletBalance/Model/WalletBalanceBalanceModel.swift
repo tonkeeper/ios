@@ -266,7 +266,7 @@ final class WalletBalanceBalanceModel {
 
     stakingItems = stackingBalance
       .sorted { left, right in
-        left.converted > right.converted
+        left.amountConverted > right.amountConverted
       }
       .map { stakingItem in
         let stackingPool = stackingPools.first(where: { $0.address == stakingItem.stackingInfo.pool  })
@@ -275,7 +275,7 @@ final class WalletBalanceBalanceModel {
           info: stakingItem.stackingInfo,
           poolInfo: stackingPool,
           currency: balance.currency,
-          converted: stakingItem.converted,
+          converted: stakingItem.amountConverted,
           price: stakingItem.price
         )
       }

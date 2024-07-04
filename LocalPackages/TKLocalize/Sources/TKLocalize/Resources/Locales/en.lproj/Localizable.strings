@@ -196,7 +196,11 @@
 
 "wallet_tags.watch_only" = "Watch only";
 
-"balance_list.stacking_item.title" = "Staked";
+"balance_list.staking_item.title" = "Staked";
+"balance_list.staking_item.comment.ready" = "%@ TON ready.\nTap to collect.";
+"balance_list.staking_item.comment.staked" = "%@ TON staked";
+"balance_list.staking_item.comment.unstaked" = "%@ TON unstaked";
+"balance_list.staking_item.comment.time_estimate" = "in %@";
 
 "receive.title" = "Receive %@";
 "receive.description" = "Send only %@ and tokens in TON network to this address, or you might lose your funds.";

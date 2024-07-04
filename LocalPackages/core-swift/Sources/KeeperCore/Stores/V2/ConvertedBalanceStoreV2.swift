@@ -151,23 +151,42 @@ public final class ConvertedBalanceStoreV2: Store<[FriendlyAddress: ConvertedBal
   
   private func calculateStakingBalance(_ accountStackingInfo: AccountStackingInfo,
                                        tonRate: Rates.Rate?) -> ConvertedStakingBalance {
-    let converted: Decimal
-    let price: Decimal
+    var amountConverted: Decimal = 0
+    var pendingDepositConverted: Decimal = 0
+    var pendingWithdrawConverted: Decimal = 0
+    var readyWithdrawConverted: Decimal = 0
+    var price: Decimal = 0
     if let tonRate = tonRate {
-      converted = RateConverter().convertToDecimal(
+      amountConverted = RateConverter().convertToDecimal(
         amount: BigUInt(accountStackingInfo.amount),
         amountFractionLength: TonInfo.fractionDigits,
         rate: tonRate
       )
+      pendingDepositConverted = RateConverter().convertToDecimal(
+        amount: BigUInt(accountStackingInfo.pendingDeposit),
+        amountFractionLength: TonInfo.fractionDigits,
+        rate: tonRate
+      )
+      pendingWithdrawConverted = RateConverter().convertToDecimal(
+        amount: BigUInt(accountStackingInfo.pendingWithdraw),
+        amountFractionLength: TonInfo.fractionDigits,
+        rate: tonRate
+      )
+      readyWithdrawConverted = RateConverter().convertToDecimal(
+        amount: BigUInt(accountStackingInfo.readyWithdraw),
+        amountFractionLength: TonInfo.fractionDigits,
+        rate: tonRate
+      )
+      
       price = tonRate.rate
-    } else {
-      converted = 0
-      price = 0
     }
     
     return ConvertedStakingBalance(
       stackingInfo: accountStackingInfo,
-      converted: converted,
+      amountConverted: amountConverted,
+      pendingDepositConverted: pendingDepositConverted,
+      pendingWithdrawConverted: pendingWithdrawConverted,
+      readyWithdrawConverted: readyWithdrawConverted,
       price: price
     )
   }
