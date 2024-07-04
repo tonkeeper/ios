@@ -19,6 +19,6 @@ public struct LedgerAccount: Codable {
   }
   
   public var id: String {
-    path.data.hexString() + revision.rawValue
+    String(path.index) + revision.rawValue
   }
 }

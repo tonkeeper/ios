@@ -98,6 +98,7 @@ private extension PairLedgerCoordinator {
     )
     
     coordinator.didCancel = { [weak self, weak coordinator] in
+      self?.router.dismiss()
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     }

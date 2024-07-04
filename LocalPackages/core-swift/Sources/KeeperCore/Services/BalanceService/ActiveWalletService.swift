@@ -12,7 +12,7 @@ public struct ActiveWalletModel: Identifiable {
   public let nfts: [NFT]
   public let isAdded: Bool
   
-  public init(id: String, 
+  public init(id: String,
               revision: WalletContractVersion,
               address: Address,
               isActive: Bool,
@@ -33,7 +33,8 @@ protocol ActiveWalletsService {
   func loadActiveWallets(publicKey: TonSwift.PublicKey,
                          isTestnet: Bool,
                          currency: Currency) async throws -> [ActiveWalletModel]
-  func loadActiveWalletModel(address: Address,
+  func loadActiveWalletModel(id: String,
+                             address: Address,
                              revision: WalletContractVersion,
                              isTestnet: Bool,
                              currency: Currency) async throws -> ActiveWalletModel
@@ -62,7 +63,8 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
     self.walletsService = walletsService
   }
   
-  func loadActiveWalletModel(address: Address,
+  func loadActiveWalletModel(id: String,
+                             address: Address,
                              revision: WalletContractVersion,
                              isTestnet: Bool,
                              currency: Currency) async throws -> ActiveWalletModel {
@@ -78,7 +80,7 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
       offset: nil,
       isIndirectOwnership: true
     )
-
+    
     let account = try await accountTask
     let jettonsBalance = (try? await jettonsBalanceTask) ?? []
     let nfts = (try? await nftsTask) ?? []
@@ -87,7 +89,7 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
     let isActive = account.status == "active" || !balance.isEmpty
     
     return ActiveWalletModel(
-      id: address.toRaw(),
+      id: id,
       revision: revision,
       address: address,
       isActive: isActive,
@@ -95,7 +97,7 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
       nfts: nfts)
   }
   
-  func loadActiveWallets(publicKey: TonSwift.PublicKey, 
+  func loadActiveWallets(publicKey: TonSwift.PublicKey,
                          isTestnet: Bool,
                          currency: Currency) async throws -> [ActiveWalletModel] {
     let revisions = WalletContractVersion.allCases
@@ -110,6 +112,7 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
         taskGroup.addTask {
           do {
             return try await self.loadActiveWalletModel(
+              id: address.toRaw(),
               address: address,
               revision: revision,
               isTestnet: isTestnet,
@@ -154,6 +157,7 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
         taskGroup.addTask {
           do {
             return try await self.loadActiveWalletModel(
+              id: account.id,
               address: account.address,
               revision: account.revision,
               isTestnet: isTestnet,
@@ -176,9 +180,10 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
       
       var resultModels = [ActiveWalletModel]()
       for try await result in taskGroup {
-        guard result.isActive else {
-          continue
-        }
+        // TODO: refactor
+        //        guard result.isActive else {
+        //          continue
+        //        }
         resultModels.append(result)
       }
       return resultModels

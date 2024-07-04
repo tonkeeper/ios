@@ -173,7 +173,7 @@ public enum TransferData {
       public let linkAmount: BigUInt
       public let timeout: UInt64?
       
-      public init(seqno: UInt64, 
+      public init(seqno: UInt64,
                   nftAddress: Address,
                   linkAmount: BigUInt,
                   timeout: UInt64?) {
@@ -199,8 +199,21 @@ public enum TransferData {
 public struct TransferMessageBuilder {
   public let transferData: TransferData
   
+  public let queryId: BigUInt
+  
   public init(transferData: TransferData) {
     self.transferData = transferData
+    self.queryId = TransferMessageBuilder.newWalletQueryId()
+  }
+  
+  static func newWalletQueryId() -> BigUInt {
+    let tonkeeperSignature: [UInt8] = [0x54, 0x6d, 0xe4, 0xef]
+    
+    var randomBytes = [UInt8](repeating: 0, count: 4)
+    arc4random_buf(&randomBytes, 4)
+
+    let hexString = Data(tonkeeperSignature + randomBytes).hexString()
+    return BigUInt(hexString, radix: 16) ?? BigUInt(0)
   }
   
   public func createBoc(signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {

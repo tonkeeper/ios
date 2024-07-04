@@ -119,12 +119,11 @@ private extension WalletTransferSignCoordinator {
           self.didCancel?()
         }
       }
-    case .Ledger(let publicKey, let walletContractVersion, _):
+    case .Ledger(_, _, let ledgerDevice):
       Task {
         guard let signedBoc = await handleLedgerSign(
           transferMessageBuilder: transferMessageBuilder,
-          publicKey: publicKey,
-          revision: walletContractVersion
+          ledgerDevice: ledgerDevice
         ) else {
           self.didCancel?()
           return
@@ -167,12 +166,13 @@ private extension WalletTransferSignCoordinator {
     )
   }
   
-  func handleLedgerSign(transferMessageBuilder: TransferMessageBuilder,
-                        publicKey: TonSwift.PublicKey,
-                        revision: WalletContractVersion) async -> String? {
+  func handleLedgerSign(transferMessageBuilder: TransferMessageBuilder, ledgerDevice: Wallet.LedgerDevice) async -> String? {
     await withCheckedContinuation { continuation in
       DispatchQueue.main.async {
-        let module = LedgerConfirmAssembly.module(coreAssembly: self.coreAssembly)
+        let module = LedgerConfirmAssembly.module(transferMessageBuilder: transferMessageBuilder,
+                                                  wallet: self.wallet,
+                                                  ledgerDevice: ledgerDevice,
+                                                  coreAssembly: self.coreAssembly)
         
         let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
         
@@ -194,7 +194,7 @@ private extension WalletTransferSignCoordinator {
             continuation.resume(returning: boc)
           })
         }
-      
+        
         bottomSheetViewController.present(fromViewController: self.router.rootViewController)
       }
     }
@@ -207,10 +207,10 @@ private extension WalletTransferSignCoordinator {
     await withCheckedContinuation { continuation in
       DispatchQueue.main.async { [wallet] in
         guard let url = try? self.createTonSignURL(transfer: walletTransfer.signingMessage.endCell().toBoc(),
-                                              publicKey: publicKey,
-                                              revision: revision,
-                                              network: network,
-                                              isOnDevice: false) else { return }
+                                                   publicKey: publicKey,
+                                                   revision: revision,
+                                                   network: network,
+                                                   isOnDevice: false) else { return }
         let module = SignerSignAssembly.module(
           url: url,
           wallet: wallet,
@@ -259,7 +259,7 @@ private extension WalletTransferSignCoordinator {
     }
   }
   
-  func createTonSignURL(transfer: Data, 
+  func createTonSignURL(transfer: Data,
                         publicKey: TonSwift.PublicKey,
                         revision: WalletContractVersion,
                         network: Network,

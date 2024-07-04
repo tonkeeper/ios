@@ -6,8 +6,8 @@ public struct AccountPath: Codable, Hashable {
   public let isTestnet: Bool
   public let workchain: Int8
   
-  public init(index: Int, isTestnet: Bool = false, workchain: Int8 = 0) {
-    self.index = index
+  public init(index: any BinaryInteger, isTestnet: Bool = false, workchain: Int8 = 0) {
+    self.index = Int(index)
     self.isTestnet = isTestnet
     self.workchain = workchain
   }

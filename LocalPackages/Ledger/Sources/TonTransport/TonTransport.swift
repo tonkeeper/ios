@@ -124,14 +124,16 @@ public class TonTransport {
     let account = try await getAccount(path: path)
     let publicKey = account.publicKey
     
+    let timeout = transaction.timeout ?? UInt64(Date().timeIntervalSince1970) + 60
+    
     var pkg = [UInt8]()
     pkg += putUint8(0)
     pkg += putUint32(transaction.seqno)
-    pkg += putUint32(transaction.timeout)
+    pkg += putUint32(timeout)
     pkg += try putVarUInt(transaction.coins.rawValue)
     pkg += putAddress(transaction.destination)
     pkg += putUint8(transaction.bounceable ? 1 : 0)
-    pkg += putUint8(transaction.sendMode)
+    pkg += putUint8(transaction.sendMode.rawValue)
     
     var stateInit: Cell? = nil
     if let transactionStateInit = transaction.stateInit {
@@ -162,7 +164,7 @@ public class TonTransport {
       var bytes = [UInt8]()
       
       if let queryId = jettonPayload.queryId {
-        bytes += putUint8(1) + (try putUint64(BigUInt(queryId)))
+        bytes += putUint8(1) + (try putUint64(queryId))
         try builder.store(uint: queryId, bits: 64)
       } else {
         bytes += putUint8(0)
@@ -244,10 +246,10 @@ public class TonTransport {
     
     let transfer = try Builder()
       .store(uint: 698983191, bits: 32)
-      .store(uint: transaction.timeout, bits: 32)
+      .store(uint: timeout, bits: 32)
       .store(uint: transaction.seqno, bits: 32)
       .store(uint: 0, bits: 8)
-      .store(uint: transaction.sendMode, bits: 8)
+      .store(uint: transaction.sendMode.rawValue, bits: 8)
       .store(ref: orderBuilder.endCell())
       .endCell()
     
@@ -272,7 +274,7 @@ public class TonTransport {
 }
 
 private extension TonTransport {
-  func putUint32(_ value: Int) -> [UInt8] {
+  func putUint32(_ value: UInt64) -> [UInt8] {
     let byteArray = withUnsafeBytes(of: value.bigEndian, Array.init)
     return Array(byteArray.suffix(4))
   }
@@ -292,12 +294,12 @@ private extension TonTransport {
     return try cell.beginParse().loadBits(8 + sizeBytes * 8).bitsToPaddedBuffer().toByteArray()
   }
   
-  func putUint8(_ value: Int) -> [UInt8] {
-    return [UInt8(value)]
+  func putUint8(_ value: UInt8) -> [UInt8] {
+    return [value]
   }
   
   func putAddress(_ address: Address) -> [UInt8] {
-    let workchainIdByte = address.workchain == -1 ? Int(0xff) : Int(address.workchain)
+    let workchainIdByte = address.workchain == -1 ? UInt8(0xff) : UInt8(address.workchain)
     return putUint8(workchainIdByte) + address.hash.toByteArray()
   }
   
