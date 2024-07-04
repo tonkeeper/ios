@@ -118,13 +118,13 @@ private extension LinkDNSCoordinator {
   
   func performLink(fromViewController: UIViewController, dnsLink: DNSLink) async -> Bool {
     do {
-      try await linkDNSController.sendLinkTransaction(dnsLink: dnsLink) { [weak self, keeperCoreMainAssembly, coreAssembly, wallet] walletTransfer in
+      try await linkDNSController.sendLinkTransaction(dnsLink: dnsLink) { [weak self, keeperCoreMainAssembly, coreAssembly, wallet] transferMessageBuilder in
         
         guard let self = self else { return nil }
         let coordinator = await WalletTransferSignCoordinator(
           router: ViewControllerRouter(rootViewController: fromViewController),
           wallet: wallet,
-          walletTransfer: walletTransfer,
+          transferMessageBuilder: transferMessageBuilder,
           keeperCoreMainAssembly: keeperCoreMainAssembly,
           coreAssembly: coreAssembly)
         
