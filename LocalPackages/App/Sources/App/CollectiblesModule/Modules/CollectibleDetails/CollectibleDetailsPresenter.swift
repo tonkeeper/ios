@@ -53,9 +53,9 @@ private extension CollectibleDetailsPresenter {
       )
     }
     
-    let buttonsModel = CollectibleDetailsButtonsView.Model(buttonsModels:
+    let buttonsModel = model.isActionsAvailable ? CollectibleDetailsButtonsView.Model(buttonsModels:
       buttonsModels(model: model)
-    )
+    ) : nil
     
     var propertiesModel: CollectibleDetailsPropertiesСarouselView.Model?
     if !model.properties.isEmpty {

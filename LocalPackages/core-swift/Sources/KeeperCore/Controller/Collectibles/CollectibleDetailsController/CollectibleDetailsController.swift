@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 public final class CollectibleDetailsController {
-    
+  
   public var didUpdateModel: ((CollectibleDetailsModel) -> Void)?
   
   public let nft: NFT
@@ -51,6 +51,7 @@ private extension CollectibleDetailsController {
     return collectibleDetailsMapper.map(
       nft: nft,
       isOwner: isOwner(nft),
+      isActionsAvailable: isActionsAvailable(),
       linkedAddress: nil,
       expirationDate: nil,
       isInitial: true)
@@ -62,6 +63,7 @@ private extension CollectibleDetailsController {
     return collectibleDetailsMapper.map(
       nft: nft,
       isOwner: isOwner(nft),
+      isActionsAvailable: isActionsAvailable(),
       linkedAddress: linkedAddress,
       expirationDate: expirationDate,
       isInitial: false)
@@ -70,6 +72,15 @@ private extension CollectibleDetailsController {
   func isOwner(_ nft: NFT) -> Bool {
     guard let address = try? walletsStore.activeWallet.address else { return false }
     return nft.owner?.address == address
+  }
+  
+  func isActionsAvailable() -> Bool {
+    switch walletsStore.activeWallet.kind {
+    case .ledger, .watchonly:
+      return false
+    default:
+      return true
+    }
   }
   
   func getDNSLinkedAddress(nft: NFT) async throws -> FriendlyAddress? {

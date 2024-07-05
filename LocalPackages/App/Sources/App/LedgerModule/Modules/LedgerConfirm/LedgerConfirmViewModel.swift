@@ -113,33 +113,34 @@ private extension LedgerConfirmViewModelImplementation {
       let peripheral = PeripheralIdentifier(uuid: uuid, name: ledgerDevice.deviceModel)
       
       print("Connecting to \(peripheral.name)...")
-      transport.connect(toPeripheralID: peripheral, disconnectedCallback: {
-        print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
-        if self.isClosed { return }
-        
-        self.pollTonAppTask?.cancel()
-        self.connect()
-        
-        self.disconnectTask = Task {
-          do {
-            try await Task.sleep(nanoseconds: 3_000_000_000)
-            try Task.checkCancellation()
-            await MainActor.run {
-              self.setDisconnected()
-            }
-          } catch {}
-        }
-      }, success: { result in
-        print("Connected to \(result.name), udid: \(result.uuid)")
-        self.disconnectTask?.cancel()
-        self.setConnected()
-        self.waitForAppOpen()
-      }, failure: { error in
-        print("Error connecting to device: \(error.localizedDescription)")
-        if self.isClosed { return }
-        self.connect()
-        self.setDisconnected()
-      })
+      transport.disconnect() { _ in
+        self.transport.connect(toPeripheralID: peripheral, disconnectedCallback: {
+          print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
+          if self.isClosed { return }
+          
+          self.pollTonAppTask?.cancel()
+          self.connect()
+          
+          self.disconnectTask = Task {
+            do {
+              try await Task.sleep(nanoseconds: 3_000_000_000)
+              try Task.checkCancellation()
+              await MainActor.run {
+                self.setDisconnected()
+              }
+            } catch {}
+          }
+        }, success: { result in
+          print("Connected to \(result.name), udid: \(result.uuid)")
+          self.disconnectTask?.cancel()
+          self.setConnected()
+          self.waitForAppOpen()
+        }, failure: { error in
+          if self.isClosed { return }
+          self.connect()
+          self.setDisconnected()
+        })
+      }
     } catch {
       didCancel?()
     }
@@ -187,13 +188,15 @@ private extension LedgerConfirmViewModelImplementation {
           self.didSign?(boc)
         }
       } catch {
-        if let transportError = error as? TransportStatusError, case .deniedByUser = transportError {
-          // nothing
-        } else {
-          self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
+        await MainActor.run {
+          if let transportError = error as? TransportStatusError, case .deniedByUser = transportError {
+            // nothing
+          } else {
+            self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
+          }
+          
+          self.didCancel?()
         }
-        
-        self.didCancel?()
       }
     }
   }

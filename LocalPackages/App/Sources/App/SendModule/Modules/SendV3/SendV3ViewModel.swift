@@ -426,8 +426,6 @@ private extension SendV3ViewModelImplementation {
         )
     }
     
-    print(commentState)
-    
     return Model.Comment(
       placeholder: placeholder,
       text: commentInput,

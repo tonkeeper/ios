@@ -39,6 +39,7 @@ public struct CollectibleDetailsModel {
   public let properties: [Property]
   public let details: Details
   public let isTransferEnable: Bool
+  public let isActionsAvailable: Bool
   public let isDns: Bool
   public let isOnSale: Bool
   public let linkedAddress: LoadableModelItem<String?>?

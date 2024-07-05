@@ -12,6 +12,7 @@ struct CollectibleDetailsMapper {
   
   func map(nft: NFT,
            isOwner: Bool,
+           isActionsAvailable: Bool,
            linkedAddress: FriendlyAddress?,
            expirationDate: Date?,
            isInitial: Bool) -> CollectibleDetailsModel {
@@ -52,6 +53,7 @@ struct CollectibleDetailsMapper {
       properties: mapProperties(nft: nft),
       details: mapDetails(nft: nft),
       isTransferEnable: mapIsTransferEnable(nft: nft, isOwner: isOwner),
+      isActionsAvailable: isOwner && isActionsAvailable,
       isDns: nft.dns != nil,
       isOnSale: nft.sale != nil,
       linkedAddress: linkedAddressItem,
@@ -101,7 +103,7 @@ struct CollectibleDetailsMapper {
     var items = [CollectibleDetailsModel.Details.Item]()
     if let owner = nft.owner {
       items.append(.init(
-        title: "Owner", 
+        title: "Owner",
         value: .init(
           short: owner.address.toShortString(bounceable: true),
           full: owner.address.toString(bounceable: true)
