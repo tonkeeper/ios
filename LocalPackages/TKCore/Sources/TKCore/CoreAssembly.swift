@@ -55,6 +55,10 @@ public final class CoreAssembly {
     return appIdentifierPrefix+keychainAccessGroup
   }
   
+  public var appInfoProvider: AppInfoProvider {
+    AppInfoProvider()
+  }
+  
   public var fileManager: FileManager {
     .default
   }

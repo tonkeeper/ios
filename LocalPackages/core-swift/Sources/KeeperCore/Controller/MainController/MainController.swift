@@ -30,6 +30,7 @@ public final class MainController {
   
   private let walletBalanceLoader: WalletBalanceLoaderV2
   private let tonRatesLoader: TonRatesLoaderV2
+  private let internalNotificationsLoader: InternalNotificationsLoader
   
   private var walletsBalanceLoadTimer: Timer?
   private var tonRatesLoadTimer: Timer?
@@ -49,7 +50,8 @@ public final class MainController {
        deeplinkParser: DeeplinkParser,
        apiProvider: APIProvider,
        walletBalanceLoader: WalletBalanceLoaderV2,
-       tonRatesLoader: TonRatesLoaderV2) {
+       tonRatesLoader: TonRatesLoaderV2,
+       internalNotificationsLoader: InternalNotificationsLoader) {
     self.walletsStore = walletsStore
     self.accountNFTService = accountNFTService
     self.backgroundUpdateStore = backgroundUpdateStore
@@ -62,6 +64,7 @@ public final class MainController {
     self.apiProvider = apiProvider
     self.walletBalanceLoader = walletBalanceLoader
     self.tonRatesLoader = tonRatesLoader
+    self.internalNotificationsLoader = internalNotificationsLoader
   }
   
   deinit {
@@ -74,6 +77,7 @@ public final class MainController {
   public func start() {
     startTonRatesLoadTimer()
     startWalletBalancesLoadTimer()
+    internalNotificationsLoader.loadNotifications(platform: "ios", version: "4.1.0", lang: "en")
 //    _ = await backgroundUpdateStore.addEventObserver(self) { observer, state in
 //      switch state {
 //      case .didUpdateState(let backgroundUpdateState):

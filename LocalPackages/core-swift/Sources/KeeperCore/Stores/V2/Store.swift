@@ -29,6 +29,13 @@ open class Store<State: Equatable> {
     self.state = state
   }
   
+  public func getState() -> State {
+    queue.sync {
+      let state = self.state
+      return state
+    }
+  }
+  
   public func getState() async -> State {
     await withCheckedContinuation { continuation in
       queue.async {

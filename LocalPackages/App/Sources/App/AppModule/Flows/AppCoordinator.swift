@@ -17,7 +17,8 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
     self.keeperCoreAssembly = KeeperCore.Assembly(
       dependencies: Assembly.Dependencies(
         cacheURL: coreAssembly.cacheURL,
-        sharedCacheURL: coreAssembly.sharedCacheURL
+        sharedCacheURL: coreAssembly.sharedCacheURL,
+        appInfoProvider: coreAssembly.appInfoProvider
       )
     )
     super.init(router: router)

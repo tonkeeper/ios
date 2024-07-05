@@ -25,6 +25,7 @@ struct WalletBalanceAssembly {
         secureMode: coreAssembly.secureMode
       ),
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+      notificationStore: keeperCoreMainAssembly.storesAssembly.notificationsStore,
       listMapper:
         WalletBalanceListMapper(
         amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
@@ -34,7 +35,8 @@ struct WalletBalanceAssembly {
       headerMapper: WalletBalanceHeaderMapper(
         decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
       ),
-      secureMode: coreAssembly.secureMode
+      secureMode: coreAssembly.secureMode,
+      urlOpener: coreAssembly.urlOpener()
     )
     let viewController = WalletBalanceViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)

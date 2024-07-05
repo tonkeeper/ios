@@ -4,10 +4,14 @@ import CoreComponents
 public struct CoreAssembly {
   let cacheURL: URL
   let sharedCacheURL: URL
+  let appInfoProvider: AppInfoProvider
   
-  init(cacheURL: URL, sharedCacheURL: URL) {
+  init(cacheURL: URL, 
+       sharedCacheURL: URL,
+       appInfoProvider: AppInfoProvider) {
     self.cacheURL = cacheURL
     self.sharedCacheURL = sharedCacheURL
+    self.appInfoProvider = appInfoProvider
   }
   
   func mnemonicVault() -> MnemonicVault {

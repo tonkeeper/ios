@@ -5,6 +5,8 @@ import KeeperCore
 enum WalletBalanceSection: Hashable {
   case balance
   case setup(TKListTitleView.Model)
+  case manage
+  case notifications
 }
 
 struct WalletBalanceSetupSection: Hashable {
@@ -12,8 +14,10 @@ struct WalletBalanceSetupSection: Hashable {
   let isFinishEnable: Bool
 }
 
-struct WalletBalanceItem: Hashable {
-  let id: String
+enum WalletBalanceItem: Hashable {
+  case notificationItem(String)
+  case balanceItem(String)
+  case manageButton(WalletsListAddWalletCell.Model)
 }
 
 enum WalletBalanceSetupItem: String, Hashable {

@@ -4,10 +4,10 @@ import TKCoordinator
 
 final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView>, ScrollViewController, WalletContainerBalanceViewController {
   typealias Section = WalletBalanceSection
-  typealias Item = AnyHashable
+  typealias Item = WalletBalanceItem
   typealias DataSource = UICollectionViewDiffableDataSource<WalletBalanceSection, Item>
   typealias Snapshot = NSDiffableDataSourceSnapshot<WalletBalanceSection, Item>
-  typealias BalanceItemCellConfiguration = UICollectionView.CellRegistration<WalletBalanceListCell, WalletBalanceItem>
+  typealias BalanceItemCellConfiguration = UICollectionView.CellRegistration<WalletBalanceListCell, String>
   typealias SetupSectionHeaderRegistration = UICollectionView.SupplementaryRegistration<TKCollectionViewSupplementaryContainerView<TKListTitleView>>
   
   var didScroll: ((CGFloat) -> Void)?
@@ -93,10 +93,10 @@ private extension WalletBalanceViewController {
       ToastPresenter.showToast(configuration: configuration)
     }
     
-    viewModel.didUpdateItems = { [weak self] items in
+    viewModel.didUpdateBalanceItems = { [weak self] items in
       guard let self else { return }
       items.forEach { identifier, model in
-        guard let indexPath = self.dataSource.indexPath(for: identifier),
+        guard let indexPath = self.dataSource.indexPath(for: .balanceItem(identifier)),
               let cell = self.customView.collectionView.cellForItem(at: indexPath) as? WalletBalanceListCell else { return }
         cell.configure(model: model)
       }
@@ -111,21 +111,43 @@ private extension WalletBalanceViewController {
         guard let collectionView = collectionView else { return false }
         return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
       }
-      guard let model = viewModel?.getBalanceItemCellModel(item: identifier) else { return }
+      guard let model = viewModel?.getBalanceItemCellModel(identifier: identifier) else { return }
+      cell.configure(model: model)
+    }
+    
+    let manageButtonCellConfiguration = UICollectionView.CellRegistration<WalletsListAddWalletCell, WalletsListAddWalletCell.Model> {
+      cell, indexPath, identifier in
+      cell.configure(model: identifier)
+      cell.didTapButton = { [weak self] in
+        self?.viewModel.didTapManageButton()
+      }
+    }
+    
+    let notificationCellConfiguration = UICollectionView.CellRegistration<NotificationBannerCell, String> {
+      [weak viewModel] cell, indexPath, identifier in
+      guard let model = viewModel?.getNotificationCellModel(identifier: identifier) else { return }
       cell.configure(model: model)
     }
     
     let dataSource = DataSource(
       collectionView: customView.collectionView) { [itemCellConfiguration] collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
-        case let balanceItem as WalletBalanceItem:
+        case .balanceItem(let identifier):
           return collectionView.dequeueConfiguredReusableCell(
             using: itemCellConfiguration,
             for: indexPath,
-            item: balanceItem
+            item: identifier
           )
-        default:
-          return nil
+        case .manageButton(let model):
+          return collectionView.dequeueConfiguredReusableCell(
+            using: manageButtonCellConfiguration,
+            for: indexPath,
+            item: model)
+        case .notificationItem(let identifier):
+          return collectionView.dequeueConfiguredReusableCell(
+            using: notificationCellConfiguration,
+            for: indexPath,
+            item: identifier)
         }
       }
     
@@ -163,7 +185,7 @@ private extension WalletBalanceViewController {
       guard let self else { return }
       let section = self.dataSource.snapshot().sectionIdentifiers[indexPath.section]
       switch section {
-      case .balance:
+      case .balance, .manage, .notifications:
         return
       case .setup(let model):
         supplementaryView.configure(model: model)
@@ -175,6 +197,19 @@ private extension WalletBalanceViewController {
   }
   
   static func createLayoutSection(section: WalletBalanceSection) -> NSCollectionLayoutSection {
+    switch section {
+    case .balance:
+      return createBalanceItemsSection(isHeader: false)
+    case .setup:
+      return createBalanceItemsSection(isHeader: true)
+    case .manage:
+      return createBalanceItemsSection(isHeader: false)
+    case .notifications:
+      return createNotificationsSection()
+    }
+  }
+  
+  static func createBalanceItemsSection(isHeader: Bool) -> NSCollectionLayoutSection {
     let itemLayoutSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
       heightDimension: .estimated(76)
@@ -198,10 +233,7 @@ private extension WalletBalanceViewController {
       trailing: 16
     )
     
-    switch section {
-    case .balance:
-      break
-    case .setup:
+    if isHeader {
       let headerSize = NSCollectionLayoutSize(
         widthDimension: .fractionalWidth(1.0),
         heightDimension: .absolute(48)
@@ -215,6 +247,33 @@ private extension WalletBalanceViewController {
     }
     return layoutSection
   }
+  
+  static func createNotificationsSection() -> NSCollectionLayoutSection {
+    let itemLayoutSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(76)
+    )
+    let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
+    
+    let groupLayoutSize = NSCollectionLayoutSize(
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(76)
+    )
+    let group = NSCollectionLayoutGroup.horizontal(
+      layoutSize: groupLayoutSize,
+      subitems: [item]
+    )
+    
+    let layoutSection = NSCollectionLayoutSection(group: group)
+    layoutSection.interGroupSpacing = 16
+    layoutSection.contentInsets = NSDirectionalEdgeInsets(
+      top: 0,
+      leading: 16,
+      bottom: 16,
+      trailing: 16
+    )
+    return layoutSection
+  }
 }
 
 extension WalletBalanceViewController: UICollectionViewDelegate {
@@ -223,10 +282,10 @@ extension WalletBalanceViewController: UICollectionViewDelegate {
     let section = snapshot.sectionIdentifiers[indexPath.section]
     let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
     switch item {
-    case let item as WalletBalanceItem:
-      viewModel.didSelectItem(item)
-    default:
-      return
+    case .balanceItem(let identifier):
+      viewModel.didSelectItem(identifier: identifier)
+    case .manageButton, .notificationItem:
+      break
     }
   }
   

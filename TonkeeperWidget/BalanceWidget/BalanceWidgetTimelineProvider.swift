@@ -20,7 +20,8 @@ struct BalanceWidgetTimelineProvider: IntentTimelineProvider {
     let keeperCoreAssembly = KeeperCore.Assembly(
       dependencies: Assembly.Dependencies(
         cacheURL: coreAssembly.cacheURL,
-        sharedCacheURL: coreAssembly.sharedCacheURL
+        sharedCacheURL: coreAssembly.sharedCacheURL,
+        appInfoProvider: coreAssembly.appInfoProvider
       )
     )
     

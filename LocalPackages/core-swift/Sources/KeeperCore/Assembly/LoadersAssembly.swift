@@ -5,11 +5,14 @@ public final class LoadersAssembly {
   
   private let servicesAssembly: ServicesAssembly
   private let storesAssembly: StoresAssembly
+  private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
   
   init(servicesAssembly: ServicesAssembly,
-       storesAssembly: StoresAssembly) {
+       storesAssembly: StoresAssembly,
+       tonkeeperAPIAssembly: TonkeeperAPIAssembly) {
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
+    self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
   }
   
   private weak var _tonRatesLoaderV2: TonRatesLoaderV2?
@@ -41,5 +44,18 @@ public final class LoadersAssembly {
   
   var chartLoader: ChartV2Loader {
     ChartV2Loader(chartService: servicesAssembly.chartService())
+  }
+  
+  private weak var _internalNotificationsLoader: InternalNotificationsLoader?
+  var internalNotificationsLoader: InternalNotificationsLoader {
+    if let _internalNotificationsLoader {
+      return _internalNotificationsLoader
+    }
+    let loader = InternalNotificationsLoader(
+      tonkeeperAPI: tonkeeperAPIAssembly.api,
+      notificationsStore: storesAssembly.notificationsStore
+    )
+    _internalNotificationsLoader = loader
+    return loader
   }
 }

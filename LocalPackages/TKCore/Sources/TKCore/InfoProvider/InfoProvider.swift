@@ -17,6 +17,7 @@ public struct InfoProvider {
     case appIdentifierPrefix = "AppIdentifierPrefix"
     case aptabaseKey = "APTABASE_KEY"
     case aptabaseEndpoint = "APTABASE_ENDPOINT"
+    case platform = "PLATFORM"
   }
   
   static func value<T>(key: Keys) -> T? {
@@ -53,6 +54,10 @@ public struct InfoProvider {
   
   public static func appIdentifierPrefix() -> String? {
     self.value(key: .appIdentifierPrefix)
+  }
+  
+  public static func platform() -> String {
+    self.value(key: .platform) ?? "ios"
   }
 }
 

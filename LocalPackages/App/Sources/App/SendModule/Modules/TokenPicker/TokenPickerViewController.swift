@@ -48,10 +48,6 @@ final class TokenPickerViewController: GenericViewViewController<TokenPickerView
 private extension TokenPickerViewController {
   func setup() {
     customView.collectionView.delegate = self
-    customView.collectionView.register(
-      TokenPickerCell.self,
-      forCellWithReuseIdentifier: TokenPickerCell.reuseIdentifier
-    )
     
     setupCollectionLayout()
   }

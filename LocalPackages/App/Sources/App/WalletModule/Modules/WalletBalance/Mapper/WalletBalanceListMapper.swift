@@ -187,20 +187,20 @@ struct WalletBalanceListMapper {
   func mapSetupState(_ state: WalletBalanceSetupModel.State,
                      biometrySelectionHandler: @escaping () -> Void,
                      telegramChannelSelectionHandler: @escaping () -> Void,
-                     backupSelectionHandler: @escaping () -> Void) -> [WalletBalanceItem: WalletBalanceListCell.Model] {
+                     backupSelectionHandler: @escaping () -> Void) -> [String: WalletBalanceListCell.Model] {
     switch state {
     case .none:
       return [:]
     case .setup(let setup):
-      var items = [WalletBalanceItem: WalletBalanceListCell.Model]()
-      items[WalletBalanceItem(id: WalletBalanceSetupItem.telegramChannel.rawValue)] = createTelegramChannelItem(
+      var items = [String: WalletBalanceListCell.Model]()
+      items[WalletBalanceSetupItem.telegramChannel.rawValue] = createTelegramChannelItem(
         selectionHandler: telegramChannelSelectionHandler
       )
       if setup.isBiometryVisible {
-        items[WalletBalanceItem(id: WalletBalanceSetupItem.biometry.rawValue)] = createBiometryItem(selectionHandler: biometrySelectionHandler)
+        items[WalletBalanceSetupItem.biometry.rawValue] = createBiometryItem(selectionHandler: biometrySelectionHandler)
       }
       if setup.isBackupVisible {
-        items[WalletBalanceItem(id: WalletBalanceSetupItem.backup.rawValue)] = createBackupItem(
+        items[WalletBalanceSetupItem.backup.rawValue] = createBackupItem(
           selectionHandler: backupSelectionHandler
         )
       }

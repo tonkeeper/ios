@@ -4,11 +4,14 @@ public final class Assembly {
   public struct Dependencies {
     public let cacheURL: URL
     public let sharedCacheURL: URL
+    public let appInfoProvider: AppInfoProvider
     
     public init(cacheURL: URL,
-                sharedCacheURL: URL) {
+                sharedCacheURL: URL,
+                appInfoProvider: AppInfoProvider) {
       self.cacheURL = cacheURL
       self.sharedCacheURL = sharedCacheURL
+      self.appInfoProvider = appInfoProvider
     }
   }
   
@@ -19,7 +22,7 @@ public final class Assembly {
     coreAssembly: coreAssembly
   )
   private lazy var apiAssembly = APIAssembly(configurationAssembly: configurationAssembly)
-  private lazy var tonkeeperApiAssembly = TonkeeperAPIAssembly()
+  private lazy var tonkeeperApiAssembly = TonkeeperAPIAssembly(appInfoProvider: dependencies.appInfoProvider)
   private lazy var locationAPIAssembly = LocationAPIAssembly()
   private lazy var servicesAssembly = ServicesAssembly(
     repositoriesAssembly: repositoriesAssembly, 
@@ -36,7 +39,8 @@ public final class Assembly {
   )
   private lazy var loadersAssembly = LoadersAssembly(
     servicesAssembly: servicesAssembly,
-    storesAssembly: storesAssembly
+    storesAssembly: storesAssembly,
+    tonkeeperAPIAssembly: tonkeeperApiAssembly
   )
   private lazy var formattersAssembly = FormattersAssembly()
   private var walletUpdateAssembly: WalletsUpdateAssembly {
@@ -58,7 +62,8 @@ public final class Assembly {
     self.dependencies = dependencies
     self.coreAssembly = CoreAssembly(
       cacheURL: dependencies.cacheURL,
-      sharedCacheURL: dependencies.sharedCacheURL
+      sharedCacheURL: dependencies.sharedCacheURL,
+      appInfoProvider: dependencies.appInfoProvider
     )
   }
 }

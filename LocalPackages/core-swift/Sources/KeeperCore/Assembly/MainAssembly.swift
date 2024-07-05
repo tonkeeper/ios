@@ -79,7 +79,8 @@ public final class MainAssembly {
       ),
       apiProvider: apiAssembly.apiProvider,
       walletBalanceLoader: mainLoadersAssembly.walletBalanceLoaderV2,
-      tonRatesLoader: loadersAssembly.tonRatesLoaderV2
+      tonRatesLoader: loadersAssembly.tonRatesLoaderV2,
+      internalNotificationsLoader: loadersAssembly.internalNotificationsLoader
     )
   }
 

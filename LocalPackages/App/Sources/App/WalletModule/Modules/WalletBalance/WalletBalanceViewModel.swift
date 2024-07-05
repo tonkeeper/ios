@@ -17,7 +17,8 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapSwap: (() -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
-  var didRequirePasscode: (() async -> String?)? { get set }
+  
+  var didTapManage: ((Wallet) -> Void)? { get set }
 }
 
 protocol WalletBalanceModuleInput: AnyObject {}
@@ -25,7 +26,7 @@ protocol WalletBalanceModuleInput: AnyObject {}
 protocol WalletBalanceViewModel: AnyObject {
   var didUpdateSnapshot: ((_ snapshot: WalletBalanceViewController.Snapshot, _ isAnimated: Bool) -> Void)? { get set }
   
-  var didUpdateItems: (([WalletBalanceItem: WalletBalanceListCell.Model]) -> Void)? { get set }
+  var didUpdateBalanceItems: (([String: WalletBalanceListCell.Model]) -> Void)? { get set }
   
   var didChangeWallet: (() -> Void)? { get set }
   var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)? { get set }
@@ -33,8 +34,10 @@ protocol WalletBalanceViewModel: AnyObject {
   
   func viewDidLoad()
   func didTapFinishSetupButton()
-  func getBalanceItemCellModel(item: WalletBalanceItem) -> WalletBalanceListCell.Model?
-  func didSelectItem(_ item: WalletBalanceItem)
+  func getBalanceItemCellModel(identifier: String) -> WalletBalanceListCell.Model?
+  func getNotificationCellModel(identifier: String) -> NotificationBannerCell.Model?
+  func didSelectItem(identifier: String)
+  func didTapManageButton()
 }
 
 final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, WalletBalanceModuleOutput, WalletBalanceModuleInput {
@@ -42,13 +45,14 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private struct State {
     let balanceItems: WalletBalanceBalanceModel.BalanceListItems
     let setupState: WalletBalanceSetupModel.State
+    let notifications: [NotificationModel]
   }
   
   // MARK: - WalletBalanceModuleOutput
   
   var didUpdateSnapshot: ((_ snapshot: WalletBalanceViewController.Snapshot, _ isAnimated: Bool) -> Void)?
   
-  var didUpdateItems: (([WalletBalanceItem: WalletBalanceListCell.Model]) -> Void)?
+  var didUpdateBalanceItems: (([String: WalletBalanceListCell.Model]) -> Void)?
   
   var didSelectTon: ((Wallet) -> Void)?
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
@@ -60,7 +64,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapSwap: (() -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
-  var didRequirePasscode: (() async -> String?)?
+  
+  var didTapManage: ((Wallet) -> Void)?
   
   // MARK: - WalletBalanceViewModel
   
@@ -78,18 +83,31 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     totalBalanceModel.didUpdateState = { [weak self] state in
       self?.didUpdateTotalBalanceState(state)
     }
+    notificationStore.addObserver(self,
+                                  notifyOnAdded: true) { observer, newState, oldState in
+      observer.didUpdateNotifications(newState)
+    }
   }
   
-  func getBalanceItemCellModel(item: WalletBalanceItem) -> WalletBalanceListCell.Model? {
-    return cellModels[item]
+  func getBalanceItemCellModel(identifier: String) -> WalletBalanceListCell.Model? {
+    cellModels[identifier]
+  }
+  
+  func getNotificationCellModel(identifier: String) -> NotificationBannerCell.Model? {
+    notificationCellModels[identifier]
   }
   
   func didTapFinishSetupButton() {
     setupModel.finishSetup()
   }
   
-  func didSelectItem(_ item: WalletBalanceItem) {
-    cellModels[item]?.selectionClosure?()
+  func didSelectItem(identifier: String) {
+    cellModels[identifier]?.selectionClosure?()
+  }
+  
+  func didTapManageButton() {
+    let wallet = walletsStore.getState().activeWallet
+    didTapManage?(wallet)
   }
   
   // MARK: - State
@@ -99,8 +117,10 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     balanceItems: WalletBalanceBalanceModel.BalanceListItems(
       tonItem: nil, usdtItem: nil, jettonsItems: [], stakingItems: []
     ),
-    setupState: .none)
-  private var cellModels = [WalletBalanceItem: WalletBalanceListCell.Model]()
+    setupState: .none,
+    notifications: [])
+  private var cellModels = [String: WalletBalanceListCell.Model]()
+  private var notificationCellModels = [String: NotificationBannerCell.Model]()
   private var stakingUpdateTimer: DispatchSourceTimer?
 
   // MARK: - Mapper
@@ -111,24 +131,30 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private let setupModel: WalletBalanceSetupModel
   private let totalBalanceModel: WalletTotalBalanceModel
   private let walletsStore: WalletsStoreV2
+  private let notificationStore: NotificationsStore
   private let listMapper: WalletBalanceListMapper
   private let headerMapper: WalletBalanceHeaderMapper
   private let secureMode: SecureMode
+  private let urlOpener: URLOpener
   
   init(balanceListModel: WalletBalanceBalanceModel,
        setupModel: WalletBalanceSetupModel,
        totalBalanceModel: WalletTotalBalanceModel,
        walletsStore: WalletsStoreV2,
+       notificationStore: NotificationsStore,
        listMapper: WalletBalanceListMapper,
        headerMapper: WalletBalanceHeaderMapper,
-       secureMode : SecureMode) {
+       secureMode : SecureMode,
+       urlOpener: URLOpener) {
     self.balanceListModel = balanceListModel
     self.setupModel = setupModel
     self.totalBalanceModel = totalBalanceModel
     self.walletsStore = walletsStore
+    self.notificationStore = notificationStore
     self.listMapper = listMapper
     self.headerMapper = headerMapper
     self.secureMode = secureMode
+    self.urlOpener = urlOpener
   }
 }
 
@@ -186,10 +212,10 @@ private extension WalletBalanceViewModelImplementation {
         self.stopStakingItemsUpdateTimer()
         
         let wallet = await self.walletsStore.getState().activeWallet
-        var models = [WalletBalanceItem: WalletBalanceListCell.Model]()
+        var models = [String: WalletBalanceListCell.Model]()
         
         if let tonItem = items.tonItem {
-          models[WalletBalanceItem(id: tonItem.id)] = self.listMapper.mapTonItem(
+          models[tonItem.id] = self.listMapper.mapTonItem(
             tonItem,
             isSecure: isSecure,
             selectionHandler: { [weak self] in
@@ -198,7 +224,7 @@ private extension WalletBalanceViewModelImplementation {
         }
         
         if let tonUSDTItem = items.usdtItem {
-          models[WalletBalanceItem(id: tonUSDTItem.id)] = self.listMapper.mapJettonItem(
+          models[tonUSDTItem.id] = self.listMapper.mapJettonItem(
             tonUSDTItem,
             isSecure: isSecure,
             selectionHandler: { [weak self] in
@@ -207,7 +233,7 @@ private extension WalletBalanceViewModelImplementation {
         }
         
         items.stakingItems.forEach { item in
-          models[WalletBalanceItem(id: item.id)] = self.listMapper.mapStakingItem(
+          models[item.id] = self.listMapper.mapStakingItem(
             item,
             isSecure: isSecure,
             selectionHandler: {
@@ -223,7 +249,7 @@ private extension WalletBalanceViewModelImplementation {
         }
         
         items.jettonsItems.forEach { item in
-          models[WalletBalanceItem(id: item.id)] = self.listMapper.mapJettonItem(
+          models[item.id] = self.listMapper.mapJettonItem(
             item,
             isSecure: isSecure) { [weak self] in
               self?.didSelectJetton?(wallet, item.jetton, !item.price.isZero)
@@ -231,7 +257,8 @@ private extension WalletBalanceViewModelImplementation {
         }
 
         let state = State(balanceItems: items,
-                          setupState: self.state.setupState)
+                          setupState: self.state.setupState,
+                          notifications: self.state.notifications)
         let snapshot = self.createSnapshot(state: state)
         
         self.state = state
@@ -265,7 +292,8 @@ private extension WalletBalanceViewModelImplementation {
           }
         )
         let state = State(balanceItems: self.state.balanceItems,
-                          setupState: state)
+                          setupState: state,
+                          notifications: self.state.notifications)
         let snapshot = self.createSnapshot(state: state)
         self.state = state
         await MainActor.run { [snapshot] in
@@ -276,21 +304,82 @@ private extension WalletBalanceViewModelImplementation {
     }
   }
   
+  func didUpdateNotifications(_ notifications: [NotificationModel]) {
+    Task {
+      await self.actor.addTask(block:{
+        let cellModels = notifications.reduce(into: [String: NotificationBannerCell.Model]()) { result, notification in
+          let appearance = {
+            switch notification.mode {
+            case .warning:
+              return NotificationBannerView.Model.Appearance.accentYellow
+            case .critical:
+              return NotificationBannerView.Model.Appearance.accentRed
+            }
+          }()
+          let actionButton: NotificationBannerView.Model.ActionButton? = {
+            guard let action = notification.action else {
+              return nil
+            }
+            
+            let actionButtonAction: (() -> Void)
+            switch action.type {
+            case .openLink(let url):
+              actionButtonAction = { [weak self] in
+                guard let url else { return }
+                self?.urlOpener.open(url: url)
+              }
+            }
+            return NotificationBannerView.Model.ActionButton(title: action.label, action: actionButtonAction)
+          }()
+          
+          let model =  NotificationBannerCell.Model(
+            title: notification.title,
+            caption: notification.caption,
+            appearance: appearance,
+            actionButton: actionButton,
+            closeAction: { [weak self] in
+              guard let self else { return }
+              Task {
+                self.notificationStore.removeNotification(notification)
+              }
+            }
+          )
+          result[notification.id] = model
+        }
+        let state = State(balanceItems: self.state.balanceItems,
+                          setupState: self.state.setupState,
+                          notifications: notifications)
+        let snapshot = self.createSnapshot(state: state)
+        self.state = state
+        await MainActor.run { [snapshot] in
+          self.notificationCellModels = cellModels
+          self.didUpdateSnapshot?(snapshot, true)
+        }
+      })
+    }
+  }
+  
   private func createSnapshot(state: State) -> WalletBalanceViewController.Snapshot {
     var snapshot = WalletBalanceViewController.Snapshot()
+    
+    if !state.notifications.isEmpty {
+      snapshot.appendSections([.notifications])
+      let items: [WalletBalanceItem] = state.notifications.map { .notificationItem($0.id) }
+      snapshot.appendItems(items, toSection: .notifications)
+    }
     
     switch state.setupState {
     case .setup(let setup):
       let items: [WalletBalanceItem] = {
         var items = [WalletBalanceItem]()
         if setup.isBiometryVisible {
-          items.append(WalletBalanceItem(id: WalletBalanceSetupItem.biometry.rawValue))
+          items.append(.balanceItem(WalletBalanceSetupItem.biometry.rawValue))
         }
         if setup.isTelegramChannelVisible {
-          items.append(WalletBalanceItem(id: WalletBalanceSetupItem.telegramChannel.rawValue))
+          items.append(.balanceItem(WalletBalanceSetupItem.telegramChannel.rawValue))
         }
         if setup.isBackupVisible {
-          items.append(WalletBalanceItem(id: WalletBalanceSetupItem.backup.rawValue))
+          items.append(.balanceItem(WalletBalanceSetupItem.backup.rawValue))
         }
         return items
       }()
@@ -312,16 +401,24 @@ private extension WalletBalanceViewModelImplementation {
     
     var items = [WalletBalanceItem]()
     if let tonItem = state.balanceItems.tonItem {
-      items.append(WalletBalanceItem(id: tonItem.id))
+      items.append(.balanceItem(tonItem.id))
     }
     if let usdtItem = state.balanceItems.usdtItem {
-      items.append(WalletBalanceItem(id: usdtItem.id))
+      items.append(.balanceItem(usdtItem.id))
     }
-    items.append(contentsOf: state.balanceItems.stakingItems.map { WalletBalanceItem(id: $0.id) })
-    items.append(contentsOf: state.balanceItems.jettonsItems.map { WalletBalanceItem(id: $0.id) })
-
+    items.append(contentsOf: state.balanceItems.stakingItems.map { .balanceItem($0.id) })
+    items.append(contentsOf: state.balanceItems.jettonsItems.map { .balanceItem($0.id) })
+    
     snapshot.appendSections([.balance])
     snapshot.appendItems(items, toSection: .balance)
+    
+    snapshot.appendSections([.manage])
+    let manageButtonItem = WalletBalanceItem.manageButton(
+      WalletsListAddWalletCell.Model(
+        content: TKButton.Configuration.Content(title: .plainString("Manage"))
+      )
+    )
+    snapshot.appendItems([manageButtonItem], toSection: .manage)
     
     if #available(iOS 15.0, *) {
       snapshot.reconfigureItems(snapshot.itemIdentifiers)
@@ -395,10 +492,10 @@ private extension WalletBalanceViewModelImplementation {
   func updateStakingItemsOnTimer(stakingItems: [WalletBalanceBalanceModel.BalanceListStakingItem]) {
     Task {
       await self.actor.addTask(block: {
-        var models = [WalletBalanceItem: WalletBalanceListCell.Model]()
+        var models = [String: WalletBalanceListCell.Model]()
         let isSecure = await self.secureMode.isSecure
         stakingItems.forEach { item in
-          models[WalletBalanceItem(id: item.id)] = self.listMapper.mapStakingItem(
+          models[item.id] = self.listMapper.mapStakingItem(
             item,
             isSecure: isSecure,
             selectionHandler: {
@@ -411,7 +508,7 @@ private extension WalletBalanceViewModelImplementation {
         
         await MainActor.run { [models] in
           self.cellModels.merge(models) { $1 }
-          self.didUpdateItems?(models)
+          self.didUpdateBalanceItems?(models)
         }
       })
     }
@@ -513,4 +610,8 @@ private extension WalletBalanceViewModelImplementation {
 
     didCopy?(toastConfiguration)
   }
+}
+
+private extension String {
+  static let manageButtonCellIdentifier = "ManageButtonCellIdentifier"
 }
