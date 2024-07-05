@@ -35,9 +35,7 @@ public final class TKInputRecoveryPhraseView: UIView, ConfigurableView {
     view.padding = .titleDescriptionPadding
     return view
   }()
-  
-  let gradientView = TKGradientView(color: .Background.page, direction: .topToBottom)
-  
+    
   var inputTextFields = [TKMnemonicTextField]()
   
   let continueButton = TKButton()
@@ -191,16 +189,13 @@ private extension TKInputRecoveryPhraseView {
     contentStackView.addArrangedSubview(continueButton)
     
     addSubview(pasteButton)
-    
-    addSubview(gradientView)
-    
+      
     setupConstraints()
   }
   
   func setupConstraints() {
     scrollView.translatesAutoresizingMaskIntoConstraints = false
     contentStackView.translatesAutoresizingMaskIntoConstraints = false
-    gradientView.translatesAutoresizingMaskIntoConstraints = false
     
     pasteButton.snp.makeConstraints { make in
       make.centerX.equalTo(self)
@@ -208,11 +203,6 @@ private extension TKInputRecoveryPhraseView {
     }
     
     NSLayoutConstraint.activate([
-      gradientView.topAnchor.constraint(equalTo: topAnchor),
-      gradientView.leftAnchor.constraint(equalTo: leftAnchor),
-      gradientView.rightAnchor.constraint(equalTo: rightAnchor),
-      gradientView.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor),
-      
       scrollView.topAnchor.constraint(equalTo: topAnchor),
       scrollView.leftAnchor.constraint(equalTo: leftAnchor),
       scrollView.rightAnchor.constraint(equalTo: rightAnchor),

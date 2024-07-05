@@ -3,7 +3,6 @@ import TonSwift
 import BigInt
 
 public final class SendV3Controller {
-  
   private let walletsStore: WalletsStore
   private let walletBalanceStore: WalletBalanceStore
   private let knownAccountsStore: KnownAccountsStore
@@ -62,8 +61,8 @@ public final class SendV3Controller {
     
     var fractionalDigits = 0
     if components.count == 2 {
-        let fractionalString = components[1]
-        fractionalDigits = fractionalString.count
+      let fractionalString = components[1]
+      fractionalDigits = fractionalString.count
     }
     let zeroString = String(repeating: "0", count: max(0, targetFractionalDigits - fractionalDigits))
     let bigIntValue = BigUInt(stringLiteral: components.joined() + zeroString)
@@ -196,11 +195,37 @@ public final class SendV3Controller {
       return .zero
     }
   }
+  
+  public enum CommentState {
+    case ledgerNonAsciiError
+    case ok
+  }
+  public func validateComment(comment: String) -> CommentState {
+    let wallet = walletsStore.activeWallet
+    
+    if (wallet.kind == .ledger && comment.count > 0 && !comment.containsOnlyAsciiCharacters) {
+      return .ledgerNonAsciiError
+    }
+    
+    return .ok
+  }
 }
 
 private extension String {
   static let groupSeparator = " "
   static var fractionalSeparator: String? {
     Locale.current.decimalSeparator
+  }
+  var containsOnlyAsciiCharacters: Bool {
+    let pattern = "^[\\x20-\\x7E]*$"
+    do {
+      let regex = try NSRegularExpression(pattern: pattern)
+      let range = NSRange(location: 0, length: self.utf16.count)
+      let match = regex.firstMatch(in: self, options: [], range: range)
+      return match != nil
+    } catch {
+      print("Invalid regular expression: \(error.localizedDescription)")
+      return false
+    }
   }
 }

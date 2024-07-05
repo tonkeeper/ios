@@ -11,7 +11,6 @@ public final class TKLoaderView: UIView {
   private let bottomCircleLayer: CAShapeLayer = {
     let layer = CAShapeLayer()
     layer.fillColor = UIColor.clear.cgColor
-    layer.strokeColor = UIColor.Icon.secondary.cgColor
     layer.lineCap = .round
     return layer
   }()
@@ -147,6 +146,7 @@ private extension TKLoaderView {
   }
   
   func didUpdateStyle() {
+    bottomCircleLayer.strokeColor = style.tintColor.withAlphaComponent(0.32).cgColor
     topCircleLayer.strokeColor = style.tintColor.cgColor
   }
 }
@@ -159,7 +159,7 @@ extension TKLoaderView {
     var tintColor: UIColor {
       switch self {
       case .primary: return UIColor.Icon.primary
-      case .secondary: return UIColor.Icon.tertiary
+      case .secondary: return UIColor.Icon.secondary
       }
     }
   }

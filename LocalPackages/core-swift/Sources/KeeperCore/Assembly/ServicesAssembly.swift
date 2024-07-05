@@ -20,7 +20,7 @@ public final class ServicesAssembly {
     self.coreAssembly = coreAssembly
   }
   
-  func walletsService() -> WalletsService {
+  public func walletsService() -> WalletsService {
     WalletsServiceImplementation(keeperInfoRepository: repositoriesAssembly.keeperInfoRepository())
   }
   
@@ -55,7 +55,8 @@ public final class ServicesAssembly {
       apiProvider: apiAssembly.apiProvider,
       jettonsBalanceService: jettonsBalanceService(),
       accountNFTService: accountNftService(),
-      currencyService: currencyService()
+      currencyService: currencyService(),
+      walletsService: walletsService()
     )
   }
   

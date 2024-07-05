@@ -18,8 +18,8 @@ public final class ToastPresenter {
     public init(title: String,
                 shape: ToastView.Model.Shape = .oval,
                 isActivity: Bool = false,
-                backgroundColor: UIColor,
-                foregroundColor: UIColor,
+                backgroundColor: UIColor = .Background.contentTint,
+                foregroundColor: UIColor = .Text.primary,
                 dismissRule: DismissRule = .default) {
       self.title = title
       self.shape = shape

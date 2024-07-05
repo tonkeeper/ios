@@ -1,19 +1,30 @@
 import Foundation
 import TKUIKit
 import TKLocalize
+import TonTransport
+import BleTransport
+import KeeperCore
 
 protocol LedgerConfirmModuleOutput: AnyObject {
   var didCancel: (() -> Void)? { get set }
-  var didSign: ((Data) -> Void)? { get set }
+  var didSign: ((String) -> Void)? { get set }
 }
 
 protocol LedgerConfirmViewModel: AnyObject {
   var didUpdateModel: ((LedgerConfirmView.Model) -> Void)? { get set }
+  var showToast: ((ToastPresenter.Configuration) -> Void)? { get set }
+  var didShowTurnOnBluetoothAlert: (() -> Void)? { get set }
+  var didShowBluetoothAuthorisationAlert: (() -> Void)? { get set }
   
   func viewDidLoad()
+  func stopTasks()
 }
 
 final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, LedgerConfirmModuleOutput {
+  enum Error: Swift.Error {
+    case invalidDeviceId
+  }
+  
   enum State {
     case idle
     case bluetoothConnected
@@ -24,47 +35,35 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   // MARK: - LedgerConnectModuleOutput
   
   var didCancel: (() -> Void)?
-  var didSign: ((Data) -> Void)?
+  var didSign: ((String) -> Void)?
   
   // MARK: - LedgerConnectViewModel
   
   var didUpdateModel: ((LedgerConfirmView.Model) -> Void)?
+  var showToast: ((ToastPresenter.Configuration) -> Void)?
+  var didShowTurnOnBluetoothAlert: (() -> Void)?
+  var didShowBluetoothAuthorisationAlert: (() -> Void)?
+  
+  private var pollTonAppTask: Task<Void, Swift.Error>? = nil
+  private var disconnectTask: Task<Void, Never>? = nil
+  
+  private var transport: BleTransportProtocol = BleTransport.shared
+  private var isClosed: Bool = false
   
   func viewDidLoad() {
     updateModel()
     didUpdateState()
     
-    setDisconnected()
+    listenBluetoothState()
   }
   
-  // TODO: Remove, For Debug
-  
-  func setDisconnected() {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-      self.state = .idle
-      self.setConnected()
-    }
-  }
-  
-  func setConnected() {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-      self.state = .bluetoothConnected
-      self.setTonAppOpened()
-    }
-  }
-  
-  func setTonAppOpened() {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-      self.state = .tonAppOpened
-      self.setConfirmed()
-    }
-  }
-  
-  func setConfirmed() {
-    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-      self.state = .confirmed
-      self.setDisconnected()
-    }
+  func stopTasks() {
+    isClosed = true
+    
+    pollTonAppTask?.cancel()
+    disconnectTask?.cancel()
+    
+    transport.disconnect(completion: nil)
   }
   
   // MARK: - State
@@ -77,10 +76,144 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   
   // MARK: - Dependencies
   
+  private let transferMessageBuilder: TransferMessageBuilder
+  private let ledgerDevice: Wallet.LedgerDevice
+  private let wallet: Wallet
+  
   // MARK: - Init
+  
+  init(transferMessageBuilder: TransferMessageBuilder, wallet: Wallet, ledgerDevice: Wallet.LedgerDevice) {
+    self.transferMessageBuilder = transferMessageBuilder
+    self.wallet = wallet
+    self.ledgerDevice = ledgerDevice
+  }
 }
 
 private extension LedgerConfirmViewModelImplementation {
+  func listenBluetoothState() {
+    transport.bluetoothStateCallback { state in
+      switch state {
+      case .poweredOn:
+        self.connect()
+      case .poweredOff:
+        self.didShowTurnOnBluetoothAlert?()
+      case .unauthorized:
+        self.didShowBluetoothAuthorisationAlert?()
+      default:
+        break
+      }
+    }
+  }
+  
+  func connect() {
+    do {
+      guard let uuid = UUID(uuidString: ledgerDevice.deviceId) else {
+        throw Error.invalidDeviceId
+      }
+      let peripheral = PeripheralIdentifier(uuid: uuid, name: ledgerDevice.deviceModel)
+      
+      print("Connecting to \(peripheral.name)...")
+      transport.connect(toPeripheralID: peripheral, disconnectedCallback: {
+        print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
+        if self.isClosed { return }
+        
+        self.pollTonAppTask?.cancel()
+        self.connect()
+        
+        self.disconnectTask = Task {
+          do {
+            try await Task.sleep(nanoseconds: 3_000_000_000)
+            try Task.checkCancellation()
+            await MainActor.run {
+              self.setDisconnected()
+            }
+          } catch {}
+        }
+      }, success: { result in
+        print("Connected to \(result.name), udid: \(result.uuid)")
+        self.disconnectTask?.cancel()
+        self.setConnected()
+        self.waitForAppOpen()
+      }, failure: { error in
+        print("Error connecting to device: \(error.localizedDescription)")
+        if self.isClosed { return }
+        self.connect()
+        self.setDisconnected()
+      })
+    } catch {
+      didCancel?()
+    }
+  }
+  
+  func waitForAppOpen() {
+    let tonTransport = TonTransport(transport: transport)
+    
+    @Sendable func startPollTask() {
+      let task = Task {
+        let isAppOpened = try await tonTransport.isAppOpen()
+        try Task.checkCancellation()
+        guard isAppOpened else {
+          try await Task.sleep(nanoseconds: 1_000_000_000)
+          try Task.checkCancellation()
+          await MainActor.run {
+            startPollTask()
+          }
+          return
+        }
+        await MainActor.run {
+          self.setTonAppOpened()
+          self.signTransaction(tonTransport: tonTransport)
+        }
+      }
+      self.pollTonAppTask = task
+    }
+    startPollTask()
+  }
+  
+  func signTransaction(tonTransport: TonTransport) {
+    let accountPath = AccountPath(index: ledgerDevice.accountIndex)
+    
+    Task {
+      do {
+        let transactionBuilder = LedgerTransactionBuilder(wallet: self.wallet,
+                                                          transferMessageBuilder: self.transferMessageBuilder,
+                                                          tonTransport: tonTransport,
+                                                          accountPath: accountPath)
+        
+        let boc = try await transactionBuilder.signTransaction()
+        
+        await MainActor.run {
+          self.setConfirmed()
+          self.didSign?(boc)
+        }
+      } catch {
+        if let transportError = error as? TransportStatusError, case .deniedByUser = transportError {
+          // nothing
+        } else {
+          self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
+        }
+        
+        self.didCancel?()
+      }
+    }
+  }
+  
+  func setDisconnected() {
+    self.state = .idle
+  }
+  
+  func setConnected() {
+    self.state = .bluetoothConnected
+  }
+  
+  func setTonAppOpened() {
+    self.state = .tonAppOpened
+  }
+  
+  func setConfirmed() {
+    self.state = .confirmed
+  }
+  
   func updateModel() {
     let model = LedgerConfirmView.Model(
       contentViewModel: LedgerContentView.Model(

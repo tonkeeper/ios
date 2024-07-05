@@ -9,6 +9,8 @@
 "actions.copy" = "Скопировать";
 "actions.sign_out" = "Выйти";
 
+"errors.unknown" = "Ошибка";
+
 "dates.today" = "Сегодня";
 "dates.yesterday" = "Вчера";
 
@@ -111,6 +113,7 @@
 
 "send.comment.placeholder" = "Комментарий";
 "send.comment.description" = "Будет виден всем.";
+"send.comment.ascii_error" = "Используйте только ASCII символы: цифры, буквы латинского алфавита и знаки пунктуации.";
 
 "send.required_comment.placeholder" = "Комментарий";
 "send.required_comment.description" = "Обязательно укажите memo или тег при отправке на биржу.";
@@ -150,6 +153,7 @@
 "choose_wallets.title" = "Выберите кошельки";
 "choose_wallets.description" = "Выберите кошельки, которые вы хотите добавить.";
 "choose_wallets.tokens" = "токены";
+"choose_wallets.alreadyAdded" = "Уже добавлен";
 
 "finish_setup.title" = "Завершить установку";
 "finish_setup.setup_biometry" = "Включите %@ для подтверждения транзакций";
@@ -245,6 +249,14 @@
 "ledger_confirm.items.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
 "ledger_confirm.items.ton_app.description" = "Разблокируйте его и откройте приложение TON";
 "ledger_confirm.items.confirm" = "Подтвердите транзакцию в Ledger";
+
+"bluetooth.powered_off_alert.title" = "Bluetooth выключен";
+"bluetooth.powered_off_alert.message" = "Пожалуйста, включите Bluetooth, чтобы использовать эту функцию";
+"bluetooth.powered_off_alert.open_settings" = "Открыть настройки";
+
+"bluetooth.permissions_alert.title" = "Разрешения Bluetooth";
+"bluetooth.permissions_alert.message" = "Пожалуйста, включите разрешения Bluetooth в настройках, чтобы использовать эту функцию";
+"bluetooth.permissions_alert.open_settings" = "Открыть настройки";
 
 "sign_out_full.title" = "🚧 🚨🚨🚨 🚧\nВыйти из всех кошельков?";
 "sign_out_full.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";

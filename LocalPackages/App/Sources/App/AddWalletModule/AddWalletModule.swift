@@ -4,6 +4,7 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 import TonSwift
+import TonTransport
 
 struct AddWalletModule {
   private let dependencies: Dependencies
@@ -129,15 +130,38 @@ struct AddWalletModule {
           self.createPublicKeyImportCoordinator(publicKey: publicKey, name: name, router: router)
         }
       )
+    }
+  
+  public func createLedgerImportCoordinator(
+    accounts: [LedgerAccount],
+    activeWalletModels: [ActiveWalletModel],
+    name: String,
+    router: NavigationControllerRouter
+  ) -> LedgerImportCoordinator {
+    LedgerImportCoordinator(
+      ledgerAccounts: accounts,
+      activeWalletModels: activeWalletModels,
+      name: name,
+      router: router,
+      walletsUpdateAssembly: dependencies.walletsUpdateAssembly,
+      customizeWalletModule: {
+        self.createCustomizeWalletModule(
+          name: name,
+          tintColor: nil,
+          icon: nil,
+          configurator: AddWalletCustomizeWalletViewModelConfigurator()
+        )
+      }
+    )
   }
-
-public func createLedgerPairCoordinator(router: ViewControllerRouter) -> PairLedgerCoordinator {
+  
+  public func createLedgerPairCoordinator(router: ViewControllerRouter) -> PairLedgerCoordinator {
     PairLedgerCoordinator(
       walletUpdateAssembly: dependencies.walletsUpdateAssembly,
       coreAssembly: dependencies.coreAssembly,
       router: router,
-      publicKeyImportCoordinatorProvider: { router, publicKey, name in
-        self.createPublicKeyImportCoordinator(publicKey: publicKey, name: name, router: router)
+      ledgerImportCoordinatorProvider: { router, accounts, activeWalletModels, name in
+        self.createLedgerImportCoordinator(accounts: accounts, activeWalletModels: activeWalletModels, name: name, router: router)
       }
     )
   }

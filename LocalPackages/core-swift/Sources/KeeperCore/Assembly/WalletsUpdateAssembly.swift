@@ -2,7 +2,7 @@ import Foundation
 
 public final class WalletsUpdateAssembly {
   
-  private let servicesAssembly: ServicesAssembly
+  public let servicesAssembly: ServicesAssembly
   public let repositoriesAssembly: RepositoriesAssembly
   private let formattersAssembly: FormattersAssembly
   
@@ -26,7 +26,7 @@ public final class WalletsUpdateAssembly {
   }
   
   public func walletImportController() -> WalletImportController {
-    WalletImportController(activeWalletService: servicesAssembly.activeWalletsService())
+    WalletImportController(activeWalletService: servicesAssembly.activeWalletsService(), currencyService: servicesAssembly.currencyService())
   }
   
   public func walletUpdateController() -> WalletEditController {
@@ -37,10 +37,11 @@ public final class WalletsUpdateAssembly {
     WatchOnlyWalletAddressInputController(addressResolver: AddressResolver(dnsService: servicesAssembly.dnsService()))
   }
   
-  public func chooseWalletController(activeWalletModels: [ActiveWalletModel]) -> ChooseWalletsController {
+  public func chooseWalletController(activeWalletModels: [ActiveWalletModel], configuration: ChooseWalletsController.Configuration) -> ChooseWalletsController {
     ChooseWalletsController(
       activeWalletModels: activeWalletModels,
-      amountFormatter: formattersAssembly.amountFormatter
+      amountFormatter: formattersAssembly.amountFormatter,
+      configuration: configuration
     )
   }
 }
