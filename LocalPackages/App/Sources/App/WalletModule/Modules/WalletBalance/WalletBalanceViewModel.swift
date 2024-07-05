@@ -29,7 +29,7 @@ protocol WalletBalanceViewModel: AnyObject {
   var didUpdateBalanceItems: (([String: WalletBalanceListCell.Model]) -> Void)? { get set }
   
   var didChangeWallet: (() -> Void)? { get set }
-  var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)? { get set }
+  var didUpdateHeader: ((BalanceHeaderView.Model) -> Void)? { get set }
   var didCopy: ((ToastPresenter.Configuration) -> Void)? { get set }
   
   func viewDidLoad()
@@ -70,7 +70,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   // MARK: - WalletBalanceViewModel
   
   var didChangeWallet: (() -> Void)?
-  var didUpdateHeader: ((WalletBalanceHeaderView.Model) -> Void)?
+  var didUpdateHeader: ((BalanceHeaderView.Model) -> Void)?
   var didCopy: ((ToastPresenter.Configuration) -> Void)?
   
   func viewDidLoad() {
@@ -175,11 +175,21 @@ private extension WalletBalanceViewModelImplementation {
           }
         )
         
-        let secureState: WalletBalanceHeaderBalanceButton.State = state.isSecure ? .secure : .unsecure
-        
-        let balanceModel = WalletBalanceHeaderBalanceView.Model(
-          balanceButtonModel: WalletBalanceHeaderBalanceButton.Model(
+        let balanceColor: UIColor
+        let backup: BalanceHeaderAmountView.Model.Backup
+        if (!state.wallet.isBackupAvailable || state.wallet.hasBackup) {
+          balanceColor = .Text.primary
+          backup = .none
+        } else {
+          balanceColor = .Accent.orange
+          backup = .backup(closure: {})
+        }
+
+        let secureState: BalanceHeaderAmountButton.State = state.isSecure ? .secure : .unsecure
+        let balanceModel = BalanceHeaderAmountView.Model(
+          balanceButtonModel: BalanceHeaderAmountButton.Model(
             balance: totalBalanceMapped,
+            balanceColor: balanceColor,
             state: secureState,
             tapHandler: { [weak self] in
               guard let self else { return }
@@ -188,14 +198,19 @@ private extension WalletBalanceViewModelImplementation {
               }
             }
           ),
+          backup: backup
+        )
+        
+        let headerModel = BalanceHeaderBalanceView.Model(
+          balanceModel: balanceModel,
           addressButtonConfiguration: addressButtonConfiguration,
           connectionStatusModel: nil,
           tagConfiguration: state.wallet.balanceTagConfiguration(),
           stateDate: nil
         )
         
-        let model = WalletBalanceHeaderView.Model(
-          balanceModel: balanceModel,
+        let model = BalanceHeaderView.Model(
+          balanceModel: headerModel,
           buttonsViewModel: self.createHeaderButtonsModel(wallet: state.wallet)
         )
         
@@ -429,50 +444,6 @@ private extension WalletBalanceViewModelImplementation {
     return snapshot
   }
 
-  func updateBalanceHeader(wallet: Wallet, totalBalanceState: TotalBalanceState?) {
-    guard let address = try? wallet.friendlyAddress else { return }
-  
-    let totalBalance = totalBalanceState?.totalBalance
-    
-    let totalBalanceMapped = headerMapper.mapTotalBalance(totalBalance: totalBalance)
-    
-    let addressButtonConfiguration = TKButton.Configuration(
-      content: TKButton.Configuration.Content(title: .plainString(address.toShort())),
-      textStyle: .body2,
-      textColor: .Text.secondary,
-      contentAlpha: [.normal: 1, .highlighted: 0.48],
-      action: { [weak self] in
-        self?.didTapCopy(address: address.toString(), toastConfiguration: wallet.copyToastConfiguration())
-      }
-    )
-    
-    let balanceModel = WalletBalanceHeaderBalanceView.Model(
-      balanceButtonModel: WalletBalanceHeaderBalanceButton.Model(
-        balance: totalBalanceMapped,
-        state: .secure,
-        tapHandler: { [weak self] in
-          guard let self else { return }
-          Task {
-            await self.secureMode.toggle()
-          }
-        }
-      ),
-      addressButtonConfiguration: addressButtonConfiguration,
-      connectionStatusModel: nil,
-      tagConfiguration: wallet.balanceTagConfiguration(),
-      stateDate: nil
-    )
-    
-    let model = WalletBalanceHeaderView.Model(
-      balanceModel: balanceModel,
-      buttonsViewModel: createHeaderButtonsModel(wallet: wallet)
-    )
-    
-    DispatchQueue.main.async {
-      self.didUpdateHeader?(model)
-    }
-  }
-  
   func startStakingItemsUpdateTimer(stakingItems: [WalletBalanceBalanceModel.BalanceListStakingItem]) {
     let queue = DispatchQueue(label: "WalletBalanceStakingItemsTimerQueue", qos: .background)
     let timer: DispatchSourceTimer = DispatchSource.makeTimerSource(flags: .strict, queue: queue)

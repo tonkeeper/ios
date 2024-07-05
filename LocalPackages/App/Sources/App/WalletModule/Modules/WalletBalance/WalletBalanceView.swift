@@ -4,7 +4,7 @@ import SnapKit
 
 final class WalletBalanceView: UIView, ConfigurableView {
   
-  let headerView = WalletBalanceHeaderView()
+  let headerView = BalanceHeaderView()
   
   let collectionView = TKUICollectionView(
     frame: .zero,

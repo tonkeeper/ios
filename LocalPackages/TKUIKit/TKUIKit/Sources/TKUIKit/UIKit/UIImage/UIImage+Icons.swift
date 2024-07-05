@@ -12,6 +12,10 @@ public extension UIImage {
           .imageWithName("Icons/12/ic-chevron-right-12")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var informationCircle: UIImage {
+          .imageWithName("Icons/12/ic-information-circle-12")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size16 {
         public static var chevronDown: UIImage {

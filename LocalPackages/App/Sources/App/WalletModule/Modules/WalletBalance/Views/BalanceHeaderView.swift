@@ -2,9 +2,9 @@ import UIKit
 import TKUIKit
 import SnapKit
 
-final class WalletBalanceHeaderView: UIView, ConfigurableView {
+final class BalanceHeaderView: UIView, ConfigurableView {
   
-  private let balanceView = WalletBalanceHeaderBalanceView()
+  private let balanceView = BalanceHeaderBalanceView()
   private let buttonsView = WalletBalanceHeaderButtonsView()
   
   private let stackView: UIStackView = {
@@ -23,7 +23,7 @@ final class WalletBalanceHeaderView: UIView, ConfigurableView {
   }
   
   struct Model {
-    let balanceModel: WalletBalanceHeaderBalanceView.Model
+    let balanceModel: BalanceHeaderBalanceView.Model
     let buttonsViewModel: WalletBalanceHeaderButtonsView.Model
   }
   
@@ -33,7 +33,7 @@ final class WalletBalanceHeaderView: UIView, ConfigurableView {
   }
 }
 
-private extension WalletBalanceHeaderView {
+private extension BalanceHeaderView {
   func setup() {
     addSubview(stackView)
     stackView.addArrangedSubview(balanceView)

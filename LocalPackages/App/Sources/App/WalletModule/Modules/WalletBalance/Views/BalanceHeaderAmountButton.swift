@@ -2,7 +2,7 @@ import TKUIKit
 import UIKit
 import SnapKit
 
-final class WalletBalanceHeaderBalanceButton: UIControl, ConfigurableView {
+final class BalanceHeaderAmountButton: UIControl, ConfigurableView {
   enum State {
     case secure
     case unsecure
@@ -17,8 +17,8 @@ final class WalletBalanceHeaderBalanceButton: UIControl, ConfigurableView {
   private var tapHandler: (() -> Void)?
 
   private let balanceLabel = UILabel()
+  private let secureLabel = UILabel()
   private let secureView = UIView()
-  private let stackView = UIStackView()
   
   override init(frame: CGRect) {
     super.init(frame: frame)
@@ -36,13 +36,15 @@ final class WalletBalanceHeaderBalanceButton: UIControl, ConfigurableView {
   
   struct Model {
     let balance: String?
+    let balanceColor: UIColor
     let state: State
     let tapHandler: (() -> Void)?
   }
   
   func configure(model: Model) {
     balanceLabel.attributedText = model
-      .balance?.withTextStyle(.balance, color: .Text.primary, alignment: .center)
+      .balance?.withTextStyle(.balance, color: model.balanceColor, alignment: .center)
+    secureLabel.attributedText = "* * *".withTextStyle(.num2, color: model.balanceColor)
     didUpdateSecureState(state: model.state)
     self.tapHandler = model.tapHandler
   }
@@ -55,8 +57,6 @@ final class WalletBalanceHeaderBalanceButton: UIControl, ConfigurableView {
     balanceLabel.isUserInteractionEnabled = false
     secureView.isUserInteractionEnabled = false
     
-    let secureLabel = UILabel()
-    secureLabel.attributedText = "* * *".withTextStyle(.num2, color: .Text.primary)
     secureView.backgroundColor = .Button.secondaryBackground
     
     secureView.isHidden = true
@@ -68,6 +68,8 @@ final class WalletBalanceHeaderBalanceButton: UIControl, ConfigurableView {
 
     balanceLabel.snp.makeConstraints { make in
       make.centerX.centerY.equalTo(self)
+      make.left.right.equalTo(self)
+      make.top.bottom.equalTo(self)
     }
     
     secureView.snp.makeConstraints { make in
