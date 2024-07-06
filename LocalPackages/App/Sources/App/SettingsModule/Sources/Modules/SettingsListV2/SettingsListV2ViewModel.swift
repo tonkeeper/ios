@@ -9,6 +9,8 @@ protocol SettingsListV2ViewModel: AnyObject {
   var didUpdateTitle: ((String) -> Void)? { get set }
   var didUpdateSnapshot: ((SettingsListV2ViewController.Snapshot) -> Void)? { get set }
   var didSelectItem: ((SettingsListV2ViewController.Item?) -> Void)? { get set }
+  var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)? { get set }
+  
   func viewDidLoad()
   func shouldSelect() -> Bool
 }
@@ -20,6 +22,8 @@ struct SettingsListV2State {
 
 protocol SettingsListV2Configurator: AnyObject {
   var didUpdateState: ((SettingsListV2State) -> Void)? { get set }
+  var didShowPopupMenu: ((_ menuItems: [TKPopupMenuItem],
+                          _ selectedIndex: Int?) -> Void)? { get set }
   
   var title: String { get }
   var isSelectable: Bool { get }
@@ -36,11 +40,17 @@ final class SettingsListV2ViewModelImplementation: SettingsListV2ViewModel, Sett
   var didUpdateTitle: ((String) -> Void)?
   var didUpdateSnapshot: ((SettingsListV2ViewController.Snapshot) -> Void)?
   var didSelectItem: ((SettingsListV2ViewController.Item?) -> Void)?
+  var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
   
   func viewDidLoad() {
     configurator.didUpdateState = { [weak self] state in
       DispatchQueue.main.async {
         self?.update(state: state)
+      }
+    }
+    configurator.didShowPopupMenu = { [weak self] items, selectedIndex in
+      DispatchQueue.main.async {
+        self?.didShowPopupMenu?(items, selectedIndex)
       }
     }
     didUpdateTitle?(configurator.title)

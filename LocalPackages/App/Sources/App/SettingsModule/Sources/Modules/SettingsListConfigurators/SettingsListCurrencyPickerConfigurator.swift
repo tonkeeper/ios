@@ -9,6 +9,7 @@ final class SettingsListCurrencyPickerConfigurator: SettingsListV2Configurator {
   // MARK: - SettingsListV2Configurator
   
   var didUpdateState: ((SettingsListV2State) -> Void)?
+  var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
   
   var title: String { TKLocales.Currency.title }
   var isSelectable: Bool { true }

@@ -58,6 +58,20 @@ private extension SettingsListV2ViewController {
       guard let item, let indexPath = self?.dataSource.indexPath(for: item) else { return }
       self?.customView.collectionView.selectItem(at: indexPath, animated: false, scrollPosition: .centeredVertically)
     }
+    
+    viewModel.didShowPopupMenu = { [weak self] items, selectedIndex in
+      guard let cellIndex = self?.customView.collectionView.indexPathsForSelectedItems?.first,
+            let cell = self?.customView.collectionView.cellForItem(at: cellIndex) else {
+        return
+      }
+      
+      TKPopupMenuController.show(
+        sourceView: cell,
+        position: .topRight,
+        width: 0,
+        items: items,
+        selectedIndex: selectedIndex)
+    }
   }
   
   func createDataSource() -> DataSource {

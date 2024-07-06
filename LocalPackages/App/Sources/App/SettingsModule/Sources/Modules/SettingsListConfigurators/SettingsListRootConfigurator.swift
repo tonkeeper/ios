@@ -16,6 +16,7 @@ final class SettingsListRootConfigurator: SettingsListV2Configurator {
   // MARK: - SettingsListV2Configurator
   
   var didUpdateState: ((SettingsListV2State) -> Void)?
+  var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
   
   var title: String { TKLocales.Settings.title }
   var isSelectable: Bool { false }
@@ -60,6 +61,14 @@ final class SettingsListRootConfigurator: SettingsListV2Configurator {
       guard wallet != oldState?.wallets.first(where: { $0.id == walletId }) else { return }
       let sections = observer.createSections(wallet: wallet)
       observer.didUpdateState?(SettingsListV2State(sections: sections, selectedItem: nil))
+    }
+    TKThemeManager.shared.addEventObserver(self) { observer, _ in
+      guard let wallet = walletsStore.getState().wallets.first(where: { $0.id == walletId }) else {
+        return
+      }
+      let sections = observer.createSections(wallet: wallet)
+      let state = SettingsListV2State(sections: sections, selectedItem: nil)
+      observer.didUpdateState?(state)
     }
   }
 }
@@ -195,8 +204,17 @@ private extension SettingsListRootConfigurator {
           id: .themeItemIdentifier,
           title: .string(TKLocales.Settings.Items.theme),
           accessory: .text(value: TKThemeManager.shared.theme.title),
-          selectionClosure: {
-            
+          selectionClosure: { [weak self] in
+            let items = TKTheme.allCases.map { theme in
+              TKPopupMenuItem(title: theme.title,
+                              value: nil,
+                              description: nil,
+                              icon: nil) {
+                TKThemeManager.shared.theme = theme
+              }
+            }
+            let selectedIndex = TKTheme.allCases.firstIndex(of: TKThemeManager.shared.theme)
+            self?.didShowPopupMenu?(items, selectedIndex)
           }
         )
       ]
