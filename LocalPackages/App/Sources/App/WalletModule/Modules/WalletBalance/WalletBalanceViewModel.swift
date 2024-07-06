@@ -132,6 +132,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private let totalBalanceModel: WalletTotalBalanceModel
   private let walletsStore: WalletsStoreV2
   private let notificationStore: NotificationsStore
+  private let configurationStore: ConfigurationStore
   private let listMapper: WalletBalanceListMapper
   private let headerMapper: WalletBalanceHeaderMapper
   private let secureMode: SecureMode
@@ -142,6 +143,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
        totalBalanceModel: WalletTotalBalanceModel,
        walletsStore: WalletsStoreV2,
        notificationStore: NotificationsStore,
+       configurationStore: ConfigurationStore,
        listMapper: WalletBalanceListMapper,
        headerMapper: WalletBalanceHeaderMapper,
        secureMode : SecureMode,
@@ -151,6 +153,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     self.totalBalanceModel = totalBalanceModel
     self.walletsStore = walletsStore
     self.notificationStore = notificationStore
+    self.configurationStore = configurationStore
     self.listMapper = listMapper
     self.headerMapper = headerMapper
     self.secureMode = secureMode
@@ -293,8 +296,15 @@ private extension WalletBalanceViewModelImplementation {
           biometrySelectionHandler: {
             
           },
-          telegramChannelSelectionHandler: {
-            
+          telegramChannelSelectionHandler: { [urlOpener = self.urlOpener, configurationStore = self.configurationStore] in
+            Task {
+              guard let telegramChannelURL = try? await configurationStore.getConfiguration().tonkeeperNewsUrl else {
+                return
+              }
+              await MainActor.run {
+                urlOpener.open(url: telegramChannelURL)
+              }
+            }
           },
           backupSelectionHandler: { [weak self] in
             guard let self else { return }

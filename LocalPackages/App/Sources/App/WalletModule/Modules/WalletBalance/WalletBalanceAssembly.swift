@@ -26,6 +26,7 @@ struct WalletBalanceAssembly {
       ),
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
       notificationStore: keeperCoreMainAssembly.storesAssembly.notificationsStore,
+      configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore,
       listMapper:
         WalletBalanceListMapper(
         amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
