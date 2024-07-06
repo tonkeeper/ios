@@ -45,22 +45,18 @@ final class WalletBalanceBalanceModel {
     let stakingItems: [BalanceListStakingItem]
   }
 
-  private let actor = SerialActor()
+  private let actor = SerialActor<Void>()
 
   var didUpdateItems: ((BalanceListItems, _ isSecure: Bool) -> Void)? {
     didSet {
-      Task {
-        await self.actor.addTask(block: {
-          let activeWallet = await self.walletsStore.getState().activeWallet
-          guard let address = try? activeWallet.friendlyAddress else { return }
-          let balance = await self.convertedBalanceStore.getState()[address]?.balance
-          let isSecure = await self.secureMode.isSecure
-          let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
-          self.update(balance: balance,
-                      stackingPools: stackingPools,
-                      isSecure: isSecure)
-        })
-      }
+      let activeWallet = self.walletsStore.getState().activeWallet
+      guard let address = try? activeWallet.friendlyAddress else { return }
+      let balance = self.convertedBalanceStore.getState()[address]?.balance
+      let isSecure = self.secureMode.getState()
+      let stackingPools = self.stackingPoolsStore.getState()[address] ?? []
+      self.update(balance: balance,
+                  stackingPools: stackingPools,
+                  isSecure: isSecure)
     }
   }
   
@@ -77,12 +73,12 @@ final class WalletBalanceBalanceModel {
     self.convertedBalanceStore = convertedBalanceStore
     self.stackingPoolsStore = stackingPoolsStore
     self.secureMode = secureMode
-    walletsStore.addObserver(self, notifyOnAdded: true) { observer, newWalletsState, oldWalletsState in
+    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newWalletsState, oldWalletsState in
       Task {
         await observer.didUpdateWalletsState(newWalletsState: newWalletsState, oldWalletsState: oldWalletsState)
       }
     }
-    convertedBalanceStore.addObserver(self, notifyOnAdded: true) { observer, newState, oldState in
+    convertedBalanceStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
       Task {
         await observer.didUpdateBalances(newState, oldState)
       }

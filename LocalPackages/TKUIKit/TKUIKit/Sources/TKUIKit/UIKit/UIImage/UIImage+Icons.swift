@@ -160,6 +160,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-reorder-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var question: UIImage {
+          .imageWithName("Icons/28/ic-question-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var plusCircle: UIImage {
           .imageWithName("Icons/28/ic-plus-circle-28")
           .withRenderingMode(.alwaysTemplate)

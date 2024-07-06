@@ -19,42 +19,62 @@ final class RootCoordinatorStateManager {
   }
   
   var didUpdateState: ((State) -> Void)?
-  private(set) var state: State? {
-    didSet {
-      guard let state,
-      state != oldValue else { return }
-      didUpdateState?(state)
+  var state: State {
+    get {
+      guard let _state else {
+        let keeperInfo = keeperInfoStore.getState()
+        let state = calculateState(keeperInfo: keeperInfo)
+        self._state = state
+        return state
+      }
+      return _state
+    }
+    set {
+      guard newValue != _state else { return }
+      _state = newValue
+      didUpdateState?(newValue)
     }
   }
+  private var _state: State?
   
-  private var keeperInfo: KeeperInfo? {
-    didSet {
-      didUpdateKeeperInfo()
-    }
-  }
-
   private let keeperInfoStore: KeeperInfoStore
   
   init(keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
-    keeperInfoStore.addObserver(self, notifyOnAdded: true) { observer, keeperInfo, _ in
+    keeperInfoStore.addObserver(self, notifyOnAdded: false) { observer, keeperInfo, _ in
       DispatchQueue.main.async {
-        observer.keeperInfo = keeperInfo
+        let state = observer.calculateState(keeperInfo: keeperInfo)
+        self.state = state
       }
     }
   }
-
-  private func didUpdateKeeperInfo() {
-    updateState()
-  }
   
-  private func updateState() {
+  private func calculateState(keeperInfo: KeeperInfo?) -> State {
     if let keeperInfo {
       let walletsState = WalletsState(wallets: keeperInfo.wallets,
                                       activeWallet: keeperInfo.currentWallet)
-      self.state = .main(walletsState: walletsState)
+      return .main(walletsState: walletsState)
     } else {
-      self.state = .onboarding
+      return .onboarding
     }
   }
+//
+//  func updateState() {
+//    let keeperInfo = keeperInfoStore.getState()
+//    
+//  }
+//
+//  private func didUpdateKeeperInfo() {
+//    updateState()
+//  }
+//  
+//  private func updateState(keeperInfo: KeeperInfo?) {
+//    if let keeperInfo {
+//      let walletsState = WalletsState(wallets: keeperInfo.wallets,
+//                                      activeWallet: keeperInfo.currentWallet)
+//      self.state = .main(walletsState: walletsState)
+//    } else {
+//      self.state = .onboarding
+//    }
+//  }
 }

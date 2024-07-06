@@ -7,7 +7,7 @@ open class BasicViewController: UIViewController {
   }
   
   open override func didMove(toParent parent: UIViewController?) {
-    navigationController?.fixInteractivePopGestureRecognizer(delegate: self)
+//    navigationController?.fixInteractivePopGestureRecognizer(delegate: self)
   }
 }
 

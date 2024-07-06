@@ -46,6 +46,7 @@
 "settings.items.currency" = "Moneda";
 "settings.items.theme" = "Tema";
 "settings.items.logout" = "Cerrar sesión";
+"settings.items.faq" = "FAQ";
 "settings.items.support" = "Soporte";
 "settings.items.tk_news" = "Noticias de Tonkeeper";
 "settings.items.contact_us" = "Contáctenos";

@@ -14,7 +14,7 @@ final class WalletBalanceSetupModel {
     let isTelegramChannelVisible: Bool
   }
   
-  private let actor = SerialActor()
+  private let actor = SerialActor<Void>()
   
   var didUpdateState: ((State) -> Void)? {
     didSet {

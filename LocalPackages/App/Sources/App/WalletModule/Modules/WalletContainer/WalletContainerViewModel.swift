@@ -5,7 +5,7 @@ import KeeperCore
 
 protocol WalletContainerModuleOutput: AnyObject {
   var walletButtonHandler: (() -> Void)? { get set }
-  var didTapSettingsButton: (() -> Void)? { get set }
+  var didTapSettingsButton: ((Wallet) -> Void)? { get set }
 }
 
 protocol WalletContainerViewModel: AnyObject {
@@ -20,7 +20,7 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   // MARK: - WalletContainerModuleOutput
   
   var walletButtonHandler: (() -> Void)?
-  var didTapSettingsButton: (() -> Void)?
+  var didTapSettingsButton: ((Wallet) -> Void)?
   
   // MARK: - WalletContainerViewModel
   
@@ -86,7 +86,9 @@ private extension WalletContainerViewModelImplementation {
     settingsButtonConfiguration.content.icon = .TKUIKit.Icons.Size28.gearOutline
     settingsButtonConfiguration.iconTintColor = .Icon.secondary
     settingsButtonConfiguration.action = { [weak self] in
-      self?.didTapSettingsButton?()
+      guard let self else { return }
+      let wallet = walletsStore.getState().activeWallet
+      self.didTapSettingsButton?(wallet)
     }
 
     let topBarViewModel = WalletContainerTopBarView.Model(

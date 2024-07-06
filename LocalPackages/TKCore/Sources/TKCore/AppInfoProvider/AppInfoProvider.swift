@@ -11,6 +11,17 @@ public struct AppInfoProvider: KeeperCore.AppInfoProvider {
   }
   
   public var language: String {
-    "en"
+    let languageCodeIdentifier: String? = {
+      if #available(iOS 16, *) {
+        return Locale(identifier: Locale.preferredLanguages[0]).language.languageCode?.identifier
+      } else {
+        return Locale(identifier: Locale.preferredLanguages[0]).languageCode
+      }
+    }()
+    
+    guard let languageCodeIdentifier else {
+      return "en"
+    }
+    return languageCodeIdentifier
   }
 }

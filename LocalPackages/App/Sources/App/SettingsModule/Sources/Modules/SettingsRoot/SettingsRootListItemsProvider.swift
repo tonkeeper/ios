@@ -319,12 +319,12 @@ private extension SettingsRootListItemsProvider {
   
   func setupRateItem() -> SettingsCell.Model {
     SettingsCell.Model(
-      identifier: .rateTonkeeperXTitle,
+      identifier: "",
       selectionHandler: { [weak self] in
         self?.appStoreReviewer.requestReview()
       },
       cellContentModel: SettingsCellContentView.Model(
-        title: .rateTonkeeperXTitle,
+        title: "",
         icon: .TKUIKit.Icons.Size28.star,
         tintColor: .Icon.secondary
       )

@@ -144,6 +144,10 @@ private extension MainCoordinator {
       self?.openSwap()
     }
     
+    walletCoordinator.didTapSettingsButton = { [weak self] wallet in
+      self?.openSettings(wallet: wallet)
+    }
+    
     let historyCoordinator = historyModule.createHistoryCoordinator()
     
     let browserCoordinator = browserModule.createBrowserCoordinator()
@@ -537,6 +541,34 @@ private extension MainCoordinator {
     }
     
     fromViewController.present(navigationController, animated: true)
+  }
+  
+  
+  func openSettings(wallet: Wallet) {
+    guard let navigationController = router.rootViewController.navigationController else { return }
+    let module = SettingsModule(
+      dependencies: SettingsModule.Dependencies(
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly
+      )
+    )
+    
+    let router = NavigationControllerRouter(rootViewController: navigationController)
+    
+    let coordinator = module.createSettingsCoordinator(router: router,
+                                                       wallet: wallet)
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    coordinator.didLogout = { [weak self, weak coordinator] in
+      guard let coordinator = coordinator else { return }
+      self?.removeChild(coordinator)
+      self?.didLogout?()
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
   }
 }
 

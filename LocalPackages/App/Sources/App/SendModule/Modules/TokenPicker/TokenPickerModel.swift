@@ -24,7 +24,7 @@ final class TokenPickerModel {
     }
   }
   
-  private let actor = SerialActor()
+  private let actor = SerialActor<Void>()
   
   private let wallet: Wallet
   private let selectedToken: Token

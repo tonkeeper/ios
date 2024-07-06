@@ -30,7 +30,7 @@ final class WalletTotalBalanceModel {
     }
   }
   
-  private let actor = SerialActor()
+  private let actor = SerialActor<Void>()
   
   private let walletsStore: WalletsStoreV2
   private let totalBalanceStore: TotalBalanceStoreV2

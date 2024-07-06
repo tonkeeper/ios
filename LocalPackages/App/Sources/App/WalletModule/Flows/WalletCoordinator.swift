@@ -12,6 +12,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   var didTapWalletButton: (() -> Void)?
   var didTapSend: ((Token) -> Void)?
   var didTapSwap: (() -> Void)?
+  var didTapSettingsButton: ((Wallet) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -42,34 +43,11 @@ private extension WalletCoordinator {
       self?.didTapWalletButton?()
     }
     
-    module.output.didTapSettingsButton = { [weak self] in
-      self?.openSettings()
+    module.output.didTapSettingsButton = { [weak self] wallet in
+      self?.didTapSettingsButton?(wallet)
     }
     
     router.push(viewController: module.view, animated: false)
-  }
-  
-  func openSettings() {
-    let module = SettingsModule(
-      dependencies: SettingsModule.Dependencies(
-        keeperCoreMainAssembly: keeperCoreMainAssembly,
-        coreAssembly: coreAssembly
-      )
-    )
-    
-    let coordinator = module.createSettingsCoordinator(router: router)
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    coordinator.didLogout = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
-      self?.didLogout?()
-    }
-    
-    addChild(coordinator)
-    coordinator.start()
   }
   
   func openTonDetails(wallet: Wallet) {

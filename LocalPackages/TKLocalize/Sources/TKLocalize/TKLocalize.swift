@@ -221,6 +221,10 @@ public enum TKLocales {
       public static var logout: String {
         localize("settings.items.logout")
       }
+      /// FAQ
+      public static var faq: String {
+        localize("settings.items.faq")
+      }
       /// Support
       public static var support: String {
         localize("settings.items.support")
@@ -233,17 +237,21 @@ public enum TKLocales {
       public static var contact_us: String {
         localize("settings.items.contact_us")
       }
-      /// Rate Tonkeeper X
-      public static var rate: String {
-        localize("settings.items.rate")
+      /// Rate %@
+      public static func rate(_ p0: Any) -> String {
+        return localizeWithArgs("settings.items.rate", String(describing: p0))
       }
       /// Legal
       public static var legal: String {
         localize("settings.items.legal")
       }
-      /// Delete account
+      /// Delete 
       public static var delete_account: String {
         localize("settings.items.delete_account")
+      }
+      /// Delete Watch account
+      public static var delete_watch_only: String {
+        localize("settings.items.delete_watch_only")
       }
       /// Edit name and color
       public static var setup_wallet_description: String {

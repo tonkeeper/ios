@@ -8,14 +8,14 @@ struct BuyModule {
     self.dependencies = dependencies
   }
   
-  func createSettingsCoordinator(router: NavigationControllerRouter) -> SettingsCoordinator {
-    let coordinator = SettingsCoordinator(
-      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
-      coreAssembly: dependencies.coreAssembly,
-      router: router
-    )
-    return coordinator
-  }
+//  func createSettingsCoordinator(router: NavigationControllerRouter) -> SettingsCoordinator {
+//    let coordinator = SettingsCoordinator(
+//      keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
+//      coreAssembly: dependencies.coreAssembly,
+//      router: router
+//    )
+//    return coordinator
+//  }
 }
 
 extension BuyModule {

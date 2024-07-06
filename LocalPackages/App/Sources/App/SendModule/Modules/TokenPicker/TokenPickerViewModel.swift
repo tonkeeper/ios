@@ -39,7 +39,7 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
   
   // MARK: - State
   
-  private let actor = SerialActor()
+  private let actor = SerialActor<Void>()
   
   // MARK: - Dependencies
   

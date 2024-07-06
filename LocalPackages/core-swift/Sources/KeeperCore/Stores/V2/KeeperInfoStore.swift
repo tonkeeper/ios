@@ -10,6 +10,14 @@ public final class KeeperInfoStore: Store<KeeperInfo?> {
     self.setInitialState()
   }
   
+  func getKeeperInfo() -> KeeperInfo? {
+    getState()
+  }
+  
+  func getKeeperInfo() async -> KeeperInfo? {
+    await getState()
+  }
+  
   func updateKeeperInfo(_ block: @escaping (KeeperInfo?) -> KeeperInfo?) async {
     await updateState { [keeperInfoRepository] keeperInfo in
       let updated = block(keeperInfo)
@@ -23,6 +31,7 @@ public final class KeeperInfoStore: Store<KeeperInfo?> {
   }
   
   private func setInitialState() {
+    let state = getState()
     Task {
       await updateState { _ in
         StateUpdate(newState: try? self.keeperInfoRepository.getKeeperInfo())

@@ -37,6 +37,7 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     stateManager.didUpdateState = { [weak self] state in
       self?.handleStateUpdate(state: state, deeplink: deeplink)
     }
+    self.handleStateUpdate(state: stateManager.state, deeplink: deeplink)
   }
   
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -121,7 +122,10 @@ private extension RootCoordinator {
     addChild(coordinator)
     coordinator.start(deeplink: deeplink)
     
-    showViewController(coordinator.router.rootViewController, animated: false)
+    let navigationController = TKNavigationController(rootViewController: coordinator.router.rootViewController)
+    navigationController.configureDefaultAppearance()
+      
+    showViewController(navigationController, animated: false)
   }
   
   func openMigration(migrationController: MigrationController) {

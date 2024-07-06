@@ -10,9 +10,6 @@ struct MainModule {
   }
   
   func createMainCoordinator() -> MainCoordinator {
-    let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
-    
     let tabBarController = TKTabBarController()
     tabBarController.configureAppearance()
     

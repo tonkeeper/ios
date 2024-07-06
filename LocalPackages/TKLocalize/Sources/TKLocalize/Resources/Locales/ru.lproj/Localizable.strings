@@ -51,12 +51,14 @@
 "settings.items.currency" = "Валюта";
 "settings.items.theme" = "Тема";
 "settings.items.logout" = "Выйти";
+"settings.items.faq" = "FAQ";
 "settings.items.support" = "Поддержка";
 "settings.items.tk_news" = "Новости Tonkeeper";
 "settings.items.contact_us" = "Написать команде";
-"settings.items.rate" = "Оценить Tonkeeper X";
+"settings.items.rate" = "Оценить %@";
 "settings.items.legal" = "Юридические документы";
-"settings.items.delete_account" = "Удалить аккаунт";
+"settings.items.delete_account" = "Удалить ";
+"settings.items.delete_watch_only" = "Удалить аккаунт";
 "settings.items.setup_wallet_description" = "Кастомизировать";
 
 "settings.logout.title" = "Выйти?";

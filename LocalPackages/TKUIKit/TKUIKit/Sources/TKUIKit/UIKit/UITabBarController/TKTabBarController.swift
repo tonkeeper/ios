@@ -23,6 +23,12 @@ public final class TKTabBarController: UITabBarController {
     tabBar.addGestureRecognizer(longPressRecognizer)
   }
   
+  public override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    
+    navigationController?.setNavigationBarHidden(true, animated: true)
+  }
+  
   @objc
   func longPressHandler(_ recognizer: UILongPressGestureRecognizer) {
     guard recognizer.state == .began,

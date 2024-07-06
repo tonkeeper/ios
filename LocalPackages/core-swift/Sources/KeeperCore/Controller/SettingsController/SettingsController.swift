@@ -63,21 +63,21 @@ public final class SettingsController {
   public var supportURL: URL? {
     get async throws {
       guard let string = try await configurationStore.getConfiguration().directSupportUrl else { return nil }
-      return URL(string: string)
+      return nil
     }
   }
   
   public var contactUsURL: URL? {
     get async throws {
       guard let string = try await configurationStore.getConfiguration().supportLink else { return nil }
-      return URL(string: string)
+      return nil
     }
   }
   
   public var tonkeeperNewsURL: URL? {
     get async throws {
       guard let string = try await configurationStore.getConfiguration().tonkeeperNewsUrl else { return nil }
-      return URL(string: string)
+      return nil
     }
   }
 }

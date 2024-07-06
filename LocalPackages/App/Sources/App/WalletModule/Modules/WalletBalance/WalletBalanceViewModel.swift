@@ -112,7 +112,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   // MARK: - State
 
-  private let actor = SerialActor()
+  private let actor = SerialActor<Void>()
   private var state = State(
     balanceItems: WalletBalanceBalanceModel.BalanceListItems(
       tonItem: nil, usdtItem: nil, jettonsItems: [], stakingItems: []
