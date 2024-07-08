@@ -64,6 +64,10 @@ private extension SettingsCoordinator {
       self?.openBackup(wallet: wallet)
     }
     
+    configurator.didTapDeleteWallet = { [weak self] wallet in
+      self?.delete(wallet: wallet)
+    }
+    
     let module = SettingsListAssembly.module(configurator: configurator)
     
     module.viewController.setupBackButton()
@@ -72,47 +76,6 @@ private extension SettingsCoordinator {
                 onPopClosures: { [weak self] in
       self?.didFinish?()
     })
-    
-//    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
-//    
-//    itemsProvider.didTapEditWallet = { [weak self] wallet in
-//      self?.openEditWallet(wallet: wallet)
-//    }
-//    
-//    itemsProvider.didTapCurrency = { [weak self] in
-//      self?.openCurrencyPicker()
-//    }
-//    
-//    itemsProvider.didTapTheme = { [weak self] in
-//      self?.openThemePicker()
-//    }
-//    
-//    itemsProvider.didTapBackup = { [weak self] wallet in
-//      self?.openBackup(wallet: wallet)
-//    }
-//    
-//    itemsProvider.didTapSecurity = { [weak self] in
-//      self?.openSecurity()
-//    }
-//    
-//    itemsProvider.didShowAlert = { [weak self] title, description, actions in
-//      let alertController = UIAlertController(title: title, message: description, preferredStyle: .alert)
-//      actions.forEach { action in alertController.addAction(action) }
-//      self?.router.rootViewController.present(alertController, animated: true)
-//    }
-//    
-//    itemsProvider.didTapLogout = { [weak self] in
-//      self?.didLogout?()
-//    }
-//    
-//    itemsProvider.didTapDeleteAccount = { [weak self] in
-//      self?.router.pop()
-//    }
-//
-//    router.push(viewController: module.viewController,
-//                onPopClosures: { [weak self] in
-//      self?.didFinish?()
-//    })
   }
   
   func openEditWallet(wallet: Wallet) {
@@ -272,6 +235,37 @@ private extension SettingsCoordinator {
       guard let coordinator else { return }
       self?.removeChild(coordinator)
     })
+  }
+  
+  func delete(wallet: Wallet) {
+    let viewController = SettingsDeleteWarningViewController()
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+
+    viewController.didTapSignOut = { [weak bottomSheetViewController, weak self] in
+      bottomSheetViewController?.dismiss(completion: {
+        guard let self else { return }
+        Task {
+          await self.keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater.deleteWallet(wallet)
+          await MainActor.run {
+            self.router.pop(animated: true)
+          }
+        }
+      })
+    }
+    
+    viewController.didTapBackup = { [weak bottomSheetViewController, weak self] in
+      bottomSheetViewController?.dismiss(completion: {
+        if wallet.isBackupAvailable {
+          if wallet.hasBackup {
+            self?.openRecoveryPhrase(wallet: wallet)
+          } else {
+            self?.openManuallyBackup(wallet: wallet)
+          }
+        }
+      })
+    }
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
   func getPasscode() async -> String? {

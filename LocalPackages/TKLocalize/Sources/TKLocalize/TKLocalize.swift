@@ -1001,4 +1001,22 @@ public enum TKLocales {
       localize("sign_out_full.description")
     }
   }
+  public enum SignOutWarning {
+    /// Sign Out
+    public static var title: String {
+      localize("sign_out_warning.title")
+    }
+    /// Wallet keys will be erased from this device.
+    public static var caption: String {
+      localize("sign_out_warning.caption")
+    }
+    /// I have a backup copy of the recovery phrase for 
+    public static var tick_description: String {
+      localize("sign_out_warning.tick_description")
+    }
+    /// Back up
+    public static var tick_back_up: String {
+      localize("sign_out_warning.tick_back_up")
+    }
+  }
 }

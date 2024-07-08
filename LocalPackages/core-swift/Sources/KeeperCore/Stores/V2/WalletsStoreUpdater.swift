@@ -92,7 +92,7 @@ public final class WalletsStoreUpdater {
         if keeperInfo.currentWallet == wallet {
           updatedKeeperInfo = updatedKeeperInfo.setActiveWallet(wallets[0])
         }
-        return keeperInfo
+        return updatedKeeperInfo
       }
     }
   }

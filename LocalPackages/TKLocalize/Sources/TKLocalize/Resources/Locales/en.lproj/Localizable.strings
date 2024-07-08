@@ -268,3 +268,7 @@
 "sign_out_full.title" = "🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?";
 "sign_out_full.description" = "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.";
 
+"sign_out_warning.title" = "Sign Out";
+"sign_out_warning.caption" = "Wallet keys will be erased from this device.";
+"sign_out_warning.tick_description" = "I have a backup copy of the recovery phrase for ";
+"sign_out_warning.tick_back_up" = "Back up";

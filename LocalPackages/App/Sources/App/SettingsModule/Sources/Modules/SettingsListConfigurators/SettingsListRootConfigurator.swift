@@ -14,6 +14,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didShowAlert: ((_ title: String,
                       _ description: String?,
                       _ actions: [UIAlertAction]) -> Void)?
+  var didTapDeleteWallet: ((Wallet) -> Void)?
   
   // MARK: - SettingsListV2Configurator
   
@@ -360,24 +361,14 @@ private extension SettingsListRootConfigurator {
       TKUIListItemCell.Configuration.createSettingsItem(
         id: .deleteAccountIdentifier,
         title: deleteWalletTitle,
-        accessory: .icon(.TKUIKit.Icons.Size28.trashBin, .Icon.secondary),
-        selectionClosure: {
-          
+        accessory: .icon(.TKUIKit.Icons.Size28.door, .Accent.blue),
+        selectionClosure: { [weak self, walletId] in
+          guard let wallet = self?.walletsStore.getState().wallets.first(where: { $0.id == walletId }) else { return }
+          self?.didTapDeleteWallet?(wallet)
         }
       )
     )
 
-    items.append(
-      TKUIListItemCell.Configuration.createSettingsItem(
-        id: .logoutIdentifier,
-        title: .string(TKLocales.Settings.Items.logout),
-        accessory: .icon(.TKUIKit.Icons.Size28.door, .Accent.blue),
-        selectionClosure: {
-          
-        }
-      )
-    )
-    
     return SettingsListSection.items(topPadding: 30, items: items)
   }
 }
