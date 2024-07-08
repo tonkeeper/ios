@@ -3,22 +3,22 @@ import TKUIKit
 import KeeperCore
 import TKLocalize
 
-final class SettingsListBackupConfigurator: SettingsListV2Configurator {
+final class SettingsListBackupConfigurator: SettingsListConfigurator {
   
   var didTapShowRecoveryPhrase: (() -> Void)?
   var didTapBackupManually: (() -> Void)?
   
   // MARK: - SettingsListV2Configurator
   
-  var didUpdateState: ((SettingsListV2State) -> Void)?
+  var didUpdateState: ((SettingsListState) -> Void)?
   var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
   
   var title: String { TKLocales.Backup.title }
   var isSelectable: Bool { false }
   
-  func getState() -> SettingsListV2State {
+  func getState() -> SettingsListState {
     guard let wallet = walletsStore.getState().wallets.first(where: { $0.id == walletId }) else {
-      return SettingsListV2State(sections: [], selectedItem: nil)
+      return SettingsListState(sections: [], selectedItem: nil)
     }
     return createState(wallet: wallet)
   }
@@ -47,8 +47,8 @@ final class SettingsListBackupConfigurator: SettingsListV2Configurator {
 }
 
 private extension SettingsListBackupConfigurator {
-  func createState(wallet: Wallet) -> SettingsListV2State {
-    var sections = [SettingsListV2Section]()
+  func createState(wallet: Wallet) -> SettingsListState {
+    var sections = [SettingsListSection]()
     sections.append(createDescriptionSection())
     
     if wallet.isBackupAvailable {
@@ -60,14 +60,14 @@ private extension SettingsListBackupConfigurator {
       }
     }
     
-    return SettingsListV2State(
+    return SettingsListState(
       sections: sections,
       selectedItem: nil
     )
   }
   
-  func createDescriptionSection() -> SettingsListV2Section {
-    SettingsListV2Section.items(
+  func createDescriptionSection() -> SettingsListSection {
+    SettingsListSection.items(
       topPadding: 0,
       items: [],
       header: TKLocales.Backup.Information.title,
@@ -78,7 +78,7 @@ private extension SettingsListBackupConfigurator {
     )
   }
   
-  func createBackupManuallySection() -> SettingsListV2Section {
+  func createBackupManuallySection() -> SettingsListSection {
     var configuration = TKButton.Configuration.actionButtonConfiguration(
       category: .secondary,
       size: .large
@@ -89,7 +89,7 @@ private extension SettingsListBackupConfigurator {
     configuration.action = { [didTapBackupManually] in
       didTapBackupManually?()
     }
-    return SettingsListV2Section.items(
+    return SettingsListSection.items(
       topPadding: 0,
       items: [
         TKButtonCell.Model(
@@ -104,7 +104,7 @@ private extension SettingsListBackupConfigurator {
     )
   }
   
-  func createBackupDoneSection(date: Date) -> SettingsListV2Section {
+  func createBackupDoneSection(date: Date) -> SettingsListSection {
     dateFormatter.dateStyle = .long
     dateFormatter.timeStyle = .short
     let subtitle = dateFormatter.string(from: date)
@@ -152,7 +152,7 @@ private extension SettingsListBackupConfigurator {
       selectionClosure: nil
     )
     
-    return SettingsListV2Section.items(
+    return SettingsListSection.items(
       topPadding: 0,
       items: [item],
       header: nil,
@@ -160,7 +160,7 @@ private extension SettingsListBackupConfigurator {
     )
   }
   
-  func createCreateRecoveryPhraseSection() -> SettingsListV2Section {
+  func createCreateRecoveryPhraseSection() -> SettingsListSection {
     let items = [
       TKUIListItemCell.Configuration.createSettingsItem(
         id: .changePasscodeItemIdentifier,
@@ -172,7 +172,7 @@ private extension SettingsListBackupConfigurator {
       )
     ]
     
-    return SettingsListV2Section.items(
+    return SettingsListSection.items(
       topPadding: 16,
       items: items
     )

@@ -1,6 +1,6 @@
 import Foundation
 import TKUIKit
 
-enum SettingsListV2Item: Hashable {
+enum SettingsListItem: Hashable {
   case item(TKUIListItemCell.Configuration)
 }

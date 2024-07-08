@@ -3,20 +3,20 @@ import TKUIKit
 import KeeperCore
 import TKLocalize
 
-final class SettingsListSecurityConfigurator: SettingsListV2Configurator {
+final class SettingsListSecurityConfigurator: SettingsListConfigurator {
   
   var didRequirePasscode: (() async -> String?)?
   var didTapChangePasscode: (() -> Void)?
   
   // MARK: - SettingsListV2Configurator
   
-  var didUpdateState: ((SettingsListV2State) -> Void)?
+  var didUpdateState: ((SettingsListState) -> Void)?
   var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
   
   var title: String { TKLocales.Security.title }
   var isSelectable: Bool { false }
   
-  func getState() -> SettingsListV2State {
+  func getState() -> SettingsListState {
     createState()
   }
   
@@ -38,20 +38,20 @@ final class SettingsListSecurityConfigurator: SettingsListV2Configurator {
 }
 
 private extension SettingsListSecurityConfigurator {
-  func createState() -> SettingsListV2State {
-    var sections = [SettingsListV2Section]()
+  func createState() -> SettingsListState {
+    var sections = [SettingsListSection]()
     
     sections.append(createBiometrySection())
     sections.append(createLockscreenSection())
     sections.append(createChangePasscodeSection())
     
-    return SettingsListV2State(
+    return SettingsListState(
       sections: sections,
       selectedItem: nil
     )
   }
   
-  func createBiometrySection() -> SettingsListV2Section {
+  func createBiometrySection() -> SettingsListSection {
     var items = [AnyHashable]()
     
     let biometryItem: TKUIListItemCell.Configuration = {
@@ -119,7 +119,7 @@ private extension SettingsListSecurityConfigurator {
     
     items.append(biometryItem)
     
-    return SettingsListV2Section.items(
+    return SettingsListSection.items(
       topPadding: 16,
       items: items,
       bottomDescription: SettingsTextDescriptionView.Model(
@@ -129,7 +129,7 @@ private extension SettingsListSecurityConfigurator {
     )
   }
   
-  func createChangePasscodeSection() -> SettingsListV2Section {
+  func createChangePasscodeSection() -> SettingsListSection {
     let items = [
       TKUIListItemCell.Configuration.createSettingsItem(
         id: .changePasscodeItemIdentifier,
@@ -141,13 +141,13 @@ private extension SettingsListSecurityConfigurator {
       )
     ]
     
-    return SettingsListV2Section.items(
+    return SettingsListSection.items(
       topPadding: 16,
       items: items
     )
   }
   
-  func createLockscreenSection() -> SettingsListV2Section {
+  func createLockscreenSection() -> SettingsListSection {
     var items = [AnyHashable]()
     
     let biometryItem: TKUIListItemCell.Configuration = {
@@ -172,7 +172,7 @@ private extension SettingsListSecurityConfigurator {
     
     items.append(biometryItem)
     
-    return SettingsListV2Section.items(
+    return SettingsListSection.items(
       topPadding: 16,
       items: items,
       bottomDescription: SettingsTextDescriptionView.Model(

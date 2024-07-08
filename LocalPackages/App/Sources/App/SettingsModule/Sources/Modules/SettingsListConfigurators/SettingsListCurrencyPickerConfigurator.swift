@@ -4,17 +4,17 @@ import KeeperCore
 import TKLocalize
 import TKCore
 
-final class SettingsListCurrencyPickerConfigurator: SettingsListV2Configurator {
+final class SettingsListCurrencyPickerConfigurator: SettingsListConfigurator {
   
   // MARK: - SettingsListV2Configurator
   
-  var didUpdateState: ((SettingsListV2State) -> Void)?
+  var didUpdateState: ((SettingsListState) -> Void)?
   var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
   
   var title: String { TKLocales.Currency.title }
   var isSelectable: Bool { true }
   
-  func getState() -> SettingsListV2State {
+  func getState() -> SettingsListState {
     let currency = currencyStore.getState()
     return createState(selectedCurrency: currency)
   }
@@ -35,7 +35,7 @@ final class SettingsListCurrencyPickerConfigurator: SettingsListV2Configurator {
 }
 
 private extension SettingsListCurrencyPickerConfigurator {
-  func createState(selectedCurrency: Currency) -> SettingsListV2State {
+  func createState(selectedCurrency: Currency) -> SettingsListState {
     let currencies = Currency.allCases
     var items = [AnyHashable]()
     var selectedItem: AnyHashable?
@@ -94,8 +94,8 @@ private extension SettingsListCurrencyPickerConfigurator {
       }
     }
     
-    let section = SettingsListV2Section.items(topPadding: 14, items: items)
+    let section = SettingsListSection.items(topPadding: 14, items: items)
     
-    return SettingsListV2State(sections: [section], selectedItem: selectedItem)
+    return SettingsListState(sections: [section], selectedItem: selectedItem)
   }
 }

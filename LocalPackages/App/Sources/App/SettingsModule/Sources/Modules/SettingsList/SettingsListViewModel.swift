@@ -3,43 +3,43 @@ import TKUIKit
 import TKCore
 import KeeperCore
 
-public protocol SettingsListV2ModuleOutput: AnyObject {}
+public protocol SettingsListModuleOutput: AnyObject {}
 
-protocol SettingsListV2ViewModel: AnyObject {
+protocol SettingsListViewModel: AnyObject {
   var didUpdateTitle: ((String) -> Void)? { get set }
-  var didUpdateSnapshot: ((SettingsListV2ViewController.Snapshot) -> Void)? { get set }
-  var didSelectItem: ((SettingsListV2ViewController.Item?) -> Void)? { get set }
+  var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)? { get set }
+  var didSelectItem: ((SettingsListViewController.Item?) -> Void)? { get set }
   var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)? { get set }
   
   func viewDidLoad()
   func shouldSelect() -> Bool
 }
 
-struct SettingsListV2State {
-  let sections: [SettingsListV2Section]
+struct SettingsListState {
+  let sections: [SettingsListSection]
   let selectedItem: AnyHashable?
 }
 
-protocol SettingsListV2Configurator: AnyObject {
-  var didUpdateState: ((SettingsListV2State) -> Void)? { get set }
+protocol SettingsListConfigurator: AnyObject {
+  var didUpdateState: ((SettingsListState) -> Void)? { get set }
   var didShowPopupMenu: ((_ menuItems: [TKPopupMenuItem],
                           _ selectedIndex: Int?) -> Void)? { get set }
   
   var title: String { get }
   var isSelectable: Bool { get }
   
-  func getState() -> SettingsListV2State
+  func getState() -> SettingsListState
 }
 
-final class SettingsListV2ViewModelImplementation: SettingsListV2ViewModel, SettingsListV2ModuleOutput {
+final class SettingsListViewModelImplementation: SettingsListViewModel, SettingsListModuleOutput {
   
   // MARK: - SettingsListModuleOutput
   
   // MARK: - SettingsListViewModel
   
   var didUpdateTitle: ((String) -> Void)?
-  var didUpdateSnapshot: ((SettingsListV2ViewController.Snapshot) -> Void)?
-  var didSelectItem: ((SettingsListV2ViewController.Item?) -> Void)?
+  var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)?
+  var didSelectItem: ((SettingsListViewController.Item?) -> Void)?
   var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
   
   func viewDidLoad() {
@@ -62,14 +62,14 @@ final class SettingsListV2ViewModelImplementation: SettingsListV2ViewModel, Sett
     configurator.isSelectable
   }
   
-  private let configurator: SettingsListV2Configurator
+  private let configurator: SettingsListConfigurator
   
-  init(configurator: SettingsListV2Configurator) {
+  init(configurator: SettingsListConfigurator) {
     self.configurator = configurator
   }
   
-  private func update(state: SettingsListV2State) {
-    var snapshot = SettingsListV2ViewController.Snapshot()
+  private func update(state: SettingsListState) {
+    var snapshot = SettingsListViewController.Snapshot()
     snapshot.appendSections(state.sections)
     for section in state.sections {
       switch section {

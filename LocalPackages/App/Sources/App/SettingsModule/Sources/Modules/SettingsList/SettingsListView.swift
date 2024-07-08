@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-public final class SettingsListV2View: UIView {
+public final class SettingsListView: UIView {
   let collectionView = TKUICollectionView(frame: .zero, collectionViewLayout: UICollectionViewLayout())
   
   override init(frame: CGRect) {
@@ -14,7 +14,7 @@ public final class SettingsListV2View: UIView {
   }
 }
 
-private extension SettingsListV2View {
+private extension SettingsListView {
   func setup() {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page

@@ -1,7 +1,7 @@
 import Foundation
 import UIKit
 
-enum SettingsListV2Section: Hashable {
+enum SettingsListSection: Hashable {
   case items(topPadding: CGFloat,
              items: [AnyHashable],
              header: String? = nil,

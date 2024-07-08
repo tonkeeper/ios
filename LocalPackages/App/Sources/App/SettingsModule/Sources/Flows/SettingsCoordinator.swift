@@ -64,7 +64,7 @@ private extension SettingsCoordinator {
       self?.openBackup(wallet: wallet)
     }
     
-    let module = SettingsListV2Assembly.module(configurator: configurator)
+    let module = SettingsListAssembly.module(configurator: configurator)
     
     module.viewController.setupBackButton()
     
@@ -156,7 +156,7 @@ private extension SettingsCoordinator {
     let configuration = SettingsListCurrencyPickerConfigurator(
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV2
     )
-    let module = SettingsListV2Assembly.module(configurator: configuration)
+    let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()
 
     router.push(viewController: module.viewController)
@@ -177,7 +177,7 @@ private extension SettingsCoordinator {
       self?.openRecoveryPhrase(wallet: wallet)
     }
   
-    let module = SettingsListV2Assembly.module(configurator: configuration)
+    let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()
 
     router.push(viewController: module.viewController)
@@ -198,7 +198,7 @@ private extension SettingsCoordinator {
       openChangePasscode()
     }
     
-    let module = SettingsListV2Assembly.module(configurator: configuration)
+    let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()
 
     router.push(viewController: module.viewController)

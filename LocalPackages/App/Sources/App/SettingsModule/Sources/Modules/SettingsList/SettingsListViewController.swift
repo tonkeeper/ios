@@ -1,8 +1,8 @@
 import UIKit
 import TKUIKit
 
-public final class SettingsListV2ViewController: GenericViewViewController<SettingsListV2View> {
-  typealias Section = SettingsListV2Section
+public final class SettingsListViewController: GenericViewViewController<SettingsListView> {
+  typealias Section = SettingsListSection
   typealias Item = AnyHashable
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
   typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
@@ -11,9 +11,9 @@ public final class SettingsListV2ViewController: GenericViewViewController<Setti
   
   private lazy var dataSource: DataSource = createDataSource()
   
-  private let viewModel: SettingsListV2ViewModel
+  private let viewModel: SettingsListViewModel
   
-  init(viewModel: SettingsListV2ViewModel) {
+  init(viewModel: SettingsListViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
   }
@@ -36,7 +36,7 @@ public final class SettingsListV2ViewController: GenericViewViewController<Setti
   }
 }
 
-private extension SettingsListV2ViewController {
+private extension SettingsListViewController {
   func setup() {
     customView.collectionView.delegate = self
     customView.collectionView.setCollectionViewLayout(
@@ -171,7 +171,7 @@ private extension SettingsListV2ViewController {
     return layout
   }
   
-  static func createLayoutSection(section: SettingsListV2Section) -> NSCollectionLayoutSection {
+  static func createLayoutSection(section: SettingsListSection) -> NSCollectionLayoutSection {
     switch section {
     case let .items(topPadding, _, header, bottomDescription):
       return createItemsSection(
@@ -250,7 +250,7 @@ private extension SettingsListV2ViewController {
   }
 }
 
-extension SettingsListV2ViewController: UICollectionViewDelegate {
+extension SettingsListViewController: UICollectionViewDelegate {
   public func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
     let snapshot = dataSource.snapshot()
     let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
