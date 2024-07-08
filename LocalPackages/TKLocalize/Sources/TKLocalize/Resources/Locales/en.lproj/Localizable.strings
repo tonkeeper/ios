@@ -94,6 +94,12 @@
 "backup.manually.button" = "Back Up Manually";
 "backup.show_phrase.title" = "Show Recovery Phrase";
 
+"backup.warning.title" = "Attention";
+"backup.warning.caption" = "Please read the following carefully before viewing your recovery phrase.";
+"backup.warning.list.item1" = "Never enter your recovery phrase any other place than Tonkeeper to access your wallet.";
+"backup.warning.list.item2" = "Tonkeeper Support never asks for a recovery phrase.";
+"backup.warning.list.item3" = "Everybody with your recovery phrase can access your wallet.";
+
 "security.title" = "Security";
 "security.use" = "Use %@";
 "security.change_passcode" = "Change Passcode";

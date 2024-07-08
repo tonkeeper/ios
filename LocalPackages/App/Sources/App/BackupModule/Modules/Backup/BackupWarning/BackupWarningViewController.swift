@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class BackupWarningViewController: UIViewController, TKBottomSheetScrollContentViewController {
   
@@ -16,7 +17,7 @@ final class BackupWarningViewController: UIViewController, TKBottomSheetScrollCo
   
   func calculateHeight(withWidth width: CGFloat) -> CGFloat {
     return stackView.systemLayoutSizeFitting(
-      CGSize(width: width, height: 0),
+      CGSize(width: width - 32, height: 0),
       withHorizontalFittingPriority: .required,
       verticalFittingPriority: .defaultLow
     ).height
@@ -39,7 +40,7 @@ final class BackupWarningViewController: UIViewController, TKBottomSheetScrollCo
     
     let titleLabel = UILabel()
     titleLabel.numberOfLines = 0
-    titleLabel.attributedText = "Attention".withTextStyle(
+    titleLabel.attributedText = TKLocales.Backup.Warning.title.withTextStyle(
       .h2,
       color: .Text.primary,
       alignment: .center,
@@ -50,7 +51,7 @@ final class BackupWarningViewController: UIViewController, TKBottomSheetScrollCo
     
     let captionLabel = UILabel()
     captionLabel.numberOfLines = 0
-    captionLabel.attributedText = "Please read the following carefully before viewing your recovery phrase.".withTextStyle(
+    captionLabel.attributedText = TKLocales.Backup.Warning.caption.withTextStyle(
       .body1,
       color: .Text.secondary,
       alignment: .center,
@@ -60,9 +61,9 @@ final class BackupWarningViewController: UIViewController, TKBottomSheetScrollCo
     stackView.setCustomSpacing(16, after: captionLabel)
     
     listView.items = [
-      "Never enter your recovery phrase any other place than Tonkeeper to access your wallet.",
-      "Tonkeeper Support never asks for a recovery phrase.",
-      "Everybody with your recovery phrase can access your wallet."
+      TKLocales.Backup.Warning.List.item1,
+      TKLocales.Backup.Warning.List.item2,
+      TKLocales.Backup.Warning.List.item3
     ]
     
     stackView.addArrangedSubview(listView)
@@ -73,7 +74,7 @@ final class BackupWarningViewController: UIViewController, TKBottomSheetScrollCo
       category: .primary,
       size: .large
     )
-    continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Continue"))
+    continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.continue_action))
     continueButtonConfiguration.action = { [didTapContinue] in
       didTapContinue?()
     }
@@ -86,7 +87,7 @@ final class BackupWarningViewController: UIViewController, TKBottomSheetScrollCo
       category: .secondary,
       size: .large
     )
-    cancelButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Cancel"))
+    cancelButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.cancel))
     cancelButtonConfiguration.action = { [didTapCancel] in
       didTapCancel?()
     }

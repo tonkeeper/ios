@@ -93,6 +93,12 @@
 "backup.done.title" = "Резервная копия сделана";
 "backup.done.subtitle" = "Последняя %@";
 
+"backup.warning.title" = "Внимание";
+"backup.warning.caption" = "Пожалуйста, внимательно прочитайте перед просмотром секретного ключа.";
+"backup.warning.list.item1" = "Никогда и нигде не вводите свой секретный ключ для доступа к кошельку, кроме Tonkeeper.";
+"backup.warning.list.item2" = "Поддержка Tonkeeper никогда не запрашивает секретный ключ.";
+"backup.warning.list.item3" = "Любой, кто знает ваш секретный ключ, сможет получить доступ к вашему кошельку.";
+
 "security.title" = "Безопасность";
 "security.use" = "Использовать %@";
 "security.change_passcode" = "Поменять пин-код";

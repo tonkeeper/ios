@@ -386,6 +386,30 @@ public enum TKLocales {
         localize("backup.show_phrase.title")
       }
     }
+    public enum Warning {
+      /// Attention
+      public static var title: String {
+        localize("backup.warning.title")
+      }
+      /// Please read the following carefully before viewing your recovery phrase.
+      public static var caption: String {
+        localize("backup.warning.caption")
+      }
+      public enum List {
+        /// Never enter your recovery phrase any other place than Tonkeeper to access your wallet.
+        public static var item1: String {
+          localize("backup.warning.list.item1")
+        }
+        /// Tonkeeper Support never asks for a recovery phrase.
+        public static var item2: String {
+          localize("backup.warning.list.item2")
+        }
+        /// Everybody with your recovery phrase can access your wallet.
+        public static var item3: String {
+          localize("backup.warning.list.item3")
+        }
+      }
+    }
   }
   public enum Security {
     /// Security
