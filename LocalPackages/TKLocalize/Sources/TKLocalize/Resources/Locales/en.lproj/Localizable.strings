@@ -99,6 +99,8 @@
 "security.change_passcode" = "Change Passcode";
 "security.unavailable_error" = "Biometry unavailable";
 "security.use_biometry_description" = "You can always unlock your wallet with a passcode.";
+"security.lock_screen" = "Lock Screen";
+"security.lock_screen_description" = "Require passcode to view wallet contents.";
 
 "wallet_buttons.send" = "Send";
 "wallet_buttons.receive" = "Receive";

@@ -56,6 +56,14 @@ private extension SettingsCoordinator {
       self?.openCurrencyPicker()
     }
     
+    configurator.didTapSecuritySettings = { [weak self] in
+      self?.openSecurity()
+    }
+    
+    configurator.didTapBackup = { [weak self, wallet] in
+      self?.openBackup(wallet: wallet)
+    }
+    
     let module = SettingsListV2Assembly.module(configurator: configurator)
     
     module.viewController.setupBackButton()
@@ -154,48 +162,45 @@ private extension SettingsCoordinator {
     router.push(viewController: module.viewController)
   }
   
-  func openThemePicker() {
-    let itemsProvider = SettingsThemePickerListItemsProvider(appSettings: coreAssembly.appSettings)
-    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
-    
-    router.push(viewController: module.viewController)
-  }
-  
   func openBackup(wallet: Wallet) {
-    let itemsProvider = SettingsBackupListItemsProvider(
-      backupController: keeperCoreMainAssembly.backupController(wallet: wallet)
+    let configuration = SettingsListBackupConfigurator(
+      walletId: wallet.id,
+      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+      dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
     )
     
-    itemsProvider.didTapBackupManually = { [weak self] in
+    configuration.didTapBackupManually = { [weak self] in
       self?.openManuallyBackup(wallet: wallet)
     }
     
-    itemsProvider.didTapShowRecoveryPhrase = { [weak self] in
+    configuration.didTapShowRecoveryPhrase = { [weak self] in
       self?.openRecoveryPhrase(wallet: wallet)
     }
-    
-    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
-    
+  
+    let module = SettingsListV2Assembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
     router.push(viewController: module.viewController)
   }
   
   func openSecurity() {
-    let itemsProvider = SettingsSecurityListItemsProvider(
-      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+    let configuration = SettingsListSecurityConfigurator(
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       biometryProvider: BiometryProvider()
     )
     
-    itemsProvider.didTapChangePasscode = { [weak self] in
-      self?.openChangePasscode()
-    }
-    
-    itemsProvider.didRequirePasscode = { [weak self] in
+    configuration.didRequirePasscode = { [weak self] in
       await self?.getPasscode()
     }
     
-    let module = SettingsListAssembly.module(itemsProvider: itemsProvider)
+    configuration.didTapChangePasscode = { [openChangePasscode] in
+      openChangePasscode()
+    }
     
+    let module = SettingsListV2Assembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
     router.push(viewController: module.viewController)
   }
   

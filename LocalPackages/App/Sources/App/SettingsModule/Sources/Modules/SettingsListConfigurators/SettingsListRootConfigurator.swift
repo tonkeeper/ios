@@ -8,6 +8,8 @@ final class SettingsListRootConfigurator: SettingsListV2Configurator {
 
   var didTapEditWallet: ((Wallet) -> Void)?
   var didTapCurrencySettings: (() -> Void)?
+  var didTapSecuritySettings: (() -> Void)?
+  var didTapBackup: (() -> Void)?
   var didOpenURL: ((URL) -> Void)?
   var didShowAlert: ((_ title: String,
                       _ description: String?,
@@ -25,7 +27,8 @@ final class SettingsListRootConfigurator: SettingsListV2Configurator {
     guard let wallet = walletsStore.getState().wallets.first(where: { $0.id == walletId }) else {
       return SettingsListV2State(sections: [], selectedItem: nil)
     }
-    let sections = createSections(wallet: wallet)
+    let currency = currencyStore.getState()
+    let sections = createSections(wallet: wallet, currency: currency)
     return SettingsListV2State(sections: sections, selectedItem: nil)
   }
   
@@ -59,14 +62,22 @@ final class SettingsListRootConfigurator: SettingsListV2Configurator {
     walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
       guard let wallet = newState.wallets.first(where: { $0.id == walletId }) else { return }
       guard wallet != oldState?.wallets.first(where: { $0.id == walletId }) else { return }
-      let sections = observer.createSections(wallet: wallet)
+      let currency = currencyStore.getState()
+      let sections = observer.createSections(wallet: wallet, currency: currency)
+      observer.didUpdateState?(SettingsListV2State(sections: sections, selectedItem: nil))
+    }
+    currencyStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      guard let wallet = walletsStore.getState().wallets.first(where: { $0.id == walletId }) else { return }
+      guard newState != oldState else { return }
+      let sections = observer.createSections(wallet: wallet, currency: newState)
       observer.didUpdateState?(SettingsListV2State(sections: sections, selectedItem: nil))
     }
     TKThemeManager.shared.addEventObserver(self) { observer, _ in
       guard let wallet = walletsStore.getState().wallets.first(where: { $0.id == walletId }) else {
         return
       }
-      let sections = observer.createSections(wallet: wallet)
+      let currency = currencyStore.getState()
+      let sections = observer.createSections(wallet: wallet, currency: currency)
       let state = SettingsListV2State(sections: sections, selectedItem: nil)
       observer.didUpdateState?(state)
     }
@@ -74,9 +85,7 @@ final class SettingsListRootConfigurator: SettingsListV2Configurator {
 }
 
 private extension SettingsListRootConfigurator {
-  func createSections(wallet: Wallet) -> [SettingsListV2Section] {
-    let currency = currencyStore.getState()
-    
+  func createSections(wallet: Wallet, currency: Currency) -> [SettingsListV2Section] {
     var sections = [SettingsListV2Section]()
     
     sections.append(createWalletSection(wallet: wallet))
@@ -167,8 +176,8 @@ private extension SettingsListRootConfigurator {
         id: .securityItemIdentifier,
         title: .string(TKLocales.Settings.Items.security),
         accessory: .icon(.TKUIKit.Icons.Size28.key, .Accent.blue),
-        selectionClosure: {
-          
+        selectionClosure: { [weak self] in
+          self?.didTapSecuritySettings?()
         }
       )
     )
@@ -179,18 +188,18 @@ private extension SettingsListRootConfigurator {
           id: .backupItemIdentifier,
           title: .string(TKLocales.Settings.Items.backup),
           accessory: .icon(.TKUIKit.Icons.Size28.lock, .Accent.blue),
-          selectionClosure: {
-            
+          selectionClosure: { [weak self] in
+            self?.didTapBackup?()
           }
         )
       )
     }
-    return SettingsListV2Section.items(topPadding: 16, items: items)
+    return SettingsListV2Section.items(topPadding: 30, items: items)
   }
   
   func createSettingsSection(currency: Currency) -> SettingsListV2Section {
     return SettingsListV2Section.items(
-      topPadding: 16,
+      topPadding: 30,
       items: [
         TKUIListItemCell.Configuration.createSettingsItem(
           id: .currencyItemIdentifier,
@@ -223,7 +232,7 @@ private extension SettingsListRootConfigurator {
   
   func createInformationSection() -> SettingsListV2Section {
     return SettingsListV2Section.items(
-      topPadding: 16,
+      topPadding: 30,
       items: [
         TKUIListItemCell.Configuration.createSettingsItem(
           id: .FAQItemIdentifier,
@@ -369,7 +378,7 @@ private extension SettingsListRootConfigurator {
       )
     )
     
-    return SettingsListV2Section.items(topPadding: 16, items: items)
+    return SettingsListV2Section.items(topPadding: 30, items: items)
   }
 }
 

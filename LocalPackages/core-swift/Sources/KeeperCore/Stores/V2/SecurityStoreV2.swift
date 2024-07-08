@@ -3,16 +3,19 @@ import Foundation
 public final class SecurityStoreV2: Store<SecurityStoreV2.State> {
   public struct State: Equatable {
     public let isBiometryEnable: Bool
+    public let isLockScreen: Bool
   }
   
   private let keeperInfoStore: KeeperInfoStore
   
   init(keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
-    super.init(state: State(isBiometryEnable: false))
+    let keeperInfo = keeperInfoStore.getKeeperInfo()
+    super.init(state: State(isBiometryEnable: keeperInfo?.securitySettings.isBiometryEnabled ?? false,
+                            isLockScreen: keeperInfo?.securitySettings.isLockScreen ?? false))
     keeperInfoStore.addObserver(
       self,
-      notifyOnAdded: true) { observer, newState, _ in
+      notifyOnAdded: false) { observer, newState, _ in
         observer.didUpdateKeeperInfo(newState)
       }
   }
@@ -22,9 +25,19 @@ public final class SecurityStoreV2: Store<SecurityStoreV2.State> {
   }
   
   public func setIsBiometryEnable(_ isBiometryEnable: Bool) async {
-    await updateState { _ in StateUpdate(newState: State(isBiometryEnable: isBiometryEnable)) }
     await keeperInfoStore.updateKeeperInfo { keeperInfo in
       let updatedKeeperInfo = keeperInfo?.setIsBiometryEnabled(isBiometryEnable)
+      return updatedKeeperInfo
+    }
+  }
+  
+  public func getIsLockScreen() async -> Bool {
+    await getState().isLockScreen
+  }
+  
+  public func setIsLockScreen(_ isLockScreen: Bool) async {
+    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      let updatedKeeperInfo = keeperInfo?.setIsLockScreen(isLockScreen)
       return updatedKeeperInfo
     }
   }
@@ -33,7 +46,10 @@ public final class SecurityStoreV2: Store<SecurityStoreV2.State> {
     guard let keeperInfo else { return }
     Task {
       await updateState { state in
-        let state = State(isBiometryEnable: keeperInfo.securitySettings.isBiometryEnabled)
+        let state = State(
+          isBiometryEnable: keeperInfo.securitySettings.isBiometryEnabled,
+          isLockScreen: keeperInfo.securitySettings.isLockScreen
+        )
         return StateUpdate(newState: state)
       }
     }

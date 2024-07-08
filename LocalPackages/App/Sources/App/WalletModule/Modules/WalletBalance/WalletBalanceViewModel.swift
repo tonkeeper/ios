@@ -438,12 +438,12 @@ private extension WalletBalanceViewModelImplementation {
     snapshot.appendItems(items, toSection: .balance)
     
     snapshot.appendSections([.manage])
-    let manageButtonItem = WalletBalanceItem.manageButton(
-      WalletsListAddWalletCell.Model(
-        content: TKButton.Configuration.Content(title: .plainString("Manage"))
-      )
-    )
-    snapshot.appendItems([manageButtonItem], toSection: .manage)
+//    let manageButtonItem = WalletBalanceItem.manageButton(
+//      WalletsListAddWalletCell.Model(
+//        content: TKButton.Configuration.Content(title: .plainString("Manage"))
+//      )
+//    )
+//    snapshot.appendItems([manageButtonItem], toSection: .manage)
     
     if #available(iOS 15.0, *) {
       snapshot.reconfigureItems(snapshot.itemIdentifiers)

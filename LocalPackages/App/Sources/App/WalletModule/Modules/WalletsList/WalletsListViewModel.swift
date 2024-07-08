@@ -75,7 +75,22 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   func getItemModel(identifier: String) -> AnyHashable? {
     switch identifier {
     case .addWalletButtonCellIdentifier:
-      return WalletsListAddWalletCell.Model(content: TKButton.Configuration.Content(title: .plainString(TKLocales.WalletsList.add_wallet)))
+      var configuration = TKButton.Configuration.actionButtonConfiguration(
+        category: .secondary,
+        size: .small
+      )
+      configuration.content = TKButton.Configuration.Content(
+        title: .plainString(TKLocales.WalletsList.add_wallet)
+      )
+      configuration.action = { [weak self] in
+        self?.addButtonEvent?()
+      }
+      return TKButtonCell.Model(
+        id: "",
+        configuration: configuration,
+        padding: UIEdgeInsets(top: 16, left: 0, bottom: 16, right: 0),
+        mode: .widthToFit
+      )
     default:
       return itemModels[identifier]
     }

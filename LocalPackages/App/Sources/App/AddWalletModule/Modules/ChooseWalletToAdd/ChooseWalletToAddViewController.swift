@@ -49,12 +49,12 @@ private extension ChooseWalletToAddViewController {
   }
   
   func setupCollectionController() {
-    collectionController.didSelect = { [viewModel] in
-      viewModel.select(at: $0)
+    collectionController.didSelect = { [weak viewModel] in
+      viewModel?.select(at: $0)
     }
     
-    collectionController.didDeselect = { [viewModel] in
-      viewModel.deselect(at: $0)
+    collectionController.didDeselect = { [weak viewModel] in
+      viewModel?.deselect(at: $0)
     }
   }
 }

@@ -6,6 +6,9 @@ extension TKUIListItemCell.Configuration {
   enum Accessory {
     case icon(UIImage, UIColor)
     case text(value: String)
+    case switchControl(isOn: Bool,
+                       isEnable: Bool,
+                       action: (Bool) async -> Bool)
   }
   
   enum Title {
@@ -30,7 +33,7 @@ extension TKUIListItemCell.Configuration {
     id: String,
     title: Title,
     accessory: Accessory,
-    selectionClosure: @escaping () -> Void) -> TKUIListItemCell.Configuration {
+    selectionClosure: (() -> Void)?) -> TKUIListItemCell.Configuration {
       let contentConfiguration = TKUIListItemContentView.Configuration(
         leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
           title: title.attributedString,
@@ -41,6 +44,7 @@ extension TKUIListItemCell.Configuration {
         rightItemConfiguration: nil
       )
       
+      let isHighlightable: Bool
       let accessoryConfiguration: TKUIListItemAccessoryView.Configuration
       switch accessory {
       case .icon(let icon, let tintColor):
@@ -51,6 +55,7 @@ extension TKUIListItemCell.Configuration {
             padding: .zero
           )
         )
+        isHighlightable = true
       case .text(let value):
         accessoryConfiguration = .text(
           TKUIListItemTextAccessoryView.Configuration(
@@ -62,6 +67,16 @@ extension TKUIListItemCell.Configuration {
             )
           )
         )
+        isHighlightable = true
+      case let .switchControl(isOn, isEnable, action):
+        accessoryConfiguration = .switchControl(
+          TKUIListItemSwitchAccessoryView.Configuration(
+            isOn: isOn,
+            isEnable: isEnable,
+            handler: action
+          )
+        )
+        isHighlightable = false
       }
       
       let listItemConfiguration = TKUIListItemView.Configuration(
@@ -76,7 +91,7 @@ extension TKUIListItemCell.Configuration {
       let configuration = TKUIListItemCell.Configuration(
         id: id,
         listItemConfiguration: listItemConfiguration,
-        isHighlightable: true,
+        isHighlightable: isHighlightable,
         selectionClosure: selectionClosure
       )
       return configuration

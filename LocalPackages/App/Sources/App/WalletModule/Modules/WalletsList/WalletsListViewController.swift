@@ -91,13 +91,10 @@ private extension WalletsListViewController {
       cell.editingAccessoryViews = self.createEditingAccessoryViews(item: .wallet(identifier))
     }
     
-    let addWalletCellConfiguration = UICollectionView.CellRegistration<WalletsListAddWalletCell, String> {
+    let addWalletCellConfiguration = UICollectionView.CellRegistration<TKButtonCell, String> {
       [weak self] cell, indexPath, identifier in
-      guard let model = self?.viewModel.getItemModel(identifier: identifier) as? WalletsListAddWalletCell.Model else { return }
+      guard let model = self?.viewModel.getItemModel(identifier: identifier) as? TKButtonCell.Model else { return }
       cell.configure(model: model)
-      cell.didTapButton = {
-        self?.viewModel.didTapAddWalletButton()
-      }
     }
     
     let dataSource = UICollectionViewDiffableDataSource<WalletsListSection, WalletsListItem>(

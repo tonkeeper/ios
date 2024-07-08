@@ -56,6 +56,19 @@ public struct MnemonicsV3Vault {
     }
   }
   
+  public func addMnemoncs(_ mnemonics: Mnemonics, password: String) async throws {
+    do {
+      let encryptedMnemonics = try loadEncryptedMnemonics()
+      var decryptedMnemonics = try await decryptMnemonics(encryptedMnemonics, password: password)
+      decryptedMnemonics.merge(mnemonics, uniquingKeysWith: { $1 })
+      let encryptedUpdatedMnemonics = try await encryptMnemonics(decryptedMnemonics, password: password)
+      try saveEncryptedMnemonics(encryptedUpdatedMnemonics)
+    } catch {
+      let encryptedMnemonics = try await encryptMnemonics(mnemonics, password: password)
+      try saveEncryptedMnemonics(encryptedMnemonics)
+    }
+  }
+  
   public func getMnemonic(identifier: MnemonicIdentifier,
                           password: String) async throws -> Mnemonic {
     let encryptedMnemonics = try loadEncryptedMnemonics()

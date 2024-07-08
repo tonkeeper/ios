@@ -73,7 +73,7 @@ final class SettingsListV2ViewModelImplementation: SettingsListV2ViewModel, Sett
     snapshot.appendSections(state.sections)
     for section in state.sections {
       switch section {
-      case .items(_, let items):
+      case .items(_, let items, _,  _):
         snapshot.appendItems(items, toSection: section)
       }
     }

@@ -155,7 +155,7 @@ private extension WalletsServiceImplementation {
       wallets: wallets,
       currentWallet: wallets[0],
       currency: .USD,
-      securitySettings: SecuritySettings(isBiometryEnabled: false),
+      securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
       isSetupFinished: false,
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
       appCollection: AppCollection(connected: [:], recent: [], pinned: [])

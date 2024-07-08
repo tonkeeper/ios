@@ -17,7 +17,7 @@ struct WalletBalanceSetupSection: Hashable {
 enum WalletBalanceItem: Hashable {
   case notificationItem(String)
   case balanceItem(String)
-  case manageButton(WalletsListAddWalletCell.Model)
+  case manageButton(TKButtonCell.Model)
 }
 
 enum WalletBalanceSetupItem: String, Hashable {

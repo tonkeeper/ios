@@ -69,7 +69,7 @@ public struct MigrationV1 {
         wallets: [wallet],
         currentWallet: wallet,
         currency: .USD,
-        securitySettings: SecuritySettings(isBiometryEnabled: version_1_0_0_KeeperInfo.securitySettings.isBiometryEnabled),
+        securitySettings: SecuritySettings(isBiometryEnabled: version_1_0_0_KeeperInfo.securitySettings.isBiometryEnabled, isLockScreen: false),
         isSetupFinished: version_1_0_0_KeeperInfo.securitySettings.isBiometryEnabled,
         assetsPolicy: version_1_0_0_KeeperInfo.assetsPolicy,
         appCollection: version_1_0_0_KeeperInfo.appCollection

@@ -408,6 +408,14 @@ public enum TKLocales {
     public static var use_biometry_description: String {
       localize("security.use_biometry_description")
     }
+    /// Lock Screen
+    public static var lock_screen: String {
+      localize("security.lock_screen")
+    }
+    /// Require passcode to view wallet contents.
+    public static var lock_screen_description: String {
+      localize("security.lock_screen_description")
+    }
   }
   public enum WalletButtons {
     /// Send

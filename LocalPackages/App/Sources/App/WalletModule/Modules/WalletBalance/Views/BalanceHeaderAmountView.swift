@@ -7,6 +7,9 @@ final class BalanceHeaderAmountView: UIControl, ConfigurableView {
   private let balanceButton = BalanceHeaderAmountButton()
   private let backupButton = TKButton()
   
+  private var balanceButtonRightConstrant: Constraint?
+  private var balanceButtonRightBackupConstrant: Constraint?
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -30,8 +33,12 @@ final class BalanceHeaderAmountView: UIControl, ConfigurableView {
     switch model.backup {
     case .none:
       backupButton.isHidden = true
+      balanceButtonRightBackupConstrant?.deactivate()
+      balanceButtonRightConstrant?.activate()
     case .backup(let closure):
       backupButton.isHidden = false
+      balanceButtonRightConstrant?.deactivate()
+      balanceButtonRightBackupConstrant?.activate()
     }
   }
   
@@ -45,20 +52,25 @@ final class BalanceHeaderAmountView: UIControl, ConfigurableView {
     backupButton.configuration.iconTintColor = .Accent.orange
     backupButton.configuration.contentAlpha = [.highlighted: 0.48]
     
+    backupButton.isHidden = true
+    
     backupButton.setContentCompressionResistancePriority(.required, for: .horizontal)
     
     addSubview(balanceButton)
     addSubview(backupButton)
     
     balanceButton.snp.makeConstraints { make in
-      make.centerX.equalTo(self)
+      make.centerX.equalTo(self).priority(.high)
       make.centerY.equalTo(self)
       make.left.greaterThanOrEqualTo(self)
+      balanceButtonRightConstrant = make.right.equalTo(self).constraint
+      balanceButtonRightBackupConstrant = make.right.equalTo(backupButton.snp.left).constraint
     }
+    
+    balanceButtonRightBackupConstrant?.deactivate()
     
     backupButton.snp.makeConstraints { make in
       make.centerY.equalTo(balanceButton)
-      make.left.equalTo(balanceButton.snp.right)
       make.right.lessThanOrEqualTo(self)
     }
   }

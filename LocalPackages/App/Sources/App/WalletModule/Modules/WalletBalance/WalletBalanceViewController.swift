@@ -115,12 +115,9 @@ private extension WalletBalanceViewController {
       cell.configure(model: model)
     }
     
-    let manageButtonCellConfiguration = UICollectionView.CellRegistration<WalletsListAddWalletCell, WalletsListAddWalletCell.Model> {
+    let manageButtonCellConfiguration = UICollectionView.CellRegistration<TKButtonCell, TKButtonCell.Model> {
       cell, indexPath, identifier in
       cell.configure(model: identifier)
-      cell.didTapButton = { [weak self] in
-        self?.viewModel.didTapManageButton()
-      }
     }
     
     let notificationCellConfiguration = UICollectionView.CellRegistration<NotificationBannerCell, String> {

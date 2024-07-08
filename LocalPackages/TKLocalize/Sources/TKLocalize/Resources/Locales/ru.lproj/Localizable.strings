@@ -98,6 +98,8 @@
 "security.change_passcode" = "Поменять пин-код";
 "security.unavailable_error" = "Биометрия недоступна";
 "security.use_biometry_description" = "Вы всегда можете разблокировать кошелёк\nс помощью пин-кода";
+"security.lock_screen" = "Экран блокировки";
+"security.lock_screen_description" = "Запрос пароля для просмотра кошелька.";
 
 
 "wallet_buttons.send" = "Отправить";

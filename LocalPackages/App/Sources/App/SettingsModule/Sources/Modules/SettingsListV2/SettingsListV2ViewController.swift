@@ -6,6 +6,8 @@ public final class SettingsListV2ViewController: GenericViewViewController<Setti
   typealias Item = AnyHashable
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
   typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
+  typealias SectionHeaderRegistration = UICollectionView.SupplementaryRegistration<TKCollectionViewSupplementaryContainerView<TKListTitleView>>
+  typealias SectionFooterRegistration = UICollectionView.SupplementaryRegistration<TKCollectionViewSupplementaryContainerView<SettingsTextDescriptionView>>
   
   private lazy var dataSource: DataSource = createDataSource()
   
@@ -88,6 +90,11 @@ private extension SettingsListV2ViewController {
       }
     }
     
+    let buttonCellConfiguration = UICollectionView.CellRegistration<TKButtonCell, TKButtonCell.Model>
+    {  cell, indexPath, identifier in
+      cell.configure(model: identifier)
+    }
+    
     let dataSource = DataSource(
       collectionView: customView.collectionView) {
         [itemCellConfiguration] collectionView,
@@ -100,10 +107,52 @@ private extension SettingsListV2ViewController {
             for: indexPath,
             item: configuration
           )
+        case let configuration as TKButtonCell.Model:
+          return collectionView.dequeueConfiguredReusableCell(
+            using: buttonCellConfiguration,
+            for: indexPath,
+            item: configuration
+          )
         default:
           return nil
         }
       }
+    
+    let sectionFooterRegistration = SectionFooterRegistration(
+      elementKind: .sectionDescriptionFooterElementKind) { [weak self] supplementaryView, elementKind, indexPath in
+        guard let self else { return }
+        let section = self.dataSource.snapshot().sectionIdentifiers[indexPath.section]
+        switch section {
+        case .items(_, _, _, let bottomDescription):
+          guard let bottomDescription else { return}
+          supplementaryView.configure(model: bottomDescription)
+        }
+      }
+    let sectionHeaderRegistration = SectionHeaderRegistration(
+      elementKind: .sectionHeaderElementKind) { [weak self] supplementaryView, elementKind, indexPath in
+        guard let self else { return }
+        let section = self.dataSource.snapshot().sectionIdentifiers[indexPath.section]
+        switch section {
+        case .items(_, _, let header, _):
+          supplementaryView.configure(
+            model: TKListTitleView.Model(
+              title: header,
+              textStyle: .h3,
+              padding: UIEdgeInsets(top: 14, left: 0, bottom: 0, right: 0)
+            )
+          )
+        }
+      }
+    dataSource.supplementaryViewProvider = { collectionView, kind, indexPath -> UICollectionReusableView? in
+      switch kind {
+      case .sectionDescriptionFooterElementKind:
+        return collectionView.dequeueConfiguredReusableSupplementary(using: sectionFooterRegistration, for: indexPath)
+      case .sectionHeaderElementKind:
+        return collectionView.dequeueConfiguredReusableSupplementary(using: sectionHeaderRegistration, for: indexPath)
+      default: return nil
+      }
+    }
+    
     return dataSource
   }
   
@@ -124,12 +173,18 @@ private extension SettingsListV2ViewController {
   
   static func createLayoutSection(section: SettingsListV2Section) -> NSCollectionLayoutSection {
     switch section {
-    case .items(let topPadding, _):
-      return createItemsSection(topPadding: topPadding)
+    case let .items(topPadding, _, header, bottomDescription):
+      return createItemsSection(
+        topPadding: topPadding,
+        hasHeader: header != nil,
+        hasFooter: bottomDescription != nil
+      )
     }
   }
   
-  static func createItemsSection(topPadding: CGFloat) -> NSCollectionLayoutSection {
+  static func createItemsSection(topPadding: CGFloat,
+                                 hasHeader: Bool,
+                                 hasFooter: Bool) -> NSCollectionLayoutSection {
     let itemLayoutSize = NSCollectionLayoutSize(
       widthDimension: .fractionalWidth(1.0),
       heightDimension: .estimated(76)
@@ -149,9 +204,38 @@ private extension SettingsListV2ViewController {
     layoutSection.contentInsets = NSDirectionalEdgeInsets(
       top: topPadding,
       leading: 16,
-      bottom: 16,
+      bottom: 0,
       trailing: 16
     )
+    
+    var boundarySupplementaryItems = [NSCollectionLayoutBoundarySupplementaryItem]()
+    if hasHeader {
+      let headerSize = NSCollectionLayoutSize(
+        widthDimension: .fractionalWidth(1.0),
+        heightDimension: .estimated(28)
+      )
+      let header = NSCollectionLayoutBoundarySupplementaryItem(
+        layoutSize: headerSize,
+        elementKind: .sectionHeaderElementKind,
+        alignment: .top
+      )
+      boundarySupplementaryItems.append(header)
+    }
+
+    if hasFooter {
+      let footerSize = NSCollectionLayoutSize(
+        widthDimension: .fractionalWidth(1.0),
+        heightDimension: .estimated(48)
+      )
+      let footer = NSCollectionLayoutBoundarySupplementaryItem(
+        layoutSize: footerSize,
+        elementKind: .sectionDescriptionFooterElementKind,
+        alignment: .bottom
+      )
+      boundarySupplementaryItems.append(footer)
+    }
+    layoutSection.boundarySupplementaryItems = boundarySupplementaryItems
+    
     return layoutSection
   }
   
@@ -177,4 +261,9 @@ extension SettingsListV2ViewController: UICollectionViewDelegate {
       break
     }
   }
+}
+
+private extension String {
+  static let sectionHeaderElementKind = "SectionHeaderElementKind"
+  static let sectionDescriptionFooterElementKind = "SectionDescriptionFooterElementKind"
 }
