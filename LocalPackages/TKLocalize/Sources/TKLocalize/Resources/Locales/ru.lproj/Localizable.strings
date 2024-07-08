@@ -59,6 +59,7 @@
 "settings.items.legal" = "Юридические документы";
 "settings.items.delete_account" = "Удалить ";
 "settings.items.delete_watch_only" = "Удалить аккаунт";
+"settings.items.delete_acount_alert_title" = "Удалить аккаунт";
 "settings.items.setup_wallet_description" = "Кастомизировать";
 
 "settings.logout.title" = "Выйти?";

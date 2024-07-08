@@ -253,6 +253,10 @@ public enum TKLocales {
       public static var delete_watch_only: String {
         localize("settings.items.delete_watch_only")
       }
+      /// Delete account
+      public static var delete_acount_alert_title: String {
+        localize("settings.items.delete_acount_alert_title")
+      }
       /// Edit name and color
       public static var setup_wallet_description: String {
         localize("settings.items.setup_wallet_description")

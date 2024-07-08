@@ -59,6 +59,7 @@
 "settings.items.legal" = "Legal";
 "settings.items.delete_account" = "Delete ";
 "settings.items.delete_watch_only" = "Delete Watch account";
+"settings.items.delete_acount_alert_title" = "Delete account";
 "settings.items.setup_wallet_description" = "Edit name and color";
 
 "settings.logout.title" = "Log out?";

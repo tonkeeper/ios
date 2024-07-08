@@ -84,14 +84,9 @@ public final class MainAssembly {
     )
   }
 
-  public var settingsController: SettingsController {
-    SettingsController(
-      walletsStore: walletAssembly.walletStore,
-      updateStore: walletUpdateAssembly.walletsStoreUpdate,
-      currencyStore: storesAssembly.currencyStoreV2,
-      configurationStore: configurationAssembly.remoteConfigurationStore,
-      mnemonicsRepository: repositoriesAssembly.mnemonicsRepository()
-    )
+  public var walletDeleteController: WalletDeleteController {
+    WalletDeleteController(walletsStoreUpdater: walletUpdateAssembly.walletsStoreUpdater,
+                           mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
   }
   
   public func historyController() -> HistoryController {

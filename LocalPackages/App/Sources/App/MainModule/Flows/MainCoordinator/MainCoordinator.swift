@@ -561,11 +561,6 @@ private extension MainCoordinator {
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
     }
-    coordinator.didLogout = { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
-      self?.didLogout?()
-    }
     
     addChild(coordinator)
     coordinator.start()

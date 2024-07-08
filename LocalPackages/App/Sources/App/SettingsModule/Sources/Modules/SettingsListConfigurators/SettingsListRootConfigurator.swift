@@ -6,6 +6,7 @@ import TKCore
 
 final class SettingsListRootConfigurator: SettingsListConfigurator {
 
+  var didRequirePasscode: (() async -> String?)?
   var didTapEditWallet: ((Wallet) -> Void)?
   var didTapCurrencySettings: (() -> Void)?
   var didTapSecuritySettings: (() -> Void)?
@@ -14,7 +15,9 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didShowAlert: ((_ title: String,
                       _ description: String?,
                       _ actions: [UIAlertAction]) -> Void)?
-  var didTapDeleteWallet: ((Wallet) -> Void)?
+  var didTapDeleteRegularWallet: ((Wallet) -> Void)?
+  var didTapLogout: (() -> Void)?
+  var didDeleteWallet: (() -> Void)?
   
   // MARK: - SettingsListV2Configurator
   
@@ -45,6 +48,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
   private let configurationStore: ConfigurationStore
+  private let walletDeleteController: WalletDeleteController
+  private let anaylticsProvider: AnalyticsProvider
   
   // MARK: - Init
   
@@ -53,13 +58,17 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
        currencyStore: CurrencyStoreV2,
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
-       configurationStore: ConfigurationStore) {
+       configurationStore: ConfigurationStore,
+       walletDeleteController: WalletDeleteController,
+       anaylticsProvider: AnalyticsProvider) {
     self.walletId = walletId
     self.walletsStore = walletsStore
     self.currencyStore = currencyStore
     self.mnemonicsRepository = mnemonicsRepository
     self.appStoreReviewer = appStoreReviewer
     self.configurationStore = configurationStore
+    self.walletDeleteController = walletDeleteController
+    self.anaylticsProvider = anaylticsProvider
     walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
       guard let wallet = newState.wallets.first(where: { $0.id == walletId }) else { return }
       guard wallet != oldState?.wallets.first(where: { $0.id == walletId }) else { return }
@@ -331,45 +340,122 @@ private extension SettingsListRootConfigurator {
     var items = [AnyHashable]()
     
     let deleteWalletTitle: TKUIListItemCell.Configuration.Title
+    let action: () -> Void
     switch wallet.kind {
     case .watchonly:
       deleteWalletTitle = .string(TKLocales.Settings.Items.delete_watch_only)
-    default:
-      let walletTitle = wallet.iconWithName(
-        attributes: TKTextStyle.label1.getAttributes(
-          color: .Text.primary,
-          alignment: .left,
-          lineBreakMode: .byTruncatingTail
-        ),
-        iconColor: .Icon.primary,
-        iconSide: 20
-      )
-      
-      let delete = TKLocales.Settings.Items.delete_account
-        .withTextStyle(
-          .label1,
-          color: .Text.primary,
-          alignment: .left,
-          lineBreakMode: .byTruncatingTail
+      action = {
+        let actions = [
+          UIAlertAction(title: TKLocales.Actions.delete, style: .destructive, handler: { [weak self] _ in
+            guard let self else { return }
+            Task {
+              await self.walletDeleteController.deleteWallet(wallet: wallet)
+              await MainActor.run {
+                self.didDeleteWallet?()
+                self.anaylticsProvider.logEvent(eventKey: .deleteWallet)
+              }
+            }
+          }),
+          UIAlertAction(title: TKLocales.Actions.cancel, style: .cancel)
+        ]
+        
+        self.didShowAlert?(
+          TKLocales.Settings.Items.delete_watch_only,
+          nil,
+          actions
         )
-      let result = NSMutableAttributedString(attributedString: delete)
-      result.append(walletTitle)
-      deleteWalletTitle = .attributedString(result)
+      }
+    case .regular:
+      deleteWalletTitle = createDeleteWalletNameTitle(wallet: wallet)
+      action = { [weak self, walletId] in
+        guard let wallet = self?.walletsStore.getState().wallets.first(where: { $0.id == walletId }) else { return }
+        self?.didTapDeleteRegularWallet?(wallet)
+      }
+    default:
+      deleteWalletTitle = createDeleteWalletNameTitle(wallet: wallet)
+      action = {
+        let actions = [
+          UIAlertAction(title: TKLocales.Actions.delete, style: .destructive, handler: { [weak self] _ in
+            guard let self else { return }
+            Task {
+              await self.walletDeleteController.deleteWallet(wallet: wallet)
+              await MainActor.run {
+                self.didDeleteWallet?()
+                self.anaylticsProvider.logEvent(eventKey: .deleteWallet)
+              }
+            }
+          }),
+          UIAlertAction(title: TKLocales.Actions.cancel, style: .cancel)
+        ]
+        
+        self.didShowAlert?(
+          TKLocales.Settings.Items.delete_acount_alert_title,
+          nil,
+          actions
+        )
+      }
     }
     
     items.append(
       TKUIListItemCell.Configuration.createSettingsItem(
         id: .deleteAccountIdentifier,
         title: deleteWalletTitle,
-        accessory: .icon(.TKUIKit.Icons.Size28.door, .Accent.blue),
-        selectionClosure: { [weak self, walletId] in
-          guard let wallet = self?.walletsStore.getState().wallets.first(where: { $0.id == walletId }) else { return }
-          self?.didTapDeleteWallet?(wallet)
-        }
-      )
+        accessory: .icon(.TKUIKit.Icons.Size28.trashBin, .Accent.blue),
+        selectionClosure: {
+          action()
+        })
     )
-
+    
+    items.append(
+      TKUIListItemCell.Configuration.createSettingsItem(
+        id: .logoutIdentifier,
+        title: .string(TKLocales.Settings.Items.logout),
+        accessory: .icon(.TKUIKit.Icons.Size28.door, .Accent.blue),
+        selectionClosure: { [weak self] in
+          let actions = [
+            UIAlertAction(title: TKLocales.Settings.Items.logout, style: .destructive, handler: { [weak self] _ in
+              guard let self else { return }
+              Task {
+                await self.walletDeleteController.deleteAll()
+                await MainActor.run {
+//                  self.didDeleteWallet?()
+                  self.anaylticsProvider.logEvent(eventKey: .resetWallet)
+                }
+              }
+            }),
+            UIAlertAction(title: TKLocales.Actions.cancel, style: .cancel)
+          ]
+          
+          self?.didShowAlert?(TKLocales.Settings.Logout.title,
+                              TKLocales.Settings.Logout.description,
+                              actions)
+        })
+    )
+    
     return SettingsListSection.items(topPadding: 30, items: items)
+  }
+  
+  private func createDeleteWalletNameTitle(wallet: Wallet) -> TKUIListItemCell.Configuration.Title {
+    let walletName = wallet.iconWithName(
+      attributes: TKTextStyle.label1.getAttributes(
+        color: .Text.primary,
+        alignment: .left,
+        lineBreakMode: .byTruncatingTail
+      ),
+      iconColor: .Icon.primary,
+      iconSide: 20
+    )
+    
+    let delete = TKLocales.Settings.Items.delete_account
+      .withTextStyle(
+        .label1,
+        color: .Text.primary,
+        alignment: .left,
+        lineBreakMode: .byTruncatingTail
+      )
+    let result = NSMutableAttributedString(attributedString: delete)
+    result.append(walletName)
+    return .attributedString(result)
   }
 }
 
@@ -387,4 +473,6 @@ private extension String {
   static let legalItemIdentifier = "LegalItem"
   static let deleteAccountIdentifier = "DeleteAccountItem"
   static let logoutIdentifier = "LogoutItem"
+  
+  static let deleteWatchTitle = "Are you sure you want to delete Watch account?"
 }

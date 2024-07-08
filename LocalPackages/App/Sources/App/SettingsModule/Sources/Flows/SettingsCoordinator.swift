@@ -6,7 +6,6 @@ import KeeperCore
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
-  var didLogout: (() -> Void)?
   
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -35,7 +34,9 @@ private extension SettingsCoordinator {
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV2,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
-      configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore
+      configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore,
+      walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
+      anaylticsProvider: coreAssembly.analyticsProvider
     )
     
     configurator.didOpenURL = { [coreAssembly] in
@@ -64,8 +65,16 @@ private extension SettingsCoordinator {
       self?.openBackup(wallet: wallet)
     }
     
-    configurator.didTapDeleteWallet = { [weak self] wallet in
-      self?.delete(wallet: wallet)
+    configurator.didTapDeleteRegularWallet = { [weak self] wallet in
+      self?.deleteRegular(wallet: wallet)
+    }
+    
+    configurator.didDeleteWallet = { [weak self] in
+      guard let self else { return }
+      let wallets = self.keeperCoreMainAssembly.walletAssembly.walletsStoreV2.getState().wallets
+      if !wallets.isEmpty {
+        self.router.pop(animated: true)
+      }
     }
     
     let module = SettingsListAssembly.module(configurator: configurator)
@@ -237,7 +246,7 @@ private extension SettingsCoordinator {
     })
   }
   
-  func delete(wallet: Wallet) {
+  func deleteRegular(wallet: Wallet) {
     let viewController = SettingsDeleteWarningViewController()
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
 
@@ -245,9 +254,13 @@ private extension SettingsCoordinator {
       bottomSheetViewController?.dismiss(completion: {
         guard let self else { return }
         Task {
-          await self.keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater.deleteWallet(wallet)
+          guard let passcode = await self.getPasscode() else { return }
+          await self.keeperCoreMainAssembly.walletDeleteController.deleteWallet(wallet: wallet, passcode: passcode)
           await MainActor.run {
-            self.router.pop(animated: true)
+            let wallets = self.keeperCoreMainAssembly.walletAssembly.walletsStoreV2.getState().wallets
+            if !wallets.isEmpty {
+              self.router.pop(animated: true)
+            }
           }
         }
       })

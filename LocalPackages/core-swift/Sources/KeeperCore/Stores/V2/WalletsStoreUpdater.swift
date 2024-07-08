@@ -97,6 +97,12 @@ public final class WalletsStoreUpdater {
     }
   }
   
+  public func deleteAllWallets() async {
+    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      return nil
+    }
+  }
+  
   public func moveWallet(fromIndex: Int, toIndex: Int) async {
     await keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return keeperInfo }
