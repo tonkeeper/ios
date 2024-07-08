@@ -91,8 +91,13 @@ private extension SettingsListViewController {
     }
     
     let buttonCellConfiguration = UICollectionView.CellRegistration<TKButtonCell, TKButtonCell.Model>
-    {  cell, indexPath, identifier in
+    { cell, indexPath, identifier in
       cell.configure(model: identifier)
+    }
+    
+    let appInformationCellConfiguration = UICollectionView.CellRegistration<SettingsAppInformationCell, SettingsAppInformationCell.Configuration>
+    { cell, indexPath, identifier in
+      cell.configure(configuration: identifier)
     }
     
     let dataSource = DataSource(
@@ -110,6 +115,12 @@ private extension SettingsListViewController {
         case let configuration as TKButtonCell.Model:
           return collectionView.dequeueConfiguredReusableCell(
             using: buttonCellConfiguration,
+            for: indexPath,
+            item: configuration
+          )
+        case let configuration as SettingsAppInformationCell.Configuration:
+          return collectionView.dequeueConfiguredReusableCell(
+            using: appInformationCellConfiguration,
             for: indexPath,
             item: configuration
           )

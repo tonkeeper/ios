@@ -107,6 +107,7 @@ private extension SettingsListRootConfigurator {
     sections.append(createSettingsSection(currency: currency))
     sections.append(createInformationSection())
     sections.append(createDeleteSection(wallet: wallet))
+    sections.append(createAppInformationSection())
     
     return sections
   }
@@ -433,6 +434,20 @@ private extension SettingsListRootConfigurator {
     )
     
     return SettingsListSection.items(topPadding: 30, items: items)
+  }
+  
+  func createAppInformationSection() -> SettingsListSection {
+    SettingsListSection.items(
+      topPadding: 0,
+      items: [
+        SettingsAppInformationCell.Configuration(
+          appName: InfoProvider.appName(),
+          version: "Version \(InfoProvider.appVersion())"
+        )
+      ],
+      header: nil,
+      bottomDescription: nil
+    )
   }
   
   private func createDeleteWalletNameTitle(wallet: Wallet) -> TKUIListItemCell.Configuration.Title {

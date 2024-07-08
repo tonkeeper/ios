@@ -24,8 +24,8 @@ public struct InfoProvider {
     Bundle.main.object(forInfoDictionaryKey: key.rawValue) as? T
   }
   
-  public static func appVersion() -> String? {
-    self.value(key: .appVersion)
+  public static func appVersion() -> String {
+    self.value(key: .appVersion) ?? ""
   }
   
   public static func aptabaseKey() -> String? {
