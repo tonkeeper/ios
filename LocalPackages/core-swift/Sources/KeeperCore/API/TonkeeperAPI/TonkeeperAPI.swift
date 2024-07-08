@@ -73,7 +73,7 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     
     components.queryItems = [
       .init(name: "lang", value: appInfoProvider.language),
-      .init(name: "build", value: appInfoProvider.version),
+      .init(name: "build", value: "5.0.0"),
       .init(name: "chainName", value: "mainnet"),
       .init(name: "platform", value: appInfoProvider.platform)
     ]

@@ -33,10 +33,12 @@ final class BalanceHeaderAmountView: UIControl, ConfigurableView {
     switch model.backup {
     case .none:
       backupButton.isHidden = true
+      backupButton.configuration.action = nil
       balanceButtonRightBackupConstrant?.deactivate()
       balanceButtonRightConstrant?.activate()
     case .backup(let closure):
       backupButton.isHidden = false
+      backupButton.configuration.action = closure
       balanceButtonRightConstrant?.deactivate()
       balanceButtonRightBackupConstrant?.activate()
     }

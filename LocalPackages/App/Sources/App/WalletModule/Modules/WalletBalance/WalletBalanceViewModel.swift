@@ -185,7 +185,9 @@ private extension WalletBalanceViewModelImplementation {
           backup = .none
         } else {
           balanceColor = .Accent.orange
-          backup = .backup(closure: {})
+          backup = .backup(closure: { [weak self] in
+            self?.didTapBackup?(state.wallet)
+          })
         }
 
         let secureState: BalanceHeaderAmountButton.State = state.isSecure ? .secure : .unsecure
