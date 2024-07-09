@@ -12,6 +12,9 @@ struct WalletBalanceAssembly {
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
         convertedBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
         stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
+        tokenManagementStoreProvider: {
+          keeperCoreMainAssembly.storesAssembly.tokenManagementStore(wallet: $0)
+        },
         secureMode: coreAssembly.secureMode
       ),
       setupModel: WalletBalanceSetupModel(

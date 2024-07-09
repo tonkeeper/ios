@@ -87,9 +87,9 @@ private extension TKListTitleView {
     addSubview(stackView)
     stackView.addArrangedSubview(titleLabel)
     stackView.addArrangedSubview(button)
-    backgroundColor = .Background.page
-    
-    titleLabel.backgroundColor = .Background.page
+//    backgroundColor = .Background.page
+//    
+//    titleLabel.backgroundColor = .Background.page
     
     button.setContentHuggingPriority(.required, for: .horizontal)
     

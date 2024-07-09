@@ -42,7 +42,7 @@ public class TKCollectionViewSupplementaryContainerView<ContentView: TKCollectio
 
 private extension TKCollectionViewSupplementaryContainerView {
   func setup() {
-    backgroundColor = .Background.page
+//    backgroundColor = .Background.page
     addSubview(contentView)
   }
 }

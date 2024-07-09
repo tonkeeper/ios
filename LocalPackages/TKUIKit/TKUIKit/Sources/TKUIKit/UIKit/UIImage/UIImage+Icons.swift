@@ -232,6 +232,18 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-signer-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var eyeClosedOutline: UIImage {
+          .imageWithName("Icons/28/ic-eye-closed-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var eyeOutline: UIImage {
+          .imageWithName("Icons/28/ic-eye-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var pin: UIImage {
+          .imageWithName("Icons/28/ic-pin-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {

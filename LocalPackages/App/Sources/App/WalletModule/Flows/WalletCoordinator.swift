@@ -184,6 +184,27 @@ private extension WalletCoordinator {
     addChild(coordinator)
     coordinator.start()
   }
+  
+  func openManageTokens(wallet: Wallet) {
+    let module = ManageTokensAssembly.module(
+      model: ManageTokensModel(
+        wallet: wallet,
+        tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStore(wallet: wallet),
+        convertedBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
+        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore
+      ),
+      mapper: ManageTokensListMapper(amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter)
+    )
+
+    let navigationController = TKNavigationController(rootViewController: module.view)
+    navigationController.configureDefaultAppearance()
+    
+    module.view.setupRightCloseButton { [weak navigationController] in
+      navigationController?.dismiss(animated: true)
+    }
+    
+    router.present(navigationController)
+  }
 
   func createWalletBalanceModule() -> WalletBalanceModule {
     let module = WalletBalanceAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly,
@@ -219,6 +240,10 @@ private extension WalletCoordinator {
     
     module.output.didTapBackup = { [weak self] wallet in
       self?.openBackup(wallet: wallet)
+    }
+
+    module.output.didTapManage = { [weak self] wallet in
+      self?.openManageTokens(wallet: wallet)
     }
 
     return module

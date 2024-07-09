@@ -270,3 +270,8 @@
 "sign_out_warning.caption" = "Ключи кошелька будут удалены с этого устройства.";
 "sign_out_warning.tick_description" = "У меня есть резервная копия фразы восстановления кошелька ";
 "sign_out_warning.tick_back_up" = "Сделать резервную копию";
+
+"home_screen_configuration.title" = "Управление";
+"home_screen_configuration.sections.pinned" = "Закреплённые";
+"home_screen_configuration.sections.all_assets" = "Все активы";
+"home_screen_configuration.sections.sorted_by_price" = "По стоимости";

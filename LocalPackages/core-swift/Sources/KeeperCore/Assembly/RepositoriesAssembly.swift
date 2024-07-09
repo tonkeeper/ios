@@ -74,4 +74,8 @@ public struct RepositoriesAssembly {
   func popularAppsRepository() -> PopularAppsRepository {
     PopularAppsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
+  
+  func tokenManagementRepository() -> TokenManagementRepository {
+    TokenManagementRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
 }

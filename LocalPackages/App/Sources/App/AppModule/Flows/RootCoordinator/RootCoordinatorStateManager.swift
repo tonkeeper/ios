@@ -58,23 +58,4 @@ final class RootCoordinatorStateManager {
       return .onboarding
     }
   }
-//
-//  func updateState() {
-//    let keeperInfo = keeperInfoStore.getState()
-//    
-//  }
-//
-//  private func didUpdateKeeperInfo() {
-//    updateState()
-//  }
-//  
-//  private func updateState(keeperInfo: KeeperInfo?) {
-//    if let keeperInfo {
-//      let walletsState = WalletsState(wallets: keeperInfo.wallets,
-//                                      activeWallet: keeperInfo.currentWallet)
-//      self.state = .main(walletsState: walletsState)
-//    } else {
-//      self.state = .onboarding
-//    }
-//  }
 }

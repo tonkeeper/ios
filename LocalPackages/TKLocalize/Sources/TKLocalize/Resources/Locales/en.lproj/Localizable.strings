@@ -273,3 +273,8 @@
 "sign_out_warning.caption" = "Wallet keys will be erased from this device.";
 "sign_out_warning.tick_description" = "I have a backup copy of the recovery phrase for ";
 "sign_out_warning.tick_back_up" = "Back up";
+
+"home_screen_configuration.title" = "Home Screen";
+"home_screen_configuration.sections.pinned" = "Pinned";
+"home_screen_configuration.sections.all_assets" = "All Assets";
+"home_screen_configuration.sections.sorted_by_price" = "Sorted by Price";

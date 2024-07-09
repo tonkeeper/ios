@@ -95,6 +95,21 @@ public final class StoresAssembly {
     }
   }
   
+  private var _tokenManagementStores = [Wallet: Weak<TokenManagementStore>]()
+  public func tokenManagementStore(wallet: Wallet) -> TokenManagementStore {
+    if let weakWrapper = _tokenManagementStores[wallet],
+       let store = weakWrapper.value {
+      return store
+    }
+    let store = TokenManagementStore(
+      wallet: wallet,
+      tokenManagementRepository: repositoriesAssembly.tokenManagementRepository()
+    )
+    _tokenManagementStores[wallet] = Weak(value: store)
+    return store
+  }
+  
+  
   private weak var _walletBalanceStore: WalletBalanceStore?
   var walletBalanceStore: WalletBalanceStore {
     if let _walletBalanceStore {
@@ -222,5 +237,12 @@ public final class StoresAssembly {
       _knownAccountsStore = knownAccountsStore
       return knownAccountsStore
     }
+  }
+}
+
+private class Weak<T: AnyObject> {
+  weak var value : T?
+  init (value: T) {
+    self.value = value
   }
 }

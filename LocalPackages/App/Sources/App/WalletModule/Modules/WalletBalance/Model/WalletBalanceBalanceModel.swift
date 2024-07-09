@@ -6,43 +6,9 @@ import TKCore
 import TKLocalize
 
 final class WalletBalanceBalanceModel {
-  struct BalanceListTonItem {
-    let id: String
-    let title: String
-    let amount: BigUInt
-    let fractionalDigits: Int
-    let currency: Currency
-    let converted: Decimal
-    let price: Decimal
-    let diff: String?
-  }
-  
-  struct BalanceListJettonItem {
-    let id: String
-    let jetton: JettonItem
-    let amount: BigUInt
-    let fractionalDigits: Int
-    let tag: String?
-    let currency: Currency
-    let converted: Decimal
-    let price: Decimal
-    let diff: String?
-  }
-  
-  struct BalanceListStakingItem {
-    let id: String
-    let info: AccountStackingInfo
-    let poolInfo: StackingPoolInfo?
-    let currency: Currency
-    let converted: Decimal
-    let price: Decimal
-  }
-  
   struct BalanceListItems {
-    let tonItem: BalanceListTonItem?
-    let usdtItem: BalanceListJettonItem?
-    let jettonsItems: [BalanceListJettonItem]
-    let stakingItems: [BalanceListStakingItem]
+    let items: [BalanceItem]
+    let canManage: Bool
   }
 
   private let actor = SerialActor<Void>()
@@ -54,25 +20,33 @@ final class WalletBalanceBalanceModel {
       let balance = self.convertedBalanceStore.getState()[address]?.balance
       let isSecure = self.secureMode.getState()
       let stackingPools = self.stackingPoolsStore.getState()[address] ?? []
+      let tokenManagementState = self.tokenManagementStore.getState()
       self.update(balance: balance,
                   stackingPools: stackingPools,
-                  isSecure: isSecure)
+                  isSecure: isSecure,
+                  tokenManagementState: tokenManagementState)
     }
   }
+  
+  private var tokenManagementStore: TokenManagementStore
   
   private let walletsStore: WalletsStoreV2
   private let convertedBalanceStore: ConvertedBalanceStoreV2
   private let stackingPoolsStore: StakingPoolsStore
+  private let tokenManagementStoreProvider: (Wallet) -> TokenManagementStore
   private let secureMode: SecureMode
   
   init(walletsStore: WalletsStoreV2,
        convertedBalanceStore: ConvertedBalanceStoreV2,
        stackingPoolsStore: StakingPoolsStore,
+       tokenManagementStoreProvider: @escaping (Wallet) -> TokenManagementStore,
        secureMode: SecureMode) {
     self.walletsStore = walletsStore
     self.convertedBalanceStore = convertedBalanceStore
     self.stackingPoolsStore = stackingPoolsStore
+    self.tokenManagementStoreProvider = tokenManagementStoreProvider
     self.secureMode = secureMode
+    self.tokenManagementStore = tokenManagementStoreProvider(walletsStore.getState().activeWallet)
     walletsStore.addObserver(self, notifyOnAdded: false) { observer, newWalletsState, oldWalletsState in
       Task {
         await observer.didUpdateWalletsState(newWalletsState: newWalletsState, oldWalletsState: oldWalletsState)
@@ -88,6 +62,11 @@ final class WalletBalanceBalanceModel {
         await observer.didUpdateSecureMode(newState)
       }
     }
+    tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      Task {
+        await observer.didUpdateTokenManagementState(_: newState, oldState: oldState)
+      }
+    }
   }
   
   private func didUpdateWalletsState(newWalletsState: WalletsState,
@@ -95,12 +74,20 @@ final class WalletBalanceBalanceModel {
     await actor.addTask(block: {
       guard newWalletsState.activeWallet != oldWalletsState?.activeWallet else { return }
       guard let address = try? newWalletsState.activeWallet.friendlyAddress else { return }
+      self.tokenManagementStore = self.tokenManagementStoreProvider(newWalletsState.activeWallet)
+      self.tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+        Task {
+          await observer.didUpdateTokenManagementState(_: newState, oldState: oldState)
+        }
+      }
       let balance = await self.convertedBalanceStore.getState()[address]?.balance
       let isSecure = await self.secureMode.isSecure
       let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
+      let tokenManagementState = await self.tokenManagementStore.getState()
       self.update(balance: balance,
                   stackingPools: stackingPools,
-                  isSecure: isSecure)
+                  isSecure: isSecure,
+      tokenManagementState: tokenManagementState)
     })
   }
   
@@ -112,9 +99,11 @@ final class WalletBalanceBalanceModel {
       guard newBalances[address] != oldBalances?[address] else { return }
       let isSecure = await self.secureMode.isSecure
       let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
+      let tokenManagementState = await self.tokenManagementStore.getState()
       self.update(balance: newBalances[address]?.balance,
                   stackingPools: stackingPools,
-                  isSecure: isSecure)
+                  isSecure: isSecure, 
+                  tokenManagementState: tokenManagementState)
     })
   }
   
@@ -124,161 +113,104 @@ final class WalletBalanceBalanceModel {
       guard let address = try? activeWallet.friendlyAddress else { return }
       let balance = await self.convertedBalanceStore.getState()[address]?.balance
       let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
-      self.update(balance: balance, 
+      let tokenManagementState = await self.tokenManagementStore.getState()
+      self.update(balance: balance,
                   stackingPools: stackingPools,
-                  isSecure: isSecure)
+                  isSecure: isSecure,
+                  tokenManagementState: tokenManagementState)
+    })
+  }
+  
+  private func didUpdateTokenManagementState(_ state: TokenManagementState, oldState: TokenManagementState?) async {
+    await actor.addTask(block: {
+      guard state != oldState else { return }
+      let activeWallet = await self.walletsStore.getState().activeWallet
+      guard let address = try? activeWallet.friendlyAddress else { return }
+      let balance = await self.convertedBalanceStore.getState()[address]?.balance
+      let isSecure = await self.secureMode.isSecure
+      let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
+      self.update(
+        balance: balance,
+        stackingPools: stackingPools,
+        isSecure: isSecure,
+        tokenManagementState: state
+      )
     })
   }
   
   private func update(balance: ConvertedBalance?,
                       stackingPools: [StackingPoolInfo],
-                      isSecure: Bool) {
+                      isSecure: Bool,
+                      tokenManagementState: TokenManagementState) {
     guard let balance else {
       didUpdateItems?(
-        BalanceListItems(
-          tonItem: nil,
-          usdtItem: nil,
-          jettonsItems: [],
-          stakingItems: []
-        ),
+        BalanceListItems(items: [],
+                         canManage: false),
         isSecure
       )
       return
     }
-    var tonItems = [BalanceListTonItem]()
-    var jettonItems = [BalanceListJettonItem]()
-    var stakingItems = [BalanceListStakingItem]()
     
-    var jettonsBalance = balance.jettonsBalance
-    var stackingBalance = balance.stackingBalance
-    
-    let tonItem = BalanceListTonItem(
-      id: TonInfo.symbol,
-      title: TonInfo.symbol,
-      amount: BigUInt(balance.tonBalance.tonBalance.amount),
-      fractionalDigits: TonInfo.fractionDigits,
-      currency: balance.currency,
-      converted: balance.tonBalance.converted,
-      price: balance.tonBalance.price,
-      diff: balance.tonBalance.diff
+    let balanceItems = BalanceItems(
+      balance: balance,
+      stackingPools: stackingPools
     )
-    tonItems.append(tonItem)
     
-    var tonUSDTItem: BalanceListJettonItem?
-    if let usdtJettonIndex = jettonsBalance.firstIndex(where: {
-      $0.jettonBalance.item.jettonInfo.address == JettonMasterAddress.tonUSDT
-    }) {
-      let usdtJetton = jettonsBalance[usdtJettonIndex]
-      jettonsBalance.remove(at: usdtJettonIndex)
-      tonUSDTItem = BalanceListJettonItem(
-        id: usdtJetton.jettonBalance.item.jettonInfo.address.toString(),
-        jetton: usdtJetton.jettonBalance.item,
-        amount: usdtJetton.jettonBalance.quantity,
-        fractionalDigits: usdtJetton.jettonBalance.item.jettonInfo.fractionDigits,
-        tag: "TON",
-        currency: balance.currency,
-        converted: usdtJetton.converted,
-        price: usdtJetton.price,
-        diff: usdtJetton.diff
-      )
+    var pinnedItems = [BalanceItem]()
+    var unpinnedItems = [BalanceItem]()
+    
+    for item in balanceItems.items {
+      if tokenManagementState.pinnedItems.contains(item.identifier) {
+        pinnedItems.append(item)
+      } else {
+        guard !tokenManagementState.hiddenItems.contains(item.identifier) else {
+          continue
+        }
+        unpinnedItems.append(item)
+      }
     }
     
-    var tonstakersItem: BalanceListStakingItem?
-    if let tonstakersJettonIndex = jettonsBalance.firstIndex(where: {
-      $0.jettonBalance.item.jettonInfo.address == JettonMasterAddress.tonstakers
-    }) {
-      let tonstakersJetton = jettonsBalance[tonstakersJettonIndex]
-      jettonsBalance.remove(at: tonstakersJettonIndex)
-      if let tonstakersPool = stackingPools.first(where: { $0.liquidJettonMaster == JettonMasterAddress.tonstakers }) {
-        var tonstackerBalance: ConvertedStakingBalance?
-        if let tonstakerInfoIndex = stackingBalance.firstIndex(where: { $0.stackingInfo.pool == tonstakersPool.address }) {
-          tonstackerBalance = stackingBalance[tonstakerInfoIndex]
-          stackingBalance.remove(at: tonstakerInfoIndex)
-        }
-        
-        var amount: Int64 = 0
-        if let tonRate = tonstakersJetton.jettonBalance.rates[.TON] {
-          let converted = RateConverter().convertToDecimal(
-            amount: tonstakersJetton.jettonBalance.quantity,
-            amountFractionLength: tonstakersJetton.jettonBalance.item.jettonInfo.fractionDigits,
-            rate: tonRate
-          )
-          let convertedFractionLength = min(Int16(TonInfo.fractionDigits),max(Int16(-converted.exponent), 0))
-          amount = Int64(NSDecimalNumber(decimal: converted)
-            .multiplying(byPowerOf10: convertedFractionLength).doubleValue)
-        }
-        
-        let info = AccountStackingInfo(
-          pool: tonstakersPool.address,
-          amount: amount,
-          pendingDeposit: tonstackerBalance?.stackingInfo.pendingDeposit ?? 0,
-          pendingWithdraw:tonstackerBalance?.stackingInfo.pendingWithdraw ?? 0,
-          readyWithdraw: tonstackerBalance?.stackingInfo.readyWithdraw ?? 0
-        )
-        tonstakersItem = BalanceListStakingItem(
-          id: info.pool.toString(),
-          info: info,
-          poolInfo: tonstakersPool,
-          currency: balance.currency,
-          converted: tonstakersJetton.converted,
-          price: tonstakersJetton.price
-        )
+    let sortedPinnedItems = pinnedItems.sorted {
+      guard let lIndex = tokenManagementState.pinnedItems.firstIndex(of: $0.identifier) else {
+        return false
       }
+      guard let rIndex = tokenManagementState.pinnedItems.firstIndex(of: $1.identifier) else {
+        return true
+      }
+      
+      return lIndex < rIndex
     }
-
-    stakingItems = stackingBalance
-      .sorted { left, right in
-        left.amountConverted > right.amountConverted
-      }
-      .map { stakingItem in
-        let stackingPool = stackingPools.first(where: { $0.address == stakingItem.stackingInfo.pool  })
-        return BalanceListStakingItem(
-          id: stakingItem.stackingInfo.pool.toString(),
-          info: stakingItem.stackingInfo,
-          poolInfo: stackingPool,
-          currency: balance.currency,
-          converted: stakingItem.amountConverted,
-          price: stakingItem.price
-        )
-      }
     
-    jettonItems = jettonsBalance
-      .sorted(by: { left, right in
-        switch (left.jettonBalance.item.jettonInfo.verification, right.jettonBalance.item.jettonInfo.verification) {
+    let sortedUnpinnedItems = unpinnedItems.sorted {
+      switch ($0, $1) {
+      case (.ton, _):
+        return true
+      case (_, .ton):
+        return false
+      case (.staking(let lModel), .staking(let rModel)):
+        return lModel.converted > rModel.converted
+      case (.staking, _):
+        return true
+      case (_, .staking):
+        return false
+      case (.jetton(let lModel), .jetton(let rModel)):
+        switch (lModel.jetton.jettonInfo.verification, rModel.jetton.jettonInfo.verification) {
         case (.whitelist, .whitelist):
-          return left.converted > right.converted ? true : false
+          return lModel.converted > rModel.converted
         case (.whitelist, _):
           return true
         case (_, .whitelist):
           return false
         default:
-          return left.converted > right.converted ? true : false
+          return lModel.converted > rModel.converted
         }
-      })
-      .map {
-        return BalanceListJettonItem(
-          id: $0.jettonBalance.item.jettonInfo.address.toString(),
-          jetton: $0.jettonBalance.item,
-          amount: $0.jettonBalance.quantity,
-          fractionalDigits: $0.jettonBalance.item.jettonInfo.fractionDigits,
-          tag: nil,
-          currency: balance.currency,
-          converted: $0.converted,
-          price: $0.price,
-          diff: $0.diff
-        )
       }
-    
-    if let tonstakersItem {
-      stakingItems.append(tonstakersItem)
     }
     
-    let item = BalanceListItems(
-      tonItem: tonItem,
-      usdtItem: tonUSDTItem,
-      jettonsItems: jettonItems,
-      stakingItems: stakingItems
+    let items = BalanceListItems(
+      items: sortedPinnedItems + sortedUnpinnedItems,
+      canManage: balanceItems.items.count > 2
     )
-    didUpdateItems?(item, isSecure)
+    didUpdateItems?(items, isSecure)
   }
 }

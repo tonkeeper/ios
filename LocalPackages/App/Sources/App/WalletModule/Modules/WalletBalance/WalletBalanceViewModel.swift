@@ -46,6 +46,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     let balanceItems: WalletBalanceBalanceModel.BalanceListItems
     let setupState: WalletBalanceSetupModel.State
     let notifications: [NotificationModel]
+    let hasManageButton: Bool
   }
   
   // MARK: - WalletBalanceModuleOutput
@@ -115,10 +116,12 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private let actor = SerialActor<Void>()
   private var state = State(
     balanceItems: WalletBalanceBalanceModel.BalanceListItems(
-      tonItem: nil, usdtItem: nil, jettonsItems: [], stakingItems: []
+      items: [], 
+      canManage: false
     ),
     setupState: .none,
-    notifications: [])
+    notifications: [],
+  hasManageButton: false)
   private var cellModels = [String: WalletBalanceListCell.Model]()
   private var notificationCellModels = [String: NotificationBannerCell.Model]()
   private var stakingUpdateTimer: DispatchSourceTimer?
@@ -234,51 +237,41 @@ private extension WalletBalanceViewModelImplementation {
         let wallet = await self.walletsStore.getState().activeWallet
         var models = [String: WalletBalanceListCell.Model]()
         
-        if let tonItem = items.tonItem {
-          models[tonItem.id] = self.listMapper.mapTonItem(
-            tonItem,
-            isSecure: isSecure,
-            selectionHandler: { [weak self] in
-              self?.didSelectTon?(wallet)
-            })
-        }
-        
-        if let tonUSDTItem = items.usdtItem {
-          models[tonUSDTItem.id] = self.listMapper.mapJettonItem(
-            tonUSDTItem,
-            isSecure: isSecure,
-            selectionHandler: { [weak self] in
-              self?.didSelectJetton?(wallet, tonUSDTItem.jetton, !tonUSDTItem.price.isZero)
-            })
-        }
-        
-        items.stakingItems.forEach { item in
-          models[item.id] = self.listMapper.mapStakingItem(
-            item,
-            isSecure: isSecure,
-            selectionHandler: {
-              print("Open staking")
-            },
-            stakingCollectHandler: {
-              print("Collect")
-            })
-        }
-        
-        if !items.stakingItems.isEmpty {
-          self.startStakingItemsUpdateTimer(stakingItems: items.stakingItems)
-        }
-        
-        items.jettonsItems.forEach { item in
-          models[item.id] = self.listMapper.mapJettonItem(
-            item,
-            isSecure: isSecure) { [weak self] in
-              self?.didSelectJetton?(wallet, item.jetton, !item.price.isZero)
-            }
+        for item in items.items {
+          switch item {
+          case .ton(let item):
+            models[item.id] = self.listMapper.mapTonItem(
+              item,
+              isSecure: isSecure,
+              selectionHandler: { [weak self] in
+                self?.didSelectTon?(wallet)
+              }
+            )
+          case .jetton(let item):
+            models[item.id] = self.listMapper.mapJettonItem(
+              item,
+              isSecure: isSecure) { [weak self] in
+                self?.didSelectJetton?(wallet, item.jetton, !item.price.isZero)
+              }
+          case .staking(let item):
+            models[item.id] = self.listMapper.mapStakingItem(
+              item,
+              isSecure: isSecure,
+              selectionHandler: {
+                print("Open staking")
+              },
+              stakingCollectHandler: {
+                print("Collect")
+              })
+          }
         }
 
-        let state = State(balanceItems: items,
-                          setupState: self.state.setupState,
-                          notifications: self.state.notifications)
+        let state = State(
+          balanceItems: items,
+          setupState: self.state.setupState,
+          notifications: self.state.notifications,
+          hasManageButton: items.canManage
+        )
         let snapshot = self.createSnapshot(state: state)
         
         self.state = state
@@ -320,7 +313,8 @@ private extension WalletBalanceViewModelImplementation {
         )
         let state = State(balanceItems: self.state.balanceItems,
                           setupState: state,
-                          notifications: self.state.notifications)
+                          notifications: self.state.notifications,
+                          hasManageButton: self.state.balanceItems.canManage)
         let snapshot = self.createSnapshot(state: state)
         self.state = state
         await MainActor.run { [snapshot] in
@@ -375,7 +369,8 @@ private extension WalletBalanceViewModelImplementation {
         }
         let state = State(balanceItems: self.state.balanceItems,
                           setupState: self.state.setupState,
-                          notifications: notifications)
+                          notifications: notifications,
+                          hasManageButton: self.state.balanceItems.canManage)
         let snapshot = self.createSnapshot(state: state)
         self.state = state
         await MainActor.run { [snapshot] in
@@ -427,25 +422,33 @@ private extension WalletBalanceViewModelImplementation {
     }
     
     var items = [WalletBalanceItem]()
-    if let tonItem = state.balanceItems.tonItem {
-      items.append(.balanceItem(tonItem.id))
-    }
-    if let usdtItem = state.balanceItems.usdtItem {
-      items.append(.balanceItem(usdtItem.id))
-    }
-    items.append(contentsOf: state.balanceItems.stakingItems.map { .balanceItem($0.id) })
-    items.append(contentsOf: state.balanceItems.jettonsItems.map { .balanceItem($0.id) })
-    
+    items.append(contentsOf: state.balanceItems.items.map { .balanceItem($0.identifier) })
+
     snapshot.appendSections([.balance])
     snapshot.appendItems(items, toSection: .balance)
     
     snapshot.appendSections([.manage])
-//    let manageButtonItem = WalletBalanceItem.manageButton(
-//      WalletsListAddWalletCell.Model(
-//        content: TKButton.Configuration.Content(title: .plainString("Manage"))
-//      )
-//    )
-//    snapshot.appendItems([manageButtonItem], toSection: .manage)
+    
+    if state.hasManageButton {
+      var manageButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(
+        category: .secondary,
+        size: .small
+      )
+      manageButtonConfiguration.action = { [didTapManage, walletsStore] in
+        didTapManage?(walletsStore.getState().activeWallet)
+      }
+      manageButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Manage"))
+      let manageButtonItem = WalletBalanceItem.manageButton(
+        TKButtonCell.Model(
+          id: "Manage",
+          configuration: manageButtonConfiguration,
+          padding: UIEdgeInsets(top: 16, left: 16, bottom: 16, right: 0),
+          mode: .widthToFit
+        )
+      )
+      
+      snapshot.appendItems([manageButtonItem], toSection: .manage)
+    }
     
     if #available(iOS 15.0, *) {
       snapshot.reconfigureItems(snapshot.itemIdentifiers)
@@ -456,7 +459,7 @@ private extension WalletBalanceViewModelImplementation {
     return snapshot
   }
 
-  func startStakingItemsUpdateTimer(stakingItems: [WalletBalanceBalanceModel.BalanceListStakingItem]) {
+  func startStakingItemsUpdateTimer(stakingItems: [BalanceStakingItemModel]) {
     let queue = DispatchQueue(label: "WalletBalanceStakingItemsTimerQueue", qos: .background)
     let timer: DispatchSourceTimer = DispatchSource.makeTimerSource(flags: .strict, queue: queue)
     timer.schedule(deadline: .now(), repeating: 1, leeway: .milliseconds(100))
@@ -472,7 +475,7 @@ private extension WalletBalanceViewModelImplementation {
     self.stakingUpdateTimer = nil
   }
   
-  func updateStakingItemsOnTimer(stakingItems: [WalletBalanceBalanceModel.BalanceListStakingItem]) {
+  func updateStakingItemsOnTimer(stakingItems: [BalanceStakingItemModel]) {
     Task {
       await self.actor.addTask(block: {
         var models = [String: WalletBalanceListCell.Model]()

@@ -1023,4 +1023,24 @@ public enum TKLocales {
       localize("sign_out_warning.tick_back_up")
     }
   }
+  public enum HomeScreenConfiguration {
+    /// Home Screen
+    public static var title: String {
+      localize("home_screen_configuration.title")
+    }
+    public enum Sections {
+      /// Pinned
+      public static var pinned: String {
+        localize("home_screen_configuration.sections.pinned")
+      }
+      /// All Assets
+      public static var all_assets: String {
+        localize("home_screen_configuration.sections.all_assets")
+      }
+      /// Sorted by Price
+      public static var sorted_by_price: String {
+        localize("home_screen_configuration.sections.sorted_by_price")
+      }
+    }
+  }
 }

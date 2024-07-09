@@ -31,7 +31,6 @@ public final class KeeperInfoStore: Store<KeeperInfo?> {
   }
   
   private func setInitialState() {
-    let state = getState()
     Task {
       await updateState { _ in
         StateUpdate(newState: try? self.keeperInfoRepository.getKeeperInfo())
