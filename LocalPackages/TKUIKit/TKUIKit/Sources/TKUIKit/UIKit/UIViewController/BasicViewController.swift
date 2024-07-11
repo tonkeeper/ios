@@ -5,9 +5,10 @@ open class BasicViewController: UIViewController {
   open override var preferredStatusBarStyle: UIStatusBarStyle {
     TKThemeManager.shared.theme.themeAppaearance.statusBarStyle(for: traitCollection.userInterfaceStyle)
   }
-  
-  open override func didMove(toParent parent: UIViewController?) {
-//    navigationController?.fixInteractivePopGestureRecognizer(delegate: self)
+
+  open override func viewDidAppear(_ animated: Bool) {
+    super.viewDidAppear(animated)
+    navigationController?.fixInteractivePopGestureRecognizer(delegate: self)
   }
 }
 
