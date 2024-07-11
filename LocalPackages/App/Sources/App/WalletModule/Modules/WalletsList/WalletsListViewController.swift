@@ -127,9 +127,11 @@ private extension WalletsListViewController {
   }
   
   func setupBindings() {
-    viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in
-      self?.dataSource.apply(snapshot, animatingDifferences: isAnimated)
-      self?.didUpdateHeight?()
+    viewModel.didUpdateSnapshot = { [weak self] snapshot, completion in
+      self?.dataSource.apply(snapshot, animatingDifferences: false, completion: { [weak self] in
+        self?.didUpdateHeight?()
+        completion()
+      })
     }
 
     viewModel.didUpdateSelected = { [weak self] index in
@@ -151,6 +153,15 @@ private extension WalletsListViewController {
       self?.reorderGesture.isEnabled = isEditing
       UIView.animate(withDuration: 0.2) {
         self?.customView.collectionView.isEditing = isEditing
+      }
+    }
+    
+    viewModel.didUpdateWalletItems = { [weak self] items in
+      guard let self else { return }
+      items.forEach { identifier, model in
+        guard let indexPath = self.dataSource.indexPath(for: .wallet(identifier)),
+              let cell = self.customView.collectionView.cellForItem(at: indexPath) as? TKUIListItemCell else { return }
+        cell.configure(configuration: model)
       }
     }
   }

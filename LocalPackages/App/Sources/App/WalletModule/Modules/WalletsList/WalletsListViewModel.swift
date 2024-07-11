@@ -12,10 +12,12 @@ protocol WalletsListModuleOutput: AnyObject {
 }
 
 protocol WalletsListViewModel: AnyObject {
-  var didUpdateSnapshot: ((_ snapshot: NSDiffableDataSourceSnapshot<WalletsListSection, WalletsListItem>, _ isAnimated: Bool) -> Void)? { get set }
+  var didUpdateSnapshot: ((_ snapshot: NSDiffableDataSourceSnapshot<WalletsListSection, WalletsListItem>,
+                           _ completion: @escaping () -> Void) -> Void)? { get set }
   var didUpdateSelected: ((Int?) -> Void)? { get set }
   var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)? { get set }
   var didUpdateIsEditing: ((Bool) -> Void)? { get set }
+  var didUpdateWalletItems: (([String: TKUIListItemCell.Configuration]) -> Void)? { get set }
   
   func viewDidLoad()
   func moveWallet(fromIndex: Int, toIndex: Int)
@@ -36,36 +38,28 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   
   // MARK: - WalletsListViewModel
   
-  var didUpdateSnapshot: ((_ snapshot: NSDiffableDataSourceSnapshot<WalletsListSection, WalletsListItem>, _ isAnimated: Bool) -> Void)?
+  var didUpdateSnapshot: ((_ snapshot: NSDiffableDataSourceSnapshot<WalletsListSection, WalletsListItem>,
+                           _ completion: @escaping () -> Void) -> Void)?
   var didUpdateSelected: ((Int?) -> Void)?
   var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)?
   var didUpdateIsEditing: ((Bool) -> Void)?
+  var didUpdateWalletItems: (([String : TKUIListItemCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
-    model.didUpdateWalletsState = { [weak self] walletsState in
-      self?.didUpdateWalletsState(walletsState)
-    }
-    model.setInitialState()
-    totalBalancesStore.addObserver(self, notifyOnAdded: true) { [weak self] observer, state, _ in
-      self?.didUpdateTotalBalances(state)
-    }
+    setupInitialState()
+    startObservations()
   }
   
   func moveWallet(fromIndex: Int, toIndex: Int) {
-    queue.async {
-      self.model.moveWallet(fromIndex: fromIndex, toIndex: toIndex)
-    }
+    self.model.moveWallet(fromIndex: fromIndex, toIndex: toIndex)
   }
   
   func didTapEdit(item: WalletsListItem) {
     switch item {
     case .wallet(let identifier):
-      queue.async {
-        guard let wallets = self.walletsState?.wallets,
-              let wallet = wallets.first(where: { $0.id == identifier }) else { return }
-        DispatchQueue.main.async {
-          self.didTapEditWallet?(wallet)
-        }
+      guard let wallet = model.getWalletsState().wallets.first(where: { $0.id == identifier }) else { return }
+      DispatchQueue.main.async {
+        self.didTapEditWallet?(wallet)
       }
     default:
       return
@@ -92,7 +86,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
         mode: .widthToFit
       )
     default:
-      return itemModels[identifier]
+      return cellModels[identifier]
     }
   }
   
@@ -103,17 +97,12 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   func didSelectItem(_ item: WalletsListItem) {
     switch item {
     case .wallet(let identifier):
-      queue.async {
-        guard let wallets = self.walletsState?.wallets,
-              let wallet = wallets.first(where: { $0.id == identifier }) else {
-          return
-        }
-        self.model.selectWallet(wallet: wallet)
-        DispatchQueue.main.async {
-          UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-          self.didSelectWallet?()
-        }
+      guard let wallet = model.getWalletsState().wallets.first(where: { $0.id == identifier }) else {
+        return
       }
+      self.model.selectWallet(wallet: wallet)
+      UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+      self.didSelectWallet?()
     case .addWalletButton:
       return
     }
@@ -121,30 +110,24 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   
   func canReorderItem(_ item: WalletsListItem) -> Bool {
     switch item {
-    case .wallet: return true && isEditing
+    case .wallet: return true && (walletsState?.wallets ?? []).count > 1
     default: return false
     }
   }
   
   // MARK: - State
   
-  private let queue = DispatchQueue(label: "WalletListViewModelUpdateQueue", target: .global(qos: .default))
-  private var snapshot = NSDiffableDataSourceSnapshot<WalletsListSection, String>()
-  private var itemModels = [String: AnyHashable]()
-  private var walletsState: WalletsState?
-  private var totalBalances = [FriendlyAddress: TotalBalanceState]()
-  private var isEditing: Bool = false {
+  private let syncQueue = DispatchQueue(label: "WalletsListViewModelImplementationSyncQueue")
+  private var cellModels = [String: AnyHashable]()
+  private var walletsState: WalletsListModelState?
+  private var isEditing = false {
     didSet {
       didUpdateIsEditing?(isEditing)
-      didUpdateSelected?(isEditing ? nil : selectedIndex)
+      didUpdateSelected?(isEditing ? nil : self.selectedIndex)
       updateHeaderItem()
     }
   }
-  private var isEditable: Bool = false {
-    didSet {
-      updateHeaderItem()
-    }
-  }
+
   private var selectedIndex: Int? {
     didSet {
       didUpdateSelected?(selectedIndex)
@@ -172,71 +155,114 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
 }
 
 private extension WalletsListViewModelImplementation {
-  func didUpdateWalletsState(_ walletsState: WalletsState) {
-    queue.async {
-      guard walletsState != self.walletsState else { return }
-      self.update(walletsState, totalBalances: self.totalBalances)
-      self.walletsState = walletsState
+  func setupInitialState() {
+    updateHeaderItem()
+    
+    let walletsState = model.getWalletsState()
+    self.walletsState = walletsState
+    updateList(walletsState: walletsState, totalBalancesState: [:]) { models, snapshot, selectedIndex in
+      self.cellModels = models
+      self.didUpdateSnapshot?(snapshot, {
+        self.didUpdateSelected?(selectedIndex)
+      })
+    }
+    syncQueue.async {
+      let totalBalancesState = self.totalBalancesStore.getState()
+      self.didUpdateTotalBalancesState(state: totalBalancesState, oldState: nil)
     }
   }
   
-  func didUpdateTotalBalances(_ totalBalances: [FriendlyAddress: TotalBalanceState]) {
-    queue.async {
-      guard totalBalances != self.totalBalances else { return }
-      self.update(self.walletsState, totalBalances: totalBalances)
-      self.totalBalances = totalBalances
+  func startObservations() {
+    model.didUpdateWalletsState = { [weak self] walletsState in
+      self?.syncQueue.async {
+        self?.walletsState = walletsState
+        self?.didUpdateWalletsState(walletsState: walletsState)
+      }
+    }
+    
+    totalBalancesStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      observer.syncQueue.async {
+        observer.didUpdateTotalBalancesState(state: newState, oldState: oldState)
+      }
     }
   }
   
-  func update(_ walletsState: WalletsState?, totalBalances: [FriendlyAddress: TotalBalanceState]) {
-    guard let walletsState else { return }
-  
+  func updateList(walletsState: WalletsListModelState,
+                  totalBalancesState: [FriendlyAddress: TotalBalanceState],
+                  completion: (_ models: [String: AnyHashable],
+                               _ snapshot: NSDiffableDataSourceSnapshot<WalletsListSection, WalletsListItem>,
+                               _ selectedIndex: Int?) -> Void) {
     var snapshot = NSDiffableDataSourceSnapshot<WalletsListSection, WalletsListItem>()
     snapshot.appendSections([.wallets, .addWallet])
     
     let isHighlightable = walletsState.wallets.count > 1
     var models = [String: AnyHashable]()
-    var updatedItems = [WalletsListItem]()
-    for wallet in walletsState.wallets {
-      guard let address = try? wallet.friendlyAddress else { continue }
+    walletsState.wallets.forEach { wallet in
+      let totalBalance: TotalBalance? = {
+        guard let address = try? wallet.friendlyAddress else {
+          return nil
+        }
+        return totalBalancesState[address]?.totalBalance
+      }()
       snapshot.appendItems([.wallet(wallet.id)], toSection: .wallets)
-      let isWalletMetaDataUpdated = {
-        wallet.metaData != self.walletsState?.wallets.first(where: { $0.id == wallet.id })?.metaData
-      }()
-      let isWalletBalanceUpdated = {
-        totalBalances[address] != self.totalBalances[address]
-      }()
-      if isWalletMetaDataUpdated || isWalletBalanceUpdated {
-        models[wallet.id] = createWalletModel(
-          wallet,
-          totalBalance: totalBalances[address]?.totalBalance,
-          isHighlightable: isHighlightable
-        )
-        updatedItems.append(.wallet(wallet.id))
-      }
+      models[wallet.id] = createWalletModel(
+        wallet,
+        totalBalance: totalBalance,
+        isHighlightable: isHighlightable
+      )
     }
-    if #available(iOS 15.0, *) {
-      snapshot.reconfigureItems(updatedItems)
-    } else {
-      snapshot.reloadItems(updatedItems)
-    }
-    
     snapshot.appendItems([.addWalletButton(.addWalletButtonCellIdentifier)], toSection: .addWallet)
-    
-    let isEditable = walletsState.wallets.count > 1 && model.isEditable
-    let selectedIndex = walletsState.wallets.firstIndex(of: walletsState.activeWallet)
-    let isAnimated = self.walletsState != nil && !self.totalBalances.isEmpty
+    if #available(iOS 15.0, *) {
+      snapshot.reconfigureItems(snapshot.itemIdentifiers)
+    } else {
+      snapshot.reloadItems(snapshot.itemIdentifiers)
+    }
+    var selectedIndex: Int?
+    if let selectedWallet = walletsState.selectedWallet,
+       let index = walletsState.wallets.firstIndex(of: selectedWallet) {
+      selectedIndex = index
+    }
 
-    DispatchQueue.main.async {
-      self.isEditable = isEditable
-      self.itemModels.merge(models) { _, value in
-        value
+    completion(models, snapshot, selectedIndex)
+  }
+  
+  func didUpdateWalletsState(walletsState: WalletsListModelState) {
+    let totalBalancesState = self.totalBalancesStore.getState()
+    self.updateList(walletsState: walletsState, totalBalancesState: totalBalancesState) { models, snapshot, selectedIndex in
+      DispatchQueue.main.async {
+        self.cellModels = models
+        self.didUpdateSnapshot?(snapshot, {
+          self.didUpdateSelected?(selectedIndex)
+        })
       }
-      self.didUpdateSnapshot?(snapshot, isAnimated)
-      self.selectedIndex = selectedIndex
     }
   }
   
+  func didUpdateTotalBalancesState(state: [FriendlyAddress: TotalBalanceState],
+                                   oldState: [FriendlyAddress: TotalBalanceState]?) {
+    guard let walletsState else { return }
+    let isHighlightable = walletsState.wallets.count > 1
+    var updatedModels = [String: TKUIListItemCell.Configuration]()
+    for wallet in walletsState.wallets {
+      guard let address = try? wallet.friendlyAddress,
+            state[address]?.totalBalance != oldState?[address]?.totalBalance else {
+        continue
+      }
+      
+      let model = createWalletModel(
+        wallet,
+        totalBalance: state[address]?.totalBalance,
+        isHighlightable: isHighlightable
+      )
+      updatedModels[wallet.id] = model
+    }
+    
+    DispatchQueue.main.async {
+      self.cellModels.merge(updatedModels) { $1 }
+      self.didUpdateWalletItems?(updatedModels)
+    }
+  }
+ 
   func createWalletModel(_ wallet: Wallet,
                          totalBalance: TotalBalance?,
                          isHighlightable: Bool) -> TKUIListItemCell.Configuration {
@@ -302,16 +328,13 @@ private extension WalletsListViewModelImplementation {
   }
   
   func createHeaderItem() -> TKPullCardHeaderItem {
-    var leftButton: TKPullCardHeaderItem.LeftButton?
-    if isEditable {
-      let leftButtonModel = TKUIHeaderTitleIconButton.Model(
-        title: isEditing ? TKLocales.Actions.done: TKLocales.Actions.edit
-      )
-      leftButton = TKPullCardHeaderItem.LeftButton(
-        model: leftButtonModel) { [weak self] in
-          self?.isEditing.toggle()
-        }
-    }
+    let leftButtonModel = TKUIHeaderTitleIconButton.Model(
+      title: isEditing ? TKLocales.Actions.done: TKLocales.Actions.edit
+    )
+    let leftButton = TKPullCardHeaderItem.LeftButton(
+      model: leftButtonModel) { [weak self] in
+        self?.isEditing.toggle()
+      }
     return TKPullCardHeaderItem(
       title: TKLocales.WalletsList.title,
       leftButton: leftButton)
