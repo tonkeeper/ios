@@ -62,9 +62,9 @@ public final class MainAssembly {
   
   public func mainController() -> MainController {
     MainController(
-      walletsStore: walletAssembly.walletStore,
+      walletsStore: walletAssembly.walletsStoreV2,
       accountNFTService: servicesAssembly.accountNftService(),
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore,
+      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater,
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
       knownAccountsStore: storesAssembly.knownAccountsStore,
       balanceStore: storesAssembly.balanceStore,
@@ -90,8 +90,8 @@ public final class MainAssembly {
   }
   
   public func historyController() -> HistoryController {
-    HistoryController(walletsStore: walletAssembly.walletStore,
-                      backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
+    HistoryController(walletsStore: walletAssembly.walletsStoreV2,
+                      backgroundUpdateStore: storesAssembly.backgroundUpdateStoreV2)
   }
   
   public func historyListController(wallet: Wallet) -> HistoryListController {
@@ -106,9 +106,9 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      walletsStore: walletAssembly.walletStore,
+      walletsStore: walletAssembly.walletsStoreV2,
       paginator: paginator,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
+      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater)
   }
   
   public func tonEventsHistoryListController(wallet: Wallet) -> HistoryListController {
@@ -123,9 +123,9 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      walletsStore: walletAssembly.walletStore,
+      walletsStore: walletAssembly.walletsStoreV2,
       paginator: paginator,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
+      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater)
   }
   
   public func jettonEventsHistoryListController(jettonItem: JettonItem, wallet: Wallet) -> HistoryListController {
@@ -141,9 +141,9 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      walletsStore: walletAssembly.walletStore,
+      walletsStore: walletAssembly.walletsStoreV2,
       paginator: paginator,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
+      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater)
   }
   
   public func chartController() -> ChartController {
@@ -187,8 +187,8 @@ public final class MainAssembly {
   
   public func collectiblesController() -> CollectiblesController {
     CollectiblesController(
-      walletsStore: walletAssembly.walletStore,
-      backgroundUpdateStore: storesAssembly.backgroundUpdateStore,
+      walletsStore: walletAssembly.walletsStoreV2,
+      backgroundUpdateStore: storesAssembly.backgroundUpdateStoreV2,
       nftsStore: storesAssembly.nftsStore
     )
   }
@@ -335,7 +335,7 @@ public final class MainAssembly {
   
   public func browserConnectedController() -> BrowserConnectedController {
     BrowserConnectedController(
-      walletsStore: walletAssembly.walletStore,
+      walletsStore: walletAssembly.walletsStoreV2,
       tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
     )
   }

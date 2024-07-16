@@ -7,16 +7,16 @@ public final class HistoryListController {
   
   private var didSendTransactionToken: NSObjectProtocol?
   
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV2
   private let paginator: HistoryListPaginator
-  private let backgroundUpdateStore: BackgroundUpdateStore
+  private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   
-  init(walletsStore: WalletsStore,
+  init(walletsStore: WalletsStoreV2,
        paginator: HistoryListPaginator,
-       backgroundUpdateStore: BackgroundUpdateStore) {
+       backgroundUpdateUpdater: BackgroundUpdateUpdater) {
     self.walletsStore = walletsStore
     self.paginator = paginator
-    self.backgroundUpdateStore = backgroundUpdateStore
+    self.backgroundUpdateUpdater = backgroundUpdateUpdater
   }
   
   public func start() async {
@@ -27,24 +27,15 @@ public final class HistoryListController {
         self?.didReceiveDidSendTransactionNotification()
       }
     
-    _ = await backgroundUpdateStore.addEventObserver(self) { [walletsStore] observer, event in
-      switch event {
-      case .didUpdateState:
-        break
-      case .didReceiveUpdateEvent(let backgroundUpdateEvent):
-        guard let walletAddress = try? walletsStore.activeWallet.address,
-              backgroundUpdateEvent.accountAddress == walletAddress else { return }
-        Task { await observer.didRecieveBackgroudUpdateEvent(backgroundUpdateEvent) }
-      }
+    backgroundUpdateUpdater.addEventObserver(self) { observer, event in
+      guard let walletAddress = try? observer.walletsStore.getState().activeWallet.friendlyAddress,
+            event.accountAddress == walletAddress.address else { return }
+      Task { await observer.didRecieveBackgroudUpdateEvent(event) }
     }
     
-    _ = walletsStore.addEventObserver(self) { observer, event in
-      switch event {
-      case .didUpdateActiveWallet:
-        Task { await observer.paginator.start() }
-      default:
-        break
-      }
+    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      guard newState.activeWallet.id != oldState?.activeWallet.id else { return }
+      Task { await observer.paginator.start() }
     }
     
     await paginator.setEventHandler { [weak self] event in
@@ -67,7 +58,7 @@ private extension HistoryListController {
     didGetEvent?(event)
   }
   
-  func didRecieveBackgroudUpdateEvent(_ backgroundUpdateEvent: BackgroundUpdateEvent) async {
+  func didRecieveBackgroudUpdateEvent(_ backgroundUpdateEvent: BackgroundUpdateUpdater.BackgroundUpdateEvent) async {
     try? await Task.sleep(nanoseconds: 2_000_000_000)
     await paginator.reload()
   }

@@ -55,6 +55,17 @@ actor WalletBalanceLoaderV2 {
       await self.reloadBalance(wallets: wallets, currency: currency)
     }
   }
+  
+  nonisolated
+  func reloadBalance(address: FriendlyAddress) {
+    Task {
+      guard let wallet = await walletsStore.getState().wallets.first(where: { (try? address == $0.friendlyAddress) == true }) else {
+        return
+      }
+      let currency = await currencyStore.getState()
+      await reloadBalance(wallet: wallet, currency: currency)
+    }
+  }
 }
 
 private extension WalletBalanceLoaderV2 {

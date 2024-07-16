@@ -6,12 +6,12 @@ public final class CollectiblesController {
   public var didUpdateActiveWallet: (() -> Void)?
   public var didUpdateIsEmpty: ((Bool) -> Void)?
 
-  private let walletsStore: WalletsStore
-  private let backgroundUpdateStore: BackgroundUpdateStore
+  private let walletsStore: WalletsStoreV2
+  private let backgroundUpdateStore: BackgroundUpdateStoreV2
   private let nftsStore: NftsStore
   
-  init(walletsStore: WalletsStore,
-       backgroundUpdateStore: BackgroundUpdateStore,
+  init(walletsStore: WalletsStoreV2,
+       backgroundUpdateStore: BackgroundUpdateStoreV2,
        nftsStore: NftsStore) {
     self.walletsStore = walletsStore
     self.backgroundUpdateStore = backgroundUpdateStore
@@ -19,27 +19,19 @@ public final class CollectiblesController {
   }
   
   public var wallet: Wallet {
-    walletsStore.activeWallet
+    walletsStore.getState().activeWallet
   }
   
   public func start() async {
-    _ = walletsStore.addEventObserver(self) { observer, event in
-      switch event {
-      case .didUpdateActiveWallet:
-        Task { await observer.didChangeActiveWallet() }
-      default: break
-      }
+    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      guard newState.activeWallet.id != oldState?.activeWallet.id else { return }
+      Task { await observer.didChangeActiveWallet() }
     }
     
-    _ = await backgroundUpdateStore.addEventObserver(self) { observer, event in
-      switch event {
-      case .didUpdateState(let backgroundUpdateState):
-        observer.handleBackgroundUpdateState(backgroundUpdateState)
-      case .didReceiveUpdateEvent:
-        break
-      }
+    backgroundUpdateStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      observer.handleBackgroundUpdateState(newState)
     }
-    
+
     _ = await nftsStore.addEventObserver(self) { observer, event in
       switch event {
       case .nftsUpdate(let nfts, let wallet):
@@ -53,7 +45,7 @@ public final class CollectiblesController {
   }
   
   public func updateConnectingState() async {
-    let state = await backgroundUpdateStore.state
+    let state = await backgroundUpdateStore.getState()
     handleBackgroundUpdateState(state)
   }
 }
@@ -66,7 +58,7 @@ private extension CollectiblesController {
     didUpdateIsEmpty?(nfts.isEmpty)
   }
   
-  func handleBackgroundUpdateState(_ state: BackgroundUpdateState) {
+  func handleBackgroundUpdateState(_ state: BackgroundUpdateStoreV2.State) {
     let isConnecting: Bool
     switch state {
     case .connecting:

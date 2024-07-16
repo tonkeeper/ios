@@ -80,7 +80,7 @@ private extension BrowserCoordinator {
       [weak self] dapp,
       completion in
       guard let self else { return }
-      let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+      let wallet = self.keeperCoreMainAssembly.walletAssembly.walletsStoreV2.getState().activeWallet
       let result = self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.reconnectBridgeDapp(
         wallet: wallet,
         appUrl: dapp.url
@@ -188,7 +188,7 @@ private extension BrowserCoordinator {
   func openSend(dapp: Dapp,
                 appRequest: TonConnect.AppRequest,
                 completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
-    let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+    let wallet = self.keeperCoreMainAssembly.walletAssembly.walletsStoreV2.getState().activeWallet
     guard let connectedApps = try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
           let connectedApp = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host }) else {
       completion(.error(.unknownApp))

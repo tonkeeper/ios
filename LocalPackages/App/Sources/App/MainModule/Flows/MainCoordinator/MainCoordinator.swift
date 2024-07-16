@@ -85,27 +85,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
-//    didSendTransactionToken = NotificationCenter.default.addObserver(
-//      forName: NSNotification.Name(
-//        "DID SEND TRANSACTION"
-//      ),
-//      object: nil,
-//      queue: .main) { [weak self] _ in
-//        self?.router.rootViewController.selectedIndex = 1
-//      }
-//    setupTabBarTaps()
     setupChildCoordinators()
+    setupTabBarTaps()
     
     mainCoordinatorStateManager.didUpdateState = { [weak self] state in
       self?.handleStateUpdate(state)
     }
     mainController.start()
-//    Task {
-//      await mainController.start()
-//      await MainActor.run {
-//        _ = handleDeeplink(deeplink: deeplink)
-//      }
-//    }
+    _ = handleDeeplink(deeplink: deeplink)
   }
 
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {

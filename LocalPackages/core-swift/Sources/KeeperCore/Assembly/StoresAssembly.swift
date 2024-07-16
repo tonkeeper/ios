@@ -109,6 +109,30 @@ public final class StoresAssembly {
     return store
   }
   
+  private weak var _backgroundUpdateStoreV2: BackgroundUpdateStoreV2?
+  public var backgroundUpdateStoreV2: BackgroundUpdateStoreV2 {
+    if let backgroundUpdateStore = _backgroundUpdateStoreV2 {
+      return backgroundUpdateStore
+    } else {
+      let backgroundUpdateStore = BackgroundUpdateStoreV2()
+      _backgroundUpdateStoreV2 = backgroundUpdateStore
+      return backgroundUpdateStore
+    }
+  }
+  
+  private weak var _backgroundUpdateUpdater: BackgroundUpdateUpdater?
+  public var backgroundUpdateUpdater: BackgroundUpdateUpdater {
+    if let backgroundUpdateUpdater = _backgroundUpdateUpdater {
+      return backgroundUpdateUpdater
+    } else {
+      let backgroundUpdateUpdater = BackgroundUpdateUpdater(
+        backgroundUpdateStore: backgroundUpdateStoreV2,
+        streamingAPI: apiAssembly.streamingTonAPIClient()
+      )
+      _backgroundUpdateUpdater = backgroundUpdateUpdater
+      return backgroundUpdateUpdater
+    }
+  }
   
   private weak var _walletBalanceStore: WalletBalanceStore?
   var walletBalanceStore: WalletBalanceStore {
@@ -210,19 +234,6 @@ public final class StoresAssembly {
       let setupStore = SetupStore(setupService: servicesAssembly.setupService())
       _setupStore = setupStore
       return setupStore
-    }
-  }
-  
-  private weak var _backgroundUpdateStore: BackgroundUpdateStore?
-  var backgroundUpdateStore: BackgroundUpdateStore {
-    if let backgroundUpdateStore = _backgroundUpdateStore {
-      return backgroundUpdateStore
-    } else {
-      let backgroundUpdateStore = BackgroundUpdateStore(
-        streamingAPI: apiAssembly.streamingTonAPIClient()
-      )
-      _backgroundUpdateStore = backgroundUpdateStore
-      return backgroundUpdateStore
     }
   }
   

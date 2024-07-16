@@ -26,7 +26,8 @@ struct WalletBalanceAssembly {
       totalBalanceModel: WalletTotalBalanceModel(
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
         totalBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
-        secureMode: coreAssembly.secureMode
+        secureMode: coreAssembly.secureMode,
+        backgroundUpdateStore: keeperCoreMainAssembly.storesAssembly.backgroundUpdateStoreV2
       ),
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
       notificationStore: keeperCoreMainAssembly.storesAssembly.notificationsStore,

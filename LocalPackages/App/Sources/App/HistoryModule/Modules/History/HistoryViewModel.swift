@@ -44,15 +44,24 @@ final class HistoryViewModelImplementation: HistoryViewModel, HistoryModuleOutpu
     }
     historyController.didUpdateIsConnecting = { [weak self] isConnecting in
       guard let self = self else { return }
-      Task { @MainActor in
+      DispatchQueue.main.async {
         self.didUpdateIsConnecting?(isConnecting)
       }
     }
     
-    historyController.updateConnectingState()
+    syncQueue.sync {
+      let isConnecting = historyController.isConnecting
+      DispatchQueue.main.async {
+        self.didUpdateIsConnecting?(isConnecting)
+      }
+    }
     
     setupChildren()
   }
+  
+  // MARK: - State
+  
+  private let syncQueue = DispatchQueue(label: "HistoryViewModelImplementationQueue")
   
   // MARK: - Child
   

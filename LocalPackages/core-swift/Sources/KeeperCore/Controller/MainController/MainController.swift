@@ -16,9 +16,9 @@ public final class MainController {
   private var walletsStoreObservationToken: ObservationToken?
   private var backgroundUpdateStoreObservationToken: ObservationToken?
   
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV2
   private let accountNFTService: AccountNFTService
-  private let backgroundUpdateStore: BackgroundUpdateStore
+  private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   private let tonConnectEventsStore: TonConnectEventsStore
   private let knownAccountsStore: KnownAccountsStore
   private let balanceStore: BalanceStore
@@ -39,9 +39,9 @@ public final class MainController {
   
   private var nftStateTask: Task<Void, Never>?
 
-  init(walletsStore: WalletsStore, 
+  init(walletsStore: WalletsStoreV2,
        accountNFTService: AccountNFTService,
-       backgroundUpdateStore: BackgroundUpdateStore,
+       backgroundUpdateUpdater: BackgroundUpdateUpdater,
        tonConnectEventsStore: TonConnectEventsStore,
        knownAccountsStore: KnownAccountsStore,
        balanceStore: BalanceStore,
@@ -54,7 +54,7 @@ public final class MainController {
        internalNotificationsLoader: InternalNotificationsLoader) {
     self.walletsStore = walletsStore
     self.accountNFTService = accountNFTService
-    self.backgroundUpdateStore = backgroundUpdateStore
+    self.backgroundUpdateUpdater = backgroundUpdateUpdater
     self.tonConnectEventsStore = tonConnectEventsStore
     self.knownAccountsStore = knownAccountsStore
     self.balanceStore = balanceStore
@@ -65,43 +65,34 @@ public final class MainController {
     self.walletBalanceLoader = walletBalanceLoader
     self.tonRatesLoader = tonRatesLoader
     self.internalNotificationsLoader = internalNotificationsLoader
+    
+    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      guard newState.activeWallet != oldState?.activeWallet else { return }
+      Task {
+        await observer.stopBackgroundUpdate()
+        await observer.startBackgroundUpdate()
+      }
+    }
   }
   
   deinit {
     stopTonRatesLoadTimer()
     stopWalletBalancesLoadTimer()
-//    walletsStoreObservationToken?.cancel()
-//    backgroundUpdateStoreObservationToken?.cancel()
   }
   
   public func start() {
+    backgroundUpdateUpdater.addEventObserver(self) { observer, event in
+      observer.walletBalanceLoader.reloadBalance(address: FriendlyAddress(
+        address: event.accountAddress,
+        testOnly: false,
+        bounceable: false))
+    }
     startTonRatesLoadTimer()
     startWalletBalancesLoadTimer()
     internalNotificationsLoader.loadNotifications(platform: "ios", version: "4.1.0", lang: "en")
-//    _ = await backgroundUpdateStore.addEventObserver(self) { observer, state in
-//      switch state {
-//      case .didUpdateState(let backgroundUpdateState):
-//        switch backgroundUpdateState {
-//        default: break
-//        }
-//      case .didReceiveUpdateEvent(let backgroundUpdateEvent):
-//        Task {
-//          guard try backgroundUpdateEvent.accountAddress == observer.walletsStore.activeWallet.address else { return }
-//        }
-//      }
-//    }
-//    
-//    _ = walletsStore.addEventObserver(self) { observer, event in
-//      switch event {
-//      case .didAddWallets:
-//        Task { await observer.startBackgroundUpdate() }
-//      default: break
-//      }
-//    }
-//    
-//    await tonConnectEventsStore.addObserver(self)
-//    
-//    await startBackgroundUpdate()
+    Task {
+      await tonConnectEventsStore.addObserver(self)
+    }
   }
   
   private func startTonRatesLoadTimer() {
@@ -131,12 +122,14 @@ public final class MainController {
   }
     
   public func startBackgroundUpdate() async {
-    await backgroundUpdateStore.start(addresses: walletsStore.wallets.compactMap { try? $0.address })
+    let activeWallet = await walletsStore.getState().activeWallet
+    guard let address = try? activeWallet.friendlyAddress else { return }
+    await backgroundUpdateUpdater.start(addresses: [address.address])
     await tonConnectEventsStore.start()
   }
   
   public func stopBackgroundUpdate() async {
-    await backgroundUpdateStore.stop()
+    await backgroundUpdateUpdater.stop()
     await tonConnectEventsStore.stop()
   }
   
@@ -180,7 +173,7 @@ public final class MainController {
     } else {
       return nil
     }
-    for wallet in walletsStore.wallets {
+    for wallet in await walletsStore.getState().wallets {
       guard let balance = try? balanceStore.getBalance(wallet: wallet).balance else {
         continue
       }

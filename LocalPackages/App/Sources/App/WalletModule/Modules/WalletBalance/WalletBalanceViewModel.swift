@@ -226,7 +226,7 @@ private extension WalletBalanceViewModelImplementation {
         let headerModel = BalanceHeaderBalanceView.Model(
           balanceModel: balanceModel,
           addressButtonConfiguration: addressButtonConfiguration,
-          connectionStatusModel: nil,
+          connectionStatusModel: self.createConnectionStatusModel(backgroundUpdateState: state.backgroundUpdateState),
           tagConfiguration: state.wallet.balanceTagConfiguration(),
           stateDate: stateDate
         )
@@ -533,6 +533,31 @@ private extension WalletBalanceViewModelImplementation {
           self.didUpdateBalanceItems?(models)
         }
       })
+    }
+  }
+  
+  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateStoreV2.State) -> ConnectionStatusView.Model? {
+    switch backgroundUpdateState {
+    case .connecting:
+      return ConnectionStatusView.Model(
+        title: TKLocales.ConnectionStatus.updating,
+        titleColor: .Text.secondary,
+        isLoading: true
+      )
+    case .connected:
+      return nil
+    case .disconnected:
+      return ConnectionStatusView.Model(
+        title: TKLocales.ConnectionStatus.updating,
+        titleColor: .Text.secondary,
+        isLoading: true
+      )
+    case .noConnection:
+      return ConnectionStatusView.Model(
+        title: TKLocales.ConnectionStatus.no_internet,
+        titleColor: .Accent.orange,
+        isLoading: false
+      )
     }
   }
   
