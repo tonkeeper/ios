@@ -132,7 +132,7 @@ public final class WalletAddController {
   public func importLedgerWallets(accounts: [LedgerAccount],
                                   deviceId: String,
                                   deviceProductName: String,
-                                  metaData: WalletMetaData) throws {
+                                  metaData: WalletMetaData) async throws {
     let addPostfix = accounts.count > 1
     
     let wallets = accounts.enumerated().map { (index, account) in

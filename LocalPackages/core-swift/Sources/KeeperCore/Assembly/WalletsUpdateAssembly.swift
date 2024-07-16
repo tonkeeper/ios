@@ -3,7 +3,7 @@ import Foundation
 public final class WalletsUpdateAssembly {
   
   private let storesAssembly: StoresAssembly
-  private let servicesAssembly: ServicesAssembly
+  public let servicesAssembly: ServicesAssembly
   public let repositoriesAssembly: RepositoriesAssembly
   private let formattersAssembly: FormattersAssembly
   
