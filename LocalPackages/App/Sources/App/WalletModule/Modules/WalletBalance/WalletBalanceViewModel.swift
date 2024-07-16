@@ -209,12 +209,22 @@ private extension WalletBalanceViewModelImplementation {
           backup: backup
         )
         
+        let stateDate: String? = {
+          guard let totalBalanceState = state.totalBalanceState else { return nil }
+          switch totalBalanceState {
+          case .current:
+            return nil
+          case .previous(let totalBalance):
+            return TKLocales.ConnectionStatus.updated_at(self.headerMapper.makeUpdatedDate(totalBalance.date))
+          }
+        }()
+        
         let headerModel = BalanceHeaderBalanceView.Model(
           balanceModel: balanceModel,
           addressButtonConfiguration: addressButtonConfiguration,
           connectionStatusModel: nil,
           tagConfiguration: state.wallet.balanceTagConfiguration(),
-          stateDate: nil
+          stateDate: stateDate
         )
         
         let model = BalanceHeaderView.Model(

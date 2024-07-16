@@ -8,9 +8,17 @@ import BigInt
 struct WalletBalanceHeaderMapper {
   
   private let decimalAmountFormatter: DecimalAmountFormatter
+  private let dateFormatter: DateFormatter
   
-  init(decimalAmountFormatter: DecimalAmountFormatter) {
+  init(decimalAmountFormatter: DecimalAmountFormatter,
+       dateFormatter: DateFormatter) {
     self.decimalAmountFormatter = decimalAmountFormatter
+    self.dateFormatter = dateFormatter
+  }
+  
+  func makeUpdatedDate(_ date: Date) -> String {
+    dateFormatter.dateFormat = "MMM d, HH:mm"
+    return dateFormatter.string(from: date)
   }
   
   func mapTotalBalance(totalBalance: TotalBalance?) -> String {

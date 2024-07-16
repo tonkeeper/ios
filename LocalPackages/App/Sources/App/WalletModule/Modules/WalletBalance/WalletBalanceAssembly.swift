@@ -37,7 +37,8 @@ struct WalletBalanceAssembly {
         rateConverter: RateConverter()
       ),
       headerMapper: WalletBalanceHeaderMapper(
-        decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
+        decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+        dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
       ),
       secureMode: coreAssembly.secureMode,
       urlOpener: coreAssembly.urlOpener()
