@@ -148,6 +148,22 @@ private extension MainCoordinator {
       self?.openSettings(wallet: wallet)
     }
     
+    walletCoordinator.didSelectTonDetails = { [weak self] in
+      self?.openTonDetails(wallet: $0)
+    }
+    
+    walletCoordinator.didSelectJettonDetails = { [weak self] wallet, jettonItem, hasPrice in
+      self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet, hasPrice: hasPrice)
+    }
+    
+    walletCoordinator.didTapBuy = { [weak self] wallet in
+      self?.openBuy(wallet: wallet)
+    }
+    
+    walletCoordinator.didTapReceive = { [weak self] token in
+      self?.openReceive(token: token)
+    }
+    
     let historyCoordinator = historyModule.createHistoryCoordinator()
     
     let browserCoordinator = browserModule.createBrowserCoordinator()
@@ -564,6 +580,122 @@ private extension MainCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+  }
+  
+  func openTonDetails(wallet: Wallet) {
+    guard let navigationController = router.rootViewController.navigationController else { return }
+    
+    let historyListModule = HistoryModule(
+      dependencies: HistoryModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createTonHistoryListModule(wallet: wallet)
+    
+    historyListModule.output.didSelectEvent = { [weak self] event in
+      self?.openHistoryEventDetails(event: event)
+    }
+    
+    let module = TokenDetailsAssembly.module(
+      tokenDetailsListContentViewController: historyListModule.view,
+      tokenDetailsController: keeperCoreMainAssembly.tonTokenDetailsController(),
+      chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
+        ChartAssembly.module(token: .ton,
+                             coreAssembly: coreAssembly,
+                             keeperCoreMainAssembly: keeperCoreMainAssembly).view
+      },
+      hasAbout: true
+    )
+    
+    module.output.didTapReceive = { [weak self] token in
+      self?.openReceive(token: token)
+    }
+    
+    module.output.didTapSend = { [weak self] token in
+      self?.openSend(token: token)
+    }
+    
+    module.output.didTapBuyOrSell = { [weak self] in
+      self?.openBuy(wallet: wallet)
+    }
+    
+    navigationController.pushViewController(module.view, animated: true)
+  }
+  
+  func openJettonDetails(jettonItem: JettonItem, wallet: Wallet, hasPrice: Bool) {
+    guard let navigationController = router.rootViewController.navigationController else { return }
+    
+    let historyListModule = HistoryModule(
+      dependencies: HistoryModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).createJettonHistoryListModule(jettonItem: jettonItem, wallet: wallet)
+    
+    historyListModule.output.didSelectEvent = { [weak self] event in
+      self?.openHistoryEventDetails(event: event)
+    }
+    
+    let module = TokenDetailsAssembly.module(
+      tokenDetailsListContentViewController: historyListModule.view,
+      tokenDetailsController: keeperCoreMainAssembly.jettonTokenDetailsController(jettonItem: jettonItem),
+      chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
+        guard hasPrice else { return nil }
+        return ChartAssembly.module(token: .jetton(jettonItem),
+                                    coreAssembly: coreAssembly,
+                                    keeperCoreMainAssembly: keeperCoreMainAssembly).view
+      },
+      hasAbout: false
+    )
+    
+    module.output.didTapReceive = { [weak self] token in
+      self?.openReceive(token: token)
+    }
+    
+    module.output.didTapSend = { [weak self] token in
+      self?.openSend(token: token)
+    }
+    
+    navigationController.pushViewController(module.view, animated: true)
+//    router.push(viewController: module.view)
+  }
+  
+  func openReceive(token: Token) {
+    let module = ReceiveModule(
+      dependencies: ReceiveModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).receiveModule(token: token)
+    
+    module.view.setupSwipeDownButton()
+    
+    let navigationController = TKNavigationController(rootViewController: module.view)
+    navigationController.configureDefaultAppearance()
+    
+    router.present(navigationController)
+  }
+  
+  func openBuy(wallet: Wallet) {
+    let coordinator = BuyCoordinator(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: ViewControllerRouter(rootViewController: self.router.rootViewController)
+    )
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
+  func openHistoryEventDetails(event: AccountEventDetailsEvent) {
+    let module = HistoryEventDetailsAssembly.module(
+      historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(event: event),
+      urlOpener: coreAssembly.urlOpener()
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
 }
 
