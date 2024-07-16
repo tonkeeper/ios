@@ -214,6 +214,7 @@
 		C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseConfigurator.swift; sourceTree = "<group>"; };
 		C392CE022BE11B0300E0C473 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKit; sourceTree = "<group>"; };
 		C39560142B737F12003303C7 /* App */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = App; sourceTree = "<group>"; };
+		E66F82AA2C2F2BB00009E7C2 /* Ledger */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Ledger; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -450,6 +451,7 @@
 		C313EC0A2B50138D009DF825 /* LocalPackages */ = {
 			isa = PBXGroup;
 			children = (
+				E66F82AA2C2F2BB00009E7C2 /* Ledger */,
 				7D98E9DA2C22F24C0032D37A /* TKCryptoSwift */,
 				50ADFE3C2BE160D3000E1C0A /* TKLocalize */,
 				C39560142B737F12003303C7 /* App */,
@@ -975,7 +977,8 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -1016,7 +1019,8 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -1121,7 +1125,8 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -1288,7 +1293,8 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

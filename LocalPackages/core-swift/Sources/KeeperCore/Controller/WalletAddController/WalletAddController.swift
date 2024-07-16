@@ -1,6 +1,7 @@
 import Foundation
 import CoreComponents
 import TonSwift
+import TonTransport
 
 public final class WalletAddController {
 
@@ -128,30 +129,31 @@ public final class WalletAddController {
     await walletsStoreUpdater.setWalletActive(wallets[0])
   }
   
-  public func importLedgerWallet(publicKey: TonSwift.PublicKey,
-                                 revisions: [WalletContractVersion],
-                                 device: Wallet.LedgerDevice,
-                                 metaData: WalletMetaData) async throws {
-    let addPostfix = revisions.count > 1
+  public func importLedgerWallets(accounts: [LedgerAccount],
+                                  deviceId: String,
+                                  deviceProductName: String,
+                                  metaData: WalletMetaData) throws {
+    let addPostfix = accounts.count > 1
     
-    let wallets = revisions.map { revision in
-      let label = addPostfix ? "\(metaData.label) \(revision.rawValue)" : metaData.label
-      let revisionMetaData = WalletMetaData(
+    let wallets = accounts.enumerated().map { (index, account) in
+      let label = addPostfix ? "\(metaData.label) \(index + 1)" : metaData.label
+      let accountMetaData = WalletMetaData(
         label: label,
         tintColor: metaData.tintColor,
         icon: metaData.icon
       )
       
+      let device = Wallet.LedgerDevice(deviceId: deviceId, deviceModel: deviceProductName, accountIndex: Int16(account.path.index))
       
       let identity = WalletIdentity(
         network: .mainnet,
-        kind: .Ledger(publicKey, revision, device)
+        kind: .Ledger(account.publicKey, .v4R2, device)
       )
       
       return Wallet(
         id: UUID().uuidString,
         identity: identity,
-        metaData: revisionMetaData,
+        metaData: accountMetaData,
         setupSettings: WalletSetupSettings(backupDate: Date()))
     }
 

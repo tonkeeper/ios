@@ -116,6 +116,7 @@ final class ChooseWalletToAddCell: UICollectionViewCell, ConfigurableView {
   struct Model: Hashable {
     let identifier: String
     let contentViewModel: ChooseWalletToAddCellContentView.Model
+    let isEnable: Bool
     
     static func == (lhs: Model, rhs: Model) -> Bool {
       lhs.identifier == rhs.identifier
@@ -128,6 +129,7 @@ final class ChooseWalletToAddCell: UICollectionViewCell, ConfigurableView {
   
   func configure(model: Model) {
     cellContentView.configure(model: model.contentViewModel)
+    tickView.isDisabled = !model.isEnable
   }
   
   override func updateConfiguration(using state: UICellConfigurationState) {

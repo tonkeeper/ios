@@ -7,6 +7,15 @@ public final class TKTabBarController: UITabBarController {
   
   public let blurView = TKBlurView()
   
+  public init() {
+    super.init(nibName: nil, bundle: nil)
+    object_setClass(self.tabBar, TKTabBar.self)
+  }
+  
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+  
   public override func viewDidLoad() {
     super.viewDidLoad()
     

@@ -107,4 +107,16 @@ extension ChooseWalletToAddCollectionController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didDeselectItemAt indexPath: IndexPath) {
     didDeselect?(indexPath)
   }
+  
+  func collectionView(_ collectionView: UICollectionView, shouldHighlightItemAt indexPath: IndexPath) -> Bool {
+    let snapshot = dataSource.snapshot()
+    let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
+    return item.isEnable
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, shouldSelectItemAt indexPath: IndexPath) -> Bool {
+    let snapshot = dataSource.snapshot()
+    let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
+    return item.isEnable
+  }
 }

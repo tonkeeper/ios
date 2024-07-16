@@ -10,7 +10,7 @@ enum SignTransactionConfirmationCoordinatorConfirmatorError: Swift.Error {
 }
 
 protocol SignTransactionConfirmationCoordinatorConfirmator {
-  func confirm(wallet: Wallet, signClosure: (WalletTransfer) async throws -> Data?) async throws
+  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws
   func cancel(wallet: Wallet) async
 }
 
@@ -30,7 +30,7 @@ struct DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignT
     self.tonConnectService = tonConnectService
   }
   
-  func confirm(wallet: Wallet, signClosure: (WalletTransfer) async throws -> Data?) async throws {
+  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
     guard let parameters = appRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
@@ -73,7 +73,7 @@ struct BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignTr
     self.connectionResponseHandler = connectionResponseHandler
   }
   
-  func confirm(wallet: Wallet, signClosure: (WalletTransfer) async throws -> Data?) async throws {
+  func confirm(wallet: Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
     guard let parameters = appRequest.params.first else { return }
     do {
       let seqno = try await sendService.loadSeqno(wallet: wallet)
@@ -124,7 +124,7 @@ struct StonfiSwapSignTransactionConfirmationCoordinatorConfirmator: SignTransact
     self.responseHandler = responseHandler
   }
   
-  func confirm(wallet: KeeperCore.Wallet, signClosure: (WalletTransfer) async throws -> Data?) async throws {
+  func confirm(wallet: KeeperCore.Wallet, signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
     guard let parameters = signRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
@@ -249,9 +249,11 @@ private extension SignTransactionConfirmationCoordinator {
     
     module.output.didTapConfirmButton = { [weak self, weak bottomSheetViewController, wallet] in
       do {
-        try await self?.confirmator.confirm(wallet: wallet) { walletTransfer in
+        try await self?.confirmator.confirm(wallet: wallet) { transferMessageBuilder in
           guard let self, let bottomSheetViewController else { throw Error.failedToSign }
-          return try await self.performSign(walletTransfer: walletTransfer, wallet: wallet, fromViewController: bottomSheetViewController)
+          return try await self.performSign(transferMessageBuilder: transferMessageBuilder,
+                                            wallet: wallet,
+                                            fromViewController: bottomSheetViewController)
         }
         return true
       } catch {
@@ -268,11 +270,11 @@ private extension SignTransactionConfirmationCoordinator {
     bottomSheetViewController.present(fromViewController: rootViewController)
   }
   
-  func performSign(walletTransfer: WalletTransfer, wallet: Wallet, fromViewController: UIViewController) async throws -> Data {
+  func performSign(transferMessageBuilder: TransferMessageBuilder, wallet: Wallet, fromViewController: UIViewController) async throws -> String {
     let coordinator = await WalletTransferSignCoordinator(
       router: ViewControllerRouter(rootViewController: fromViewController),
       wallet: wallet,
-      walletTransfer: walletTransfer,
+      transferMessageBuilder: transferMessageBuilder,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly)
     
@@ -281,8 +283,8 @@ private extension SignTransactionConfirmationCoordinator {
     let result = await coordinator.handleSign(parentCoordinator: self)
     
     switch result {
-    case .signed(let data):
-      return data
+    case .signed(let signedBoc):
+      return signedBoc
     case .cancel:
       throw Error.failedToSign
     case .failed(let error):

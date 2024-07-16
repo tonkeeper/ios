@@ -4,8 +4,13 @@ public final class TKTickView: UIView {
   
   public var isSelected: Bool = false {
     didSet {
-      unselectedView.alpha = isSelected ? 0 : 1
-      selectedView.alpha = isSelected ? 1 : 0
+      didUpdateState()
+    }
+  }
+  
+  public var isDisabled: Bool = false {
+    didSet {
+      didUpdateState()
     }
   }
   
@@ -40,9 +45,30 @@ private extension TKTickView {
     unselectedView.alpha = 1
     selectedView.alpha = 0
   }
+  
+  func didUpdateState() {
+    defer {
+      unselectedView.isDisabled = isDisabled
+    }
+    guard !isDisabled else {
+      selectedView.alpha = 0
+      unselectedView.alpha = 1
+      return
+    }
+    
+    unselectedView.alpha = isSelected ? 0 : 1
+    selectedView.alpha = isSelected ? 1 : 0
+  }
 }
 
 private class UITickViewUnselectedView: UIView {
+  
+  public var isDisabled: Bool = false {
+    didSet {
+      layer.opacity = isDisabled ? 0.48 : 1
+    }
+  }
+  
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -56,7 +82,8 @@ private class UITickViewUnselectedView: UIView {
     backgroundColor = .clear
     layer.cornerRadius = .cornerRadius
     layer.borderWidth = .unselectedBorderWidth
-    layer.borderColor = UIColor.Background.contentTint.cgColor
+    layer.borderColor = UIColor.Icon.tertiary.cgColor
+    layer.opacity = isDisabled ? 0.48 : 1
   }
 }
 

@@ -14,7 +14,7 @@ public final class SendConfirmationController {
   public var didGetError: ((Error) -> Void)?
   public var didGetExternalSign: ((URL) async throws -> Data?)?
   
-  public var signHandler: ((WalletTransfer, Wallet) async throws -> Data?)?
+  public var signHandler: ((TransferMessageBuilder, Wallet) async throws -> String?)?
   
   private var transactionEmulationExtra: Int64 = 0
   
@@ -247,9 +247,15 @@ private extension SendConfirmationController {
     case .nft(let nft):
       boc = try await createNFTEmulateTransactionBoc(nft: nft)
     case .token(let token, let amount):
-      boc = try await createTokenTransactionBoc(token: token, amount: amount) { transfer in
-        try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
-      }
+      boc = try await createTokenTransactionBoc(
+        token: token,
+        amount: amount,
+        signClosure: { [wallet] builder in
+          try await builder.externalSign(wallet: wallet) { transfer in
+            try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
+          }
+        }
+      )
     }
     return boc
   }
@@ -267,7 +273,7 @@ private extension SendConfirmationController {
     return boc
   }
   
-  func createTokenTransactionBoc(token: Token, amount: BigUInt, signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
+  func createTokenTransactionBoc(token: Token, amount: BigUInt, signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
                 
@@ -282,29 +288,35 @@ private extension SendConfirmationController {
       } else {
         isMax = false
       }
-      return try await TonTransferMessageBuilder.sendTonTransfer(
-        wallet: wallet,
-        seqno: seqno,
-        value: amount,
-        isMax: isMax,
-        recipientAddress: recipient.recipientAddress.address,
-        isBounceable: shouldForceBounceFalse ? false : recipient.recipientAddress.isBouncable,
-        comment: comment,
-        timeout: timeout,
-        signClosure: signClosure
+      let transferMessageBuilder = TransferMessageBuilder(
+        transferData: .ton(
+          TransferData.Ton(
+            seqno: seqno,
+            amount: amount,
+            isMax: isMax,
+            recipient: recipient.recipientAddress.address,
+            isBouncable: shouldForceBounceFalse ? false : recipient.recipientAddress.isBouncable,
+            comment: comment,
+            timeout: timeout
+          )
+        )
       )
+      return try await transferMessageBuilder.createBoc(signClosure: signClosure)
     case .jetton(let jettonItem):
-      return try await TokenTransferMessageBuilder.sendTokenTransfer(
-        wallet: wallet,
-        seqno: seqno,
-        tokenAddress: jettonItem.walletAddress,
-        value: amount,
-        recipientAddress: recipient.recipientAddress.address,
-        isBounceable: recipient.recipientAddress.isBouncable,
-        comment: comment,
-        timeout: timeout,
-        signClosure: signClosure
+      let transferMessageBuilder = TransferMessageBuilder(
+        transferData: .jetton(
+          TransferData.Jetton(
+            seqno: seqno,
+            jettonAddress: jettonItem.walletAddress,
+            amount: amount,
+            recipient: recipient.recipientAddress.address,
+            isBouncable: recipient.recipientAddress.isBouncable,
+            comment: comment,
+            timeout: timeout
+          )
+        )
       )
+      return try await transferMessageBuilder.createBoc(signClosure: signClosure)
     }
   }
   
@@ -439,22 +451,26 @@ private extension SendConfirmationController {
         commentCell = try Builder().store(int: 0, bits: 32).writeSnakeData(Data(comment.utf8)).endCell()
     }
     
-    return try await NFTTransferMessageBuilder.sendNFTTransfer(
-        wallet: wallet,
-        seqno: seqno,
-        nftAddress: nft.address,
-        recipientAddress: recipient.recipientAddress.address,
-        transferAmount: transferAmount.magnitude,
-        timeout: timeout,
-        forwardPayload: commentCell
-        ) { transfer in
-          return try await signTransfer(transfer)
-        }
+    return try await TransferMessageBuilder(
+      transferData: .nft(
+        TransferData.NFT(
+          seqno: seqno,
+          nftAddress: nft.address,
+          recipient: recipient.recipientAddress.address,
+          isBouncable: recipient.recipientAddress.isBouncable,
+          transferAmount: transferAmount.magnitude,
+          timeout: timeout,
+          forwardPayload: commentCell
+        )
+      )
+    ).createBoc { transferMessageBuilder in
+      return try await signTransfer(transferMessageBuilder)
+    }
   }
   
-  func signTransfer(_ transfer: WalletTransfer) async throws -> Data {
+  func signTransfer(_ transferBuilder: TransferMessageBuilder) async throws -> String {
     guard let signHandler,
-          let signedData = try await signHandler(transfer, wallet) else { throw Error.failedToSign }
+          let signedData = try await signHandler(transferBuilder, wallet) else { throw Error.failedToSign }
     return signedData
   }
 }

@@ -181,6 +181,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   func didInputComment(_ string: String) {
     guard string != commentInput else { return }
     commentInput = string
+    commentState = sendController.validateComment(comment: string)
     update()
   }
   
@@ -259,12 +260,20 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     }
   }
   
+  
+  private var commentState: SendV3Controller.CommentState = .ok {
+    didSet {
+      guard commentState != oldValue else { return }
+      update()
+    }
+  }
   private var isCommentRequired: Bool = false {
     didSet {
       guard isCommentRequired != oldValue else { return }
       update()
     }
   }
+  
   private var isContinueEnabled: Bool = false {
     didSet {
       guard isContinueEnabled != oldValue else { return }
@@ -386,11 +395,19 @@ private extension SendV3ViewModelImplementation {
   func createCommentModel() -> Model.Comment {
     let description: NSAttributedString?
     let placeholder: String
-    switch (isCommentRequired, commentInput.isEmpty) {
-    case (false, true):
+    switch (isCommentRequired, commentInput.isEmpty, commentState) {
+    case (_, false, .ledgerNonAsciiError):
+      placeholder = TKLocales.Send.Comment.placeholder
+      description = TKLocales.Send.Comment.ascii_error.withTextStyle(
+        .body2,
+        color: .Accent.red,
+        alignment: .left,
+        lineBreakMode: .byWordWrapping
+      )
+    case (false, true, _):
       placeholder = TKLocales.Send.Comment.placeholder
       description = nil
-    case (false, false):
+    case (false, false, _):
       placeholder = TKLocales.Send.Comment.placeholder
       description = TKLocales.Send.Comment.description.withTextStyle(
         .body2,
@@ -398,7 +415,7 @@ private extension SendV3ViewModelImplementation {
         alignment: .left,
         lineBreakMode: .byWordWrapping
       )
-    case (true, _):
+    case (true, _, _):
       placeholder = TKLocales.Send.RequiredComment.placeholder
       description = TKLocales.Send.RequiredComment.description
         .withTextStyle(
@@ -409,10 +426,12 @@ private extension SendV3ViewModelImplementation {
         )
     }
     
+    print(commentState)
+    
     return Model.Comment(
       placeholder: placeholder,
       text: commentInput,
-      isValid: true,
+      isValid: commentState == .ok,
       description: description
     )
   }

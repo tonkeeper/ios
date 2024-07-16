@@ -41,6 +41,12 @@ public enum TKLocales {
       localize("actions.sign_out")
     }
   }
+  public enum Errors {
+    /// Error
+    public static var unknown: String {
+      localize("errors.unknown")
+    }
+  }
   public enum Dates {
     /// Today
     public static var today: String {
@@ -497,6 +503,10 @@ public enum TKLocales {
       public static var description: String {
         localize("send.comment.description")
       }
+      /// Use only ASCII characters: digits, latin alphabet letters and punctuation marks.
+      public static var ascii_error: String {
+        localize("send.comment.ascii_error")
+      }
     }
     public enum RequiredComment {
       /// Required comment
@@ -641,6 +651,10 @@ public enum TKLocales {
     /// tokens
     public static var tokens: String {
       localize("choose_wallets.tokens")
+    }
+    /// Already added
+    public static var alreadyAdded: String {
+      localize("choose_wallets.alreadyAdded")
     }
   }
   public enum FinishSetup {
@@ -992,6 +1006,36 @@ public enum TKLocales {
         public static var description: String {
           localize("ledger_confirm.steps.confirm.description")
         }
+      }
+    }
+  }
+  public enum Bluetooth {
+    public enum PermissionsAlert {
+      /// Bluetooth Permissions
+      public static var title: String {
+        localize("bluetooth.permissions_alert.title")
+      }
+      /// Please enable Bluetooth permissions in your settings to use this feature
+      public static var message: String {
+        localize("bluetooth.permissions_alert.message")
+      }
+      /// Open Settings
+      public static var open_settings: String {
+        localize("bluetooth.permissions_alert.open_settings")
+      }
+    }
+    public enum PoweredOffAlert {
+      /// Bluetooth is off
+      public static var title: String {
+        localize("bluetooth.powered_off_alert.title")
+      }
+      /// Please turn on Bluetooth to use this feature
+      public static var message: String {
+        localize("bluetooth.powered_off_alert.message")
+      }
+      /// Open Settings
+      public static var open_settings: String {
+        localize("bluetooth.powered_off_alert.open_settings")
       }
     }
   }

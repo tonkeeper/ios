@@ -7,35 +7,40 @@ import TonSwift
 
 enum WalletTransferSignError: Swift.Error {
   case incorrectWalletKind
-  case failedToSign(Swift.Error)
+  case cancelled
+  case failedToSign(Swift.Error?)
 }
 
 final class WalletTransferSignCoordinator: RouterCoordinator<ViewControllerRouter> {
   
+  enum ExtenalSignError: Swift.Error {
+    case cancelled
+  }
+  
   enum Result {
-    case signed(Data)
+    case signed(String)
     case failed(WalletTransferSignError)
     case cancel
   }
   
   var didFail: ((WalletTransferSignError) -> Void)?
-  var didSign: ((Data) -> Void)?
+  var didSign: ((String) -> Void)?
   var didCancel: (() -> Void)?
   
   var externalSignHandler: ((Data?) -> Void)?
   
   private let wallet: Wallet
-  private let walletTransfer: WalletTransfer
+  private let transferMessageBuilder: TransferMessageBuilder
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
   
   init(router: ViewControllerRouter,
        wallet: Wallet,
-       walletTransfer: WalletTransfer,
+       transferMessageBuilder: TransferMessageBuilder,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        coreAssembly: TKCore.CoreAssembly) {
     self.wallet = wallet
-    self.walletTransfer = walletTransfer
+    self.transferMessageBuilder = transferMessageBuilder
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.coreAssembly = coreAssembly
     super.init(router: router)
@@ -79,25 +84,52 @@ private extension WalletTransferSignCoordinator {
     case .Regular:
       handleRegularSign()
     case .SignerDevice(let publicKey, let walletContractVersion):
-      handleSignerSignOnDevice(
-        transfer: walletTransfer,
-        publicKey: publicKey,
-        revision: walletContractVersion,
-        network: wallet.identity.network
-      )
+      Task {
+        do {
+          let signedBoc = try await transferMessageBuilder.externalSign(wallet: wallet, signClosure: { transfer in
+            guard let data = await handleSignerSignOnDevice(
+              walletTransfer: transfer,
+              publicKey: publicKey,
+              revision: walletContractVersion,
+              network: wallet.identity.network) else {
+              throw ExtenalSignError.cancelled
+            }
+            return data
+          })
+          self.didSign?(signedBoc)
+        } catch {
+          self.didCancel?()
+        }
+      }
     case .Signer(let publicKey, let walletContractVersion):
-      handleSignerSign(
-        transfer: walletTransfer,
-        publicKey: publicKey,
-        revision: walletContractVersion,
-        network: wallet.identity.network
-      )
-    case .Ledger(let publicKey, let walletContractVersion, _):
-      handleLedgerSign(
-        transfer: walletTransfer,
-        publicKey: publicKey,
-        revision: walletContractVersion
-      )
+      Task {
+        do {
+          let signedBoc = try await transferMessageBuilder.externalSign(wallet: wallet, signClosure: { transfer in
+            guard let data = await handleSignerSign(
+              walletTransfer: transfer,
+              publicKey: publicKey,
+              revision: walletContractVersion,
+              network: wallet.identity.network) else {
+              throw ExtenalSignError.cancelled
+            }
+            return data
+          })
+          self.didSign?(signedBoc)
+        } catch {
+          self.didCancel?()
+        }
+      }
+    case .Ledger(_, _, let ledgerDevice):
+      Task {
+        guard let signedBoc = await handleLedgerSign(
+          transferMessageBuilder: transferMessageBuilder,
+          ledgerDevice: ledgerDevice
+        ) else {
+          self.didCancel?()
+          return
+        }
+        self.didSign?(signedBoc)
+      }
     case .Lockup, .Watchonly:
       didFail?(.incorrectWalletKind)
     }
@@ -112,7 +144,7 @@ private extension WalletTransferSignCoordinator {
       onCancel: { [weak self] in
         self?.didCancel?()
       },
-      onInput: { [weak self, wallet, keeperCoreMainAssembly, walletTransfer] passcode in
+      onInput: { [weak self, wallet, keeperCoreMainAssembly, transferMessageBuilder] passcode in
         guard let self else { return }
         Task {
           do {
@@ -122,8 +154,10 @@ private extension WalletTransferSignCoordinator {
             )
             let keyPair = try TonSwift.Mnemonic.mnemonicToPrivateKey(mnemonicArray: mnemonic.mnemonicWords)
             let privateKey = keyPair.privateKey
-            let signed = try walletTransfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
-            self.didSign?(signed)
+            let signedBoc = try await transferMessageBuilder.externalSign(wallet: wallet) { walletTransfer in
+              return try walletTransfer.signMessage(signer: WalletTransferSecretKeySigner(secretKey: privateKey.data))
+            }
+            self.didSign?(signedBoc)
           } catch {
             self.didFail?(.failedToSign(error))
           }
@@ -132,89 +166,100 @@ private extension WalletTransferSignCoordinator {
     )
   }
   
-  func handleLedgerSign(transfer: WalletTransfer,
-                        publicKey: TonSwift.PublicKey,
-                        revision: WalletContractVersion) {
-    let module = LedgerConfirmAssembly.module(coreAssembly: coreAssembly)
-    
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    
-    bottomSheetViewController.didClose = { [weak self] isInteractivly in
-      guard !isInteractivly else {
-        self?.didCancel?()
-        return
+  func handleLedgerSign(transferMessageBuilder: TransferMessageBuilder, ledgerDevice: Wallet.LedgerDevice) async -> String? {
+    await withCheckedContinuation { continuation in
+      DispatchQueue.main.async {
+        let module = LedgerConfirmAssembly.module(transferMessageBuilder: transferMessageBuilder,
+                                                  wallet: self.wallet,
+                                                  ledgerDevice: ledgerDevice,
+                                                  coreAssembly: self.coreAssembly)
+        
+        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+        
+        bottomSheetViewController.didClose = { isInteractivly in
+          guard !isInteractivly else {
+            continuation.resume(returning: nil)
+            return
+          }
+        }
+        
+        module.output.didCancel = { [weak bottomSheetViewController] in
+          bottomSheetViewController?.dismiss(completion: {
+            continuation.resume(returning: nil)
+          })
+        }
+        
+        module.output.didSign = { [weak bottomSheetViewController] boc in
+          bottomSheetViewController?.dismiss(completion: {
+            continuation.resume(returning: boc)
+          })
+        }
+        
+        bottomSheetViewController.present(fromViewController: self.router.rootViewController)
       }
     }
-    
-    module.output.didCancel = { [weak self, weak bottomSheetViewController] in
-      bottomSheetViewController?.dismiss(completion: {
-        self?.didCancel?()
-      })
-    }
-    
-    module.output.didSign = { [weak self, weak bottomSheetViewController] data in
-      bottomSheetViewController?.dismiss(completion: {
-        self?.didSign?(data)
-      })
-    }
-  
-    bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func handleSignerSign(transfer: WalletTransfer,
+  func handleSignerSign(walletTransfer: WalletTransfer,
                         publicKey: TonSwift.PublicKey,
                         revision: WalletContractVersion,
-                        network: Network) {
-    guard let url = try? createTonSignURL(transfer: transfer.signingMessage.endCell().toBoc(),
-                                          publicKey: publicKey,
-                                          revision: revision,
-                                          network: network,
-                                          isOnDevice: false) else { return }
-    let module = SignerSignAssembly.module(
-      url: url,
-      wallet: wallet,
-      assembly: self.keeperCoreMainAssembly,
-      coreAssembly: self.coreAssembly
-    )
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    
-    bottomSheetViewController.didClose = { [weak self, weak bottomSheetViewController] isInteractivly in
-      guard isInteractivly else { return }
-      bottomSheetViewController?.dismiss(completion: {
-        self?.didCancel?()
-        return
-      })
-    }
-    
-    module.output.didScanSignedTransaction = { [weak self, weak bottomSheetViewController] model in
-      bottomSheetViewController?.dismiss {
-        self?.didSign?(model.sign)
+                        network: Network) async -> Data? {
+    await withCheckedContinuation { continuation in
+      DispatchQueue.main.async { [wallet] in
+        guard let url = try? self.createTonSignURL(transfer: walletTransfer.signingMessage.endCell().toBoc(),
+                                                   publicKey: publicKey,
+                                                   revision: revision,
+                                                   network: network,
+                                                   isOnDevice: false) else { return }
+        let module = SignerSignAssembly.module(
+          url: url,
+          wallet: wallet,
+          assembly: self.keeperCoreMainAssembly,
+          coreAssembly: self.coreAssembly
+        )
+        let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+        
+        bottomSheetViewController.didClose = { [weak bottomSheetViewController] isInteractivly in
+          guard isInteractivly else { return }
+          bottomSheetViewController?.dismiss(completion: {
+            continuation.resume(returning: nil)
+          })
+        }
+        
+        module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
+          bottomSheetViewController?.dismiss {
+            continuation.resume(returning: model.sign)
+          }
+        }
+        
+        bottomSheetViewController.present(fromViewController: self.router.rootViewController)
       }
     }
-    
-    bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func handleSignerSignOnDevice(transfer: WalletTransfer,
+  func handleSignerSignOnDevice(walletTransfer: WalletTransfer,
                                 publicKey: TonSwift.PublicKey,
                                 revision: WalletContractVersion,
-                                network: Network) {
-    guard let url = try? createTonSignURL(transfer: transfer.signingMessage.endCell().toBoc(),
-                                          publicKey: publicKey,
-                                          revision: revision,
-                                          network: network,
-                                          isOnDevice: true) else { return }
-    externalSignHandler = { [weak self] data in
-      guard let data else {
-        self?.didCancel?()
+                                network: Network) async -> Data? {
+    await withCheckedContinuation { continuation in
+      guard let url = try? createTonSignURL(transfer: walletTransfer.signingMessage.endCell().toBoc(),
+                                            publicKey: publicKey,
+                                            revision: revision,
+                                            network: network,
+                                            isOnDevice: true) else {
+        continuation.resume(returning: nil)
         return
       }
-      self?.didSign?(data)
+      externalSignHandler = { data in
+        continuation.resume(returning: data)
+      }
+      DispatchQueue.main.async {
+        self.coreAssembly.urlOpener().open(url: url)
+      }
     }
-    coreAssembly.urlOpener().open(url: url)
   }
   
-  func createTonSignURL(transfer: Data, 
+  func createTonSignURL(transfer: Data,
                         publicKey: TonSwift.PublicKey,
                         revision: WalletContractVersion,
                         network: Network,

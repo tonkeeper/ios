@@ -2,6 +2,318 @@ import Foundation
 import TonSwift
 import BigInt
 
+
+public enum TransferData {
+  public struct Ton {
+    public let seqno: UInt64
+    public let amount: BigUInt
+    public let isMax: Bool
+    public let recipient: Address
+    public let isBouncable: Bool
+    public let comment: String?
+    public let timeout: UInt64?
+    
+    public init(seqno: UInt64,
+                amount: BigUInt,
+                isMax: Bool,
+                recipient: Address,
+                isBouncable: Bool = true,
+                comment: String?,
+                timeout: UInt64?) {
+      self.seqno = seqno
+      self.amount = amount
+      self.isMax = isMax
+      self.recipient = recipient
+      self.isBouncable = isBouncable
+      self.comment = comment
+      self.timeout = timeout
+    }
+  }
+  
+  public struct Jetton {
+    public let seqno: UInt64
+    public let jettonAddress: Address
+    public let amount: BigUInt
+    public let recipient: Address
+    public let isBouncable: Bool
+    public let comment: String?
+    public let timeout: UInt64?
+    
+    public init(seqno: UInt64,
+                jettonAddress: Address,
+                amount: BigUInt,
+                recipient: Address,
+                isBouncable: Bool = true,
+                comment: String?,
+                timeout: UInt64?) {
+      self.seqno = seqno
+      self.jettonAddress = jettonAddress
+      self.amount = amount
+      self.recipient = recipient
+      self.isBouncable = isBouncable
+      self.comment = comment
+      self.timeout = timeout
+    }
+  }
+  
+  public struct NFT {
+    public let seqno: UInt64
+    public let nftAddress: Address
+    public let recipient: Address
+    public let isBounceable: Bool
+    public let transferAmount: BigUInt
+    public let timeout: UInt64?
+    public let forwardPayload: Cell?
+    
+    public init(seqno: UInt64,
+                nftAddress: Address,
+                recipient: Address,
+                isBouncable: Bool = true,
+                transferAmount: BigUInt,
+                timeout: UInt64?,
+                forwardPayload: Cell?) {
+      self.seqno = seqno
+      self.nftAddress = nftAddress
+      self.recipient = recipient
+      self.isBounceable = isBouncable
+      self.transferAmount = transferAmount
+      self.timeout = timeout
+      self.forwardPayload = forwardPayload
+    }
+  }
+  
+  public struct Swap {
+    public let seqno: UInt64
+    public let minAskAmount: BigUInt
+    public let offerAmount: BigUInt
+    public let jettonToWalletAddress: Address
+    public let jettonFromWalletAddress: Address
+    public let forwardAmount: BigUInt
+    public let attachedAmount: BigUInt
+    public let timeout: UInt64?
+    
+    public init(seqno: UInt64,
+                minAskAmount: BigUInt,
+                offerAmount: BigUInt,
+                jettonToWalletAddress: Address,
+                jettonFromWalletAddress: Address,
+                forwardAmount: BigUInt,
+                attachedAmount: BigUInt,
+                timeout: UInt64?) {
+      self.seqno = seqno
+      self.minAskAmount = minAskAmount
+      self.offerAmount = offerAmount
+      self.jettonToWalletAddress = jettonToWalletAddress
+      self.jettonFromWalletAddress = jettonFromWalletAddress
+      self.forwardAmount = forwardAmount
+      self.attachedAmount = attachedAmount
+      self.timeout = timeout
+    }
+  }
+  
+  public struct TonConnect {
+    public struct Payload {
+      public let value: BigInt
+      public let recipientAddress: Address
+      public let stateInit: String?
+      public let payload: String?
+      
+      public init(value: BigInt,
+                  recipientAddress: Address,
+                  stateInit: String?,
+                  payload: String?) {
+        self.value = value
+        self.recipientAddress = recipientAddress
+        self.stateInit = stateInit
+        self.payload = payload
+      }
+    }
+    
+    public let seqno: UInt64
+    public let payloads: [Payload]
+    public let sender: Address?
+    public let timeout: UInt64
+    
+    public init(seqno: UInt64,
+                payloads: [Payload],
+                sender: Address?,
+                timeout: UInt64) {
+      self.seqno = seqno
+      self.payloads = payloads
+      self.sender = sender
+      self.timeout = timeout
+    }
+  }
+  
+  public enum ChangeDNSRecord {
+    
+    public struct LinkDNS {
+      public let seqno: UInt64
+      public let nftAddress: Address
+      public let linkAddress: Address?
+      public let linkAmount: BigUInt
+      public let timeout: UInt64
+      
+      public init(seqno: UInt64,
+                  nftAddress: Address,
+                  linkAddress: Address?,
+                  linkAmount: BigUInt,
+                  timeout: UInt64) {
+        self.seqno = seqno
+        self.nftAddress = nftAddress
+        self.linkAddress = linkAddress
+        self.linkAmount = linkAmount
+        self.timeout = timeout
+      }
+    }
+    
+    public struct RenewDNS {
+      public let seqno: UInt64
+      public let nftAddress: Address
+      public let linkAmount: BigUInt
+      public let timeout: UInt64?
+      
+      public init(seqno: UInt64,
+                  nftAddress: Address,
+                  linkAmount: BigUInt,
+                  timeout: UInt64?) {
+        self.seqno = seqno
+        self.nftAddress = nftAddress
+        self.linkAmount = linkAmount
+        self.timeout = timeout
+      }
+    }
+    
+    case link(LinkDNS)
+    case renew(RenewDNS)
+  }
+  
+  case ton(Ton)
+  case jetton(Jetton)
+  case nft(NFT)
+  case swap(Swap)
+  case tonConnect(TonConnect)
+  case changeDNSRecord(ChangeDNSRecord)
+}
+
+public struct TransferMessageBuilder {
+  public let transferData: TransferData
+  
+  public let queryId: BigUInt
+  
+  public init(transferData: TransferData) {
+    self.transferData = transferData
+    self.queryId = TransferMessageBuilder.newWalletQueryId()
+  }
+  
+  static func newWalletQueryId() -> BigUInt {
+    let tonkeeperSignature: [UInt8] = [0x54, 0x6d, 0xe4, 0xef]
+    
+    var randomBytes = [UInt8](repeating: 0, count: 4)
+    arc4random_buf(&randomBytes, 4)
+
+    let hexString = Data(tonkeeperSignature + randomBytes).hexString()
+    return BigUInt(hexString, radix: 16) ?? BigUInt(0)
+  }
+  
+  public func createBoc(signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
+    try await signClosure(self)
+  }
+  
+  public func externalSign(wallet: Wallet,
+                           signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
+    switch transferData {
+    case .ton(let ton):
+      return try await TonTransferMessageBuilder.sendTonTransfer(
+        wallet: wallet,
+        seqno: ton.seqno,
+        value: ton.amount,
+        isMax: ton.isMax,
+        recipientAddress: ton.recipient,
+        isBounceable: ton.isBouncable,
+        comment: ton.comment,
+        timeout: ton.timeout,
+        signClosure: signClosure
+      )
+    case .jetton(let jetton):
+      return try await TokenTransferMessageBuilder.sendTokenTransfer(
+        wallet: wallet,
+        seqno: jetton.seqno,
+        tokenAddress: jetton.jettonAddress,
+        value: jetton.amount,
+        recipientAddress: jetton.recipient,
+        isBounceable: jetton.isBouncable,
+        comment: jetton.comment,
+        timeout: jetton.timeout,
+        signClosure: signClosure
+      )
+    case .nft(let nft):
+      return try await NFTTransferMessageBuilder.sendNFTTransfer(
+        wallet: wallet,
+        seqno: nft.seqno,
+        nftAddress: nft.nftAddress,
+        recipientAddress: nft.recipient,
+        isBounceable: nft.isBounceable,
+        transferAmount: nft.transferAmount,
+        timeout: nft.timeout,
+        forwardPayload: nft.forwardPayload,
+        signClosure: signClosure
+      )
+    case .swap(let swap):
+      return try await SwapMessageBuilder.sendSwap(
+        wallet: wallet,
+        seqno: swap.seqno,
+        minAskAmount: swap.minAskAmount,
+        offerAmount: swap.offerAmount,
+        jettonToWalletAddress: swap.jettonToWalletAddress,
+        jettonFromWalletAddress: swap.jettonFromWalletAddress,
+        forwardAmount: swap.forwardAmount,
+        attachedAmount: swap.attachedAmount,
+        timeout: swap.timeout,
+        signClosure: signClosure
+      )
+    case .tonConnect(let tonConnect):
+      return try await TonConnectTransferMessageBuilder.sendTonConnectTransfer(
+        wallet: wallet,
+        seqno: tonConnect.seqno,
+        payloads: tonConnect.payloads.map {
+          TonConnectTransferMessageBuilder.Payload(
+            value: $0.value,
+            recipientAddress: $0.recipientAddress,
+            stateInit: $0.stateInit,
+            payload: $0.payload
+          )
+        },
+        sender: tonConnect.sender,
+        timeout: tonConnect.timeout,
+        signClosure: signClosure
+      )
+    case .changeDNSRecord(let changeDNS):
+      switch changeDNS {
+      case .link(let link):
+        return try await ChangeDNSRecordMessageBuilder.linkDNSMessage(
+          wallet: wallet,
+          seqno: link.seqno,
+          nftAddress: link.nftAddress,
+          linkAddress: link.linkAddress,
+          linkAmount: link.linkAmount,
+          timeout: link.timeout,
+          signClosure: signClosure
+        )
+      case .renew(let renew):
+        return try await ChangeDNSRecordMessageBuilder.renewDNSMessage(
+          wallet: wallet,
+          seqno: renew.seqno,
+          nftAddress: renew.nftAddress,
+          linkAmount: renew.linkAmount,
+          timeout: renew.timeout,
+          signClosure: signClosure
+        )
+      }
+    }
+  }
+}
+
 public struct TonTransferMessageBuilder {
   private init() {}
   public static func sendTonTransfer(wallet: Wallet,
@@ -139,7 +451,7 @@ public struct SwapMessageBuilder {
                               timeout: UInt64?,
                               signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
     
-        
+    
     let internalMessage = try StonfiSwapMessage.internalMessage(
       userWalletAddress: wallet.address,
       minAskAmount: minAskAmount,
@@ -149,7 +461,7 @@ public struct SwapMessageBuilder {
       forwardAmount: forwardAmount,
       attachedAmount: attachedAmount
     )
-      
+    
     return try await ExternalMessageTransferBuilder
       .externalMessageTransfer(
         wallet: wallet,
