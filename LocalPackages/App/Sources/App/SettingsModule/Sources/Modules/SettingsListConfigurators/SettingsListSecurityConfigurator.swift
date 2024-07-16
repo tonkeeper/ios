@@ -88,7 +88,7 @@ private extension SettingsListSecurityConfigurator {
           do {
             if isOn {
               guard let passcode = await self.didRequirePasscode?() else {
-                return !isOn
+                return false
               }
               try self.mnemonicsRepository.savePassword(passcode)
               await self.securityStore.setIsBiometryEnable(true)
@@ -96,9 +96,9 @@ private extension SettingsListSecurityConfigurator {
               try self.mnemonicsRepository.deletePassword()
               await self.securityStore.setIsBiometryEnable(false)
             }
-            return isOn
+            return true
           } catch {
-            return !isOn
+            return false
           }
         }.value
       }

@@ -19,6 +19,8 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapBackup: ((Wallet) -> Void)? { get set }
   
   var didTapManage: ((Wallet) -> Void)? { get set }
+  
+  var didRequirePasscode: (() async -> String?)? { get set }
 }
 
 protocol WalletBalanceModuleInput: AnyObject {}
@@ -67,6 +69,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapBackup: ((Wallet) -> Void)?
   
   var didTapManage: ((Wallet) -> Void)?
+  
+  var didRequirePasscode: (() async -> String?)?
   
   // MARK: - WalletBalanceViewModel
   
@@ -298,8 +302,30 @@ private extension WalletBalanceViewModelImplementation {
       await self.actor.addTask(block: {
         let models = self.listMapper.mapSetupState(
           state,
-          biometrySelectionHandler: {
-            
+          biometrySelectionHandler: { [weak self] in
+            guard let self else { return }
+            Task {
+              guard let passcode = await self.didRequirePasscode?() else {
+                return
+              }
+              try await self.setupModel.turnOnBiometry(passcode: passcode)
+            }
+          },
+          biometrySwitchHandler: { [weak self] isOn in
+            guard let self else { return false }
+            do {
+              if isOn {
+                guard let passcode = await self.didRequirePasscode?() else {
+                  return !isOn
+                }
+                try await setupModel.turnOnBiometry(passcode: passcode)
+              } else {
+                try await setupModel.turnOffBiometry()
+              }
+              return isOn
+            } catch {
+              return !isOn
+            }
           },
           telegramChannelSelectionHandler: { [urlOpener = self.urlOpener, configurationStore = self.configurationStore] in
             Task {

@@ -169,6 +169,7 @@ struct WalletBalanceListMapper {
   
   func mapSetupState(_ state: WalletBalanceSetupModel.State,
                      biometrySelectionHandler: @escaping () -> Void,
+                     biometrySwitchHandler: @escaping (Bool) async -> Bool,
                      telegramChannelSelectionHandler: @escaping () -> Void,
                      backupSelectionHandler: @escaping () -> Void) -> [String: WalletBalanceListCell.Model] {
     switch state {
@@ -180,7 +181,10 @@ struct WalletBalanceListMapper {
         selectionHandler: telegramChannelSelectionHandler
       )
       if setup.isBiometryVisible {
-        items[WalletBalanceSetupItem.biometry.rawValue] = createBiometryItem(selectionHandler: biometrySelectionHandler)
+        items[WalletBalanceSetupItem.biometry.rawValue] = createBiometryItem(
+          selectionHandler: biometrySelectionHandler, 
+          switchHandler: biometrySwitchHandler
+        )
       }
       if setup.isBackupVisible {
         items[WalletBalanceSetupItem.backup.rawValue] = createBackupItem(
@@ -290,7 +294,8 @@ struct WalletBalanceListMapper {
     )
   }
   
-  private func createBiometryItem(selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
+  private func createBiometryItem(selectionHandler: @escaping () -> Void,
+                                  switchHandler: @escaping (Bool) async -> Bool) -> WalletBalanceListCell.Model {
     let title: String
     let icon: UIImage
     
@@ -316,10 +321,7 @@ struct WalletBalanceListMapper {
     
     let switchAccessoryConfiguration = TKUIListItemSwitchAccessoryView.Configuration(
       isOn: false,
-      handler: {
-        selectionHandler()
-        return $0
-      })
+      handler: switchHandler)
     
     return createSetupItem(
       description: title,

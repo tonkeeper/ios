@@ -37,13 +37,16 @@ final class WalletBalanceSetupModel {
   private let walletsStore: WalletsStoreV2
   private let setupStore: SetupStoreV2
   private let securityStore: SecurityStoreV2
+  private let mnemonicsRepository: MnemonicsRepository
   
   init(walletsStore: WalletsStoreV2,
        setupStore: SetupStoreV2,
-       securityStore: SecurityStoreV2) {
+       securityStore: SecurityStoreV2,
+       mnemonicsRepository: MnemonicsRepository) {
     self.walletsStore = walletsStore
     self.setupStore = setupStore
     self.securityStore = securityStore
+    self.mnemonicsRepository = mnemonicsRepository
     walletsStore.addObserver(self, notifyOnAdded: true) { observer, newState, oldState in
       observer.didUpdateWalletsState(newState, oldWalletsState: oldState)
     }
@@ -59,6 +62,16 @@ final class WalletBalanceSetupModel {
     Task {
       await setupStore.setIsSetupFinished(true)
     }
+  }
+  
+  func turnOnBiometry(passcode: String) async throws {
+    try mnemonicsRepository.savePassword(passcode)
+    await self.securityStore.setIsBiometryEnable(true)
+  }
+  
+  func turnOffBiometry() async throws {
+    try self.mnemonicsRepository.deletePassword()
+    await self.securityStore.setIsBiometryEnable(false)
   }
 }
 
@@ -127,11 +140,11 @@ private extension WalletBalanceSetupModel {
     }()
     
     let isBiometryVisible: Bool = {
-      !isSetupFinished && wallet.isBiometryAvailable
+      !isSetupFinished && wallet.isBiometryAvailable && !isBiometryEnable
     }()
     
     let isTelegramChannelVisible: Bool = {
-      return true
+      !isSetupFinished
     }()
     
     let setup = Setup(

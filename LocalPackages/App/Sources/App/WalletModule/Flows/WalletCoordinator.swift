@@ -134,7 +134,20 @@ private extension WalletCoordinator {
     module.output.didTapManage = { [weak self] wallet in
       self?.openManageTokens(wallet: wallet)
     }
+    
+    module.output.didRequirePasscode = { [weak self] in
+      await self?.getPasscode()
+    }
 
     return module
+  }
+  
+  func getPasscode() async -> String? {
+    return await PasscodeInputCoordinator.getPasscode(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+    )
   }
 }

@@ -66,8 +66,11 @@ private extension TKUIListItemSwitchAccessoryView {
       Task {
         let isSuccess = await handler(isOn)
         await MainActor.run {
-          guard !isSuccess else { return }
-          switchControl?.setOn(!isOn, animated: true)
+          guard isSuccess else {
+            switchControl?.setOn(!isOn, animated: true)
+            return
+          }
+          switchControl?.setOn(isOn, animated: true)
         }
       }
     }), for: .valueChanged)
