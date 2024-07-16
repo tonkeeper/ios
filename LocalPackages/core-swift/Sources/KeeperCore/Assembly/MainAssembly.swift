@@ -146,33 +146,6 @@ public final class MainAssembly {
       backgroundUpdateStore: storesAssembly.backgroundUpdateStore)
   }
   
-  public func tonTokenDetailsController() -> TokenDetailsController {
-    let configurator = TonTokenDetailsControllerConfigurator(
-      mapper: tokenDetailsMapper
-    )
-    return TokenDetailsController(
-      configurator: configurator,
-      walletsStore: walletAssembly.walletStore,
-      walletBalanceStore: storesAssembly.walletBalanceStore,
-      currencyStore: storesAssembly.currencyStore,
-      tonRatesStore: storesAssembly.tonRatesStore
-    )
-  }
-  
-  public func jettonTokenDetailsController(jettonItem: JettonItem) -> TokenDetailsController {
-    let configurator = JettonTokenDetailsControllerConfigurator(
-      jettonItem: jettonItem,
-      mapper: tokenDetailsMapper
-    )
-    return TokenDetailsController(
-      configurator: configurator,
-      walletsStore: walletAssembly.walletStore,
-      walletBalanceStore: storesAssembly.walletBalanceStore,
-      currencyStore: storesAssembly.currencyStore,
-      tonRatesStore: storesAssembly.tonRatesStore
-    )
-  }
-  
   public func chartController() -> ChartController {
     ChartController(
       chartService: servicesAssembly.chartService(),
@@ -406,13 +379,6 @@ private extension MainAssembly {
           amountFormatter: formattersAssembly.amountFormatter
         )
       )
-    )
-  }
-  
-  var tokenDetailsMapper: TokenDetailsMapper {
-    TokenDetailsMapper(
-      amountFormatter: formattersAssembly.amountFormatter,
-      rateConverter: RateConverter()
     )
   }
 }

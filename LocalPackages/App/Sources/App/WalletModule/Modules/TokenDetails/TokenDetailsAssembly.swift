@@ -5,13 +5,17 @@ import KeeperCore
 struct TokenDetailsAssembly {
   private init() {}
   static func module(
+    wallet: Wallet,
+    balanceStore: ConvertedBalanceStoreV2,
+    configurator: TokenDetailsConfigurator,
     tokenDetailsListContentViewController: TokenDetailsListContentViewController,
-    tokenDetailsController: TokenDetailsController,
     chartViewControllerProvider: (() -> UIViewController?)?,
     hasAbout: Bool = false
   ) -> MVVMModule<TokenDetailsViewController, TokenDetailsModuleOutput, Void> {
     let viewModel = TokenDetailsViewModelImplementation(
-      tokenDetailsController: tokenDetailsController,
+      wallet: wallet,
+      balanceStore: balanceStore,
+      configurator: configurator,
       chartViewControllerProvider: chartViewControllerProvider
     )
     let viewController = TokenDetailsViewController(

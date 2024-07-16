@@ -19,8 +19,16 @@ protocol TokenDetailsViewModel: AnyObject {
   func viewDidLoad()
 }
 
+struct TokenDetailsModel {
+  let tokenTitle: String
+  let tokenSubtitle: String?
+  let image: TokenImage
+  let tokenAmount: String
+  let convertedAmount: String?
+  let buttons: [IconButton]
+}
+
 final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDetailsModuleOutput {
-  
   // MARK: - TokenDetailsModuleOutput
   
   var didTapSend: ((KeeperCore.Token) -> Void)?
@@ -35,14 +43,14 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   var didUpdateChartViewController: ((UIViewController) -> Void)?
   
   func viewDidLoad() {
-    Task {
-      tokenDetailsController.didUpdate = { [weak self] model in
-        self?.didUpdateTokenModel(model: model)
-      }
-      await tokenDetailsController.start()
-    }
+    setupObservations()
+    setInitialState()
     setupChart()
   }
+  
+  // MARK: - State
+  
+  private let syncQueue = DispatchQueue(label: "TokenDetailsViewModelImplementationQueue")
   
   // MARK: - Image Loading
   
@@ -50,28 +58,62 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
 
   // MARK: - Dependencies
   
-  private let tokenDetailsController: TokenDetailsController
+  private let wallet: Wallet
+  private let balanceStore: ConvertedBalanceStoreV2
+  private let configurator: TokenDetailsConfigurator
   private let chartViewControllerProvider: (() -> UIViewController?)?
   
   // MARK: - Init
   
-  init(tokenDetailsController: TokenDetailsController,
+  init(wallet: Wallet,
+       balanceStore: ConvertedBalanceStoreV2,
+       configurator: TokenDetailsConfigurator,
        chartViewControllerProvider: (() -> UIViewController?)?) {
-    self.tokenDetailsController = tokenDetailsController
+    self.wallet = wallet
+    self.balanceStore = balanceStore
+    self.configurator = configurator
     self.chartViewControllerProvider = chartViewControllerProvider
   }
 }
 
 private extension TokenDetailsViewModelImplementation {
-  func didUpdateTokenModel(model: TokenDetailsController.TokenModel) {
-    Task { @MainActor in
-      setupTitleView(model: model)
-      setupInformationView(model: model)
-      setupButtonsView(model: model)
+  func setInitialState() {
+    syncQueue.sync {
+      guard let address = try? wallet.friendlyAddress else {
+        return
+      }
+      let balance = balanceStore.getState()[address]?.balance
+      let model = configurator.getTokenModel(balance: balance)
+      DispatchQueue.main.async {
+        self.didUpdateModel(model)
+      }
     }
   }
   
-  func setupTitleView(model: TokenDetailsController.TokenModel) {
+  func setupObservations() {
+    balanceStore.addObserver(
+      self,
+      notifyOnAdded: false) { observer, newState, oldState in
+        observer.syncQueue.sync {
+          guard let address = try? observer.wallet.friendlyAddress else {
+            return
+          }
+          let balance = newState[address]?.balance
+          let model = observer.configurator.getTokenModel(balance: balance)
+          DispatchQueue.main.async {
+            self.didUpdateModel(model)
+          }
+        }
+      }
+  }
+  
+  func didUpdateModel(_ model: TokenDetailsModel) {
+    setupTitleView(model: model)
+    setupInformationView(model: model)
+    setupButtonsView(model: model)
+  }
+  
+  func setupTitleView(model: TokenDetailsModel) {
     didUpdateTitleView?(
       TokenDetailsTitleView.Model(
         title: model.tokenTitle,
@@ -80,7 +122,7 @@ private extension TokenDetailsViewModelImplementation {
     )
   }
   
-  func setupButtonsView(model: TokenDetailsController.TokenModel) {
+  func setupButtonsView(model: TokenDetailsModel) {
     let mapper = IconButtonModelMapper()
     let buttons = model.buttons.map { buttonModel in
       TokenDetailsHeaderButtonsView.Model.Button(
@@ -103,7 +145,7 @@ private extension TokenDetailsViewModelImplementation {
     didUpdateButtonsView?(model)
   }
   
-  func setupInformationView(model: TokenDetailsController.TokenModel) {
+  func setupInformationView(model: TokenDetailsModel) {
     let image: TokenDetailsInformationView.Model.Image
     switch model.image {
     case .ton:

@@ -597,14 +597,21 @@ private extension MainCoordinator {
     }
     
     let module = TokenDetailsAssembly.module(
+      wallet: wallet,
+      balanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
+      configurator: TonTokenDetailsConfigurator(
+        mapper: TokenDetailsMapper(
+          amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+          decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+          rateConverter: RateConverter()
+        )
+      ),
       tokenDetailsListContentViewController: historyListModule.view,
-      tokenDetailsController: keeperCoreMainAssembly.tonTokenDetailsController(),
-      chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
+      chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
         ChartAssembly.module(token: .ton,
                              coreAssembly: coreAssembly,
                              keeperCoreMainAssembly: keeperCoreMainAssembly).view
-      },
-      hasAbout: true
+      }
     )
     
     module.output.didTapReceive = { [weak self] token in
@@ -637,17 +644,23 @@ private extension MainCoordinator {
     }
     
     let module = TokenDetailsAssembly.module(
+      wallet: wallet,
+      balanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
+      configurator: JettonTokenDetailsConfigurator(jettonItem: jettonItem,
+        mapper: TokenDetailsMapper(
+          amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+          decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+          rateConverter: RateConverter()
+        )
+      ),
       tokenDetailsListContentViewController: historyListModule.view,
-      tokenDetailsController: keeperCoreMainAssembly.jettonTokenDetailsController(jettonItem: jettonItem),
-      chartViewControllerProvider: { [keeperCoreMainAssembly, coreAssembly] in
-        guard hasPrice else { return nil }
-        return ChartAssembly.module(token: .jetton(jettonItem),
-                                    coreAssembly: coreAssembly,
-                                    keeperCoreMainAssembly: keeperCoreMainAssembly).view
-      },
-      hasAbout: false
+      chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
+        ChartAssembly.module(token: .ton,
+                             coreAssembly: coreAssembly,
+                             keeperCoreMainAssembly: keeperCoreMainAssembly).view
+      }
     )
-    
+
     module.output.didTapReceive = { [weak self] token in
       self?.openReceive(token: token)
     }
