@@ -115,6 +115,16 @@ extension Version11V1.Wallet {
         return try WalletV3(workchain: 0, publicKey: publicKey.data, revision: .r2)
       case .v3R1:
         return try WalletV3(workchain: 0, publicKey: publicKey.data, revision: .r1)
+      case .v5Beta:
+        return WalletV5Beta(
+          publicKey: publicKey.data,
+          walletId: WalletIdBeta(
+            networkGlobalId: Int32(
+              isTestnet ? Network.testnet.rawValue : Network.mainnet.rawValue
+            ),
+            workchain: 0
+          )
+        )
       case .v5R1:
         return WalletV5R1(
           publicKey: publicKey.data,

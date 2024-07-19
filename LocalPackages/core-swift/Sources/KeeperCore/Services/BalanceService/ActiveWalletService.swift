@@ -201,6 +201,11 @@ private extension ActiveWalletsServiceImplementation {
         publicKey: publicKey.data,
         walletId: WalletId(networkGlobalId: Int32(networkId.rawValue), workchain: 0)
       )
+    case .v5Beta:
+      contract = WalletV5Beta(
+        publicKey: publicKey.data,
+        walletId: WalletIdBeta(networkGlobalId: Int32(networkId.rawValue), workchain: 0)
+      )
     case .v4R2:
       contract = WalletV4R2(publicKey: publicKey.data)
     case .v4R1:
