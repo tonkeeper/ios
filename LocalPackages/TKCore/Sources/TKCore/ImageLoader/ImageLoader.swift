@@ -11,11 +11,7 @@ public final class ImageLoader {
                         cornerRadius: CGFloat? = nil) -> Kingfisher.DownloadTask? {
     var options = KingfisherOptionsInfo()
     var processor: ImageProcessor = DefaultImageProcessor.default
-    
-    options.append(.keepCurrentImageWhileLoading)
-    options.append(.loadDiskFileSynchronously)
-    options.append(.memoryCacheExpiration(.expired))
-    
+
     if let size = size {
       processor = processor |> DownsamplingImageProcessor(size: size)
       options.append(.scaleFactor(UIScreen.main.scale))

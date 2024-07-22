@@ -86,9 +86,16 @@ private extension WalletBalanceViewController {
     }
     
     viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in
-      self?.dataSource.apply(snapshot, animatingDifferences: isAnimated)
+      guard let self else { return }
+      let contentOffset = self.customView.collectionView.contentOffset
+      self.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+        self.customView.collectionView.layoutIfNeeded()
+        self.customView.collectionView.contentOffset = contentOffset
+      })
+      self.customView.collectionView.layoutIfNeeded()
+      self.customView.collectionView.contentOffset = contentOffset
     }
-
+    
     viewModel.didCopy = { configuration in
       ToastPresenter.showToast(configuration: configuration)
     }
@@ -275,6 +282,7 @@ private extension WalletBalanceViewController {
 
 extension WalletBalanceViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    collectionView.deselectItem(at: indexPath, animated: false)
     let snapshot = dataSource.snapshot()
     let section = snapshot.sectionIdentifiers[indexPath.section]
     let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]

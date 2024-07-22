@@ -222,6 +222,8 @@ private extension ManageTokensViewController {
                            tapClosure: (() -> Void)?) -> UIView {
     var configuration = TKButton.Configuration.accentButtonConfiguration(padding: .zero)
     configuration.contentPadding.right = 16
+    configuration.contentPadding.top = 16
+    configuration.contentPadding.bottom = 16
     configuration.iconTintColor = tintColor
     configuration.content.icon = image
     let button = TKButton(configuration: configuration)
@@ -239,7 +241,15 @@ private extension ManageTokensViewController {
     }
     
     viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in
-      self?.dataSource.apply(snapshot, animatingDifferences: isAnimated)
+      guard let self else { return }
+      let contentOffset = self.customView.collectionView.contentOffset
+      self.dataSource.apply(snapshot, animatingDifferences: isAnimated, completion: {
+        self.customView.collectionView.layoutIfNeeded()
+        self.customView.collectionView.contentOffset = contentOffset
+      })
+      self.customView.collectionView.layoutIfNeeded()
+      self.customView.collectionView.contentOffset = contentOffset
+      self.didUpdateHeight?()
     }
   }
   
