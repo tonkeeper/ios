@@ -10,10 +10,18 @@ final class MigrationCoordinator: RouterCoordinator<NavigationControllerRouter> 
   var didLogout: (() -> Void)?
   
   private let migrationController: MigrationController
+  private let rnService: RNService
+  private let biometryProvider: PasscodeInputBiometryProvider
   
   init(migrationController: MigrationController,
+       rnService: RNService,
        router: NavigationControllerRouter) {
     self.migrationController = migrationController
+    self.rnService = rnService
+    self.biometryProvider = MigrationPasscodeBiometryProvider(
+      biometryProvider: BiometryProvider(),
+      rnService: rnService
+    )
     super.init(router: router)
   }
   
@@ -69,8 +77,18 @@ final class MigrationCoordinator: RouterCoordinator<NavigationControllerRouter> 
       passcodeInputModule.input.didTapDigit(digit)
     }
     
-    passcodeModule.output.biometryProvider = {
-      .none
+    passcodeModule.output.biometryProvider = { [biometryProvider] in
+      await biometryProvider.getBiometryState()
+    }
+    
+    passcodeModule.output.didTapBiometry = { [weak self] in
+      guard let self else { return }
+      Task {
+        let passcode = try await self.rnService.getBiometryPasscode()
+        await MainActor.run {
+          passcodeInputModule.input.didSetInput(passcode)
+        }
+      }
     }
     
     let singOutButton = TKButton(configuration: .titleHeaderButtonConfiguration(category: .secondary))
@@ -116,3 +134,32 @@ final class MigrationCoordinator: RouterCoordinator<NavigationControllerRouter> 
     fromViewController.present(alertViewController, animated: true)
   }
 }
+
+private struct MigrationPasscodeBiometryProvider: PasscodeInputBiometryProvider {
+  
+  private let biometryProvider: BiometryProvider
+  private let rnService: RNService
+  
+  init(biometryProvider: BiometryProvider,
+       rnService: RNService) {
+    self.biometryProvider = biometryProvider
+    self.rnService = rnService
+  }
+  
+  func getBiometryState() async -> TKUIKit.TKKeyboardView.Biometry {
+    guard await rnService.isBiometryEnable() else {
+      return .none
+    }
+    switch biometryProvider.getBiometryState(policy: .deviceOwnerAuthenticationWithBiometrics) {
+    case .failure:
+      return .none
+    case .success(let state):
+      switch state {
+      case .faceID: return .faceId
+      case .touchID: return .touchId
+      case .none: return .none
+      }
+    }
+  }
+}
+

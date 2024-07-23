@@ -2,9 +2,12 @@ import Foundation
 
 public final class WalletsStoreUpdater {
   private let keeperInfoStore: KeeperInfoStore
+  private let rnService: RNService
   
-  init(keeperInfoStore: KeeperInfoStore) {
+  init(keeperInfoStore: KeeperInfoStore,
+       rnService: RNService) {
     self.keeperInfoStore = keeperInfoStore
+    self.rnService = rnService
   }
   
   public func addWallets(_ wallets: [Wallet]) async {
@@ -22,6 +25,8 @@ public final class WalletsStoreUpdater {
         return createdKeeperInfo
       }
     }
+    let rnWallets = wallets.map { RNWallet(wallet: $0) }
+    try? await rnService.addWallets(rnWallets)
   }
   
   public func setWalletActive(_ wallet: Wallet) async {
@@ -31,6 +36,7 @@ public final class WalletsStoreUpdater {
       let updatedKeeperInfo = keeperInfo.setActiveWallet(wallet)
       return updatedKeeperInfo
     }
+    try? await rnService.setWalletActive(RNWallet(wallet: wallet))
   }
   
   public func updateWalletMetaData(_ wallet: Wallet, metaData: WalletMetaData) async {
@@ -55,6 +61,7 @@ public final class WalletsStoreUpdater {
       }
       return updatedKeeperInfo
     }
+    try? await rnService.updateWalletMetaData(RNWallet(wallet: wallet), metaData: metaData)
   }
   
   public func updateWallet(_ wallet: Wallet, setupSettings: WalletSetupSettings) async {
@@ -79,6 +86,12 @@ public final class WalletsStoreUpdater {
       }
       return updatedKeeperInfo
     }
+    var lastBackupAt: TimeInterval?
+    if let backupDate = setupSettings.backupDate?.timeIntervalSince1970 {
+      lastBackupAt = backupDate * 1000
+    }
+    try? await rnService.updateWallet(RNWallet(wallet: wallet),
+                                     lastBackupAt: lastBackupAt)
   }
   
   public func deleteWallet(_ wallet: Wallet) async {
@@ -95,12 +108,14 @@ public final class WalletsStoreUpdater {
         return updatedKeeperInfo
       }
     }
+    try? await rnService.deleteWallet(RNWallet(wallet: wallet))
   }
   
   public func deleteAllWallets() async {
     await keeperInfoStore.updateKeeperInfo { keeperInfo in
       return nil
     }
+    try? await rnService.deleteAllWallets()
   }
   
   public func moveWallet(fromIndex: Int, toIndex: Int) async {
@@ -118,6 +133,7 @@ public final class WalletsStoreUpdater {
       let updatedKeeperInfo = keeperInfo.setWallets(wallets)
       return updatedKeeperInfo
     }
+    try? await rnService.moveWallet(fromIndex: fromIndex, toIndex: toIndex)
   }
 }
 

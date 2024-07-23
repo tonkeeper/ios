@@ -40,10 +40,12 @@ public final class TotalBalanceStoreV2: Store<[FriendlyAddress: TotalBalanceStat
     switch convertedBalanceState {
     case .current:
       return .current(TotalBalance(amount: total,
+                                   balance: balance,
                                    currency: balance.currency,
                                    date: balance.date))
     case .previous:
       return .previous(TotalBalance(amount: total,
+                                    balance: balance,
                                     currency: balance.currency,
                                     date: balance.date))
     }

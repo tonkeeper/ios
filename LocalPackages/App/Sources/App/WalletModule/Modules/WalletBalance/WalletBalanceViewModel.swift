@@ -187,14 +187,27 @@ private extension WalletBalanceViewModelImplementation {
         
         let balanceColor: UIColor
         let backup: BalanceHeaderAmountView.Model.Backup
-        if (!state.wallet.isBackupAvailable || state.wallet.hasBackup) {
+        let isNeedToWarnBackup = state.wallet.isBackupAvailable && !state.wallet.hasBackup
+        let tonAmount = state.totalBalanceState?.totalBalance.balance.tonBalance.tonBalance.amount ?? 0
+        if isNeedToWarnBackup {
+          switch tonAmount {
+          case _ where tonAmount >= .tonAmountError:
+            balanceColor = .Accent.red
+            backup = .backup(color: .Accent.red, closure: { [weak self] in
+              self?.didTapBackup?(state.wallet)
+            })
+          case _ where tonAmount > .tonAmountWarning:
+            balanceColor = .Accent.orange
+            backup = .backup(color: .Accent.orange, closure: { [weak self] in
+              self?.didTapBackup?(state.wallet)
+            })
+          default:
+            balanceColor = .Text.primary
+            backup = .none
+          }
+        } else {
           balanceColor = .Text.primary
           backup = .none
-        } else {
-          balanceColor = .Accent.orange
-          backup = .backup(closure: { [weak self] in
-            self?.didTapBackup?(state.wallet)
-          })
         }
 
         let secureState: BalanceHeaderAmountButton.State = state.isSecure ? .secure : .unsecure
@@ -661,4 +674,9 @@ private extension WalletBalanceViewModelImplementation {
 
 private extension String {
   static let manageButtonCellIdentifier = "ManageButtonCellIdentifier"
+}
+
+private extension Int64 {
+  static let tonAmountWarning: Int64 = 2000000000
+  static let tonAmountError: Int64 = 20000000000
 }

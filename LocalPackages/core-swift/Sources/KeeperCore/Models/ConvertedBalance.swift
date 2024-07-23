@@ -16,7 +16,7 @@ public enum ConvertedBalanceState: Equatable {
   }
 }
 
-public struct ConvertedBalance: Equatable {
+public struct ConvertedBalance: Codable, Equatable {
   public let date: Date
   public let currency: Currency
   public let tonBalance: ConvertedTonBalance
@@ -24,21 +24,21 @@ public struct ConvertedBalance: Equatable {
   public let stackingBalance: [ConvertedStakingBalance]
 }
 
-public struct ConvertedTonBalance: Equatable {
+public struct ConvertedTonBalance: Codable, Equatable {
   public let tonBalance: TonBalance
   public let converted: Decimal
   public let price: Decimal
   public let diff: String?
 }
 
-public struct ConvertedJettonBalance: Equatable {
+public struct ConvertedJettonBalance: Codable, Equatable {
   public let jettonBalance: JettonBalance
   public let converted: Decimal
   public let price: Decimal
   public let diff: String?
 }
 
-public struct ConvertedStakingBalance: Equatable {
+public struct ConvertedStakingBalance: Codable, Equatable {
   public let stackingInfo: AccountStackingInfo
   public let amountConverted: Decimal
   public let pendingDepositConverted: Decimal

@@ -31,6 +31,7 @@ public final class CoreAssembly {
   public var sharedCacheURL: URL {
     if let appGroupId: String = InfoProvider.appGroupName(),
        let containerURL = fileManager.containerURL(forSecurityApplicationGroupIdentifier: appGroupId) {
+      print(containerURL)
       return containerURL
     } else {
       return documentsURL

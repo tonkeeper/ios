@@ -5,28 +5,38 @@ import CryptoKit
 
 public struct RNMigration {
   
-  private let walletsStoreUpdate: WalletsStoreUpdate
+  private let rnService: RNService
+  private let walletsStoreUpdater: WalletsStoreUpdater
   private var settingsRepository: SettingsRepository
   private let mnemonicsRepository: MnemonicsRepository
   private let keychainVault: KeychainVault
+  private let securityStore: SecurityStoreV2
   
-  init(walletsStoreUpdate: WalletsStoreUpdate,
+  init(rnService: RNService,
+       walletsStoreUpdater: WalletsStoreUpdater,
        settingsRepository: SettingsRepository,
        mnemonicsRepository: MnemonicsRepository,
-       keychainVault: KeychainVault) {
-    self.walletsStoreUpdate = walletsStoreUpdate
+       keychainVault: KeychainVault,
+       securityStore: SecurityStoreV2) {
+    self.rnService = rnService
+    self.walletsStoreUpdater = walletsStoreUpdater
     self.settingsRepository = settingsRepository
     self.mnemonicsRepository = mnemonicsRepository
     self.keychainVault = keychainVault
+    self.securityStore = securityStore
   }
   
-  public func checkIfNeedToMigrate() -> Bool {
-    !settingsRepository.didMigrateRN && getWalletsStoreState() != nil
+  public func checkIfNeedToMigrate() async -> Bool {
+    return await rnService.needToMigrate()
   }
   
   public mutating func migrate(passcodeProvider: (_ passcodeValidation: @escaping (String) async -> Bool) async -> String) async throws {
-    try await migrateMnemonics(passcodeProvider: passcodeProvider)
-    migrateWallets()
+    guard let walletsStore = try? await rnService.getWalletsStore() else {
+      return
+    }
+    try await migrateMnemonics(isBiometryEnable: walletsStore.biometryEnabled, passcodeProvider: passcodeProvider)
+    await migrateWallets(walletsStore)
+    try? await rnService.setMigrationFinished()
   }
   
   enum MigrateError: Swift.Error {
@@ -37,8 +47,9 @@ public struct RNMigration {
     case noWalletsChunksCount
     case mnemonicsCorrupted
   }
-
-  private func migrateMnemonics(passcodeProvider: (_ passcodeValidation: @escaping (String) async -> Bool) async -> String) async throws {
+  
+  private func migrateMnemonics(isBiometryEnable: Bool,
+                                passcodeProvider: (_ passcodeValidation: @escaping (String) async -> Bool) async -> String) async throws {
     let chunksCount: Int
     do {
       let chunksCountQuery = keychainQuery(key: "wallets_chunks")
@@ -53,7 +64,7 @@ public struct RNMigration {
         .map {
           let key = "wallets_chunk_\($0)"
           let query = keychainQuery(key: key)
-          let chunkData = try keychainVault.read(query)
+          let chunkData: Data = try keychainVault.read(query)
           guard let chunk = String(data: chunkData, encoding: .utf8) else {
             throw MnemonicsMigrateError.mnemonicsCorrupted
           }
@@ -99,6 +110,7 @@ public struct RNMigration {
     let rnMnemonics = try JSONDecoder().decode([String: RNMnemonic].self, from: decryptedData)
     let mnemonics = rnMnemonics.compactMapValues { try? Mnemonic(mnemonicWords: $0.mnemonic.components(separatedBy: " ")) }
     try await mnemonicsRepository.importMnemonics(mnemonics, password: passcode)
+    try mnemonicsRepository.savePassword(passcode)
   }
   
   private func keychainQuery(key: String) -> KeychainQueryable {
@@ -108,289 +120,29 @@ public struct RNMigration {
                                 accessible: .whenUnlocked)
   }
   
-  private mutating func migrateWallets() {
-    guard let walletsStoreState = getWalletsStoreState() else { return }
-
-    do {
-      let wallets = walletsStoreState.wallets
-      let migratedWallets = wallets.compactMap { wallet -> Wallet? in
-        return try? createWallet(walletConfig: wallet)
+  private mutating func migrateWallets(_ walletsStore: RNWalletsStore) async {
+    let rnWallets = walletsStore.wallets
+    var wallets = [Wallet]()
+    var activeWallet: Wallet?
+    for rnWallet in rnWallets {
+      let backupDate = try? await rnService.getWalletBackupDate(walletId: rnWallet.identifier)
+      guard let wallet = try? rnWallet.getWallet(backupDate: backupDate) else {
+        continue
       }
-      try walletsStoreUpdate.addWallets(migratedWallets)
-      settingsRepository.didMigrateRN = true
-    } catch {
-      print("Log: failed to migrate from RN \(error)")
-    }
-  }
-  
-  private func getWalletsStoreState() -> RNWalletsStoreState? {
-    let rnStorageDirectoryPath = FileManager.default.urls(
-      for: .applicationSupportDirectory,
-      in: .userDomainMask
-    )[0]
-      .appendingPathComponent(Bundle.main.bundleIdentifier ?? "")
-      .appendingPathComponent(.asyncStorageFolder)
-
-    let jsonDecoder = JSONDecoder()
-    let walletsStoreStateFileName = key(string: .walletsStoreKey)
-    let walletsStoreStatePath = rnStorageDirectoryPath.appendingPathComponent(walletsStoreStateFileName)
-
-    let manifestPath = rnStorageDirectoryPath
-      .appendingPathComponent(.manifest)
-    guard let manifestData = try? Data(contentsOf: manifestPath),
-          let manifest = try? jsonDecoder.decode(RNManifest.self, from: manifestData) else {
-      return nil
-    }
-
-    if let walletsStoreStateString = manifest.walletsStore,
-       let walletsStoreStateData = walletsStoreStateString.data(using: .utf8) {
-      do {
-        let walletsStoreState = try jsonDecoder.decode(RNWalletsStoreState.self, from: walletsStoreStateData)
-        return walletsStoreState
-      } catch {
-        return nil
+      if rnWallet.identifier == walletsStore.selectedIdentifier {
+        activeWallet = wallet
       }
-    } else if let walletsStoreStateData = try? Data(contentsOf: walletsStoreStatePath) {
-      do {
-        let walletsStoreState = try jsonDecoder.decode(RNWalletsStoreState.self, from: walletsStoreStateData)
-        return walletsStoreState
-      } catch {
-        return nil
-      }
-    } else {
-      return nil
+      wallets.append(wallet)
     }
-  }
-  
-  private func createWallet(walletConfig: RNWalletConfig) throws -> Wallet {
-
-    guard let publicKeyData = Data(hex: walletConfig.pubkey) else {
-      throw MigrateError.failedMigrateWallet
+    await walletsStoreUpdater.addWallets(wallets)
+    if let activeWallet {
+      await walletsStoreUpdater.setWalletActive(activeWallet)
     }
-    let publicKey = TonSwift.PublicKey(data: publicKeyData)
-
-    let contractVersion: WalletContractVersion
-    switch walletConfig.version {
-    case .v3R1:
-      contractVersion = .v3R1
-    case .v3R2:
-      contractVersion = .v3R2
-    case .v4R1:
-      contractVersion = .v4R1
-    case .v4R2:
-      contractVersion = .v4R2
-    case .v5R1:
-      contractVersion = .v5R1
-    case .LockupV1:
-      contractVersion = .v3R1
-    }
-    
-    let network: Network
-    switch walletConfig.network {
-    case .mainnet:
-      network = .mainnet
-    case .testnet:
-      network = .testnet
-    }
-
-    let contract: WalletContract
-    switch contractVersion {
-    case .v5R1:
-      contract = WalletV5R1(
-        publicKey: publicKey.data,
-        walletId: WalletId(
-          networkGlobalId: Int32(
-            network.rawValue
-          ),
-          workchain: 0
-        )
-      )
-    case .v4R2:
-      contract = WalletV4R2(publicKey: publicKey.data)
-    case .v4R1:
-      contract = WalletV4R1(publicKey: publicKey.data)
-    case .v3R2:
-      contract = try WalletV3(workchain: 0, publicKey: publicKey.data, revision: .r2)
-    case .v3R1:
-      contract = try WalletV3(workchain: 0, publicKey: publicKey.data, revision: .r1)
-    }
-
-    let kind: WalletKind
-    switch walletConfig.type {
-    case .Ledger:
-      guard let ledgerDevice = walletConfig.ledger else {
-        throw MigrateError.failedMigrateWallet
-      }
-      kind = .Ledger(
-        publicKey,
-        contractVersion,
-        Wallet.LedgerDevice(deviceId: ledgerDevice.deviceId,
-                            deviceModel: ledgerDevice.deviceModel,
-                            accountIndex: ledgerDevice.accountIndex)
-      )
-    case .Lockup:
-      throw MigrateError.failedMigrateWallet
-    case .Regular:
-      kind = .Regular(publicKey, contractVersion)
-    case .Signer:
-      kind = .Signer(publicKey, contractVersion)
-    case .SignerDeeplink:
-      kind = .SignerDevice(publicKey, contractVersion)
-    case .WatchOnly:
-      kind = .Watchonly(.Resolved(try contract.address()))
-    }
-    
-    let icon: WalletIcon
-    if walletConfig.emoji.count == 1 {
-      icon = .emoji(walletConfig.emoji)
-    } else {
-      icon = .icon(WalletIcon.Image(rnIconString: walletConfig.emoji))
-    }
-    
-    let tintColor = WalletTintColor(rawValue: walletConfig.color) ?? .defaultColor
-    
-    return Wallet(
-      id: walletConfig.identifier,
-      identity: WalletIdentity(network: network, kind: kind),
-      metaData: WalletMetaData(label: walletConfig.name, tintColor: tintColor, icon: icon),
-      setupSettings: WalletSetupSettings(backupDate: Date())
-    )
+    await securityStore.setIsBiometryEnable(walletsStore.biometryEnabled)
   }
-}
-
-private struct RNManifest: Decodable {
-  let walletsStore: String?
-}
-
-private struct RNWalletsStoreState: Decodable {
-  let wallets: [RNWalletConfig]
-  let selectedIdentifier: String
-  let biometryEnabled: Bool
-  let lockScreenEnabled: Bool
-  
-  enum CodingKeys: CodingKey {
-    case wallets
-    case selectedIdentifier
-    case biometryEnabled
-    case lockScreenEnabled
-  }
-  
-  init(from decoder: any Decoder) throws {
-    let container = try decoder.container(keyedBy: CodingKeys.self)
-    self.wallets = try container.decode([RNWalletConfig].self, forKey: .wallets)
-    self.selectedIdentifier = try container.decode(String.self, forKey: .selectedIdentifier)
-    self.biometryEnabled = try container.decode(Bool.self, forKey: .biometryEnabled)
-    self.lockScreenEnabled = try container.decodeIfPresent(Bool.self, forKey: .lockScreenEnabled) ?? false
-  }
-}
-
-private struct RNWalletConfig: Decodable {
-  enum WalletType: String, Decodable {
-    case Regular
-    case Lockup
-    case WatchOnly
-    case Signer
-    case SignerDeeplink
-    case Ledger
-  }
-
-  enum WalletNetwork: Int, Decodable {
-    case mainnet = -239
-    case testnet = -3
-  }
-
-  enum WalletContractVersion: String, Decodable {
-    case v5R1
-    case v4R2
-    case v4R1
-    case v3R2
-    case v3R1
-    case LockupV1 = "lockup-0.1"
-  }
-
-  struct Ledger: Codable {
-    let deviceId: String
-    let deviceModel: String
-    let accountIndex: Int16
-  }
-
-  let identifier: String
-  let name: String
-  let emoji: String
-  let color: String
-  let pubkey: String
-  let network: WalletNetwork
-  let type: WalletType
-  let version: WalletContractVersion
-  let workchain: Int
-  let ledger: Ledger?
 }
 
 private struct RNMnemonic: Decodable {
   let identifier: String
   let mnemonic: String
-}
-
-private extension WalletIcon.Image {
-  init(rnIconString: String) {
-    switch rnIconString {
-     case "ic-wallet-32":
-      self = .wallet
-     case "ic-leaf-32":
-      self = .leaf
-     case "ic-lock-32":
-      self = .lock
-     case "ic-key-32":
-      self = .key
-     case "ic-inbox-32":
-      self = .inbox
-     case "ic-snowflake-32":
-      self = .snowflake
-     case "ic-sparkles-32":
-      self = .sparkles
-     case "ic-sun-32":
-      self = .sun
-     case "ic-hare-32":
-      self = .hare
-     case "ic-flash-32":
-      self = .flash
-     case "ic-bank-card-32":
-      self = .bankCard
-     case "ic-gear-32":
-      self = .gear
-     case "ic-hand-raised-32":
-      self = .handRaised
-     case "ic-magnifying-glass-circle-32":
-      self = .magnifyingGlassCircle
-     case "ic-flash-circle-32":
-      self = .flashCircle
-     case "ic-dollar-circle-32":
-      self = .dollarCircle
-     case "ic-euro-circle-32":
-      self = .euroCircle
-     case "ic-sterling-circle-32":
-      self = .sterlingCircle
-     case "ic-chinese-yuan-circle-32":
-      self = .yuanCircle
-     case "ic-ruble-circle-32":
-      self = .rubleCircle
-     case "ic-indian-rupee-circle-32":
-      self = .indianRupeeCircle
-    default:
-      self = .wallet
-    }
-  }
-}
-
-private func key(string: String) -> String {
-  let digest = Insecure.MD5.hash(data: Data(string.utf8))
-  return digest.map {
-    String(format: "%02hhx", $0)
-  }.joined()
-}
-
-private extension String {
-  static let asyncStorageFolder = "RCTAsyncLocalStorage_V1"
-  static let manifest = "manifest.json"
-  static let walletsStoreKey = "walletsStore"
 }

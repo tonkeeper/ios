@@ -6,15 +6,18 @@ public final class WalletsUpdateAssembly {
   public let servicesAssembly: ServicesAssembly
   public let repositoriesAssembly: RepositoriesAssembly
   private let formattersAssembly: FormattersAssembly
+  private let rnAssembly: RNAssembly
   
   init(storesAssembly: StoresAssembly,
        servicesAssembly: ServicesAssembly,
        repositoriesAssembly: RepositoriesAssembly,
-       formattersAssembly: FormattersAssembly) {
+       formattersAssembly: FormattersAssembly,
+       rnAssembly: RNAssembly) {
     self.storesAssembly = storesAssembly
     self.servicesAssembly = servicesAssembly
     self.repositoriesAssembly = repositoriesAssembly
     self.formattersAssembly = formattersAssembly
+    self.rnAssembly = rnAssembly
   }
   
   public lazy var walletsStoreUpdate: WalletsStoreUpdate = {
@@ -22,7 +25,10 @@ public final class WalletsUpdateAssembly {
   }()
   
   public var walletsStoreUpdater: WalletsStoreUpdater {
-    WalletsStoreUpdater(keeperInfoStore: storesAssembly.keeperInfoStore)
+    WalletsStoreUpdater(
+      keeperInfoStore: storesAssembly.keeperInfoStore,
+      rnService: rnAssembly.rnService
+    )
   }
   
   public func walletAddController() -> WalletAddController {

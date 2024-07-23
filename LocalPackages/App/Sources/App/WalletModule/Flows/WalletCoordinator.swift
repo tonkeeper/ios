@@ -17,6 +17,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   var didTapSettingsButton: ((Wallet) -> Void)?
   var didSelectTonDetails: ((Wallet) -> Void)?
   var didSelectJettonDetails: ((Wallet, JettonItem, Bool) -> Void)?
+  var didTapBackup: ((Wallet) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
@@ -52,26 +53,6 @@ private extension WalletCoordinator {
     }
     
     router.push(viewController: module.view, animated: false)
-  }
-  
-  func openBackup(wallet: Wallet) {
-    let coordinator = BackupModule(
-      dependencies: BackupModule.Dependencies(
-        keeperCoreMainAssembly: keeperCoreMainAssembly,
-        coreAssembly: coreAssembly
-      )
-    ).createBackupCoordinator(
-      router: router,
-      wallet: wallet
-    )
-    
-    coordinator.didFinish = { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    
-    addChild(coordinator)
-    coordinator.start()
   }
   
   func openManageTokens(wallet: Wallet) {
@@ -128,7 +109,7 @@ private extension WalletCoordinator {
     }
     
     module.output.didTapBackup = { [weak self] wallet in
-      self?.openBackup(wallet: wallet)
+      self?.didTapBackup?(wallet)
     }
 
     module.output.didTapManage = { [weak self] wallet in

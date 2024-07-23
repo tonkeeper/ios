@@ -37,7 +37,29 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
     stateManager.didUpdateState = { [weak self] state in
       self?.handleStateUpdate(state: state, deeplink: deeplink)
     }
-    self.handleStateUpdate(state: stateManager.state, deeplink: deeplink)
+    
+    @Sendable
+    func startStandartFlow() {
+      self.handleStateUpdate(state: stateManager.state, deeplink: deeplink)
+    }
+    
+    let migrationController = dependencies.keeperCoreRootAssembly.migrationController(
+      sharedCacheURL: dependencies.coreAssembly.sharedCacheURL,
+      keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier,
+      isTonkeeperX: dependencies.coreAssembly.isTonkeeperX
+    )
+    
+    Task {
+      if await migrationController.checkIfNeedToMigrate() {
+        await MainActor.run {
+          openMigration(migrationController: migrationController)
+        }
+      } else {
+        await MainActor.run {
+          startStandartFlow()
+        }
+      }
+    }
   }
   
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -134,6 +156,7 @@ private extension RootCoordinator {
     
     let migrationCoordinator = MigrationCoordinator(
       migrationController: migrationController,
+      rnService: dependencies.keeperCoreRootAssembly.rnAssembly.rnService,
       router: NavigationControllerRouter(rootViewController: navigationController)
     )
     migrationCoordinator.didFinish = { [weak self, weak migrationCoordinator] in

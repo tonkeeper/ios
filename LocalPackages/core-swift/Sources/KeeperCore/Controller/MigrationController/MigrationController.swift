@@ -31,18 +31,20 @@ public final class MigrationController {
       settingsRepository: rootAssembly.repositoriesAssembly.settingsRepository()
     )
     self.rnMigration = RNMigration(
-      walletsStoreUpdate: rootAssembly.walletsUpdateAssembly.walletsStoreUpdate,
+      rnService: rootAssembly.rnAssembly.rnService,
+      walletsStoreUpdater: rootAssembly.walletsUpdateAssembly.walletsStoreUpdater,
       settingsRepository: rootAssembly.repositoriesAssembly.settingsRepository(),
       mnemonicsRepository: rootAssembly.repositoriesAssembly.mnemonicsRepository(),
-      keychainVault: rootAssembly.coreAssembly.keychainVault
+      keychainVault: rootAssembly.coreAssembly.keychainVault,
+      securityStore: rootAssembly.storesAssembly.securityStoreV2
     )
   }
   
-  public func checkIfNeedToMigrate() -> Bool {
+  public func checkIfNeedToMigrate() async -> Bool {
     if isTonkeeperX {
       checkIfNeedToMigrateTonkeeperX()
     } else {
-      checkIfNeedToMigrateTonkeeperRN()
+      await checkIfNeedToMigrateTonkeeperRN()
     }
   }
   
@@ -78,12 +80,12 @@ public final class MigrationController {
     }
   }
   
-  private func checkIfNeedToMigrateTonkeeperRN() -> Bool {
-    rnMigration.checkIfNeedToMigrate()
+  private func checkIfNeedToMigrateTonkeeperRN() async -> Bool {
+    await rnMigration.checkIfNeedToMigrate()
   }
   
   private func migrateTonkeeperRN(passcodeHandler: (_ validation: @escaping (String) async -> Bool) async -> String) async throws {
-    guard rnMigration.checkIfNeedToMigrate() else { return }
+    guard await rnMigration.checkIfNeedToMigrate() else { return }
     try await rnMigration.migrate { passcodeValidation in
       let passcode = await passcodeHandler(passcodeValidation)
       return passcode

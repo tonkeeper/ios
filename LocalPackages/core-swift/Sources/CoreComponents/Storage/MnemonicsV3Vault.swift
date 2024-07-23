@@ -232,7 +232,7 @@ private extension MnemonicsV3Vault {
       let encryptedMnemonicsData = try (0..<count)
         .map {
           let query = getChunkQuery(index: $0)
-          let chunk = try keychainVault.read(query)
+          let chunk: Data = try keychainVault.read(query)
           return chunk
         }
         .reduce(into: Data()) { $0 = $0 + $1 }

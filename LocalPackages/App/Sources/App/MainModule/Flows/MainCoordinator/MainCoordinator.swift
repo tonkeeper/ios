@@ -151,6 +151,10 @@ private extension MainCoordinator {
       self?.openReceive(token: token)
     }
     
+    walletCoordinator.didTapBackup = { [weak self] wallet in
+      self?.openBackup(wallet: wallet)
+    }
+    
     let historyCoordinator = historyModule.createHistoryCoordinator()
     
     let browserCoordinator = browserModule.createBrowserCoordinator()
@@ -657,7 +661,6 @@ private extension MainCoordinator {
     }
     
     navigationController.pushViewController(module.view, animated: true)
-//    router.push(viewController: module.view)
   }
   
   func openReceive(token: Token) {
@@ -696,6 +699,67 @@ private extension MainCoordinator {
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
     bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func openBackup(wallet: Wallet) {
+    guard let navigationController = router.rootViewController.navigationController else { return }
+    let configuration = SettingsListBackupConfigurator(
+      walletId: wallet.id,
+      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+      dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
+    )
+    
+    configuration.didTapBackupManually = { [weak self] in
+      self?.openManuallyBackup(wallet: wallet)
+    }
+    
+    configuration.didTapShowRecoveryPhrase = { [weak self] in
+      self?.openRecoveryPhrase(wallet: wallet)
+    }
+  
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
+    navigationController.pushViewController(module.viewController, animated: true)
+  }
+  
+  func openRecoveryPhrase(wallet: Wallet) {
+    guard let navigationController = router.rootViewController.navigationController else { return }
+    let coordinator = SettingsRecoveryPhraseCoordinator(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: NavigationControllerRouter(rootViewController: navigationController)
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
+  }
+  
+  func openManuallyBackup(wallet: Wallet) {
+    guard let navigationController = router.rootViewController.navigationController else { return }
+    let coordinator = BackupModule(
+      dependencies: BackupModule.Dependencies(
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly
+      )
+    ).createBackupCoordinator(
+      router: NavigationControllerRouter(rootViewController: navigationController),
+      wallet: wallet
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      guard let coordinator else { return }
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start()
   }
 }
 

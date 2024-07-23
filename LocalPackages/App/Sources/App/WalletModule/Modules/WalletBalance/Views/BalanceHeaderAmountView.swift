@@ -22,7 +22,7 @@ final class BalanceHeaderAmountView: UIControl, ConfigurableView {
   struct Model {
     enum Backup {
       case none
-      case backup(closure: () -> Void)
+      case backup(color: UIColor, closure: () -> Void)
     }
     let balanceButtonModel: BalanceHeaderAmountButton.Model
     let backup: Backup
@@ -36,9 +36,12 @@ final class BalanceHeaderAmountView: UIControl, ConfigurableView {
       backupButton.configuration.action = nil
       balanceButtonRightBackupConstrant?.deactivate()
       balanceButtonRightConstrant?.activate()
-    case .backup(let closure):
+    case .backup(let color, let closure):
       backupButton.isHidden = false
       backupButton.configuration.action = closure
+      backupButton.configuration.iconTintColor = color
+      backupButton.configuration.backgroundColors = [.normal: color.withAlphaComponent(0.48),
+                                                     .highlighted: color.withAlphaComponent(0.48)]
       balanceButtonRightConstrant?.deactivate()
       balanceButtonRightBackupConstrant?.activate()
     }

@@ -11,6 +11,7 @@ public final class RootAssembly {
   public let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
+  public let rnAssembly: RNAssembly
 
   init(repositoriesAssembly: RepositoriesAssembly,
        coreAssembly: CoreAssembly,
@@ -21,7 +22,8 @@ public final class RootAssembly {
        configurationAssembly: ConfigurationAssembly,
        passcodeAssembly: PasscodeAssembly,
        apiAssembly: APIAssembly,
-       loadersAssembly: LoadersAssembly) {
+       loadersAssembly: LoadersAssembly,
+       rnAssembly: RNAssembly) {
     self.repositoriesAssembly = repositoriesAssembly
     self.coreAssembly = coreAssembly
     self.servicesAssembly = servicesAssembly
@@ -32,6 +34,7 @@ public final class RootAssembly {
     self.passcodeAssembly = passcodeAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
+    self.rnAssembly = rnAssembly
   }
   
   private var _rootController: RootController?

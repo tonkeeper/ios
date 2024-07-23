@@ -41,7 +41,7 @@ public struct CoreAssembly {
     return FileSystemVault(fileManager: fileManager, directory: sharedCacheURL)
   }
   
-  var keychainVault: KeychainVault {
+  public var keychainVault: KeychainVault {
     KeychainVaultImplementation(keychain: keychain)
   }
   
