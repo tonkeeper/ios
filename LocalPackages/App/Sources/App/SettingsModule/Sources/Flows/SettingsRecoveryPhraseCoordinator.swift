@@ -27,7 +27,7 @@ final class SettingsRecoveryPhraseCoordinator: RouterCoordinator<NavigationContr
       parentCoordinator: self,
       parentRouter: router,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
-      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2,
       onCancel: { [weak self] in
         self?.didFinish?()
       },

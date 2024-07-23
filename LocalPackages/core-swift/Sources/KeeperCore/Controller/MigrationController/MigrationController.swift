@@ -1,4 +1,5 @@
 import Foundation
+import CoreComponents
 
 public final class MigrationController {
   private let sharedCacheURL: URL
@@ -8,6 +9,7 @@ public final class MigrationController {
   
   private let migrationV1: MigrationV1
   private var migrationV2: MigrationV2
+  private var migrationV3: MigrationV3
   private var rnMigration: RNMigration
   
   init(sharedCacheURL: URL,
@@ -28,6 +30,10 @@ public final class MigrationController {
       mnemonicsRepositoryV1: rootAssembly.repositoriesAssembly.mnemonicRepository(),
       mnemonicsRepository: rootAssembly.repositoriesAssembly.mnemonicsRepository(),
       passcodeRepository: rootAssembly.repositoriesAssembly.passcodeRepository(),
+      settingsRepository: rootAssembly.repositoriesAssembly.settingsRepository()
+    )
+    self.migrationV3 = MigrationV3(
+      mnemonicMigration: rootAssembly.repositoriesAssembly.mnemonicV3ToV4Migration(),
       settingsRepository: rootAssembly.repositoriesAssembly.settingsRepository()
     )
     self.rnMigration = RNMigration(
@@ -57,13 +63,14 @@ public final class MigrationController {
   }
   
   private func checkIfNeedToMigrateTonkeeperX() -> Bool {
-    migrationV1.checkIfNeedToMigrate() || migrationV2.checkIfNeedToMigrate()
+    migrationV1.checkIfNeedToMigrate() || migrationV2.checkIfNeedToMigrate() || migrationV3.checkIfNeedToMigrate()
   }
   
   private func migrateTonkeeperX(passcodeHandler: (_ validation: @escaping (String) async -> Bool) async -> String) async throws {
     if migrationV1.checkIfNeedToMigrate() {
       migrationV1.migrateKeeperInfo()
     }
+    
     if migrationV2.checkIfNeedToMigrate() {
       try await migrationV2.migrate {
         let validation: (String) async -> Bool = { input in
@@ -77,6 +84,17 @@ public final class MigrationController {
         let passcode = await passcodeHandler(validation)
         return passcode
       }
+    }
+    if migrationV3.checkIfNeedToMigrate() {
+      let validation: (String) async -> Bool = { [migrationV3] input in
+        do {
+          try await migrationV3.migrate(passcodeProvider: { input })
+          return true
+        } catch {
+          return false
+        }
+      }
+      await passcodeHandler(validation)
     }
   }
   

@@ -133,7 +133,7 @@ private extension TonConnectConnectCoordinator {
       parentCoordinator: self,
       parentRouter: ViewControllerRouter(rootViewController: fromViewController),
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
-      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2
     ) else { return false }
     do {
       try await connector.connect(

@@ -14,6 +14,10 @@ public struct CoreAssembly {
     MnemonicsV3Vault(keychainVault: keychainVault, seedProvider: seedProvider)
   }
   
+  func mnemonicsV4Vault() -> MnemonicsV4Vault {
+    MnemonicsV4Vault(keychainVault: keychainVault)
+  }
+  
   func passcodeVault() -> PasscodeVault {
     PasscodeVault(keychainVault: keychainVault)
   }

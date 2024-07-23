@@ -34,7 +34,6 @@ public struct RNMigration {
     guard let walletsStore = try? await rnService.getWalletsStore() else {
       return
     }
-    try await migrateMnemonics(isBiometryEnable: walletsStore.biometryEnabled, passcodeProvider: passcodeProvider)
     await migrateWallets(walletsStore)
     try? await rnService.setMigrationFinished()
   }
@@ -46,78 +45,6 @@ public struct RNMigration {
   enum MnemonicsMigrateError: Swift.Error {
     case noWalletsChunksCount
     case mnemonicsCorrupted
-  }
-  
-  private func migrateMnemonics(isBiometryEnable: Bool,
-                                passcodeProvider: (_ passcodeValidation: @escaping (String) async -> Bool) async -> String) async throws {
-    let chunksCount: Int
-    do {
-      let chunksCountQuery = keychainQuery(key: "wallets_chunks")
-      chunksCount = try keychainVault.readValue(chunksCountQuery)
-    } catch {
-      throw MnemonicsMigrateError.noWalletsChunksCount
-    }
-    
-    let encryptedMnemonicsString: String
-    do {
-      encryptedMnemonicsString = try (0..<chunksCount)
-        .map {
-          let key = "wallets_chunk_\($0)"
-          let query = keychainQuery(key: key)
-          let chunkData: Data = try keychainVault.read(query)
-          guard let chunk = String(data: chunkData, encoding: .utf8) else {
-            throw MnemonicsMigrateError.mnemonicsCorrupted
-          }
-          return chunk
-        }
-        .reduce(into: "") { $0 = $0 + $1 }
-    } catch {
-      throw MnemonicsMigrateError.mnemonicsCorrupted
-    }
-    
-    let encryptedMnemonics = try JSONDecoder().decode(
-      MnemonicsV3Vault.EncryptedMnemonics.self,
-      from: encryptedMnemonicsString.data(
-        using: .utf8
-      )!
-    )
-    
-    let passcodeValidation: (String) async -> Bool = { passcode in
-      do {
-        _ = try await ScryptHashBox.decrypt(
-          string: encryptedMnemonics.ct,
-          salt: encryptedMnemonics.salt,
-          N: encryptedMnemonics.N,
-          r: encryptedMnemonics.r,
-          p: encryptedMnemonics.p,
-          password: passcode
-        )
-        return true
-      } catch {
-        return false
-      }
-    }
-    
-    let passcode = await passcodeProvider(passcodeValidation)
-    let decryptedData = try await ScryptHashBox.decrypt(
-      string: encryptedMnemonics.ct,
-      salt: encryptedMnemonics.salt,
-      N: encryptedMnemonics.N,
-      r: encryptedMnemonics.r,
-      p: encryptedMnemonics.p,
-      password: passcode
-    )
-    let rnMnemonics = try JSONDecoder().decode([String: RNMnemonic].self, from: decryptedData)
-    let mnemonics = rnMnemonics.compactMapValues { try? Mnemonic(mnemonicWords: $0.mnemonic.components(separatedBy: " ")) }
-    try await mnemonicsRepository.importMnemonics(mnemonics, password: passcode)
-    try mnemonicsRepository.savePassword(passcode)
-  }
-  
-  private func keychainQuery(key: String) -> KeychainQueryable {
-    KeychainGenericPasswordItem(service: "app",
-                                account: key,
-                                accessGroup: nil,
-                                accessible: .whenUnlocked)
   }
   
   private mutating func migrateWallets(_ walletsStore: RNWalletsStore) async {
@@ -140,9 +67,4 @@ public struct RNMigration {
     }
     await securityStore.setIsBiometryEnable(walletsStore.biometryEnabled)
   }
-}
-
-private struct RNMnemonic: Decodable {
-  let identifier: String
-  let mnemonic: String
 }

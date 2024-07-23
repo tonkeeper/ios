@@ -121,7 +121,7 @@ private extension PasscodeChangeCoordinator {
           newPassword: newPasscode
         )
         try? self.keeperCoreAssembly.repositoriesAssembly.mnemonicsRepository().deletePassword()
-        try? await self.keeperCoreAssembly.storesAssembly.securityStore.setIsBiometryEnabled(false)
+        await self.keeperCoreAssembly.storesAssembly.securityStoreV2.setIsBiometryEnable(false)
         await MainActor.run {
           self.didChangePasscode?()
         }

@@ -33,8 +33,10 @@ final class RNServiceImplementation: RNService {
       if xFlag != true, let walletsStore: RNWalletsStore = try await asyncStorage.getValue(key: .walletsStore) {
         return !walletsStore.wallets.isEmpty
       }
+      try? await asyncStorage.setValue(value: true, key: "x")
       return false
     } catch {
+      try? await asyncStorage.setValue(value: true, key: "x")
       return false
     }
   }

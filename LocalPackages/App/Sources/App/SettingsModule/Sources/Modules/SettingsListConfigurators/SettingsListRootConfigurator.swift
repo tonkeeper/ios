@@ -28,11 +28,12 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var isSelectable: Bool { false }
   
   func getState() -> SettingsListState {
-    guard let wallet = walletsStore.getState().wallets.first(where: { $0.id == walletId }) else {
+    let walletsStoreState = walletsStore.getState()
+    guard let wallet = walletsStoreState.wallets.first(where: { $0.id == walletId }) else {
       return SettingsListState(sections: [], selectedItem: nil)
     }
     let currency = currencyStore.getState()
-    let sections = createSections(wallet: wallet, currency: currency)
+    let sections = createSections(wallet: wallet, wallets: walletsStoreState.wallets, currency: currency)
     return SettingsListState(sections: sections, selectedItem: nil)
   }
   
@@ -73,21 +74,23 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       guard let wallet = newState.wallets.first(where: { $0.id == walletId }) else { return }
       guard wallet != oldState?.wallets.first(where: { $0.id == walletId }) else { return }
       let currency = currencyStore.getState()
-      let sections = observer.createSections(wallet: wallet, currency: currency)
+      let sections = observer.createSections(wallet: wallet, wallets: newState.wallets, currency: currency)
       observer.didUpdateState?(SettingsListState(sections: sections, selectedItem: nil))
     }
     currencyStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      guard let wallet = walletsStore.getState().wallets.first(where: { $0.id == walletId }) else { return }
+      let walletsState = walletsStore.getState()
+      guard let wallet = walletsState.wallets.first(where: { $0.id == walletId }) else { return }
       guard newState != oldState else { return }
-      let sections = observer.createSections(wallet: wallet, currency: newState)
+      let sections = observer.createSections(wallet: wallet, wallets: walletsState.wallets, currency: newState)
       observer.didUpdateState?(SettingsListState(sections: sections, selectedItem: nil))
     }
     TKThemeManager.shared.addEventObserver(self) { observer, _ in
-      guard let wallet = walletsStore.getState().wallets.first(where: { $0.id == walletId }) else {
+      let walletsState = walletsStore.getState()
+      guard let wallet = walletsState.wallets.first(where: { $0.id == walletId }) else {
         return
       }
       let currency = currencyStore.getState()
-      let sections = observer.createSections(wallet: wallet, currency: currency)
+      let sections = observer.createSections(wallet: wallet, wallets: walletsState.wallets, currency: currency)
       let state = SettingsListState(sections: sections, selectedItem: nil)
       observer.didUpdateState?(state)
     }
@@ -95,12 +98,12 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
 }
 
 private extension SettingsListRootConfigurator {
-  func createSections(wallet: Wallet, currency: Currency) -> [SettingsListSection] {
+  func createSections(wallet: Wallet, wallets: [Wallet], currency: Currency) -> [SettingsListSection] {
     var sections = [SettingsListSection]()
     
     sections.append(createWalletSection(wallet: wallet))
     
-    if let securitySection = createSecuritySection(wallet: wallet) {
+    if let securitySection = createSecuritySection(wallet: wallet, wallets: wallets) {
       sections.append(securitySection)
     }
     
@@ -178,8 +181,10 @@ private extension SettingsListRootConfigurator {
     return SettingsListSection.items(topPadding: 14, items: [configuration])
   }
   
-  func createSecuritySection(wallet: Wallet) -> SettingsListSection? {
-    guard mnemonicsRepository.hasMnemonics() else { return nil }
+  func createSecuritySection(wallet: Wallet, wallets: [Wallet]) -> SettingsListSection? {
+    let hasMnemonics = mnemonicsRepository.hasMnemonics()
+    let hasRegularWallet = wallets.contains(where: { $0.kind == .regular })
+    guard hasMnemonics && hasRegularWallet else { return nil }
     
     var items = [AnyHashable]()
     items.append(

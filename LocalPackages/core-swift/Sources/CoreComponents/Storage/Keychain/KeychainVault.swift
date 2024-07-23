@@ -9,7 +9,8 @@ public enum KeychainVaultError: Swift.Error {
 public protocol KeychainVault {
   func read(_ item: KeychainQueryable) throws -> Data
   func read(_ item: KeychainQueryable) throws -> String
-  func save(data: Data, item: KeychainQueryable) throws
+  func save(_ data: Data, item: KeychainQueryable) throws
+  func save(_ string: String, item: KeychainQueryable) throws
   func readValue<T: Codable>(_ item: KeychainQueryable) throws -> T
   func saveValue<T: Codable>(_ value: T, to item: KeychainQueryable) throws
   func deleteItem(_ item: KeychainQueryable) throws
@@ -52,7 +53,14 @@ public struct KeychainVaultImplementation: KeychainVault {
     return string
   }
   
-  public func save(data: Data, item: any KeychainQueryable) throws {
+  public func save(_ string: String, item: any KeychainQueryable) throws {
+    guard let data = string.data(using: .utf8) else {
+      throw KeychainVaultError.unexpectedData
+    }
+    try save(data, item: item)
+  }
+  
+  public func save(_ data: Data, item: any KeychainQueryable) throws {
     do {
       let _ = try read(item) as Data
       let attributes: [String: AnyObject] = [

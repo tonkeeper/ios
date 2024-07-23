@@ -4,11 +4,14 @@ import CryptoKit
 import CryptoSwift
 import TweetNacl
 
-public typealias MnemonicIdentifier = String
-public typealias Mnemonics = [MnemonicIdentifier: Mnemonic]
-
-public struct MnemonicsV3Vault {
+public struct MnemonicsV4Vault {
+  private struct MnemonicItem: Codable {
+    let identifier: String
+    let mnemonic: String
+  }
+  
   public struct EncryptedMnemonics: Codable {
+    public let kind: String
     public let N: Int
     public let r: Int
     public let p: Int
@@ -23,12 +26,9 @@ public struct MnemonicsV3Vault {
   }
   
   private let keychainVault: KeychainVault
-  private let seedProvider: () -> String
   
-  public init(keychainVault: KeychainVault,
-              seedProvider: @escaping () -> String) {
+  public init(keychainVault: KeychainVault) {
     self.keychainVault = keychainVault
-    self.seedProvider = seedProvider
   }
   
   public func hasMnemonics() -> Bool {
@@ -40,7 +40,7 @@ public struct MnemonicsV3Vault {
     }
   }
 
-  public func addMnemonic(_ mnemonic: Mnemonic, 
+  public func addMnemonic(_ mnemonic: Mnemonic,
                           identifier: MnemonicIdentifier,
                           password: String) async throws {
     do {
@@ -93,16 +93,6 @@ public struct MnemonicsV3Vault {
     try deletePassword()
   }
   
-  public func getAllMnemonics(password: String) async -> Mnemonics {
-    do {
-      let encryptedMnemonics = try loadEncryptedMnemonics()
-      let mnemonics = try await decryptMnemonics(encryptedMnemonics, password: password)
-      return mnemonics
-    } catch {
-      return [:]
-    }
-  }
-  
   public func changePassword(oldPassword: String,
                              newPassword: String) async throws {
     let encryptedMnemonics = try loadEncryptedMnemonics()
@@ -123,12 +113,12 @@ public struct MnemonicsV3Vault {
   
   public func savePassword(_ password: String) throws {
     let query = getPasswordQuery()
-    try keychainVault.saveValue(password, to: query)
+    try keychainVault.save(password, item: query)
   }
   
   public func getPassword() throws -> String {
     let query = getPasswordQuery()
-    return try keychainVault.readValue(query)
+    return try keychainVault.read(query)
   }
   
   public func deletePassword() throws {
@@ -137,21 +127,20 @@ public struct MnemonicsV3Vault {
   }
 }
 
-private extension MnemonicsV3Vault {
+private extension MnemonicsV4Vault {
   func getChunksCountQuery() -> KeychainQueryable {
-    let key = "\(String.mnemonicsVaultKey)_\(seedProvider())"
     return KeychainGenericPasswordItem(service: .mnemonicsVaultKey,
-                                       account: key,
+                                       account: .encryptedMnemonicsChunksCountKey,
                                        accessGroup: nil,
-                                       accessible: .whenUnlockedThisDeviceOnly)
+                                       accessible: .whenUnlocked)
   }
   
   func getChunkQuery(index: Int) -> KeychainQueryable {
-    let key = "\(String.encryptedMnemonicsChunkKey)_\(index)_\(seedProvider())"
+    let key = "\(String.encryptedMnemonicsChunkKey)\(index)"
     return KeychainGenericPasswordItem(service: .mnemonicsVaultKey,
                                        account: key,
                                        accessGroup: nil,
-                                       accessible: .whenUnlockedThisDeviceOnly)
+                                       accessible: .whenUnlocked)
   }
   
   func getMnemonicsVaultQuery() -> KeychainQueryable {
@@ -164,10 +153,9 @@ private extension MnemonicsV3Vault {
   }
   
   func getPasswordQuery() -> KeychainQueryable {
-    let key = "\(String.passwordKey)_\(seedProvider())"
     return KeychainGenericPasswordItem(
-      service: .mnemonicsVaultKey,
-      account: key,
+      service: .passwordVaultKey,
+      account: .passwordKey,
       accessGroup: nil,
       accessible: .whenUnlockedThisDeviceOnly,
       isBiometry: true
@@ -184,12 +172,23 @@ private extension MnemonicsV3Vault {
       password: password
     )
 
-    let mnemonics = try JSONDecoder().decode(Mnemonics.self, from: data)
+    let decrypted = try JSONDecoder().decode([String: MnemonicItem].self, from: data)
+    let mnemonics = decrypted.compactMapValues {
+      try? Mnemonic(mnemonicWords: $0.mnemonic.components(separatedBy: " "))
+    }
     return mnemonics
   }
   
   func encryptMnemonics(_ mnemonics: Mnemonics, password: String) async throws -> EncryptedMnemonics {
-    let data = try JSONEncoder().encode(mnemonics)
+    var toEncrypt = [String: MnemonicItem]()
+    mnemonics.forEach {
+      toEncrypt[$0.key] = MnemonicItem(
+        identifier: $0.key,
+        mnemonic: $0.value.mnemonicWords.joined(separator: " ")
+      )
+    }
+    let data = try JSONEncoder().encode(toEncrypt)
+    
     let salt = try SecureRandom.getRandomBytes(length: 32)
     let ct = try await ScryptHashBox.encrypt(
       data: data,
@@ -201,6 +200,7 @@ private extension MnemonicsV3Vault {
     )
     
     let encryptedMnemonics = EncryptedMnemonics(
+      kind: "encrypted-scrypt-tweetnacl",
       N: .N,
       r: .r,
       p: .p,
@@ -238,6 +238,7 @@ private extension MnemonicsV3Vault {
     } catch KeychainVaultError.noItemFound {
       throw Error.noMnemonic
     }
+
     do {
       let encryptedMnemonicsData = try (0..<count)
         .map {
@@ -251,48 +252,6 @@ private extension MnemonicsV3Vault {
     } catch {
       throw Error.mnemonicsCorrupted
     }
-  }
-}
-
-public struct ScryptHashBox {
-  private init() {}
-
-  public static func encrypt(data: Data, salt: [UInt8],  N: Int, r: Int, p: Int, password: String) async throws -> String {
-    let passwordHash = Data(try Scrypt(
-      password: [UInt8](password.utf8),
-      salt: salt,
-      dkLen: .passwordKeyLength,
-      N: .N,
-      r: .r,
-      p: .p
-    ).calculate())
-    
-    let nonce = Data(salt[0..<24])
-    let secretBox = try TweetNacl.NaclSecretBox.secretBox(
-      message: data,
-      nonce: nonce,
-      key: passwordHash
-    )
-    
-    return secretBox.toHexString()
-  }
-  
-  public static func decrypt(string: String, salt: String, N: Int, r: Int, p: Int, password: String) async throws -> Data {
-    let passwordHash = Data(try Scrypt(
-      password: [UInt8](password.utf8),
-      salt: [UInt8](Data(hex: salt)),
-      dkLen: .passwordKeyLength,
-      N: N,
-      r: r,
-      p: p
-    ).calculate())
-    
-    let nonce = Data([UInt8](Data(hex: salt))[0..<24])
-    
-    let data = try TweetNacl.NaclSecretBox.open(box: Data(hex: string),
-                                                     nonce: nonce,
-                                                     key: Data(passwordHash))
-    return data
   }
 }
 
@@ -327,14 +286,9 @@ private extension Int {
 }
 
 private extension String {
-  static let mnemonicsVaultKey = "MnemonicsVault"
-  static let encryptedMnemonicsChunksCountKey = "encryptedChunksCount"
-  static let encryptedMnemonicsChunkKey = "encryptedChunk"
-  static let passwordKey = "password"
-}
-
-extension Data {
-    var bytes: [UInt8] {
-      return [UInt8](self)
-    }
+  static let mnemonicsVaultKey = "app"
+  static let passwordVaultKey = "TKProtected"
+  static let encryptedMnemonicsChunksCountKey = "wallets_chunks"
+  static let encryptedMnemonicsChunkKey = "wallets_chunk_"
+  static let passwordKey = "biometry_passcode"
 }

@@ -14,7 +14,7 @@ public struct RNWalletsStore: Codable {
     case lockScreenEnabled
   }
   
-  public init(wallets: [RNWallet], 
+  public init(wallets: [RNWallet],
               selectedIdentifier: String,
               biometryEnabled: Bool,
               lockScreenEnabled: Bool) {
@@ -155,10 +155,10 @@ public extension RNWallet {
       case .emoji(let emoji):
         return emoji
       case .icon(let image):
-        return image.rawValue
+        return image.rnIconString
       }
     }()
-
+    
   }
   
   func getWallet(backupDate: Date?) throws -> Wallet  {
@@ -167,7 +167,7 @@ public extension RNWallet {
       throw Error.failedToCreateWallet
     }
     let publicKey = TonSwift.PublicKey(data: publicKeyData)
-
+    
     let contractVersion: WalletContractVersion
     switch version {
     case .v3R1:
@@ -191,7 +191,7 @@ public extension RNWallet {
     case .testnet:
       network = .testnet
     }
-
+    
     let contract: WalletContract
     switch contractVersion {
     case .v5R1:
@@ -213,7 +213,7 @@ public extension RNWallet {
     case .v3R1:
       contract = try WalletV3(workchain: 0, publicKey: publicKey.data, revision: .r1)
     }
-
+    
     let kind: WalletKind
     switch type {
     case .Ledger:
@@ -258,49 +258,96 @@ public extension RNWallet {
 }
 
 private extension WalletIcon.Image {
+  var rnIconString: String {
+    switch self {
+    case .wallet:
+      return "ic-wallet-32"
+    case .leaf:
+      return "ic-leaf-32"
+    case .lock:
+      return "ic-lock-32"
+    case .key:
+      return "ic-key-32"
+    case .inbox:
+      return "ic-inbox-32"
+    case .snowflake:
+      return "ic-snowflake-32"
+    case .sparkles:
+      return "ic-sparkles-32"
+    case .sun:
+      return "ic-sun-32"
+    case .hare:
+      return "ic-hare-32"
+    case .flash:
+      return "ic-flash-32"
+    case .bankCard:
+      return "ic-bank-card-32"
+    case .gear:
+      return "ic-gear-32"
+    case .handRaised:
+      return "ic-hand-raised-32"
+    case .magnifyingGlassCircle:
+      return "ic-magnifying-glass-circle-32"
+    case .flashCircle:
+      return "ic-flash-circle-32"
+    case .dollarCircle:
+      return "ic-dollar-circle-32"
+    case .euroCircle:
+      return "ic-euro-circle-32"
+    case .sterlingCircle:
+      return "ic-sterling-circle-32"
+    case .yuanCircle:
+      return "ic-chinese-yuan-circle-32"
+    case .rubleCircle:
+      return "ic-ruble-circle-32"
+    case .indianRupeeCircle:
+      return "ic-indian-rupee-circle-32"
+    }
+  }
+  
   init(rnIconString: String) {
     switch rnIconString {
-     case "ic-wallet-32":
+    case "ic-wallet-32":
       self = .wallet
-     case "ic-leaf-32":
+    case "ic-leaf-32":
       self = .leaf
-     case "ic-lock-32":
+    case "ic-lock-32":
       self = .lock
-     case "ic-key-32":
+    case "ic-key-32":
       self = .key
-     case "ic-inbox-32":
+    case "ic-inbox-32":
       self = .inbox
-     case "ic-snowflake-32":
+    case "ic-snowflake-32":
       self = .snowflake
-     case "ic-sparkles-32":
+    case "ic-sparkles-32":
       self = .sparkles
-     case "ic-sun-32":
+    case "ic-sun-32":
       self = .sun
-     case "ic-hare-32":
+    case "ic-hare-32":
       self = .hare
-     case "ic-flash-32":
+    case "ic-flash-32":
       self = .flash
-     case "ic-bank-card-32":
+    case "ic-bank-card-32":
       self = .bankCard
-     case "ic-gear-32":
+    case "ic-gear-32":
       self = .gear
-     case "ic-hand-raised-32":
+    case "ic-hand-raised-32":
       self = .handRaised
-     case "ic-magnifying-glass-circle-32":
+    case "ic-magnifying-glass-circle-32":
       self = .magnifyingGlassCircle
-     case "ic-flash-circle-32":
+    case "ic-flash-circle-32":
       self = .flashCircle
-     case "ic-dollar-circle-32":
+    case "ic-dollar-circle-32":
       self = .dollarCircle
-     case "ic-euro-circle-32":
+    case "ic-euro-circle-32":
       self = .euroCircle
-     case "ic-sterling-circle-32":
+    case "ic-sterling-circle-32":
       self = .sterlingCircle
-     case "ic-chinese-yuan-circle-32":
+    case "ic-chinese-yuan-circle-32":
       self = .yuanCircle
-     case "ic-ruble-circle-32":
+    case "ic-ruble-circle-32":
       self = .rubleCircle
-     case "ic-indian-rupee-circle-32":
+    case "ic-indian-rupee-circle-32":
       self = .indianRupeeCircle
     default:
       self = .wallet

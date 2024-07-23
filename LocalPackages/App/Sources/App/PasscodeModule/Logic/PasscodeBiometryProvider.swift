@@ -5,16 +5,16 @@ import KeeperCore
 struct PasscodeBiometryProvider: PasscodeInputBiometryProvider {
   
   private let biometryProvider: BiometryProvider
-  private let securityStore: SecurityStore
+  private let securityStore: SecurityStoreV2
   
   init(biometryProvider: BiometryProvider,
-       securityStore: SecurityStore) {
+       securityStore: SecurityStoreV2) {
     self.biometryProvider = biometryProvider
     self.securityStore = securityStore
   }
   
   func getBiometryState() async -> TKUIKit.TKKeyboardView.Biometry {
-    guard await securityStore.isBiometryEnabled else {
+    guard await securityStore.getState().isBiometryEnable else {
       return .none
     }
     switch biometryProvider.getBiometryState(policy: .deviceOwnerAuthenticationWithBiometrics) {

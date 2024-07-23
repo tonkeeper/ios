@@ -25,6 +25,12 @@ public struct CoreAssembly {
     )
   }
   
+  func mnemonicsV4Vault() -> MnemonicsV4Vault {
+    MnemonicsV4Vault(
+      keychainVault: keychainVault
+    )
+  }
+  
   func passcodeVault() -> PasscodeVault {
     PasscodeVault(keychainVault: keychainVault)
   }

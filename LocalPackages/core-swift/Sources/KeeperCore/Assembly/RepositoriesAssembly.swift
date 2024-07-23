@@ -14,9 +14,7 @@ public struct RepositoriesAssembly {
   }
   
   public func mnemonicsRepository() -> MnemonicsRepository {
-    coreAssembly.mnemonicsV3Vault {
-      settingsRepository().seed
-    }
+    coreAssembly.mnemonicsV4Vault()
   }
   
   public func settingsRepository() -> SettingsRepository {
@@ -77,5 +75,15 @@ public struct RepositoriesAssembly {
   
   func tokenManagementRepository() -> TokenManagementRepository {
     TokenManagementRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
+  public func mnemonicV3ToV4Migration() -> MnemonicV3ToV4Migration {
+    let seedProvider = {
+      return self.settingsRepository().seed
+    }
+    return MnemonicV3ToV4Migration(
+      v3Vault: coreAssembly.mnemonicsV3Vault(seedProvider: seedProvider),
+      v4Vault: coreAssembly.mnemonicsV4Vault()
+    )
   }
 }

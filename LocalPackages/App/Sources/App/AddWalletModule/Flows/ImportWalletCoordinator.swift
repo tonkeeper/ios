@@ -122,7 +122,15 @@ private extension ImportWalletCoordinator {
   }
   
   func handleDidChooseRevisions(phrase: [String], revisions: [WalletContractVersion]) {
-    if walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository().hasMnemonics() {
+    let hasMnemonics = walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository().hasMnemonics()
+    let hasRegularWallet = { [walletsUpdateAssembly] in
+      do {
+        return try walletsUpdateAssembly.repositoriesAssembly.keeperInfoRepository().getKeeperInfo().wallets.contains(where: { $0.kind == .regular })
+      } catch {
+        return false
+      }
+    }()
+    if hasMnemonics && hasRegularWallet {
       openConfirmPasscode(phrase: phrase, revisions: revisions)
     } else {
       openCreatePasscode(phrase: phrase, revisions: revisions)
@@ -159,7 +167,7 @@ private extension ImportWalletCoordinator {
       parentCoordinator: self,
       parentRouter: self.router,
       mnemonicsRepository: walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository(),
-      securityStore: storesAssembly.securityStore,
+      securityStore: storesAssembly.securityStoreV2,
       onCancel: {},
       onInput: { [weak self] passcode in
         self?.openCustomizeWallet(

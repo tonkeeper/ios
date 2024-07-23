@@ -34,6 +34,12 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
     self.securityStore = securityStore
     self.mnemonicsRepository = mnemonicsRepository
     self.biometryProvider = biometryProvider
+    
+    securityStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      DispatchQueue.main.async {
+        observer.didUpdateState?(observer.createState())
+      }
+    }
   }
 }
 
