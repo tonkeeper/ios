@@ -77,6 +77,9 @@ public final class SignConfirmationController {
       case "v5r1":
         // TODO: replace hardcoded networkId
         contract = WalletV5R1(publicKey: model.publicKey.data, walletId: WalletId(networkGlobalId: -239, workchain: 0))
+      case "v5beta":
+        // TODO: replace hardcoded networkId
+        contract = WalletV5Beta(publicKey: model.publicKey.data, walletId: WalletIdBeta(networkGlobalId: -239, workchain: 0))
       case "v4r2", nil:
         contract = WalletV4R2(publicKey: model.publicKey.data)
       case "v3r2":

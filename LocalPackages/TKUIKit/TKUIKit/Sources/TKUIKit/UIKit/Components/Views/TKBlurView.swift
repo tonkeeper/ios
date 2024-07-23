@@ -25,7 +25,6 @@ public final class TKBlurView: UIView {
 
 private extension TKBlurView {
   func setup() {
-    colorView.alpha = 1
     addSubview(blurView)
     addSubview(colorView)
     

@@ -54,8 +54,15 @@ private extension TokenPickerViewController {
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
-      self?.dataSource.apply(snapshot, animatingDifferences: false)
-      self?.didUpdateHeight?()
+      guard let self else { return }
+      let contentOffset = self.customView.collectionView.contentOffset
+      self.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+        self.customView.collectionView.layoutIfNeeded()
+        self.customView.collectionView.contentOffset = contentOffset
+      })
+      self.customView.collectionView.layoutIfNeeded()
+      self.customView.collectionView.contentOffset = contentOffset
+      self.didUpdateHeight?()
     }
     
     viewModel.didUpdateSelectedToken = { [weak self] index, isScroll in

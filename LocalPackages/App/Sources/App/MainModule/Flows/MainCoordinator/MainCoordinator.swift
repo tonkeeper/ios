@@ -646,9 +646,10 @@ private extension MainCoordinator {
       ),
       tokenDetailsListContentViewController: historyListModule.view,
       chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
-        ChartAssembly.module(token: .ton,
-                             coreAssembly: coreAssembly,
-                             keeperCoreMainAssembly: keeperCoreMainAssembly).view
+        guard hasPrice else { return nil }
+        return ChartAssembly.module(token: .jetton(jettonItem),
+                                    coreAssembly: coreAssembly,
+                                    keeperCoreMainAssembly: keeperCoreMainAssembly).view
       }
     )
 
