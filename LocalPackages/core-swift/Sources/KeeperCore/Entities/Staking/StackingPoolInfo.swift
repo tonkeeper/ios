@@ -2,11 +2,18 @@ import Foundation
 import TonSwift
 
 public struct StackingPoolInfo: Codable, Equatable {
-  public enum Implementation: String, Codable {
-    case whales
-    case tf
-    case liquidTF
-    case unknown
+  public struct Implementation: Codable, Hashable {
+    public enum Kind: String, CaseIterable, Codable {
+      case liquidTF
+      case whales
+      case tf
+    }
+    
+    public let type: Kind
+    public let name: String
+    public let description: String
+    public let urlString: String
+    public let socials: [String]
   }
   
   public let address: Address
@@ -56,4 +63,12 @@ public struct StackingPoolInfo: Codable, Equatable {
     self.validatorStake = validatorStake
     self.cycleLength = cycleLength
   }
+}
+
+public extension Array where Element == StackingPoolInfo {
+  var profitablePool: Element? {
+    self.max(by: { $0.apy < $1.apy })
+  }
+  
+//  func poolsByKind(_ kind: StackingPoolInfo.Implementation)
 }

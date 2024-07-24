@@ -3,11 +3,14 @@ import TonSwift
 import TonAPI
 
 extension StackingPoolInfo {
-  init(accountStakingInfo: Components.Schemas.PoolInfo) throws {
+  init(accountStakingInfo: Components.Schemas.PoolInfo, implementations: [String: Components.Schemas.PoolImplementation]) throws {
     self.address = try Address.parse(accountStakingInfo.address)
     self.name = accountStakingInfo.name
     self.totalAmount = accountStakingInfo.total_amount
-    self.implementation = .init(implemenetation: accountStakingInfo.implementation)
+    self.implementation = StackingPoolInfo.Implementation(
+      implemenetationType: accountStakingInfo.implementation,
+      implementation: implementations[accountStakingInfo.implementation.rawValue]
+    )
     self.apy = Decimal(accountStakingInfo.apy)
     self.minStake = accountStakingInfo.min_stake
     self.cycleStart = TimeInterval(accountStakingInfo.cycle_start)
@@ -31,14 +34,20 @@ extension StackingPoolInfo {
 }
 
 extension StackingPoolInfo.Implementation {
-  init(implemenetation: Components.Schemas.PoolImplementationType) {
-    switch implemenetation {
+  init(implemenetationType: Components.Schemas.PoolImplementationType,
+       implementation: Components.Schemas.PoolImplementation?) {
+    switch implemenetationType {
     case .whales:
-      self = .whales
+      self.type = .whales
     case .tf:
-      self = .tf
+      self.type = .tf
     case .liquidTF:
-      self = .liquidTF
+      self.type = .liquidTF
     }
+    
+    self.name = implementation?.name ?? ""
+    self.description = implementation?.description ?? ""
+    self.urlString = implementation?.url ?? ""
+    self.socials = implementation?.socials ?? []
   }
 }

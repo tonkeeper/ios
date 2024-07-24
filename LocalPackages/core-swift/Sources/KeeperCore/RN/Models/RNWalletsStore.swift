@@ -62,6 +62,7 @@ public struct RNWallet: Codable {
   }
   
   enum RNContractVersion: String, Codable {
+    case v5Beta
     case v5R1
     case v5Beta
     case v4R2

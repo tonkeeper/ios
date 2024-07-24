@@ -78,6 +78,14 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-dote-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var swapVertical: UIImage {
+          .imageWithName("Icons/16/ic-swap-vertical-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var informationCircle: UIImage {
+          .imageWithName("Icons/16/ic-information-circle-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
@@ -272,6 +280,17 @@ public extension UIImage {
       public enum Size44 {
         public static var tonCurrency: UIImage {
           .imageWithName("Icons/44/ton_currency")
+        }
+        public static var tonNominatorsLogo: UIImage {
+          .imageWithName("Icons/44/ic-tonnominators-44")
+        }
+        
+        public static var tonStakersLogo: UIImage {
+          .imageWithName("Icons/44/ic-tonstakers-44")
+        }
+        
+        public static var tonWhalesLogo: UIImage {
+          .imageWithName("Icons/44/ic-tonwhales-44")
         }
       }
       public enum Size56 {

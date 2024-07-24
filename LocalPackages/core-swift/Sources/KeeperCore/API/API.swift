@@ -344,7 +344,7 @@ extension API {
     
     let entity = try response.ok.body.json
     let result = entity.pools.compactMap {
-      try? StackingPoolInfo(accountStakingInfo: $0)
+      try? StackingPoolInfo(accountStakingInfo: $0, implementations: entity.implementations.additionalProperties)
     }
     return result
   }

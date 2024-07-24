@@ -151,6 +151,10 @@ private extension MainCoordinator {
       self?.openReceive(token: token)
     }
     
+    walletCoordinator.didTapStake = { [weak self] wallet in
+      self?.openStake(wallet: wallet)
+    }
+    
     walletCoordinator.didTapBackup = { [weak self] wallet in
       self?.openBackup(wallet: wallet)
     }
@@ -678,6 +682,30 @@ private extension MainCoordinator {
     navigationController.configureDefaultAppearance()
     
     router.present(navigationController)
+  }
+  
+  func openStake(wallet: Wallet) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
+    let coordinator = StakingCoordinator(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: NavigationControllerRouter(rootViewController: navigationController)
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start(deeplink: nil)
+    
+    self.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
+    })
   }
   
   func openBuy(wallet: Wallet) {

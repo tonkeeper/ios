@@ -15,6 +15,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapScan: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
   var didTapSwap: (() -> Void)? { get set }
+  var didTapStake: ((Wallet) -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
   
@@ -65,6 +66,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapScan: (() -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
   var didTapSwap: (() -> Void)?
+  var didTapStake: ((Wallet) -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
   
@@ -589,7 +591,7 @@ private extension WalletBalanceViewModelImplementation {
       isScanEnable = true
       isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     case .lockup:
       isSendEnable = false
       isReceiveEnable = false
@@ -610,7 +612,7 @@ private extension WalletBalanceViewModelImplementation {
       isScanEnable = true
       isSwapEnable = true
       isBuyEnable = true
-      isStakeEnable = false
+      isStakeEnable = true
     case .ledger:
       isSendEnable = true
       isReceiveEnable = true
@@ -659,7 +661,9 @@ private extension WalletBalanceViewModelImplementation {
         title: TKLocales.WalletButtons.stake,
         icon: .TKUIKit.Icons.Size28.stakingOutline,
         isEnabled: isStakeEnable,
-        action: {}
+        action: { [weak self] in
+          self?.didTapStake?(wallet)
+        }
       )
     )
   }

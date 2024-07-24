@@ -10,6 +10,7 @@ public struct RemoteConfiguration: Equatable {
   public let tonkeeperNewsUrl: URL?
   public let stonfiUrl: URL?
   public let faqUrl: URL?
+  public let stakingInfoUrl: URL?
   
   enum CodingKeys: String, CodingKey {
     case tonapiV2Endpoint
@@ -21,6 +22,7 @@ public struct RemoteConfiguration: Equatable {
     case tonkeeperNewsUrl
     case stonfiUrl
     case faqUrl = "faq_url"
+    case stakingInfoUrl
   }
 }
 
@@ -37,7 +39,8 @@ extension RemoteConfiguration {
       directSupportUrl: nil,
       tonkeeperNewsUrl: nil,
       stonfiUrl: nil,
-      faqUrl: nil
+      faqUrl: nil,
+      stakingInfoUrl: nil
     )
   }
 }
