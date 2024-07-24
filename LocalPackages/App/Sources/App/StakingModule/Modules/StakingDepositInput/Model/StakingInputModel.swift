@@ -40,9 +40,12 @@ protocol StakingInputModel: AnyObject {
   var didUpdateRemainingItem: ((StakingInputRemainingItem) -> Void)? { get set }
   var didUpdateButtonItem: ((StakingInputButtonItem) -> Void)? { get set }
   var didUpdatePoolInfoItem: ((StakingInputPoolInfoItem?) -> Void)? { get set }
+  var selectedStackingPoolInfo: StackingPoolInfo? { get }
   
   func start()
   func didEditAmountInput(_ input: String)
   func toggleInputMode()
   func toggleIsMax()
+  func setSelectedStackingPool(_ pool: StackingPoolInfo)
+  func getPickerSections(completion: @escaping (StakingListModel) -> Void)
 }

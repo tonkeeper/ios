@@ -19,7 +19,7 @@ final class StakingDepositInputModel: StakingInputModel {
   
   // MARK: - State
   
-  private var selectedStackingPoolInfo: StackingPoolInfo? {
+  private(set) var selectedStackingPoolInfo: StackingPoolInfo? {
     didSet {
       updateButton()
       updateStakingPool()
@@ -152,6 +152,70 @@ final class StakingDepositInputModel: StakingInputModel {
     queue.async {
       self.isMaxAmount.toggle()
       self.didToggleIsMax()
+    }
+  }
+  
+  func setSelectedStackingPool(_ pool: StackingPoolInfo) {
+    queue.async {
+      self.selectedStackingPoolInfo = pool
+    }
+  }
+  
+  func getPickerSections(completion: @escaping (StakingListModel) -> Void) {
+    queue.async {
+      guard let walletAddress = try? self.wallet.friendlyAddress,
+      let pools = self.stakingPoolsStore.getState()[walletAddress] else {
+        return
+      }
+      
+      let liquidPools = pools.filterByPoolKind(.liquidTF)
+        .sorted(by: { $0.apy > $1.apy })
+      let whalesPools = pools.filterByPoolKind(.whales)
+        .sorted(by: { $0.apy > $1.apy })
+      let tfPools = pools.filterByPoolKind(.tf)
+        .sorted(by: { $0.apy > $1.apy })
+      
+      var sections = [StakingListSection]()
+      
+      sections.append(
+        StakingListSection(
+          title: .liquidStakingTitle,
+          items: liquidPools.enumerated().map { index, pool in
+              .pool(StakingListPool(pool: pool, isMaxAPY: index == 0))
+          }
+        )
+      )
+      
+      func createGroup(_ pools: [StackingPoolInfo]) -> StakingListItem? {
+        guard !pools.isEmpty else { return nil }
+        let groupName = pools[0].implementation.name
+        let groupImage = pools[0].implementation.icon
+        let groupApy = pools[0].apy
+        let minAmount = BigUInt(UInt64(pools[0].minStake))
+        return StakingListItem.group(
+          StakingListGroup(
+            name: groupName,
+            image: groupImage,
+            apy: groupApy,
+            minAmount: minAmount,
+            items: pools.enumerated().map { StakingListPool(pool: $1, isMaxAPY: $0 == 0) }
+          )
+        )
+      }
+      
+      sections.append(
+        StakingListSection(
+          title: .otherTitle, items: [whalesPools, tfPools].compactMap { createGroup($0) }
+        )
+      )
+
+      completion(
+        StakingListModel(
+          title: "Options",
+          sections: sections,
+          selectedPool: self.selectedStackingPoolInfo
+        )
+      )
     }
   }
   
@@ -402,4 +466,7 @@ private extension String {
   static var fractionalSeparator: String? {
     Locale.current.decimalSeparator
   }
+  
+  static let liquidStakingTitle = "Liquid Staking"
+  static let otherTitle = "Other"
 }

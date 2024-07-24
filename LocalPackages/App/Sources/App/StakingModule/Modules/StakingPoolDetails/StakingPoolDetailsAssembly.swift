@@ -2,19 +2,19 @@ import Foundation
 import TKCore
 import KeeperCore
 
-struct StakingInputAssembly {
+struct StakingPoolDetailsAssembly {
   private init() {}
   
-  static func module(model: StakingInputModel, 
+  static func module(pool: StakingListPool, 
                      keeperCoreMainAssembly: KeeperCore.MainAssembly)
-  -> MVVMModule<StakingInputViewController, StakingInputModuleOutput, StakingInputModuleInput> {
-    let viewModel = StakingInputViewModelImplementation(
-      model: model,
+  -> MVVMModule<StakingPoolDetailsViewController, StakingPoolDetailsModuleOutput, StakingPoolDetailsModuleOutput> {
+    let viewModel = StakingPoolDetailsViewModelImplementation(
+      pool: pool,
       decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
     
-    let viewController = StakingInputViewController(viewModel: viewModel)
+    let viewController = StakingPoolDetailsViewController(viewModel: viewModel)
     
     return MVVMModule(view: viewController, output: viewModel, input: viewModel)
   }

@@ -119,6 +119,10 @@ private extension StakingInputViewController {
     amountInputViewController.didToggle = { [weak viewModel] in
       viewModel?.didToggleInputMode()
     }
+    
+    customView.infoView.addAction(UIAction(handler: { [weak viewModel] _ in
+      viewModel?.didTapInfoView()
+    }), for: .touchUpInside)
   }
   
   func createMaxButtonConfiguration() -> TKButton.Configuration {

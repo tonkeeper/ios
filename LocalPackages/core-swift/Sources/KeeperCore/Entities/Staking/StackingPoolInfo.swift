@@ -70,5 +70,7 @@ public extension Array where Element == StackingPoolInfo {
     self.max(by: { $0.apy < $1.apy })
   }
   
-//  func poolsByKind(_ kind: StackingPoolInfo.Implementation)
+  func filterByPoolKind(_ kind: StackingPoolInfo.Implementation.Kind) -> [StackingPoolInfo] {
+    filter { $0.implementation.type ==  kind}
+  }
 }

@@ -5,11 +5,11 @@ import KeeperCore
 import BigInt
 
 protocol StakingInputModuleOutput: AnyObject {
-  
+  var didTapPoolPicker: ((_ model: StakingListModel) -> Void)? { get set }
 }
 
 protocol StakingInputModuleInput: AnyObject {
-  
+  func setPool(_ pool: StackingPoolInfo)
 }
 
 protocol StakingInputViewModel: AnyObject {
@@ -28,9 +28,10 @@ protocol StakingInputViewModel: AnyObject {
   func didEditAmountInput(_ input: String)
   func didToggleInputMode()
   func didToggleIsMax()
+  func didTapInfoView()
 }
 
-final class StakingInputViewModelImplementation: StakingInputViewModel, StakingInputModuleOutput {
+final class StakingInputViewModelImplementation: StakingInputViewModel, StakingInputModuleOutput, StakingInputModuleInput {
   
   private let model: StakingInputModel
   private let decimalFormatter: DecimalAmountFormatter
@@ -42,6 +43,16 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
     self.model = model
     self.decimalFormatter = decimalFormatter
     self.amountFormatter = amountFormatter
+  }
+  
+  // MARK: - StakingInputModuleOutput
+  
+  var didTapPoolPicker: ((_ model: StakingListModel) -> Void)?
+  
+  // MARK: - StakingInputModuleInput
+  
+  func setPool(_ pool: StackingPoolInfo) {
+    model.setSelectedStackingPool(pool)
   }
   
   // MARK: - StakingViewModel
@@ -109,6 +120,14 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
   
   func didToggleIsMax() {
     model.toggleIsMax()
+  }
+  
+  func didTapInfoView() {
+    model.getPickerSections { model in
+      DispatchQueue.main.async {
+        self.didTapPoolPicker?(model)
+      }
+    }
   }
 }
 
@@ -205,7 +224,7 @@ private extension StakingInputViewModelImplementation {
   func mapStakingPoolItem(_ item: StackingPoolInfo, isMostProfitable: Bool, profit: BigUInt) -> TKUIListItemView.Configuration {
     let tagText: String? = isMostProfitable ? .mostProfitableTag : nil
     let percentFormatted = decimalFormatter.format(amount: item.apy, maximumFractionDigits: 2)
-    var subtitle = "\(String.apy) ≈ \(percentFormatted)"
+    var subtitle = "\(String.apy) ≈ \(percentFormatted)%"
     if profit >= BigUInt(stringLiteral: "1000000000") {
       let formatted = amountFormatter.formatAmount(
         profit,
@@ -236,7 +255,7 @@ private extension StakingInputViewModelImplementation {
       iconConfiguration: TKUIListItemIconView.Configuration(
         iconConfiguration: .image(
           TKUIListItemImageIconView.Configuration(
-            image: TKUIListItemImageIconView.Configuration.Image.image(item.icon),
+            image: TKUIListItemImageIconView.Configuration.Image.image(item.implementation.icon),
             tintColor: .clear,
             backgroundColor: .clear,
             size: CGSize(width: 44, height: 44),
@@ -267,83 +286,12 @@ private extension StakingInputViewModelImplementation {
         )
       )
     )
-    
-//    if let apyProfit = item.profit {
-//      subtitle += " · \(apyProfit)"
-//    }
-//    
-//    let imageConfiguration: TKUIListItemImageIconView.Configuration.Image
-//    switch item.icon {
-//    case .fromResource:
-//      imageConfiguration = .image(item.implementation.image)
-//    case .url(let url):
-//      imageConfiguration = .asyncImage(
-//        url,
-//        TKCore.ImageDownloadTask(
-//          closure: {
-//            [imageLoader] imageView,
-//            size,
-//            cornerRadius in
-//            return imageLoader.loadImage(
-//              url: url,
-//              imageView: imageView,
-//              size: size,
-//              cornerRadius: cornerRadius
-//            )
-//          }
-//        )
-//      )
-//    }
-//    
-//    let iconConfiguration = TKUIListItemIconView.Configuration(
-//      iconConfiguration: .image(
-//        .init(
-//          image: imageConfiguration,
-//          tintColor: .clear,
-//          backgroundColor: .clear,
-//          size: .iconSize,
-//          cornerRadius: CGSize.iconSize.height/2
-//        )
-//      ),
-//      alignment: .center
-//    )
-//    
-//    var tagConfiguration: TKUITagView.Configuration?
-//    if let tagText  {
-//      tagConfiguration = TKUITagView.Configuration(
-//        text: tagText,
-//        textColor: .Accent.green,
-//        backgroundColor: .Accent.green.withAlphaComponent(0.3)
-//      )
-//    }
-//    
-//    let leftItemConfiguration = TKUIListItemContentLeftItem.Configuration(
-//      title: title.withTextStyle(.label1, color: .Text.primary),
-//      tagViewModel: tagConfiguration,
-//      subtitle: subtitle.withTextStyle(.body2, color: .Text.secondary),
-//      description: nil
-//    )
-//    
-//    return .init(
-//      iconConfiguration: iconConfiguration,
-//      contentConfiguration: .init(
-//        leftItemConfiguration: leftItemConfiguration,
-//        rightItemConfiguration: nil
-//      ),
-//      accessoryConfiguration: .image(
-//        .init(
-//          image: .TKUIKit.Icons.Size16.switch,
-//          tintColor: .Text.tertiary,
-//          padding: .zero
-//        )
-//      )
-//    )
   }
 }
 
-extension StackingPoolInfo {
+extension StackingPoolInfo.Implementation {
   var icon: UIImage {
-    switch implementation.type {
+    switch type {
     case .liquidTF: .TKUIKit.Icons.Size44.tonStakersLogo
     case .tf: .TKUIKit.Icons.Size44.tonNominatorsLogo
     case .whales: .TKUIKit.Icons.Size44.tonWhalesLogo
