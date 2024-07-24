@@ -60,6 +60,7 @@
 "settings.items.legal" = "Legal";
 "settings.items.delete_account" = "Delete account";
 "settings.items.setup_wallet_description" = "Edit name and color";
+"settings.items.wallet_w5" = "Wallet W5";
 
 "settings.logout.title" = "Log out?";
 "settings.logout.description" = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.";
@@ -264,3 +265,10 @@
 "sign_out_full.title" = "🚧 🚨🚨🚨 🚧\nSign Out of All Wallets?";
 "sign_out_full.description" = "This will erase keys to all wallets. Make sure you have backed up your recovery phrases.";
 
+"w5_stories.gasless.title" = "Gasless USDT Transfers";
+"w5_stories.gasless.subtitle" = "Send USDT without having TON – transaction fees will be covered by a few cents of USDT automatically.";
+"w5_stories.messages.title" = "Up to 255 Operations in One Transaction";
+"w5_stories.messages.subtitle" = "W5 increases the number of simultaneous operations from 4 to 255, which can save on fee costs.";
+"w5_stories.phrase.title" = "Recovery Phrase Does Not Change";
+"w5_stories.phrase.subtitle" = "Old accounts and W5 use the same recovery phrase – when restoring accounts on a new device, both old and new will appear automatically.";
+"w5_stories.phrase.button" = "Add W5 Wallet";

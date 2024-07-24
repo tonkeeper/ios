@@ -12,11 +12,19 @@ public extension Wallet {
     case watchonly
     case signer
     case ledger
+    case w5
+    case w5Beta
   }
   
   var kind: Kind {
     switch identity.kind {
     case .Regular:
+      if (try? contractVersion) == .v5Beta {
+        return .w5Beta
+      }
+      if (try? contractVersion) == .v5R1 {
+        return .w5
+      }
       return .regular
     case .Lockup:
       return .lockup
@@ -165,12 +173,16 @@ public extension Wallet {
       return false
     case .ledger:
       return false
+    case .w5:
+      return true
+    case .w5Beta:
+      return true
     }
   }
   
   var isBrowserAvailable: Bool {
     switch kind {
-    case .regular:
+    case .regular, .w5, .w5Beta:
       return true
     case .lockup:
       return false
@@ -183,9 +195,18 @@ public extension Wallet {
     }
   }
   
+  var isGaslessAvailable: Bool {
+    switch kind {
+    case .w5, .w5Beta:
+      return true
+    default:
+      return false
+    }
+  }
+  
   var isSendAvailable: Bool {
     switch kind {
-    case .regular:
+    case .regular, .w5, .w5Beta:
       return true
     case .lockup:
       return false

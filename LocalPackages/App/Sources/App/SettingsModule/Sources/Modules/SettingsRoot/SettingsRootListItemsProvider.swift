@@ -7,6 +7,7 @@ import TKLocalize
 final class SettingsRootListItemsProvider: SettingsListItemsProvider {
   var didTapEditWallet: ((Wallet) -> Void)?
   var didTapCurrency: (() -> Void)?
+  var didTapW5Wallet: ((Wallet) -> Void)?
   var didTapTheme: (() -> Void)?
   var didTapBackup: ((Wallet) -> Void)?
   var didTapSecurity: (() -> Void)?
@@ -86,12 +87,18 @@ private extension SettingsRootListItemsProvider {
       ))
     }
     
-    await sections.append(SettingsListSection(
+    var configureWalletSectionItems = await [
+      await setupCurrencyItem(),
+      setupThemeItem(),
+    ]
+    
+    if (settingsController.activeWallet().kind != .w5) {
+      configureWalletSectionItems.append(setupWalletW5Item())
+    }
+    
+    sections.append(SettingsListSection(
       padding: .sectionPadding,
-      items: [
-        await setupCurrencyItem(),
-        setupThemeItem(),
-      ]
+      items: configureWalletSectionItems
     ))
     
     sections.append(SettingsListSection(
@@ -230,6 +237,21 @@ private extension SettingsRootListItemsProvider {
       cellContentModel: await SettingsCellContentView.Model(
         title: .currencyItemTitle,
         value: settingsController.activeCurrency().code
+      )
+    )
+  }
+  
+  func setupWalletW5Item() -> SettingsCell.Model {
+    return SettingsCell.Model(
+      identifier: .walletW5ItemTitle,
+      selectionHandler: { [weak self] in
+        guard let self = self else { return }
+        self.didTapW5Wallet?(self.settingsController.activeWallet())
+      },
+      cellContentModel: SettingsCellContentView.Model(
+        title: .walletW5ItemTitle,
+        icon: .TKUIKit.Icons.Size28.wallet,
+        tintColor: .Accent.blue
       )
     )
   }
@@ -421,6 +443,7 @@ private extension String {
   
   static let backupItemTitle = TKLocales.Settings.Items.backup
   
+  static let walletW5ItemTitle = TKLocales.Settings.Items.wallet_w5
   static let currencyItemTitle = TKLocales.Settings.Items.currency
   static let themeItemTitle = TKLocales.Settings.Items.theme
   

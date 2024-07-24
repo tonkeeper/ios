@@ -255,6 +255,10 @@ public enum TKLocales {
       public static var setup_wallet_description: String {
         localize("settings.items.setup_wallet_description")
       }
+      /// Wallet W5
+      public static var wallet_w5: String {
+        localize("settings.items.wallet_w5")
+      }
     }
     public enum Logout {
       /// Log out?
@@ -977,6 +981,42 @@ public enum TKLocales {
     /// This will erase keys to all wallets. Make sure you have backed up your recovery phrases.
     public static var description: String {
       localize("sign_out_full.description")
+    }
+  }
+  public enum W5Stories {
+    public enum Gasless {
+      /// Gasless USDT Transfers
+      public static var title: String {
+        localize("w5_stories.gasless.title")
+      }
+      /// Send USDT without having TON – transaction fees will be covered by a few cents of USDT automatically.
+      public static var subtitle: String {
+        localize("w5_stories.gasless.subtitle")
+      }
+    }
+    public enum Messages {
+      /// Up to 255 Operations in One Transaction
+      public static var title: String {
+        localize("w5_stories.messages.title")
+      }
+      /// W5 increases the number of simultaneous operations from 4 to 255, which can save on fee costs.
+      public static var subtitle: String {
+        localize("w5_stories.messages.subtitle")
+      }
+    }
+    public enum Phrase {
+      /// Recovery Phrase Does Not Change
+      public static var title: String {
+        localize("w5_stories.phrase.title")
+      }
+      /// Old accounts and W5 use the same recovery phrase – when restoring accounts on a new device, both old and new will appear automatically.
+      public static var subtitle: String {
+        localize("w5_stories.phrase.subtitle")
+      }
+      /// Add W5 Wallet
+      public static var button: String {
+        localize("w5_stories.phrase.button")
+      }
     }
   }
 }

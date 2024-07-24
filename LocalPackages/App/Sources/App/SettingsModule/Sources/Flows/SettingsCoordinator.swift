@@ -3,6 +3,7 @@ import TKCoordinator
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
   var didFinish: (() -> Void)?
@@ -41,6 +42,10 @@ private extension SettingsCoordinator {
     
     itemsProvider.didTapCurrency = { [weak self] in
       self?.openCurrencyPicker()
+    }
+    
+    itemsProvider.didTapW5Wallet = { [weak self] wallet in
+      self?.openW5Story(wallet: wallet)
     }
     
     itemsProvider.didTapTheme = { [weak self] in
@@ -101,6 +106,22 @@ private extension SettingsCoordinator {
     module.view.setupRightCloseButton { [weak navigationController] in
       navigationController?.dismiss(animated: true)
     }
+    
+    router.present(navigationController)
+  }
+  
+  func openW5Story(wallet: Wallet) {
+    let module = StoriesModule(
+      dependencies: StoriesModule.Dependencies(
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+    ).storiesModule(pages: [
+      StoriesController.StoryPage(title: TKLocales.W5Stories.Gasless.title, description: TKLocales.W5Stories.Gasless.subtitle, buttonTitle: nil, backgroundImage: .TKUIKit.Images.storyGasless), StoriesController.StoryPage(title: TKLocales.W5Stories.Messages.title, description: TKLocales.W5Stories.Messages.subtitle, buttonTitle: nil, backgroundImage: .TKUIKit.Images.storyMessages), StoriesController.StoryPage(title: TKLocales.W5Stories.Phrase.title, description: TKLocales.W5Stories.Phrase.subtitle, buttonTitle: TKLocales.W5Stories.Phrase.button, backgroundImage: .TKUIKit.Images.storyPhrase)
+    ])
+        
+    let navigationController = TKNavigationController(rootViewController: module.view)
+    navigationController.configureDefaultAppearance()
     
     router.present(navigationController)
   }
@@ -233,7 +254,7 @@ private extension SettingsCoordinator {
     addChild(coordinator)
     coordinator.start()
     
-    router.present(coordinator.router.rootViewController, 
+    router.present(coordinator.router.rootViewController,
                    onDismiss: { [weak self, weak coordinator] in
       guard let coordinator else { return }
       self?.removeChild(coordinator)

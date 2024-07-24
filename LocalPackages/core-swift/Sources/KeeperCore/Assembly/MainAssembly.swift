@@ -253,6 +253,12 @@ public final class MainAssembly {
     )
   }
   
+  public func storiesController(pages: [StoriesController.StoryPage]) -> StoriesController {
+    StoriesController(
+      pages: pages
+    )
+  }
+  
   public func historyEventDetailsController(event: AccountEventDetailsEvent) -> HistoryEventDetailsController {
     HistoryEventDetailsController(
       event: event,

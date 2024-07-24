@@ -260,7 +260,7 @@ private extension WalletBalanceViewModelImplementation {
     let isStakeEnable: Bool
     
     switch wallet.kind {
-    case .regular:
+    case .regular, .w5, .w5Beta:
       isSendEnable = true
       isReceiveEnable = true
       isScanEnable = true
