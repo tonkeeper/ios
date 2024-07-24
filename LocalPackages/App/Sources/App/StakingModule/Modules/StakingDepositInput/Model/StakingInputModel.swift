@@ -32,6 +32,17 @@ enum StakingInputPoolInfoItem {
   case cycleInfo(String)
 }
 
+public struct StakingConfirmationItem {
+  public enum Operation {
+    case deposit(StackingPoolInfo)
+    case withdraw(StackingPoolInfo)
+  }
+  
+  public let operation: Operation
+  public let amount: BigUInt
+  public let isMax: Bool
+}
+
 protocol StakingInputModel: AnyObject {
   var title: String { get }
   var didUpdateIsMax: ((Bool) -> Void)? { get set }
@@ -48,4 +59,5 @@ protocol StakingInputModel: AnyObject {
   func toggleIsMax()
   func setSelectedStackingPool(_ pool: StackingPoolInfo)
   func getPickerSections(completion: @escaping (StakingListModel) -> Void)
+  func getStakingConfirmationItem(completion: @escaping (StakingConfirmationItem) -> Void)
 }

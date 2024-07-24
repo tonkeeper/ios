@@ -59,6 +59,9 @@ private extension StakingInputViewController {
     amountInputViewController.isTokenPickerAvailable = false
     
     customView.balanceView.maxButton.configuration = createMaxButtonConfiguration()
+    customView.continueButton.configuration.action = { [weak viewModel] in
+      viewModel?.didTapContinue()
+    }
   }
   
   func setupBindings() {

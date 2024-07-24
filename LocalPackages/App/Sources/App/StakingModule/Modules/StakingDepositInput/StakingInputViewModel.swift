@@ -6,6 +6,7 @@ import BigInt
 
 protocol StakingInputModuleOutput: AnyObject {
   var didTapPoolPicker: ((_ model: StakingListModel) -> Void)? { get set }
+  var didConfirm: ((StakingConfirmationItem) -> Void)? { get set }
 }
 
 protocol StakingInputModuleInput: AnyObject {
@@ -29,6 +30,7 @@ protocol StakingInputViewModel: AnyObject {
   func didToggleInputMode()
   func didToggleIsMax()
   func didTapInfoView()
+  func didTapContinue()
 }
 
 final class StakingInputViewModelImplementation: StakingInputViewModel, StakingInputModuleOutput, StakingInputModuleInput {
@@ -48,6 +50,7 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
   // MARK: - StakingInputModuleOutput
   
   var didTapPoolPicker: ((_ model: StakingListModel) -> Void)?
+  var didConfirm: ((StakingConfirmationItem) -> Void)?
   
   // MARK: - StakingInputModuleInput
   
@@ -126,6 +129,14 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
     model.getPickerSections { model in
       DispatchQueue.main.async {
         self.didTapPoolPicker?(model)
+      }
+    }
+  }
+  
+  func didTapContinue() {
+    model.getStakingConfirmationItem { item in
+      DispatchQueue.main.async {
+        self.didConfirm?(item)
       }
     }
   }

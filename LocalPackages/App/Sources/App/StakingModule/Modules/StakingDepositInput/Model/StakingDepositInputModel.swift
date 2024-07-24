@@ -219,6 +219,20 @@ final class StakingDepositInputModel: StakingInputModel {
     }
   }
   
+  func getStakingConfirmationItem(completion: @escaping (StakingConfirmationItem) -> Void) {
+    queue.async {
+      guard let selectedStackingPoolInfo = self.selectedStackingPoolInfo else { return }
+      let item = StakingConfirmationItem(
+        operation: .deposit(
+          selectedStackingPoolInfo
+        ),
+        amount: self.tonAmount,
+        isMax: self.isMaxAmount
+      )
+      completion(item)
+    }
+  }
+  
   func setInitialStakingPool() {
     guard let walletAddress = try? wallet.friendlyAddress,
     let pool = stakingPoolsStore.getState()[walletAddress]?.profitablePool else { return }

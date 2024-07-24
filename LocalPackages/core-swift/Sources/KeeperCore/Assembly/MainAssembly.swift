@@ -303,15 +303,26 @@ public final class MainAssembly {
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
-//  
-//  public func tokenPickerController(wallet: Wallet, selectedToken: Token) -> TokenPickerController {
-//    TokenPickerController(
-//      wallet: wallet,
-//      selectedToken: selectedToken,
-//      walletBalanceStore: storesAssembly.walletBalanceStore,
-//      amountFormatter: formattersAssembly.amountFormatter
-//    )
-//  }
+  
+  public func stakingDepositConfirmationController(wallet: Wallet,
+                                                   stakingPool: StackingPoolInfo,
+                                                   amount: BigUInt,
+                                                   isMax: Bool) -> StakeConfirmationController {
+    StakeDepositConfirmationController(
+      wallet: wallet,
+      stakingPool: stakingPool,
+      amount: amount,
+      isMax: isMax,
+      sendService: servicesAssembly.sendService(),
+      accountService: servicesAssembly.accountService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      balanceStore: mainStoresAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStoreV2,
+      currencyStore: storesAssembly.currencyStoreV2,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter
+    )
+  }
   
   public func buyListController(wallet: Wallet,
                                 isMarketRegionPickerAvailable: @escaping () async -> Bool) -> BuyListController {

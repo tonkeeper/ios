@@ -1,5 +1,6 @@
 import Foundation
 import TonSwift
+import BigInt
 
 public struct StackingPoolInfo: Codable, Equatable {
   public struct Implementation: Codable, Hashable {
@@ -72,5 +73,19 @@ public extension Array where Element == StackingPoolInfo {
   
   func filterByPoolKind(_ kind: StackingPoolInfo.Implementation.Kind) -> [StackingPoolInfo] {
     filter { $0.implementation.type ==  kind}
+  }
+}
+
+
+public extension StackingPoolInfo.Implementation {
+  var withdrawalFee: BigUInt  {
+    switch self.type {
+    case .liquidTF:
+      return BigUInt(integerLiteral: 1_000_000_000)
+    case .tf:
+      return BigUInt(integerLiteral: 1_000_000_000)
+    case .whales:
+      return BigUInt(integerLiteral: 200_000_000)
+    }
   }
 }
