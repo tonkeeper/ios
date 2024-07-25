@@ -268,7 +268,7 @@ extension API {
     }
     
     let address = try Address.parse(wallet.address)
-    return FriendlyAddress(address: address, bounceable: !wallet.is_wallet)
+    return FriendlyAddress(address: address, bounceable: !wallet.account.is_wallet)
   }
   
   func getDomainExpirationDate(_ domainName: String) async throws -> Date? {
