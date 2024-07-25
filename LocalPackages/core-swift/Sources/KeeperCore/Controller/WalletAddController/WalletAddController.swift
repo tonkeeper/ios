@@ -21,7 +21,7 @@ public final class WalletAddController {
     )
     let walletIdentity = WalletIdentity(
       network: .mainnet,
-      kind: .Regular(keyPair.publicKey, .v4R2)
+      kind: .Regular(keyPair.publicKey, .currentVersion)
     )
     let wallet = Wallet(
       id: UUID().uuidString,
