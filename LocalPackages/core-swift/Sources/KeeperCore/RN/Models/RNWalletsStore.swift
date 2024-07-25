@@ -63,6 +63,7 @@ public struct RNWallet: Codable {
   
   enum RNContractVersion: String, Codable {
     case v5R1
+    case v5Beta
     case v4R2
     case v4R1
     case v3R2
@@ -79,6 +80,8 @@ public struct RNWallet: Codable {
         self = .v4R1
       case .v4R2:
         self = .v4R2
+      case .v5Beta:
+        self = .v5Beta
       case .v5R1:
         self = .v5R1
       }
@@ -178,6 +181,8 @@ public extension RNWallet {
       contractVersion = .v4R1
     case .v4R2:
       contractVersion = .v4R2
+    case .v5Beta:
+      contractVersion = .v5Beta
     case .v5R1:
       contractVersion = .v5R1
     case .LockupV1:
@@ -198,6 +203,16 @@ public extension RNWallet {
       contract = WalletV5R1(
         publicKey: publicKey.data,
         walletId: WalletId(
+          networkGlobalId: Int32(
+            network.rawValue
+          ),
+          workchain: 0
+        )
+      )
+    case .v5Beta:
+      contract = WalletV5Beta(
+        publicKey: publicKey.data,
+        walletId: WalletIdBeta(
           networkGlobalId: Int32(
             network.rawValue
           ),
