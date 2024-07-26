@@ -2,6 +2,17 @@ import UIKit
 import TKUIKit
 
 final class StakingInputView: TKView {
+  
+  var keyboardHeight: CGFloat = 0 {
+    didSet {
+      continueButtonContainer.snp.remakeConstraints { make in
+        make.left.right.equalTo(self)
+        make.bottom.equalTo(self).inset(keyboardHeight)
+      }
+      scrollView.contentInset.bottom = keyboardHeight == 0 ? keyboardHeight : keyboardHeight + 32
+    }
+  }
+  
   let scrollView = TKUIScrollView()
   let contentStackView: UIStackView = {
     let stackView = UIStackView()
@@ -52,15 +63,17 @@ final class StakingInputView: TKView {
     
     continueButtonContainer.setViews([continueButton])
     continueButtonContainer.padding.top = 16
+    continueButtonContainer.padding.left = 16
+    continueButtonContainer.padding.right = 16
     
     addSubview(scrollView)
+    addSubview(continueButtonContainer)
     scrollView.addSubview(contentStackView)
     contentStackView.addArrangedSubview(amountInputContainer)
     contentStackView.setCustomSpacing(16, after: amountInputContainer)
     contentStackView.addArrangedSubview(balanceView)
     contentStackView.setCustomSpacing(16, after: balanceView)
     contentStackView.addArrangedSubview(detailsViewContainer)
-    contentStackView.addArrangedSubview(continueButtonContainer)
     
     setupConstraints()
   }
@@ -79,6 +92,11 @@ final class StakingInputView: TKView {
     
     amountInputContainer.snp.makeConstraints { make in
       make.height.greaterThanOrEqualTo(CGFloat.amountInputHeight)
+    }
+    
+    continueButtonContainer.snp.makeConstraints { make in
+      make.left.right.equalTo(self)
+      make.bottom.equalTo(self).inset(keyboardHeight)
     }
   }
 }

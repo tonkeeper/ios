@@ -12,6 +12,9 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectStakingItem: (( _ wallet: Wallet,
                                _ stakingPoolInfo: StackingPoolInfo,
                                _ accountStakingInfo: AccountStackingInfo) -> Void)? { get set }
+  var didSelectCollectStakingItem: (( _ wallet: Wallet,
+                                      _ stakingPoolInfo: StackingPoolInfo,
+                                      _ accountStakingInfo: AccountStackingInfo) -> Void)? { get set }
 
   var didTapReceive: (() -> Void)? { get set }
   var didTapSend: (() -> Void)? { get set }
@@ -66,6 +69,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didSelectStakingItem: (( _ wallet: Wallet,
                                _ stakingPoolInfo: StackingPoolInfo,
                                _ accountStakingInfo: AccountStackingInfo) -> Void)?
+  var didSelectCollectStakingItem: (( _ wallet: Wallet,
+                                      _ stakingPoolInfo: StackingPoolInfo,
+                                      _ accountStakingInfo: AccountStackingInfo) -> Void)?
   
   var didTapReceive: (() -> Void)?
   var didTapSend: (() -> Void)?
@@ -299,8 +305,10 @@ private extension WalletBalanceViewModelImplementation {
                       let poolInfo = item.poolInfo else { return }
                 self.didSelectStakingItem?(wallet, poolInfo, item.info)
               },
-              stakingCollectHandler: {
-                print("Collect")
+              stakingCollectHandler: { [weak self] in
+                guard let self,
+                      let poolInfo = item.poolInfo else { return }
+                self.didSelectCollectStakingItem?(wallet, poolInfo, item.info)
               })
           }
         }
@@ -550,8 +558,9 @@ private extension WalletBalanceViewModelImplementation {
               guard let poolInfo = item.poolInfo else { return }
               self?.didSelectStakingItem?(wallet, poolInfo, item.info)
             },
-            stakingCollectHandler: {
-              print("Collect")
+            stakingCollectHandler: { [weak self] in
+              guard let poolInfo = item.poolInfo else { return }
+              self?.didSelectCollectStakingItem?(wallet, poolInfo, item.info)
             })
         }
         

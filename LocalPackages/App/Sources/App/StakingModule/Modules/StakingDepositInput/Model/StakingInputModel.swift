@@ -1,6 +1,7 @@
 import Foundation
 import KeeperCore
 import BigInt
+import TonSwift
 
 struct StakingInputModelConvertedItem {
   let amount: BigUInt
@@ -42,6 +43,16 @@ public struct StakingConfirmationItem {
   public let operation: Operation
   public let amount: BigUInt
   public let isMax: Bool
+}
+
+protocol StakingInputModelConfigurator: AnyObject {
+  var title: String { get }
+  var didUpdateBalance: ((UInt64) -> Void)? { get set }
+  var stakingPoolInfo: StackingPoolInfo? { get set }
+  func getBalance() -> UInt64
+  func getStakingConfirmationItem(tonAmount: BigUInt, isMaxAmount: Bool) -> StakingConfirmationItem?
+  func isContinueEnable(tonAmount: BigUInt) -> Bool
+  func getStakingInputRemainingItem(tonAmount: BigUInt) -> StakingInputRemainingItem
 }
 
 protocol StakingInputModel: AnyObject {

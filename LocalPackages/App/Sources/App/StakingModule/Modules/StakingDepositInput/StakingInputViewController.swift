@@ -42,14 +42,16 @@ final class StakingInputViewController: GenericViewViewController<StakingInputVi
     guard let animationDuration = notification.keyboardAnimationDuration,
     let keyboardHeight = notification.keyboardSize?.height else { return }
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
-      self.customView.scrollView.contentInset.bottom = keyboardHeight
+      self.customView.keyboardHeight = keyboardHeight + 16
+      self.customView.layoutIfNeeded()
     }
   }
   
   public func keyboardWillHide(_ notification: Notification) {
     guard let animationDuration = notification.keyboardAnimationDuration else { return }
     UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
-      self.customView.scrollView.contentInset.bottom = .zero
+      self.customView.keyboardHeight = 0
+      self.customView.layoutIfNeeded()
     }
   }
 }

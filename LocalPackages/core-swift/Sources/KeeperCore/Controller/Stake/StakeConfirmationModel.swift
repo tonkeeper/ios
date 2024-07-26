@@ -11,4 +11,5 @@ public struct StakeConfirmationModel {
   public let fee: LoadableModelItem<String>
   public let feeConverted: LoadableModelItem<String?>
   public let tokenSymbol: String
+  public let buttonTitle: String
 }

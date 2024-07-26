@@ -3,12 +3,12 @@ import KeeperCore
 import BigInt
 import TonSwift
 
-final class StakingDepositInputModel: StakingInputModel {
+final class StakingInputModelImplementation: StakingInputModel {
   
   // MARK: - StakingInputModel
   
   var title: String {
-    "Stake"
+    configurator.title
   }
   var didUpdateIsMax: ((Bool) -> Void)?
   var didUpdateConvertedItem: ((StakingInputModelConvertedItem) -> Void)?
@@ -27,7 +27,7 @@ final class StakingDepositInputModel: StakingInputModel {
     }
   }
   private var mostProfitableStackingPoolInfo: StackingPoolInfo?
-  private var convertedBalance: ConvertedBalance? {
+  private var balanceAmount: UInt64? {
     didSet {
       if isMaxAmount {
         didToggleIsMax()
@@ -35,8 +35,10 @@ final class StakingDepositInputModel: StakingInputModel {
       updateInputItem()
       updateConvertedItem()
       updateButton()
+      updateRemainingItem()
     }
   }
+  
   private var isTonInput = true {
     didSet {
       updateInputItem()
@@ -67,7 +69,7 @@ final class StakingDepositInputModel: StakingInputModel {
   
   private let wallet: Wallet
   private let detailsInput: StakingInputDetailsModuleInput
-  private let balanceStore: ConvertedBalanceStoreV2
+  private let configurator: StakingInputModelConfigurator
   private let stakingPoolsStore: StakingPoolsStore
   private let tonRatesStore: TonRatesStoreV2
   private let currencyStore: CurrencyStoreV2
@@ -77,13 +79,13 @@ final class StakingDepositInputModel: StakingInputModel {
   init(wallet: Wallet,
        stakingPoolInfo: StackingPoolInfo? = nil,
        detailsInput: StakingInputDetailsModuleInput,
-       balanceStore: ConvertedBalanceStoreV2,
+       configurator: StakingInputModelConfigurator,
        stakingPoolsStore: StakingPoolsStore,
        tonRatesStore: TonRatesStoreV2,
        currencyStore: CurrencyStoreV2) {
     self.wallet = wallet
     self.detailsInput = detailsInput
-    self.balanceStore = balanceStore
+    self.configurator = configurator
     self.stakingPoolsStore = stakingPoolsStore
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
@@ -102,10 +104,9 @@ final class StakingDepositInputModel: StakingInputModel {
         notifyOnAdded: false) { observer, newState, oldState in
           observer.didUpdateTonRates(newState)
         }
-      self.balanceStore.addObserver(
-        self, notifyOnAdded: false) { observer, newState, oldState in
-          observer.didUpdateBalance(newState)
-        }
+      self.configurator.didUpdateBalance = { [weak self] balance in
+        self?.didUpdateBalance(balance: balance)
+      }
       self.setInitialBalance()
       self.setInitialStakingPool()
       self.setInitialCurrency()
@@ -163,6 +164,7 @@ final class StakingDepositInputModel: StakingInputModel {
   
   func setSelectedStackingPool(_ pool: StackingPoolInfo) {
     queue.async {
+      self.configurator.stakingPoolInfo = pool
       self.selectedStackingPoolInfo = pool
     }
   }
@@ -227,20 +229,17 @@ final class StakingDepositInputModel: StakingInputModel {
   
   func getStakingConfirmationItem(completion: @escaping (StakingConfirmationItem) -> Void) {
     queue.async {
-      guard let selectedStackingPoolInfo = self.selectedStackingPoolInfo else { return }
-      let item = StakingConfirmationItem(
-        operation: .deposit(
-          selectedStackingPoolInfo
-        ),
-        amount: self.tonAmount,
-        isMax: self.isMaxAmount
-      )
+      guard let item = self.configurator.getStakingConfirmationItem(
+        tonAmount: self.tonAmount,
+        isMaxAmount: self.isMaxAmount
+      ) else { return }
       completion(item)
     }
   }
   
   func setInitialStakingPool() {
     guard selectedStackingPoolInfo == nil else {
+      configurator.stakingPoolInfo = selectedStackingPoolInfo
       updateButton()
       updateStakingPool()
       return
@@ -249,6 +248,7 @@ final class StakingDepositInputModel: StakingInputModel {
     let pool = stakingPoolsStore.getState()[walletAddress]?.profitablePool else { return }
     self.mostProfitableStackingPoolInfo = pool
     self.selectedStackingPoolInfo = pool
+    self.configurator.stakingPoolInfo = pool
   }
   
   func setInitialCurrency() {
@@ -260,18 +260,13 @@ final class StakingDepositInputModel: StakingInputModel {
   }
   
   func setInitialBalance() {
-    guard let walletAddress = try? wallet.friendlyAddress,
-          let balance = balanceStore.getState()[walletAddress] else {
-      return
-    }
-    self.convertedBalance = balance.balance
+    self.balanceAmount = configurator.getBalance()
   }
   
-  func didUpdateBalance(_ balances: [FriendlyAddress: ConvertedBalanceState]) {
+  func didUpdateBalance(balance: UInt64) {
     queue.async { [weak self] in
       guard let self else { return }
-      guard let walletAddress = try? wallet.friendlyAddress else { return }
-      self.convertedBalance = balances[walletAddress]?.balance
+      self.balanceAmount = balance
     }
   }
 
@@ -283,6 +278,7 @@ final class StakingDepositInputModel: StakingInputModel {
             !walletPools.isEmpty else {
         self.mostProfitableStackingPoolInfo = nil
         self.selectedStackingPoolInfo = nil
+        self.configurator.stakingPoolInfo = nil
         return
       }
       
@@ -290,8 +286,10 @@ final class StakingDepositInputModel: StakingInputModel {
       
       if let selectedStackingPoolInfo, let updated = walletPools.first(where: { $0.address == selectedStackingPoolInfo.address }) {
         self.selectedStackingPoolInfo = updated
+        self.configurator.stakingPoolInfo = updated
       } else {
         self.selectedStackingPoolInfo = mostProfitableStackingPoolInfo
+        self.configurator.stakingPoolInfo = mostProfitableStackingPoolInfo
       }
     }
   }
@@ -313,14 +311,7 @@ final class StakingDepositInputModel: StakingInputModel {
         )
       )
     }
-    guard let selectedPool = selectedStackingPoolInfo else {
-      return
-    }
-    let isInputNotZero = !tonAmount.isZero
-    let isAvailableAmount = tonAmount <= BigUInt(integerLiteral: UInt64((convertedBalance?.tonBalance.tonBalance.amount) ?? 0))
-    let isGreaterThanMinimum = tonAmount >= BigUInt(selectedPool.minStake)
-    
-    isEnable = isInputNotZero && isAvailableAmount && isGreaterThanMinimum
+    isEnable = configurator.isContinueEnable(tonAmount: tonAmount)
   }
   
   func updateInputItem() {
@@ -396,34 +387,8 @@ final class StakingDepositInputModel: StakingInputModel {
   }
   
   func updateRemainingItem() {
-    guard let tonBalance = convertedBalance?.tonBalance.tonBalance.amount else {
-      didUpdateRemainingItem?(.insufficient)
-      return
-    }
-    
-    guard tonAmount > 0 else {
-      let remaining = BigUInt(UInt64(tonBalance)) - tonAmount
-      didUpdateRemainingItem?(.remaining(remaining, TonInfo.fractionDigits))
-      return
-    }
-    
-    guard tonAmount <= BigUInt(UInt64(tonBalance)) else {
-      didUpdateRemainingItem?(.insufficient)
-      return
-    }
-    
-    guard let selectedStackingPoolInfo else {
-      didUpdateRemainingItem?(.lessThanMinDeposit(0, TonInfo.fractionDigits))
-      return
-    }
-    
-    guard tonAmount >= BigUInt(UInt64(selectedStackingPoolInfo.minStake)) else {
-      didUpdateRemainingItem?(.lessThanMinDeposit(BigUInt(UInt64(selectedStackingPoolInfo.minStake)), TonInfo.fractionDigits))
-      return
-    }
-    
-    let remaining = BigUInt(UInt64(tonBalance)) - tonAmount
-    didUpdateRemainingItem?(.remaining(remaining, TonInfo.fractionDigits))
+    let remaining = configurator.getStakingInputRemainingItem(tonAmount: tonAmount)
+    didUpdateRemainingItem?(remaining)
   }
   
   func updateStakingPool() {
@@ -441,7 +406,7 @@ final class StakingDepositInputModel: StakingInputModel {
   }
   
   func toggleMaxIfNeeded() {
-    guard let amount = convertedBalance?.tonBalance.tonBalance.amount else {
+    guard let amount = balanceAmount else {
       return
     }
     isMaxAmount = tonAmount == BigUInt(integerLiteral: UInt64(amount))
@@ -449,7 +414,7 @@ final class StakingDepositInputModel: StakingInputModel {
   }
   
   func didToggleIsMax() {
-    let amount = convertedBalance?.tonBalance.tonBalance.amount ?? 0
+    let amount = balanceAmount ?? 0
     if isMaxAmount {
       tonAmount = BigUInt(integerLiteral: UInt64(amount))
     } else {

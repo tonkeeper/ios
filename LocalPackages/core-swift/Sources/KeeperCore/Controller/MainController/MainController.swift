@@ -31,6 +31,7 @@ public final class MainController {
   private let walletBalanceLoader: WalletBalanceLoaderV2
   private let tonRatesLoader: TonRatesLoaderV2
   private let internalNotificationsLoader: InternalNotificationsLoader
+  private let nftsLoader: NftsLoader
   
   private var walletsBalanceLoadTimer: Timer?
   private var tonRatesLoadTimer: Timer?
@@ -51,6 +52,7 @@ public final class MainController {
        apiProvider: APIProvider,
        walletBalanceLoader: WalletBalanceLoaderV2,
        tonRatesLoader: TonRatesLoaderV2,
+       nftsLoader: NftsLoader,
        internalNotificationsLoader: InternalNotificationsLoader) {
     self.walletsStore = walletsStore
     self.accountNFTService = accountNFTService
@@ -64,6 +66,7 @@ public final class MainController {
     self.apiProvider = apiProvider
     self.walletBalanceLoader = walletBalanceLoader
     self.tonRatesLoader = tonRatesLoader
+    self.nftsLoader = nftsLoader
     self.internalNotificationsLoader = internalNotificationsLoader
     
     walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
@@ -93,6 +96,14 @@ public final class MainController {
     Task {
       await tonConnectEventsStore.addObserver(self)
     }
+    Task {
+      await self.nftsLoader.loadNfts(wallet: self.walletsStore.getState().activeWallet)
+    }
+    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      Task {
+        await self.nftsLoader.loadNfts(wallet: newState.activeWallet)
+      }
+    }
   }
   
   private func startTonRatesLoadTimer() {
@@ -111,7 +122,11 @@ public final class MainController {
   private func startWalletBalancesLoadTimer() {
     self.walletsBalanceLoadTimer?.invalidate()
     let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
-      self?.walletBalanceLoader.reloadBalance()
+      guard let self else { return }
+      self.walletBalanceLoader.reloadBalance()
+      Task {
+        await self.nftsLoader.loadNfts(wallet: self.walletsStore.getState().activeWallet)
+      }
     }
     RunLoop.main.add(timer, forMode: .common)
     self.walletsBalanceLoadTimer = timer

@@ -44,6 +44,10 @@ final class StakingDepositInputAPYViewController: UIViewController, StakingInput
     stackView.snp.makeConstraints { make in
       make.edges.equalTo(self.view)
     }
+    
+    headerView.snp.makeConstraints { make in
+      make.height.equalTo(48)
+    }
   }
   
   func configureWith(stackingPoolInfo: StackingPoolInfo,
@@ -101,6 +105,7 @@ final class StakingDepositInputAPYViewController: UIViewController, StakingInput
     )
     
     DispatchQueue.main.async {
+      self.headerView.configure(model: TKListTitleView.Model(title: "Your APY", textStyle: .label1))
       self.listView.configure(model: listModel)
     }
     

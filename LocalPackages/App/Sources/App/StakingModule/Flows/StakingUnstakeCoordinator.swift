@@ -6,7 +6,7 @@ import TKCore
 import KeeperCore
 import TonSwift
 
-final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRouter> {
+final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
   var didFinish: (() -> Void)?
   
@@ -31,17 +31,18 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
   }
   
   override func start(deeplink: (any CoordinatorDeeplink)? = nil) {
-    openStakingDepositInput()
+    openStakingWithdrawInput()
   }
   
-  func openStakingDepositInput() {
-    let stakingDepositInputAPY = StakingDepositInputAPYAssembly.module(
+  func openStakingWithdrawInput() {
+    let stakingWithdrawEstimateViewController = StakingWithdrawEstimateViewController(
       wallet: wallet,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
+      stakingPoolInfo: stakingPoolInfo
     )
     
-    let configurator = StakingDepositInputModelConfigurator(
+    let configurator = StakingWithdrawInputModelConfigurator(
       wallet: wallet,
+      poolInfo: stakingPoolInfo,
       balanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore
     )
     
@@ -49,13 +50,13 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
       model: StakingInputModelImplementation(
         wallet: wallet,
         stakingPoolInfo: stakingPoolInfo,
-        detailsInput: stakingDepositInputAPY.input,
+        detailsInput: stakingWithdrawEstimateViewController,
         configurator: configurator,
         stakingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
         tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStoreV2,
         currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV2
       ),
-      detailsViewController: stakingDepositInputAPY.view,
+      detailsViewController: stakingWithdrawEstimateViewController,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
@@ -74,15 +75,16 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
   func openConfirmation(wallet: Wallet, item: StakingConfirmationItem) {
     let controller: StakeConfirmationController
     switch item.operation {
-    case .deposit(let stackingPoolInfo):
-      controller = keeperCoreMainAssembly.stakingDepositConfirmationController(
+    case .deposit:
+      return
+    case .withdraw(let stackingPoolInfo):
+      controller = keeperCoreMainAssembly.stakingWithdrawConfirmationController(
         wallet: wallet,
         stakingPool: stackingPoolInfo,
         amount: item.amount,
-        isMax: item.isMax
+        isMax: item.isMax,
+        isCollect: false
       )
-    case .withdraw(let stackingPoolInfo):
-      return
     }
     
     let module = StakingConfirmationAssembly.module(stakingConfirmationController: controller)

@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 import BigInt
 
-public final class StakeDepositConfirmationController: StakeConfirmationController {
+public final class StakeWithdrawConfirmationController: StakeConfirmationController {
   
   public enum Error: Swift.Error {
     case failedToCalculateFee
@@ -22,6 +22,7 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
   private let stakingPool: StackingPoolInfo
   private let amount: BigUInt
   private let isMax: Bool
+  private let isCollect: Bool
   private let sendService: SendService
   private let accountService: AccountService
   private let blockchainService: BlockchainService
@@ -35,6 +36,7 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
        stakingPool: StackingPoolInfo,
        amount: BigUInt,
        isMax: Bool,
+       isCollect: Bool,
        sendService: SendService,
        accountService: AccountService,
        blockchainService: BlockchainService,
@@ -47,6 +49,7 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
     self.stakingPool = stakingPool
     self.amount = amount
     self.isMax = isMax
+    self.isCollect = isCollect
     self.sendService = sendService
     self.accountService = accountService
     self.blockchainService = blockchainService
@@ -115,7 +118,7 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
 
 // MARK: - Private methods
 
-private extension StakeDepositConfirmationController {
+private extension StakeWithdrawConfirmationController {
   func emulate() async {
     async let createTransactionBocTask = createEmulateTransactionBoc()
     
@@ -211,13 +214,22 @@ private extension StakeDepositConfirmationController {
     
     let transferMessageBuilder = TransferMessageBuilder(
       transferData: .stake(
-        .deposit(
-          TransferData.StakeDeposit(
+        .withdraw(
+          TransferData.StakeWithdraw(
             seqno: seqno,
             pool: stakingPool,
             amount: amount,
             isBouncable: true,
-            timeout: timeout
+            timeout: timeout,
+            jettonWalletAddress: {
+              [blockchainService] wallet,
+              jettonMaster in
+              try await blockchainService.getWalletAddress(
+                jettonMaster: jettonMaster?.toRaw() ?? "",
+                owner: wallet.address.toRaw(),
+                isTestnet: wallet.isTestnet
+              )
+            }
           )
         )
       )
@@ -234,7 +246,6 @@ private extension StakeDepositConfirmationController {
     let pool = stakingPool
     
     let poolName = pool.name
-    let apyFormatted = makeFromattedAPY(pool)
     var formattedConvertedAmount: String?
     
     let formattedAmount = amountFormatter.formatAmount(
@@ -265,14 +276,14 @@ private extension StakeDepositConfirmationController {
       poolName: poolName,
       poolImplementation: pool.implementation,
       wallet: wallet,
-      apyPercent: apyFormatted,
-      operationName: .depositOperation,
+      apyPercent: nil,
+      operationName: isCollect ? .getWithdrawOperation : .withdrawOperation,
       amount: formattedAmount,
       amountConverted: formattedConvertedAmount,
       fee: fee,
       feeConverted: feeConverted,
       tokenSymbol: TonInfo.symbol,
-      buttonTitle: "Confirm and Stake"
+      buttonTitle: isCollect ? "Confirm and Collect" : "Confirm and Unstake"
     )
   }
   
@@ -301,5 +312,6 @@ private extension StakeDepositConfirmationController {
 }
 
 private extension String {
-  static let depositOperation = "Deposit"
+  static let withdrawOperation = "Unstake"
+  static let getWithdrawOperation = "Get withdrawal"
 }

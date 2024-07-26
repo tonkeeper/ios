@@ -9,8 +9,10 @@ protocol StakingBalanceDetailsModuleOutput: AnyObject {
   var didOpenURLInApp: ((URL, String?) -> Void)? { get set }
   var openJettonDetails: ((_ wallet: Wallet, _ jettonItem: JettonItem) -> Void)? { get set }
   var didTapStake: ((_ wallet: Wallet, _ stakingPoolInfo: StackingPoolInfo) -> Void)? { get set }
-  var didTapUnstake: ((_ wallet: Wallet) -> Void)? { get set }
-  var didTapCollect: ((_ wallet: Wallet) -> Void)? { get set }
+  var didTapUnstake: ((_ wallet: Wallet, _ stakingPoolInfo: StackingPoolInfo) -> Void)? { get set }
+  var didTapCollect: (( _ wallet: Wallet,
+                        _ stakingPoolInfo: StackingPoolInfo,
+                        _ accountStakingInfo: AccountStackingInfo) -> Void)? { get set }
 }
 
 protocol StakingBalanceDetailsModuleInput: AnyObject {
@@ -39,8 +41,10 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   var didOpenURLInApp: ((URL, String?) -> Void)?
   var openJettonDetails: ((Wallet, JettonItem) -> Void)?
   var didTapStake: ((_ wallet: Wallet, _ stakingPoolInfo: StackingPoolInfo) -> Void)?
-  var didTapUnstake: ((_ wallet: Wallet) -> Void)?
-  var didTapCollect: ((_ wallet: Wallet) -> Void)?
+  var didTapUnstake: ((_ wallet: Wallet, _ stakingPoolInfo: StackingPoolInfo) -> Void)?
+  var didTapCollect: (( _ wallet: Wallet,
+                        _ stakingPoolInfo: StackingPoolInfo,
+                        _ accountStakingInfo: AccountStackingInfo) -> Void)?
   
   // MARK: - StakingViewModel
   
@@ -241,17 +245,32 @@ private extension StakingBalanceDetailsViewModelImplementation {
       currency: balanceItem.currency
     )
     
+    let badgeImage = TKUIListItemImageIconView.Configuration.Image.image(stakingPoolInfo.implementation.icon)
+    let badgeIconConfiguration = TKUIListItemImageIconView.Configuration(
+      image: badgeImage,
+      tintColor: .Icon.primary,
+      backgroundColor: .Background.contentTint,
+      size: .badgeIconSize,
+      cornerRadius: 13,
+      borderWidth: 2,
+      borderColor: .Background.page,
+      contentMode: .scaleAspectFill
+    )
+    
     let model = TokenDetailsInformationView.Model(
-      imageConfiguration: TKUIListItemImageIconView.Configuration(
-        image: .image(
-          .TKCore.Icons.Size44.tonLogo
-        ),
-        tintColor: .clear,
-        backgroundColor: .clear,
-        size: CGSize(width: 64, height: 64),
-        cornerRadius: 32,
-        contentMode: .scaleAspectFit,
-        imageSize: CGSize(width: 64, height: 64)
+      imageConfiguration: TKUIListItemIconView.Configuration(
+        iconConfiguration: .imageWithBadge(TKUIListItemImageIconView.Configuration(
+          image: .image(
+            .TKCore.Icons.Size44.tonLogo
+          ),
+          tintColor: .clear,
+          backgroundColor: .clear,
+          size: CGSize(width: 64, height: 64),
+          cornerRadius: 32,
+          contentMode: .scaleAspectFit,
+          imageSize: CGSize(width: 64, height: 64)
+        ), badgeIconConfiguration),
+        alignment: .center
       ),
       tokenAmount: tokenAmount,
       convertedAmount: convertedAmount
@@ -333,8 +352,8 @@ private extension StakingBalanceDetailsViewModelImplementation {
       converted = convert(amount: balanceItem.info.readyWithdraw)
       title = .unstakeReadyTitle
       subtitle = .tapToCollect
-      tapClosure = { [weak self, wallet] in
-        self?.didTapCollect?(wallet)
+      tapClosure = { [weak self, wallet, stakingPoolInfo, accountStackingInfo] in
+        self?.didTapCollect?(wallet, stakingPoolInfo, accountStackingInfo)
       }
     } else {
       didUpdateStakeStateView?(nil)
@@ -400,8 +419,8 @@ private extension StakingBalanceDetailsViewModelImplementation {
             image: .TKUIKit.Icons.Size28.minusOutline,
             title: .unstakeTitle
           ),
-          action: { [weak self, wallet] in
-            self?.didTapUnstake?(wallet)
+          action: { [weak self, wallet, stakingPoolInfo] in
+            self?.didTapUnstake?(wallet, stakingPoolInfo)
           }
         )
       ]
@@ -423,4 +442,9 @@ private extension String {
   static let tapToCollect = "Tap to collect"
   static let stakeTitle = "Stake"
   static let unstakeTitle = "Unstake"
+}
+
+private extension CGSize {
+  static let iconSize = CGSize(width: 44, height: 44)
+  static let badgeIconSize = CGSize(width: 24, height: 24)
 }

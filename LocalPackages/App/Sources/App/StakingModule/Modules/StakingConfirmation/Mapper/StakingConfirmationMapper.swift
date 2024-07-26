@@ -22,7 +22,7 @@ struct StakingConfirmationMapper {
       items: [
         .button(
           TKModalCardViewController.Configuration.Button(
-            title: TKLocales.ConfirmSend.confirm_button,
+            title: model.buttonTitle,
             size: .large,
             category: .primary,
             isEnabled: true,
@@ -137,7 +137,7 @@ private extension StakingConfirmationMapper {
     )
     items.append(hintItem)
     
-    let title = "Stake"
+    let title = model.operationName
     let titleItem: TKModalCardViewController.Configuration.Item = .text(
       .init(text: title.withTextStyle(.h3, color: .Text.primary, alignment: .center), numberOfLines: 1),
       bottomSpacing: 0

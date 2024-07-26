@@ -6,6 +6,7 @@ import TKScreenKit
 import KeeperCore
 import TKCore
 import TonSwift
+import BigInt
 
 final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
@@ -31,6 +32,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private weak var addWalletCoordinator: AddWalletCoordinator?
   private weak var sendTokenCoordinator: SendTokenCoordinator?
   private weak var webSwapCoordinator: WebSwapCoordinator?
+  
+  private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
@@ -146,6 +149,13 @@ private extension MainCoordinator {
     
     walletCoordinator.didSelectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
       self?.openStakingItemDetails(
+        wallet: wallet,
+        stakingPoolInfo: stakingPoolInfo,
+        accountStackingInfo: accountStackingInfo)
+    }
+    
+    walletCoordinator.didSelectCollectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
+      self?.openStakingCollect(
         wallet: wallet,
         stakingPoolInfo: stakingPoolInfo,
         accountStackingInfo: accountStackingInfo)
@@ -704,9 +714,69 @@ private extension MainCoordinator {
       self?.openStake(wallet: wallet, stakingPoolInfo: stakingPoolInfo)
     }
     
+    module.output.didTapUnstake = { [weak self] wallet, stakingPoolInfo in
+      self?.openUnstake(wallet: wallet, stakingPoolInfo: stakingPoolInfo)
+    }
+    
+    module.output.didTapCollect = { [weak self] in
+      self?.openStakingCollect(wallet: $0, stakingPoolInfo: $1, accountStackingInfo: $2)
+    }
+    
     module.view.setupBackButton()
     
     navigationController.pushViewController(module.view, animated: true)
+  }
+  
+  func openStakingCollect(wallet: Wallet,
+                          stakingPoolInfo: StackingPoolInfo,
+                          accountStackingInfo: AccountStackingInfo) {
+    
+    let controller = keeperCoreMainAssembly.stakingWithdrawConfirmationController(
+      wallet: wallet,
+      stakingPool: stakingPoolInfo,
+      amount: BigUInt(accountStackingInfo.readyWithdraw),
+      isMax: false,
+      isCollect: true
+    )
+    
+    let module = StakingConfirmationAssembly.module(stakingConfirmationController: controller)
+    
+    let navigationController = TKNavigationController(rootViewController: module.view)
+    navigationController.configureDefaultAppearance()
+    
+    module.output.didSendTransaction = { [weak self] in
+      NotificationCenter.default.post(Notification(name: Notification.Name("DID SEND TRANSACTION")))
+      self?.router.dismiss()
+    }
+    
+    module.output.didRequireSign = { [weak self, weak navigationController, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
+      guard let self = self, let navigationController else { return nil }
+      let coordinator = await WalletTransferSignCoordinator(
+        router: ViewControllerRouter(rootViewController: navigationController),
+        wallet: wallet,
+        transferMessageBuilder: walletTransfer,
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        coreAssembly: coreAssembly)
+      
+      self.walletTransferSignCoordinator = coordinator
+      
+      let result = await coordinator.handleSign(parentCoordinator: self)
+      
+      switch result {
+      case .signed(let data):
+        return data
+      case .cancel:
+        return nil
+      case .failed(let error):
+        throw error
+      }
+    }
+    
+    module.view.setupRightCloseButton { [weak self] in
+      self?.router.dismiss()
+    }
+
+    router.present(navigationController)
   }
   
   func openURL(_ url: URL, title: String?) {
@@ -719,6 +789,31 @@ private extension MainCoordinator {
     navigationController.configureDefaultAppearance()
     
     let coordinator = StakingStakeCoordinator(
+      wallet: wallet,
+      stakingPoolInfo: stakingPoolInfo,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: NavigationControllerRouter(rootViewController: navigationController)
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start(deeplink: nil)
+    
+    self.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
+    })
+  }
+  
+  func openUnstake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
+    let coordinator = StakingUnstakeCoordinator(
       wallet: wallet,
       stakingPoolInfo: stakingPoolInfo,
       keeperCoreMainAssembly: keeperCoreMainAssembly,

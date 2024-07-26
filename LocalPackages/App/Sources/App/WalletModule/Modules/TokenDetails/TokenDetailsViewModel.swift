@@ -163,13 +163,16 @@ private extension TokenDetailsViewModelImplementation {
     
     didUpdateInformationView?(
       TokenDetailsInformationView.Model(
-        imageConfiguration: TKUIListItemImageIconView.Configuration(
-          image: image,
-          tintColor: .clear,
-          backgroundColor: .clear,
-          size: CGSize(width: 64, height: 64),
-          cornerRadius: 32,
-          contentMode: .scaleAspectFit
+        imageConfiguration: TKUIListItemIconView.Configuration(
+          iconConfiguration: .image(TKUIListItemImageIconView.Configuration(
+            image: image,
+            tintColor: .clear,
+            backgroundColor: .clear,
+            size: CGSize(width: 64, height: 64),
+            cornerRadius: 32,
+            contentMode: .scaleAspectFit
+          )),
+          alignment: .center
         ),
         tokenAmount: model.tokenAmount,
         convertedAmount: model.convertedAmount

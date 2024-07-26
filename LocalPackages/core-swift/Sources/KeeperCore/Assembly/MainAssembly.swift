@@ -80,6 +80,7 @@ public final class MainAssembly {
       apiProvider: apiAssembly.apiProvider,
       walletBalanceLoader: mainLoadersAssembly.walletBalanceLoaderV2,
       tonRatesLoader: loadersAssembly.tonRatesLoaderV2,
+      nftsLoader: loadersAssembly.nftsLoader,
       internalNotificationsLoader: loadersAssembly.internalNotificationsLoader
     )
   }
@@ -313,6 +314,28 @@ public final class MainAssembly {
       stakingPool: stakingPool,
       amount: amount,
       isMax: isMax,
+      sendService: servicesAssembly.sendService(),
+      accountService: servicesAssembly.accountService(),
+      blockchainService: servicesAssembly.blockchainService(),
+      balanceStore: mainStoresAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStoreV2,
+      currencyStore: storesAssembly.currencyStoreV2,
+      amountFormatter: formattersAssembly.amountFormatter,
+      decimalFormatter: formattersAssembly.decimalAmountFormatter
+    )
+  }
+  
+  public func stakingWithdrawConfirmationController(wallet: Wallet,
+                                                    stakingPool: StackingPoolInfo,
+                                                    amount: BigUInt,
+                                                    isMax: Bool,
+                                                    isCollect: Bool) -> StakeConfirmationController {
+    StakeWithdrawConfirmationController(
+      wallet: wallet,
+      stakingPool: stakingPool,
+      amount: amount,
+      isMax: isMax,
+      isCollect: isCollect,
       sendService: servicesAssembly.sendService(),
       accountService: servicesAssembly.accountService(),
       blockchainService: servicesAssembly.blockchainService(),
