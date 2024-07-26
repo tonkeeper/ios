@@ -80,6 +80,7 @@ public final class TKCommentView: UIControl, ConfigurableView, ReusableView {
   public func configure(model: Model) {
     textLabel.attributedText = model.comment
     tapClosure = model.tapClosure
+    isUserInteractionEnabled = tapClosure != nil
     setNeedsLayout()
   }
   

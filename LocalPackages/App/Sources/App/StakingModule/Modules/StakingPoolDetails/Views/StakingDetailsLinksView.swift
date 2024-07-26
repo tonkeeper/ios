@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class StakingPoolDetailsLinksView: TKView, ConfigurableView {
+final class StakingDetailsLinksView: TKView, ConfigurableView {
   let titleView = TKListTitleView()
   let stackView = UIStackView()
   

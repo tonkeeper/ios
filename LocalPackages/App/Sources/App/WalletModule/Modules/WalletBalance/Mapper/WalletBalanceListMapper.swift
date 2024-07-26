@@ -16,44 +16,22 @@ struct WalletBalanceListMapper {
   }()
   
   private let amountFormatter: AmountFormatter
-  private let decimalAmountFormatter: DecimalAmountFormatter
+  private let balanceItemMapper: BalanceItemMapper
   private let rateConverter: RateConverter
   
   init(amountFormatter: AmountFormatter,
-       decimalAmountFormatter: DecimalAmountFormatter,
+       balanceItemMapper: BalanceItemMapper,
        rateConverter: RateConverter) {
     self.amountFormatter = amountFormatter
-    self.decimalAmountFormatter = decimalAmountFormatter
     self.rateConverter = rateConverter
+    self.balanceItemMapper = balanceItemMapper
   }
   
   func mapTonItem(_ item: BalanceTonItemModel,
                   isSecure: Bool,
                   selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
-    let subtitle = createPriceSubtitle(
-      price: item.price,
-      currency: item.currency,
-      diff: item.diff,
-      verification: .whitelist
-    )
-    
-    let listItemConfiguration = TKUIListItemView.Configuration(
-      iconConfiguration: .tonConfiguration(imageLoader: imageLoader),
-      contentConfiguration: TKUIListItemContentView.Configuration(
-        leftItemConfiguration: .tonConfiguration(subtitle: subtitle),
-        rightItemConfiguration: createRightItemConfiguration(
-          amount: item.amount,
-          amountFractionDigits: TonInfo.fractionDigits,
-          convertedAmount: item.converted,
-          currency: item.currency,
-          isSecure: isSecure
-        )
-      ),
-      accessoryConfiguration: .none
-    )
-    
     return WalletBalanceListCell.Model(
-      listItemConfiguration: listItemConfiguration,
+      listItemConfiguration: balanceItemMapper.mapTonItem(item, isSecure: isSecure),
       commentConfiguration: nil,
       selectionClosure: selectionHandler
     )
@@ -62,30 +40,8 @@ struct WalletBalanceListMapper {
   func mapJettonItem(_ item: BalanceJettonItemModel,
                      isSecure: Bool,
                      selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
-    let subtitle = createPriceSubtitle(
-      price: item.price,
-      currency: item.currency,
-      diff: item.diff,
-      verification: item.jetton.jettonInfo.verification
-    )
-    
-    let listItemConfiguration = TKUIListItemView.Configuration(
-      iconConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo, imageLoader: imageLoader),
-      contentConfiguration: TKUIListItemContentView.Configuration(
-        leftItemConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo, subtitle: subtitle),
-        rightItemConfiguration: createRightItemConfiguration(
-          amount: item.amount,
-          amountFractionDigits: item.fractionalDigits,
-          convertedAmount: item.converted,
-          currency: item.currency,
-          isSecure: isSecure
-        )
-      ),
-      accessoryConfiguration: .none
-    )
-    
     return WalletBalanceListCell.Model(
-      listItemConfiguration: listItemConfiguration,
+      listItemConfiguration: balanceItemMapper.mapJettonItem(item, isSecure: isSecure),
       commentConfiguration: nil,
       selectionClosure: selectionHandler
     )
@@ -95,22 +51,6 @@ struct WalletBalanceListMapper {
                       isSecure: Bool,
                       selectionHandler: @escaping () -> Void,
                       stakingCollectHandler: (() -> Void)?) -> WalletBalanceListCell.Model {
-    let listItemConfiguration = TKUIListItemView.Configuration(
-      iconConfiguration: .configuration(poolInfo: item.poolInfo, imageLoader: imageLoader),
-      contentConfiguration: TKUIListItemContentView.Configuration(
-        leftItemConfiguration: .configuration(title: TKLocales.BalanceList.StakingItem.title,
-                                              poolInfo: item.poolInfo),
-        rightItemConfiguration: createRightItemConfiguration(
-          amount: BigUInt(item.info.amount),
-          amountFractionDigits: TonInfo.fractionDigits,
-          convertedAmount: item.converted,
-          currency: item.currency,
-          isSecure: isSecure
-        )
-      ),
-      accessoryConfiguration: .none
-    )
-    
     let commentConfiguration = { () -> TKCommentView.Model? in
       guard let comment = mapStakingItemComment(item, stakingCollectHandler: stakingCollectHandler) else {
         return nil
@@ -119,7 +59,7 @@ struct WalletBalanceListMapper {
     }
     
     return WalletBalanceListCell.Model(
-      listItemConfiguration: listItemConfiguration,
+      listItemConfiguration: balanceItemMapper.mapStakingItem(item, isSecure: isSecure),
       commentConfiguration: commentConfiguration(),
       selectionClosure: selectionHandler
     )
@@ -193,95 +133,6 @@ struct WalletBalanceListMapper {
       }
       return items
     }
-  }
-  
-  private func createPriceSubtitle(price: Decimal?,
-                                   currency: Currency,
-                                   diff: String?,
-                                   verification: JettonInfo.Verification) -> NSAttributedString {
-    let result = NSMutableAttributedString()
-    switch verification {
-    case .none, .blacklist:
-      result.append(
-        TKLocales.Token.unverified.withTextStyle(
-          .body2,
-          color: .Accent.orange,
-          alignment: .left,
-          lineBreakMode: .byTruncatingTail
-        )
-      )
-    case .whitelist:
-      if let price {
-        result.append(
-          decimalAmountFormatter.format(
-            amount: price,
-            currency: currency
-          ).withTextStyle(
-            .body2,
-            color: .Text.secondary,
-            alignment: .left,
-            lineBreakMode: .byTruncatingTail
-          )
-        )
-        result.append(" ".withTextStyle(.body2, color: .Text.secondary))
-      }
-      
-      if let diff {
-        result.append({
-          let color: UIColor
-          if diff.hasPrefix("-") || diff.hasPrefix("−") {
-            color = .Accent.red
-          } else if diff.hasPrefix("+") {
-            color = .Accent.green
-          } else {
-            color = .Text.tertiary
-          }
-          return diff.withTextStyle(.body2, color: color, alignment: .left)
-        }())
-      }
-    }
-    return result
-  }
-  
-  private func createRightItemConfiguration(amount: BigUInt,
-                                            amountFractionDigits: Int,
-                                            convertedAmount: Decimal,
-                                            currency: Currency,
-                                            isSecure: Bool) -> TKUIListItemContentRightItem.Configuration {
-    let formatAmount = {
-      amountFormatter.formatAmount(
-        amount,
-        fractionDigits: amountFractionDigits,
-        maximumFractionDigits: 2
-      )
-    }
-    
-    let formatConvertedAmount = {
-      decimalAmountFormatter.format(
-        amount: convertedAmount,
-        maximumFractionDigits: 2,
-        currency: currency
-      )
-    }
-    
-    let value = (isSecure ? String.secureModeValue : formatAmount()).withTextStyle(
-      .label1,
-      color: .Text.primary,
-      alignment: .right,
-      lineBreakMode: .byTruncatingTail
-    )
-    let valueSubtitle = (isSecure ? String.secureModeValue : formatConvertedAmount()).withTextStyle(
-      .body2,
-      color: .Text.secondary,
-      alignment: .right,
-      lineBreakMode: .byTruncatingTail
-    )
-    
-    return TKUIListItemContentRightItem.Configuration(
-      value: value,
-      subtitle: valueSubtitle,
-      description: nil
-    )
   }
   
   private func createTelegramChannelItem(selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
@@ -424,6 +275,6 @@ private extension CGFloat {
   static let iconCornerRadius: CGFloat = 22
 }
 
-private extension String {
+extension String {
   static let secureModeValue = "* * *"
 }

@@ -27,7 +27,7 @@ final class StakingPoolDetailsView: TKView {
   let continueButtonContainer = TKPaddingContainerView()
   let descriptionLabel = UILabel()
   let descriptionLabelContainer = TKPaddingContainerView()
-  let linksView = StakingPoolDetailsLinksView()
+  let linksView = StakingDetailsLinksView()
   
   override func setup() {
     super.setup()

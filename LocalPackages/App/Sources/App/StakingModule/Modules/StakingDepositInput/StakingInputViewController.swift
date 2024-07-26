@@ -3,10 +3,14 @@ import TKUIKit
 
 final class StakingInputViewController: GenericViewViewController<StakingInputView>, KeyboardObserving {
   private let viewModel: StakingInputViewModel
+  private let detailsViewController: UIViewController
+  
   private let amountInputViewController = AmountInputViewController()
   
-  init(viewModel: StakingInputViewModel) {
+  init(viewModel: StakingInputViewModel,
+       detailsViewController: UIViewController) {
     self.viewModel = viewModel
+    self.detailsViewController = detailsViewController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -58,6 +62,10 @@ private extension StakingInputViewController {
     amountInputViewController.didMove(toParent: self)
     amountInputViewController.isTokenPickerAvailable = false
     
+    addChild(detailsViewController)
+    customView.setDetailsView(detailsViewController.view)
+    detailsViewController.didMove(toParent: self)
+    
     customView.balanceView.maxButton.configuration = createMaxButtonConfiguration()
     customView.continueButton.configuration.action = { [weak viewModel] in
       viewModel?.didTapContinue()
@@ -90,13 +98,8 @@ private extension StakingInputViewController {
       self.customView.balanceView.balanceLabel.attributedText = value
     }
     
-    viewModel.didUpdatePoolInfoView = { [weak self] model in
-      if let model {
-        self?.customView.infoViewContainer.isHidden = false
-        self?.customView.infoView.configure(model: model)
-      } else {
-        self?.customView.infoViewContainer.isHidden = true
-      }
+    viewModel.didUpdateDetailsViewIsHidden = { [weak self] isHidden in
+      self?.customView.detailsViewContainer.isHidden = isHidden
     }
 
     viewModel.didUpdateButton = { [weak self] title, isEnable in
@@ -123,9 +126,9 @@ private extension StakingInputViewController {
       viewModel?.didToggleInputMode()
     }
     
-    customView.infoView.addAction(UIAction(handler: { [weak viewModel] _ in
-      viewModel?.didTapInfoView()
-    }), for: .touchUpInside)
+//    customView.infoView.addAction(UIAction(handler: { [weak viewModel] _ in
+//      viewModel?.didTapInfoView()
+//    }), for: .touchUpInside)
   }
   
   func createMaxButtonConfiguration() -> TKButton.Configuration {

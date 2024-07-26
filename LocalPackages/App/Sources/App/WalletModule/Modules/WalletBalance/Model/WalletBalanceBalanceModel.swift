@@ -74,10 +74,12 @@ final class WalletBalanceBalanceModel {
     await actor.addTask(block: {
       guard newWalletsState.activeWallet != oldWalletsState?.activeWallet else { return }
       guard let address = try? newWalletsState.activeWallet.friendlyAddress else { return }
-      self.tokenManagementStore = self.tokenManagementStoreProvider(newWalletsState.activeWallet)
-      self.tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-        Task {
-          await observer.didUpdateTokenManagementState(_: newState, oldState: oldState)
+      await MainActor.run {
+        self.tokenManagementStore = self.tokenManagementStoreProvider(newWalletsState.activeWallet)
+        self.tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+          Task {
+            await observer.didUpdateTokenManagementState(_: newState, oldState: oldState)
+          }
         }
       }
       let balance = await self.convertedBalanceStore.getState()[address]?.balance

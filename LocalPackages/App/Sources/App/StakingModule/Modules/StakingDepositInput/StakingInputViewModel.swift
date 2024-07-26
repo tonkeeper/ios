@@ -4,6 +4,12 @@ import TKCore
 import KeeperCore
 import BigInt
 
+protocol StakingInputDetailsModuleInput: AnyObject {
+  func configureWith(stackingPoolInfo: StackingPoolInfo,
+                     tonAmount: BigUInt,
+                     isMostProfitable: Bool)
+}
+
 protocol StakingInputModuleOutput: AnyObject {
   var didTapPoolPicker: ((_ model: StakingListModel) -> Void)? { get set }
   var didConfirm: ((StakingConfirmationItem) -> Void)? { get set }
@@ -23,7 +29,7 @@ protocol StakingInputViewModel: AnyObject {
   var didUpdateSwapIcon: ((Bool) -> Void)? { get set }
   var didUpdateIsMax: ((Bool) -> Void)? { get set }
   var didUpdateButton:((String, Bool) -> Void)? { get set }
-  var didUpdatePoolInfoView: ((StakingInputPoolInfoView.Model?) -> Void)? { get set }
+  var didUpdateDetailsViewIsHidden: ((Bool) -> Void)? { get set}
   
   func viewDidLoad()
   func didEditAmountInput(_ input: String)
@@ -69,7 +75,7 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
   var didUpdateSwapIcon: ((Bool) -> Void)?
   var didUpdateIsMax: ((Bool) -> Void)?
   var didUpdateButton: ((String, Bool) -> Void)?
-  var didUpdatePoolInfoView: ((StakingInputPoolInfoView.Model?) -> Void)?
+  var didUpdateDetailsViewIsHidden: ((Bool) -> Void)?
   
   func viewDidLoad() {
     didUpdateTitle?(model.title)
@@ -80,9 +86,9 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
       }
     }
     
-    model.didUpdatePoolInfoItem = { [weak self] item in
+    model.didUpdateDetailsIsHidden = { [weak self] isHidden in
       DispatchQueue.main.async {
-        self?.didUpdatePoolInfoItem(item)
+        self?.didUpdateDetailsViewIsHidden?(isHidden)
       }
     }
     
@@ -143,23 +149,6 @@ final class StakingInputViewModelImplementation: StakingInputViewModel, StakingI
 }
 
 private extension StakingInputViewModelImplementation {
-  func didUpdatePoolInfoItem(_ item: StakingInputPoolInfoItem?) {
-    guard let item else {
-      didUpdatePoolInfoView?(nil)
-      return
-    }
-    let model: StakingInputPoolInfoView.Model = {
-      switch item {
-      case let .poolInfo(stackingPoolInfo, isMostProfitable, profit):
-        return .listItem(mapStakingPoolItem(stackingPoolInfo, isMostProfitable: isMostProfitable, profit: profit))
-      case .cycleInfo(let string):
-        return .text(string.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byWordWrapping))
-      }
-    }()
-    
-    didUpdatePoolInfoView?(model)
-  }
-  
   func didUpdateButtonItem(_ item: StakingInputButtonItem) {
     didUpdateButton?(item.title, item.isEnable)
   }

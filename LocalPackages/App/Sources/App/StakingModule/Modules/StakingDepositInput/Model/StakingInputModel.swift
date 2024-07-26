@@ -27,9 +27,10 @@ enum StakingInputRemainingItem {
   case insufficient
 }
 
-enum StakingInputPoolInfoItem {
-  case poolInfo(StackingPoolInfo, isMostProfitable: Bool, profit: BigUInt)
-  case cycleInfo(String)
+struct StakingInputPoolInfoItem {
+  let poolInfo: StackingPoolInfo
+  let isMostProfitable: Bool
+  let profit: BigUInt
 }
 
 public struct StakingConfirmationItem {
@@ -50,8 +51,7 @@ protocol StakingInputModel: AnyObject {
   var didUpdateInputItem: ((StakingInputInputItem) -> Void)? { get set }
   var didUpdateRemainingItem: ((StakingInputRemainingItem) -> Void)? { get set }
   var didUpdateButtonItem: ((StakingInputButtonItem) -> Void)? { get set }
-  var didUpdatePoolInfoItem: ((StakingInputPoolInfoItem?) -> Void)? { get set }
-  var selectedStackingPoolInfo: StackingPoolInfo? { get }
+  var didUpdateDetailsIsHidden: ((Bool) -> Void)? { get set }
   
   func start()
   func didEditAmountInput(_ input: String)

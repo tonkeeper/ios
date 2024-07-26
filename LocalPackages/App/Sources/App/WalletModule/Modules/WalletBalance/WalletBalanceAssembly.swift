@@ -35,7 +35,10 @@ struct WalletBalanceAssembly {
       listMapper:
         WalletBalanceListMapper(
         amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-        decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+        balanceItemMapper: BalanceItemMapper(
+          amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+          decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
+        ),
         rateConverter: RateConverter()
       ),
       headerMapper: WalletBalanceHeaderMapper(

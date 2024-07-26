@@ -24,8 +24,8 @@ final class StakingInputView: TKView {
   )
   let continueButtonContainer = TKPaddingContainerView()
   let balanceView = StakingInputBalanceView()
-  let infoView = StakingInputPoolInfoView()
-  let infoViewContainer = TKPaddingContainerView()
+  let detailsViewContainer = TKPaddingContainerView()
+  private let detailsContainer = UIView()
   private let amountInputContainer = UIView()
   
   func setAmountInputView(_ view: UIView) {
@@ -35,13 +35,20 @@ final class StakingInputView: TKView {
     }
   }
   
+  func setDetailsView(_ view: UIView) {
+    detailsContainer.addSubview(view)
+    view.snp.makeConstraints { make in
+      make.edges.equalTo(detailsContainer)
+    }
+  }
+  
   override func setup() {
     super.setup()
     backgroundColor = .Background.page
     
-    infoViewContainer.isHidden = true
-    infoViewContainer.setViews([infoView])
-    infoViewContainer.padding.top = 16
+    detailsViewContainer.isHidden = true
+    detailsViewContainer.padding.top = 16
+    detailsViewContainer.setViews([detailsContainer])
     
     continueButtonContainer.setViews([continueButton])
     continueButtonContainer.padding.top = 16
@@ -52,7 +59,7 @@ final class StakingInputView: TKView {
     contentStackView.setCustomSpacing(16, after: amountInputContainer)
     contentStackView.addArrangedSubview(balanceView)
     contentStackView.setCustomSpacing(16, after: balanceView)
-    contentStackView.addArrangedSubview(infoViewContainer)
+    contentStackView.addArrangedSubview(detailsViewContainer)
     contentStackView.addArrangedSubview(continueButtonContainer)
     
     setupConstraints()

@@ -10,8 +10,11 @@ struct StakingPoolDetailsAssembly {
   -> MVVMModule<StakingPoolDetailsViewController, StakingPoolDetailsModuleOutput, StakingPoolDetailsModuleOutput> {
     let viewModel = StakingPoolDetailsViewModelImplementation(
       pool: pool,
-      decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
-      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+      listViewModelBuilder: StakingListViewModelBuilder(
+        decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+        amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+      ),
+      linksViewModelBuilder: StakingLinksViewModelBuilder()
     )
     
     let viewController = StakingPoolDetailsViewController(viewModel: viewModel)

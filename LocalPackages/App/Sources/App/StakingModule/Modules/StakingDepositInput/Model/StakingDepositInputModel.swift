@@ -15,7 +15,7 @@ final class StakingDepositInputModel: StakingInputModel {
   var didUpdateInputItem: ((StakingInputInputItem) -> Void)?
   var didUpdateRemainingItem: ((StakingInputRemainingItem) -> Void)?
   var didUpdateButtonItem: ((StakingInputButtonItem) -> Void)?
-  var didUpdatePoolInfoItem: ((StakingInputPoolInfoItem?) -> Void)?
+  var didUpdateDetailsIsHidden: ((Bool) -> Void)?
   
   // MARK: - State
   
@@ -23,6 +23,7 @@ final class StakingDepositInputModel: StakingInputModel {
     didSet {
       updateButton()
       updateStakingPool()
+      updateRemainingItem()
     }
   }
   private var mostProfitableStackingPoolInfo: StackingPoolInfo?
@@ -65,6 +66,7 @@ final class StakingDepositInputModel: StakingInputModel {
   // MARK: - Dependencies
   
   private let wallet: Wallet
+  private let detailsInput: StakingInputDetailsModuleInput
   private let balanceStore: ConvertedBalanceStoreV2
   private let stakingPoolsStore: StakingPoolsStore
   private let tonRatesStore: TonRatesStoreV2
@@ -72,16 +74,20 @@ final class StakingDepositInputModel: StakingInputModel {
   
   // MARK: - Init
   
-  init(wallet: Wallet, 
+  init(wallet: Wallet,
+       stakingPoolInfo: StackingPoolInfo? = nil,
+       detailsInput: StakingInputDetailsModuleInput,
        balanceStore: ConvertedBalanceStoreV2,
        stakingPoolsStore: StakingPoolsStore,
        tonRatesStore: TonRatesStoreV2,
        currencyStore: CurrencyStoreV2) {
     self.wallet = wallet
+    self.detailsInput = detailsInput
     self.balanceStore = balanceStore
     self.stakingPoolsStore = stakingPoolsStore
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
+    self.selectedStackingPoolInfo = stakingPoolInfo
   }
   
   func start() {
@@ -234,6 +240,11 @@ final class StakingDepositInputModel: StakingInputModel {
   }
   
   func setInitialStakingPool() {
+    guard selectedStackingPoolInfo == nil else {
+      updateButton()
+      updateStakingPool()
+      return
+    }
     guard let walletAddress = try? wallet.friendlyAddress,
     let pool = stakingPoolsStore.getState()[walletAddress]?.profitablePool else { return }
     self.mostProfitableStackingPoolInfo = pool
@@ -417,26 +428,16 @@ final class StakingDepositInputModel: StakingInputModel {
   
   func updateStakingPool() {
     guard let selectedStackingPoolInfo else {
-      didUpdatePoolInfoItem?(nil)
+      didUpdateDetailsIsHidden?(true)
       return
     }
     
-    let profit: BigUInt = {
-      let apy = selectedStackingPoolInfo.apy
-      let apyFractionLength = max(Int(-apy.exponent), 0)
-      let apyPlain = NSDecimalNumber(decimal: apy).multiplying(byPowerOf10: Int16(apyFractionLength))
-      let apyBigInt = BigUInt(stringLiteral: apyPlain.stringValue)
-    
-      let scalingFactor = BigUInt(100) * BigUInt(10).power(apyFractionLength)
-      
-      return tonAmount * apyBigInt / scalingFactor
-    }()
-    
-    didUpdatePoolInfoItem?(.poolInfo(
-      selectedStackingPoolInfo,
-      isMostProfitable: selectedStackingPoolInfo.address == mostProfitableStackingPoolInfo?.address,
-      profit: profit)
+    detailsInput.configureWith(
+      stackingPoolInfo: selectedStackingPoolInfo,
+      tonAmount: tonAmount,
+      isMostProfitable: selectedStackingPoolInfo.address == mostProfitableStackingPoolInfo?.address
     )
+    didUpdateDetailsIsHidden?(false)
   }
   
   func toggleMaxIfNeeded() {

@@ -18,6 +18,9 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   var didTapSettingsButton: ((Wallet) -> Void)?
   var didSelectTonDetails: ((Wallet) -> Void)?
   var didSelectJettonDetails: ((Wallet, JettonItem, Bool) -> Void)?
+  var didSelectStakingItem: (( _ wallet: Wallet,
+                               _ stakingPoolInfo: StackingPoolInfo,
+                               _ accountStakingInfo: AccountStackingInfo) -> Void)?
   var didTapBackup: ((Wallet) -> Void)?
   
   private let coreAssembly: TKCore.CoreAssembly
@@ -87,6 +90,10 @@ private extension WalletCoordinator {
     
     module.output.didSelectJetton = { [weak self] wallet, jettonItem, hasPrice in
       self?.didSelectJettonDetails?(wallet, jettonItem, hasPrice)
+    }
+    
+    module.output.didSelectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
+      self?.didSelectStakingItem?(wallet, stakingPoolInfo, accountStackingInfo)
     }
     
     module.output.didTapSend = { [weak self] in

@@ -9,6 +9,9 @@ import TonSwift
 protocol WalletBalanceModuleOutput: AnyObject {
   var didSelectTon: ((Wallet) -> Void)? { get set }
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)? { get set }
+  var didSelectStakingItem: (( _ wallet: Wallet,
+                               _ stakingPoolInfo: StackingPoolInfo,
+                               _ accountStakingInfo: AccountStackingInfo) -> Void)? { get set }
 
   var didTapReceive: (() -> Void)? { get set }
   var didTapSend: (() -> Void)? { get set }
@@ -60,6 +63,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   
   var didSelectTon: ((Wallet) -> Void)?
   var didSelectJetton: ((Wallet, JettonItem, Bool) -> Void)?
+  var didSelectStakingItem: (( _ wallet: Wallet,
+                               _ stakingPoolInfo: StackingPoolInfo,
+                               _ accountStakingInfo: AccountStackingInfo) -> Void)?
   
   var didTapReceive: (() -> Void)?
   var didTapSend: (() -> Void)?
@@ -266,6 +272,7 @@ private extension WalletBalanceViewModelImplementation {
         let wallet = await self.walletsStore.getState().activeWallet
         var models = [String: WalletBalanceListCell.Model]()
         
+        var stakingItems = [BalanceStakingItemModel]()
         for item in items.items {
           switch item {
           case .ton(let item):
@@ -283,11 +290,14 @@ private extension WalletBalanceViewModelImplementation {
                 self?.didSelectJetton?(wallet, item.jetton, !item.price.isZero)
               }
           case .staking(let item):
+            stakingItems.append(item)
             models[item.id] = self.listMapper.mapStakingItem(
               item,
               isSecure: isSecure,
-              selectionHandler: {
-                print("Open staking")
+              selectionHandler: { [weak self] in
+                guard let self,
+                      let poolInfo = item.poolInfo else { return }
+                self.didSelectStakingItem?(wallet, poolInfo, item.info)
               },
               stakingCollectHandler: {
                 print("Collect")
@@ -304,9 +314,10 @@ private extension WalletBalanceViewModelImplementation {
         let snapshot = self.createSnapshot(state: state)
         
         self.state = state
-        await MainActor.run { [snapshot, models] in
+        await MainActor.run { [snapshot, models, stakingItems] in
           self.cellModels.merge(models) { $1 }
           self.didUpdateSnapshot?(snapshot, false)
+          self.startStakingItemsUpdateTimer(wallet: wallet, stakingItems: stakingItems)
         }
       })
     }
@@ -510,13 +521,13 @@ private extension WalletBalanceViewModelImplementation {
     return snapshot
   }
 
-  func startStakingItemsUpdateTimer(stakingItems: [BalanceStakingItemModel]) {
+  func startStakingItemsUpdateTimer(wallet: Wallet, stakingItems: [BalanceStakingItemModel]) {
     let queue = DispatchQueue(label: "WalletBalanceStakingItemsTimerQueue", qos: .background)
     let timer: DispatchSourceTimer = DispatchSource.makeTimerSource(flags: .strict, queue: queue)
     timer.schedule(deadline: .now(), repeating: 1, leeway: .milliseconds(100))
     timer.resume()
     timer.setEventHandler(handler: { [weak self] in
-      self?.updateStakingItemsOnTimer(stakingItems: stakingItems)
+      self?.updateStakingItemsOnTimer(wallet: wallet, stakingItems: stakingItems)
     })
     self.stakingUpdateTimer = timer
   }
@@ -526,7 +537,7 @@ private extension WalletBalanceViewModelImplementation {
     self.stakingUpdateTimer = nil
   }
   
-  func updateStakingItemsOnTimer(stakingItems: [BalanceStakingItemModel]) {
+  func updateStakingItemsOnTimer(wallet: Wallet, stakingItems: [BalanceStakingItemModel]) {
     Task {
       await self.actor.addTask(block: {
         var models = [String: WalletBalanceListCell.Model]()
@@ -535,8 +546,9 @@ private extension WalletBalanceViewModelImplementation {
           models[item.id] = self.listMapper.mapStakingItem(
             item,
             isSecure: isSecure,
-            selectionHandler: {
-              print("Open staking")
+            selectionHandler: { [weak self] in
+              guard let poolInfo = item.poolInfo else { return }
+              self?.didSelectStakingItem?(wallet, poolInfo, item.info)
             },
             stakingCollectHandler: {
               print("Collect")

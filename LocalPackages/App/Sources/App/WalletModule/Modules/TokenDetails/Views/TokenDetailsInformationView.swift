@@ -5,7 +5,7 @@ final class TokenDetailsInformationView: UIView, ConfigurableView {
   
   private let tokenAmountLabel = UILabel()
   private let convertedAmountLabel = UILabel()
-  private let imageView = UIImageView()
+  private let imageView = TKUIListItemImageIconView()
   
   private let contentView = UIView()
   private let amountStackView: UIStackView = {
@@ -24,18 +24,14 @@ final class TokenDetailsInformationView: UIView, ConfigurableView {
   }
   
   struct Model {
-    enum Image {
-      case image(UIImage)
-      case asyncImage(ImageDownloadTask)
-    }
-    let image: Image
+    let imageConfiguration: TKUIListItemImageIconView.Configuration
     let tokenAmount: NSAttributedString
     let convertedAmount: NSAttributedString?
     
-    init(image: Image, 
+    init(imageConfiguration: TKUIListItemImageIconView.Configuration,
          tokenAmount: String,
          convertedAmount: String?) {
-      self.image = image
+      self.imageConfiguration = imageConfiguration
       self.tokenAmount = tokenAmount.withTextStyle(
         .h2,
         color: .Text.primary,
@@ -52,16 +48,7 @@ final class TokenDetailsInformationView: UIView, ConfigurableView {
   }
   
   func configure(model: Model) {
-    switch model.image {
-    case .image(let image):
-      imageView.image = image
-    case .asyncImage(let imageDownloadTask):
-      imageDownloadTask.start(
-        imageView: imageView,
-        size: CGSize(width: .imageViewSide, height: .imageViewSide),
-        cornerRadius: .imageViewSide/2
-      )
-    }
+    imageView.configure(configuration: model.imageConfiguration)
     tokenAmountLabel.attributedText = model.tokenAmount
     convertedAmountLabel.attributedText = model.convertedAmount
   }

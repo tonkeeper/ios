@@ -146,26 +146,31 @@ private extension TokenDetailsViewModelImplementation {
   }
   
   func setupInformationView(model: TokenDetailsModel) {
-    let image: TokenDetailsInformationView.Model.Image
+    let image: TKUIListItemImageIconView.Configuration.Image
     switch model.image {
     case .ton:
       image = .image(.TKCore.Icons.Size44.tonLogo)
     case .url(let url):
-      image = .asyncImage(
-        TKCore.ImageDownloadTask(
-          closure: {
-            [imageLoader] imageView,
-            size,
-            cornerRadius in
-            return imageLoader.loadImage(url: url, imageView: imageView, size: size, cornerRadius: cornerRadius)
-          }
-        )
-      )
+      image = .asyncImage(url, TKCore.ImageDownloadTask(
+        closure: {
+          [imageLoader] imageView,
+          size,
+          cornerRadius in
+          return imageLoader.loadImage(url: url, imageView: imageView, size: size, cornerRadius: cornerRadius)
+        }
+      ))
     }
     
     didUpdateInformationView?(
       TokenDetailsInformationView.Model(
-        image: image,
+        imageConfiguration: TKUIListItemImageIconView.Configuration(
+          image: image,
+          tintColor: .clear,
+          backgroundColor: .clear,
+          size: CGSize(width: 64, height: 64),
+          cornerRadius: 32,
+          contentMode: .scaleAspectFit
+        ),
         tokenAmount: model.tokenAmount,
         convertedAmount: model.convertedAmount
       )

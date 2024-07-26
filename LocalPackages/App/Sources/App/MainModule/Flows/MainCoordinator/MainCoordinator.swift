@@ -2,6 +2,7 @@ import UIKit
 import TKCoordinator
 import TKLocalize
 import TKUIKit
+import TKScreenKit
 import KeeperCore
 import TKCore
 import TonSwift
@@ -141,6 +142,13 @@ private extension MainCoordinator {
     
     walletCoordinator.didSelectJettonDetails = { [weak self] wallet, jettonItem, hasPrice in
       self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet, hasPrice: hasPrice)
+    }
+    
+    walletCoordinator.didSelectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
+      self?.openStakingItemDetails(
+        wallet: wallet,
+        stakingPoolInfo: stakingPoolInfo,
+        accountStackingInfo: accountStackingInfo)
     }
     
     walletCoordinator.didTapBuy = { [weak self] wallet in
@@ -666,6 +674,69 @@ private extension MainCoordinator {
     }
     
     navigationController.pushViewController(module.view, animated: true)
+  }
+  
+  func openStakingItemDetails(wallet: Wallet, 
+                              stakingPoolInfo: StackingPoolInfo,
+                              accountStackingInfo: AccountStackingInfo) {
+    guard let navigationController = router.rootViewController.navigationController else { return }
+    
+    let module = StakingBalanceDetailsAssembly.module(
+      wallet: wallet,
+      stakingPoolInfo: stakingPoolInfo,
+      accountStackingInfo: accountStackingInfo,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+    
+    module.output.didOpenURL = { [weak self] in
+      self?.coreAssembly.urlOpener().open(url: $0)
+    }
+    
+    module.output.didOpenURLInApp = { [weak self] url, title in
+      self?.openURL(url, title: title)
+    }
+    
+    module.output.openJettonDetails = { [weak self] wallet, jettonItem in
+      self?.openJettonDetails(jettonItem: jettonItem, wallet: wallet, hasPrice: true)
+    }
+    
+    module.output.didTapStake = { [weak self] wallet, stakingPoolInfo in
+      self?.openStake(wallet: wallet, stakingPoolInfo: stakingPoolInfo)
+    }
+    
+    module.view.setupBackButton()
+    
+    navigationController.pushViewController(module.view, animated: true)
+  }
+  
+  func openURL(_ url: URL, title: String?) {
+    let viewController = TKBridgeWebViewController(initialURL: url, initialTitle: nil, jsInjection: nil)
+    router.present(viewController)
+  }
+  
+  func openStake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo) {
+    let navigationController = TKNavigationController()
+    navigationController.configureDefaultAppearance()
+    
+    let coordinator = StakingStakeCoordinator(
+      wallet: wallet,
+      stakingPoolInfo: stakingPoolInfo,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly,
+      router: NavigationControllerRouter(rootViewController: navigationController)
+    )
+    
+    coordinator.didFinish = { [weak self, weak coordinator] in
+      self?.router.dismiss()
+      self?.removeChild(coordinator)
+    }
+    
+    addChild(coordinator)
+    coordinator.start(deeplink: nil)
+    
+    self.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+      self?.removeChild(coordinator)
+    })
   }
   
   func openReceive(token: Token) {
