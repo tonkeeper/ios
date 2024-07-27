@@ -42,10 +42,8 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
 
 private extension AppCoordinator {
   func openRoot(deeplink: TKCoordinator.CoordinatorDeeplink? = nil) {
-    let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
     let rootCoordinator = RootCoordinator(
-      router: NavigationControllerRouter(rootViewController: navigationController),
+      router: ViewControllerRouter(rootViewController: UIViewController()),
       dependencies: RootCoordinator.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreRootAssembly: keeperCoreAssembly.rootAssembly()

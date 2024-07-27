@@ -4,7 +4,7 @@ import TKCoordinator
 import TKCore
 import KeeperCore
 
-final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
+final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   struct Dependencies {
     let coreAssembly: TKCore.CoreAssembly
     let keeperCoreRootAssembly: KeeperCore.RootAssembly
@@ -13,12 +13,14 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
   private weak var onboardingCoordinator: OnboardingCoordinator?
   private weak var mainCoordinator: MainCoordinator?
   
+  private var activeViewController: UIViewController?
+  
   private let dependencies: Dependencies
   private let rootController: RootController
   
   private let stateManager: RootCoordinatorStateManager
 
-  init(router: NavigationControllerRouter,
+  init(router: ViewControllerRouter,
        dependencies: Dependencies) {
     self.dependencies = dependencies
     self.rootController = dependencies.keeperCoreRootAssembly.rootController()
@@ -26,7 +28,6 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
       keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
     )
     super.init(router: router)
-    router.rootViewController.setNavigationBarHidden(true, animated: false)
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
@@ -38,27 +39,28 @@ final class RootCoordinator: RouterCoordinator<NavigationControllerRouter> {
       self?.handleStateUpdate(state: state, deeplink: deeplink)
     }
     
-    @Sendable
-    func startStandartFlow() {
-      self.handleStateUpdate(state: stateManager.state, deeplink: deeplink)
-    }
-    
-    let migrationController = dependencies.keeperCoreRootAssembly.migrationController(
-      sharedCacheURL: dependencies.coreAssembly.sharedCacheURL,
-      keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier,
-      isTonkeeperX: dependencies.coreAssembly.isTonkeeperX
-    )
-    
-    Task {
-      if await migrationController.checkIfNeedToMigrate() {
-        await MainActor.run {
-          openMigration(migrationController: migrationController)
-        }
-      } else {
-        await MainActor.run {
-          startStandartFlow()
+    let state = stateManager.state
+    switch state {
+    case .onboarding:
+      openLaunchScreen()
+      let migrationController = dependencies.keeperCoreRootAssembly.migrationController(
+        sharedCacheURL: dependencies.coreAssembly.sharedCacheURL,
+        keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier,
+        isTonkeeperX: dependencies.coreAssembly.isTonkeeperX
+      )
+      Task {
+        if await migrationController.checkIfNeedToMigrate() {
+          await MainActor.run {
+            openMigration(migrationController: migrationController)
+          }
+        } else {
+          await MainActor.run {
+            openOnboarding(deeplink: deeplink)
+          }
         }
       }
+    case .main(let walletsState):
+      openMain(wallets: walletsState.wallets, activeWallet: walletsState.activeWallet, deeplink: deeplink)
     }
   }
   
@@ -90,6 +92,11 @@ private extension RootCoordinator {
     }
   }
   
+  func openLaunchScreen() {
+    let viewController = LaunchScreenViewController()
+    showViewController(viewController, animated: false)
+  }
+  
   func openOnboarding(deeplink: CoordinatorDeeplink?) {
     let module = OnboardingModule(
       dependencies: OnboardingModule.Dependencies(
@@ -111,7 +118,7 @@ private extension RootCoordinator {
     addChild(coordinator)
     coordinator.start(deeplink: deeplink)
     
-    showViewController(coordinator.router.rootViewController, animated: false)
+    showViewController(coordinator.router.rootViewController, animated: true)
   }
   
   func openMain(wallets: [Wallet], activeWallet: Wallet, deeplink: CoordinatorDeeplink?) {
@@ -147,7 +154,7 @@ private extension RootCoordinator {
     let navigationController = TKNavigationController(rootViewController: coordinator.router.rootViewController)
     navigationController.configureDefaultAppearance()
       
-    showViewController(navigationController, animated: false)
+    showViewController(navigationController, animated: true)
   }
   
   func openMigration(migrationController: MigrationController) {
@@ -181,19 +188,23 @@ private extension RootCoordinator {
   }
   
   func showViewController(_ viewController: UIViewController, animated: Bool) {
-    let containerViewController = UIViewController()
-    containerViewController.addChild(viewController)
-    containerViewController.view.addSubview(viewController.view)
-    viewController.didMove(toParent: containerViewController)
+    activeViewController?.willMove(toParent: nil)
+    activeViewController?.view.removeFromSuperview()
+    activeViewController?.removeFromParent()
     
-    viewController.view.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-      viewController.view.topAnchor.constraint(equalTo: containerViewController.view.topAnchor),
-      viewController.view.leftAnchor.constraint(equalTo: containerViewController.view.leftAnchor),
-      viewController.view.bottomAnchor.constraint(equalTo: containerViewController.view.bottomAnchor),
-      viewController.view.rightAnchor.constraint(equalTo: containerViewController.view.rightAnchor)
-    ])
-    router.setViewControllers([(containerViewController , nil)], animated: animated)
+    activeViewController = viewController
+    
+    router.rootViewController.addChild(viewController)
+    router.rootViewController.view.addSubview(viewController.view)
+    viewController.didMove(toParent: router.rootViewController)
+    
+    viewController.view.snp.makeConstraints { make in
+      make.edges.equalTo(router.rootViewController.view)
+    }
+    
+    if animated {
+      UIView.transition(with: router.rootViewController.view, duration: 0.2, options: .transitionCrossDissolve) {}
+    }
   }
   
   func logout() async throws {
