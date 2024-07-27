@@ -69,4 +69,8 @@ public enum Currency: String, Codable, CaseIterable {
     default: return false
     }
   }
+  
+  public static var defaultCurrency: Currency {
+    .USD
+  }
 }

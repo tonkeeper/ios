@@ -9,14 +9,22 @@ public struct WalletsState: Equatable {
     self.wallets = wallets
     self.activeWallet = activeWallet
   }
+  
+  static func state(keeperInfo: KeeperInfo) -> WalletsState {
+    WalletsState(wallets: keeperInfo.wallets, activeWallet: keeperInfo.currentWallet)
+  }
 }
 
-public final class WalletsStoreV2: Store<WalletsState> {
+public final class WalletsStoreV2: StoreUpdated<WalletsState> {
   
   private let keeperInfoStore: KeeperInfoStore
+  private let getInitialStateClosure: () -> WalletsState
   
   init(state: WalletsState, keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
+    self.getInitialStateClosure = {
+      state
+    }
     super.init(state: state)
     keeperInfoStore.addObserver(
       self,
@@ -24,19 +32,17 @@ public final class WalletsStoreV2: Store<WalletsState> {
         observer.didUpdateKeeperInfo(keeperInfo)
       }
   }
+  
+  public override func getInitialState() -> WalletsState {
+    getInitialStateClosure()
+  }
 }
 
 private extension WalletsStoreV2 {
   func didUpdateKeeperInfo(_ keeperInfo: KeeperInfo?) {
     guard let keeperInfo else { return }
-    Task {
-      await updateState { walletsState in
-        let newWalletsState = WalletsState(
-          wallets: keeperInfo.wallets,
-          activeWallet: keeperInfo.currentWallet
-        )
-        return StateUpdate(newState: newWalletsState)
-      }
+    updateState { _ in
+      StateUpdate(newState: WalletsState.state(keeperInfo: keeperInfo))
     }
   }
 }

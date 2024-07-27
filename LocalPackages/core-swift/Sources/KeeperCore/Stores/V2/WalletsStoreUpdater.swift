@@ -142,7 +142,7 @@ private extension KeeperInfo {
     let keeperInfo = KeeperInfo(
       wallets: wallets,
       currentWallet: wallets[0],
-      currency: .USD,
+      currency: .defaultCurrency,
       securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
       isSetupFinished: false,
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
