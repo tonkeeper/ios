@@ -215,16 +215,10 @@ public final class MainAssembly {
     )
   }
   
-  public func settingsSecurityController() -> SettingsSecurityController {
-    SettingsSecurityController(
-      securityStore: storesAssembly.securityStore
-    )
-  }
-  
   public func sendV3Controller() -> SendV3Controller {
     SendV3Controller(
       walletsStore: walletAssembly.walletsStore,
-      walletBalanceStore: storesAssembly.walletBalanceStore,
+      balanceStore: mainStoresAssembly.convertedBalanceStore,
       knownAccountsStore: storesAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
       tonRatesStore: storesAssembly.tonRatesStore,

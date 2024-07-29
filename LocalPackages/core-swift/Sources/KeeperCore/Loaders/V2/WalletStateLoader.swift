@@ -86,6 +86,17 @@ private extension WalletStateLoader {
         await observer.didUpdateCurrencyStoreState(newState: newState, oldState: oldState)
       }
     }
+    
+    backgroundUpdateUpdater.addEventObserver(self) { observer, event in
+      Task {
+        let currency = await observer.currencyStore.getCurrency()
+        guard let wallet = await observer.walletsStore.getState().wallets.first(where: {
+          guard let address = try? $0.address else { return false }
+          return address == event.accountAddress
+        }) else { return }
+        await observer.reloadBalance(wallets: [wallet], currency: currency)
+      }
+    }
   }
   
   func didUpdateWalletsStoreState(newState: WalletsState, oldState: WalletsState) async {

@@ -6,7 +6,7 @@ import OpenAPIRuntime
 
 public actor BackgroundUpdateUpdater {
   public struct BackgroundUpdateEvent {
-    public let accountAddress: FriendlyAddress
+    public let accountAddress: Address
     public let lt: Int64
     public let txHash: String
   }
@@ -140,9 +140,8 @@ private extension BackgroundUpdateUpdater {
     do {
       let eventTransaction = try jsonDecoder.decode(EventSource.Transaction.self, from: eventData)
       let address = try Address.parse(eventTransaction.accountId)
-      let friendlyAddress = FriendlyAddress(address: address, testOnly: false)
       let updateEvent = BackgroundUpdateEvent(
-        accountAddress: friendlyAddress,
+        accountAddress: address,
         lt: eventTransaction.lt,
         txHash: eventTransaction.txHash
       )

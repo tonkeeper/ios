@@ -109,18 +109,6 @@ public final class StoresAssembly {
     return store
   }
   
-  private weak var _walletBalanceStore: WalletBalanceStore?
-  var walletBalanceStore: WalletBalanceStore {
-    if let _walletBalanceStore {
-      return _walletBalanceStore
-    }
-    let walletBalanceStore = WalletBalanceStore(
-      repository: repositoriesAssembly.walletBalanceRepository()
-    )
-    _walletBalanceStore = walletBalanceStore
-    return walletBalanceStore
-  }
-  
   private weak var _tonRatesStore: TonRatesStore?
   var tonRatesStore: TonRatesStore {
     if let tonRatesStore = _tonRatesStore {
@@ -176,42 +164,7 @@ public final class StoresAssembly {
       return currencyStore
     }
   }
-  
-  private weak var _backupStore: BackupStore?
-  var backupStore: BackupStore {
-    if let backupStore = _backupStore {
-      return backupStore
-    } else {
-      let backupStore = BackupStore(
-        walletService: servicesAssembly.walletsService()
-      )
-      _backupStore = backupStore
-      return backupStore
-    }
-  }
-  
-  private weak var _securityStore: SecurityStore?
-  public var securityStore: SecurityStore {
-    if let securityStore = _securityStore {
-      return securityStore
-    } else {
-      let securityStore = SecurityStore(securityService: servicesAssembly.securityService())
-      _securityStore = securityStore
-      return securityStore
-    }
-  }
-  
-  private weak var _setupStore: SetupStore?
-  var setupStore: SetupStore {
-    if let setupStore = _setupStore {
-      return setupStore
-    } else {
-      let setupStore = SetupStore(setupService: servicesAssembly.setupService())
-      _setupStore = setupStore
-      return setupStore
-    }
-  }
-  
+
   private weak var _knownAccountsStore: KnownAccountsStore?
   var knownAccountsStore: KnownAccountsStore {
     if let knownAccountsStore = _knownAccountsStore {
