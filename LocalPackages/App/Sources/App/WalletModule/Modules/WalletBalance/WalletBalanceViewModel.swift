@@ -151,7 +151,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private let balanceListModel: WalletBalanceBalanceModel
   private let setupModel: WalletBalanceSetupModel
   private let totalBalanceModel: WalletTotalBalanceModel
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let notificationStore: NotificationsStore
   private let configurationStore: ConfigurationStore
   private let listMapper: WalletBalanceListMapper
@@ -162,7 +162,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   init(balanceListModel: WalletBalanceBalanceModel,
        setupModel: WalletBalanceSetupModel,
        totalBalanceModel: WalletTotalBalanceModel,
-       walletsStore: WalletsStoreV2,
+       walletsStore: WalletsStore,
        notificationStore: NotificationsStore,
        configurationStore: ConfigurationStore,
        listMapper: WalletBalanceListMapper,

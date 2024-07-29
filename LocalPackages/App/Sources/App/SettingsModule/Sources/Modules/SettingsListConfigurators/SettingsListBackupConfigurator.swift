@@ -26,13 +26,13 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
   // MARK: - Dependencies
  
   private let walletId: String
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let dateFormatter: DateFormatter
   
   // MARK: - Init
   
   init(walletId: String,
-       walletsStore: WalletsStoreV2,
+       walletsStore: WalletsStore,
        dateFormatter: DateFormatter) {
     self.walletId = walletId
     self.walletsStore = walletsStore

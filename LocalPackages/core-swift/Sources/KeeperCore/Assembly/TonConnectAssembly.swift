@@ -67,7 +67,7 @@ public final class TonConnectAssembly {
     } else {
       let tonConnectEventsStore = TonConnectEventsStore(
         apiClient: apiAssembly.tonConnectAPIClient(),
-        walletsStore: walletsAssembly.walletStore,
+        walletsStore: walletsAssembly.walletsStore,
         tonConnectAppsStore: tonConnectAppsStore
       )
       _tonConnectEventsStore = tonConnectEventsStore

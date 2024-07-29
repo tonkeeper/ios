@@ -95,7 +95,7 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
   }
   
   var jsInjection: String? {
-    guard let info = try? Info(address: walletsStore.activeWallet.address.toRaw()),
+    guard let info = try? Info(address: walletsStore.getState().activeWallet.address.toRaw()),
           let infoData = try? JSONEncoder().encode(info),
           var infoString = String(data: infoData, encoding: .utf8) else { return nil }
     infoString = String(describing: infoString).replacingOccurrences(of: "\\", with: "")

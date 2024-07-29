@@ -10,10 +10,10 @@ public final class BrowserConnectedController {
     public let iconURL: URL?
   }
   
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let tonConnectAppsStore: TonConnectAppsStore
   
-  init(walletsStore: WalletsStoreV2,
+  init(walletsStore: WalletsStore,
        tonConnectAppsStore: TonConnectAppsStore) {
     self.walletsStore = walletsStore
     self.tonConnectAppsStore = tonConnectAppsStore

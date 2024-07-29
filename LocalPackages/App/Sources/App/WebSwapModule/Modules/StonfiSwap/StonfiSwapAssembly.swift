@@ -8,7 +8,7 @@ struct StonfiSwapAssembly {
   -> MVVMModule<StonfiSwapViewController, Void, Void> {
 
     let viewModel = StonfiSwapViewModelImplementation(
-      walletsStore: keeperCoreAssembly.walletAssembly.walletStore,
+      walletsStore: keeperCoreAssembly.walletAssembly.walletsStore,
       configurationStore: keeperCoreAssembly.configurationAssembly.remoteConfigurationStore,
       messageHandler: messageHandler
     )

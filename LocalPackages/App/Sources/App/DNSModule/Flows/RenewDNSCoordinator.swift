@@ -35,7 +35,7 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
   }
   
   override func start() {
-    let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+    let wallet = self.keeperCoreMainAssembly.walletAssembly.walletsStore.getState().activeWallet
     let coordinator = SignTransactionConfirmationCoordinator(
       router: router,
       wallet: wallet,

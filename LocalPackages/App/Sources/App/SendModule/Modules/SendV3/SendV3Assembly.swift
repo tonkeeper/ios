@@ -12,7 +12,7 @@ struct SendV3Assembly {
       sendItem: sendItem,
       recipient: recipient,
       sendController: keeperCoreMainAssembly.sendV3Controller(),
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletStore
+      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore
     )
     let viewController = SendV3ViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)

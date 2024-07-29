@@ -35,12 +35,12 @@ final class WalletTotalBalanceModel {
   
   private let actor = SerialActor<Void>()
   
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let totalBalanceStore: TotalBalanceStoreV2
   private let secureMode: SecureMode
   private let backgroundUpdateStore: BackgroundUpdateStoreV2
   
-  init(walletsStore: WalletsStoreV2, 
+  init(walletsStore: WalletsStore, 
        totalBalanceStore: TotalBalanceStoreV2,
        secureMode: SecureMode,
        backgroundUpdateStore: BackgroundUpdateStoreV2) {

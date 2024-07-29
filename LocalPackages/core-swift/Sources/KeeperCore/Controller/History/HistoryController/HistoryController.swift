@@ -7,10 +7,10 @@ public final class HistoryController {
   
   private var walletsStoreObservationToken: ObservationToken?
   
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let backgroundUpdateStore: BackgroundUpdateStoreV2
   
-  init(walletsStore: WalletsStoreV2,
+  init(walletsStore: WalletsStore,
        backgroundUpdateStore: BackgroundUpdateStoreV2) {
     self.walletsStore = walletsStore
     self.backgroundUpdateStore = backgroundUpdateStore
@@ -39,15 +39,6 @@ public final class HistoryController {
 }
 
 extension HistoryController {
-  func didGetWalletsStoreEvent(_ event: WalletsStore.Event) {
-    switch event {
-    case .didUpdateActiveWallet:
-      didUpdateWallet?()
-    default:
-      break
-    }
-  }
-  
   func createIsConnecting(_ state: BackgroundUpdateStoreV2.State) -> Bool {
     let isConnecting: Bool
     switch state {

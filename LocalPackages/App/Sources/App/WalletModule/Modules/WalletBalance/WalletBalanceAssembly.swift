@@ -9,7 +9,7 @@ struct WalletBalanceAssembly {
   static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly, coreAssembly: TKCore.CoreAssembly) -> WalletBalanceModule {
     let viewModel = WalletBalanceViewModelImplementation(
       balanceListModel: WalletBalanceBalanceModel(
-        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
         balanceStore: keeperCoreMainAssembly.mainStoresAssembly.processedBalanceStore,
         stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
         tokenManagementStoreProvider: {
@@ -18,18 +18,18 @@ struct WalletBalanceAssembly {
         secureMode: coreAssembly.secureMode
       ),
       setupModel: WalletBalanceSetupModel(
-        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
         setupStore: keeperCoreMainAssembly.storesAssembly.setupStoreV2,
         securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2,
         mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
       ),
       totalBalanceModel: WalletTotalBalanceModel(
-        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
         totalBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
         secureMode: coreAssembly.secureMode,
         backgroundUpdateStore: keeperCoreMainAssembly.mainStoresAssembly.backgroundUpdateStoreV2
       ),
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
       notificationStore: keeperCoreMainAssembly.storesAssembly.notificationsStore,
       configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore,
       listMapper:

@@ -26,7 +26,7 @@ public final class MainStoresAssembly {
     if let _balanceStore {
       return _balanceStore
     }
-    let store = BalanceStoreV2(walletsStore: walletsAssembly.walletsStoreV2,
+    let store = BalanceStoreV2(walletsStore: walletsAssembly.walletsStore,
                                repository: repositoriesAssembly.walletBalanceRepositoryV2()
     )
     _balanceStore = store
@@ -55,7 +55,7 @@ public final class MainStoresAssembly {
       return _processedBalanceStore
     }
     let store = ProcessedBalanceStore(
-      walletsStore: walletsAssembly.walletsStoreV2,
+      walletsStore: walletsAssembly.walletsStore,
       balanceStore: balanceStore,
       tonRatesStore: storesAssembly.tonRatesStoreV2,
       currencyStore: storesAssembly.currencyStoreV2,
@@ -82,7 +82,7 @@ public final class MainStoresAssembly {
     } else {
       let backgroundUpdateUpdater = BackgroundUpdateUpdater(
         backgroundUpdateStore: backgroundUpdateStoreV2,
-        walletsStore: walletsAssembly.walletsStoreV2,
+        walletsStore: walletsAssembly.walletsStore,
         streamingAPI: apiAssembly.streamingTonAPIClient()
       )
       _backgroundUpdateUpdater = backgroundUpdateUpdater

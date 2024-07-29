@@ -20,13 +20,13 @@ public enum ProcessedBalanceState: Equatable {
 }
 
 public final class ProcessedBalanceStore: StoreUpdated<[FriendlyAddress: ProcessedBalanceState]> {
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let balanceStore: BalanceStoreV2
   private let tonRatesStore: TonRatesStoreV2
   private let currencyStore: CurrencyStoreV2
   private let stakingPoolsStore: StakingPoolsStore
   
-  init(walletsStore: WalletsStoreV2,
+  init(walletsStore: WalletsStore,
        balanceStore: BalanceStoreV2,
        tonRatesStore: TonRatesStoreV2,
        currencyStore: CurrencyStoreV2,

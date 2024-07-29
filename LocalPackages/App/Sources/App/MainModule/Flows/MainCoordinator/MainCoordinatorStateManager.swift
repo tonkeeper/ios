@@ -31,11 +31,11 @@ final class MainCoordinatorStateManager {
     }
   }
  
-  private let walletsStoreV2: WalletsStoreV2
+  private let walletsStore: WalletsStore
   
-  init(walletsStoreV2: WalletsStoreV2) {
-    self.walletsStoreV2 = walletsStoreV2
-    walletsStoreV2.addObserver(
+  init(walletsStore: WalletsStore) {
+    self.walletsStore = walletsStore
+    walletsStore.addObserver(
       self,
       notifyOnAdded: true) { observer, walletsState, _ in
         DispatchQueue.main.async {

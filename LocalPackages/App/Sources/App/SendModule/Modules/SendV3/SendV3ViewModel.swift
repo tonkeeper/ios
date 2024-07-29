@@ -188,7 +188,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   func didTapWalletTokenPicker() {
     switch sendItem {
     case .token(let token, _):
-      self.didTapPicker?(walletsStore.activeWallet, token)
+      self.didTapPicker?(walletsStore.getState().activeWallet, token)
     case .nft:
       break
     }
@@ -357,7 +357,7 @@ private extension SendV3ViewModelImplementation {
         isActivity: isResolving,
         action: { [weak self] in
           guard let self else { return }
-          let sendModel = SendModel(wallet: walletsStore.activeWallet,
+          let sendModel = SendModel(wallet: walletsStore.getState().activeWallet,
                                     recipient: recipient,
                                     sendItem: sendItem,
                                     comment: commentInput)

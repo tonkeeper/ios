@@ -77,7 +77,7 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
     self.walletsStore = walletsStore
     self.showWalletPicker = showWalletPicker
     
-    self.selectedWallet = walletsStore.activeWallet
+    self.selectedWallet = walletsStore.getState().activeWallet
   }
 }
 
@@ -86,7 +86,7 @@ private extension TonConnectConnectViewModelImplementation {
     let configuration = TonConnectConnectMapper.modalCardConfiguration(
       wallet: selectedWallet,
       manifest: manifest,
-      showWalletPicker: !walletsStore.wallets.isEmpty && showWalletPicker,
+      showWalletPicker: !walletsStore.getState().wallets.isEmpty && showWalletPicker,
       headerView: {
         headerView?($0, $1)
       },

@@ -9,7 +9,7 @@ actor WalletStateLoader {
   
   private let balanceStore: BalanceStoreV2
   private let currencyStore: CurrencyStoreV2
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let ratesStore: TonRatesStoreV2
   private let stakingPoolsStore: StakingPoolsStore
   private let balanceService: BalanceService
@@ -19,7 +19,7 @@ actor WalletStateLoader {
   
   init(balanceStore: BalanceStoreV2, 
        currencyStore: CurrencyStoreV2,
-       walletsStore: WalletsStoreV2,
+       walletsStore: WalletsStore,
        ratesStore: TonRatesStoreV2,
        stakingPoolsStore: StakingPoolsStore,
        balanceService: BalanceService,

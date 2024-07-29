@@ -62,7 +62,7 @@ public final class MainAssembly {
   
   public func mainController() -> MainController {
     MainController(
-      walletsStore: walletAssembly.walletsStoreV2,
+      walletsStore: walletAssembly.walletsStore,
       accountNFTService: servicesAssembly.accountNftService(),
       backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater,
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
@@ -91,7 +91,7 @@ public final class MainAssembly {
   }
   
   public func historyController() -> HistoryController {
-    HistoryController(walletsStore: walletAssembly.walletsStoreV2,
+    HistoryController(walletsStore: walletAssembly.walletsStore,
                       backgroundUpdateStore: mainStoresAssembly.backgroundUpdateStoreV2)
   }
   
@@ -107,7 +107,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      walletsStore: walletAssembly.walletsStoreV2,
+      walletsStore: walletAssembly.walletsStore,
       paginator: paginator,
       backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater)
   }
@@ -124,7 +124,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      walletsStore: walletAssembly.walletsStoreV2,
+      walletsStore: walletAssembly.walletsStore,
       paginator: paginator,
       backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater)
   }
@@ -142,7 +142,7 @@ public final class MainAssembly {
       dateFormatter: formattersAssembly.dateFormatter
     )
     return HistoryListController(
-      walletsStore: walletAssembly.walletsStoreV2,
+      walletsStore: walletAssembly.walletsStore,
       paginator: paginator,
       backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater)
   }
@@ -170,7 +170,7 @@ public final class MainAssembly {
   public func receiveController(token: Token) -> ReceiveController {
     ReceiveController(
       token: token,
-      walletsStore: walletAssembly.walletStore,
+      walletsStore: walletAssembly.walletsStore,
       deeplinkGenerator: DeeplinkGenerator()
     )
   }
@@ -180,7 +180,7 @@ public final class MainAssembly {
       event: event,
       amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
       tonRatesStore: storesAssembly.tonRatesStore,
-      walletsStore: walletAssembly.walletStore,
+      walletsStore: walletAssembly.walletsStore,
       currencyStore: storesAssembly.currencyStore,
       nftService: servicesAssembly.nftService()
     )
@@ -188,7 +188,7 @@ public final class MainAssembly {
   
   public func collectiblesController() -> CollectiblesController {
     CollectiblesController(
-      walletsStore: walletAssembly.walletsStoreV2,
+      walletsStore: walletAssembly.walletsStore,
       backgroundUpdateStore: mainStoresAssembly.backgroundUpdateStoreV2,
       nftsStore: storesAssembly.nftsStore
     )
@@ -208,19 +208,10 @@ public final class MainAssembly {
   public func collectibleDetailsController(nft: NFT) -> CollectibleDetailsController {
     CollectibleDetailsController(
       nft: nft,
-      walletsStore: walletAssembly.walletStore,
+      walletsStore: walletAssembly.walletsStore,
       nftService: servicesAssembly.nftService(),
       dnsService: servicesAssembly.dnsService(),
       collectibleDetailsMapper: CollectibleDetailsMapper(dateFormatter: formattersAssembly.dateFormatter)
-    )
-  }
-  
-  public func backupController(wallet: Wallet) -> BackupController {
-    BackupController(
-      wallet: wallet,
-      backupStore: storesAssembly.backupStore,
-      walletsStore: walletAssembly.walletStore,
-      dateFormatter: formattersAssembly.dateFormatter
     )
   }
   
@@ -230,21 +221,9 @@ public final class MainAssembly {
     )
   }
   
-  public func sendController(sendItem: SendItem, recipient: Recipient? = nil) -> SendController {
-    SendController(
-      sendItem: sendItem,
-      recipient: recipient,
-      walletsStore: walletAssembly.walletStore,
-      balanceStore: storesAssembly.balanceStore,
-      knownAccountsStore: storesAssembly.knownAccountsStore,
-      dnsService: servicesAssembly.dnsService(),
-      amountFormatter: formattersAssembly.amountFormatter
-    )
-  }
-  
   public func sendV3Controller() -> SendV3Controller {
     SendV3Controller(
-      walletsStore: walletAssembly.walletStore,
+      walletsStore: walletAssembly.walletsStore,
       walletBalanceStore: storesAssembly.walletBalanceStore,
       knownAccountsStore: storesAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
@@ -369,7 +348,7 @@ public final class MainAssembly {
   
   public func browserConnectedController() -> BrowserConnectedController {
     BrowserConnectedController(
-      walletsStore: walletAssembly.walletsStoreV2,
+      walletsStore: walletAssembly.walletsStore,
       tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
     )
   }

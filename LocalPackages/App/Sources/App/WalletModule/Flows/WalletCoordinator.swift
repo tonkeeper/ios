@@ -48,7 +48,7 @@ private extension WalletCoordinator {
   func openWalletContainer() {
     let module = WalletContainerAssembly.module(
       walletBalanceModule: createWalletBalanceModule(),
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2
+      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore
     )
     
     module.output.walletButtonHandler = { [weak self] in

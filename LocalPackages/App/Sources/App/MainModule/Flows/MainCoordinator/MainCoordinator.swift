@@ -75,7 +75,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     self.appStateTracker = appStateTracker
     self.reachabilityTracker = reachabilityTracker
     
-    self.mainCoordinatorStateManager = MainCoordinatorStateManager(walletsStoreV2: keeperCoreMainAssembly.walletAssembly.walletsStoreV2)
+    self.mainCoordinatorStateManager = MainCoordinatorStateManager(walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore)
     self.walletsStoreUpdater = keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater
     
     super.init(router: router)
@@ -477,7 +477,7 @@ private extension MainCoordinator {
   func openWalletPicker() {
     let module = WalletsListAssembly.module(
       model: WalletsPickerListModel(
-        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
         walletsUpdater: keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater
       ),
       totalBalancesStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
@@ -900,7 +900,7 @@ private extension MainCoordinator {
     guard let navigationController = router.rootViewController.navigationController else { return }
     let configuration = SettingsListBackupConfigurator(
       walletId: wallet.id,
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
     )
     

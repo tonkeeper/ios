@@ -6,11 +6,11 @@ public final class CollectiblesController {
   public var didUpdateActiveWallet: (() -> Void)?
   public var didUpdateIsEmpty: ((Bool) -> Void)?
 
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let backgroundUpdateStore: BackgroundUpdateStoreV2
   private let nftsStore: NftsStore
   
-  init(walletsStore: WalletsStoreV2,
+  init(walletsStore: WalletsStore,
        backgroundUpdateStore: BackgroundUpdateStoreV2,
        nftsStore: NftsStore) {
     self.walletsStore = walletsStore

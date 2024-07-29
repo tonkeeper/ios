@@ -16,10 +16,10 @@ protocol WalletsListModel: AnyObject {
 }
 
 final class WalletsPickerListModel: WalletsListModel {
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let walletsUpdater: WalletsStoreUpdater
   
-  init(walletsStore: WalletsStoreV2, 
+  init(walletsStore: WalletsStore, 
        walletsUpdater: WalletsStoreUpdater) {
     self.walletsStore = walletsStore
     self.walletsUpdater = walletsUpdater
@@ -63,9 +63,9 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   
   var didSelectWallet: ((Wallet) -> Void)?
   
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   
-  init(walletsStore: WalletsStoreV2) {
+  init(walletsStore: WalletsStore) {
     self.walletsStore = walletsStore
   }
   

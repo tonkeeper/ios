@@ -33,7 +33,7 @@ public final class ReceiveController {
     }
     do {
       return try deeplinkGenerator.generateTransferDeeplink(
-        with: walletsStore.activeWallet.address.toString(bounceable: false), jettonAddress: jettonAddress
+        with: walletsStore.getState().activeWallet.address.toString(bounceable: false), jettonAddress: jettonAddress
       ).string
     } catch {
       return ""
@@ -58,7 +58,7 @@ public final class ReceiveController {
     
     didUpdateModel?(
       Model(
-        wallet: walletsStore.activeWallet,
+        wallet: walletsStore.getState().activeWallet,
         tokenName: tokenName,
         descriptionTokenName: descriptionTokenName,
         image: image

@@ -5,7 +5,7 @@ import KeeperCore
 struct WalletContainerAssembly {
   private init() {}
   static func module(walletBalanceModule: WalletBalanceModule,
-                     walletsStore: WalletsStoreV2) -> MVVMModule<WalletContainerViewController, WalletContainerModuleOutput, Void> {
+                     walletsStore: WalletsStore) -> MVVMModule<WalletContainerViewController, WalletContainerModuleOutput, Void> {
     let viewModel = WalletContainerViewModelImplementation(
       walletsStore: walletsStore
     )

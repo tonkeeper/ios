@@ -15,7 +15,7 @@ public struct WalletsState: Equatable {
   }
 }
 
-public final class WalletsStoreV2: StoreUpdated<WalletsState> {
+public final class WalletsStore: StoreUpdated<WalletsState> {
   
   private let keeperInfoStore: KeeperInfoStore
   private let getInitialStateClosure: () -> WalletsState
@@ -38,7 +38,7 @@ public final class WalletsStoreV2: StoreUpdated<WalletsState> {
   }
 }
 
-private extension WalletsStoreV2 {
+private extension WalletsStore {
   func didUpdateKeeperInfo(_ keeperInfo: KeeperInfo?) {
     guard let keeperInfo else { return }
     updateState { _ in

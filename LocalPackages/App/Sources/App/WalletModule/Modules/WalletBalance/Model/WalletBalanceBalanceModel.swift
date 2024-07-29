@@ -30,13 +30,13 @@ final class WalletBalanceBalanceModel {
   
   private var tokenManagementStore: TokenManagementStore
   
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let balanceStore: ProcessedBalanceStore
   private let stackingPoolsStore: StakingPoolsStore
   private let tokenManagementStoreProvider: (Wallet) -> TokenManagementStore
   private let secureMode: SecureMode
   
-  init(walletsStore: WalletsStoreV2,
+  init(walletsStore: WalletsStore,
        balanceStore: ProcessedBalanceStore,
        stackingPoolsStore: StakingPoolsStore,
        tokenManagementStoreProvider: @escaping (Wallet) -> TokenManagementStore,

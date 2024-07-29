@@ -98,7 +98,7 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
   }
   
   func collectibleDetailsLinkDomain(_ collectibleDetails: CollectibleDetailsModuleInput, nft: NFT) {
-    let wallet = keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+    let wallet = keeperCoreMainAssembly.walletAssembly.walletsStore.getState().activeWallet
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
     
@@ -133,7 +133,7 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
   }
   
   func collectibleDetailsUnlinkDomain(_ collectibleDetails:CollectibleDetailsModuleInput, nft: NFT) {
-    let wallet = keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+    let wallet = keeperCoreMainAssembly.walletAssembly.walletsStore.getState().activeWallet
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
     
@@ -163,7 +163,7 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
   }
   
   func collectibleDetailsRenewDomain(_ collectibleDetails: any CollectibleDetailsModuleInput, nft: NFT) {
-    let wallet = keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+    let wallet = keeperCoreMainAssembly.walletAssembly.walletsStore.getState().activeWallet
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
     

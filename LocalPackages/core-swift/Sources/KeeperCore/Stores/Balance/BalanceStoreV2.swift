@@ -2,10 +2,10 @@ import Foundation
 import TonSwift
 
 public final class BalanceStoreV2: StoreUpdated<[FriendlyAddress: WalletBalanceState]> {
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let repository: WalletBalanceRepositoryV2
   
-  init(walletsStore: WalletsStoreV2,
+  init(walletsStore: WalletsStore,
        repository: WalletBalanceRepositoryV2) {
     self.walletsStore = walletsStore
     self.repository = repository

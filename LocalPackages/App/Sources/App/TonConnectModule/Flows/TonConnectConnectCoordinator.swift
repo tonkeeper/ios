@@ -87,7 +87,7 @@ private extension TonConnectConnectCoordinator {
     let module = TonConnectConnectAssembly.module(
       parameters: parameters,
       manifest: manifest,
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletStore,
+      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
       showWalletPicker: showWalletPicker
     )
     
@@ -149,7 +149,7 @@ private extension TonConnectConnectCoordinator {
   }
   
   func openWalletPicker(wallet: Wallet, fromViewController: UIViewController, didSelectWallet: @escaping (Wallet) -> Void) {
-    let model = TonConnectWalletsPickerListModel(walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2)
+    let model = TonConnectWalletsPickerListModel(walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore)
     model.didSelectWallet = { wallet in
       didSelectWallet(wallet)
     }

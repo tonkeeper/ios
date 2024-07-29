@@ -26,7 +26,7 @@ public final class MainLoadersAssembly {
     let loader = WalletStateLoader(
       balanceStore: mainStoresAssembly.balanceStore,
       currencyStore: storesAssembly.currencyStoreV2,
-      walletsStore: walletAssembly.walletsStoreV2,
+      walletsStore: walletAssembly.walletsStore,
       ratesStore: storesAssembly.tonRatesStoreV2,
       stakingPoolsStore: storesAssembly.stackingPoolsStore,
       balanceService: servicesAssembly.balanceService(),

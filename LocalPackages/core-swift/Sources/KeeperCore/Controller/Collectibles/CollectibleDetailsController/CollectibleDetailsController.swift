@@ -68,7 +68,7 @@ private extension CollectibleDetailsController {
   }
   
   func isOwner(_ nft: NFT) -> Bool {
-    guard let address = try? walletsStore.activeWallet.address else { return false }
+    guard let address = try? walletsStore.getState().activeWallet.address else { return false }
     return nft.owner?.address == address
   }
   
@@ -76,7 +76,7 @@ private extension CollectibleDetailsController {
     guard let dns = nft.dns else { return nil }
     let linkedAddress = try await dnsService.resolveDomainName(
       dns,
-      isTestnet: walletsStore.activeWallet.isTestnet
+      isTestnet: walletsStore.getState().activeWallet.isTestnet
     )
     return linkedAddress.friendlyAddress
   }
@@ -85,7 +85,7 @@ private extension CollectibleDetailsController {
     guard let dns = nft.dns else { return nil }
     let date = try await dnsService.loadDomainExpirationDate(
       dns,
-      isTestnet: walletsStore.activeWallet.isTestnet
+      isTestnet: walletsStore.getState().activeWallet.isTestnet
     )
     return date
   }

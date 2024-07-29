@@ -75,7 +75,7 @@ public actor TonConnectEventsStore {
 
 private extension TonConnectEventsStore {
   func getApps() -> [Wallet: TonConnectApps] {
-    let wallets = walletsStore.wallets
+    let wallets = walletsStore.getState().wallets
     
     var apps = [Wallet: TonConnectApps]()
     wallets.forEach { wallet in

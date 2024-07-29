@@ -7,11 +7,11 @@ public final class HistoryListController {
   
   private var didSendTransactionToken: NSObjectProtocol?
   
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let paginator: HistoryListPaginator
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   
-  init(walletsStore: WalletsStoreV2,
+  init(walletsStore: WalletsStore,
        paginator: HistoryListPaginator,
        backgroundUpdateUpdater: BackgroundUpdateUpdater) {
     self.walletsStore = walletsStore

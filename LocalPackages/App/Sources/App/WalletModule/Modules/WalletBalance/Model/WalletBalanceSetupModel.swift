@@ -34,12 +34,12 @@ final class WalletBalanceSetupModel {
     }
   }
   
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let setupStore: SetupStoreV2
   private let securityStore: SecurityStoreV2
   private let mnemonicsRepository: MnemonicsRepository
   
-  init(walletsStore: WalletsStoreV2,
+  init(walletsStore: WalletsStore,
        setupStore: SetupStoreV2,
        securityStore: SecurityStoreV2,
        mnemonicsRepository: MnemonicsRepository) {

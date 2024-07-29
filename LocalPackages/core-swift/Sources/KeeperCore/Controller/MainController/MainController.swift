@@ -16,7 +16,7 @@ public final class MainController {
   private var walletsStoreObservationToken: ObservationToken?
   private var backgroundUpdateStoreObservationToken: ObservationToken?
   
-  private let walletsStore: WalletsStoreV2
+  private let walletsStore: WalletsStore
   private let accountNFTService: AccountNFTService
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   private let tonConnectEventsStore: TonConnectEventsStore
@@ -39,7 +39,7 @@ public final class MainController {
   
   private var nftStateTask: Task<Void, Never>?
 
-  init(walletsStore: WalletsStoreV2,
+  init(walletsStore: WalletsStore,
        accountNFTService: AccountNFTService,
        backgroundUpdateUpdater: BackgroundUpdateUpdater,
        tonConnectEventsStore: TonConnectEventsStore,

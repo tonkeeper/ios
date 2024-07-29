@@ -43,7 +43,7 @@ public final class SendV3Controller {
                         isMemoRequired: knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false))
     } else if let domain = try? await dnsService.resolveDomainName(
       input,
-      isTestnet: walletsStore.activeWallet.isTestnet) {
+      isTestnet: walletsStore.getState().activeWallet.isTestnet) {
       return Recipient(recipientAddress: .domain(domain),
                        isMemoRequired: knownAccounts.first(where: { $0.address == domain.friendlyAddress.address })?.requireMemo ?? false)
     } else {
@@ -86,7 +86,7 @@ public final class SendV3Controller {
   }
   
   public func isAmountAvailableToSend(amount: BigUInt, token: Token) async -> Bool {
-    let wallet = walletsStore.activeWallet
+    let wallet = await walletsStore.getState().activeWallet
     do {
       let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
       switch token {
@@ -116,7 +116,7 @@ public final class SendV3Controller {
       )
       return "≈ \(formatted)"
     case .jetton(let jettonItem):
-      let wallet = walletsStore.activeWallet
+      let wallet = await walletsStore.getState().activeWallet
       do {
         let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
         guard let jettonBalance = balance.walletBalance.balance.jettonsBalance.first(where: {
@@ -143,7 +143,7 @@ public final class SendV3Controller {
     case remaining(String)
   }
   public func calculateRemaining(token: Token, tokenAmount: BigUInt) async -> Remaining {
-    let wallet = walletsStore.activeWallet
+    let wallet = await walletsStore.getState().activeWallet
     let amount: BigUInt
     let tokenSymbol: String?
     let fractionalDigits: Int
@@ -180,7 +180,7 @@ public final class SendV3Controller {
   }
   
   public func getMaximumAmount(token: Token) async -> BigUInt {
-    let wallet = walletsStore.activeWallet
+    let wallet = await walletsStore.getState().activeWallet
     do {
       let balance = try await walletBalanceStore.getBalanceState(wallet: wallet)
       switch token {
@@ -201,7 +201,7 @@ public final class SendV3Controller {
     case ok
   }
   public func validateComment(comment: String) -> CommentState {
-    let wallet = walletsStore.activeWallet
+    let wallet = walletsStore.getState().activeWallet
     
     if (wallet.kind == .ledger && comment.count > 0 && !comment.containsOnlyAsciiCharacters) {
       return .ledgerNonAsciiError

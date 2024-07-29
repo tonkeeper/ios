@@ -30,7 +30,7 @@ private extension SettingsCoordinator {
   func openSettingsRoot() {
     let configurator = SettingsListRootConfigurator(
       walletId: wallet.id,
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV2,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
@@ -71,7 +71,7 @@ private extension SettingsCoordinator {
     
     configurator.didDeleteWallet = { [weak self] in
       guard let self else { return }
-      let wallets = self.keeperCoreMainAssembly.walletAssembly.walletsStoreV2.getState().wallets
+      let wallets = self.keeperCoreMainAssembly.walletAssembly.walletsStore.getState().wallets
       if !wallets.isEmpty {
         self.router.pop(animated: true)
       }
@@ -137,7 +137,7 @@ private extension SettingsCoordinator {
   func openBackup(wallet: Wallet) {
     let configuration = SettingsListBackupConfigurator(
       walletId: wallet.id,
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
+      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
     )
     
@@ -257,7 +257,7 @@ private extension SettingsCoordinator {
           guard let passcode = await self.getPasscode() else { return }
           await self.keeperCoreMainAssembly.walletDeleteController.deleteWallet(wallet: wallet, passcode: passcode)
           await MainActor.run {
-            let wallets = self.keeperCoreMainAssembly.walletAssembly.walletsStoreV2.getState().wallets
+            let wallets = self.keeperCoreMainAssembly.walletAssembly.walletsStore.getState().wallets
             if !wallets.isEmpty {
               self.router.pop(animated: true)
             }
