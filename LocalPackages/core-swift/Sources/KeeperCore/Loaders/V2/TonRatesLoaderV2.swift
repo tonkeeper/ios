@@ -18,11 +18,11 @@ actor TonRatesLoaderV2 {
   
   private let tonRatesStore: TonRatesStoreV2
   private let ratesService: RatesService
-  private let currencyStore: CurrencyStoreV2
+  private let currencyStore: CurrencyStore
   
   init(tonRatesStore: TonRatesStoreV2, 
        ratesService: RatesService,
-       currencyStore: CurrencyStoreV2) {
+       currencyStore: CurrencyStore) {
     self.tonRatesStore = tonRatesStore
     self.ratesService = ratesService
     self.currencyStore = currencyStore

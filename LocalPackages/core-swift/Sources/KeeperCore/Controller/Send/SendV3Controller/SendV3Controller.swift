@@ -101,7 +101,7 @@ public final class SendV3Controller {
   
   public func convertTokenAmountToCurrency(token: Token, _ amount: BigUInt) async -> String {
     guard !amount.isZero else { return "" }
-    let currency = await currencyStore.getActiveCurrency()
+    let currency = await currencyStore.getCurrency()
     switch token {
     case .ton:
       guard let rate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency }) else { return ""}

@@ -1,6 +1,6 @@
 import Foundation
 
-public final class CurrencyStoreV2: StoreUpdated<Currency> {
+public final class CurrencyStore: StoreUpdated<Currency> {
   
   private let keeperInfoStore: KeeperInfoStore
   

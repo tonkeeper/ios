@@ -23,13 +23,13 @@ public final class ProcessedBalanceStore: StoreUpdated<[FriendlyAddress: Process
   private let walletsStore: WalletsStore
   private let balanceStore: BalanceStoreV2
   private let tonRatesStore: TonRatesStoreV2
-  private let currencyStore: CurrencyStoreV2
+  private let currencyStore: CurrencyStore
   private let stakingPoolsStore: StakingPoolsStore
   
   init(walletsStore: WalletsStore,
        balanceStore: BalanceStoreV2,
        tonRatesStore: TonRatesStoreV2,
-       currencyStore: CurrencyStoreV2,
+       currencyStore: CurrencyStore,
        stakingPoolsStore: StakingPoolsStore) {
     self.walletsStore = walletsStore
     self.balanceStore = balanceStore

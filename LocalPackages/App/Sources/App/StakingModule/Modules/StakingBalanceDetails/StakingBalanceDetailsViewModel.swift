@@ -78,7 +78,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   private let stakingPoolsStore: StakingPoolsStore
   private let balanceStore: ProcessedBalanceStore
   private let tonRatesStore: TonRatesStoreV2
-  private let currencyStore: CurrencyStoreV2
+  private let currencyStore: CurrencyStore
   private let decimalFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
@@ -93,7 +93,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
        stakingPoolsStore: StakingPoolsStore,
        balanceStore: ProcessedBalanceStore,
        tonRatesStore: TonRatesStoreV2,
-       currencyStore: CurrencyStoreV2,
+       currencyStore: CurrencyStore,
        decimalFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet

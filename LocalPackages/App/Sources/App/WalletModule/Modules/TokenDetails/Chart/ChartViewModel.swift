@@ -37,7 +37,7 @@ final class ChartViewModelImplementation: ChartViewModel, ChartModuleOutput {
   
   func didSelectChartPoint(at index: Int) {
     Task {
-      let currency = await currencyStore.getActiveCurrency()
+      let currency = await currencyStore.getCurrency()
       let period = await state.period
       let coordinates = await state.coordinates
       let pointModel = preparePointModel(
@@ -54,7 +54,7 @@ final class ChartViewModelImplementation: ChartViewModel, ChartModuleOutput {
   
   func didDeselectChartPoint() {
     Task {
-      let currency = await currencyStore.getActiveCurrency()
+      let currency = await currencyStore.getCurrency()
       let period = await state.period
       let coordinates = await state.coordinates
       let pointModel = prepareLastPointModel(
@@ -140,7 +140,7 @@ private extension ChartViewModelImplementation {
   }
   
   func cachedChartData() async {
-    let currency = await currencyStore.getActiveCurrency()
+    let currency = await currencyStore.getCurrency()
     let period = await state.period
     let cachedCoordinates = chartController.getCachedChartData(period: period, currency: currency)
     await state.setCoordinates(cachedCoordinates)
@@ -155,7 +155,7 @@ private extension ChartViewModelImplementation {
   func loadChartData() async {
     pollingTask?.cancel()
     pollingTask = Task {
-      let currency = await currencyStore.getActiveCurrency()
+      let currency = await currencyStore.getCurrency()
       let period = await state.period
       do {
         let loadedCoordinates = try await chartController.loadChartData(period: period, currency: currency)

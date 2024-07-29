@@ -52,7 +52,7 @@ public final class WidgetAssembly {
       token: token,
       loader: loadersAssembly.chartLoader,
       chartService: servicesAssembly.chartService(),
-      currencyStore: storesAssembly.currencyStore,
+      currencyStore: storesAssembly.currencyStoreV2,
       walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
     )

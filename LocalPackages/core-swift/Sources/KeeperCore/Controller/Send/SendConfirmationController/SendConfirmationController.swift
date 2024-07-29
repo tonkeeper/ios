@@ -100,7 +100,7 @@ private extension SendConfirmationController {
       )
       feeItem = .value(feeFormatted)
       let rates = ratesStore.getRates(jettons: [])
-      let currency = await currencyStore.getActiveCurrency()
+      let currency = await currencyStore.getCurrency()
       if let rates = rates.ton.first(where: { $0.currency == currency }) {
         let rateConverter = RateConverter()
         let converted = rateConverter.convert(
@@ -147,7 +147,7 @@ private extension SendConfirmationController {
           symbol: TonInfo.symbol
         )
         let rates = ratesStore.getRates(jettons: [])
-        let currency = await currencyStore.getActiveCurrency()
+        let currency = await currencyStore.getCurrency()
         if let rates = rates.ton.first(where: { $0.currency == currency }) {
           let rateConverter = RateConverter()
           let converted = rateConverter.convert(
@@ -173,7 +173,7 @@ private extension SendConfirmationController {
           symbol: jettonItem.jettonInfo.symbol
         )
         let rates = ratesStore.getRates(jettons: [jettonItem.jettonInfo])
-        let currency = await currencyStore.getActiveCurrency()
+        let currency = await currencyStore.getCurrency()
         if let rates = rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency }) {
           let rateConverter = RateConverter()
           let converted = rateConverter.convert(

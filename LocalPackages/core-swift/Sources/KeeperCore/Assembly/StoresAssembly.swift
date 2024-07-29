@@ -28,12 +28,12 @@ public final class StoresAssembly {
     return store
   }
   
-  private weak var _currencyStoreV2: CurrencyStoreV2?
-  public var currencyStoreV2: CurrencyStoreV2 {
+  private weak var _currencyStoreV2: CurrencyStore?
+  public var currencyStoreV2: CurrencyStore {
     if let _currencyStoreV2 {
       return _currencyStoreV2
     }
-    let store = CurrencyStoreV2(keeperInfoStore: keeperInfoStore)
+    let store = CurrencyStore(keeperInfoStore: keeperInfoStore)
     _currencyStoreV2 = store
     return store
   }
@@ -151,17 +151,6 @@ public final class StoresAssembly {
       let ratesStore = RatesStore(ratesService: servicesAssembly.ratesService())
       _ratesStore = ratesStore
       return ratesStore
-    }
-  }
-  
-  private weak var _currencyStore: CurrencyStore?
-  public var currencyStore: CurrencyStore {
-    if let currencyStore = _currencyStore {
-      return currencyStore
-    } else {
-      let currencyStore = CurrencyStore(currencyService: servicesAssembly.currencyService())
-      _currencyStore = currencyStore
-      return currencyStore
     }
   }
 

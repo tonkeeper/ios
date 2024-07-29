@@ -78,7 +78,7 @@ public final class SendAmountController {
   
   public func start() {
     Task {
-      currency = await currencyStore.getActiveCurrency()
+      currency = await currencyStore.getCurrency()
       await MainActor.run {
         updateMaximumFractionDigits()
         updateRates()

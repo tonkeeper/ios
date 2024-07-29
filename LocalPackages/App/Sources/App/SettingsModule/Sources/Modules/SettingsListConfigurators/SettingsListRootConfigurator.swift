@@ -45,7 +45,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   private let walletId: String
   private let walletsStore: WalletsStore
-  private let currencyStore: CurrencyStoreV2
+  private let currencyStore: CurrencyStore
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
   private let configurationStore: ConfigurationStore
@@ -56,7 +56,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   init(walletId: String,
        walletsStore: WalletsStore,
-       currencyStore: CurrencyStoreV2,
+       currencyStore: CurrencyStore,
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
        configurationStore: ConfigurationStore,

@@ -151,7 +151,7 @@ public final class MainAssembly {
     ChartController(
       chartService: servicesAssembly.chartService(),
       tonRatesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
+      currencyStore: storesAssembly.currencyStoreV2,
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
     )
   }
@@ -161,7 +161,7 @@ public final class MainAssembly {
       token: token,
       loader: loadersAssembly.chartLoader,
       chartService: servicesAssembly.chartService(),
-      currencyStore: storesAssembly.currencyStore,
+      currencyStore: storesAssembly.currencyStoreV2,
       walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
     )
@@ -181,7 +181,7 @@ public final class MainAssembly {
       amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
       tonRatesStore: storesAssembly.tonRatesStore,
       walletsStore: walletAssembly.walletsStore,
-      currencyStore: storesAssembly.currencyStore,
+      currencyStore: storesAssembly.currencyStoreV2,
       nftService: servicesAssembly.nftService()
     )
   }
@@ -222,7 +222,7 @@ public final class MainAssembly {
       knownAccountsStore: storesAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
       tonRatesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
+      currencyStore: storesAssembly.currencyStoreV2,
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
@@ -244,7 +244,7 @@ public final class MainAssembly {
       wallet: wallet,
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.ratesStore,
-      currencyStore: storesAssembly.currencyStore,
+      currencyStore: storesAssembly.currencyStoreV2,
       rateConverter: RateConverter(),
       amountFormatter: formattersAssembly.amountFormatter
     )
@@ -272,7 +272,7 @@ public final class MainAssembly {
       blockchainService: servicesAssembly.blockchainService(),
       balanceStore: storesAssembly.balanceStore,
       ratesStore: storesAssembly.ratesStore,
-      currencyStore: storesAssembly.currencyStore,
+      currencyStore: storesAssembly.currencyStoreV2,
       mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
       amountFormatter: formattersAssembly.amountFormatter
     )
@@ -327,7 +327,7 @@ public final class MainAssembly {
       buySellMethodsService: servicesAssembly.buySellMethodsService(),
       locationService: servicesAssembly.locationService(),
       configurationStore: configurationAssembly.remoteConfigurationStore,
-      currencyStore: storesAssembly.currencyStore,
+      currencyStore: storesAssembly.currencyStoreV2,
       isMarketRegionPickerAvailable: isMarketRegionPickerAvailable
     )
   }
@@ -355,7 +355,7 @@ public final class MainAssembly {
       sendService: servicesAssembly.sendService(),
       nftService: servicesAssembly.nftService(),
       ratesStore: storesAssembly.ratesStore,
-      currencyStore: storesAssembly.currencyStore,
+      currencyStore: storesAssembly.currencyStoreV2,
       confirmTransactionMapper: ConfirmTransactionMapper(
         accountEventMapper: AccountEventMapper(
           dateFormatter: formattersAssembly.dateFormatter,

@@ -8,7 +8,7 @@ actor WalletStateLoader {
   private var loadRatesTask: Task<([Rates.Rate]), Never>?
   
   private let balanceStore: BalanceStoreV2
-  private let currencyStore: CurrencyStoreV2
+  private let currencyStore: CurrencyStore
   private let walletsStore: WalletsStore
   private let ratesStore: TonRatesStoreV2
   private let stakingPoolsStore: StakingPoolsStore
@@ -18,7 +18,7 @@ actor WalletStateLoader {
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   
   init(balanceStore: BalanceStoreV2, 
-       currencyStore: CurrencyStoreV2,
+       currencyStore: CurrencyStore,
        walletsStore: WalletsStore,
        ratesStore: TonRatesStoreV2,
        stakingPoolsStore: StakingPoolsStore,

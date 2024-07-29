@@ -66,7 +66,7 @@ private extension BuyListController {
   }
   
   func mapFiatMethods(_ fiatMethods: FiatMethods) async -> [[BuySellItemModel]] {
-    let currency = await currencyStore.getActiveCurrency()
+    let currency = await currencyStore.getCurrency()
     var sections = [[BuySellItemModel]]()
     for category in fiatMethods.categories {
       var items = [BuySellItemModel]()
