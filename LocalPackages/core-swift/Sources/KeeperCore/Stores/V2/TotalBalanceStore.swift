@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class TotalBalanceStoreV2: StoreUpdated<[FriendlyAddress: TotalBalanceState]> {
+public final class TotalBalanceStore: StoreUpdated<[FriendlyAddress: TotalBalanceState]> {
 
   private let processedBalanceStore: ProcessedBalanceStore
   

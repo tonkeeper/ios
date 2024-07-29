@@ -137,14 +137,14 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   // MARK: - Dependencies
   
   private let model: WalletsListModel
-  private let totalBalancesStore: TotalBalanceStoreV2
+  private let totalBalancesStore: TotalBalanceStore
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
   // MARK: - Init
   
   init(model: WalletsListModel,
-       totalBalancesStore: TotalBalanceStoreV2,
+       totalBalancesStore: TotalBalanceStore,
        decimalAmountFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.model = model

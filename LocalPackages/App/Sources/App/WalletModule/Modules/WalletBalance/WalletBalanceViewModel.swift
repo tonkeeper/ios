@@ -573,7 +573,7 @@ private extension WalletBalanceViewModelImplementation {
     }
   }
   
-  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateStoreV2.State) -> ConnectionStatusView.Model? {
+  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateStore.State) -> ConnectionStatusView.Model? {
     switch backgroundUpdateState {
     case .connecting:
       return ConnectionStatusView.Model(

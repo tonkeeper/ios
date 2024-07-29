@@ -20,13 +20,13 @@ final class ManageTokensModel {
   private let actor = SerialActor<Void>()
 
   private let wallet: Wallet
-  private let convertedBalanceStore: ConvertedBalanceStoreV2
+  private let convertedBalanceStore: ConvertedBalanceStore
   private let tokenManagementStore: TokenManagementStore
   private let stackingPoolsStore: StakingPoolsStore
   
   init(wallet: Wallet,
        tokenManagementStore: TokenManagementStore,
-       convertedBalanceStore: ConvertedBalanceStoreV2,
+       convertedBalanceStore: ConvertedBalanceStore,
        stackingPoolsStore: StakingPoolsStore) {
     self.wallet = wallet
     self.tokenManagementStore = tokenManagementStore

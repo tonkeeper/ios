@@ -157,7 +157,7 @@ private extension SettingsCoordinator {
   
   func openSecurity() {
     let configuration = SettingsListSecurityConfigurator(
-      securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2,
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       biometryProvider: BiometryProvider()
     )
@@ -286,7 +286,7 @@ private extension SettingsCoordinator {
       parentCoordinator: self,
       parentRouter: router,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
-      securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
   }
 }

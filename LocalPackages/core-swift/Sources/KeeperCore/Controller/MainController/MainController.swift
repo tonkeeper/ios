@@ -141,10 +141,11 @@ public final class MainController {
       return nil
     }
     for wallet in await walletsStore.getState().wallets {
-      guard let balance = try? balanceStore.getBalance(wallet: wallet).balance else {
+      guard let address = try? wallet.friendlyAddress,
+            let balance = await balanceStore.getState()[address]?.walletBalance else {
         continue
       }
-      guard let jettonItem =  balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonInfo })?.item else {
+      guard let jettonItem =  balance.balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonInfo })?.item else {
         continue
       }
       return jettonItem

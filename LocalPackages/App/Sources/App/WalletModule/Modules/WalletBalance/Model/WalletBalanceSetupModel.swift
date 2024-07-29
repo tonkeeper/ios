@@ -35,13 +35,13 @@ final class WalletBalanceSetupModel {
   }
   
   private let walletsStore: WalletsStore
-  private let setupStore: SetupStoreV2
-  private let securityStore: SecurityStoreV2
+  private let setupStore: SetupStore
+  private let securityStore: SecurityStore
   private let mnemonicsRepository: MnemonicsRepository
   
   init(walletsStore: WalletsStore,
-       setupStore: SetupStoreV2,
-       securityStore: SecurityStoreV2,
+       setupStore: SetupStore,
+       securityStore: SecurityStore,
        mnemonicsRepository: MnemonicsRepository) {
     self.walletsStore = walletsStore
     self.setupStore = setupStore
@@ -92,7 +92,7 @@ private extension WalletBalanceSetupModel {
     }
   }
   
-  func didUpdateSetupStoreState(_ state: SetupStoreV2.State, oldState: SetupStoreV2.State?) {
+  func didUpdateSetupStoreState(_ state: SetupStore.State, oldState: SetupStore.State?) {
     Task {
       await actor.addTask {
         let isBiometryEnable = await self.securityStore.getIsBiometryEnable()
@@ -107,7 +107,7 @@ private extension WalletBalanceSetupModel {
     }
   }
   
-  func didUpdateSecurityStoreState(_ state: SecurityStoreV2.State, oldState: SecurityStoreV2.State?) {
+  func didUpdateSecurityStoreState(_ state: SecurityStore.State, oldState: SecurityStore.State?) {
     Task {
       await actor.addTask {
         let isSetupFinished = await self.setupStore.getIsSetupFinished()

@@ -167,7 +167,7 @@ private extension ImportWalletCoordinator {
       parentCoordinator: self,
       parentRouter: self.router,
       mnemonicsRepository: walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository(),
-      securityStore: storesAssembly.securityStoreV2,
+      securityStore: storesAssembly.securityStore,
       onCancel: {},
       onInput: { [weak self] passcode in
         self?.openCustomizeWallet(

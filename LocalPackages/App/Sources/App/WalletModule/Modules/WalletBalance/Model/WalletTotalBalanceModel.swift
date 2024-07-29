@@ -10,7 +10,7 @@ final class WalletTotalBalanceModel {
     let address: FriendlyAddress
     let totalBalanceState: TotalBalanceState?
     let isSecure: Bool
-    let backgroundUpdateState: BackgroundUpdateStoreV2.State
+    let backgroundUpdateState: BackgroundUpdateStore.State
   }
   
   var didUpdateState: ((State) -> Void)? {
@@ -36,14 +36,14 @@ final class WalletTotalBalanceModel {
   private let actor = SerialActor<Void>()
   
   private let walletsStore: WalletsStore
-  private let totalBalanceStore: TotalBalanceStoreV2
+  private let totalBalanceStore: TotalBalanceStore
   private let secureMode: SecureMode
-  private let backgroundUpdateStore: BackgroundUpdateStoreV2
+  private let backgroundUpdateStore: BackgroundUpdateStore
   
   init(walletsStore: WalletsStore, 
-       totalBalanceStore: TotalBalanceStoreV2,
+       totalBalanceStore: TotalBalanceStore,
        secureMode: SecureMode,
-       backgroundUpdateStore: BackgroundUpdateStoreV2) {
+       backgroundUpdateStore: BackgroundUpdateStore) {
     self.walletsStore = walletsStore
     self.totalBalanceStore = totalBalanceStore
     self.secureMode = secureMode
@@ -120,8 +120,8 @@ final class WalletTotalBalanceModel {
     }
   }
   
-  private func didUpdateBackgroundUpdateState(_ state: BackgroundUpdateStoreV2.State,
-                                              oldState: BackgroundUpdateStoreV2.State?) async {
+  private func didUpdateBackgroundUpdateState(_ state: BackgroundUpdateStore.State,
+                                              oldState: BackgroundUpdateStore.State?) async {
     await actor.addTask {
       let wallet = await self.walletsStore.getState().activeWallet
       guard let address = try? wallet.friendlyAddress else { return }
@@ -137,7 +137,7 @@ final class WalletTotalBalanceModel {
   private func update(wallet: Wallet, 
                       totalBalanceState: TotalBalanceState?,
                       isSecure: Bool,
-                      backgroundUpdateState: BackgroundUpdateStoreV2.State) {
+                      backgroundUpdateState: BackgroundUpdateStore.State) {
     guard let address = try? wallet.friendlyAddress else { return }
     
     let state = State(

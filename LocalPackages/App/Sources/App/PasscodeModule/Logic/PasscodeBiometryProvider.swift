@@ -5,10 +5,10 @@ import KeeperCore
 struct PasscodeBiometryProvider: PasscodeInputBiometryProvider {
   
   private let biometryProvider: BiometryProvider
-  private let securityStore: SecurityStoreV2
+  private let securityStore: SecurityStore
   
   init(biometryProvider: BiometryProvider,
-       securityStore: SecurityStoreV2) {
+       securityStore: SecurityStore) {
     self.biometryProvider = biometryProvider
     self.securityStore = securityStore
   }

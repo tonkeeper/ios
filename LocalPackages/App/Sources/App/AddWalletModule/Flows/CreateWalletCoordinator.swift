@@ -78,7 +78,7 @@ private extension CreateWalletCoordinator {
       parentCoordinator: self,
       parentRouter: self.router,
       mnemonicsRepository: walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository(),
-      securityStore: storesAssembly.securityStoreV2,
+      securityStore: storesAssembly.securityStore,
       onCancel: { [weak self] in
         self?.didCancel?()
       },

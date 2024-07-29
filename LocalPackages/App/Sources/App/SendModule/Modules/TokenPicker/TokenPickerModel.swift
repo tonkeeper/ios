@@ -28,11 +28,11 @@ final class TokenPickerModel {
   
   private let wallet: Wallet
   private let selectedToken: Token
-  private let balanceStore: ConvertedBalanceStoreV2
+  private let balanceStore: ConvertedBalanceStore
   
   init(wallet: Wallet, 
        selectedToken: Token,
-       balanceStore: ConvertedBalanceStoreV2) {
+       balanceStore: ConvertedBalanceStore) {
     self.wallet = wallet
     self.selectedToken = selectedToken
     self.balanceStore = balanceStore

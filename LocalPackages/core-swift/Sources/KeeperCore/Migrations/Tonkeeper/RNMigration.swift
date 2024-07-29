@@ -10,14 +10,14 @@ public struct RNMigration {
   private var settingsRepository: SettingsRepository
   private let mnemonicsRepository: MnemonicsRepository
   private let keychainVault: KeychainVault
-  private let securityStore: SecurityStoreV2
+  private let securityStore: SecurityStore
   
   init(rnService: RNService,
        walletsStoreUpdater: WalletsStoreUpdater,
        settingsRepository: SettingsRepository,
        mnemonicsRepository: MnemonicsRepository,
        keychainVault: KeychainVault,
-       securityStore: SecurityStoreV2) {
+       securityStore: SecurityStore) {
     self.rnService = rnService
     self.walletsStoreUpdater = walletsStoreUpdater
     self.settingsRepository = settingsRepository

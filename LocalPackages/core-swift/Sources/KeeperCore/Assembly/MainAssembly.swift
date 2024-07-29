@@ -67,7 +67,7 @@ public final class MainAssembly {
       backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater,
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
       knownAccountsStore: storesAssembly.knownAccountsStore,
-      balanceStore: storesAssembly.balanceStore,
+      balanceStore: mainStoresAssembly.balanceStore,
       dnsService: servicesAssembly.dnsService(),
       tonConnectService: tonConnectAssembly.tonConnectService(),
       deeplinkParser: DefaultDeeplinkParser(
@@ -92,7 +92,7 @@ public final class MainAssembly {
   
   public func historyController() -> HistoryController {
     HistoryController(walletsStore: walletAssembly.walletsStore,
-                      backgroundUpdateStore: mainStoresAssembly.backgroundUpdateStoreV2)
+                      backgroundUpdateStore: mainStoresAssembly.backgroundUpdateStore)
   }
   
   public func historyListController(wallet: Wallet) -> HistoryListController {
@@ -189,7 +189,7 @@ public final class MainAssembly {
   public func collectiblesController() -> CollectiblesController {
     CollectiblesController(
       walletsStore: walletAssembly.walletsStore,
-      backgroundUpdateStore: mainStoresAssembly.backgroundUpdateStoreV2,
+      backgroundUpdateStore: mainStoresAssembly.backgroundUpdateStore,
       nftsStore: storesAssembly.nftsStore
     )
   }
@@ -255,7 +255,7 @@ public final class MainAssembly {
       sendService: servicesAssembly.sendService(),
       accountService: servicesAssembly.accountService(),
       blockchainService: servicesAssembly.blockchainService(),
-      balanceStore: storesAssembly.balanceStore,
+      balanceStore: mainStoresAssembly.balanceStore,
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
       mnemonicRepository: repositoriesAssembly.mnemonicRepository(),

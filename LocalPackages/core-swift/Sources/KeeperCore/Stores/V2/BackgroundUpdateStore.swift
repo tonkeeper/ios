@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class BackgroundUpdateStoreV2: Store<BackgroundUpdateStoreV2.State> {
+public final class BackgroundUpdateStore: Store<BackgroundUpdateStore.State> {
   public enum State: Equatable {
     case connecting
     case connected

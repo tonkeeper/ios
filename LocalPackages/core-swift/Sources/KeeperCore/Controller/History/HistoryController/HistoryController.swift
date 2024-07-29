@@ -8,10 +8,10 @@ public final class HistoryController {
   private var walletsStoreObservationToken: ObservationToken?
   
   private let walletsStore: WalletsStore
-  private let backgroundUpdateStore: BackgroundUpdateStoreV2
+  private let backgroundUpdateStore: BackgroundUpdateStore
   
   init(walletsStore: WalletsStore,
-       backgroundUpdateStore: BackgroundUpdateStoreV2) {
+       backgroundUpdateStore: BackgroundUpdateStore) {
     self.walletsStore = walletsStore
     self.backgroundUpdateStore = backgroundUpdateStore
     
@@ -39,7 +39,7 @@ public final class HistoryController {
 }
 
 extension HistoryController {
-  func createIsConnecting(_ state: BackgroundUpdateStoreV2.State) -> Bool {
+  func createIsConnecting(_ state: BackgroundUpdateStore.State) -> Bool {
     let isConnecting: Bool
     switch state {
     case .connecting:
@@ -54,7 +54,7 @@ extension HistoryController {
     return isConnecting
   }
   
-  func handleBackgroundUpdateState(_ state: BackgroundUpdateStoreV2.State) {
+  func handleBackgroundUpdateState(_ state: BackgroundUpdateStore.State) {
     let isConnecting = createIsConnecting(state)
     didUpdateIsConnecting?(isConnecting)
   }

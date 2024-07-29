@@ -140,7 +140,7 @@ private extension WalletTransferSignCoordinator {
       parentCoordinator: self,
       parentRouter: router,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
-      securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2,
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
       onCancel: { [weak self] in
         self?.didCancel?()
       },

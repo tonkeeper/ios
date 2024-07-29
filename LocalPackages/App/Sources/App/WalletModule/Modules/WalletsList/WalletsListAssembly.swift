@@ -5,7 +5,7 @@ import KeeperCore
 struct WalletsListAssembly {
   private init() {}
   static func module(model: WalletsListModel,
-                     totalBalancesStore: TotalBalanceStoreV2,
+                     totalBalancesStore: TotalBalanceStore,
                      decimalAmountFormatter: DecimalAmountFormatter,
                      amountFormatter: AmountFormatter) -> MVVMModule<WalletsListViewController, WalletsListModuleOutput, Void> {
     let viewModel = WalletsListViewModelImplementation(

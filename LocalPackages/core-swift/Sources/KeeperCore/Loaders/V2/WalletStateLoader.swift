@@ -7,7 +7,7 @@ actor WalletStateLoader {
   private var reloadStateTask: Task<(), Never>?
   private var loadRatesTask: Task<([Rates.Rate]), Never>?
   
-  private let balanceStore: BalanceStoreV2
+  private let balanceStore: BalanceStore
   private let currencyStore: CurrencyStore
   private let walletsStore: WalletsStore
   private let ratesStore: TonRatesStore
@@ -17,7 +17,7 @@ actor WalletStateLoader {
   private let ratesService: RatesService
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   
-  init(balanceStore: BalanceStoreV2, 
+  init(balanceStore: BalanceStore, 
        currencyStore: CurrencyStore,
        walletsStore: WalletsStore,
        ratesStore: TonRatesStore,
@@ -160,7 +160,7 @@ private extension WalletStateLoader {
         await balanceStore.updateState { state in
           var updatedState = state
           updatedState[friendlyAddress] = .previous(balanceState.walletBalance)
-          return BalanceStoreV2.StateUpdate(newState: updatedState)
+          return BalanceStore.StateUpdate(newState: updatedState)
         }
       }
     }

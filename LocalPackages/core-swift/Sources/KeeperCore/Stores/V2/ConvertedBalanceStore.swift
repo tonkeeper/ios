@@ -2,12 +2,12 @@ import Foundation
 import TonSwift
 import BigInt
 
-public final class ConvertedBalanceStoreV2: Store<[FriendlyAddress: ConvertedBalanceState]> {
-  private let balanceStore: BalanceStoreV2
+public final class ConvertedBalanceStore: Store<[FriendlyAddress: ConvertedBalanceState]> {
+  private let balanceStore: BalanceStore
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   
-  init(balanceStore: BalanceStoreV2, 
+  init(balanceStore: BalanceStore, 
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore) {
     self.balanceStore = balanceStore

@@ -25,7 +25,7 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
   private let sendService: SendService
   private let accountService: AccountService
   private let blockchainService: BlockchainService
-  private let balanceStore: BalanceStoreV2
+  private let balanceStore: BalanceStore
   private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let amountFormatter: AmountFormatter
@@ -38,7 +38,7 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
        sendService: SendService,
        accountService: AccountService,
        blockchainService: BlockchainService,
-       balanceStore: BalanceStoreV2,
+       balanceStore: BalanceStore,
        ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        amountFormatter: AmountFormatter,

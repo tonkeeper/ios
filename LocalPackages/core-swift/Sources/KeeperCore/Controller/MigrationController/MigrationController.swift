@@ -42,7 +42,7 @@ public final class MigrationController {
       settingsRepository: rootAssembly.repositoriesAssembly.settingsRepository(),
       mnemonicsRepository: rootAssembly.repositoriesAssembly.mnemonicsRepository(),
       keychainVault: rootAssembly.coreAssembly.keychainVault,
-      securityStore: rootAssembly.storesAssembly.securityStoreV2
+      securityStore: rootAssembly.storesAssembly.securityStore
     )
   }
   

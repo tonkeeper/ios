@@ -283,7 +283,8 @@ private extension SendConfirmationController {
       let shouldForceBounceFalse = ["empty", "uninit", "nonexist"].contains(account?.status)
       
       let isMax: Bool
-      if let balance = try? balanceStore.getBalance(wallet: wallet) {
+      if let address = try? wallet.friendlyAddress,
+         let balance = await balanceStore.getState()[address]?.walletBalance {
         isMax = BigUInt(balance.balance.tonBalance.amount) == amount
       } else {
         isMax = false

@@ -1,6 +1,6 @@
 import Foundation
 
-public final class SecurityStoreV2: StoreUpdated<SecurityStoreV2.State> {
+public final class SecurityStore: StoreUpdated<SecurityStore.State> {
   public struct State: Equatable {
     public let isBiometryEnable: Bool
     public let isLockScreen: Bool

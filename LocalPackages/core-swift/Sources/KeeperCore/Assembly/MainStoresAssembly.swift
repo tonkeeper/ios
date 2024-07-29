@@ -21,24 +21,24 @@ public final class MainStoresAssembly {
     self.apiAssembly = apiAssembly
   }
   
-  private weak var _balanceStore: BalanceStoreV2?
-  public var balanceStore: BalanceStoreV2 {
+  private weak var _balanceStore: BalanceStore?
+  public var balanceStore: BalanceStore {
     if let _balanceStore {
       return _balanceStore
     }
-    let store = BalanceStoreV2(walletsStore: walletsAssembly.walletsStore,
+    let store = BalanceStore(walletsStore: walletsAssembly.walletsStore,
                                repository: repositoriesAssembly.walletBalanceRepositoryV2()
     )
     _balanceStore = store
     return store
   }
   
-  private weak var _convertedBalanceStore: ConvertedBalanceStoreV2?
-    public var convertedBalanceStore: ConvertedBalanceStoreV2 {
+  private weak var _convertedBalanceStore: ConvertedBalanceStore?
+    public var convertedBalanceStore: ConvertedBalanceStore {
       if let _convertedBalanceStore {
         return _convertedBalanceStore
       }
-      let store = ConvertedBalanceStoreV2(
+      let store = ConvertedBalanceStore(
 
         balanceStore: balanceStore,
         tonRatesStore: storesAssembly.tonRatesStore,
@@ -65,12 +65,12 @@ public final class MainStoresAssembly {
     return store
   }
   
-  private weak var _walletsTotalBalanceStore: TotalBalanceStoreV2?
-  public var walletsTotalBalanceStore: TotalBalanceStoreV2 {
+  private weak var _walletsTotalBalanceStore: TotalBalanceStore?
+  public var walletsTotalBalanceStore: TotalBalanceStore {
     if let _walletsTotalBalanceStore {
       return _walletsTotalBalanceStore
     }
-    let store = TotalBalanceStoreV2(processedBalanceStore: processedBalanceStore)
+    let store = TotalBalanceStore(processedBalanceStore: processedBalanceStore)
     _walletsTotalBalanceStore = store
     return store
   }
@@ -81,7 +81,7 @@ public final class MainStoresAssembly {
       return backgroundUpdateUpdater
     } else {
       let backgroundUpdateUpdater = BackgroundUpdateUpdater(
-        backgroundUpdateStore: backgroundUpdateStoreV2,
+        backgroundUpdateStore: backgroundUpdateStore,
         walletsStore: walletsAssembly.walletsStore,
         streamingAPI: apiAssembly.streamingTonAPIClient()
       )
@@ -90,13 +90,13 @@ public final class MainStoresAssembly {
     }
   }
   
-  private weak var _backgroundUpdateStoreV2: BackgroundUpdateStoreV2?
-  public var backgroundUpdateStoreV2: BackgroundUpdateStoreV2 {
-    if let backgroundUpdateStore = _backgroundUpdateStoreV2 {
+  private weak var _backgroundUpdateStore: BackgroundUpdateStore?
+  public var backgroundUpdateStore: BackgroundUpdateStore {
+    if let backgroundUpdateStore = _backgroundUpdateStore {
       return backgroundUpdateStore
     } else {
-      let backgroundUpdateStore = BackgroundUpdateStoreV2()
-      _backgroundUpdateStoreV2 = backgroundUpdateStore
+      let backgroundUpdateStore = BackgroundUpdateStore()
+      _backgroundUpdateStore = backgroundUpdateStore
       return backgroundUpdateStore
     }
   }

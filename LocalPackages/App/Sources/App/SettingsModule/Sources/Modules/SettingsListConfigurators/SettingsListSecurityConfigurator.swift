@@ -22,13 +22,13 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
   
   // MARK: - Dependencies
  
-  private let securityStore: SecurityStoreV2
+  private let securityStore: SecurityStore
   private let mnemonicsRepository: MnemonicsRepository
   private let biometryProvider: BiometryProvider
   
   // MARK: - Init
   
-  init(securityStore: SecurityStoreV2,
+  init(securityStore: SecurityStore,
        mnemonicsRepository: MnemonicsRepository,
        biometryProvider: BiometryProvider) {
     self.securityStore = securityStore

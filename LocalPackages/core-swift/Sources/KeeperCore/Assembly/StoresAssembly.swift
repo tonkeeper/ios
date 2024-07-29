@@ -51,24 +51,24 @@ public final class StoresAssembly {
     }
   }
   
-  private weak var _securityStoreV2: SecurityStoreV2?
-  public var securityStoreV2: SecurityStoreV2 {
-    if let securityStore = _securityStoreV2 {
+  private weak var _securityStore: SecurityStore?
+  public var securityStore: SecurityStore {
+    if let securityStore = _securityStore {
       return securityStore
     } else {
-      let securityStore = SecurityStoreV2(keeperInfoStore: keeperInfoStore)
-      _securityStoreV2 = securityStore
+      let securityStore = SecurityStore(keeperInfoStore: keeperInfoStore)
+      _securityStore = securityStore
       return securityStore
     }
   }
   
-  private weak var _setupStoreV2: SetupStoreV2?
-  public var setupStoreV2: SetupStoreV2 {
-    if let setupStore = _setupStoreV2 {
+  private weak var _setupStore: SetupStore?
+  public var setupStore: SetupStore {
+    if let setupStore = _setupStore {
       return setupStore
     } else {
-      let setupStore = SetupStoreV2(keeperInfoStore: keeperInfoStore)
-      _setupStoreV2 = setupStore
+      let setupStore = SetupStore(keeperInfoStore: keeperInfoStore)
+      _setupStore = setupStore
       return setupStore
     }
   }
@@ -118,17 +118,17 @@ public final class StoresAssembly {
     _nftsStore = nftsStore
     return nftsStore
   }
-  
-  private weak var _balanceStore: BalanceStore?
-  var balanceStore: BalanceStore {
-    if let balanceStore = _balanceStore {
-      return balanceStore
-    } else {
-      let balanceStore = BalanceStore(balanceService: servicesAssembly.balanceService())
-      _balanceStore = balanceStore
-      return balanceStore
-    }
-  }
+//  
+//  private weak var _balanceStore: BalanceStore?
+//  var balanceStore: BalanceStore {
+//    if let balanceStore = _balanceStore {
+//      return balanceStore
+//    } else {
+//      let balanceStore = BalanceStore(balanceService: servicesAssembly.balanceService())
+//      _balanceStore = balanceStore
+//      return balanceStore
+//    }
+//  }
   
   private weak var _knownAccountsStore: KnownAccountsStore?
   var knownAccountsStore: KnownAccountsStore {

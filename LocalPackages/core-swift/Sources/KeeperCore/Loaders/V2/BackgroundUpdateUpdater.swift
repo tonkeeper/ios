@@ -15,11 +15,11 @@ public actor BackgroundUpdateUpdater {
   private let jsonDecoder = JSONDecoder()
   private var observations = [UUID: (BackgroundUpdateEvent) -> Void]()
 
-  private let backgroundUpdateStore: BackgroundUpdateStoreV2
+  private let backgroundUpdateStore: BackgroundUpdateStore
   private let walletsStore: WalletsStore
   private let streamingAPI: TonStreamingAPI.Client
   
-  init(backgroundUpdateStore: BackgroundUpdateStoreV2,
+  init(backgroundUpdateStore: BackgroundUpdateStore,
        walletsStore: WalletsStore,
        streamingAPI: TonStreamingAPI.Client) {
     self.backgroundUpdateStore = backgroundUpdateStore

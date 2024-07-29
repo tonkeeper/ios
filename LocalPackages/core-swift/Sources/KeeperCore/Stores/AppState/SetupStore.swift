@@ -1,6 +1,6 @@
 import Foundation
 
-public final class SetupStoreV2: StoreUpdated<SetupStoreV2.State> {
+public final class SetupStore: StoreUpdated<SetupStore.State> {
   public struct State: Equatable {
     public let isSetupFinished: Bool
     

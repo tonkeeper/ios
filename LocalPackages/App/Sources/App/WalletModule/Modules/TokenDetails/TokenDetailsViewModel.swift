@@ -59,14 +59,14 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   // MARK: - Dependencies
   
   private let wallet: Wallet
-  private let balanceStore: ConvertedBalanceStoreV2
+  private let balanceStore: ConvertedBalanceStore
   private let configurator: TokenDetailsConfigurator
   private let chartViewControllerProvider: (() -> UIViewController?)?
   
   // MARK: - Init
   
   init(wallet: Wallet,
-       balanceStore: ConvertedBalanceStoreV2,
+       balanceStore: ConvertedBalanceStore,
        configurator: TokenDetailsConfigurator,
        chartViewControllerProvider: (() -> UIViewController?)?) {
     self.wallet = wallet

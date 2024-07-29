@@ -148,7 +148,7 @@ private extension WalletCoordinator {
       parentCoordinator: self,
       parentRouter: router,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
-      securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
   }
 }

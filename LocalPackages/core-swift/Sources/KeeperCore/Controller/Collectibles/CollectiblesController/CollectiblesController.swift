@@ -7,11 +7,11 @@ public final class CollectiblesController {
   public var didUpdateIsEmpty: ((Bool) -> Void)?
 
   private let walletsStore: WalletsStore
-  private let backgroundUpdateStore: BackgroundUpdateStoreV2
+  private let backgroundUpdateStore: BackgroundUpdateStore
   private let nftsStore: NftsStore
   
   init(walletsStore: WalletsStore,
-       backgroundUpdateStore: BackgroundUpdateStoreV2,
+       backgroundUpdateStore: BackgroundUpdateStore,
        nftsStore: NftsStore) {
     self.walletsStore = walletsStore
     self.backgroundUpdateStore = backgroundUpdateStore
@@ -58,7 +58,7 @@ private extension CollectiblesController {
     didUpdateIsEmpty?(nfts.isEmpty)
   }
   
-  func handleBackgroundUpdateState(_ state: BackgroundUpdateStoreV2.State) {
+  func handleBackgroundUpdateState(_ state: BackgroundUpdateStore.State) {
     let isConnecting: Bool
     switch state {
     case .connecting:

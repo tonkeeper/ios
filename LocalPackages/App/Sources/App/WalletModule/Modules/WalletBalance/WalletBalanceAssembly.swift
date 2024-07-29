@@ -19,15 +19,15 @@ struct WalletBalanceAssembly {
       ),
       setupModel: WalletBalanceSetupModel(
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
-        setupStore: keeperCoreMainAssembly.storesAssembly.setupStoreV2,
-        securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV2,
+        setupStore: keeperCoreMainAssembly.storesAssembly.setupStore,
+        securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
         mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
       ),
       totalBalanceModel: WalletTotalBalanceModel(
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
         totalBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
         secureMode: coreAssembly.secureMode,
-        backgroundUpdateStore: keeperCoreMainAssembly.mainStoresAssembly.backgroundUpdateStoreV2
+        backgroundUpdateStore: keeperCoreMainAssembly.mainStoresAssembly.backgroundUpdateStore
       ),
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
       notificationStore: keeperCoreMainAssembly.storesAssembly.notificationsStore,
