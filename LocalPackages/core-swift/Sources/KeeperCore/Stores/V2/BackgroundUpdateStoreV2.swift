@@ -3,8 +3,8 @@ import TonSwift
 
 public final class BackgroundUpdateStoreV2: Store<BackgroundUpdateStoreV2.State> {
   public enum State: Equatable {
-    case connecting(addresses: [Address])
-    case connected(addresses: [Address])
+    case connecting
+    case connected
     case disconnected
     case noConnection
   }

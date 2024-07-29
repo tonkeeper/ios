@@ -69,6 +69,11 @@ public final class WalletBalanceListCell: TKCollectionViewNewCell, ConfigurableV
         size: .zero)
     }
   }
+  
+  public override func prepareForReuse() {
+    super.prepareForReuse()
+    listItemView.prepareForReuse()
+  }
 }
 
 private extension WalletBalanceListCell {

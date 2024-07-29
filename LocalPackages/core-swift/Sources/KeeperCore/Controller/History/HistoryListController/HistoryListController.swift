@@ -28,13 +28,13 @@ public final class HistoryListController {
       }
     
     backgroundUpdateUpdater.addEventObserver(self) { observer, event in
-      guard let walletAddress = try? observer.walletsStore.getState().activeWallet.friendlyAddress,
-            event.accountAddress == walletAddress.address else { return }
-      Task { await observer.didRecieveBackgroudUpdateEvent(event) }
+//      guard let walletAddress = try? observer.walletsStore.getState().activeWallet.friendlyAddress,
+//            event.accountAddress == walletAddress.address else { return }
+//      Task { await observer.didRecieveBackgroudUpdateEvent(event) }
     }
     
     walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      guard newState.activeWallet.id != oldState?.activeWallet.id else { return }
+      guard newState.activeWallet.id != oldState.activeWallet.id else { return }
       Task { await observer.paginator.start() }
     }
     

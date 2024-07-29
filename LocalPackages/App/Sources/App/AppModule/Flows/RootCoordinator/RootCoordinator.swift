@@ -82,6 +82,8 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
 
 private extension RootCoordinator {
   func handleStateUpdate(state: RootCoordinatorStateManager.State, deeplink: CoordinatorDeeplink? = nil) {
+    removeChild(mainCoordinator)
+    removeChild(onboardingCoordinator)
     self.mainCoordinator = nil
     self.onboardingCoordinator = nil
     switch state {

@@ -27,7 +27,7 @@ struct WalletBalanceListMapper {
     self.balanceItemMapper = balanceItemMapper
   }
   
-  func mapTonItem(_ item: BalanceTonItemModel,
+  func mapTonItem(_ item: ProcessedBalanceTonItem,
                   isSecure: Bool,
                   selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
     return WalletBalanceListCell.Model(
@@ -37,7 +37,7 @@ struct WalletBalanceListMapper {
     )
   }
   
-  func mapJettonItem(_ item: BalanceJettonItemModel,
+  func mapJettonItem(_ item: ProcessedBalanceJettonItem,
                      isSecure: Bool,
                      selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
     return WalletBalanceListCell.Model(
@@ -47,7 +47,7 @@ struct WalletBalanceListMapper {
     )
   }
   
-  func mapStakingItem(_ item: BalanceStakingItemModel,
+  func mapStakingItem(_ item: ProcessedBalanceStakingItem,
                       isSecure: Bool,
                       selectionHandler: @escaping () -> Void,
                       stakingCollectHandler: (() -> Void)?) -> WalletBalanceListCell.Model {
@@ -65,7 +65,7 @@ struct WalletBalanceListMapper {
     )
   }
   
-  private func mapStakingItemComment(_ item: BalanceStakingItemModel,
+  private func mapStakingItemComment(_ item: ProcessedBalanceStakingItem,
                                      stakingCollectHandler: (() -> Void)?) -> Comment? {
     
     let estimate: String = {

@@ -100,7 +100,8 @@ public final class RootAssembly {
       walletsAssembly: walletAssembly,
       repositoriesAssembly: repositoriesAssembly,
       servicesAssembly: servicesAssembly,
-      storesAssembly: storesAssembly
+      storesAssembly: storesAssembly,
+      apiAssembly: apiAssembly
     )
     return MainAssembly(
       repositoriesAssembly: repositoriesAssembly,

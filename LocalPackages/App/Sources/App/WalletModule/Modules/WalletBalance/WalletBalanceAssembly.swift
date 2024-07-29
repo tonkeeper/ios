@@ -10,7 +10,7 @@ struct WalletBalanceAssembly {
     let viewModel = WalletBalanceViewModelImplementation(
       balanceListModel: WalletBalanceBalanceModel(
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
-        convertedBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
+        balanceStore: keeperCoreMainAssembly.mainStoresAssembly.processedBalanceStore,
         stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
         tokenManagementStoreProvider: {
           keeperCoreMainAssembly.storesAssembly.tokenManagementStore(wallet: $0)
@@ -27,7 +27,7 @@ struct WalletBalanceAssembly {
         walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
         totalBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
         secureMode: coreAssembly.secureMode,
-        backgroundUpdateStore: keeperCoreMainAssembly.storesAssembly.backgroundUpdateStoreV2
+        backgroundUpdateStore: keeperCoreMainAssembly.mainStoresAssembly.backgroundUpdateStoreV2
       ),
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStoreV2,
       notificationStore: keeperCoreMainAssembly.storesAssembly.notificationsStore,

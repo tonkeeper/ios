@@ -19,25 +19,21 @@ final class StakingWithdrawInputModelConfigurator: StakingInputModelConfigurator
   
   func getBalance() -> UInt64 {
     guard let address = try? wallet.friendlyAddress else { return 0 }
-    return UInt64(balanceStore.getState()[address]?.balance.stackingBalance
-      .first(where: { $0.stackingInfo.pool == poolInfo.address })?
-      .stackingInfo.amount ?? 0)
+    return UInt64(balanceStore.getState()[address]?.balance?.stakingItems
+      .first(where: { $0.poolInfo?.address == stakingPoolInfo?.address })?
+      .info.amount ?? 0)
   }
 
   private let wallet: Wallet
   private let poolInfo: StackingPoolInfo
-  private let balanceStore: ConvertedBalanceStoreV2
+  private let balanceStore: ProcessedBalanceStore
   
   init(wallet: Wallet,
        poolInfo: StackingPoolInfo,
-       balanceStore: ConvertedBalanceStoreV2) {
+       balanceStore: ProcessedBalanceStore) {
     self.wallet = wallet
     self.poolInfo = poolInfo
     self.balanceStore = balanceStore
-    
-    self.balanceStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-//      observer.didUpdateBalance?(newState)
-    }
   }
   
   func getStakingConfirmationItem(tonAmount: BigUInt, isMaxAmount: Bool) -> StakingConfirmationItem? {

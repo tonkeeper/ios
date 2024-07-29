@@ -18,20 +18,23 @@ public final class MainLoadersAssembly {
     self.walletAssembly = walletAssembly
   }
   
-  private weak var _walletBalanceLoaderV2: WalletBalanceLoaderV2?
-  var walletBalanceLoaderV2: WalletBalanceLoaderV2 {
-    if let _walletBalanceLoaderV2 {
-      return _walletBalanceLoaderV2
+  private weak var _walletStateLoader: WalletStateLoader?
+  var walletStateLoader: WalletStateLoader {
+    if let _walletStateLoader {
+      return _walletStateLoader
     }
-    let loader = WalletBalanceLoaderV2(
+    let loader = WalletStateLoader(
       balanceStore: mainStoresAssembly.balanceStore,
       currencyStore: storesAssembly.currencyStoreV2,
       walletsStore: walletAssembly.walletsStoreV2,
+      ratesStore: storesAssembly.tonRatesStoreV2,
       stakingPoolsStore: storesAssembly.stackingPoolsStore,
       balanceService: servicesAssembly.balanceService(),
-      stackingService: servicesAssembly.stackingService()
+      stackingService: servicesAssembly.stackingService(),
+      ratesService: servicesAssembly.ratesService(),
+      backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater
     )
-    _walletBalanceLoaderV2 = loader
+    _walletStateLoader = loader
     return loader
   }
 }

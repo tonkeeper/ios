@@ -25,7 +25,7 @@ public final class ConvertedBalanceStoreV2: Store<[FriendlyAddress: ConvertedBal
   private func didUpdateBalanceState(balanceState: [FriendlyAddress: WalletBalanceState]) {
     Task {
       let currency = await currencyStore.getCurrency()
-      let rates = await tonRatesStore.getRates()
+      let rates = await tonRatesStore.getState()
       await recalculateBalance(
         balanceStates: balanceState,
         tonRates: rates,

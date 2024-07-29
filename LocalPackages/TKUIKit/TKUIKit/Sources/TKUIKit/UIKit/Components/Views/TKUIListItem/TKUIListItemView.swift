@@ -93,7 +93,7 @@ public final class TKUIListItemView: UIView, TKConfigurableView {
     contentView.frame = CGRect(x: contentViewX, y: 0, width: contentViewWidth, height: bounds.height)
   }
   
-  func prepareForReuse() {
+  public func prepareForReuse() {
     iconView.prepareForReuse()
   }
 }

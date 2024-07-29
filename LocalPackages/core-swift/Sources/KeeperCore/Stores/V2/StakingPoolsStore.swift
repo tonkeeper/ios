@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class StakingPoolsStore: Store<[FriendlyAddress: [StackingPoolInfo]]> {
+public final class StakingPoolsStore: StoreUpdated<[FriendlyAddress: [StackingPoolInfo]]> {
   
   init() {
     super.init(state: [:])
@@ -19,5 +19,9 @@ public final class StakingPoolsStore: Store<[FriendlyAddress: [StackingPoolInfo]
       state[address] = pools
       return StateUpdate(newState: state)
     }
+  }
+  
+  public override func getInitialState() -> [FriendlyAddress : [StackingPoolInfo]] {
+    [:]
   }
 }

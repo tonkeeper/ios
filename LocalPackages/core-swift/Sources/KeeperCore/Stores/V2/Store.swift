@@ -1,4 +1,5 @@
 import Foundation
+import TonSwift
 
 open class Store<State: Equatable> {
   public struct StateUpdate {

@@ -202,7 +202,8 @@ private extension WalletBalanceViewModelImplementation {
         let balanceColor: UIColor
         let backup: BalanceHeaderAmountView.Model.Backup
         let isNeedToWarnBackup = state.wallet.isBackupAvailable && !state.wallet.hasBackup
-        let tonAmount = state.totalBalanceState?.totalBalance.balance.tonBalance.tonBalance.amount ?? 0
+        state.totalBalanceState?.totalBalance?.balance
+        let tonAmount = state.totalBalanceState?.totalBalance?.balance.tonItem.amount ?? 0
         if isNeedToWarnBackup {
           switch tonAmount {
           case _ where tonAmount >= .tonAmountError:
@@ -243,7 +244,7 @@ private extension WalletBalanceViewModelImplementation {
         let stateDate: String? = {
           guard let totalBalanceState = state.totalBalanceState else { return nil }
           switch totalBalanceState {
-          case .current:
+          case .current, .none:
             return nil
           case .previous(let totalBalance):
             return TKLocales.ConnectionStatus.updated_at(self.headerMapper.makeUpdatedDate(totalBalance.date))
@@ -278,7 +279,7 @@ private extension WalletBalanceViewModelImplementation {
         let wallet = await self.walletsStore.getState().activeWallet
         var models = [String: WalletBalanceListCell.Model]()
         
-        var stakingItems = [BalanceStakingItemModel]()
+        var stakingItems = [ProcessedBalanceStakingItem]()
         for item in items.items {
           switch item {
           case .ton(let item):
@@ -529,7 +530,7 @@ private extension WalletBalanceViewModelImplementation {
     return snapshot
   }
 
-  func startStakingItemsUpdateTimer(wallet: Wallet, stakingItems: [BalanceStakingItemModel]) {
+  func startStakingItemsUpdateTimer(wallet: Wallet, stakingItems: [ProcessedBalanceStakingItem]) {
     let queue = DispatchQueue(label: "WalletBalanceStakingItemsTimerQueue", qos: .background)
     let timer: DispatchSourceTimer = DispatchSource.makeTimerSource(flags: .strict, queue: queue)
     timer.schedule(deadline: .now(), repeating: 1, leeway: .milliseconds(100))
@@ -545,7 +546,7 @@ private extension WalletBalanceViewModelImplementation {
     self.stakingUpdateTimer = nil
   }
   
-  func updateStakingItemsOnTimer(wallet: Wallet, stakingItems: [BalanceStakingItemModel]) {
+  func updateStakingItemsOnTimer(wallet: Wallet, stakingItems: [ProcessedBalanceStakingItem]) {
     Task {
       await self.actor.addTask(block: {
         var models = [String: WalletBalanceListCell.Model]()
@@ -701,7 +702,7 @@ private extension String {
   static let manageButtonCellIdentifier = "ManageButtonCellIdentifier"
 }
 
-private extension Int64 {
-  static let tonAmountWarning: Int64 = 2000000000
-  static let tonAmountError: Int64 = 20000000000
+private extension UInt64 {
+  static let tonAmountWarning: UInt64 = 2000000000
+  static let tonAmountError: UInt64 = 20000000000
 }

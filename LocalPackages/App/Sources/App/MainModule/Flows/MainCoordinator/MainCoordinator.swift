@@ -994,9 +994,9 @@ extension MainCoordinator: AppStateTrackerObserver {
   func didUpdateState(_ state: TKCore.AppStateTracker.State) {
     switch (appStateTracker.state, reachabilityTracker.state) {
     case (.active, .connected):
-      Task { await mainController.startBackgroundUpdate() }
+      mainController.startUpdates()
     case (.background, _):
-      Task { await mainController.stopBackgroundUpdate() }
+      mainController.stopUpdates()
     default: return
     }
   }
@@ -1008,7 +1008,7 @@ extension MainCoordinator: ReachabilityTrackerObserver {
   func didUpdateState(_ state: TKCore.ReachabilityTracker.State) {
     switch reachabilityTracker.state {
     case .connected:
-      Task { await mainController.startBackgroundUpdate() }
+      mainController.startUpdates()
     default:
       return
     }

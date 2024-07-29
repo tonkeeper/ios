@@ -28,12 +28,11 @@ public final class MainController {
   // TODO: wrap to service
   private let apiProvider: APIProvider
   
-  private let walletBalanceLoader: WalletBalanceLoaderV2
+  private let walletStateLoader: WalletStateLoader
   private let tonRatesLoader: TonRatesLoaderV2
   private let internalNotificationsLoader: InternalNotificationsLoader
   private let nftsLoader: NftsLoader
   
-  private var walletsBalanceLoadTimer: Timer?
   private var tonRatesLoadTimer: Timer?
 
   private var state = State()
@@ -50,7 +49,7 @@ public final class MainController {
        tonConnectService: TonConnectService,
        deeplinkParser: DeeplinkParser,
        apiProvider: APIProvider,
-       walletBalanceLoader: WalletBalanceLoaderV2,
+       walletStateLoader: WalletStateLoader,
        tonRatesLoader: TonRatesLoaderV2,
        nftsLoader: NftsLoader,
        internalNotificationsLoader: InternalNotificationsLoader) {
@@ -64,88 +63,41 @@ public final class MainController {
     self.tonConnectService = tonConnectService
     self.deeplinkParser = deeplinkParser
     self.apiProvider = apiProvider
-    self.walletBalanceLoader = walletBalanceLoader
+    self.walletStateLoader = walletStateLoader
     self.tonRatesLoader = tonRatesLoader
     self.nftsLoader = nftsLoader
     self.internalNotificationsLoader = internalNotificationsLoader
-    
-    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      guard newState.activeWallet != oldState?.activeWallet else { return }
-      Task {
-        await observer.stopBackgroundUpdate()
-        await observer.startBackgroundUpdate()
-      }
-    }
   }
   
   deinit {
-    stopTonRatesLoadTimer()
-    stopWalletBalancesLoadTimer()
+    stopUpdates()
   }
   
   public func start() {
-    backgroundUpdateUpdater.addEventObserver(self) { observer, event in
-      observer.walletBalanceLoader.reloadBalance(address: FriendlyAddress(
-        address: event.accountAddress,
-        testOnly: false,
-        bounceable: false))
-    }
-    startTonRatesLoadTimer()
-    startWalletBalancesLoadTimer()
-    internalNotificationsLoader.loadNotifications(platform: "ios", version: "4.1.0", lang: "en")
+    startUpdates()
+  }
+  
+  public func startUpdates() {
+    walletStateLoader.startStateReload()
     Task {
-      await tonConnectEventsStore.addObserver(self)
+      backgroundUpdateUpdater.addEventObserver(self) { observer, event in
+        
+      }
+      await backgroundUpdateUpdater.start()
     }
     Task {
-      await self.nftsLoader.loadNfts(wallet: self.walletsStore.getState().activeWallet)
-    }
-    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      Task {
-        await self.nftsLoader.loadNfts(wallet: newState.activeWallet)
-      }
+      await tonConnectEventsStore.start()
     }
   }
   
-  private func startTonRatesLoadTimer() {
-    self.tonRatesLoadTimer?.invalidate()
-    let timer = Timer(timeInterval: 15, repeats: true, block: { [weak self] _ in
-      self?.tonRatesLoader.reloadRates()
-    })
-    RunLoop.main.add(timer, forMode: .common)
-    self.tonRatesLoadTimer = timer
-  }
-  
-  private func stopTonRatesLoadTimer() {
-    self.tonRatesLoadTimer?.invalidate()
-  }
-  
-  private func startWalletBalancesLoadTimer() {
-    self.walletsBalanceLoadTimer?.invalidate()
-    let timer = Timer(timeInterval: 15, repeats: true) { [weak self] _ in
-      guard let self else { return }
-      self.walletBalanceLoader.reloadBalance()
-      Task {
-        await self.nftsLoader.loadNfts(wallet: self.walletsStore.getState().activeWallet)
-      }
+  public func stopUpdates() {
+    walletStateLoader.stopStateReload()
+    Task {
+      await backgroundUpdateUpdater.stop()
     }
-    RunLoop.main.add(timer, forMode: .common)
-    self.walletsBalanceLoadTimer = timer
-  }
-  
-  private func stopWalletBalancesLoadTimer() {
-    self.walletsBalanceLoadTimer?.invalidate()
-  }
-    
-  public func startBackgroundUpdate() async {
-    let activeWallet = await walletsStore.getState().activeWallet
-    guard let address = try? activeWallet.friendlyAddress else { return }
-    await backgroundUpdateUpdater.start(addresses: [address.address])
-    await tonConnectEventsStore.start()
-  }
-  
-  public func stopBackgroundUpdate() async {
-    await backgroundUpdateUpdater.stop()
-    await tonConnectEventsStore.stop()
+    Task {
+      await tonConnectEventsStore.stop()
+    }
   }
   
   public func handleTonConnectDeeplink(_ deeplink: TonConnectDeeplink) async throws -> (TonConnectParameters, TonConnectManifest) {

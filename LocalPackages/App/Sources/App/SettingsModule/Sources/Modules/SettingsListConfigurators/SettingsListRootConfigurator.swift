@@ -72,7 +72,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.anaylticsProvider = anaylticsProvider
     walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
       guard let wallet = newState.wallets.first(where: { $0.id == walletId }) else { return }
-      guard wallet != oldState?.wallets.first(where: { $0.id == walletId }) else { return }
+      guard wallet != oldState.wallets.first(where: { $0.id == walletId }) else { return }
       let currency = currencyStore.getState()
       let sections = observer.createSections(wallet: wallet, wallets: newState.wallets, currency: currency)
       observer.didUpdateState?(SettingsListState(sections: sections, selectedItem: nil))

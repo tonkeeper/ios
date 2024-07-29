@@ -17,7 +17,7 @@ struct BalanceItemMapper {
     self.amountFormatter = amountFormatter
   }
   
-  func mapTonItem(_ item: BalanceTonItemModel,
+  func mapTonItem(_ item: ProcessedBalanceTonItem,
                   isSecure: Bool) -> TKUIListItemView.Configuration {
     let subtitle = createPriceSubtitle(
       price: item.price,
@@ -31,7 +31,7 @@ struct BalanceItemMapper {
       contentConfiguration: TKUIListItemContentView.Configuration(
         leftItemConfiguration: .tonConfiguration(subtitle: subtitle),
         rightItemConfiguration: createRightItemConfiguration(
-          amount: item.amount,
+          amount: BigUInt(item.amount),
           amountFractionDigits: TonInfo.fractionDigits,
           convertedAmount: item.converted,
           currency: item.currency,
@@ -42,7 +42,7 @@ struct BalanceItemMapper {
     )
   }
   
-  func mapJettonItem(_ item: BalanceJettonItemModel,
+  func mapJettonItem(_ item: ProcessedBalanceJettonItem,
                      isSecure: Bool) -> TKUIListItemView.Configuration {
     let subtitle = createPriceSubtitle(
       price: item.price,
@@ -67,7 +67,7 @@ struct BalanceItemMapper {
     )
   }
   
-  func mapStakingItem(_ item: BalanceStakingItemModel,
+  func mapStakingItem(_ item: ProcessedBalanceStakingItem,
                       isSecure: Bool) -> TKUIListItemView.Configuration {
     return TKUIListItemView.Configuration(
       iconConfiguration: .configuration(poolInfo: item.poolInfo, imageLoader: imageLoader),
@@ -77,7 +77,7 @@ struct BalanceItemMapper {
         rightItemConfiguration: createRightItemConfiguration(
           amount: BigUInt(item.info.amount),
           amountFractionDigits: TonInfo.fractionDigits,
-          convertedAmount: item.converted,
+          convertedAmount: item.amountConverted,
           currency: item.currency,
           isSecure: isSecure
         )

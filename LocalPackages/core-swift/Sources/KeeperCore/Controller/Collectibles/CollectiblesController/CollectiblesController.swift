@@ -24,7 +24,7 @@ public final class CollectiblesController {
   
   public func start() async {
     walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      guard newState.activeWallet.id != oldState?.activeWallet.id else { return }
+      guard newState.activeWallet.id != oldState.activeWallet.id else { return }
       Task { await observer.didChangeActiveWallet() }
     }
     

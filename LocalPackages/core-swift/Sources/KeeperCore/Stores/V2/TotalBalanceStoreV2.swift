@@ -1,53 +1,58 @@
 import Foundation
 import TonSwift
 
-public final class TotalBalanceStoreV2: Store<[FriendlyAddress: TotalBalanceState]> {
+public final class TotalBalanceStoreV2: StoreUpdated<[FriendlyAddress: TotalBalanceState]> {
 
-  private let convertedBalanceStore: ConvertedBalanceStoreV2
+  private let processedBalanceStore: ProcessedBalanceStore
   
-  init(convertedBalanceStore: ConvertedBalanceStoreV2) {
-    self.convertedBalanceStore = convertedBalanceStore
+  init(processedBalanceStore: ProcessedBalanceStore) {
+    self.processedBalanceStore = processedBalanceStore
     super.init(state: [:])
-    convertedBalanceStore.addObserver(self, notifyOnAdded: true) { observer, state, _ in
-      observer.didUpdateConvertedBalances(state)
-    }
+    processedBalanceStore.addObserver(
+      self,
+      notifyOnAdded: false) { observer, newState, oldState in
+        observer.didUpdateBalances(newState)
+      }
   }
   
-  private func didUpdateConvertedBalances(_ convertedBalances: [FriendlyAddress: ConvertedBalanceState]){
+  public override func getInitialState() -> [FriendlyAddress : TotalBalanceState] {
+    let balanceStates = processedBalanceStore.getState()
+    let total = balanceStates.mapValues {
+      self.recalculateTotalBalance($0)
+    }
+    return total
+  }
+  
+  private func didUpdateBalances(_ balanceStates: [FriendlyAddress: ProcessedBalanceState]){
     Task {
-      await recalculateTotalBalances(convertedBalances)
+      await recalculateTotalBalances(balanceStates)
     }
   }
   
-  private func recalculateTotalBalances(_ convertedBalances: [FriendlyAddress: ConvertedBalanceState]) async {
+  private func recalculateTotalBalances(_ balanceStates: [FriendlyAddress: ProcessedBalanceState]) async {
     await updateState { _ in
-      let total = convertedBalances.mapValues {
+      let total = balanceStates.mapValues {
         self.recalculateTotalBalance($0)
       }
       return StateUpdate(newState: total)
     }
   }
   
-  private func recalculateTotalBalance(_ convertedBalanceState: ConvertedBalanceState) -> TotalBalanceState {
-    let balance = convertedBalanceState.balance
-    let jettonsTotal = balance.jettonsBalance.reduce(Decimal(0)) { partialResult, item in
-      return partialResult + item.converted
+  private func recalculateTotalBalance(_ balanceState: ProcessedBalanceState) -> TotalBalanceState {
+    
+    func calculateTotal(balance: ProcessedBalance) -> TotalBalance {
+      let total = balance.items.reduce(Decimal(0)) { partialResult, item in
+        return partialResult + item.converted
+      }
+      return TotalBalance(amount: total, balance: balance, currency: balance.currency, date: balance.date)
     }
-    let stakingTotal = balance.stackingBalance.reduce(Decimal(0)) { partialResult, item in
-      return partialResult + item.amountConverted + item.pendingDepositConverted + item.pendingWithdrawConverted + item.readyWithdrawConverted
-    }
-    let total = jettonsTotal + stakingTotal + balance.tonBalance.converted
-    switch convertedBalanceState {
-    case .current:
-      return .current(TotalBalance(amount: total,
-                                   balance: balance,
-                                   currency: balance.currency,
-                                   date: balance.date))
-    case .previous:
-      return .previous(TotalBalance(amount: total,
-                                    balance: balance,
-                                    currency: balance.currency,
-                                    date: balance.date))
+    switch balanceState {
+    case .none:
+      return .none
+    case .current(let processedBalance):
+      return .current(calculateTotal(balance: processedBalance))
+    case .previous(let processedBalance):
+      return .previous(calculateTotal(balance: processedBalance))
     }
   }
 }

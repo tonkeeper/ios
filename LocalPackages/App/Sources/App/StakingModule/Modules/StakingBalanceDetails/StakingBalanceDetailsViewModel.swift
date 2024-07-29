@@ -65,8 +65,8 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   
   private let queue = DispatchQueue(label: "StakingBalanceDetailsViewModelImplementationQueue")
   private var accountStackingInfo: AccountStackingInfo
-  private var balanceItem: BalanceStakingItemModel?
-  private var jettonBalanceItem: BalanceJettonItemModel?
+  private var balanceItem: ProcessedBalanceStakingItem?
+  private var jettonBalanceItem: ProcessedBalanceJettonItem?
   
   // MARK: - Dependencies
   
@@ -76,7 +76,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   private let linksViewModelBuilder: StakingLinksViewModelBuilder
   private let balanceItemMapper: BalanceItemMapper
   private let stakingPoolsStore: StakingPoolsStore
-  private let balanceStore: ConvertedBalanceStoreV2
+  private let balanceStore: ProcessedBalanceStore
   private let tonRatesStore: TonRatesStoreV2
   private let currencyStore: CurrencyStoreV2
   private let decimalFormatter: DecimalAmountFormatter
@@ -91,7 +91,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
        linksViewModelBuilder: StakingLinksViewModelBuilder,
        balanceItemMapper: BalanceItemMapper,
        stakingPoolsStore: StakingPoolsStore,
-       balanceStore: ConvertedBalanceStoreV2,
+       balanceStore: ProcessedBalanceStore,
        tonRatesStore: TonRatesStoreV2,
        currencyStore: CurrencyStoreV2,
        decimalFormatter: DecimalAmountFormatter,
@@ -165,66 +165,9 @@ private extension StakingBalanceDetailsViewModelImplementation {
           let balance = balanceStore.getState()[address]?.balance else {
       return
     }
-    
-    if let stakingPoolJetton = balance.jettonsBalance
-      .first(where: { $0.jettonBalance.item.jettonInfo.address == stakingPoolInfo.liquidJettonMaster }) {
-      var amount: Int64 = 0
-      if let tonRate = stakingPoolJetton.jettonBalance.rates[.TON] {
-        let converted = RateConverter().convertToDecimal(
-          amount: stakingPoolJetton.jettonBalance.quantity,
-          amountFractionLength: stakingPoolJetton.jettonBalance.item.jettonInfo.fractionDigits,
-          rate: tonRate
-        )
-        let convertedFractionLength = min(Int16(TonInfo.fractionDigits),max(Int16(-converted.exponent), 0))
-        amount = Int64(NSDecimalNumber(decimal: converted)
-          .multiplying(byPowerOf10: convertedFractionLength).doubleValue)
-      }
-      
-      let info = AccountStackingInfo(
-        pool: stakingPoolInfo.address,
-        amount: amount,
-        pendingDeposit: accountStackingInfo.pendingDeposit,
-        pendingWithdraw: accountStackingInfo.pendingWithdraw,
-        readyWithdraw: accountStackingInfo.readyWithdraw
-      )
-      
-      let stakingItem = BalanceStakingItemModel(
-        id: info.pool.toRaw(),
-        info: info,
-        poolInfo: stakingPoolInfo,
-        currency: balance.currency,
-        converted: stakingPoolJetton.converted,
-        price: stakingPoolJetton.price
-      )
-      let jettonBalanceItem = BalanceJettonItemModel(
-        id: stakingPoolJetton.jettonBalance.item.jettonInfo.address.toRaw(),
-        jetton: stakingPoolJetton.jettonBalance.item,
-        amount: stakingPoolJetton.jettonBalance.quantity,
-        fractionalDigits: stakingPoolJetton.jettonBalance.item.jettonInfo.fractionDigits,
-        tag: nil,
-        currency: balance.currency,
-        converted: stakingPoolJetton.converted,
-        price: stakingPoolJetton.price,
-        diff: stakingPoolJetton.diff
-      )
-      
-      self.jettonBalanceItem = jettonBalanceItem
-      self.balanceItem = stakingItem
-      
-      return
-    }
-    
-    if let stakingItem = balance.stackingBalance.first(where: { $0.stackingInfo.pool == stakingPoolInfo.address }) {
-      let balanceItem = BalanceStakingItemModel(
-        id: stakingItem.stackingInfo.pool.toRaw(),
-        info: stakingItem.stackingInfo,
-        poolInfo: stakingPoolInfo,
-        currency: balance.currency,
-        converted: stakingItem.amountConverted,
-        price: stakingItem.price
-      )
-      self.balanceItem = balanceItem
-    }
+
+    self.balanceItem = balance.stakingItems.first(where: { $0.poolInfo?.address == stakingPoolInfo.address })
+    self.jettonBalanceItem = balanceItem?.jetton
   }
   
   func updateInformation() {
@@ -240,7 +183,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
     )
     
     let convertedAmount = decimalFormatter.format(
-      amount: balanceItem.converted,
+      amount: balanceItem.amountConverted,
       maximumFractionDigits: 2,
       currency: balanceItem.currency
     )

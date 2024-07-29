@@ -6,7 +6,7 @@ import OpenAPIRuntime
 
 public actor BackgroundUpdateUpdater {
   public struct BackgroundUpdateEvent {
-    public let accountAddress: Address
+    public let accountAddress: FriendlyAddress
     public let lt: Int64
     public let txHash: String
   }
@@ -16,31 +16,28 @@ public actor BackgroundUpdateUpdater {
   private var observations = [UUID: (BackgroundUpdateEvent) -> Void]()
 
   private let backgroundUpdateStore: BackgroundUpdateStoreV2
+  private let walletsStore: WalletsStoreV2
   private let streamingAPI: TonStreamingAPI.Client
   
   init(backgroundUpdateStore: BackgroundUpdateStoreV2,
+       walletsStore: WalletsStoreV2,
        streamingAPI: TonStreamingAPI.Client) {
     self.backgroundUpdateStore = backgroundUpdateStore
+    self.walletsStore = walletsStore
     self.streamingAPI = streamingAPI
   }
   
-  public func start(addresses: [Address]) {
-    let state = backgroundUpdateStore.getState()
-    switch state {
-    case .connecting(let connectingAddresses):
-      guard addresses != connectingAddresses else { return }
-      connect(addresses: addresses)
-    case .connected(let connectedAddresses):
-      guard addresses != connectedAddresses else { return }
-      connect(addresses: addresses)
-    case .disconnected:
-      connect(addresses: addresses)
-    case .noConnection:
-      connect(addresses: addresses)
+  public func start() {
+    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      Task {
+        await observer.connect(addresses: [newState.activeWallet].compactMap { try? $0.address } )
+      }
     }
+    let addresses = [walletsStore.getState().activeWallet].compactMap { try? $0.address }
+    connect(addresses: addresses)
   }
   
-  public func stop() async {
+  public func stop() {
     task?.cancel()
     task = nil
   }
@@ -89,8 +86,9 @@ private extension BackgroundUpdateUpdater {
       
       do {
         await backgroundUpdateStore.updateState { _ in
-          Store.StateUpdate(newState: .connecting(addresses: addresses))
+          Store.StateUpdate(newState: .connecting)
         }
+        print("Log 🪵: BackgroundUpdateUpdater — connecting")
         let stream = try await EventSource.eventSource {
           let response = try await self.streamingAPI.getTransactions(
             query: .init(accounts: [rawAddresses])
@@ -101,25 +99,31 @@ private extension BackgroundUpdateUpdater {
         guard !Task.isCancelled else { return }
         
         await backgroundUpdateStore.updateState { _ in
-          Store.StateUpdate(newState: .connected(addresses: addresses))
+          Store.StateUpdate(newState: .connected)
         }
+        print("Log 🪵: BackgroundUpdateUpdater — connected")
         for try await events in stream {
+          print("Log 🪵: BackgroundUpdateUpdater — recieved events \(events)")
           handleReceivedEvents(events)
         }
         await backgroundUpdateStore.updateState { _ in
           Store.StateUpdate(newState: .disconnected)
         }
+        print("Log 🪵: BackgroundUpdateUpdater — disconnected")
         guard !Task.isCancelled else { return }
         connect(addresses: addresses)
       } catch {
+        guard !error.isCancelledError else { return }
         if error.isNoConnectionError {
           await backgroundUpdateStore.updateState { _ in
             Store.StateUpdate(newState: .noConnection)
           }
+          print("Log 🪵: BackgroundUpdateUpdater — no connection")
         } else {
           await backgroundUpdateStore.updateState { _ in
             Store.StateUpdate(newState: .disconnected)
           }
+          print("Log 🪵: BackgroundUpdateUpdater — disconnected")
           try? await Task.sleep(nanoseconds: 3_000_000_000)
           self.connect(addresses: addresses)
         }
@@ -136,8 +140,9 @@ private extension BackgroundUpdateUpdater {
     do {
       let eventTransaction = try jsonDecoder.decode(EventSource.Transaction.self, from: eventData)
       let address = try Address.parse(eventTransaction.accountId)
+      let friendlyAddress = FriendlyAddress(address: address, testOnly: false)
       let updateEvent = BackgroundUpdateEvent(
-        accountAddress: address,
+        accountAddress: friendlyAddress,
         lt: eventTransaction.lt,
         txHash: eventTransaction.txHash
       )

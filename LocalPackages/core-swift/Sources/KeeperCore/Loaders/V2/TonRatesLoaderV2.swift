@@ -26,7 +26,7 @@ actor TonRatesLoaderV2 {
     self.tonRatesStore = tonRatesStore
     self.ratesService = ratesService
     self.currencyStore = currencyStore
-    currencyStore.addObserver(self, notifyOnAdded: true) { observer, currency, _ in
+    currencyStore.addObserver(self, notifyOnAdded: false) { observer, currency, _ in
       Task { await observer.didUpdateCurrency(currency) }
     }
   }
@@ -65,10 +65,10 @@ private extension TonRatesLoaderV2 {
           currencies: [currency, .TON]
         ).ton
         guard !Task.isCancelled else { return }
-        await tonRatesStore.setRates(rates)
+        await tonRatesStore.setTonRates(rates)
       } catch {
         guard !error.isCancelledError else { return }
-        await tonRatesStore.setRates([])
+        await tonRatesStore.setTonRates([])
       }
     }
     taskInProgress = task

@@ -7,7 +7,7 @@ import TKLocalize
 
 final class WalletBalanceBalanceModel {
   struct BalanceListItems {
-    let items: [BalanceItem]
+    let items: [ProcessedBalanceItem]
     let canManage: Bool
   }
 
@@ -17,7 +17,7 @@ final class WalletBalanceBalanceModel {
     didSet {
       let activeWallet = self.walletsStore.getState().activeWallet
       guard let address = try? activeWallet.friendlyAddress else { return }
-      let balance = self.convertedBalanceStore.getState()[address]?.balance
+      let balance = self.balanceStore.getState()[address]?.balance
       let isSecure = self.secureMode.getState()
       let stackingPools = self.stackingPoolsStore.getState()[address] ?? []
       let tokenManagementState = self.tokenManagementStore.getState()
@@ -31,18 +31,18 @@ final class WalletBalanceBalanceModel {
   private var tokenManagementStore: TokenManagementStore
   
   private let walletsStore: WalletsStoreV2
-  private let convertedBalanceStore: ConvertedBalanceStoreV2
+  private let balanceStore: ProcessedBalanceStore
   private let stackingPoolsStore: StakingPoolsStore
   private let tokenManagementStoreProvider: (Wallet) -> TokenManagementStore
   private let secureMode: SecureMode
   
   init(walletsStore: WalletsStoreV2,
-       convertedBalanceStore: ConvertedBalanceStoreV2,
+       balanceStore: ProcessedBalanceStore,
        stackingPoolsStore: StakingPoolsStore,
        tokenManagementStoreProvider: @escaping (Wallet) -> TokenManagementStore,
        secureMode: SecureMode) {
     self.walletsStore = walletsStore
-    self.convertedBalanceStore = convertedBalanceStore
+    self.balanceStore = balanceStore
     self.stackingPoolsStore = stackingPoolsStore
     self.tokenManagementStoreProvider = tokenManagementStoreProvider
     self.secureMode = secureMode
@@ -52,7 +52,7 @@ final class WalletBalanceBalanceModel {
         await observer.didUpdateWalletsState(newWalletsState: newWalletsState, oldWalletsState: oldWalletsState)
       }
     }
-    convertedBalanceStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+    balanceStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
       Task {
         await observer.didUpdateBalances(newState, oldState)
       }
@@ -82,7 +82,7 @@ final class WalletBalanceBalanceModel {
           }
         }
       }
-      let balance = await self.convertedBalanceStore.getState()[address]?.balance
+      let balance = await self.balanceStore.getState()[address]?.balance
       let isSecure = await self.secureMode.isSecure
       let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
       let tokenManagementState = await self.tokenManagementStore.getState()
@@ -93,12 +93,12 @@ final class WalletBalanceBalanceModel {
     })
   }
   
-  private func didUpdateBalances(_ newBalances: [FriendlyAddress: ConvertedBalanceState],
-                                 _ oldBalances: [FriendlyAddress: ConvertedBalanceState]?) async {
+  private func didUpdateBalances(_ newBalances: [FriendlyAddress: ProcessedBalanceState],
+                                 _ oldBalances: [FriendlyAddress: ProcessedBalanceState]) async {
     await actor.addTask(block: {
       let activeWallet = await self.walletsStore.getState().activeWallet
       guard let address = try? activeWallet.friendlyAddress else { return }
-      guard newBalances[address] != oldBalances?[address] else { return }
+      guard newBalances[address] != oldBalances[address] else { return }
       let isSecure = await self.secureMode.isSecure
       let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
       let tokenManagementState = await self.tokenManagementStore.getState()
@@ -113,7 +113,7 @@ final class WalletBalanceBalanceModel {
     await actor.addTask(block: {
       let activeWallet = await self.walletsStore.getState().activeWallet
       guard let address = try? activeWallet.friendlyAddress else { return }
-      let balance = await self.convertedBalanceStore.getState()[address]?.balance
+      let balance = await self.balanceStore.getState()[address]?.balance
       let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
       let tokenManagementState = await self.tokenManagementStore.getState()
       self.update(balance: balance,
@@ -128,7 +128,7 @@ final class WalletBalanceBalanceModel {
       guard state != oldState else { return }
       let activeWallet = await self.walletsStore.getState().activeWallet
       guard let address = try? activeWallet.friendlyAddress else { return }
-      let balance = await self.convertedBalanceStore.getState()[address]?.balance
+      let balance = await self.balanceStore.getState()[address]?.balance
       let isSecure = await self.secureMode.isSecure
       let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
       self.update(
@@ -140,7 +140,7 @@ final class WalletBalanceBalanceModel {
     })
   }
   
-  private func update(balance: ConvertedBalance?,
+  private func update(balance: ProcessedBalance?,
                       stackingPools: [StackingPoolInfo],
                       isSecure: Bool,
                       tokenManagementState: TokenManagementState) {
@@ -153,15 +153,10 @@ final class WalletBalanceBalanceModel {
       return
     }
     
-    let balanceItems = BalanceItems(
-      balance: balance,
-      stackingPools: stackingPools
-    )
+    var pinnedItems = [ProcessedBalanceItem]()
+    var unpinnedItems = [ProcessedBalanceItem]()
     
-    var pinnedItems = [BalanceItem]()
-    var unpinnedItems = [BalanceItem]()
-    
-    for item in balanceItems.items {
+    for item in balance.items {
       if tokenManagementState.pinnedItems.contains(item.identifier) {
         pinnedItems.append(item)
       } else {
@@ -190,7 +185,7 @@ final class WalletBalanceBalanceModel {
       case (_, .ton):
         return false
       case (.staking(let lModel), .staking(let rModel)):
-        return lModel.converted > rModel.converted
+        return lModel.amountConverted > rModel.amountConverted
       case (.staking, _):
         return true
       case (_, .staking):
@@ -211,7 +206,7 @@ final class WalletBalanceBalanceModel {
     
     let items = BalanceListItems(
       items: sortedPinnedItems + sortedUnpinnedItems,
-      canManage: balanceItems.items.count > 2
+      canManage: balance.items.count > 2
     )
     didUpdateItems?(items, isSecure)
   }
