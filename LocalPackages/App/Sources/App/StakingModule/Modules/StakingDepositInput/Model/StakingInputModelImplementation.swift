@@ -71,7 +71,7 @@ final class StakingInputModelImplementation: StakingInputModel {
   private let detailsInput: StakingInputDetailsModuleInput
   private let configurator: StakingInputModelConfigurator
   private let stakingPoolsStore: StakingPoolsStore
-  private let tonRatesStore: TonRatesStoreV2
+  private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   
   // MARK: - Init
@@ -81,7 +81,7 @@ final class StakingInputModelImplementation: StakingInputModel {
        detailsInput: StakingInputDetailsModuleInput,
        configurator: StakingInputModelConfigurator,
        stakingPoolsStore: StakingPoolsStore,
-       tonRatesStore: TonRatesStoreV2,
+       tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore) {
     self.wallet = wallet
     self.detailsInput = detailsInput

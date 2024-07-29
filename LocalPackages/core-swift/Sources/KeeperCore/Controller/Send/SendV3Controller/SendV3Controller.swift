@@ -104,7 +104,7 @@ public final class SendV3Controller {
     let currency = await currencyStore.getCurrency()
     switch token {
     case .ton:
-      guard let rate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency }) else { return ""}
+      guard let rate = await tonRatesStore.getState().first(where: { $0.currency == currency }) else { return ""}
       let converted = RateConverter().convert(amount: amount, amountFractionLength: TonInfo.fractionDigits, rate: rate)
       let formatted = amountFormatter.formatAmount(
         converted.amount,

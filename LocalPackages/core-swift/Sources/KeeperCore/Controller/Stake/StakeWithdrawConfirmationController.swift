@@ -27,7 +27,7 @@ public final class StakeWithdrawConfirmationController: StakeConfirmationControl
   private let accountService: AccountService
   private let blockchainService: BlockchainService
   private let balanceStore: BalanceStoreV2
-  private let ratesStore: TonRatesStoreV2
+  private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let amountFormatter: AmountFormatter
   private let decimalFormatter: DecimalAmountFormatter
@@ -41,7 +41,7 @@ public final class StakeWithdrawConfirmationController: StakeConfirmationControl
        accountService: AccountService,
        blockchainService: BlockchainService,
        balanceStore: BalanceStoreV2,
-       ratesStore: TonRatesStoreV2,
+       ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        amountFormatter: AmountFormatter,
        decimalFormatter: DecimalAmountFormatter) {

@@ -21,9 +21,9 @@ public final class LoadersAssembly {
       return _tonRatesLoaderV2
     }
     let loader = TonRatesLoaderV2(
-      tonRatesStore: storesAssembly.tonRatesStoreV2,
+      tonRatesStore: storesAssembly.tonRatesStore,
       ratesService: servicesAssembly.ratesService(),
-      currencyStore: storesAssembly.currencyStoreV2
+      currencyStore: storesAssembly.currencyStore
     )
     _tonRatesLoaderV2 = loader
     return loader

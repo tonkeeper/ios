@@ -4,11 +4,11 @@ import BigInt
 
 public final class ConvertedBalanceStoreV2: Store<[FriendlyAddress: ConvertedBalanceState]> {
   private let balanceStore: BalanceStoreV2
-  private let tonRatesStore: TonRatesStoreV2
+  private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   
   init(balanceStore: BalanceStoreV2, 
-       tonRatesStore: TonRatesStoreV2,
+       tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore) {
     self.balanceStore = balanceStore
     self.tonRatesStore = tonRatesStore

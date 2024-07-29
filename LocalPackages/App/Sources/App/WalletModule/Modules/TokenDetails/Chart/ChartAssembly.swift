@@ -9,7 +9,7 @@ struct ChartAssembly {
                      keeperCoreMainAssembly: KeeperCore.MainAssembly) -> MVVMModule<ChartViewController, ChartModuleOutput, Void> {
     let viewModel = ChartViewModelImplementation(
       chartController: keeperCoreMainAssembly.chartV2Controller(token: token),
-      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV2,
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
       chartFormatter: coreAssembly.formattersAssembly.chartFormatter(
         dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
         decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter

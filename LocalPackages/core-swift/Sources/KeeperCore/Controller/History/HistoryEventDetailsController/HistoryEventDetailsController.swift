@@ -951,7 +951,7 @@ private extension HistoryEventDetailsController {
   
   func tonFiatString(amount: BigUInt) async -> String? {
     let currency = await currencyStore.getCurrency()
-    guard let tonRate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency }) else {
+    guard let tonRate = await tonRatesStore.getState().first(where: { $0.currency == currency }) else {
       return nil
     }
     

@@ -28,25 +28,25 @@ public final class StoresAssembly {
     return store
   }
   
-  private weak var _currencyStoreV2: CurrencyStore?
-  public var currencyStoreV2: CurrencyStore {
-    if let _currencyStoreV2 {
-      return _currencyStoreV2
+  private weak var _currencyStore: CurrencyStore?
+  public var currencyStore: CurrencyStore {
+    if let _currencyStore {
+      return _currencyStore
     }
     let store = CurrencyStore(keeperInfoStore: keeperInfoStore)
-    _currencyStoreV2 = store
+    _currencyStore = store
     return store
   }
   
-  private weak var _tonRatesStoreV2: TonRatesStoreV2?
-  public var tonRatesStoreV2: TonRatesStoreV2 {
-    if let tonRatesStore = _tonRatesStoreV2 {
+  private weak var _tonRatesStore: TonRatesStore?
+  public var tonRatesStore: TonRatesStore {
+    if let tonRatesStore = _tonRatesStore {
       return tonRatesStore
     } else {
-      let tonRatesStore = TonRatesStoreV2(
+      let tonRatesStore = TonRatesStore(
         repository: repositoriesAssembly.ratesRepository()
       )
-      _tonRatesStoreV2 = tonRatesStore
+      _tonRatesStore = tonRatesStore
       return tonRatesStore
     }
   }
@@ -109,19 +109,6 @@ public final class StoresAssembly {
     return store
   }
   
-  private weak var _tonRatesStore: TonRatesStore?
-  var tonRatesStore: TonRatesStore {
-    if let tonRatesStore = _tonRatesStore {
-      return tonRatesStore
-    } else {
-      let tonRatesStore = TonRatesStore(
-        repository: repositoriesAssembly.ratesRepository()
-      )
-      _tonRatesStore = tonRatesStore
-      return tonRatesStore
-    }
-  }
-  
   private weak var _nftsStore: NftsStore?
   var nftsStore: NftsStore {
     if let _nftsStore {
@@ -143,17 +130,6 @@ public final class StoresAssembly {
     }
   }
   
-  private weak var _ratesStore: RatesStore?
-  var ratesStore: RatesStore {
-    if let ratesStore = _ratesStore {
-      return ratesStore
-    } else {
-      let ratesStore = RatesStore(ratesService: servicesAssembly.ratesService())
-      _ratesStore = ratesStore
-      return ratesStore
-    }
-  }
-
   private weak var _knownAccountsStore: KnownAccountsStore?
   var knownAccountsStore: KnownAccountsStore {
     if let knownAccountsStore = _knownAccountsStore {

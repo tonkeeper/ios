@@ -16,11 +16,11 @@ actor TonRatesLoaderV2 {
     }
   }
   
-  private let tonRatesStore: TonRatesStoreV2
+  private let tonRatesStore: TonRatesStore
   private let ratesService: RatesService
   private let currencyStore: CurrencyStore
   
-  init(tonRatesStore: TonRatesStoreV2, 
+  init(tonRatesStore: TonRatesStore, 
        ratesService: RatesService,
        currencyStore: CurrencyStore) {
     self.tonRatesStore = tonRatesStore

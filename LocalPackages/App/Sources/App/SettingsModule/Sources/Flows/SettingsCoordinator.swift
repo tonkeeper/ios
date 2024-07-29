@@ -31,7 +31,7 @@ private extension SettingsCoordinator {
     let configurator = SettingsListRootConfigurator(
       walletId: wallet.id,
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
-      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV2,
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
       configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore,
@@ -126,7 +126,7 @@ private extension SettingsCoordinator {
   
   func openCurrencyPicker() {
     let configuration = SettingsListCurrencyPickerConfigurator(
-      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV2
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
     )
     let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()

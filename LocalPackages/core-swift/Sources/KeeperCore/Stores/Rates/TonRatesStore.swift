@@ -1,53 +1,35 @@
 import Foundation
 
-actor TonRatesStore {
-  typealias ObservationClosure = (Event) -> Void
-  enum Event {
-    case didUpdateRates(_ rates: [Rates.Rate])
-  }
+public final class TonRatesStore: StoreUpdated<[Rates.Rate]> {
   
   private let repository: RatesRepository
   
   init(repository: RatesRepository) {
     self.repository = repository
+    super.init(state: [])
   }
   
-  func getTonRates() -> [Rates.Rate] {
+  public func setTonRates(_ rates: [Rates.Rate], completion: (() -> Void)?) {
+    updateState { [repository] _ in
+      try? repository.saveRates(Rates(ton: rates, jettonsRates: []))
+      return StateUpdate(newState: rates)
+    } completion: {
+      completion?()
+    }
+  }
+  
+  public func setTonRates(_ rates: [Rates.Rate]) async {
+    await updateState { [repository] _ in
+      try? repository.saveRates(Rates(ton: rates, jettonsRates: []))
+      return StateUpdate(newState: rates)
+    }
+  }
+
+  public override func getInitialState() -> [Rates.Rate] {
     do {
       return try repository.getRates(jettons: []).ton
     } catch {
       return []
     }
-  }
-  
-  func setTonRates(_ tonRates: [Rates.Rate]) {
-    try? repository.saveRates(Rates(ton: tonRates, jettonsRates: []))
-    observations.values.forEach { $0(.didUpdateRates(tonRates)) }
-  }
-
-  private var observations = [UUID: ObservationClosure]()
-  
-  func addEventObserver<T: AnyObject>(_ observer: T,
-                                      closure: @escaping (T, Event) -> Void) -> ObservationToken {
-    let id = UUID()
-    let eventHandler: (Event) -> Void = { [weak self, weak observer] event in
-      guard let self else { return }
-      guard let observer else {
-        Task { await self.removeObservation(key: id) }
-        return
-      }
-      
-      closure(observer, event)
-    }
-    observations[id] = eventHandler
-    
-    return ObservationToken { [weak self] in
-      guard let self else { return }
-      Task { await self.removeObservation(key: id) }
-    }
-  }
-  
-  func removeObservation(key: UUID) {
-    observations.removeValue(forKey: key)
   }
 }

@@ -41,8 +41,8 @@ public final class MainStoresAssembly {
       let store = ConvertedBalanceStoreV2(
 
         balanceStore: balanceStore,
-        tonRatesStore: storesAssembly.tonRatesStoreV2,
-        currencyStore: storesAssembly.currencyStoreV2
+        tonRatesStore: storesAssembly.tonRatesStore,
+        currencyStore: storesAssembly.currencyStore
 
       )
       _convertedBalanceStore = store
@@ -57,8 +57,8 @@ public final class MainStoresAssembly {
     let store = ProcessedBalanceStore(
       walletsStore: walletsAssembly.walletsStore,
       balanceStore: balanceStore,
-      tonRatesStore: storesAssembly.tonRatesStoreV2,
-      currencyStore: storesAssembly.currencyStoreV2,
+      tonRatesStore: storesAssembly.tonRatesStore,
+      currencyStore: storesAssembly.currencyStore,
       stakingPoolsStore: storesAssembly.stackingPoolsStore
     )
     _processedBalanceStore = store

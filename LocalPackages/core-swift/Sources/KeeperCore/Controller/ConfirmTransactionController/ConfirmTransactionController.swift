@@ -11,7 +11,7 @@ public final class ConfirmTransactionController {
   private let bocProvider: ConfirmTransactionControllerBocProvider
   private let sendService: SendService
   private let nftService: NFTService
-  private let ratesStore: RatesStore
+  private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let confirmTransactionMapper: ConfirmTransactionMapper
   
@@ -19,14 +19,14 @@ public final class ConfirmTransactionController {
        bocProvider: ConfirmTransactionControllerBocProvider,
        sendService: SendService,
        nftService: NFTService,
-       ratesStore: RatesStore,
+       tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        confirmTransactionMapper: ConfirmTransactionMapper) {
     self.wallet = wallet
     self.bocProvider = bocProvider
     self.sendService = sendService
     self.nftService = nftService
-    self.ratesStore = ratesStore
+    self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
     self.confirmTransactionMapper = confirmTransactionMapper
   }
@@ -47,7 +47,7 @@ private extension ConfirmTransactionController {
       timeout: timeout
     )
     let currency = await currencyStore.getCurrency()
-    let rates = ratesStore.getRates(jettons: []).ton.first(where: { $0.currency == currency })
+    let rates = await tonRatesStore.getState().first(where: { $0.currency == currency })
     let transactionInfo = try await sendService.loadTransactionInfo(boc: boc, wallet: wallet)
     let event = try AccountEvent(accountEvent: transactionInfo.event)
     let nfts = try await loadEventNFTs(event: event)

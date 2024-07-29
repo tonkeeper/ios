@@ -25,8 +25,8 @@ struct StakingBalanceDetailsAssembly {
       ),
       stakingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
       balanceStore: keeperCoreMainAssembly.mainStoresAssembly.processedBalanceStore,
-      tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStoreV2,
-      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV2,
+      tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
       decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )

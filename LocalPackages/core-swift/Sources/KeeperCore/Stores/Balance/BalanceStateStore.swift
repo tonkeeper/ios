@@ -12,13 +12,13 @@ public struct BalanceState: Equatable {
 public final class BalanceStateStore: StoreUpdated<[Wallet: BalanceState]> {
   private let walletsStore: WalletsStore
   private let balanceStore: BalanceStoreV2
-  private let tonRatesStore: TonRatesStoreV2
+  private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let stakingPoolsStore: StakingPoolsStore
   
   init(walletsStore: WalletsStore, 
        balanceStore: BalanceStoreV2,
-       tonRatesStore: TonRatesStoreV2,
+       tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        stakingPoolsStore: StakingPoolsStore) {
     self.walletsStore = walletsStore

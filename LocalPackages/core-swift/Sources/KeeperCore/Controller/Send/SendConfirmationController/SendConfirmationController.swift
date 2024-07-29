@@ -26,7 +26,7 @@ public final class SendConfirmationController {
   private let accountService: AccountService
   private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
-  private let ratesStore: RatesStore
+  private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
   private let mnemonicRepository: WalletMnemonicRepository
   private let amountFormatter: AmountFormatter
@@ -39,7 +39,7 @@ public final class SendConfirmationController {
        accountService: AccountService,
        blockchainService: BlockchainService,
        balanceStore: BalanceStore,
-       ratesStore: RatesStore,
+       ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
        mnemonicRepository: WalletMnemonicRepository,
        amountFormatter: AmountFormatter) {
@@ -99,9 +99,9 @@ private extension SendConfirmationController {
         symbol: TonInfo.symbol
       )
       feeItem = .value(feeFormatted)
-      let rates = ratesStore.getRates(jettons: [])
+      let rates = await ratesStore.getState()
       let currency = await currencyStore.getCurrency()
-      if let rates = rates.ton.first(where: { $0.currency == currency }) {
+      if let rates = rates.first(where: { $0.currency == currency }) {
         let rateConverter = RateConverter()
         let converted = rateConverter.convert(
           amount: fee,
@@ -146,9 +146,9 @@ private extension SendConfirmationController {
           maximumFractionDigits: TonInfo.fractionDigits,
           symbol: TonInfo.symbol
         )
-        let rates = ratesStore.getRates(jettons: [])
+        let rates = await ratesStore.getState()
         let currency = await currencyStore.getCurrency()
-        if let rates = rates.ton.first(where: { $0.currency == currency }) {
+        if let rates = rates.first(where: { $0.currency == currency }) {
           let rateConverter = RateConverter()
           let converted = rateConverter.convert(
             amount: amount,
@@ -172,22 +172,22 @@ private extension SendConfirmationController {
           maximumFractionDigits: jettonItem.jettonInfo.fractionDigits,
           symbol: jettonItem.jettonInfo.symbol
         )
-        let rates = ratesStore.getRates(jettons: [jettonItem.jettonInfo])
-        let currency = await currencyStore.getCurrency()
-        if let rates = rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency }) {
-          let rateConverter = RateConverter()
-          let converted = rateConverter.convert(
-            amount: amount,
-            amountFractionLength: TonInfo.fractionDigits,
-            rate: rates
-          )
-          formattedConvertedAmount = amountFormatter.formatAmount(
-            converted.amount,
-            fractionDigits: converted.fractionLength,
-            maximumFractionDigits: 2,
-            currency: currency
-          )
-        }
+//        let rates = ratesStore.getRates(jettons: [jettonItem.jettonInfo])
+//        let currency = await currencyStore.getCurrency()
+//        if let rates = rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency }) {
+//          let rateConverter = RateConverter()
+//          let converted = rateConverter.convert(
+//            amount: amount,
+//            amountFractionLength: TonInfo.fractionDigits,
+//            rate: rates
+//          )
+//          formattedConvertedAmount = amountFormatter.formatAmount(
+//            converted.amount,
+//            fractionDigits: converted.fractionLength,
+//            maximumFractionDigits: 2,
+//            currency: currency
+//          )
+//        }
       }
     case .nft(let nft):
       let description = [nft.name, nft.collection?.name].compactMap { $0 }.joined(separator: " · ")
