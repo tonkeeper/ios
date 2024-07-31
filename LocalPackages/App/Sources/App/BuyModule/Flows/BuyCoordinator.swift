@@ -70,6 +70,17 @@ private extension BuyCoordinator {
       self?.openWarning(item: item, fromViewController: bottomSheetViewController)
     }
     
+    module.output.didSelectCountryPicker = { [weak self, weak bottomSheetViewController] selectedCountry in
+      guard let bottomSheetViewController else { return }
+      self?.openCountryPicker(
+        selectedCountry: selectedCountry,
+        fromViewController: bottomSheetViewController,
+        completion: { selectedCountry in
+          module.input.setSelectedCountry(selectedCountry)
+        }
+      )
+    }
+    
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
@@ -97,5 +108,22 @@ private extension BuyCoordinator {
         self?.openWebView(url: item.actionUrl, fromViewController: fromViewController)
       }
     }
+  }
+  
+  func openCountryPicker(selectedCountry: SelectedCountry,
+                         fromViewController: UIViewController,
+                         completion: @escaping (SelectedCountry) -> Void) {
+    let countryPickerViewController = CountryPickerViewController(
+      selectedCountry: selectedCountry,
+      countriesProvider: CountriesProvider()
+    )
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: countryPickerViewController)
+    
+    countryPickerViewController.didSelectCountry = { [weak bottomSheetViewController] in
+      completion($0)
+      bottomSheetViewController?.dismiss()
+    }
+    
+    bottomSheetViewController.present(fromViewController: fromViewController)
   }
 }

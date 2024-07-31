@@ -102,8 +102,11 @@ private extension BuySellListViewController {
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
-      self?.dataSource.apply(snapshot, animatingDifferences: false)
-      self?.didUpdateHeight?()
+      guard let self else { return }
+      self.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+        self.didUpdateHeight?()
+      })
+      self.didUpdateHeight?()
     }
     
     viewModel.didUpdateState = { [weak self] state in
@@ -117,6 +120,17 @@ private extension BuySellListViewController {
       } else {
         self?.segmentedControl.isHidden = true
       }
+    }
+    
+    viewModel.didUpdateHeaderLeftButton = { [weak self] model in
+      guard let self else { return }
+      let headerItem = TKUIKit.TKPullCardHeaderItem(
+        title: .customView(
+          self.segmentedControl
+        ),
+        leftButton: model
+      )
+      didUpdatePullCardHeaderItem?(headerItem)
     }
   }
   
@@ -183,13 +197,13 @@ private extension BuySellListViewController {
       
       let itemLayoutSize = NSCollectionLayoutSize(
         widthDimension: .fractionalWidth(1.0),
-        heightDimension: .estimated(76)
+        heightDimension: .estimated(96)
       )
       let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
       
       let groupLayoutSize = NSCollectionLayoutSize(
         widthDimension: .fractionalWidth(1.0),
-        heightDimension: .estimated(76)
+        heightDimension: .estimated(96)
       )
       let group = NSCollectionLayoutGroup.horizontal(
         layoutSize: groupLayoutSize,

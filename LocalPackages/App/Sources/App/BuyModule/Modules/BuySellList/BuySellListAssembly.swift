@@ -5,7 +5,7 @@ import KeeperCore
 struct BuySellListAssembly {
   private init() {}
   static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly,
-                     coreAssembly: TKCore.CoreAssembly) -> MVVMModule<BuySellListViewController, BuySellListModuleOutput, Void> {
+                     coreAssembly: TKCore.CoreAssembly) -> MVVMModule<BuySellListViewController, BuySellListModuleOutput, BuySellListModuleInput> {
     let viewModel = BuySellListViewModelImplementation(
       fiatMethodsStore: keeperCoreMainAssembly.storesAssembly.fiatMethodsStore,
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
@@ -19,7 +19,7 @@ struct BuySellListAssembly {
     return MVVMModule(
       view: viewController,
       output: viewModel,
-      input: Void()
+      input: viewModel
     )
   }
 }

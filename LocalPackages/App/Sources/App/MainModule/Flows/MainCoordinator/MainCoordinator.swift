@@ -95,6 +95,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     mainCoordinatorStateManager.didUpdateState = { [weak self] state in
       self?.handleStateUpdate(state)
     }
+    handleStateUpdate(mainCoordinatorStateManager.state)
     mainController.start()
     _ = handleDeeplink(deeplink: deeplink)
   }

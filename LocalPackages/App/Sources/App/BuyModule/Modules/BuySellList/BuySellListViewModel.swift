@@ -6,12 +6,18 @@ import KeeperCore
 protocol BuySellListModuleOutput: AnyObject {
   var didSelectURL: ((URL) -> Void)? { get set }
   var didSelectItem: ((BuySellItem) -> Void)? { get set }
+  var didSelectCountryPicker: ((SelectedCountry) -> Void)? { get set }
+}
+
+protocol BuySellListModuleInput: AnyObject {
+  func setSelectedCountry(_ selectedCountry: SelectedCountry)
 }
 
 protocol BuySellListViewModel: AnyObject {
   var didUpdateSegmentedControl: ((BuySellListSegmentedControl.Model?) -> Void)? { get set }
   var didUpdateState: ((BuySellListViewController.State) -> Void)? { get set }
   var didUpdateSnapshot: ((BuySellListViewController.Snapshot) -> Void)? { get set }
+  var didUpdateHeaderLeftButton: ((TKPullCardHeaderItem.LeftButton) -> Void)? { get set }
   
   func viewDidLoad()
   func getCellConfiguration(identifier: String) -> AnyHashable
@@ -19,7 +25,7 @@ protocol BuySellListViewModel: AnyObject {
   func selecteItem(_ item: BuySellListItem)
 }
 
-final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellListModuleOutput {
+final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellListModuleOutput, BuySellListModuleInput {
   
   enum Tab: CaseIterable {
     case buy
@@ -33,20 +39,47 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   
   var didSelectURL: ((URL) -> Void)?
   var didSelectItem: ((BuySellItem) -> Void)?
+  var didSelectCountryPicker: ((SelectedCountry) -> Void)?
+  
+  func setSelectedCountry(_ selectedCountry: SelectedCountry) {
+    self.selectedCountry = selectedCountry
+    if case let .country(countryCode) = selectedCountry {
+      appSettings.selectedCountryCode = countryCode
+    } else {
+      appSettings.selectedCountryCode = nil
+    }
+    updateCountryPickerButton()
+    categoryExpandStates = [:]
+    switch fiatMethodsState {
+    case .loading:
+      break
+    case .none:
+      updateList(fiatMethods: nil)
+    case .fiatMethods(let fiatMethods):
+      updateList(fiatMethods: fiatMethods)
+    }
+  }
   
   // MARK: - BuySellListViewModel
   
   var didUpdateSegmentedControl: ((BuySellListSegmentedControl.Model?) -> Void)?
   var didUpdateState: ((BuySellListViewController.State) -> Void)?
   var didUpdateSnapshot: ((BuySellListViewController.Snapshot) -> Void)?
+  var didUpdateHeaderLeftButton: ((TKPullCardHeaderItem.LeftButton) -> Void)?
   
   func viewDidLoad() {
+    if let selectedCountryCode = appSettings.selectedCountryCode {
+      self.selectedCountry = .country(countryCode: selectedCountryCode)
+    }
+    
     fiatMethodsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
       DispatchQueue.main.async {
         observer.fiatMethodsState = newState
       }
     }
     fiatMethodsState = fiatMethodsStore.getState()
+    
+    updateCountryPickerButton()
   }
   
   func getCellConfiguration(identifier: String) -> AnyHashable {
@@ -81,13 +114,14 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
       didUpdateFiatMethodsStoreState(fiatMethodsState)
     }
   }
-  private var categories = [FiatMethodCategory]()
+  private var fiatMethods: FiatMethods?
   private var activeTab: Tab = .buy {
     didSet {
       didChangeTab()
     }
   }
   private var categoryExpandStates = [FiatMethodCategory: SectionExpandState]()
+  private var selectedCountry: SelectedCountry = .auto
   
   // MARK: - Image Loader
   
@@ -117,43 +151,56 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
 }
 
 private extension BuySellListViewModelImplementation {
+  func updateCountryPickerButton() {
+    let title: String
+    switch selectedCountry {
+    case .all:
+      title = "🌍"
+    case .auto:
+      title = Locale.current.regionCode ?? ""
+    case .country(let countryCode):
+      title = countryCode
+    }
+  
+    didUpdateHeaderLeftButton?(
+      TKPullCardHeaderItem.LeftButton(
+        model: TKUIHeaderTitleIconButton.Model(title: title),
+        action: { [weak self] in
+          guard let self else { return }
+          self.didSelectCountryPicker?(selectedCountry)
+        }
+      )
+    )
+  }
+  
   func didChangeTab() {
     switch fiatMethodsState {
     case .loading:
       break
     case .none:
-      updateList(categories: [])
+      updateList(fiatMethods: nil)
     case .fiatMethods(let fiatMethods):
-      switch activeTab {
-      case .buy:
-        updateList(categories: fiatMethods.buy)
-      case .sell:
-        updateList(categories: fiatMethods.sell)
-      }
+      updateList(fiatMethods: fiatMethods)
     }
   }
   
   func didUpdateFiatMethodsStoreState(_ state: FiatMethodsStore.State) {
+    categoryExpandStates = [:]
     switch state {
     case .loading:
       didUpdateState?(.loading)
       didUpdateSegmentedControl?(nil)
-      categories = []
+      fiatMethods = nil
     case .none:
       didUpdateSegmentedControl?(
         BuySellListSegmentedControl.Model(
           tabs: ["Buy", "Sell"]
         )
       )
-      categories = []
+      fiatMethods = nil
       didUpdateState?(.list)
     case .fiatMethods(let fiatMethods):
-      switch activeTab {
-      case .buy:
-        categories = fiatMethods.buy
-      case .sell:
-        categories = fiatMethods.sell
-      }
+      self.fiatMethods = fiatMethods
       didUpdateSegmentedControl?(
         BuySellListSegmentedControl.Model(
           tabs: ["Buy", "Sell"]
@@ -161,27 +208,45 @@ private extension BuySellListViewModelImplementation {
       )
       didUpdateState?(.list)
     }
-    updateList(categories: categories)
+    updateList(fiatMethods: fiatMethods)
   }
-  
-  func updateList(categories: [FiatMethodCategory]) {
+
+  func updateList(fiatMethods: FiatMethods?) {
     var cellModels = [String: TKUIListItemCell.Configuration]()
     
-    for category in categories {
+    for category in (fiatMethods?.buy ?? []) {
       for item in category.items {
         cellModels[item.id] = mapBuySellItem(item)
       }
-      
-      categoryExpandStates[category] = category.items.count > 4 ? .collapsed : nil
-      
-      self.cellModels = cellModels
-      
-      updateSnapshot(categories: categories)
     }
+    for category in (fiatMethods?.sell ?? []) {
+      for item in category.items {
+        cellModels[item.id] = mapBuySellItem(item)
+      }
+    }
+    self.cellModels = cellModels
+    
+    updateSnapshot(fiatMethods: fiatMethods)
   }
   
-  func updateSnapshot(categories: [FiatMethodCategory]) {
+  func updateSnapshot(fiatMethods: FiatMethods?) {
     var snapshot = BuySellListViewController.Snapshot()
+    
+    defer {
+      self.snapshot = snapshot
+    }
+    
+    guard let fiatMethods else {
+      return
+    }
+    
+    let categories: [FiatMethodCategory]
+    switch activeTab {
+    case .buy:
+      categories = fiatMethods.buy
+    case .sell:
+      categories = fiatMethods.sell
+    }
     
     for category in categories {
       let assets = category.assets.map { UIImage(named: "Images/CryptoAssets/\($0)") }
@@ -191,21 +256,44 @@ private extension BuySellListViewModelImplementation {
         assets: assets
       )
       
-      let expandState = categoryExpandStates[category] ?? .none
+      let filteredItems: [FiatMethodItem] = {
+        switch selectedCountry {
+        case .all:
+          return category.items
+        case .auto:
+          let region = Locale.current.regionCode
+          if let methods = fiatMethods.layoutByCountry
+            .first(where: { $0.countryCode == region })?.methods {
+            return category.items.filter { methods.contains($0.id) }
+          } else {
+            return category.items
+          }
+        case .country(let countryCode):
+          if let methods = fiatMethods.layoutByCountry
+            .first(where: { $0.countryCode == countryCode })?.methods {
+            return category.items.filter { methods.contains($0.id) }
+          } else {
+            return category.items
+          }
+        }
+      }()
       
-      let items: [FiatMethodItem]
-      switch categoryExpandStates[category] {
+      let expandedState: SectionExpandState? = categoryExpandStates[category] ?? (filteredItems.count > 4 ? .collapsed : nil)
+      categoryExpandStates[category] = expandedState
+      
+      let resultItems: [FiatMethodItem]
+      switch expandedState {
       case .expanded, .none:
-        items = category.items
+        resultItems = filteredItems
       case .collapsed:
-        items = Array(category.items.prefix(4))
+        resultItems = Array(filteredItems.prefix(4))
       }
       
+      guard !resultItems.isEmpty else { continue }
       snapshot.appendSections([section])
-      snapshot.appendItems(items.map { .item(identifier: $0.id) }, toSection: section)
+      snapshot.appendItems(resultItems.map { .item(identifier: $0.id) }, toSection: section)
       
-      
-      switch expandState {
+      switch expandedState {
       case .collapsed:
         var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
           category: .secondary,
@@ -252,18 +340,16 @@ private extension BuySellListViewModelImplementation {
     }
     
     snapshot.reloadItems(snapshot.itemIdentifiers)
-    
-    self.snapshot = snapshot
   }
   
   func expandCategory(_ category: FiatMethodCategory) {
     categoryExpandStates[category] = .expanded
-    updateSnapshot(categories: categories)
+    updateSnapshot(fiatMethods: fiatMethods)
   }
   
   func collapseCategory(_ category: FiatMethodCategory) {
     categoryExpandStates[category] = .collapsed
-    updateSnapshot(categories: categories)
+    updateSnapshot(fiatMethods: fiatMethods)
   }
   
   func mapBuySellItem(_ item: FiatMethodItem) -> TKUIListItemCell.Configuration {

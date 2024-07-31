@@ -139,7 +139,8 @@ private extension SettingsListRootConfigurator {
     case .emoji(let emoji):
       iconConfiguration = .emoji(TKUIListItemEmojiIconView.Configuration(
         emoji: emoji,
-        backgroundColor: wallet.tintColor.uiColor
+        backgroundColor: wallet.tintColor.uiColor,
+        size: 44
       ))
     case .icon(let image):
       iconConfiguration = .image(TKUIListItemImageIconView.Configuration(
