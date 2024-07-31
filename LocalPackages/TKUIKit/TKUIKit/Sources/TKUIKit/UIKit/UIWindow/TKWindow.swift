@@ -25,9 +25,6 @@ open class TKWindow: UIWindow {
 
 private extension TKWindow {
   func setup() {
-    if screen.maximumFramesPerSecond <= 60 {
-      layer.speed = 1.3
-    }
     TKThemeManager.shared.addEventObserver(self) { observer, theme in
       observer.updateUserInterfaceStyle(theme.themeAppaearance.userInterfaceStyle)
     }

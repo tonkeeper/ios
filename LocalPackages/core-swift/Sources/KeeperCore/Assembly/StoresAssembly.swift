@@ -118,17 +118,6 @@ public final class StoresAssembly {
     _nftsStore = nftsStore
     return nftsStore
   }
-//  
-//  private weak var _balanceStore: BalanceStore?
-//  var balanceStore: BalanceStore {
-//    if let balanceStore = _balanceStore {
-//      return balanceStore
-//    } else {
-//      let balanceStore = BalanceStore(balanceService: servicesAssembly.balanceService())
-//      _balanceStore = balanceStore
-//      return balanceStore
-//    }
-//  }
   
   private weak var _knownAccountsStore: KnownAccountsStore?
   var knownAccountsStore: KnownAccountsStore {
@@ -140,6 +129,17 @@ public final class StoresAssembly {
       )
       _knownAccountsStore = knownAccountsStore
       return knownAccountsStore
+    }
+  }
+  
+  private weak var _fiatMethodsStore: FiatMethodsStore?
+  public var fiatMethodsStore: FiatMethodsStore {
+    if let fiatMethodsStore = _fiatMethodsStore {
+      return fiatMethodsStore
+    } else {
+      let fiatMethodsStore = FiatMethodsStore()
+      _fiatMethodsStore = fiatMethodsStore
+      return fiatMethodsStore
     }
   }
 }

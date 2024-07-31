@@ -32,7 +32,7 @@ final class LinkDNSViewController: BasicViewController, TKBottomSheetScrollConte
   var didUpdateHeight: (() -> Void)?
   
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: viewModel.title)
+    TKUIKit.TKPullCardHeaderItem(title: .title(title: viewModel.title, subtitle: nil))
   }
   
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?

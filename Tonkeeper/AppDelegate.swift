@@ -6,8 +6,7 @@
 //
 
 import UIKit
-import FirebaseCore
-import Aptabase
+import TKCore
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {

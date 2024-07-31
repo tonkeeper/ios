@@ -62,6 +62,13 @@ public final class TKListTitleView: UIView, ReusableView, TKCollectionViewSupple
     titleLabel.text = nil
   }
   
+  public override func setContentHuggingPriority(_ priority: UILayoutPriority, for axis: NSLayoutConstraint.Axis) {
+    super.setContentHuggingPriority(priority, for: axis)
+    
+    stackView.setContentHuggingPriority(priority, for: axis)
+    titleLabel.setContentHuggingPriority(priority, for: axis)
+  }
+  
   public func configure(model: Model) {
     titleLabel.text = model.title
     titleLabel.font = model.textStyle.font

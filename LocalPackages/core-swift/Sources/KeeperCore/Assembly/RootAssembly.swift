@@ -53,8 +53,7 @@ public final class RootAssembly {
         ]),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
-        buySellMethodsService: servicesAssembly.buySellMethodsService(),
-        locationService: servicesAssembly.locationService()
+        fiatMethodsLoader: loadersAssembly.fiatMethodsLoader()
       )
       self._rootController = rootController
       return rootController

@@ -140,14 +140,14 @@ public final class ServicesAssembly {
     )
   }
   
-  func buySellMethodsService() -> BuySellMethodsService {
+  public func buySellMethodsService() -> BuySellMethodsService {
     BuySellMethodsServiceImplementation(
       api: tonkeeperAPIAssembly.api,
       buySellMethodsRepository: repositoriesAssembly.buySellMethodsRepository()
     )
   }
   
-  func locationService() -> LocationService {
+  public func locationService() -> LocationService {
     LocationServiceImplementation(locationAPI: locationAPIAsembly.locationAPI())
   }
   

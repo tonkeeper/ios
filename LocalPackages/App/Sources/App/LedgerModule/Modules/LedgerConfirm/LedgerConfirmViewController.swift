@@ -10,7 +10,12 @@ final class LedgerConfirmViewController: GenericViewViewController<LedgerConfirm
   var didUpdateHeight: (() -> Void)?
   
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: TKLocales.LedgerConfirm.title)
+    TKUIKit.TKPullCardHeaderItem(
+      title: .title(
+        title: TKLocales.LedgerConfirm.title,
+        subtitle: nil
+      )
+    )
   }
   
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?

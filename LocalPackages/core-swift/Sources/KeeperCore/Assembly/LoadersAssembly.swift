@@ -58,4 +58,19 @@ public final class LoadersAssembly {
     _internalNotificationsLoader = loader
     return loader
   }
+  
+  private weak var _fiatMethodsLoader: FiatMethodsLoader?
+  func fiatMethodsLoader() -> FiatMethodsLoader {
+    if let _fiatMethodsLoader {
+      return _fiatMethodsLoader
+    }
+    let loader = FiatMethodsLoader(
+      fiatMethodsStore: storesAssembly.fiatMethodsStore,
+      buySellMethodsService: servicesAssembly.buySellMethodsService(),
+      locationService: servicesAssembly.locationService()
+    )
+    _fiatMethodsLoader = loader
+    return loader
+  }
+  
 }

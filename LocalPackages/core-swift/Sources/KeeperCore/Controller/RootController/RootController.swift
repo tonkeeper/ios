@@ -12,8 +12,7 @@ public final class RootController {
   private let deeplinkParser: DeeplinkParser
   private let keeperInfoRepository: KeeperInfoRepository
   private let mnemonicsRepository: MnemonicsRepository
-  private let buySellMethodsService: BuySellMethodsService
-  private let locationService: LocationService
+  private let fiatMethodsLoader: FiatMethodsLoader
   
   init(walletsService: WalletsService,
        remoteConfigurationStore: ConfigurationStore,
@@ -21,18 +20,16 @@ public final class RootController {
        deeplinkParser: DeeplinkParser,
        keeperInfoRepository: KeeperInfoRepository,
        mnemonicsRepository: MnemonicsRepository,
-       buySellMethodsService: BuySellMethodsService,
-       locationService: LocationService) {
+       fiatMethodsLoader: FiatMethodsLoader) {
     self.walletsService = walletsService
     self.remoteConfigurationStore = remoteConfigurationStore
     self.knownAccountsStore = knownAccountsStore
     self.deeplinkParser = deeplinkParser
     self.keeperInfoRepository = keeperInfoRepository
     self.mnemonicsRepository = mnemonicsRepository
-    self.buySellMethodsService = buySellMethodsService
-    self.locationService = locationService
+    self.fiatMethodsLoader = fiatMethodsLoader
   }
-  
+
   public func getState() -> State {
     do {
       let wallets = try walletsService.getWallets()
@@ -43,23 +40,16 @@ public final class RootController {
     }
   }
   
-  public func loadConfiguration() {
+  public func loadFiatMethods(isMarketRegionPickerAvailable: Bool) {
+    fiatMethodsLoader.loadFiatMethods(isMarketRegionPickerAvailable: isMarketRegionPickerAvailable)
+  }
+  
+  public func loadConfigurations() {
     Task {
       try await remoteConfigurationStore.load()
     }
-  }
-  
-  public func loadKnownAccounts() {
     Task {
       try await knownAccountsStore.load()
-    }
-  }
-  
-  public func loadBuySellMethods() {
-    Task {
-      let countryCode = try await locationService.getCountryCodeByIp()
-      let methods = try await buySellMethodsService.loadFiatMethods(countryCode: countryCode)
-      try? buySellMethodsService.saveFiatMethods(methods)
     }
   }
   

@@ -306,7 +306,7 @@ public final class MainAssembly {
   }
   
   public func buyListController(wallet: Wallet,
-                                isMarketRegionPickerAvailable: @escaping () async -> Bool) -> BuyListController {
+                                isMarketRegionPickerAvailable: Bool) -> BuyListController {
     BuyListController(
       wallet: wallet,
       buySellMethodsService: servicesAssembly.buySellMethodsService(),

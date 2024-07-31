@@ -336,7 +336,7 @@ private extension WalletsListViewModelImplementation {
         self?.isEditing.toggle()
       }
     return TKPullCardHeaderItem(
-      title: TKLocales.WalletsList.title,
+      title: .title(title: TKLocales.WalletsList.title, subtitle: nil),
       leftButton: leftButton)
   }
 }

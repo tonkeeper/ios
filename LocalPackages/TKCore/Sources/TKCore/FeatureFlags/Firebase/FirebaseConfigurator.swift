@@ -4,7 +4,7 @@ import FirebaseRemoteConfig
 
 public final class FirebaseConfigurator {
   
-  static let configurator = FirebaseConfigurator()
+  public static let configurator = FirebaseConfigurator()
   
   private init() {}
   

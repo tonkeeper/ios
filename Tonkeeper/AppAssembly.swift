@@ -10,11 +10,6 @@ import TKCore
 
 final class AppAssembly {
   let coreAssembly = CoreAssembly(
-    featureFlagsProvider: FeatureFlagsProvider(
-      isMarketRegionPickerAvailable: {
-        FirebaseConfigurator.configurator.isMarketRegionPickerAvailable
-      }
-    ),
     analyticsProvider: AnalyticsProvider(
       analyticsServices: AptabaseService()
     )

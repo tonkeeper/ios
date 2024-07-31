@@ -1,6 +1,6 @@
 import Foundation
 
-protocol LocationService {
+public protocol LocationService {
   func getCountryCodeByIp() async throws -> String
 }
 

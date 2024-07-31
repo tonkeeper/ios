@@ -8,14 +8,14 @@ public final class BuyListController {
   private let locationService: LocationService
   private let configurationStore: ConfigurationStore
   private let currencyStore: CurrencyStore
-  private let isMarketRegionPickerAvailable: () async -> Bool
+  private let isMarketRegionPickerAvailable: Bool
   
   init(wallet: Wallet,
        buySellMethodsService: BuySellMethodsService,
        locationService: LocationService,
        configurationStore: ConfigurationStore,
        currencyStore: CurrencyStore,
-       isMarketRegionPickerAvailable: @escaping () async -> Bool) {
+       isMarketRegionPickerAvailable: Bool) {
     self.wallet = wallet
     self.buySellMethodsService = buySellMethodsService
     self.locationService = locationService
@@ -41,7 +41,7 @@ public final class BuyListController {
 
 private extension BuyListController {
   func loadFiatMethods() async throws -> [[BuySellItemModel]] {
-    if await !isMarketRegionPickerAvailable() {
+    if !isMarketRegionPickerAvailable {
       return try await loadFiatMethodsByLocationRequired()
     } else {
       return try await loadDefaultFiatMethods()

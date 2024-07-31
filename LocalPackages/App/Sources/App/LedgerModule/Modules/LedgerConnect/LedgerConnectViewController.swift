@@ -10,7 +10,7 @@ final class LedgerConnectViewController: GenericViewViewController<LedgerConnect
   var didUpdateHeight: (() -> Void)?
   
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: TKLocales.LedgerConnect.title)
+    TKUIKit.TKPullCardHeaderItem(title: .title(title: TKLocales.LedgerConnect.title, subtitle: nil))
   }
   
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?

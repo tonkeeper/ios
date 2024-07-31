@@ -38,7 +38,7 @@ final class TokenPickerViewController: GenericViewViewController<TokenPickerView
   var didUpdateHeight: (() -> Void)?
   var didUpdatePullCardHeaderItem: ((TKPullCardHeaderItem) -> Void)?
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: "Tokens")
+    TKUIKit.TKPullCardHeaderItem(title: .title(title: "Tokens", subtitle: nil))
   }
   func calculateHeight(withWidth width: CGFloat) -> CGFloat {
     scrollView.contentSize.height

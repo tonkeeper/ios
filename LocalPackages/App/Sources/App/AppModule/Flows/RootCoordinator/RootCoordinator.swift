@@ -19,6 +19,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   private let rootController: RootController
   
   private let stateManager: RootCoordinatorStateManager
+  private let featureFlagsProvider: FeatureFlagsProvider
 
   init(router: ViewControllerRouter,
        dependencies: Dependencies) {
@@ -27,13 +28,18 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     self.stateManager = RootCoordinatorStateManager(
       keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
     )
+    self.featureFlagsProvider = dependencies.coreAssembly.featureFlagsProvider
     super.init(router: router)
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
-    rootController.loadConfiguration()
-    rootController.loadKnownAccounts()
-    rootController.loadBuySellMethods()
+    featureFlagsProvider.didUpdateIsMarketRegionPickerAvailable = { [weak self, weak featureFlagsProvider] in
+      guard let isMarketRegionPickerAvailable = featureFlagsProvider?.isMarketRegionPickerAvailable else { return }
+      self?.rootController.loadFiatMethods(isMarketRegionPickerAvailable: isMarketRegionPickerAvailable)
+    }
+    rootController.loadFiatMethods(isMarketRegionPickerAvailable: featureFlagsProvider.isMarketRegionPickerAvailable)
+    
+    rootController.loadConfigurations()
     
     stateManager.didUpdateState = { [weak self] state in
       self?.handleStateUpdate(state: state, deeplink: deeplink)

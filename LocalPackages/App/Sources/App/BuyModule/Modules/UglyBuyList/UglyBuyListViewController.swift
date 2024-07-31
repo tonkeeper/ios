@@ -16,7 +16,7 @@ class UglyBuyListViewController: GenericViewViewController<UglyBuyListView>, TKB
   var didUpdateHeight: (() -> Void)?
   
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: "Buy")
+    TKUIKit.TKPullCardHeaderItem(title: .title(title: "Buy", subtitle: nil))
   }
   
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?

@@ -11,25 +11,29 @@ public struct TKPullCardHeaderItem {
     }
   }
   
-  let title: String
-  let subtitle: NSAttributedString?
-  let leftButton: LeftButton?
-  
-  public init(title: String,
-              subtitle: NSAttributedString? = nil,
-              leftButton: LeftButton? = nil) {
-    self.title = title
-    self.subtitle = subtitle
-    self.leftButton = leftButton
+  public enum Title {
+    case title(title: String, subtitle: NSAttributedString?)
+    case customView(UIView)
+    
+    static func title(_ title: String, subtitle: String?) -> Title {
+      return .title(
+        title: title,
+        subtitle: subtitle?.withTextStyle(
+          .body2,
+          color: .Text.secondary,
+          alignment: .left
+        )
+      )
+    }
   }
   
-  public init(title: String,
-              subtitle: String?,
+  let title: Title
+  let leftButton: LeftButton?
+  
+  public init(title: Title,
               leftButton: LeftButton? = nil) {
-    let attributedSubtitle = subtitle?.withTextStyle(.body2, color: .Text.secondary, alignment: .left)
-    self.init(title: title,
-              subtitle: attributedSubtitle,
-              leftButton: leftButton)
+    self.title = title
+    self.leftButton = leftButton
   }
 }
 

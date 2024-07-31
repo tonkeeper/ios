@@ -1,10 +1,9 @@
 import Foundation
 import Aptabase
-import TKCore
 
 public final class AptabaseConfigurator {
   
-  static let configurator = AptabaseConfigurator()
+  public static let configurator = AptabaseConfigurator()
   
   private init() {}
   
@@ -17,6 +16,9 @@ public final class AptabaseConfigurator {
 }
 
 public class AptabaseService: AnalyticsService {
+  
+  public init() {}
+  
   public func logEvent(eventKey: EventKeys) {
     Aptabase.shared.trackEvent(eventKey.rawValue)
   }
