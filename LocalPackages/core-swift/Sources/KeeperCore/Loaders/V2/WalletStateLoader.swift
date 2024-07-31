@@ -47,9 +47,9 @@ actor WalletStateLoader {
       let walletsState = await walletsStore.getState()
       let currency = await currencyStore.getCurrency()
       await reloadBalance(wallets: walletsState.wallets, currency: currency)
-//      try? await Task.sleep(nanoseconds: 15_000_000_000)
+      try? await Task.sleep(nanoseconds: 60_000_000_000)
       guard !Task.isCancelled else { return }
-//      startStateReload()
+      startStateReload()
     }
     Task {
       await setReloadStateTask(task)

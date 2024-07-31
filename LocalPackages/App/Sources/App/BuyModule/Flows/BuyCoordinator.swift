@@ -117,13 +117,18 @@ private extension BuyCoordinator {
       selectedCountry: selectedCountry,
       countriesProvider: CountriesProvider()
     )
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: countryPickerViewController)
+    let navigationController = TKNavigationController(rootViewController: countryPickerViewController)
+    navigationController.setNavigationBarHidden(true, animated: false)
     
-    countryPickerViewController.didSelectCountry = { [weak bottomSheetViewController] in
-      completion($0)
-      bottomSheetViewController?.dismiss()
+    countryPickerViewController.setupRightCloseButton { [weak navigationController] in
+      navigationController?.dismiss(animated: true)
     }
     
-    bottomSheetViewController.present(fromViewController: fromViewController)
+    countryPickerViewController.didSelectCountry = { [weak navigationController] in
+      completion($0)
+      navigationController?.dismiss(animated: true)
+    }
+    
+    fromViewController.present(navigationController, animated: true)
   }
 }

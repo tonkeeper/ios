@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 
-final class CountryPickerViewController: GenericViewViewController<CountryPickerView>, TKBottomSheetScrollContentViewController {
+final class CountryPickerViewController: GenericViewViewController<CountryPickerView>, KeyboardObserving {
   typealias Item = TKUIListItemCell.Configuration
   typealias Section = CountryPickerSection
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
@@ -11,33 +11,29 @@ final class CountryPickerViewController: GenericViewViewController<CountryPicker
   
   var didSelectCountry: ((SelectedCountry) -> Void)?
   
-  // MARK: - TKBottomSheetScrollContentViewController
-  
-  var scrollView: UIScrollView {
-    customView.collectionView
-  }
-  
-  var didUpdateHeight: (() -> Void)?
-  
-  var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(
-      title: .title(
-        title: "Choose your country",
-        subtitle: nil
-      )
-    )
-  }
-  
-  var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?
-  
-  func calculateHeight(withWidth width: CGFloat) -> CGFloat {
-    return scrollView.contentSize.height
-  }
-  
   // MARK: - List
   
   private lazy var layout = createLayout()
   private lazy var dataSource = createDataSource()
+  
+  // MARK: - State
+  
+  private var countries = [Country]() {
+    didSet {
+      updateList(countries: countries, locale: .current, animated: false)
+    }
+  }
+  private var isSearching: Bool = false {
+    didSet {
+      updateList(countries: countries, locale: .current, animated: true)
+    }
+  }
+  private var searchInput: String? {
+    didSet {
+      guard isSearching else { return }
+      updateList(countries: countries, locale: .current, animated: false)
+    }
+  }
   
   // MARK: - Dependencies
   
@@ -62,12 +58,49 @@ final class CountryPickerViewController: GenericViewViewController<CountryPicker
   override func viewDidLoad() {
     super.viewDidLoad()
     
+    customView.topBar.title = "Choose your country"
+    customView.topBar.button.configuration.action = { [weak self] in
+      self?.dismiss(animated: true)
+    }
+    customView.searchBar.isCancelButtonOnEdit = true
+    
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.allowsMultipleSelection = true
     customView.collectionView.delegate = self
     
-    let countries = countriesProvider.countries
-    updateList(countries: countries, locale: .current)
+    self.countries = countriesProvider.countries
+    
+    customView.searchBar.placeholder = "Search"
+    customView.searchBar.textField.addTarget(self, action: #selector(didBeginSearch), for: .editingDidBegin)
+    customView.searchBar.textField.addTarget(self, action: #selector(didEndSearch), for: .editingDidEnd)
+    customView.searchBar.textField.addTarget(self, action: #selector(didEdit), for: .editingChanged)
+  }
+  
+  public override func viewWillAppear(_ animated: Bool) {
+    super.viewWillAppear(animated)
+    registerForKeyboardEvents()
+  }
+  
+  public override func viewWillDisappear(_ animated: Bool) {
+    super.viewWillDisappear(animated)
+    unregisterFromKeyboardEvents()
+  }
+  
+  public func keyboardWillShow(_ notification: Notification) {
+    guard let animationDuration = notification.keyboardAnimationDuration,
+    let keyboardHeight = notification.keyboardSize?.height else { return }
+    UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
+      self.customView.hideTopBar()
+      self.customView.collectionView.contentInset.bottom = keyboardHeight
+    }
+  }
+  
+  public func keyboardWillHide(_ notification: Notification) {
+    guard let animationDuration = notification.keyboardAnimationDuration else { return }
+    UIView.animate(withDuration: animationDuration, delay: 0, options: .curveEaseInOut) {
+      self.customView.showTopBar()
+      self.customView.collectionView.contentInset.bottom = 0
+    }
   }
 }
 
@@ -132,55 +165,69 @@ private extension CountryPickerViewController {
     return layout
   }
   
-  func updateList(countries: [Country], locale: Locale) {
+  func updateList(countries: [Country], locale: Locale, animated: Bool) {
     var snapshot = Snapshot()
     
     var recentSectionItems = [TKUIListItemCell.Configuration]()
     var selectedItems = [TKUIListItemCell.Configuration]()
-    
-    let auto = countries.first(where: { $0.alpha2 == locale.regionCode })
-    if let auto {
-      let item = mapCountry(
-        id: "auto",
-        itemTitle: "Auto",
-        itemSubtitle: auto.en,
-        icon: auto.flag) { [weak self] in
-          self?.didSelectCountry?(.auto)
+    if !isSearching {
+      let auto = countries.first(where: { $0.alpha2 == locale.regionCode })
+      if let auto {
+        let item = mapCountry(
+          id: "auto",
+          itemTitle: "Auto",
+          itemSubtitle: auto.en,
+          icon: auto.flag) { [weak self] in
+            self?.didSelectCountry?(.auto)
+          }
+        recentSectionItems.append(item)
+        if case .auto = selectedCountry {
+          selectedItems.append(item)
         }
-      recentSectionItems.append(item)
-      if case .auto = selectedCountry {
-        selectedItems.append(item)
       }
-    }
-    let all = mapCountry(
-      id: "all",
-      itemTitle: "All Regions",
-      itemSubtitle: nil,
-      icon: "🌍") { [weak self] in
-        self?.didSelectCountry?(.all)
-      }
-    recentSectionItems.append(all)
-    if case .all = selectedCountry {
-      selectedItems.append(all)
-    }
-    
-    if case .country(let countryCode) = selectedCountry, let country = countries.first(where: { $0.alpha2 == countryCode }) {
-      let countryRecent = mapCountry(
-        id: "countryRecent",
-        itemTitle: country.en,
+      let all = mapCountry(
+        id: "all",
+        itemTitle: "All Regions",
         itemSubtitle: nil,
-        icon: country.flag) { [weak self] in
-          self?.didSelectCountry?(.country(countryCode: country.alpha2))
+        icon: "🌍") { [weak self] in
+          self?.didSelectCountry?(.all)
         }
-      recentSectionItems.append(countryRecent)
-      selectedItems.append(countryRecent)
+      recentSectionItems.append(all)
+      if case .all = selectedCountry {
+        selectedItems.append(all)
+      }
+      
+      if case .country(let countryCode) = selectedCountry, let country = countries.first(where: { $0.alpha2 == countryCode }) {
+        let countryRecent = mapCountry(
+          id: "countryRecent",
+          itemTitle: country.en,
+          itemSubtitle: nil,
+          icon: country.flag) { [weak self] in
+            self?.didSelectCountry?(.country(countryCode: country.alpha2))
+          }
+        recentSectionItems.append(countryRecent)
+        selectedItems.append(countryRecent)
+      }
+      
+      snapshot.appendSections([.recent])
+      snapshot.appendItems(recentSectionItems, toSection: .recent)
+      
     }
-    
-    snapshot.appendSections([.recent])
-    snapshot.appendItems(recentSectionItems, toSection: .recent)
-    
     snapshot.appendSections([.all])
-    countries.forEach { country in
+    let filteredCountries: [Country] = {
+      guard isSearching else {
+        return countries
+      }
+      if let searchInput, !searchInput.isEmpty {
+        return countries.filter { country in
+          country.en.lowercased().contains(searchInput.lowercased()) || country.ru.lowercased().contains(searchInput.lowercased())
+        }
+      } else {
+        return countries
+      }
+    }()
+    
+    filteredCountries.forEach { country in
       let item = mapCountry(
         id: country.alpha2,
         itemTitle: country.en,
@@ -195,7 +242,7 @@ private extension CountryPickerViewController {
       snapshot.appendItems([item], toSection: .all)
     }
     
-    dataSource.apply(snapshot, animatingDifferences: false) { [weak self, weak dataSource] in
+    dataSource.apply(snapshot, animatingDifferences: animated) { [weak self, weak dataSource] in
       guard let self, let dataSource else { return }
       selectedItems
         .compactMap { dataSource.indexPath(for:$0) }
@@ -273,6 +320,20 @@ private extension CountryPickerViewController {
     let button = TKButton(configuration: configuration)
     button.isUserInteractionEnabled = false
     return [button]
+  }
+  
+  @objc func didBeginSearch() {
+    isSearching = true
+  }
+  
+  @objc func didEndSearch() {
+    searchInput = nil
+    customView.searchBar.textField.text = nil
+    isSearching = false
+  }
+  
+  @objc func didEdit() {
+    searchInput = customView.searchBar.textField.text
   }
 }
 
