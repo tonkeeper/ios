@@ -16,6 +16,7 @@ protocol HistoryV2ModuleInput: AnyObject {
 protocol HistoryV2ViewModel: AnyObject {
   var didUpdateState: ((HistoryV2ViewController.State) -> Void)? { get set }
   var didUpdateEmptyModel: ((TKEmptyViewController.Model) -> Void)? { get set }
+  var didUpdateIsConnecting: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
 }
@@ -42,11 +43,15 @@ final class HistoryV2ViewModelImplementation: HistoryV2ViewModel, HistoryV2Modul
   
   var didUpdateState: ((HistoryV2ViewController.State) -> Void)?
   var didUpdateEmptyModel: ((TKEmptyViewController.Model) -> Void)?
+  var didUpdateIsConnecting: ((Bool) -> Void)?
   
   private let walletsStore: WalletsStore
+  private let backgroundUpdateStore: BackgroundUpdateStore
   
-  init(walletsStore: WalletsStore) {
+  init(walletsStore: WalletsStore,
+       backgroundUpdateStore: BackgroundUpdateStore) {
     self.walletsStore = walletsStore
+    self.backgroundUpdateStore = backgroundUpdateStore
   }
   
   func viewDidLoad() {
@@ -56,10 +61,19 @@ final class HistoryV2ViewModelImplementation: HistoryV2ViewModel, HistoryV2Modul
       }
     }
     
+    backgroundUpdateStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      DispatchQueue.main.async {
+        observer.didUpdateBackgroundUpdateState(newState: newState)
+      }
+    }
+    
     let wallet = walletsStore.getState().activeWallet
     didChangeWallet?(wallet)
     setupEmpty(wallet: wallet)
     didUpdateState?(.list)
+    
+    let state = backgroundUpdateStore.getState()
+    didUpdateBackgroundUpdateState(newState: state)
   }
 }
 
@@ -91,5 +105,18 @@ private extension HistoryV2ViewModelImplementation {
   func didUpdateWalletsState(newState: WalletsState, oldState: WalletsState) {
     guard newState.activeWallet != oldState.activeWallet else { return }
     didChangeWallet?(newState.activeWallet)
+  }
+  
+  func didUpdateBackgroundUpdateState(newState: BackgroundUpdateStore.State) {
+    switch newState {
+    case .connecting:
+      didUpdateIsConnecting?(true)
+    case .connected:
+      didUpdateIsConnecting?(false)
+    case .disconnected:
+      didUpdateIsConnecting?(true)
+    case .noConnection:
+      didUpdateIsConnecting?(true)
+    }
   }
 }

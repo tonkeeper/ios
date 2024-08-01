@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import TKCoordinator
+import TKLocalize
 
 final class HistoryV2ViewController: GenericViewViewController<HistoryV2View> {
   enum State {
@@ -13,8 +14,10 @@ final class HistoryV2ViewController: GenericViewViewController<HistoryV2View> {
       switch state {
       case .empty:
         customView.showEmpty()
+        customView.navigationBarView.isHidden = true
       case .list:
         customView.showList()
+        customView.navigationBarView.isHidden = false
       }
     }
   }
@@ -22,7 +25,7 @@ final class HistoryV2ViewController: GenericViewViewController<HistoryV2View> {
   private let viewModel: HistoryV2ViewModel
   
   private let emptyViewController = TKEmptyViewController()
-  private var listViewController: UIViewController?
+  private var listViewController: HistoryV2ListViewController?
   
   init(viewModel: HistoryV2ViewModel) {
     self.viewModel = viewModel
@@ -36,12 +39,19 @@ final class HistoryV2ViewController: GenericViewViewController<HistoryV2View> {
   override func viewDidLoad() {
     super.viewDidLoad()
     
+    navigationController?.setNavigationBarHidden(true, animated: false)
+    
     setup()
     
     viewModel.viewDidLoad()
   }
   
-  func setListViewController(_ viewController: UIViewController) {
+  override func viewDidLayoutSubviews() {
+    super.viewDidLayoutSubviews()
+    listViewController?.additionalSafeAreaInsets.top = customView.navigationBarView.additionalInset
+  }
+  
+  func setListViewController(_ viewController: HistoryV2ListViewController) {
     if let listViewController {
       listViewController.willMove(toParent: self)
       listViewController.view.removeFromSuperview()
@@ -51,11 +61,15 @@ final class HistoryV2ViewController: GenericViewViewController<HistoryV2View> {
     customView.embedListView(viewController.view)
     viewController.didMove(toParent: self)
     listViewController = viewController
+    DispatchQueue.main.async {
+      self.customView.navigationBarView.scrollView = self.listViewController?.customView.collectionView
+    }
   }
 }
 
 private extension HistoryV2ViewController {
   func setup() {
+    customView.navigationBarView.title = TKLocales.History.title
     setupEmptyView()
     setupBindings()
   }
@@ -73,6 +87,10 @@ private extension HistoryV2ViewController {
     
     viewModel.didUpdateEmptyModel = { [weak self] model in
       self?.emptyViewController.configure(model: model)
+    }
+    
+    viewModel.didUpdateIsConnecting = { [weak self] isConnecting in
+      self?.customView.navigationBarView.isConnecting = isConnecting
     }
   }
 }

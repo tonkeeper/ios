@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 
 final class HistoryV2View: UIView {
+  let navigationBarView = TKNavigationBar()
 
   private let emptyViewContainer = UIView()
   private let listViewContainer = UIView()
@@ -47,6 +48,7 @@ private extension HistoryV2View {
     backgroundColor = .Background.page
     addSubview(emptyViewContainer)
     addSubview(listViewContainer)
+    addSubview(navigationBarView)
     
     setupConstraints()
   }
@@ -57,6 +59,9 @@ private extension HistoryV2View {
     }
     listViewContainer.snp.makeConstraints { make in
       make.edges.equalTo(self)
+    }
+    navigationBarView.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
     }
   }
 }
