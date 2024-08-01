@@ -29,7 +29,7 @@ public final class HistoryListController {
     
     backgroundUpdateUpdater.addEventObserver(self) { observer, event in
 //      guard let walletAddress = try? observer.walletsStore.getState().activeWallet.friendlyAddress,
-//            event.accountAddress == walletAddress.address else { return }
+//            event.accountAddress == walleshtAddress.address else { return }
 //      Task { await observer.didRecieveBackgroudUpdateEvent(event) }
     }
     

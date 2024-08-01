@@ -20,13 +20,14 @@ public final class MainAssembly {
   public let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
   public let formattersAssembly: FormattersAssembly
+  public let mappersAssembly: MappersAssembly
   public let configurationAssembly: ConfigurationAssembly
   public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
   public let mainStoresAssembly: MainStoresAssembly
   public let mainLoadersAssembly: MainLoadersAssembly
+  public let loadersAssembly: LoadersAssembly
   let apiAssembly: APIAssembly
-  let loadersAssembly: LoadersAssembly
   
   init(repositoriesAssembly: RepositoriesAssembly,
        walletAssembly: WalletAssembly,
@@ -34,6 +35,7 @@ public final class MainAssembly {
        servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
        formattersAssembly: FormattersAssembly,
+       mappersAssembly: MappersAssembly,
        configurationAssembly: ConfigurationAssembly,
        passcodeAssembly: PasscodeAssembly,
        tonConnectAssembly: TonConnectAssembly,
@@ -47,6 +49,7 @@ public final class MainAssembly {
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.formattersAssembly = formattersAssembly
+    self.mappersAssembly = mappersAssembly
     self.configurationAssembly = configurationAssembly
     self.passcodeAssembly = passcodeAssembly
     self.tonConnectAssembly = tonConnectAssembly

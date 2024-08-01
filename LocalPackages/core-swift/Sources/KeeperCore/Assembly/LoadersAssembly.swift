@@ -73,4 +73,39 @@ public final class LoadersAssembly {
     return loader
   }
   
+  public func historyAllEventsPaginationLoader(wallet: Wallet) -> HistoryPaginationLoader {
+    historyPaginationLoader(
+      wallet: wallet,
+      loader: HistoryListAllEventsLoader(
+        historyService: servicesAssembly.historyService()
+      )
+    )
+  }
+  
+  public func historyTonEventsPaginationLoader(wallet: Wallet) -> HistoryPaginationLoader {
+    historyPaginationLoader(
+      wallet: wallet,
+      loader: HistoryListTonEventsLoader(
+        historyService: servicesAssembly.historyService()
+      )
+    )
+  }
+  
+  public func historyJettonEventsPaginationLoader(wallet: Wallet,
+                                                  jettonInfo: JettonInfo) -> HistoryPaginationLoader {
+    historyPaginationLoader(
+      wallet: wallet,
+      loader: HistoryListJettonEventsLoader(jettonInfo: jettonInfo,
+        historyService: servicesAssembly.historyService()
+      )
+    )
+  }
+  
+  func historyPaginationLoader(wallet: Wallet,
+                               loader: HistoryListLoader) -> HistoryPaginationLoader {
+    HistoryPaginationLoader(
+      wallet: wallet,
+      loader: loader
+    )
+  }
 }

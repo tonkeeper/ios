@@ -43,6 +43,7 @@ public final class Assembly {
     tonkeeperAPIAssembly: tonkeeperApiAssembly
   )
   private lazy var formattersAssembly = FormattersAssembly()
+  private lazy var mappersAssembly = MappersAssembly(formattersAssembly: formattersAssembly)
   private var walletUpdateAssembly: WalletsUpdateAssembly {
     WalletsUpdateAssembly(
       storesAssembly: storesAssembly,
@@ -78,6 +79,7 @@ public extension Assembly {
       servicesAssembly: servicesAssembly,
       storesAssembly: storesAssembly,
       formattersAssembly: formattersAssembly,
+      mappersAssembly: mappersAssembly,
       walletsUpdateAssembly: walletUpdateAssembly,
       configurationAssembly: configurationAssembly,
       passcodeAssembly: passcodeAssembly,

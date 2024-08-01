@@ -651,7 +651,7 @@ private extension MainCoordinator {
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
-    ).createJettonHistoryListModule(jettonItem: jettonItem, wallet: wallet)
+    ).createJettonHistoryListModule(jettonInfo: jettonItem.jettonInfo, wallet: wallet)
     
     historyListModule.output.didSelectEvent = { [weak self] event in
       self?.openHistoryEventDetails(event: event)

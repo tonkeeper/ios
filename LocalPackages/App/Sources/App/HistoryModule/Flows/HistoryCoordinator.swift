@@ -26,23 +26,12 @@ public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRou
 
 private extension HistoryCoordinator {
   func openHistory() {
-    let module = HistoryAssembly.module(
-      historyController: keeperCoreMainAssembly.historyController(),
-      listModuleProvider: { [keeperCoreMainAssembly] wallet in
-        HistoryListAssembly.module(
-          historyListController: keeperCoreMainAssembly.historyListController(wallet: wallet),
-          historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
-        )
-      },
-      emptyModuleProvider: { wallet in
-        HistoryEmptyAssembly.module()
-      }
-    )
+    let module = HistoryV2Assembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
     
-    module.output.didTapReceive = { [weak self] in
+    module.output.didTapReceive = { [weak self] wallet in
       self?.openReceive()
     }
-    
+
     module.output.didTapBuy = { [weak self] wallet in
       self?.openBuy(wallet: wallet)
     }
@@ -53,6 +42,21 @@ private extension HistoryCoordinator {
     
     module.output.didSelectNFT = { [weak self] nft in
       self?.openNFTDetails(nft: nft)
+    }
+    
+    module.output.didChangeWallet = { [weak self] wallet in
+      guard let self else { return }
+      
+      let listModule = HistoryV2ListAssembly.module(
+        wallet: wallet,
+        paginationLoader: keeperCoreMainAssembly.loadersAssembly.historyAllEventsPaginationLoader(
+          wallet: wallet
+        ),
+        keeperCoreMainAssembly: keeperCoreMainAssembly,
+        historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
+      )
+      module.input.setListModuleOutput(listModule.output)
+      module.view.setListViewController(listModule.view)
     }
     
     router.push(viewController: module.view, animated: false)

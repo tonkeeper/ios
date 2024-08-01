@@ -118,65 +118,65 @@ private extension HistoryListPaginator {
   }
   
   func handleEvents(_ events: AccountEvents, nfts: NFTsCollection) {
-    let calendar = Calendar.current
-    var updatedSections = [HistoryListSection]()
-    for event in events.events {
-      let eventDate = Date(timeIntervalSince1970: event.timestamp)
-      let dateFormat: String
-      let dateComponents: DateComponents
-      if calendar.isDateInToday(eventDate)
-          || calendar.isDateInYesterday(eventDate)
-          || calendar.isDate(eventDate, equalTo: Date(), toGranularity: .month) {
-        dateComponents = calendar.dateComponents([.year, .month, .day], from: eventDate)
-        dateFormat = "HH:mm"
-      } else {
-        dateComponents = calendar.dateComponents([.year, .month], from: eventDate)
-        dateFormat = "MMM d 'at' HH:mm"
-      }
-
-      guard let sectionDate = calendar.date(from: dateComponents) else { continue }
-      
-      let eventModel = accountEventMapper.mapEvent(
-        event,
-        eventDate: eventDate,
-        nftsCollection: nfts,
-        accountEventRightTopDescriptionProvider: HistoryAccountEventRightTopDescriptionProvider(
-          dateFormatter: dateFormatter,
-          dateFormat: dateFormat
-        ),
-        isTestnet: wallet.isTestnet
-      )
-      
-      if let sectionIndex = sectionsMap[sectionDate],
-         sections.count > sectionIndex {
-        let section = sections[sectionIndex]
-        let updatedEvents = section.events + CollectionOfOne(eventModel)
-          .sorted(by: { $0.date > $1.date })
-        let updatedSection = HistoryListSection(
-          date: section.date,
-          title: section.title,
-          events: updatedEvents
-        )
-        if let index = updatedSections.firstIndex(where: { $0.date == updatedSection.date }) {
-          updatedSections.remove(at: index)
-          updatedSections.insert(updatedSection, at: index)
-        } else {
-          updatedSections.append(updatedSection)
-        }
-        sections.remove(at: sectionIndex)
-        sections.insert(updatedSection, at: sectionIndex)
-      } else {
-        let section = HistoryListSection(
-          date: sectionDate,
-          title: accountEventMapper.mapEventsSectionDate(sectionDate),
-          events: [eventModel]
-        )
-        updatedSections.append(section)
-        sections = sections + CollectionOfOne(section)
-          .sorted(by: { $0.date > $1.date })
-        sectionsMap = Dictionary(uniqueKeysWithValues: sections.enumerated().map { ($0.element.date, $0.offset) })
-      }
-    }
+//    let calendar = Calendar.current
+//    var updatedSections = [HistoryListSection]()
+//    for event in events.events {
+//      let eventDate = Date(timeIntervalSince1970: event.timestamp)
+//      let dateFormat: String
+//      let dateComponents: DateComponents
+//      if calendar.isDateInToday(eventDate)
+//          || calendar.isDateInYesterday(eventDate)
+//          || calendar.isDate(eventDate, equalTo: Date(), toGranularity: .month) {
+//        dateComponents = calendar.dateComponents([.year, .month, .day], from: eventDate)
+//        dateFormat = "HH:mm"
+//      } else {
+//        dateComponents = calendar.dateComponents([.year, .month], from: eventDate)
+//        dateFormat = "MMM d 'at' HH:mm"
+//      }
+//
+//      guard let sectionDate = calendar.date(from: dateComponents) else { continue }
+//      
+//      let eventModel = accountEventMapper.mapEvent(
+//        event,
+//        eventDate: eventDate,
+//        nftsCollection: nfts,
+//        accountEventRightTopDescriptionProvider: HistoryAccountEventRightTopDescriptionProvider(
+//          dateFormatter: dateFormatter,
+//          dateFormat: dateFormat
+//        ),
+//        isTestnet: wallet.isTestnet
+//      )
+//      
+//      if let sectionIndex = sectionsMap[sectionDate],
+//         sections.count > sectionIndex {
+//        let section = sections[sectionIndex]
+//        let updatedEvents = section.events + CollectionOfOne(eventModel)
+//          .sorted(by: { $0.date > $1.date })
+//        let updatedSection = HistoryListSection(
+//          date: section.date,
+//          title: section.title,
+//          events: updatedEvents
+//        )
+//        if let index = updatedSections.firstIndex(where: { $0.date == updatedSection.date }) {
+//          updatedSections.remove(at: index)
+//          updatedSections.insert(updatedSection, at: index)
+//        } else {
+//          updatedSections.append(updatedSection)
+//        }
+//        sections.remove(at: sectionIndex)
+//        sections.insert(updatedSection, at: sectionIndex)
+//      } else {
+//        let section = HistoryListSection(
+//          date: sectionDate,
+//          title: accountEventMapper.mapEventsSectionDate(sectionDate),
+//          events: [eventModel]
+//        )
+//        updatedSections.append(section)
+//        sections = sections + CollectionOfOne(section)
+//          .sorted(by: { $0.date > $1.date })
+//        sectionsMap = Dictionary(uniqueKeysWithValues: sections.enumerated().map { ($0.element.date, $0.offset) })
+//      }
+//    }
   }
   
   func loadNextPage() async throws -> AccountEvents {

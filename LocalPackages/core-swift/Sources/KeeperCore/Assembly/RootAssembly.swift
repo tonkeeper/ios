@@ -6,6 +6,7 @@ public final class RootAssembly {
   public let storesAssembly: StoresAssembly
   public let coreAssembly: CoreAssembly
   public let formattersAssembly: FormattersAssembly
+  public let mappersAssembly: MappersAssembly
   public let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
   public let passcodeAssembly: PasscodeAssembly
@@ -18,6 +19,7 @@ public final class RootAssembly {
        servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
        formattersAssembly: FormattersAssembly,
+       mappersAssembly: MappersAssembly,
        walletsUpdateAssembly: WalletsUpdateAssembly,
        configurationAssembly: ConfigurationAssembly,
        passcodeAssembly: PasscodeAssembly,
@@ -29,6 +31,7 @@ public final class RootAssembly {
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.formattersAssembly = formattersAssembly
+    self.mappersAssembly = mappersAssembly
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.configurationAssembly = configurationAssembly
     self.passcodeAssembly = passcodeAssembly
@@ -109,6 +112,7 @@ public final class RootAssembly {
       servicesAssembly: servicesAssembly,
       storesAssembly: storesAssembly,
       formattersAssembly: formattersAssembly,
+      mappersAssembly: mappersAssembly,
       configurationAssembly: configurationAssembly,
       passcodeAssembly: passcodeAssembly,
       tonConnectAssembly: tonConnectAssembly,

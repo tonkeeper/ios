@@ -131,7 +131,7 @@ private extension HistoryListViewModelImplementation {
     for updatedSection in updatedSections {
       var eventModels = [HistoryCell.Configuration]()
       for event in updatedSection.events {
-        await eventModels.append(mapEvent(event))
+//        await eventModels.append(mapEvent(event))
       }
       let section = HistoryListEventsSection(
         date: updatedSection.date,
@@ -147,20 +147,20 @@ private extension HistoryListViewModelImplementation {
     }
   }
   
-  func mapEvent(_ event: AccountEventModel) async -> HistoryCell.Configuration {
-    if let cachedModel = await cachedModels.models[event.eventId] {
-      return cachedModel
-    } else {
-      let model = historyEventMapper.mapEvent(event) { [weak self] nft in
-        self?.didSelectNft(nft)
-      } tapAction: { [weak self] accountEventDetailsEvent in
-        self?.didSelectEvent?(accountEventDetailsEvent)
-      }
-      await cachedModels.setModel(model, id: event.eventId)
-      return model
-    }
-  }
-  
+//  func mapEvent(_ event: AccountEventModel) async -> HistoryCell.Configuration {
+//    if let cachedModel = await cachedModels.models[event.eventId] {
+//      return cachedModel
+//    } else {
+//      let model = historyEventMapper.mapEvent(event) { [weak self] nft in
+//        self?.didSelectNft(nft)
+//      } tapAction: { [weak self] accountEventDetailsEvent in
+//        self?.didSelectEvent?(accountEventDetailsEvent)
+//      }
+//      await cachedModels.setModel(model, id: event.eventId)
+//      return model
+//    }
+//  }
+//  
   func didSelectNft(_ nft: NFT) {
     didSelectNFT?(nft)
   }

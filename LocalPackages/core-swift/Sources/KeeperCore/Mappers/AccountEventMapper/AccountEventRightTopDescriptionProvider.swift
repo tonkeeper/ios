@@ -1,27 +1,9 @@
 import Foundation
 import BigInt
 
-protocol AccountEventRightTopDescriptionProvider {
+public protocol AccountEventRightTopDescriptionProvider {
   mutating func rightTopDescription(accountEvent: AccountEvent,
                                     action: AccountEventAction) -> String?
-}
-
-struct HistoryAccountEventRightTopDescriptionProvider: AccountEventRightTopDescriptionProvider {
-  private let dateFormatter: DateFormatter
-  private let dateFormat: String
-  
-  init(dateFormatter: DateFormatter,
-       dateFormat: String) {
-    self.dateFormatter = dateFormatter
-    self.dateFormat = dateFormat
-  }
-  
-  mutating func rightTopDescription(accountEvent: AccountEvent,
-                                    action: AccountEventAction) -> String? {
-    dateFormatter.dateFormat = dateFormat
-    let eventDate = Date(timeIntervalSince1970: accountEvent.timestamp)
-    return dateFormatter.string(from: eventDate)
-  }
 }
 
 struct TonConnectConfirmationAccountEventRightTopDescriptionProvider: AccountEventRightTopDescriptionProvider {

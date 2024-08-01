@@ -3,7 +3,7 @@ import BigInt
 import TKLocalize
 import TonSwift
 
-struct AccountEventMapper {
+public struct AccountEventMapper {
   private let dateFormatter: DateFormatter
   private let amountFormatter: AmountFormatter
   private let amountMapper: AccountEventAmountMapper
@@ -16,11 +16,11 @@ struct AccountEventMapper {
     self.amountMapper = amountMapper
   }
   
-  func mapEvent(_ event: AccountEvent,
-                eventDate: Date,
-                nftsCollection: NFTsCollection,
-                accountEventRightTopDescriptionProvider: AccountEventRightTopDescriptionProvider,
-                isTestnet: Bool) -> AccountEventModel {
+  public func mapEvent(_ event: AccountEvent,
+                       eventDate: Date,
+                       nftsCollection: NFTsCollection,
+                       accountEventRightTopDescriptionProvider: AccountEventRightTopDescriptionProvider,
+                       isTestnet: Bool) -> AccountEventModel {
     var accountEventRightTopDescriptionProvider = accountEventRightTopDescriptionProvider
     let actions = event.actions.compactMap { action in
       let rightTopDescription = accountEventRightTopDescriptionProvider.rightTopDescription(
@@ -41,22 +41,6 @@ struct AccountEventMapper {
       accountEvent: event,
       date: eventDate
     )
-  }
-  
-  func mapEventsSectionDate(_ date: Date) -> String? {
-    let calendar = Calendar.current
-    if calendar.isDateInToday(date) {
-      return TKLocales.Dates.today
-    } else if calendar.isDateInYesterday(date) {
-      return TKLocales.Dates.yesterday
-    } else if calendar.isDate(date, equalTo: Date(), toGranularity: .month) {
-      dateFormatter.dateFormat = "d MMMM"
-    } else if calendar.isDate(date, equalTo: Date(), toGranularity: .year) {
-      dateFormatter.dateFormat = "LLLL"
-    } else {
-      dateFormatter.dateFormat = "LLLL y"
-    }
-    return dateFormatter.string(from: date).capitalized
   }
 }
 
