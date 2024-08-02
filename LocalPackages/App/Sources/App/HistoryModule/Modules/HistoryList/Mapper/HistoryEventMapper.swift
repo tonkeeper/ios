@@ -15,32 +15,42 @@ struct HistoryEventMapper {
   
   func mapEvent(_ event: AccountEventModel,
                 nftAction: @escaping (Address) -> Void,
-                tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCell.Configuration {
-    return HistoryCell.Configuration(
+                encryptedCommentAction: @escaping () -> Void,
+                tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCell.Model {
+    return HistoryCell.Model(
       id: event.eventId,
       historyContentConfiguration: mapEventContentConfiguration(
         event,
         nftAction: nftAction,
+        encryptedCommentAction: encryptedCommentAction,
         tapAction: tapAction
       )
     )
   }
   
   func mapEventContentConfiguration(_ event: AccountEventModel,
-                                   nftAction: @escaping (Address) -> Void,
-                                   tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCellContentView.Configuration {
+                                    nftAction: @escaping (Address) -> Void,
+                                    encryptedCommentAction: @escaping () -> Void,
+                                    tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCellContentView.Model {
     let actions = event.actions.enumerated().map { index, action in
-      HistoryCellContentView.Configuration.Action(
-        configuration: mapAction(action, isInProgress: event.accountEvent.isInProgress, nftAction: nftAction),
+      HistoryCellContentView.Model.Action(
+        configuration: mapAction(
+          action, 
+          isInProgress: event.accountEvent.isInProgress,
+          nftAction: nftAction,
+          encryptedCommentAction: encryptedCommentAction),
         action: {
           tapAction(AccountEventDetailsEvent(accountEvent: event.accountEvent, action: event.accountEvent.actions[index]))
         }
       )
     }
-    return HistoryCellContentView.Configuration(actions: actions)
+    return HistoryCellContentView.Model(actions: actions)
   }
 
-  func mapAction(_ action: AccountEventModel.Action, isInProgress: Bool, nftAction: @escaping (Address) -> Void) -> HistoryCellActionView.Configuration {
+  func mapAction(_ action: AccountEventModel.Action,
+                 isInProgress: Bool,
+                 nftAction: @escaping (Address) -> Void,
+                 encryptedCommentAction: @escaping () -> Void) -> HistoryCellActionView.Model {
     let imageModel = TKUIListItemImageIconView.Configuration(
       image: .image(action.eventType.icon),
       tintColor: .Icon.secondary,
@@ -128,6 +138,16 @@ struct HistoryEventMapper {
       commentConfiguration = HistoryCellActionView.CommentView.Configuration(comment: comment)
     }
     
+    var encryptedCommentConfiguration: HistoryCellActionView.EncyptedCommentView.Model?
+    if let encryptedComment = action.encryptedComment {
+      encryptedCommentConfiguration = HistoryCellActionView.EncyptedCommentView.Model(
+        encryptedText: encryptedComment.cipherText,
+        action: {
+          encryptedCommentAction()
+        }
+      )
+    }
+    
     var descriptionConfiguration: HistoryCellActionView.CommentView.Configuration?
     if let description = action.description {
       descriptionConfiguration = HistoryCellActionView.CommentView.Configuration(comment: description)
@@ -163,10 +183,11 @@ struct HistoryEventMapper {
       }
     }
     
-    return HistoryCellActionView.Configuration(
+    return HistoryCellActionView.Model(
       iconConfiguration: iconConfiguration,
       contentConfiguration: contentConfiguration,
       commentConfiguration: commentConfiguration,
+      encryptedCommentConfiguration: encryptedCommentConfiguration,
       descriptionConfiguration: descriptionConfiguration,
       nftConfiguration: nftConfiguration,
       isInProgress: isInProgress

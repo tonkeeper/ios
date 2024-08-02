@@ -192,6 +192,7 @@ private extension AccountEventMapper {
                                     rightTopDescription: rightTopDescription,
                                     status: status,
                                     comment: action.comment,
+                                    encryptedComment: action.encryptedComment,
                                     nft: nil)
   }
   
@@ -227,14 +228,15 @@ private extension AccountEventMapper {
         symbol: action.jettonInfo.symbol)
     
     return AccountEventModel.Action(eventType: eventType,
-                               amount: amount,
-                               subamount: nil,
-                               leftTopDescription: leftTopDescription,
-                               leftBottomDescription: nil,
-                               rightTopDescription: rightTopDescription,
-                               status: status,
-                               comment: action.comment,
-                               nft: nil)
+                                    amount: amount,
+                                    subamount: nil,
+                                    leftTopDescription: leftTopDescription,
+                                    leftBottomDescription: nil,
+                                    rightTopDescription: rightTopDescription,
+                                    status: status,
+                                    comment: action.comment,
+                                    encryptedComment: action.encryptedComment,
+                                    nft: nil)
   }
   
   func mapJettonMintAction(_ action: AccountEventAction.JettonMint,
@@ -503,14 +505,15 @@ private extension AccountEventMapper {
     }
     
     return AccountEventModel.Action(eventType: eventType,
-                                    amount: "NFT",
-                                    subamount: nil,
-                                    leftTopDescription: leftTopDescription,
-                                    leftBottomDescription: nil,
-                                    rightTopDescription: rightTopDescription,
-                                    status: status,
-                                    comment: action.comment,
-                                    nft: actionNFT)
+                                        amount: "NFT",
+                                        subamount: nil,
+                                        leftTopDescription: leftTopDescription,
+                                        leftBottomDescription: nil,
+                                        rightTopDescription: rightTopDescription,
+                                        status: status,
+                                        comment: action.comment,
+                                        encryptedComment: action.encryptedComment,
+                                        nft: actionNFT)
   }
   
   func mapJettonSwapAction(_ action: AccountEventAction.JettonSwap,

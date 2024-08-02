@@ -44,9 +44,9 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
   }()
   
   private lazy var dataSource = createDataSource()
-  private lazy var historyCellConfiguration = UICollectionView.CellRegistration<HistoryCell, HistoryCell.Configuration> { [weak self]
+  private lazy var historyCellConfiguration = UICollectionView.CellRegistration<HistoryCell, HistoryCell.Model> { [weak self]
     cell, indexPath, itemIdentifier in
-    cell.configure(configuration: itemIdentifier)
+    cell.configure(model: itemIdentifier)
   }
   
   init(viewModel: HistoryListViewModel) {
@@ -115,21 +115,21 @@ private extension HistoryListViewController {
   }
   
   func setupBindings() {
-    viewModel.didUpdateHistory = { [weak dataSource] sections in
-      guard let dataSource else { return }
-      var snapshot = dataSource.snapshot()
-      snapshot.deleteAllItems()
-      for section in sections {
-        switch section {
-        case .events(let model):
-          snapshot.appendSections([section])
-          snapshot.appendItems(model.events, toSection: section)
-        default:
-          continue
-        }
-      }
-      dataSource.apply(snapshot, animatingDifferences: false)
-    }
+//    viewModel.didUpdateHistory = { [weak dataSource] sections in
+//      guard let dataSource else { return }
+//      var snapshot = dataSource.snapshot()
+//      snapshot.deleteAllItems()
+//      for section in sections {
+//        switch section {
+//        case .events(let model):
+//          snapshot.appendSections([section])
+//          snapshot.appendItems(model.events, toSection: section)
+//        default:
+//          continue
+//        }
+//      }
+//      dataSource.apply(snapshot, animatingDifferences: false)
+//    }
     
     viewModel.didStartPagination = { [weak dataSource] pagination in
       guard let dataSource else { return }
@@ -165,7 +165,7 @@ private extension HistoryListViewController {
     let dataSource = UICollectionViewDiffableDataSource<HistoryListSection, AnyHashable>(
       collectionView: customView.collectionView) { [historyCellConfiguration] collectionView, indexPath, itemIdentifier in
         switch itemIdentifier {
-        case let configuration as HistoryCell.Configuration:
+        case let configuration as HistoryCell.Model:
           return collectionView.dequeueConfiguredReusableCell(using: historyCellConfiguration, for: indexPath, item: configuration)
         default: return nil
         }

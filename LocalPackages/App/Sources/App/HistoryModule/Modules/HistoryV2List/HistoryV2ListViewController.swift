@@ -110,7 +110,7 @@ private extension HistoryV2ListViewController {
     let eventCellConfiguration = EventCellConfiguration {
       [weak viewModel] cell, indexPath, itemIdentifier in
       guard let model = viewModel?.getEventCellModel(identifier: itemIdentifier) else { return }
-      cell.configure(configuration: model)
+      cell.configure(model: model)
     }
     
     let paginationCellConfiguration = PaginationCellConfiguration {

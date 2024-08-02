@@ -27,9 +27,9 @@ protocol HistoryListViewModel: AnyObject {
 final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryListModuleOutput, HistoryListModuleInput {
   
   actor CachedModels {
-    var models = [String: HistoryCell.Configuration]()
+    var models = [String: HistoryCell.Model]()
     
-    func setModel(_ model: HistoryCell.Configuration, id: String) {
+    func setModel(_ model: HistoryCell.Model, id: String) {
       models[id] = model
     }
     
@@ -129,7 +129,7 @@ private extension HistoryListViewModelImplementation {
   func handleUpdatedSections(_ updatedSections: [KeeperCore.HistoryListSection]) async {
     var sections = [HistoryListSection]()
     for updatedSection in updatedSections {
-      var eventModels = [HistoryCell.Configuration]()
+      var eventModels = [HistoryCell.Model]()
       for event in updatedSection.events {
 //        await eventModels.append(mapEvent(event))
       }
@@ -147,7 +147,7 @@ private extension HistoryListViewModelImplementation {
     }
   }
   
-//  func mapEvent(_ event: AccountEventModel) async -> HistoryCell.Configuration {
+//  func mapEvent(_ event: AccountEventModel) async -> HistoryCell.Model {
 //    if let cachedModel = await cachedModels.models[event.eventId] {
 //      return cachedModel
 //    } else {

@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class HistoryCellContentView: UIView, TKConfigurableView, ReusableView {
+final class HistoryCellContentView: UIView, ConfigurableView, ReusableView {
   var actionViews = [HistoryCellActionView]()
   
   override init(frame: CGRect) {
@@ -38,33 +38,25 @@ final class HistoryCellContentView: UIView, TKConfigurableView, ReusableView {
     return CGSize(width: UIView.noIntrinsicMetric, height: sizeThatFits(.init(width: bounds.width, height: 0)).height)
   }
   
-  struct Configuration: Hashable {
-    struct Action: Hashable {
-      let configuration: HistoryCellActionView.Configuration
+  struct Model {
+    struct Action {
+      let configuration: HistoryCellActionView.Model
       let action: () -> Void
-      
-      func hash(into hasher: inout Hasher) {
-        hasher.combine(configuration)
-      }
-      
-      static func ==(lhs: Action, rhs: Action) -> Bool {
-        lhs.configuration == rhs.configuration
-      }
     }
     let actions: [Action]
   }
   
-  func configure(configuration: Configuration) {
+  func configure(model: Model) {
     var actionViews = [HistoryCellActionView]()
     for (index, view) in self.actionViews.enumerated() {
-      guard index < configuration.actions.count else {
+      guard index < model.actions.count else {
         view.removeFromSuperview()
         continue
       }
       actionViews.append(view)
     }
     
-    configuration.actions.enumerated().forEach { index, action in
+    model.actions.enumerated().forEach { index, action in
       let view: HistoryCellActionView
       if index < actionViews.count {
         view = actionViews[index]
@@ -73,8 +65,8 @@ final class HistoryCellContentView: UIView, TKConfigurableView, ReusableView {
         actionViews.append(view)
         addSubview(view)
       }
-      view.configure(configuration: action.configuration)
-      view.isSeparatorVisible = index < configuration.actions.count - 1
+      view.configure(model: action.configuration)
+      view.isSeparatorVisible = index < model.actions.count - 1
       view.enumerateEventHandlers { action, targetAction, event, stop in
         if let action = action {
           view.removeAction(action, for: event)

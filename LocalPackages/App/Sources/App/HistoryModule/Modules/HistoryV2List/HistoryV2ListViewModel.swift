@@ -14,7 +14,7 @@ protocol HistoryV2ListViewModel: AnyObject {
   var didUpdateSnapshot: ((HistoryV2ListViewController.Snapshot) -> Void)? { get set }
   
   func viewDidLoad()
-  func getEventCellModel(identifier: String) -> HistoryCell.Configuration?
+  func getEventCellModel(identifier: String) -> HistoryCell.Model?
   func getPaginationCellModel() -> HistoryV2ListPaginationCell.Model
   func loadNextPage()
 }
@@ -40,7 +40,7 @@ final class HistoryV2ListViewModelImplementation: HistoryV2ListViewModel, Histor
   private var snapshot = HistoryV2ListViewController.Snapshot()
   private var sections = [HistoryListSection]()
   private var sectionsOrderMap = [Date: Int]()
-  private var eventCellModels = [String: HistoryCell.Configuration]()
+  private var eventCellModels = [String: HistoryCell.Model]()
   private var paginationCellModel = HistoryV2ListPaginationCell.Model(state: .none)
   private var loadNFTsTasks = [Address: Task<NFT, Swift.Error>]()
   
@@ -69,7 +69,7 @@ final class HistoryV2ListViewModelImplementation: HistoryV2ListViewModel, Histor
     setupLoader()
   }
   
-  func getEventCellModel(identifier: String) -> HistoryCell.Configuration? {
+  func getEventCellModel(identifier: String) -> HistoryCell.Model? {
     return eventCellModels[identifier]
   }
   
@@ -200,7 +200,7 @@ private extension HistoryV2ListViewModelImplementation {
     snapshot.deleteSections([.pagination])
     
     let calendar = Calendar.current
-    var models = [String: HistoryCell.Configuration]()
+    var models = [String: HistoryCell.Model]()
     for event in accountsEvents {
       let eventDate = Date(timeIntervalSince1970: event.timestamp)
       let eventSectionDateComponents: DateComponents
@@ -340,11 +340,13 @@ private extension HistoryV2ListViewModelImplementation {
     _ = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad), isTestnet: wallet.isTestnet)
   }
   
-  func mapEventCellModel(_ eventModel: AccountEventModel) -> HistoryCell.Configuration {
+  func mapEventCellModel(_ eventModel: AccountEventModel) -> HistoryCell.Model {
     return historyEventMapper.mapEvent(
       eventModel,
       nftAction: { [weak self] address in
         self?.didSelectNFT?(address)
+      }, encryptedCommentAction: {
+        
       },
       tapAction: { [weak self] accountEventDetailsEvent in
         self?.didSelectEvent?(accountEventDetailsEvent)

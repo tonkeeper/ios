@@ -91,6 +91,7 @@ extension AccountEventAction.TonTransfer {
     self.recipient = try WalletAccount(accountAddress: tonTransfer.recipient)
     self.amount = tonTransfer.amount
     self.comment = tonTransfer.comment
+    self.encryptedComment = EncryptedComment(encryptedComment: tonTransfer.encrypted_comment)
   }
 }
 
@@ -112,6 +113,7 @@ extension AccountEventAction.JettonTransfer {
     self.amount = BigUInt(stringLiteral: jettonTransfer.amount)
     self.jettonInfo = try JettonInfo(jettonPreview: jettonTransfer.jetton)
     self.comment = jettonTransfer.comment
+    self.encryptedComment = EncryptedComment(encryptedComment: jettonTransfer.encrypted_comment)
   }
 }
 
@@ -137,6 +139,7 @@ extension AccountEventAction.NFTItemTransfer {
     self.nftAddress = try Address.parse(nftItemTransfer.nft)
     self.comment = nftItemTransfer.comment
     self.payload = nftItemTransfer.payload
+    self.encryptedComment = EncryptedComment(encryptedComment: nftItemTransfer.encrypted_comment)
   }
 }
 

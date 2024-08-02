@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
+final class HistoryCellActionView: UIControl, ConfigurableView, ReusableView {
   var isSeparatorVisible: Bool = true {
       didSet {
         updateSeparatorVisibility()
@@ -13,6 +13,7 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
   let iconView = HistoryCellIconView()
   let contentView = TKUIListItemContentView()
   let commentView = CommentView()
+  let encryptedCommentView = EncyptedCommentView()
   let descriptionView = CommentView()
   let nftView = NFTView()
   let separatorView = TKSeparatorView()
@@ -34,40 +35,48 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  struct Configuration: Hashable {
+  struct Model {
     let iconConfiguration: HistoryCellIconView.Configuration
     let contentConfiguration: TKUIListItemContentView.Configuration
     let commentConfiguration: CommentView.Configuration?
+    let encryptedCommentConfiguration: EncyptedCommentView.Model?
     let descriptionConfiguration: CommentView.Configuration?
     let nftConfiguration: NFTView.Configuration?
     let isInProgress: Bool
   }
   
-  func configure(configuration: Configuration) {
-    iconView.configure(configuration: configuration.iconConfiguration)
-    contentView.configure(configuration: configuration.contentConfiguration)
-    if let commentConfiguration = configuration.commentConfiguration {
+  func configure(model: Model) {
+    iconView.configure(configuration: model.iconConfiguration)
+    contentView.configure(configuration: model.contentConfiguration)
+    if let commentConfiguration = model.commentConfiguration {
       commentView.isHidden = false
       commentView.configure(configuration: commentConfiguration)
     } else {
       commentView.isHidden = true
     }
     
-    if let descriptionConfiguration = configuration.descriptionConfiguration {
+    if let encryptedCommentConfiguration = model.encryptedCommentConfiguration {
+      encryptedCommentView.isHidden = false
+      encryptedCommentView.configure(model: encryptedCommentConfiguration)
+    } else {
+      encryptedCommentView.isHidden = true
+    }
+    
+    if let descriptionConfiguration = model.descriptionConfiguration {
       descriptionView.isHidden = false
       descriptionView.configure(configuration: descriptionConfiguration)
     } else {
       descriptionView.isHidden = true
     }
     
-    if let nftConfiguration = configuration.nftConfiguration {
+    if let nftConfiguration = model.nftConfiguration {
       nftView.isHidden = false
       nftView.configure(configuration: nftConfiguration)
     } else {
       nftView.isHidden = true
     }
     
-    if configuration.isInProgress {
+    if model.isInProgress {
       inProgressLoaderView.isHidden = false
       inProgressLoaderView.startAnimation()
     } else {
@@ -96,6 +105,13 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
       commentSize = commentView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
     }
     
+    let encryptedCommentSize: CGSize
+    if encryptedCommentView.isHidden {
+      encryptedCommentSize = .zero
+    } else {
+      encryptedCommentSize = encryptedCommentView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
+    }
+    
     let descriptionSize: CGSize
     if descriptionView.isHidden {
       descriptionSize = .zero
@@ -112,6 +128,7 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
     
     let height = contentSizeThatFits.height
     + commentSize.height
+    + encryptedCommentSize.height
     + descriptionSize.height
     + nftSize.height
     + UIEdgeInsets.contentPadding.top
@@ -166,14 +183,25 @@ final class HistoryCellActionView: UIControl, TKConfigurableView, ReusableView {
         size: .zero)
     }
     
+    if !encryptedCommentView.isHidden {
+      encryptedCommentView.frame = CGRect(
+        origin: CGPoint(x: contentViewX, y: commentView.frame.maxY),
+        size: encryptedCommentView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
+      )
+    } else {
+      encryptedCommentView.frame = CGRect(
+        origin: CGPoint(x: contentViewX, y: commentView.frame.maxY),
+        size: .zero)
+    }
+    
     if !descriptionView.isHidden {
       descriptionView.frame = CGRect(
-        origin: CGPoint(x: contentViewX, y: commentView.frame.maxY),
+        origin: CGPoint(x: contentViewX, y: encryptedCommentView.frame.maxY),
         size: descriptionView.sizeThatFits(CGSize(width: contentViewWidth, height: 0))
       )
     } else {
       descriptionView.frame = CGRect(
-        origin: CGPoint(x: contentViewX, y: nftView.frame.maxY),
+        origin: CGPoint(x: contentViewX, y: encryptedCommentView.frame.maxY),
         size: .zero)
     }
     
@@ -216,6 +244,7 @@ private extension HistoryCellActionView {
     addSubview(contentContainer)
     contentContainer.addSubview(iconView)
     contentContainer.addSubview(contentView)
+    contentContainer.addSubview(encryptedCommentView)
     contentContainer.addSubview(commentView)
     contentContainer.addSubview(descriptionView)
     contentContainer.addSubview(nftView)

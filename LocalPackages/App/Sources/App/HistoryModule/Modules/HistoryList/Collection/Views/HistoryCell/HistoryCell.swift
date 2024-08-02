@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-class HistoryCell: TKCollectionViewNewCell, TKConfigurableView {
+class HistoryCell: TKCollectionViewNewCell, ConfigurableView {
   let historyCellContentView = HistoryCellContentView()
 
   override init(frame: CGRect) {
@@ -22,13 +22,13 @@ class HistoryCell: TKCollectionViewNewCell, TKConfigurableView {
     historyCellContentView.frame = contentContainerView.bounds
   }
   
-  struct Configuration: Hashable {
+  struct Model {
     let id: String
-    let historyContentConfiguration: HistoryCellContentView.Configuration
+    let historyContentConfiguration: HistoryCellContentView.Model
   }
   
-  func configure(configuration: Configuration) {
-    historyCellContentView.configure(configuration: configuration.historyContentConfiguration)
+  func configure(model: Model) {
+    historyCellContentView.configure(model: model.historyContentConfiguration)
     setNeedsLayout()
   }
   
