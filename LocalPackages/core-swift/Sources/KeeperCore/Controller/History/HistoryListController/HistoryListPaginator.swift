@@ -42,12 +42,12 @@ actor HistoryListPaginator {
   func start() async {
     state = .isLoading
     nextFrom = nil
-    if let cachedEvents = try? loader.cachedEvents(wallet: wallet), !cachedEvents.events.isEmpty {
-      await handleCachedEvents(cachedEvents)
-      eventHandler?(.cached(sections))
-    } else {
-      eventHandler?(.loading)
-    }
+//    if let cachedEvents = try? loader.cachedEvents(wallet: wallet), !cachedEvents.events.isEmpty {
+//      await handleCachedEvents(cachedEvents)
+//      eventHandler?(.cached(sections))
+//    } else {
+//      eventHandler?(.loading)
+//    }
     
     do {
       let events = try await loadNextPage()

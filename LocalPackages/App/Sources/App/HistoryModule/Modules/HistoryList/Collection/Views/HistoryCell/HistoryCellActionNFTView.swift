@@ -69,64 +69,90 @@ extension HistoryCellActionView {
       return CGSize(width: width, height: .height + 8)
     }
     
-    struct Configuration: Hashable {
-      let imageDownloadTask: ImageDownloadTask?
-      let imageUrl: URL?
-      let name: NSAttributedString?
-      let collectionName: NSAttributedString?
-      let action: () -> Void
-      
-      init(imageDownloadTask: ImageDownloadTask?,
-           imageUrl: URL?,
-           name: String?,
-           collectionName: String?,
-           action: @escaping () -> Void) {
-        self.imageDownloadTask = imageDownloadTask
-        self.imageUrl = imageUrl
-        self.name = name?.withTextStyle(
-          .body2,
-          color: .Bubble.foreground,
-          alignment: .left,
-          lineBreakMode: .byTruncatingTail
-        )
-        self.collectionName = collectionName?.withTextStyle(
-          .body2,
-          color: .Bubble.foreground.withAlphaComponent(0.64),
-          alignment: .left,
-          lineBreakMode: .byTruncatingTail
-        )
-        self.action = action
+    enum Configuration: Hashable {
+      struct NFT: Hashable {
+        let imageDownloadTask: ImageDownloadTask?
+        let imageUrl: URL?
+        let name: NSAttributedString?
+        let collectionName: NSAttributedString?
+        let action: () -> Void
+        
+        init(imageDownloadTask: ImageDownloadTask?,
+             imageUrl: URL?,
+             name: String?,
+             collectionName: String?,
+             action: @escaping () -> Void) {
+          self.imageDownloadTask = imageDownloadTask
+          self.imageUrl = imageUrl
+          self.name = name?.withTextStyle(
+            .body2,
+            color: .Bubble.foreground,
+            alignment: .left,
+            lineBreakMode: .byTruncatingTail
+          )
+          self.collectionName = collectionName?.withTextStyle(
+            .body2,
+            color: .Bubble.foreground.withAlphaComponent(0.64),
+            alignment: .left,
+            lineBreakMode: .byTruncatingTail
+          )
+          self.action = action
+        }
+        
+        func hash(into hasher: inout Hasher) {
+          hasher.combine(name)
+          hasher.combine(collectionName)
+          hasher.combine(imageUrl)
+        }
+        
+        static func ==(lhs: NFT, rhs: NFT) -> Bool {
+          lhs.name == rhs.name && lhs.collectionName == rhs.collectionName && lhs.imageUrl == rhs.imageUrl
+        }
       }
       
-      func hash(into hasher: inout Hasher) {
-        hasher.combine(name)
-        hasher.combine(collectionName)
-        hasher.combine(imageUrl)
-      }
-      
-      static func ==(lhs: Configuration, rhs: Configuration) -> Bool {
-        lhs.name == rhs.name && lhs.collectionName == rhs.collectionName && lhs.imageUrl == rhs.imageUrl
-      }
+      case nft(NFT)
+      case shimmer
     }
     
     func configure(configuration: Configuration) {
-      nameLabel.attributedText = configuration.name
-      collectiomNameLabel.attributedText = configuration.collectionName
-      imageDownloadTask = configuration.imageDownloadTask
-      imageDownloadTask?.start(
-        imageView: imageView,
-        size: CGSize(width: .imageSize, height: .imageSize),
-        cornerRadius: nil
-      )
-      enumerateEventHandlers { action, targetAction, event, stop in
-        if let action = action {
-          self.removeAction(action, for: event)
+      switch configuration {
+      case .nft(let nft):
+        nameLabel.attributedText = nft.name
+        collectiomNameLabel.attributedText = nft.collectionName
+        imageDownloadTask = nft.imageDownloadTask
+        imageDownloadTask?.start(
+          imageView: imageView,
+          size: CGSize(width: .imageSize, height: .imageSize),
+          cornerRadius: nil
+        )
+        enumerateEventHandlers { action, targetAction, event, stop in
+          if let action = action {
+            self.removeAction(action, for: event)
+          }
         }
+        addAction(UIAction(handler: { _ in
+          nft.action()
+        }), for: .touchUpInside)
+      case .shimmer:
+        break
       }
-      addAction(UIAction(handler: { _ in
-        configuration.action()
-      }), for: .touchUpInside)
-      setNeedsLayout()
+//      nameLabel.attributedText = configuration.name
+//      collectiomNameLabel.attributedText = configuration.collectionName
+//      imageDownloadTask = configuration.imageDownloadTask
+//      imageDownloadTask?.start(
+//        imageView: imageView,
+//        size: CGSize(width: .imageSize, height: .imageSize),
+//        cornerRadius: nil
+//      )
+//      enumerateEventHandlers { action, targetAction, event, stop in
+//        if let action = action {
+//          self.removeAction(action, for: event)
+//        }
+//      }
+//      addAction(UIAction(handler: { _ in
+//        configuration.action()
+//      }), for: .touchUpInside)
+//      setNeedsLayout()
     }
     
     func prepareForReuse() {

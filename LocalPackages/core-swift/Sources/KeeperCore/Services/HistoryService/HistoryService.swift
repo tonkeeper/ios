@@ -27,11 +27,11 @@ final class HistoryServiceImplementation: HistoryService {
   }
   
   func cachedEvents(wallet: Wallet) throws -> AccountEvents {
-    try repository.getEvents(forKey: wallet.friendlyAddress.toShort())
+    try repository.getEvents(forKey: wallet.friendlyAddress.toString())
   }
   
   func cachedEvents(wallet: Wallet, jettonInfo: JettonInfo) throws -> AccountEvents {
-    let key = try wallet.friendlyAddress.toShort() + jettonInfo.address.toRaw()
+    let key = try wallet.friendlyAddress.toString() + jettonInfo.address.toRaw()
     return try repository.getEvents(forKey: key)
   }
   

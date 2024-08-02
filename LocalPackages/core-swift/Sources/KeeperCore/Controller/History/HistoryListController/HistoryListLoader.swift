@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 protocol HistoryListLoader {
-  func cachedEvents(wallet: Wallet) throws -> AccountEvents
+  func cachedEvents(wallet: Wallet) throws -> [AccountEvent]
   func loadEvents(wallet: Wallet, beforeLt: Int64?, limit: Int) async throws -> AccountEvents
   func loadEvent(wallet: Wallet, eventId: String) async throws -> AccountEvent
 }
@@ -14,8 +14,8 @@ final class HistoryListAllEventsLoader: HistoryListLoader {
     self.historyService = historyService
   }
   
-  func cachedEvents(wallet: Wallet) throws -> AccountEvents {
-    try historyService.cachedEvents(wallet: wallet)
+  func cachedEvents(wallet: Wallet) throws -> [AccountEvent] {
+    try historyService.cachedEvents(wallet: wallet).events
   }
   
   func loadEvents(wallet: Wallet,
@@ -37,7 +37,7 @@ final class HistoryListTonEventsLoader: HistoryListLoader {
     self.historyService = historyService
   }
   
-  func cachedEvents(wallet: Wallet) throws -> AccountEvents {
+  func cachedEvents(wallet: Wallet) throws -> [AccountEvent] {
     let cachedEvents = try historyService.cachedEvents(wallet: wallet)
     let filteredEvents = cachedEvents.events.compactMap { event -> AccountEvent? in
       let filteredActions = event.actions.compactMap { action -> AccountEventAction? in
@@ -55,13 +55,7 @@ final class HistoryListTonEventsLoader: HistoryListLoader {
         actions: filteredActions
       )
     }
-    
-    return AccountEvents(
-      address: try wallet.address,
-      events: filteredEvents,
-      startFrom: cachedEvents.startFrom,
-      nextFrom: cachedEvents.nextFrom
-    )
+    return filteredEvents
   }
   
   func loadEvents(wallet: Wallet,
@@ -114,11 +108,11 @@ final class HistoryListJettonEventsLoader: HistoryListLoader {
     self.historyService = historyService
   }
   
-  func cachedEvents(wallet: Wallet) throws -> AccountEvents {
+  func cachedEvents(wallet: Wallet) throws -> [AccountEvent] {
     try historyService.cachedEvents(
       wallet: wallet,
       jettonInfo: jettonInfo
-    )
+    ).events
   }
   
   func loadEvents(wallet: Wallet,

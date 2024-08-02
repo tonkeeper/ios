@@ -3,6 +3,7 @@ import TonSwift
 
 public actor HistoryPaginationLoader {
   public enum Event {
+    case cached([AccountEvent])
     case loading
     case loadingFailed
     case loaded(AccountEvents, hasMore: Bool)
@@ -55,7 +56,16 @@ private extension HistoryPaginationLoader {
   func _reload() async {
     state = .isLoading
     nextFrom = nil
-    continuation?.yield(.loading)
+    do {
+      let cached = try loader.cachedEvents(wallet: wallet)
+      if !cached.isEmpty {
+        continuation?.yield(.cached(cached))
+      } else {
+        continuation?.yield(.loading)
+      }
+    } catch {
+      continuation?.yield(.loading)
+    }
     do {
       let events = try await loadNextPage()
       continuation?.yield(.loaded(events, hasMore: events.nextFrom != 0))

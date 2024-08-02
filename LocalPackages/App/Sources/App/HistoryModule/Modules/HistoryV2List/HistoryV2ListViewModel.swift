@@ -2,10 +2,12 @@ import UIKit
 import TKUIKit
 import TKLocalize
 import KeeperCore
+import TonSwift
 
 protocol HistoryV2ListModuleOutput: AnyObject {
   var didUpdate: ((_ hasEvents: Bool) -> Void)? { get set }
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
+  var didSelectNFT: ((Address) -> Void)? { get set }
 }
 protocol HistoryV2ListModuleInput: AnyObject {}
 protocol HistoryV2ListViewModel: AnyObject {
@@ -27,31 +29,37 @@ final class HistoryV2ListViewModelImplementation: HistoryV2ListViewModel, Histor
   
   var didUpdate: ((Bool) -> Void)?
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)?
+  var didSelectNFT: ((Address) -> Void)?
   
   var didUpdateSnapshot: ((HistoryV2ListViewController.Snapshot) -> Void)?
   
   private let serialActor = SerialActor<Void>()
   private var relativeDate = Date()
   private var events = [AccountEvent]()
+  private var eventsOrderMap = [String: Int]()
   private var snapshot = HistoryV2ListViewController.Snapshot()
   private var sections = [HistoryListSection]()
   private var sectionsOrderMap = [Date: Int]()
   private var eventCellModels = [String: HistoryCell.Configuration]()
   private var paginationCellModel = HistoryV2ListPaginationCell.Model(state: .none)
+  private var loadNFTsTasks = [Address: Task<NFT, Swift.Error>]()
   
   private let wallet: Wallet
   private let paginationLoader: HistoryPaginationLoader
+  private let nftService: NFTService
   private let accountEventMapper: AccountEventMapper
   private let dateFormatter: DateFormatter
   private let historyEventMapper: HistoryEventMapper
   
   init(wallet: Wallet,
        paginationLoader: HistoryPaginationLoader,
+       nftService: NFTService,
        accountEventMapper: AccountEventMapper,
        dateFormatter: DateFormatter,
        historyEventMapper: HistoryEventMapper) {
     self.wallet = wallet
     self.paginationLoader = paginationLoader
+    self.nftService = nftService
     self.accountEventMapper = accountEventMapper
     self.dateFormatter = dateFormatter
     self.historyEventMapper = historyEventMapper
@@ -81,15 +89,18 @@ private extension HistoryV2ListViewModelImplementation {
       let stream = await paginationLoader.createStream()
       for await event in stream {
         await self.serialActor.addTask {
-          self.handleLoaderEvent(event)
+          await self.handleLoaderEvent(event)
         }
       }
     }
     paginationLoader.reload()
   }
   
-  func handleLoaderEvent(_ event: HistoryPaginationLoader.Event) {
+  func handleLoaderEvent(_ event: HistoryPaginationLoader.Event) async {
     switch event {
+    case .cached(let events):
+      didUpdate?(true)
+      handleCached(events)
     case .loading:
       didUpdate?(true)
       handleLoading()
@@ -100,9 +111,9 @@ private extension HistoryV2ListViewModelImplementation {
         didUpdate?(false)
         return
       }
-      handleLoaded(accountEvents, hasMore: hasMore)
+      await handleLoaded(accountEvents, hasMore: hasMore)
     case .loadedPage(let accountEvents, let hasMore):
-      handleLoadedPage(accountEvents, hasMore: hasMore)
+      await handleLoadedPage(accountEvents, hasMore: hasMore)
     case .pageLoading:
       handlePageLoading()
     case .pageLoadingFailed:
@@ -110,10 +121,17 @@ private extension HistoryV2ListViewModelImplementation {
     }
   }
   
-  func handleLoading() {
+  func reset() {
     relativeDate = Date()
     events = []
+    eventsOrderMap.removeAll()
+    sections.removeAll()
+    sectionsOrderMap.removeAll()
     snapshot.deleteAllItems()
+  }
+  
+  func handleLoading() {
+    reset()
     snapshot.appendSections([.shimmer])
     snapshot.appendItems([.shimmer], toSection: .shimmer)
     DispatchQueue.main.async { [snapshot] in
@@ -121,20 +139,35 @@ private extension HistoryV2ListViewModelImplementation {
     }
   }
   
-  func handleLoaded(_ accountEvents: AccountEvents, hasMore: Bool) {
-    if snapshot.indexOfSection(.shimmer) != nil {
-      snapshot.deleteSections([.shimmer])
+  func handleCached(_ accountEvents: [AccountEvent]) {
+    reset()
+    accountEvents.forEach { event in
+      self.events.append(event)
+      eventsOrderMap[event.eventId] = self.events.count - 1
     }
-    events += accountEvents.events
-    handleAccountEvents(accountEvents, hasMore: hasMore)
+    handleAccountEvents(accountEvents, hasMore: false)
   }
   
-  func handleLoadedPage(_ accountEvents: AccountEvents, hasMore: Bool) {
+  func handleLoaded(_ accountEvents: AccountEvents, hasMore: Bool) async {
+    reset()
+    accountEvents.events.forEach { event in
+      self.events.append(event)
+      eventsOrderMap[event.eventId] = self.events.count - 1
+    }
+    await handleEventsWithNFTs(events: accountEvents.events)
+    handleAccountEvents(accountEvents.events, hasMore: hasMore)
+  }
+  
+  func handleLoadedPage(_ accountEvents: AccountEvents, hasMore: Bool) async {
     if snapshot.indexOfSection(.shimmer) != nil {
       snapshot.deleteSections([.shimmer])
     }
-    events += accountEvents.events
-    handleAccountEvents(accountEvents, hasMore: hasMore)
+    accountEvents.events.forEach { event in
+      self.events.append(event)
+      eventsOrderMap[event.eventId] = self.events.count - 1
+    }
+    await handleEventsWithNFTs(events: accountEvents.events)
+    handleAccountEvents(accountEvents.events, hasMore: hasMore)
   }
   
   func handlePageLoading() {
@@ -163,12 +196,12 @@ private extension HistoryV2ListViewModelImplementation {
     }
   }
   
-  func handleAccountEvents(_ accountsEvents: AccountEvents, hasMore: Bool) {
+  func handleAccountEvents(_ accountsEvents: [AccountEvent], hasMore: Bool) {
     snapshot.deleteSections([.pagination])
     
     let calendar = Calendar.current
     var models = [String: HistoryCell.Configuration]()
-    for event in accountsEvents.events {
+    for event in accountsEvents {
       let eventDate = Date(timeIntervalSince1970: event.timestamp)
       let eventSectionDateComponents: DateComponents
       let eventDateFormat: String
@@ -189,25 +222,8 @@ private extension HistoryV2ListViewModelImplementation {
       
       guard let sectionDate = calendar.date(from: eventSectionDateComponents) else { continue }
       
-      let eventModel = accountEventMapper.mapEvent(
-        event,
-        eventDate: eventDate,
-        nftsCollection: NFTsCollection(nfts: [:]),
-        accountEventRightTopDescriptionProvider: HistoryAccountEventRightTopDescriptionProvider(
-          dateFormatter: dateFormatter
-        ),
-        isTestnet: wallet.isTestnet
-      )
-      
-      let eventCellModel = historyEventMapper.mapEvent(
-        eventModel,
-        nftAction: { _ in
-          
-        },
-        tapAction: { [weak self] accountEventDetailsEvent in
-          self?.didSelectEvent?(accountEventDetailsEvent)
-        }
-      )
+      let eventModel = mapEvent(event)
+      let eventCellModel = mapEventCellModel(eventModel)
       models[eventModel.eventId] = eventCellModel
       
       if let sectionIndex = sectionsOrderMap[sectionDate],
@@ -274,6 +290,66 @@ private extension HistoryV2ListViewModelImplementation {
       self.eventCellModels.merge(models) { $1 }
       self.didUpdateSnapshot?(snapshot)
     }
+  }
+  
+  func mapEvent(_ event: AccountEvent) -> AccountEventModel {
+    let calendar = Calendar.current
+    let eventDate = Date(timeIntervalSince1970: event.timestamp)
+    let eventDateFormat: String
+
+    if calendar.isDateInToday(eventDate)
+        || calendar.isDateInYesterday(eventDate)
+        || calendar.isDate(eventDate, equalTo: relativeDate, toGranularity: .month) {
+      eventDateFormat = "HH:mm"
+    } else if calendar.isDate(eventDate, equalTo: relativeDate, toGranularity: .year) {
+      eventDateFormat = "dd MMM, HH:mm"
+    } else {
+      eventDateFormat = "dd MMM yyyy, HH:mm"
+    }
+    dateFormatter.dateFormat = eventDateFormat
+
+    let eventModel = accountEventMapper.mapEvent(
+      event,
+      eventDate: eventDate,
+      accountEventRightTopDescriptionProvider: HistoryAccountEventRightTopDescriptionProvider(
+        dateFormatter: dateFormatter
+      ),
+      isTestnet: wallet.isTestnet,
+      nftProvider: { [weak self] address in
+        guard let self else { return nil }
+        return try? self.nftService.getNFT(address: address, isTestnet: self.wallet.isTestnet)
+      }
+    )
+    
+    return eventModel
+  }
+  
+  func handleEventsWithNFTs(events: [AccountEvent]) async {
+    let actions = events.flatMap { $0.actions }
+    var nftAddressesToLoad = Set<Address>()
+    for action in actions {
+      switch action.type {
+      case .nftItemTransfer(let nftItemTransfer):
+        nftAddressesToLoad.insert(nftItemTransfer.nftAddress)
+      case .nftPurchase(let nftPurchase):
+        try? nftService.saveNFT(nft: nftPurchase.nft, isTestnet: wallet.isTestnet)
+      default: continue
+      }
+    }
+    guard !nftAddressesToLoad.isEmpty else { return }
+    _ = try? await nftService.loadNFTs(addresses: Array(nftAddressesToLoad), isTestnet: wallet.isTestnet)
+  }
+  
+  func mapEventCellModel(_ eventModel: AccountEventModel) -> HistoryCell.Configuration {
+    return historyEventMapper.mapEvent(
+      eventModel,
+      nftAction: { [weak self] address in
+        self?.didSelectNFT?(address)
+      },
+      tapAction: { [weak self] accountEventDetailsEvent in
+        self?.didSelectEvent?(accountEventDetailsEvent)
+      }
+    )
   }
   
   private func mapEventsSectionDate(_ date: Date) -> String? {

@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import KeeperCore
 import TKCore
+import TonSwift
 
 struct HistoryEventMapper {
   
@@ -13,7 +14,7 @@ struct HistoryEventMapper {
   }
   
   func mapEvent(_ event: AccountEventModel,
-                nftAction: @escaping (NFT) -> Void,
+                nftAction: @escaping (Address) -> Void,
                 tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCell.Configuration {
     return HistoryCell.Configuration(
       id: event.eventId,
@@ -26,7 +27,7 @@ struct HistoryEventMapper {
   }
   
   func mapEventContentConfiguration(_ event: AccountEventModel,
-                                   nftAction: @escaping (NFT) -> Void,
+                                   nftAction: @escaping (Address) -> Void,
                                    tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCellContentView.Configuration {
     let actions = event.actions.enumerated().map { index, action in
       HistoryCellContentView.Configuration.Action(
@@ -39,7 +40,7 @@ struct HistoryEventMapper {
     return HistoryCellContentView.Configuration(actions: actions)
   }
 
-  func mapAction(_ action: AccountEventModel.Action, isInProgress: Bool, nftAction: @escaping (NFT) -> Void) -> HistoryCellActionView.Configuration {
+  func mapAction(_ action: AccountEventModel.Action, isInProgress: Bool, nftAction: @escaping (Address) -> Void) -> HistoryCellActionView.Configuration {
     let imageModel = TKUIListItemImageIconView.Configuration(
       image: .image(action.eventType.icon),
       tintColor: .Icon.secondary,
@@ -134,25 +135,32 @@ struct HistoryEventMapper {
     
     var nftConfiguration: HistoryCellActionView.NFTView.Configuration?
     if let nft = action.nft {
-      nftConfiguration = HistoryCellActionView.NFTView.Configuration(
-        imageDownloadTask: TKCore.ImageDownloadTask(closure: {
-          [imageLoader] imageView,
-          size,
-          cornerRadius in
-          imageLoader.loadImage(
-            url: nft.image,
-            imageView: imageView,
-            size: size,
-            cornerRadius: cornerRadius
-          )
-        }),
-        imageUrl: nft.image,
-        name: nft.name,
-        collectionName: nft.collectionName,
-        action: {
-          nftAction(nft.nft)
-        }
-      )
+      switch nft {
+      case .model(let model):
+        let nftItem = HistoryCellActionView.NFTView.Configuration.NFT(
+          imageDownloadTask: TKCore.ImageDownloadTask(closure: {
+            [imageLoader] imageView,
+            size,
+            cornerRadius in
+            imageLoader.loadImage(
+              url: model.image,
+              imageView: imageView,
+              size: size,
+              cornerRadius: cornerRadius
+            )
+          }),
+          imageUrl: model.image,
+          name: model.name,
+          collectionName: model.collectionName,
+          action: {
+            nftAction(model.nft.address)
+          }
+        )
+        nftConfiguration = .nft(nftItem)
+      case .empty(let address):
+        nftAction(address)
+        nftConfiguration = .shimmer
+      }
     }
     
     return HistoryCellActionView.Configuration(

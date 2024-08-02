@@ -30,11 +30,16 @@ public struct AccountEventModel {
       case unknown
     }
     
-    public struct NFTModel {
-      public let nft: NFT
-      public let name: String?
-      public let collectionName: String?
-      public let image: URL?
+    public enum ActionNFT {
+      public struct Model {
+        public let nft: NFT
+        public let name: String?
+        public let collectionName: String?
+        public let image: URL?
+      }
+      
+      case model(Model)
+      case empty(Address)
     }
     
     public let eventType: ActionType
@@ -46,7 +51,7 @@ public struct AccountEventModel {
     public let status: String?
     public let comment: String?
     public let description: String?
-    public let nft: NFTModel?
+    public let nft: ActionNFT?
     
     init(eventType: ActionType,
          amount: String?,
@@ -57,7 +62,7 @@ public struct AccountEventModel {
          status: String?,
          comment: String?,
          description: String? = nil,
-         nft: NFTModel?) {
+         nft: ActionNFT?) {
       self.eventType = eventType
       self.amount = amount
       self.subamount = subamount

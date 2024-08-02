@@ -27,9 +27,9 @@ struct ConfirmTransactionMapper {
       .mapEvent(
         try AccountEvent(accountEvent: info.event),
         eventDate: Date(),
-        nftsCollection: nftsCollection,
         accountEventRightTopDescriptionProvider: descriptionProvider,
-        isTestnet: wallet.isTestnet
+        isTestnet: wallet.isTestnet,
+        nftProvider: { _ in nil }
       )
 
     var feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"

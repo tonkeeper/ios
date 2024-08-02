@@ -11,6 +11,7 @@ struct HistoryV2ListAssembly {
     let viewModel = HistoryV2ListViewModelImplementation(
       wallet: wallet,
       paginationLoader: paginationLoader,
+      nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
       accountEventMapper: keeperCoreMainAssembly.mappersAssembly.historyAccountEventMapper,
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
       historyEventMapper: historyEventMapper
