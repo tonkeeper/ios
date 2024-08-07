@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class HistoryV2ListView: UIView {
+final class HistoryListView: UIView {
 
   let collectionView = TKUICollectionView(
     frame: .zero, 
@@ -18,7 +18,7 @@ final class HistoryV2ListView: UIView {
   }
 }
 
-private extension HistoryV2ListView {
+private extension HistoryListView {
   func setup() {
 
     backgroundColor = .Background.page

@@ -1,17 +1,17 @@
 import Foundation
 
-enum HistoryV2ListSection: Hashable {
-  case events(HistoryV2ListEventsSection)
+enum HistoryListSection: Hashable {
+  case events(HistoryListEventsSection)
   case pagination
   case shimmer
 }
 
-struct HistoryV2ListEventsSection: Hashable {
+struct HistoryListEventsSection: Hashable {
   let date: Date
   let title: String?
 }
 
-enum HistoryV2ListItem: Hashable {
+enum HistoryListItem: Hashable {
   case event(identifier: String)
   case pagination
   case shimmer

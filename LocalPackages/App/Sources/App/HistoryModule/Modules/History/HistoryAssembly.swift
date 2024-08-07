@@ -4,19 +4,12 @@ import KeeperCore
 
 struct HistoryAssembly {
   private init() {}
-  static func module(historyController: HistoryController,
-                     listModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput>,
-                     emptyModuleProvider: @escaping (Wallet) -> MVVMModule<HistoryEmptyViewController, HistoryEmptyModuleOutput, Void>)
-  -> MVVMModule<HistoryViewController, HistoryModuleOutput, Void> {
-
-    let viewModel = HistoryViewModelImplementation(
-      historyController: historyController,
-      listModuleProvider: listModuleProvider,
-      emptyModuleProvider: emptyModuleProvider
+  static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly) -> MVVMModule<HistoryViewController, HistoryModuleOutput, HistoryModuleInput> {
+    let viewModel = HistoryV2ViewModelImplementation(
+      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
+      backgroundUpdateStore: keeperCoreMainAssembly.mainStoresAssembly.backgroundUpdateStore
     )
-    let viewController = HistoryViewController(
-      viewModel: viewModel
-    )
-    return .init(view: viewController, output: viewModel, input: Void())
+    let viewController = HistoryViewController(viewModel: viewModel)
+    return .init(view: viewController, output: viewModel, input: viewModel)
   }
 }

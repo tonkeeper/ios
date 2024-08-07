@@ -31,7 +31,7 @@ public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRou
 
 private extension HistoryCoordinator {
   func openHistory() {
-    let module = HistoryV2Assembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
+    let module = HistoryAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
     
     module.output.didTapReceive = { [weak self] wallet in
       self?.openReceive()
@@ -59,7 +59,7 @@ private extension HistoryCoordinator {
     module.output.didChangeWallet = { [weak self] wallet in
       guard let self else { return }
       
-      let listModule = HistoryV2ListAssembly.module(
+      let listModule = HistoryListAssembly.module(
         wallet: wallet,
         paginationLoader: keeperCoreMainAssembly.loadersAssembly.historyAllEventsPaginationLoader(
           wallet: wallet

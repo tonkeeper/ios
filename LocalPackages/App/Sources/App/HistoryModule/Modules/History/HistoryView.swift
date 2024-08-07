@@ -3,10 +3,10 @@ import TKUIKit
 
 final class HistoryView: UIView {
   let navigationBarView = TKNavigationBar()
-  
-  let listContainer = UIView()
-  let emptyContainer = UIView()
-  
+
+  private let emptyViewContainer = UIView()
+  private let listViewContainer = UIView()
+
   override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
@@ -16,68 +16,52 @@ final class HistoryView: UIView {
     fatalError("init(coder:) has not been implemented")
   }
   
-  func showEmptyState() {
-    emptyContainer.isHidden = false
-    listContainer.isHidden = true
+  func embedEmptyView(_ view: UIView) {
+    emptyViewContainer.subviews.forEach { $0.removeFromSuperview() }
+    emptyViewContainer.addSubview(view)
+    view.snp.makeConstraints { make in
+      make.edges.equalTo(emptyViewContainer)
+    }
+  }
+  
+  func embedListView(_ view: UIView) {
+    listViewContainer.subviews.forEach { $0.removeFromSuperview() }
+    listViewContainer.addSubview(view)
+    view.snp.makeConstraints { make in
+      make.edges.equalTo(listViewContainer)
+    }
+  }
+  
+  func showEmpty() {
+    emptyViewContainer.isHidden = false
+    listViewContainer.isHidden = true
   }
   
   func showList() {
-    listContainer.isHidden = false
-    emptyContainer.isHidden = true
-  }
-  
-  func addEmptyContentView(view: UIView) {
-    emptyContainer.subviews.forEach { $0.removeFromSuperview() }
-    emptyContainer.addSubview(view)
-    view.translatesAutoresizingMaskIntoConstraints = false
-    
-    NSLayoutConstraint.activate([
-      view.topAnchor.constraint(equalTo: emptyContainer.topAnchor),
-      view.leftAnchor.constraint(equalTo: emptyContainer.leftAnchor),
-      view.bottomAnchor.constraint(equalTo: emptyContainer.bottomAnchor),
-      view.rightAnchor.constraint(equalTo: emptyContainer.rightAnchor)
-    ])
-  }
-  
-  func addListContentView(view: UIView) {
-    listContainer.subviews.forEach { $0.removeFromSuperview() }
-    listContainer.addSubview(view)
-    view.translatesAutoresizingMaskIntoConstraints = false
-    
-    NSLayoutConstraint.activate([
-      view.topAnchor.constraint(equalTo: listContainer.topAnchor),
-      view.leftAnchor.constraint(equalTo: listContainer.leftAnchor),
-      view.bottomAnchor.constraint(equalTo: listContainer.bottomAnchor),
-      view.rightAnchor.constraint(equalTo: listContainer.rightAnchor)
-    ])
+    emptyViewContainer.isHidden = true
+    listViewContainer.isHidden = false
   }
 }
 
 private extension HistoryView {
   func setup() {
     backgroundColor = .Background.page
-    
-    addSubview(listContainer)
-    addSubview(emptyContainer)
+    addSubview(emptyViewContainer)
+    addSubview(listViewContainer)
     addSubview(navigationBarView)
-
-    emptyContainer.translatesAutoresizingMaskIntoConstraints = false
-    listContainer.translatesAutoresizingMaskIntoConstraints = false
-    navigationBarView.translatesAutoresizingMaskIntoConstraints = false
-    NSLayoutConstraint.activate([
-      navigationBarView.topAnchor.constraint(equalTo: topAnchor),
-      navigationBarView.leftAnchor.constraint(equalTo: leftAnchor),
-      navigationBarView.rightAnchor.constraint(equalTo: rightAnchor),
-      
-      emptyContainer.topAnchor.constraint(equalTo: topAnchor),
-      emptyContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      emptyContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
-      emptyContainer.rightAnchor.constraint(equalTo: rightAnchor),
-      
-      listContainer.topAnchor.constraint(equalTo: topAnchor),
-      listContainer.leftAnchor.constraint(equalTo: leftAnchor),
-      listContainer.bottomAnchor.constraint(equalTo: bottomAnchor),
-      listContainer.rightAnchor.constraint(equalTo: rightAnchor)
-    ])
+    
+    setupConstraints()
+  }
+  
+  func setupConstraints() {
+    emptyViewContainer.snp.makeConstraints { make in
+      make.edges.equalTo(safeAreaLayoutGuide)
+    }
+    listViewContainer.snp.makeConstraints { make in
+      make.edges.equalTo(self)
+    }
+    navigationBarView.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
+    }
   }
 }

@@ -5,7 +5,7 @@ protocol TokenDetailsListContentViewController: UIViewController {
   func setHeaderViewController(_ headerViewController: UIViewController?)
 }
 
-extension HistoryV2ListViewController: TokenDetailsListContentViewController {
+extension HistoryListViewController: TokenDetailsListContentViewController {
   var scrollView: UIScrollView {
     customView.collectionView
   }

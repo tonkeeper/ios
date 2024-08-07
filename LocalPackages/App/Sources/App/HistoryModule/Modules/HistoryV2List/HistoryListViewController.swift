@@ -2,9 +2,9 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 
-final class HistoryV2ListViewController: GenericViewViewController<HistoryV2ListView> {
-  typealias Item = HistoryV2ListItem
-  typealias Section = HistoryV2ListSection
+final class HistoryListViewController: GenericViewViewController<HistoryListView> {
+  typealias Item = HistoryListItem
+  typealias Section = HistoryListSection
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
   typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
   typealias EventCellConfiguration = UICollectionView.CellRegistration<HistoryCell, String>
@@ -19,9 +19,9 @@ final class HistoryV2ListViewController: GenericViewViewController<HistoryV2List
   
   private var headerViewController: UIViewController?
 
-  private let viewModel: HistoryV2ListViewModel
+  private let viewModel: HistoryListViewModel
   
-  init(viewModel: HistoryV2ListViewModel) {
+  init(viewModel: HistoryListViewModel) {
     self.viewModel = viewModel
     super.init(nibName: nil, bundle: nil)
   }
@@ -52,7 +52,7 @@ final class HistoryV2ListViewController: GenericViewViewController<HistoryV2List
   }
 }
 
-private extension HistoryV2ListViewController {
+private extension HistoryListViewController {
   func setup() {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
@@ -260,7 +260,7 @@ private extension NSCollectionLayoutSection {
   }
 }
 
-extension HistoryV2ListViewController: UICollectionViewDelegate {
+extension HistoryListViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, 
                       willDisplay cell: UICollectionViewCell,
                       forItemAt indexPath: IndexPath) {
@@ -273,7 +273,7 @@ extension HistoryV2ListViewController: UICollectionViewDelegate {
   }
 }
 
-extension HistoryV2ListViewController: UICollectionViewDataSourcePrefetching {
+extension HistoryListViewController: UICollectionViewDataSourcePrefetching {
   func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
     for indexPath in indexPaths {
       let snapshot = dataSource.snapshot()

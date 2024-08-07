@@ -4,15 +4,15 @@ import TKLocalize
 import KeeperCore
 import TonSwift
 
-protocol HistoryV2ListModuleOutput: AnyObject {
+protocol HistoryListModuleOutput: AnyObject {
   var didUpdate: ((_ hasEvents: Bool) -> Void)? { get set }
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
   var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)? { get set }
   var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)? { get set }
 }
-protocol HistoryV2ListModuleInput: AnyObject {}
-protocol HistoryV2ListViewModel: AnyObject {
-  var didUpdateSnapshot: ((HistoryV2ListViewController.Snapshot) -> Void)? { get set }
+protocol HistoryListModuleInput: AnyObject {}
+protocol HistoryListViewModel: AnyObject {
+  var didUpdateSnapshot: ((HistoryListViewController.Snapshot) -> Void)? { get set }
   
   func viewDidLoad()
   func getEventCellModel(identifier: String) -> HistoryCell.Model?
@@ -20,9 +20,9 @@ protocol HistoryV2ListViewModel: AnyObject {
   func loadNextPage()
 }
 
-final class HistoryV2ListViewModelImplementation: HistoryV2ListViewModel, HistoryV2ListModuleOutput, HistoryV2ListModuleInput {
+final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryListModuleOutput, HistoryListModuleInput {
   
-  struct HistoryListSection {
+  struct EventsSection {
     let date: Date
     let title: String?
     let events: [AccountEvent]
@@ -33,14 +33,14 @@ final class HistoryV2ListViewModelImplementation: HistoryV2ListViewModel, Histor
   var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)?
   var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)?
   
-  var didUpdateSnapshot: ((HistoryV2ListViewController.Snapshot) -> Void)?
+  var didUpdateSnapshot: ((HistoryListViewController.Snapshot) -> Void)?
   
   private let serialActor = SerialActor<Void>()
   private var relativeDate = Date()
   private var events = [AccountEvent]()
   private var eventsOrderMap = [String: Int]()
-  private var snapshot = HistoryV2ListViewController.Snapshot()
-  private var sections = [HistoryListSection]()
+  private var snapshot = HistoryListViewController.Snapshot()
+  private var sections = [EventsSection]()
   private var sectionsOrderMap = [Date: Int]()
   private var eventCellModels = [String: HistoryCell.Model]()
   private var paginationCellModel = HistoryV2ListPaginationCell.Model(state: .none)
@@ -84,7 +84,7 @@ final class HistoryV2ListViewModelImplementation: HistoryV2ListViewModel, Histor
   }
 }
 
-private extension HistoryV2ListViewModelImplementation {
+private extension HistoryListViewModelImplementation {
 
   func setupLoader() {
     Task {
@@ -232,7 +232,7 @@ private extension HistoryV2ListViewModelImplementation {
         let section = sections[sectionIndex]
         let events = section.events + CollectionOfOne(event)
           .sorted(by: { $0.date > $1.date })
-        let updatedSection = HistoryListSection(
+        let updatedSection = EventsSection(
           date: section.date,
           title: section.title,
           events: events
@@ -241,8 +241,8 @@ private extension HistoryV2ListViewModelImplementation {
         sections.remove(at: sectionIndex)
         sections.insert(updatedSection, at: sectionIndex)
         
-        let snapshotSection: HistoryV2ListSection = .events(
-          HistoryV2ListEventsSection(
+        let snapshotSection: HistoryListSection = .events(
+          HistoryListEventsSection(
             date: section.date,
             title: section.title
           )
@@ -250,7 +250,7 @@ private extension HistoryV2ListViewModelImplementation {
         snapshot.deleteItems(snapshot.itemIdentifiers(inSection: snapshotSection))
         snapshot.appendItems(events.map { .event(identifier: $0.eventId) }, toSection: snapshotSection)
       } else {
-        let section = HistoryListSection(
+        let section = EventsSection(
           date: sectionDate,
           title: mapEventsSectionDate(sectionDate),
           events: [event]
@@ -262,8 +262,8 @@ private extension HistoryV2ListViewModelImplementation {
           ($0.element.date, $0.offset) }
         )
         
-        let snapshotSection: HistoryV2ListSection = .events(
-          HistoryV2ListEventsSection(
+        let snapshotSection: HistoryListSection = .events(
+          HistoryListEventsSection(
             date: section.date,
             title: section.title
           )

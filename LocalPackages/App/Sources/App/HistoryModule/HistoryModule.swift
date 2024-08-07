@@ -26,8 +26,8 @@ struct HistoryModule {
   }
   
   func createTonHistoryListModule(
-    wallet: Wallet) -> MVVMModule<HistoryV2ListViewController, HistoryV2ListModuleOutput, HistoryV2ListModuleInput> {
-    let listModule = HistoryV2ListAssembly.module(
+    wallet: Wallet) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+    let listModule = HistoryListAssembly.module(
       wallet: wallet,
       paginationLoader: dependencies.keeperCoreMainAssembly.loadersAssembly.historyTonEventsPaginationLoader(
         wallet: wallet
@@ -41,8 +41,8 @@ struct HistoryModule {
   func createJettonHistoryListModule(
     jettonInfo: JettonInfo,
     wallet: Wallet
-  ) -> MVVMModule<HistoryV2ListViewController, HistoryV2ListModuleOutput, HistoryV2ListModuleInput> {
-    let listModule = HistoryV2ListAssembly.module(
+  ) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+    let listModule = HistoryListAssembly.module(
       wallet: wallet,
       paginationLoader: dependencies.keeperCoreMainAssembly.loadersAssembly.historyJettonEventsPaginationLoader(
         wallet: wallet,

@@ -2,13 +2,13 @@ import UIKit
 import TKCore
 import KeeperCore
 
-struct HistoryV2ListAssembly {
+struct HistoryListAssembly {
   private init() {}
   static func module(wallet: Wallet,
                      paginationLoader: HistoryPaginationLoader,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly,
-                     historyEventMapper: HistoryEventMapper) -> MVVMModule<HistoryV2ListViewController, HistoryV2ListModuleOutput, HistoryV2ListModuleInput> {
-    let viewModel = HistoryV2ListViewModelImplementation(
+                     historyEventMapper: HistoryEventMapper) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+    let viewModel = HistoryListViewModelImplementation(
       wallet: wallet,
       paginationLoader: paginationLoader,
       nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
@@ -16,7 +16,7 @@ struct HistoryV2ListAssembly {
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
       historyEventMapper: historyEventMapper
     )
-    let viewController = HistoryV2ListViewController(viewModel: viewModel)
+    let viewController = HistoryListViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)
   }
 }
