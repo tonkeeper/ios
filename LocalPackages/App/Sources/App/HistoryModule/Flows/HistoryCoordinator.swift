@@ -4,6 +4,11 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import TKLocalize
+import TonSwift
+import CryptoKit
+import TweetNacl
+import CommonCrypto
+import CryptoSwift
 
 public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
   private let coreAssembly: TKCore.CoreAssembly
@@ -40,8 +45,15 @@ private extension HistoryCoordinator {
       self?.openEventDetails(event: event)
     }
     
-    module.output.didSelectNFT = { [weak self] nft in
-      self?.openNFTDetails(nft: nft)
+    module.output.didSelectNFT = { [weak self] wallet, nftAddress in
+      guard let self else { return }
+      Task {
+        await self.openNFTDetails(wallet: wallet, address: nftAddress)
+      }
+    }
+    
+    module.output.didSelectEncryptedComment = { [weak self] wallet, payload in
+      self?.decryptComment(wallet: wallet, payload: payload)
     }
     
     module.output.didChangeWallet = { [weak self] wallet in
@@ -100,33 +112,71 @@ private extension HistoryCoordinator {
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func openNFTDetails(nft: NFT) {
-    let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
-    
-    let coordinator = CollectiblesDetailsCoordinator(
-      router: NavigationControllerRouter(rootViewController: navigationController),
-      nft: nft,
-      coreAssembly: coreAssembly,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
+  @MainActor
+  func openNFTDetails(wallet: Wallet, address: Address) {
+    if let nft = try? keeperCoreMainAssembly.servicesAssembly.nftService().getNFT(address: address, isTestnet: wallet.isTestnet) {
+      openDetails(nft: nft)
+    } else {
+      ToastPresenter.showToast(configuration: .loading)
+      Task {
+        guard let loaded = try? await keeperCoreMainAssembly.servicesAssembly.nftService().loadNFTs(addresses: [address], isTestnet: wallet.isTestnet),
+              let nft = loaded[address] else {
+          await MainActor.run {
+            ToastPresenter.showToast(configuration: .failed)
+          }
+          return
+        }
+        await MainActor.run {
+          ToastPresenter.hideAll()
+          openDetails(nft: nft)
+        }
+      }
+    }
+//    do {
+//      keeperCoreMainAssembly.servicesAssembly.nftService().getNFT(address: address, isTestnet: wallet.isTestnet)
+//    } catch {
+//      
+//    }
+    @MainActor
+    func openDetails(nft: NFT) {
+      let navigationController = TKNavigationController()
+      navigationController.configureDefaultAppearance()
+      
+      let coordinator = CollectiblesDetailsCoordinator(
+        router: NavigationControllerRouter(rootViewController: navigationController),
+        nft: nft,
+        coreAssembly: coreAssembly,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+      
+      coordinator.didPerformTransaction = { [weak self] in
+  //      self?.didPerformTransaction?()
+      }
+      
+      coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
+        navigationController?.dismiss(animated: true)
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      }
+      
+      coordinator.start()
+      addChild(coordinator)
+      
+      router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+        guard let coordinator else { return }
+        self?.removeChild(coordinator)
+      })
+    }
+  }
+  
+  func decryptComment(wallet: Wallet, payload: EncryptedCommentPayload) {}
+  
+  func getPasscode() async -> String? {
+    return await PasscodeInputCoordinator.getPasscode(
+      parentCoordinator: self,
+      parentRouter: router,
+      mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
+      securityStore: keeperCoreMainAssembly.storesAssembly.securityStore
     )
-    
-    coordinator.didPerformTransaction = { [weak self] in
-//      self?.didPerformTransaction?()
-    }
-    
-    coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
-      navigationController?.dismiss(animated: true)
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    
-    coordinator.start()
-    addChild(coordinator)
-    
-    router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    })
   }
 }

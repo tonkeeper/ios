@@ -47,7 +47,7 @@ final class HistoryListTonEventsLoader: HistoryListLoader {
       guard !filteredActions.isEmpty else { return nil }
       return AccountEvent(
         eventId: event.eventId,
-        timestamp: event.timestamp,
+        date: event.date,
         account: event.account,
         isScam: event.isScam,
         isInProgress: event.isInProgress,
@@ -75,7 +75,7 @@ final class HistoryListTonEventsLoader: HistoryListLoader {
       guard !filteredActions.isEmpty else { return nil }
       return AccountEvent(
         eventId: event.eventId,
-        timestamp: event.timestamp,
+        date: event.date,
         account: event.account,
         isScam: event.isScam,
         isInProgress: event.isInProgress,

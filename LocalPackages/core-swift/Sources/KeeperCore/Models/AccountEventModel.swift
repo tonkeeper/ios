@@ -50,7 +50,7 @@ public struct AccountEventModel {
     public let rightTopDescription: String?
     public let status: String?
     public let comment: String?
-    public let encryptedComment: EncryptedComment?
+    public let encryptedCommentPayload: EncryptedCommentPayload?
     public let description: String?
     public let nft: ActionNFT?
     
@@ -62,7 +62,7 @@ public struct AccountEventModel {
          rightTopDescription: String?,
          status: String?,
          comment: String?,
-         encryptedComment: EncryptedComment? = nil,
+         encryptedCommentPayload: EncryptedCommentPayload? = nil,
          description: String? = nil,
          nft: ActionNFT?) {
       self.eventType = eventType
@@ -73,7 +73,7 @@ public struct AccountEventModel {
       self.rightTopDescription = rightTopDescription
       self.status = status
       self.comment = comment
-      self.encryptedComment = encryptedComment
+      self.encryptedCommentPayload = encryptedCommentPayload
       self.description = description
       self.nft = nft
     }

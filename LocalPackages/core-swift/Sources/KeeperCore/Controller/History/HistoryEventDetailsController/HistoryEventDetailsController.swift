@@ -110,7 +110,7 @@ private extension HistoryEventDetailsController {
   func mapModel() async -> Model {
     let wallet = await walletsStore.getState().activeWallet
     let eventAction = event.action
-    let date = dateFormatter.string(from: Date(timeIntervalSince1970: event.accountEvent.timestamp))
+    let date = dateFormatter.string(from: event.accountEvent.date)
     let fee = amountMapper.mapAmount(
       amount: BigUInt(integerLiteral: UInt64(abs(event.accountEvent.fee))),
       fractionDigits: TonInfo.fractionDigits,

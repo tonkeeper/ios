@@ -10,7 +10,6 @@ public struct HistoryAccountEventRightTopDescriptionProvider: AccountEventRightT
   
   public mutating func rightTopDescription(accountEvent: AccountEvent,
                                            action: AccountEventAction) -> String? {
-    let eventDate = Date(timeIntervalSince1970: accountEvent.timestamp)
-    return dateFormatter.string(from: eventDate)
+    return dateFormatter.string(from: accountEvent.date)
   }
 }

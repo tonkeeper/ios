@@ -6,7 +6,7 @@ import BigInt
 extension AccountEvent {
   init(accountEvent: Components.Schemas.AccountEvent) throws {
     self.eventId = accountEvent.event_id
-    self.timestamp = TimeInterval(accountEvent.timestamp)
+    self.date = Date(timeIntervalSince1970: TimeInterval(accountEvent.timestamp))
     self.account = try WalletAccount(accountAddress: accountEvent.account)
     self.isScam = accountEvent.is_scam
     self.isInProgress = accountEvent.in_progress

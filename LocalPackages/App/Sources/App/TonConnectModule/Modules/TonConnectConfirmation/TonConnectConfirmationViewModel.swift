@@ -142,7 +142,7 @@ private extension TonConnectConfirmationViewModelImplementation {
     return historyEventMapper.mapEventContentConfiguration(
       event,
       nftAction: { _ in },
-      encryptedCommentAction: {
+      encryptedCommentAction: { _ in
         
       },
       tapAction: { _ in }

@@ -184,6 +184,15 @@ private extension AccountEventMapper {
         maximumFractionDigits: 2,
         type: amountType,
         currency: .TON)
+    
+    var encryptedCommentPayload: EncryptedCommentPayload?
+    if let encryptedComment = action.encryptedComment {
+      encryptedCommentPayload = EncryptedCommentPayload(
+        encryptedComment: encryptedComment,
+        senderAddress: action.sender.address
+      )
+    }
+    
     return AccountEventModel.Action(eventType: eventType,
                                     amount: amount,
                                     subamount: nil,
@@ -192,7 +201,7 @@ private extension AccountEventMapper {
                                     rightTopDescription: rightTopDescription,
                                     status: status,
                                     comment: action.comment,
-                                    encryptedComment: action.encryptedComment,
+                                    encryptedCommentPayload: encryptedCommentPayload,
                                     nft: nil)
   }
   
@@ -227,6 +236,14 @@ private extension AccountEventMapper {
         type: amountType,
         symbol: action.jettonInfo.symbol)
     
+    var encryptedCommentPayload: EncryptedCommentPayload?
+    if let encryptedComment = action.encryptedComment {
+      encryptedCommentPayload = EncryptedCommentPayload(
+        encryptedComment: encryptedComment,
+        senderAddress: action.senderAddress
+      )
+    }
+    
     return AccountEventModel.Action(eventType: eventType,
                                     amount: amount,
                                     subamount: nil,
@@ -235,7 +252,7 @@ private extension AccountEventMapper {
                                     rightTopDescription: rightTopDescription,
                                     status: status,
                                     comment: action.comment,
-                                    encryptedComment: action.encryptedComment,
+                                    encryptedCommentPayload: encryptedCommentPayload,
                                     nft: nil)
   }
   
@@ -504,16 +521,24 @@ private extension AccountEventMapper {
       actionNFT = .empty(action.nftAddress)
     }
     
+    var encryptedCommentPayload: EncryptedCommentPayload?
+    if let encryptedComment = action.encryptedComment, let sender = action.sender {
+      encryptedCommentPayload = EncryptedCommentPayload(
+        encryptedComment: encryptedComment,
+        senderAddress: sender.address
+      )
+    }
+    
     return AccountEventModel.Action(eventType: eventType,
-                                        amount: "NFT",
-                                        subamount: nil,
-                                        leftTopDescription: leftTopDescription,
-                                        leftBottomDescription: nil,
-                                        rightTopDescription: rightTopDescription,
-                                        status: status,
-                                        comment: action.comment,
-                                        encryptedComment: action.encryptedComment,
-                                        nft: actionNFT)
+                                    amount: "NFT",
+                                    subamount: nil,
+                                    leftTopDescription: leftTopDescription,
+                                    leftBottomDescription: nil,
+                                    rightTopDescription: rightTopDescription,
+                                    status: status,
+                                    comment: action.comment,
+                                    encryptedCommentPayload: encryptedCommentPayload,
+                                    nft: actionNFT)
   }
   
   func mapJettonSwapAction(_ action: AccountEventAction.JettonSwap,

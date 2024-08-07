@@ -2,13 +2,15 @@ import UIKit
 import TKUIKit
 import TKLocalize
 import KeeperCore
+import TonSwift
 
 protocol HistoryV2ModuleOutput: AnyObject {
   var didTapBuy: ((Wallet) -> Void)? { get set }
   var didTapReceive: ((Wallet) -> Void)? { get set }
   var didChangeWallet: ((Wallet) -> Void)? { get set }
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
-  var didSelectNFT: ((NFT) -> Void)? { get set }
+  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)? { get set }
+  var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)? { get set }
 }
 protocol HistoryV2ModuleInput: AnyObject {
   func setListModuleOutput(_ output: HistoryV2ListModuleOutput)
@@ -26,7 +28,8 @@ final class HistoryV2ViewModelImplementation: HistoryV2ViewModel, HistoryV2Modul
   var didTapReceive: ((Wallet) -> Void)?
   var didChangeWallet: ((Wallet) -> Void)?
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)?
-  var didSelectNFT: ((NFT) -> Void)?
+  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)?
+  var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)?
   
   func setListModuleOutput(_ output: HistoryV2ListModuleOutput) {
     output.didUpdate = { [weak self] hasEvents in
@@ -38,6 +41,14 @@ final class HistoryV2ViewModelImplementation: HistoryV2ViewModel, HistoryV2Modul
     
     output.didSelectEvent = { [weak self] event in
       self?.didSelectEvent?(event)
+    }
+    
+    output.didSelectNFT = { [weak self] wallet, address in
+      self?.didSelectNFT?(wallet, address)
+    }
+    
+    output.didSelectEncryptedComment = { [weak self] wallet, payload in
+      self?.didSelectEncryptedComment?(wallet, payload)
     }
   }
   

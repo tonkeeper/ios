@@ -136,23 +136,6 @@ extension HistoryCellActionView {
       case .shimmer:
         break
       }
-//      nameLabel.attributedText = configuration.name
-//      collectiomNameLabel.attributedText = configuration.collectionName
-//      imageDownloadTask = configuration.imageDownloadTask
-//      imageDownloadTask?.start(
-//        imageView: imageView,
-//        size: CGSize(width: .imageSize, height: .imageSize),
-//        cornerRadius: nil
-//      )
-//      enumerateEventHandlers { action, targetAction, event, stop in
-//        if let action = action {
-//          self.removeAction(action, for: event)
-//        }
-//      }
-//      addAction(UIAction(handler: { _ in
-//        configuration.action()
-//      }), for: .touchUpInside)
-//      setNeedsLayout()
     }
     
     func prepareForReuse() {

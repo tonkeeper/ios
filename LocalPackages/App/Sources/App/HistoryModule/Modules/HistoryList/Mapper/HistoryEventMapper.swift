@@ -15,7 +15,7 @@ struct HistoryEventMapper {
   
   func mapEvent(_ event: AccountEventModel,
                 nftAction: @escaping (Address) -> Void,
-                encryptedCommentAction: @escaping () -> Void,
+                encryptedCommentAction: @escaping (EncryptedCommentPayload) -> Void,
                 tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCell.Model {
     return HistoryCell.Model(
       id: event.eventId,
@@ -30,7 +30,7 @@ struct HistoryEventMapper {
   
   func mapEventContentConfiguration(_ event: AccountEventModel,
                                     nftAction: @escaping (Address) -> Void,
-                                    encryptedCommentAction: @escaping () -> Void,
+                                    encryptedCommentAction: @escaping (EncryptedCommentPayload) -> Void,
                                     tapAction: @escaping (AccountEventDetailsEvent) -> Void) -> HistoryCellContentView.Model {
     let actions = event.actions.enumerated().map { index, action in
       HistoryCellContentView.Model.Action(
@@ -50,7 +50,7 @@ struct HistoryEventMapper {
   func mapAction(_ action: AccountEventModel.Action,
                  isInProgress: Bool,
                  nftAction: @escaping (Address) -> Void,
-                 encryptedCommentAction: @escaping () -> Void) -> HistoryCellActionView.Model {
+                 encryptedCommentAction: @escaping (EncryptedCommentPayload) -> Void) -> HistoryCellActionView.Model {
     let imageModel = TKUIListItemImageIconView.Configuration(
       image: .image(action.eventType.icon),
       tintColor: .Icon.secondary,
@@ -139,11 +139,11 @@ struct HistoryEventMapper {
     }
     
     var encryptedCommentConfiguration: HistoryCellActionView.EncyptedCommentView.Model?
-    if let encryptedComment = action.encryptedComment {
+    if let encryptedCommentPayload = action.encryptedCommentPayload {
       encryptedCommentConfiguration = HistoryCellActionView.EncyptedCommentView.Model(
-        encryptedText: encryptedComment.cipherText,
+        encryptedText: encryptedCommentPayload.encryptedComment.cipherText,
         action: {
-          encryptedCommentAction()
+          encryptedCommentAction(encryptedCommentPayload)
         }
       )
     }
@@ -178,8 +178,7 @@ struct HistoryEventMapper {
         )
         nftConfiguration = .nft(nftItem)
       case .empty(let address):
-        nftAction(address)
-        nftConfiguration = .shimmer
+        nftConfiguration = nil
       }
     }
     

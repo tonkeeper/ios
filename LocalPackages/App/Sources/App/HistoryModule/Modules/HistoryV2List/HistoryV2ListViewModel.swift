@@ -7,7 +7,8 @@ import TonSwift
 protocol HistoryV2ListModuleOutput: AnyObject {
   var didUpdate: ((_ hasEvents: Bool) -> Void)? { get set }
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
-  var didSelectNFT: ((Address) -> Void)? { get set }
+  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)? { get set }
+  var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)? { get set }
 }
 protocol HistoryV2ListModuleInput: AnyObject {}
 protocol HistoryV2ListViewModel: AnyObject {
@@ -24,12 +25,13 @@ final class HistoryV2ListViewModelImplementation: HistoryV2ListViewModel, Histor
   struct HistoryListSection {
     let date: Date
     let title: String?
-    let events: [AccountEventModel]
+    let events: [AccountEvent]
   }
   
   var didUpdate: ((Bool) -> Void)?
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)?
-  var didSelectNFT: ((Address) -> Void)?
+  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)?
+  var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)?
   
   var didUpdateSnapshot: ((HistoryV2ListViewController.Snapshot) -> Void)?
   
@@ -202,20 +204,19 @@ private extension HistoryV2ListViewModelImplementation {
     let calendar = Calendar.current
     var models = [String: HistoryCell.Model]()
     for event in accountsEvents {
-      let eventDate = Date(timeIntervalSince1970: event.timestamp)
       let eventSectionDateComponents: DateComponents
       let eventDateFormat: String
 
-      if calendar.isDateInToday(eventDate)
-          || calendar.isDateInYesterday(eventDate)
-          || calendar.isDate(eventDate, equalTo: relativeDate, toGranularity: .month) {
-        eventSectionDateComponents = calendar.dateComponents([.year, .month, .day], from: eventDate)
+      if calendar.isDateInToday(event.date)
+          || calendar.isDateInYesterday(event.date)
+          || calendar.isDate(event.date, equalTo: relativeDate, toGranularity: .month) {
+        eventSectionDateComponents = calendar.dateComponents([.year, .month, .day], from: event.date)
         eventDateFormat = "HH:mm"
-      } else if calendar.isDate(eventDate, equalTo: relativeDate, toGranularity: .year) {
-        eventSectionDateComponents = calendar.dateComponents([.year, .month], from: eventDate)
+      } else if calendar.isDate(event.date, equalTo: relativeDate, toGranularity: .year) {
+        eventSectionDateComponents = calendar.dateComponents([.year, .month], from: event.date)
         eventDateFormat = "dd MMM, HH:mm"
       } else {
-        eventSectionDateComponents = calendar.dateComponents([.year, .month], from: eventDate)
+        eventSectionDateComponents = calendar.dateComponents([.year, .month], from: event.date)
         eventDateFormat = "dd MMM yyyy, HH:mm"
       }
       dateFormatter.dateFormat = eventDateFormat
@@ -229,7 +230,7 @@ private extension HistoryV2ListViewModelImplementation {
       if let sectionIndex = sectionsOrderMap[sectionDate],
          sections.count > sectionIndex {
         let section = sections[sectionIndex]
-        let events = section.events + CollectionOfOne(eventModel)
+        let events = section.events + CollectionOfOne(event)
           .sorted(by: { $0.date > $1.date })
         let updatedSection = HistoryListSection(
           date: section.date,
@@ -252,7 +253,7 @@ private extension HistoryV2ListViewModelImplementation {
         let section = HistoryListSection(
           date: sectionDate,
           title: mapEventsSectionDate(sectionDate),
-          events: [eventModel]
+          events: [event]
         )
         
         sections = sections + CollectionOfOne(section)
@@ -294,7 +295,7 @@ private extension HistoryV2ListViewModelImplementation {
   
   func mapEvent(_ event: AccountEvent) -> AccountEventModel {
     let calendar = Calendar.current
-    let eventDate = Date(timeIntervalSince1970: event.timestamp)
+    let eventDate = event.date
     let eventDateFormat: String
 
     if calendar.isDateInToday(eventDate)
@@ -343,10 +344,10 @@ private extension HistoryV2ListViewModelImplementation {
   func mapEventCellModel(_ eventModel: AccountEventModel) -> HistoryCell.Model {
     return historyEventMapper.mapEvent(
       eventModel,
-      nftAction: { [weak self] address in
-        self?.didSelectNFT?(address)
-      }, encryptedCommentAction: {
-        
+      nftAction: { [weak self, wallet] address in
+        self?.didSelectNFT?(wallet, address)
+      }, encryptedCommentAction: { [weak self, wallet] payload in
+        self?.didSelectEncryptedComment?(wallet, payload)
       },
       tapAction: { [weak self] accountEventDetailsEvent in
         self?.didSelectEvent?(accountEventDetailsEvent)
