@@ -45,6 +45,13 @@ public struct SendTransactionParam: Decodable {
       stateInit = try container.decodeIfPresent(String.self, forKey: .stateInit)
       payload = try container.decodeIfPresent(String.self, forKey: .payload)
     }
+    
+    public init(address: Address, amount: Int64, stateInit: String?, payload: String?) {
+      self.address = address
+      self.amount = amount
+      self.stateInit = stateInit
+      self.payload = payload
+    }
   }
 }
 

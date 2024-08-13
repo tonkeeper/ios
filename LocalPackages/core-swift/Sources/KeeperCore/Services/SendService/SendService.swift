@@ -7,6 +7,7 @@ public protocol SendService {
   func loadTransactionInfo(boc: String, wallet: Wallet) async throws -> Components.Schemas.MessageConsequences
   func sendTransaction(boc: String, wallet: Wallet) async throws
   func getTimeoutSafely(wallet: Wallet, TTL: UInt64) async -> UInt64
+  func getJettonCustomPayload(wallet: Wallet, jetton: Address) async throws -> JettonTransferPayload
 }
 
 final class SendServiceImplementation: SendService {
@@ -37,6 +38,10 @@ final class SendServiceImplementation: SendService {
     } catch {
       return UInt64(Date().timeIntervalSince1970) + TTL
     }
+  }
+  
+  func getJettonCustomPayload(wallet: Wallet, jetton: Address) async throws -> JettonTransferPayload {
+    try await apiProvider.api(wallet.isTestnet).getCustomPayload(address: wallet.address, jettonAddress: jetton)
   }
 }
 

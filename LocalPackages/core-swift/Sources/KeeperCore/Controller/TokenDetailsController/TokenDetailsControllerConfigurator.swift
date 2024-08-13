@@ -66,7 +66,7 @@ struct JettonTokenDetailsControllerConfigurator: TokenDetailsControllerConfigura
       image: .url(jettonItem.jettonInfo.imageURL),
       tokenAmount: tokenAmount,
       convertedAmount: convertedAmount,
-      buttons: [.send(.jetton(jettonItem)), .receive(.jetton(jettonItem))]
+      buttons: [.send(.jetton(jettonItem), enabled: jettonItem.jettonInfo.isTransferable), .receive(.jetton(jettonItem))]
     )
   }
 }

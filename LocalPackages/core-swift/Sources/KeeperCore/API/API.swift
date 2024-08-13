@@ -37,7 +37,7 @@ extension API {
           let quantity = BigUInt(stringLiteral: jetton.balance)
           let walletAddress = try Address.parse(jetton.wallet_address.address)
           let rates = mapJettonRates(rates: jetton.price)
-          let jettonInfo = try JettonInfo(jettonPreview: jetton.jetton)
+          let jettonInfo = try JettonInfo(jettonPreview: jetton.jetton, extensions: jetton.extensions)
           let jettonItem = JettonItem(jettonInfo: jettonInfo, walletAddress: walletAddress)
           let jettonBalance = JettonBalance(item: jettonItem, quantity: quantity, rates: rates)
           return jettonBalance
@@ -197,6 +197,8 @@ extension API {
     }
     
     return JettonInfo(
+      isTransferable: true,
+      hasCustomPayload: false,
       address: try Address.parse(entity.metadata.address),
       fractionDigits: Int(entity.metadata.decimals) ?? 0,
       name: entity.metadata.name,
@@ -330,6 +332,17 @@ extension API {
     return chartResponse.coordinates.reversed()
   }
 }
+
+// MARK: - Jetton
+
+extension API {
+  func getCustomPayload(address: Address, jettonAddress: Address) async throws -> JettonTransferPayload {
+    let response = try await tonAPIClient.getJettonTransferPayload(.init(path: .init(account_id: address.toRaw(), jetton_id: jettonAddress.toRaw())))
+    let decoded = try response.ok.body.json
+    return try JettonTransferPayload(custom_payload: decoded.custom_payload, state_init: decoded.state_init)
+  }
+}
+  
 
 // MARK: - Blockchain
 
