@@ -21,6 +21,12 @@ struct RenewDNSSignTransactionConfirmationCoordinatorConfirmator: SignTransactio
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let amount = OP_AMOUNT.CHANGE_DNS_RECORD
     
+    let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
+    
+    if indexingLatency > (DEFAULT_TTL - 30) {
+      throw SignTransactionConfirmationCoordinatorConfirmatorError.indexerOffline
+    }
+    
     let boc = try await TransferMessageBuilder(
       transferData: .changeDNSRecord(
         .renew(

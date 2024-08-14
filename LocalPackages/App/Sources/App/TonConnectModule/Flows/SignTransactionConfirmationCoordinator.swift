@@ -7,6 +7,7 @@ import TonSwift
 
 enum SignTransactionConfirmationCoordinatorConfirmatorError: Swift.Error {
   case failedToSign
+  case indexerOffline
 }
 
 protocol SignTransactionConfirmationCoordinatorConfirmator {
@@ -34,6 +35,12 @@ struct DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignT
     guard let parameters = appRequest.params.first else { return }
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    
+    let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
+    
+    if indexingLatency > (DEFAULT_TTL - 30) {
+      throw SignTransactionConfirmationCoordinatorConfirmatorError.indexerOffline
+    }
 
     let boc = try await tonConnectService.createConfirmTransactionBoc(
       wallet: wallet,

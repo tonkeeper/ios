@@ -7,6 +7,7 @@ public protocol SendService {
   func loadTransactionInfo(boc: String, wallet: Wallet) async throws -> Components.Schemas.MessageConsequences
   func sendTransaction(boc: String, wallet: Wallet) async throws
   func getTimeoutSafely(wallet: Wallet, TTL: UInt64) async -> UInt64
+  func getIndexingLatency(wallet: Wallet) async throws -> Int
 }
 
 final class SendServiceImplementation: SendService {
@@ -30,6 +31,11 @@ final class SendServiceImplementation: SendService {
       .sendTransaction(boc: boc)
   }
   
+  func getIndexingLatency(wallet: Wallet) async throws -> Int {
+    try await apiProvider.api(wallet.isTestnet)
+      .getStatus()
+  }
+  
   func getTimeoutSafely(wallet: Wallet, TTL: UInt64) async -> UInt64 {
     do {
       return try await UInt64(apiProvider.api(wallet.isTestnet)
@@ -41,7 +47,7 @@ final class SendServiceImplementation: SendService {
 }
 
 public extension SendService {
-  func getTimeoutSafely(wallet: Wallet, TTL: UInt64 = 5 * 60) async -> UInt64 {
+  func getTimeoutSafely(wallet: Wallet, TTL: UInt64 = DEFAULT_TTL) async -> UInt64 {
     return await getTimeoutSafely(wallet: wallet, TTL: TTL)
   }
 }

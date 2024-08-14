@@ -356,3 +356,12 @@ extension API {
     return TimeInterval(entity.time)
   }
 }
+
+// MARK: - Status
+extension API {
+  func getStatus() async throws -> Int {
+    let response = try await tonAPIClient.status()
+    let entity = try response.ok.body.json
+    return entity.indexing_latency
+  }
+}
