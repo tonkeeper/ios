@@ -47,7 +47,7 @@ final class SendServiceImplementation: SendService {
 }
 
 public extension SendService {
-  func getTimeoutSafely(wallet: Wallet, TTL: UInt64 = DEFAULT_TTL) async -> UInt64 {
+  func getTimeoutSafely(wallet: Wallet, TTL: UInt64 = TonSwift.DEFAULT_TTL) async -> UInt64 {
     return await getTimeoutSafely(wallet: wallet, TTL: TTL)
   }
 }

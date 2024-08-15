@@ -269,7 +269,7 @@ private extension SendConfirmationController {
     
     let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
     
-    if indexingLatency > (DEFAULT_TTL - 30) {
+    if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
       throw Error.indexerOffline
     }
     
@@ -456,7 +456,7 @@ private extension SendConfirmationController {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
     let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
     
-    if indexingLatency > (DEFAULT_TTL - 30) {
+    if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
       throw Error.indexerOffline
     }
     

@@ -41,7 +41,7 @@ public final class LinkDNSController {
   public func sendLinkTransaction(dnsLink: DNSLink,
                                   signClosure: (TransferMessageBuilder) async throws -> String?) async throws {
     let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
-    if indexingLatency > (DEFAULT_TTL - 30) {
+    if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
       throw Error.indexerOffline
     }
     

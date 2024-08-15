@@ -23,7 +23,7 @@ struct RenewDNSSignTransactionConfirmationCoordinatorConfirmator: SignTransactio
     
     let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
     
-    if indexingLatency > (DEFAULT_TTL - 30) {
+    if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
       throw SignTransactionConfirmationCoordinatorConfirmatorError.indexerOffline
     }
     
