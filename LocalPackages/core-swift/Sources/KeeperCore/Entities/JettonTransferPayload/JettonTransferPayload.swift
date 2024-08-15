@@ -2,6 +2,11 @@ import Foundation
 import TonSwift
 
 public struct JettonTransferPayload {
-  let custom_payload: Cell?
-  let state_init: Cell?
+  public let customPayload: Cell?
+  public let stateInit: Cell?
+  
+  public init(customPayload: Cell?, stateInit: Cell?) {
+    self.customPayload = customPayload
+    self.stateInit = stateInit
+  }
 }

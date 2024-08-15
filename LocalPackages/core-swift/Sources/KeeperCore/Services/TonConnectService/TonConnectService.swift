@@ -288,12 +288,12 @@ private extension TonConnectServiceImplementation {
         }
         var jettonTransferData = try JettonTransferData.loadFrom(slice: Cell.fromBase64(src: jettonSendPayload).beginParse())
         
-        jettonTransferData.customPayload = jettonPayload.custom_payload
+        jettonTransferData.customPayload = jettonPayload.customPayload
         
         rebuildedMessages.append(SendTransactionParam.Message(
           address: message.address,
           amount: message.amount,
-          stateInit: try jettonPayload.state_init != nil ? jettonPayload.state_init?.toBoc().base64EncodedString() : message.stateInit,
+          stateInit: try jettonPayload.stateInit != nil ? jettonPayload.stateInit?.toBoc().base64EncodedString() : message.stateInit,
           payload: try Builder().store(jettonTransferData).endCell().toBoc().base64EncodedString()
         ))
       }
