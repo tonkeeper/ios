@@ -485,3 +485,15 @@ extension API {
     return TimeInterval(response.time)
   }
 }
+
+// MARK: - Status
+extension API {
+  func getStatus() async throws -> Int {
+    let request = try await requestBuilderActor.addTask {
+      await prepareAPIForRequest()
+      return BlockchainAPI.statusWithRequestBuilder()
+    }
+    let response = try await request.execute().body
+    return response.indexingLatency
+  }
+}
