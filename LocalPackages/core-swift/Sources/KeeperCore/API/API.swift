@@ -489,8 +489,11 @@ extension API {
 // MARK: - Status
 extension API {
   func getStatus() async throws -> Int {
-    let response = try await tonAPIClient.status()
-    let entity = try response.ok.body.json
-    return entity.indexing_latency
+    let request = try await requestBuilderActor.addTask {
+      await prepareAPIForRequest()
+      return BlockchainAPI.statusWithRequestBuilder()
+    }
+    let response = try await request.execute().body
+    return response.indexingLatency
   }
 }
