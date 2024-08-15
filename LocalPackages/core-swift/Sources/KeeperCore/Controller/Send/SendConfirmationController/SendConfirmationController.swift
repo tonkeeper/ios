@@ -313,6 +313,21 @@ private extension SendConfirmationController {
       )
       return try await transferMessageBuilder.createBoc(signClosure: signClosure)
     case .jetton(let jettonItem):
+      
+      let payload = jettonItem.jettonInfo.hasCustomPayload ? try await sendService.getJettonCustomPayload(wallet: wallet, jetton: jettonItem.jettonInfo.address) : nil
+      
+      let customPayload = payload?.customPayload
+      let stateInit: StateInit? = {
+        guard let stateInit = payload?.stateInit else {
+          return nil
+        }
+        do {
+          return try StateInit.loadFrom(slice: stateInit.beginParse())
+        } catch {
+          return nil
+        }
+      }()
+      
       let transferMessageBuilder = TransferMessageBuilder(
         transferData: .jetton(
           TransferData.Jetton(
@@ -322,7 +337,9 @@ private extension SendConfirmationController {
             recipient: recipient.recipientAddress.address,
             isBouncable: recipient.recipientAddress.isBouncable,
             comment: comment,
-            timeout: timeout
+            timeout: timeout,
+            customPayload: customPayload,
+            stateInit: stateInit
           )
         )
       )
