@@ -10,7 +10,7 @@ extension NFT {
     case size1500 = "1500x1500"
   }
   
-  init(nftItem: Components.Schemas.NftItem) throws {
+  init(nftItem: TonAPI.NftItem) throws {
     let address = try Address.parse(nftItem.address)
     var owner: WalletAccount?
     var name: String?
@@ -24,14 +24,13 @@ extension NFT {
       owner = ownerWalletAccount
     }
     
-    let metadata = nftItem.metadata.additionalProperties.value as [String: AnyObject]
-    name = metadata["name"] as? String
-    imageURL = (metadata["image"] as? String).flatMap { URL(string: $0) }
-    description = metadata["description"] as? String
-    isHidden = (metadata["render_type"] as? String) == "hidden"
+    name = nftItem.metadata["name"]?.value as? String
+    imageURL = (nftItem.metadata["image"]?.value as? String).flatMap { URL(string: $0) }
+    description = nftItem.metadata["description"]?.value as? String
+    isHidden = (nftItem.metadata["render_type"]?.value as? String) == "hidden"
     
     var attributes = [Attribute]()
-    if let attributesValue = (metadata["attributes"] as? [AnyObject]) {
+    if let attributesValue = nftItem.metadata["attributes"]?.value as? [AnyObject] {
       attributes = attributesValue
         .compactMap { $0 as? [String: AnyObject] }
         .compactMap { attributeObject -> Attribute? in
@@ -90,7 +89,7 @@ extension NFT {
     self.isHidden = isHidden
   }
   
-  static private func mapPreviews(_ previews: [Components.Schemas.ImagePreview]?) -> Preview {
+  static private func mapPreviews(_ previews: [TonAPI.ImagePreview]?) -> Preview {
     var size5: URL?
     var size100: URL?
     var size500: URL?

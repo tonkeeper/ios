@@ -3,13 +3,13 @@ import TonSwift
 import TonAPI
 
 extension Account {
-  init(account: Components.Schemas.Account) throws {
+  init(account: TonAPI.Account) throws {
     self.address = try Address.parse(account.address)
     self.balance = account.balance
-    self.status = account.status
+    self.status = account.status.rawValue
     self.name = account.name
     self.icon = account.icon
-    self.isSuspended = account.is_suspended
-    self.isWallet = account.is_wallet
+    self.isSuspended = account.isSuspended
+    self.isWallet = account.isWallet
   }
 }
