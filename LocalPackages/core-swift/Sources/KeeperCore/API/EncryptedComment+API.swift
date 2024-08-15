@@ -3,11 +3,11 @@ import TonSwift
 import TonAPI
 
 extension EncryptedComment {
-  init?(encryptedComment: Components.Schemas.EncryptedComment?) {
+  init?(encryptedComment: TonAPI.EncryptedComment?) {
     guard let encryptedComment,
-    let type = EncryptedCommentType(rawValue: encryptedComment.encryption_type)else { return nil }
+    let type = EncryptedCommentType(rawValue: encryptedComment.encryptionType)else { return nil }
     self.type = type
-    self.cipherText = encryptedComment.cipher_text
+    self.cipherText = encryptedComment.cipherText
   }
 }
 

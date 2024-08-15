@@ -38,6 +38,8 @@ public enum TransferData {
     public let isBouncable: Bool
     public let comment: String?
     public let timeout: UInt64?
+    public let customPayload: Cell?
+    public let stateInit: StateInit?
     
     public init(seqno: UInt64,
                 jettonAddress: Address,
@@ -45,7 +47,10 @@ public enum TransferData {
                 recipient: Address,
                 isBouncable: Bool = true,
                 comment: String?,
-                timeout: UInt64?) {
+                timeout: UInt64?,
+                customPayload: Cell? = nil,
+                stateInit: StateInit? = nil
+    ) {
       self.seqno = seqno
       self.jettonAddress = jettonAddress
       self.amount = amount
@@ -53,6 +58,8 @@ public enum TransferData {
       self.isBouncable = isBouncable
       self.comment = comment
       self.timeout = timeout
+      self.customPayload = customPayload
+      self.stateInit = stateInit
     }
   }
   
@@ -268,7 +275,9 @@ public struct TransferMessageBuilder {
         isBounceable: jetton.isBouncable,
         comment: jetton.comment,
         timeout: jetton.timeout,
-        signClosure: signClosure
+        signClosure: signClosure,
+        customPayload: jetton.customPayload,
+        stateInit: jetton.stateInit
       )
     case .nft(let nft):
       return try await NFTTransferMessageBuilder.sendNFTTransfer(
@@ -519,7 +528,9 @@ public struct TokenTransferMessageBuilder {
                                        isBounceable: Bool = true,
                                        comment: String?,
                                        timeout: UInt64?,
-                                       signClosure: (WalletTransfer) async throws -> Data) async throws -> String {
+                                       signClosure: (WalletTransfer) async throws -> Data,
+                                       customPayload: Cell? = nil,
+                                       stateInit: StateInit? = nil) async throws -> String {
     return try await ExternalMessageTransferBuilder
       .externalMessageTransfer(
         wallet: wallet,
@@ -531,7 +542,9 @@ public struct TokenTransferMessageBuilder {
             bounce: isBounceable,
             to: recipientAddress,
             from: sender,
-            comment: comment
+            comment: comment,
+            customPayload: customPayload,
+            stateInit: stateInit
           )
           return [internalMessage]
         },

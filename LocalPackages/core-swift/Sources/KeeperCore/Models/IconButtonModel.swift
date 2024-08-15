@@ -1,7 +1,7 @@
 import Foundation
 
 public enum IconButton {
-  case send(Token)
+  case send(Token, enabled: Bool = true)
   case receive(Token)
   case buySell
   case swap

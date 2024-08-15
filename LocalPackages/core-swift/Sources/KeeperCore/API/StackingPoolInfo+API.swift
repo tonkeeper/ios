@@ -3,30 +3,30 @@ import TonSwift
 import TonAPI
 
 extension StackingPoolInfo {
-  init(accountStakingInfo: Components.Schemas.PoolInfo, implementations: [String: Components.Schemas.PoolImplementation]) throws {
+  init(accountStakingInfo: TonAPI.PoolInfo, implementations: [String: TonAPI.PoolImplementation]) throws {
     self.address = try Address.parse(accountStakingInfo.address)
     self.name = accountStakingInfo.name
-    self.totalAmount = accountStakingInfo.total_amount
-    self.implementation = StackingPoolInfo.Implementation(
+    self.totalAmount = accountStakingInfo.totalAmount
+    self.implementation = try StackingPoolInfo.Implementation(
       implemenetationType: accountStakingInfo.implementation,
       implementation: implementations[accountStakingInfo.implementation.rawValue]
     )
     self.apy = Decimal(accountStakingInfo.apy)
-    self.minStake = accountStakingInfo.min_stake
-    self.cycleStart = TimeInterval(accountStakingInfo.cycle_start)
-    self.cycleEnd = TimeInterval(accountStakingInfo.cycle_end)
+    self.minStake = accountStakingInfo.minStake
+    self.cycleStart = TimeInterval(accountStakingInfo.cycleStart)
+    self.cycleEnd = TimeInterval(accountStakingInfo.cycleEnd)
     self.isVerified = accountStakingInfo.verified
-    self.currentNominators = Int64(accountStakingInfo.current_nominators)
-    self.maxNominators = Int64(accountStakingInfo.max_nominators)
-    if let liquid_jetton_master = accountStakingInfo.liquid_jetton_master {
-      self.liquidJettonMaster = try Address.parse(liquid_jetton_master)
+    self.currentNominators = Int64(accountStakingInfo.currentNominators)
+    self.maxNominators = Int64(accountStakingInfo.maxNominators)
+    if let liquidJettonMaster = accountStakingInfo.liquidJettonMaster {
+      self.liquidJettonMaster = try Address.parse(liquidJettonMaster)
     } else {
       self.liquidJettonMaster = nil
     }
-    self.nominatorsStake = accountStakingInfo.nominators_stake
-    self.validatorStake = accountStakingInfo.validator_stake
-    if let cycle_length = accountStakingInfo.cycle_length {
-      self.cycleLength = TimeInterval(cycle_length)
+    self.nominatorsStake = accountStakingInfo.nominatorsStake
+    self.validatorStake = accountStakingInfo.validatorStake
+    if let cycleLength = accountStakingInfo.cycleLength {
+      self.cycleLength = TimeInterval(cycleLength)
     } else {
       self.cycleLength = nil
     }
@@ -34,15 +34,21 @@ extension StackingPoolInfo {
 }
 
 extension StackingPoolInfo.Implementation {
-  init(implemenetationType: Components.Schemas.PoolImplementationType,
-       implementation: Components.Schemas.PoolImplementation?) {
+  enum Error: Swift.Error {
+    case unknownStakingPool
+  }
+  
+  init(implemenetationType: TonAPI.PoolImplementationType,
+       implementation: TonAPI.PoolImplementation?) throws {
     switch implemenetationType {
     case .whales:
       self.type = .whales
     case .tf:
       self.type = .tf
-    case .liquidTF:
+    case .liquidtf:
       self.type = .liquidTF
+    case .unknownDefaultOpenApi:
+      throw Error.unknownStakingPool
     }
     
     self.name = implementation?.name ?? ""

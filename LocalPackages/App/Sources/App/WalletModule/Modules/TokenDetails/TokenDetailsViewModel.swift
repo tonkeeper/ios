@@ -55,7 +55,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   // MARK: - Image Loading
   
   private let imageLoader = ImageLoader()
-
+  
   // MARK: - Dependencies
   
   private let wallet: Wallet
@@ -125,11 +125,23 @@ private extension TokenDetailsViewModelImplementation {
   func setupButtonsView(model: TokenDetailsModel) {
     let mapper = IconButtonModelMapper()
     let buttons = model.buttons.map { buttonModel in
-      TokenDetailsHeaderButtonsView.Model.Button(
+      let isEnabled: Bool
+      switch buttonModel {
+      case .send(_, let enabled):
+        if !enabled {
+          print("dsd")
+        }
+        isEnabled = enabled
+      default:
+        isEnabled = true
+      }
+      
+      return TokenDetailsHeaderButtonsView.Model.Button(
         configuration: mapper.mapButton(model: buttonModel),
+        isEnabled: isEnabled,
         action: { [weak self] in
           switch buttonModel {
-          case .send(let token):
+          case .send(let token, _):
             self?.didTapSend?(token)
           case .receive(let token):
             self?.didTapReceive?(token)

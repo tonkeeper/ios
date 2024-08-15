@@ -4,54 +4,54 @@ import TonSwift
 import BigInt
 
 extension AccountEvent {
-  init(accountEvent: Components.Schemas.AccountEvent) throws {
-    self.eventId = accountEvent.event_id
+  init(accountEvent: TonAPI.AccountEvent) throws {
+    self.eventId = accountEvent.eventId
     self.date = Date(timeIntervalSince1970: TimeInterval(accountEvent.timestamp))
     self.account = try WalletAccount(accountAddress: accountEvent.account)
-    self.isScam = accountEvent.is_scam
-    self.isInProgress = accountEvent.in_progress
+    self.isScam = accountEvent.isScam
+    self.isInProgress = accountEvent.inProgress
     self.fee = accountEvent.extra
     self.actions = accountEvent.actions.compactMap { action -> AccountEventAction? in
       do {
         let actionType: AccountEventAction.ActionType
-        if let tonTransfer = action.TonTransfer {
+        if let tonTransfer = action.tonTransfer {
           actionType = .tonTransfer(try .init(tonTransfer: tonTransfer))
-        } else if let jettonTransfer = action.JettonTransfer {
+        } else if let jettonTransfer = action.jettonTransfer {
           actionType = .jettonTransfer(try .init(jettonTransfer: jettonTransfer))
-        } else if let contractDeploy = action.ContractDeploy {
+        } else if let contractDeploy = action.contractDeploy {
           actionType = .contractDeploy(try .init(contractDeploy: contractDeploy))
-        } else if let nftItemTransfer = action.NftItemTransfer {
+        } else if let nftItemTransfer = action.nftItemTransfer {
           actionType = .nftItemTransfer(try .init(nftItemTransfer: nftItemTransfer))
-        } else if let subscribe = action.Subscribe {
+        } else if let subscribe = action.subscribe {
           actionType = .subscribe(try .init(subscription: subscribe))
-        } else if let unsubscribe = action.UnSubscribe {
+        } else if let unsubscribe = action.unSubscribe {
           actionType = .unsubscribe(try .init(unsubscription: unsubscribe))
-        } else if let auctionBid = action.AuctionBid {
+        } else if let auctionBid = action.auctionBid {
           actionType = .auctionBid(try .init(auctionBid: auctionBid))
-        } else if let nftPurchase = action.NftPurchase {
+        } else if let nftPurchase = action.nftPurchase {
           actionType = .nftPurchase(try .init(nftPurchase: nftPurchase))
-        } else if let depositStake = action.DepositStake {
+        } else if let depositStake = action.depositStake {
           actionType = .depositStake(try .init(depositStake: depositStake))
-        } else if let withdrawStake = action.WithdrawStake {
+        } else if let withdrawStake = action.withdrawStake {
           actionType = .withdrawStake(try .init(withdrawStake: withdrawStake))
-        } else if let withdrawStakeRequest = action.WithdrawStakeRequest {
+        } else if let withdrawStakeRequest = action.withdrawStakeRequest {
           actionType = .withdrawStakeRequest(try .init(withdrawStakeRequest: withdrawStakeRequest))
-        } else if let jettonSwap = action.JettonSwap {
+        } else if let jettonSwap = action.jettonSwap {
           actionType = .jettonSwap(try .init(jettonSwap: jettonSwap))
-        } else if let jettonMint = action.JettonMint {
+        } else if let jettonMint = action.jettonMint {
           actionType = .jettonMint(try .init(jettonMint: jettonMint))
-        } else if let jettonBurn = action.JettonBurn {
+        } else if let jettonBurn = action.jettonBurn {
           actionType = .jettonBurn(try .init(jettonBurn: jettonBurn))
-        } else if let smartContractExec = action.SmartContractExec {
+        } else if let smartContractExec = action.smartContractExec {
           actionType = .smartContractExec(try .init(smartContractExec: smartContractExec))
-        } else if let domainRenew = action.DomainRenew {
+        } else if let domainRenew = action.domainRenew {
           actionType = .domainRenew(try .init(domainRenew: domainRenew))
         } else {
           actionType = .unknown
         }
         
         let status = AccountEventStatus(rawValue: action.status.rawValue)
-        return AccountEventAction(type: actionType, status: status, preview: try .init(simplePreview: action.simple_preview))
+        return AccountEventAction(type: actionType, status: status, preview: try .init(simplePreview: action.simplePreview))
       } catch {
         return nil
       }
@@ -61,19 +61,19 @@ extension AccountEvent {
 
 
 extension AccountEventAction.SimplePreview {
-  init(simplePreview: Components.Schemas.ActionSimplePreview) throws {
+  init(simplePreview: TonAPI.ActionSimplePreview) throws {
     self.name = simplePreview.name
     self.description = simplePreview.description
     self.value = simplePreview.value
     
     var image: URL?
-    if let actionImage = simplePreview.action_image {
+    if let actionImage = simplePreview.actionImage {
       image = URL(string: actionImage)
     }
     self.image = image
     
     var valueImage: URL?
-    if let valueImageString = simplePreview.value_image {
+    if let valueImageString = simplePreview.valueImage {
       valueImage = URL(string: valueImageString)
     }
     self.valueImage = valueImage
@@ -86,17 +86,17 @@ extension AccountEventAction.SimplePreview {
 }
 
 extension AccountEventAction.TonTransfer {
-  init(tonTransfer: Components.Schemas.TonTransferAction) throws {
+  init(tonTransfer: TonAPI.TonTransferAction) throws {
     self.sender = try WalletAccount(accountAddress: tonTransfer.sender)
     self.recipient = try WalletAccount(accountAddress: tonTransfer.recipient)
     self.amount = tonTransfer.amount
     self.comment = tonTransfer.comment
-    self.encryptedComment = EncryptedComment(encryptedComment: tonTransfer.encrypted_comment)
+    self.encryptedComment = EncryptedComment(encryptedComment: tonTransfer.encryptedComment)
   }
 }
 
 extension AccountEventAction.JettonTransfer {
-  init(jettonTransfer: Components.Schemas.JettonTransferAction) throws {
+  init(jettonTransfer: TonAPI.JettonTransferAction) throws {
     var sender: WalletAccount?
     var recipient: WalletAccount?
     if let senderAccountAddress = jettonTransfer.sender {
@@ -108,23 +108,23 @@ extension AccountEventAction.JettonTransfer {
     
     self.sender = sender
     self.recipient = recipient
-    self.senderAddress = try Address.parse(jettonTransfer.senders_wallet)
-    self.recipientAddress = try Address.parse(jettonTransfer.recipients_wallet)
+    self.senderAddress = try Address.parse(jettonTransfer.sendersWallet)
+    self.recipientAddress = try Address.parse(jettonTransfer.recipientsWallet)
     self.amount = BigUInt(stringLiteral: jettonTransfer.amount)
     self.jettonInfo = try JettonInfo(jettonPreview: jettonTransfer.jetton)
     self.comment = jettonTransfer.comment
-    self.encryptedComment = EncryptedComment(encryptedComment: jettonTransfer.encrypted_comment)
+    self.encryptedComment = EncryptedComment(encryptedComment: jettonTransfer.encryptedComment)
   }
 }
 
 extension AccountEventAction.ContractDeploy {
-  init(contractDeploy: Components.Schemas.ContractDeployAction) throws {
+  init(contractDeploy: TonAPI.ContractDeployAction) throws {
     self.address = try Address.parse(contractDeploy.address)
   }
 }
 
 extension AccountEventAction.NFTItemTransfer {
-  init(nftItemTransfer: Components.Schemas.NftItemTransferAction) throws {
+  init(nftItemTransfer: TonAPI.NftItemTransferAction) throws {
     var sender: WalletAccount?
     var recipient: WalletAccount?
     if let senderAccountAddress = nftItemTransfer.sender {
@@ -139,12 +139,12 @@ extension AccountEventAction.NFTItemTransfer {
     self.nftAddress = try Address.parse(nftItemTransfer.nft)
     self.comment = nftItemTransfer.comment
     self.payload = nftItemTransfer.payload
-    self.encryptedComment = EncryptedComment(encryptedComment: nftItemTransfer.encrypted_comment)
+    self.encryptedComment = EncryptedComment(encryptedComment: nftItemTransfer.encryptedComment)
   }
 }
 
 extension AccountEventAction.Subscription {
-  init(subscription: Components.Schemas.SubscriptionAction) throws {
+  init(subscription: TonAPI.SubscriptionAction) throws {
     self.subscriber = try WalletAccount(accountAddress: subscription.subscriber)
     self.subscriptionAddress = try Address.parse(subscription.subscription)
     self.beneficiary = try WalletAccount(accountAddress: subscription.beneficiary)
@@ -154,7 +154,7 @@ extension AccountEventAction.Subscription {
 }
 
 extension AccountEventAction.Unsubscription {
-  init(unsubscription: Components.Schemas.UnSubscriptionAction) throws {
+  init(unsubscription: TonAPI.UnSubscriptionAction) throws {
     self.subscriber = try WalletAccount(accountAddress: unsubscription.subscriber)
     self.subscriptionAddress = try Address.parse(unsubscription.subscription)
     self.beneficiary = try WalletAccount(accountAddress: unsubscription.beneficiary)
@@ -162,8 +162,15 @@ extension AccountEventAction.Unsubscription {
 }
 
 extension AccountEventAction.AuctionBid {
-  init(auctionBid: Components.Schemas.AuctionBidAction) throws {
-    self.auctionType = auctionBid.auction_type
+  init(auctionBid: TonAPI.AuctionBidAction) throws {
+    self.auctionType = {
+      switch auctionBid.auctionType {
+      case .numberPeriodTg, .dnsPeriodTg, .dnsPeriodTon, .getgems:
+        return auctionBid.auctionType.rawValue
+      case .unknownDefaultOpenApi:
+        return "unknown"
+      }
+    }()
     self.price = AccountEventAction.Price(price: auctionBid.amount)
     self.bidder = try WalletAccount(accountAddress: auctionBid.bidder)
     self.auction = try WalletAccount(accountAddress: auctionBid.auction)
@@ -177,8 +184,8 @@ extension AccountEventAction.AuctionBid {
 }
 
 extension AccountEventAction.NFTPurchase {
-  init(nftPurchase: Components.Schemas.NftPurchaseAction) throws {
-    self.auctionType = nftPurchase.auction_type
+  init(nftPurchase: TonAPI.NftPurchaseAction) throws {
+    self.auctionType = nftPurchase.auctionType.rawValue
     self.nft = try NFT(nftItem: nftPurchase.nft)
     self.seller = try WalletAccount(accountAddress: nftPurchase.seller)
     self.buyer = try WalletAccount(accountAddress: nftPurchase.buyer)
@@ -187,7 +194,7 @@ extension AccountEventAction.NFTPurchase {
 }
 
 extension AccountEventAction.DepositStake {
-  init(depositStake: Components.Schemas.DepositStakeAction) throws {
+  init(depositStake: TonAPI.DepositStakeAction) throws {
     self.amount = depositStake.amount
     self.staker = try WalletAccount(accountAddress: depositStake.staker)
     self.pool = try WalletAccount(accountAddress: depositStake.pool)
@@ -195,7 +202,7 @@ extension AccountEventAction.DepositStake {
 }
 
 extension AccountEventAction.WithdrawStake {
-  init(withdrawStake: Components.Schemas.WithdrawStakeAction) throws {
+  init(withdrawStake: TonAPI.WithdrawStakeAction) throws {
     self.amount = withdrawStake.amount
     self.staker = try WalletAccount(accountAddress: withdrawStake.staker)
     self.pool = try WalletAccount(accountAddress: withdrawStake.pool)
@@ -203,7 +210,7 @@ extension AccountEventAction.WithdrawStake {
 }
 
 extension AccountEventAction.WithdrawStakeRequest {
-  init(withdrawStakeRequest: Components.Schemas.WithdrawStakeRequestAction) throws {
+  init(withdrawStakeRequest: TonAPI.WithdrawStakeRequestAction) throws {
     self.amount = withdrawStakeRequest.amount
     self.staker = try WalletAccount(accountAddress: withdrawStakeRequest.staker)
     self.pool = try WalletAccount(accountAddress: withdrawStakeRequest.pool)
@@ -211,27 +218,27 @@ extension AccountEventAction.WithdrawStakeRequest {
 }
 
 extension AccountEventAction.RecoverStake {
-  init(recoverStake: Components.Schemas.ElectionsRecoverStakeAction) throws {
+  init(recoverStake: TonAPI.ElectionsRecoverStakeAction) throws {
     self.amount = recoverStake.amount
     self.staker = try WalletAccount(accountAddress: recoverStake.staker)
   }
 }
 
 extension AccountEventAction.JettonSwap {
-  init(jettonSwap: Components.Schemas.JettonSwapAction) throws {
-    self.dex = jettonSwap.dex
-    self.amountIn = BigUInt(stringLiteral: jettonSwap.amount_in)
-    self.amountOut = BigUInt(stringLiteral: jettonSwap.amount_out)
-    self.tonIn = jettonSwap.ton_in
-    self.tonOut = jettonSwap.ton_out
-    self.user = try WalletAccount(accountAddress: jettonSwap.user_wallet)
+  init(jettonSwap: TonAPI.JettonSwapAction) throws {
+    self.dex = jettonSwap.dex.rawValue
+    self.amountIn = BigUInt(stringLiteral: jettonSwap.amountIn)
+    self.amountOut = BigUInt(stringLiteral: jettonSwap.amountOut)
+    self.tonIn = jettonSwap.tonIn
+    self.tonOut = jettonSwap.tonOut
+    self.user = try WalletAccount(accountAddress: jettonSwap.userWallet)
     self.router = try WalletAccount(accountAddress: jettonSwap.router)
-    if let jettonMasterIn = jettonSwap.jetton_master_in {
+    if let jettonMasterIn = jettonSwap.jettonMasterIn {
       self.jettonInfoIn = try JettonInfo(jettonPreview: jettonMasterIn)
     } else {
       self.jettonInfoIn = nil
     }
-    if let jettonMasterOut = jettonSwap.jetton_master_out {
+    if let jettonMasterOut = jettonSwap.jettonMasterOut {
       self.jettonInfoOut = try JettonInfo(jettonPreview: jettonMasterOut)
     } else {
       self.jettonInfoOut = nil
@@ -240,45 +247,45 @@ extension AccountEventAction.JettonSwap {
 }
 
 extension AccountEventAction.JettonMint {
-  init(jettonMint: Components.Schemas.JettonMintAction) throws {
+  init(jettonMint: TonAPI.JettonMintAction) throws {
     self.recipient = try WalletAccount(accountAddress: jettonMint.recipient)
-    self.recipientsWallet = try Address.parse(jettonMint.recipients_wallet)
+    self.recipientsWallet = try Address.parse(jettonMint.recipientsWallet)
     self.amount = BigUInt(stringLiteral: jettonMint.amount)
     self.jettonInfo = try JettonInfo(jettonPreview: jettonMint.jetton)
   }
 }
 
 extension AccountEventAction.JettonBurn {
-  init(jettonBurn: Components.Schemas.JettonBurnAction) throws {
+  init(jettonBurn: TonAPI.JettonBurnAction) throws {
     self.sender = try WalletAccount(accountAddress: jettonBurn.sender)
-    self.senderWallet = try Address.parse(jettonBurn.senders_wallet)
+    self.senderWallet = try Address.parse(jettonBurn.sendersWallet)
     self.amount = BigUInt(stringLiteral: jettonBurn.amount)
     self.jettonInfo = try JettonInfo(jettonPreview: jettonBurn.jetton)
   }
 }
 
 extension AccountEventAction.SmartContractExec {
-  init(smartContractExec: Components.Schemas.SmartContractAction) throws {
+  init(smartContractExec: TonAPI.SmartContractAction) throws {
     self.executor = try WalletAccount(accountAddress: smartContractExec.executor)
     self.contract = try WalletAccount(accountAddress: smartContractExec.contract)
-    self.tonAttached = smartContractExec.ton_attached
+    self.tonAttached = smartContractExec.tonAttached
     self.operation = smartContractExec.operation
     self.payload = smartContractExec.payload
   }
 }
 
 extension AccountEventAction.DomainRenew {
-  init(domainRenew: Components.Schemas.DomainRenewAction) throws {
+  init(domainRenew: TonAPI.DomainRenewAction) throws {
     self.domain = domainRenew.domain
-    self.contractAddress = domainRenew.contract_address
+    self.contractAddress = domainRenew.contractAddress
     self.renewer = try WalletAccount(accountAddress: domainRenew.renewer)
   }
 }
 
 extension AccountEventAction.Price {
-  init(price: Components.Schemas.Price) {
+  init(price: TonAPI.Price) {
     amount = BigUInt(stringLiteral: price.value)
-    tokenName = price.token_name
+    tokenName = price.tokenName
   }
 }
 

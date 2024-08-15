@@ -8,6 +8,7 @@ public final class SendConfirmationController {
     case failedToCalculateFee
     case failedToSendTransaction
     case failedToSign
+    case indexerOffline
   }
   
   public var didUpdateModel: ((SendConfirmationModel) -> Void)?
@@ -242,6 +243,7 @@ private extension SendConfirmationController {
   }
   
   func createEmulateTransactionBoc() async throws -> String {
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let boc: String
     switch sendItem {
     case .nft(let nft):
@@ -250,6 +252,7 @@ private extension SendConfirmationController {
       boc = try await createTokenTransactionBoc(
         token: token,
         amount: amount,
+        timeout: timeout,
         signClosure: { [wallet] builder in
           try await builder.externalSign(wallet: wallet) { transfer in
             try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
@@ -262,20 +265,27 @@ private extension SendConfirmationController {
   
   func createTransactionBoc() async throws -> String {
     let boc: String
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    
+    let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
+    
+    if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
+      throw Error.indexerOffline
+    }
+    
     switch sendItem {
     case .nft(let nft):
-      boc = try await createNFTTransactionBoc(nft: nft)
+      boc = try await createNFTTransactionBoc(nft: nft, timeout: timeout)
     case .token(let token, let amount):
-      boc = try await createTokenTransactionBoc(token: token, amount: amount) { transfer in
+      boc = try await createTokenTransactionBoc(token: token, amount: amount, timeout: timeout) { transfer in
         return try await signTransfer(transfer)
       }
     }
     return boc
   }
   
-  func createTokenTransactionBoc(token: Token, amount: BigUInt, signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
+  func createTokenTransactionBoc(token: Token, amount: BigUInt, timeout: UInt64, signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
-    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
                 
     switch token {
     case .ton:
@@ -304,6 +314,21 @@ private extension SendConfirmationController {
       )
       return try await transferMessageBuilder.createBoc(signClosure: signClosure)
     case .jetton(let jettonItem):
+      
+      let payload = jettonItem.jettonInfo.hasCustomPayload ? try await sendService.getJettonCustomPayload(wallet: wallet, jetton: jettonItem.jettonInfo.address) : nil
+      
+      let customPayload = payload?.customPayload
+      let stateInit: StateInit? = {
+        guard let stateInit = payload?.stateInit else {
+          return nil
+        }
+        do {
+          return try StateInit.loadFrom(slice: stateInit.beginParse())
+        } catch {
+          return nil
+        }
+      }()
+      
       let transferMessageBuilder = TransferMessageBuilder(
         transferData: .jetton(
           TransferData.Jetton(
@@ -313,7 +338,9 @@ private extension SendConfirmationController {
             recipient: recipient.recipientAddress.address,
             isBouncable: recipient.recipientAddress.isBouncable,
             comment: comment,
-            timeout: timeout
+            timeout: timeout,
+            customPayload: customPayload,
+            stateInit: stateInit
           )
         )
       )
@@ -437,7 +464,7 @@ private extension SendConfirmationController {
         }
   }
   
-  func createNFTTransactionBoc(nft: NFT) async throws -> String {
+  func createNFTTransactionBoc(nft: NFT, timeout: UInt64) async throws -> String {
     let emulationExtra = BigInt(integerLiteral: transactionEmulationExtra)
     let minimumTransferAmount = BigInt(stringLiteral: "50000000")
     var transferAmount = emulationExtra + minimumTransferAmount
@@ -445,7 +472,11 @@ private extension SendConfirmationController {
     ? minimumTransferAmount
     : transferAmount
     let seqno = try await sendService.loadSeqno(wallet: wallet)
-    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
+    
+    if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
+      throw Error.indexerOffline
+    }
     
     var commentCell: Cell?
     if let comment = comment {

@@ -66,7 +66,8 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
         image: .url(jettonItem.jettonInfo.imageURL),
         tokenAmount: "0",
         convertedAmount: "0",
-        buttons: [.send(.jetton(jettonItem)), .receive(.jetton(jettonItem))]
+        buttons: [.send(.jetton(jettonItem), enabled: false),
+                  .receive(.jetton(jettonItem))]
       )
     }
     
@@ -84,7 +85,8 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
       image: .url(jettonItem.jettonInfo.imageURL),
       tokenAmount: tokenAmount,
       convertedAmount: convertedAmount,
-      buttons: [.send(.jetton(jettonItem)), .receive(.jetton(jettonItem))]
+      buttons: [.send(.jetton(jettonItem), enabled: jettonItem.jettonInfo.isTransferable),
+                      .receive(.jetton(jettonItem))]
     )
   }
 }

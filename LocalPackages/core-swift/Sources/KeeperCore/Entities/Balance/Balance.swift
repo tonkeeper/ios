@@ -60,6 +60,8 @@ public struct JettonInfo: Codable, Equatable, Hashable {
     case blacklist
   }
   
+  public let isTransferable: Bool
+  public let hasCustomPayload: Bool
   public let address: Address
   public let fractionDigits: Int
   public let name: String

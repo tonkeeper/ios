@@ -129,7 +129,7 @@ private extension StakeWithdrawConfirmationController {
         wallet: wallet
       )
       
-      transactionEmulationExtra = transactionInfo.trace.transaction.total_fees
+      transactionEmulationExtra = transactionInfo.trace.transaction.totalFees
       let model = await makeEmulatedModel(fee: transactionEmulationExtra)
       
       Task { @MainActor in

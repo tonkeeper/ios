@@ -3,11 +3,11 @@ import TonSwift
 import TonAPI
 
 extension AccountStackingInfo {
-  init(accountStakingInfo: Components.Schemas.AccountStakingInfo) throws {
+  init(accountStakingInfo: TonAPI.AccountStakingInfo) throws {
     self.pool = try Address.parse(accountStakingInfo.pool)
     self.amount = accountStakingInfo.amount
-    self.pendingDeposit = accountStakingInfo.pending_deposit
-    self.pendingWithdraw = accountStakingInfo.pending_withdraw
-    self.readyWithdraw = accountStakingInfo.ready_withdraw
+    self.pendingDeposit = accountStakingInfo.pendingDeposit
+    self.pendingWithdraw = accountStakingInfo.pendingWithdraw
+    self.readyWithdraw = accountStakingInfo.readyWithdraw
   }
 }
