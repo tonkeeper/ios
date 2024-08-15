@@ -10,7 +10,7 @@ extension NFT {
     case size1500 = "1500x1500"
   }
   
-  init(nftItem: Components.Schemas.NftItem) throws {
+  init(nftItem: TonAPI.NftItem) throws {
     let address = try Address.parse(nftItem.address)
     var owner: WalletAccount?
     var name: String?
@@ -24,36 +24,36 @@ extension NFT {
       owner = ownerWalletAccount
     }
     
-    let metadata = nftItem.metadata.additionalProperties.value as [String: AnyObject]
-    name = metadata["name"] as? String
-    imageURL = (metadata["image"] as? String).flatMap { URL(string: $0) }
-    description = metadata["description"] as? String
-    isHidden = (metadata["render_type"] as? String) == "hidden"
+//    let metadata = nftItem.metadata as [String: AnyObject]
+//    name = metadata["name"] as? String
+//    imageURL = (metadata["image"] as? String).flatMap { URL(string: $0) }
+//    description = metadata["description"] as? String
+//    isHidden = (metadata["render_type"] as? String) == "hidden"
     
     var attributes = [Attribute]()
-    if let attributesValue = (metadata["attributes"] as? [AnyObject]) {
-      attributes = attributesValue
-        .compactMap { $0 as? [String: AnyObject] }
-        .compactMap { attributeObject -> Attribute? in
-          guard let key = attributeObject["trait_type"] as? String else { return nil }
-          let attributeValue: String
-          switch attributeObject["value"] {
-          case .none: return nil
-          case .some(let value):
-            switch value {
-            case let stringValue as String:
-              attributeValue = stringValue
-            case let intValue as Int:
-              attributeValue = String(intValue)
-            case let doubleValue as Int:
-              attributeValue = String(doubleValue)
-            default:
-              attributeValue = "-"
-            }
-          }
-          return Attribute(key: key, value: attributeValue)
-        }
-    }
+//    if let attributesValue = (metadata["attributes"] as? [AnyObject]) {
+//      attributes = attributesValue
+//        .compactMap { $0 as? [String: AnyObject] }
+//        .compactMap { attributeObject -> Attribute? in
+//          guard let key = attributeObject["trait_type"] as? String else { return nil }
+//          let attributeValue: String
+//          switch attributeObject["value"] {
+//          case .none: return nil
+//          case .some(let value):
+//            switch value {
+//            case let stringValue as String:
+//              attributeValue = stringValue
+//            case let intValue as Int:
+//              attributeValue = String(intValue)
+//            case let doubleValue as Int:
+//              attributeValue = String(doubleValue)
+//            default:
+//              attributeValue = "-"
+//            }
+//          }
+//          return Attribute(key: key, value: attributeValue)
+//        }
+//    }
     
     if let nftCollection = nftItem.collection,
        let address = try? Address.parse(nftCollection.address) {
@@ -90,7 +90,7 @@ extension NFT {
     self.isHidden = isHidden
   }
   
-  static private func mapPreviews(_ previews: [Components.Schemas.ImagePreview]?) -> Preview {
+  static private func mapPreviews(_ previews: [TonAPI.ImagePreview]?) -> Preview {
     var size5: URL?
     var size100: URL?
     var size500: URL?

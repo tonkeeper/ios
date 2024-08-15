@@ -12,7 +12,7 @@ struct ConfirmTransactionMapper {
     self.amountFormatter = amountFormatter
   }
   
-  func mapTransactionInfo(_ info: Components.Schemas.MessageConsequences,
+  func mapTransactionInfo(_ info: TonAPI.MessageConsequences,
                           tonRates: Rates.Rate?,
                           currency: Currency,
                           nftsCollection: NFTsCollection,

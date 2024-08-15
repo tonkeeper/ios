@@ -24,50 +24,36 @@ final class APIAssembly {
   
   var api: API {
     API(
-      tonAPIClient: tonAPIClient(),
+      hostProvider: tonApiHostProvider,
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
-      configurationStore: configurationAssembly.remoteConfigurationStore
+      configurationStore: configurationAssembly.remoteConfigurationStore,
+      requestBuilderActor: requestBuilderActor
     )
   }
   
   var testnetAPI: API {
     API(
-      tonAPIClient: tonAPITestnetClient(),
+      hostProvider: testnetTonApiHostProvider,
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
-      configurationStore: configurationAssembly.remoteConfigurationStore
+      configurationStore: configurationAssembly.remoteConfigurationStore,
+      requestBuilderActor: requestBuilderActor
     )
   }
   
-  private var _tonAPIClient: TonAPI.Client?
-  func tonAPIClient() -> TonAPI.Client {
-    if let tonAPIClient = _tonAPIClient {
-      return tonAPIClient
-    }
-    let tonAPIClient = TonAPI.Client(
-      serverURL: tonAPIURL,
-      transport: transport,
-      middlewares: [apiHostProvider, authTokenProvider])
-    _tonAPIClient = tonAPIClient
-    return tonAPIClient
+  private lazy var requestBuilderActor = APIRequestBuilderSerialActor()
+  
+  private var tonApiHostProvider: APIHostProvider {
+    MainnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.remoteConfigurationStore)
   }
   
-  private var _tonAPITestnetClient: TonAPI.Client?
-  func tonAPITestnetClient() -> TonAPI.Client {
-    if let tonAPITestnetClient = _tonAPITestnetClient {
-      return tonAPITestnetClient
-    }
-    let tonAPITestnetClient = TonAPI.Client(
-      serverURL: testnetTonAPIURL,
-      transport: transport,
-      middlewares: [authTokenProvider])
-    _tonAPITestnetClient = tonAPITestnetClient
-    return tonAPITestnetClient
+  private var testnetTonApiHostProvider: APIHostProvider {
+    TestnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.remoteConfigurationStore)
   }
-  
+
   private var _streamingTonAPIClient: TonStreamingAPI.Client?
   func streamingTonAPIClient() -> TonStreamingAPI.Client {
     if let streamingTonAPIClient = _streamingTonAPIClient {

@@ -14,11 +14,11 @@ public struct SendTransactionModel {
     self.extra = extra
   }
    
-  init(accountEvent: Components.Schemas.AccountEvent,
-       risk: Components.Schemas.Risk,
-       transaction: Components.Schemas.Transaction) throws {
+  init(accountEvent: TonAPI.AccountEvent,
+       risk: TonAPI.Risk,
+       transaction: TonAPI.Transaction) throws {
     self.accountEvent = try AccountEvent(accountEvent: accountEvent)
-    self.fee = transaction.total_fees
+    self.fee = transaction.totalFees
     self.extra = accountEvent.extra
   }
 }
