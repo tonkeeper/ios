@@ -24,36 +24,35 @@ extension NFT {
       owner = ownerWalletAccount
     }
     
-//    let metadata = nftItem.metadata as [String: AnyObject]
-//    name = metadata["name"] as? String
-//    imageURL = (metadata["image"] as? String).flatMap { URL(string: $0) }
-//    description = metadata["description"] as? String
-//    isHidden = (metadata["render_type"] as? String) == "hidden"
+    name = nftItem.metadata["name"]?.value as? String
+    imageURL = (nftItem.metadata["image"]?.value as? String).flatMap { URL(string: $0) }
+    description = nftItem.metadata["description"]?.value as? String
+    isHidden = (nftItem.metadata["render_type"]?.value as? String) == "hidden"
     
     var attributes = [Attribute]()
-//    if let attributesValue = (metadata["attributes"] as? [AnyObject]) {
-//      attributes = attributesValue
-//        .compactMap { $0 as? [String: AnyObject] }
-//        .compactMap { attributeObject -> Attribute? in
-//          guard let key = attributeObject["trait_type"] as? String else { return nil }
-//          let attributeValue: String
-//          switch attributeObject["value"] {
-//          case .none: return nil
-//          case .some(let value):
-//            switch value {
-//            case let stringValue as String:
-//              attributeValue = stringValue
-//            case let intValue as Int:
-//              attributeValue = String(intValue)
-//            case let doubleValue as Int:
-//              attributeValue = String(doubleValue)
-//            default:
-//              attributeValue = "-"
-//            }
-//          }
-//          return Attribute(key: key, value: attributeValue)
-//        }
-//    }
+    if let attributesValue = nftItem.metadata["attributes"]?.value as? [AnyObject] {
+      attributes = attributesValue
+        .compactMap { $0 as? [String: AnyObject] }
+        .compactMap { attributeObject -> Attribute? in
+          guard let key = attributeObject["trait_type"] as? String else { return nil }
+          let attributeValue: String
+          switch attributeObject["value"] {
+          case .none: return nil
+          case .some(let value):
+            switch value {
+            case let stringValue as String:
+              attributeValue = stringValue
+            case let intValue as Int:
+              attributeValue = String(intValue)
+            case let doubleValue as Int:
+              attributeValue = String(doubleValue)
+            default:
+              attributeValue = "-"
+            }
+          }
+          return Attribute(key: key, value: attributeValue)
+        }
+    }
     
     if let nftCollection = nftItem.collection,
        let address = try? Address.parse(nftCollection.address) {
