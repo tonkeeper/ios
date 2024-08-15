@@ -3,7 +3,7 @@ import TonAPI
 import TonSwift
 
 extension JettonInfo {
-  init(jettonPreview: Components.Schemas.JettonPreview) throws {
+  init(jettonPreview: JettonPreview) throws {
     let tokenAddress = try Address.parse(jettonPreview.address)
     address = tokenAddress
     fractionDigits = jettonPreview.decimals
@@ -17,7 +17,9 @@ extension JettonInfo {
       verification = .whitelist
     case .blacklist:
       verification = .blacklist
-    case .none:
+    case ._none:
+      verification = .none
+    case .unknownDefaultOpenApi:
       verification = .none
     }
     self.verification = verification
