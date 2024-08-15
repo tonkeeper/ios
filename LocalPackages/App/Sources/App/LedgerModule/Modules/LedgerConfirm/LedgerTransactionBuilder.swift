@@ -65,6 +65,26 @@ public struct LedgerTransactionBuilder {
           )
         )
       )
+    case .nft(let nft):
+      return Transaction(
+        destination: nft.nftAddress,
+        sendMode: .walletDefault(),
+        seqno: nft.seqno,
+        timeout: nft.timeout,
+        bounceable: nft.isBounceable,
+        coins: Coins(rawValue: nft.transferAmount)!,
+        stateInit: nil,
+        payload: .nftTransfer(
+          TonPayloadFormat.NftTransfer(
+            queryId: transferMessageBuilder.queryId,
+            newOwnerAddress: nft.recipient,
+            excessesAddress: try wallet.address,
+            customPayload: nil,
+            forwardAmount: Coins(rawValue: BigUInt(stringLiteral: "1"))!,
+            forwardPayload: nft.forwardPayload
+          )
+        )
+      )
     default:
       throw Error.unsupportedTransaction
     }

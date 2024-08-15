@@ -174,7 +174,7 @@ private extension LedgerConnectViewModelImplementation {
     
     @Sendable func startPollTask() {
       let task = Task {
-        let isAppOpened = try await tonTransport.isAppOpen()
+        let (isAppOpened, version) = try await tonTransport.isAppOpen()
         try Task.checkCancellation()
         guard isAppOpened else {
           try await Task.sleep(nanoseconds: 1_000_000_000)

@@ -76,7 +76,7 @@ private extension CollectibleDetailsController {
   
   func isActionsAvailable() -> Bool {
     switch walletsStore.activeWallet.kind {
-    case .ledger, .watchonly:
+    case .watchonly:
       return false
     default:
       return true

@@ -5,9 +5,14 @@ import TonTransport
 import BleTransport
 import KeeperCore
 
+enum LedgerConfirmError: Error {
+  case versionTooLow(version: String, requiredVersion: String)
+}
+
 protocol LedgerConfirmModuleOutput: AnyObject {
   var didCancel: (() -> Void)? { get set }
   var didSign: ((String) -> Void)? { get set }
+  var didError: ((_ error: LedgerConfirmError) -> Void)? { get set }
 }
 
 protocol LedgerConfirmViewModel: AnyObject {
@@ -36,6 +41,7 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   
   var didCancel: (() -> Void)?
   var didSign: ((String) -> Void)?
+  var didError: ((_ error: LedgerConfirmError) -> Void)?
   
   // MARK: - LedgerConnectViewModel
   
@@ -146,12 +152,25 @@ private extension LedgerConfirmViewModelImplementation {
     }
   }
   
+  func checkVersion(version: String) throws -> Bool {
+    switch transferMessageBuilder.transferData {
+    case .nft(_), .changeDNSRecord(_):
+      if (TonTransport.isVersion(version, greaterThanOrEqualTo: "2.1.0")) {
+        return true
+      } else {
+        throw LedgerConfirmError.versionTooLow(version: version, requiredVersion: "2.1.0")
+      }
+    default:
+      return true
+    }
+  }
+  
   func waitForAppOpen() {
     let tonTransport = TonTransport(transport: transport)
     
     @Sendable func startPollTask() {
       let task = Task {
-        let isAppOpened = try await tonTransport.isAppOpen()
+        let (isAppOpened, version) = try await tonTransport.isAppOpen()
         try Task.checkCancellation()
         guard isAppOpened else {
           try await Task.sleep(nanoseconds: 1_000_000_000)
@@ -161,6 +180,16 @@ private extension LedgerConfirmViewModelImplementation {
           }
           return
         }
+        
+        do {
+          checkVersion(version: version)
+        } catch {
+          await MainActor.run {
+            self.didError?(error)
+          }
+          return
+        }
+        
         await MainActor.run {
           self.setTonAppOpened()
           self.signTransaction(tonTransport: tonTransport)

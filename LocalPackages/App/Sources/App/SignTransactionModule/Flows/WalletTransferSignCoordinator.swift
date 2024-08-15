@@ -195,6 +195,13 @@ private extension WalletTransferSignCoordinator {
           })
         }
         
+        module.output.didError = { [weak bottomSheetViewController] error in
+          bottomSheetViewController?.dismiss(completion: {
+            print("didError", error)
+            continuation.resume(returning: nil)
+          })
+        }
+        
         bottomSheetViewController.present(fromViewController: self.router.rootViewController)
       }
     }
