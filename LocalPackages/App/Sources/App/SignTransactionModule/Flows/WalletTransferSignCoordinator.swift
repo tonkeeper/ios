@@ -4,6 +4,7 @@ import TKCore
 import TKUIKit
 import KeeperCore
 import TonSwift
+import TKLocalize
 
 enum WalletTransferSignError: Swift.Error {
   case incorrectWalletKind
@@ -195,9 +196,9 @@ private extension WalletTransferSignCoordinator {
           })
         }
         
-        module.output.didError = { [weak bottomSheetViewController] error in
+        module.output.didError = { [weak bottomSheetViewController, weak self] error in
           bottomSheetViewController?.dismiss(completion: {
-            print("didError", error)
+            self?.handleLedgerConfirmError(error)
             continuation.resume(returning: nil)
           })
         }
@@ -280,5 +281,29 @@ private extension WalletTransferSignCoordinator {
       string.append("&return=\("tonkeeperx://publish".percentEncoded ?? "")")
     }
     return URL(string: string)
+  }
+  
+  func handleLedgerConfirmError(_ error: LedgerConfirmError) {
+    switch error {
+    case .versionTooLow(_, let requiredVersion):
+      let module = UpdatePopupAssembly.module()
+      
+      let configuration = UpdatePopupConfiguration(
+        icon: .TKUIKit.Icons.Size96.tonIcon,
+        title: TKLocales.LedgerVersionUpdate.title(requiredVersion),
+        caption: TKLocales.LedgerVersionUpdate.caption,
+        buttons: [UpdatePopupConfiguration.Button(
+          title: TKLocales.Actions.ok,
+          category: .secondary,
+          action: {
+            module.view.dismiss()
+          }
+        )]
+      )
+      
+      module.input.setConfiguration(configuration)
+      
+      module.view.present(fromViewController: self.router.rootViewController)
+    }
   }
 }

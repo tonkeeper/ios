@@ -8,6 +8,7 @@
 "actions.edit" = "Edit";
 "actions.copy" = "Copy";
 "actions.sign_out" = "Sign Out";
+"actions.ok" = "OK";
 
 "errors.unknown" = "Error";
 
@@ -252,6 +253,9 @@
 "ledger_confirm.steps.bluetooth_connect.description" = "Connect Ledger to your device via Bluetooth";
 "ledger_confirm.steps.ton_app.description" = "Unlock it and open TON App";
 "ledger_confirm.steps.confirm.description" = "Confirm your transaction on Ledger";
+
+"ledger_version_update.title" = "Update TON app in Ledger to the %@ version";
+"ledger_version_update.caption" = "This type of transaction is not supported in your current application version.";
 
 "bluetooth.permissions_alert.title" = "Bluetooth Permissions";
 "bluetooth.permissions_alert.message" = "Please enable Bluetooth permissions in your settings to use this feature";

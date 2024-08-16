@@ -40,6 +40,10 @@ public enum TKLocales {
     public static var sign_out: String {
       localize("actions.sign_out")
     }
+    /// OK
+    public static var ok: String {
+      localize("actions.ok")
+    }
   }
   public enum Errors {
     /// Error
@@ -937,6 +941,16 @@ public enum TKLocales {
           localize("ledger_confirm.steps.confirm.description")
         }
       }
+    }
+  }
+  public enum LedgerVersionUpdate {
+    /// Update TON app in Ledger to the %@ version
+    public static func title(_ p0: Any) -> String {
+      return localizeWithArgs("ledger_version_update.title", String(describing: p0))
+    }
+    /// This type of transaction is not supported in your current application version.
+    public static var caption: String {
+      localize("ledger_version_update.caption")
     }
   }
   public enum Bluetooth {

@@ -152,16 +152,15 @@ private extension LedgerConfirmViewModelImplementation {
     }
   }
   
-  func checkVersion(version: String) throws -> Bool {
+  func checkVersion(version: String) -> Result<Void, LedgerConfirmError> {
     switch transferMessageBuilder.transferData {
     case .nft(_), .changeDNSRecord(_):
-      if (TonTransport.isVersion(version, greaterThanOrEqualTo: "2.1.0")) {
-        return true
-      } else {
-        throw LedgerConfirmError.versionTooLow(version: version, requiredVersion: "2.1.0")
+      guard TonTransport.isVersion(version, greaterThanOrEqualTo: "2.1.0") else {
+        return .failure(LedgerConfirmError.versionTooLow(version: version, requiredVersion: "2.1.0"))
       }
+      return .success(())
     default:
-      return true
+      return .success(())
     }
   }
   
@@ -181,18 +180,16 @@ private extension LedgerConfirmViewModelImplementation {
           return
         }
         
-        do {
-          checkVersion(version: version)
-        } catch {
+        switch checkVersion(version: version) {
+        case .success:
+          await MainActor.run {
+            self.setTonAppOpened()
+            self.signTransaction(tonTransport: tonTransport)
+          }
+        case .failure(let error):
           await MainActor.run {
             self.didError?(error)
           }
-          return
-        }
-        
-        await MainActor.run {
-          self.setTonAppOpened()
-          self.signTransaction(tonTransport: tonTransport)
         }
       }
       self.pollTonAppTask = task
