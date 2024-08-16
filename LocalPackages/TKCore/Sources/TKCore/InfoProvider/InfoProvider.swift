@@ -18,6 +18,8 @@ public struct InfoProvider {
     case aptabaseKey = "APTABASE_KEY"
     case aptabaseEndpoint = "APTABASE_ENDPOINT"
     case platform = "PLATFORM"
+    case termsOfServiceURL = "TermsOfServiceURL"
+    case privacyPolicyURL = "PrivacyPolicyURL"
   }
   
   static func value<T>(key: Keys) -> T? {
@@ -58,6 +60,16 @@ public struct InfoProvider {
   
   public static func platform() -> String {
     self.value(key: .platform) ?? "ios"
+  }
+  
+  public static func termsOfServiceURL() -> URL? {
+    guard let value: String = self.value(key: .termsOfServiceURL) else { return nil }
+    return URL(string: value)
+  }
+  
+  public static func privacyPolicyURL() -> URL? {
+    guard let value: String = self.value(key: .privacyPolicyURL) else { return nil }
+    return URL(string: value)
   }
 }
 

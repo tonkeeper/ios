@@ -61,6 +61,10 @@ private extension SettingsCoordinator {
       self?.openSecurity()
     }
     
+    configurator.didTapLegal = { [weak self] in
+      self?.openLegal()
+    }
+    
     configurator.didTapBackup = { [weak self, wallet] in
       self?.openBackup(wallet: wallet)
     }
@@ -279,6 +283,25 @@ private extension SettingsCoordinator {
     }
     
     bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func openLegal() {
+    let configuration = SettingsListLegalConfigurator()
+    
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+    
+    configuration.didTapFontLicense = { [weak self] in
+      let viewController = FontLicenseViewController()
+      viewController.setupBackButton()
+      self?.router.push(viewController: viewController)
+    }
+    
+    configuration.openUrl = { [coreAssembly] url in
+      coreAssembly.urlOpener().open(url: url)
+    }
+
+    router.push(viewController: module.viewController)
   }
   
   func getPasscode() async -> String? {

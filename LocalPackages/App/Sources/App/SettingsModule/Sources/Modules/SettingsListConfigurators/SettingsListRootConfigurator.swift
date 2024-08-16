@@ -10,6 +10,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didTapEditWallet: ((Wallet) -> Void)?
   var didTapCurrencySettings: (() -> Void)?
   var didTapSecuritySettings: (() -> Void)?
+  var didTapLegal: (() -> Void)?
   var didTapBackup: (() -> Void)?
   var didOpenURL: ((URL) -> Void)?
   var didShowAlert: ((_ title: String,
@@ -335,8 +336,8 @@ private extension SettingsListRootConfigurator {
           id: .legalItemIdentifier,
           title: .string(TKLocales.Settings.Items.legal),
           accessory: .icon(.TKUIKit.Icons.Size28.doc, .Icon.secondary),
-          selectionClosure: {
-            
+          selectionClosure: { [weak self] in
+            self?.didTapLegal?()
           }
         )
       ]
@@ -425,7 +426,6 @@ private extension SettingsListRootConfigurator {
               Task {
                 await self.walletDeleteController.deleteAll()
                 await MainActor.run {
-//                  self.didDeleteWallet?()
                   self.anaylticsProvider.logEvent(eventKey: .resetWallet)
                 }
               }

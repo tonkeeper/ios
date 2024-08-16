@@ -67,6 +67,12 @@
 "settings.logout.title" = "Выйти?";
 "settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
 
+"settings.legal.title" = "Документы";
+"settings.legal.items.terms_of_service" = "Правила использования";
+"settings.legal.items.privacy_policy" = "Политика конфиденциальности";
+"settings.legal.items.montserrat_font" = "Шрифт Montserrat";
+"settings.legal.sections.licenses" = "Лицензии";
+
 "theme.title" = "Тема";
 "theme.options.system" = "Системная";
 "theme.options.dark" = "Тёмная";

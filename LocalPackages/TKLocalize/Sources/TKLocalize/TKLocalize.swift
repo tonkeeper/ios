@@ -278,6 +278,32 @@ public enum TKLocales {
         localize("settings.logout.description")
       }
     }
+    public enum Legal {
+      /// Legal
+      public static var title: String {
+        localize("settings.legal.title")
+      }
+      public enum Items {
+        /// Terms of service
+        public static var terms_of_service: String {
+          localize("settings.legal.items.terms_of_service")
+        }
+        /// Privacy policy
+        public static var privacy_policy: String {
+          localize("settings.legal.items.privacy_policy")
+        }
+        /// Montserrat font
+        public static var montserrat_font: String {
+          localize("settings.legal.items.montserrat_font")
+        }
+      }
+      public enum Sections {
+        /// Licences
+        public static var licenses: String {
+          localize("settings.legal.sections.licenses")
+        }
+      }
+    }
   }
   public enum Theme {
     /// Theme

@@ -67,6 +67,12 @@
 "settings.logout.title" = "Log out?";
 "settings.logout.description" = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.";
 
+"settings.legal.title" = "Legal";
+"settings.legal.items.terms_of_service" = "Terms of service";
+"settings.legal.items.privacy_policy" = "Privacy policy";
+"settings.legal.items.montserrat_font" = "Montserrat font";
+"settings.legal.sections.licenses" = "Licences";
+
 "theme.title" = "Theme";
 "theme.options.system" = "System";
 "theme.options.dark" = "Dark";

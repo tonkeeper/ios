@@ -25,3 +25,6 @@ ASSOCIATED_DOMAIN_APPLINKS_SECOND = applinks:app.tonkeeper.org
 
 APTABASE_KEY = A-SH-6199502298
 APTABASE_ENDPOINT = https:/$()/anonymous-analytics.tonkeeper.com/
+
+TERMS_OF_SERVICE_URL = https:/$()/tonkeeper.com/terms
+PRIVACY_POLICY_URL = https:/$()/tonkeeper.com/privacy
