@@ -31,7 +31,6 @@ public final class MainController {
   private let walletStateLoader: WalletStateLoader
   private let tonRatesLoader: TonRatesLoaderV2
   private let internalNotificationsLoader: InternalNotificationsLoader
-  private let nftsLoader: NftsLoader
   
   private var tonRatesLoadTimer: Timer?
 
@@ -51,7 +50,6 @@ public final class MainController {
        apiProvider: APIProvider,
        walletStateLoader: WalletStateLoader,
        tonRatesLoader: TonRatesLoaderV2,
-       nftsLoader: NftsLoader,
        internalNotificationsLoader: InternalNotificationsLoader) {
     self.walletsStore = walletsStore
     self.accountNFTService = accountNFTService
@@ -65,7 +63,6 @@ public final class MainController {
     self.apiProvider = apiProvider
     self.walletStateLoader = walletStateLoader
     self.tonRatesLoader = tonRatesLoader
-    self.nftsLoader = nftsLoader
     self.internalNotificationsLoader = internalNotificationsLoader
   }
   
@@ -79,10 +76,8 @@ public final class MainController {
   
   public func startUpdates() {
     walletStateLoader.startStateReload()
+    walletStateLoader.loadNFTs()
     Task {
-      backgroundUpdateUpdater.addEventObserver(self) { observer, event in
-        
-      }
       await backgroundUpdateUpdater.start()
     }
     Task {

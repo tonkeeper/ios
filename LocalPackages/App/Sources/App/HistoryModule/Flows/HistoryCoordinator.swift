@@ -132,11 +132,7 @@ private extension HistoryCoordinator {
         }
       }
     }
-//    do {
-//      keeperCoreMainAssembly.servicesAssembly.nftService().getNFT(address: address, isTestnet: wallet.isTestnet)
-//    } catch {
-//      
-//    }
+
     @MainActor
     func openDetails(nft: NFT) {
       let navigationController = TKNavigationController()

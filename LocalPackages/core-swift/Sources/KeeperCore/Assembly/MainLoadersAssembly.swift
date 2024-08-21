@@ -32,9 +32,23 @@ public final class MainLoadersAssembly {
       balanceService: servicesAssembly.balanceService(),
       stackingService: servicesAssembly.stackingService(),
       ratesService: servicesAssembly.ratesService(),
-      backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater
+      backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater,
+      accountNftsLoader: accountNftsLoader
     )
     _walletStateLoader = loader
+    return loader
+  }
+  
+  private weak var _accountNftsLoader: AccountNftsLoader?
+  public var accountNftsLoader: AccountNftsLoader {
+    if let _accountNftsLoader {
+      return _accountNftsLoader
+    }
+    let loader = AccountNftsLoader(
+      accountNFTsStore: mainStoresAssembly.accountNftsStore,
+      nftsService: servicesAssembly.accountNftService()
+    )
+    _accountNftsLoader = loader
     return loader
   }
 }

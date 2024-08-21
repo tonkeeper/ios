@@ -1,91 +1,110 @@
 import UIKit
 import TKCore
 import TKUIKit
+import TKLocalize
 import KeeperCore
 import TonSwift
 
 protocol CollectiblesModuleOutput: AnyObject {
-  var didSelectNFT: ((NFT) -> Void)? { get set }
+  var didChangeWallet: ((Wallet) -> Void)? { get set }
+  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)? { get set }
+}
+protocol CollectiblesModuleInput: AnyObject {
+  func setListModuleOutput(_ output: CollectiblesListModuleOutput)
 }
 
 protocol CollectiblesViewModel: AnyObject {
-  var didUpdateListViewController: ((CollectiblesListViewController) -> Void)? { get set }
-  var didUpdateEmptyViewController: ((UIViewController) -> Void)? { get set }
-  var didUpdateIsEmpty: ((Bool) -> Void)? { get set }
+  var didUpdateState: ((_ state: HistoryViewController.State, _ animated: Bool) -> Void)? { get set }
+  var didUpdateEmptyModel: ((TKEmptyViewController.Model) -> Void)? { get set }
   var didUpdateIsConnecting: ((Bool) -> Void)? { get set }
   
   func viewDidLoad()
 }
 
-final class CollectiblesViewModelImplementation: CollectiblesViewModel, CollectiblesModuleOutput {
+final class CollectiblesViewModelImplementation: CollectiblesViewModel, CollectiblesModuleOutput, CollectiblesModuleInput {
   
   // MARK: - CollectiblesModuleOutput
   
-  var didSelectNFT: ((NFT) -> Void)?
-
+  var didChangeWallet: ((Wallet) -> Void)?
+  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)?
   
+  // MARK: - CollectiblesModuleInput
+  
+  func setListModuleOutput(_ output: any CollectiblesListModuleOutput) {
+    output.didUpdate = { [weak self] hasEvents in
+      let state: CollectiblesViewController.State = hasEvents ? .list : .empty
+      DispatchQueue.main.async {
+        self?.didUpdateState?(state, false)
+      }
+    }
+  }
+
   // MARK: - CollectiblesViewModel
   
+  var didUpdateState: ((_ state: HistoryViewController.State, _ animated: Bool) -> Void)?
+  var didUpdateEmptyModel: ((TKEmptyViewController.Model) -> Void)?
   var didUpdateIsConnecting: ((Bool) -> Void)?
-  var didUpdateListViewController: ((CollectiblesListViewController) -> Void)?
-  var didUpdateEmptyViewController: ((UIViewController) -> Void)?
-  var didUpdateIsEmpty: ((Bool) -> Void)?
   
   func viewDidLoad() {
-    setupChildren()
-    
-    Task {
-      collectiblesController.didUpdateIsConnecting = { [weak self] isConnecting in
-        guard let self = self else { return }
-        Task { @MainActor in
-          self.didUpdateIsConnecting?(isConnecting)
-        }
+    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      DispatchQueue.main.async {
+        observer.didUpdateWalletsState(newState: newState, oldState: oldState)
       }
-      
-      collectiblesController.didUpdateActiveWallet = { [weak self] in
-        guard let self = self else { return }
-        Task { @MainActor in
-          self.setupChildren()
-        }
-      }
-      
-      collectiblesController.didUpdateIsEmpty = { [weak self] isEmpty in
-        guard let self = self else { return }
-        Task { @MainActor in
-          self.didUpdateIsEmpty?(isEmpty)
-        }
-      }
-      
-      await collectiblesController.start()
-      await collectiblesController.updateConnectingState()
     }
+    
+    backgroundUpdateStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      DispatchQueue.main.async {
+        observer.didUpdateBackgroundUpdateState(newState: newState)
+      }
+    }
+    
+    let wallet = walletsStore.getState().activeWallet
+    didChangeWallet?(wallet)
+    setupEmpty(wallet: wallet)
+    didUpdateState?(.list, false)
+    
+    let state = backgroundUpdateStore.getState()
+    didUpdateBackgroundUpdateState(newState: state)
   }
   
   // MARK: Dependencies
   
-  private let collectiblesController: CollectiblesController
-  private let listModuleProvider: (Wallet) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void>
-  private let emptyModuleProvider: (Wallet) -> MVVMModule<CollectiblesEmptyViewController, CollectiblesEmptyModuleOutput, Void>
+  private let walletsStore: WalletsStore
+  private let backgroundUpdateStore: BackgroundUpdateStore
   
-  init(collectiblesController: CollectiblesController,
-       listModuleProvider: @escaping (Wallet) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void>,
-       emptyModuleProvider: @escaping (Wallet) -> MVVMModule<CollectiblesEmptyViewController, CollectiblesEmptyModuleOutput, Void>) {
-    self.collectiblesController = collectiblesController
-    self.listModuleProvider = listModuleProvider
-    self.emptyModuleProvider = emptyModuleProvider
+  init(walletsStore: WalletsStore,
+       backgroundUpdateStore: BackgroundUpdateStore) {
+    self.walletsStore = walletsStore
+    self.backgroundUpdateStore = backgroundUpdateStore
   }
 }
 
 private extension CollectiblesViewModelImplementation {
-  func setupChildren() {
-    let listModule = listModuleProvider(collectiblesController.wallet)
-    listModule.output.didSelectNFT = { [weak self] nft in
-      self?.didSelectNFT?(nft)
-    }
-    didUpdateListViewController?(listModule.view)
-    
-    let emptyModule = emptyModuleProvider(collectiblesController.wallet)
-    
-    didUpdateEmptyViewController?(emptyModule.view)
+  func setupEmpty(wallet: Wallet) {
+    let model = TKEmptyViewController.Model(
+      title: TKLocales.Purchases.empty_placeholder,
+      caption: nil,
+      buttons: []
+    )
+    didUpdateEmptyModel?(model)
   }
+  
+  func didUpdateWalletsState(newState: WalletsState, oldState: WalletsState) {
+    guard newState.activeWallet != oldState.activeWallet else { return }
+    didChangeWallet?(newState.activeWallet)
+  }
+  
+  func didUpdateBackgroundUpdateState(newState: BackgroundUpdateStore.State) {
+    switch newState {
+    case .connecting:
+      didUpdateIsConnecting?(true)
+    case .connected:
+      didUpdateIsConnecting?(false)
+    case .disconnected:
+      didUpdateIsConnecting?(true)
+    case .noConnection:
+      didUpdateIsConnecting?(true)
+    }
+  }
+
 }

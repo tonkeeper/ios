@@ -53,6 +53,10 @@ public struct RepositoriesAssembly {
     AccountNFTRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
+  func accountNFTsManagementRepository() -> AccountNFTsManagementRepository {
+    AccountNFTsManagementRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
   public func passcodeRepository() -> PasscodeRepository {
     PasscodeRepositoryImplementation(passcodeVault: coreAssembly.passcodeVault())
   }

@@ -16,6 +16,7 @@ actor WalletStateLoader {
   private let stackingService: StakingService
   private let ratesService: RatesService
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
+  private let accountNftsLoader: AccountNftsLoader
   
   init(balanceStore: BalanceStore, 
        currencyStore: CurrencyStore,
@@ -25,7 +26,8 @@ actor WalletStateLoader {
        balanceService: BalanceService,
        stackingService: StakingService,
        ratesService: RatesService,
-       backgroundUpdateUpdater: BackgroundUpdateUpdater) {
+       backgroundUpdateUpdater: BackgroundUpdateUpdater,
+       accountNftsLoader: AccountNftsLoader) {
     self.balanceStore = balanceStore
     self.currencyStore = currencyStore
     self.walletsStore = walletsStore
@@ -35,6 +37,7 @@ actor WalletStateLoader {
     self.stackingService = stackingService
     self.ratesService = ratesService
     self.backgroundUpdateUpdater = backgroundUpdateUpdater
+    self.accountNftsLoader = accountNftsLoader
     Task {
       await setupObserverations()
     }
@@ -60,6 +63,14 @@ actor WalletStateLoader {
   func stopStateReload() {
     Task {
       await resetReloadStateTask()
+    }
+  }
+  
+  nonisolated
+  func loadNFTs() {
+    Task {
+      let walletsState = await walletsStore.getState()
+      await accountNftsLoader.loadNfts(wallet: walletsState.activeWallet)
     }
   }
 }
@@ -105,8 +116,13 @@ private extension WalletStateLoader {
     if newState.activeWallet != oldState.activeWallet {
       walletsToUpdate.append(newState.activeWallet)
     }
-    let currency = await currencyStore.getCurrency()
-    await reloadBalance(wallets: walletsToUpdate, currency: currency)
+    Task {
+      let currency = await currencyStore.getCurrency()
+      await reloadBalance(wallets: walletsToUpdate, currency: currency)
+    }
+    Task(priority: .userInitiated) {
+      await accountNftsLoader.loadNfts(wallet: newState.activeWallet)
+    }
   }
   
   func didUpdateCurrencyStoreState(newState: Currency, oldState: Currency) async {

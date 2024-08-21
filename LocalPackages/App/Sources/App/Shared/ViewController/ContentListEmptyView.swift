@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class HistoryView: UIView {
+final class ContentListEmptyView: UIView {
   let navigationBarView = TKNavigationBar()
 
   private let emptyViewContainer = UIView()
@@ -43,7 +43,7 @@ final class HistoryView: UIView {
   }
 }
 
-private extension HistoryView {
+private extension ContentListEmptyView {
   func setup() {
     backgroundColor = .Background.page
     addSubview(emptyViewContainer)

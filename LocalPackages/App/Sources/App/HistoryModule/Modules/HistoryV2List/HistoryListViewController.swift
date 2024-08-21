@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import TKCoordinator
 
-final class HistoryListViewController: GenericViewViewController<HistoryListView> {
+final class HistoryListViewController: GenericViewViewController<HistoryListView>, ContentListEmptyViewControllerListViewController {
   typealias Item = HistoryListItem
   typealias Section = HistoryListSection
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>

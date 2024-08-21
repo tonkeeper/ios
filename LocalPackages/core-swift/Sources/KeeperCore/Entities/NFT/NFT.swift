@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public struct NFT: Codable {
+public struct NFT: Codable, Equatable {
   public let address: Address
   public let owner: WalletAccount?
   public let name: String?
@@ -13,39 +13,41 @@ public struct NFT: Codable {
   public let dns: String?
   public let sale: Sale?
   public let isHidden: Bool
+  public let trust: Trust
   
-  public struct Marketplace {
+  public struct Marketplace: Equatable {
     public let name: String
     public let url: URL?
   }
   
-  public struct Attribute: Codable {
+  public struct Attribute: Codable, Equatable {
     public let key: String
     public let value: String
   }
   
-  public enum Trust {
-    public struct Approval {
-      let name: String
-    }
-    case approvedBy([Approval])
+  public enum Trust: String, Equatable, Codable {
+    case none
+    case whitelist
+    case blacklist
+    case graylist
+    case unknown
   }
   
-  public struct Preview: Codable {
+  public struct Preview: Codable, Equatable {
     public let size5: URL?
     public let size100: URL?
     public let size500: URL?
     public let size1500: URL?
   }
   
-  public struct Sale: Codable {
+  public struct Sale: Codable, Equatable {
     public let address: Address
     public let market: WalletAccount
     public let owner: WalletAccount?
   }
 }
 
-public struct NFTCollection: Codable {
+public struct NFTCollection: Codable, Equatable {
   public let address: Address
   public let name: String?
   public let description: String?

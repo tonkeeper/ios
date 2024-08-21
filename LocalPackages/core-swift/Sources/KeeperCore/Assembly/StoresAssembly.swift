@@ -144,7 +144,7 @@ public final class StoresAssembly {
   }
 }
 
-private class Weak<T: AnyObject> {
+class Weak<T: AnyObject> {
   weak var value : T?
   init (value: T) {
     self.value = value

@@ -39,17 +39,18 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
 
 private extension CollectiblesCoordinator {
   func openCollectibles() {
-    let module = CollectiblesAssembly.module(
-      collectiblesController: keeperCoreMainAssembly.collectiblesController(), listModuleProvider: { [keeperCoreMainAssembly] wallet in
-        CollectiblesListAssembly.module(
-          collectiblesListController: keeperCoreMainAssembly.collectiblesListController(wallet: wallet)
-        )
-      }, emptyModuleProvider: { wallet in
-        CollectiblesEmptyAssembly.module()
-      })
-    
-    module.output.didSelectNFT = { [weak self] nft in
-      self?.openNFTDetails(nft: nft)
+    let module = CollectiblesAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
+
+    module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly] wallet in
+      guard let self else { return }
+      
+      let listModule = CollectiblesListAssembly.module(
+        wallet: wallet,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+      
+      module.input.setListModuleOutput(listModule.output)
+      module.view.setListViewController(listModule.view)
     }
     
     router.push(viewController: module.view, animated: false)

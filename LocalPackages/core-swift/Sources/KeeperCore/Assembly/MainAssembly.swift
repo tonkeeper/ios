@@ -83,7 +83,6 @@ public final class MainAssembly {
       apiProvider: apiAssembly.apiProvider,
       walletStateLoader: mainLoadersAssembly.walletStateLoader,
       tonRatesLoader: loadersAssembly.tonRatesLoaderV2,
-      nftsLoader: loadersAssembly.nftsLoader,
       internalNotificationsLoader: loadersAssembly.internalNotificationsLoader
     )
   }
