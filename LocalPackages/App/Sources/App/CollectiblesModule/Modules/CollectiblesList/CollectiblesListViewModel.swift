@@ -13,8 +13,7 @@ protocol CollectiblesListViewModel: AnyObject {
   
   func viewDidLoad()
   func getNFTCellModel(identifier: String) -> CollectibleCollectionViewCell.Model?
-//  func loadNext()
-//  func didSelectNftAt(index: Int)
+  func didSelectNftAt(index: Int)
 }
 
 final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, CollectiblesListModuleOutput {
@@ -50,17 +49,15 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   }
   
   func didSelectNftAt(index: Int) {
-//    Task {
-//      let nft = await collectiblesListController.nftAt(index: index)
-//      await MainActor.run {
-//        didSelectNFT?(nft)
-//      }
-//    }
+    guard index < nfts.count else { return }
+    let nft = nfts[index]
+    didSelectNFT?(nft)
   }
   
   // MARK: - State
   
   private var models = [String: CollectibleCollectionViewCell.Model]()
+  private var nfts = [NFT]()
   
   // MARK: - Mapper
   
@@ -104,6 +101,7 @@ private extension CollectiblesListViewModelImplementation {
     let snapshot = self.createSnapshot(state: filteredState)
     let models = self.createModels(state: filteredState)
     let hasItems = self.hasItems(state: filteredState)
+    self.nfts = filteredState.nfts
     self.didUpdate?(hasItems)
     self.models = models
     self.didUpdateSnapshot?(snapshot)

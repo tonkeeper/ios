@@ -42,8 +42,6 @@ private extension CollectiblesCoordinator {
     let module = CollectiblesAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
 
     module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly] wallet in
-      guard let self else { return }
-      
       let listModule = CollectiblesListAssembly.module(
         wallet: wallet,
         keeperCoreMainAssembly: keeperCoreMainAssembly
@@ -51,6 +49,10 @@ private extension CollectiblesCoordinator {
       
       module.input.setListModuleOutput(listModule.output)
       module.view.setListViewController(listModule.view)
+    }
+    
+    module.output.didSelectNFT = { [weak self] wallet, nft in
+      self?.openNFTDetails(nft: nft)
     }
     
     router.push(viewController: module.view, animated: false)

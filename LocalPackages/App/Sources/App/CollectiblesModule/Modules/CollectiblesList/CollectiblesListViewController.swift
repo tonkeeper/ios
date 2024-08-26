@@ -56,6 +56,7 @@ final class CollectiblesListViewController: GenericViewViewController<Collectibl
 private extension CollectiblesListViewController {
   func setup() {
     customView.collectionView.setCollectionViewLayout(layout, animated: true)
+    customView.collectionView.delegate = self
   }
   
   func setupBindings() {
@@ -122,6 +123,12 @@ private extension CollectiblesListViewController {
       configuration: configuration
     )
     return layout
+  }
+}
+
+extension CollectiblesListViewController: UICollectionViewDelegate {
+  func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+    viewModel.didSelectNftAt(index: indexPath.item)
   }
 }
 

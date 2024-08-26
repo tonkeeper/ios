@@ -5,6 +5,15 @@ public final class AccountNFTsStore: StoreUpdated<[FriendlyAddress: AccountNFTsS
   public enum State: Equatable {
     case loading(cached: [NFT])
     case items(item: [NFT])
+    
+    public var nfts: [NFT] {
+      switch self {
+      case .loading(let cached):
+        return cached
+      case .items(let items):
+        return items
+      }
+    }
   }
   
   private let walletsStore: WalletsStore

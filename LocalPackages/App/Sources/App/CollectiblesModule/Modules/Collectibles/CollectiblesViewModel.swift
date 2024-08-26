@@ -7,7 +7,7 @@ import TonSwift
 
 protocol CollectiblesModuleOutput: AnyObject {
   var didChangeWallet: ((Wallet) -> Void)? { get set }
-  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)? { get set }
+  var didSelectNFT: ((_ wallet: Wallet, _ nft: NFT) -> Void)? { get set }
 }
 protocol CollectiblesModuleInput: AnyObject {
   func setListModuleOutput(_ output: CollectiblesListModuleOutput)
@@ -26,7 +26,7 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   // MARK: - CollectiblesModuleOutput
   
   var didChangeWallet: ((Wallet) -> Void)?
-  var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)?
+  var didSelectNFT: ((_ wallet: Wallet, _ nft: NFT) -> Void)?
   
   // MARK: - CollectiblesModuleInput
   
@@ -35,6 +35,13 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
       let state: CollectiblesViewController.State = hasEvents ? .list : .empty
       DispatchQueue.main.async {
         self?.didUpdateState?(state, false)
+      }
+    }
+    
+    output.didSelectNFT = { [weak self, walletsStore] nft in
+      DispatchQueue.main.async {
+        let wallet = walletsStore.getState().activeWallet
+        self?.didSelectNFT?(wallet, nft)
       }
     }
   }
