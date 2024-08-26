@@ -3,11 +3,14 @@ import TKUIKit
 import TKCoordinator
 import TKCore
 import KeeperCore
+import WidgetKit
 
 public final class AppCoordinator: RouterCoordinator<WindowRouter> {
   
   let coreAssembly: TKCore.CoreAssembly
   let keeperCoreAssembly: KeeperCore.Assembly
+  
+  private let appStateTracker: AppStateTracker
   
   private weak var rootCoordinator: RootCoordinator?
   
@@ -21,6 +24,7 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
         appInfoProvider: coreAssembly.appInfoProvider
       )
     )
+    self.appStateTracker = coreAssembly.appStateTracker
     super.init(router: router)
   }
   
@@ -32,6 +36,8 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
     }
     
     openRoot(deeplink: deeplink)
+    
+    appStateTracker.addObserver(self)
   }
   
   public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -55,5 +61,16 @@ private extension AppCoordinator {
     
     addChild(rootCoordinator)
     rootCoordinator.start(deeplink: deeplink)
+  }
+}
+
+extension AppCoordinator: AppStateTrackerObserver {
+  public func didUpdateState(_ state: AppStateTracker.State) {
+    switch state {
+    case .resign:
+      WidgetCenter.shared.reloadAllTimelines()
+    default:
+      break
+    }
   }
 }
