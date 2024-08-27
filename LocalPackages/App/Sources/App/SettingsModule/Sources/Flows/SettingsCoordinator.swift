@@ -35,6 +35,7 @@ private extension SettingsCoordinator {
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
       configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore,
+      accountsNFTsStore: keeperCoreMainAssembly.mainStoresAssembly.accountNftsStore,
       walletDeleteController: keeperCoreMainAssembly.walletDeleteController,
       anaylticsProvider: coreAssembly.analyticsProvider
     )

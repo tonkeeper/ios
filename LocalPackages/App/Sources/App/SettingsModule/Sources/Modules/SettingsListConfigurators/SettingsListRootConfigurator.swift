@@ -19,6 +19,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didTapDeleteRegularWallet: ((Wallet) -> Void)?
   var didTapLogout: (() -> Void)?
   var didDeleteWallet: (() -> Void)?
+  var didTapPurchases: (() -> Void)?
   
   // MARK: - SettingsListV2Configurator
   
@@ -29,19 +30,10 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var isSelectable: Bool { false }
   
   func getState() -> SettingsListState {
-    let walletsStoreState = walletsStore.getState()
-    guard let wallet = walletsStoreState.wallets.first(where: { $0.id == walletId }) else {
-      return SettingsListState(sections: [], selectedItem: nil)
-    }
-    let currency = currencyStore.getState()
-    let sections = createSections(wallet: wallet, wallets: walletsStoreState.wallets, currency: currency)
+    let sections = createSections()
     return SettingsListState(sections: sections, selectedItem: nil)
   }
-  
-  // MARK: - State
-  
-  private let actor = SerialActor<Void>()
-  
+
   // MARK: - Dependencies
   
   private let walletId: String
@@ -50,6 +42,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
   private let configurationStore: ConfigurationStore
+  private let accountsNFTsStore: AccountNFTsStore
   private let walletDeleteController: WalletDeleteController
   private let anaylticsProvider: AnalyticsProvider
   
@@ -61,6 +54,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
        configurationStore: ConfigurationStore,
+       accountsNFTsStore: AccountNFTsStore,
        walletDeleteController: WalletDeleteController,
        anaylticsProvider: AnalyticsProvider) {
     self.walletId = walletId
@@ -69,48 +63,56 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.mnemonicsRepository = mnemonicsRepository
     self.appStoreReviewer = appStoreReviewer
     self.configurationStore = configurationStore
+    self.accountsNFTsStore = accountsNFTsStore
     self.walletDeleteController = walletDeleteController
     self.anaylticsProvider = anaylticsProvider
     walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      guard let wallet = newState.wallets.first(where: { $0.id == walletId }) else { return }
-      guard wallet != oldState.wallets.first(where: { $0.id == walletId }) else { return }
-      let currency = currencyStore.getState()
-      let sections = observer.createSections(wallet: wallet, wallets: newState.wallets, currency: currency)
-      observer.didUpdateState?(SettingsListState(sections: sections, selectedItem: nil))
+      DispatchQueue.main.async {
+        let sections = observer.createSections()
+        let state = SettingsListState(sections: sections, selectedItem: nil)
+        observer.didUpdateState?(state)
+      }
     }
     currencyStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      let walletsState = walletsStore.getState()
-      guard let wallet = walletsState.wallets.first(where: { $0.id == walletId }) else { return }
-      guard newState != oldState else { return }
-      let sections = observer.createSections(wallet: wallet, wallets: walletsState.wallets, currency: newState)
-      observer.didUpdateState?(SettingsListState(sections: sections, selectedItem: nil))
+      DispatchQueue.main.async {
+        let sections = observer.createSections()
+        let state = SettingsListState(sections: sections, selectedItem: nil)
+        observer.didUpdateState?(state)
+      }
+    }
+    accountsNFTsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+      DispatchQueue.main.async {
+        let sections = observer.createSections()
+        let state = SettingsListState(sections: sections, selectedItem: nil)
+        observer.didUpdateState?(state)
+      }
     }
     TKThemeManager.shared.addEventObserver(self) { observer, _ in
-      let walletsState = walletsStore.getState()
-      guard let wallet = walletsState.wallets.first(where: { $0.id == walletId }) else {
-        return
+      DispatchQueue.main.async {
+        let sections = observer.createSections()
+        let state = SettingsListState(sections: sections, selectedItem: nil)
+        observer.didUpdateState?(state)
       }
-      let currency = currencyStore.getState()
-      let sections = observer.createSections(wallet: wallet, wallets: walletsState.wallets, currency: currency)
-      let state = SettingsListState(sections: sections, selectedItem: nil)
-      observer.didUpdateState?(state)
     }
   }
 }
 
 private extension SettingsListRootConfigurator {
-  func createSections(wallet: Wallet, wallets: [Wallet], currency: Currency) -> [SettingsListSection] {
+  func createSections() -> [SettingsListSection] {
+    let walletsState = walletsStore.getState()
+    let currency = currencyStore.getState()
+    
     var sections = [SettingsListSection]()
     
-    sections.append(createWalletSection(wallet: wallet))
+    sections.append(createWalletSection(wallet: walletsState.activeWallet))
     
-    if let securitySection = createSecuritySection(wallet: wallet, wallets: wallets) {
+    if let securitySection = createWalletSettingsSection(wallet: walletsState.activeWallet) {
       sections.append(securitySection)
     }
     
-    sections.append(createSettingsSection(currency: currency))
+    sections.append(createAppSettingsSection(currency: currency, wallets: walletsState.wallets))
     sections.append(createInformationSection())
-    sections.append(createDeleteSection(wallet: wallet))
+    sections.append(createDeleteSection(wallet: walletsState.activeWallet))
     sections.append(createAppInformationSection())
     
     return sections
@@ -183,22 +185,8 @@ private extension SettingsListRootConfigurator {
     return SettingsListSection.items(topPadding: 14, items: [configuration])
   }
   
-  func createSecuritySection(wallet: Wallet, wallets: [Wallet]) -> SettingsListSection? {
-    let hasMnemonics = mnemonicsRepository.hasMnemonics()
-    let hasRegularWallet = wallets.contains(where: { $0.kind == .regular })
-    guard hasMnemonics && hasRegularWallet else { return nil }
-    
+  func createWalletSettingsSection(wallet: Wallet) -> SettingsListSection? {
     var items = [AnyHashable]()
-    items.append(
-      TKUIListItemCell.Configuration.createSettingsItem(
-        id: .securityItemIdentifier,
-        title: .string(TKLocales.Settings.Items.security),
-        accessory: .icon(.TKUIKit.Icons.Size28.key, .Accent.blue),
-        selectionClosure: { [weak self] in
-          self?.didTapSecuritySettings?()
-        }
-      )
-    )
     
     if wallet.isBackupAvailable {
       items.append(
@@ -212,39 +200,67 @@ private extension SettingsListRootConfigurator {
         )
       )
     }
+    
+    if let collectiblesManagementItem = createCollectiblesManagementItem() {
+      items.append(collectiblesManagementItem)
+    }
+    
+    guard !items.isEmpty else {
+      return nil
+    }
+    
     return SettingsListSection.items(topPadding: 30, items: items)
   }
   
-  func createSettingsSection(currency: Currency) -> SettingsListSection {
-    return SettingsListSection.items(
-      topPadding: 30,
-      items: [
+  func createAppSettingsSection(currency: Currency, wallets: [Wallet]) -> SettingsListSection {
+    var items = [AnyHashable]()
+    
+    let hasMnemonics = mnemonicsRepository.hasMnemonics()
+    let hasRegularWallet = wallets.contains(where: { $0.kind == .regular })
+    if hasMnemonics && hasRegularWallet {
+      items.append(
         TKUIListItemCell.Configuration.createSettingsItem(
-          id: .currencyItemIdentifier,
-          title: .string(TKLocales.Settings.Items.currency),
-          accessory: .text(value: currency.code),
+          id: .securityItemIdentifier,
+          title: .string(TKLocales.Settings.Items.security),
+          accessory: .icon(.TKUIKit.Icons.Size28.key, .Accent.blue),
           selectionClosure: { [weak self] in
-            self?.didTapCurrencySettings?()
-          }
-        ),
-        TKUIListItemCell.Configuration.createSettingsItem(
-          id: .themeItemIdentifier,
-          title: .string(TKLocales.Settings.Items.theme),
-          accessory: .text(value: TKThemeManager.shared.theme.title),
-          selectionClosure: { [weak self] in
-            let items = TKTheme.allCases.map { theme in
-              TKPopupMenuItem(title: theme.title,
-                              value: nil,
-                              description: nil,
-                              icon: nil) {
-                TKThemeManager.shared.theme = theme
-              }
-            }
-            let selectedIndex = TKTheme.allCases.firstIndex(of: TKThemeManager.shared.theme)
-            self?.didShowPopupMenu?(items, selectedIndex)
+            self?.didTapSecuritySettings?()
           }
         )
-      ]
+      )
+    }
+    
+    items.append(contentsOf: [
+      TKUIListItemCell.Configuration.createSettingsItem(
+        id: .currencyItemIdentifier,
+        title: .string(TKLocales.Settings.Items.currency),
+        accessory: .text(value: currency.code),
+        selectionClosure: { [weak self] in
+          self?.didTapCurrencySettings?()
+        }
+      ),
+      TKUIListItemCell.Configuration.createSettingsItem(
+        id: .themeItemIdentifier,
+        title: .string(TKLocales.Settings.Items.theme),
+        accessory: .text(value: TKThemeManager.shared.theme.title),
+        selectionClosure: { [weak self] in
+          let items = TKTheme.allCases.map { theme in
+            TKPopupMenuItem(title: theme.title,
+                            value: nil,
+                            description: nil,
+                            icon: nil) {
+              TKThemeManager.shared.theme = theme
+            }
+          }
+          let selectedIndex = TKTheme.allCases.firstIndex(of: TKThemeManager.shared.theme)
+          self?.didShowPopupMenu?(items, selectedIndex)
+        }
+      )
+    ])
+    
+    return SettingsListSection.items(
+      topPadding: 30,
+      items: items
     )
   }
   
@@ -478,6 +494,22 @@ private extension SettingsListRootConfigurator {
     result.append(walletName)
     return .attributedString(result)
   }
+  
+  private func createCollectiblesManagementItem() -> AnyHashable? {
+    let wallet = walletsStore.getState().activeWallet
+    guard let address = try? wallet.friendlyAddress,
+          let state = accountsNFTsStore.getState()[address],
+          !state.nfts.isEmpty else { return nil }
+    
+    return TKUIListItemCell.Configuration.createSettingsItem(
+      id: .purchasesIdentifier,
+      title: .string(TKLocales.Settings.Items.purchases),
+      accessory: .icon(.TKUIKit.Icons.Size28.purchase, .Accent.blue),
+      selectionClosure: { [weak self] in
+        self?.didTapPurchases?()
+      }
+    )
+  }
 }
 
 private extension String {
@@ -494,6 +526,5 @@ private extension String {
   static let legalItemIdentifier = "LegalItem"
   static let deleteAccountIdentifier = "DeleteAccountItem"
   static let logoutIdentifier = "LogoutItem"
-  
-  static let deleteWatchTitle = "Are you sure you want to delete Watch account?"
+  static let purchasesIdentifier = "Purhases item"
 }

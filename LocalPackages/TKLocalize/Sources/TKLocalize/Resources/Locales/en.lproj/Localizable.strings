@@ -63,6 +63,7 @@
 "settings.items.delete_watch_only" = "Delete Watch account";
 "settings.items.delete_acount_alert_title" = "Delete account";
 "settings.items.setup_wallet_description" = "Edit name and color";
+"settings.items.purchases" = "Purchases";
 
 "settings.logout.title" = "Log out?";
 "settings.logout.description" = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.";
@@ -72,6 +73,11 @@
 "settings.legal.items.privacy_policy" = "Privacy policy";
 "settings.legal.items.montserrat_font" = "Montserrat font";
 "settings.legal.sections.licenses" = "Licences";
+
+"settings.purchases.title" = "Purchases";
+"settings.purchases.sections.visible" = "Visible";
+"settings.purchases.sections.hidden" = "Hidden";
+"settings.purchases.sections.spam" = "Spam";
 
 "theme.title" = "Theme";
 "theme.options.system" = "System";

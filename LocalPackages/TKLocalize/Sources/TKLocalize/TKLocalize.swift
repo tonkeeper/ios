@@ -267,6 +267,10 @@ public enum TKLocales {
       public static var setup_wallet_description: String {
         localize("settings.items.setup_wallet_description")
       }
+      /// Purchases
+      public static var purchases: String {
+        localize("settings.items.purchases")
+      }
     }
     public enum Logout {
       /// Log out?
@@ -301,6 +305,26 @@ public enum TKLocales {
         /// Licences
         public static var licenses: String {
           localize("settings.legal.sections.licenses")
+        }
+      }
+    }
+    public enum Purchases {
+      /// Purchases
+      public static var title: String {
+        localize("settings.purchases.title")
+      }
+      public enum Sections {
+        /// Visible
+        public static var visible: String {
+          localize("settings.purchases.sections.visible")
+        }
+        /// Hidden
+        public static var hidden: String {
+          localize("settings.purchases.sections.hidden")
+        }
+        /// Spam
+        public static var spam: String {
+          localize("settings.purchases.sections.spam")
         }
       }
     }

@@ -63,6 +63,7 @@
 "settings.items.delete_watch_only" = "Удалить аккаунт";
 "settings.items.delete_acount_alert_title" = "Удалить аккаунт";
 "settings.items.setup_wallet_description" = "Кастомизировать";
+"settings.items.purchases" = "Покупки";
 
 "settings.logout.title" = "Выйти?";
 "settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
@@ -72,6 +73,11 @@
 "settings.legal.items.privacy_policy" = "Политика конфиденциальности";
 "settings.legal.items.montserrat_font" = "Шрифт Montserrat";
 "settings.legal.sections.licenses" = "Лицензии";
+
+"settings.purchases.title" = "Покупки";
+"settings.purchases.sections.visible" = "Видимые";
+"settings.purchases.sections.hidden" = "Скрытые";
+"settings.purchases.sections.spam" = "Спам";
 
 "theme.title" = "Тема";
 "theme.options.system" = "Системная";
