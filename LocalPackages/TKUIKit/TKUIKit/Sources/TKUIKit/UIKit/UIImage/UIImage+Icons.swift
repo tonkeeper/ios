@@ -94,6 +94,14 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-twitter-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var plus: UIImage {
+          .imageWithName("Icons/16/ic-plus-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var minus: UIImage {
+          .imageWithName("Icons/16/ic-minus-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {
@@ -266,6 +274,14 @@ public extension UIImage {
         }
         public static var plusOutline: UIImage {
           .imageWithName("Icons/28/ic-plus-outline-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var plus: UIImage {
+          .imageWithName("Icons/28/ic-plus-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
+        public static var minus: UIImage {
+          .imageWithName("Icons/28/ic-minus-28")
           .withRenderingMode(.alwaysTemplate)
         }
       }

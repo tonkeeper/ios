@@ -152,11 +152,18 @@ private extension CollectiblesListViewModelImplementation {
     
     func filter(items: [NFT]) -> [NFT] {
       items.filter {
+        let state: NFTsManagementState.NFTState?
+        if let collection = $0.collection {
+          state = managementState.nftStates[.collection(collection.address)]
+        } else {
+          state = managementState.nftStates[.singleItem($0.address)]
+        }
+        
         switch $0.trust {
         case .blacklist:
-          managementState.nftStates[$0.address] == .visible
+          return state == .visible
         case .graylist, .none, .unknown, .whitelist:
-          managementState.nftStates[$0.address] != .hidden
+          return state != .hidden
         }
       }
     }

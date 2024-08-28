@@ -75,6 +75,16 @@ public enum TKLocales {
       localize("tabs.purchases")
     }
   }
+  public enum List {
+    /// Show all
+    public static var show_all: String {
+      localize("list.show_all")
+    }
+    /// Hide
+    public static var hide: String {
+      localize("list.hide")
+    }
+  }
   public enum CameraPermission {
     /// Enable access to your camera in order to can scan QR codes
     public static var title: String {
@@ -325,6 +335,38 @@ public enum TKLocales {
         /// Spam
         public static var spam: String {
           localize("settings.purchases.sections.spam")
+        }
+      }
+      public enum Token {
+        /// Unnamed collection
+        public static var unnamed_collection: String {
+          localize("settings.purchases.token.unnamed_collection")
+        }
+        /// Single token
+        public static var single_token: String {
+          localize("settings.purchases.token.single_token")
+        }
+        public enum TokenCount {
+          /// tokens
+          public static var zero: String {
+            localize("settings.purchases.token.token_count.zero")
+          }
+          /// token
+          public static var one: String {
+            localize("settings.purchases.token.token_count.one")
+          }
+          /// tokens
+          public static var few: String {
+            localize("settings.purchases.token.token_count.few")
+          }
+          /// tokens
+          public static var many: String {
+            localize("settings.purchases.token.token_count.many")
+          }
+          /// tokens
+          public static var other: String {
+            localize("settings.purchases.token.token_count.other")
+          }
         }
       }
     }

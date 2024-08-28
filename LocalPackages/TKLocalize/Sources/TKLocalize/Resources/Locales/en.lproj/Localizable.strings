@@ -19,6 +19,9 @@
 "tabs.browser" = "Browser";
 "tabs.purchases" = "Purchases";
 
+"list.show_all" = "Show all";
+"list.hide" = "Hide";
+
 "camera_permission.title" = "Enable access to your camera in order to can scan QR codes";
 "camera_permission.button" = "Open Settings";
 
@@ -78,6 +81,13 @@
 "settings.purchases.sections.visible" = "Visible";
 "settings.purchases.sections.hidden" = "Hidden";
 "settings.purchases.sections.spam" = "Spam";
+"settings.purchases.token.unnamed_collection" = "Unnamed collection";
+"settings.purchases.token.single_token" = "Single token";
+"settings.purchases.token.token_count.zero" = "tokens";
+"settings.purchases.token.token_count.one" = "token";
+"settings.purchases.token.token_count.few" = "tokens";
+"settings.purchases.token.token_count.many" = "tokens";
+"settings.purchases.token.token_count.other" = "tokens";
 
 "theme.title" = "Theme";
 "theme.options.system" = "System";

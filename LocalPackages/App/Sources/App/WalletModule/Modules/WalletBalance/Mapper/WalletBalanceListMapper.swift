@@ -250,18 +250,6 @@ struct WalletBalanceListMapper {
   }
 }
 
-private extension TKUIListItemAccessoryView.Configuration {
-  static var chevron: TKUIListItemAccessoryView.Configuration {
-    .image(
-      TKUIListItemImageAccessoryView.Configuration(
-        image: .TKUIKit.Icons.Size16.chevronRight,
-        tintColor: .Text.tertiary,
-        padding: .zero
-      )
-    )
-  }
-}
-
 private struct Comment {
   let text: String
   let tapHandler: (() -> Void)?

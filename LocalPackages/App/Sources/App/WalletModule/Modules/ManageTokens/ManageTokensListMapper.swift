@@ -91,7 +91,7 @@ struct ManageTokensListMapper {
   }
 }
 
-private extension TKUIListItemAccessoryView.Configuration {
+extension TKUIListItemAccessoryView.Configuration {
   static var chevron: TKUIListItemAccessoryView.Configuration {
     .image(
       TKUIListItemImageAccessoryView.Configuration(

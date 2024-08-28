@@ -26,20 +26,20 @@ public final class AccountNFTsManagementStore: StoreUpdated<NFTsManagementState>
     accountNFTsManagementRepository.getState(wallet: wallet)
   }
   
-  public func hideItem(address: Address) async {
+  public func hideItem(_ item: NFTManagementItem) async {
     await updateState { [accountNFTsManagementRepository, wallet] state in
       var updatedNFTStates = state.nftStates
-      updatedNFTStates[address] = .hidden
+      updatedNFTStates[item] = .hidden
       let updatedState = NFTsManagementState(nftStates: updatedNFTStates)
       try? accountNFTsManagementRepository.setState(updatedState, wallet: wallet)
       return AccountNFTsManagementStore.StateUpdate(newState: updatedState)
     }
   }
   
-  public func showItem(address: Address) async {
+  public func showItem(_ item: NFTManagementItem) async {
     await updateState { [accountNFTsManagementRepository, wallet] state in
       var updatedNFTStates = state.nftStates
-      updatedNFTStates[address] = .visible
+      updatedNFTStates[item] = .visible
       let updatedState = NFTsManagementState(nftStates: updatedNFTStates)
       try? accountNFTsManagementRepository.setState(updatedState, wallet: wallet)
       return AccountNFTsManagementStore.StateUpdate(newState: updatedState)

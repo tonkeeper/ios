@@ -74,6 +74,10 @@ private extension SettingsCoordinator {
       self?.deleteRegular(wallet: wallet)
     }
     
+    configurator.didTapPurchases = { [weak self] wallet in
+      self?.openPurchases(wallet: wallet)
+    }
+    
     configurator.didDeleteWallet = { [weak self] in
       guard let self else { return }
       let wallets = self.keeperCoreMainAssembly.walletAssembly.walletsStore.getState().wallets
@@ -303,6 +307,17 @@ private extension SettingsCoordinator {
     }
 
     router.push(viewController: module.viewController)
+  }
+  
+  func openPurchases(wallet: Wallet) {
+    let module = SettingsPurchasesAssembly.module(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
+    
+    module.view.setupBackButton()
+    
+    router.push(viewController: module.view)
   }
   
   func getPasscode() async -> String? {

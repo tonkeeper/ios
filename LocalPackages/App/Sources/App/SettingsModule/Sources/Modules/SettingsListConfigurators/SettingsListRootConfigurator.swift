@@ -19,7 +19,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didTapDeleteRegularWallet: ((Wallet) -> Void)?
   var didTapLogout: (() -> Void)?
   var didDeleteWallet: (() -> Void)?
-  var didTapPurchases: (() -> Void)?
+  var didTapPurchases: ((Wallet) -> Void)?
   
   // MARK: - SettingsListV2Configurator
   
@@ -201,7 +201,7 @@ private extension SettingsListRootConfigurator {
       )
     }
     
-    if let collectiblesManagementItem = createCollectiblesManagementItem() {
+    if let collectiblesManagementItem = createCollectiblesManagementItem(wallet: wallet) {
       items.append(collectiblesManagementItem)
     }
     
@@ -495,8 +495,7 @@ private extension SettingsListRootConfigurator {
     return .attributedString(result)
   }
   
-  private func createCollectiblesManagementItem() -> AnyHashable? {
-    let wallet = walletsStore.getState().activeWallet
+  private func createCollectiblesManagementItem(wallet: Wallet) -> AnyHashable? {
     guard let address = try? wallet.friendlyAddress,
           let state = accountsNFTsStore.getState()[address],
           !state.nfts.isEmpty else { return nil }
@@ -506,7 +505,7 @@ private extension SettingsListRootConfigurator {
       title: .string(TKLocales.Settings.Items.purchases),
       accessory: .icon(.TKUIKit.Icons.Size28.purchase, .Accent.blue),
       selectionClosure: { [weak self] in
-        self?.didTapPurchases?()
+        self?.didTapPurchases?(wallet)
       }
     )
   }

@@ -19,6 +19,9 @@
 "tabs.browser" = "Браузер";
 "tabs.purchases" = "Покупки";
 
+"list.show_all" = "Показать все";
+"list.hide" = "Скрыть";
+
 "camera_permission.title" = "Разрешите доступ к камере, чтобы сканировать QR-коды";
 "camera_permission.button" = "Открыть настройки";
 
@@ -78,6 +81,13 @@
 "settings.purchases.sections.visible" = "Видимые";
 "settings.purchases.sections.hidden" = "Скрытые";
 "settings.purchases.sections.spam" = "Спам";
+"settings.purchases.token.unnamed_collection" = "Коллекция без названия";
+"settings.purchases.token.single_token" = "Одиночный токен";
+"settings.purchases.token.token_count.zero" = "токенов";
+"settings.purchases.token.token_count.one" = "токен";
+"settings.purchases.token.token_count.few" = "токена";
+"settings.purchases.token.token_count.many" = "токенов";
+"settings.purchases.token.token_count.other" = "токенов";
 
 "theme.title" = "Тема";
 "theme.options.system" = "Системная";

@@ -47,8 +47,12 @@ public struct NFT: Codable, Equatable {
   }
 }
 
-public struct NFTCollection: Codable, Equatable {
+public struct NFTCollection: Codable, Equatable, Hashable {
   public let address: Address
   public let name: String?
   public let description: String?
+  
+  public var notEmptyName: String? {
+    name?.isEmpty == false ? name : nil
+  }
 }
