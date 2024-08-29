@@ -188,35 +188,6 @@ public final class MainAssembly {
     )
   }
   
-  public func collectiblesController() -> CollectiblesController {
-    CollectiblesController(
-      walletsStore: walletAssembly.walletsStore,
-      backgroundUpdateStore: mainStoresAssembly.backgroundUpdateStore,
-      nftsStore: storesAssembly.nftsStore
-    )
-  }
-  
-  public func collectiblesListController(wallet: Wallet) -> CollectiblesListController {
-    CollectiblesListController(
-      wallet: wallet,
-      nftsListPaginator: NftsListPaginator(
-        wallet: wallet,
-        accountNftsService: servicesAssembly.accountNftService()
-      ),
-      nftsStore: storesAssembly.nftsStore
-    )
-  }
-  
-  public func collectibleDetailsController(nft: NFT) -> CollectibleDetailsController {
-    CollectibleDetailsController(
-      nft: nft,
-      walletsStore: walletAssembly.walletsStore,
-      nftService: servicesAssembly.nftService(),
-      dnsService: servicesAssembly.dnsService(),
-      collectibleDetailsMapper: CollectibleDetailsMapper(dateFormatter: formattersAssembly.dateFormatter)
-    )
-  }
-  
   public func sendV3Controller() -> SendV3Controller {
     SendV3Controller(
       walletsStore: walletAssembly.walletsStore,
