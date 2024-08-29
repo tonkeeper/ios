@@ -6,7 +6,7 @@ import KeeperCore
 public protocol SettingsListModuleOutput: AnyObject {}
 
 protocol SettingsListViewModel: AnyObject {
-  var didUpdateTitle: ((String) -> Void)? { get set }
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
   var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)? { get set }
   var didSelectItem: ((SettingsListViewController.Item?) -> Void)? { get set }
   var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)? { get set }
@@ -37,10 +37,10 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   
   // MARK: - SettingsListViewModel
   
-  var didUpdateTitle: ((String) -> Void)?
   var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)?
   var didSelectItem: ((SettingsListViewController.Item?) -> Void)?
   var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
   
   func viewDidLoad() {
     configurator.didUpdateState = { [weak self] state in
@@ -53,7 +53,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
         self?.didShowPopupMenu?(items, selectedIndex)
       }
     }
-    didUpdateTitle?(configurator.title)
+    didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: configurator.title))
     let state = configurator.getState()
     update(state: state)
   }

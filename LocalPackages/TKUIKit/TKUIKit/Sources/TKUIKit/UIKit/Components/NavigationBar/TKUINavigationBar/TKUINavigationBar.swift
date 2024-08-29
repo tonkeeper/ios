@@ -61,6 +61,8 @@ public final class TKUINavigationBar: UIView {
     stackView.axis = .horizontal
     stackView.spacing = 8
     stackView.alignment = .center
+    stackView.isLayoutMarginsRelativeArrangement = true
+    stackView.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8)
     return stackView
   }()
   
@@ -69,6 +71,8 @@ public final class TKUINavigationBar: UIView {
     stackView.axis = .horizontal
     stackView.spacing = 8
     stackView.alignment = .center
+    stackView.isLayoutMarginsRelativeArrangement = true
+    stackView.directionalLayoutMargins = NSDirectionalEdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8)
     return stackView
   }()
   

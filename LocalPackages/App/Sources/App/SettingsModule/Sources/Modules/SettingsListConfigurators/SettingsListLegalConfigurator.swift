@@ -63,7 +63,7 @@ private extension SettingsListLegalConfigurator {
     items.append(privacyPolicyItem)
     
     return SettingsListSection.items(
-      topPadding: 14,
+      topPadding: 0,
       items: items,
       header: nil,
       bottomDescription: nil

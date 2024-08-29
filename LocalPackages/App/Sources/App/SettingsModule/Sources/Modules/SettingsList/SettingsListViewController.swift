@@ -28,16 +28,11 @@ public final class SettingsListViewController: GenericViewViewController<Setting
     setupBindings()
     viewModel.viewDidLoad()
   }
-  
-  public override func viewWillAppear(_ animated: Bool) {
-    super.viewWillAppear(animated)
-    
-    navigationController?.setNavigationBarHidden(false, animated: true)
-  }
 }
 
 private extension SettingsListViewController {
   func setup() {
+    setupNavigationBar()
     customView.collectionView.delegate = self
     customView.collectionView.setCollectionViewLayout(
       createLayout(
@@ -48,8 +43,8 @@ private extension SettingsListViewController {
   }
   
   func setupBindings() {
-    viewModel.didUpdateTitle = { [weak self] title in
-      self?.navigationItem.title = title
+    viewModel.didUpdateTitleView = { [weak self] model in
+      self?.customView.titleView.configure(model: model)
     }
     
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
@@ -74,6 +69,18 @@ private extension SettingsListViewController {
         items: items,
         selectedIndex: selectedIndex)
     }
+  }
+  
+  func setupNavigationBar() {
+    guard let navigationController,
+          !navigationController.viewControllers.isEmpty else {
+      return
+    }
+    customView.navigationBar.leftViews = [
+      TKUINavigationBar.createBackButton {
+        navigationController.popViewController(animated: true)
+      }
+    ]
   }
   
   func createDataSource() -> DataSource {

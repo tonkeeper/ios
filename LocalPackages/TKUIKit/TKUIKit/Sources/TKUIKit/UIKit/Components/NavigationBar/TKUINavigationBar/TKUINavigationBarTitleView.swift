@@ -6,12 +6,12 @@ public final class TKUINavigationBarTitleView: UIView, ConfigurableView {
     public let title: NSAttributedString
     public let caption: TKPlainButton.Model?
     
-    public init(title: NSAttributedString, caption: TKPlainButton.Model?) {
+    public init(title: NSAttributedString, caption: TKPlainButton.Model? = nil) {
       self.title = title
       self.caption = caption
     }
     
-    public init(title: String, caption: TKPlainButton.Model?) {
+    public init(title: String, caption: TKPlainButton.Model? = nil) {
       self.title = title.withTextStyle(.h3, color: .Text.primary, alignment: .center, lineBreakMode: .byTruncatingTail)
       self.caption = caption
     }

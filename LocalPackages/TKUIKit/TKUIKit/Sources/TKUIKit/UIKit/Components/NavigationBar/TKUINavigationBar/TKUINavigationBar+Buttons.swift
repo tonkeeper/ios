@@ -47,7 +47,7 @@ public extension TKUINavigationBar {
     )
     
     button.addTapAction(action)
-    
+
     button.tapAreaInsets = UIEdgeInsets(
       top: -10,
       left: -10,

@@ -126,7 +126,7 @@ private extension SettingsListSecurityConfigurator {
     items.append(biometryItem)
     
     return SettingsListSection.items(
-      topPadding: 16,
+      topPadding: 0,
       items: items,
       bottomDescription: SettingsTextDescriptionView.Model(
         padding: UIEdgeInsets(top: 12, left: 1, bottom: 0, right: 1),

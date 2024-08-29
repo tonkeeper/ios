@@ -182,7 +182,7 @@ private extension SettingsListRootConfigurator {
       }
     )
     
-    return SettingsListSection.items(topPadding: 14, items: [configuration])
+    return SettingsListSection.items(topPadding: 0, items: [configuration])
   }
   
   func createWalletSettingsSection(wallet: Wallet) -> SettingsListSection? {
