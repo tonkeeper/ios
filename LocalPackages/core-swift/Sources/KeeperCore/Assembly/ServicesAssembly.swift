@@ -129,7 +129,7 @@ public final class ServicesAssembly {
     SendServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
-  func dnsService() -> DNSService {
+  public func dnsService() -> DNSService {
     DNSServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   

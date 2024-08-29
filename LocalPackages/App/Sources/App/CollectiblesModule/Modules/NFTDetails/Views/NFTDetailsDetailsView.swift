@@ -34,11 +34,13 @@ final class NFTDetailsDetailsView: UIView, ConfigurableView {
   
   private func setupConstraints() {
     headerView.snp.makeConstraints { make in
-      make.top.left.right.equalTo(self)
+      make.top.equalTo(self)
+      make.left.right.equalTo(self).inset(18)
     }
     listView.snp.makeConstraints { make in
       make.top.equalTo(headerView.snp.bottom)
-      make.left.bottom.right.equalTo(self)
+      make.left.right.equalTo(self).inset(16)
+      make.bottom.equalTo(self)
     }
   }
 }

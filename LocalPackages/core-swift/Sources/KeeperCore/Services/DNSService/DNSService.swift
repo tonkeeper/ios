@@ -2,7 +2,7 @@ import Foundation
 import TonAPI
 import TonSwift
 
-protocol DNSService {
+public protocol DNSService {
   func resolveDomainName(_ domainName: String, isTestnet: Bool) async throws -> Domain
   func loadDomainExpirationDate(_ domainName: String, isTestnet: Bool) async throws -> Date?
 }

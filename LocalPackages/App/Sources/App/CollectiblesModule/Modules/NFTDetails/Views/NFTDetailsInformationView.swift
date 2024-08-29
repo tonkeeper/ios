@@ -61,7 +61,8 @@ final class NFTDetailsInformationView: UIView, ConfigurableView {
   
   private func setupConstraints() {
     containerView.snp.makeConstraints { make in
-      make.top.left.right.equalTo(self)
+      make.top.equalTo(self)
+      make.left.right.equalTo(self).inset(16)
       make.bottom.equalTo(self).offset(-16)
     }
     

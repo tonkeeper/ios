@@ -11,6 +11,7 @@ final class NFTDetailsView: UIView {
     return stackView
   }()
   let informationView = NFTDetailsInformationView()
+  let buttonsView = NFTDetailsButtonsView()
   let propertiesView = NFTDetailsPropertiesView()
   let detailsView = NFTDetailsDetailsView()
   
@@ -42,6 +43,7 @@ final class NFTDetailsView: UIView {
     addSubview(scrollView)
     scrollView.addSubview(contentStackView)
     contentStackView.addArrangedSubview(informationView)
+    contentStackView.addArrangedSubview(buttonsView)
     contentStackView.addArrangedSubview(propertiesView)
     contentStackView.addArrangedSubview(detailsView)
     addSubview(navigationBar)
@@ -60,8 +62,8 @@ final class NFTDetailsView: UIView {
     
     contentStackView.snp.makeConstraints { make in
       make.top.bottom.equalTo(scrollView)
-      make.left.right.equalTo(scrollView).inset(16)
-      make.width.equalTo(scrollView).offset(-32)
+      make.left.right.equalTo(scrollView)
+      make.width.equalTo(scrollView)
     }
   }
 }

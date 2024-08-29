@@ -52,19 +52,20 @@ private extension CollectiblesCoordinator {
     }
     
     module.output.didSelectNFT = { [weak self] wallet, nft in
-      self?.openNFTDetails(nft: nft)
+      self?.openNFTDetails(wallet: wallet, nft: nft)
     }
     
     router.push(viewController: module.view, animated: false)
   }
   
-  func openNFTDetails(nft: NFT) {
+  func openNFTDetails(wallet: Wallet, nft: NFT) {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)
     
     let coordinator = CollectiblesDetailsCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
       nft: nft,
+      wallet: wallet,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )

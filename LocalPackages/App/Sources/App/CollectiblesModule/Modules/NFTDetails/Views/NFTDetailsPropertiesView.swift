@@ -42,6 +42,9 @@ final class NFTDetailsPropertiesView: UIView, ConfigurableView {
   }
   
   private func setup() {
+    scrollView.contentInset.left = 16
+    scrollView.contentInset.right = 16
+    
     addSubview(headerView)
     addSubview(scrollView)
     scrollView.addSubview(propertiesStackView)
@@ -51,7 +54,8 @@ final class NFTDetailsPropertiesView: UIView, ConfigurableView {
   
   private func setupConstraints() {
     headerView.snp.makeConstraints { make in
-      make.top.left.right.equalTo(self)
+      make.top.equalTo(self)
+      make.left.right.equalTo(self).inset(18)
     }
     scrollView.snp.makeConstraints { make in
       make.top.equalTo(headerView.snp.bottom)

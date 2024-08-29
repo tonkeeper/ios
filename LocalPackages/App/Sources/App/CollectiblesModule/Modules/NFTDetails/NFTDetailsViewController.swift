@@ -42,6 +42,15 @@ final class NFTDetailsViewController: GenericViewViewController<NFTDetailsView> 
       self?.customView.informationView.configure(model: model)
     }
     
+    viewModel.didUpdateButtonsView = { [weak self] model in
+      if let model {
+        self?.customView.buttonsView.isHidden = false
+        self?.customView.buttonsView.configure(model: model)
+      } else {
+        self?.customView.buttonsView.isHidden = true
+      }
+    }
+    
     viewModel.didUpdateDetailsView = { [weak self] model in
       self?.customView.detailsView.configure(model: model)
     }

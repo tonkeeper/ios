@@ -115,7 +115,7 @@ private extension HistoryCoordinator {
   @MainActor
   func openNFTDetails(wallet: Wallet, address: Address) {
     if let nft = try? keeperCoreMainAssembly.servicesAssembly.nftService().getNFT(address: address, isTestnet: wallet.isTestnet) {
-      openDetails(nft: nft)
+      openDetails(wallet: wallet, nft: nft)
     } else {
       ToastPresenter.showToast(configuration: .loading)
       Task {
@@ -128,19 +128,20 @@ private extension HistoryCoordinator {
         }
         await MainActor.run {
           ToastPresenter.hideAll()
-          openDetails(nft: nft)
+          openDetails(wallet: wallet, nft: nft)
         }
       }
     }
 
     @MainActor
-    func openDetails(nft: NFT) {
+    func openDetails(wallet: Wallet, nft: NFT) {
       let navigationController = TKNavigationController()
       navigationController.setNavigationBarHidden(true, animated: false)
       
       let coordinator = CollectiblesDetailsCoordinator(
         router: NavigationControllerRouter(rootViewController: navigationController),
         nft: nft,
+        wallet: wallet,
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )

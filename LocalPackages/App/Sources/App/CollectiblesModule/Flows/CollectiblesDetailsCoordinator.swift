@@ -16,14 +16,17 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
   private weak var renewDNSCoordinator: RenewDNSCoordinator?
   
   private let nft: NFT
+  private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   
   public init(router: NavigationControllerRouter,
               nft: NFT,
+              wallet: Wallet,
               coreAssembly: TKCore.CoreAssembly,
               keeperCoreMainAssembly: KeeperCore.MainAssembly) {
     self.nft = nft
+    self.wallet = wallet
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
@@ -53,22 +56,36 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
 
 private extension CollectiblesDetailsCoordinator {
   func openDetails() {
-    let module = NFTDetailsAssembly.module(nft: nft, keeperCoreMainAssembly: keeperCoreMainAssembly)
+    let module = NFTDetailsAssembly.module(
+      wallet: wallet,
+      nft: nft,
+      keeperCoreMainAssembly: keeperCoreMainAssembly
+    )
     
     module.output.didClose = { [weak self] in
       self?.didClose?()
     }
     
+    module.output.didTapTransfer = { [weak self] _, nft in
+      self?.openTransfer(nft: nft)
+    }
+    
+    module.output.didTapLinkDomain = { [weak self] wallet, nft in
+      self?.openLinkDomain(wallet: wallet, nft: nft)
+    }
+    
+    module.output.didTapUnlinkDomain = { [weak self] wallet, nft in
+      self?.openUnlinkDomain(wallet: wallet, nft: nft)
+    }
+    
+    module.output.didTapRenewDomain = { [weak self] wallet, nft in
+      self?.openRenewDomain(wallet: wallet, nft: nft)
+    }
+    
     router.push(viewController: module.view)
   }
-}
-
-extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
-  func collectibleDetailsDidFinish(_ collectibleDetails: any CollectibleDetailsModuleInput) {
-    didClose?()
-  }
   
-  func collectibleDetails(_ collectibleDetails: CollectibleDetailsModuleInput, transferNFT nft: NFT) {
+  func openTransfer(nft: NFT) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     
@@ -98,8 +115,7 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
     self.router.rootViewController.present(navigationController, animated: true)
   }
   
-  func collectibleDetailsLinkDomain(_ collectibleDetails: CollectibleDetailsModuleInput, nft: NFT) {
-    let wallet = keeperCoreMainAssembly.walletAssembly.walletsStore.getState().activeWallet
+  func openLinkDomain(wallet: Wallet, nft: NFT) {
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
     
@@ -133,8 +149,7 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
     coordinator.start()
   }
   
-  func collectibleDetailsUnlinkDomain(_ collectibleDetails:CollectibleDetailsModuleInput, nft: NFT) {
-    let wallet = keeperCoreMainAssembly.walletAssembly.walletsStore.getState().activeWallet
+  func openUnlinkDomain(wallet: Wallet, nft: NFT) {
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
     
@@ -163,8 +178,7 @@ extension CollectiblesDetailsCoordinator: CollectibleDetailsModuleOutput {
     coordinator.start()
   }
   
-  func collectibleDetailsRenewDomain(_ collectibleDetails: any CollectibleDetailsModuleInput, nft: NFT) {
-    let wallet = keeperCoreMainAssembly.walletAssembly.walletsStore.getState().activeWallet
+  func openRenewDomain(wallet: Wallet, nft: NFT) {
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)
     
