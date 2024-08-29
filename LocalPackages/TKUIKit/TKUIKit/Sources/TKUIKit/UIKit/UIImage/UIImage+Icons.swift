@@ -38,6 +38,10 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-globe-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var ellipses: UIImage {
+          .imageWithName("Icons/16/ic-ellipsis-16")
+          .withRenderingMode(.alwaysTemplate)
+        }
         public static var doneBold: UIImage {
           .imageWithName("Icons/16/ic-done-bold-16")
           .withRenderingMode(.alwaysTemplate)
