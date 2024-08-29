@@ -1,9 +1,8 @@
 import UIKit
-import TKUIKit
 
-final class TKListContainerItemView: UIControl {
+public final class TKListContainerItemViewContainer: UIControl {
   var isHighlightable: Bool = true
-  override var isHighlighted: Bool {
+  public override var isHighlighted: Bool {
     didSet {
       guard isHighlightable else { return }
       highlightView.isHighlighted = isHighlighted
@@ -12,7 +11,7 @@ final class TKListContainerItemView: UIControl {
   
   private let highlightView = TKHighlightView()
   
-  override init(frame: CGRect) {
+  public override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
   }

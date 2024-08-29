@@ -1,20 +1,22 @@
 import UIKit
-import TKUIKit
 
-protocol TKListContainerItem {
+public protocol TKListContainerItem {
   var isHighlightable: Bool { get }
-  var tapAction: (() -> Void)? { get }
+  var copyValue: String? { get }
   
   func getView() -> UIView
 }
 
-final class TKListContainerView: UIView {
+public final class TKListContainerView: UIView {
   
-  struct Configuration {
-    let items: [TKListContainerItem]
+  public struct Configuration {
+    public let items: [TKListContainerItem]
+    public init(items: [TKListContainerItem]) {
+      self.items = items
+    }
   }
   
-  var configuration: Configuration? {
+  public var configuration: Configuration? {
     didSet {
       setup(with: configuration)
     }
@@ -34,7 +36,7 @@ final class TKListContainerView: UIView {
     return view
   }()
   
-  override init(frame: CGRect) {
+  public override init(frame: CGRect) {
     super.init(frame: frame)
     setup()
   }
@@ -52,7 +54,7 @@ final class TKListContainerView: UIView {
     }
     
     stackView.snp.makeConstraints { make in
-      make.top.bottom.equalTo(backgroundView).inset(8)
+      make.top.bottom.equalTo(backgroundView)
       make.left.right.equalTo(backgroundView)
     }
   }
@@ -63,11 +65,14 @@ final class TKListContainerView: UIView {
     configuration.items.forEach { item in
       let contentView = item.getView()
       contentView.isUserInteractionEnabled = false
-      let itemView = TKListContainerItemView()
+      let itemView = TKListContainerItemViewContainer()
       itemView.setContentView(contentView)
       itemView.isHighlightable = item.isHighlightable
       itemView.addAction(UIAction(handler: { _ in
-        item.tapAction?()
+        guard let copyValue = item.copyValue else { return }
+        UIPasteboard.general.string = copyValue
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+        ToastPresenter.showToast(configuration: .copied)
       }), for: .touchUpInside)
       stackView.addArrangedSubview(itemView)
     }

@@ -136,7 +136,7 @@ private extension HistoryCoordinator {
     @MainActor
     func openDetails(nft: NFT) {
       let navigationController = TKNavigationController()
-      navigationController.configureDefaultAppearance()
+      navigationController.setNavigationBarHidden(true, animated: false)
       
       let coordinator = CollectiblesDetailsCoordinator(
         router: NavigationControllerRouter(rootViewController: navigationController),

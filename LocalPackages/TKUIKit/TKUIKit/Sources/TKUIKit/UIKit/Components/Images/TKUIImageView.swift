@@ -40,6 +40,7 @@ public final class TKImageView: UIView, ConfigurableView {
   }
   
   public enum Size {
+    case none
     case auto
     case size(CGSize)
   }
@@ -92,6 +93,14 @@ public final class TKImageView: UIView, ConfigurableView {
     super.layoutSubviews()
 
     switch size {
+    case .none:
+      let imageViewFrame = CGRect(
+        x: padding.left,
+        y: padding.top,
+        width: bounds.width - padding.left - padding.right,
+        height: bounds.height - padding.top - padding.bottom
+      )
+      imageView.frame = imageViewFrame
     case .auto:
       let imageViewSizeThatFits = imageView.sizeThatFits(.zero)
       let imageViewFrame = CGRect(
@@ -116,6 +125,8 @@ public final class TKImageView: UIView, ConfigurableView {
   
   public override func sizeThatFits(_ size: CGSize) -> CGSize {
     switch self.size {
+    case .none:
+      return .zero
     case .auto:
       let imageViewSizeThatFits = imageView.sizeThatFits(.zero)
       let size = CGSize(width: imageViewSizeThatFits.width + padding.left + padding.right,

@@ -106,6 +106,9 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-minus-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var verification: UIImage {
+          .imageWithName("Icons/16/ic-verification-16")
+        }
       }
       public enum Size28 {
         public static var qrViewFinder: UIImage {

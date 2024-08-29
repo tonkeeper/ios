@@ -20,7 +20,7 @@ final class SettingsPurchasesDetailsListItemView: UIView, ConfigurableView {
   
   struct Model: TKListContainerItem {
     var isHighlightable: Bool
-    var tapAction: (() -> Void)?
+    var copyValue: String?
     
     func getView() -> UIView {
       let view = SettingsPurchasesDetailsListItemView()
@@ -36,7 +36,7 @@ final class SettingsPurchasesDetailsListItemView: UIView, ConfigurableView {
          caption: String?,
          image: TKImageView.Model? = nil,
          isHighlightable: Bool = true,
-         tapAction: (() -> Void)? = nil) {
+         copyValue: String?) {
       self.title = title.withTextStyle(
         .body2,
         color: .Text.secondary,
@@ -51,7 +51,7 @@ final class SettingsPurchasesDetailsListItemView: UIView, ConfigurableView {
       )
       self.image = image
       self.isHighlightable = isHighlightable
-      self.tapAction = tapAction
+      self.copyValue = copyValue
     }
   }
   

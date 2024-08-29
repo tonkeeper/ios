@@ -274,11 +274,7 @@ private extension SettingsPurchasesViewModelImplementation {
             padding: UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 4)
           ),
           isHighlightable: true,
-          tapAction: {
-            UIPasteboard.general.string = nft.address.toString(bounceable: true)
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            ToastPresenter.showToast(configuration: .copied)
-          }
+          copyValue: nft.address.toString(bounceable: true)
         )
       ]
     case .collection(let collection):
@@ -307,7 +303,7 @@ private extension SettingsPurchasesViewModelImplementation {
             corners: .cornerRadius(cornerRadius: 8)
           ),
           isHighlightable: false,
-          tapAction: nil
+          copyValue: nil
         ),
         SettingsPurchasesDetailsListItemView.Model(
           title: TKLocales.Settings.Purchases.Details.Items.collection_id,
@@ -320,11 +316,7 @@ private extension SettingsPurchasesViewModelImplementation {
             padding: UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 4)
           ),
           isHighlightable: true,
-          tapAction: {
-            UIPasteboard.general.string = collection.address.toString(bounceable: true)
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            ToastPresenter.showToast(configuration: .copied)
-          }
+          copyValue: collection.address.toString(bounceable: true)
         )
       ]
     }

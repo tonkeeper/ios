@@ -53,12 +53,13 @@ public final class CollectiblesDetailsCoordinator: RouterCoordinator<NavigationC
 
 private extension CollectiblesDetailsCoordinator {
   func openDetails() {
-    let module = CollectibleDetailsAssembly.module(
-      collectibleDetailsController: keeperCoreMainAssembly.collectibleDetailsController(nft: nft),
-      urlOpener: coreAssembly.urlOpener(),
-      output: self
-    )
-    router.push(viewController: module.0)
+    let module = NFTDetailsAssembly.module(nft: nft, keeperCoreMainAssembly: keeperCoreMainAssembly)
+    
+    module.output.didClose = { [weak self] in
+      self?.didClose?()
+    }
+    
+    router.push(viewController: module.view)
   }
 }
 
