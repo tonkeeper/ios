@@ -89,6 +89,17 @@
 "settings.purchases.token.token_count.many" = "токенов";
 "settings.purchases.token.token_count.other" = "токенов";
 
+"settings.purchases.details.title.single_token" = "Подробнее о токене";
+"settings.purchases.details.title.collection" = "Подробнее о коллекции";
+"settings.purchases.details.button.hide_token" = "Скрыть токен из кошелька";
+"settings.purchases.details.button.show_token" = "Показать токен в кошельке";
+"settings.purchases.details.button.hide_collection" = "Скрыть коллекцию из кошелька";
+"settings.purchases.details.button.show_collection" = "Показать коллекцию в кошелька";
+"settings.purchases.details.button.not_spam" = "Это не спам";
+"settings.purchases.details.items.name" = "Имя";
+"settings.purchases.details.items.collection_id" = "ID коллекции";
+"settings.purchases.details.items.token_id" = "ID токена";
+
 "theme.title" = "Тема";
 "theme.options.system" = "Системная";
 "theme.options.dark" = "Тёмная";

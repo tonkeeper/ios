@@ -26,7 +26,7 @@ final class CollectiblesViewController: ContentListEmptyViewController {
 
 private extension CollectiblesViewController {
   func setup() {
-    customView.navigationBarView.title = TKLocales.History.title
+    customView.navigationBarView.title = TKLocales.Purchases.title
     setupBindings()
   }
   

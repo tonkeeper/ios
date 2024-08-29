@@ -17,6 +17,7 @@ actor WalletStateLoader {
   private let ratesService: RatesService
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   private let accountNftsLoader: AccountNftsLoader
+  private let accountNftsStore: AccountNFTsStore
   
   init(balanceStore: BalanceStore, 
        currencyStore: CurrencyStore,
@@ -27,7 +28,8 @@ actor WalletStateLoader {
        stackingService: StakingService,
        ratesService: RatesService,
        backgroundUpdateUpdater: BackgroundUpdateUpdater,
-       accountNftsLoader: AccountNftsLoader) {
+       accountNftsLoader: AccountNftsLoader,
+       accountNftsStore: AccountNFTsStore) {
     self.balanceStore = balanceStore
     self.currencyStore = currencyStore
     self.walletsStore = walletsStore
@@ -38,6 +40,7 @@ actor WalletStateLoader {
     self.ratesService = ratesService
     self.backgroundUpdateUpdater = backgroundUpdateUpdater
     self.accountNftsLoader = accountNftsLoader
+    self.accountNftsStore = accountNftsStore
     Task {
       await setupObserverations()
     }
@@ -70,7 +73,7 @@ actor WalletStateLoader {
   func loadNFTs() {
     Task {
       let walletsState = await walletsStore.getState()
-      await accountNftsLoader.loadNfts(wallet: walletsState.activeWallet)
+      await loadNFTs(wallet: walletsState.activeWallet)
     }
   }
 }
@@ -120,8 +123,8 @@ private extension WalletStateLoader {
       let currency = await currencyStore.getCurrency()
       await reloadBalance(wallets: walletsToUpdate, currency: currency)
     }
-    Task(priority: .userInitiated) {
-      await accountNftsLoader.loadNfts(wallet: newState.activeWallet)
+    Task {
+      await loadNFTs(wallet: newState.activeWallet)
     }
   }
   
@@ -197,5 +200,16 @@ private extension WalletStateLoader {
       }
     }
     return await task.value
+  }
+  
+  func loadNFTs(wallet: Wallet) async {
+    do {
+      let nfts = try await accountNftsLoader.loadNfts(wallet: wallet)
+      try await accountNftsStore.setNFTS(nfts, address: wallet.friendlyAddress)
+    } catch {
+      guard !error.isCancelledError,
+      let address = try? wallet.friendlyAddress else { return }
+      await accountNftsStore.setNFTS([], address: address)
+    }
   }
 }

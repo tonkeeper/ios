@@ -89,6 +89,17 @@
 "settings.purchases.token.token_count.many" = "tokens";
 "settings.purchases.token.token_count.other" = "tokens";
 
+"settings.purchases.details.title.single_token" = "Token details";
+"settings.purchases.details.title.collection" = "Collection details";
+"settings.purchases.details.button.hide_token" = "Hide token from wallet";
+"settings.purchases.details.button.show_token" = "Show token in wallet";
+"settings.purchases.details.button.hide_collection" = "Hide collection from wallet";
+"settings.purchases.details.button.show_collection" = "Show collection in wallet";
+"settings.purchases.details.button.not_spam" = "Not Spam";
+"settings.purchases.details.items.name" = "Name";
+"settings.purchases.details.items.collection_id" = "Collection ID";
+"settings.purchases.details.items.token_id" = "Token ID";
+
 "theme.title" = "Theme";
 "theme.options.system" = "System";
 "theme.options.dark" = "Dark";

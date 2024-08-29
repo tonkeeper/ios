@@ -33,7 +33,8 @@ public final class MainLoadersAssembly {
       stackingService: servicesAssembly.stackingService(),
       ratesService: servicesAssembly.ratesService(),
       backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater,
-      accountNftsLoader: accountNftsLoader
+      accountNftsLoader: accountNftsLoader,
+      accountNftsStore: mainStoresAssembly.accountNftsStore
     )
     _walletStateLoader = loader
     return loader

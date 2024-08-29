@@ -15,6 +15,14 @@ public struct NFT: Codable, Equatable {
   public let isHidden: Bool
   public let trust: Trust
   
+  public var notNilName: String {
+    if let name, !name.isEmpty {
+      return name
+    } else {
+      return address.toShortString(bounceable: true)
+    }
+  }
+  
   public struct Marketplace: Equatable {
     public let name: String
     public let url: URL?

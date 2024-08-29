@@ -128,9 +128,6 @@ private extension TokenDetailsViewModelImplementation {
       let isEnabled: Bool
       switch buttonModel {
       case .send(_, let enabled):
-        if !enabled {
-          print("dsd")
-        }
         isEnabled = enabled
       default:
         isEnabled = true

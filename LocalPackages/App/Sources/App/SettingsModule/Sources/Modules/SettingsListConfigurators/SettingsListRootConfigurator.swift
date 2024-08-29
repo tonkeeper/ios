@@ -496,9 +496,10 @@ private extension SettingsListRootConfigurator {
   }
   
   private func createCollectiblesManagementItem(wallet: Wallet) -> AnyHashable? {
+    print(accountsNFTsStore.getState()[try! wallet.friendlyAddress]?.count)
     guard let address = try? wallet.friendlyAddress,
           let state = accountsNFTsStore.getState()[address],
-          !state.nfts.isEmpty else { return nil }
+          !state.isEmpty else { return nil }
     
     return TKUIListItemCell.Configuration.createSettingsItem(
       id: .purchasesIdentifier,

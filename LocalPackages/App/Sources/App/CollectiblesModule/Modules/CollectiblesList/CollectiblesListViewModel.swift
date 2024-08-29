@@ -87,7 +87,7 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
 }
 
 private extension CollectiblesListViewModelImplementation {
-  func update(nftsStoreStates: [FriendlyAddress: AccountNFTsStore.State],
+  func update(nftsStoreStates: [FriendlyAddress: [NFT]],
               managementState: NFTsManagementState) {
     guard let address = try? wallet.friendlyAddress,
           let nftStoreState = nftsStoreStates[address] else {
@@ -100,55 +100,31 @@ private extension CollectiblesListViewModelImplementation {
       managementState: managementState)
     let snapshot = self.createSnapshot(state: filteredState)
     let models = self.createModels(state: filteredState)
-    let hasItems = self.hasItems(state: filteredState)
-    self.nfts = filteredState.nfts
+    let hasItems = !filteredState.isEmpty
+    self.nfts = filteredState
     self.didUpdate?(hasItems)
     self.models = models
     self.didUpdateSnapshot?(snapshot)
   }
   
-  func createSnapshot(state: AccountNFTsStore.State) -> CollectiblesListViewController.Snapshot {
+  func createSnapshot(state: [NFT]) -> CollectiblesListViewController.Snapshot {
     var snapshot = CollectiblesListViewController.Snapshot()
-    switch state {
-    case .loading(let cached):
-      snapshot.appendSections([.all])
-      snapshot.appendItems(cached.map { .nft(identifier: $0.address.toString()) }, toSection: .all)
-    case .items(let items):
-      snapshot.appendSections([.all])
-      snapshot.appendItems(items.map { .nft(identifier: $0.address.toString()) }, toSection: .all)
-    }
-    
+    snapshot.appendSections([.all])
+    snapshot.appendItems(state.map { .nft(identifier: $0.address.toString()) }, toSection: .all)
+
     return snapshot
   }
   
-  func createModels(state: AccountNFTsStore.State) -> [String: CollectibleCollectionViewCell.Model] {
-    switch state {
-    case .items(let items):
-      return items.reduce(into: [String: CollectibleCollectionViewCell.Model](), { result, item in
-        let model = collectiblesListMapper.map(nft: item)
-        let identifier = item.address.toString()
-        result[identifier] = model
-      })
-    case .loading(let cached):
-      return cached.reduce(into: [String: CollectibleCollectionViewCell.Model](), { result, item in
-        let model = collectiblesListMapper.map(nft: item)
-        let identifier = item.address.toString()
-        result[identifier] = model
-      })
-    }
+  func createModels(state: [NFT]) -> [String: CollectibleCollectionViewCell.Model] {
+    return state.reduce(into: [String: CollectibleCollectionViewCell.Model](), { result, item in
+      let model = collectiblesListMapper.map(nft: item)
+      let identifier = item.address.toString()
+      result[identifier] = model
+    })
   }
   
-  func hasItems(state: AccountNFTsStore.State) -> Bool {
-    switch state {
-    case .items(let items):
-      return !items.isEmpty
-    case .loading:
-      return true
-    }
-  }
-  
-  func filterSpamNFTItems(state: AccountNFTsStore.State,
-                          managementState: NFTsManagementState) -> AccountNFTsStore.State {
+  func filterSpamNFTItems(state: [NFT],
+                          managementState: NFTsManagementState) -> [NFT] {
     
     func filter(items: [NFT]) -> [NFT] {
       items.filter {
@@ -167,12 +143,6 @@ private extension CollectiblesListViewModelImplementation {
         }
       }
     }
-    
-    switch state {
-    case .loading(let cached):
-      return .loading(cached: filter(items: cached))
-    case .items(let items):
-      return .items(item: filter(items: items))
-    }
+    return filter(items: state)
   }
 }

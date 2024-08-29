@@ -13,10 +13,7 @@ extension JettonInfo {
     
     isTransferable = !(extensions?.contains("non_transferable") ?? false)
     hasCustomPayload = extensions?.contains("custom_payload") ?? false
-
-    if jettonPreview.symbol == "PUNK" {
-      print("dsd")
-    }
+    
     let verification: JettonInfo.Verification
     switch jettonPreview.verification {
     case .whitelist:

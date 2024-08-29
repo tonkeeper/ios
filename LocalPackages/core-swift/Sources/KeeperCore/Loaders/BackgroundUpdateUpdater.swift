@@ -171,6 +171,8 @@ public extension Swift.Error {
   
   var isCancelledError: Bool {
     switch self {
+    case let cancellationError as CancellationError:
+      return true
     case let urlError as URLError:
       switch urlError.code {
       case URLError.Code.cancelled:

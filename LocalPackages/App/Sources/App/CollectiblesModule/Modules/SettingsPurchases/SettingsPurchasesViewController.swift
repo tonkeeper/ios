@@ -31,6 +31,8 @@ final class SettingsPurchasesViewController: GenericViewViewController<SettingsP
   typealias HeaderRegistration = UICollectionView.SupplementaryRegistration<TKCollectionViewSupplementaryContainerView<TKListTitleView>>
   typealias SectionFooterRegistration = UICollectionView.SupplementaryRegistration<SettingsPurchasesSectionButtonView>
   
+  private weak var detailsViewController: TKBottomSheetViewController?
+  
   // MARK: - List
   
   private lazy var layout = createLayout()
@@ -69,6 +71,19 @@ private extension SettingsPurchasesViewController {
       guard let self else { return }
       self.dataSource.apply(snapshot, animatingDifferences: false, completion: {
       })
+    }
+    
+    viewModel.didOpenDetails = { [weak self] configuration in
+      guard let self else { return }
+      let viewController = PurchasesManagementDetailsViewController(configuration: configuration)
+      let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+      bottomSheetViewController.present(fromViewController: self)
+      self.detailsViewController = bottomSheetViewController
+    }
+    
+    viewModel.didHideDetails = { [weak self] in
+      guard let detailsViewController = self?.detailsViewController else { return }
+      detailsViewController.dismiss()
     }
   }
   

@@ -87,9 +87,14 @@ final class SettingsPurchasesModel {
     }
   }
   
+  func isMarkedAsSpam(item: Item) -> Bool {
+    let nftStates = accountNFTsManagementStore.getState().nftStates
+    return nftStates[item.nftManagementItem] == .spam
+  }
+  
   private func getState() -> State {
     guard let address = try? wallet.friendlyAddress,
-          let nfts = accountNFTsStore.getState()[address]?.nfts else {
+          let nfts = accountNFTsStore.getState()[address] else {
       return State(
         visible: [],
         hidden: [],

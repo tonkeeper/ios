@@ -369,6 +369,54 @@ public enum TKLocales {
           }
         }
       }
+      public enum Details {
+        public enum Title {
+          /// Token details
+          public static var single_token: String {
+            localize("settings.purchases.details.title.single_token")
+          }
+          /// Collection details
+          public static var collection: String {
+            localize("settings.purchases.details.title.collection")
+          }
+        }
+        public enum Button {
+          /// Hide token from wallet
+          public static var hide_token: String {
+            localize("settings.purchases.details.button.hide_token")
+          }
+          /// Show token in wallet
+          public static var show_token: String {
+            localize("settings.purchases.details.button.show_token")
+          }
+          /// Hide collection from wallet
+          public static var hide_collection: String {
+            localize("settings.purchases.details.button.hide_collection")
+          }
+          /// Show collection in wallet
+          public static var show_collection: String {
+            localize("settings.purchases.details.button.show_collection")
+          }
+          /// Not Spam
+          public static var not_spam: String {
+            localize("settings.purchases.details.button.not_spam")
+          }
+        }
+        public enum Items {
+          /// Name
+          public static var name: String {
+            localize("settings.purchases.details.items.name")
+          }
+          /// Collection ID
+          public static var collection_id: String {
+            localize("settings.purchases.details.items.collection_id")
+          }
+          /// Token ID
+          public static var token_id: String {
+            localize("settings.purchases.details.items.token_id")
+          }
+        }
+      }
     }
   }
   public enum Theme {

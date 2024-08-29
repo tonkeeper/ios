@@ -1,4 +1,4 @@
-import Foundation
+import UIKit
 import TKUIKit
 import TKCore
 import TKLocalize
@@ -7,6 +7,9 @@ import KeeperCore
 protocol SettingsPurchasesViewModel: AnyObject {
   
   var didUpdateSnapshot: ((SettingsPurchasesViewController.Snapshot) -> Void)? { get set }
+  var didOpenDetails: ((PurchasesManagementDetailsViewController.Configuration) -> Void)? { get set }
+  var didHideDetails: (() -> Void)? { get set }
+  var didCopyItem: ((String?) -> Void)? { get set }
   
   func viewDidLoad()
   func getItemCellModel(identifier: String) -> SettingsPurchasesItemCell.Model?
@@ -27,6 +30,9 @@ final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel
   }
   
   var didUpdateSnapshot: ((SettingsPurchasesViewController.Snapshot) -> Void)?
+  var didOpenDetails: ((PurchasesManagementDetailsViewController.Configuration) -> Void)?
+  var didHideDetails: (() -> Void)?
+  var didCopyItem: ((String?) -> Void)?
   
   func viewDidLoad() {
     model.didUpdate = { [weak self] event in
@@ -100,7 +106,12 @@ private extension SettingsPurchasesViewModelImplementation {
           }
         ),
         tapHandler: {
-          
+          [weak self] in
+          guard let self else { return }
+          let configuration = createDetailsConfiguration(item: visibleItem, 
+                                                         collectionNfts: state.collectionNfts,
+                                                         itemState: .visible)
+          didOpenDetails?(configuration)
         }
       )
       cellModels[visibleItem.id] = model
@@ -120,7 +131,12 @@ private extension SettingsPurchasesViewModelImplementation {
           }
         ),
         tapHandler: {
-          
+          [weak self] in
+          guard let self else { return }
+          let configuration = createDetailsConfiguration(item: hiddenItem,
+                                                         collectionNfts: state.collectionNfts,
+                                                         itemState: .hidden)
+          didOpenDetails?(configuration)
         }
       )
       cellModels[hiddenItem.id] = model
@@ -136,7 +152,12 @@ private extension SettingsPurchasesViewModelImplementation {
         controlModel: nil,
         accessoryConfiguration: .chevron,
         tapHandler: {
-          
+          [weak self] in
+          guard let self else { return }
+          let configuration = createDetailsConfiguration(item: visibleItem,
+                                                         collectionNfts: state.collectionNfts,
+                                                         itemState: .spam)
+          didOpenDetails?(configuration)
         }
       )
       cellModels[visibleItem.id] = model
@@ -209,6 +230,122 @@ private extension SettingsPurchasesViewModelImplementation {
     buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.List.show_all))
     let model = SettingsPurchasesSectionButtonView.Model(buttonConfiguration: buttonConfiguration)
     return model
+  }
+  
+  private enum ItemState {
+    case visible
+    case hidden
+    case spam
+  }
+  
+  private func createDetailsConfiguration(item: SettingsPurchasesModel.Item,
+                                          collectionNfts:  [NFTCollection: [NFT]],
+                                          itemState: ItemState) -> PurchasesManagementDetailsViewController.Configuration {
+    let title: String
+    let buttonTitle: String
+    let listItems: [SettingsPurchasesDetailsListItemView.Model]
+    
+    switch item {
+    case .single(let nft):
+      title = TKLocales.Settings.Purchases.Details.Title.single_token
+      buttonTitle = {
+        switch itemState {
+        case .visible:
+          TKLocales.Settings.Purchases.Details.Button.hide_token
+        case .hidden:
+          TKLocales.Settings.Purchases.Details.Button.show_token
+        case .spam:
+          if model.isMarkedAsSpam(item: item) {
+            TKLocales.Settings.Purchases.Details.Button.not_spam
+          } else {
+            TKLocales.Settings.Purchases.Details.Button.show_token
+          }
+        }
+      }()
+      listItems = [
+        SettingsPurchasesDetailsListItemView.Model(
+          title: TKLocales.Settings.Purchases.Details.Items.token_id,
+          caption: nft.address.toShortString(bounceable: true),
+          image: TKImageView.Model(
+            image: .image(.TKUIKit.Icons.Size16.copy),
+            tintColor: .Icon.secondary,
+            size: .auto,
+            corners: .none,
+            padding: UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 4)
+          ),
+          isHighlightable: true,
+          tapAction: {
+            UIPasteboard.general.string = nft.address.toString(bounceable: true)
+            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            ToastPresenter.showToast(configuration: .copied)
+          }
+        )
+      ]
+    case .collection(let collection):
+      title = TKLocales.Settings.Purchases.Details.Title.collection
+      buttonTitle = {
+        switch itemState {
+        case .visible:
+          TKLocales.Settings.Purchases.Details.Button.hide_collection
+        case .hidden:
+          TKLocales.Settings.Purchases.Details.Button.show_collection
+        case .spam:
+          if model.isMarkedAsSpam(item: item) {
+            TKLocales.Settings.Purchases.Details.Button.not_spam
+          } else {
+            TKLocales.Settings.Purchases.Details.Button.show_collection
+          }
+        }
+      }()
+      listItems = [
+        SettingsPurchasesDetailsListItemView.Model(
+          title: TKLocales.Settings.Purchases.Details.Items.name,
+          caption: collection.notEmptyName,
+          image: TKImageView.Model(
+            image: .urlImage(collectionNfts[collection]?.first?.preview.size500),
+            size: .size(CGSize(width: 40, height: 40)),
+            corners: .cornerRadius(cornerRadius: 8)
+          ),
+          isHighlightable: false,
+          tapAction: nil
+        ),
+        SettingsPurchasesDetailsListItemView.Model(
+          title: TKLocales.Settings.Purchases.Details.Items.collection_id,
+          caption: collection.address.toShortString(bounceable: true),
+          image: TKImageView.Model(
+            image: .image(.TKUIKit.Icons.Size16.copy),
+            tintColor: .Icon.secondary,
+            size: .auto,
+            corners: .none,
+            padding: UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 4)
+          ),
+          isHighlightable: true,
+          tapAction: {
+            UIPasteboard.general.string = collection.address.toString(bounceable: true)
+            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            ToastPresenter.showToast(configuration: .copied)
+          }
+        )
+      ]
+    }
+    
+    var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
+    buttonConfiguration.content.title = .plainString(buttonTitle)
+    buttonConfiguration.action = { [weak self] in
+      switch itemState {
+      case .visible:
+        self?.model.hideItem(item)
+      case .hidden, .spam:
+        self?.model.showItem(item)
+      }
+      self?.didHideDetails?()
+    }
+    
+    return PurchasesManagementDetailsViewController.Configuration(
+      title: title,
+      listConfiguration: TKListContainerView.Configuration(items: listItems),
+      buttonConfiguration: buttonConfiguration
+    )
   }
   
   func mapRegularItem(title: String,
