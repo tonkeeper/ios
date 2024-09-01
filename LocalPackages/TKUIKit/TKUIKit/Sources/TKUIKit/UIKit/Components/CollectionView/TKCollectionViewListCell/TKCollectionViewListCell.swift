@@ -51,8 +51,8 @@ open class TKCollectionViewListCell: UICollectionViewCell {
   var listCellContentView: UIView?
   private var visibleAccessoryView: UIView?
   
-  private var isFirst = false
-  private var isLast = false
+  public private(set) var isFirst = false
+  public private(set) var isLast = false
   
   public override init(frame: CGRect) {
     super.init(frame: frame)
@@ -74,6 +74,7 @@ open class TKCollectionViewListCell: UICollectionViewCell {
   open override func layoutSubviews() {
     super.layoutSubviews()
     highlightViewContainer.frame = contentView.bounds
+    highlightView?.frame = highlightViewContainer.bounds
     layoutContentView()
     layoutAccessoryView()
     layoutLeftAccessoryView()
@@ -170,6 +171,8 @@ open class TKCollectionViewListCell: UICollectionViewCell {
     let contentViewFrame = getContentViewFrame()
     listCellContentContainerView.frame = contentViewFrame
     listCellContentView?.frame = listCellContentContainerView.bounds
+    listCellContentView?.setNeedsLayout()
+    listCellContentView?.layoutIfNeeded()
   }
   
   private func layoutAccessoryView() {
