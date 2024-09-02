@@ -195,15 +195,20 @@ public final class TKListItemTextContentViewV2: UIView {
     valueViewFullHeightFrame.size.height = size.height
     if valueCaptionView.isHidden,
        subvalueView.isHidden,
+       valueViewFrame != .zero,
         !captionsViewsFrames.map({ $0.intersects(valueViewFullHeightFrame) }).reduce(false, { $0 || $1 }) {
       valueViewFrame = valueViewFullHeightFrame
     }
     
+    if titleView.titleLabel.text?.contains("TON D") == true {
+      print("Dsd")
+    }
     var titleViewFullHeightFrame = titleViewFrame
     titleViewFullHeightFrame.size.height = size.height
     if captionViews.isEmpty,
-       !titleViewFullHeightFrame.intersects(valueViewFrame),
-       !titleViewFullHeightFrame.intersects(valueCaptionViewFrame) {
+       size.height > 0,
+       valueViewFrame == .zero || !titleViewFullHeightFrame.intersects(valueViewFrame),
+       valueCaptionViewFrame == .zero || !titleViewFullHeightFrame.intersects(valueCaptionViewFrame) {
       titleViewFrame = titleViewFullHeightFrame
     }
     

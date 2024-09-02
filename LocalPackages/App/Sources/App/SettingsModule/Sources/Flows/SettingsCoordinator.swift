@@ -331,6 +331,7 @@ private extension SettingsCoordinator {
     let configuration = SettingsListNotificationsConfigurator(
     wallet: wallet,
     walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+    tonConnectAppsStore: keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore,
     urlOpener: coreAssembly.urlOpener())
     
     let module = SettingsListAssembly.module(configurator: configuration)

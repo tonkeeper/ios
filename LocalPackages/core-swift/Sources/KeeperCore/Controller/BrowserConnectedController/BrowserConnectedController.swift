@@ -45,7 +45,7 @@ public final class BrowserConnectedController {
 }
 
 extension BrowserConnectedController: TonConnectAppsStoreObserver {
-  func didGetTonConnectAppsStoreEvent(_ event: TonConnectAppsStoreEvent) {
+  public func didGetTonConnectAppsStoreEvent(_ event: TonConnectAppsStoreEvent) {
     didUpdateApps?()
   }
 }

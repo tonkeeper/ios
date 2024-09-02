@@ -15,7 +15,7 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
   var isSelectable: Bool { false }
   
   func getInitialState() -> SettingsListState {
-    updateIsPushAvaiable()
+    updateIsPushAvailable()
     return createState()
   }
   
@@ -33,19 +33,24 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
   
   private let wallet: Wallet
   private let walletNotificationStore: WalletNotificationStore
+  private let tonConnectAppsStore: TonConnectAppsStore
   private let urlOpener: URLOpener
   
   // MARK: - Init
   init(wallet: Wallet,
        walletNotificationStore: WalletNotificationStore,
+       tonConnectAppsStore: TonConnectAppsStore,
        urlOpener: URLOpener) {
     self.wallet = wallet
     self.walletNotificationStore = walletNotificationStore
+    self.tonConnectAppsStore = tonConnectAppsStore
     self.urlOpener = urlOpener
     
     notificationToken = NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main, using: { [weak self] _ in
-      self?.updateIsPushAvaiable()
+      self?.updateIsPushAvailable()
     })
+    
+    tonConnectAppsStore.addObserver(self)
   }
   
   deinit {
@@ -58,6 +63,9 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
       sections.append(createNotificationsNotAvailableSection())
     }
     sections.append(createPushNotificationsSection())
+    if let connectedAppsSection = createConnectedAppsSection() {
+      sections.append(connectedAppsSection)
+    }
     return SettingsListState(sections: sections)
   }
   
@@ -157,7 +165,74 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     )
   }
   
-  private func updateIsPushAvaiable() {
+  private func createConnectedAppsSection() -> SettingsListSection? {
+    let apps = (try? tonConnectAppsStore.connectedApps(forWallet: wallet).apps) ?? []
+    guard !apps.isEmpty else { return nil }
+    let items = apps.map { createConnectedAppItem($0) }
+    return SettingsListSection.listItems(SettingsListItemsSection(
+      items: items,
+      topPadding: 0,
+      bottomPadding: 16,
+      headerConfiguration: SettingsListSectionHeaderView.Configuration(
+        title: .connectedAppsSectionTitle,
+        caption: .connectedAppsSectionCaption
+      )
+    ))
+  }
+  
+  private func createConnectedAppsItems() -> [SettingsListItem] {
+    []
+  }
+  
+  private func createConnectedAppItem(_ app: TonConnectApp) -> SettingsListItem {
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
+        iconViewConfiguration: TKListItemIconViewV2.Configuration(
+          content: .image(TKImageView.Model(image: .urlImage(app.manifest.iconUrl), size: .size(CGSize(width: 44, height: 44)))),
+          alignment: .center,
+          cornerRadius: 12,
+          backgroundColor: .clear,
+          size: CGSize(width: 44, height: 44)
+        ),
+        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: app.manifest.name
+          )
+        )
+      )
+    )
+    
+//    let isOn: Bool = {
+//      guard let address = try? wallet.friendlyAddress else { return false }
+//      guard let isOn = walletNotificationStore.getState()[address] else { return false }
+//      return isOn
+//    }()
+//    
+//    let action: (Bool) -> Void = { [weak self] isOn in
+//      guard let self else { return }
+//      
+//      Task {
+//        await self.walletNotificationStore.setNotificationIsOn(isOn, wallet: self.wallet)
+//      }
+//    }
+    
+    return SettingsListItem(
+      id: app.manifest.host,
+      cellConfiguration: cellConfiguration,
+      accessory: .switch(
+        TKListItemSwitchAccessoryView.Configuration(
+          isOn: false,
+          isEnable: true,
+          action: { _ in }
+        )
+      ),
+      onSelection: { _ in
+        //        action(!isOn)
+      }
+    )
+  }
+  
+  private func updateIsPushAvailable() {
     Task {
       let center = UNUserNotificationCenter.current()
       let isPushAvailable: Bool
@@ -177,7 +252,18 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
   }
 }
 
+extension SettingsListNotificationsConfigurator: TonConnectAppsStoreObserver {
+  func didGetTonConnectAppsStoreEvent(_ event: KeeperCore.TonConnectAppsStoreEvent) {
+    DispatchQueue.main.async {
+      let state = self.createState()
+      self.didUpdateState?(state)
+    }
+  }
+}
+
 private extension String {
   static let walletNotificationsIdentifier = "WalletNotificationsIdentifier"
   static let notificationsNotAvailableBannerIdentifier = "NotificationsNotAvailableBannerIdentifier"
+  static let connectedAppsSectionTitle = "Apps"
+  static let connectedAppsSectionCaption = "Notifications from connected apps in your activity"
 }
