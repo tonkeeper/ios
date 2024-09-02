@@ -89,7 +89,7 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
               let accessoryView = TKListItemIconAccessoryView()
               accessoryView.configuration = configuration
               return accessoryView
-            case .swift(let configuration):
+            case .switch(let configuration):
               let accessoryView = TKListItemSwitchAccessoryView()
               accessoryView.configuration = configuration
               return accessoryView
@@ -131,6 +131,7 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
       }
     
     let sectionHeaderRegistration = SettingsListSectionHeaderViewRegistration.registration()
+    let sectionFooterRegistration = SettingsListSectionFooterViewRegistration.registration()
     dataSource.supplementaryViewProvider = { [weak self] collectionView, elementKind, indexPath in
       guard let snapshot = self?.dataSource.snapshot() else { return nil }
       switch elementKind {
@@ -140,6 +141,17 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
         case .listItems(let section):
           guard let configuration = section.headerConfiguration else { return nil }
           let view = collectionView.dequeueConfiguredReusableSupplementary(using: sectionHeaderRegistration, for: indexPath)
+          view.configuration = configuration
+          return view
+        default:
+          return nil
+        }
+      case SettingsListSectionFooterView.elementKind:
+        let snapshotSection = snapshot.sectionIdentifiers[indexPath.section]
+        switch snapshotSection {
+        case .listItems(let section):
+          guard let configuration = section.footerConfiguration else { return nil }
+          let view = collectionView.dequeueConfiguredReusableSupplementary(using: sectionFooterRegistration, for: indexPath)
           view.configuration = configuration
           return view
         default:
@@ -202,7 +214,20 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
               alignment: .top
             )
             
-            sectionLayout.boundarySupplementaryItems = [header]
+            sectionLayout.boundarySupplementaryItems.append(header)
+          }
+          
+          if section.footerConfiguration != nil {
+            let footerSize = NSCollectionLayoutSize(
+              widthDimension: .fractionalWidth(1.0),
+              heightDimension: .estimated(100)
+            )
+            let footer = NSCollectionLayoutBoundarySupplementaryItem(
+              layoutSize: footerSize,
+              elementKind: SettingsListSectionFooterView.elementKind,
+              alignment: .bottom
+            )
+            sectionLayout.boundarySupplementaryItems.append(footer)
           }
           
           return sectionLayout

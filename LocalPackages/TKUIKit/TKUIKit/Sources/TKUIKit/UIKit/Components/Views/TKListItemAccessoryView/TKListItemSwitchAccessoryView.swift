@@ -4,10 +4,19 @@ public final class TKListItemSwitchAccessoryView: UIControl {
   
   public struct Configuration {
     public let isOn: Bool
+    public let isEnable: Bool
     public let action: ((_ isOn: Bool) -> Void)?
     
     public static var `default`: Configuration {
       Configuration(isOn: false, action: nil)
+    }
+    
+    public init(isOn: Bool,
+                isEnable: Bool = true,
+                action: ((_ isOn: Bool) -> Void)?) {
+      self.isOn = isOn
+      self.isEnable = isEnable
+      self.action = action
     }
   }
   
@@ -55,5 +64,6 @@ public final class TKListItemSwitchAccessoryView: UIControl {
   
   private func didUpdateConfiguration() {
     `switch`.isOn = configuration.isOn
+    `switch`.isEnabled = configuration.isEnable
   }
 }

@@ -13,15 +13,18 @@ struct SettingsListItemsSection: Hashable {
   let topPadding: CGFloat
   let bottomPadding: CGFloat
   let headerConfiguration: SettingsListSectionHeaderView.Configuration?
+  let footerConfiguration: SettingsListSectionFooterView.Configuration?
   
   init(items: [AnyHashable], 
        topPadding: CGFloat,
        bottomPadding: CGFloat,
-       headerConfiguration: SettingsListSectionHeaderView.Configuration? = nil) {
+       headerConfiguration: SettingsListSectionHeaderView.Configuration? = nil,
+       footerConfiguration: SettingsListSectionFooterView.Configuration? = nil) {
     self.items = items
     self.topPadding = topPadding
     self.bottomPadding = bottomPadding
     self.headerConfiguration = headerConfiguration
+    self.footerConfiguration = footerConfiguration
   }
 }
 
@@ -77,5 +80,5 @@ enum SettingsListItemAccessory {
   case chevron
   case icon(TKListItemIconAccessoryView.Configuration)
   case text(TKListItemTextAccessoryView.Configuration)
-  case swift(TKListItemSwitchAccessoryView.Configuration)
+  case `switch`(TKListItemSwitchAccessoryView.Configuration)
 }
