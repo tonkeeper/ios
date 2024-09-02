@@ -3,40 +3,91 @@ import TKUIKit
 import SnapKit
 import TKLocalize
 
-final class FontLicenseViewController: UIViewController {
+final class FontLicenseView: UIView {
+  let navigationBar = TKUINavigationBar()
+  let titleView = TKUINavigationBarTitleView()
   let textView = UITextView()
   
-  override func viewDidLoad() {
-    super.viewDidLoad()
-    title = TKLocales.Settings.Legal.Items.montserrat_font
+  override init(frame: CGRect) {
+    super.init(frame: frame)
     
-    view.backgroundColor = .Background.page
+    backgroundColor = .Background.page
     textView.backgroundColor = .clear
     textView.textContainerInset.left = 16
     textView.textContainerInset.right = 16
     textView.font = TKTextStyle.body2.font
     textView.textColor = .Text.primary
     textView.text = .license
-
+    
     textView.isEditable = false
     textView.isSelectable = true
     textView.contentInsetAdjustmentBehavior = .never
     
-    view.addSubview(textView)
-    textView.snp.makeConstraints { make in
-      make.left.right.equalTo(self.view)
-      make.top.bottom.equalTo(self.view.safeAreaLayoutGuide)
+    addSubview(textView)
+    addSubview(navigationBar)
+    navigationBar.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
     }
+    
+    textView.snp.makeConstraints { make in
+      make.left.right.equalTo(self)
+      make.top.bottom.equalTo(self)
+    }
+  }
+  
+  required init?(coder: NSCoder) {
+    fatalError("init(coder:) has not been implemented")
+  }
+  
+  override func layoutSubviews() {
+    super.layoutSubviews()
+    
+    navigationBar.setNeedsLayout()
+    navigationBar.layoutIfNeeded()
+    textView.textContainerInset.top = navigationBar.bounds.height
+    textView.contentInset.bottom = safeAreaInsets.bottom
+  }
+}
+
+final class FontLicenseViewController: GenericViewViewController<FontLicenseView> {
+  
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    customView.navigationBar.scrollView = customView.textView
+    customView.navigationBar.centerView = customView.titleView
+    
+    customView.titleView.configure(
+      model: TKUINavigationBarTitleView.Model(
+        title: TKLocales.Settings.Legal.Items.montserrat_font.withTextStyle(
+          .h3,
+          color: .Text.primary
+        )
+      )
+    )
+    
+    setupNavigationBar()
   }
   
   override func viewDidAppear(_ animated: Bool) {
     super.viewDidAppear(animated)
-    textView.layoutManager.ensureLayout(
+    customView.textView.layoutManager.ensureLayout(
       forCharacterRange: NSRange(
         location: 0,
         length: String.license.count
       )
     )
+  }
+  
+  private func setupNavigationBar() {
+    guard let navigationController,
+          !navigationController.viewControllers.isEmpty else {
+      return
+    }
+    customView.navigationBar.leftViews = [
+      TKUINavigationBar.createBackButton {
+        navigationController.popViewController(animated: true)
+      }
+    ]
   }
 }
 

@@ -24,7 +24,6 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   // MARK: - SettingsListV2Configurator
   
   var didUpdateState: ((SettingsListState) -> Void)?
-  var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
   
   var title: String { TKLocales.Settings.title }
   var isSelectable: Bool { false }

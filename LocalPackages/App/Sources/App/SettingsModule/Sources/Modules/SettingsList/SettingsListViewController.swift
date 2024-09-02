@@ -38,7 +38,14 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
     }
     
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
-      self?.dataSource.apply(snapshot, animatingDifferences: false)
+      self?.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+        let selectedItems = self?.viewModel.selectedItems
+        selectedItems?.forEach {
+          guard let index = snapshot.indexOfItem($0) else { return }
+          let indexPath = IndexPath(item: index, section: 0)
+          self?.customView.collectionView.selectItem(at: indexPath, animated: false, scrollPosition: [])
+        }
+      })
     }
   }
   
@@ -57,6 +64,8 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
   private lazy var dataSource: DataSource = {
     let listCellRegistration = ListItemCellRegistration.registration(collectionView: customView.collectionView)
     let appInformationCellRegistration = SettingsAppInformationCellRegistration.registration
+    let buttonCellRegistration = TKButtonCollectionViewCellRegistration.registration()
+    
     let dataSource = DataSource(
       collectionView: customView.collectionView) {
         collectionView, indexPath, itemIdentifier in
@@ -66,25 +75,42 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
             using: listCellRegistration,
             for: indexPath,
             item: listItem.cellConfiguration)
-          switch listItem.accessory {
-          case .none:
+          func getAccessoryView(accessory: SettingsListItemAccessory?) -> UIView? {
+            switch accessory {
+            case nil:
+              return nil
+            case .none:
+              return nil
+            case .chevron:
+              let accessoryView = TKListItemIconAccessoryView()
+              accessoryView.configuration = .chevron
+              return accessoryView
+            case .icon(let configuration):
+              let accessoryView = TKListItemIconAccessoryView()
+              accessoryView.configuration = configuration
+              return accessoryView
+            case .swift(let configuration):
+              let accessoryView = TKListItemSwitchAccessoryView()
+              accessoryView.configuration = configuration
+              return accessoryView
+            case .text(let configuration):
+              let accessoryView = TKListItemTextAccessoryView()
+              accessoryView.configuration = configuration
+              return accessoryView
+            default:
+              return nil
+            }
+          }
+          if let accessory = getAccessoryView(accessory: listItem.accessory) {
+            cell.defaultAccessoryViews = [accessory]
+          } else {
             cell.defaultAccessoryViews = []
-          case .chevron:
-            let accessoryView = TKListItemIconAccessoryView()
-            accessoryView.configuration = .chevron
-            cell.defaultAccessoryViews = [accessoryView]
-          case .icon(let configuration):
-            let accessoryView = TKListItemIconAccessoryView()
-            accessoryView.configuration = configuration
-            cell.defaultAccessoryViews = [accessoryView]
-          case .swift(let configuration):
-            let accessoryView = TKListItemSwitchAccessoryView()
-            accessoryView.configuration = configuration
-            cell.defaultAccessoryViews = [accessoryView]
-          case .text(let configuration):
-            let accessoryView = TKListItemTextAccessoryView()
-            accessoryView.configuration = configuration
-            cell.defaultAccessoryViews = [accessoryView]
+          }
+          
+          if let selectionAccessory = getAccessoryView(accessory: listItem.selectAccessory) {
+            cell.selectionAccessoryViews = [selectionAccessory]
+          } else {
+            cell.selectionAccessoryViews = []
           }
           return cell
         case let item as SettingsAppInformationCell.Configuration:
@@ -93,10 +119,37 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
             for: indexPath,
             item: item)
           return cell
+        case let item as SettingsButtonListItem:
+          let cell = collectionView.dequeueConfiguredReusableCell(
+            using: buttonCellRegistration,
+            for: indexPath,
+            item: item.cellConfiguration)
+          return cell
         default:
           return nil
         }
       }
+    
+    let sectionHeaderRegistration = SettingsListSectionHeaderViewRegistration.registration()
+    dataSource.supplementaryViewProvider = { [weak self] collectionView, elementKind, indexPath in
+      guard let snapshot = self?.dataSource.snapshot() else { return nil }
+      switch elementKind {
+      case SettingsListSectionHeaderView.elementKind:
+        let snapshotSection = snapshot.sectionIdentifiers[indexPath.section]
+        switch snapshotSection {
+        case .listItems(let section):
+          guard let configuration = section.headerConfiguration else { return nil }
+          let view = collectionView.dequeueConfiguredReusableSupplementary(using: sectionHeaderRegistration, for: indexPath)
+          view.configuration = configuration
+          return view
+        default:
+          return nil
+        }
+      default:
+        return nil
+      }
+    }
+    
     return dataSource
   }()
   
@@ -137,8 +190,23 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
           let sectionLayout: NSCollectionLayoutSection = .listItemsSection
           sectionLayout.contentInsets.top = section.topPadding
           sectionLayout.contentInsets.bottom = section.bottomPadding
+          
+          if section.headerConfiguration != nil {
+            let headerSize = NSCollectionLayoutSize(
+              widthDimension: .fractionalWidth(1.0),
+              heightDimension: .estimated(100)
+            )
+            let header = NSCollectionLayoutBoundarySupplementaryItem(
+              layoutSize: headerSize,
+              elementKind: SettingsListSectionHeaderView.elementKind,
+              alignment: .top
+            )
+            
+            sectionLayout.boundarySupplementaryItems = [header]
+          }
+          
           return sectionLayout
-        case .appInformation:
+        case .appInformation, .button:
           let itemLayoutSize = NSCollectionLayoutSize(
             widthDimension: .fractionalWidth(1.0),
             heightDimension: .estimated(110)

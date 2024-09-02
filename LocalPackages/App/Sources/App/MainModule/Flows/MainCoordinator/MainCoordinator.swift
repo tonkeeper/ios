@@ -900,7 +900,7 @@ private extension MainCoordinator {
   func openBackup(wallet: Wallet) {
     guard let navigationController = router.rootViewController.navigationController else { return }
     let configuration = SettingsListBackupConfigurator(
-      walletId: wallet.id,
+      wallet: wallet,
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
     )

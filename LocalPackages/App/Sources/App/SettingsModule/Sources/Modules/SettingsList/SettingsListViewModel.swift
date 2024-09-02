@@ -8,6 +8,7 @@ public protocol SettingsListModuleOutput: AnyObject {}
 protocol SettingsListViewModel: AnyObject {
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
   var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)? { get set }
+  var selectedItems: Set<SettingsListItem> { get }
 
   func viewDidLoad()
 }
@@ -19,7 +20,12 @@ struct SettingsListState {
 protocol SettingsListConfigurator: AnyObject {
   var title: String { get }
   var didUpdateState: ((SettingsListState) -> Void)? { get set }
+  var selectedItems: Set<SettingsListItem> { get }
   func getInitialState() -> SettingsListState
+}
+
+extension SettingsListConfigurator {
+  var selectedItems: Set<SettingsListItem> { [] }
 }
 
 final class SettingsListViewModelImplementation: SettingsListViewModel, SettingsListModuleOutput {
@@ -30,6 +36,9 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
   var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)?
+  var selectedItems: Set<SettingsListItem> {
+    configurator.selectedItems
+  }
   
   func viewDidLoad() {
     didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: configurator.title))
@@ -43,6 +52,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     let state = configurator.getInitialState()
     update(with: state)
   }
+
   
   private let configurator: SettingsListConfigurator
   
@@ -68,6 +78,13 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
           snapshot.reconfigureItems([configuration])
         } else {
           snapshot.reloadItems([configuration])
+        }
+      case .button(let item):
+        snapshot.appendItems([item], toSection: section)
+        if #available(iOS 15.0, *) {
+          snapshot.reconfigureItems([item])
+        } else {
+          snapshot.reloadItems([item])
         }
       }
     }

@@ -137,6 +137,9 @@ private extension SettingsCoordinator {
     let configuration = SettingsListCurrencyPickerConfigurator(
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
     )
+    configuration.didSelect = { [weak self] in
+      self?.router.pop()
+    }
     let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()
 
@@ -145,7 +148,7 @@ private extension SettingsCoordinator {
   
   func openBackup(wallet: Wallet) {
     let configuration = SettingsListBackupConfigurator(
-      walletId: wallet.id,
+      wallet: wallet,
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
     )
