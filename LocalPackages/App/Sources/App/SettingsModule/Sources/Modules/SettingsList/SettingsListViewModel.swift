@@ -8,27 +8,18 @@ public protocol SettingsListModuleOutput: AnyObject {}
 protocol SettingsListViewModel: AnyObject {
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
   var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)? { get set }
-  var didSelectItem: ((SettingsListViewController.Item?) -> Void)? { get set }
-  var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)? { get set }
-  
+
   func viewDidLoad()
-  func shouldSelect() -> Bool
 }
 
 struct SettingsListState {
   let sections: [SettingsListSection]
-  let selectedItem: AnyHashable?
 }
 
 protocol SettingsListConfigurator: AnyObject {
-  var didUpdateState: ((SettingsListState) -> Void)? { get set }
-  var didShowPopupMenu: ((_ menuItems: [TKPopupMenuItem],
-                          _ selectedIndex: Int?) -> Void)? { get set }
-  
   var title: String { get }
-  var isSelectable: Bool { get }
-  
-  func getState() -> SettingsListState
+  var didUpdateState: ((SettingsListState) -> Void)? { get set }
+  func getInitialState() -> SettingsListState
 }
 
 final class SettingsListViewModelImplementation: SettingsListViewModel, SettingsListModuleOutput {
@@ -37,29 +28,20 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   
   // MARK: - SettingsListViewModel
   
-  var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)?
-  var didSelectItem: ((SettingsListViewController.Item?) -> Void)?
-  var didShowPopupMenu: (([TKPopupMenuItem], Int?) -> Void)?
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
+  var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)?
   
   func viewDidLoad() {
+    didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: configurator.title))
+    
     configurator.didUpdateState = { [weak self] state in
       DispatchQueue.main.async {
-        self?.update(state: state)
+        self?.update(with: state)
       }
     }
-    configurator.didShowPopupMenu = { [weak self] items, selectedIndex in
-      DispatchQueue.main.async {
-        self?.didShowPopupMenu?(items, selectedIndex)
-      }
-    }
-    didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: configurator.title))
-    let state = configurator.getState()
-    update(state: state)
-  }
-  
-  func shouldSelect() -> Bool {
-    configurator.isSelectable
+    
+    let state = configurator.getInitialState()
+    update(with: state)
   }
   
   private let configurator: SettingsListConfigurator
@@ -68,20 +50,28 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     self.configurator = configurator
   }
   
-  private func update(state: SettingsListState) {
+  private func update(with state: SettingsListState) {
     var snapshot = SettingsListViewController.Snapshot()
     snapshot.appendSections(state.sections)
     for section in state.sections {
       switch section {
-      case .items(_, let items, _,  _):
-        snapshot.appendItems(items, toSection: section)
+      case .listItems(let settingsListItemsSection):
+        snapshot.appendItems(settingsListItemsSection.items, toSection: section)
+        if #available(iOS 15.0, *) {
+          snapshot.reconfigureItems(settingsListItemsSection.items)
+        } else {
+          snapshot.reloadItems(settingsListItemsSection.items)
+        }
+      case .appInformation(let configuration):
+        snapshot.appendItems([configuration], toSection: section)
+        if #available(iOS 15.0, *) {
+          snapshot.reconfigureItems([configuration])
+        } else {
+          snapshot.reloadItems([configuration])
+        }
       }
     }
-    
     didUpdateSnapshot?(snapshot)
-    if let selectedItem = state.selectedItem {
-      didSelectItem?(selectedItem)
-    }
   }
 }
 

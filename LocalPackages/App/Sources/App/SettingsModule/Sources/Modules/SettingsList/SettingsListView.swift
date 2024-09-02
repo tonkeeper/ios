@@ -20,6 +20,7 @@ public final class SettingsListView: UIView {
    
     navigationBar.layoutIfNeeded()
     collectionView.contentInset.top = navigationBar.bounds.height
+    collectionView.contentInset.bottom = safeAreaInsets.bottom + 16
   }
 }
 

@@ -38,6 +38,13 @@ public final class TKListItemTitleView: UIView {
       self.tagConfiguration = tagConfiguration
       self.icon = icon
     }
+    
+    public init(title: NSAttributedString) {
+      self.title = title
+      self.caption = nil
+      self.tagConfiguration = nil
+      self.icon = nil
+    }
   }
   
   public var configuration = Configuration(title: "") {

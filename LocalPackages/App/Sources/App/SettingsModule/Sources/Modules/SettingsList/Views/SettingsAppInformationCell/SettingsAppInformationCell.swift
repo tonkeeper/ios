@@ -2,7 +2,7 @@ import UIKit
 import TKUIKit
 import Lottie
 
-final class SettingsAppInformationCell: UICollectionViewCell, TKConfigurableView {
+final class SettingsAppInformationCell: UICollectionViewCell {
   
   private let appNameLabel = UILabel()
   private let versionLabel = UILabel()
@@ -14,24 +14,13 @@ final class SettingsAppInformationCell: UICollectionViewCell, TKConfigurableView
     let version: String
   }
   
-  func configure(configuration: Configuration) {
-    appNameLabel.attributedText = configuration.appName
-      .withTextStyle(
-        .label2,
-        color: .Text.primary,
-        alignment: .center,
-        lineBreakMode: .byTruncatingTail
-      )
-    
-    versionLabel.attributedText = configuration.version
-      .withTextStyle(
-        .body3,
-        color: .Text.secondary,
-        alignment: .center,
-        lineBreakMode: .byTruncatingTail
-      )
+  var configuration = Configuration(appName: "", version: "") {
+    didSet {
+      didUpdateConfiguration()
+      setNeedsLayout()
+      invalidateIntrinsicContentSize()
+    }
   }
-  
   override func sizeThatFits(_ size: CGSize) -> CGSize {
     systemLayoutSizeFitting(
       size,
@@ -47,6 +36,24 @@ final class SettingsAppInformationCell: UICollectionViewCell, TKConfigurableView
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  private func didUpdateConfiguration() {
+    appNameLabel.attributedText = configuration.appName
+      .withTextStyle(
+        .label2,
+        color: .Text.primary,
+        alignment: .center,
+        lineBreakMode: .byTruncatingTail
+      )
+    
+    versionLabel.attributedText = configuration.version
+      .withTextStyle(
+        .body3,
+        color: .Text.secondary,
+        alignment: .center,
+        lineBreakMode: .byTruncatingTail
+      )
   }
 }
 

@@ -70,7 +70,7 @@ public final class TKListItemTextView: UIView {
     guard labelSizeThatFits != .zero else {
       return .zero
     }
-    let labelWidth = min(size.width, labelSizeThatFits.width)
+    let labelWidth = labelSizeThatFits.width
     let resultWidth = labelWidth + configuration.padding.left + configuration.padding.right
     let resultHeight = labelSizeThatFits.height + configuration.padding.top + configuration.padding.bottom
     return CGSize(width: resultWidth, height: resultHeight)

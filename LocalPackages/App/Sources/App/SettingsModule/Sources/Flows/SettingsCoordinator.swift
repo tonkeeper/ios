@@ -29,7 +29,7 @@ final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
 private extension SettingsCoordinator {
   func openSettingsRoot() {
     let configurator = SettingsListRootConfigurator(
-      walletId: wallet.id,
+      wallet: wallet,
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
