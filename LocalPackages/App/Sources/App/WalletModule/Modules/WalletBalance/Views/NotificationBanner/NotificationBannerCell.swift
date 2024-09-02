@@ -15,7 +15,7 @@ final class NotificationBannerCell: UICollectionViewCell {
       title: nil,
       caption: nil,
       appearance: .regular,
-      closeAction: nil
+      closeButton: nil
     )) {
     didSet {
       didUpdateConfiguration()

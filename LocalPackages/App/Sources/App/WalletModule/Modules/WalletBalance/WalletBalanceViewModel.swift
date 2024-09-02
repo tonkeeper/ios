@@ -429,12 +429,13 @@ private extension WalletBalanceViewModelImplementation {
                                                                   caption: notification.caption,
                                                                   appearance: appearance,
                                                                   actionButton: actionButton,
-                                                                  closeAction: { [weak self] in
+                                                                  closeButton: NotificationBannerView.Model.CloseButton(action: { [weak self] in
                                                                     guard let self else { return }
                                                                     Task {
                                                                       self.notificationStore.removeNotification(notification)
                                                                     }
-                                                                  })
+                                                                  }))
+
           )
           result[notification.id] = model
         }

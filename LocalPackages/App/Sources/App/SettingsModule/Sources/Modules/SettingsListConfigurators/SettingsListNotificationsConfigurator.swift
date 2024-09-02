@@ -1,7 +1,8 @@
 import UIKit
 import TKUIKit
-import KeeperCore
+import TKCore
 import TKLocalize
+import KeeperCore
 import UserNotifications
 
 final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
@@ -32,12 +33,15 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
   
   private let wallet: Wallet
   private let walletNotificationStore: WalletNotificationStore
+  private let urlOpener: URLOpener
   
   // MARK: - Init
   init(wallet: Wallet,
-       walletNotificationStore: WalletNotificationStore) {
+       walletNotificationStore: WalletNotificationStore,
+       urlOpener: URLOpener) {
     self.wallet = wallet
     self.walletNotificationStore = walletNotificationStore
+    self.urlOpener = urlOpener
     
     notificationToken = NotificationCenter.default.addObserver(forName: UIApplication.willEnterForegroundNotification, object: nil, queue: .main, using: { [weak self] _ in
       self?.updateIsPushAvaiable()
@@ -139,10 +143,15 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
           appearance: .accentYellow,
           actionButton: NotificationBannerView.Model.ActionButton(
             title: "Settings",
-            action: {
-              
+            action: { [urlOpener] in
+              guard let url = URL(string: UIApplication.openSettingsURLString),
+                    urlOpener.canOpen(url: url) else {
+                return
+              }
+              urlOpener.open(url: url)
             }
-          ), closeAction: nil
+          ),
+          closeButton: nil
         )
       )
     )

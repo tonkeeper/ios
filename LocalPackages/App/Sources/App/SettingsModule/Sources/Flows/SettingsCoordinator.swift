@@ -330,7 +330,8 @@ private extension SettingsCoordinator {
   func openNotifications(wallet: Wallet) {
     let configuration = SettingsListNotificationsConfigurator(
     wallet: wallet,
-    walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore)
+    walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore,
+    urlOpener: coreAssembly.urlOpener())
     
     let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()

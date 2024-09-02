@@ -9,6 +9,10 @@ final class NotificationBannerView: UIControl, ConfigurableView {
       let action: (() -> Void)
     }
     
+    struct CloseButton {
+      let action: (() -> Void)
+    }
+    
     enum Appearance {
       case regular
       case accentYellow
@@ -56,18 +60,18 @@ final class NotificationBannerView: UIControl, ConfigurableView {
     let caption: String?
     let appearance: Appearance
     let actionButton: ActionButton?
-    let closeAction: (() -> Void)?
+    let closeButton: CloseButton?
     
     init(title: String?,
          caption: String?,
          appearance: Appearance,
          actionButton: ActionButton? = nil,
-         closeAction: (() -> Void)?) {
+         closeButton: CloseButton? = nil) {
       self.title = title
       self.caption = caption
       self.appearance = appearance
       self.actionButton = actionButton
-      self.closeAction = closeAction
+      self.closeButton = closeButton
     }
   }
   
@@ -88,14 +92,19 @@ final class NotificationBannerView: UIControl, ConfigurableView {
     )
     captionLabel.alpha = model.appearance.captionAlpha
     
-    closeButton.configuration = TKButton.Configuration(
-      content: TKButton.Configuration.Content(icon: .TKUIKit.Icons.Size16.close),
-      contentPadding: UIEdgeInsets(top: 12, left: 24, bottom: 12, right: 0),
-      iconTintColor: model.appearance.tintColor,
-      contentAlpha: [.highlighted: 0.48],
-      isEnabled: true,
-      action: model.closeAction
-    )
+    if let closeButton = model.closeButton {
+      self.closeButton.isHidden = false
+      self.closeButton.configuration = TKButton.Configuration(
+        content: TKButton.Configuration.Content(icon: .TKUIKit.Icons.Size16.close),
+        contentPadding: UIEdgeInsets(top: 12, left: 24, bottom: 12, right: 0),
+        iconTintColor: model.appearance.tintColor,
+        contentAlpha: [.highlighted: 0.48],
+        isEnabled: true,
+        action: closeButton.action
+      )
+    } else {
+      self.closeButton.isHidden = true
+    }
     
     if let actionButtonModel = model.actionButton {
       self.actionButton.isHidden = false
