@@ -67,6 +67,7 @@
 "settings.items.delete_acount_alert_title" = "Удалить аккаунт";
 "settings.items.setup_wallet_description" = "Кастомизировать";
 "settings.items.purchases" = "Покупки";
+"settings.items.notifications" = "Уведомления";
 
 "settings.logout.title" = "Выйти?";
 "settings.logout.description" = "Доступ к кошелькам будет отключён. Убедитесь, что вы сохранили все секретные ключи.";
@@ -99,6 +100,10 @@
 "settings.purchases.details.items.name" = "Имя";
 "settings.purchases.details.items.collection_id" = "ID коллекции";
 "settings.purchases.details.items.token_id" = "ID токена";
+
+"settings.notifications.title" = "Уведомления";
+"settings.notifications.notifications_item.title" = "Push уведомления";
+"settings.notifications.notifications_item.caption" = "Получайте уведомления при получении TON, токенов, NFT и уведомления от подключенных приложений.";
 
 "theme.title" = "Тема";
 "theme.options.system" = "Системная";

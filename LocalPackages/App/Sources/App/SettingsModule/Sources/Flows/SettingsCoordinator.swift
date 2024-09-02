@@ -78,6 +78,10 @@ private extension SettingsCoordinator {
       self?.openPurchases(wallet: wallet)
     }
     
+    configurator.didTapNotifications = { [weak self] wallet in
+      self?.openNotifications(wallet: wallet)
+    }
+    
     configurator.didDeleteWallet = { [weak self] in
       guard let self else { return }
       let wallets = self.keeperCoreMainAssembly.walletAssembly.walletsStore.getState().wallets
@@ -321,6 +325,17 @@ private extension SettingsCoordinator {
     module.view.setupBackButton()
     
     router.push(viewController: module.view)
+  }
+  
+  func openNotifications(wallet: Wallet) {
+    let configuration = SettingsListNotificationsConfigurator(
+    wallet: wallet,
+    walletNotificationStore: keeperCoreMainAssembly.storesAssembly.walletNotificationStore)
+    
+    let module = SettingsListAssembly.module(configurator: configuration)
+    module.viewController.setupBackButton()
+
+    router.push(viewController: module.viewController)
   }
   
   func getPasscode() async -> String? {

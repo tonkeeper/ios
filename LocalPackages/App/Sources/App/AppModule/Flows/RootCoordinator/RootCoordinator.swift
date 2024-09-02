@@ -20,6 +20,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   
   private let stateManager: RootCoordinatorStateManager
   private let featureFlagsProvider: FeatureFlagsProvider
+  private let pushNotificationsManager: PushNotificationManager
 
   init(router: ViewControllerRouter,
        dependencies: Dependencies) {
@@ -29,10 +30,18 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
     )
     self.featureFlagsProvider = dependencies.coreAssembly.featureFlagsProvider
+    self.pushNotificationsManager = PushNotificationManager(
+      appSettings: dependencies.coreAssembly.appSettings,
+      pushNotificationTokenProvider: dependencies.coreAssembly.pushNotificationTokenProvider,
+      pushNotificationAPI: dependencies.coreAssembly.pushNotificationAPI,
+      walletNotificationsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore
+    )
     super.init(router: router)
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
+    pushNotificationsManager.setup()
+    
     featureFlagsProvider.didUpdateIsMarketRegionPickerAvailable = { [weak self, weak featureFlagsProvider] in
       guard let isMarketRegionPickerAvailable = featureFlagsProvider?.isMarketRegionPickerAvailable else { return }
       self?.rootController.loadFiatMethods(isMarketRegionPickerAvailable: isMarketRegionPickerAvailable)

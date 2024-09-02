@@ -1,12 +1,13 @@
 import Foundation
 import FirebaseCore
 import FirebaseRemoteConfig
+import FirebaseMessaging
 
-public final class FirebaseConfigurator {
+public final class FirebaseConfigurator: NSObject {
   
   public static let configurator = FirebaseConfigurator()
   
-  private init() {}
+  private override init() {}
   
   lazy var remoteConfig: RemoteConfig = {
     let remoteConfig = RemoteConfig.remoteConfig()
@@ -18,8 +19,6 @@ public final class FirebaseConfigurator {
   
   public func configure() {
     FirebaseApp.configure()
-    
-    configureRemoteConfig()
   }
   
   public var isMarketRegionPickerAvailable: Bool {

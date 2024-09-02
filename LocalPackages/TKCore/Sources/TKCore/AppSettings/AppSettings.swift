@@ -35,10 +35,31 @@ public final class AppSettings {
       userDefaults.setValue(newValue, forKey: .isSecureModeKey)
     }
   }
+  
+  public var installDeviceID: String {
+    if let deviceId = userDefaults.string(forKey: .installDeviceId) {
+      return deviceId
+    } else {
+      let deviceID = UUID()
+      userDefaults.set(deviceID.uuidString, forKey: .installDeviceId)
+      return deviceID.uuidString
+    }
+  }
+  
+  public var fcmToken: String? {
+    get {
+      userDefaults.string(forKey: .fcmToken)
+    }
+    set {
+      userDefaults.setValue(newValue, forKey: .fcmToken)
+    }
+  }
 }
 
 private extension String {
   static let buySellItemDoNotShowKey = "buy_sell_item_do_not_show_warning"
   static let isSecureModeKey = "is_secure_mode"
   static let selectedCountryCode = "selected_country_code"
+  static let installDeviceId = "install_device_id"
+  static let fcmToken = "fcm_token"
 }

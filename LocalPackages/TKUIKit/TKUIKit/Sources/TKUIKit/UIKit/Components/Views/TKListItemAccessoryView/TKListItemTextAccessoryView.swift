@@ -3,24 +3,37 @@ import UIKit
 public final class TKListItemTextAccessoryView: UIView {
   
   public struct Configuration {
-    public let textViewConfiguration: TKListItemTextView.Configuration
+    public let text: NSAttributedString?
+    public let numberOfLines: Int
+    public let padding: UIEdgeInsets
     
-    public static var `default`: Configuration {
-      Configuration(
-        textViewConfiguration: TKListItemTextView.Configuration(
-          text: "Text",
-          color: .Accent.blue,
-          textStyle: .label1
-        )
+    public init(text: String? = nil,
+                color: UIColor,
+                textStyle: TKTextStyle,
+                alignment: NSTextAlignment = .left,
+                lineBreakMode: NSLineBreakMode = .byTruncatingTail,
+                numberOfLines: Int = 1,
+                padding: UIEdgeInsets = .zero) {
+      self.text = text?.withTextStyle(
+        textStyle,
+        color: color,
+        alignment: alignment,
+        lineBreakMode: lineBreakMode
       )
+      self.numberOfLines = numberOfLines
+      self.padding = padding
     }
     
-    public init(textViewConfiguration: TKListItemTextView.Configuration) {
-      self.textViewConfiguration = textViewConfiguration
+    public init(text: NSAttributedString?,
+                numberOfLines: Int,
+                padding: UIEdgeInsets) {
+      self.text = text
+      self.numberOfLines = numberOfLines
+      self.padding = padding
     }
   }
   
-  public var configuration: Configuration = .default {
+  public var configuration = Configuration(text: "Label", color: .Text.primary, textStyle: .body2) {
     didSet {
       didUpdateConfiguration()
       setNeedsLayout()
@@ -28,7 +41,7 @@ public final class TKListItemTextAccessoryView: UIView {
     }
   }
   
-  private let textView = TKListItemTextView()
+  private let label = UILabel()
   
   public override init(frame: CGRect) {
     super.init(frame: frame)
@@ -42,23 +55,23 @@ public final class TKListItemTextAccessoryView: UIView {
   public override func layoutSubviews() {
     super.layoutSubviews()
     
-    let sizeThatFits = textView.sizeThatFits(.zero)
-    textView.frame = CGRect(x: 0, y: 0, width: sizeThatFits.width, height: bounds.height)
+    let sizeThatFits = label.sizeThatFits(.zero)
+    label.frame = CGRect(x: 0, y: 0, width: sizeThatFits.width, height: bounds.height)
   }
   
   public override func sizeThatFits(_ size: CGSize) -> CGSize {
-    let sizeThatFits = textView.sizeThatFits(.zero)
+    let sizeThatFits = label.sizeThatFits(.zero)
     return CGSize(width: sizeThatFits.width + 16, height: sizeThatFits.height)
   }
   
   private func setup() {
-//    isUserInteractionEnabled = false
-    addSubview(textView)
+    addSubview(label)
     
     didUpdateConfiguration()
   }
   
   private func didUpdateConfiguration() {
-    textView.configuration = configuration.textViewConfiguration
+    label.attributedText = configuration.text
+    label.numberOfLines = configuration.numberOfLines
   }
 }

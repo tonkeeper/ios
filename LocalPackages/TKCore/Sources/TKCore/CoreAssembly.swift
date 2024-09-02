@@ -15,6 +15,7 @@ public final class CoreAssembly {
   public let isTonkeeperX: Bool
   public lazy var secureMode = SecureMode(appSettings: appSettings)
   
+  
   public init(analyticsProvider: AnalyticsProvider = AnalyticsProvider(),
               isTonkeeperX: Bool = false) {
     self.analyticsProvider = analyticsProvider
@@ -79,6 +80,14 @@ public final class CoreAssembly {
   
   public var formattersAssembly: FormattersAssembly {
     FormattersAssembly()
+  }
+  
+  public var pushNotificationTokenProvider: PushNotificationTokenProvider {
+    PushNotificationTokenProvider()
+  }
+  
+  public var pushNotificationAPI: PushNotificationsAPI {
+    PushNotificationsAPI(urlSession: .shared)
   }
 }
 

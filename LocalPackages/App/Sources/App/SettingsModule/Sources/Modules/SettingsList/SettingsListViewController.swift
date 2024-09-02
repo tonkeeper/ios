@@ -37,8 +37,8 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
       self?.customView.titleView.configure(model: model)
     }
     
-    viewModel.didUpdateSnapshot = { [weak self] snapshot in
-      self?.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+    viewModel.didUpdateSnapshot = { [weak self] snapshot, animated in
+      self?.dataSource.apply(snapshot, animatingDifferences: animated, completion: {
         let selectedItems = self?.viewModel.selectedItems
         selectedItems?.forEach {
           guard let index = snapshot.indexOfItem($0) else { return }
@@ -65,6 +65,7 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
     let listCellRegistration = ListItemCellRegistration.registration(collectionView: customView.collectionView)
     let appInformationCellRegistration = SettingsAppInformationCellRegistration.registration
     let buttonCellRegistration = TKButtonCollectionViewCellRegistration.registration()
+    let notificationBannerCellRegistration = NotificationBannerCellRegistration.registration
     
     let dataSource = DataSource(
       collectionView: customView.collectionView) {
@@ -122,6 +123,12 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
         case let item as SettingsButtonListItem:
           let cell = collectionView.dequeueConfiguredReusableCell(
             using: buttonCellRegistration,
+            for: indexPath,
+            item: item.cellConfiguration)
+          return cell
+        case let item as SettingsNotificationBannerListItem:
+          let cell = collectionView.dequeueConfiguredReusableCell(
+            using: notificationBannerCellRegistration,
             for: indexPath,
             item: item.cellConfiguration)
           return cell

@@ -130,7 +130,7 @@ private extension WalletBalanceViewController {
     let notificationCellConfiguration = UICollectionView.CellRegistration<NotificationBannerCell, String> {
       [weak viewModel] cell, indexPath, identifier in
       guard let model = viewModel?.getNotificationCellModel(identifier: identifier) else { return }
-      cell.configure(model: model)
+      cell.configuration = model
     }
     
     let dataSource = DataSource(

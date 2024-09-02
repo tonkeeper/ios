@@ -15,7 +15,7 @@ public struct Wallet: Codable, Hashable {
   public let setupSettings: WalletSetupSettings
   
   /// Per-wallet notifications: maybe filters by assets, amounts, dapps etc.
-  let notificationSettings: NotificationSettings
+  public let notificationSettings: NotificationSettings
   
   /// Backup settings for this wallet.
   public let backupSettings: WalletBackupSettings
@@ -37,7 +37,7 @@ public struct Wallet: Codable, Hashable {
        identity: WalletIdentity,
        metaData: WalletMetaData,
        setupSettings: WalletSetupSettings,
-       notificationSettings: NotificationSettings = .init(),
+       notificationSettings: NotificationSettings = NotificationSettings(isOn: false),
        backupSettings: WalletBackupSettings = .init(enabled: true, revision: 1, voucher: nil),
        addressBook: [AddressBookEntry] = []) {
     self.id = id
@@ -54,6 +54,7 @@ public struct Wallet: Codable, Hashable {
     && lhs.identity == rhs.identity
     && lhs.metaData == rhs.metaData
     && lhs.setupSettings == rhs.setupSettings
+    && lhs.notificationSettings == rhs.notificationSettings
   }
   
   public func isIdentityEqual(wallet: Wallet) -> Bool {

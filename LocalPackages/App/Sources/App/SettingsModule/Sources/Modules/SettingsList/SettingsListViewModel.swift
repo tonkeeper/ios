@@ -7,7 +7,7 @@ public protocol SettingsListModuleOutput: AnyObject {}
 
 protocol SettingsListViewModel: AnyObject {
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
-  var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)? { get set }
+  var didUpdateSnapshot: ((SettingsListViewController.Snapshot, _ animated: Bool) -> Void)? { get set }
   var selectedItems: Set<SettingsListItem> { get }
 
   func viewDidLoad()
@@ -35,7 +35,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
   // MARK: - SettingsListViewModel
   
   var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
-  var didUpdateSnapshot: ((SettingsListViewController.Snapshot) -> Void)?
+  var didUpdateSnapshot: ((SettingsListViewController.Snapshot, Bool) -> Void)?
   var selectedItems: Set<SettingsListItem> {
     configurator.selectedItems
   }
@@ -45,12 +45,12 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     
     configurator.didUpdateState = { [weak self] state in
       DispatchQueue.main.async {
-        self?.update(with: state)
+        self?.update(with: state, animated: false)
       }
     }
     
     let state = configurator.getInitialState()
-    update(with: state)
+    update(with: state, animated: false)
   }
 
   
@@ -60,7 +60,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
     self.configurator = configurator
   }
   
-  private func update(with state: SettingsListState) {
+  private func update(with state: SettingsListState, animated: Bool) {
     var snapshot = SettingsListViewController.Snapshot()
     snapshot.appendSections(state.sections)
     for section in state.sections {
@@ -88,7 +88,7 @@ final class SettingsListViewModelImplementation: SettingsListViewModel, Settings
         }
       }
     }
-    didUpdateSnapshot?(snapshot)
+    didUpdateSnapshot?(snapshot, animated)
   }
 }
 

@@ -82,11 +82,11 @@ private extension WalletsListViewController {
       guard let self else { return }
       guard let model = self.viewModel.getItemModel(identifier: identifier) as? TKUIListItemCell.Configuration else { return }
       cell.configure(configuration: model)
-      cell.isFirstInSection = { ip in ip.item == 0 }
-      cell.isLastInSection = { [weak collectionView = self.customView.collectionView] ip in
-        guard let collectionView = collectionView else { return false }
-        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
-      }
+//      cell.isFirstInSection = { ip in ip.item == 0 }
+//      cell.isLastInSection = { [weak collectionView = self.customView.collectionView] ip in
+//        guard let collectionView = collectionView else { return false }
+//        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
+//      }
       cell.selectionAccessoryViews = self.createSelectionAccessoryViews()
       cell.editingAccessoryViews = self.createEditingAccessoryViews(item: .wallet(identifier))
     }
@@ -261,6 +261,10 @@ extension WalletsListViewController: UICollectionViewDelegate {
     let section = snapshot.sectionIdentifiers[indexPath.section]
     let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
     viewModel.didSelectItem(item)
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, willDisplay cell: UICollectionViewCell, forItemAt indexPath: IndexPath) {
+    print("dsd")
   }
 }
 

@@ -50,7 +50,7 @@ public actor APIRequestBuilderSerialActor {
   }
 }
 
-struct API {
+public struct API {
   private let hostProvider: APIHostProvider
   private let urlSession: URLSession
   private let configurationStore: ConfigurationStore

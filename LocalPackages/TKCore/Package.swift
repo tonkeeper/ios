@@ -28,7 +28,7 @@ let package = Package(
         .product(name: "FirebaseAnalyticsWithoutAdIdSupport", package: "firebase-ios-sdk"),
         .product(name: "FirebaseCrashlytics", package: "firebase-ios-sdk"),
         .product(name: "FirebaseRemoteConfig", package: "firebase-ios-sdk"),
-        .product(name: "FirebaseRemoteConfig", package: "firebase-ios-sdk"),
+        .product(name: "FirebaseMessaging", package: "firebase-ios-sdk"),
         .product(name: "Aptabase", package: "aptabase-swift"),
         .product(name: "TKUIKitDynamic", package: "TKUIKit"),
         .product(name: "WalletCore", package: "core-swift"),

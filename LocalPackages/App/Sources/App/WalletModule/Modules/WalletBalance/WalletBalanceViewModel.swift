@@ -44,7 +44,7 @@ protocol WalletBalanceViewModel: AnyObject {
   func viewDidLoad()
   func didTapFinishSetupButton()
   func getBalanceItemCellModel(identifier: String) -> WalletBalanceListCell.Model?
-  func getNotificationCellModel(identifier: String) -> NotificationBannerCell.Model?
+  func getNotificationCellModel(identifier: String) -> NotificationBannerCell.Configuration?
   func didSelectItem(identifier: String)
   func didTapManageButton()
 }
@@ -112,7 +112,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     cellModels[identifier]
   }
   
-  func getNotificationCellModel(identifier: String) -> NotificationBannerCell.Model? {
+  func getNotificationCellModel(identifier: String) -> NotificationBannerCell.Configuration? {
     notificationCellModels[identifier]
   }
   
@@ -141,7 +141,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     notifications: [],
   hasManageButton: false)
   private var cellModels = [String: WalletBalanceListCell.Model]()
-  private var notificationCellModels = [String: NotificationBannerCell.Model]()
+  private var notificationCellModels = [String: NotificationBannerCell.Configuration]()
   private var stakingUpdateTimer: DispatchSourceTimer?
 
   // MARK: - Mapper
@@ -399,7 +399,7 @@ private extension WalletBalanceViewModelImplementation {
   func didUpdateNotifications(_ notifications: [NotificationModel]) {
     Task {
       await self.actor.addTask(block:{
-        let cellModels = notifications.reduce(into: [String: NotificationBannerCell.Model]()) { result, notification in
+        let cellModels = notifications.reduce(into: [String: NotificationBannerCell.Configuration]()) { result, notification in
           let appearance = {
             switch notification.mode {
             case .warning:
@@ -424,17 +424,17 @@ private extension WalletBalanceViewModelImplementation {
             return NotificationBannerView.Model.ActionButton(title: action.label, action: actionButtonAction)
           }()
           
-          let model =  NotificationBannerCell.Model(
-            title: notification.title,
-            caption: notification.caption,
-            appearance: appearance,
-            actionButton: actionButton,
-            closeAction: { [weak self] in
-              guard let self else { return }
-              Task {
-                self.notificationStore.removeNotification(notification)
-              }
-            }
+          let model =  NotificationBannerCell.Configuration(
+            bannerViewConfiguration: NotificationBannerView.Model(title: notification.title,
+                                                                  caption: notification.caption,
+                                                                  appearance: appearance,
+                                                                  actionButton: actionButton,
+                                                                  closeAction: { [weak self] in
+                                                                    guard let self else { return }
+                                                                    Task {
+                                                                      self.notificationStore.removeNotification(notification)
+                                                                    }
+                                                                  })
           )
           result[notification.id] = model
         }

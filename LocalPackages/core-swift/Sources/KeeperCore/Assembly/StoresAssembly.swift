@@ -142,6 +142,17 @@ public final class StoresAssembly {
       return fiatMethodsStore
     }
   }
+  
+  private weak var _walletNotificationStore: WalletNotificationStore?
+  public var walletNotificationStore: WalletNotificationStore {
+    if let walletNotificationStore = _walletNotificationStore {
+      return walletNotificationStore
+    } else {
+      let walletNotificationStore = WalletNotificationStore(keeperInfoStore: keeperInfoStore)
+      _walletNotificationStore = walletNotificationStore
+      return walletNotificationStore
+    }
+  }
 }
 
 class Weak<T: AnyObject> {

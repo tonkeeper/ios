@@ -67,6 +67,7 @@
 "settings.items.delete_acount_alert_title" = "Delete account";
 "settings.items.setup_wallet_description" = "Edit name and color";
 "settings.items.purchases" = "Purchases";
+"settings.items.notifications" = "Notifications";
 
 "settings.logout.title" = "Log out?";
 "settings.logout.description" = "This will erase keys to the wallets. Make sure you have backed up your secret recovery phrases.";
@@ -99,6 +100,10 @@
 "settings.purchases.details.items.name" = "Name";
 "settings.purchases.details.items.collection_id" = "Collection ID";
 "settings.purchases.details.items.token_id" = "Token ID";
+
+"settings.notifications.title" = "Notifications";
+"settings.notifications.notifications_item.title" = "Push notifications";
+"settings.notifications.notifications_item.caption" = "Get notifications when you receive TON, tokens and NFTs. Notifications from connected apps.";
 
 "theme.title" = "Theme";
 "theme.options.system" = "System";

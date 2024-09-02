@@ -20,6 +20,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didTapLogout: (() -> Void)?
   var didDeleteWallet: (() -> Void)?
   var didTapPurchases: ((Wallet) -> Void)?
+  var didTapNotifications: ((Wallet) -> Void)?
   
   // MARK: - SettingsListV2Configurator
   
@@ -123,13 +124,14 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   }
   
   private func createWalletSettingsSection() -> SettingsListSection? {
-    var items = [SettingsListItem]()
+    var items = [AnyHashable]()
     if let backupItem = createBackupItem() {
       items.append(backupItem)
     }
     if let purchasesManagementItem = createPurchasesManagementItem() {
       items.append(purchasesManagementItem)
     }
+    items.append(createNotificationsItem())
     items.append(createCurrencyItem())
     guard !items.isEmpty else { return nil }
     return SettingsListSection.listItems(
@@ -267,11 +269,9 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .text(
         TKListItemTextAccessoryView.Configuration(
-          textViewConfiguration: TKListItemTextView.Configuration(
-            text: currency.code,
-            color: .Accent.blue,
-            textStyle: .label1
-          )
+          text: currency.code,
+          color: .Accent.blue,
+          textStyle: .label1
         )
       ),
       onSelection: {
@@ -312,11 +312,9 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       cellConfiguration: cellConfiguration,
       accessory: .text(
         TKListItemTextAccessoryView.Configuration(
-          textViewConfiguration: TKListItemTextView.Configuration(
-            text: TKThemeManager.shared.theme.title,
-            color: .Accent.blue,
-            textStyle: .label1
-          )
+          text: TKThemeManager.shared.theme.title,
+          color: .Accent.blue,
+          textStyle: .label1
         )
       ),
       onSelection: { view in
@@ -613,6 +611,25 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     result.append(walletName)
     return result
   }
+  
+  private func createNotificationsItem() -> AnyHashable {
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
+        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.notifications)
+        )))
+    return SettingsListItem(
+      id: .notificationsIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.notification,
+                                                                 tintColor: .Accent.blue)),
+      onSelection: {
+        [weak self] _ in
+        guard let self else { return }
+        self.didTapNotifications?(self.wallet)
+      }
+    )
+  }
 }
 
 private extension String {
@@ -630,4 +647,5 @@ private extension String {
   static let deleteAccountIdentifier = "DeleteAccountItem"
   static let logoutIdentifier = "LogoutItem"
   static let purchasesIdentifier = "Purhases item"
+  static let notificationsIdentifier = "Notifications item"
 }

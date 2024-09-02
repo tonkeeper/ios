@@ -1,7 +1,29 @@
 import UIKit
 import TKUIKit
 
-final class NotificationBannerCell: UICollectionViewCell, ConfigurableView {
+final class NotificationBannerCell: UICollectionViewCell {
+  struct Configuration {
+    let bannerViewConfiguration: NotificationBannerView.Model
+    
+    init(bannerViewConfiguration: NotificationBannerView.Model) {
+      self.bannerViewConfiguration = bannerViewConfiguration
+    }
+  }
+  
+  public var configuration = Configuration(
+    bannerViewConfiguration: NotificationBannerView.Model(
+      title: nil,
+      caption: nil,
+      appearance: .regular,
+      closeAction: nil
+    )) {
+    didSet {
+      didUpdateConfiguration()
+      setNeedsLayout()
+      invalidateIntrinsicContentSize()
+    }
+  }
+  
   let bannerView = NotificationBannerView()
   
   override init(frame: CGRect) {
@@ -22,5 +44,9 @@ final class NotificationBannerCell: UICollectionViewCell, ConfigurableView {
     bannerView.snp.makeConstraints { make in
       make.edges.equalTo(contentView)
     }
+  }
+  
+  private func didUpdateConfiguration() {
+    bannerView.configure(model: configuration.bannerViewConfiguration)
   }
 }

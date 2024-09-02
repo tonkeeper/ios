@@ -660,7 +660,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "INFO_PLIST=GoogleService-Info.plist\nDEVELOPMENT_INFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/Debug/${INFO_PLIST}\nRELEASE_INFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/Release/${INFO_PLIST}\necho \"Checking ${INFO_PLIST} in ${DEVELOPMENT_INFO_PLIST}\"\nif [ ! -f $DEVELOPMENT_INFO_PLIST ] ; then\necho \"Development GoogleService-Info.plist not found.\"\nexit 1\nfi\necho \"Checking ${INFO_PLIST} in ${RELEASE_INFO_PLIST}\"\nif [ ! -f $RELEASE_INFO_PLIST ] ; then\necho \"Release GoogleService-Info.plist not found.\"\nexit 1\nfi\nPLIST_DESTINATION=${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\necho \"Copying ${INFO_PLIST} to final destination: ${PLIST_DESTINATION}\"\nif [ \"${CONFIGURATION}\" == \"Release\" ] ; then\necho \"Copied ${RELEASE_INFO_PLIST}.\"\ncp \"${RELEASE_INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nelse\necho \"Copied ${DEVELOPMENT_INFO_PLIST}.\"\ncp \"${DEVELOPMENT_INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nfi\n";
+			shellScript = "INFO_PLIST=GoogleService-Info.plist\nX_DEVELOPMENT_INFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/TonkeeperXDebug/${INFO_PLIST}\nX_RELEASE_INFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/TonkeeperXRelease/${INFO_PLIST}\nINFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/Tonkeeper/${INFO_PLIST}\necho \"Checking ${INFO_PLIST} in ${X_DEVELOPMENT_INFO_PLIST}\"\nif [ ! -f $X_DEVELOPMENT_INFO_PLIST ] ; then\necho \"Development GoogleService-Info.plist not found.\"\nexit 1\nfi\necho \"Checking ${INFO_PLIST} in ${X_RELEASE_INFO_PLIST}\"\nif [ ! -f $X_RELEASE_INFO_PLIST ] ; then\necho \"Release GoogleService-Info.plist not found.\"\nexit 1\nfi\nPLIST_DESTINATION=${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\necho \"Copying ${INFO_PLIST} to final destination: ${PLIST_DESTINATION}\"\nif [ \"${CONFIGURATION}\" == \"TonkeeperXRelease\" ] ; then\necho \"Copied ${X_RELEASE_INFO_PLIST}.\"\ncp \"${X_RELEASE_INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nelif [ \"${CONFIGURATION}\" == \"TonkeeperXDebug\" ] ; then \necho \"Copied ${X_DEVELOPMENT_INFO_PLIST}.\"\ncp \"${X_DEVELOPMENT_INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nelse \necho \"Copied ${INFO_PLIST}.\"\ncp \"${INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -956,7 +956,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = Tonkeeper;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -998,7 +998,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = Tonkeeper;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -1104,7 +1104,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = Tonkeeper;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -1272,7 +1272,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = Tonkeeper;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";

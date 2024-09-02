@@ -281,6 +281,10 @@ public enum TKLocales {
       public static var purchases: String {
         localize("settings.items.purchases")
       }
+      /// Notifications
+      public static var notifications: String {
+        localize("settings.items.notifications")
+      }
     }
     public enum Logout {
       /// Log out?
@@ -415,6 +419,22 @@ public enum TKLocales {
           public static var token_id: String {
             localize("settings.purchases.details.items.token_id")
           }
+        }
+      }
+    }
+    public enum Notifications {
+      /// Notifications
+      public static var title: String {
+        localize("settings.notifications.title")
+      }
+      public enum NotificationsItem {
+        /// Push notifications
+        public static var title: String {
+          localize("settings.notifications.notifications_item.title")
+        }
+        /// Get notifications when you receive TON, tokens and NFTs. Notifications from connected apps.
+        public static var caption: String {
+          localize("settings.notifications.notifications_item.caption")
         }
       }
     }

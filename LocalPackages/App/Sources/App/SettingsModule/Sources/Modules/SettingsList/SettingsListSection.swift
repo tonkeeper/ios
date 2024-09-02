@@ -75,6 +75,25 @@ class SettingsButtonListItem: Hashable {
   }
 }
 
+class SettingsNotificationBannerListItem: Hashable {
+  let id: String
+  let cellConfiguration: NotificationBannerCell.Configuration
+  
+  static func == (lhs: SettingsNotificationBannerListItem, rhs: SettingsNotificationBannerListItem) -> Bool {
+    lhs.id == rhs.id
+  }
+  
+  func hash(into hasher: inout Hasher) {
+    hasher.combine(id)
+  }
+  
+  init(id: String,
+       cellConfiguration: NotificationBannerCell.Configuration) {
+    self.id = id
+    self.cellConfiguration = cellConfiguration
+  }
+}
+
 enum SettingsListItemAccessory {
   case none
   case chevron

@@ -44,7 +44,7 @@ extension Version_1_0_0 {
     
     init(identity: WalletIdentity,
          label: String = "",
-         notificationSettings: NotificationSettings = .init(),
+         notificationSettings: NotificationSettings = NotificationSettings(isOn: false),
          backupSettings: WalletBackupSettings = .init(enabled: true, revision: 1, voucher: nil),
          currency: Currency = .USD,
          addressBook: [AddressBookEntry] = [],

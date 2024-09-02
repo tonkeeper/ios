@@ -34,7 +34,7 @@ extension Version11V1 {
     init(identity: Version11V1.WalletIdentity,
          metaData: WalletMetaData,
          setupSettings: WalletSetupSettings,
-         notificationSettings: NotificationSettings = .init(),
+         notificationSettings: NotificationSettings = NotificationSettings(isOn: false),
          backupSettings: WalletBackupSettings = .init(enabled: true, revision: 1, voucher: nil),
          addressBook: [AddressBookEntry] = []) {
       self.identity = identity
