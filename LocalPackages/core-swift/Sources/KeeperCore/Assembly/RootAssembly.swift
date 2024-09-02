@@ -64,13 +64,11 @@ public final class RootAssembly {
   }
   
   public func migrationController(sharedCacheURL: URL,
-                                  keychainAccessGroupIdentifier: String,
-                                  isTonkeeperX: Bool) -> MigrationController {
+                                  keychainAccessGroupIdentifier: String) -> MigrationController {
     MigrationController(
       sharedCacheURL: sharedCacheURL,
       keychainAccessGroupIdentifier: keychainAccessGroupIdentifier,
-      rootAssembly: self,
-      isTonkeeperX: isTonkeeperX
+      rootAssembly: self
     )
   }
   

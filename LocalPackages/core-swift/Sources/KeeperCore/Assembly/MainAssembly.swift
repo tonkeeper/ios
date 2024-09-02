@@ -231,7 +231,6 @@ public final class MainAssembly {
       balanceStore: mainStoresAssembly.balanceStore,
       ratesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
-      mnemonicRepository: repositoriesAssembly.mnemonicRepository(),
       amountFormatter: formattersAssembly.amountFormatter
     )
   }

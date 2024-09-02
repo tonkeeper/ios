@@ -29,7 +29,6 @@ public final class SendConfirmationController {
   private let balanceStore: BalanceStore
   private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
-  private let mnemonicRepository: WalletMnemonicRepository
   private let amountFormatter: AmountFormatter
   
   init(wallet: Wallet,
@@ -42,7 +41,6 @@ public final class SendConfirmationController {
        balanceStore: BalanceStore,
        ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
-       mnemonicRepository: WalletMnemonicRepository,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
     self.recipient = recipient
@@ -54,7 +52,6 @@ public final class SendConfirmationController {
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
-    self.mnemonicRepository = mnemonicRepository
     self.amountFormatter = amountFormatter
   }
   

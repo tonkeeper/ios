@@ -60,8 +60,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       openLaunchScreen()
       let migrationController = dependencies.keeperCoreRootAssembly.migrationController(
         sharedCacheURL: dependencies.coreAssembly.sharedCacheURL,
-        keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier,
-        isTonkeeperX: dependencies.coreAssembly.isTonkeeperX
+        keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier
       )
       Task {
         if await migrationController.checkIfNeedToMigrate() {
