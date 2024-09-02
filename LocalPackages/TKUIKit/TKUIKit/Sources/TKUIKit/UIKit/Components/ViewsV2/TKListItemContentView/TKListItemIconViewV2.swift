@@ -69,8 +69,8 @@ public final class TKListItemIconViewV2: UIView {
     
     public init(content: Content, 
                 alignment: Alignment,
-                cornerRadius: CGFloat,
-                backgroundColor: UIColor,
+                cornerRadius: CGFloat = 0,
+                backgroundColor: UIColor = .clear,
                 size: CGSize,
                 badge: Badge? = nil) {
       self.content = content

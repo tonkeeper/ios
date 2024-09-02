@@ -40,6 +40,8 @@ open class TKCollectionViewListCell: UICollectionViewCell {
     }
   }
   
+  public var isSelectable = false
+  
   private let highlightViewContainer = UIView()
   private let listCellContentContainerView = UIView()
   private let defaultAccessoryContainerView = TKCollectionViewListCellAccessoryContainerView()
@@ -146,7 +148,7 @@ open class TKCollectionViewListCell: UICollectionViewCell {
   }
   
   private func updateAccessoryView(state: UICellConfigurationState) {
-    switch (state.isEditing, state.isSelected) {
+    switch (state.isEditing, state.isSelected && isSelectable) {
     case (true, _):
       visibleAccessoryView = editingAccessoryContainerView
     case (false, true):

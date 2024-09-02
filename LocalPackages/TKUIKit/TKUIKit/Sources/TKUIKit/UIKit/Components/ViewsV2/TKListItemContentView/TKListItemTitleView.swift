@@ -113,7 +113,7 @@ public final class TKListItemTitleView: UIView {
       tagView.configuration = tagConfiguration
       tagView.isHidden = false
     } else {
-      tagView.isHidden = false
+      tagView.isHidden = true
     }
     if let icon = configuration.icon {
       iconImageView.image = icon.image

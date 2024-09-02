@@ -146,7 +146,7 @@ public final class TKUINavigationBar: UIView {
     }
     contentOffsetToken = scrollView.observe(\.contentOffset) { [weak self] scrollView, _ in
       let offset = scrollView.contentOffset.y + scrollView.adjustedContentInset.top
-      self?.separatorView.isHidden = offset == 0
+      self?.separatorView.isHidden = offset <= 0
     }
   }
 }
