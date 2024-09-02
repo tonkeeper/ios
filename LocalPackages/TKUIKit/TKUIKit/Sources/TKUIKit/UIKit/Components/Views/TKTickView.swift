@@ -32,6 +32,10 @@ public final class TKTickView: UIView {
     selectedView.frame = bounds.insetBy(dx: .padding, dy: .padding)
   }
   
+  public override func sizeThatFits(_ size: CGSize) -> CGSize {
+    CGSize(width: .side, height: .side)
+  }
+  
   public override var intrinsicContentSize: CGSize {
     CGSize(width: .side, height: .side)
   }

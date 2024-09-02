@@ -5,6 +5,8 @@ open class TKCollectionViewListCell: UICollectionViewCell {
   public var isFirstInSection: ((IndexPath) -> Bool) = { _ in return false }
   public var isLastInSection: ((IndexPath) -> Bool) = { _ in return false }
   
+  public var onSelection: ((_ isSelected: Bool) -> Void)?
+  
   public var listCellContentViewPadding: UIEdgeInsets = .zero {
     didSet {
       setNeedsLayout()
@@ -40,7 +42,7 @@ open class TKCollectionViewListCell: UICollectionViewCell {
     }
   }
   
-  public var isSelectable = false
+  public var isHiglightable = true
   
   private let highlightViewContainer = UIView()
   private let listCellContentContainerView = UIView()
@@ -115,8 +117,7 @@ open class TKCollectionViewListCell: UICollectionViewCell {
   
   open override func updateConfiguration(using state: UICellConfigurationState) {
     super.updateConfiguration(using: state)
-    
-    highlightViewContainer.alpha = state.isHighlighted ? 1 : 0
+    highlightViewContainer.alpha = state.isHighlighted && isHiglightable ? 1 : 0
     updateAccessoryView(state: state)
     
     UIView.performWithoutAnimation {
@@ -126,6 +127,8 @@ open class TKCollectionViewListCell: UICollectionViewCell {
     }
     updateAccessoryViewVisibility()
     didUpdateCellOrderInSection()
+    
+    onSelection?(state.isSelected)
   }
   
   open func didUpdateCellOrderInSection() {
@@ -148,7 +151,7 @@ open class TKCollectionViewListCell: UICollectionViewCell {
   }
   
   private func updateAccessoryView(state: UICellConfigurationState) {
-    switch (state.isEditing, state.isSelected && isSelectable) {
+    switch (state.isEditing, state.isSelected && !selectionAccessoryViews.isEmpty) {
     case (true, _):
       visibleAccessoryView = editingAccessoryContainerView
     case (false, true):

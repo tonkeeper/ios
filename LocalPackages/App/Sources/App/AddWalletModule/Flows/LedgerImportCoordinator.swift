@@ -39,14 +39,14 @@ public final class LedgerImportCoordinator: RouterCoordinator<NavigationControll
 
 private extension LedgerImportCoordinator {
   func openChooseWalletToAdd() {
-    let controller = walletsUpdateAssembly.chooseWalletController(
+    let module = ChooseWalletToAddAssembly.module(
       activeWalletModels: activeWalletModels,
-      configuration: ChooseWalletsController.Configuration(
+      configuration: ChooseWalletToAddConfiguration(
         showRevision: false,
         selectLastRevision: false
-      )
+      ),
+      amountFormatter: walletsUpdateAssembly.formattersAssembly.amountFormatter
     )
-    let module = ChooseWalletToAddAssembly.module(controller: controller)
     
     module.output.didSelectWallets = { [weak self] selectedWalletModels in
       guard let self else { return }
