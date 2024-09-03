@@ -8,8 +8,7 @@ let package = Package(
     .macOS(.v12), .iOS(.v14)
   ],
   products: [
-    .library(name: "WalletCore", type: .dynamic, targets: ["KeeperCore"]),
-    .library(name: "SignerCore", type: .dynamic, targets: ["SignerCore"]),
+    .library(name: "WalletCore", type: .dynamic, targets: ["KeeperCore"])
   ],
   dependencies: [
     .package(path: "../TKLocalize"),
@@ -59,12 +58,6 @@ let package = Package(
             ],
             path: "Packages/TonConnectAPI",
             sources: ["Sources"]
-           ),
-    .target(name: "SignerCore",
-            dependencies: [
-              .product(name: "TonSwift", package: "ton-swift"),
-              .target(name: "CoreComponents")
-            ],
-            path: "Sources/SignerCore"),
+           )
   ]
 )
