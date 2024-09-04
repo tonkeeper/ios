@@ -5,12 +5,12 @@ import TonTransport
 
 public final class WalletAddController {
 
-  private let walletsStoreUpdater: WalletsStoreUpdater
+  private let walletsStore: WalletsStoreV3
   private let mnemonicsRepository: MnemonicsRepository
   
-  init(walletsStoreUpdater: WalletsStoreUpdater,
+  init(walletsStore: WalletsStoreV3,
        mnemonicsRepositoty: MnemonicsRepository) {
-    self.walletsStoreUpdater = walletsStoreUpdater
+    self.walletsStore = walletsStore
     self.mnemonicsRepository = mnemonicsRepositoty
   }
   
@@ -31,8 +31,7 @@ public final class WalletAddController {
     )
     
     try await mnemonicsRepository.saveMnemonic(mnemonic, wallet: wallet, password: passcode)
-    await walletsStoreUpdater.addWallets([wallet])
-    await walletsStoreUpdater.setWalletActive(wallet)
+    await walletsStore.addWallets([wallet])
   }
   
   public func importWallets(phrase: [String],
@@ -74,8 +73,7 @@ public final class WalletAddController {
       wallets: wallets,
       password: passcode
     )
-    await walletsStoreUpdater.addWallets(wallets)
-    await walletsStoreUpdater.setWalletActive(wallets[0])
+    await walletsStore.addWallets(wallets)
   }
   
   public func importWatchOnlyWallet(resolvableAddress: ResolvableAddress,
@@ -86,8 +84,7 @@ public final class WalletAddController {
       metaData: metaData,
       setupSettings: WalletSetupSettings(backupDate: nil)
     )
-    await walletsStoreUpdater.addWallets([wallet])
-    await walletsStoreUpdater.setWalletActive(wallet)
+    await walletsStore.addWallets([wallet])
   }
   
   public func importSignerWallet(publicKey: TonSwift.PublicKey,
@@ -124,9 +121,7 @@ public final class WalletAddController {
         metaData: revisionMetaData,
         setupSettings: WalletSetupSettings(backupDate: Date()))
     }
-
-    await walletsStoreUpdater.addWallets(wallets)
-    await walletsStoreUpdater.setWalletActive(wallets[0])
+    await walletsStore.addWallets(wallets)
   }
   
   public func importLedgerWallets(accounts: [LedgerAccount],
@@ -156,8 +151,6 @@ public final class WalletAddController {
         metaData: accountMetaData,
         setupSettings: WalletSetupSettings(backupDate: Date()))
     }
-
-    await walletsStoreUpdater.addWallets(wallets)
-    await walletsStoreUpdater.setWalletActive(wallets[0])
+    await walletsStore.addWallets(wallets)
   }
 }

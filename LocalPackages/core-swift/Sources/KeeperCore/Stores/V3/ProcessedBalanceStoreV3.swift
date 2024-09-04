@@ -2,157 +2,145 @@ import Foundation
 import TonSwift
 import BigInt
 
-public final class ProcessedBalanceStore: StoreUpdated<[FriendlyAddress: ProcessedBalanceState]> {
-  private let walletsStore: WalletsStore
-  private let balanceStore: BalanceStore
-  private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStore
-  private let stakingPoolsStore: StakingPoolsStore
+public enum ProcessedBalanceState: Equatable {
+  case none
+  case current(ProcessedBalance)
+  case previous(ProcessedBalance)
   
-  init(walletsStore: WalletsStore,
-       balanceStore: BalanceStore,
-       tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStore,
-       stakingPoolsStore: StakingPoolsStore) {
+  public var balance: ProcessedBalance? {
+    switch self {
+    case .none:
+      return nil
+    case .current(let balance):
+      return balance
+    case .previous(let balance):
+      return balance
+    }
+  }
+}
+
+public final class ProcessedBalanceStoreV3: StoreV3<ProcessedBalanceStoreV3.Event, ProcessedBalanceStoreV3.State> {
+  public typealias State = [Wallet: ProcessedBalanceState]
+  
+  public enum Event {
+    case didUpdateProccessedBalance(state: ProcessedBalanceState, wallet: Wallet)
+  }
+  
+  private let walletsStore: WalletsStoreV3
+  private let balanceStore: BalanceStoreV3
+  private let tonRatesStore: TonRatesStoreV3
+  private let currencyStore: CurrencyStoreV3
+  private let stakingPoolsStore: StakingPoolsStoreV3
+  
+  init(walletsStore: WalletsStoreV3,
+       balanceStore: BalanceStoreV3,
+       tonRatesStore: TonRatesStoreV3,
+       currencyStore: CurrencyStoreV3,
+       stakingPoolsStore: StakingPoolsStoreV3) {
     self.walletsStore = walletsStore
     self.balanceStore = balanceStore
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
     self.stakingPoolsStore = stakingPoolsStore
     super.init(state: [:])
-    setupObservations()
+    setupObservers()
   }
   
-  public override func getInitialState() -> [FriendlyAddress : ProcessedBalanceState] {
-    let wallets = walletsStore.getState().wallets
+  public override var initialState: State {
+    let wallets = walletsStore.wallets
     let balanceStates = balanceStore.getState()
     let tonRates = tonRatesStore.getState()
-    let currency = currencyStore.getCurrency()
     let stakingPools = stakingPoolsStore.getState()
+    let currency = currencyStore.getState()
     
-    var states = [FriendlyAddress: ProcessedBalanceState]()
-    let addresses = wallets.compactMap { try? $0.friendlyAddress }
-    for address in addresses {
-      states[address] = calculateState(
-        address: address,
-        balanceStates: balanceStates,
+    var state = State()
+    for wallet in wallets {
+      state[wallet] = calculateState(
+        wallet: wallet,
+        balanceState: balanceStates[wallet],
         tonRates: tonRates,
-        currency: currency,
-        stakingPools: stakingPools
+        stakingPools: stakingPools[wallet] ?? [],
+        currency: currency
       )
     }
-    return states
+    return state
   }
   
-  private func setupObservations() {
-    balanceStore.addObserver(
-      self,
-      notifyOnAdded: false) { observer, newState, oldState in
-        observer.didUpdateBalanceStates(newState: newState, oldState: oldState)
+  private func setupObservers() {
+    balanceStore.addObserver(self) { observer, event in
+      observer.didGetBalanceStoreEvent(event)
+    }
+    tonRatesStore.addObserver(self) { observer, event in
+      observer.didGetTonRateStoreEvent(event)
+    }
+    stakingPoolsStore.addObserver(self) { observer, event in
+      observer.didGetStakingPoolsStoreEvent(event)
+    }
+  }
+  
+  private func didGetBalanceStoreEvent(_ event: BalanceStoreV3.Event) {
+    Task {
+      switch event {
+      case .didUpdateBalanceState(let wallet, _):
+        await updateState(wallet: wallet)
       }
-    
-    tonRatesStore.addObserver(
-      self,
-      notifyOnAdded: false) { observer, newState, oldState in
-        observer.didUpdateTonRates(newState: newState, oldState: oldState)
-    }
-    
-    stakingPoolsStore.addObserver(
-      self,
-      notifyOnAdded: false) { observer, newState, oldState in
-      observer.didUpdateStakingPools(newState: newState, oldState: oldState)
     }
   }
   
-  private func didUpdateBalanceStates(newState: [FriendlyAddress: WalletBalanceState],
-                                      oldState: [FriendlyAddress: WalletBalanceState]) {
-    updateState { state in
-      var updatedState = state
-     
-      let wallets = self.walletsStore.getState().wallets
+  private func didGetTonRateStoreEvent(_ event: TonRatesStoreV3.Event) {
+    Task {
+      switch event {
+      case .didUpdateTonRates:
+        let wallets = walletsStore.wallets
+        for wallet in wallets {
+          await updateState(wallet: wallet)
+        }
+      }
+    }
+  }
+  
+  private func didGetStakingPoolsStoreEvent(_ event: StakingPoolsStoreV3.Event) {
+    Task {
+      switch event {
+      case .didUpdateStakingPools(_, let wallet):
+        await updateState(wallet: wallet)
+      }
+    }
+  }
+  
+  private func updateState(wallet: Wallet) async {
+    var proccessedBalanceState: ProcessedBalanceState?
+    await setState { state in
+      let balanceState = self.balanceStore.getState()[wallet]
       let tonRates = self.tonRatesStore.getState()
-      let currency = self.currencyStore.getCurrency()
-      let stakingPools = self.stakingPoolsStore.getState()
-      let addresses = wallets.compactMap { try? $0.friendlyAddress }
-      for address in addresses {
-        guard newState[address] != oldState[address] else { continue }
-        updatedState[address] = self.calculateState(
-          address: address,
-          balanceStates: newState,
-          tonRates: tonRates,
-          currency: currency,
-          stakingPools: stakingPools
-        )
-      }
+      let stakingPools = self.stakingPoolsStore.getState()[wallet] ?? []
+      let currency = self.currencyStore.getState()
       
-      return StateUpdate(newState: updatedState)
-    }
-  }
-  
-  private func didUpdateTonRates(newState: [Rates.Rate], 
-                                 oldState: [Rates.Rate]) {
-    updateState { state -> StateUpdate? in
       var updatedState = state
-      
-      let currency = self.currencyStore.getCurrency()
-      guard newState.first(where: { $0.currency == currency }) != oldState.first(where: { $0.currency == currency }) else {
-        return nil
-      }
-     
-      let balanceStates = self.balanceStore.getState()
-      let wallets = self.walletsStore.getState().wallets
-      let stakingPools = self.stakingPoolsStore.getState()
-      let addresses = wallets.compactMap { try? $0.friendlyAddress }
-      for address in addresses {
-        updatedState[address] = self.calculateState(
-          address: address,
-          balanceStates: balanceStates,
-          tonRates: newState,
-          currency: currency,
-          stakingPools: stakingPools
-        )
-      }
-      
+      proccessedBalanceState = self.calculateState(
+        wallet: wallet,
+        balanceState: balanceState,
+        tonRates: tonRates,
+        stakingPools: stakingPools,
+        currency: currency
+      )
+      updatedState[wallet] = proccessedBalanceState
       return StateUpdate(newState: updatedState)
+    } notify: {
+      guard let proccessedBalanceState else { return }
+      self.sendEvent(.didUpdateProccessedBalance(state: proccessedBalanceState, wallet: wallet))
     }
   }
   
-  private func didUpdateStakingPools(newState: [FriendlyAddress: [StackingPoolInfo]],
-                                     oldState: [FriendlyAddress: [StackingPoolInfo]]) {
-    updateState { state -> StateUpdate? in
-      var updatedState = state
-     
-      let wallets = self.walletsStore.getState().wallets
-      let balanceStates = self.balanceStore.getState()
-      let tonRates = self.tonRatesStore.getState()
-      let currency = self.currencyStore.getCurrency()
-      let addresses = wallets.compactMap { try? $0.friendlyAddress }
-      for address in addresses {
-        guard newState[address] != oldState[address] else { continue }
-        updatedState[address] = self.calculateState(
-          address: address,
-          balanceStates: balanceStates,
-          tonRates: tonRates,
-          currency: currency,
-          stakingPools: newState
-        )
-      }
-      
-      return StateUpdate(newState: updatedState)
-    }
-  }
-  
-  private func calculateState(address: FriendlyAddress,
-                              balanceStates: [FriendlyAddress: WalletBalanceState],
+  private func calculateState(wallet: Wallet,
+                              balanceState: WalletBalanceState?,
                               tonRates: [Rates.Rate],
-                              currency: Currency,
-                              stakingPools: [FriendlyAddress: [StackingPoolInfo]]) -> ProcessedBalanceState {
-    guard let walletBalanceState = balanceStates[address] else {
+                              stakingPools: [StackingPoolInfo],
+                              currency: Currency) -> ProcessedBalanceState {
+    guard let balanceState = balanceState else {
       return ProcessedBalanceState.none
     }
-    let walletStakingPools = stakingPools[address] ?? []
-    
-    let walletBalance = walletBalanceState.walletBalance
+    let walletBalance = balanceState.walletBalance
     
     let tonItem = processTonBalance(
       tonBalance: walletBalance.balance.tonBalance,
@@ -160,7 +148,7 @@ public final class ProcessedBalanceStore: StoreUpdated<[FriendlyAddress: Process
       currency: currency
     )
     
-    var jettonsBalance = walletBalance.balance.jettonsBalance
+    let jettonsBalance = walletBalance.balance.jettonsBalance
     var stackingBalance = walletBalance.stacking
     
     var stakingItems = [ProcessedBalanceStakingItem]()
@@ -168,9 +156,9 @@ public final class ProcessedBalanceStore: StoreUpdated<[FriendlyAddress: Process
     
     for jetton in jettonsBalance {
       if StakingJettonMasterAddress.addresses.contains(jetton.item.jettonInfo.address),
-         let pool = walletStakingPools.first(where: { $0.liquidJettonMaster == jetton.item.jettonInfo.address }) {
+         let pool = stakingPools.first(where: { $0.liquidJettonMaster == jetton.item.jettonInfo.address }) {
         
-        var jettonStakingInfo = walletBalance.stacking.first(where: { $0.pool == pool.address })
+        let jettonStakingInfo = walletBalance.stacking.first(where: { $0.pool == pool.address })
         stackingBalance = stackingBalance.filter { $0 != jettonStakingInfo }
         
         let amount: Int64 = {
@@ -213,7 +201,7 @@ public final class ProcessedBalanceStore: StoreUpdated<[FriendlyAddress: Process
     }
     
     stakingItems.append(contentsOf: stackingBalance.map { item in
-      let stackingPool = walletStakingPools.first(where: { $0.address == item.pool })
+      let stackingPool = stakingPools.first(where: { $0.address == item.pool })
       return processStaking(item,
                             stakingPool: stackingPool,
                             jetton: nil,
@@ -232,7 +220,7 @@ public final class ProcessedBalanceStore: StoreUpdated<[FriendlyAddress: Process
       date: walletBalance.date
     )
     
-    switch walletBalanceState {
+    switch balanceState {
     case .current:
       return ProcessedBalanceState.current(processedBalance)
     case .previous:
@@ -356,7 +344,6 @@ public final class ProcessedBalanceStore: StoreUpdated<[FriendlyAddress: Process
   }
 }
 
-
 private enum StakingJettonMasterAddress {
   static var addresses: [Address] {
     [
@@ -365,4 +352,3 @@ private enum StakingJettonMasterAddress {
     ]
   }
 }
-

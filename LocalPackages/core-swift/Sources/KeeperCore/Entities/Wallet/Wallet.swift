@@ -50,11 +50,7 @@ public struct Wallet: Codable, Hashable {
   }
   
   public static func == (lhs: Wallet, rhs: Wallet) -> Bool {
-    lhs.id == rhs.id 
-    && lhs.identity == rhs.identity
-    && lhs.metaData == rhs.metaData
-    && lhs.setupSettings == rhs.setupSettings
-    && lhs.notificationSettings == rhs.notificationSettings
+    lhs.id == rhs.id
   }
   
   public func isIdentityEqual(wallet: Wallet) -> Bool {

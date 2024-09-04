@@ -27,11 +27,18 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   var didUpdateModel: ((WalletContainerView.Model) -> Void)?
   
   func viewDidLoad() {
-    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsStore, _ in
+    walletsStore.addObserver(self) { observer, event in
       DispatchQueue.main.async {
-        self.wallet = walletsStore.activeWallet
+        switch event {
+        case .didChangeActiveWallet(let wallet):
+          self.wallet = wallet
+        case .didUpdateWalletMetaData(let wallet):
+          self.wallet = wallet
+        default: break
+        }
       }
     }
+    setInitialState()
   }
   
   // MARK: - State
@@ -50,12 +57,17 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 
   // MARK: - Dependencies
   
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   
   // MARK: - Init
   
-  init(walletsStore: WalletsStore) {
+  init(walletsStore: WalletsStoreV3) {
     self.walletsStore = walletsStore
+  }
+  
+  private func setInitialState() {
+    guard let wallet = try? walletsStore.activeWallet else { return }
+    self.wallet = wallet
   }
 }
 
@@ -86,9 +98,7 @@ private extension WalletContainerViewModelImplementation {
     settingsButtonConfiguration.content.icon = .TKUIKit.Icons.Size28.gearOutline
     settingsButtonConfiguration.iconTintColor = .Icon.secondary
     settingsButtonConfiguration.action = { [weak self] in
-      guard let self else { return }
-      let wallet = walletsStore.getState().activeWallet
-      self.didTapSettingsButton?(wallet)
+      self?.didTapSettingsButton?(wallet)
     }
 
     let topBarViewModel = WalletContainerTopBarView.Model(

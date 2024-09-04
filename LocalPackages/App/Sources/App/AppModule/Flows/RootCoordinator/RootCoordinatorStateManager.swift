@@ -4,7 +4,7 @@ import KeeperCore
 final class RootCoordinatorStateManager {
   enum State: Equatable {
     case onboarding
-    case main(walletsState: WalletsState)
+    case main
     
     static func ==(lhs: State, rhs: State) -> Bool {
       switch (lhs, rhs) {
@@ -22,9 +22,8 @@ final class RootCoordinatorStateManager {
   var state: State {
     get {
       guard let _state else {
-        let keeperInfo = keeperInfoStore.getState()
-        let state = calculateState(keeperInfo: keeperInfo)
-        self._state = state
+        let state = calculateState(walletsStoreState: walletsStore.getState())
+        _state = state
         return state
       }
       return _state
@@ -37,25 +36,27 @@ final class RootCoordinatorStateManager {
   }
   private var _state: State?
   
-  private let keeperInfoStore: KeeperInfoStore
+  private let walletsStore: WalletsStoreV3
   
-  init(keeperInfoStore: KeeperInfoStore) {
-    self.keeperInfoStore = keeperInfoStore
-    keeperInfoStore.addObserver(self, notifyOnAdded: false) { observer, keeperInfo, _ in
-      DispatchQueue.main.async {
-        let state = observer.calculateState(keeperInfo: keeperInfo)
-        self.state = state
+  init(walletsStore: WalletsStoreV3) {
+    self.walletsStore = walletsStore
+    walletsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didDeleteWallet, .didAddWallets:
+        DispatchQueue.main.async {
+          self.state = observer.calculateState(walletsStoreState: walletsStore.getState())
+        }
+      default: break
       }
     }
   }
-  
-  private func calculateState(keeperInfo: KeeperInfo?) -> State {
-    if let keeperInfo {
-      let walletsState = WalletsState(wallets: keeperInfo.wallets,
-                                      activeWallet: keeperInfo.currentWallet)
-      return .main(walletsState: walletsState)
-    } else {
+
+  private func calculateState(walletsStoreState: WalletsStoreV3.State) -> State {
+    switch walletsStoreState {
+    case .empty:
       return .onboarding
+    case .wallets:
+      return .main
     }
   }
 }

@@ -16,7 +16,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
                                       _ stakingPoolInfo: StackingPoolInfo,
                                       _ accountStakingInfo: AccountStackingInfo) -> Void)? { get set }
 
-  var didTapReceive: (() -> Void)? { get set }
+  var didTapReceive: ((_ wallet: Wallet) -> Void)? { get set }
   var didTapSend: (() -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
@@ -73,7 +73,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
                                       _ stakingPoolInfo: StackingPoolInfo,
                                       _ accountStakingInfo: AccountStackingInfo) -> Void)?
   
-  var didTapReceive: (() -> Void)?
+  var didTapReceive: ((_ wallet: Wallet) -> Void)?
   var didTapSend: (() -> Void)?
   var didTapScan: (() -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
@@ -656,7 +656,7 @@ private extension WalletBalanceViewModelImplementation {
         title: TKLocales.WalletButtons.receive,
         icon: .TKUIKit.Icons.Size28.arrowDownOutline,
         isEnabled: isReceiveEnable,
-        action: { [weak self] in self?.didTapReceive?() }
+        action: { [weak self] in self?.didTapReceive?(wallet) }
       ),
       scanButton: WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.scan,

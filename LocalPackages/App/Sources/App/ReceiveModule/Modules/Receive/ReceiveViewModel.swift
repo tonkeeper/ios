@@ -4,6 +4,7 @@ import TKCore
 import UIKit
 import KeeperCore
 import TKLocalize
+import TonSwift
 
 protocol ReceiveModuleOutput: AnyObject {
   
@@ -35,17 +36,30 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
   var showToast: ((ToastPresenter.Configuration) -> Void)?
   
   func viewDidLoad() {
-    receiveController.didUpdateModel = { [weak self] model in
-      self?.model = model
-    }
-    
-    receiveController.createModel()
+    didUpdateModel?(createModel())
   }
   
   func generateQRCode(size: CGSize) {
     Task {
+      let qrCodeString: String = {
+        let jettonAddress: Address?
+        switch token {
+        case .ton:
+          jettonAddress = nil
+        case .jetton(let jettonItem):
+          jettonAddress = jettonItem.jettonInfo.address
+        }
+        do {
+          return try deeplinkGenerator.generateTransferDeeplink(
+            with: wallet.friendlyAddress.toString(),
+            jettonAddress: jettonAddress
+          ).string
+        } catch {
+          return ""
+        }
+      }()
       let image = await qrCodeGenerator.generate(
-        string: receiveController.qrCodeString(),
+        string: qrCodeString,
         size: size
       )
       await MainActor.run {
@@ -57,33 +71,50 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
   // MARK: - Image Loading
   
   private let imageLoader = ImageLoader()
-  
-  // MARK: - State
-  
-  private var model: ReceiveController.Model? {
-    didSet {
-      guard let model else { return }
-      didUpdateModel?(createModel(model: model))
-    }
-  }
 
   // MARK: - Dependencies
   
-  private let receiveController: ReceiveController
+  private let token: Token
+  private let wallet: Wallet
+  private let deeplinkGenerator: DeeplinkGenerator
   private let qrCodeGenerator: QRCodeGenerator
   
-  init(receiveController: ReceiveController,
+  init(token: Token,
+       wallet: Wallet,
+       deeplinkGenerator: DeeplinkGenerator,
        qrCodeGenerator: QRCodeGenerator) {
-    self.receiveController = receiveController
+    self.token = token
+    self.wallet = wallet
+    self.deeplinkGenerator = deeplinkGenerator
     self.qrCodeGenerator = qrCodeGenerator
   }
 }
 
 private extension ReceiveViewModelImplementation {
-  func createModel(model: KeeperCore.ReceiveController.Model) -> ReceiveView.Model {
+  func createModel() -> ReceiveView.Model {
+    let tokenName: String
+    let descriptionTokenName: String
+    let image: ReceiveView.Model.Image
+    
+    switch token {
+    case .ton:
+      tokenName = TonInfo.name
+      descriptionTokenName = "\(TonInfo.name) \(TonInfo.symbol)"
+      image = .image(.TKCore.Icons.Size44.tonLogo)
+    case .jetton(let jettonItem):
+      tokenName = jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name
+      descriptionTokenName = jettonItem.jettonInfo.symbol ?? jettonItem.jettonInfo.name
+      image = .asyncImage(ImageDownloadTask(closure: { [weak self] imageView, size, cornerRadius in
+        self?.imageLoader.loadImage(url: jettonItem.jettonInfo.imageURL,
+                                    imageView: imageView,
+                                    size: size,
+                                    cornerRadius: cornerRadius)
+      }))
+    }
+    
     let titleDescriptionModel = TKTitleDescriptionView.Model(
-      title: TKLocales.Receive.title(model.tokenName),
-      bottomDescription: TKLocales.Receive.description(model.descriptionTokenName)
+      title: TKLocales.Receive.title(tokenName),
+      bottomDescription: TKLocales.Receive.description(descriptionTokenName)
     )
         
     let buttonsModel = ReceiveButtonsView.Model(
@@ -95,8 +126,8 @@ private extension ReceiveViewModelImplementation {
         )
       ),
       copyButtonAction: {
-        [weak self] in
-        self?.copyButtonAction(wallet: model.wallet)
+        [weak self, wallet] in
+        self?.copyButtonAction(wallet: wallet)
       },
       shareButtonConfiguration: TKButton.Configuration(
         content: TKButton.Configuration.Content(icon: .TKUIKit.Icons.Size16.share),
@@ -105,31 +136,22 @@ private extension ReceiveViewModelImplementation {
         iconTintColor: .Button.secondaryForeground,
         backgroundColors: [.normal: .Button.secondaryBackground, .highlighted: .Button.secondaryBackgroundHighlighted],
         cornerRadius: 24,
-        action: { [weak self] in
-          self?.didTapShare?(try? model.wallet.friendlyAddress.toString())
+        action: { [weak self, wallet] in
+          guard let address = try? wallet.friendlyAddress.toString() else { return }
+          self?.didTapShare?(address)
         }
       )
     )
     
-    let image: ReceiveView.Model.Image
-    switch model.image {
-    case .ton:
-      image = .image(.TKCore.Icons.Size44.tonLogo)
-    case .url(let url):
-      image = .asyncImage(ImageDownloadTask(closure: { [weak self] imageView, size, cornerRadius in
-        self?.imageLoader.loadImage(url: url, imageView: imageView, size: size, cornerRadius: cornerRadius)
-      }))
-    }
-    
     let receiveModel = ReceiveView.Model(
       titleDescriptionModel: titleDescriptionModel,
       buttonsModel: buttonsModel,
-      address: try? model.wallet.friendlyAddress.toString(),
-      addressButtonAction: { [weak self] in
-        self?.copyButtonAction(wallet: model.wallet)
+      address: try? wallet.friendlyAddress.toString(),
+      addressButtonAction: { [weak self, wallet] in
+        self?.copyButtonAction(wallet: wallet)
       },
       image: image,
-      tag: model.wallet.receiveTagConfiguration()
+      tag: wallet.receiveTagConfiguration()
     )
     
     return receiveModel

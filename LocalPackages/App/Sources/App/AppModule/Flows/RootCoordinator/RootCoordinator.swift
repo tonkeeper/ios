@@ -27,7 +27,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     self.dependencies = dependencies
     self.rootController = dependencies.keeperCoreRootAssembly.rootController()
     self.stateManager = RootCoordinatorStateManager(
-      keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
+      walletsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore
     )
     self.featureFlagsProvider = dependencies.coreAssembly.featureFlagsProvider
     self.pushNotificationsManager = PushNotificationManager(
@@ -73,8 +73,8 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
           }
         }
       }
-    case .main(let walletsState):
-      openMain(wallets: walletsState.wallets, activeWallet: walletsState.activeWallet, deeplink: deeplink)
+    case .main:
+      openMain(deeplink: deeplink)
     }
   }
   
@@ -103,8 +103,8 @@ private extension RootCoordinator {
     switch state {
     case .onboarding:
       openOnboarding(deeplink: deeplink)
-    case .main(let walletsState):
-      openMain(wallets: walletsState.wallets, activeWallet: walletsState.activeWallet, deeplink: deeplink)
+    case .main:
+      openMain(deeplink: deeplink)
     }
   }
   
@@ -126,7 +126,6 @@ private extension RootCoordinator {
       self?.onboardingCoordinator = nil
       guard let coordinator = coordinator else { return }
       self?.removeChild(coordinator)
-      self?.start(deeplink: nil)
     }
     
     self.onboardingCoordinator = coordinator
@@ -137,17 +136,11 @@ private extension RootCoordinator {
     showViewController(coordinator.router.rootViewController, animated: true)
   }
   
-  func openMain(wallets: [Wallet], activeWallet: Wallet, deeplink: CoordinatorDeeplink?) {
-    let mainAssemblyDependencies = MainAssembly.Dependencies(
-      wallets: wallets, 
-      activeWallet: activeWallet
-    )
+  func openMain(deeplink: CoordinatorDeeplink?) {
     let module = MainModule(
       dependencies: MainModule.Dependencies(
         coreAssembly: dependencies.coreAssembly,
-        keeperCoreMainAssembly: dependencies.keeperCoreRootAssembly.mainAssembly(
-          dependencies: mainAssemblyDependencies
-        )
+        keeperCoreMainAssembly: dependencies.keeperCoreRootAssembly.mainAssembly()
       )
     )
     let coordinator = module.createMainCoordinator()

@@ -57,7 +57,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   func didTapEdit(item: WalletsListItem) {
     switch item {
     case .wallet(let identifier):
-      guard let wallet = model.getWalletsState().wallets.first(where: { $0.id == identifier }) else { return }
+      guard let wallet = model.getState().wallets.first(where: { $0.id == identifier }) else { return }
       DispatchQueue.main.async {
         self.didTapEditWallet?(wallet)
       }
@@ -97,7 +97,7 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   func didSelectItem(_ item: WalletsListItem) {
     switch item {
     case .wallet(let identifier):
-      guard let wallet = model.getWalletsState().wallets.first(where: { $0.id == identifier }) else {
+      guard let wallet = model.getState().wallets.first(where: { $0.id == identifier }) else {
         return
       }
       self.model.selectWallet(wallet: wallet)
@@ -158,7 +158,7 @@ private extension WalletsListViewModelImplementation {
   func setupInitialState() {
     updateHeaderItem()
     
-    let walletsState = model.getWalletsState()
+    let walletsState = model.getState()
     self.walletsState = walletsState
     updateList(walletsState: walletsState, totalBalancesState: [:]) { models, snapshot, selectedIndex in
       self.cellModels = models
@@ -173,7 +173,7 @@ private extension WalletsListViewModelImplementation {
   }
   
   func startObservations() {
-    model.didUpdateWalletsState = { [weak self] walletsState in
+    model.didUpdateState = { [weak self] walletsState in
       self?.syncQueue.async {
         self?.walletsState = walletsState
         self?.didUpdateWalletsState(walletsState: walletsState)

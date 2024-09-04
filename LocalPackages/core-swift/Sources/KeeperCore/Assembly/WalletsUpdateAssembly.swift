@@ -20,10 +20,6 @@ public final class WalletsUpdateAssembly {
     self.rnAssembly = rnAssembly
   }
   
-  public lazy var walletsStoreUpdate: WalletsStoreUpdate = {
-    WalletsStoreUpdate(walletsService: servicesAssembly.walletsService())
-  }()
-  
   public var walletsStoreUpdater: WalletsStoreUpdater {
     WalletsStoreUpdater(
       keeperInfoStore: storesAssembly.keeperInfoStore,
@@ -33,7 +29,7 @@ public final class WalletsUpdateAssembly {
   
   public func walletAddController() -> WalletAddController {
     WalletAddController(
-      walletsStoreUpdater: walletsStoreUpdater,
+      walletsStore: storesAssembly.walletsStore,
       mnemonicsRepositoty: repositoriesAssembly.mnemonicsRepository()
     )
   }
@@ -43,7 +39,7 @@ public final class WalletsUpdateAssembly {
   }
   
   public func walletUpdateController() -> WalletEditController {
-    WalletEditController(walletsStoreUpdate: walletsStoreUpdate)
+    WalletEditController(walletsStore: storesAssembly.walletsStore)
   }
   
   public func watchOnlyWalletAddressInputController() -> WatchOnlyWalletAddressInputController {

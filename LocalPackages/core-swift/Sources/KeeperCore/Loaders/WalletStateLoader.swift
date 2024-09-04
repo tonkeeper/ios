@@ -1,34 +1,50 @@
 import Foundation
 import TonSwift
 
-actor WalletStateLoader {
+final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletStateLoader.State> {
+  public struct State {
+    var balanceLoadTasks: [Wallet: Task<(), Never>]
+    var nftLoadTasks: [Wallet: Task<(), Never>]
+    var reloadStateTask: Task<(), Never>?
+    var ratesLoadTask: Task<[Rates.Rate], Swift.Error>?
+    
+    init(balanceLoadTasks: [Wallet : Task<(), Never>] = [:],
+         nftLoadTasks: [Wallet : Task<(), Never>] = [:],
+         reloadStateTask: Task<(), Never>? = nil,
+         ratesLoadTask: Task<[Rates.Rate], Error>? = nil) {
+      self.balanceLoadTasks = balanceLoadTasks
+      self.nftLoadTasks = nftLoadTasks
+      self.reloadStateTask = reloadStateTask
+      self.ratesLoadTask = ratesLoadTask
+    }
+  }
   
-  private var reloadBalanceTaskInProgress = [Wallet: Task<(), Never>]()
-  private var reloadStateTask: Task<(), Never>?
-  private var loadRatesTask: Task<([Rates.Rate]), Never>?
+  public enum Event {
+    
+  }
   
-  private let balanceStore: BalanceStore
-  private let currencyStore: CurrencyStore
-  private let walletsStore: WalletsStore
-  private let ratesStore: TonRatesStore
-  private let stakingPoolsStore: StakingPoolsStore
+  private let balanceStore: BalanceStoreV3
+  private let currencyStore: CurrencyStoreV3
+  private let walletsStore: WalletsStoreV3
+  private let ratesStore: TonRatesStoreV3
+  private let stakingPoolsStore: StakingPoolsStoreV3
   private let balanceService: BalanceService
   private let stackingService: StakingService
+  private let accountNFTService: AccountNFTService
   private let ratesService: RatesService
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
-  private let accountNftsLoader: AccountNftsLoader
   private let accountNftsStore: AccountNFTsStore
   
-  init(balanceStore: BalanceStore, 
-       currencyStore: CurrencyStore,
-       walletsStore: WalletsStore,
-       ratesStore: TonRatesStore,
-       stakingPoolsStore: StakingPoolsStore,
+  init(balanceStore: BalanceStoreV3,
+       currencyStore: CurrencyStoreV3,
+       walletsStore: WalletsStoreV3,
+       ratesStore: TonRatesStoreV3,
+       stakingPoolsStore: StakingPoolsStoreV3,
        balanceService: BalanceService,
        stackingService: StakingService,
+       accountNFTService: AccountNFTService,
        ratesService: RatesService,
        backgroundUpdateUpdater: BackgroundUpdateUpdater,
-       accountNftsLoader: AccountNftsLoader,
        accountNftsStore: AccountNFTsStore) {
     self.balanceStore = balanceStore
     self.currencyStore = currencyStore
@@ -37,179 +53,228 @@ actor WalletStateLoader {
     self.stakingPoolsStore = stakingPoolsStore
     self.balanceService = balanceService
     self.stackingService = stackingService
+    self.accountNFTService = accountNFTService
     self.ratesService = ratesService
     self.backgroundUpdateUpdater = backgroundUpdateUpdater
-    self.accountNftsLoader = accountNftsLoader
     self.accountNftsStore = accountNftsStore
-    Task {
-      await setupObserverations()
-    }
+    super.init(state: State())
+    addObservers()
   }
   
-  nonisolated
+  override var initialState: State {
+    State()
+  }
+  
   func startStateReload() {
     stopStateReload()
+    
     let task = Task {
-      let walletsState = await walletsStore.getState()
-      let currency = await currencyStore.getCurrency()
-      await reloadBalance(wallets: walletsState.wallets, currency: currency)
-      try? await Task.sleep(nanoseconds: 60_000_000_000)
-      guard !Task.isCancelled else { return }
-      startStateReload()
+      let wallets = await walletsStore.getState()
+      switch wallets {
+      case .empty:
+        return
+      case .wallets(let wallets):
+        let currency = await currencyStore.getState()
+        await loadRatesAndStore(currency: currency)
+        await loadBalance(wallets: wallets.wallets, currency: currency)
+        try? await Task.sleep(nanoseconds: 60_000_000_000)
+        guard !Task.isCancelled else { return }
+        startStateReload()
+      }
     }
+    
     Task {
-      await setReloadStateTask(task)
+      await setReloadStateTask(task: task)
     }
   }
   
-  nonisolated
   func stopStateReload() {
     Task {
-      await resetReloadStateTask()
+      await setReloadStateTask(task: nil)
     }
   }
   
-  nonisolated
   func loadNFTs() {
     Task {
-      let walletsState = await walletsStore.getState()
-      await loadNFTs(wallet: walletsState.activeWallet)
-    }
-  }
-}
-
-private extension WalletStateLoader {
-  func setReloadStateTask(_ task: Task<(), Never>) {
-    self.reloadStateTask = task
-  }
-  
-  func resetReloadStateTask() {
-    self.reloadStateTask?.cancel()
-    self.reloadStateTask = nil
-  }
-  
-  func setupObserverations() {
-    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      Task {
-        await observer.didUpdateWalletsStoreState(newState: newState, oldState: oldState)
-      }
-    }
-    
-    currencyStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      Task {
-        await observer.didUpdateCurrencyStoreState(newState: newState, oldState: oldState)
-      }
-    }
-    
-    backgroundUpdateUpdater.addEventObserver(self) { observer, event in
-      Task {
-        let currency = await observer.currencyStore.getCurrency()
-        guard let wallet = await observer.walletsStore.getState().wallets.first(where: {
-          guard let address = try? $0.address else { return false }
-          return address == event.accountAddress
-        }) else { return }
-        await observer.reloadBalance(wallets: [wallet], currency: currency)
+      switch await walletsStore.getState() {
+      case .empty:
+        break
+      case .wallets(let wallets):
+        await loadNFTs(wallet: wallets.activeWalelt)
       }
     }
   }
   
-  func didUpdateWalletsStoreState(newState: WalletsState, oldState: WalletsState) async {
-    var walletsToUpdate = newState.wallets
-      .filter { !oldState.wallets.contains($0) }
-    if newState.activeWallet != oldState.activeWallet {
-      walletsToUpdate.append(newState.activeWallet)
+  private func addObservers() {
+    self.walletsStore.addObserver(self) { observer, event in
+      observer.didGetWalletsStoreEvent(event)
     }
+    self.currencyStore.addObserver(self) { observer, event in
+      observer.didGetCurrencyStoreEvent(event)
+    }
+  }
+  
+  private func didGetWalletsStoreEvent(_ event: WalletsStoreV3.Event) {
     Task {
-      let currency = await currencyStore.getCurrency()
-      await reloadBalance(wallets: walletsToUpdate, currency: currency)
+      let currency = await currencyStore.getState()
+      switch event {
+      case .didAddWallets(let wallets):
+        await loadBalance(wallets: wallets, currency: currency)
+      case .didChangeActiveWallet(let wallet):
+        await loadBalance(wallets: [wallet], currency: currency)
+        loadNFTs()
+      default: break
+      }
     }
+  }
+  
+  private func didGetCurrencyStoreEvent(_ event: CurrencyStoreV3.Event) {
     Task {
-      await loadNFTs(wallet: newState.activeWallet)
+      let wallets = await walletsStore.getState()
+      switch wallets {
+      case .empty:
+        return
+      case .wallets(let wallets):
+        let currency = await currencyStore.getState()
+        await loadBalance(wallets: wallets.wallets, currency: currency)
+      }
     }
   }
   
-  func didUpdateCurrencyStoreState(newState: Currency, oldState: Currency) async {
-    guard newState != oldState else { return }
-    let walletState = await walletsStore.getState()
-    await reloadBalance(wallets: walletState.wallets, currency: newState)
-  }
-  
-  func reloadBalance(wallets: [Wallet], currency: Currency) async {
+  private func loadBalance(wallets: [Wallet], currency: Currency) async {
     guard !wallets.isEmpty else { return }
-    let rates = await loadRates(currency: currency)
-    await ratesStore.setTonRates(rates)
     await withTaskGroup(of: Void.self) { [weak self] taskGroup in
       guard let self else { return }
       for wallet in wallets {
         taskGroup.addTask {
-          await self.reloadBalance(wallet: wallet, currency: currency, rates: rates)
+          await self.loadBalance(wallet: wallet, currency: currency)
         }
       }
     }
   }
   
-  func reloadBalance(wallet: Wallet, currency: Currency, rates: [Rates.Rate]) {
-    guard let friendlyAddress = try? wallet.friendlyAddress else { return }
-    if let task = reloadBalanceTaskInProgress[wallet] {
-      task.cancel()
-      reloadBalanceTaskInProgress[wallet] = nil
-    }
-    
+  private func loadBalance(wallet: Wallet, currency: Currency) async {
     let task = Task {
       do {
-        async let balanceTask = balanceService.loadWalletBalance(
-          wallet: wallet,
-          currency: currency
-        )
-        async let stakingPoolsTask = stackingService.loadStakingPools(wallet: wallet)
+        async let balanceTask = self.balanceService.loadWalletBalance(wallet: wallet, currency: currency)
+        async let stakingPoolTask = self.stackingService.loadStakingPools(wallet: wallet)
         
         let balance = try await balanceTask
-        let pools = (try? await stakingPoolsTask) ?? []
-        guard !Task.isCancelled else { return }
+        let pools: [StackingPoolInfo]
+        do {
+          pools = try await stakingPoolTask
+        } catch {
+          pools = []
+        }
         
-        await stakingPoolsStore.setStackingPools(pools: pools,
-                                                 address: friendlyAddress)
-        await balanceStore.setBalanceState(.current(balance),
-                                           address: friendlyAddress)
+        await balanceStore.setBalanceState(.current(balance), wallet: wallet)
+        await stakingPoolsStore.setStackingPools(pools, wallet: wallet)
       } catch {
         guard error.isCancelledError else { return }
-        guard let balanceState = await self.balanceStore.getState()[friendlyAddress] else {
+        guard let balanceState = await self.balanceStore.getState()[wallet] else {
           return
         }
-        await balanceStore.updateState { state in
-          var updatedState = state
-          updatedState[friendlyAddress] = .previous(balanceState.walletBalance)
-          return BalanceStore.StateUpdate(newState: updatedState)
-        }
+        await self.balanceStore.setBalanceState(.previous(balanceState.walletBalance), wallet: wallet)
       }
-    }
-    reloadBalanceTaskInProgress[wallet] = task
-  }
-  
-  func loadRates(currency: Currency) async -> [Rates.Rate] {
-    if let task = loadRatesTask {
-      task.cancel()
-      self.loadRatesTask = nil
+      await setBalanceLoadTask(task: nil, wallet: wallet)
     }
     
-    let task = Task<[Rates.Rate], Never> {
-      do {
-        return try await ratesService.loadRates(jettons: [], currencies: [currency, .TON]).ton
-      } catch {
-        return []
-      }
-    }
-    return await task.value
+    await setBalanceLoadTask(task: task, wallet: wallet)
   }
   
-  func loadNFTs(wallet: Wallet) async {
+  private func loadNFTs(wallet: Wallet) async {
+    let task = Task {
+      do {
+        async let nftsTask = self.accountNFTService.loadAccountNFTs(
+          wallet: wallet,
+          collectionAddress: nil,
+          limit: nil,
+          offset: nil,
+          isIndirectOwnership: true
+        )
+
+        let nfts = try await nftsTask
+        
+        // TODO: save to store
+      } catch {
+        guard error.isCancelledError else { return }
+      }
+      await setNFTLoadTask(task: nil, wallet: wallet)
+    }
+    await setNFTLoadTask(task: task, wallet: wallet)
+  }
+  
+  private func loadRatesAndStore(currency: Currency) async {
     do {
-      let nfts = try await accountNftsLoader.loadNfts(wallet: wallet)
-      try await accountNftsStore.setNFTS(nfts, address: wallet.friendlyAddress)
+      let rates = try await loadRates(currency: currency)
+      await ratesStore.setRates(rates)
     } catch {
-      guard !error.isCancelledError,
-      let address = try? wallet.friendlyAddress else { return }
-      await accountNftsStore.setNFTS([], address: address)
+      guard !error.isCancelledError else { return }
+      await ratesStore.setRates([])
+    }
+  }
+  
+  private func loadRates(currency: Currency) async throws -> [Rates.Rate] {
+    let task = Task<[Rates.Rate], Swift.Error> {
+      let rates = try await ratesService.loadRates(jettons: [], currencies: [currency, .TON]).ton
+      try Task.checkCancellation()
+      await setRatesLoadTask(task: nil)
+      return rates
+    }
+    
+    await setRatesLoadTask(task: task)
+    
+    return try await task.value
+  }
+  
+  private func setBalanceLoadTask(task: Task<(), Never>?, wallet: Wallet) async {
+    await setState { state in
+      var updatedState = state
+      if let stateTask = state.balanceLoadTasks[wallet] {
+        stateTask.cancel()
+        updatedState.balanceLoadTasks[wallet] = nil
+      }
+
+      updatedState.balanceLoadTasks[wallet] = task
+      return StateUpdate(newState: updatedState)
+    }
+  }
+  
+  private func setNFTLoadTask(task: Task<(), Never>?, wallet: Wallet) async {
+    await setState { state in
+      var updatedState = state
+      if let stateTask = state.nftLoadTasks[wallet] {
+        stateTask.cancel()
+        updatedState.nftLoadTasks[wallet] = nil
+      }
+
+      updatedState.nftLoadTasks[wallet] = task
+      return StateUpdate(newState: updatedState)
+    }
+  }
+  
+  private func setReloadStateTask(task: Task<(), Never>?) async {
+    await setState { state in
+      var updatedState = state
+      if let stateTask = state.reloadStateTask {
+        stateTask.cancel()
+        updatedState.reloadStateTask = nil
+      }
+      
+      updatedState.reloadStateTask = task
+      return StateUpdate(newState: updatedState)
+    }
+  }
+  
+  private func setRatesLoadTask(task: Task<[Rates.Rate], Swift.Error>?) async {
+    await setState { state in
+      var updatedState = state
+      if let stateTask = state.ratesLoadTask {
+        stateTask.cancel()
+        updatedState.ratesLoadTask = nil
+      }
+      updatedState.ratesLoadTask = task
+      return StateUpdate(newState: updatedState)
     }
   }
 }

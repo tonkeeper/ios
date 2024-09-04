@@ -34,7 +34,7 @@ private extension HistoryCoordinator {
     let module = HistoryAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
     
     module.output.didTapReceive = { [weak self] wallet in
-      self?.openReceive()
+      self?.openReceive(wallet: wallet)
     }
 
     module.output.didTapBuy = { [weak self] wallet in
@@ -74,13 +74,13 @@ private extension HistoryCoordinator {
     router.push(viewController: module.view, animated: false)
   }
   
-  func openReceive() {
+  func openReceive(wallet: Wallet) {
     let module = ReceiveModule(
       dependencies: ReceiveModule.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
-    ).receiveModule(token: .ton)
+    ).receiveModule(token: .ton, wallet: wallet)
     
     module.view.setupSwipeDownButton()
     

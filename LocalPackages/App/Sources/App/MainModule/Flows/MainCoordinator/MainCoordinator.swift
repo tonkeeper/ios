@@ -166,8 +166,8 @@ private extension MainCoordinator {
       self?.openBuy(wallet: wallet)
     }
     
-    walletCoordinator.didTapReceive = { [weak self] token in
-      self?.openReceive(token: token)
+    walletCoordinator.didTapReceive = { [weak self] token, wallet in
+      self?.openReceive(token: token, wallet: wallet)
     }
     
     walletCoordinator.didTapStake = { [weak self] wallet in
@@ -478,8 +478,7 @@ private extension MainCoordinator {
   func openWalletPicker() {
     let module = WalletsListAssembly.module(
       model: WalletsPickerListModel(
-        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
-        walletsUpdater: keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater
+        walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
       ),
       totalBalancesStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
@@ -629,7 +628,7 @@ private extension MainCoordinator {
     )
     
     module.output.didTapReceive = { [weak self] token in
-      self?.openReceive(token: token)
+      self?.openReceive(token: token, wallet: wallet)
     }
     
     module.output.didTapSend = { [weak self] token in
@@ -677,7 +676,7 @@ private extension MainCoordinator {
     )
 
     module.output.didTapReceive = { [weak self] token in
-      self?.openReceive(token: token)
+      self?.openReceive(token: token, wallet: wallet)
     }
     
     module.output.didTapSend = { [weak self] token in
@@ -835,13 +834,13 @@ private extension MainCoordinator {
     })
   }
   
-  func openReceive(token: Token) {
+  func openReceive(token: Token, wallet: Wallet) {
     let module = ReceiveModule(
       dependencies: ReceiveModule.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
-    ).receiveModule(token: token)
+    ).receiveModule(token: token, wallet: wallet)
     
     module.view.setupSwipeDownButton()
     

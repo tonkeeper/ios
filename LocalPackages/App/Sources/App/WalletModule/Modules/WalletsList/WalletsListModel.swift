@@ -8,27 +8,30 @@ struct WalletsListModelState {
 
 protocol WalletsListModel: AnyObject {
   var isEditable: Bool { get }
-  var didUpdateWalletsState: ((WalletsListModelState) -> Void)? { get set }
+  var didUpdateState: ((WalletsListModelState) -> Void)? { get set }
   
-  func getWalletsState() -> WalletsListModelState
+  func getState() -> WalletsListModelState
   func selectWallet(wallet: Wallet)
   func moveWallet(fromIndex: Int, toIndex: Int)
 }
 
 final class WalletsPickerListModel: WalletsListModel {
-  private let walletsStore: WalletsStore
-  private let walletsUpdater: WalletsStoreUpdater
+  private let walletsStore: WalletsStoreV3
   
-  init(walletsStore: WalletsStore, 
-       walletsUpdater: WalletsStoreUpdater) {
+  init(walletsStore: WalletsStoreV3) {
     self.walletsStore = walletsStore
-    self.walletsUpdater = walletsUpdater
-    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      let state = WalletsListModelState(
-        wallets: newState.wallets,
-        selectedWallet: newState.activeWallet
-      )
-      observer.didUpdateWalletsState?(state)
+    walletsStore.addObserver(self) { observer, event in
+      DispatchQueue.main.async {
+        switch event {
+        case .didAddWallets,
+            .didDeleteWallet,
+            .didChangeActiveWallet,
+            .didMoveWallet,
+            .didUpdateWalletMetaData:
+          observer.updateState()
+        default: break
+        }
+      }
     }
   }
   
@@ -36,26 +39,44 @@ final class WalletsPickerListModel: WalletsListModel {
     true
   }
   
-  var didUpdateWalletsState: ((WalletsListModelState) -> Void)?
+  var didUpdateState: ((WalletsListModelState) -> Void)?
   
-  func getWalletsState() -> WalletsListModelState {
-    let storeState = walletsStore.getState()
+  func getState() -> WalletsListModelState {
+    guard let state = try? walletsStore.stateWallets else {
+      return WalletsListModelState(
+        wallets: [],
+        selectedWallet: nil
+      )
+    }
+    
     return WalletsListModelState(
-      wallets: storeState.wallets,
-      selectedWallet: storeState.activeWallet
+      wallets: state.wallets,
+      selectedWallet: state.activeWalelt
     )
   }
   
   func selectWallet(wallet: Wallet) {
     Task {
-      await walletsUpdater.setWalletActive(wallet)
+      await walletsStore.setWalletActive(wallet)
     }
   }
   
   func moveWallet(fromIndex: Int, toIndex: Int) {
     Task {
-      await walletsUpdater.moveWallet(fromIndex: fromIndex, toIndex: toIndex)
+      await walletsStore.moveWallet(fromIndex: fromIndex, toIndex: toIndex)
     }
+  }
+  
+  private func updateState() {
+    guard let state = try? walletsStore.stateWallets else {
+      return
+    }
+    didUpdateState?(
+      WalletsListModelState(
+        wallets: state.wallets,
+        selectedWallet: state.activeWalelt
+      )
+    )
   }
 }
 
@@ -73,9 +94,9 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
     false
   }
   
-  var didUpdateWalletsState: ((WalletsListModelState) -> Void)?
+  var didUpdateState: ((WalletsListModelState) -> Void)?
   
-  func getWalletsState() -> WalletsListModelState {
+  func getState() -> WalletsListModelState {
     let storeState = walletsStore.getState()
     let wallets = storeState.wallets.filter { $0.isTonconnectAvailable }
     guard let activeWallet = (wallets.first(where: { $0 == storeState.activeWallet }) ?? wallets.first) else {

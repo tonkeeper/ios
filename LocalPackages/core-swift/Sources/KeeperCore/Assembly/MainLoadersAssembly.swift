@@ -24,16 +24,16 @@ public final class MainLoadersAssembly {
       return _walletStateLoader
     }
     let loader = WalletStateLoader(
-      balanceStore: mainStoresAssembly.balanceStore,
-      currencyStore: storesAssembly.currencyStore,
-      walletsStore: walletAssembly.walletsStore,
-      ratesStore: storesAssembly.tonRatesStore,
-      stakingPoolsStore: storesAssembly.stackingPoolsStore,
+      balanceStore: storesAssembly.balanceStore,
+      currencyStore: storesAssembly.currencyStoreV3,
+      walletsStore: storesAssembly.walletsStore,
+      ratesStore: storesAssembly.tonRatesStoreV3,
+      stakingPoolsStore: storesAssembly.stackingPoolsStoreV3,
       balanceService: servicesAssembly.balanceService(),
       stackingService: servicesAssembly.stackingService(),
+      accountNFTService: servicesAssembly.accountNftService(),
       ratesService: servicesAssembly.ratesService(),
       backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater,
-      accountNftsLoader: accountNftsLoader,
       accountNftsStore: mainStoresAssembly.accountNftsStore
     )
     _walletStateLoader = loader

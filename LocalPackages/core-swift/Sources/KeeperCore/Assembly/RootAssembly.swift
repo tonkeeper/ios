@@ -80,13 +80,11 @@ public final class RootAssembly {
     )
   }
   
-  public func mainAssembly(dependencies: MainAssembly.Dependencies) -> MainAssembly {
+  public func mainAssembly() -> MainAssembly {
     let walletAssembly = WalletAssembly(
       servicesAssembly: servicesAssembly,
       storesAssembly: storesAssembly,
-      walletUpdateAssembly: walletsUpdateAssembly,
-      wallets: dependencies.wallets,
-      activeWallet: dependencies.activeWallet)
+      walletUpdateAssembly: walletsUpdateAssembly)
     let tonConnectAssembly = TonConnectAssembly(
       repositoriesAssembly: repositoriesAssembly,
       servicesAssembly: servicesAssembly,

@@ -2,26 +2,31 @@ import Foundation
 
 public final class WalletDeleteController {
   
-  private let walletsStoreUpdater: WalletsStoreUpdater
+  private let walletStore: WalletsStoreV3
+  private let keeperInfoStore: KeeperInfoStoreV3
   private let mnemonicsRepository: MnemonicsRepository
   
-  init(walletsStoreUpdater: WalletsStoreUpdater,
+  init(walletStore: WalletsStoreV3,
+       keeperInfoStore: KeeperInfoStoreV3,
        mnemonicsRepository: MnemonicsRepository) {
-    self.walletsStoreUpdater = walletsStoreUpdater
+    self.walletStore = walletStore
+    self.keeperInfoStore = keeperInfoStore
     self.mnemonicsRepository = mnemonicsRepository
   }
   
   public func deleteWallet(wallet: Wallet, passcode: String) async {
-    await walletsStoreUpdater.deleteWallet(wallet)
+    await walletStore.deleteWallet(wallet)
     try? await mnemonicsRepository.deleteMnemonic(wallet: wallet, password: passcode)
   }
   
   public func deleteWallet(wallet: Wallet) async {
-    await walletsStoreUpdater.deleteWallet(wallet)
+    await walletStore.deleteWallet(wallet)
   }
   
   public func deleteAll() async {
-    await walletsStoreUpdater.deleteAllWallets()
+    await keeperInfoStore.updateKeeperInfo { _ in
+      return nil
+    }
     if mnemonicsRepository.hasMnemonics() {
       try? await mnemonicsRepository.deleteAll()
     }

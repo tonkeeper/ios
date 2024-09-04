@@ -12,7 +12,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   var didTapWalletButton: (() -> Void)?
   var didTapSend: ((Token) -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
-  var didTapReceive: ((Token) -> Void)?
+  var didTapReceive: ((Token, _ wallet: Wallet) -> Void)?
   var didTapSwap: (() -> Void)?
   var didTapStake: ((Wallet) -> Void)?
   var didTapSettingsButton: ((Wallet) -> Void)?
@@ -48,7 +48,7 @@ private extension WalletCoordinator {
   func openWalletContainer() {
     let module = WalletContainerAssembly.module(
       walletBalanceModule: createWalletBalanceModule(),
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
     )
     
     module.output.walletButtonHandler = { [weak self] in
@@ -108,8 +108,8 @@ private extension WalletCoordinator {
       self?.didTapSend?(.ton)
     }
     
-    module.output.didTapReceive = { [weak self] in
-      self?.didTapReceive?(.ton)
+    module.output.didTapReceive = { [weak self] wallet in
+      self?.didTapReceive?(.ton, wallet)
     }
     
     module.output.didTapScan = { [weak self] in

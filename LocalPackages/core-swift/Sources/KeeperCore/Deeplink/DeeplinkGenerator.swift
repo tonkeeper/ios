@@ -9,4 +9,6 @@ public struct DeeplinkGenerator {
   public func generateTonSignOpenDeeplink() -> TonsignDeeplink {
     .plain
   }
+  
+  public init() {}
 }

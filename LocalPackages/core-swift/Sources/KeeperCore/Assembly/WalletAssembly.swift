@@ -10,15 +10,21 @@ public final class WalletAssembly {
   
   init(servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
-       walletUpdateAssembly: WalletsUpdateAssembly,
-       wallets: [Wallet],
-       activeWallet: Wallet) {
+       walletUpdateAssembly: WalletsUpdateAssembly) {
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.walletUpdateAssembly = walletUpdateAssembly
 
     self.walletsStore = WalletsStore(
-      state: WalletsState(wallets: wallets, activeWallet: activeWallet),
+      state: WalletsState(
+        wallets: [],
+        activeWallet: Wallet(
+          id: "",
+          identity: WalletIdentity(network: .mainnet, kind: .Watchonly(.Domain("", .mock(workchain: 1, seed: "")))),
+          metaData: WalletMetaData(label: "sd", tintColor: .Aquamarine, icon: .icon(.bankCard)),
+          setupSettings: WalletSetupSettings(backupDate: nil)
+        )
+      ),
       keeperInfoStore: storesAssembly.keeperInfoStore
     )
   }

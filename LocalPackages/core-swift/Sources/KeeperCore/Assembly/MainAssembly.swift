@@ -4,16 +4,6 @@ import BigInt
 
 public final class MainAssembly {
   
-  public struct Dependencies {
-    let wallets: [Wallet]
-    let activeWallet: Wallet
-    
-    public init(wallets: [Wallet], activeWallet: Wallet) {
-      self.wallets = wallets
-      self.activeWallet = activeWallet
-    }
-  }
-  
   public let repositoriesAssembly: RepositoriesAssembly
   public let walletAssembly: WalletAssembly
   public let walletUpdateAssembly: WalletsUpdateAssembly
@@ -88,7 +78,8 @@ public final class MainAssembly {
   }
 
   public var walletDeleteController: WalletDeleteController {
-    WalletDeleteController(walletsStoreUpdater: walletUpdateAssembly.walletsStoreUpdater,
+    WalletDeleteController(walletStore: storesAssembly.walletsStore,
+                           keeperInfoStore: storesAssembly.keeperInfoStoreV3,
                            mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
   }
   
@@ -166,14 +157,6 @@ public final class MainAssembly {
       currencyStore: storesAssembly.currencyStore,
       walletsService: servicesAssembly.walletsService(),
       decimalAmountFormatter: formattersAssembly.decimalAmountFormatter
-    )
-  }
-  
-  public func receiveController(token: Token) -> ReceiveController {
-    ReceiveController(
-      token: token,
-      walletsStore: walletAssembly.walletsStore,
-      deeplinkGenerator: DeeplinkGenerator()
     )
   }
   

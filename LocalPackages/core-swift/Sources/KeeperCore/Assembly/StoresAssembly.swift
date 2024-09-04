@@ -28,6 +28,54 @@ public final class StoresAssembly {
     return store
   }
   
+  private weak var _keeperInfoStoreV3: KeeperInfoStoreV3?
+  public var keeperInfoStoreV3: KeeperInfoStoreV3 {
+    if let _keeperInfoStoreV3 {
+      return _keeperInfoStoreV3
+    }
+    let store = KeeperInfoStoreV3(keeperInfoRepository: repositoriesAssembly.keeperInfoRepository())
+    _keeperInfoStoreV3 = store
+    return store
+  }
+  
+  private weak var _walletsStore: WalletsStoreV3?
+  public var walletsStore: WalletsStoreV3 {
+    if let _walletsStore {
+      return _walletsStore
+    }
+    let store = WalletsStoreV3(keeperInfoStore: keeperInfoStoreV3)
+    _walletsStore = store
+    return store
+  }
+  
+  private weak var _balanceStore: BalanceStoreV3?
+  public var balanceStore: BalanceStoreV3 {
+    if let _balanceStore {
+      return _balanceStore
+    }
+    let store = BalanceStoreV3(walletsStore: walletsStore,
+                               repository: repositoriesAssembly.walletBalanceRepositoryV2()
+    )
+    _balanceStore = store
+    return store
+  }
+  
+  private weak var _processedBalanceStore: ProcessedBalanceStoreV3?
+  public var processedBalanceStore: ProcessedBalanceStoreV3 {
+    if let _processedBalanceStore {
+      return _processedBalanceStore
+    }
+    let store = ProcessedBalanceStoreV3(
+      walletsStore: walletsStore,
+      balanceStore: balanceStore,
+      tonRatesStore: tonRatesStoreV3,
+      currencyStore: currencyStoreV3,
+      stakingPoolsStore: stackingPoolsStoreV3
+    )
+    _processedBalanceStore = store
+    return store
+  }
+  
   private weak var _currencyStore: CurrencyStore?
   public var currencyStore: CurrencyStore {
     if let _currencyStore {
@@ -35,6 +83,16 @@ public final class StoresAssembly {
     }
     let store = CurrencyStore(keeperInfoStore: keeperInfoStore)
     _currencyStore = store
+    return store
+  }
+  
+  private weak var _currencyStoreV3: CurrencyStoreV3?
+  public var currencyStoreV3: CurrencyStoreV3 {
+    if let _currencyStoreV3 {
+      return _currencyStoreV3
+    }
+    let store = CurrencyStoreV3(keeperInfoStore: keeperInfoStoreV3)
+    _currencyStoreV3 = store
     return store
   }
   
@@ -47,6 +105,19 @@ public final class StoresAssembly {
         repository: repositoriesAssembly.ratesRepository()
       )
       _tonRatesStore = tonRatesStore
+      return tonRatesStore
+    }
+  }
+  
+  private weak var _tonRatesStoreV3: TonRatesStoreV3?
+  public var tonRatesStoreV3: TonRatesStoreV3 {
+    if let tonRatesStoreV3 = _tonRatesStoreV3 {
+      return tonRatesStoreV3
+    } else {
+      let tonRatesStore = TonRatesStoreV3(
+        repository: repositoriesAssembly.ratesRepository()
+      )
+      _tonRatesStoreV3 = tonRatesStore
       return tonRatesStore
     }
   }
@@ -80,6 +151,17 @@ public final class StoresAssembly {
     } else {
       let store = StakingPoolsStore()
       _stackingPoolsStore = store
+      return store
+    }
+  }
+  
+  private weak var _stackingPoolsStoreV3: StakingPoolsStoreV3?
+  public var stackingPoolsStoreV3: StakingPoolsStoreV3 {
+    if let store = _stackingPoolsStoreV3 {
+      return store
+    } else {
+      let store = StakingPoolsStoreV3()
+      _stackingPoolsStoreV3 = store
       return store
     }
   }

@@ -4,13 +4,13 @@ import TonSwift
 
 public final class WalletEditController {
 
-  private let walletsStoreUpdate: WalletsStoreUpdate
+  private let walletsStore: WalletsStoreV3
   
-  init(walletsStoreUpdate: WalletsStoreUpdate) {
-    self.walletsStoreUpdate = walletsStoreUpdate
+  init(walletsStore: WalletsStoreV3) {
+    self.walletsStore = walletsStore
   }
   
-  public func updateWallet(wallet: Wallet, metaData: WalletMetaData) throws {
-    try walletsStoreUpdate.updateWallet(wallet, metaData: metaData)
+  public func updateWallet(wallet: Wallet, metaData: WalletMetaData) async {
+    await walletsStore.setWallet(wallet, metaData: metaData)
   }
 }
