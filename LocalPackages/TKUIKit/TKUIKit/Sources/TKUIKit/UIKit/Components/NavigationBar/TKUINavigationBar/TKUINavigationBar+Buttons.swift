@@ -38,6 +38,24 @@ public extension TKUINavigationBar {
     return button
   }
   
+  static func createCloseButton(action: @escaping () -> Void) -> UIView {
+    let button = TKUIHeaderIconButton()
+    button.configure(
+      model: TKUIHeaderButtonIconContentView.Model(
+        image: .TKUIKit.Icons.Size16.close
+      )
+    )
+    
+    button.addTapAction(action)
+    
+    button.tapAreaInsets = UIEdgeInsets(
+      top: -10,
+      left: -10,
+      bottom: -10,
+      right: -10)
+    return button
+  }
+  
   static func createMoreButton(action: @escaping () -> Void) -> UIView {
     let button = TKUIHeaderIconButton()
     button.configure(

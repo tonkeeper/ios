@@ -64,7 +64,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
   }
   
   func startStateReload() {
-    stopStateReload()
+    print("🔥 reload")
     
     let task = Task {
       let wallets = await walletsStore.getState()
@@ -75,8 +75,8 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
         let currency = await currencyStore.getState()
         await loadRatesAndStore(currency: currency)
         await loadBalance(wallets: wallets.wallets, currency: currency)
-        try? await Task.sleep(nanoseconds: 60_000_000_000)
-        guard !Task.isCancelled else { return }
+        try? await Task.sleep(nanoseconds: 5_000_000_000)
+        guard !Task.isCancelled else { print("🔥 cancelled"); return }
         startStateReload()
       }
     }

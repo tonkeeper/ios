@@ -74,11 +74,7 @@ private extension WalletCoordinator {
     )
 
     let navigationController = TKNavigationController(rootViewController: module.view)
-    navigationController.configureDefaultAppearance()
-    
-    module.view.setupRightCloseButton { [weak navigationController] in
-      navigationController?.dismiss(animated: true)
-    }
+    navigationController.setNavigationBarHidden(true, animated: false)
     
     router.present(navigationController)
   }

@@ -97,18 +97,27 @@ final class ManageTokensViewController: GenericViewViewController<ManageTokensVi
     )
     return layout
   }
-}
-
-private extension ManageTokensViewController {
+  
   func setup() {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
     customView.collectionView.addGestureRecognizer(reorderGesture)
+    setupNavigationBar()
   }
- 
+  
+  private func setupNavigationBar() {
+    customView.navigationBar.rightViews = [
+      TKUINavigationBar.createCloseButton(action: { [weak self] in
+        self?.dismiss(animated: true)
+      })
+    ]
+  }
+}
+
+private extension ManageTokensViewController {
   func setupBindings() {
-    viewModel.didUpdateTitle = { [weak self] title in
-      self?.title = title
+    viewModel.didUpdateTitleView = { [weak self] model in
+      self?.customView.titleView.configure(model: model)
     }
     
     viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in

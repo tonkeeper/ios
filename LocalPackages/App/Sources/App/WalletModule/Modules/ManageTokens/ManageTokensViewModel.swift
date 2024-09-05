@@ -12,7 +12,7 @@ protocol ManageTokensModuleOutput: AnyObject {
 protocol ManageTokensViewModel: AnyObject {
   var didUpdateSnapshot: ((_ snapshot: ManageTokensViewController.Snapshot,
                            _ isAnimated: Bool) -> Void)? { get set }
-  var didUpdateTitle: ((String) -> Void)? { get set }
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
   
   func viewDidLoad()
   func getItemCellConfiguration(item: ManageTokensListItem) -> TKListItemCell.Configuration?
@@ -42,11 +42,13 @@ final class ManageTokensViewModelImplementation: ManageTokensViewModel, ManageTo
   
   //  // MARK: - ManageTokensViewModel
   
-  var didUpdateTitle: ((String) -> Void)?
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
   var didUpdateSnapshot: ((ManageTokensViewController.Snapshot, Bool) -> Void)?
   
   func viewDidLoad() {
-    didUpdateTitle?(TKLocales.HomeScreenConfiguration.title)
+    didUpdateTitleView?(TKUINavigationBarTitleView.Model(
+      title: TKLocales.HomeScreenConfiguration.title)
+    )
     
     model.didUpdateState = { [weak self] state in
       guard let self else { return }

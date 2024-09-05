@@ -225,16 +225,13 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   private func didUpdateSetupState(setupState: WalletBalanceSetupModel.State?) {
-    let isAnimated = {
-      self.setupState != nil && setupState == nil
-    }()
     self.setupState = setupState
     let listModel = self.createWalletBalanceListModel(balanceListItems: balanceListItems,
                                                       setupState: setupState,
                                                       notifications: notifications)
     DispatchQueue.main.async {
       self.listModel = listModel
-      self.didUpdateSnapshot?(listModel.snapshot, isAnimated)
+      self.didUpdateSnapshot?(listModel.snapshot, false)
     }
   }
   
