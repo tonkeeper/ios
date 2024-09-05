@@ -225,30 +225,30 @@ private extension StakingBalanceDetailsViewModelImplementation {
   }
   
   func updateJettonItemView() {
-    guard let jettonBalanceItem else {
-      didUpdateJettonItemView?(nil)
-      return
-    }
-    
-    let configuration = balanceItemMapper.mapJettonItem(jettonBalanceItem, isSecure: false)
-    didUpdateJettonItemView?(
-      TKUIListItemButton.Model(
-        listItemConfiguration: configuration,
-        tapClosure: { [weak self] in
-          guard let self else { return }
-          self.openJettonDetails?(self.wallet, jettonBalanceItem.jetton)
-        }
-      )
-    )
-    
-    didUpdateJettonButtonDescription?(
-      String.jettonButtonDescription.withTextStyle(
-        .body3,
-        color: .Text.tertiary,
-        alignment: .left,
-        lineBreakMode: .byWordWrapping
-      )
-    )
+//    guard let jettonBalanceItem else {
+//      didUpdateJettonItemView?(nil)
+//      return
+//    }
+//    
+//    let configuration = balanceItemMapper.mapJettonItem(jettonBalanceItem, isSecure: false)
+//    didUpdateJettonItemView?(
+//      TKUIListItemButton.Model(
+//        listItemConfiguration: configuration,
+//        tapClosure: { [weak self] in
+//          guard let self else { return }
+//          self.openJettonDetails?(self.wallet, jettonBalanceItem.jetton)
+//        }
+//      )
+//    )
+//    
+//    didUpdateJettonButtonDescription?(
+//      String.jettonButtonDescription.withTextStyle(
+//        .body3,
+//        color: .Text.tertiary,
+//        alignment: .left,
+//        lineBreakMode: .byWordWrapping
+//      )
+//    )
   }
   
   func updateStakeStateView() {

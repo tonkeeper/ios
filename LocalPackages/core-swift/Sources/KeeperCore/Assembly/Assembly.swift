@@ -74,6 +74,7 @@ public final class Assembly {
 public extension Assembly {
   func rootAssembly() -> RootAssembly {
     RootAssembly(
+      appInfoProvider: dependencies.appInfoProvider,
       repositoriesAssembly: repositoriesAssembly,
       coreAssembly: coreAssembly,
       servicesAssembly: servicesAssembly,

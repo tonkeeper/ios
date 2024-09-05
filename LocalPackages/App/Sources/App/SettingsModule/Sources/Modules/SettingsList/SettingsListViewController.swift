@@ -76,40 +76,14 @@ final class SettingsListViewController: GenericViewViewController<SettingsListVi
             using: listCellRegistration,
             for: indexPath,
             item: listItem.cellConfiguration)
-          func getAccessoryView(accessory: SettingsListItemAccessory?) -> UIView? {
-            switch accessory {
-            case nil:
-              return nil
-            case .none:
-              return nil
-            case .chevron:
-              let accessoryView = TKListItemIconAccessoryView()
-              accessoryView.configuration = .chevron
-              return accessoryView
-            case .icon(let configuration):
-              let accessoryView = TKListItemIconAccessoryView()
-              accessoryView.configuration = configuration
-              return accessoryView
-            case .switch(let configuration):
-              let accessoryView = TKListItemSwitchAccessoryView()
-              accessoryView.configuration = configuration
-              return accessoryView
-            case .text(let configuration):
-              let accessoryView = TKListItemTextAccessoryView()
-              accessoryView.configuration = configuration
-              return accessoryView
-            default:
-              return nil
-            }
-          }
-          if let accessory = getAccessoryView(accessory: listItem.accessory) {
-            cell.defaultAccessoryViews = [accessory]
+          if let accessoryView = listItem.accessory?.view {
+            cell.defaultAccessoryViews = [accessoryView]
           } else {
             cell.defaultAccessoryViews = []
           }
           
-          if let selectionAccessory = getAccessoryView(accessory: listItem.selectAccessory) {
-            cell.selectionAccessoryViews = [selectionAccessory]
+          if let selectionAccessoryView = listItem.selectAccessory?.view {
+            cell.selectionAccessoryViews = [selectionAccessoryView]
           } else {
             cell.selectionAccessoryViews = []
           }

@@ -9,29 +9,29 @@ struct WalletBalanceAssembly {
   static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly, coreAssembly: TKCore.CoreAssembly) -> WalletBalanceModule {
     let viewModel = WalletBalanceViewModelImplementation(
       balanceListModel: WalletBalanceBalanceModel(
-        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
-        balanceStore: keeperCoreMainAssembly.mainStoresAssembly.processedBalanceStore,
-        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
-        tokenManagementStoreProvider: {
-          keeperCoreMainAssembly.storesAssembly.tokenManagementStore(wallet: $0)
-        },
-        secureMode: coreAssembly.secureMode
+        walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+        balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
+        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStoreV3,
+        tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStoreV3,
+        appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
       ),
       setupModel: WalletBalanceSetupModel(
-        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
-        setupStore: keeperCoreMainAssembly.storesAssembly.setupStore,
-        securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
+        walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+        appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+        securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV3,
         mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
       ),
       totalBalanceModel: WalletTotalBalanceModel(
-        walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
-        totalBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
-        secureMode: coreAssembly.secureMode,
-        backgroundUpdateStore: keeperCoreMainAssembly.mainStoresAssembly.backgroundUpdateStore
+        walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+        totalBalanceStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
+        appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
+        backgroundUpdateStore: keeperCoreMainAssembly.storesAssembly.backgroundUpdateStore,
+        stateLoader: keeperCoreMainAssembly.loadersAssembly.walletStateLoader
       ),
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
-      notificationStore: keeperCoreMainAssembly.storesAssembly.notificationsStore,
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      notificationStore: keeperCoreMainAssembly.storesAssembly.internalNotificationsStore,
       configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore,
+      appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       listMapper:
         WalletBalanceListMapper(
         amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
@@ -45,7 +45,6 @@ struct WalletBalanceAssembly {
         decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
         dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
       ),
-      secureMode: coreAssembly.secureMode,
       urlOpener: coreAssembly.urlOpener()
     )
     let viewController = WalletBalanceViewController(viewModel: viewModel)

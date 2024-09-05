@@ -7,160 +7,182 @@ import TKLocalize
 
 final class WalletBalanceBalanceModel {
   struct BalanceListItems {
+    let wallet: Wallet
     let items: [ProcessedBalanceItem]
     let canManage: Bool
+    let isSecure: Bool
   }
-
+  
+  var didUpdateItems: ((BalanceListItems) -> Void)?
+  
   private let actor = SerialActor<Void>()
-
-  var didUpdateItems: ((BalanceListItems, _ isSecure: Bool) -> Void)? {
-    didSet {
-      let activeWallet = self.walletsStore.getState().activeWallet
-      guard let address = try? activeWallet.friendlyAddress else { return }
-      let balance = self.balanceStore.getState()[address]?.balance
-      let isSecure = self.secureMode.getState()
-      let stackingPools = self.stackingPoolsStore.getState()[address] ?? []
-      let tokenManagementState = self.tokenManagementStore.getState()
-      self.update(balance: balance,
-                  stackingPools: stackingPools,
-                  isSecure: isSecure,
-                  tokenManagementState: tokenManagementState)
-    }
-  }
   
-  private var tokenManagementStore: TokenManagementStore
+  private let walletsStore: WalletsStoreV3
+  private let balanceStore: ProcessedBalanceStoreV3
+  private let stackingPoolsStore: StakingPoolsStoreV3
+  private let tokenManagementStore: TokenManagementStoreV3
+  private let appSettingsStore: AppSettingsV3Store
   
-  private let walletsStore: WalletsStore
-  private let balanceStore: ProcessedBalanceStore
-  private let stackingPoolsStore: StakingPoolsStore
-  private let tokenManagementStoreProvider: (Wallet) -> TokenManagementStore
-  private let secureMode: SecureMode
-  
-  init(walletsStore: WalletsStore,
-       balanceStore: ProcessedBalanceStore,
-       stackingPoolsStore: StakingPoolsStore,
-       tokenManagementStoreProvider: @escaping (Wallet) -> TokenManagementStore,
-       secureMode: SecureMode) {
+  init(walletsStore: WalletsStoreV3,
+       balanceStore: ProcessedBalanceStoreV3,
+       stackingPoolsStore: StakingPoolsStoreV3,
+       tokenManagementStore: TokenManagementStoreV3,
+       appSettingsStore: AppSettingsV3Store) {
     self.walletsStore = walletsStore
     self.balanceStore = balanceStore
     self.stackingPoolsStore = stackingPoolsStore
-    self.tokenManagementStoreProvider = tokenManagementStoreProvider
-    self.secureMode = secureMode
-    self.tokenManagementStore = tokenManagementStoreProvider(walletsStore.getState().activeWallet)
-    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newWalletsState, oldWalletsState in
-      Task {
-        await observer.didUpdateWalletsState(newWalletsState: newWalletsState, oldWalletsState: oldWalletsState)
-      }
+    self.tokenManagementStore = tokenManagementStore
+    self.appSettingsStore = appSettingsStore
+    
+    walletsStore.addObserver(self) { observer, event in
+      observer.didGetWalletsStoreEvent(event)
     }
-    balanceStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      Task {
-        await observer.didUpdateBalances(newState, oldState)
-      }
+    
+    balanceStore.addObserver(self) { observer, event in
+      observer.didGetBalanceStoreEvent(event)
     }
-    secureMode.addObserver(self, notifyOnAdded: false) { observer, newState, _ in
-      Task {
-        await observer.didUpdateSecureMode(newState)
-      }
+    
+    stackingPoolsStore.addObserver(self) { observer, event in
+      observer.didGetStackingPoolsStoreEvent(event)
     }
-    tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      Task {
-        await observer.didUpdateTokenManagementState(_: newState, oldState: oldState)
+    
+    tokenManagementStore.addObserver(self) { observer, event in
+      observer.didGetTokenManagementStoreStoreEvent(event)
+    }
+    
+    appSettingsStore.addObserver(self) { observer, event in
+      observer.didGetAppSettingsStoreEvent(event)
+    }
+  }
+  
+  func getItems() throws -> BalanceListItems {
+    let activeWallet = try walletsStore.getActiveWallet()
+    let isSecureMode = appSettingsStore.getState().isSecureMode
+    let balanceState = balanceStore.getState()[activeWallet]
+    let tokenManagementState = tokenManagementStore.getState()[activeWallet]
+    let stakingPools = stackingPoolsStore.getState()[activeWallet]
+    return createItems(
+      wallet: activeWallet,
+      balanceState: balanceState,
+      stakingPools: stakingPools ?? [],
+      tokenManagementState: tokenManagementState,
+      isSecureMode: isSecureMode
+    )
+  }
+  
+  func getItems() async throws -> BalanceListItems {
+    let activeWallet = try await walletsStore.getActiveWallet()
+    let isSecureMode = await appSettingsStore.getState().isSecureMode
+    let balanceState = await balanceStore.getState()[activeWallet]
+    let tokenManagementState = await tokenManagementStore.getState()[activeWallet]
+    let stakingPools = await stackingPoolsStore.getState()[activeWallet]
+    return createItems(
+      wallet: activeWallet,
+      balanceState: balanceState,
+      stakingPools: stakingPools ?? [],
+      tokenManagementState: tokenManagementState,
+      isSecureMode: isSecureMode
+    )
+  }
+  
+  private func didGetWalletsStoreEvent(_ event: WalletsStoreV3.Event) {
+    Task {
+      switch event {
+      case .didChangeActiveWallet:
+        await self.actor.addTask(block: { await self.updateItems() })
+      default: break
       }
     }
   }
   
-  private func didUpdateWalletsState(newWalletsState: WalletsState,
-                                     oldWalletsState: WalletsState?) async {
-    await actor.addTask(block: {
-      guard newWalletsState.activeWallet != oldWalletsState?.activeWallet else { return }
-      guard let address = try? newWalletsState.activeWallet.friendlyAddress else { return }
-      await MainActor.run {
-        self.tokenManagementStore = self.tokenManagementStoreProvider(newWalletsState.activeWallet)
-        self.tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-          Task {
-            await observer.didUpdateTokenManagementState(_: newState, oldState: oldState)
-          }
+  private func didGetBalanceStoreEvent(_ event: ProcessedBalanceStoreV3.Event) {
+    Task {
+      switch event {
+      case .didUpdateProccessedBalance(_, let wallet):
+        switch await walletsStore.getState() {
+        case .empty: break
+        case .wallets(let state):
+          guard state.activeWalelt == wallet else { return }
+          await self.actor.addTask(block: { await self.updateItems() })
         }
       }
-      let balance = await self.balanceStore.getState()[address]?.balance
-      let isSecure = await self.secureMode.isSecure
-      let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
-      let tokenManagementState = await self.tokenManagementStore.getState()
-      self.update(balance: balance,
-                  stackingPools: stackingPools,
-                  isSecure: isSecure,
-      tokenManagementState: tokenManagementState)
-    })
-  }
-  
-  private func didUpdateBalances(_ newBalances: [FriendlyAddress: ProcessedBalanceState],
-                                 _ oldBalances: [FriendlyAddress: ProcessedBalanceState]) async {
-    await actor.addTask(block: {
-      let activeWallet = await self.walletsStore.getState().activeWallet
-      guard let address = try? activeWallet.friendlyAddress else { return }
-      guard newBalances[address] != oldBalances[address] else { return }
-      let isSecure = await self.secureMode.isSecure
-      let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
-      let tokenManagementState = await self.tokenManagementStore.getState()
-      self.update(balance: newBalances[address]?.balance,
-                  stackingPools: stackingPools,
-                  isSecure: isSecure, 
-                  tokenManagementState: tokenManagementState)
-    })
-  }
-  
-  private func didUpdateSecureMode(_ isSecure: Bool) async {
-    await actor.addTask(block: {
-      let activeWallet = await self.walletsStore.getState().activeWallet
-      guard let address = try? activeWallet.friendlyAddress else { return }
-      let balance = await self.balanceStore.getState()[address]?.balance
-      let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
-      let tokenManagementState = await self.tokenManagementStore.getState()
-      self.update(balance: balance,
-                  stackingPools: stackingPools,
-                  isSecure: isSecure,
-                  tokenManagementState: tokenManagementState)
-    })
-  }
-  
-  private func didUpdateTokenManagementState(_ state: TokenManagementState, oldState: TokenManagementState?) async {
-    await actor.addTask(block: {
-      guard state != oldState else { return }
-      let activeWallet = await self.walletsStore.getState().activeWallet
-      guard let address = try? activeWallet.friendlyAddress else { return }
-      let balance = await self.balanceStore.getState()[address]?.balance
-      let isSecure = await self.secureMode.isSecure
-      let stackingPools = await self.stackingPoolsStore.getStackingPools(address: address)
-      self.update(
-        balance: balance,
-        stackingPools: stackingPools,
-        isSecure: isSecure,
-        tokenManagementState: state
-      )
-    })
-  }
-  
-  private func update(balance: ProcessedBalance?,
-                      stackingPools: [StackingPoolInfo],
-                      isSecure: Bool,
-                      tokenManagementState: TokenManagementState) {
-    guard let balance else {
-      didUpdateItems?(
-        BalanceListItems(items: [],
-                         canManage: false),
-        isSecure
-      )
-      return
     }
+  }
+  
+  private func didGetStackingPoolsStoreEvent(_ event: StakingPoolsStoreV3.Event) {
+    Task {
+      switch event {
+      case .didUpdateStakingPools(_, let wallet):
+        switch await walletsStore.getState() {
+        case .empty: break
+        case .wallets(let state):
+          guard state.activeWalelt == wallet else { return }
+          await self.actor.addTask(block: { await self.updateItems() })
+        }
+      }
+    }
+  }
+  
+  private func didGetTokenManagementStoreStoreEvent(_ event: TokenManagementStoreV3.Event) {
+    Task {
+      switch event {
+      case .didUpdateState(let wallet):
+        switch await walletsStore.getState() {
+        case .empty: break
+        case .wallets(let state):
+          guard state.activeWalelt == wallet else { return }
+          await self.actor.addTask(block: { await self.updateItems() })
+        }
+      }
+    }
+  }
+  
+  private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
+    Task {
+      await self.actor.addTask(block: { await self.updateItems() })
+    }
+  }
+  
+  private func updateItems() async {
+    let walletsStoreState = await walletsStore.getState()
+    switch walletsStoreState {
+    case .empty: break
+    case .wallets(let walletsState):
+      let isSecureMode = await appSettingsStore.getState().isSecureMode
+      let balanceState = await balanceStore.getState()[walletsState.activeWalelt]
+      let tokenManagementState = await tokenManagementStore.getState()[walletsState.activeWalelt]
+      let stakingPools = await stackingPoolsStore.getState()[walletsState.activeWalelt]
+      let items = createItems(
+        wallet: walletsState.activeWalelt,
+        balanceState: balanceState,
+        stakingPools: stakingPools ?? [],
+        tokenManagementState: tokenManagementState,
+        isSecureMode: isSecureMode
+      )
+      didUpdateItems?(items)
+    }
+  }
+  
+  private func createItems(wallet: Wallet,
+                           balanceState: ProcessedBalanceState?,
+                           stakingPools: [StackingPoolInfo],
+                           tokenManagementState: TokenManagementState?,
+                           isSecureMode: Bool) -> BalanceListItems {
+    guard let balance = balanceState?.balance else {
+      return BalanceListItems(wallet: wallet, items: [], canManage: false, isSecure: isSecureMode)
+    }
+    
+    let statePinnedItems = tokenManagementState?.pinnedItems ?? []
+    let stateHiddenItems = tokenManagementState?.hiddenItems ?? []
     
     var pinnedItems = [ProcessedBalanceItem]()
     var unpinnedItems = [ProcessedBalanceItem]()
     
     for item in balance.items {
-      if tokenManagementState.pinnedItems.contains(item.identifier) {
+      if statePinnedItems.contains(item.identifier) {
         pinnedItems.append(item)
       } else {
-        guard !tokenManagementState.hiddenItems.contains(item.identifier) else {
+        guard !stateHiddenItems.contains(item.identifier) else {
           continue
         }
         unpinnedItems.append(item)
@@ -168,10 +190,10 @@ final class WalletBalanceBalanceModel {
     }
     
     let sortedPinnedItems = pinnedItems.sorted {
-      guard let lIndex = tokenManagementState.pinnedItems.firstIndex(of: $0.identifier) else {
+      guard let lIndex = statePinnedItems.firstIndex(of: $0.identifier) else {
         return false
       }
-      guard let rIndex = tokenManagementState.pinnedItems.firstIndex(of: $1.identifier) else {
+      guard let rIndex = statePinnedItems.firstIndex(of: $1.identifier) else {
         return true
       }
       
@@ -205,9 +227,11 @@ final class WalletBalanceBalanceModel {
     }
     
     let items = BalanceListItems(
+      wallet: wallet,
       items: sortedPinnedItems + sortedUnpinnedItems,
-      canManage: balance.items.count > 2
+      canManage: balance.items.count > 2,
+      isSecure: isSecureMode
     )
-    didUpdateItems?(items, isSecure)
+    return items
   }
 }

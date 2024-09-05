@@ -53,7 +53,7 @@ public final class LoadersAssembly {
     }
     let loader = InternalNotificationsLoader(
       tonkeeperAPI: tonkeeperAPIAssembly.api,
-      notificationsStore: storesAssembly.notificationsStore
+      notificationsStore: storesAssembly.internalNotificationsStore
     )
     _internalNotificationsLoader = loader
     return loader
@@ -107,5 +107,26 @@ public final class LoadersAssembly {
       wallet: wallet,
       loader: loader
     )
+  }
+  
+  private weak var _walletStateLoader: WalletStateLoader?
+  public var walletStateLoader: WalletStateLoader {
+    if let _walletStateLoader {
+      return _walletStateLoader
+    }
+    let loader = WalletStateLoader(
+      balanceStore: storesAssembly.balanceStore,
+      currencyStore: storesAssembly.currencyStoreV3,
+      walletsStore: storesAssembly.walletsStore,
+      ratesStore: storesAssembly.tonRatesStoreV3,
+      stakingPoolsStore: storesAssembly.stackingPoolsStoreV3,
+      balanceService: servicesAssembly.balanceService(),
+      stackingService: servicesAssembly.stackingService(),
+      accountNFTService: servicesAssembly.accountNftService(),
+      ratesService: servicesAssembly.ratesService(),
+      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater
+    )
+    _walletStateLoader = loader
+    return loader
   }
 }

@@ -542,7 +542,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
         textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: title)
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: title, numberOfLines: 1)
         )))
     return SettingsListItem(
       id: .currencyItemIdentifier,

@@ -9,7 +9,7 @@ extension KeeperInfo {
       currentWallet: self.currentWallet,
       currency: self.currency,
       securitySettings: self.securitySettings,
-      isSetupFinished: self.isSetupFinished,
+      appSettings: self.appSettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -21,7 +21,7 @@ extension KeeperInfo {
       currentWallet: wallet,
       currency: self.currency,
       securitySettings: self.securitySettings,
-      isSetupFinished: self.isSetupFinished,
+      appSettings: self.appSettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -34,7 +34,7 @@ extension KeeperInfo {
       currentWallet: activeWallet,
       currency: self.currency,
       securitySettings: self.securitySettings,
-      isSetupFinished: self.isSetupFinished,
+      appSettings: self.appSettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -124,7 +124,7 @@ extension KeeperInfo {
       currentWallet: self.currentWallet,
       currency: currency,
       securitySettings: self.securitySettings,
-      isSetupFinished: self.isSetupFinished,
+      appSettings: self.appSettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -149,15 +149,37 @@ extension KeeperInfo {
   }
   
   
-  // MARK: - Setup
+  // MARK: - Settings
   
   func updateIsSetupFinished(_ isSetupFinished: Bool) -> KeeperInfo {
-    KeeperInfo(
+    let appSettings = AppSettings(
+      isSetupFinished: isSetupFinished,
+      isSecureMode: self.appSettings.isSecureMode
+    )
+    
+    return KeeperInfo(
       wallets: self.wallets,
       currentWallet: self.currentWallet,
       currency: self.currency,
       securitySettings: self.securitySettings,
-      isSetupFinished: isSetupFinished,
+      appSettings: appSettings,
+      assetsPolicy: self.assetsPolicy,
+      appCollection: self.appCollection
+    )
+  }
+  
+  func updateIsSecureMode(_ isSecureMode: Bool) -> KeeperInfo {
+    let appSettings = AppSettings(
+      isSetupFinished: self.appSettings.isSetupFinished,
+      isSecureMode: isSecureMode
+    )
+    
+    return KeeperInfo(
+      wallets: self.wallets,
+      currentWallet: self.currentWallet,
+      currency: self.currency,
+      securitySettings: self.securitySettings,
+      appSettings: appSettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -196,7 +218,19 @@ extension KeeperInfo {
       currentWallet: self.currentWallet,
       currency: self.currency,
       securitySettings: securitySettings,
-      isSetupFinished: self.isSetupFinished,
+      appSettings: self.appSettings,
+      assetsPolicy: self.assetsPolicy,
+      appCollection: self.appCollection
+    )
+  }
+  
+  func updateAppSettings(_ appSettings: AppSettings) -> KeeperInfo {
+    KeeperInfo(
+      wallets: self.wallets,
+      currentWallet: self.currentWallet,
+      currency: self.currency,
+      securitySettings: self.securitySettings,
+      appSettings: appSettings,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )

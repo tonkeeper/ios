@@ -44,17 +44,24 @@ public final class WalletsStoreV3: StoreV3<WalletsStoreV3.Event, WalletsStoreV3.
     }
   }
   
-  public var activeWallet: Wallet {
-    get throws {
-      switch getState() {
-      case .empty:
-        throw Error.noWallets
-      case .wallets(let wallets):
-        return wallets.activeWalelt
-      }
+  public func getActiveWallet() throws -> Wallet {
+    switch getState() {
+    case .empty:
+      throw Error.noWallets
+    case .wallets(let wallets):
+      return wallets.activeWalelt
     }
   }
   
+  public func getActiveWallet() async throws -> Wallet {
+    switch await getState() {
+    case .empty:
+      throw Error.noWallets
+    case .wallets(let wallets):
+      return wallets.activeWalelt
+    }
+  }
+
   private let keeperInfoStore: KeeperInfoStoreV3
   
   public override var initialState: State {
@@ -89,6 +96,7 @@ public final class WalletsStoreV3: StoreV3<WalletsStoreV3.Event, WalletsStoreV3.
       return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
     } notify: {
       self.sendEvent(.didAddWallets(wallets: wallets))
+      self.sendEvent(.didChangeActiveWallet(wallet: wallets[0]))
     }
   }
   
@@ -170,7 +178,7 @@ private extension KeeperInfo {
       currentWallet: wallets[0],
       currency: .defaultCurrency,
       securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
-      isSetupFinished: false,
+      appSettings: AppSettings(isSetupFinished: false, isSecureMode: false),
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
       appCollection: AppCollection(connected: [:], recent: [], pinned: [])
     )

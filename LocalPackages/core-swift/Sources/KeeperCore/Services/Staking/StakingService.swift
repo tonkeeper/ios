@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-protocol StakingService {
+public protocol StakingService {
   func loadStakingPools(wallet: Wallet) async throws -> [StackingPoolInfo]
   func loadStakingBalance(wallet: Wallet) async throws -> [AccountStackingInfo]
 }

@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 import BigInt
 
-protocol BalanceService {
+public protocol BalanceService {
   func loadWalletBalance(wallet: Wallet, currency: Currency) async throws -> WalletBalance
   func getBalance(wallet: Wallet) throws -> WalletBalance
 }

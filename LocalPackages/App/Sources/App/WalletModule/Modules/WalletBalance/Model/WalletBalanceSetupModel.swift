@@ -2,157 +2,165 @@ import Foundation
 import KeeperCore
 
 final class WalletBalanceSetupModel {
-  enum State {
-    case none
-    case setup(Setup)
-  }
-  
-  struct Setup {
+  struct State {
+    enum Item: String {
+      case telegramChannel
+      case backup
+      case biometry
+    }
+    
+    let wallet: Wallet
     let isFinishEnable: Bool
-    let isBiometryVisible: Bool
-    let isBackupVisible: Bool
-    let isTelegramChannelVisible: Bool
+    let items: [Item]
   }
   
   private let actor = SerialActor<Void>()
   
-  var didUpdateState: ((State) -> Void)? {
-    didSet {
-      Task {
-        await actor.addTask(block: {
-          let wallet = await self.walletsStore.getState().activeWallet
-          let isSetupFinished = await self.setupStore.getIsSetupFinished()
-          let isBiometryEnable = await self.securityStore.getIsBiometryEnable()
-          let state = self.calculateState(
-            wallet: wallet,
-            isSetupFinished: isSetupFinished,
-            isBiometryEnable: isBiometryEnable
-          )
-          self.update(state: state)
-        })
-      }
+  var didUpdateState: ((State?) -> Void)?
+  
+  private let walletsStore: WalletsStoreV3
+  private let appSettingsStore: AppSettingsV3Store
+  private let securityStore: SecurityStoreV3
+  private let mnemonicsRepository: MnemonicsRepository
+  
+  init(walletsStore: WalletsStoreV3,
+       appSettingsStore: AppSettingsV3Store,
+       securityStore: SecurityStoreV3,
+       mnemonicsRepository: MnemonicsRepository) {
+    self.walletsStore = walletsStore
+    self.appSettingsStore = appSettingsStore
+    self.securityStore = securityStore
+    self.mnemonicsRepository = mnemonicsRepository
+    
+    walletsStore.addObserver(self) { observer, event in
+      observer.didGetWalletsStoreEvent(event)
+    }
+    
+    appSettingsStore.addObserver(self) { observer, event in
+      observer.didGetAppSettingsStoreEvent(event)
+    }
+    
+    securityStore.addObserver(self) { observer, event in
+      observer.didGetSecurityStoreEvent(event)
     }
   }
   
-  private let walletsStore: WalletsStore
-  private let setupStore: SetupStore
-  private let securityStore: SecurityStore
-  private let mnemonicsRepository: MnemonicsRepository
-  
-  init(walletsStore: WalletsStore,
-       setupStore: SetupStore,
-       securityStore: SecurityStore,
-       mnemonicsRepository: MnemonicsRepository) {
-    self.walletsStore = walletsStore
-    self.setupStore = setupStore
-    self.securityStore = securityStore
-    self.mnemonicsRepository = mnemonicsRepository
-    walletsStore.addObserver(self, notifyOnAdded: true) { observer, newState, oldState in
-      observer.didUpdateWalletsState(newState, oldWalletsState: oldState)
+  func getState() -> State? {
+    guard let wallet = try? walletsStore.getActiveWallet() else {
+      return nil
     }
-    setupStore.addObserver(self, notifyOnAdded: true) { observer, newState, oldState in
-      observer.didUpdateSetupStoreState(newState, oldState: oldState)
-    }
-    securityStore.addObserver(self, notifyOnAdded: true) { observer, newState, oldState in
-      observer.didUpdateSecurityStoreState(newState, oldState: oldState)
-    }
+    let isSetupFinished = appSettingsStore.getState().isSetupFinished
+    let isBiometryEnable = securityStore.getState().isBiometryEnable
+    return calculateState(
+      wallet: wallet,
+      isSetupFinished: isSetupFinished,
+      isBiometryEnable: isBiometryEnable
+    )
   }
   
   func finishSetup() {
     Task {
-      await setupStore.setIsSetupFinished(true)
+      await appSettingsStore.setIsSetupFinished(true)
     }
   }
   
-  func turnOnBiometry(passcode: String) async throws {
-    try mnemonicsRepository.savePassword(passcode)
-    await self.securityStore.setIsBiometryEnable(true)
+  func turnOnBiometry(passcode: String) throws {
+    Task {
+      try mnemonicsRepository.savePassword(passcode)
+      await self.securityStore.setIsBiometryEnable(true)
+    }
   }
   
-  func turnOffBiometry() async throws {
-    try self.mnemonicsRepository.deletePassword()
-    await self.securityStore.setIsBiometryEnable(false)
-  }
-}
-
-private extension WalletBalanceSetupModel {
-  func didUpdateWalletsState(_ walletsState: WalletsState, oldWalletsState: WalletsState?) {
-    guard walletsState.activeWallet != oldWalletsState?.activeWallet else { return }
+  func turnOffBiometry() throws {
     Task {
-      await actor.addTask {
-        let isSetupFinished = await self.setupStore.getIsSetupFinished()
-        let isBiometryEnable = await self.securityStore.getIsBiometryEnable()
-        let state = self.calculateState(
-          wallet: walletsState.activeWallet,
-          isSetupFinished: isSetupFinished,
-          isBiometryEnable: isBiometryEnable
-        )
-        self.update(state: state)
+      try self.mnemonicsRepository.deletePassword()
+      await self.securityStore.setIsBiometryEnable(false)
+    }
+  }
+  
+  private func didGetWalletsStoreEvent(_ event: WalletsStoreV3.Event) {
+    Task {
+      switch event {
+      case .didChangeActiveWallet:
+        await self.actor.addTask(block: { await self.updateState() })
+      default: break
       }
     }
   }
   
-  func didUpdateSetupStoreState(_ state: SetupStore.State, oldState: SetupStore.State?) {
+  private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
     Task {
-      await actor.addTask {
-        let isBiometryEnable = await self.securityStore.getIsBiometryEnable()
-        let wallet = await self.walletsStore.getState().activeWallet
-        let state = self.calculateState(
-          wallet: wallet,
-          isSetupFinished: state.isSetupFinished,
-          isBiometryEnable: isBiometryEnable
-        )
-        self.update(state: state)
+      switch event {
+      case .didUpdateIsSetupFinished:
+        await self.actor.addTask(block: { await self.updateState() })
+      default: break
       }
     }
   }
   
-  func didUpdateSecurityStoreState(_ state: SecurityStore.State, oldState: SecurityStore.State?) {
+  private func didGetSecurityStoreEvent(_ event: SecurityStoreV3.Event) {
     Task {
-      await actor.addTask {
-        let isSetupFinished = await self.setupStore.getIsSetupFinished()
-        let wallet = await self.walletsStore.getState().activeWallet
-        let state = self.calculateState(
-          wallet: wallet,
-          isSetupFinished: isSetupFinished,
-          isBiometryEnable: state.isBiometryEnable
-        )
-        self.update(state: state)
+      switch event {
+      case .didUpdateIsBiometryEnabled:
+        await self.actor.addTask(block: { await self.updateState() })
+      default: break
       }
     }
   }
   
-  func update(state: State) {
-    didUpdateState?(state)
+  private func updateState() async {
+    let walletsStoreState = await walletsStore.getState()
+    switch walletsStoreState {
+    case .empty: break
+    case .wallets(let walletsState):
+      let isSetupFinished = await appSettingsStore.getState().isSetupFinished
+      let isBiometryEnable = await securityStore.getState().isBiometryEnable
+      let state = calculateState(
+        wallet: walletsState.activeWalelt,
+        isSetupFinished: isSetupFinished,
+        isBiometryEnable: isBiometryEnable
+      )
+      didUpdateState?(state)
+    }
   }
   
-  func calculateState(wallet: Wallet, isSetupFinished: Bool, isBiometryEnable: Bool) -> State {
+  private func calculateState(wallet: Wallet, isSetupFinished: Bool, isBiometryEnable: Bool) -> State? {
     if isSetupFinished && (!wallet.isBackupAvailable || wallet.hasBackup)  {
-      return .none
+      return nil
     }
+    
+    var items = [State.Item]()
     
     let isFinishEnable: Bool = {
       !wallet.isBackupAvailable || wallet.setupSettings.backupDate != nil
     }()
     
-    let isBackupVisible: Bool = {
-      wallet.isBackupAvailable && wallet.setupSettings.backupDate == nil
+    let isTelegramChannelVisible: Bool = {
+      !isSetupFinished
     }()
+    if isTelegramChannelVisible {
+      items.append(.telegramChannel)
+    }
     
     let isBiometryVisible: Bool = {
       !isSetupFinished && wallet.isBiometryAvailable && !isBiometryEnable
     }()
+    if isBiometryVisible {
+      items.append(.biometry)
+    }
     
-    let isTelegramChannelVisible: Bool = {
-      !isSetupFinished
+    let isBackupVisible: Bool = {
+      wallet.isBackupAvailable && wallet.setupSettings.backupDate == nil
     }()
+    if isBackupVisible {
+      items.append(.backup)
+    }
     
-    let setup = Setup(
+    let state = State(
+      wallet: wallet,
       isFinishEnable: isFinishEnable,
-      isBiometryVisible: isBiometryVisible,
-      isBackupVisible: isBackupVisible,
-      isTelegramChannelVisible: isTelegramChannelVisible
+      items: items
     )
-    return .setup(setup)
+    return state
   }
 }

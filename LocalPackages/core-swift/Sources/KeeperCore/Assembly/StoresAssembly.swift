@@ -76,6 +76,16 @@ public final class StoresAssembly {
     return store
   }
   
+  private weak var _totalBalanceStore: TotalBalanceStoreV3?
+  public var totalBalanceStore: TotalBalanceStoreV3 {
+    if let _totalBalanceStore {
+      return _totalBalanceStore
+    }
+    let store = TotalBalanceStoreV3(processedBalanceStore: processedBalanceStore)
+    _totalBalanceStore = store
+    return store
+  }
+  
   private weak var _currencyStore: CurrencyStore?
   public var currencyStore: CurrencyStore {
     if let _currencyStore {
@@ -133,6 +143,17 @@ public final class StoresAssembly {
     }
   }
   
+  private weak var _securityStoreV3: SecurityStoreV3?
+  public var securityStoreV3: SecurityStoreV3 {
+    if let securityStore = _securityStoreV3 {
+      return securityStore
+    } else {
+      let securityStore = SecurityStoreV3(keeperInfoStore: keeperInfoStoreV3)
+      _securityStoreV3 = securityStore
+      return securityStore
+    }
+  }
+  
   private weak var _setupStore: SetupStore?
   public var setupStore: SetupStore {
     if let setupStore = _setupStore {
@@ -177,6 +198,17 @@ public final class StoresAssembly {
     }
   }
   
+  private weak var _internalNotificationsStore: InternalNotificationsStore?
+  public var internalNotificationsStore: InternalNotificationsStore {
+    if let store = _internalNotificationsStore {
+      return store
+    } else {
+      let store = InternalNotificationsStore()
+      _internalNotificationsStore = store
+      return store
+    }
+  }
+  
   private var _tokenManagementStores = [Wallet: Weak<TokenManagementStore>]()
   public func tokenManagementStore(wallet: Wallet) -> TokenManagementStore {
     if let weakWrapper = _tokenManagementStores[wallet],
@@ -189,6 +221,20 @@ public final class StoresAssembly {
     )
     _tokenManagementStores[wallet] = Weak(value: store)
     return store
+  }
+  
+  private var _tokenManagementStoreV3: TokenManagementStoreV3?
+  public var tokenManagementStoreV3: TokenManagementStoreV3 {
+    if let tokenManagementStoreV3 = _tokenManagementStoreV3 {
+      return tokenManagementStoreV3
+    } else {
+      let tokenManagementStoreV3 = TokenManagementStoreV3(
+        walletsStore: walletsStore,
+        tokenManagementRepository: repositoriesAssembly.tokenManagementRepository()
+      )
+      _tokenManagementStoreV3 = tokenManagementStoreV3
+      return tokenManagementStoreV3
+    }
   }
   
   private weak var _nftsStore: NftsStore?
@@ -233,6 +279,43 @@ public final class StoresAssembly {
       let walletNotificationStore = WalletNotificationStore(keeperInfoStore: keeperInfoStore)
       _walletNotificationStore = walletNotificationStore
       return walletNotificationStore
+    }
+  }
+  
+  private weak var _backgroundUpdateStore: BackgroundUpdateStoreV3?
+  public var backgroundUpdateStore: BackgroundUpdateStoreV3 {
+    if let backgroundUpdateStore = _backgroundUpdateStore {
+      return backgroundUpdateStore
+    } else {
+      let backgroundUpdateStore = BackgroundUpdateStoreV3()
+      _backgroundUpdateStore = backgroundUpdateStore
+      return backgroundUpdateStore
+    }
+  }
+  
+  private weak var _backgroundUpdateUpdater: BackgroundUpdateUpdater?
+  public var backgroundUpdateUpdater: BackgroundUpdateUpdater {
+    if let backgroundUpdateUpdater = _backgroundUpdateUpdater {
+      return backgroundUpdateUpdater
+    } else {
+      let backgroundUpdateUpdater = BackgroundUpdateUpdater(
+        backgroundUpdateStore: backgroundUpdateStore,
+        walletsStore: walletsStore,
+        streamingAPI: apiAssembly.streamingTonAPIClient()
+      )
+      _backgroundUpdateUpdater = backgroundUpdateUpdater
+      return backgroundUpdateUpdater
+    }
+  }
+  
+  private weak var _appSettingsStore: AppSettingsV3Store?
+  public var appSettingsStore: AppSettingsV3Store {
+    if let appSettingsStore = _appSettingsStore {
+      return appSettingsStore
+    } else {
+      let appSettingsStore = AppSettingsV3Store(keeperInfoStore: keeperInfoStoreV3)
+      _appSettingsStore = appSettingsStore
+      return appSettingsStore
     }
   }
 }

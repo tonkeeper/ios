@@ -18,27 +18,26 @@ public final class MainLoadersAssembly {
     self.walletAssembly = walletAssembly
   }
   
-  private weak var _walletStateLoader: WalletStateLoader?
-  var walletStateLoader: WalletStateLoader {
-    if let _walletStateLoader {
-      return _walletStateLoader
-    }
-    let loader = WalletStateLoader(
-      balanceStore: storesAssembly.balanceStore,
-      currencyStore: storesAssembly.currencyStoreV3,
-      walletsStore: storesAssembly.walletsStore,
-      ratesStore: storesAssembly.tonRatesStoreV3,
-      stakingPoolsStore: storesAssembly.stackingPoolsStoreV3,
-      balanceService: servicesAssembly.balanceService(),
-      stackingService: servicesAssembly.stackingService(),
-      accountNFTService: servicesAssembly.accountNftService(),
-      ratesService: servicesAssembly.ratesService(),
-      backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater,
-      accountNftsStore: mainStoresAssembly.accountNftsStore
-    )
-    _walletStateLoader = loader
-    return loader
-  }
+//  private weak var _walletStateLoader: WalletStateLoader?
+//  var walletStateLoader: WalletStateLoader {
+//    if let _walletStateLoader {
+//      return _walletStateLoader
+//    }
+//    let loader = WalletStateLoader(
+//      balanceStore: storesAssembly.balanceStore,
+//      currencyStore: storesAssembly.currencyStoreV3,
+//      walletsStore: storesAssembly.walletsStore,
+//      ratesStore: storesAssembly.tonRatesStoreV3,
+//      stakingPoolsStore: storesAssembly.stackingPoolsStoreV3,
+//      balanceService: servicesAssembly.balanceService(),
+//      stackingService: servicesAssembly.stackingService(),
+//      accountNFTService: servicesAssembly.accountNftService(),
+//      ratesService: servicesAssembly.ratesService(),
+//      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater
+//    )
+//    _walletStateLoader = loader
+//    return loader
+//  }
   
   private weak var _accountNftsLoader: AccountNftsLoader?
   public var accountNftsLoader: AccountNftsLoader {

@@ -68,6 +68,10 @@ public extension TKButton.Configuration {
       self.title = title
       self.icon = icon
     }
+    
+    static var `default`: Content {
+      Content(title: .plainString("Button"))
+    }
   }
 }
 

@@ -45,7 +45,9 @@ final class ConnectionStatusView: UIView, ConfigurableView {
       lineBreakMode: .byWordWrapping
     )
     loaderViewContrainer.isHidden = !model.isLoading
-    loaderView.isLoading = model.isLoading
+    if loaderView.isLoading != model.isLoading {
+      loaderView.isLoading = model.isLoading
+    }
   }
 }
 

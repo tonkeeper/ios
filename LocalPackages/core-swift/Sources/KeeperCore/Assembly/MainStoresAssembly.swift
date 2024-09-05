@@ -106,8 +106,8 @@ public final class MainStoresAssembly {
       return backgroundUpdateUpdater
     } else {
       let backgroundUpdateUpdater = BackgroundUpdateUpdater(
-        backgroundUpdateStore: backgroundUpdateStore,
-        walletsStore: walletsAssembly.walletsStore,
+        backgroundUpdateStore: storesAssembly.backgroundUpdateStore,
+        walletsStore: storesAssembly.walletsStore,
         streamingAPI: apiAssembly.streamingTonAPIClient()
       )
       _backgroundUpdateUpdater = backgroundUpdateUpdater

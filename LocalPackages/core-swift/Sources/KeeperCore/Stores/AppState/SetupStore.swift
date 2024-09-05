@@ -12,7 +12,7 @@ public final class SetupStore: StoreUpdated<SetupStore.State> {
       guard let keeperInfo else {
         return .defaultState
       }
-      let state = State(isSetupFinished: keeperInfo.isSetupFinished)
+      let state = State(isSetupFinished: keeperInfo.appSettings.isSetupFinished)
       return state
     }
   }
@@ -25,7 +25,7 @@ public final class SetupStore: StoreUpdated<SetupStore.State> {
     keeperInfoStore.addObserver(
       self,
       notifyOnAdded: false) { observer, newState, oldState in
-        guard newState?.isSetupFinished != oldState?.isSetupFinished else {
+        guard newState?.appSettings.isSetupFinished != oldState?.appSettings.isSetupFinished else {
           return
         }
         observer.didUpdateKeeperInfo(newState)

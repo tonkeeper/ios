@@ -14,7 +14,18 @@ public final class TKListItemTitleView: UIView {
       }
     }
     
-    public var title: NSAttributedString
+    public struct Title {
+      public let text: NSAttributedString
+      public let numberOfLines: Int
+      
+      public init(text: NSAttributedString, 
+                  numberOfLines: Int) {
+        self.text = text
+        self.numberOfLines = numberOfLines
+      }
+    }
+    
+    public var title: Title
     public var caption: NSAttributedString?
     public var tagConfiguration: TKTagView.Configuration?
     public var icon: Icon?
@@ -23,12 +34,12 @@ public final class TKListItemTitleView: UIView {
                 caption: String? = nil,
                 tagConfiguration: TKTagView.Configuration? = nil,
                 icon: Icon? = nil) {
-      self.title = title.withTextStyle(
+      self.title = Title(text: title.withTextStyle(
         .label1,
         color: .Text.primary,
         alignment: .left,
         lineBreakMode: .byTruncatingTail
-      )
+      ), numberOfLines: 1)
       self.caption = caption?.withTextStyle(
         .label1,
         color: .Text.tertiary,
@@ -39,8 +50,8 @@ public final class TKListItemTitleView: UIView {
       self.icon = icon
     }
     
-    public init(title: NSAttributedString) {
-      self.title = title
+    public init(title: NSAttributedString, numberOfLines: Int) {
+      self.title = Title(text: title, numberOfLines: numberOfLines)
       self.caption = nil
       self.tagConfiguration = nil
       self.icon = nil
@@ -114,7 +125,8 @@ public final class TKListItemTitleView: UIView {
   }
   
   private func didUpdateConfiguration() {
-    titleLabel.attributedText = configuration.title
+    titleLabel.attributedText = configuration.title.text
+    titleLabel.numberOfLines = configuration.title.numberOfLines
     captionLabel.attributedText = configuration.caption
     if let tagConfiguration = configuration.tagConfiguration {
       tagView.configuration = tagConfiguration

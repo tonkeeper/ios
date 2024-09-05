@@ -17,14 +17,14 @@ public final class CurrencyStoreV3: StoreV3<CurrencyStoreV3.Event, Currency> {
   }
   
   public func setCurrency(_ currency: Currency) async {
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
-      let updated = keeperInfo?.setCurrency(currency)
-      return updated
-    }
     await self.setState { _ in
       return StateUpdate(newState: currency)
     } notify: {
       self.sendEvent(.didUpdateCurrency(currency: currency))
+    }
+    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      let updated = keeperInfo?.updateCurrency(currency)
+      return updated
     }
   }
   

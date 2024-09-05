@@ -1,12 +1,12 @@
 import Foundation
 import TonSwift
 
-final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletStateLoader.State> {
+public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletStateLoader.State> {
   public struct State {
-    var balanceLoadTasks: [Wallet: Task<(), Never>]
-    var nftLoadTasks: [Wallet: Task<(), Never>]
-    var reloadStateTask: Task<(), Never>?
-    var ratesLoadTask: Task<[Rates.Rate], Swift.Error>?
+    public var balanceLoadTasks: [Wallet: Task<(), Never>]
+    public var nftLoadTasks: [Wallet: Task<(), Never>]
+    public var reloadStateTask: Task<(), Never>?
+    public var ratesLoadTask: Task<[Rates.Rate], Swift.Error>?
     
     init(balanceLoadTasks: [Wallet : Task<(), Never>] = [:],
          nftLoadTasks: [Wallet : Task<(), Never>] = [:],
@@ -20,7 +20,8 @@ final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletStateLoade
   }
   
   public enum Event {
-    
+    case didStartLoadBalance(wallet: Wallet)
+    case didEndLoadBalance(wallet: Wallet)
   }
   
   private let balanceStore: BalanceStoreV3
@@ -33,19 +34,17 @@ final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletStateLoade
   private let accountNFTService: AccountNFTService
   private let ratesService: RatesService
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
-  private let accountNftsStore: AccountNFTsStore
   
-  init(balanceStore: BalanceStoreV3,
-       currencyStore: CurrencyStoreV3,
-       walletsStore: WalletsStoreV3,
-       ratesStore: TonRatesStoreV3,
-       stakingPoolsStore: StakingPoolsStoreV3,
-       balanceService: BalanceService,
-       stackingService: StakingService,
-       accountNFTService: AccountNFTService,
-       ratesService: RatesService,
-       backgroundUpdateUpdater: BackgroundUpdateUpdater,
-       accountNftsStore: AccountNFTsStore) {
+  public init(balanceStore: BalanceStoreV3,
+              currencyStore: CurrencyStoreV3,
+              walletsStore: WalletsStoreV3,
+              ratesStore: TonRatesStoreV3,
+              stakingPoolsStore: StakingPoolsStoreV3,
+              balanceService: BalanceService,
+              stackingService: StakingService,
+              accountNFTService: AccountNFTService,
+              ratesService: RatesService,
+              backgroundUpdateUpdater: BackgroundUpdateUpdater) {
     self.balanceStore = balanceStore
     self.currencyStore = currencyStore
     self.walletsStore = walletsStore
@@ -56,12 +55,11 @@ final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletStateLoade
     self.accountNFTService = accountNFTService
     self.ratesService = ratesService
     self.backgroundUpdateUpdater = backgroundUpdateUpdater
-    self.accountNftsStore = accountNftsStore
     super.init(state: State())
     addObservers()
   }
   
-  override var initialState: State {
+  public override var initialState: State {
     State()
   }
   
@@ -237,6 +235,12 @@ final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletStateLoade
 
       updatedState.balanceLoadTasks[wallet] = task
       return StateUpdate(newState: updatedState)
+    } notify: {
+      if task != nil {
+        self.sendEvent(.didStartLoadBalance(wallet: wallet))
+      } else {
+        self.sendEvent(.didEndLoadBalance(wallet: wallet))
+      }
     }
   }
   

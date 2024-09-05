@@ -10,143 +10,156 @@ final class WalletTotalBalanceModel {
     let address: FriendlyAddress
     let totalBalanceState: TotalBalanceState?
     let isSecure: Bool
-    let backgroundUpdateState: BackgroundUpdateStore.State
+    let backgroundUpdateState: BackgroundUpdateStoreV3.State
+    let isLoadingBalance: Bool
   }
   
-  var didUpdateState: ((State) -> Void)? {
-    didSet {
-      Task {
-        await self.actor.addTask(block:{
-          let activeWallet = await self.walletsStore.getState().activeWallet
-          guard let address = try? activeWallet.friendlyAddress else { return }
-          let isSecure = await self.secureMode.isSecure
-          let balanceState = await self.totalBalanceStore.getState()[address]
-          let backgroundUpdateState = await self.backgroundUpdateStore.getState()
-          self.update(
-            wallet: activeWallet,
-            totalBalanceState: balanceState,
-            isSecure: isSecure,
-            backgroundUpdateState: backgroundUpdateState
-          )
-        })
-      }
-    }
-  }
+  var didUpdateState: ((State) -> Void)?
   
   private let actor = SerialActor<Void>()
   
-  private let walletsStore: WalletsStore
-  private let totalBalanceStore: TotalBalanceStore
-  private let secureMode: SecureMode
-  private let backgroundUpdateStore: BackgroundUpdateStore
+  private let walletsStore: WalletsStoreV3
+  private let totalBalanceStore: TotalBalanceStoreV3
+  private let appSettingsStore: AppSettingsV3Store
+  private let backgroundUpdateStore: BackgroundUpdateStoreV3
+  private let stateLoader: WalletStateLoader
   
-  init(walletsStore: WalletsStore, 
-       totalBalanceStore: TotalBalanceStore,
-       secureMode: SecureMode,
-       backgroundUpdateStore: BackgroundUpdateStore) {
+  init(walletsStore: WalletsStoreV3,
+       totalBalanceStore: TotalBalanceStoreV3,
+       appSettingsStore: AppSettingsV3Store,
+       backgroundUpdateStore: BackgroundUpdateStoreV3,
+       stateLoader: WalletStateLoader) {
     self.walletsStore = walletsStore
     self.totalBalanceStore = totalBalanceStore
-    self.secureMode = secureMode
+    self.appSettingsStore = appSettingsStore
     self.backgroundUpdateStore = backgroundUpdateStore
+    self.stateLoader = stateLoader
     
-    walletsStore.addObserver(self, notifyOnAdded: true) { observer, walletsState, oldWalletsState in
-      Task {
-        await observer.didUpdateWalletsState(walletsState,
-                                       oldWalletsState)
-      }
-    }
-    totalBalanceStore.addObserver(self, notifyOnAdded: true) { observer, state, oldState in
-      Task {
-        await observer.didUpdateTotalBalanceState(state,
-                                                  oldState)
-      }
-    }
-    secureMode.addObserver(self, notifyOnAdded: false) { observer, newState, _ in
-      Task {
-        await observer.didUpdateSecureMode(newState)
-      }
+    walletsStore.addObserver(self) { observer, event in
+      observer.didGetWalletsStoreEvent(event)
     }
     
-    backgroundUpdateStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      Task {
-        await observer.didUpdateBackgroundUpdateState(newState, oldState: oldState)
-      }
+    totalBalanceStore.addObserver(self) { observer, event in
+      observer.didGetTotalBalanceStoreEvent(event)
     }
-  }
-  
-  private func didUpdateWalletsState(_ walletsState: WalletsState,
-                                     _ oldWalletsState: WalletsState?) async {
-    await actor.addTask {
-      guard walletsState.activeWallet != oldWalletsState?.activeWallet else { return }
-      guard let address = try? walletsState.activeWallet.friendlyAddress else { return }
-      let isSecure = await self.secureMode.isSecure
-      let totalBalanceState = await self.totalBalanceStore.getState()[address]
-      let backgroundUpdateState = await self.backgroundUpdateStore.getState()
-      self.update(
-        wallet: walletsState.activeWallet,
-        totalBalanceState: totalBalanceState,
-        isSecure: isSecure,
-        backgroundUpdateState: backgroundUpdateState
-      )
-    }
-  }
-  
-  private func didUpdateTotalBalanceState(_ totalBalances: [FriendlyAddress: TotalBalanceState],
-                                          _ oldTotalBalances: [FriendlyAddress: TotalBalanceState]?) async {
-    await actor.addTask {
-      let wallet = await self.walletsStore.getState().activeWallet
-      guard let address = try? wallet.friendlyAddress else { return }
-      let isSecure = await self.secureMode.isSecure
-      let backgroundUpdateState = await self.backgroundUpdateStore.getState()
-      guard totalBalances[address] != oldTotalBalances?[address] else { return }
-      self.update(wallet: wallet,
-                  totalBalanceState: totalBalances[address],
-                  isSecure: isSecure,
-                  backgroundUpdateState: backgroundUpdateState)
-    }
-  }
-  
-  private func didUpdateSecureMode(_ isSecure: Bool) async {
-    await actor.addTask {
-      let activeWallet = await self.walletsStore.getState().activeWallet
-      guard let address = try? activeWallet.friendlyAddress else { return }
-      let isSecure = await self.secureMode.isSecure
-      let backgroundUpdateState = await self.backgroundUpdateStore.getState()
-      let totalBalanceState = await self.totalBalanceStore.getState()[address]
-      self.update(wallet: activeWallet,
-                  totalBalanceState: totalBalanceState,
-                  isSecure: isSecure,
-                  backgroundUpdateState: backgroundUpdateState)
-    }
-  }
-  
-  private func didUpdateBackgroundUpdateState(_ state: BackgroundUpdateStore.State,
-                                              oldState: BackgroundUpdateStore.State?) async {
-    await actor.addTask {
-      let wallet = await self.walletsStore.getState().activeWallet
-      guard let address = try? wallet.friendlyAddress else { return }
-      let isSecure = await self.secureMode.isSecure
-      let totalBalanceState = await self.totalBalanceStore.getState()[address]
-      self.update(wallet: wallet,
-                  totalBalanceState: totalBalanceState,
-                  isSecure: isSecure,
-                  backgroundUpdateState: state)
-    }
-  }
-  
-  private func update(wallet: Wallet, 
-                      totalBalanceState: TotalBalanceState?,
-                      isSecure: Bool,
-                      backgroundUpdateState: BackgroundUpdateStore.State) {
-    guard let address = try? wallet.friendlyAddress else { return }
     
-    let state = State(
-      wallet: wallet,
-      address: address,
+    appSettingsStore.addObserver(self) { observer, event in
+      observer.didGetAppSettingsStoreEvent(event)
+    }
+    
+    backgroundUpdateStore.addObserver(self) { observer, event in
+      observer.didGetBackgroundUpdateStoreEvent(event)
+    }
+    
+    stateLoader.addObserver(self) { observer, event in
+      observer.didGetStateLoaderEvent(event)
+    }
+  }
+  
+  func getState() throws -> State {
+    let activeWallet = try walletsStore.getActiveWallet()
+    let isSecureMode = appSettingsStore.getState().isSecureMode
+    let totalBalanceState = totalBalanceStore.getState()[activeWallet]
+    let backgroundUpdateState = backgroundUpdateStore.getState()
+    let isLoadingBalance = stateLoader.getState().balanceLoadTasks[activeWallet] != nil
+    return try createState(
+      wallet: activeWallet,
+      isSecureMode: isSecureMode,
       totalBalanceState: totalBalanceState,
-      isSecure: isSecure,
-      backgroundUpdateState: backgroundUpdateState
+      backgroundUpdateState: backgroundUpdateState,
+      isLoadingBalance: isLoadingBalance
     )
-    didUpdateState?(state)
+  }
+  
+  private func didGetWalletsStoreEvent(_ event: WalletsStoreV3.Event) {
+    Task {
+      switch event {
+      case .didChangeActiveWallet:
+        await self.actor.addTask(block: { try await self.updateModel() })
+      default: break
+      }
+    }
+  }
+  
+  private func didGetTotalBalanceStoreEvent(_ event: TotalBalanceStoreV3.Event) {
+    Task {
+      switch event {
+      case .didUpdateTotalBalance(_, let wallet):
+        switch await walletsStore.getState() {
+        case .empty: break
+        case .wallets(let state):
+          guard state.activeWalelt == wallet else { return }
+          await self.actor.addTask(block: { try await self.updateModel() })
+        }
+      }
+    }
+  }
+  
+  private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
+    Task {
+      await self.actor.addTask(block: { try await self.updateModel() })
+    }
+  }
+  
+  private func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStoreV3.Event) {
+    Task {
+      await self.actor.addTask(block: { try await self.updateModel() })
+    }
+  }
+  
+  private func didGetStateLoaderEvent(_ event: WalletStateLoader.Event) {
+    Task {
+      switch await walletsStore.getState() {
+      case .empty: break
+      case .wallets(let state):
+        await self.actor.addTask(block: { try await self.updateModel() })
+        switch event {
+        case .didEndLoadBalance(let wallet):
+          guard state.activeWalelt == wallet else { return }
+          await self.actor.addTask(block: { try await self.updateModel() })
+        case .didStartLoadBalance(let wallet):
+          guard state.activeWalelt == wallet else { return }
+          await self.actor.addTask(block: { try await self.updateModel() })
+        }
+      }
+    }
+  }
+  
+  private func updateModel() async throws {
+    let walletsStoreState = await walletsStore.getState()
+    switch walletsStoreState {
+    case .empty: break
+    case .wallets(let walletsState):
+      let isSecureMode = await appSettingsStore.getState().isSecureMode
+      let totalBalance = await totalBalanceStore.getState()[walletsState.activeWalelt]
+      let backgroundUpdateState = await backgroundUpdateStore.getState()
+      let isLoadingBalance = await {
+        let state = await stateLoader.getState()
+        return state.balanceLoadTasks[walletsState.activeWalelt] != nil
+      }()
+      let state = try createState(
+        wallet: walletsState.activeWalelt,
+        isSecureMode: isSecureMode,
+        totalBalanceState: totalBalance,
+        backgroundUpdateState: backgroundUpdateState,
+        isLoadingBalance: isLoadingBalance
+      )
+      didUpdateState?(state)
+    }
+  }
+  
+  private func createState(wallet: Wallet,
+                           isSecureMode: Bool,
+                           totalBalanceState: TotalBalanceState?,
+                           backgroundUpdateState: BackgroundUpdateStoreV3.State,
+                           isLoadingBalance: Bool) throws -> State {
+    return State(
+      wallet: wallet,
+      address: try wallet.friendlyAddress,
+      totalBalanceState: totalBalanceState,
+      isSecure: isSecureMode,
+      backgroundUpdateState: backgroundUpdateState,
+      isLoadingBalance: isLoadingBalance
+    )
   }
 }

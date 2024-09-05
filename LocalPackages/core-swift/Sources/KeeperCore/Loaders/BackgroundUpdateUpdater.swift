@@ -15,12 +15,12 @@ public actor BackgroundUpdateUpdater {
   private let jsonDecoder = JSONDecoder()
   private var observations = [UUID: (BackgroundUpdateEvent) -> Void]()
 
-  private let backgroundUpdateStore: BackgroundUpdateStore
-  private let walletsStore: WalletsStore
+  private let backgroundUpdateStore: BackgroundUpdateStoreV3
+  private let walletsStore: WalletsStoreV3
   private let streamingAPI: TonStreamingAPI.Client
   
-  init(backgroundUpdateStore: BackgroundUpdateStore,
-       walletsStore: WalletsStore,
+  init(backgroundUpdateStore: BackgroundUpdateStoreV3,
+       walletsStore: WalletsStoreV3,
        streamingAPI: TonStreamingAPI.Client) {
     self.backgroundUpdateStore = backgroundUpdateStore
     self.walletsStore = walletsStore
@@ -28,13 +28,18 @@ public actor BackgroundUpdateUpdater {
   }
   
   public func start() {
-    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      Task {
-        await observer.connect(addresses: [newState.activeWallet].compactMap { try? $0.address } )
+    walletsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didChangeActiveWallet(let wallet):
+        Task {
+          guard let address = try? wallet.address else { return }
+          self.connect(addresses: [address])
+        }
+      default: break
       }
     }
-    let addresses = [walletsStore.getState().activeWallet].compactMap { try? $0.address }
-    connect(addresses: addresses)
+    guard let activeWalletAddress = try? walletsStore.getActiveWallet().address else { return }
+    connect(addresses: [activeWalletAddress])
   }
   
   public func stop() {
@@ -85,9 +90,7 @@ private extension BackgroundUpdateUpdater {
       let rawAddresses = addresses.map { $0.toRaw() }.joined(separator: ",")
       
       do {
-        await backgroundUpdateStore.updateState { _ in
-          Store.StateUpdate(newState: .connecting)
-        }
+        await backgroundUpdateStore.setState(.connecting)
         print("Log 🪵: BackgroundUpdateUpdater — connecting")
         let stream = try await EventSource.eventSource {
           let response = try await self.streamingAPI.getTransactions(
@@ -98,31 +101,23 @@ private extension BackgroundUpdateUpdater {
         
         guard !Task.isCancelled else { return }
         
-        await backgroundUpdateStore.updateState { _ in
-          Store.StateUpdate(newState: .connected)
-        }
+        await backgroundUpdateStore.setState(.connected)
         print("Log 🪵: BackgroundUpdateUpdater — connected")
         for try await events in stream {
           print("Log 🪵: BackgroundUpdateUpdater — recieved events \(events)")
           handleReceivedEvents(events)
         }
-        await backgroundUpdateStore.updateState { _ in
-          Store.StateUpdate(newState: .disconnected)
-        }
+        await backgroundUpdateStore.setState(.disconnected)
         print("Log 🪵: BackgroundUpdateUpdater — disconnected")
         guard !Task.isCancelled else { return }
         connect(addresses: addresses)
       } catch {
         guard !error.isCancelledError else { return }
         if error.isNoConnectionError {
-          await backgroundUpdateStore.updateState { _ in
-            Store.StateUpdate(newState: .noConnection)
-          }
+          await backgroundUpdateStore.setState(.noConnection)
           print("Log 🪵: BackgroundUpdateUpdater — no connection")
         } else {
-          await backgroundUpdateStore.updateState { _ in
-            Store.StateUpdate(newState: .disconnected)
-          }
+          await backgroundUpdateStore.setState(.disconnected)
           print("Log 🪵: BackgroundUpdateUpdater — disconnected")
           try? await Task.sleep(nanoseconds: 3_000_000_000)
           self.connect(addresses: addresses)

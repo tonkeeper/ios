@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents the entire state of the application install
-public struct KeeperInfo: Codable, Equatable {
+public struct KeeperInfo: Equatable {
   /// Keeper contains multiple wallets
   public let wallets: [Wallet]
   
@@ -14,9 +14,28 @@ public struct KeeperInfo: Codable, Equatable {
   /// Common pin/faceid settings
   let securitySettings: SecuritySettings
   
-  let isSetupFinished: Bool
+  let appSettings: AppSettings
   
   ///
   let assetsPolicy: AssetsPolicy
   let appCollection: AppCollection
+}
+
+extension KeeperInfo: Codable {
+  public init(from decoder: any Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.wallets = try container.decode([Wallet].self, forKey: .wallets)
+    self.currentWallet = try container.decode(Wallet.self, forKey: .currentWallet)
+    self.currency = try container.decode(Currency.self, forKey: .currency)
+    self.securitySettings = try container.decode(SecuritySettings.self, forKey: .securitySettings)
+    
+    if let appSettings = try container.decodeIfPresent(AppSettings.self, forKey: .appSettings) {
+      self.appSettings = appSettings
+    } else {
+      self.appSettings = AppSettings(isSetupFinished: false, isSecureMode: false)
+    }
+    
+    self.assetsPolicy = try container.decode(AssetsPolicy.self, forKey: .assetsPolicy)
+    self.appCollection = try container.decode(AppCollection.self, forKey: .appCollection)
+  }
 }

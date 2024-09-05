@@ -8,6 +8,16 @@ final class NotificationBannerCell: UICollectionViewCell {
     init(bannerViewConfiguration: NotificationBannerView.Model) {
       self.bannerViewConfiguration = bannerViewConfiguration
     }
+    
+    static var `default`: Configuration {
+      Configuration(
+        bannerViewConfiguration: NotificationBannerView.Model(
+          title: nil,
+          caption: nil,
+          appearance: .regular
+        )
+      )
+    }
   }
   
   public var configuration = Configuration(
@@ -44,6 +54,7 @@ final class NotificationBannerCell: UICollectionViewCell {
     bannerView.snp.makeConstraints { make in
       make.edges.equalTo(contentView)
     }
+    didUpdateConfiguration()
   }
   
   private func didUpdateConfiguration() {

@@ -31,8 +31,8 @@ struct SettingsListItemsSection: Hashable {
 class SettingsListItem: Hashable {
   let id: String
   let cellConfiguration: TKListItemCell.Configuration
-  let accessory: SettingsListItemAccessory
-  let selectAccessory: SettingsListItemAccessory?
+  let accessory: TKListItemAccessory?
+  let selectAccessory: TKListItemAccessory?
   let onSelection: ((UIView?) -> Void)?
   
   static func == (lhs: SettingsListItem, rhs: SettingsListItem) -> Bool {
@@ -45,8 +45,8 @@ class SettingsListItem: Hashable {
   
   init(id: String, 
        cellConfiguration: TKListItemCell.Configuration,
-       accessory: SettingsListItemAccessory,
-       selectAccessory: SettingsListItemAccessory? = nil,
+       accessory: TKListItemAccessory? = nil,
+       selectAccessory: TKListItemAccessory? = nil,
        onSelection: ( (UIView?) -> Void)?) {
     self.id = id
     self.cellConfiguration = cellConfiguration
@@ -92,12 +92,4 @@ class SettingsNotificationBannerListItem: Hashable {
     self.id = id
     self.cellConfiguration = cellConfiguration
   }
-}
-
-enum SettingsListItemAccessory {
-  case none
-  case chevron
-  case icon(TKListItemIconAccessoryView.Configuration)
-  case text(TKListItemTextAccessoryView.Configuration)
-  case `switch`(TKListItemSwitchAccessoryView.Configuration)
 }

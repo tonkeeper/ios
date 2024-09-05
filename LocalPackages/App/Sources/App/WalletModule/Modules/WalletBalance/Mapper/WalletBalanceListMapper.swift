@@ -12,6 +12,7 @@ struct WalletBalanceListMapper {
   private let dateComponentsFormatter: DateComponentsFormatter = {
     let formatter = DateComponentsFormatter()
     formatter.allowedUnits = [.hour, .minute, .second]
+    formatter.zeroFormattingBehavior = .pad
     return formatter
   }()
   
@@ -28,29 +29,28 @@ struct WalletBalanceListMapper {
   }
   
   func mapTonItem(_ item: ProcessedBalanceTonItem,
-                  isSecure: Bool,
-                  selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
-    return WalletBalanceListCell.Model(
-      listItemConfiguration: balanceItemMapper.mapTonItem(item, isSecure: isSecure),
-      commentConfiguration: nil,
-      selectionClosure: selectionHandler
+                  isSecure: Bool) -> WalletBalanceListCell.Configuration {
+    return WalletBalanceListCell.Configuration(
+      walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
+        listItemContentViewConfiguration: balanceItemMapper.mapTonItem(item, isSecure: isSecure),
+        commentViewConfiguration: nil
+      )
     )
   }
   
   func mapJettonItem(_ item: ProcessedBalanceJettonItem,
-                     isSecure: Bool,
-                     selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
-    return WalletBalanceListCell.Model(
-      listItemConfiguration: balanceItemMapper.mapJettonItem(item, isSecure: isSecure),
-      commentConfiguration: nil,
-      selectionClosure: selectionHandler
+                     isSecure: Bool) -> WalletBalanceListCell.Configuration {
+    return WalletBalanceListCell.Configuration(
+      walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
+        listItemContentViewConfiguration: balanceItemMapper.mapJettonItem(item, isSecure: isSecure),
+        commentViewConfiguration: nil
+      )
     )
   }
   
   func mapStakingItem(_ item: ProcessedBalanceStakingItem,
                       isSecure: Bool,
-                      selectionHandler: @escaping () -> Void,
-                      stakingCollectHandler: (() -> Void)?) -> WalletBalanceListCell.Model {
+                      stakingCollectHandler: (() -> Void)?) -> WalletBalanceListCell.Configuration {
     let commentConfiguration = { () -> TKCommentView.Model? in
       guard let comment = mapStakingItemComment(item, stakingCollectHandler: stakingCollectHandler) else {
         return nil
@@ -58,10 +58,11 @@ struct WalletBalanceListMapper {
       return TKCommentView.Model(comment: comment.text, tapClosure: comment.tapHandler)
     }
     
-    return WalletBalanceListCell.Model(
-      listItemConfiguration: balanceItemMapper.mapStakingItem(item, isSecure: isSecure),
-      commentConfiguration: commentConfiguration(),
-      selectionClosure: selectionHandler
+    return WalletBalanceListCell.Configuration(
+      walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
+        listItemContentViewConfiguration: balanceItemMapper.mapStakingItem(item, isSecure: isSecure),
+        commentViewConfiguration: commentConfiguration()
+      )
     )
   }
   
@@ -105,48 +106,62 @@ struct WalletBalanceListMapper {
     }
     return nil
   }
+  
+//  func mapSetupState(_ state: WalletBalanceSetupModel.State) -> [String: WalletBalanceListCell.Configuration] {
+//    switch state {
+//    case .setup(let setup):
+//      var items = [String: WalletBalanceListCell.Configuration]()
+//      
+//      items[WalletBalanceSetupItem.telegramChannel.rawValue] = createTelegramChannelItem()
+//
+//      if setup.isBiometryVisible {
+//        items[WalletBalanceSetupItem.biometry.rawValue] = createBiometryItem()
+//      }
+//      if setup.isBackupVisible {
+//        items[WalletBalanceSetupItem.backup.rawValue] = createBackupItem()
+//      }
+//      return items
+//    }
+//  }
 
+//  
+//  func mapSetupState(_ state: WalletBalanceSetupModel.State,
+//                     biometrySelectionHandler: @escaping () -> Void,
+//                     biometrySwitchHandler: @escaping (Bool) async -> Bool,
+//                     telegramChannelSelectionHandler: @escaping () -> Void,
+//                     backupSelectionHandler: @escaping () -> Void) -> [String: WalletBalanceListCell.Configuration] {
+//    switch state {
+//    case .none:
+//      return [:]
+//    case .setup(let setup):
+//      var items = [String: WalletBalanceListCell.Model]()
+//      items[WalletBalanceSetupItem.telegramChannel.rawValue] = createTelegramChannelItem(
+//        selectionHandler: telegramChannelSelectionHandler
+//      )
+//      if setup.isBiometryVisible {
+//        items[WalletBalanceSetupItem.biometry.rawValue] = createBiometryItem(
+//          selectionHandler: biometrySelectionHandler, 
+//          switchHandler: biometrySwitchHandler
+//        )
+//      }
+//      if setup.isBackupVisible {
+//        items[WalletBalanceSetupItem.backup.rawValue] = createBackupItem(
+//          selectionHandler: backupSelectionHandler
+//        )
+//      }
+//      return items
+//    }
+//  }
   
-  func mapSetupState(_ state: WalletBalanceSetupModel.State,
-                     biometrySelectionHandler: @escaping () -> Void,
-                     biometrySwitchHandler: @escaping (Bool) async -> Bool,
-                     telegramChannelSelectionHandler: @escaping () -> Void,
-                     backupSelectionHandler: @escaping () -> Void) -> [String: WalletBalanceListCell.Model] {
-    switch state {
-    case .none:
-      return [:]
-    case .setup(let setup):
-      var items = [String: WalletBalanceListCell.Model]()
-      items[WalletBalanceSetupItem.telegramChannel.rawValue] = createTelegramChannelItem(
-        selectionHandler: telegramChannelSelectionHandler
-      )
-      if setup.isBiometryVisible {
-        items[WalletBalanceSetupItem.biometry.rawValue] = createBiometryItem(
-          selectionHandler: biometrySelectionHandler, 
-          switchHandler: biometrySwitchHandler
-        )
-      }
-      if setup.isBackupVisible {
-        items[WalletBalanceSetupItem.backup.rawValue] = createBackupItem(
-          selectionHandler: backupSelectionHandler
-        )
-      }
-      return items
-    }
-  }
-  
-  private func createTelegramChannelItem(selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
+  func createTelegramChannelConfiguration() -> WalletBalanceListCell.Configuration {
     createSetupItem(
-      description: "Join Tonkeeper channel",
+      text: "Join Tonkeeper channel",
       icon: .TKUIKit.Icons.Size28.telegram,
-      iconColor: .Accent.blue,
-      accessory: .chevron,
-      selectionHandler: selectionHandler
+      iconColor: .Accent.blue
     )
   }
   
-  private func createBiometryItem(selectionHandler: @escaping () -> Void,
-                                  switchHandler: @escaping (Bool) async -> Bool) -> WalletBalanceListCell.Model {
+  func createBiometryConfiguration() -> WalletBalanceListCell.Configuration {
     let title: String
     let icon: UIImage
     
@@ -169,81 +184,61 @@ struct WalletBalanceListMapper {
       title = TKLocales.FinishSetup.biometry_unavailable
       icon = .TKUIKit.Icons.Size28.faceId
     }
-    
-    let switchAccessoryConfiguration = TKUIListItemSwitchAccessoryView.Configuration(
-      isOn: false,
-      handler: switchHandler)
-    
+
     return createSetupItem(
-      description: title,
+      text: title,
       icon: icon,
-      iconColor: .Accent.green,
-      accessory: .switchControl(switchAccessoryConfiguration),
-      selectionHandler: selectionHandler
+      iconColor: .Accent.green
     )
   }
   
-  private func createBackupItem(selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
+  func createBackupConfiguration() -> WalletBalanceListCell.Configuration {
     createSetupItem(
-      description: TKLocales.FinishSetup.backup,
+      text: TKLocales.FinishSetup.backup,
       icon: .TKUIKit.Icons.Size28.key,
-      iconColor: .Accent.orange,
-      accessory: .chevron,
-      selectionHandler: selectionHandler
+      iconColor: .Accent.orange
     )
   }
   
-  private func createSetupItem(description: String,
+  private func createSetupItem(text: String,
                                icon: UIImage,
-                               iconColor: UIColor,
-                               accessory: TKUIListItemAccessoryView.Configuration,
-                               selectionHandler: @escaping () -> Void) -> WalletBalanceListCell.Model {
-    let leftItemConfiguration = TKUIListItemContentLeftItem.Configuration(
-      title: nil,
-      tagViewModel: nil,
-      subtitle: nil,
-      description: description.withTextStyle(
-        .body2,
-        color: .Text.primary,
-        alignment: .left,
-        lineBreakMode: .byWordWrapping
-      )
-    )
+                               iconColor: UIColor) -> WalletBalanceListCell.Configuration {
     
-    let contentConfiguration = TKUIListItemContentView.Configuration(
-      leftItemConfiguration: leftItemConfiguration,
-      rightItemConfiguration: nil
-    )
+    let title = text.withTextStyle(.body2, color: .Text.primary)
     
-    let iconConfiguration = TKUIListItemIconView.Configuration(
-      iconConfiguration: .image(
-        TKUIListItemImageIconView.Configuration(
-          image: .image(icon),
-          tintColor: iconColor,
-          backgroundColor: iconColor.withAlphaComponent(0.12),
-          size: .iconSize,
-          cornerRadius: CGSize.iconSize.height/2
+    return WalletBalanceListCell.Configuration(
+      walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
+        listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
+          iconViewConfiguration: TKListItemIconViewV2.Configuration(
+            content: .image(
+              TKImageView.Model(
+                image: .image(icon),
+                tintColor: iconColor,
+                size: .auto,
+                corners: .circle
+              )
+            ),
+            alignment: .top,
+            cornerRadius: .iconCornerRadius,
+            backgroundColor: iconColor.withAlphaComponent(0.12),
+            size: .iconSize
+          ),
+          textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+            titleViewConfiguration: TKListItemTitleView.Configuration(title: title, numberOfLines: 0)
+          )
         )
-      ),
-      alignment: .center
-    )
-    
-    let listItemConfiguration = TKUIListItemView.Configuration(
-      iconConfiguration: iconConfiguration,
-      contentConfiguration: contentConfiguration,
-      accessoryConfiguration: accessory
-    )
-    
-    return WalletBalanceListCell.Model(
-      listItemConfiguration: listItemConfiguration,
-      selectionClosure: selectionHandler
+      )
     )
   }
   
   func formatCycleEnd(timestamp: TimeInterval) -> String? {
-    let estimateDate = Date(timeIntervalSince1970: timestamp)
+    let now = Date()
+    var estimateDate = Date(timeIntervalSince1970: timestamp)
+    if estimateDate <= now {
+      estimateDate = now
+    }
     let components = Calendar.current.dateComponents(
-      [.hour, .minute, .second], from: Date(),
+      [.hour, .minute, .second], from: now,
       to: estimateDate
     )
     return dateComponentsFormatter.string(from: components)

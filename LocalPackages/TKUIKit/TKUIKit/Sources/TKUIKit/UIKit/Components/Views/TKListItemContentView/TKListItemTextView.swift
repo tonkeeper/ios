@@ -25,8 +25,8 @@ public final class TKListItemTextView: UIView {
     }
     
     public init(text: NSAttributedString?,
-                numberOfLines: Int,
-                padding: UIEdgeInsets) {
+                numberOfLines: Int = 1,
+                padding: UIEdgeInsets = .zero) {
       self.text = text
       self.numberOfLines = numberOfLines
       self.padding = padding

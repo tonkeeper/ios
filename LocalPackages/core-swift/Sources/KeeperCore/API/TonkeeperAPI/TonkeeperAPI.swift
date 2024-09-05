@@ -118,7 +118,13 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
     ]
     guard let url = components.url else { throw TonkeeperAPIError.incorrectUrl }
     let (data, _) = try await urlSession.data(from: url)
-    let response = try JSONDecoder().decode(InternalNotificationResponse.self, from: data)
-    return response.notifications
+    do {
+      let response = try JSONDecoder().decode(InternalNotificationResponse.self, from: data)
+      return response.notifications
+    } catch {
+      print("dsd")
+      throw error
+    }
+    
   }
 }

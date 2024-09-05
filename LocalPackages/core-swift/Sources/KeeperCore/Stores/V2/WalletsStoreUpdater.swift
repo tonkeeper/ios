@@ -144,7 +144,7 @@ private extension KeeperInfo {
       currentWallet: wallets[0],
       currency: .defaultCurrency,
       securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
-      isSetupFinished: false,
+      appSettings: AppSettings(isSetupFinished: false, isSecureMode: false),
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
       appCollection: AppCollection(connected: [:], recent: [], pinned: [])
     )

@@ -18,71 +18,123 @@ struct BalanceItemMapper {
   }
   
   func mapTonItem(_ item: ProcessedBalanceTonItem,
-                  isSecure: Bool) -> TKUIListItemView.Configuration {
-    let subtitle = createPriceSubtitle(
+                  isSecure: Bool) -> TKListItemContentViewV2.Configuration {
+    let caption = createPriceSubtitle(
       price: item.price,
       currency: item.currency,
       diff: item.diff,
       verification: .whitelist
     )
     
-    return TKUIListItemView.Configuration(
-      iconConfiguration: .tonConfiguration(imageLoader: imageLoader),
-      contentConfiguration: TKUIListItemContentView.Configuration(
-        leftItemConfiguration: .tonConfiguration(subtitle: subtitle),
-        rightItemConfiguration: createRightItemConfiguration(
-          amount: BigUInt(item.amount),
-          amountFractionDigits: TonInfo.fractionDigits,
-          convertedAmount: item.converted,
-          currency: item.currency,
-          isSecure: isSecure
-        )
-      ),
-      accessoryConfiguration: .none
+    return TKListItemContentViewV2.Configuration(
+      iconViewConfiguration: .tonConfiguration(),
+      textContentViewConfiguration: createTextContentViewConfiguration(
+        title: TonInfo.symbol,
+        isPinned: false,
+        caption: caption,
+        amount: BigUInt(item.amount),
+        amountFractionDigits: TonInfo.fractionDigits,
+        convertedAmount: item.converted,
+        currency: item.currency,
+        isSecure: isSecure
+      )
     )
   }
   
   func mapJettonItem(_ item: ProcessedBalanceJettonItem,
-                     isSecure: Bool) -> TKUIListItemView.Configuration {
-    let subtitle = createPriceSubtitle(
+                     isSecure: Bool) -> TKListItemContentViewV2.Configuration {
+    let caption = createPriceSubtitle(
       price: item.price,
       currency: item.currency,
       diff: item.diff,
-      verification: item.jetton.jettonInfo.verification
+      verification: .whitelist
     )
     
-    return TKUIListItemView.Configuration(
-      iconConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo, imageLoader: imageLoader),
-      contentConfiguration: TKUIListItemContentView.Configuration(
-        leftItemConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo, subtitle: subtitle),
-        rightItemConfiguration: createRightItemConfiguration(
-          amount: item.amount,
-          amountFractionDigits: item.fractionalDigits,
-          convertedAmount: item.converted,
-          currency: item.currency,
-          isSecure: isSecure
-        )
-      ),
-      accessoryConfiguration: .none
+    return TKListItemContentViewV2.Configuration(
+      iconViewConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo),
+      textContentViewConfiguration: createTextContentViewConfiguration(
+        title: (item.jetton.jettonInfo.symbol ?? item.jetton.jettonInfo.name),
+        isPinned: false,
+        caption: caption,
+        amount: BigUInt(item.amount),
+        amountFractionDigits: TonInfo.fractionDigits,
+        convertedAmount: item.converted,
+        currency: item.currency,
+        isSecure: isSecure
+      )
     )
   }
   
   func mapStakingItem(_ item: ProcessedBalanceStakingItem,
-                      isSecure: Bool) -> TKUIListItemView.Configuration {
-    return TKUIListItemView.Configuration(
-      iconConfiguration: .configuration(poolInfo: item.poolInfo, imageLoader: imageLoader),
-      contentConfiguration: TKUIListItemContentView.Configuration(
-        leftItemConfiguration: .configuration(title: TKLocales.BalanceList.StakingItem.title,
-                                              poolInfo: item.poolInfo),
-        rightItemConfiguration: createRightItemConfiguration(
-          amount: BigUInt(item.info.amount),
-          amountFractionDigits: TonInfo.fractionDigits,
-          convertedAmount: item.amountConverted,
-          currency: item.currency,
-          isSecure: isSecure
-        )
-      ),
-      accessoryConfiguration: .none
+                      isSecure: Bool) -> TKListItemContentViewV2.Configuration {
+    return TKListItemContentViewV2.Configuration(
+      iconViewConfiguration: .configuration(poolInfo: item.poolInfo),
+      textContentViewConfiguration: createTextContentViewConfiguration(
+        title: TKLocales.BalanceList.StakingItem.title,
+        isPinned: false,
+        caption: item.poolInfo?.name.withTextStyle(.body2, color: .Text.secondary),
+        amount: BigUInt(item.info.amount),
+        amountFractionDigits: TonInfo.fractionDigits,
+        convertedAmount: item.amountConverted,
+        currency: item.currency,
+        isSecure: isSecure
+      )
+    )
+  }
+  
+  private func createTextContentViewConfiguration(title: String,
+                                                  isPinned: Bool,
+                                                  caption: NSAttributedString?, 
+                                                  amount: BigUInt,
+                                                  amountFractionDigits: Int,
+                                                  convertedAmount: Decimal,
+                                                  currency: Currency,
+                                                  isSecure: Bool) -> TKListItemTextContentViewV2.Configuration {
+    var icon: TKListItemTitleView.Configuration.Icon?
+    if isPinned {
+      icon = TKListItemTitleView.Configuration.Icon(image: .TKUIKit.Icons.Size12.pin, tintColor: .Icon.tertiary)
+    }
+    let titleViewConfiguration = TKListItemTitleView.Configuration(title: title, icon: icon)
+    
+    var captionViewsConfigurations = [TKListItemTextView.Configuration]()
+    if let caption {
+      captionViewsConfigurations.append(TKListItemTextView.Configuration(text: caption))
+    }
+                                        
+    let formatAmount = {
+      amountFormatter.formatAmount(
+        amount,
+        fractionDigits: amountFractionDigits,
+        maximumFractionDigits: 2
+      )
+    }
+    
+    let formatConvertedAmount = {
+      decimalAmountFormatter.format(
+        amount: convertedAmount,
+        maximumFractionDigits: 2,
+        currency: currency
+      )
+    }
+    
+    let value = (isSecure ? String.secureModeValue : formatAmount()).withTextStyle(
+      .label1,
+      color: .Text.primary,
+      alignment: .right,
+      lineBreakMode: .byTruncatingTail
+    )
+    let valueCaption = (isSecure ? String.secureModeValue : formatConvertedAmount()).withTextStyle(
+      .body2,
+      color: .Text.secondary,
+      alignment: .right,
+      lineBreakMode: .byTruncatingTail
+    )
+    
+    return TKListItemTextContentViewV2.Configuration(
+      titleViewConfiguration: titleViewConfiguration,
+      captionViewsConfigurations: captionViewsConfigurations,
+      valueViewConfiguration: TKListItemTextView.Configuration(text: value),
+      valueCaptionViewConfiguration: TKListItemTextView.Configuration(text: valueCaption)
     )
   }
   

@@ -66,7 +66,7 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   }
   
   private func setInitialState() {
-    guard let wallet = try? walletsStore.activeWallet else { return }
+    guard let wallet = try? walletsStore.getActiveWallet() else { return }
     self.wallet = wallet
   }
 }

@@ -60,12 +60,6 @@ public final class TKListItemContentViewV2: UIView {
     }()
     let textContentFrame = CGRect(origin: CGPoint(x: iconViewSpace, y: 0),
                                   size: CGSize(width: textContentViewSize.width, height: bounds.height))
-    if textContentView.titleView.titleLabel.text?.contains("TON D") == true {
-      print("Dsd")
-    }
-//    if titleView.titleLabel.text?.contains("TON D") == true {
-//      print("Dsd")
-//    }
     textContentView.frame = textContentFrame
     iconView.frame = iconViewFrame
   }

@@ -4,43 +4,15 @@ import TKCoordinator
 
 final class WalletBalanceViewController: GenericViewViewController<WalletBalanceView>, ScrollViewController, WalletContainerBalanceViewController {
   typealias Section = WalletBalanceSection
-  typealias Item = WalletBalanceItem
+  typealias Item = AnyHashable
   typealias DataSource = UICollectionViewDiffableDataSource<WalletBalanceSection, Item>
   typealias Snapshot = NSDiffableDataSourceSnapshot<WalletBalanceSection, Item>
-  typealias BalanceItemCellConfiguration = UICollectionView.CellRegistration<WalletBalanceListCell, String>
-  typealias SetupSectionHeaderRegistration = UICollectionView.SupplementaryRegistration<TKCollectionViewSupplementaryContainerView<TKListTitleView>>
   
   var didScroll: ((CGFloat) -> Void)?
   
-  private let viewModel: WalletBalanceViewModel
-
-  private lazy var layout: UICollectionViewCompositionalLayout = {
-    
-    let size = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(0)
-    )
-    let header = NSCollectionLayoutBoundarySupplementaryItem(
-      layoutSize: size,
-      elementKind: .balanceHeaderElementKind,
-      alignment: .top
-    )
-    
-    let configuration = UICollectionViewCompositionalLayoutConfiguration()
-    configuration.scrollDirection = .vertical
-    configuration.boundarySupplementaryItems = [header]
-    
-    let layout = UICollectionViewCompositionalLayout(
-      sectionProvider: { [dataSource] sectionIndex, _ in
-        let snapshot = dataSource.snapshot()
-        return WalletBalanceViewController.createLayoutSection(section: snapshot.sectionIdentifiers[sectionIndex])
-      },
-      configuration: configuration
-    )
-    return layout
-  }()
+  private var balanceItemsConfigurations = [String: WalletBalanceListCell.Configuration]()
   
-  private lazy var dataSource: DataSource = createDataSource()
+  private let viewModel: WalletBalanceViewModel
 
   init(viewModel: WalletBalanceViewModel) {
     self.viewModel = viewModel
@@ -62,33 +34,23 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
   func scrollToTop() {
     scrollToTop(animated: true)
   }
-}
-
-private extension WalletBalanceViewController {
+  
   func setup() {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
+    customView.collectionView.delegate = self
+    customView.collectionView.showsVerticalScrollIndicator = false
     customView.collectionView.register(
       TKReusableContainerView.self,
       forSupplementaryViewOfKind: .balanceHeaderElementKind,
       withReuseIdentifier: TKReusableContainerView.reuseIdentifier
     )
-    customView.collectionView.delegate = self
-    customView.collectionView.showsVerticalScrollIndicator = false
   }
   
   func setupBindings() {
-    viewModel.didChangeWallet = { [weak self] in
-      self?.scrollToTop(animated: false)
-    }
-    
-    viewModel.didUpdateHeader = { [weak customView] model in
-      customView?.headerView.configure(model: model)
-    }
-    
     viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in
       guard let self else { return }
       let contentOffset = self.customView.collectionView.contentOffset
-      self.dataSource.apply(snapshot, animatingDifferences: false, completion: {
+      self.dataSource.apply(snapshot, animatingDifferences: isAnimated, completion: {
         self.customView.collectionView.layoutIfNeeded()
         self.customView.collectionView.contentOffset = contentOffset
       })
@@ -96,84 +58,104 @@ private extension WalletBalanceViewController {
       self.customView.collectionView.contentOffset = contentOffset
     }
     
-    viewModel.didCopy = { configuration in
-      ToastPresenter.showToast(configuration: configuration)
+    viewModel.didUpdateHeader = { [weak customView] model in
+       customView?.headerView.configure(model: model)
+     }
+    viewModel.didChangeWallet = { [weak self] in
+      self?.scrollToTop(animated: false)
     }
-    
-    viewModel.didUpdateBalanceItems = { [weak self] items in
+    viewModel.didUpdateItems = { [weak self] items in
       guard let self else { return }
-      items.forEach { identifier, model in
-        guard let indexPath = self.dataSource.indexPath(for: .balanceItem(identifier)),
-              let cell = self.customView.collectionView.cellForItem(at: indexPath) as? WalletBalanceListCell else { return }
-        cell.configure(model: model)
+      for item in items {
+        guard let indexPath = self.dataSource.indexPath(for: item.key),
+              let cell = self.customView.collectionView.cellForItem(at: indexPath) as? WalletBalanceListCell else {
+          return
+        }
+        cell.configuration = item.value
       }
     }
   }
   
-  func createDataSource() -> DataSource {
-    let itemCellConfiguration = BalanceItemCellConfiguration
-    { [weak viewModel, weak collectionView = self.customView.collectionView] cell, indexPath, identifier in
-      cell.isFirstInSection = { ip in ip.item == 0 }
-      cell.isLastInSection = { ip in
-        guard let collectionView = collectionView else { return false }
-        return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
-      }
-      guard let model = viewModel?.getBalanceItemCellModel(identifier: identifier) else { return }
-      cell.configure(model: model)
-    }
-    
-    let manageButtonCellConfiguration = UICollectionView.CellRegistration<TKButtonCell, TKButtonCell.Model> {
-      cell, indexPath, identifier in
-      cell.configure(model: identifier)
-    }
-    
-    let notificationCellConfiguration = UICollectionView.CellRegistration<NotificationBannerCell, String> {
-      [weak viewModel] cell, indexPath, identifier in
-      guard let model = viewModel?.getNotificationCellModel(identifier: identifier) else { return }
-      cell.configuration = model
-    }
+  private lazy var dataSource: DataSource = {
+    let balanceListCellRegistration = WalletBalanceListCellRegistration.registration(collectionView: customView.collectionView)
+    let notifiationCellRegistration = NotificationBannerCellRegistration.registration
     
     let dataSource = DataSource(
-      collectionView: customView.collectionView) { [itemCellConfiguration] collectionView, indexPath, itemIdentifier in
+      collectionView: customView.collectionView) {
+        [weak self] collectionView, indexPath, itemIdentifier in
+        guard let self else { return nil }
         switch itemIdentifier {
-        case .balanceItem(let identifier):
-          return collectionView.dequeueConfiguredReusableCell(
-            using: itemCellConfiguration,
+        case let listItem as WalletBalanceListItem:
+          let configuration = self.viewModel.getListItemCellConfiguration(identifier: listItem.identifier) ?? .default
+          let cell = collectionView.dequeueConfiguredReusableCell(
+            using: balanceListCellRegistration,
             for: indexPath,
-            item: identifier
-          )
-        case .manageButton(let model):
-          return collectionView.dequeueConfiguredReusableCell(
-            using: manageButtonCellConfiguration,
+            item: configuration)
+          if let accessoryView = listItem.accessory?.view {
+            cell.defaultAccessoryViews = [accessoryView]
+          } else {
+            cell.defaultAccessoryViews = []
+          }
+          return cell
+        case let notificationItem as WalletBalanceNotificationItem:
+          let configuration = self.viewModel.getNotificationItemCellConfiguration(identifier: notificationItem.id) ?? .default
+          let cell = collectionView.dequeueConfiguredReusableCell(
+            using: notifiationCellRegistration,
             for: indexPath,
-            item: model)
-        case .notificationItem(let identifier):
-          return collectionView.dequeueConfiguredReusableCell(
-            using: notificationCellConfiguration,
-            for: indexPath,
-            item: identifier)
+            item: configuration)
+          return cell
+        default:
+          return nil
         }
       }
     
-    let setupSectionHeaderRegistration = createSetupSectionHeaderRegistration()
-    dataSource.supplementaryViewProvider = { [weak headerView = customView.headerView] collectionView, kind, indexPath -> UICollectionReusableView? in
-      switch kind {
+    let listButtonFooterRegistration = TKListCollectionViewButtonFooterViewRegistration.registration()
+    let listButtonHeaderRegistration = TKListCollectionViewButtonHeaderViewRegistration.registration()
+    dataSource.supplementaryViewProvider = { [weak self] collectionView, elementKind, indexPath in
+      guard let snapshot = self?.dataSource.snapshot() else { return nil }
+      let snapshotSection = snapshot.sectionIdentifiers[indexPath.section]
+      switch elementKind {
       case String.balanceHeaderElementKind:
         let view = collectionView.dequeueReusableSupplementaryView(
-          ofKind: kind, 
+          ofKind: elementKind,
           withReuseIdentifier: TKReusableContainerView.reuseIdentifier,
           for: indexPath
         ) as? TKReusableContainerView
-        view?.setContentView(headerView)
+        view?.setContentView(self?.customView.headerView)
         return view
-      case .setupSectionHeaderElementKind:
-        return collectionView.dequeueConfiguredReusableSupplementary(using: setupSectionHeaderRegistration, for: indexPath)
-      default: return nil
+      case TKListCollectionViewButtonFooterView.elementKind:
+        switch snapshotSection {
+        case .balance(let balanceSection):
+          guard let configuration = balanceSection.footerConfiguration else { return nil}
+          let view = collectionView.dequeueConfiguredReusableSupplementary(
+            using: listButtonFooterRegistration,
+            for: indexPath
+          )
+          view.configuration = configuration
+          return view
+        default: return nil
+        }
+      case TKListCollectionViewButtonHeaderView.elementKind:
+        switch snapshotSection {
+        case .setup(let setupSection):
+          let view = collectionView.dequeueConfiguredReusableSupplementary(
+            using: listButtonHeaderRegistration,
+            for: indexPath
+          )
+          view.configuration = setupSection.headerConfiguration
+          return view
+        default: return nil
+        }
+      default:
+        return nil
       }
     }
     
     return dataSource
-  }
+  }()
+}
+
+private extension WalletBalanceViewController {
   
   func scrollToTop(animated: Bool = true) {
     guard customView.collectionView.contentOffset.y > customView.collectionView.adjustedContentInset.top else { return }
@@ -184,113 +166,82 @@ private extension WalletBalanceViewController {
     )
   }
   
-  func createSetupSectionHeaderRegistration() -> SetupSectionHeaderRegistration {
-    SetupSectionHeaderRegistration(elementKind: .setupSectionHeaderElementKind) { [weak self] supplementaryView, elementKind, indexPath in
-      guard let self else { return }
-      let section = self.dataSource.snapshot().sectionIdentifiers[indexPath.section]
-      switch section {
-      case .balance, .manage, .notifications:
-        return
-      case .setup(let model):
-        supplementaryView.configure(model: model)
-        supplementaryView.contentView.didTapButton = { [weak self] in
-          self?.viewModel.didTapFinishSetupButton()
+  private var layout: UICollectionViewCompositionalLayout {
+    let size = NSCollectionLayoutSize(
+          widthDimension: .fractionalWidth(1.0),
+          heightDimension: .estimated(0)
+        )
+        let header = NSCollectionLayoutBoundarySupplementaryItem(
+          layoutSize: size,
+          elementKind: .balanceHeaderElementKind,
+          alignment: .top
+        )
+        
+        let configuration = UICollectionViewCompositionalLayoutConfiguration()
+        configuration.scrollDirection = .vertical
+        configuration.boundarySupplementaryItems = [header]
+
+    let layout = UICollectionViewCompositionalLayout(
+      sectionProvider: { [weak dataSource] sectionIndex, _ in
+        guard let dataSource else { return nil }
+        let snapshotSection = dataSource.snapshot().sectionIdentifiers[sectionIndex]
+        
+        switch snapshotSection {
+        case .balance(let section):
+          let sectionLayout: NSCollectionLayoutSection = .listItemsSection
+          sectionLayout.contentInsets.bottom = 16
+          if section.footerConfiguration != nil {
+            let footerSize = NSCollectionLayoutSize(
+              widthDimension: .fractionalWidth(1.0),
+              heightDimension: .estimated(100)
+            )
+            let footer = NSCollectionLayoutBoundarySupplementaryItem(
+              layoutSize: footerSize,
+              elementKind: TKListCollectionViewButtonFooterView.elementKind,
+              alignment: .bottom
+            )
+            sectionLayout.boundarySupplementaryItems.append(footer)
+          }
+          
+          return sectionLayout
+        case .setup:
+          let sectionLayout: NSCollectionLayoutSection = .listItemsSection
+          sectionLayout.contentInsets.bottom = 16
+          
+          let headerSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .estimated(100)
+          )
+          let header = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: headerSize,
+            elementKind: TKListCollectionViewButtonHeaderView.elementKind,
+            alignment: .top
+          )
+          sectionLayout.boundarySupplementaryItems.append(header)
+          
+          return sectionLayout
+        case .notifications:
+          let sectionLayout: NSCollectionLayoutSection = .listItemsSection
+          sectionLayout.interGroupSpacing = 16
+          sectionLayout.contentInsets.bottom = 16
+          return sectionLayout
         }
-      }
-    }
-  }
-  
-  static func createLayoutSection(section: WalletBalanceSection) -> NSCollectionLayoutSection {
-    switch section {
-    case .balance:
-      return createBalanceItemsSection(isHeader: false)
-    case .setup:
-      return createBalanceItemsSection(isHeader: true)
-    case .manage:
-      return createBalanceItemsSection(isHeader: false)
-    case .notifications:
-      return createNotificationsSection()
-    }
-  }
-  
-  static func createBalanceItemsSection(isHeader: Bool) -> NSCollectionLayoutSection {
-    let itemLayoutSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(76)
+      },
+      configuration: configuration
     )
-    let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
-    
-    let groupLayoutSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(76)
-    )
-    let group = NSCollectionLayoutGroup.horizontal(
-      layoutSize: groupLayoutSize,
-      subitems: [item]
-    )
-    
-    let layoutSection = NSCollectionLayoutSection(group: group)
-    layoutSection.contentInsets = NSDirectionalEdgeInsets(
-      top: 0,
-      leading: 16,
-      bottom: 16,
-      trailing: 16
-    )
-    
-    if isHeader {
-      let headerSize = NSCollectionLayoutSize(
-        widthDimension: .fractionalWidth(1.0),
-        heightDimension: .absolute(48)
-      )
-      let header = NSCollectionLayoutBoundarySupplementaryItem(
-        layoutSize: headerSize,
-        elementKind: .setupSectionHeaderElementKind,
-        alignment: .top
-      )
-      layoutSection.boundarySupplementaryItems = [header]
-    }
-    return layoutSection
-  }
-  
-  static func createNotificationsSection() -> NSCollectionLayoutSection {
-    let itemLayoutSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(76)
-    )
-    let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
-    
-    let groupLayoutSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(76)
-    )
-    let group = NSCollectionLayoutGroup.horizontal(
-      layoutSize: groupLayoutSize,
-      subitems: [item]
-    )
-    
-    let layoutSection = NSCollectionLayoutSection(group: group)
-    layoutSection.interGroupSpacing = 16
-    layoutSection.contentInsets = NSDirectionalEdgeInsets(
-      top: 0,
-      leading: 16,
-      bottom: 16,
-      trailing: 16
-    )
-    return layoutSection
+    return layout
   }
 }
 
 extension WalletBalanceViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-    collectionView.deselectItem(at: indexPath, animated: false)
     let snapshot = dataSource.snapshot()
-    let section = snapshot.sectionIdentifiers[indexPath.section]
-    let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
+    let item = snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[indexPath.section])[indexPath.item]
     switch item {
-    case .balanceItem(let identifier):
-      viewModel.didSelectItem(identifier: identifier)
-    case .manageButton, .notificationItem:
-      break
+    case let listItem as WalletBalanceListItem:
+      listItem.onSelection?()
+    default:
+      return
     }
   }
   
@@ -303,3 +254,4 @@ private extension String {
   static let balanceHeaderElementKind = "BalanceHeaderElementKind"
   static let setupSectionHeaderElementKind = "SetupSectionHeaderElementKind"
 }
+

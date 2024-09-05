@@ -16,6 +16,7 @@ public final class MainController {
   private var walletsStoreObservationToken: ObservationToken?
   private var backgroundUpdateStoreObservationToken: ObservationToken?
   
+  private let appInfoProvider: AppInfoProvider
   private let walletsStore: WalletsStore
   private let accountNFTService: AccountNFTService
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
@@ -38,7 +39,8 @@ public final class MainController {
   
   private var nftStateTask: Task<Void, Never>?
 
-  init(walletsStore: WalletsStore,
+  init(appInfoProvider: AppInfoProvider,
+       walletsStore: WalletsStore,
        accountNFTService: AccountNFTService,
        backgroundUpdateUpdater: BackgroundUpdateUpdater,
        tonConnectEventsStore: TonConnectEventsStore,
@@ -51,6 +53,7 @@ public final class MainController {
        walletStateLoader: WalletStateLoader,
        tonRatesLoader: TonRatesLoaderV2,
        internalNotificationsLoader: InternalNotificationsLoader) {
+    self.appInfoProvider = appInfoProvider
     self.walletsStore = walletsStore
     self.accountNFTService = accountNFTService
     self.backgroundUpdateUpdater = backgroundUpdateUpdater
@@ -72,6 +75,7 @@ public final class MainController {
   
   public func start() {
     startUpdates()
+    internalNotificationsLoader.loadNotifications()
   }
   
   public func startUpdates() {

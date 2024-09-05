@@ -3,7 +3,7 @@ import TonSwift
 import BigInt
 
 public final class MainAssembly {
-  
+  public let appInfoProvider: AppInfoProvider
   public let repositoriesAssembly: RepositoriesAssembly
   public let walletAssembly: WalletAssembly
   public let walletUpdateAssembly: WalletsUpdateAssembly
@@ -19,7 +19,8 @@ public final class MainAssembly {
   public let loadersAssembly: LoadersAssembly
   let apiAssembly: APIAssembly
   
-  init(repositoriesAssembly: RepositoriesAssembly,
+  init(appInfoProvider: AppInfoProvider,
+       repositoriesAssembly: RepositoriesAssembly,
        walletAssembly: WalletAssembly,
        walletUpdateAssembly: WalletsUpdateAssembly,
        servicesAssembly: ServicesAssembly,
@@ -33,6 +34,7 @@ public final class MainAssembly {
        mainLoadersAssembly: MainLoadersAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly) {
+    self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.walletAssembly = walletAssembly
     self.walletUpdateAssembly = walletUpdateAssembly
@@ -55,6 +57,7 @@ public final class MainAssembly {
   
   public func mainController() -> MainController {
     MainController(
+      appInfoProvider: appInfoProvider,
       walletsStore: walletAssembly.walletsStore,
       accountNFTService: servicesAssembly.accountNftService(),
       backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater,
@@ -71,7 +74,7 @@ public final class MainAssembly {
         ]
       ),
       apiProvider: apiAssembly.apiProvider,
-      walletStateLoader: mainLoadersAssembly.walletStateLoader,
+      walletStateLoader: loadersAssembly.walletStateLoader,
       tonRatesLoader: loadersAssembly.tonRatesLoaderV2,
       internalNotificationsLoader: loadersAssembly.internalNotificationsLoader
     )

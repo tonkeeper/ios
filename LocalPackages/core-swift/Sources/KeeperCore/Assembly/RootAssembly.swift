@@ -1,6 +1,7 @@
 import Foundation
 
 public final class RootAssembly {
+  public let appInfoProvider: AppInfoProvider
   public let repositoriesAssembly: RepositoriesAssembly
   private let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
@@ -14,7 +15,8 @@ public final class RootAssembly {
   private let loadersAssembly: LoadersAssembly
   public let rnAssembly: RNAssembly
 
-  init(repositoriesAssembly: RepositoriesAssembly,
+  init(appInfoProvider: AppInfoProvider,
+       repositoriesAssembly: RepositoriesAssembly,
        coreAssembly: CoreAssembly,
        servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
@@ -26,6 +28,7 @@ public final class RootAssembly {
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly,
        rnAssembly: RNAssembly) {
+    self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.coreAssembly = coreAssembly
     self.servicesAssembly = servicesAssembly
@@ -102,6 +105,7 @@ public final class RootAssembly {
       apiAssembly: apiAssembly
     )
     return MainAssembly(
+      appInfoProvider: appInfoProvider,
       repositoriesAssembly: repositoriesAssembly,
       walletAssembly: walletAssembly,
       walletUpdateAssembly: walletsUpdateAssembly,

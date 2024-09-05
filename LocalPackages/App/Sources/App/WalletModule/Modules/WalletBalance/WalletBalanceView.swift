@@ -33,6 +33,7 @@ private extension WalletBalanceView {
   func setup() {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .Background.page
+    collectionView.contentInset.bottom = 16
     
 //    addSubview(headerView)
     addSubview(collectionView)
