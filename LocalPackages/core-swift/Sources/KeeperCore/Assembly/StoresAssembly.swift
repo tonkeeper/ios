@@ -60,6 +60,22 @@ public final class StoresAssembly {
     return store
   }
   
+  private weak var _convertedBalanceStore: ConvertedBalanceStoreV3?
+    public var convertedBalanceStore: ConvertedBalanceStoreV3 {
+      if let _convertedBalanceStore {
+        return _convertedBalanceStore
+      }
+      let store = ConvertedBalanceStoreV3(
+        walletsStore: walletsStore,
+        balanceStore: balanceStore,
+        tonRatesStore: tonRatesStoreV3,
+        currencyStore: currencyStoreV3
+
+      )
+      _convertedBalanceStore = store
+      return store
+    }
+  
   private weak var _processedBalanceStore: ProcessedBalanceStoreV3?
   public var processedBalanceStore: ProcessedBalanceStoreV3 {
     if let _processedBalanceStore {

@@ -18,7 +18,8 @@ struct BalanceItemMapper {
   }
   
   func mapTonItem(_ item: ProcessedBalanceTonItem,
-                  isSecure: Bool) -> TKListItemContentViewV2.Configuration {
+                  isSecure: Bool,
+                  isPinned: Bool) -> TKListItemContentViewV2.Configuration {
     let caption = createPriceSubtitle(
       price: item.price,
       currency: item.currency,
@@ -30,7 +31,7 @@ struct BalanceItemMapper {
       iconViewConfiguration: .tonConfiguration(),
       textContentViewConfiguration: createTextContentViewConfiguration(
         title: TonInfo.symbol,
-        isPinned: false,
+        isPinned: isPinned,
         caption: caption,
         amount: BigUInt(item.amount),
         amountFractionDigits: TonInfo.fractionDigits,
@@ -42,7 +43,8 @@ struct BalanceItemMapper {
   }
   
   func mapJettonItem(_ item: ProcessedBalanceJettonItem,
-                     isSecure: Bool) -> TKListItemContentViewV2.Configuration {
+                     isSecure: Bool,
+                     isPinned: Bool) -> TKListItemContentViewV2.Configuration {
     let caption = createPriceSubtitle(
       price: item.price,
       currency: item.currency,
@@ -54,7 +56,7 @@ struct BalanceItemMapper {
       iconViewConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo),
       textContentViewConfiguration: createTextContentViewConfiguration(
         title: (item.jetton.jettonInfo.symbol ?? item.jetton.jettonInfo.name),
-        isPinned: false,
+        isPinned: isPinned,
         caption: caption,
         amount: BigUInt(item.amount),
         amountFractionDigits: TonInfo.fractionDigits,
@@ -66,12 +68,13 @@ struct BalanceItemMapper {
   }
   
   func mapStakingItem(_ item: ProcessedBalanceStakingItem,
-                      isSecure: Bool) -> TKListItemContentViewV2.Configuration {
+                      isSecure: Bool,
+                      isPinned: Bool) -> TKListItemContentViewV2.Configuration {
     return TKListItemContentViewV2.Configuration(
       iconViewConfiguration: .configuration(poolInfo: item.poolInfo),
       textContentViewConfiguration: createTextContentViewConfiguration(
         title: TKLocales.BalanceList.StakingItem.title,
-        isPinned: false,
+        isPinned: isPinned,
         caption: item.poolInfo?.name.withTextStyle(.body2, color: .Text.secondary),
         amount: BigUInt(item.info.amount),
         amountFractionDigits: TonInfo.fractionDigits,

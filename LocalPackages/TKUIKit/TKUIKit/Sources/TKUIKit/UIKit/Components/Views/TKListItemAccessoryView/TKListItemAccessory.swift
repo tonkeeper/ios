@@ -6,7 +6,7 @@ public enum TKListItemAccessory {
   case text(TKListItemTextAccessoryView.Configuration)
   case `switch`(TKListItemSwitchAccessoryView.Configuration)
   
-  public var view: UIView? {
+  public var view: UIView {
     switch self {
     case .chevron:
       let accessoryView = TKListItemIconAccessoryView()

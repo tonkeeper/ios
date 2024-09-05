@@ -48,14 +48,37 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in
+      let setContentOffset = {
+        let contentOffset = self?.customView.collectionView.contentOffset ?? .zero
+        self?.customView.collectionView.layoutIfNeeded()
+        self?.customView.collectionView.contentOffset = contentOffset
+      }
       guard let self else { return }
-      let contentOffset = self.customView.collectionView.contentOffset
-      self.dataSource.apply(snapshot, animatingDifferences: isAnimated, completion: {
-        self.customView.collectionView.layoutIfNeeded()
-        self.customView.collectionView.contentOffset = contentOffset
-      })
-      self.customView.collectionView.layoutIfNeeded()
-      self.customView.collectionView.contentOffset = contentOffset
+      if isAnimated {
+        dataSource.apply(snapshot, animatingDifferences: true)
+      } else {
+        if #available(iOS 15.0, *) {
+          dataSource.applySnapshotUsingReloadData(snapshot, completion: nil)
+        } else {
+          dataSource.apply(snapshot, animatingDifferences: false)
+        }
+      }
+      setContentOffset()
+      
+//      let setContentOffset = {
+//        let contentOffset = self.customView.collectionView.contentOffset
+//        self.customView.collectionView.layoutIfNeeded()
+//        self.customView.collectionView.contentOffset = contentOffset
+//      }
+//      
+//      self.dataSource.apply(snapshot, animatingDifferences: isAnimated, completion: {
+//        if self.customView.collectionView.isDragging {
+//          setContentOffset()
+//        }
+//      })
+//      if self.customView.collectionView.isDragging {
+//        setContentOffset()
+//      }
     }
     
     viewModel.didUpdateHeader = { [weak customView] model in
@@ -168,19 +191,19 @@ private extension WalletBalanceViewController {
   
   private var layout: UICollectionViewCompositionalLayout {
     let size = NSCollectionLayoutSize(
-          widthDimension: .fractionalWidth(1.0),
-          heightDimension: .estimated(0)
-        )
-        let header = NSCollectionLayoutBoundarySupplementaryItem(
-          layoutSize: size,
-          elementKind: .balanceHeaderElementKind,
-          alignment: .top
-        )
-        
-        let configuration = UICollectionViewCompositionalLayoutConfiguration()
-        configuration.scrollDirection = .vertical
-        configuration.boundarySupplementaryItems = [header]
-
+      widthDimension: .fractionalWidth(1.0),
+      heightDimension: .estimated(0)
+    )
+    let header = NSCollectionLayoutBoundarySupplementaryItem(
+      layoutSize: size,
+      elementKind: .balanceHeaderElementKind,
+      alignment: .top
+    )
+    
+    let configuration = UICollectionViewCompositionalLayoutConfiguration()
+    configuration.scrollDirection = .vertical
+    configuration.boundarySupplementaryItems = [header]
+    
     let layout = UICollectionViewCompositionalLayout(
       sectionProvider: { [weak dataSource] sectionIndex, _ in
         guard let dataSource else { return nil }

@@ -6,9 +6,20 @@ import TKCore
 import TKLocalize
 
 final class WalletBalanceBalanceModel {
+  struct Item {
+    let balanceItem: ProcessedBalanceItem
+    let isPinned: Bool
+    
+    init(balanceItem: ProcessedBalanceItem, 
+         isPinned: Bool = false) {
+      self.balanceItem = balanceItem
+      self.isPinned = isPinned
+    }
+  }
+  
   struct BalanceListItems {
     let wallet: Wallet
-    let items: [ProcessedBalanceItem]
+    let items: [Item]
     let canManage: Bool
     let isSecure: Bool
   }
@@ -175,25 +186,33 @@ final class WalletBalanceBalanceModel {
     let statePinnedItems = tokenManagementState?.pinnedItems ?? []
     let stateHiddenItems = tokenManagementState?.hiddenItems ?? []
     
-    var pinnedItems = [ProcessedBalanceItem]()
-    var unpinnedItems = [ProcessedBalanceItem]()
+    var pinnedItems = [Item]()
+    var unpinnedItems = [Item]()
     
-    for item in balance.items {
-      if statePinnedItems.contains(item.identifier) {
+    for balanceItem in balance.items {
+      if statePinnedItems.contains(balanceItem.identifier) {
+        let item = Item(
+          balanceItem: balanceItem,
+          isPinned: true
+        )
         pinnedItems.append(item)
       } else {
-        guard !stateHiddenItems.contains(item.identifier) else {
+        guard !stateHiddenItems.contains(balanceItem.identifier) else {
           continue
         }
+        let item = Item(
+          balanceItem: balanceItem,
+          isPinned: false
+        )
         unpinnedItems.append(item)
       }
     }
     
     let sortedPinnedItems = pinnedItems.sorted {
-      guard let lIndex = statePinnedItems.firstIndex(of: $0.identifier) else {
+      guard let lIndex = statePinnedItems.firstIndex(of: $0.balanceItem.identifier) else {
         return false
       }
-      guard let rIndex = statePinnedItems.firstIndex(of: $1.identifier) else {
+      guard let rIndex = statePinnedItems.firstIndex(of: $1.balanceItem.identifier) else {
         return true
       }
       
@@ -201,7 +220,7 @@ final class WalletBalanceBalanceModel {
     }
     
     let sortedUnpinnedItems = unpinnedItems.sorted {
-      switch ($0, $1) {
+      switch ($0.balanceItem, $1.balanceItem) {
       case (.ton, _):
         return true
       case (_, .ton):

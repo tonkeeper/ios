@@ -66,9 +66,9 @@ private extension WalletCoordinator {
     let module = ManageTokensAssembly.module(
       model: ManageTokensModel(
         wallet: wallet,
-        tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStore(wallet: wallet),
-        convertedBalanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
-        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore
+        tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStoreV3,
+        convertedBalanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
+        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStoreV3
       ),
       mapper: ManageTokensListMapper(amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter)
     )

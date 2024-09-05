@@ -28,7 +28,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
   }
   
   public func pinItem(identifier: String, wallet: Wallet) async {
-    await setState { state in
+    await setState { [tokenManagementRepository] state in
       guard let walletState = state[wallet] else {
         return nil
       }
@@ -40,6 +40,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
       )
       var updatedState = state
       updatedState[wallet] = walletUpdatedState
+      try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
     } notify: {
       self.sendEvent(.didUpdateState(wallet: wallet))
@@ -58,9 +59,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
       )
       var updatedState = state
       updatedState[wallet] = walletUpdatedState
-      
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
-      
       return StateUpdate(newState: updatedState)
     } notify: {
       self.sendEvent(.didUpdateState(wallet: wallet))
@@ -80,9 +79,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
       )
       var updatedState = state
       updatedState[wallet] = walletUpdatedState
-      
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
-      
       return StateUpdate(newState: updatedState)
     } notify: {
       self.sendEvent(.didUpdateState(wallet: wallet))
@@ -101,9 +98,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
       )
       var updatedState = state
       updatedState[wallet] = walletUpdatedState
-      
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
-      
       return StateUpdate(newState: updatedState)
     } notify: {
       self.sendEvent(.didUpdateState(wallet: wallet))
@@ -124,9 +119,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
       )
       var updatedState = state
       updatedState[wallet] = walletUpdatedState
-      
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
-      
       return StateUpdate(newState: updatedState)
     } notify: {
       self.sendEvent(.didUpdateState(wallet: wallet))

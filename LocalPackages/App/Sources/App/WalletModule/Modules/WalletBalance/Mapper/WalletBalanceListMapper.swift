@@ -29,20 +29,22 @@ struct WalletBalanceListMapper {
   }
   
   func mapTonItem(_ item: ProcessedBalanceTonItem,
-                  isSecure: Bool) -> WalletBalanceListCell.Configuration {
+                  isSecure: Bool,
+                  isPinned: Bool) -> WalletBalanceListCell.Configuration {
     return WalletBalanceListCell.Configuration(
       walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
-        listItemContentViewConfiguration: balanceItemMapper.mapTonItem(item, isSecure: isSecure),
+        listItemContentViewConfiguration: balanceItemMapper.mapTonItem(item, isSecure: isSecure, isPinned: isPinned),
         commentViewConfiguration: nil
       )
     )
   }
   
   func mapJettonItem(_ item: ProcessedBalanceJettonItem,
-                     isSecure: Bool) -> WalletBalanceListCell.Configuration {
+                     isSecure: Bool,
+                     isPinned: Bool) -> WalletBalanceListCell.Configuration {
     return WalletBalanceListCell.Configuration(
       walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
-        listItemContentViewConfiguration: balanceItemMapper.mapJettonItem(item, isSecure: isSecure),
+        listItemContentViewConfiguration: balanceItemMapper.mapJettonItem(item, isSecure: isSecure, isPinned: isPinned),
         commentViewConfiguration: nil
       )
     )
@@ -50,6 +52,7 @@ struct WalletBalanceListMapper {
   
   func mapStakingItem(_ item: ProcessedBalanceStakingItem,
                       isSecure: Bool,
+                      isPinned: Bool,
                       stakingCollectHandler: (() -> Void)?) -> WalletBalanceListCell.Configuration {
     let commentConfiguration = { () -> TKCommentView.Model? in
       guard let comment = mapStakingItemComment(item, stakingCollectHandler: stakingCollectHandler) else {
@@ -60,7 +63,7 @@ struct WalletBalanceListMapper {
     
     return WalletBalanceListCell.Configuration(
       walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
-        listItemContentViewConfiguration: balanceItemMapper.mapStakingItem(item, isSecure: isSecure),
+        listItemContentViewConfiguration: balanceItemMapper.mapStakingItem(item, isSecure: isSecure, isPinned: isPinned),
         commentViewConfiguration: commentConfiguration()
       )
     )
@@ -106,52 +109,6 @@ struct WalletBalanceListMapper {
     }
     return nil
   }
-  
-//  func mapSetupState(_ state: WalletBalanceSetupModel.State) -> [String: WalletBalanceListCell.Configuration] {
-//    switch state {
-//    case .setup(let setup):
-//      var items = [String: WalletBalanceListCell.Configuration]()
-//      
-//      items[WalletBalanceSetupItem.telegramChannel.rawValue] = createTelegramChannelItem()
-//
-//      if setup.isBiometryVisible {
-//        items[WalletBalanceSetupItem.biometry.rawValue] = createBiometryItem()
-//      }
-//      if setup.isBackupVisible {
-//        items[WalletBalanceSetupItem.backup.rawValue] = createBackupItem()
-//      }
-//      return items
-//    }
-//  }
-
-//  
-//  func mapSetupState(_ state: WalletBalanceSetupModel.State,
-//                     biometrySelectionHandler: @escaping () -> Void,
-//                     biometrySwitchHandler: @escaping (Bool) async -> Bool,
-//                     telegramChannelSelectionHandler: @escaping () -> Void,
-//                     backupSelectionHandler: @escaping () -> Void) -> [String: WalletBalanceListCell.Configuration] {
-//    switch state {
-//    case .none:
-//      return [:]
-//    case .setup(let setup):
-//      var items = [String: WalletBalanceListCell.Model]()
-//      items[WalletBalanceSetupItem.telegramChannel.rawValue] = createTelegramChannelItem(
-//        selectionHandler: telegramChannelSelectionHandler
-//      )
-//      if setup.isBiometryVisible {
-//        items[WalletBalanceSetupItem.biometry.rawValue] = createBiometryItem(
-//          selectionHandler: biometrySelectionHandler, 
-//          switchHandler: biometrySwitchHandler
-//        )
-//      }
-//      if setup.isBackupVisible {
-//        items[WalletBalanceSetupItem.backup.rawValue] = createBackupItem(
-//          selectionHandler: backupSelectionHandler
-//        )
-//      }
-//      return items
-//    }
-//  }
   
   func createTelegramChannelConfiguration() -> WalletBalanceListCell.Configuration {
     createSetupItem(

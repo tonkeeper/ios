@@ -209,7 +209,6 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   private func didUpdateBalanceItems(balanceListItems: WalletBalanceBalanceModel.BalanceListItems) {
-    self.stopStakingItemsUpdateTimer()
     self.balanceListItems = balanceListItems
     let listModel = self.createWalletBalanceListModel(balanceListItems: balanceListItems, 
                                                       setupState: setupState,
@@ -218,7 +217,11 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       self.listModel = listModel
       self.didUpdateSnapshot?(listModel.snapshot, false)
     }
-    self.startStakingItemsUpdateTimer(wallet: balanceListItems.wallet, stakingItems: balanceListItems.items.getStakingItems())
+    self.stopStakingItemsUpdateTimer()
+    self.startStakingItemsUpdateTimer(
+      wallet: balanceListItems.wallet,
+      stakingItems: balanceListItems.items.getStakingItems()
+    )
   }
   
   private func didUpdateSetupState(setupState: WalletBalanceSetupModel.State?) {
@@ -292,11 +295,14 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   ) -> (section: WalletBalanceListSection, cellConfigurations: [String: WalletBalanceListCell.Configuration])  {
     var cellConfigurations = [String: WalletBalanceListCell.Configuration]()
     var sectionItems = [WalletBalanceListItem]()
-    
     balanceListItems.items.forEach { balanceListItem in
-      switch balanceListItem {
+      switch balanceListItem.balanceItem {
       case .ton(let item):
-        let cellConfiguration = listMapper.mapTonItem(item, isSecure: balanceListItems.isSecure)
+        let cellConfiguration = listMapper.mapTonItem(
+          item,
+          isSecure: balanceListItems.isSecure,
+          isPinned: balanceListItem.isPinned
+        )
         let sectionItem = WalletBalanceListItem(
           identifier: item.id) { [weak self] in
             self?.didSelectTon?(balanceListItems.wallet)
@@ -304,7 +310,10 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         cellConfigurations[item.id] = cellConfiguration
         sectionItems.append(sectionItem)
       case .jetton(let item):
-        let cellConfiguration = listMapper.mapJettonItem(item, isSecure: balanceListItems.isSecure)
+        let cellConfiguration = listMapper.mapJettonItem(
+          item,
+          isSecure: balanceListItems.isSecure,
+          isPinned: balanceListItem.isPinned)
         let sectionItem = WalletBalanceListItem(
           identifier: item.id) { [weak self] in
             self?.didSelectJetton?(balanceListItems.wallet, item.jetton, !item.price.isZero)
@@ -314,7 +323,9 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       case .staking(let item):
         let cellConfiguration = listMapper.mapStakingItem(
           item,
-          isSecure: balanceListItems.isSecure, stakingCollectHandler: { [weak self] in
+          isSecure: balanceListItems.isSecure,
+          isPinned: balanceListItem.isPinned,
+          stakingCollectHandler: { [weak self] in
             guard let self,
                   let poolInfo = item.poolInfo else { return }
             self.didSelectCollectStakingItem?(balanceListItems.wallet, poolInfo, item.info)
@@ -510,10 +521,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     return (section, cellConfigurations)
   }
   
-  private func startStakingItemsUpdateTimer(wallet: Wallet, stakingItems: [ProcessedBalanceStakingItem]) {
-    let stakingItemsToUpdate = stakingItems.filter { $0.info.pendingDeposit > 0 || $0.info.pendingWithdraw > 0 }
-    guard !stakingItemsToUpdate.isEmpty else { return }
-    
+  private func startStakingItemsUpdateTimer(wallet: Wallet, 
+                                            stakingItems: [WalletBalanceBalanceModel.Item]) {
     let queue = DispatchQueue(label: "WalletBalanceStakingItemsTimerQueue", qos: .background)
     let timer: DispatchSourceTimer = DispatchSource.makeTimerSource(flags: .strict, queue: queue)
     timer.schedule(deadline: .now(), repeating: 1, leeway: .milliseconds(100))
@@ -521,7 +530,10 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     timer.setEventHandler(handler: { [weak self] in
       guard let self else { return }
       Task {
-        await self.updateStakingItemsOnTimer(wallet: wallet, stakingItems: stakingItemsToUpdate)
+        await self.updateStakingItemsOnTimer(
+          wallet: wallet, 
+          stakingItems: stakingItems
+        )
       }
     })
     self.stakingUpdateTimer = timer
@@ -532,16 +544,18 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     self.stakingUpdateTimer = nil
   }
   
-  func updateStakingItemsOnTimer(wallet: Wallet, stakingItems: [ProcessedBalanceStakingItem]) async {
+  func updateStakingItemsOnTimer(wallet: Wallet, stakingItems: [WalletBalanceBalanceModel.Item]) async {
     let listModel = await self.listModel
     let isSecure = await self.appSettingsStore.getState().isSecureMode
     var listItemsConfigurations = listModel.listItemsConfigurations
     var items = [WalletBalanceListItem: WalletBalanceListCell.Configuration]()
     
-    stakingItems.forEach { stakingItem in
+    for item in stakingItems {
+      guard case let .staking(stakingItem) = item.balanceItem else { continue }
       let cellConfiguration = self.listMapper.mapStakingItem(
         stakingItem,
         isSecure: isSecure,
+        isPinned: item.isPinned,
         stakingCollectHandler: { [weak self] in
           guard let poolInfo = stakingItem.poolInfo else { return }
           self?.didSelectCollectStakingItem?(wallet, poolInfo, stakingItem.info)
@@ -557,7 +571,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         }
       items[item] = cellConfiguration
     }
-    
+
     let updatedListModel = WalletBalanceListModel(
       snapshot: listModel.snapshot,
       listItemsConfigurations: listItemsConfigurations,
@@ -798,13 +812,13 @@ private extension UInt64 {
   static let tonAmountError: UInt64 = 20000000000
 }
 
-private extension Array where Element == ProcessedBalanceItem {
-  func getStakingItems() -> [ProcessedBalanceStakingItem] {
+private extension Array where Element == WalletBalanceBalanceModel.Item {
+  func getStakingItems() -> [WalletBalanceBalanceModel.Item] {
     self.compactMap {
-      guard case .staking(let stakingItem) = $0 else {
+      guard case .staking = $0.balanceItem else {
         return nil
       }
-      return stakingItem
+      return $0
     }
   }
 }

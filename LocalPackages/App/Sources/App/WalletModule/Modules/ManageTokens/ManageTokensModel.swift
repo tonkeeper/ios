@@ -20,40 +20,41 @@ final class ManageTokensModel {
   private let actor = SerialActor<Void>()
 
   private let wallet: Wallet
-  private let convertedBalanceStore: ConvertedBalanceStore
-  private let tokenManagementStore: TokenManagementStore
-  private let stackingPoolsStore: StakingPoolsStore
+  private let convertedBalanceStore: ConvertedBalanceStoreV3
+  private let tokenManagementStore: TokenManagementStoreV3
+  private let stackingPoolsStore: StakingPoolsStoreV3
   
   init(wallet: Wallet,
-       tokenManagementStore: TokenManagementStore,
-       convertedBalanceStore: ConvertedBalanceStore,
-       stackingPoolsStore: StakingPoolsStore) {
+       tokenManagementStore: TokenManagementStoreV3,
+       convertedBalanceStore: ConvertedBalanceStoreV3,
+       stackingPoolsStore: StakingPoolsStoreV3) {
     self.wallet = wallet
     self.tokenManagementStore = tokenManagementStore
     self.convertedBalanceStore = convertedBalanceStore
     self.stackingPoolsStore = stackingPoolsStore
     
-    convertedBalanceStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      Task {
-        await observer.didUpdateBalanceState(newState: newState, oldState: oldState)
-      }
+    convertedBalanceStore.addObserver(self) { observer, event in
+      observer.didGetBalanceStateEvent(event)
     }
     
-    tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      Task {
-        await observer.didUpdateTokenManagementState(newState: newState, oldState: oldState)
-      }
+    tokenManagementStore.addObserver(self) { observer, event in
+      observer.didGetTokenManagmentStoreEvent(event)
     }
+    
+//    tokenManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+//      Task {
+//        await observer.didUpdateTokenManagementState(newState: newState, oldState: oldState)
+//      }
+//    }
   }
   
   func getState() -> State {
-    guard let address = try? wallet.friendlyAddress,
-          let balance = convertedBalanceStore.getState()[address]?.balance else {
+    guard let balance = convertedBalanceStore.getState()[wallet]?.balance else {
       return State(pinnedItems: [], unpinnedItems: [])
     }
     
-    let tokenManagementState = tokenManagementStore.getState()
-    let stackingPools = stackingPoolsStore.getState()[address] ?? []
+    let tokenManagementState = tokenManagementStore.getState()[wallet]
+    let stackingPools = stackingPoolsStore.getState()[wallet] ?? []
     
     return createState(
       balance: balance,
@@ -62,69 +63,136 @@ final class ManageTokensModel {
     )
   }
   
-  func pinItem(identifier: String) async {
-    await tokenManagementStore.pinItem(identifier: identifier)
-  }
-  
-  func unpinItem(identifier: String) async {
-    await tokenManagementStore.unpinItem(identifier: identifier)
-  }
-  
-  func hideItem(identifier: String) async {
-    await tokenManagementStore.hideItem(identifier: identifier)
-  }
-  
-  func unhideItem(identifier: String) async {
-    await tokenManagementStore.unhideItem(identifier: identifier)
-  }
-  
-  func movePinnedItem(from: Int, to: Int) async {
-    await tokenManagementStore.movePinnedItem(from: from, to: to)
-  }
-  
-  private func didUpdateBalanceState(newState: [FriendlyAddress: ConvertedBalanceState],
-                                     oldState: [FriendlyAddress: ConvertedBalanceState]?) async {
-    await actor.addTask { [wallet] in
-      guard let address = try? wallet.friendlyAddress,
-      let balanceState = newState[address],
-      balanceState != oldState?[address] else {
-        return
-      }
+  func getState() async -> State {
+    guard let balance = await convertedBalanceStore.getState()[wallet]?.balance else {
+      return State(pinnedItems: [], unpinnedItems: [])
+    }
     
-      let tokenManagementState = self.tokenManagementStore.getState()
-      let stackingPools = self.stackingPoolsStore.getState()[address] ?? []
-      
-      let state = self.createState(
-        balance: balanceState.balance,
-        tokenManagementState: tokenManagementState,
-        stackingPools: stackingPools
-      )
-      self.didUpdateState?(state)
+    let tokenManagementState = await tokenManagementStore.getState()[wallet]
+    let stackingPools = await stackingPoolsStore.getState()[wallet] ?? []
+    
+    return createState(
+      balance: balance,
+      tokenManagementState: tokenManagementState,
+      stackingPools: stackingPools
+    )
+  }
+  
+  func pinItem(identifier: String) {
+    Task {
+      await tokenManagementStore.pinItem(identifier: identifier, wallet: wallet)
     }
   }
   
-  private func didUpdateTokenManagementState(newState: TokenManagementState,
-                                             oldState: TokenManagementState?) async {
-    await actor.addTask {
-      guard newState != oldState,
-            let address = try? self.wallet.friendlyAddress,
-            let balance = self.convertedBalanceStore.getState()[address]?.balance else {
-        return
-      }
-      
-      let stackingPools = self.stackingPoolsStore.getState()[address] ?? []
-      
-      let state = self.createState(
-        balance: balance,
-        tokenManagementState: newState,
-        stackingPools: stackingPools
-      )
-      self.didUpdateState?(state)
+  func unpinItem(identifier: String) {
+    Task {
+      await tokenManagementStore.unpinItem(identifier: identifier, wallet: wallet)
     }
   }
+  
+  func hideItem(identifier: String) {
+    Task {
+      await tokenManagementStore.hideItem(identifier: identifier, wallet: wallet)
+    }
+  }
+  
+  func unhideItem(identifier: String) {
+    Task {
+      await tokenManagementStore.unhideItem(identifier: identifier, wallet: wallet)
+    }
+  }
+  
+  func movePinnedItem(from: Int, to: Int) {
+    Task {
+      await tokenManagementStore.movePinnedItem(from: from, to: to, wallet: wallet)
+    }
+  }
+  
+  private func didGetBalanceStateEvent(_ event: ConvertedBalanceStoreV3.Event) {
+    switch event {
+    case .didUpdateConvertedBalance(_, let wallet):
+      guard wallet == self.wallet else { return }
+      Task {
+        await actor.addTask { [wallet] in
+          guard let balance = await self.convertedBalanceStore.getState()[wallet]?.balance else { return }
+          let tokenManagementState = await self.tokenManagementStore.getState()[wallet]
+          let stackingPools = await self.stackingPoolsStore.getState()[wallet] ?? []
+          
+          let state = self.createState(
+            balance: balance,
+            tokenManagementState: tokenManagementState,
+            stackingPools: stackingPools
+          )
+          self.didUpdateState?(state)
+        }
+      }
+    }
+  }
+  
+  private func didGetTokenManagmentStoreEvent(_ event: TokenManagementStoreV3.Event) {
+    switch event {
+    case .didUpdateState(let wallet):
+      guard wallet == self.wallet else { return }
+      Task {
+        await actor.addTask { [wallet] in
+          guard let balance = await self.convertedBalanceStore.getState()[wallet]?.balance else { return }
+          let tokenManagementState = await self.tokenManagementStore.getState()[wallet]
+          let stackingPools = await self.stackingPoolsStore.getState()[wallet] ?? []
+          
+          let state = self.createState(
+            balance: balance,
+            tokenManagementState: tokenManagementState,
+            stackingPools: stackingPools
+          )
+          self.didUpdateState?(state)
+        }
+      }
+    }
+  }
+  
+//  private func didUpdateBalanceState(newState: [FriendlyAddress: ConvertedBalanceState],
+//                                     oldState: [FriendlyAddress: ConvertedBalanceState]?) async {
+//    await actor.addTask { [wallet] in
+//      guard let address = try? wallet.friendlyAddress,
+//      let balanceState = newState[address],
+//      balanceState != oldState?[address] else {
+//        return
+//      }
+//    
+//      let tokenManagementState = self.tokenManagementStore.getState()
+//      let stackingPools = self.stackingPoolsStore.getState()[address] ?? []
+//      
+//      let state = self.createState(
+//        balance: balanceState.balance,
+//        tokenManagementState: tokenManagementState,
+//        stackingPools: stackingPools
+//      )
+//      self.didUpdateState?(state)
+//    }
+//  }
+//  
+//  private func didUpdateTokenManagementState(newState: TokenManagementState,
+//                                             oldState: TokenManagementState?) async {
+//    await actor.addTask {
+//      guard newState != oldState,
+//            let address = try? self.wallet.friendlyAddress,
+//            let balance = self.convertedBalanceStore.getState()[address]?.balance else {
+//        return
+//      }
+//      
+//      let stackingPools = self.stackingPoolsStore.getState()[address] ?? []
+//      
+//      let state = self.createState(
+//        balance: balance,
+//        tokenManagementState: newState,
+//        stackingPools: stackingPools
+//      )
+//      self.didUpdateState?(state)
+//    }
+//  }
   
   private func createState(balance: ConvertedBalance, 
-                           tokenManagementState: TokenManagementState,
+                           tokenManagementState: TokenManagementState?,
                            stackingPools: [StackingPoolInfo]) -> State {
     
     let balanceItems = BalanceItems(
@@ -132,23 +200,25 @@ final class ManageTokensModel {
       stackingPools: stackingPools
     )
     
+    let statePinnedItems = tokenManagementState?.pinnedItems ?? []
+    let stateHiddenItems = tokenManagementState?.hiddenItems ?? []
     var pinnedItems = [BalanceItem]()
     var unpinnedItems = [UnpinnedItem]()
     
     for item in balanceItems.items {
-      if tokenManagementState.pinnedItems.contains(item.identifier) {
+      if statePinnedItems.contains(item.identifier) {
         pinnedItems.append(item)
       } else {
-        let isHidden = tokenManagementState.hiddenItems.contains(item.identifier)
+        let isHidden = stateHiddenItems.contains(item.identifier)
         unpinnedItems.append(UnpinnedItem(item: item, isHidden: isHidden))
       }
     }
     
     let sortedPinnedItems = pinnedItems.sorted {
-      guard let lIndex = tokenManagementState.pinnedItems.firstIndex(of: $0.identifier) else {
+      guard let lIndex = statePinnedItems.firstIndex(of: $0.identifier) else {
         return false
       }
-      guard let rIndex = tokenManagementState.pinnedItems.firstIndex(of: $1.identifier) else {
+      guard let rIndex = statePinnedItems.firstIndex(of: $1.identifier) else {
         return true
       }
       

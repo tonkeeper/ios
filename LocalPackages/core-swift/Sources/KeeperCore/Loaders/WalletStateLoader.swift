@@ -82,6 +82,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
     }
     
     Task {
+      await setReloadStateTask(task: nil)
       await setReloadStateTask(task: task)
     }
   }
