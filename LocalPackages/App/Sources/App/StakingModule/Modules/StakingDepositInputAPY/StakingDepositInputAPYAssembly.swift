@@ -9,7 +9,7 @@ struct StakingDepositInputAPYAssembly {
   -> MVVMModule<StakingDepositInputAPYViewController, Void, StakingInputDetailsModuleInput> {
     let viewController = StakingDepositInputAPYViewController(
       wallet: wallet,
-      balanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
+      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
       decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter
     )

@@ -12,21 +12,27 @@ final class StakingDepositInputModelConfigurator: StakingInputModelConfigurator 
   var stakingPoolInfo: StackingPoolInfo?
   
   func getBalance() -> UInt64 {
-    guard let address = try? wallet.friendlyAddress else { return 0 }
-    return UInt64((balanceStore.getState()[address]?.balance.tonBalance.tonBalance.amount ?? 0))
+    let balance = UInt64(balanceStore.getState()[wallet]?.balance.tonBalance.tonBalance.amount ?? 0)
+    return balance
   }
 
   private let wallet: Wallet
-  private let balanceStore: ConvertedBalanceStore
+  private let balanceStore: ConvertedBalanceStoreV3
   
   init(wallet: Wallet,
-       balanceStore: ConvertedBalanceStore) {
+       balanceStore: ConvertedBalanceStoreV3) {
     self.wallet = wallet
     self.balanceStore = balanceStore
     
-    self.balanceStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      guard let address = try? wallet.friendlyAddress else { return }
-      observer.didUpdateBalance?(UInt64(newState[address]?.balance.tonBalance.tonBalance.amount ?? 0))
+    balanceStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateConvertedBalance(_, let wallet):
+        guard wallet == observer.wallet else { return }
+        DispatchQueue.main.async {
+          let balance = UInt64(observer.balanceStore.getState()[wallet]?.balance.tonBalance.tonBalance.amount ?? 0)
+          observer.didUpdateBalance?(balance)
+        }
+      }
     }
   }
   

@@ -33,22 +33,6 @@ public final class MainStoresAssembly {
     return store
   }
   
-  private weak var _convertedBalanceStore: ConvertedBalanceStore?
-    public var convertedBalanceStore: ConvertedBalanceStore {
-      if let _convertedBalanceStore {
-        return _convertedBalanceStore
-      }
-      let store = ConvertedBalanceStore(
-
-        balanceStore: balanceStore,
-        tonRatesStore: storesAssembly.tonRatesStore,
-        currencyStore: storesAssembly.currencyStore
-
-      )
-      _convertedBalanceStore = store
-      return store
-    }
-  
   private weak var _accountNftsStore: AccountNFTsStore?
   public var accountNftsStore: AccountNFTsStore {
     if let _accountNftsStore {

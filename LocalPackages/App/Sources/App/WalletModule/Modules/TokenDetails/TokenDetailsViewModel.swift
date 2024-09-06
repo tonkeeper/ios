@@ -59,14 +59,14 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   // MARK: - Dependencies
   
   private let wallet: Wallet
-  private let balanceStore: ConvertedBalanceStore
+  private let balanceStore: ConvertedBalanceStoreV3
   private let configurator: TokenDetailsConfigurator
   private let chartViewControllerProvider: (() -> UIViewController?)?
   
   // MARK: - Init
   
   init(wallet: Wallet,
-       balanceStore: ConvertedBalanceStore,
+       balanceStore: ConvertedBalanceStoreV3,
        configurator: TokenDetailsConfigurator,
        chartViewControllerProvider: (() -> UIViewController?)?) {
     self.wallet = wallet
@@ -79,10 +79,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
 private extension TokenDetailsViewModelImplementation {
   func setInitialState() {
     syncQueue.sync {
-      guard let address = try? wallet.friendlyAddress else {
-        return
-      }
-      let balance = balanceStore.getState()[address]?.balance
+      let balance = balanceStore.getState()[wallet]?.balance
       let model = configurator.getTokenModel(balance: balance)
       DispatchQueue.main.async {
         self.didUpdateModel(model)
@@ -91,20 +88,19 @@ private extension TokenDetailsViewModelImplementation {
   }
   
   func setupObservations() {
-    balanceStore.addObserver(
-      self,
-      notifyOnAdded: false) { observer, newState, oldState in
+    balanceStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateConvertedBalance(_, let wallet):
+        guard wallet == observer.wallet else { return }
         observer.syncQueue.sync {
-          guard let address = try? observer.wallet.friendlyAddress else {
-            return
-          }
-          let balance = newState[address]?.balance
+          let balance = observer.balanceStore.getState()[wallet]?.balance
           let model = observer.configurator.getTokenModel(balance: balance)
           DispatchQueue.main.async {
             self.didUpdateModel(model)
           }
         }
       }
+    }
   }
   
   func didUpdateModel(_ model: TokenDetailsModel) {

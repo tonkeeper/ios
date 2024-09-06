@@ -607,7 +607,7 @@ private extension MainCoordinator {
     
     let module = TokenDetailsAssembly.module(
       wallet: wallet,
-      balanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
+      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
       configurator: TonTokenDetailsConfigurator(
         mapper: TokenDetailsMapper(
           amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
@@ -654,7 +654,7 @@ private extension MainCoordinator {
     
     let module = TokenDetailsAssembly.module(
       wallet: wallet,
-      balanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore,
+      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
       configurator: JettonTokenDetailsConfigurator(jettonItem: jettonItem,
         mapper: TokenDetailsMapper(
           amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,

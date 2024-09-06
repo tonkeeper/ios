@@ -39,7 +39,7 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
     
     let configurator = StakingDepositInputModelConfigurator(
       wallet: wallet,
-      balanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore
+      balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
     )
 
     let module = StakingInputAssembly.module(
