@@ -74,7 +74,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     self.appStateTracker = appStateTracker
     self.reachabilityTracker = reachabilityTracker
     
-    self.mainCoordinatorStateManager = MainCoordinatorStateManager(walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore)
+    self.mainCoordinatorStateManager = MainCoordinatorStateManager(walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore)
     
     super.init(router: router)
     
@@ -93,7 +93,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     mainCoordinatorStateManager.didUpdateState = { [weak self] state in
       self?.handleStateUpdate(state)
     }
-    handleStateUpdate(mainCoordinatorStateManager.state)
+    if let state = try? mainCoordinatorStateManager.getState() {
+      handleStateUpdate(state)
+    }
     mainController.start()
     _ = handleDeeplink(deeplink: deeplink)
   }
@@ -475,7 +477,7 @@ private extension MainCoordinator {
       model: WalletsPickerListModel(
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore
       ),
-      totalBalancesStore: keeperCoreMainAssembly.mainStoresAssembly.walletsTotalBalanceStore,
+      totalBalancesStore: keeperCoreMainAssembly.storesAssembly.totalBalanceStore,
       decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )

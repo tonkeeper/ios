@@ -3,7 +3,7 @@ import KeeperCore
 
 struct WalletsListModelState {
   let wallets: [Wallet]
-  let selectedWallet: Wallet?
+  let selectedWallet: Int?
 }
 
 protocol WalletsListModel: AnyObject {
@@ -51,7 +51,7 @@ final class WalletsPickerListModel: WalletsListModel {
     
     return WalletsListModelState(
       wallets: state.wallets,
-      selectedWallet: state.activeWalelt
+      selectedWallet: state.wallets.firstIndex(of: state.activeWalelt)
     )
   }
   
@@ -74,7 +74,7 @@ final class WalletsPickerListModel: WalletsListModel {
     didUpdateState?(
       WalletsListModelState(
         wallets: state.wallets,
-        selectedWallet: state.activeWalelt
+        selectedWallet: state.wallets.firstIndex(of: state.activeWalelt)
       )
     )
   }
@@ -84,9 +84,9 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   
   var didSelectWallet: ((Wallet) -> Void)?
   
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   
-  init(walletsStore: WalletsStore) {
+  init(walletsStore: WalletsStoreV3) {
     self.walletsStore = walletsStore
   }
   
@@ -97,12 +97,18 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   var didUpdateState: ((WalletsListModelState) -> Void)?
   
   func getState() -> WalletsListModelState {
-    let storeState = walletsStore.getState()
-    let wallets = storeState.wallets.filter { $0.isTonconnectAvailable }
-    guard let activeWallet = (wallets.first(where: { $0 == storeState.activeWallet }) ?? wallets.first) else {
+    guard let state = try? walletsStore.stateWallets else {
+      return WalletsListModelState(
+        wallets: [],
+        selectedWallet: nil
+      )
+    }
+
+    let wallets = state.wallets.filter { $0.isTonconnectAvailable }
+    guard let activeWallet = (wallets.first(where: { $0 == state.activeWalelt }) ?? wallets.first) else {
       return WalletsListModelState(wallets: wallets, selectedWallet: nil)
     }
-    return WalletsListModelState(wallets: wallets, selectedWallet: activeWallet)
+    return WalletsListModelState(wallets: wallets, selectedWallet: wallets.firstIndex(of: activeWallet))
   }
   
   func selectWallet(wallet: Wallet) {

@@ -98,7 +98,7 @@ final class ManageTokensViewController: GenericViewViewController<ManageTokensVi
     return layout
   }
   
-  func setup() {
+  private func setup() {
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
     customView.collectionView.addGestureRecognizer(reorderGesture)

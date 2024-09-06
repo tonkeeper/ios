@@ -15,45 +15,32 @@ final class MainCoordinatorStateManager {
   }
   
   var didUpdateState: ((State) -> Void)?
+  private let walletsStore: WalletsStoreV3
   
-  
-  var state: State {
-    get {
-      guard let _state else {
-        let walletsState = walletsStore.getState()
-        let state = createState(walletsState: walletsState)
-        self._state = state
-        return state
+  init(walletsStore: WalletsStoreV3) {
+    self.walletsStore = walletsStore
+    walletsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didChangeActiveWallet:
+        DispatchQueue.main.async {
+          guard let state = try? observer.createState(activeWallet: walletsStore.getActiveWallet()) else { return }
+          observer.didUpdateState?(state)
+        }
+      default: break
       }
-      return _state
-    }
-    set {
-      guard newValue != _state else { return }
-      _state = newValue
-      didUpdateState?(newValue)
     }
   }
-  private var _state: State?
   
-  private let walletsStore: WalletsStore
-  
-  init(walletsStore: WalletsStore) {
-    self.walletsStore = walletsStore
-    walletsStore.addObserver(
-      self,
-      notifyOnAdded: false) { observer, walletsState, _ in
-        DispatchQueue.main.async {
-          let state = observer.createState(walletsState: walletsState)
-          self.state = state
-        }
-      }
+  func getState() throws -> State {
+    let state = try createState(activeWallet: walletsStore.getActiveWallet())
+    return state
   }
 
-  private func createState(walletsState: WalletsState) -> State {
+  private func createState(activeWallet: Wallet) -> State {
     var tabs = [State.Tab]()
     tabs.append(.wallet)
     tabs.append(.history)
-    if walletsState.activeWallet.isBrowserAvailable {
+    if activeWallet.isBrowserAvailable {
       tabs.append(.browser)
     }
     tabs.append(.purchases)

@@ -90,16 +90,6 @@ public final class MainStoresAssembly {
     return store
   }
   
-  private weak var _walletsTotalBalanceStore: TotalBalanceStore?
-  public var walletsTotalBalanceStore: TotalBalanceStore {
-    if let _walletsTotalBalanceStore {
-      return _walletsTotalBalanceStore
-    }
-    let store = TotalBalanceStore(processedBalanceStore: processedBalanceStore)
-    _walletsTotalBalanceStore = store
-    return store
-  }
-  
   private weak var _backgroundUpdateUpdater: BackgroundUpdateUpdater?
   public var backgroundUpdateUpdater: BackgroundUpdateUpdater {
     if let backgroundUpdateUpdater = _backgroundUpdateUpdater {

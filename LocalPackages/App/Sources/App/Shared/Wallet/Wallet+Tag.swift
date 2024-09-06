@@ -134,4 +134,9 @@ extension Wallet {
       backgroundColor: .Background.contentTint
     )
   }
+  
+  func listTagConfiguration() -> TKTagView.Configuration? {
+    guard let tag = tag else { return nil }
+    return TKTagView.Configuration.outlintTag(text: tag)
+  }
 }
