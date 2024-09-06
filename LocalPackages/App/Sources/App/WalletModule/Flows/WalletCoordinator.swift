@@ -10,7 +10,7 @@ public final class WalletCoordinator: RouterCoordinator<NavigationControllerRout
   var didTapScan: (() -> Void)?
   var didLogout: (() -> Void)?
   var didTapWalletButton: (() -> Void)?
-  var didTapSend: ((Token) -> Void)?
+  var didTapSend: ((Wallet, Token) -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
   var didTapReceive: ((Token, _ wallet: Wallet) -> Void)?
   var didTapSwap: (() -> Void)?
@@ -100,8 +100,8 @@ private extension WalletCoordinator {
       
     }
     
-    module.output.didTapSend = { [weak self] in
-      self?.didTapSend?(.ton)
+    module.output.didTapSend = { [weak self] wallet in
+      self?.didTapSend?(wallet, .ton)
     }
     
     module.output.didTapReceive = { [weak self] wallet in

@@ -4,14 +4,15 @@ import KeeperCore
 
 struct SendV3Assembly {
   private init() {}
-  static func module(sendItem: SendItem,
-                     recipient: Recipient?, 
+  static func module(wallet: Wallet,
+                     sendItem: SendItem,
+                     recipient: Recipient?,
                      coreAssembly: TKCore.CoreAssembly,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly) -> MVVMModule<SendV3ViewController, SendV3ModuleOutput, SendV3ModuleInput> {
     let viewModel = SendV3ViewModelImplementation(
       sendItem: sendItem,
       recipient: recipient,
-      sendController: keeperCoreMainAssembly.sendV3Controller(),
+      sendController: keeperCoreMainAssembly.sendV3Controller(wallet: wallet),
       walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore
     )
     let viewController = SendV3ViewController(viewModel: viewModel)

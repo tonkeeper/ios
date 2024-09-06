@@ -96,6 +96,7 @@ private extension CollectiblesDetailsCoordinator {
       )
     ).createSendTokenCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
+      wallet: wallet,
       sendItem: .nft(nft)
     )
     

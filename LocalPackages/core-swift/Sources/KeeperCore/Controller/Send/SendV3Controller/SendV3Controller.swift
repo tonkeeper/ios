@@ -3,22 +3,22 @@ import TonSwift
 import BigInt
 
 public final class SendV3Controller {
-  private let walletsStore: WalletsStore
-  private let balanceStore: ConvertedBalanceStore
+  private let wallet: Wallet
+  private let balanceStore: ConvertedBalanceStoreV3
   private let knownAccountsStore: KnownAccountsStore
   private let dnsService: DNSService
-  private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStore
+  private let tonRatesStore: TonRatesStoreV3
+  private let currencyStore: CurrencyStoreV3
   private let amountFormatter: AmountFormatter
   
-  init(walletsStore: WalletsStore,
-       balanceStore: ConvertedBalanceStore,
+  init(wallet: Wallet,
+       balanceStore: ConvertedBalanceStoreV3,
        knownAccountsStore: KnownAccountsStore,
        dnsService: DNSService,
-       tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStore,
+       tonRatesStore: TonRatesStoreV3,
+       currencyStore: CurrencyStoreV3,
        amountFormatter: AmountFormatter) {
-    self.walletsStore = walletsStore
+    self.wallet = wallet
     self.balanceStore = balanceStore
     self.knownAccountsStore = knownAccountsStore
     self.dnsService = dnsService
@@ -43,7 +43,7 @@ public final class SendV3Controller {
                         isMemoRequired: knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false))
     } else if let domain = try? await dnsService.resolveDomainName(
       input,
-      isTestnet: walletsStore.getState().activeWallet.isTestnet) {
+      isTestnet: wallet.isTestnet) {
       return Recipient(recipientAddress: .domain(domain),
                        isMemoRequired: knownAccounts.first(where: { $0.address == domain.friendlyAddress.address })?.requireMemo ?? false)
     } else {
@@ -86,10 +86,7 @@ public final class SendV3Controller {
   }
   
   public func isAmountAvailableToSend(amount: BigUInt, token: Token) async -> Bool {
-    guard let address = try? await walletsStore.getState().activeWallet.friendlyAddress,
-          let balance = await balanceStore.getState()[address]?.balance else {
-      return false
-    }
+    guard let balance = await balanceStore.getState()[wallet]?.balance else { return false }
     switch token {
     case .ton:
       return BigUInt(balance.tonBalance.tonBalance.amount) >= amount
@@ -101,7 +98,7 @@ public final class SendV3Controller {
   
   public func convertTokenAmountToCurrency(token: Token, _ amount: BigUInt) async -> String {
     guard !amount.isZero else { return "" }
-    let currency = await currencyStore.getCurrency()
+    let currency = await currencyStore.getState()
     switch token {
     case .ton:
       guard let rate = await tonRatesStore.getState().first(where: { $0.currency == currency }) else { return ""}
@@ -114,15 +111,17 @@ public final class SendV3Controller {
       )
       return "≈ \(formatted)"
     case .jetton(let jettonItem):
-      let wallet = await walletsStore.getState().activeWallet
-        guard let address = try? wallet.friendlyAddress,
-              let balance = await balanceStore.getState()[address],
-              let jettonBalance = balance.balance.jettonsBalance.first(where: {
-                $0.jettonBalance.item.jettonInfo == jettonItem.jettonInfo
-              }) else { return "" }
+      guard let jettonRate = await balanceStore.getState()[wallet]?.balance.jettonsBalance
+        .first(where: { $0.jettonBalance.item.jettonInfo == jettonItem.jettonInfo })?
+        .jettonBalance.rates[currency]  else {
+        return ""
+      }
       
-      guard let rate = jettonBalance.jettonBalance.rates[currency] else { return ""}
-      let converted = RateConverter().convert(amount: amount, amountFractionLength: jettonItem.jettonInfo.fractionDigits, rate: rate)
+      let converted = RateConverter().convert(
+        amount: amount,
+        amountFractionLength: jettonItem.jettonInfo.fractionDigits,
+        rate: jettonRate
+      )
       let formatted = amountFormatter.formatAmount(
         converted.amount,
         fractionDigits: converted.fractionLength,
@@ -138,9 +137,7 @@ public final class SendV3Controller {
     case remaining(String)
   }
   public func calculateRemaining(token: Token, tokenAmount: BigUInt) async -> Remaining {
-    let wallet = await walletsStore.getState().activeWallet
-    guard let address = try? wallet.friendlyAddress,
-          let balance = await balanceStore.getState()[address]?.balance else {
+    guard let balance = await balanceStore.getState()[wallet]?.balance else {
       return .insufficient
     }
     let amount: BigUInt
@@ -174,9 +171,7 @@ public final class SendV3Controller {
   }
   
   public func getMaximumAmount(token: Token) async -> BigUInt {
-    let wallet = await walletsStore.getState().activeWallet
-    guard let address = try? wallet.friendlyAddress,
-          let balance = await balanceStore.getState()[address]?.balance else {
+    guard let balance = await balanceStore.getState()[wallet]?.balance else {
       return .zero
     }
     switch token {
@@ -194,8 +189,6 @@ public final class SendV3Controller {
     case ok
   }
   public func validateComment(comment: String) -> CommentState {
-    let wallet = walletsStore.getState().activeWallet
-    
     if (wallet.kind == .ledger && comment.count > 0 && !comment.containsOnlyAsciiCharacters) {
       return .ledgerNonAsciiError
     }

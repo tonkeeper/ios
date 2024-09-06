@@ -174,14 +174,14 @@ public final class MainAssembly {
     )
   }
   
-  public func sendV3Controller() -> SendV3Controller {
+  public func sendV3Controller(wallet: Wallet) -> SendV3Controller {
     SendV3Controller(
-      walletsStore: walletAssembly.walletsStore,
-      balanceStore: mainStoresAssembly.convertedBalanceStore,
+      wallet: wallet,
+      balanceStore: storesAssembly.convertedBalanceStore,
       knownAccountsStore: storesAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
-      tonRatesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
+      tonRatesStore: storesAssembly.tonRatesStoreV3,
+      currencyStore: storesAssembly.currencyStoreV3,
       amountFormatter: formattersAssembly.amountFormatter
     )
   }

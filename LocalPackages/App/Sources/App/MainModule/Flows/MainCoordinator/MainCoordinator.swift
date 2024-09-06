@@ -126,8 +126,8 @@ private extension MainCoordinator {
       self?.openWalletPicker()
     }
     
-    walletCoordinator.didTapSend = { [weak self] token in
-      self?.openSend(token: token)
+    walletCoordinator.didTapSend = { [weak self] wallet, token in
+      self?.openSend(wallet: wallet, token: token)
     }
     
     walletCoordinator.didTapSwap = { [weak self] in
@@ -251,7 +251,7 @@ private extension MainCoordinator {
     router.present(navigationController)
   }
   
-  func openSend(token: Token, recipient: Recipient? = nil) {
+  func openSend(wallet: Wallet, token: Token, recipient: Recipient? = nil) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     
@@ -262,6 +262,7 @@ private extension MainCoordinator {
       )
     ).createSendTokenCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
+      wallet: wallet,
       sendItem: .token(token, amount: 0),
       recipient: recipient
     )
@@ -287,12 +288,14 @@ private extension MainCoordinator {
   
   func openSend(recipient: String, jettonAddress: Address?) {
     ToastPresenter.showToast(configuration: .loading)
+    let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     Task {
       do {
-        let recipient = try await mainController.resolveSend(recipient: recipient, jettonAddress: jettonAddress)
+        let wallet = try await walletsStore.getActiveWallet()
+        let recipient = try await self.mainController.resolveSend(recipient: recipient, jettonAddress: jettonAddress)
         await MainActor.run {
           ToastPresenter.hideAll()
-          self.openSend(token: .ton, recipient: recipient)
+          self.openSend(wallet: wallet, token: .ton, recipient: recipient)
         }
       } catch {
         await MainActor.run {
@@ -623,7 +626,7 @@ private extension MainCoordinator {
     }
     
     module.output.didTapSend = { [weak self] token in
-      self?.openSend(token: token)
+      self?.openSend(wallet: wallet, token: token)
     }
     
     module.output.didTapBuyOrSell = { [weak self] in
@@ -671,7 +674,7 @@ private extension MainCoordinator {
     }
     
     module.output.didTapSend = { [weak self] token in
-      self?.openSend(token: token)
+      self?.openSend(wallet: wallet, token: token)
     }
     
     navigationController.pushViewController(module.view, animated: true)

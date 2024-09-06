@@ -12,16 +12,19 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
+  private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let sendItem: SendItem
   private let recipient: Recipient?
   
   init(router: NavigationControllerRouter,
+       wallet: Wallet,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        sendItem: SendItem,
        recipient: Recipient? = nil ) {
+    self.wallet = wallet
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.sendItem = sendItem
@@ -50,6 +53,7 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
 private extension SendTokenCoordinator {
   func openSend() {
     let module = SendV3Assembly.module(
+      wallet: wallet,
       sendItem: sendItem,
       recipient: recipient,
       coreAssembly: coreAssembly,
