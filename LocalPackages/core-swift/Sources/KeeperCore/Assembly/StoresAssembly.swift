@@ -180,18 +180,7 @@ public final class StoresAssembly {
       return store
     }
   }
-  
-  private weak var _notificationsStore: NotificationsStore?
-  public var notificationsStore: NotificationsStore {
-    if let store = _notificationsStore {
-      return store
-    } else {
-      let store = NotificationsStore()
-      _notificationsStore = store
-      return store
-    }
-  }
-  
+ 
   private weak var _internalNotificationsStore: InternalNotificationsStore?
   public var internalNotificationsStore: InternalNotificationsStore {
     if let store = _internalNotificationsStore {
