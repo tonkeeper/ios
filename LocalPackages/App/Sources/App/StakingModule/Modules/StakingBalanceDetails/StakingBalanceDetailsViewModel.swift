@@ -75,7 +75,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   private let listViewModelBuilder: StakingListViewModelBuilder
   private let linksViewModelBuilder: StakingLinksViewModelBuilder
   private let balanceItemMapper: BalanceItemMapper
-  private let stakingPoolsStore: StakingPoolsStoreV3
+  private let stakingPoolsStore: StakingPoolsStore
   private let balanceStore: ProcessedBalanceStore
   private let tonRatesStore: TonRatesStoreV3
   private let currencyStore: CurrencyStoreV3
@@ -90,7 +90,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
        listViewModelBuilder: StakingListViewModelBuilder,
        linksViewModelBuilder: StakingLinksViewModelBuilder,
        balanceItemMapper: BalanceItemMapper,
-       stakingPoolsStore: StakingPoolsStoreV3,
+       stakingPoolsStore: StakingPoolsStore,
        balanceStore: ProcessedBalanceStore,
        tonRatesStore: TonRatesStoreV3,
        currencyStore: CurrencyStoreV3,

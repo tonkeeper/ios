@@ -146,8 +146,7 @@ private extension StakingDepositInputPoolPickerViewController {
   }
   
   func getPickerSections(completion: @escaping (StakingListModel) -> Void) {
-    guard let walletAddress = try? self.wallet.friendlyAddress,
-          let pools = self.stakingPoolsStore.getState()[walletAddress] else {
+    guard let pools = self.stakingPoolsStore.getState()[wallet] else {
       return
     }
     

@@ -119,7 +119,7 @@ public final class LoadersAssembly {
       currencyStore: storesAssembly.currencyStoreV3,
       walletsStore: storesAssembly.walletsStore,
       ratesStore: storesAssembly.tonRatesStoreV3,
-      stakingPoolsStore: storesAssembly.stackingPoolsStoreV3,
+      stakingPoolsStore: storesAssembly.stackingPoolsStore,
       balanceService: servicesAssembly.balanceService(),
       stackingService: servicesAssembly.stackingService(),
       accountNFTService: servicesAssembly.accountNftService(),

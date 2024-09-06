@@ -1,6 +1,6 @@
 import Foundation
 
-public final class StakingPoolsStoreV3: StoreV3<StakingPoolsStoreV3.Event, StakingPoolsStoreV3.State> {
+public final class StakingPoolsStore: StoreV3<StakingPoolsStore.Event, StakingPoolsStore.State> {
   public typealias State = [Wallet: [StackingPoolInfo]]
   
   public enum Event {

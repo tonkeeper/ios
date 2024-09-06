@@ -28,7 +28,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
   private let currencyStore: CurrencyStoreV3
   private let walletsStore: WalletsStoreV3
   private let ratesStore: TonRatesStoreV3
-  private let stakingPoolsStore: StakingPoolsStoreV3
+  private let stakingPoolsStore: StakingPoolsStore
   private let balanceService: BalanceService
   private let stackingService: StakingService
   private let accountNFTService: AccountNFTService
@@ -39,7 +39,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
               currencyStore: CurrencyStoreV3,
               walletsStore: WalletsStoreV3,
               ratesStore: TonRatesStoreV3,
-              stakingPoolsStore: StakingPoolsStoreV3,
+              stakingPoolsStore: StakingPoolsStore,
               balanceService: BalanceService,
               stackingService: StakingService,
               accountNFTService: AccountNFTService,

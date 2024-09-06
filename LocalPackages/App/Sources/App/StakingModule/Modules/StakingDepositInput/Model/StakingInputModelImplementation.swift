@@ -71,8 +71,8 @@ final class StakingInputModelImplementation: StakingInputModel {
   private let detailsInput: StakingInputDetailsModuleInput
   private let configurator: StakingInputModelConfigurator
   private let stakingPoolsStore: StakingPoolsStore
-  private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStore
+  private let tonRatesStore: TonRatesStoreV3
+  private let currencyStore: CurrencyStoreV3
   
   // MARK: - Init
   
@@ -81,8 +81,8 @@ final class StakingInputModelImplementation: StakingInputModel {
        detailsInput: StakingInputDetailsModuleInput,
        configurator: StakingInputModelConfigurator,
        stakingPoolsStore: StakingPoolsStore,
-       tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStore) {
+       tonRatesStore: TonRatesStoreV3,
+       currencyStore: CurrencyStoreV3) {
     self.wallet = wallet
     self.detailsInput = detailsInput
     self.configurator = configurator
@@ -94,16 +94,12 @@ final class StakingInputModelImplementation: StakingInputModel {
   
   func start() {
     queue.async {
-      self.stakingPoolsStore.addObserver(
-        self,
-        notifyOnAdded: false) { observer, newState, oldState in
-          observer.didUpdateStakingPools(newState)
-        }
-      self.tonRatesStore.addObserver(
-        self,
-        notifyOnAdded: false) { observer, newState, oldState in
-          observer.didUpdateTonRates(newState)
-        }
+      self.stakingPoolsStore.addObserver(self) { observer, event in
+        observer.didGetStakingPoolsStoreEvent(event)
+      }
+      self.tonRatesStore.addObserver(self) { observer, event in
+        observer.didGetTonRatesStoreEvent(event)
+      }
       self.configurator.didUpdateBalance = { [weak self] balance in
         self?.didUpdateBalance(balance: balance)
       }
@@ -170,9 +166,8 @@ final class StakingInputModelImplementation: StakingInputModel {
   }
   
   func getPickerSections(completion: @escaping (StakingListModel) -> Void) {
-    queue.async {
-      guard let walletAddress = try? self.wallet.friendlyAddress,
-      let pools = self.stakingPoolsStore.getState()[walletAddress] else {
+    queue.async { [wallet] in
+      guard let pools = self.stakingPoolsStore.getState()[wallet] else {
         return
       }
       
@@ -244,8 +239,7 @@ final class StakingInputModelImplementation: StakingInputModel {
       updateStakingPool()
       return
     }
-    guard let walletAddress = try? wallet.friendlyAddress,
-    let pool = stakingPoolsStore.getState()[walletAddress]?.profitablePool else { return }
+    guard let pool = stakingPoolsStore.getState()[wallet]?.profitablePool else { return }
     self.mostProfitableStackingPoolInfo = pool
     self.selectedStackingPoolInfo = pool
     self.configurator.stakingPoolInfo = pool
@@ -270,34 +264,41 @@ final class StakingInputModelImplementation: StakingInputModel {
     }
   }
 
-  func didUpdateStakingPools(_ pools: [FriendlyAddress: [StackingPoolInfo]]) {
-    queue.async { [weak self] in
-      guard let self else { return }
-      guard let walletAddress = try? wallet.friendlyAddress,
-            let walletPools = pools[walletAddress],
-            !walletPools.isEmpty else {
-        self.mostProfitableStackingPoolInfo = nil
-        self.selectedStackingPoolInfo = nil
-        self.configurator.stakingPoolInfo = nil
+  func didGetStakingPoolsStoreEvent(_ event: StakingPoolsStore.Event) {
+    switch event {
+    case .didUpdateStakingPools(_, let wallet):
+      guard wallet == wallet else {
         return
       }
-      
-      self.mostProfitableStackingPoolInfo = walletPools.profitablePool
-      
-      if let selectedStackingPoolInfo, let updated = walletPools.first(where: { $0.address == selectedStackingPoolInfo.address }) {
-        self.selectedStackingPoolInfo = updated
-        self.configurator.stakingPoolInfo = updated
-      } else {
-        self.selectedStackingPoolInfo = mostProfitableStackingPoolInfo
-        self.configurator.stakingPoolInfo = mostProfitableStackingPoolInfo
+      queue.async { [weak self] in
+        guard let self else { return }
+        guard let pools = self.stakingPoolsStore.getState()[wallet],
+              !pools.isEmpty else {
+          self.mostProfitableStackingPoolInfo = nil
+          self.selectedStackingPoolInfo = nil
+          self.configurator.stakingPoolInfo = nil
+          return
+        }
+        
+        self.mostProfitableStackingPoolInfo = pools.profitablePool
+        
+        if let selectedStackingPoolInfo, let updated = pools.first(where: { $0.address == selectedStackingPoolInfo.address }) {
+          self.selectedStackingPoolInfo = updated
+          self.configurator.stakingPoolInfo = updated
+        } else {
+          self.selectedStackingPoolInfo = mostProfitableStackingPoolInfo
+          self.configurator.stakingPoolInfo = mostProfitableStackingPoolInfo
+        }
       }
     }
   }
   
-  func didUpdateTonRates(_ tonRates: [Rates.Rate]) {
-    queue.async { [weak self] in
-      guard let self else { return }
-      self.tonRates = tonRates
+  func didGetTonRatesStoreEvent(_ event: TonRatesStoreV3.Event) {
+    switch event {
+    case .didUpdateTonRates:
+      queue.async {
+        self.tonRates = self.tonRatesStore.getState()
+      }
     }
   }
   

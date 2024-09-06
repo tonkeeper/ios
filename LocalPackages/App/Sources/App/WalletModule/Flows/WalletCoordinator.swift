@@ -68,7 +68,7 @@ private extension WalletCoordinator {
         wallet: wallet,
         tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStore,
         convertedBalanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
-        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStoreV3
+        stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore
       ),
       mapper: ManageTokensListMapper(amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter)
     )

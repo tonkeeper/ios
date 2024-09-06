@@ -86,7 +86,7 @@ public final class StoresAssembly {
       balanceStore: balanceStore,
       tonRatesStore: tonRatesStoreV3,
       currencyStore: currencyStoreV3,
-      stakingPoolsStore: stackingPoolsStoreV3
+      stakingPoolsStore: stackingPoolsStore
     )
     _processedBalanceStore = store
     return store
@@ -170,17 +170,6 @@ public final class StoresAssembly {
     }
   }
   
-  private weak var _setupStore: SetupStore?
-  public var setupStore: SetupStore {
-    if let setupStore = _setupStore {
-      return setupStore
-    } else {
-      let setupStore = SetupStore(keeperInfoStore: keeperInfoStore)
-      _setupStore = setupStore
-      return setupStore
-    }
-  }
-  
   private weak var _stackingPoolsStore: StakingPoolsStore?
   public var stackingPoolsStore: StakingPoolsStore {
     if let store = _stackingPoolsStore {
@@ -188,17 +177,6 @@ public final class StoresAssembly {
     } else {
       let store = StakingPoolsStore()
       _stackingPoolsStore = store
-      return store
-    }
-  }
-  
-  private weak var _stackingPoolsStoreV3: StakingPoolsStoreV3?
-  public var stackingPoolsStoreV3: StakingPoolsStoreV3 {
-    if let store = _stackingPoolsStoreV3 {
-      return store
-    } else {
-      let store = StakingPoolsStoreV3()
-      _stackingPoolsStoreV3 = store
       return store
     }
   }

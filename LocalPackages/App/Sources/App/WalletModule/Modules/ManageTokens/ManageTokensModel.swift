@@ -22,12 +22,12 @@ final class ManageTokensModel {
   private let wallet: Wallet
   private let convertedBalanceStore: ConvertedBalanceStore
   private let tokenManagementStore: TokenManagementStore
-  private let stackingPoolsStore: StakingPoolsStoreV3
+  private let stackingPoolsStore: StakingPoolsStore
   
   init(wallet: Wallet,
        tokenManagementStore: TokenManagementStore,
        convertedBalanceStore: ConvertedBalanceStore,
-       stackingPoolsStore: StakingPoolsStoreV3) {
+       stackingPoolsStore: StakingPoolsStore) {
     self.wallet = wallet
     self.tokenManagementStore = tokenManagementStore
     self.convertedBalanceStore = convertedBalanceStore

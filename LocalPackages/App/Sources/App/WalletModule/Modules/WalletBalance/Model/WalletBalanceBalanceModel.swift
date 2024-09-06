@@ -30,13 +30,13 @@ final class WalletBalanceBalanceModel {
   
   private let walletsStore: WalletsStoreV3
   private let balanceStore: ProcessedBalanceStore
-  private let stackingPoolsStore: StakingPoolsStoreV3
+  private let stackingPoolsStore: StakingPoolsStore
   private let tokenManagementStore: TokenManagementStore
   private let appSettingsStore: AppSettingsV3Store
   
   init(walletsStore: WalletsStoreV3,
        balanceStore: ProcessedBalanceStore,
-       stackingPoolsStore: StakingPoolsStoreV3,
+       stackingPoolsStore: StakingPoolsStore,
        tokenManagementStore: TokenManagementStore,
        appSettingsStore: AppSettingsV3Store) {
     self.walletsStore = walletsStore
@@ -120,7 +120,7 @@ final class WalletBalanceBalanceModel {
     }
   }
   
-  private func didGetStackingPoolsStoreEvent(_ event: StakingPoolsStoreV3.Event) {
+  private func didGetStackingPoolsStoreEvent(_ event: StakingPoolsStore.Event) {
     Task {
       switch event {
       case .didUpdateStakingPools(_, let wallet):
