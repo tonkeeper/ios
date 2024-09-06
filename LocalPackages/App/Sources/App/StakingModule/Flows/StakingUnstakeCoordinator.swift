@@ -43,7 +43,7 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
     let configurator = StakingWithdrawInputModelConfigurator(
       wallet: wallet,
       poolInfo: stakingPoolInfo,
-      balanceStore: keeperCoreMainAssembly.mainStoresAssembly.processedBalanceStore
+      balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore
     )
     
     let module = StakingInputAssembly.module(

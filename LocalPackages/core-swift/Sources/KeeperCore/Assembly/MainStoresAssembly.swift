@@ -49,22 +49,6 @@ public final class MainStoresAssembly {
       return store
     }
   
-  private weak var _processedBalanceStore: ProcessedBalanceStore?
-  public var processedBalanceStore: ProcessedBalanceStore {
-    if let _processedBalanceStore {
-      return _processedBalanceStore
-    }
-    let store = ProcessedBalanceStore(
-      walletsStore: walletsAssembly.walletsStore,
-      balanceStore: balanceStore,
-      tonRatesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
-      stakingPoolsStore: storesAssembly.stackingPoolsStore
-    )
-    _processedBalanceStore = store
-    return store
-  }
-  
   private weak var _accountNftsStore: AccountNFTsStore?
   public var accountNftsStore: AccountNFTsStore {
     if let _accountNftsStore {

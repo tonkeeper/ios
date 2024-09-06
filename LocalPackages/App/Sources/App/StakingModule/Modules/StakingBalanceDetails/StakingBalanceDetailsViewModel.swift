@@ -75,10 +75,10 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   private let listViewModelBuilder: StakingListViewModelBuilder
   private let linksViewModelBuilder: StakingLinksViewModelBuilder
   private let balanceItemMapper: BalanceItemMapper
-  private let stakingPoolsStore: StakingPoolsStore
-  private let balanceStore: ProcessedBalanceStore
-  private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStore
+  private let stakingPoolsStore: StakingPoolsStoreV3
+  private let balanceStore: ProcessedBalanceStoreV3
+  private let tonRatesStore: TonRatesStoreV3
+  private let currencyStore: CurrencyStoreV3
   private let decimalFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
@@ -90,10 +90,10 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
        listViewModelBuilder: StakingListViewModelBuilder,
        linksViewModelBuilder: StakingLinksViewModelBuilder,
        balanceItemMapper: BalanceItemMapper,
-       stakingPoolsStore: StakingPoolsStore,
-       balanceStore: ProcessedBalanceStore,
-       tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStore,
+       stakingPoolsStore: StakingPoolsStoreV3,
+       balanceStore: ProcessedBalanceStoreV3,
+       tonRatesStore: TonRatesStoreV3,
+       currencyStore: CurrencyStoreV3,
        decimalFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
@@ -127,8 +127,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
 
 private extension StakingBalanceDetailsViewModelImplementation {
   func updateList() {
-    guard let address = try? wallet.friendlyAddress else { return }
-    let profitablePool = stakingPoolsStore.getState()[address]?.profitablePool
+    let profitablePool = stakingPoolsStore.getState()[wallet]?.profitablePool
     let model = self.listViewModelBuilder.build(stakingPoolInfo: stakingPoolInfo, isMaxAPY: profitablePool?.address == self.stakingPoolInfo.address)
     DispatchQueue.main.async {
       self.didUpdateListViewModel?(model)
@@ -161,8 +160,7 @@ private extension StakingBalanceDetailsViewModelImplementation {
   }
   
   func prepareInitialState() {
-    guard let address = try? wallet.friendlyAddress,
-          let balance = balanceStore.getState()[address]?.balance else {
+    guard let balance = balanceStore.getState()[wallet]?.balance else {
       return
     }
 
