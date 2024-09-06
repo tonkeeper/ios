@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class TotalBalanceStoreV3: StoreV3<TotalBalanceStoreV3.Event, TotalBalanceStoreV3.State> {
+public final class TotalBalanceStore: StoreV3<TotalBalanceStore.Event, TotalBalanceStore.State> {
   
   public typealias State = [Wallet: TotalBalanceState]
   
@@ -9,9 +9,9 @@ public final class TotalBalanceStoreV3: StoreV3<TotalBalanceStoreV3.Event, Total
     case didUpdateTotalBalance(state: TotalBalanceState, wallet: Wallet)
   }
 
-  private let processedBalanceStore: ProcessedBalanceStoreV3
+  private let processedBalanceStore: ProcessedBalanceStore
   
-  init(processedBalanceStore: ProcessedBalanceStoreV3) {
+  init(processedBalanceStore: ProcessedBalanceStore) {
     self.processedBalanceStore = processedBalanceStore
     super.init(state: [:])
     processedBalanceStore.addObserver(self) { observer, event in
@@ -27,7 +27,7 @@ public final class TotalBalanceStoreV3: StoreV3<TotalBalanceStoreV3.Event, Total
     return total
   }
   
-  private func didGetProcessedBalanceStoreEvent(_ event: ProcessedBalanceStoreV3.Event) {
+  private func didGetProcessedBalanceStoreEvent(_ event: ProcessedBalanceStore.Event) {
     switch event {
     case .didUpdateProccessedBalance(_, let wallet):
       Task {

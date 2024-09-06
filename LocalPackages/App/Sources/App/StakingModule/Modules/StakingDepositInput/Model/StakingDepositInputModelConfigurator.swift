@@ -17,10 +17,10 @@ final class StakingDepositInputModelConfigurator: StakingInputModelConfigurator 
   }
 
   private let wallet: Wallet
-  private let balanceStore: ConvertedBalanceStoreV3
+  private let balanceStore: ConvertedBalanceStore
   
   init(wallet: Wallet,
-       balanceStore: ConvertedBalanceStoreV3) {
+       balanceStore: ConvertedBalanceStore) {
     self.wallet = wallet
     self.balanceStore = balanceStore
     

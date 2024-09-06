@@ -312,7 +312,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   private let wallet: Wallet
   private let imageLoader = ImageLoader()
   private let sendController: SendV3Controller
-  private let balanceStore: ConvertedBalanceStoreV3
+  private let balanceStore: ConvertedBalanceStore
   
   // MARK: - Init
   
@@ -320,7 +320,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
        sendItem: SendItem,
        recipient: Recipient?,
        sendController: SendV3Controller,
-       balanceStore: ConvertedBalanceStoreV3) {
+       balanceStore: ConvertedBalanceStore) {
     self.wallet = wallet
     self.sendItem = sendItem
     self.recipient = recipient

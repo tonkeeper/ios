@@ -13,12 +13,12 @@ final class StakingDepositInputAPYViewController: UIViewController, StakingInput
   private let listView = StakingDetailsListView()
   
   private let wallet: Wallet
-  private let balanceStore: ConvertedBalanceStoreV3
+  private let balanceStore: ConvertedBalanceStore
   private let amountFormatter: AmountFormatter
   private let decimalFormatter: DecimalAmountFormatter
   
   init(wallet: Wallet,
-       balanceStore: ConvertedBalanceStoreV3,
+       balanceStore: ConvertedBalanceStore,
        amountFormatter: AmountFormatter,
        decimalFormatter: DecimalAmountFormatter) {
     self.wallet = wallet

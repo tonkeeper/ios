@@ -60,12 +60,12 @@ public final class StoresAssembly {
     return store
   }
   
-  private weak var _convertedBalanceStore: ConvertedBalanceStoreV3?
-    public var convertedBalanceStore: ConvertedBalanceStoreV3 {
+  private weak var _convertedBalanceStore: ConvertedBalanceStore?
+    public var convertedBalanceStore: ConvertedBalanceStore {
       if let _convertedBalanceStore {
         return _convertedBalanceStore
       }
-      let store = ConvertedBalanceStoreV3(
+      let store = ConvertedBalanceStore(
         walletsStore: walletsStore,
         balanceStore: balanceStore,
         tonRatesStore: tonRatesStoreV3,
@@ -76,12 +76,12 @@ public final class StoresAssembly {
       return store
     }
   
-  private weak var _processedBalanceStore: ProcessedBalanceStoreV3?
-  public var processedBalanceStore: ProcessedBalanceStoreV3 {
+  private weak var _processedBalanceStore: ProcessedBalanceStore?
+  public var processedBalanceStore: ProcessedBalanceStore {
     if let _processedBalanceStore {
       return _processedBalanceStore
     }
-    let store = ProcessedBalanceStoreV3(
+    let store = ProcessedBalanceStore(
       walletsStore: walletsStore,
       balanceStore: balanceStore,
       tonRatesStore: tonRatesStoreV3,
@@ -92,12 +92,12 @@ public final class StoresAssembly {
     return store
   }
   
-  private weak var _totalBalanceStore: TotalBalanceStoreV3?
-  public var totalBalanceStore: TotalBalanceStoreV3 {
+  private weak var _totalBalanceStore: TotalBalanceStore?
+  public var totalBalanceStore: TotalBalanceStore {
     if let _totalBalanceStore {
       return _totalBalanceStore
     }
-    let store = TotalBalanceStoreV3(processedBalanceStore: processedBalanceStore)
+    let store = TotalBalanceStore(processedBalanceStore: processedBalanceStore)
     _totalBalanceStore = store
     return store
   }

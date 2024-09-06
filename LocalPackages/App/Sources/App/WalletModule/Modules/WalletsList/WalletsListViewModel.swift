@@ -71,14 +71,14 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   // MARK: - Dependencies
   
   private let model: WalletsListModel
-  private let totalBalancesStore: TotalBalanceStoreV3
+  private let totalBalancesStore: TotalBalanceStore
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
   
   // MARK: - Init
   
   init(model: WalletsListModel,
-       totalBalancesStore: TotalBalanceStoreV3,
+       totalBalancesStore: TotalBalanceStore,
        decimalAmountFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {
     self.model = model
@@ -107,7 +107,7 @@ private extension WalletsListViewModelImplementation {
     }
   }
   
-  private func updateList(wallets: [Wallet], totalBalanceState: TotalBalanceStoreV3.State) -> (WalletsListViewController.Snapshot, [String: TKListItemCell.Configuration]) {
+  private func updateList(wallets: [Wallet], totalBalanceState: TotalBalanceStore.State) -> (WalletsListViewController.Snapshot, [String: TKListItemCell.Configuration]) {
     var snapshot = WalletsListViewController.Snapshot()
     
     var cellConfigurations = [String: TKListItemCell.Configuration]()
@@ -229,7 +229,7 @@ private extension WalletsListViewModelImplementation {
     }
   }
   
-  func didGetTotalBalanceStoreEvent(_ event: TotalBalanceStoreV3.Event) {
+  func didGetTotalBalanceStoreEvent(_ event: TotalBalanceStore.Event) {
     switch event {
     case .didUpdateTotalBalance(_, let wallet):
       syncQueue.async {

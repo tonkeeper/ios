@@ -25,11 +25,11 @@ final class StakingWithdrawInputModelConfigurator: StakingInputModelConfigurator
 
   private let wallet: Wallet
   private let poolInfo: StackingPoolInfo
-  private let balanceStore: ProcessedBalanceStoreV3
+  private let balanceStore: ProcessedBalanceStore
   
   init(wallet: Wallet,
        poolInfo: StackingPoolInfo,
-       balanceStore: ProcessedBalanceStoreV3) {
+       balanceStore: ProcessedBalanceStore) {
     self.wallet = wallet
     self.poolInfo = poolInfo
     self.balanceStore = balanceStore

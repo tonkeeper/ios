@@ -19,7 +19,7 @@ public enum ProcessedBalanceState: Equatable {
   }
 }
 
-public final class ProcessedBalanceStoreV3: StoreV3<ProcessedBalanceStoreV3.Event, ProcessedBalanceStoreV3.State> {
+public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, ProcessedBalanceStore.State> {
   public typealias State = [Wallet: ProcessedBalanceState]
   
   public enum Event {

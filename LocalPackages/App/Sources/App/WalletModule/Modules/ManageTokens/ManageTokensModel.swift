@@ -20,13 +20,13 @@ final class ManageTokensModel {
   private let actor = SerialActor<Void>()
 
   private let wallet: Wallet
-  private let convertedBalanceStore: ConvertedBalanceStoreV3
+  private let convertedBalanceStore: ConvertedBalanceStore
   private let tokenManagementStore: TokenManagementStore
   private let stackingPoolsStore: StakingPoolsStoreV3
   
   init(wallet: Wallet,
        tokenManagementStore: TokenManagementStore,
-       convertedBalanceStore: ConvertedBalanceStoreV3,
+       convertedBalanceStore: ConvertedBalanceStore,
        stackingPoolsStore: StakingPoolsStoreV3) {
     self.wallet = wallet
     self.tokenManagementStore = tokenManagementStore
@@ -108,7 +108,7 @@ final class ManageTokensModel {
     }
   }
   
-  private func didGetBalanceStateEvent(_ event: ConvertedBalanceStoreV3.Event) {
+  private func didGetBalanceStateEvent(_ event: ConvertedBalanceStore.Event) {
     switch event {
     case .didUpdateConvertedBalance(_, let wallet):
       guard wallet == self.wallet else { return }

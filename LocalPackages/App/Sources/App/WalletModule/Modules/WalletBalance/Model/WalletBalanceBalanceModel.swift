@@ -29,13 +29,13 @@ final class WalletBalanceBalanceModel {
   private let actor = SerialActor<Void>()
   
   private let walletsStore: WalletsStoreV3
-  private let balanceStore: ProcessedBalanceStoreV3
+  private let balanceStore: ProcessedBalanceStore
   private let stackingPoolsStore: StakingPoolsStoreV3
   private let tokenManagementStore: TokenManagementStore
   private let appSettingsStore: AppSettingsV3Store
   
   init(walletsStore: WalletsStoreV3,
-       balanceStore: ProcessedBalanceStoreV3,
+       balanceStore: ProcessedBalanceStore,
        stackingPoolsStore: StakingPoolsStoreV3,
        tokenManagementStore: TokenManagementStore,
        appSettingsStore: AppSettingsV3Store) {
@@ -106,7 +106,7 @@ final class WalletBalanceBalanceModel {
     }
   }
   
-  private func didGetBalanceStoreEvent(_ event: ProcessedBalanceStoreV3.Event) {
+  private func didGetBalanceStoreEvent(_ event: ProcessedBalanceStore.Event) {
     Task {
       switch event {
       case .didUpdateProccessedBalance(_, let wallet):

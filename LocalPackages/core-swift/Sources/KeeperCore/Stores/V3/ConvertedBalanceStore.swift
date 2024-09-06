@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 import BigInt
 
-public final class ConvertedBalanceStoreV3: StoreV3<ConvertedBalanceStoreV3.Event, ConvertedBalanceStoreV3.State> {
+public final class ConvertedBalanceStore: StoreV3<ConvertedBalanceStore.Event, ConvertedBalanceStore.State> {
   public typealias State = [Wallet: ConvertedBalanceState]
   public enum Event {
     case didUpdateConvertedBalance(state: ConvertedBalanceState, wallet: Wallet)
