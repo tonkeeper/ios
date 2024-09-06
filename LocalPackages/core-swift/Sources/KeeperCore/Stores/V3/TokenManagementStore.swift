@@ -1,6 +1,6 @@
 import Foundation
 
-public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event, TokenManagementStoreV3.State> {
+public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, TokenManagementStore.State> {
   public typealias State = [Wallet: TokenManagementState]
   
   public enum Event {

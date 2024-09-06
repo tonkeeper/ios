@@ -225,31 +225,17 @@ public final class StoresAssembly {
     }
   }
   
-  private var _tokenManagementStores = [Wallet: Weak<TokenManagementStore>]()
-  public func tokenManagementStore(wallet: Wallet) -> TokenManagementStore {
-    if let weakWrapper = _tokenManagementStores[wallet],
-       let store = weakWrapper.value {
-      return store
-    }
-    let store = TokenManagementStore(
-      wallet: wallet,
-      tokenManagementRepository: repositoriesAssembly.tokenManagementRepository()
-    )
-    _tokenManagementStores[wallet] = Weak(value: store)
-    return store
-  }
-  
-  private var _tokenManagementStoreV3: TokenManagementStoreV3?
-  public var tokenManagementStoreV3: TokenManagementStoreV3 {
-    if let tokenManagementStoreV3 = _tokenManagementStoreV3 {
-      return tokenManagementStoreV3
+  private var _tokenManagementStore: TokenManagementStore?
+  public var tokenManagementStore: TokenManagementStore {
+    if let tokenManagementStore = _tokenManagementStore {
+      return tokenManagementStore
     } else {
-      let tokenManagementStoreV3 = TokenManagementStoreV3(
+      let tokenManagementStore = TokenManagementStore(
         walletsStore: walletsStore,
         tokenManagementRepository: repositoriesAssembly.tokenManagementRepository()
       )
-      _tokenManagementStoreV3 = tokenManagementStoreV3
-      return tokenManagementStoreV3
+      _tokenManagementStore = tokenManagementStore
+      return tokenManagementStore
     }
   }
   

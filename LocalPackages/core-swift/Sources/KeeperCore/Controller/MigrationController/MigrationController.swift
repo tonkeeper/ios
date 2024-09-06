@@ -16,7 +16,6 @@ public final class MigrationController {
     self.rootAssembly = rootAssembly
     self.rnMigration = RNMigration(
       rnService: rootAssembly.rnAssembly.rnService,
-      walletsStoreUpdater: rootAssembly.walletsUpdateAssembly.walletsStoreUpdater,
       settingsRepository: rootAssembly.repositoriesAssembly.settingsRepository(),
       mnemonicsRepository: rootAssembly.repositoriesAssembly.mnemonicsRepository(),
       keychainVault: rootAssembly.coreAssembly.keychainVault,

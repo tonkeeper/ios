@@ -6,20 +6,17 @@ import CryptoKit
 public struct RNMigration {
   
   private let rnService: RNService
-  private let walletsStoreUpdater: WalletsStoreUpdater
   private var settingsRepository: SettingsRepository
   private let mnemonicsRepository: MnemonicsRepository
   private let keychainVault: KeychainVault
   private let securityStore: SecurityStore
   
   init(rnService: RNService,
-       walletsStoreUpdater: WalletsStoreUpdater,
        settingsRepository: SettingsRepository,
        mnemonicsRepository: MnemonicsRepository,
        keychainVault: KeychainVault,
        securityStore: SecurityStore) {
     self.rnService = rnService
-    self.walletsStoreUpdater = walletsStoreUpdater
     self.settingsRepository = settingsRepository
     self.mnemonicsRepository = mnemonicsRepository
     self.keychainVault = keychainVault
@@ -60,10 +57,6 @@ public struct RNMigration {
         activeWallet = wallet
       }
       wallets.append(wallet)
-    }
-    await walletsStoreUpdater.addWallets(wallets)
-    if let activeWallet {
-      await walletsStoreUpdater.setWalletActive(activeWallet)
     }
     await securityStore.setIsBiometryEnable(walletsStore.biometryEnabled)
   }

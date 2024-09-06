@@ -12,7 +12,7 @@ struct WalletBalanceAssembly {
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
         balanceStore: keeperCoreMainAssembly.storesAssembly.processedBalanceStore,
         stackingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStoreV3,
-        tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStoreV3,
+        tokenManagementStore: keeperCoreMainAssembly.storesAssembly.tokenManagementStore,
         appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore
       ),
       setupModel: WalletBalanceSetupModel(

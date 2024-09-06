@@ -20,13 +20,6 @@ public final class WalletsUpdateAssembly {
     self.rnAssembly = rnAssembly
   }
   
-  public var walletsStoreUpdater: WalletsStoreUpdater {
-    WalletsStoreUpdater(
-      keeperInfoStore: storesAssembly.keeperInfoStore,
-      rnService: rnAssembly.rnService
-    )
-  }
-  
   public func walletAddController() -> WalletAddController {
     WalletAddController(
       walletsStore: storesAssembly.walletsStore,

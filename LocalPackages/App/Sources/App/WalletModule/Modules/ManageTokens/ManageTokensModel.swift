@@ -21,11 +21,11 @@ final class ManageTokensModel {
 
   private let wallet: Wallet
   private let convertedBalanceStore: ConvertedBalanceStoreV3
-  private let tokenManagementStore: TokenManagementStoreV3
+  private let tokenManagementStore: TokenManagementStore
   private let stackingPoolsStore: StakingPoolsStoreV3
   
   init(wallet: Wallet,
-       tokenManagementStore: TokenManagementStoreV3,
+       tokenManagementStore: TokenManagementStore,
        convertedBalanceStore: ConvertedBalanceStoreV3,
        stackingPoolsStore: StakingPoolsStoreV3) {
     self.wallet = wallet
@@ -129,7 +129,7 @@ final class ManageTokensModel {
     }
   }
   
-  private func didGetTokenManagmentStoreEvent(_ event: TokenManagementStoreV3.Event) {
+  private func didGetTokenManagmentStoreEvent(_ event: TokenManagementStore.Event) {
     switch event {
     case .didUpdateState(let wallet):
       guard wallet == self.wallet else { return }
