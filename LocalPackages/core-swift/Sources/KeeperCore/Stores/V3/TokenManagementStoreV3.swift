@@ -42,7 +42,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
       updatedState[wallet] = walletUpdatedState
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didUpdateState(wallet: wallet))
     }
   }
@@ -61,7 +61,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
       updatedState[wallet] = walletUpdatedState
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didUpdateState(wallet: wallet))
     }
   }
@@ -81,7 +81,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
       updatedState[wallet] = walletUpdatedState
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didUpdateState(wallet: wallet))
     }
   }
@@ -100,7 +100,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
       updatedState[wallet] = walletUpdatedState
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didUpdateState(wallet: wallet))
     }
   }
@@ -121,7 +121,7 @@ public final class TokenManagementStoreV3: StoreV3<TokenManagementStoreV3.Event,
       updatedState[wallet] = walletUpdatedState
       try? tokenManagementRepository.setState(walletUpdatedState, wallet: wallet)
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didUpdateState(wallet: wallet))
     }
   }

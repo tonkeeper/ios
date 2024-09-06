@@ -15,17 +15,15 @@ public final class InternalNotificationsStore: StoreV3<InternalNotificationsStor
   }
   
   public func addNotifications(_ notifications: [NotificationModel]) async {
-    var resultNotifications = [NotificationModel]()
     await setState { state in
       let newNotifications = notifications.filter { notification in
         !state.contains(where: { $0.id == notification.id })
       }
       guard !newNotifications.isEmpty else { return nil }
       let updatedNotifications = state + newNotifications
-      resultNotifications = updatedNotifications
       return StateUpdate(newState: updatedNotifications)
-    } notify: {
-      self.sendEvent(.didUpdateNotifications(notifications: resultNotifications))
+    } notify: { state in
+      self.sendEvent(.didUpdateNotifications(notifications: state))
     }
   }
   
@@ -34,13 +32,11 @@ public final class InternalNotificationsStore: StoreV3<InternalNotificationsStor
   }
   
   public func removeNotification(_ notification: NotificationModel) async {
-    var resultNotifications = [NotificationModel]()
     await setState { state in
       let updatedNotifications = state.filter { $0.id != notification.id }
-      resultNotifications = updatedNotifications
       return StateUpdate(newState: updatedNotifications)
-    } notify: {
-      self.sendEvent(.didUpdateNotifications(notifications: resultNotifications))
+    } notify: { state in
+      self.sendEvent(.didUpdateNotifications(notifications: state))
     }
   }
 }

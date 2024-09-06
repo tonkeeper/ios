@@ -20,7 +20,7 @@ public final class StakingPoolsStoreV3: StoreV3<StakingPoolsStoreV3.Event, Staki
       var updatedState = state
       updatedState[wallet] = pools
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didUpdateStakingPools(stakingPools: pools, wallet: wallet))
     }
   }

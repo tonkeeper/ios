@@ -53,7 +53,7 @@ extension KeeperInfo {
       backupSettings: wallet.backupSettings,
       addressBook: wallet.addressBook
     )
-    return (updateWallet(wallet), updatedWallet)
+    return (updateWallet(updatedWallet), updatedWallet)
   }
   
   func updateWallet(_ wallet: Wallet,
@@ -67,7 +67,7 @@ extension KeeperInfo {
       backupSettings: wallet.backupSettings,
       addressBook: wallet.addressBook
     )
-    return (updateWallet(wallet), updatedWallet)
+    return (updateWallet(updatedWallet), updatedWallet)
   }
   
   func updateWallet(_ wallet: Wallet,
@@ -81,7 +81,7 @@ extension KeeperInfo {
       backupSettings: wallet.backupSettings,
       addressBook: wallet.addressBook
     )
-    return (updateWallet(wallet), updatedWallet)
+    return (updateWallet(updatedWallet), updatedWallet)
   }
   
   func deleteWallet(_ wallet: Wallet) -> KeeperInfo? {
@@ -147,7 +147,6 @@ extension KeeperInfo {
     )
     return updateSecuritySettings(securitySettings)
   }
-  
   
   // MARK: - Settings
   

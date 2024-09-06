@@ -64,8 +64,6 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
   }
   
   func startStateReload() {
-    print("🔥 reload")
-    
     let task = Task {
       let wallets = await walletsStore.getState()
       switch wallets {
@@ -75,8 +73,8 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
         let currency = await currencyStore.getState()
         await loadRatesAndStore(currency: currency)
         await loadBalance(wallets: wallets.wallets, currency: currency)
-        try? await Task.sleep(nanoseconds: 5_000_000_000)
-        guard !Task.isCancelled else { print("🔥 cancelled"); return }
+        try? await Task.sleep(nanoseconds: 60_000_000_000)
+        guard !Task.isCancelled else { return }
         startStateReload()
       }
     }
@@ -135,6 +133,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
         return
       case .wallets(let wallets):
         let currency = await currencyStore.getState()
+        await loadRatesAndStore(currency: currency)
         await loadBalance(wallets: wallets.wallets, currency: currency)
       }
     }
@@ -169,7 +168,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
         await balanceStore.setBalanceState(.current(balance), wallet: wallet)
         await stakingPoolsStore.setStackingPools(pools, wallet: wallet)
       } catch {
-        guard error.isCancelledError else { return }
+        guard !error.isCancelledError else { return }
         guard let balanceState = await self.balanceStore.getState()[wallet] else {
           return
         }
@@ -236,7 +235,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
 
       updatedState.balanceLoadTasks[wallet] = task
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       if task != nil {
         self.sendEvent(.didStartLoadBalance(wallet: wallet))
       } else {

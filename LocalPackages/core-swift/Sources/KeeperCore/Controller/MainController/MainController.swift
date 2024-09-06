@@ -69,13 +69,13 @@ public final class MainController {
     self.internalNotificationsLoader = internalNotificationsLoader
   }
   
-  deinit {
-    stopUpdates()
-  }
-  
   public func start() {
     startUpdates()
     internalNotificationsLoader.loadNotifications()
+  }
+  
+  public func stop() {
+    stopUpdates()
   }
   
   public func startUpdates() {

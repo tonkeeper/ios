@@ -58,30 +58,35 @@ open class StoreV3<Event, State> {
     }
   }
   
-  public func setState(_ closure: @escaping (State) -> StateUpdate?, notify: (() -> Void)? = nil, completion: (() -> Void)? = nil) {
+  public func setState(_ closure: @escaping (State) -> StateUpdate?,
+                       notify: ((State) -> Void)? = nil,
+                       completion: ((State) -> Void)? = nil) {
     queue.async {
       guard let update = closure(self.state) else {
-        completion?()
+        completion?(self.state)
         return
       }
       
-      self.state = update.newState
-      notify?()
-      completion?()
+      let newState = update.newState
+      self.state = newState
+      notify?(newState)
+      completion?(newState)
     }
   }
   
-  public func setState(_ closure: @escaping (State) -> StateUpdate?, notify: (() -> Void)? = nil) async {
+  @discardableResult
+  public func setState(_ closure: @escaping (State) -> StateUpdate?, 
+                       notify: ((State) -> Void)? = nil) async -> State {
     await withUnsafeContinuation { continuation in
       queue.async {
         guard let update = closure(self.state) else {
-          continuation.resume()
+          continuation.resume(returning: self.state)
           return
         }
-        
-        self.state = update.newState
-        notify?()
-        continuation.resume()
+        let newState = update.newState
+        self.state = newState
+        notify?(newState)
+        continuation.resume(returning: newState)
       }
     }
   }

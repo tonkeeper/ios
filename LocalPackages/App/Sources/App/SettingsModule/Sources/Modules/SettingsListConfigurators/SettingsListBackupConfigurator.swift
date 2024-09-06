@@ -21,24 +21,28 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
   // MARK: - Dependencies
  
   private var wallet: Wallet
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   private let dateFormatter: DateFormatter
   
   // MARK: - Init
   
   init(wallet: Wallet,
-       walletsStore: WalletsStore,
+       walletsStore: WalletsStoreV3,
        dateFormatter: DateFormatter) {
     self.wallet = wallet
     self.walletsStore = walletsStore
     self.dateFormatter = dateFormatter
     
-    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      DispatchQueue.main.async {
-        guard let updatedWallet = newState.wallets.first(where: { $0.id == wallet.id }) else { return }
-        self.wallet = updatedWallet
-        let state = observer.createState()
-        observer.didUpdateState?(state)
+    walletsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateWalletSetupSettings(let wallet):
+        guard wallet == self.wallet else { return }
+        DispatchQueue.main.async {
+          self.wallet = wallet
+          let state = observer.createState()
+          observer.didUpdateState?(state)
+        }
+      default: break
       }
     }
   }

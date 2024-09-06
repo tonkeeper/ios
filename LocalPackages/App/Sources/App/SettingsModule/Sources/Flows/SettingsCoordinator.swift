@@ -30,8 +30,8 @@ private extension SettingsCoordinator {
   func openSettingsRoot() {
     let configurator = SettingsListRootConfigurator(
       wallet: wallet,
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
-      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV3,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
       configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore,
@@ -84,7 +84,7 @@ private extension SettingsCoordinator {
     
     configurator.didDeleteWallet = { [weak self] in
       guard let self else { return }
-      let wallets = self.keeperCoreMainAssembly.walletAssembly.walletsStore.getState().wallets
+      let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
       if !wallets.isEmpty {
         self.router.pop(animated: true)
       }
@@ -131,15 +131,18 @@ private extension SettingsCoordinator {
   }
   
   func updateWallet(wallet: Wallet, model: CustomizeWalletModel) {
-    let updater = keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater
+    let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     Task {
-      await updater.updateWalletMetaData(wallet, metaData: WalletMetaData(customizeWalletModel: model))
+      await walletsStore.setWallet(
+        wallet,
+        metaData: WalletMetaData(customizeWalletModel: model)
+      )
     }
   }
   
   func openCurrencyPicker() {
     let configuration = SettingsListCurrencyPickerConfigurator(
-      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV3
     )
     configuration.didSelect = { [weak self] in
       self?.router.pop()
@@ -153,7 +156,7 @@ private extension SettingsCoordinator {
   func openBackup(wallet: Wallet) {
     let configuration = SettingsListBackupConfigurator(
       wallet: wallet,
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
     )
     

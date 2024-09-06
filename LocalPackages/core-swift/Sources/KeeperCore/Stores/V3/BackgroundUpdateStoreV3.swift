@@ -23,7 +23,7 @@ public final class BackgroundUpdateStoreV3: StoreV3<BackgroundUpdateStoreV3.Even
   public func setState(_ state: State) async {
     await setState { _ in
       StateUpdate(newState: state)
-    } notify: {
+    } notify: { state in
       self.sendEvent(.didUpdateState(state))
     }
   }

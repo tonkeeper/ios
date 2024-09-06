@@ -42,7 +42,7 @@ final class RootCoordinatorStateManager {
     self.walletsStore = walletsStore
     walletsStore.addObserver(self) { observer, event in
       switch event {
-      case .didDeleteWallet, .didAddWallets:
+      case .didDeleteWallet, .didAddWallets, .didDeleteAll:
         DispatchQueue.main.async {
           self.state = observer.calculateState(walletsStoreState: walletsStore.getState())
         }

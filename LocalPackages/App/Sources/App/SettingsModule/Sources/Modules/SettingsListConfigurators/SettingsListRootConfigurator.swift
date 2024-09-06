@@ -36,8 +36,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   // MARK: - Dependencies
   
   private var wallet: Wallet
-  private let walletsStore: WalletsStore
-  private let currencyStore: CurrencyStore
+  private let walletsStore: WalletsStoreV3
+  private let currencyStore: CurrencyStoreV3
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
   private let configurationStore: ConfigurationStore
@@ -48,8 +48,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   // MARK: - Init
   
   init(wallet: Wallet,
-       walletsStore: WalletsStore,
-       currencyStore: CurrencyStore,
+       walletsStore: WalletsStoreV3,
+       currencyStore: CurrencyStoreV3,
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
        configurationStore: ConfigurationStore,
@@ -65,18 +65,37 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.accountsNFTsStore = accountsNFTsStore
     self.walletDeleteController = walletDeleteController
     self.anaylticsProvider = anaylticsProvider
-    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      DispatchQueue.main.async {
-        guard let updatedWallet = newState.wallets.first(where: { $0.id == observer.wallet.id }) else { return }
-        observer.wallet = updatedWallet
-        let state = observer.createState()
-        observer.didUpdateState?(state)
+    walletsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateWalletMetaData(let wallet):
+        DispatchQueue.main.async {
+          observer.wallet = wallet
+          let state = observer.createState()
+          observer.didUpdateState?(state)
+        }
+      case .didUpdateWalletSetupSettings(let wallet):
+        DispatchQueue.main.async {
+          observer.wallet = wallet
+        }
+      case .didDeleteWallet(let wallet):
+        DispatchQueue.main.async {
+          if wallet == self.wallet {
+            observer.didDeleteWallet?()
+          } else {
+            let state = observer.createState()
+            observer.didUpdateState?(state)
+          }
+        }
+      default: break
       }
     }
-    currencyStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      DispatchQueue.main.async {
-        let state = observer.createState()
-        observer.didUpdateState?(state)
+    currencyStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateCurrency:
+        DispatchQueue.main.async {
+          let state = observer.createState()
+          observer.didUpdateState?(state)
+        }
       }
     }
     accountsNFTsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
@@ -258,7 +277,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   }
   
   private func createCurrencyItem() -> SettingsListItem {
-    let currency = currencyStore.getCurrency()
+    let currency = currencyStore.getState()
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
         textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
@@ -283,7 +302,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   private func createSecurityItem() -> SettingsListItem? {
     let hasMnemonics = mnemonicsRepository.hasMnemonics()
-    let hasRegularWallet = walletsStore.getState().wallets.contains(where: { $0.kind == .regular })
+    let hasRegularWallet = walletsStore.wallets.contains(where: { $0.kind == .regular })
     guard hasMnemonics && hasRegularWallet else { return nil }
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(

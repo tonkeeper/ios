@@ -43,7 +43,7 @@ public final class TotalBalanceStoreV3: StoreV3<TotalBalanceStoreV3.Event, Total
       var updatedState = state
       updatedState[wallet] = totalBalanceState
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didUpdateTotalBalance(state: totalBalanceState, wallet: wallet))
     }
   }

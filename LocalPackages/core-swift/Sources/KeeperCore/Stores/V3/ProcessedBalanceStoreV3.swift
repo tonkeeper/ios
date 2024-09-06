@@ -126,7 +126,7 @@ public final class ProcessedBalanceStoreV3: StoreV3<ProcessedBalanceStoreV3.Even
       )
       updatedState[wallet] = proccessedBalanceState
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       guard let proccessedBalanceState else { return }
       self.sendEvent(.didUpdateProccessedBalance(state: proccessedBalanceState, wallet: wallet))
     }

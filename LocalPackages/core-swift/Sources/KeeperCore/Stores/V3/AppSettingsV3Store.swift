@@ -27,8 +27,8 @@ public final class AppSettingsV3Store: StoreV3<AppSettingsV3Store.Event, AppSett
       var updatedState = state
       updatedState.isSetupFinished = isSetupFinished
       return StateUpdate(newState: updatedState)
-    } notify: {
-      self.sendEvent(.didUpdateIsSetupFinished(isSetupFinished: isSetupFinished))
+    } notify: { state in
+      self.sendEvent(.didUpdateIsSetupFinished(isSetupFinished: state.isSetupFinished))
     }
     await keeperInfoStore.updateKeeperInfo { keeperInfo in
       let updated = keeperInfo?.updateIsSetupFinished(isSetupFinished)
@@ -43,8 +43,8 @@ public final class AppSettingsV3Store: StoreV3<AppSettingsV3Store.Event, AppSett
       updatedState.isSecureMode = !state.isSecureMode
       isSecureMode = !state.isSecureMode
       return StateUpdate(newState: updatedState)
-    } notify: {
-      self.sendEvent(.didUpdateIsSecureMode(isSecureMode: isSecureMode))
+    } notify: { state in
+      self.sendEvent(.didUpdateIsSecureMode(isSecureMode: state.isSecureMode))
     }
     await keeperInfoStore.updateKeeperInfo { keeperInfo in
       let updated = keeperInfo?.updateIsSecureMode(isSecureMode)
@@ -57,8 +57,8 @@ public final class AppSettingsV3Store: StoreV3<AppSettingsV3Store.Event, AppSett
       var updatedState = state
       updatedState.isSecureMode = isSecureMode
       return StateUpdate(newState: updatedState)
-    } notify: {
-      self.sendEvent(.didUpdateIsSecureMode(isSecureMode: isSecureMode))
+    } notify: { state in
+      self.sendEvent(.didUpdateIsSecureMode(isSecureMode: state.isSecureMode))
     }
     await keeperInfoStore.updateKeeperInfo { keeperInfo in
       let updated = keeperInfo?.updateIsSecureMode(isSecureMode)

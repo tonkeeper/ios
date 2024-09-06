@@ -19,8 +19,8 @@ public final class CurrencyStoreV3: StoreV3<CurrencyStoreV3.Event, Currency> {
   public func setCurrency(_ currency: Currency) async {
     await self.setState { _ in
       return StateUpdate(newState: currency)
-    } notify: {
-      self.sendEvent(.didUpdateCurrency(currency: currency))
+    } notify: { state in
+      self.sendEvent(.didUpdateCurrency(currency: state))
     }
     await keeperInfoStore.updateKeeperInfo { keeperInfo in
       let updated = keeperInfo?.updateCurrency(currency)

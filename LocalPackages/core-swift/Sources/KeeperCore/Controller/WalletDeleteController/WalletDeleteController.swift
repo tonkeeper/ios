@@ -27,6 +27,7 @@ public final class WalletDeleteController {
     await keeperInfoStore.updateKeeperInfo { _ in
       return nil
     }
+    await walletStore.deleteAllWallets()
     if mnemonicsRepository.hasMnemonics() {
       try? await mnemonicsRepository.deleteAll()
     }

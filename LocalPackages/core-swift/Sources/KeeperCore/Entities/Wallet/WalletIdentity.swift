@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public struct WalletIdentity: Equatable {
+public struct WalletIdentity: Equatable, Hashable {
   public let network: Network
   public let kind: WalletKind
   

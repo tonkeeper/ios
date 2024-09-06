@@ -48,11 +48,6 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
   
   func setupBindings() {
     viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in
-      let setContentOffset = {
-        let contentOffset = self?.customView.collectionView.contentOffset ?? .zero
-        self?.customView.collectionView.layoutIfNeeded()
-        self?.customView.collectionView.contentOffset = contentOffset
-      }
       guard let self else { return }
       if isAnimated {
         dataSource.apply(snapshot, animatingDifferences: true)
@@ -63,22 +58,6 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
           dataSource.apply(snapshot, animatingDifferences: false)
         }
       }
-      setContentOffset()
-      
-//      let setContentOffset = {
-//        let contentOffset = self.customView.collectionView.contentOffset
-//        self.customView.collectionView.layoutIfNeeded()
-//        self.customView.collectionView.contentOffset = contentOffset
-//      }
-//      
-//      self.dataSource.apply(snapshot, animatingDifferences: isAnimated, completion: {
-//        if self.customView.collectionView.isDragging {
-//          setContentOffset()
-//        }
-//      })
-//      if self.customView.collectionView.isDragging {
-//        setContentOffset()
-//      }
     }
     
     viewModel.didUpdateHeader = { [weak customView] model in
@@ -96,6 +75,9 @@ final class WalletBalanceViewController: GenericViewViewController<WalletBalance
         }
         cell.configuration = item.value
       }
+    }
+    viewModel.didCopy = { configuration in
+      ToastPresenter.showToast(configuration: configuration)
     }
   }
   

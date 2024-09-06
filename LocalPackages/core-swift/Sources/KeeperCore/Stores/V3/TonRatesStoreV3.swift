@@ -26,8 +26,8 @@ public final class TonRatesStoreV3: StoreV3<TonRatesStoreV3.Event, TonRatesStore
     await setState { [repository] _ in
       try? repository.saveRates(Rates(ton: rates, jettonsRates: []))
       return StateUpdate(newState: rates)
-    } notify: {
-      self.sendEvent(.didUpdateTonRates(rates: rates))
+    } notify: { state in
+      self.sendEvent(.didUpdateTonRates(rates: state))
     }
   }
 }

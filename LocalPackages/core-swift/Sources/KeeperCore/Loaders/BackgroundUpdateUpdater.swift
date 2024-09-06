@@ -3,6 +3,7 @@ import TonStreamingAPI
 import EventSource
 import TonSwift
 import OpenAPIRuntime
+import TonAPI
 
 public actor BackgroundUpdateUpdater {
   public struct BackgroundUpdateEvent {
@@ -176,6 +177,11 @@ public extension Swift.Error {
       }
     case let clientError as OpenAPIRuntime.ClientError:
       return clientError.underlyingError.isCancelledError
+    case let tonApiErrorResponse as TonAPI.ErrorResponse:
+      switch tonApiErrorResponse {
+      case .error(_, _, _, let error):
+        return error.isCancelledError
+      }
     default:
       return false
     }

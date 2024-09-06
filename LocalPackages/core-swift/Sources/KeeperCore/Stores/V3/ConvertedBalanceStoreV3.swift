@@ -86,7 +86,7 @@ public final class ConvertedBalanceStoreV3: StoreV3<ConvertedBalanceStoreV3.Even
       var updatedState = state
       updatedState[wallet] = convertedBalanceState
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       guard let convertedBalanceState else { return }
       self.sendEvent(.didUpdateConvertedBalance(state: convertedBalanceState, wallet: wallet))
     }

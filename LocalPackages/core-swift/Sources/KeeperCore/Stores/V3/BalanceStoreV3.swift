@@ -48,7 +48,7 @@ public final class BalanceStoreV3: StoreV3<BalanceStoreV3.Event, BalanceStoreV3.
       var updatedState = state
       updatedState[wallet] = balanceState
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didUpdateBalanceState(wallet: wallet, balanceState))
     }
   }
@@ -70,7 +70,7 @@ public final class BalanceStoreV3: StoreV3<BalanceStoreV3.Event, BalanceStoreV3.
         }
       }
       return StateUpdate(newState: updatedState)
-    } notify: {
+    } notify: { _ in
       observersActions.forEach { $0() }
     }
   }

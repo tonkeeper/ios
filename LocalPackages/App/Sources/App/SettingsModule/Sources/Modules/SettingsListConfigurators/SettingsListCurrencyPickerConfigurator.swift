@@ -21,16 +21,16 @@ final class SettingsListCurrencyPickerConfigurator: SettingsListConfigurator {
   
   // MARK: - Dependencies
   
-  private let currencyStore: CurrencyStore
+  private let currencyStore: CurrencyStoreV3
   
   // MARK: - Init
   
-  init(currencyStore: CurrencyStore) {
+  init(currencyStore: CurrencyStoreV3) {
     self.currencyStore = currencyStore
   }
   
   private func createState() -> SettingsListState {
-    let selectedCurrency = currencyStore.getCurrency()
+    let selectedCurrency = currencyStore.getState()
     let currencies = Currency.allCases
     var items = [SettingsListItem]()
     currencies.forEach { currency in

@@ -12,6 +12,7 @@ public final class WalletsStoreV3: StoreV3<WalletsStoreV3.Event, WalletsStoreV3.
     case didUpdateWalletMetaData(wallet: Wallet)
     case didUpdateWalletSetupSettings(wallet: Wallet)
     case didDeleteWallet(wallet: Wallet)
+    case didDeleteAll
   }
   
   public enum State {
@@ -76,89 +77,118 @@ public final class WalletsStoreV3: StoreV3<WalletsStoreV3.Event, WalletsStoreV3.
   public func addWallets(_ wallets: [Wallet]) async {
     guard !wallets.isEmpty else { return }
     
-    var updatedKeeperInfo: KeeperInfo?
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
       if let keeperInfo {
         let updatedWallets = keeperInfo.wallets
-          .filter { !wallets.contains($0) }
+          .filter { keeperInfoWallet in !wallets.contains(where: { $0.identity == keeperInfoWallet.identity }) }
         + wallets
-        
-        updatedKeeperInfo = keeperInfo.updateWallets(
+        let updatedKeeperInfo = keeperInfo.updateWallets(
           updatedWallets,
           activeWallet: wallets[0]
         )
+        return updatedKeeperInfo
       } else {
-        updatedKeeperInfo = KeeperInfo.keeperInfo(wallets: wallets)
+        return KeeperInfo.keeperInfo(wallets: wallets)
       }
-      return updatedKeeperInfo
     }
+    
     await setState { _ in
       return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didAddWallets(wallets: wallets))
       self.sendEvent(.didChangeActiveWallet(wallet: wallets[0]))
     }
   }
   
   public func setWalletActive(_ wallet: Wallet) async {
-    var updatedKeeperInfo: KeeperInfo?
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
-      updatedKeeperInfo = keeperInfo.updateActiveWallet(wallet)
+      let updatedKeeperInfo = keeperInfo.updateActiveWallet(wallet)
       return updatedKeeperInfo
     }
-    await self.setState { _ in
+    
+    await setState { _ in
       return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didChangeActiveWallet(wallet: wallet))
     }
   }
   
   public func setWallet(_ wallet: Wallet, metaData: WalletMetaData) async {
-    var updatedKeeperInfo: KeeperInfo?
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
-      
       let updated = keeperInfo.updateWallet(wallet, metaData: metaData)
-      updatedKeeperInfo = updated.keeperInfo
       return updated.keeperInfo
     }
-    await self.setState { _ in
+    
+    await setState { _ in
       return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: {
-      self.sendEvent(.didUpdateWalletMetaData(wallet: wallet))
+    } notify: { _ in
+      var updatedWallet = wallet
+      updatedWallet.metaData = metaData
+      self.sendEvent(.didUpdateWalletMetaData(wallet: updatedWallet))
     }
   }
   
   public func deleteWallet(_ wallet: Wallet) async {
-    var updatedKeeperInfo: KeeperInfo?
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
-      
-      let updated = keeperInfo.deleteWallet(wallet)
-      updatedKeeperInfo = updated
-      return updated
+      let updatedKeeperInfo = keeperInfo.deleteWallet(wallet)
+      return updatedKeeperInfo
+    }
+    
+    await setState { _ in
+      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
+    } notify: { state in
+      switch state {
+      case .empty:
+        self.sendEvent(.didDeleteAll)
+      case .wallets(let walletsState):
+        self.sendEvent(.didDeleteWallet(wallet: wallet))
+        self.sendEvent(.didChangeActiveWallet(wallet: walletsState.activeWalelt))
+      }
+    }
+  }
+  
+  public func deleteAllWallets() async {
+    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      return nil
     }
     await self.setState { _ in
-      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: {
-      self.sendEvent(.didDeleteWallet(wallet: wallet))
+      return StateUpdate(newState: .empty)
+    } notify: { _ in
+      self.sendEvent(.didDeleteAll)
     }
   }
   
   public func moveWallet(fromIndex: Int, toIndex: Int) async {
-    var updatedKeeperInfo: KeeperInfo?
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
-      
       let updated = keeperInfo.moveWallet(fromIndex: fromIndex, toIndex: toIndex)
-      updatedKeeperInfo = updated
       return updated
     }
     await self.setState { _ in
       return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
-    } notify: {
+    } notify: { _ in
       self.sendEvent(.didMoveWallet(fromIndex: fromIndex, toIndex: toIndex))
+    }
+  }
+  
+  public func setWalletBackupDate(wallet: Wallet, backupDate: Date?) async {
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updated = keeperInfo.updateWallet(
+        wallet, 
+        setupSettings: WalletSetupSettings(backupDate: backupDate)
+      )
+      return updated.keeperInfo
+    }
+    await self.setState { _ in
+      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
+    } notify: { _ in
+      var wallet = wallet
+      wallet.setupSettings = WalletSetupSettings(backupDate: backupDate)
+      self.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
     }
   }
   

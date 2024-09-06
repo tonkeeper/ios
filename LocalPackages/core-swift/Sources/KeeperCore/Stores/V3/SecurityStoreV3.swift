@@ -42,8 +42,8 @@ public final class SecurityStoreV3: StoreV3<SecurityStoreV3.Event, SecurityStore
       let updatedState = State(isBiometryEnable: isBiometryEnable,
                                isLockScreen: state.isLockScreen)
       return StateUpdate(newState: updatedState)
-    } notify: {
-      self.sendEvent(.didUpdateIsBiometryEnabled(isBiometryEnable: isBiometryEnable))
+    } notify: { state in
+      self.sendEvent(.didUpdateIsBiometryEnabled(isBiometryEnable: state.isBiometryEnable))
     }
     await keeperInfoStore.updateKeeperInfo { keeperInfo in
       let updated = keeperInfo?.updateIsBiometryEnable(isBiometryEnable)
@@ -56,8 +56,8 @@ public final class SecurityStoreV3: StoreV3<SecurityStoreV3.Event, SecurityStore
       let updatedState = State(isBiometryEnable: state.isBiometryEnable,
                                isLockScreen: isLockScreen)
       return StateUpdate(newState: updatedState)
-    } notify: {
-      self.sendEvent(.didUpdateIsLockScreen(isLockScreen: isLockScreen))
+    } notify: { state in
+      self.sendEvent(.didUpdateIsLockScreen(isLockScreen: state.isLockScreen))
     }
     await keeperInfoStore.updateKeeperInfo { keeperInfo in
       let updated = keeperInfo?.updateIsLockScreen(isLockScreen)

@@ -73,9 +73,8 @@ final class BackupCheckCoordinator: RouterCoordinator<NavigationControllerRouter
   }
   
   func setDidBackup() async {
-    await keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater.updateWallet(
-      wallet,
-      setupSettings: WalletSetupSettings(backupDate: Date())
+    await keeperCoreMainAssembly.storesAssembly.walletsStore.setWalletBackupDate(
+      wallet: wallet, backupDate: Date()
     )
   }
 }

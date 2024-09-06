@@ -17,7 +17,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   private let mainController: KeeperCore.MainController
   
   private let mainCoordinatorStateManager: MainCoordinatorStateManager
-  private let walletsStoreUpdater: WalletsStoreUpdater
   
   private let walletModule: WalletModule
   private let historyModule: HistoryModule
@@ -76,7 +75,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     self.reachabilityTracker = reachabilityTracker
     
     self.mainCoordinatorStateManager = MainCoordinatorStateManager(walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore)
-    self.walletsStoreUpdater = keeperCoreMainAssembly.walletUpdateAssembly.walletsStoreUpdater
     
     super.init(router: router)
     
@@ -553,12 +551,11 @@ private extension MainCoordinator {
     
     module.output.didCustomizeWallet = { [weak self] model in
       guard let self else { return }
+      let walletsStore = self.keeperCoreMainAssembly.storesAssembly.walletsStore
       Task {
-        await self.walletsStoreUpdater.updateWalletMetaData(
+        await walletsStore.setWallet(
           wallet,
-          metaData: WalletMetaData(
-            customizeWalletModel: model
-          )
+          metaData: WalletMetaData(customizeWalletModel: model)
         )
       }
     }
@@ -900,7 +897,7 @@ private extension MainCoordinator {
     guard let navigationController = router.rootViewController.navigationController else { return }
     let configuration = SettingsListBackupConfigurator(
       wallet: wallet,
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
     )
     

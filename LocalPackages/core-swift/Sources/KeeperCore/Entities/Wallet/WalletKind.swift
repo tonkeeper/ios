@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public enum WalletKind: Codable, Equatable {
+public enum WalletKind: Codable, Equatable, Hashable {
   case Regular(TonSwift.PublicKey, WalletContractVersion)
   case Lockup(TonSwift.PublicKey, LockupConfig)
   case Watchonly(ResolvableAddress)
@@ -28,9 +28,12 @@ public enum WalletKind: Codable, Equatable {
   }
 }
 
-extension TonSwift.PublicKey: Equatable {
+extension TonSwift.PublicKey: Equatable, Hashable {
   public static func == (lhs: TonSwift.PublicKey, rhs: TonSwift.PublicKey) -> Bool {
     lhs.data == rhs.data
+  }
+  public func hash(into hasher: inout Hasher) {
+    hasher.combine(data)
   }
 }
 
