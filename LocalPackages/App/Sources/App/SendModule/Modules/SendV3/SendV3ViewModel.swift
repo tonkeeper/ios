@@ -113,6 +113,16 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   // MARK: - SendV3ViewModel
   
   func viewDidLoad() {
+    balanceStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateConvertedBalance(_, let wallet):
+        guard observer.wallet == wallet else { return }
+        DispatchQueue.main.async {
+          observer.updateRemaining()
+          observer.update()
+        }
+      }
+    }
     updateRemaining()
     update()
   }
@@ -188,7 +198,7 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   func didTapWalletTokenPicker() {
     switch sendItem {
     case .token(let token, _):
-      self.didTapPicker?(walletsStore.getState().activeWallet, token)
+      self.didTapPicker?(wallet, token)
     case .nft:
       break
     }
@@ -299,20 +309,23 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   
   // MARK: - Dependencies
   
+  private let wallet: Wallet
   private let imageLoader = ImageLoader()
   private let sendController: SendV3Controller
-  private let walletsStore: WalletsStore
+  private let balanceStore: ConvertedBalanceStoreV3
   
   // MARK: - Init
   
-  init(sendItem: SendItem,
+  init(wallet: Wallet,
+       sendItem: SendItem,
        recipient: Recipient?,
        sendController: SendV3Controller,
-       walletsStore: WalletsStore) {
+       balanceStore: ConvertedBalanceStoreV3) {
+    self.wallet = wallet
     self.sendItem = sendItem
     self.recipient = recipient
     self.sendController = sendController
-    self.walletsStore = walletsStore
+    self.balanceStore = balanceStore
     
     switch sendItem {
     case .token(let token, _):
@@ -357,7 +370,7 @@ private extension SendV3ViewModelImplementation {
         isActivity: isResolving,
         action: { [weak self] in
           guard let self else { return }
-          let sendModel = SendModel(wallet: walletsStore.getState().activeWallet,
+          let sendModel = SendModel(wallet: wallet,
                                     recipient: recipient,
                                     sendItem: sendItem,
                                     comment: commentInput)

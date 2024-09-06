@@ -25,13 +25,15 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
   
   // MARK: - TokenPickerViewModel
   
-  var didUpdateSelectedToken: ((Int?, _ scroll: Bool) -> Void)?  
+  var didUpdateSelectedToken: ((Int?, _ scroll: Bool) -> Void)?
   var didUpdateSnapshot: ((_ snapshot: TokenPickerViewController.Snapshot) -> Void)?
   
   func viewDidLoad() {
     tokenPickerModel.didUpdateState = { [weak self] state in
       self?.didUpdateState(state: state)
     }
+    let state = tokenPickerModel.getState()
+    self.didUpdateState(state: state)
   }
   // MARK: - Image Loading
   
@@ -39,7 +41,7 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
   
   // MARK: - State
   
-  private let actor = SerialActor<Void>()
+  private let syncQueue = DispatchQueue(label: "TokenPickerViewModelImplementationSyncQueue")
   
   // MARK: - Dependencies
   
@@ -56,45 +58,51 @@ final class TokenPickerViewModelImplementation: TokenPickerViewModel, TokenPicke
 }
 
 private extension TokenPickerViewModelImplementation {
-  func didUpdateState(state: TokenPickerModel.State) {
-    Task {
-      await self.actor.addTask(block: {
-        var models = [TKUIListItemCell.Configuration]()
-        
-        let tonModel: TKUIListItemCell.Configuration = {
-          let title = TonInfo.name
-          let caption = self.amountFormatter.formatAmount(
-            BigUInt(state.tonBalance.tonBalance.amount),
-            fractionDigits: TonInfo.fractionDigits,
-            maximumFractionDigits: 2,
-            symbol: TonInfo.symbol
-          )
-          return self.createCellModel(
-            id: TonInfo.name,
-            image: .ton,
-            title: title,
-            tag: nil,
-            caption: caption,
-            selectionClosure: { [weak self] in
-              guard let self else { return }
-              if state.selectedToken == .ton {
-                self.didFinish?()
-              } else {
-                self.didSelectToken?(.ton)
-                self.didFinish?()
-              }
+  func didUpdateState(state: TokenPickerModel.State?) {
+    syncQueue.async {
+      guard let state else {
+        DispatchQueue.main.async {
+          self.didUpdateSnapshot?(TokenPickerViewController.Snapshot())
+        }
+        return
+      }
+      
+      var models = [TKUIListItemCell.Configuration]()
+      
+      let tonModel: TKUIListItemCell.Configuration = {
+        let title = TonInfo.name
+        let caption = self.amountFormatter.formatAmount(
+          BigUInt(state.tonBalance.tonBalance.amount),
+          fractionDigits: TonInfo.fractionDigits,
+          maximumFractionDigits: 2,
+          symbol: TonInfo.symbol
+        )
+        return self.createCellModel(
+          id: TonInfo.name,
+          image: .ton,
+          title: title,
+          tag: nil,
+          caption: caption,
+          selectionClosure: { [weak self] in
+            guard let self else { return }
+            if state.selectedToken == .ton {
+              self.didFinish?()
+            } else {
+              self.didSelectToken?(.ton)
+              self.didFinish?()
             }
-          )
-        }()
-        models.append(tonModel)
-        
-        let sortedJettonBalances = state.jettonBalances
-          .sorted(by: {
-            $0.converted > $1.converted
-          })
-        
-        let jettonModels = sortedJettonBalances
-          .map { jettonBalance in
+          }
+        )
+      }()
+      models.append(tonModel)
+      
+      let sortedJettonBalances = state.jettonBalances
+        .sorted(by: {
+          $0.converted > $1.converted
+        })
+      
+      let jettonModels = sortedJettonBalances
+        .map { jettonBalance in
           let title = jettonBalance.jettonBalance.item.jettonInfo.symbol ?? jettonBalance.jettonBalance.item.jettonInfo.name
           let caption = self.amountFormatter.formatAmount(
             jettonBalance.jettonBalance.quantity,
@@ -119,27 +127,26 @@ private extension TokenPickerViewModelImplementation {
             }
           )
         }
-        models.append(contentsOf: jettonModels)
-        
-        var selectedIndex: Int?
-        switch state.selectedToken {
-        case .ton:
-          selectedIndex = 0
-        case .jetton(let jettonItem):
-          if let index = sortedJettonBalances.firstIndex(where: { $0.jettonBalance.item == jettonItem }) {
-            print(jettonItem.jettonInfo.name)
-            selectedIndex = index + 1
-          }
+      models.append(contentsOf: jettonModels)
+      
+      var selectedIndex: Int?
+      switch state.selectedToken {
+      case .ton:
+        selectedIndex = 0
+      case .jetton(let jettonItem):
+        if let index = sortedJettonBalances.firstIndex(where: { $0.jettonBalance.item == jettonItem }) {
+          print(jettonItem.jettonInfo.name)
+          selectedIndex = index + 1
         }
-        
-        var snapshot = TokenPickerViewController.Snapshot()
-        snapshot.appendSections([.tokens])
-        snapshot.appendItems(models, toSection: .tokens)
-        await MainActor.run { [snapshot, selectedIndex] in
-          self.didUpdateSnapshot?(snapshot)
-          self.didUpdateSelectedToken?(selectedIndex, state.scrollToSelected)
-        }
-      })
+      }
+      
+      var snapshot = TokenPickerViewController.Snapshot()
+      snapshot.appendSections([.tokens])
+      snapshot.appendItems(models, toSection: .tokens)
+      DispatchQueue.main.async {
+        self.didUpdateSnapshot?(snapshot)
+        self.didUpdateSelectedToken?(selectedIndex, state.scrollToSelected)
+      }
     }
   }
   

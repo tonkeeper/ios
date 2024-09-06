@@ -11,53 +11,46 @@ final class TokenPickerModel {
     let scrollToSelected: Bool
   }
   
-  var didUpdateState: ((State) -> Void)? {
-    didSet {
-      Task {
-        await self.actor.addTask(block: {
-          let balanceState = await self.balanceStore.getState()
-          guard let state = await self.getState(balanceState: balanceState,
-                                                scrollToSelected: true) else { return }
-          self.didUpdateState?(state)
-        })
-      }
-    }
-  }
-  
-  private let actor = SerialActor<Void>()
+  var didUpdateState: ((State?) -> Void)?
   
   private let wallet: Wallet
   private let selectedToken: Token
-  private let balanceStore: ConvertedBalanceStore
+  private let balanceStore: ConvertedBalanceStoreV3
   
   init(wallet: Wallet, 
        selectedToken: Token,
-       balanceStore: ConvertedBalanceStore) {
+       balanceStore: ConvertedBalanceStoreV3) {
     self.wallet = wallet
     self.selectedToken = selectedToken
     self.balanceStore = balanceStore
     
-    balanceStore.addObserver(
-      self,
-      notifyOnAdded: false) { observer, newState, oldState in
+    balanceStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateConvertedBalance(_, let wallet): 
+        guard wallet == observer.wallet else { return }
         Task {
-          await observer.didUpdateBalanceState(balanceState: newState,
-                                               oldBalanceState: oldState)
+          await observer.didUpdateBalanceState()
         }
       }
+    }
+  }
+  
+  func getState() -> State? {
+    let balanceState = balanceStore.getState()[wallet]
+    let state = getState(balanceState: balanceState, scrollToSelected: false)
+    return state
   }
 }
 
 private extension TokenPickerModel {
-  func didUpdateBalanceState(balanceState: [FriendlyAddress: ConvertedBalanceState],
-                             oldBalanceState: [FriendlyAddress: ConvertedBalanceState]?) async {
-    guard let state = await getState(balanceState: balanceState, scrollToSelected: false) else { return }
+  func didUpdateBalanceState() async {
+    let balanceState = await balanceStore.getState()[wallet]
+    let state = getState(balanceState: balanceState, scrollToSelected: false)
     self.didUpdateState?(state)
   }
   
-  func getState(balanceState: [FriendlyAddress: ConvertedBalanceState], scrollToSelected: Bool) async -> State? {
-    guard let address = try? wallet.friendlyAddress else { return nil }
-    guard let balance = balanceState[address]?.balance else { return nil }
+  func getState(balanceState: ConvertedBalanceState?, scrollToSelected: Bool) -> State? {
+    guard let balance = balanceState?.balance else { return nil}
     return State(
       tonBalance: balance.tonBalance,
       jettonBalances: balance.jettonsBalance,

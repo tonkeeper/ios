@@ -12,7 +12,7 @@ struct TokenPickerAssembly {
       tokenPickerModel: TokenPickerModel(
         wallet: wallet,
         selectedToken: selectedToken,
-        balanceStore: keeperCoreMainAssembly.mainStoresAssembly.convertedBalanceStore
+        balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
       ),
       amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
     )
