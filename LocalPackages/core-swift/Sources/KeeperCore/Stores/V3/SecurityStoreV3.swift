@@ -1,6 +1,6 @@
 import Foundation
 
-public final class SecurityStoreV3: StoreV3<SecurityStoreV3.Event, SecurityStoreV3.State> {
+public final class SecurityStore: StoreV3<SecurityStore.Event, SecurityStore.State> {
   public struct State {
     public let isBiometryEnable: Bool
     public let isLockScreen: Bool

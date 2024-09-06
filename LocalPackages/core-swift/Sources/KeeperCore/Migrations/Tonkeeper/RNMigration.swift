@@ -9,18 +9,15 @@ public struct RNMigration {
   private var settingsRepository: SettingsRepository
   private let mnemonicsRepository: MnemonicsRepository
   private let keychainVault: KeychainVault
-  private let securityStore: SecurityStore
   
   init(rnService: RNService,
        settingsRepository: SettingsRepository,
        mnemonicsRepository: MnemonicsRepository,
-       keychainVault: KeychainVault,
-       securityStore: SecurityStore) {
+       keychainVault: KeychainVault) {
     self.rnService = rnService
     self.settingsRepository = settingsRepository
     self.mnemonicsRepository = mnemonicsRepository
     self.keychainVault = keychainVault
-    self.securityStore = securityStore
   }
   
   public func checkIfNeedToMigrate() async -> Bool {
@@ -58,6 +55,5 @@ public struct RNMigration {
       }
       wallets.append(wallet)
     }
-    await securityStore.setIsBiometryEnable(walletsStore.biometryEnabled)
   }
 }

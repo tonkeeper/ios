@@ -153,19 +153,8 @@ public final class StoresAssembly {
     if let securityStore = _securityStore {
       return securityStore
     } else {
-      let securityStore = SecurityStore(keeperInfoStore: keeperInfoStore)
+      let securityStore = SecurityStore(keeperInfoStore: keeperInfoStoreV3)
       _securityStore = securityStore
-      return securityStore
-    }
-  }
-  
-  private weak var _securityStoreV3: SecurityStoreV3?
-  public var securityStoreV3: SecurityStoreV3 {
-    if let securityStore = _securityStoreV3 {
-      return securityStore
-    } else {
-      let securityStore = SecurityStoreV3(keeperInfoStore: keeperInfoStoreV3)
-      _securityStoreV3 = securityStore
       return securityStore
     }
   }

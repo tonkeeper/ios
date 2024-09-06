@@ -20,12 +20,12 @@ final class WalletBalanceSetupModel {
   
   private let walletsStore: WalletsStoreV3
   private let appSettingsStore: AppSettingsV3Store
-  private let securityStore: SecurityStoreV3
+  private let securityStore: SecurityStore
   private let mnemonicsRepository: MnemonicsRepository
   
   init(walletsStore: WalletsStoreV3,
        appSettingsStore: AppSettingsV3Store,
-       securityStore: SecurityStoreV3,
+       securityStore: SecurityStore,
        mnemonicsRepository: MnemonicsRepository) {
     self.walletsStore = walletsStore
     self.appSettingsStore = appSettingsStore
@@ -100,7 +100,7 @@ final class WalletBalanceSetupModel {
     }
   }
   
-  private func didGetSecurityStoreEvent(_ event: SecurityStoreV3.Event) {
+  private func didGetSecurityStoreEvent(_ event: SecurityStore.Event) {
     Task {
       switch event {
       case .didUpdateIsBiometryEnabled:

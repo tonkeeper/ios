@@ -35,10 +35,13 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
     self.mnemonicsRepository = mnemonicsRepository
     self.biometryProvider = biometryProvider
     
-    securityStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      DispatchQueue.main.async {
-        let state = observer.createState()
-        observer.didUpdateState?(state)
+    securityStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateIsBiometryEnabled, .didUpdateIsLockScreen:
+        DispatchQueue.main.async {
+          let state = observer.createState()
+          observer.didUpdateState?(state)
+        }
       }
     }
   }

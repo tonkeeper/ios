@@ -18,7 +18,7 @@ struct WalletBalanceAssembly {
       setupModel: WalletBalanceSetupModel(
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
         appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
-        securityStore: keeperCoreMainAssembly.storesAssembly.securityStoreV3,
+        securityStore: keeperCoreMainAssembly.storesAssembly.securityStore,
         mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository()
       ),
       totalBalanceModel: WalletTotalBalanceModel(

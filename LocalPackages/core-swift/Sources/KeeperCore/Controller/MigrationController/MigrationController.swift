@@ -18,8 +18,7 @@ public final class MigrationController {
       rnService: rootAssembly.rnAssembly.rnService,
       settingsRepository: rootAssembly.repositoriesAssembly.settingsRepository(),
       mnemonicsRepository: rootAssembly.repositoriesAssembly.mnemonicsRepository(),
-      keychainVault: rootAssembly.coreAssembly.keychainVault,
-      securityStore: rootAssembly.storesAssembly.securityStore
+      keychainVault: rootAssembly.coreAssembly.keychainVault
     )
   }
   
