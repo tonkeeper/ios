@@ -288,23 +288,17 @@ private extension MainCoordinator {
   func openSend(recipient: String, jettonAddress: Address?) {
     ToastPresenter.showToast(configuration: .loading)
     Task {
-      guard let resolvedRecipient = await mainController.resolveRecipient(recipient) else {
+      do {
+        let recipient = try await mainController.resolveSend(recipient: recipient, jettonAddress: jettonAddress)
+        await MainActor.run {
+          ToastPresenter.hideAll()
+          self.openSend(token: .ton, recipient: recipient)
+        }
+      } catch {
         await MainActor.run {
           ToastPresenter.hideAll()
           ToastPresenter.showToast(configuration: .failed)
         }
-        return
-      }
-      let token: Token
-      if let jettonAddress, let jettonItem = await mainController.resolveJetton(jettonAddress: jettonAddress) {
-        token = .jetton(jettonItem)
-      } else {
-        token = .ton
-      }
-      
-      await MainActor.run {
-        ToastPresenter.hideAll()
-        self.openSend(token: token, recipient: resolvedRecipient)
       }
     }
   }

@@ -58,7 +58,7 @@ public final class MainAssembly {
   public func mainController() -> MainController {
     MainController(
       appInfoProvider: appInfoProvider,
-      walletsStore: walletAssembly.walletsStore,
+      walletsStore: storesAssembly.walletsStore,
       accountNFTService: servicesAssembly.accountNftService(),
       backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater,
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,

@@ -3,6 +3,10 @@ import TonSwift
 
 public final class MainController {
   
+  public enum Error: Swift.Error {
+    case failedResolveRecipient(recipient: String)
+  }
+  
   actor State {
     var nftsUpdateTask: Task<(), Never>?
     
@@ -17,7 +21,7 @@ public final class MainController {
   private var backgroundUpdateStoreObservationToken: ObservationToken?
   
   private let appInfoProvider: AppInfoProvider
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   private let accountNFTService: AccountNFTService
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   private let tonConnectEventsStore: TonConnectEventsStore
@@ -40,7 +44,7 @@ public final class MainController {
   private var nftStateTask: Task<Void, Never>?
 
   init(appInfoProvider: AppInfoProvider,
-       walletsStore: WalletsStore,
+       walletsStore: WalletsStoreV3,
        accountNFTService: AccountNFTService,
        backgroundUpdateUpdater: BackgroundUpdateUpdater,
        tonConnectEventsStore: TonConnectEventsStore,
@@ -107,49 +111,22 @@ public final class MainController {
     try deeplinkParser.parse(string: deeplink)
   }
   
-  public func resolveRecipient(_ recipient: String) async -> Recipient? {
-    let inputRecipient: Recipient?
-    let knownAccounts = (try? await knownAccountsStore.getKnownAccounts()) ?? []
-    if let friendlyAddress = try? FriendlyAddress(string: recipient) {
-      inputRecipient = Recipient(
-        recipientAddress: .friendly(
-          friendlyAddress
-        ),
-        isMemoRequired: knownAccounts.first(where: { $0.address == friendlyAddress.address })?.requireMemo ?? false
-      )
-    } else if let rawAddress = try? Address.parse(recipient) {
-      inputRecipient = Recipient(
-        recipientAddress: .raw(
-          rawAddress
-        ),
-        isMemoRequired: knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false
-      )
-    } else {
-      inputRecipient = nil
-    }
-    return inputRecipient
+  public func resolveSend(recipient: String, jettonAddress: Address?) async throws -> Recipient {
+    let recipient = try await resolveRecipient(recipient)
+    return recipient
   }
   
-  public func resolveJetton(jettonAddress: Address) async -> JettonItem? {
-    let jettonInfo: JettonInfo
-    if let mainnetJettonInfo = try? await apiProvider.api(false).resolveJetton(address: jettonAddress) {
-      jettonInfo = mainnetJettonInfo
-    } else if let testnetJettonInfo = try? await apiProvider.api(true).resolveJetton(address: jettonAddress) {
-      jettonInfo = testnetJettonInfo
+  private func resolveRecipient(_ recipient: String) async throws -> Recipient {
+    let knownAccounts = (try? await knownAccountsStore.getKnownAccounts()) ?? []
+    if let friendlyAddress = try? FriendlyAddress(string: recipient) {
+      let isMemoRequired = knownAccounts.first(where: { $0.address == friendlyAddress.address })?.requireMemo ?? false
+      return Recipient(recipientAddress: .friendly(friendlyAddress), isMemoRequired: isMemoRequired)
+    } else if let rawAddress = try? Address.parse(recipient) {
+      let isMemoRequired = knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false
+      return Recipient(recipientAddress: .raw(rawAddress), isMemoRequired: isMemoRequired)
     } else {
-      return nil
+      throw Error.failedResolveRecipient(recipient: recipient)
     }
-    for wallet in await walletsStore.getState().wallets {
-      guard let address = try? wallet.friendlyAddress,
-            let balance = await balanceStore.getState()[address]?.walletBalance else {
-        continue
-      }
-      guard let jettonItem =  balance.balance.jettonsBalance.first(where: { $0.item.jettonInfo == jettonInfo })?.item else {
-        continue
-      }
-      return jettonItem
-    }
-    return nil
   }
 }
 
