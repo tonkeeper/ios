@@ -47,14 +47,7 @@ public final class ServicesAssembly {
   func stackingService() -> StakingService {
     StakingServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
-  
-  func totalBalanceService() -> TotalBalanceService {
-    TotalBalanceServiceImplementation(
-      totalBalanceRepository: repositoriesAssembly.totalBalanceRepository(),
-      rateConverter: RateConverter()
-    )
-  }
-  
+
   func activeWalletsService() -> ActiveWalletsService {
     ActiveWalletsServiceImplementation(
       apiProvider: apiAssembly.apiProvider,

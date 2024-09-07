@@ -49,7 +49,6 @@ public final class RootAssembly {
       return rootController
     } else {
       let rootController = RootController(
-        walletsService: servicesAssembly.walletsService(),
         remoteConfigurationStore: configurationAssembly.remoteConfigurationStore,
         knownAccountsStore: storesAssembly.knownAccountsStore,
         deeplinkParser: DefaultDeeplinkParser(parsers: [
