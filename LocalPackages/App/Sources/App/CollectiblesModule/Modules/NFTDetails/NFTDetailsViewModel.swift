@@ -126,7 +126,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   
   private func createInformationViewModel() -> NFTDetailsInformationView.Model {
     let imageViewModel: TKImageView.Model = {
-      TKImageView.Model(image: .urlImage(nft.preview.size1500), size: .none)
+      TKImageView.Model(image: .urlImage(nft.preview.size500), size: .none)
     }()
 
     let itemInformationViewModel: NFTDetailsItemInformationView.Model = {

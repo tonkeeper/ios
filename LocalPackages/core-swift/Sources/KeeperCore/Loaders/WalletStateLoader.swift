@@ -22,6 +22,8 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
   public enum Event {
     case didStartLoadBalance(wallet: Wallet)
     case didEndLoadBalance(wallet: Wallet)
+    case didStartLoadNFT(wallet: Wallet)
+    case didEndLoadNFT(wallet: Wallet)
   }
   
   private let balanceStore: BalanceStoreV3
@@ -257,6 +259,12 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
 
       updatedState.nftLoadTasks[wallet] = task
       return StateUpdate(newState: updatedState)
+    } notify: { _ in
+      if task != nil {
+        self.sendEvent(.didStartLoadNFT(wallet: wallet))
+      } else {
+        self.sendEvent(.didEndLoadNFT(wallet: wallet))
+      }
     }
   }
   

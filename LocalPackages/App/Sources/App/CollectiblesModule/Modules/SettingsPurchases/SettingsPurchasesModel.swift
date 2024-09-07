@@ -49,11 +49,11 @@ final class SettingsPurchasesModel {
   
   private let wallet: Wallet
   private let walletNFTStore: WalletNFTStore
-  private let accountNFTsManagementStore: AccountNFTsManagementStore
+  private let accountNFTsManagementStore: WalletNFTsManagementStore
   
   init(wallet: Wallet, 
        walletNFTStore: WalletNFTStore,
-       accountNFTsManagementStore: AccountNFTsManagementStore) {
+       accountNFTsManagementStore: WalletNFTsManagementStore) {
     self.wallet = wallet
     self.walletNFTStore = walletNFTStore
     self.accountNFTsManagementStore = accountNFTsManagementStore
@@ -70,11 +70,15 @@ final class SettingsPurchasesModel {
       }
     }
     
-    accountNFTsManagementStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+    accountNFTsManagementStore.addObserver(self) { observer, event in
       observer.queue.async {
-        let state = observer.getState()
-        observer._state = state
-        observer.didUpdate?(.didUpdateManagementState(state))
+        switch event {
+        case .didUpdateState(let wallet):
+          guard wallet == self.wallet else { return }
+          let state = observer.getState()
+          observer._state = state
+          observer.didUpdate?(.didUpdateManagementState(state))
+        }
       }
     }
   }

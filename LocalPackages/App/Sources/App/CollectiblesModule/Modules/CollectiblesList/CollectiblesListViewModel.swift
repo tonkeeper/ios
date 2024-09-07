@@ -5,7 +5,6 @@ import TonSwift
 
 protocol CollectiblesListModuleOutput: AnyObject {
   var didSelectNFT: ((NFT, _ wallet: Wallet) -> Void)? { get set }
-  var didUpdate: ((_ hasItems: Bool) -> Void)? { get set }
 }
 
 protocol CollectiblesListViewModel: AnyObject {
@@ -21,7 +20,6 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   // MARK: - CollectiblesListModuleOutput
   
   var didSelectNFT: ((NFT, _ wallet: Wallet) -> Void)?
-  var didUpdate: ((_ hasItems: Bool) -> Void)?
   
   // MARK: - CollectiblesListViewModel
   
@@ -32,21 +30,24 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
     walletNFTStore.addObserver(self) { observer, event in
       switch event {
       case .didUpdateNFTs(let wallet):
-        guard self.wallet == wallet else { return }
+        guard observer.wallet == wallet else { return }
         DispatchQueue.main.async {
-          let nfts = observer.walletNFTStore.getState()[wallet] ?? []
-          let nftsManagementState = observer.nftManagementStore.getState()
-          observer.update(nfts: nfts, managementState: nftsManagementState)
+          observer.update()
         }
       }
     }
     
-    let nfts = walletNFTStore.getState()[wallet] ?? []
-    let nftsManagementState = nftManagementStore.getState()
-    update(
-      nfts: nfts,
-      managementState: nftsManagementState
-    )
+    nftManagementStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateState(let wallet):
+        guard observer.wallet == wallet else { return }
+        DispatchQueue.main.async {
+          observer.update()
+        }
+      }
+    }
+    
+    update()
   }
   
   func getNFTCellModel(identifier: String) -> CollectibleCollectionViewCell.Model? {
@@ -71,38 +72,35 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   // MARK: - Dependencies
   
   private let wallet: Wallet
-  private let walletsStore: WalletsStore
   private let walletNFTStore: WalletNFTStore
-  private let nftManagementStore: AccountNFTsManagementStore
+  private let nftManagementStore: WalletNFTsManagementStore
   
   // MARK: - Init
   
   init(wallet: Wallet,
-       walletsStore: WalletsStore,
        walletNFTStore: WalletNFTStore,
-       nftManagementStore: AccountNFTsManagementStore) {
+       nftManagementStore: WalletNFTsManagementStore) {
     self.wallet = wallet
-    self.walletsStore = walletsStore
     self.walletNFTStore = walletNFTStore
     self.nftManagementStore = nftManagementStore
   }
 }
 
 private extension CollectiblesListViewModelImplementation {
+  func update() {
+    let nfts = walletNFTStore.getState()[wallet] ?? []
+    let nftsManagementState = nftManagementStore.getState()
+    update(nfts: nfts, managementState: nftsManagementState)
+  }
+  
   func update(nfts: [NFT],
               managementState: NFTsManagementState) {
-    guard !nfts.isEmpty else {
-      didUpdate?(false)
-      return
-    }
     let filteredState = self.filterSpamNFTItems(
       nfts: nfts,
       managementState: managementState)
     let snapshot = self.createSnapshot(state: filteredState)
     let models = self.createModels(state: filteredState)
-    let hasItems = !filteredState.isEmpty
     self.nfts = filteredState
-    self.didUpdate?(hasItems)
     self.models = models
     self.didUpdateSnapshot?(snapshot)
   }

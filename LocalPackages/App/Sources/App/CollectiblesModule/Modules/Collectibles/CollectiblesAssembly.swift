@@ -4,14 +4,19 @@ import KeeperCore
 
 struct CollectiblesAssembly {
   private init() {}
-  static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly
+  static func module(wallet: Wallet,
+                     collectiblesListViewController: CollectiblesListViewController,
+                     keeperCoreMainAssembly: KeeperCore.MainAssembly
   ) -> MVVMModule<CollectiblesViewController, CollectiblesModuleOutput, CollectiblesModuleInput> {
     let viewModel = CollectiblesViewModelImplementation(
-      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-      backgroundUpdateStore: keeperCoreMainAssembly.mainStoresAssembly.backgroundUpdateStore
+      wallet: wallet,
+      walletNFTStore: keeperCoreMainAssembly.storesAssembly.walletNFTsStore,
+      backgroundUpdateStore: keeperCoreMainAssembly.storesAssembly.backgroundUpdateStore,
+      walletStateLoader: keeperCoreMainAssembly.loadersAssembly.walletStateLoader
     )
     let viewController = CollectiblesViewController(
-      viewModel: viewModel
+      viewModel: viewModel,
+      collectiblesListViewController: collectiblesListViewController
     )
     return .init(view: viewController, output: viewModel, input: viewModel)
   }

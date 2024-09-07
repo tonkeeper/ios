@@ -10,9 +10,8 @@ struct CollectiblesListAssembly {
   ) -> MVVMModule<CollectiblesListViewController, CollectiblesListModuleOutput, Void> {
     let viewModel = CollectiblesListViewModelImplementation(
       wallet: wallet,
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
       walletNFTStore: keeperCoreMainAssembly.storesAssembly.walletNFTsStore,
-      nftManagementStore: keeperCoreMainAssembly.mainStoresAssembly.accountNFTsManagementStore(wallet: wallet)
+      nftManagementStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet)
     )
     let viewController = CollectiblesListViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: Void())

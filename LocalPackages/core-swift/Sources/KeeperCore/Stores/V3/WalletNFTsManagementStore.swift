@@ -1,12 +1,11 @@
 import Foundation
 import TonSwift
 
-public final class AccountNFTsManagementStore: StoreUpdated<NFTsManagementState> {
-  
-  public struct State: Equatable {
-    public let nftStates: [Address: NFTState]
+public final class WalletNFTsManagementStore: StoreV3<WalletNFTsManagementStore.Event, NFTsManagementState> {
+  public enum Event {
+    case didUpdateState(wallet: Wallet)
   }
-  
+
   public enum NFTState: Equatable {
     case visible
     case hidden
@@ -22,27 +21,31 @@ public final class AccountNFTsManagementStore: StoreUpdated<NFTsManagementState>
     super.init(state: NFTsManagementState(nftStates: [:]))
   }
   
-  public override func getInitialState() -> NFTsManagementState {
+  public override var initialState: NFTsManagementState {
     accountNFTsManagementRepository.getState(wallet: wallet)
   }
   
   public func hideItem(_ item: NFTManagementItem) async {
-    await updateState { [accountNFTsManagementRepository, wallet] state in
+    await setState { [accountNFTsManagementRepository, wallet] state in
       var updatedNFTStates = state.nftStates
       updatedNFTStates[item] = .hidden
       let updatedState = NFTsManagementState(nftStates: updatedNFTStates)
       try? accountNFTsManagementRepository.setState(updatedState, wallet: wallet)
-      return AccountNFTsManagementStore.StateUpdate(newState: updatedState)
+      return WalletNFTsManagementStore.StateUpdate(newState: updatedState)
+    } notify: { [wallet] _ in
+      self.sendEvent(.didUpdateState(wallet: wallet))
     }
   }
   
   public func showItem(_ item: NFTManagementItem) async {
-    await updateState { [accountNFTsManagementRepository, wallet] state in
+    await setState { [accountNFTsManagementRepository, wallet] state in
       var updatedNFTStates = state.nftStates
       updatedNFTStates[item] = .visible
       let updatedState = NFTsManagementState(nftStates: updatedNFTStates)
       try? accountNFTsManagementRepository.setState(updatedState, wallet: wallet)
-      return AccountNFTsManagementStore.StateUpdate(newState: updatedState)
+      return WalletNFTsManagementStore.StateUpdate(newState: updatedState)
+    } notify: { [wallet] _ in
+      self.sendEvent(.didUpdateState(wallet: wallet))
     }
   }
 }

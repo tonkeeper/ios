@@ -37,9 +37,6 @@ final class WalletsListViewModelImplementation: WalletsListViewModel, WalletsLis
   var didUpdateWaletCellConfiguration: ((WalletsListViewController.Item, TKListItemCell.Configuration) -> Void)?
   var didUpdateIsEditing: ((Bool) -> Void)?
   var didUpdateHeaderItem: ((TKPullCardHeaderItem) -> Void)?
-//  var didUpdateWaletCellConfiguration: <<error type>>
-//  var didUpdateSelected: ((Int?) -> Void)?
-//  var didUpdateWalletItems: (([String : TKUIListItemCell.Configuration]) -> Void)?
   
   func viewDidLoad() {
     didUpdateHeaderItem?(createHeaderItem())

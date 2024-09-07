@@ -6,9 +6,12 @@ import TKLocalize
 final class CollectiblesViewController: ContentListEmptyViewController {
 
   private let viewModel: CollectiblesViewModel
+  private let collectiblesListViewController: CollectiblesListViewController
   
-  init(viewModel: CollectiblesViewModel) {
+  init(viewModel: CollectiblesViewModel,
+       collectiblesListViewController: CollectiblesListViewController) {
     self.viewModel = viewModel
+    self.collectiblesListViewController = collectiblesListViewController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -27,20 +30,29 @@ final class CollectiblesViewController: ContentListEmptyViewController {
 private extension CollectiblesViewController {
   func setup() {
     customView.navigationBarView.title = TKLocales.Purchases.title
+    
+    emptyViewController.configure(model: TKEmptyViewController.Model(
+      title: TKLocales.Purchases.empty_placeholder,
+      caption: nil,
+      buttons: []
+    ))
+    
+    setListViewController(collectiblesListViewController)
+
     setupBindings()
   }
   
   func setupBindings() {
-    viewModel.didUpdateState = { [weak self] state, animated in
-      self?.setState(state, animated: animated)
+    viewModel.didUpdateIsLoading = { [weak self] isLoading in
+      self?.customView.navigationBarView.isConnecting = isLoading
     }
     
-    viewModel.didUpdateEmptyModel = { [weak self] model in
-      self?.emptyViewController.configure(model: model)
-    }
-    
-    viewModel.didUpdateIsConnecting = { [weak self] isConnecting in
-      self?.customView.navigationBarView.isConnecting = isConnecting
+    viewModel.didUpdateIsEmpty = { [weak self] isEmpty in
+      if isEmpty {
+        self?.setState(.empty, animated: false)
+      } else {
+        self?.setState(.list, animated: false)
+      }
     }
   }
 }

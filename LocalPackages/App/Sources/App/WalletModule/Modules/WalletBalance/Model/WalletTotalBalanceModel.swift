@@ -120,6 +120,7 @@ final class WalletTotalBalanceModel {
         case .didStartLoadBalance(let wallet):
           guard state.activeWalelt == wallet else { return }
           await self.actor.addTask(block: { try await self.updateModel() })
+        default: break
         }
       }
     }

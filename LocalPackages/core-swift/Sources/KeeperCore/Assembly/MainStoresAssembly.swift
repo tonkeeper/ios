@@ -32,32 +32,7 @@ public final class MainStoresAssembly {
     _balanceStore = store
     return store
   }
-//  
-//  private weak var _accountNftsStore: AccountNFTsStore?
-//  public var accountNftsStore: AccountNFTsStore {
-//    if let _accountNftsStore {
-//      return _accountNftsStore
-//    }
-//    let accountNftsStore = AccountNFTsStore(walletsStore: walletsAssembly.walletsStore,
-//                                            repository: repositoriesAssembly.accountsNftRepository())
-//    _accountNftsStore = accountNftsStore
-//    return accountNftsStore
-//  }
-  
-  private var _accountNFTsManagementStore = [Wallet: Weak<AccountNFTsManagementStore>]()
-  public func accountNFTsManagementStore(wallet: Wallet) -> AccountNFTsManagementStore {
-    if let weakWrapper = _accountNFTsManagementStore[wallet],
-       let store = weakWrapper.value {
-      return store
-    }
-    let store = AccountNFTsManagementStore(
-      wallet: wallet,
-      accountNFTsManagementRepository: repositoriesAssembly.accountNFTsManagementRepository()
-    )
-    _accountNFTsManagementStore[wallet] = Weak(value: store)
-    return store
-  }
-  
+
   private weak var _backgroundUpdateUpdater: BackgroundUpdateUpdater?
   public var backgroundUpdateUpdater: BackgroundUpdateUpdater {
     if let backgroundUpdateUpdater = _backgroundUpdateUpdater {

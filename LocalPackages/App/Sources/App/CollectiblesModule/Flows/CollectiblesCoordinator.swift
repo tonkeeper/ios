@@ -39,25 +39,28 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
 
 private extension CollectiblesCoordinator {
   func openCollectibles() {
-    let module = CollectiblesAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
-
+    let module = CollectiblesContainerAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
+    
     module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly] wallet in
-      let listModule = CollectiblesListAssembly.module(
+      let listModel = CollectiblesListAssembly.module(wallet: wallet,
+                                                      keeperCoreMainAssembly: keeperCoreMainAssembly)
+      
+      listModel.output.didSelectNFT = { nft, wallet in
+        self?.openNFTDetails(wallet: wallet, nft: nft)
+      }
+      
+      let collectiblesModule = CollectiblesAssembly.module(
         wallet: wallet,
+        collectiblesListViewController: listModel.view,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
       
-      module.input.setListModuleOutput(listModule.output)
-      module.view.setListViewController(listModule.view)
+      module.view.collectiblesViewController = collectiblesModule.view
+      
     }
-    
-    module.output.didSelectNFT = { [weak self] wallet, nft in
-      self?.openNFTDetails(wallet: wallet, nft: nft)
-    }
-    
     router.push(viewController: module.view, animated: false)
   }
-  
+
   func openNFTDetails(wallet: Wallet, nft: NFT) {
     let navigationController = TKNavigationController()
     navigationController.setNavigationBarHidden(true, animated: false)

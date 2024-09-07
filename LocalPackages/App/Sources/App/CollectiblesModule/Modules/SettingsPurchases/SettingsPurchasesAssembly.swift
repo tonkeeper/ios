@@ -10,7 +10,7 @@ struct SettingsPurchasesAssembly {
       model: SettingsPurchasesModel(
         wallet: wallet,
         walletNFTStore: keeperCoreMainAssembly.storesAssembly.walletNFTsStore,
-        accountNFTsManagementStore: keeperCoreMainAssembly.mainStoresAssembly.accountNFTsManagementStore(wallet: wallet)
+        accountNFTsManagementStore: keeperCoreMainAssembly.storesAssembly.walletNFTsManagementStore(wallet: wallet)
       )
     )
     
