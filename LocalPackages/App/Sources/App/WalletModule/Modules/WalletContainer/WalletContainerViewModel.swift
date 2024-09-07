@@ -30,10 +30,10 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
     walletsStore.addObserver(self) { observer, event in
       DispatchQueue.main.async {
         switch event {
-        case .didChangeActiveWallet(let wallet):
-          self.wallet = wallet
-        case .didUpdateWalletMetaData(let wallet):
-          self.wallet = wallet
+        case .didChangeActiveWallet, 
+            .didUpdateWalletMetaData, 
+            .didUpdateWalletSetupSettings:
+          self.wallet = try? observer.walletsStore.getActiveWallet()
         default: break
         }
       }
@@ -45,8 +45,7 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
   
   private var wallet: Wallet? {
     didSet {
-      guard let wallet,
-            wallet.metaData != oldValue?.metaData else { return }
+      guard let wallet else { return }
       didUpdateModel?(createModel(wallet: wallet))
     }
   }
