@@ -27,6 +27,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
   private let balanceStore: BalanceStoreV3
   private let currencyStore: CurrencyStoreV3
   private let walletsStore: WalletsStoreV3
+  private let walletNFTSStore: WalletNFTStore
   private let ratesStore: TonRatesStoreV3
   private let stakingPoolsStore: StakingPoolsStore
   private let balanceService: BalanceService
@@ -38,6 +39,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
   public init(balanceStore: BalanceStoreV3,
               currencyStore: CurrencyStoreV3,
               walletsStore: WalletsStoreV3,
+              walletNFTSStore: WalletNFTStore,
               ratesStore: TonRatesStoreV3,
               stakingPoolsStore: StakingPoolsStore,
               balanceService: BalanceService,
@@ -48,6 +50,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
     self.balanceStore = balanceStore
     self.currencyStore = currencyStore
     self.walletsStore = walletsStore
+    self.walletNFTSStore = walletNFTSStore
     self.ratesStore = ratesStore
     self.stakingPoolsStore = stakingPoolsStore
     self.balanceService = balanceService
@@ -193,7 +196,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
 
         let nfts = try await nftsTask
         
-        // TODO: save to store
+        await walletNFTSStore.setNFTs(nfts, wallet: wallet)
       } catch {
         guard error.isCancelledError else { return }
       }

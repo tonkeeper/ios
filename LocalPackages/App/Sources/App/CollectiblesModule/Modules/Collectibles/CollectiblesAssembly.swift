@@ -7,7 +7,7 @@ struct CollectiblesAssembly {
   static func module(keeperCoreMainAssembly: KeeperCore.MainAssembly
   ) -> MVVMModule<CollectiblesViewController, CollectiblesModuleOutput, CollectiblesModuleInput> {
     let viewModel = CollectiblesViewModelImplementation(
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       backgroundUpdateStore: keeperCoreMainAssembly.mainStoresAssembly.backgroundUpdateStore
     )
     let viewController = CollectiblesViewController(

@@ -38,9 +38,8 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
       }
     }
     
-    output.didSelectNFT = { [weak self, walletsStore] nft in
+    output.didSelectNFT = { [weak self] nft, wallet in
       DispatchQueue.main.async {
-        let wallet = walletsStore.getState().activeWallet
         self?.didSelectNFT?(wallet, nft)
       }
     }
@@ -53,9 +52,13 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   var didUpdateIsConnecting: ((Bool) -> Void)?
   
   func viewDidLoad() {
-    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      DispatchQueue.main.async {
-        observer.didUpdateWalletsState(newState: newState, oldState: oldState)
+    walletsStore.addObserver(self) { observer, event in
+      switch event {
+      case .didChangeActiveWallet(let wallet):
+        DispatchQueue.main.async {
+          observer.didChangeActiveWallet(wallet: wallet)
+        }
+      default: break
       }
     }
     
@@ -65,7 +68,7 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
       }
     }
     
-    let wallet = walletsStore.getState().activeWallet
+    guard let wallet = try? walletsStore.getActiveWallet() else { return }
     didChangeWallet?(wallet)
     setupEmpty(wallet: wallet)
     didUpdateState?(.list, false)
@@ -76,10 +79,10 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   
   // MARK: Dependencies
   
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   private let backgroundUpdateStore: BackgroundUpdateStore
   
-  init(walletsStore: WalletsStore,
+  init(walletsStore: WalletsStoreV3,
        backgroundUpdateStore: BackgroundUpdateStore) {
     self.walletsStore = walletsStore
     self.backgroundUpdateStore = backgroundUpdateStore
@@ -96,9 +99,8 @@ private extension CollectiblesViewModelImplementation {
     didUpdateEmptyModel?(model)
   }
   
-  func didUpdateWalletsState(newState: WalletsState, oldState: WalletsState) {
-    guard newState.activeWallet != oldState.activeWallet else { return }
-    didChangeWallet?(newState.activeWallet)
+  func didChangeActiveWallet(wallet: Wallet) {
+    didChangeWallet?(wallet)
   }
   
   func didUpdateBackgroundUpdateState(newState: BackgroundUpdateStore.State) {

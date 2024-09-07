@@ -9,7 +9,7 @@ struct SettingsPurchasesAssembly {
     let viewModel = SettingsPurchasesViewModelImplementation(
       model: SettingsPurchasesModel(
         wallet: wallet,
-        accountNFTsStore: keeperCoreMainAssembly.mainStoresAssembly.accountNftsStore,
+        walletNFTStore: keeperCoreMainAssembly.storesAssembly.walletNFTsStore,
         accountNFTsManagementStore: keeperCoreMainAssembly.mainStoresAssembly.accountNFTsManagementStore(wallet: wallet)
       )
     )

@@ -148,6 +148,32 @@ public final class StoresAssembly {
     }
   }
   
+  private weak var _nftsStore: NFTStore?
+  public var nftsStore: NFTStore {
+    if let _nftsStore {
+      return _nftsStore
+    }
+    let nftsStore = NFTStore(
+      repository: repositoriesAssembly.nftRepository()
+    )
+    _nftsStore = nftsStore
+    return nftsStore
+  }
+  
+  private weak var _walletNFTsStore: WalletNFTStore?
+  public var walletNFTsStore: WalletNFTStore {
+    if let _walletNFTsStore {
+      return _walletNFTsStore
+    }
+    let walletNFTsStore = WalletNFTStore(
+      walletsStore: walletsStore,
+      nftStore: nftsStore,
+      repository: repositoriesAssembly.walletNFTRepository()
+    )
+    _walletNFTsStore = walletNFTsStore
+    return walletNFTsStore
+  }
+  
   private weak var _securityStore: SecurityStore?
   public var securityStore: SecurityStore {
     if let securityStore = _securityStore {
@@ -193,16 +219,6 @@ public final class StoresAssembly {
       _tokenManagementStore = tokenManagementStore
       return tokenManagementStore
     }
-  }
-  
-  private weak var _nftsStore: NftsStore?
-  var nftsStore: NftsStore {
-    if let _nftsStore {
-      return _nftsStore
-    }
-    let nftsStore = NftsStore(service: servicesAssembly.accountNftService())
-    _nftsStore = nftsStore
-    return nftsStore
   }
   
   private weak var _knownAccountsStore: KnownAccountsStore?

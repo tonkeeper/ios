@@ -38,17 +38,17 @@ public final class MainLoadersAssembly {
 //    _walletStateLoader = loader
 //    return loader
 //  }
-  
-  private weak var _accountNftsLoader: AccountNftsLoader?
-  public var accountNftsLoader: AccountNftsLoader {
-    if let _accountNftsLoader {
-      return _accountNftsLoader
-    }
-    let loader = AccountNftsLoader(
-      accountNFTsStore: mainStoresAssembly.accountNftsStore,
-      nftsService: servicesAssembly.accountNftService()
-    )
-    _accountNftsLoader = loader
-    return loader
-  }
+//  
+//  private weak var _accountNftsLoader: AccountNftsLoader?
+//  public var accountNftsLoader: AccountNftsLoader {
+//    if let _accountNftsLoader {
+//      return _accountNftsLoader
+//    }
+//    let loader = AccountNftsLoader(
+//      accountNFTsStore: mainStoresAssembly.accountNftsStore,
+//      nftsService: servicesAssembly.accountNftService()
+//    )
+//    _accountNftsLoader = loader
+//    return loader
+//  }
 }

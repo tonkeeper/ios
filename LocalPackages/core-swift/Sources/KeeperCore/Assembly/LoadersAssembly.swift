@@ -29,19 +29,6 @@ public final class LoadersAssembly {
     return loader
   }
   
-  private weak var _nftsLoader: NftsLoader?
-  var nftsLoader: NftsLoader {
-    if let _nftsLoader {
-      return _nftsLoader
-    }
-    let loader = NftsLoader(
-      nftsStore: storesAssembly.nftsStore,
-      nftsService: servicesAssembly.accountNftService()
-    )
-    _nftsLoader = loader
-    return loader
-  }
-  
   var chartLoader: ChartV2Loader {
     ChartV2Loader(chartService: servicesAssembly.chartService())
   }
@@ -118,6 +105,7 @@ public final class LoadersAssembly {
       balanceStore: storesAssembly.balanceStore,
       currencyStore: storesAssembly.currencyStoreV3,
       walletsStore: storesAssembly.walletsStore,
+      walletNFTSStore: storesAssembly.walletNFTsStore,
       ratesStore: storesAssembly.tonRatesStoreV3,
       stakingPoolsStore: storesAssembly.stackingPoolsStore,
       balanceService: servicesAssembly.balanceService(),

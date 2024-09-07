@@ -48,21 +48,25 @@ final class SettingsPurchasesModel {
   private let queue = DispatchQueue(label: "SettingsPurchasesModelQueue")
   
   private let wallet: Wallet
-  private let accountNFTsStore: AccountNFTsStore
+  private let walletNFTStore: WalletNFTStore
   private let accountNFTsManagementStore: AccountNFTsManagementStore
   
   init(wallet: Wallet, 
-       accountNFTsStore: AccountNFTsStore,
+       walletNFTStore: WalletNFTStore,
        accountNFTsManagementStore: AccountNFTsManagementStore) {
     self.wallet = wallet
-    self.accountNFTsStore = accountNFTsStore
+    self.walletNFTStore = walletNFTStore
     self.accountNFTsManagementStore = accountNFTsManagementStore
     
-    accountNFTsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+    walletNFTStore.addObserver(self) { observer, event in
       observer.queue.async {
-        let state = observer.getState()
-        observer._state = state
-        observer.didUpdate?(.didUpdateItems(state))
+        switch event {
+        case .didUpdateNFTs(let wallet):
+          guard wallet == self.wallet else { return }
+          let state = observer.getState()
+          observer._state = state
+          observer.didUpdate?(.didUpdateItems(state))
+        }
       }
     }
     
@@ -93,8 +97,7 @@ final class SettingsPurchasesModel {
   }
   
   private func getState() -> State {
-    guard let address = try? wallet.friendlyAddress,
-          let nfts = accountNFTsStore.getState()[address] else {
+    guard let nfts = walletNFTStore.getState()[wallet] else {
       return State(
         visible: [],
         hidden: [],

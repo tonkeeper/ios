@@ -41,7 +41,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
   private let configurationStore: ConfigurationStore
-  private let accountsNFTsStore: AccountNFTsStore
+  private let walletNFTStore: WalletNFTStore
   private let walletDeleteController: WalletDeleteController
   private let anaylticsProvider: AnalyticsProvider
   
@@ -53,7 +53,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,
        configurationStore: ConfigurationStore,
-       accountsNFTsStore: AccountNFTsStore,
+       walletNFTStore: WalletNFTStore,
        walletDeleteController: WalletDeleteController,
        anaylticsProvider: AnalyticsProvider) {
     self.wallet = wallet
@@ -62,7 +62,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     self.mnemonicsRepository = mnemonicsRepository
     self.appStoreReviewer = appStoreReviewer
     self.configurationStore = configurationStore
-    self.accountsNFTsStore = accountsNFTsStore
+    self.walletNFTStore = walletNFTStore
     self.walletDeleteController = walletDeleteController
     self.anaylticsProvider = anaylticsProvider
     walletsStore.addObserver(self) { observer, event in
@@ -98,10 +98,14 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         }
       }
     }
-    accountsNFTsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      DispatchQueue.main.async {
-        let state = observer.createState()
-        observer.didUpdateState?(state)
+    walletNFTStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateNFTs(let wallet):
+        DispatchQueue.main.async {
+          guard wallet == self.wallet else { return }
+          let state = observer.createState()
+          observer.didUpdateState?(state)
+        }
       }
     }
     TKThemeManager.shared.addEventObserver(self) { observer, _ in
@@ -240,9 +244,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   }
   
   private func createPurchasesManagementItem() -> SettingsListItem? {
-    guard let address = try? wallet.friendlyAddress else { return nil }
-    guard let state = accountsNFTsStore.getState()[address] else { return nil }
-    guard !state.isEmpty else { return nil }
+    guard let nfts = walletNFTStore.getState()[wallet] else { return nil }
+    guard !nfts.isEmpty else { return nil }
     
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
