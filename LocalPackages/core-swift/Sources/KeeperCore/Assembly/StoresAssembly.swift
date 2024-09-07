@@ -48,12 +48,12 @@ public final class StoresAssembly {
     return store
   }
   
-  private weak var _balanceStore: BalanceStoreV3?
-  public var balanceStore: BalanceStoreV3 {
+  private weak var _balanceStore: BalanceStore?
+  public var balanceStore: BalanceStore {
     if let _balanceStore {
       return _balanceStore
     }
-    let store = BalanceStoreV3(walletsStore: walletsStore,
+    let store = BalanceStore(walletsStore: walletsStore,
                                repository: repositoriesAssembly.walletBalanceRepositoryV2()
     )
     _balanceStore = store

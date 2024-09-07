@@ -21,18 +21,6 @@ public final class MainStoresAssembly {
     self.apiAssembly = apiAssembly
   }
   
-  private weak var _balanceStore: BalanceStore?
-  public var balanceStore: BalanceStore {
-    if let _balanceStore {
-      return _balanceStore
-    }
-    let store = BalanceStore(walletsStore: walletsAssembly.walletsStore,
-                               repository: repositoriesAssembly.walletBalanceRepositoryV2()
-    )
-    _balanceStore = store
-    return store
-  }
-
   private weak var _backgroundUpdateUpdater: BackgroundUpdateUpdater?
   public var backgroundUpdateUpdater: BackgroundUpdateUpdater {
     if let backgroundUpdateUpdater = _backgroundUpdateUpdater {

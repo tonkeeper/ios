@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public final class BalanceStoreV3: StoreV3<BalanceStoreV3.Event, BalanceStoreV3.State> {
+public final class BalanceStore: StoreV3<BalanceStore.Event, BalanceStore.State> {
   public typealias State = [Wallet: WalletBalanceState]
   
   public enum Event {

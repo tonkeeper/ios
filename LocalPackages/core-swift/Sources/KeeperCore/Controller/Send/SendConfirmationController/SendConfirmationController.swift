@@ -27,8 +27,8 @@ public final class SendConfirmationController {
   private let accountService: AccountService
   private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
-  private let ratesStore: TonRatesStore
-  private let currencyStore: CurrencyStore
+  private let ratesStore: TonRatesStoreV3
+  private let currencyStore: CurrencyStoreV3
   private let amountFormatter: AmountFormatter
   
   init(wallet: Wallet,
@@ -39,8 +39,8 @@ public final class SendConfirmationController {
        accountService: AccountService,
        blockchainService: BlockchainService,
        balanceStore: BalanceStore,
-       ratesStore: TonRatesStore,
-       currencyStore: CurrencyStore,
+       ratesStore: TonRatesStoreV3,
+       currencyStore: CurrencyStoreV3,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
     self.recipient = recipient
@@ -98,7 +98,7 @@ private extension SendConfirmationController {
       )
       feeItem = .value(feeFormatted)
       let rates = await ratesStore.getState()
-      let currency = await currencyStore.getCurrency()
+      let currency = await currencyStore.getState()
       if let rates = rates.first(where: { $0.currency == currency }) {
         let rateConverter = RateConverter()
         let converted = rateConverter.convert(
@@ -145,7 +145,7 @@ private extension SendConfirmationController {
           symbol: TonInfo.symbol
         )
         let rates = await ratesStore.getState()
-        let currency = await currencyStore.getCurrency()
+        let currency = await currencyStore.getState()
         if let rates = rates.first(where: { $0.currency == currency }) {
           let rateConverter = RateConverter()
           let converted = rateConverter.convert(
@@ -290,8 +290,7 @@ private extension SendConfirmationController {
       let shouldForceBounceFalse = ["empty", "uninit", "nonexist"].contains(account?.status)
       
       let isMax: Bool
-      if let address = try? wallet.friendlyAddress,
-         let balance = await balanceStore.getState()[address]?.walletBalance {
+      if let balance = await balanceStore.getState()[wallet]?.walletBalance {
         isMax = BigUInt(balance.balance.tonBalance.amount) == amount
       } else {
         isMax = false

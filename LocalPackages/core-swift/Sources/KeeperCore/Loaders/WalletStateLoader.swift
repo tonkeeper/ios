@@ -26,7 +26,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
     case didEndLoadNFT(wallet: Wallet)
   }
   
-  private let balanceStore: BalanceStoreV3
+  private let balanceStore: BalanceStore
   private let currencyStore: CurrencyStoreV3
   private let walletsStore: WalletsStoreV3
   private let walletNFTSStore: WalletNFTStore
@@ -38,7 +38,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
   private let ratesService: RatesService
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   
-  public init(balanceStore: BalanceStoreV3,
+  public init(balanceStore: BalanceStore,
               currencyStore: CurrencyStoreV3,
               walletsStore: WalletsStoreV3,
               walletNFTSStore: WalletNFTStore,

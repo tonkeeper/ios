@@ -26,8 +26,8 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
   private let accountService: AccountService
   private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
-  private let ratesStore: TonRatesStore
-  private let currencyStore: CurrencyStore
+  private let ratesStore: TonRatesStoreV3
+  private let currencyStore: CurrencyStoreV3
   private let amountFormatter: AmountFormatter
   private let decimalFormatter: DecimalAmountFormatter
   
@@ -39,8 +39,8 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
        accountService: AccountService,
        blockchainService: BlockchainService,
        balanceStore: BalanceStore,
-       ratesStore: TonRatesStore,
-       currencyStore: CurrencyStore,
+       ratesStore: TonRatesStoreV3,
+       currencyStore: CurrencyStoreV3,
        amountFormatter: AmountFormatter,
        decimalFormatter: DecimalAmountFormatter) {
     self.wallet = wallet
@@ -83,14 +83,11 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
   }
   
   public func checkTransactionSendingStatus() async -> StakingTransactionSendingStatus {
-    guard let address = try? wallet.friendlyAddress else {
-      return .feeIsNotSet
-    }
     guard let transactionEmulationExtra else {
       return .feeIsNotSet
     }
     
-    let balance = await balanceStore.getState()[address]?.walletBalance.balance.tonBalance.amount ?? .zero
+    let balance = await balanceStore.getState()[wallet]?.walletBalance.balance.tonBalance.amount ?? .zero
     let refundedAmount = stakingPool.implementation.withdrawalFee
     let balanceAmount = BigUInt(integerLiteral: UInt64(balance))
     let totalDepositExpenses = getTotalDepositExpenses()

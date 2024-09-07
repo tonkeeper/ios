@@ -63,7 +63,6 @@ public final class MainAssembly {
       backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater,
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
       knownAccountsStore: storesAssembly.knownAccountsStore,
-      balanceStore: mainStoresAssembly.balanceStore,
       dnsService: servicesAssembly.dnsService(),
       tonConnectService: tonConnectAssembly.tonConnectService(),
       deeplinkParser: DefaultDeeplinkParser(
@@ -214,9 +213,9 @@ public final class MainAssembly {
       sendService: servicesAssembly.sendService(),
       accountService: servicesAssembly.accountService(),
       blockchainService: servicesAssembly.blockchainService(),
-      balanceStore: mainStoresAssembly.balanceStore,
-      ratesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStoreV3,
+      currencyStore: storesAssembly.currencyStoreV3,
       amountFormatter: formattersAssembly.amountFormatter
     )
   }
@@ -233,9 +232,9 @@ public final class MainAssembly {
       sendService: servicesAssembly.sendService(),
       accountService: servicesAssembly.accountService(),
       blockchainService: servicesAssembly.blockchainService(),
-      balanceStore: mainStoresAssembly.balanceStore,
-      ratesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStoreV3,
+      currencyStore: storesAssembly.currencyStoreV3,
       amountFormatter: formattersAssembly.amountFormatter,
       decimalFormatter: formattersAssembly.decimalAmountFormatter
     )
@@ -255,9 +254,9 @@ public final class MainAssembly {
       sendService: servicesAssembly.sendService(),
       accountService: servicesAssembly.accountService(),
       blockchainService: servicesAssembly.blockchainService(),
-      balanceStore: mainStoresAssembly.balanceStore,
-      ratesStore: storesAssembly.tonRatesStore,
-      currencyStore: storesAssembly.currencyStore,
+      balanceStore: storesAssembly.balanceStore,
+      ratesStore: storesAssembly.tonRatesStoreV3,
+      currencyStore: storesAssembly.currencyStoreV3,
       amountFormatter: formattersAssembly.amountFormatter,
       decimalFormatter: formattersAssembly.decimalAmountFormatter
     )

@@ -26,7 +26,6 @@ public final class MainController {
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   private let tonConnectEventsStore: TonConnectEventsStore
   private let knownAccountsStore: KnownAccountsStore
-  private let balanceStore: BalanceStore
   private let dnsService: DNSService
   private let tonConnectService: TonConnectService
   private let deeplinkParser: DeeplinkParser
@@ -49,7 +48,6 @@ public final class MainController {
        backgroundUpdateUpdater: BackgroundUpdateUpdater,
        tonConnectEventsStore: TonConnectEventsStore,
        knownAccountsStore: KnownAccountsStore,
-       balanceStore: BalanceStore,
        dnsService: DNSService,
        tonConnectService: TonConnectService,
        deeplinkParser: DeeplinkParser,
@@ -63,7 +61,6 @@ public final class MainController {
     self.backgroundUpdateUpdater = backgroundUpdateUpdater
     self.tonConnectEventsStore = tonConnectEventsStore
     self.knownAccountsStore = knownAccountsStore
-    self.balanceStore = balanceStore
     self.dnsService = dnsService
     self.tonConnectService = tonConnectService
     self.deeplinkParser = deeplinkParser

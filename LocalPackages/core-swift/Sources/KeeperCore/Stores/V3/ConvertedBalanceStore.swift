@@ -9,12 +9,12 @@ public final class ConvertedBalanceStore: StoreV3<ConvertedBalanceStore.Event, C
   }
   
   private let walletsStore: WalletsStoreV3
-  private let balanceStore: BalanceStoreV3
+  private let balanceStore: BalanceStore
   private let tonRatesStore: TonRatesStoreV3
   private let currencyStore: CurrencyStoreV3
   
   init(walletsStore: WalletsStoreV3,
-       balanceStore: BalanceStoreV3,
+       balanceStore: BalanceStore,
        tonRatesStore: TonRatesStoreV3,
        currencyStore: CurrencyStoreV3) {
     self.walletsStore = walletsStore
@@ -48,7 +48,7 @@ public final class ConvertedBalanceStore: StoreV3<ConvertedBalanceStore.Event, C
     return state
   }
   
-  private func didGetBalanceStoreEvent(_ event: BalanceStoreV3.Event) {
+  private func didGetBalanceStoreEvent(_ event: BalanceStore.Event) {
     Task {
       switch event {
       case .didUpdateBalanceState(let wallet, _):
