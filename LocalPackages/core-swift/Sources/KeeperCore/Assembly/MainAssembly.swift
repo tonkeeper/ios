@@ -185,22 +185,6 @@ public final class MainAssembly {
     )
   }
   
-  public func sendRecipientController(recipient: Recipient?) -> SendRecipientController {
-    SendRecipientController(
-      recipient: recipient,
-      knownAccountsStore: storesAssembly.knownAccountsStore,
-      dnsService: servicesAssembly.dnsService()
-    )
-  }
-  
-  public func sendCommentController(isCommentRequired: Bool,
-                                    comment: String?) -> SendCommentController {
-    SendCommentController(
-      isCommentRequired: isCommentRequired,
-      comment: comment
-    )
-  }
-  
   public func sendConfirmationController(wallet: Wallet,
                                          recipient: Recipient,
                                          sendItem: SendItem,
