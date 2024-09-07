@@ -85,63 +85,6 @@ public final class MainAssembly {
                            mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
   }
   
-  public func historyController() -> HistoryController {
-    HistoryController(walletsStore: walletAssembly.walletsStore,
-                      backgroundUpdateStore: mainStoresAssembly.backgroundUpdateStore)
-  }
-  
-  public func historyListController(wallet: Wallet) -> HistoryListController {
-    let loader = HistoryListAllEventsLoader(
-      historyService: servicesAssembly.historyService()
-    )
-    let paginator = HistoryListPaginator(
-      wallet: wallet,
-      loader: loader,
-      nftService: servicesAssembly.nftService(),
-      accountEventMapper: accountEventMapper,
-      dateFormatter: formattersAssembly.dateFormatter
-    )
-    return HistoryListController(
-      walletsStore: walletAssembly.walletsStore,
-      paginator: paginator,
-      backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater)
-  }
-  
-  public func tonEventsHistoryListController(wallet: Wallet) -> HistoryListController {
-    let loader = HistoryListTonEventsLoader(
-      historyService: servicesAssembly.historyService()
-    )
-    let paginator = HistoryListPaginator(
-      wallet: wallet,
-      loader: loader,
-      nftService: servicesAssembly.nftService(),
-      accountEventMapper: accountEventMapper,
-      dateFormatter: formattersAssembly.dateFormatter
-    )
-    return HistoryListController(
-      walletsStore: walletAssembly.walletsStore,
-      paginator: paginator,
-      backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater)
-  }
-  
-  public func jettonEventsHistoryListController(jettonItem: JettonItem, wallet: Wallet) -> HistoryListController {
-    let loader = HistoryListJettonEventsLoader(
-      jettonInfo: jettonItem.jettonInfo,
-      historyService: servicesAssembly.historyService()
-    )
-    let paginator = HistoryListPaginator(
-      wallet: wallet,
-      loader: loader,
-      nftService: servicesAssembly.nftService(),
-      accountEventMapper: accountEventMapper,
-      dateFormatter: formattersAssembly.dateFormatter
-    )
-    return HistoryListController(
-      walletsStore: walletAssembly.walletsStore,
-      paginator: paginator,
-      backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater)
-  }
-  
   public func chartController() -> ChartController {
     ChartController(
       chartService: servicesAssembly.chartService(),

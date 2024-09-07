@@ -94,7 +94,6 @@ private extension HistoryPaginationLoader {
   }
   
   func loadNextPage() async throws -> AccountEvents {
-//    try? await Task.sleep(nanoseconds: 2_000_000_000)
     let events = try await loader.loadEvents(
       wallet: wallet,
       beforeLt: nextFrom,
