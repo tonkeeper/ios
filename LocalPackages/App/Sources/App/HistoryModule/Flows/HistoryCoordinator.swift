@@ -31,33 +31,9 @@ public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRou
 
 private extension HistoryCoordinator {
   func openHistory() {
-    let module = HistoryAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
+    let module = HistoryContainerAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
     
-    module.output.didTapReceive = { [weak self] wallet in
-      self?.openReceive(wallet: wallet)
-    }
-
-    module.output.didTapBuy = { [weak self] wallet in
-      self?.openBuy(wallet: wallet)
-    }
-    
-    module.output.didSelectEvent = { [weak self] event in
-      self?.openEventDetails(event: event)
-    }
-    
-    module.output.didSelectNFT = { [weak self] wallet, nftAddress in
-      guard let self else { return }
-      Task {
-        await self.openNFTDetails(wallet: wallet, address: nftAddress)
-      }
-    }
-    
-    module.output.didSelectEncryptedComment = { [weak self] wallet, payload in
-      self?.decryptComment(wallet: wallet, payload: payload)
-    }
-    
-    module.output.didChangeWallet = { [weak self] wallet in
-      guard let self else { return }
+    module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly] wallet in
       
       let listModule = HistoryListAssembly.module(
         wallet: wallet,
@@ -67,10 +43,39 @@ private extension HistoryCoordinator {
         keeperCoreMainAssembly: keeperCoreMainAssembly,
         historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
       )
-      module.input.setListModuleOutput(listModule.output)
-      module.view.setListViewController(listModule.view)
+      
+      listModule.output.didSelectEvent = { [weak self] event in
+        self?.openEventDetails(event: event)
+      }
+      
+      listModule.output.didSelectNFT = { [weak self] wallet, nftAddress in
+        guard let self else { return }
+        Task {
+          await self.openNFTDetails(wallet: wallet, address: nftAddress)
+        }
+      }
+      
+      listModule.output.didSelectEncryptedComment = { [weak self] wallet, payload in
+        self?.decryptComment(wallet: wallet, payload: payload)
+      }
+      
+      let historyModule = HistoryAssembly.module(
+        wallet: wallet,
+        historyListViewController: listModule.view,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
+      
+      historyModule.output.didTapReceive = { [weak self] wallet in
+        self?.openReceive(wallet: wallet)
+      }
+
+      historyModule.output.didTapBuy = { [weak self] wallet in
+        self?.openBuy(wallet: wallet)
+      }
+      
+      module.view.historyViewController = historyModule.view
     }
-    
+
     router.push(viewController: module.view, animated: false)
   }
   
@@ -145,11 +150,7 @@ private extension HistoryCoordinator {
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
-      
-      coordinator.didPerformTransaction = { [weak self] in
-  //      self?.didPerformTransaction?()
-      }
-      
+
       coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
         navigationController?.dismiss(animated: true)
         guard let coordinator else { return }

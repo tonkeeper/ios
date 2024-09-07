@@ -7,7 +7,7 @@ struct HistoryListAssembly {
   static func module(wallet: Wallet,
                      paginationLoader: HistoryPaginationLoader,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly,
-                     historyEventMapper: HistoryEventMapper) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+                     historyEventMapper: HistoryEventMapper) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, Void> {
     let viewModel = HistoryListViewModelImplementation(
       wallet: wallet,
       paginationLoader: paginationLoader,
@@ -17,6 +17,6 @@ struct HistoryListAssembly {
       historyEventMapper: historyEventMapper
     )
     let viewController = HistoryListViewController(viewModel: viewModel)
-    return .init(view: viewController, output: viewModel, input: viewModel)
+    return .init(view: viewController, output: viewModel, input: Void())
   }
 }

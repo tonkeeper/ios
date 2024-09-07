@@ -1,23 +1,23 @@
 import UIKit
 import KeeperCore
 
-protocol CollectiblesContainerModuleOutput: AnyObject {
+protocol HistoryContainerModuleOutput: AnyObject {
   var didChangeWallet: ((Wallet) -> Void)? { get set }
 }
 
-protocol CollectiblesContainerViewModel: AnyObject {
+protocol HistoryContainerViewModel: AnyObject {
   func viewDidLoad()
 }
 
-final class CollectiblesContainerViewModelImplementation: CollectiblesContainerViewModel, CollectiblesContainerModuleOutput {
+final class HistoryContainerViewModelImplementation: HistoryContainerViewModel, HistoryContainerModuleOutput {
   
-  // MARK: - CollectiblesContainerModuleOutput
+  // MARK: - HistoryContainerModuleOutput
   
   var didChangeWallet: ((Wallet) -> Void)?
   
-  // MARK: - CollectiblesContainerModuleInput
+  // MARK: - HistoryContainerModuleInput
   
-  // MARK: - CollectiblesContainerViewModel
+  // MARK: - HistoryContainerViewModel
   
   func viewDidLoad() {
     walletsStore.addObserver(self) { observer, event in

@@ -183,10 +183,6 @@ private extension MainCoordinator {
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
-    
-    collectiblesCoordinator.didPerformTransaction = { [weak self] in
-      self?.router.rootViewController.selectedIndex = 1
-    }
 
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
@@ -739,12 +735,7 @@ private extension MainCoordinator {
     
     let navigationController = TKNavigationController(rootViewController: module.view)
     navigationController.configureDefaultAppearance()
-    
-    module.output.didSendTransaction = { [weak self] in
-      NotificationCenter.default.post(Notification(name: Notification.Name("DID SEND TRANSACTION")))
-      self?.router.dismiss()
-    }
-    
+
     module.output.didRequireSign = { [weak self, weak navigationController, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
       guard let self = self, let navigationController else { return nil }
       let coordinator = await WalletTransferSignCoordinator(

@@ -10,7 +10,6 @@ protocol HistoryListModuleOutput: AnyObject {
   var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)? { get set }
   var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)? { get set }
 }
-protocol HistoryListModuleInput: AnyObject {}
 protocol HistoryListViewModel: AnyObject {
   var didUpdateSnapshot: ((HistoryListViewController.Snapshot) -> Void)? { get set }
   
@@ -20,7 +19,7 @@ protocol HistoryListViewModel: AnyObject {
   func loadNextPage()
 }
 
-final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryListModuleOutput, HistoryListModuleInput {
+final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryListModuleOutput {
   
   struct EventsSection {
     let date: Date

@@ -7,9 +7,7 @@ import TonSwift
 import TKLocalize
 
 public final class CollectiblesCoordinator: RouterCoordinator<NavigationControllerRouter> {
-  
-  var didPerformTransaction: (() -> Void)?
-  
+    
   private weak var detailsCoordinator: CollectiblesDetailsCoordinator?
   
   private let coreAssembly: TKCore.CoreAssembly
@@ -42,16 +40,18 @@ private extension CollectiblesCoordinator {
     let module = CollectiblesContainerAssembly.module(keeperCoreMainAssembly: keeperCoreMainAssembly)
     
     module.output.didChangeWallet = { [weak self, keeperCoreMainAssembly] wallet in
-      let listModel = CollectiblesListAssembly.module(wallet: wallet,
-                                                      keeperCoreMainAssembly: keeperCoreMainAssembly)
+      let listModule = CollectiblesListAssembly.module(
+        wallet: wallet,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
+      )
       
-      listModel.output.didSelectNFT = { nft, wallet in
+      listModule.output.didSelectNFT = { nft, wallet in
         self?.openNFTDetails(wallet: wallet, nft: nft)
       }
       
       let collectiblesModule = CollectiblesAssembly.module(
         wallet: wallet,
-        collectiblesListViewController: listModel.view,
+        collectiblesListViewController: listModule.view,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
       
@@ -72,10 +72,6 @@ private extension CollectiblesCoordinator {
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
-    
-    coordinator.didPerformTransaction = { [weak self] in
-      self?.didPerformTransaction?()
-    }
     
     coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
       navigationController?.dismiss(animated: true)

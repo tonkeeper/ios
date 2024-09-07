@@ -6,9 +6,12 @@ import TKLocalize
 final class HistoryViewController: ContentListEmptyViewController {
 
   private let viewModel: HistoryViewModel
+  private let historyListViewController: HistoryListViewController
   
-  init(viewModel: HistoryViewModel) {
+  init(viewModel: HistoryViewModel,
+       historyListViewController: HistoryListViewController) {
     self.viewModel = viewModel
+    self.historyListViewController = historyListViewController
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -27,6 +30,9 @@ final class HistoryViewController: ContentListEmptyViewController {
 private extension HistoryViewController {
   func setup() {
     customView.navigationBarView.title = TKLocales.History.title
+    
+    setListViewController(historyListViewController)
+    
     setupBindings()
   }
   

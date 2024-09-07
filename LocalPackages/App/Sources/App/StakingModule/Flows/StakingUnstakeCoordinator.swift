@@ -89,13 +89,6 @@ final class StakingUnstakeCoordinator: RouterCoordinator<NavigationControllerRou
     
     let module = StakingConfirmationAssembly.module(stakingConfirmationController: controller)
     
-    module.output.didSendTransaction = { [weak self] in
-      NotificationCenter.default.post(Notification(name: Notification.Name("DID SEND TRANSACTION")))
-      self?.router.dismiss(completion: {
-        self?.didFinish?()
-      })
-    }
-    
     module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
       guard let self = self else { return nil }
       let coordinator = await WalletTransferSignCoordinator(
