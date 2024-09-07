@@ -174,6 +174,21 @@ public final class StoresAssembly {
     return walletNFTsStore
   }
   
+  private var _walletNFTsManagedStores = [Wallet: Weak<WalletNFTsManagedStore>]()
+  public func walletNFTsManagedStore(wallet: Wallet) -> WalletNFTsManagedStore {
+    if let weakWrapper = _walletNFTsManagedStores[wallet],
+       let store = weakWrapper.value {
+      return store
+    }
+    let store = WalletNFTsManagedStore(
+      wallet: wallet,
+      walletNFTStore: walletNFTsStore,
+      walletNFTsManagementStore: walletNFTsManagementStore(wallet: wallet)
+    )
+    _walletNFTsManagedStores[wallet] = Weak(value: store)
+    return store
+  }
+
   private weak var _securityStore: SecurityStore?
   public var securityStore: SecurityStore {
     if let securityStore = _securityStore {

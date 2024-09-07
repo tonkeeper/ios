@@ -41,7 +41,7 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
       observer.didGetWalletStateLoaderEvent(event)
     }
     
-    walletNFTStore.addObserver(self) { observer, event in
+    walletNFTManagedStore.addObserver(self) { observer, event in
       observer.didGetWalletNFTStoreEvent(event)
     }
     
@@ -51,16 +51,16 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   // MARK: Dependencies
   
   private let wallet: Wallet
-  private let walletNFTStore: WalletNFTStore
+  private let walletNFTManagedStore: WalletNFTsManagedStore
   private let backgroundUpdateStore: BackgroundUpdateStoreV3
   private let walletStateLoader: WalletStateLoader
   
   init(wallet: Wallet,
-       walletNFTStore: WalletNFTStore,
+       walletNFTManagedStore: WalletNFTsManagedStore,
        backgroundUpdateStore: BackgroundUpdateStoreV3,
        walletStateLoader: WalletStateLoader) {
     self.wallet = wallet
-    self.walletNFTStore = walletNFTStore
+    self.walletNFTManagedStore = walletNFTManagedStore
     self.backgroundUpdateStore = backgroundUpdateStore
     self.walletStateLoader = walletStateLoader
   }
@@ -92,7 +92,7 @@ private extension CollectiblesViewModelImplementation {
     }
   }
   
-  func didGetWalletNFTStoreEvent(_ event: WalletNFTStore.Event) {
+  func didGetWalletNFTStoreEvent(_ event: WalletNFTsManagedStore.Event) {
     switch event {
     case .didUpdateNFTs(let wallet):
       guard wallet == self.wallet else { return }
@@ -118,7 +118,7 @@ private extension CollectiblesViewModelImplementation {
       return isLoadingNft || isBackgroundUpdate
     }()
     
-    let isEmpty = (walletNFTStore.getState()[wallet] ?? []).isEmpty
+    let isEmpty = walletNFTManagedStore.getState().isEmpty
     let listHidden = isEmpty && !isLoading
     
     didUpdateIsLoading?(isLoading)

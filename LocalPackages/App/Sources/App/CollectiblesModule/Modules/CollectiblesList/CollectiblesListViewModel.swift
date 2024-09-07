@@ -27,19 +27,9 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   var didLoadNFTs: (([CollectibleCollectionViewCell.Model]) -> Void)?
   
   func viewDidLoad() {
-    walletNFTStore.addObserver(self) { observer, event in
+    walletNFTsManagedStore.addObserver(self) { observer, event in
       switch event {
       case .didUpdateNFTs(let wallet):
-        guard observer.wallet == wallet else { return }
-        DispatchQueue.main.async {
-          observer.update()
-        }
-      }
-    }
-    
-    nftManagementStore.addObserver(self) { observer, event in
-      switch event {
-      case .didUpdateState(let wallet):
         guard observer.wallet == wallet else { return }
         DispatchQueue.main.async {
           observer.update()
@@ -72,35 +62,27 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   // MARK: - Dependencies
   
   private let wallet: Wallet
-  private let walletNFTStore: WalletNFTStore
-  private let nftManagementStore: WalletNFTsManagementStore
+  private let walletNFTsManagedStore: WalletNFTsManagedStore
   
   // MARK: - Init
   
   init(wallet: Wallet,
-       walletNFTStore: WalletNFTStore,
-       nftManagementStore: WalletNFTsManagementStore) {
+       walletNFTsManagedStore: WalletNFTsManagedStore) {
     self.wallet = wallet
-    self.walletNFTStore = walletNFTStore
-    self.nftManagementStore = nftManagementStore
+    self.walletNFTsManagedStore = walletNFTsManagedStore
   }
 }
 
 private extension CollectiblesListViewModelImplementation {
   func update() {
-    let nfts = walletNFTStore.getState()[wallet] ?? []
-    let nftsManagementState = nftManagementStore.getState()
-    update(nfts: nfts, managementState: nftsManagementState)
+    let nfts = walletNFTsManagedStore.getState()
+    update(nfts: nfts)
   }
   
-  func update(nfts: [NFT],
-              managementState: NFTsManagementState) {
-    let filteredState = self.filterSpamNFTItems(
-      nfts: nfts,
-      managementState: managementState)
-    let snapshot = self.createSnapshot(state: filteredState)
-    let models = self.createModels(state: filteredState)
-    self.nfts = filteredState
+  func update(nfts: [NFT]) {
+    let snapshot = self.createSnapshot(state: nfts)
+    let models = self.createModels(state: nfts)
+    self.nfts = nfts
     self.models = models
     self.didUpdateSnapshot?(snapshot)
   }
