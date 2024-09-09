@@ -60,13 +60,29 @@ final class SettingsPurchasesViewController: GenericViewViewController<SettingsP
 
 private extension SettingsPurchasesViewController {
   func setup() {
-    navigationItem.title = TKLocales.Settings.Purchases.title
+    setupNavigationBar()
     
     customView.collectionView.setCollectionViewLayout(layout, animated: false)
     customView.collectionView.delegate = self
   }
   
+  private func setupNavigationBar() {
+    guard let navigationController,
+          !navigationController.viewControllers.isEmpty else {
+      return
+    }
+    customView.navigationBar.leftViews = [
+      TKUINavigationBar.createBackButton {
+        navigationController.popViewController(animated: true)
+      }
+    ]
+  }
+  
   func setupBindings() {
+    viewModel.didUpdateTitleView = { [weak self] model in
+      self?.customView.titleView.configure(model: model)
+    }
+    
     viewModel.didUpdateSnapshot = { [weak self] snapshot in
       guard let self else { return }
       self.dataSource.apply(snapshot, animatingDifferences: false, completion: {

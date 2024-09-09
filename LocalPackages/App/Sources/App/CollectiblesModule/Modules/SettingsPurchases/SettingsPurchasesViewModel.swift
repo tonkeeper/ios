@@ -6,6 +6,7 @@ import KeeperCore
 
 protocol SettingsPurchasesViewModel: AnyObject {
   
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
   var didUpdateSnapshot: ((SettingsPurchasesViewController.Snapshot) -> Void)? { get set }
   var didOpenDetails: ((PurchasesManagementDetailsViewController.Configuration) -> Void)? { get set }
   var didHideDetails: (() -> Void)? { get set }
@@ -29,12 +30,15 @@ final class SettingsPurchasesViewModelImplementation: SettingsPurchasesViewModel
     case expanded
   }
   
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
   var didUpdateSnapshot: ((SettingsPurchasesViewController.Snapshot) -> Void)?
   var didOpenDetails: ((PurchasesManagementDetailsViewController.Configuration) -> Void)?
   var didHideDetails: (() -> Void)?
   var didCopyItem: ((String?) -> Void)?
   
   func viewDidLoad() {
+    didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: TKLocales.Settings.Purchases.title))
+    
     model.didUpdate = { [weak self] event in
       DispatchQueue.main.async {
         switch event {
