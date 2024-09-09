@@ -1,7 +1,11 @@
 import Foundation
 import TonSwift
 
-public final class WalletNotificationStore: StoreUpdated<[FriendlyAddress: Bool]> {
+public final class WalletNotificationStore: StoreV3<WalletNotificationStore.Event, WalletNotificationStore.State> {
+  public typealias State = [Wallet: Bool]
+  public enum Event {
+    case didUpdateNotificationsIsOn(wallet: Wallet)
+  }
   
   private let keeperInfoStore: KeeperInfoStore
   
@@ -10,45 +14,33 @@ public final class WalletNotificationStore: StoreUpdated<[FriendlyAddress: Bool]
     super.init(state: [:])
   }
   
-  public override func getInitialState() -> [FriendlyAddress : Bool] {
-    return getState(keeperInfo: keeperInfoStore.getState())
+  public override var initialState: State {
+    getState(keeperInfo: keeperInfoStore.getState())
   }
-  
+
   public func setNotificationIsOn(_ isOn: Bool, wallet: Wallet) async {
-    guard let address = try? wallet.friendlyAddress else { return }
-    await updateState { state in
-      var updatedState = state
-      updatedState[address] = isOn
-      return StateUpdate(newState: updatedState)
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updated = keeperInfo.updateWallet(wallet, notificationsIsOn: isOn)
+      return updated
     }
-    await keeperInfoStore.updateKeeperInfo { keeperInfo in
-      guard let keeperInfo else { return keeperInfo }
-      let updatedWallet = Wallet(
-        id: wallet.id,
-        identity: wallet.identity,
-        metaData: wallet.metaData,
-        setupSettings: wallet.setupSettings,
-        notificationSettings: NotificationSettings(isOn: isOn),
-        backupSettings: wallet.backupSettings,
-        addressBook: wallet.addressBook
-      )
-      var wallets = keeperInfo.wallets
-      guard let index = wallets.firstIndex(where: { $0.id == wallet.id }) else { return keeperInfo }
-      wallets.remove(at: index)
-      wallets.insert(updatedWallet, at: index)
-      var updatedKeeperInfo = keeperInfo.setWallets(wallets)
-      return updatedKeeperInfo
+    
+    await setState { state in
+      var updatedState = state
+      updatedState[wallet] = isOn
+      return StateUpdate(newState: updatedState)
+    } notify: { _ in
+      self.sendEvent(.didUpdateNotificationsIsOn(wallet: wallet))
     }
   }
   
-  private func getState(keeperInfo: KeeperInfo?) -> [FriendlyAddress: Bool] {
+  private func getState(keeperInfo: KeeperInfo?) -> State {
     guard let keeperInfo = keeperInfoStore.getState() else {
       return [:]
     }
-    var result = [FriendlyAddress: Bool]()
+    var result = State()
     for wallet in keeperInfo.wallets {
-      guard let address = try? wallet.friendlyAddress else { continue }
-      result[address] = wallet.notificationSettings.isOn
+      result[wallet] = wallet.notificationSettings.isOn
     }
     return result
   }

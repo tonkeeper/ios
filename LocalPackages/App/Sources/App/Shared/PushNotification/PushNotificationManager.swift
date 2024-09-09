@@ -8,6 +8,9 @@ final class PushNotificationManager {
   
   private var deferedActions = [(String) -> Void]()
   
+  private let queue = DispatchQueue(label: "PushNotificationManagerQueue", qos: .userInitiated)
+  private var notificationsUpdateTask = [Wallet: Task<Void, Never>]()
+  
   private let appSettings: AppSettings
   private let pushNotificationTokenProvider: PushNotificationTokenProvider
   private let pushNotificationAPI: PushNotificationsAPI
@@ -25,12 +28,12 @@ final class PushNotificationManager {
   
   func setup() {
     pushNotificationTokenProvider.setup()
-    walletNotificationsStore.addObserver(
-      self,
-      notifyOnAdded: false) { observer, newState, oldState in
-        observer.handleNotificationsStoreStateUpdate(newState: newState, oldState: oldState)
+    walletNotificationsStore.addObserver(self) { observer, event in
+      observer.queue.async {
+        observer.didGetNotificationsStoreEvent(event)
       }
-    
+    }
+
     pushNotificationTokenProvider.didUpdateToken = { [appSettings] token in
       guard appSettings.fcmToken != token else {
         return
@@ -65,35 +68,34 @@ final class PushNotificationManager {
     }
   }
   
-  private func handleNotificationsStoreStateUpdate(newState: [FriendlyAddress: Bool],
-                                                   oldState: [FriendlyAddress: Bool]) {
-    newState.keys.forEach { address in
-      guard newState[address] != oldState[address] else {
-        return
-      }
-      if newState[address] == true {
-        subscribePushNotifications(address: address)
+  private func didGetNotificationsStoreEvent(_ event: WalletNotificationStore.Event) {
+    switch event {
+    case .didUpdateNotificationsIsOn(let wallet):
+      notificationsUpdateTask[wallet]?.cancel()
+      let isOn = walletNotificationsStore.getState()[wallet] ?? false
+      if isOn {
+        subscribePushNotifications(wallet: wallet)
       } else {
-        unsubscribePushNotifications(address: address)
+        unsubscribePushNotifications(wallet: wallet)
       }
     }
   }
   
-  private func subscribePushNotifications(address: FriendlyAddress) {
+  private func subscribePushNotifications(wallet: Wallet) {
     let action: (String) -> Void = { [appSettings, pushNotificationAPI] token in
       Task {
         _ = try await pushNotificationAPI.subscribeNotifications(
           subscribeData: PushNotificationsAPI.SubscribeData(
             token: token,
             device: appSettings.installDeviceID,
-            accounts: [PushNotificationsAPI.SubscribeData.Account(address: address.toString())],
+            accounts: [PushNotificationsAPI.SubscribeData.Account(address: wallet.friendlyAddress.toString())],
             locale: Locale.current.languageCode ?? "en"
           )
         )
       }
     }
     
-    Task {
+    let task = Task {
       switch await UNUserNotificationCenter.current().notificationSettings().authorizationStatus {
       case .authorized:
         break
@@ -109,21 +111,22 @@ final class PushNotificationManager {
       
       action(token)
     }
+    notificationsUpdateTask[wallet] = task
   }
   
-  private func unsubscribePushNotifications(address: FriendlyAddress) {
+  private func unsubscribePushNotifications(wallet: Wallet) {
     let action: (String) -> Void = { [appSettings, pushNotificationAPI] token in
       Task {
         _ = try await pushNotificationAPI.unsubscribeNotifications(
           unsubscribeData: PushNotificationsAPI.UnsubscribeData(
             device: appSettings.installDeviceID,
-            accounts: [PushNotificationsAPI.UnsubscribeData.Account(address: address.toString())]
+            accounts: [PushNotificationsAPI.UnsubscribeData.Account(address: wallet.friendlyAddress.toString())]
           )
         )
       }
     }
     
-    Task {
+    let task = Task {
       guard let token = await pushNotificationTokenProvider.getToken() else {
         await MainActor.run {
           deferedActions.append(action)
@@ -133,6 +136,7 @@ final class PushNotificationManager {
       
       action(token)
     }
+    notificationsUpdateTask[wallet] = task
   }
   
   private func performDefferedActions(token: String) {

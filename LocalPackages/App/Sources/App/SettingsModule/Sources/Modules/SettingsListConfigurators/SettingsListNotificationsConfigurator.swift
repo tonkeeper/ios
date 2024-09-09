@@ -112,8 +112,7 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
     )
     
     let isOn: Bool = {
-      guard let address = try? wallet.friendlyAddress else { return false }
-      guard let isOn = walletNotificationStore.getState()[address] else { return false }
+      guard let isOn = walletNotificationStore.getState()[wallet] else { return false }
       return isOn
     }()
     

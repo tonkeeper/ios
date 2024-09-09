@@ -13,7 +13,6 @@ public final class CoreAssembly {
   public let reachabilityTracker = ReachabilityTracker()
   public let analyticsProvider: AnalyticsProvider
   public let isTonkeeperX: Bool
-  public lazy var secureMode = SecureMode(appSettings: appSettings)
   
   
   public init(analyticsProvider: AnalyticsProvider = AnalyticsProvider(),
