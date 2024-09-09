@@ -1,5 +1,6 @@
 import Foundation
 import TonSwift
+import BigInt
 
 enum DeeplinkParserError: Swift.Error {
   case unsupportedDeeplink(string: String?)
@@ -46,13 +47,22 @@ public struct TonDeeplinkParser: DeeplinkParser {
       switch host {
       case "transfer":
         let address = url.lastPathComponent
+        var amount: BigUInt?
+        var comment: String?
         var jettonAddress: Address?
+        if let amountRawParameter = components?.queryItems?.first(where: { $0.name == "amount" })?.value,
+           let amountParameter = BigUInt(amountRawParameter) {
+          amount = amountParameter
+        }
+        if let commentParameter = components?.queryItems?.first(where: { $0.name == "text" })?.value {
+          comment = commentParameter
+        }
         if let jettonParameter = components?.queryItems?.first(where: { $0.name == "jetton" })?.value,
            let address = try? Address.parse(jettonParameter){
           jettonAddress = address
         }
         
-        return .ton(.transfer(recipient: address, jettonAddress: jettonAddress))
+        return .ton(.transfer(recipient: address, amount: amount, comment: comment, jettonAddress: jettonAddress))
       default:
         throw DeeplinkParserError.unsupportedDeeplink(string: string)
       }

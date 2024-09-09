@@ -129,7 +129,7 @@ private extension MainCoordinator {
     }
     
     walletCoordinator.didTapSend = { [weak self] wallet, token in
-      self?.openSend(wallet: wallet, token: token)
+      self?.openSend(wallet: wallet, token: token, amount: nil, comment: nil)
     }
     
     walletCoordinator.didTapSwap = { [weak self] in
@@ -249,7 +249,7 @@ private extension MainCoordinator {
     router.present(navigationController)
   }
   
-  func openSend(wallet: Wallet, token: Token, recipient: Recipient? = nil) {
+  func openSend(wallet: Wallet, token: Token, recipient: Recipient? = nil, amount: BigUInt?, comment: String?) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     
@@ -261,8 +261,9 @@ private extension MainCoordinator {
     ).createSendTokenCoordinator(
       router: NavigationControllerRouter(rootViewController: navigationController),
       wallet: wallet,
-      sendItem: .token(token, amount: 0),
-      recipient: recipient
+      sendItem: .token(token, amount: amount ?? 0),
+      recipient: recipient,
+      comment: comment
     )
     
     sendTokenCoordinator.didFinish = { [weak self, weak sendTokenCoordinator, weak navigationController] in
@@ -284,7 +285,7 @@ private extension MainCoordinator {
     })
   }
   
-  func openSend(recipient: String, jettonAddress: Address?) {
+  func openSend(recipient: String, amount: BigUInt?, comment: String?, jettonAddress: Address?) {
     ToastPresenter.showToast(configuration: .loading)
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
     Task {
@@ -293,7 +294,7 @@ private extension MainCoordinator {
         let recipient = try await self.mainController.resolveSend(recipient: recipient, jettonAddress: jettonAddress)
         await MainActor.run {
           ToastPresenter.hideAll()
-          self.openSend(wallet: wallet, token: .ton, recipient: recipient)
+          self.openSend(wallet: wallet, token: .ton, recipient: recipient, amount: amount, comment: comment)
         }
       } catch {
         await MainActor.run {
@@ -350,8 +351,8 @@ private extension MainCoordinator {
   
   func handleTonDeeplink(_ deeplink: TonDeeplink) -> Bool {
     switch deeplink {
-    case .transfer(let recipient, let jettonAddress):
-      openSend(recipient: recipient, jettonAddress: jettonAddress)
+    case let .transfer(recipient, amount, comment, jettonAddress):
+      openSend(recipient: recipient, amount: amount, comment: comment, jettonAddress: jettonAddress)
       return true
     }
   }
@@ -624,7 +625,7 @@ private extension MainCoordinator {
     }
     
     module.output.didTapSend = { [weak self] token in
-      self?.openSend(wallet: wallet, token: token)
+      self?.openSend(wallet: wallet, token: token, amount: nil, comment: nil)
     }
     
     module.output.didTapBuyOrSell = { [weak self] in
@@ -672,7 +673,7 @@ private extension MainCoordinator {
     }
     
     module.output.didTapSend = { [weak self] token in
-      self?.openSend(wallet: wallet, token: token)
+      self?.openSend(wallet: wallet, token: token, recipient: nil, amount: nil, comment: nil)
     }
     
     navigationController.pushViewController(module.view, animated: true)

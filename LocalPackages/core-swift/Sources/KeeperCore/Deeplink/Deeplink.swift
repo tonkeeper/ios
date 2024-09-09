@@ -1,5 +1,6 @@
 import Foundation
 import TonSwift
+import BigInt
 
 public enum Deeplink {
   case tonkeeper(TonkeeperDeeplink)
@@ -18,16 +19,22 @@ public enum Deeplink {
 }
 
 public enum TonDeeplink {
-  case transfer(recipient: String, jettonAddress: Address?)
+  case transfer(recipient: String, amount: BigUInt?, comment: String?, jettonAddress: Address?)
   
   public var string: String {
     let ton = "ton"
     switch self {
-    case let .transfer(recipient, jettonAddress):
+    case let .transfer(recipient, amount, comment, jettonAddress):
       var components = URLComponents(string: ton)
       components?.scheme = ton
       components?.host = "transfer"
       components?.path = "/\(recipient)"
+      if let amount {
+        components?.queryItems = [URLQueryItem(name: "amount", value: amount.description)]
+      }
+      if let comment {
+        components?.queryItems = [URLQueryItem(name: "text", value: comment)]
+      }
       if let jettonAddress {
         components?.queryItems = [URLQueryItem(name: "jetton", value: jettonAddress.toRaw())]
       }

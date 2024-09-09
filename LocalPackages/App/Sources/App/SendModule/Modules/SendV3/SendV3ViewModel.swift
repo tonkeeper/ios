@@ -13,6 +13,8 @@ protocol SendV3ModuleOutput: AnyObject {
 protocol SendV3ModuleInput: AnyObject {
   func updateWithToken(_ token: Token)
   func setRecipient(string: String)
+  func setAmount(amount: BigUInt?)
+  func setComment(comment: String?)
 }
 
 protocol SendV3ViewModel: AnyObject {
@@ -110,6 +112,18 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     didInputRecipient(string)
   }
   
+  func setAmount(amount: BigUInt?) {
+    guard let amount else { return }
+    didInputAmount(amount.description)
+  }
+  
+  func setComment(comment: String?) {
+    guard let comment else {
+      return
+    }
+    didInputComment(comment)
+  }
+  
   // MARK: - SendV3ViewModel
   
   func viewDidLoad() {
@@ -122,6 +136,13 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
           observer.update()
         }
       }
+    }
+    switch sendItem {
+    case .token(_, let amount):
+      didInputAmount(amount.description)
+      
+    case .nft:
+      break
     }
     updateRemaining()
     update()
@@ -319,11 +340,13 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
   init(wallet: Wallet,
        sendItem: SendItem,
        recipient: Recipient?,
+       comment: String?,
        sendController: SendV3Controller,
        balanceStore: ConvertedBalanceStore) {
     self.wallet = wallet
     self.sendItem = sendItem
     self.recipient = recipient
+    self.commentInput = comment ?? ""
     self.sendController = sendController
     self.balanceStore = balanceStore
     
@@ -438,8 +461,6 @@ private extension SendV3ViewModelImplementation {
           lineBreakMode: .byWordWrapping
         )
     }
-    
-    print(commentState)
     
     return Model.Comment(
       placeholder: placeholder,

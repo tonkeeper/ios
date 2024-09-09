@@ -7,12 +7,14 @@ struct SendV3Assembly {
   static func module(wallet: Wallet,
                      sendItem: SendItem,
                      recipient: Recipient?,
+                     comment: String?,
                      coreAssembly: TKCore.CoreAssembly,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly) -> MVVMModule<SendV3ViewController, SendV3ModuleOutput, SendV3ModuleInput> {
     let viewModel = SendV3ViewModelImplementation(
       wallet: wallet,
       sendItem: sendItem,
       recipient: recipient,
+      comment: comment,
       sendController: keeperCoreMainAssembly.sendV3Controller(wallet: wallet),
       balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore
     )

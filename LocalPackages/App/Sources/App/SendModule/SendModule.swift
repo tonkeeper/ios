@@ -2,6 +2,7 @@ import TKUIKit
 import TKCoordinator
 import TKCore
 import KeeperCore
+import BigInt
 
 struct SendModule {
   private let dependencies: Dependencies
@@ -12,14 +13,16 @@ struct SendModule {
   public func createSendTokenCoordinator(router: NavigationControllerRouter,
                                          wallet: Wallet,
                                          sendItem: SendItem,
-                                         recipient: Recipient? = nil) -> SendTokenCoordinator {
+                                         recipient: Recipient? = nil,
+                                         comment: String? = nil) -> SendTokenCoordinator {
     let coordinator = SendTokenCoordinator(
       router: router,
       wallet: wallet,
       coreAssembly: dependencies.coreAssembly,
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
       sendItem: sendItem,
-      recipient: recipient
+      recipient: recipient,
+      comment: comment
     )
     return coordinator
   }

@@ -5,6 +5,7 @@ import TKUIKit
 import KeeperCore
 import TKCore
 import TonSwift
+import BigInt
 
 final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -17,18 +18,21 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let sendItem: SendItem
   private let recipient: Recipient?
+  private let comment: String?
   
   init(router: NavigationControllerRouter,
        wallet: Wallet,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        sendItem: SendItem,
-       recipient: Recipient? = nil ) {
+       recipient: Recipient? = nil,
+       comment: String? = nil) {
     self.wallet = wallet
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.sendItem = sendItem
     self.recipient = recipient
+    self.comment = comment
     super.init(router: router)
   }
   
@@ -56,6 +60,7 @@ private extension SendTokenCoordinator {
       wallet: wallet,
       sendItem: sendItem,
       recipient: recipient,
+      comment: comment,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
@@ -80,8 +85,10 @@ private extension SendTokenCoordinator {
         switch deeplink {
         case .ton(let tonDeeplink):
           switch tonDeeplink {
-          case .transfer(let recipient, _):
+          case let .transfer(recipient, amount, comment, _):
             module.input.setRecipient(string: recipient)
+            module.input.setAmount(amount: amount)
+            module.input.setComment(comment: comment)
           }
         default:
           break
