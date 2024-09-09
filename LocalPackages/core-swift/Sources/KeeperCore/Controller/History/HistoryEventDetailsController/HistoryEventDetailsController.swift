@@ -66,7 +66,7 @@ public final class HistoryEventDetailsController {
   private let amountMapper: AccountEventAmountMapper
   private let tonRatesStore: TonRatesStore
   private let walletsStore: WalletsStore
-  private let currencyStore: CurrencyStore
+  private let currencyStore: CurrencyStoreV3
   private let nftService: NFTService
   
   private let rateConverter = RateConverter()
@@ -81,7 +81,7 @@ public final class HistoryEventDetailsController {
        amountMapper: AccountEventAmountMapper,
        tonRatesStore: TonRatesStore,
        walletsStore: WalletsStore,
-       currencyStore: CurrencyStore,
+       currencyStore: CurrencyStoreV3,
        nftService: NFTService) {
     self.event = event
     self.amountMapper = amountMapper
@@ -950,7 +950,7 @@ private extension HistoryEventDetailsController {
   }
   
   func tonFiatString(amount: BigUInt) async -> String? {
-    let currency = await currencyStore.getCurrency()
+    let currency = await currencyStore.getState()
     guard let tonRate = await tonRatesStore.getState().first(where: { $0.currency == currency }) else {
       return nil
     }

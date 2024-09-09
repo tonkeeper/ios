@@ -28,13 +28,13 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
   
   private let walletsStore: WalletsStore
   private let balanceStore: BalanceStore
-  private let tonRatesStore: TonRatesStoreV3
+  private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStoreV3
   private let stakingPoolsStore: StakingPoolsStore
   
   init(walletsStore: WalletsStore,
        balanceStore: BalanceStore,
-       tonRatesStore: TonRatesStoreV3,
+       tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStoreV3,
        stakingPoolsStore: StakingPoolsStore) {
     self.walletsStore = walletsStore
@@ -87,7 +87,7 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
     }
   }
   
-  private func didGetTonRateStoreEvent(_ event: TonRatesStoreV3.Event) {
+  private func didGetTonRateStoreEvent(_ event: TonRatesStore.Event) {
     Task {
       switch event {
       case .didUpdateTonRates:

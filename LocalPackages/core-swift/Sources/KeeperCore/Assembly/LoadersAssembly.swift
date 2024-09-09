@@ -15,20 +15,6 @@ public final class LoadersAssembly {
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
   }
   
-  private weak var _tonRatesLoaderV2: TonRatesLoaderV2?
-  var tonRatesLoaderV2: TonRatesLoaderV2 {
-    if let _tonRatesLoaderV2 {
-      return _tonRatesLoaderV2
-    }
-    let loader = TonRatesLoaderV2(
-      tonRatesStore: storesAssembly.tonRatesStore,
-      ratesService: servicesAssembly.ratesService(),
-      currencyStore: storesAssembly.currencyStore
-    )
-    _tonRatesLoaderV2 = loader
-    return loader
-  }
-  
   var chartLoader: ChartV2Loader {
     ChartV2Loader(chartService: servicesAssembly.chartService())
   }
@@ -106,7 +92,7 @@ public final class LoadersAssembly {
       currencyStore: storesAssembly.currencyStoreV3,
       walletsStore: storesAssembly.walletsStore,
       walletNFTSStore: storesAssembly.walletNFTsStore,
-      ratesStore: storesAssembly.tonRatesStoreV3,
+      ratesStore: storesAssembly.tonRatesStore,
       stakingPoolsStore: storesAssembly.stackingPoolsStore,
       balanceService: servicesAssembly.balanceService(),
       stackingService: servicesAssembly.stackingService(),

@@ -33,7 +33,6 @@ public final class MainController {
   private let apiProvider: APIProvider
   
   private let walletStateLoader: WalletStateLoader
-  private let tonRatesLoader: TonRatesLoaderV2
   private let internalNotificationsLoader: InternalNotificationsLoader
   
   private var tonRatesLoadTimer: Timer?
@@ -53,7 +52,6 @@ public final class MainController {
        deeplinkParser: DeeplinkParser,
        apiProvider: APIProvider,
        walletStateLoader: WalletStateLoader,
-       tonRatesLoader: TonRatesLoaderV2,
        internalNotificationsLoader: InternalNotificationsLoader) {
     self.appInfoProvider = appInfoProvider
     self.walletsStore = walletsStore
@@ -66,7 +64,6 @@ public final class MainController {
     self.deeplinkParser = deeplinkParser
     self.apiProvider = apiProvider
     self.walletStateLoader = walletStateLoader
-    self.tonRatesLoader = tonRatesLoader
     self.internalNotificationsLoader = internalNotificationsLoader
   }
   

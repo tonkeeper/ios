@@ -6,7 +6,7 @@ public final class ChartController {
   
   private let chartService: ChartService
   private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStore
+  private let currencyStore: CurrencyStoreV3
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let dateFormatter = DateFormatter()
   
@@ -15,7 +15,7 @@ public final class ChartController {
   
   init(chartService: ChartService,
        tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStore,
+       currencyStore: CurrencyStoreV3,
        decimalAmountFormatter: DecimalAmountFormatter) {
     self.chartService = chartService
     self.tonRatesStore = tonRatesStore
@@ -24,14 +24,19 @@ public final class ChartController {
   }
   
   public func start() async {
-    tonRatesStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-      observer.didUpdateChartData?()
+    tonRatesStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateTonRates:
+        DispatchQueue.main.async {
+          observer.didUpdateChartData?()
+        }
+      }
     }
   }
   
   public func loadChartData(period: Period) async throws -> [Coordinate] {
     loadChartDataTask?.cancel()
-    let currency = await currencyStore.getCurrency()
+    let currency = await currencyStore.getState()
     let task = Task {
       async let coordinatesTask = self.chartService.loadChartData(
         period: period,
@@ -61,7 +66,7 @@ public final class ChartController {
         diff: .init(percent: "", fiat: "", direction: .none),
         date: "")
     }
-    let currency = await currencyStore.getCurrency()
+    let currency = await currencyStore.getState()
     let coordinate = coordinates[index]
     
     let percentageValue = calculatePercentageDiff(at: index)

@@ -71,7 +71,7 @@ final class StakingInputModelImplementation: StakingInputModel {
   private let detailsInput: StakingInputDetailsModuleInput
   private let configurator: StakingInputModelConfigurator
   private let stakingPoolsStore: StakingPoolsStore
-  private let tonRatesStore: TonRatesStoreV3
+  private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStoreV3
   
   // MARK: - Init
@@ -81,7 +81,7 @@ final class StakingInputModelImplementation: StakingInputModel {
        detailsInput: StakingInputDetailsModuleInput,
        configurator: StakingInputModelConfigurator,
        stakingPoolsStore: StakingPoolsStore,
-       tonRatesStore: TonRatesStoreV3,
+       tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStoreV3) {
     self.wallet = wallet
     self.detailsInput = detailsInput
@@ -293,7 +293,7 @@ final class StakingInputModelImplementation: StakingInputModel {
     }
   }
   
-  func didGetTonRatesStoreEvent(_ event: TonRatesStoreV3.Event) {
+  func didGetTonRatesStoreEvent(_ event: TonRatesStore.Event) {
     switch event {
     case .didUpdateTonRates:
       queue.async {

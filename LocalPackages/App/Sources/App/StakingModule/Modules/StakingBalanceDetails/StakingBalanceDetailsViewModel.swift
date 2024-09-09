@@ -77,7 +77,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   private let balanceItemMapper: BalanceItemMapper
   private let stakingPoolsStore: StakingPoolsStore
   private let balanceStore: ProcessedBalanceStore
-  private let tonRatesStore: TonRatesStoreV3
+  private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStoreV3
   private let decimalFormatter: DecimalAmountFormatter
   private let amountFormatter: AmountFormatter
@@ -92,7 +92,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
        balanceItemMapper: BalanceItemMapper,
        stakingPoolsStore: StakingPoolsStore,
        balanceStore: ProcessedBalanceStore,
-       tonRatesStore: TonRatesStoreV3,
+       tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStoreV3,
        decimalFormatter: DecimalAmountFormatter,
        amountFormatter: AmountFormatter) {

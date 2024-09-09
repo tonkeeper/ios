@@ -68,7 +68,7 @@ public final class StoresAssembly {
       let store = ConvertedBalanceStore(
         walletsStore: walletsStore,
         balanceStore: balanceStore,
-        tonRatesStore: tonRatesStoreV3,
+        tonRatesStore: tonRatesStore,
         currencyStore: currencyStoreV3
 
       )
@@ -84,7 +84,7 @@ public final class StoresAssembly {
     let store = ProcessedBalanceStore(
       walletsStore: walletsStore,
       balanceStore: balanceStore,
-      tonRatesStore: tonRatesStoreV3,
+      tonRatesStore: tonRatesStore,
       currencyStore: currencyStoreV3,
       stakingPoolsStore: stackingPoolsStore
     )
@@ -124,26 +124,13 @@ public final class StoresAssembly {
   
   private weak var _tonRatesStore: TonRatesStore?
   public var tonRatesStore: TonRatesStore {
-    if let tonRatesStore = _tonRatesStore {
-      return tonRatesStore
+    if let tonRatesStoreV3 = _tonRatesStore {
+      return tonRatesStoreV3
     } else {
       let tonRatesStore = TonRatesStore(
         repository: repositoriesAssembly.ratesRepository()
       )
       _tonRatesStore = tonRatesStore
-      return tonRatesStore
-    }
-  }
-  
-  private weak var _tonRatesStoreV3: TonRatesStoreV3?
-  public var tonRatesStoreV3: TonRatesStoreV3 {
-    if let tonRatesStoreV3 = _tonRatesStoreV3 {
-      return tonRatesStoreV3
-    } else {
-      let tonRatesStore = TonRatesStoreV3(
-        repository: repositoriesAssembly.ratesRepository()
-      )
-      _tonRatesStoreV3 = tonRatesStore
       return tonRatesStore
     }
   }

@@ -27,7 +27,7 @@ public final class SendConfirmationController {
   private let accountService: AccountService
   private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
-  private let ratesStore: TonRatesStoreV3
+  private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStoreV3
   private let amountFormatter: AmountFormatter
   
@@ -39,7 +39,7 @@ public final class SendConfirmationController {
        accountService: AccountService,
        blockchainService: BlockchainService,
        balanceStore: BalanceStore,
-       ratesStore: TonRatesStoreV3,
+       ratesStore: TonRatesStore,
        currencyStore: CurrencyStoreV3,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
