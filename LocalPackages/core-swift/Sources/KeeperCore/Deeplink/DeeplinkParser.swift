@@ -35,8 +35,7 @@ public struct TonDeeplinkParser: DeeplinkParser {
     guard let string else { throw DeeplinkParserError.unsupportedDeeplink(string: string) }
     guard let url = URL(string: string),
           let scheme = url.scheme,
-          let host = url.host,
-          !url.lastPathComponent.isEmpty else {
+          let host = url.host else {
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
     }
     
@@ -63,6 +62,10 @@ public struct TonDeeplinkParser: DeeplinkParser {
         }
         
         return .ton(.transfer(recipient: address, amount: amount, comment: comment, jettonAddress: jettonAddress))
+      case "buy-ton":
+        return .ton(.buyTon)
+      case "staking":
+        return .ton(.staking)
       default:
         throw DeeplinkParserError.unsupportedDeeplink(string: string)
       }

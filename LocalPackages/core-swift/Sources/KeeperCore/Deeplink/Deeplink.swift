@@ -20,13 +20,15 @@ public enum Deeplink {
 
 public enum TonDeeplink {
   case transfer(recipient: String, amount: BigUInt?, comment: String?, jettonAddress: Address?)
+  case buyTon
+  case staking
   
   public var string: String {
     let ton = "ton"
+    var components = URLComponents(string: ton)
+    components?.scheme = ton
     switch self {
     case let .transfer(recipient, amount, comment, jettonAddress):
-      var components = URLComponents(string: ton)
-      components?.scheme = ton
       components?.host = "transfer"
       components?.path = "/\(recipient)"
       if let amount {
@@ -38,8 +40,12 @@ public enum TonDeeplink {
       if let jettonAddress {
         components?.queryItems = [URLQueryItem(name: "jetton", value: jettonAddress.toRaw())]
       }
-      return components?.string ?? ""
+    case .buyTon:
+      components?.host = "buy-ton"
+    case .staking:
+      components?.host = "staking"
     }
+    return components?.string ?? ""
   }
 }
 

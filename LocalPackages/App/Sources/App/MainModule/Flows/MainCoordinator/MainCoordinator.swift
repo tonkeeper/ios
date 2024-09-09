@@ -278,10 +278,12 @@ private extension MainCoordinator {
     addChild(sendTokenCoordinator)
     sendTokenCoordinator.start()
     
-    self.router.present(navigationController, onDismiss: { [weak self, weak sendTokenCoordinator] in
-      self?.sendTokenCoordinator = nil
-      guard let sendTokenCoordinator else { return }
-      self?.removeChild(sendTokenCoordinator)
+    self.router.dismiss(animated: true, completion: { [weak self] in
+      self?.router.present(navigationController, onDismiss: { [weak self, weak sendTokenCoordinator] in
+        self?.sendTokenCoordinator = nil
+        guard let sendTokenCoordinator else { return }
+        self?.removeChild(sendTokenCoordinator)
+      })
     })
   }
   
@@ -353,6 +355,14 @@ private extension MainCoordinator {
     switch deeplink {
     case let .transfer(recipient, amount, comment, jettonAddress):
       openSend(recipient: recipient, amount: amount, comment: comment, jettonAddress: jettonAddress)
+      return true
+    case .buyTon:
+      guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return false }
+      openBuy(wallet: wallet)
+      return true
+    case .staking:
+      guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return false }
+      openStake(wallet: wallet)
       return true
     }
   }
@@ -857,9 +867,11 @@ private extension MainCoordinator {
     addChild(coordinator)
     coordinator.start(deeplink: nil)
     
-    self.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
-    })
+    self.router.dismiss(animated: true) { [weak self] in
+      self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+        self?.removeChild(coordinator)
+      })
+    }
   }
   
   func openBuy(wallet: Wallet) {
@@ -870,8 +882,10 @@ private extension MainCoordinator {
       router: ViewControllerRouter(rootViewController: self.router.rootViewController)
     )
     
-    addChild(coordinator)
-    coordinator.start()
+    self.router.dismiss(animated: true) { [weak self] in
+      self?.addChild(coordinator)
+      coordinator.start()
+    }
   }
   
   func openHistoryEventDetails(event: AccountEventDetailsEvent) {

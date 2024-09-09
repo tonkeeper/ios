@@ -89,9 +89,9 @@ private extension SendTokenCoordinator {
             module.input.setRecipient(string: recipient)
             module.input.setAmount(amount: amount)
             module.input.setComment(comment: comment)
+          default: break
           }
-        default:
-          break
+        default: break
         }
       })
     }
