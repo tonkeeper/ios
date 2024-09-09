@@ -17,11 +17,11 @@ public actor BackgroundUpdateUpdater {
   private var observations = [UUID: (BackgroundUpdateEvent) -> Void]()
 
   private let backgroundUpdateStore: BackgroundUpdateStoreV3
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let streamingAPI: TonStreamingAPI.Client
   
   init(backgroundUpdateStore: BackgroundUpdateStoreV3,
-       walletsStore: WalletsStoreV3,
+       walletsStore: WalletsStore,
        streamingAPI: TonStreamingAPI.Client) {
     self.backgroundUpdateStore = backgroundUpdateStore
     self.walletsStore = walletsStore

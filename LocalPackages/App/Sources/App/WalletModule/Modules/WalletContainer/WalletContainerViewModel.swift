@@ -56,11 +56,11 @@ final class WalletContainerViewModelImplementation: WalletContainerViewModel, Wa
 
   // MARK: - Dependencies
   
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   
   // MARK: - Init
   
-  init(walletsStore: WalletsStoreV3) {
+  init(walletsStore: WalletsStore) {
     self.walletsStore = walletsStore
   }
   

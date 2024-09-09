@@ -16,9 +16,9 @@ protocol WalletsListModel: AnyObject {
 }
 
 final class WalletsPickerListModel: WalletsListModel {
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   
-  init(walletsStore: WalletsStoreV3) {
+  init(walletsStore: WalletsStore) {
     self.walletsStore = walletsStore
     walletsStore.addObserver(self) { observer, event in
       DispatchQueue.main.async {
@@ -84,9 +84,9 @@ final class TonConnectWalletsPickerListModel: WalletsListModel {
   
   var didSelectWallet: ((Wallet) -> Void)?
   
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   
-  init(walletsStore: WalletsStoreV3) {
+  init(walletsStore: WalletsStore) {
     self.walletsStore = walletsStore
   }
   

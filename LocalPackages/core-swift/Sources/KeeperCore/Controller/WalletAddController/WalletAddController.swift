@@ -5,10 +5,10 @@ import TonTransport
 
 public final class WalletAddController {
 
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let mnemonicsRepository: MnemonicsRepository
   
-  init(walletsStore: WalletsStoreV3,
+  init(walletsStore: WalletsStore,
        mnemonicsRepositoty: MnemonicsRepository) {
     self.walletsStore = walletsStore
     self.mnemonicsRepository = mnemonicsRepositoty

@@ -26,13 +26,13 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
     case didUpdateProccessedBalance(state: ProcessedBalanceState, wallet: Wallet)
   }
   
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let balanceStore: BalanceStore
   private let tonRatesStore: TonRatesStoreV3
   private let currencyStore: CurrencyStoreV3
   private let stakingPoolsStore: StakingPoolsStore
   
-  init(walletsStore: WalletsStoreV3,
+  init(walletsStore: WalletsStore,
        balanceStore: BalanceStore,
        tonRatesStore: TonRatesStoreV3,
        currencyStore: CurrencyStoreV3,

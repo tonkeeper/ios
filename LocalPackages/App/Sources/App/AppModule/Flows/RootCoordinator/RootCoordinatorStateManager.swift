@@ -36,9 +36,9 @@ final class RootCoordinatorStateManager {
   }
   private var _state: State?
   
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   
-  init(walletsStore: WalletsStoreV3) {
+  init(walletsStore: WalletsStore) {
     self.walletsStore = walletsStore
     walletsStore.addObserver(self) { observer, event in
       switch event {
@@ -51,7 +51,7 @@ final class RootCoordinatorStateManager {
     }
   }
 
-  private func calculateState(walletsStoreState: WalletsStoreV3.State) -> State {
+  private func calculateState(walletsStoreState: WalletsStore.State) -> State {
     switch walletsStoreState {
     case .empty:
       return .onboarding

@@ -7,10 +7,10 @@ public final class TokenManagementStore: StoreV3<TokenManagementStore.Event, Tok
     case didUpdateState(wallet: Wallet)
   }
   
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let tokenManagementRepository: TokenManagementRepository
   
-  init(walletsStore: WalletsStoreV3, 
+  init(walletsStore: WalletsStore, 
        tokenManagementRepository: TokenManagementRepository) {
     self.walletsStore = walletsStore
     self.tokenManagementRepository = tokenManagementRepository

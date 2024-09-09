@@ -17,11 +17,11 @@ public actor TonConnectEventsStore {
   private var observers = [TonConnectEventsStoreObserverWrapper]()
   
   private let apiClient: TonConnectAPI.Client
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let tonConnectAppsStore: TonConnectAppsStore
   
   init(apiClient: TonConnectAPI.Client,
-       walletsStore: WalletsStoreV3,
+       walletsStore: WalletsStore,
        tonConnectAppsStore: TonConnectAppsStore) {
     self.apiClient = apiClient
     self.walletsStore = walletsStore

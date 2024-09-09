@@ -36,7 +36,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   // MARK: - Dependencies
   
   private var wallet: Wallet
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStoreV3
   private let mnemonicsRepository: MnemonicsRepository
   private let appStoreReviewer: AppStoreReviewer
@@ -48,7 +48,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   // MARK: - Init
   
   init(wallet: Wallet,
-       walletsStore: WalletsStoreV3,
+       walletsStore: WalletsStore,
        currencyStore: CurrencyStoreV3,
        mnemonicsRepository: MnemonicsRepository,
        appStoreReviewer: AppStoreReviewer,

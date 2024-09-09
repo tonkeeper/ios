@@ -34,9 +34,9 @@ final class CollectiblesContainerViewModelImplementation: CollectiblesContainerV
     didChangeWallet?(wallet)
   }
   
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   
-  init(walletsStore: WalletsStoreV3) {
+  init(walletsStore: WalletsStore) {
     self.walletsStore = walletsStore
   }
 }

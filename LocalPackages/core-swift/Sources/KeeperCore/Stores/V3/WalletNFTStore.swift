@@ -7,11 +7,11 @@ public final class WalletNFTStore: StoreV3<WalletNFTStore.Event, WalletNFTStore.
     case didUpdateNFTs(wallet: Wallet)
   }
   
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let nftStore: NFTStore
   private let repository: WalletNFTRepository
   
-  init(walletsStore: WalletsStoreV3,
+  init(walletsStore: WalletsStore,
        nftStore: NFTStore,
        repository: WalletNFTRepository) {
     self.walletsStore = walletsStore

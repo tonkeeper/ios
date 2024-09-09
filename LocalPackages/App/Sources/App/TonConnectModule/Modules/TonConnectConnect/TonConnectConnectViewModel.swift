@@ -63,14 +63,14 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   
   private let parameters: TonConnectParameters
   private let manifest: TonConnectManifest
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let showWalletPicker: Bool
     
   // MARK: - Init
   
   init(parameters: TonConnectParameters,
        manifest: TonConnectManifest,
-       walletsStore: WalletsStoreV3,
+       walletsStore: WalletsStore,
        showWalletPicker: Bool) {
     self.parameters = parameters
     self.manifest = manifest

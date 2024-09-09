@@ -38,12 +38,12 @@ public final class StoresAssembly {
     return store
   }
   
-  private weak var _walletsStore: WalletsStoreV3?
-  public var walletsStore: WalletsStoreV3 {
+  private weak var _walletsStore: WalletsStore?
+  public var walletsStore: WalletsStore {
     if let _walletsStore {
       return _walletsStore
     }
-    let store = WalletsStoreV3(keeperInfoStore: keeperInfoStoreV3)
+    let store = WalletsStore(keeperInfoStore: keeperInfoStoreV3)
     _walletsStore = store
     return store
   }

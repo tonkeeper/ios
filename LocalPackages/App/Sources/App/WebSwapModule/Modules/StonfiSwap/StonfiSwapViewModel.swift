@@ -70,11 +70,11 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
     }
   }
 
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let configurationStore: ConfigurationStore
   private let messageHandler: StonfiSwapMessageHandler
   
-  init(walletsStore: WalletsStoreV3,
+  init(walletsStore: WalletsStore,
        configurationStore: ConfigurationStore,
        messageHandler: StonfiSwapMessageHandler) {
     self.walletsStore = walletsStore

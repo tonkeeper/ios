@@ -130,7 +130,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   // MARK: - Dependencies
   
   private let fiatMethodsStore: FiatMethodsStore
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
   private let configurationStore: ConfigurationStore
   private let appSettings: AppSettings
@@ -138,7 +138,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   // MARK: - Init
   
   init(fiatMethodsStore: FiatMethodsStore,
-       walletsStore: WalletsStoreV3,
+       walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
        configurationStore: ConfigurationStore,
        appSettings: AppSettings) {

@@ -8,12 +8,12 @@ public final class ConvertedBalanceStore: StoreV3<ConvertedBalanceStore.Event, C
     case didUpdateConvertedBalance(state: ConvertedBalanceState, wallet: Wallet)
   }
   
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let balanceStore: BalanceStore
   private let tonRatesStore: TonRatesStoreV3
   private let currencyStore: CurrencyStoreV3
   
-  init(walletsStore: WalletsStoreV3,
+  init(walletsStore: WalletsStore,
        balanceStore: BalanceStore,
        tonRatesStore: TonRatesStoreV3,
        currencyStore: CurrencyStoreV3) {

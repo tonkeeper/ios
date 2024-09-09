@@ -18,12 +18,12 @@ final class WalletBalanceSetupModel {
   
   var didUpdateState: ((State?) -> Void)?
   
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let appSettingsStore: AppSettingsV3Store
   private let securityStore: SecurityStore
   private let mnemonicsRepository: MnemonicsRepository
   
-  init(walletsStore: WalletsStoreV3,
+  init(walletsStore: WalletsStore,
        appSettingsStore: AppSettingsV3Store,
        securityStore: SecurityStore,
        mnemonicsRepository: MnemonicsRepository) {
@@ -78,7 +78,7 @@ final class WalletBalanceSetupModel {
     }
   }
   
-  private func didGetWalletsStoreEvent(_ event: WalletsStoreV3.Event) {
+  private func didGetWalletsStoreEvent(_ event: WalletsStore.Event) {
     Task {
       switch event {
       case .didChangeActiveWallet:

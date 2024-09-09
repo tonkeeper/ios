@@ -15,9 +15,9 @@ final class MainCoordinatorStateManager {
   }
   
   var didUpdateState: ((State) -> Void)?
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   
-  init(walletsStore: WalletsStoreV3) {
+  init(walletsStore: WalletsStore) {
     self.walletsStore = walletsStore
     walletsStore.addObserver(self) { observer, event in
       switch event {

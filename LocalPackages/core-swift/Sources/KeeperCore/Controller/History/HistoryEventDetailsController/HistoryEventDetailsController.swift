@@ -65,7 +65,7 @@ public final class HistoryEventDetailsController {
   private let event: AccountEventDetailsEvent
   private let amountMapper: AccountEventAmountMapper
   private let tonRatesStore: TonRatesStore
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
   private let nftService: NFTService
   
@@ -80,7 +80,7 @@ public final class HistoryEventDetailsController {
   init(event: AccountEventDetailsEvent,
        amountMapper: AccountEventAmountMapper,
        tonRatesStore: TonRatesStore,
-       walletsStore: WalletsStoreV3,
+       walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
        nftService: NFTService) {
     self.event = event

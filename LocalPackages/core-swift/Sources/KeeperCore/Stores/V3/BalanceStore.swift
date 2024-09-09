@@ -8,10 +8,10 @@ public final class BalanceStore: StoreV3<BalanceStore.Event, BalanceStore.State>
     case didUpdateBalanceState(wallet: Wallet, WalletBalanceState)
   }
   
-  private let walletsStore: WalletsStoreV3
+  private let walletsStore: WalletsStore
   private let repository: WalletBalanceRepositoryV2
   
-  init(walletsStore: WalletsStoreV3,
+  init(walletsStore: WalletsStore,
        repository: WalletBalanceRepositoryV2) {
     self.walletsStore = walletsStore
     self.repository = repository
