@@ -7,7 +7,7 @@ struct TonConnectConnectAssembly {
   static func module(
     parameters: TonConnectParameters,
     manifest: TonConnectManifest,
-    walletsStore: WalletsStore,
+    walletsStore: WalletsStoreV3,
     showWalletPicker: Bool
   ) -> MVVMModule<
     TonConnectConnectViewController,

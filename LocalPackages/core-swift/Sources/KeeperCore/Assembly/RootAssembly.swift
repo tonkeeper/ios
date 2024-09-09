@@ -83,30 +83,17 @@ public final class RootAssembly {
   }
   
   public func mainAssembly() -> MainAssembly {
-    let walletAssembly = WalletAssembly(
-      servicesAssembly: servicesAssembly,
-      storesAssembly: storesAssembly,
-      walletUpdateAssembly: walletsUpdateAssembly)
     let tonConnectAssembly = TonConnectAssembly(
       repositoriesAssembly: repositoriesAssembly,
       servicesAssembly: servicesAssembly,
       storesAssembly: storesAssembly,
-      walletsAssembly: walletAssembly,
       apiAssembly: apiAssembly,
       coreAssembly: coreAssembly,
       formattersAssembly: formattersAssembly
     )
-    let mainStoresAssembly = MainStoresAssembly(
-      walletsAssembly: walletAssembly,
-      repositoriesAssembly: repositoriesAssembly,
-      servicesAssembly: servicesAssembly,
-      storesAssembly: storesAssembly,
-      apiAssembly: apiAssembly
-    )
     return MainAssembly(
       appInfoProvider: appInfoProvider,
       repositoriesAssembly: repositoriesAssembly,
-      walletAssembly: walletAssembly,
       walletUpdateAssembly: walletsUpdateAssembly,
       servicesAssembly: servicesAssembly,
       storesAssembly: storesAssembly,
@@ -115,13 +102,6 @@ public final class RootAssembly {
       configurationAssembly: configurationAssembly,
       passcodeAssembly: passcodeAssembly,
       tonConnectAssembly: tonConnectAssembly,
-      mainStoresAssembly: mainStoresAssembly,
-      mainLoadersAssembly: MainLoadersAssembly(
-        servicesAssembly: servicesAssembly, 
-        storesAssembly: storesAssembly,
-        mainStoresAssembly: mainStoresAssembly,
-        walletAssembly: walletAssembly
-      ),
       apiAssembly: apiAssembly,
       loadersAssembly: loadersAssembly
     )

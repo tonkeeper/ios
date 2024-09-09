@@ -17,11 +17,11 @@ public actor TonConnectEventsStore {
   private var observers = [TonConnectEventsStoreObserverWrapper]()
   
   private let apiClient: TonConnectAPI.Client
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   private let tonConnectAppsStore: TonConnectAppsStore
   
   init(apiClient: TonConnectAPI.Client,
-       walletsStore: WalletsStore,
+       walletsStore: WalletsStoreV3,
        tonConnectAppsStore: TonConnectAppsStore) {
     self.apiClient = apiClient
     self.walletsStore = walletsStore
@@ -75,7 +75,7 @@ public actor TonConnectEventsStore {
 
 private extension TonConnectEventsStore {
   func getApps() -> [Wallet: TonConnectApps] {
-    let wallets = walletsStore.getState().wallets
+    let wallets = walletsStore.wallets
     
     var apps = [Wallet: TonConnectApps]()
     wallets.forEach { wallet in

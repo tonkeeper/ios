@@ -87,7 +87,7 @@ private extension TonConnectConnectCoordinator {
     let module = TonConnectConnectAssembly.module(
       parameters: parameters,
       manifest: manifest,
-      walletsStore: keeperCoreMainAssembly.walletAssembly.walletsStore,
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       showWalletPicker: showWalletPicker
     )
     

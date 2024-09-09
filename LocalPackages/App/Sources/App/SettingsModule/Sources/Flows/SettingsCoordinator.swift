@@ -276,7 +276,7 @@ private extension SettingsCoordinator {
           guard let passcode = await self.getPasscode() else { return }
           await self.keeperCoreMainAssembly.walletDeleteController.deleteWallet(wallet: wallet, passcode: passcode)
           await MainActor.run {
-            let wallets = self.keeperCoreMainAssembly.walletAssembly.walletsStore.getState().wallets
+            let wallets = self.keeperCoreMainAssembly.storesAssembly.walletsStore.wallets
             if !wallets.isEmpty {
               self.router.pop(animated: true)
             }

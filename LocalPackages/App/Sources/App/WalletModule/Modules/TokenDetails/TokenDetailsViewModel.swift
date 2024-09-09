@@ -92,7 +92,7 @@ private extension TokenDetailsViewModelImplementation {
       switch event {
       case .didUpdateConvertedBalance(_, let wallet):
         guard wallet == observer.wallet else { return }
-        observer.syncQueue.sync {
+        observer.syncQueue.async {
           let balance = observer.balanceStore.getState()[wallet]?.balance
           let model = observer.configurator.getTokenModel(balance: balance)
           DispatchQueue.main.async {

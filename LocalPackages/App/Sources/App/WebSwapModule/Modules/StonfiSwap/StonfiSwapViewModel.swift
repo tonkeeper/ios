@@ -70,11 +70,11 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
     }
   }
 
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   private let configurationStore: ConfigurationStore
   private let messageHandler: StonfiSwapMessageHandler
   
-  init(walletsStore: WalletsStore,
+  init(walletsStore: WalletsStoreV3,
        configurationStore: ConfigurationStore,
        messageHandler: StonfiSwapMessageHandler) {
     self.walletsStore = walletsStore
@@ -95,7 +95,7 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
   }
   
   var jsInjection: String? {
-    guard let info = try? Info(address: walletsStore.getState().activeWallet.address.toRaw()),
+    guard let info = try? Info(address: walletsStore.getActiveWallet().address.toRaw()),
           let infoData = try? JSONEncoder().encode(info),
           var infoString = String(data: infoData, encoding: .utf8) else { return nil }
     infoString = String(describing: infoString).replacingOccurrences(of: "\\", with: "")

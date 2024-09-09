@@ -65,7 +65,7 @@ public final class HistoryEventDetailsController {
   private let event: AccountEventDetailsEvent
   private let amountMapper: AccountEventAmountMapper
   private let tonRatesStore: TonRatesStore
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   private let currencyStore: CurrencyStore
   private let nftService: NFTService
   
@@ -80,7 +80,7 @@ public final class HistoryEventDetailsController {
   init(event: AccountEventDetailsEvent,
        amountMapper: AccountEventAmountMapper,
        tonRatesStore: TonRatesStore,
-       walletsStore: WalletsStore,
+       walletsStore: WalletsStoreV3,
        currencyStore: CurrencyStore,
        nftService: NFTService) {
     self.event = event
@@ -108,7 +108,7 @@ public final class HistoryEventDetailsController {
 
 private extension HistoryEventDetailsController {
   func mapModel() async -> Model {
-    let wallet = await walletsStore.getState().activeWallet
+    let isTestnet = (try? await walletsStore.getActiveWallet().isTestnet) ?? false
     let eventAction = event.action
     let date = dateFormatter.string(from: event.accountEvent.date)
     let fee = amountMapper.mapAmount(
@@ -154,7 +154,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .jettonBurn(jettonBurn):
       return await mapJettonBurn(
         activityEvent: event.accountEvent,
@@ -169,7 +169,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .jettonSwap(jettonSwap):
       return mapJettonSwap(
         activityEvent: event.accountEvent,
@@ -177,7 +177,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .jettonTransfer(jettonTransfer):
       return await mapJettonTransfer(
         activityEvent: event.accountEvent,
@@ -185,7 +185,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .nftItemTransfer(nftItemTransfer):
       return mapNFTTransfer(
         activityEvent: event.accountEvent,
@@ -193,7 +193,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .nftPurchase(nftPurchase):
       return await mapNFTPurchase(
         activityEvent: event.accountEvent,
@@ -201,7 +201,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .smartContractExec(smartContractExec):
       return await mapSmartContractExec(
         activityEvent: event.accountEvent,
@@ -209,7 +209,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .tonTransfer(tonTransfer):
       return await mapTonTransfer(
         activityEvent: event.accountEvent,
@@ -217,7 +217,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .withdrawStake(withdrawStake):
       return await mapWithdrawStake(
         activityEvent: event.accountEvent,
@@ -225,7 +225,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .withdrawStakeRequest(withdrawStakeRequest):
       return mapWithdrawStakeRequest(
         activityEvent: event.accountEvent,
@@ -233,7 +233,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case .unknown:
       return mapUnknownAction(
         date: date,

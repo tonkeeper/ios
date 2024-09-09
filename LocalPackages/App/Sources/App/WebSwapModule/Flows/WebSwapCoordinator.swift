@@ -63,7 +63,9 @@ private extension WebSwapCoordinator {
   
   func openSend(signRequest: SendTransactionSignRequest,
                 completion: @escaping (SendTransactionSignResult) -> Void) {
-    let wallet = self.keeperCoreMainAssembly.walletAssembly.walletsStore.getState().activeWallet
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else {
+      return
+    }
 
     guard let windowScene = UIApplication.keyWindowScene else { return }
     let window = TKWindow(windowScene: windowScene)

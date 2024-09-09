@@ -130,7 +130,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   // MARK: - Dependencies
   
   private let fiatMethodsStore: FiatMethodsStore
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   private let currencyStore: CurrencyStore
   private let configurationStore: ConfigurationStore
   private let appSettings: AppSettings
@@ -138,7 +138,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   // MARK: - Init
   
   init(fiatMethodsStore: FiatMethodsStore,
-       walletsStore: WalletsStore,
+       walletsStore: WalletsStoreV3,
        currencyStore: CurrencyStore,
        configurationStore: ConfigurationStore,
        appSettings: AppSettings) {
@@ -437,7 +437,7 @@ private extension BuySellListViewModelImplementation {
   }
   
   func actionUrl(for item: FiatMethodItem, currency: Currency) async -> URL? {
-    guard let address = try? await walletsStore.getState().activeWallet.friendlyAddress else { return nil }
+    guard let address = try? await walletsStore.getActiveWallet().friendlyAddress else { return nil }
     var urlString = item.actionButton.url
     
     switch item.id {

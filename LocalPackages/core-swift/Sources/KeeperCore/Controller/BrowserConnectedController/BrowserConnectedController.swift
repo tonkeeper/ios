@@ -10,10 +10,10 @@ public final class BrowserConnectedController {
     public let iconURL: URL?
   }
   
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   private let tonConnectAppsStore: TonConnectAppsStore
   
-  init(walletsStore: WalletsStore,
+  init(walletsStore: WalletsStoreV3,
        tonConnectAppsStore: TonConnectAppsStore) {
     self.walletsStore = walletsStore
     self.tonConnectAppsStore = tonConnectAppsStore
@@ -21,14 +21,14 @@ public final class BrowserConnectedController {
   
   public func start() {
     tonConnectAppsStore.addObserver(self)
-    walletsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+    walletsStore.addObserver(self) { observer, event in
       observer.didUpdateApps?()
     }
   }
   
   public func getConnectedApps() -> [ConnectedApp] {
     do {
-      let connectedApps = try tonConnectAppsStore.connectedApps(forWallet: walletsStore.getState().activeWallet)
+      let connectedApps = try tonConnectAppsStore.connectedApps(forWallet: walletsStore.getActiveWallet())
         .apps
         .map { item in
           ConnectedApp(

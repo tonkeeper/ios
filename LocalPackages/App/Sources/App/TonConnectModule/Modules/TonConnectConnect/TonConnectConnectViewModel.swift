@@ -57,36 +57,37 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   
   // MARK: - State
   
-  private var selectedWallet: Wallet
+  private var selectedWallet: Wallet?
   
   // MARK: - Dependencies
   
   private let parameters: TonConnectParameters
   private let manifest: TonConnectManifest
-  private let walletsStore: WalletsStore
+  private let walletsStore: WalletsStoreV3
   private let showWalletPicker: Bool
     
   // MARK: - Init
   
   init(parameters: TonConnectParameters,
        manifest: TonConnectManifest,
-       walletsStore: WalletsStore,
+       walletsStore: WalletsStoreV3,
        showWalletPicker: Bool) {
     self.parameters = parameters
     self.manifest = manifest
     self.walletsStore = walletsStore
     self.showWalletPicker = showWalletPicker
     
-    self.selectedWallet = walletsStore.getState().activeWallet
+    self.selectedWallet = try? walletsStore.getActiveWallet()
   }
 }
 
 private extension TonConnectConnectViewModelImplementation {
   func prepareContent() {
+    guard let selectedWallet else { return }
     let configuration = TonConnectConnectMapper.modalCardConfiguration(
       wallet: selectedWallet,
       manifest: manifest,
-      showWalletPicker: !walletsStore.getState().wallets.isEmpty && showWalletPicker,
+      showWalletPicker: !walletsStore.wallets.isEmpty && showWalletPicker,
       headerView: {
         headerView?($0, $1)
       },
@@ -95,8 +96,9 @@ private extension TonConnectConnectViewModelImplementation {
         return walletPickerView?($0)
       },
       walletPickerAction: { [weak self] in
-        guard let self else { return }
-        self.didTapWalletPicker?(self.selectedWallet)
+        guard let self,
+        let selectedWallet = self.selectedWallet else { return }
+        self.didTapWalletPicker?(selectedWallet)
       },
       connectAction: { [weak self] in
         guard let self, let connect else { return false }

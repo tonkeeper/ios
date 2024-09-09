@@ -5,7 +5,6 @@ import BigInt
 public final class MainAssembly {
   public let appInfoProvider: AppInfoProvider
   public let repositoriesAssembly: RepositoriesAssembly
-  public let walletAssembly: WalletAssembly
   public let walletUpdateAssembly: WalletsUpdateAssembly
   public let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
@@ -14,14 +13,11 @@ public final class MainAssembly {
   public let configurationAssembly: ConfigurationAssembly
   public let passcodeAssembly: PasscodeAssembly
   public let tonConnectAssembly: TonConnectAssembly
-  public let mainStoresAssembly: MainStoresAssembly
-  public let mainLoadersAssembly: MainLoadersAssembly
   public let loadersAssembly: LoadersAssembly
   let apiAssembly: APIAssembly
   
   init(appInfoProvider: AppInfoProvider,
        repositoriesAssembly: RepositoriesAssembly,
-       walletAssembly: WalletAssembly,
        walletUpdateAssembly: WalletsUpdateAssembly,
        servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
@@ -30,13 +26,10 @@ public final class MainAssembly {
        configurationAssembly: ConfigurationAssembly,
        passcodeAssembly: PasscodeAssembly,
        tonConnectAssembly: TonConnectAssembly,
-       mainStoresAssembly: MainStoresAssembly,
-       mainLoadersAssembly: MainLoadersAssembly,
        apiAssembly: APIAssembly,
        loadersAssembly: LoadersAssembly) {
     self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
-    self.walletAssembly = walletAssembly
     self.walletUpdateAssembly = walletUpdateAssembly
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
@@ -45,8 +38,6 @@ public final class MainAssembly {
     self.configurationAssembly = configurationAssembly
     self.passcodeAssembly = passcodeAssembly
     self.tonConnectAssembly = tonConnectAssembly
-    self.mainStoresAssembly = mainStoresAssembly
-    self.mainLoadersAssembly = mainLoadersAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
   }
@@ -60,7 +51,7 @@ public final class MainAssembly {
       appInfoProvider: appInfoProvider,
       walletsStore: storesAssembly.walletsStore,
       accountNFTService: servicesAssembly.accountNftService(),
-      backgroundUpdateUpdater: mainStoresAssembly.backgroundUpdateUpdater,
+      backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater,
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
       knownAccountsStore: storesAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
@@ -110,7 +101,7 @@ public final class MainAssembly {
       event: event,
       amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
       tonRatesStore: storesAssembly.tonRatesStore,
-      walletsStore: walletAssembly.walletsStore,
+      walletsStore: storesAssembly.walletsStore,
       currencyStore: storesAssembly.currencyStore,
       nftService: servicesAssembly.nftService()
     )
@@ -211,7 +202,7 @@ public final class MainAssembly {
   
   public func browserConnectedController() -> BrowserConnectedController {
     BrowserConnectedController(
-      walletsStore: walletAssembly.walletsStore,
+      walletsStore: storesAssembly.walletsStore,
       tonConnectAppsStore: tonConnectAssembly.tonConnectAppsStore
     )
   }
