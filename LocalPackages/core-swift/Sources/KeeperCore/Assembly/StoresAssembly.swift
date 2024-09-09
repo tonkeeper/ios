@@ -28,22 +28,12 @@ public final class StoresAssembly {
     return store
   }
   
-  private weak var _keeperInfoStoreV3: KeeperInfoStoreV3?
-  public var keeperInfoStoreV3: KeeperInfoStoreV3 {
-    if let _keeperInfoStoreV3 {
-      return _keeperInfoStoreV3
-    }
-    let store = KeeperInfoStoreV3(keeperInfoRepository: repositoriesAssembly.keeperInfoRepository())
-    _keeperInfoStoreV3 = store
-    return store
-  }
-  
   private weak var _walletsStore: WalletsStore?
   public var walletsStore: WalletsStore {
     if let _walletsStore {
       return _walletsStore
     }
-    let store = WalletsStore(keeperInfoStore: keeperInfoStoreV3)
+    let store = WalletsStore(keeperInfoStore: keeperInfoStore)
     _walletsStore = store
     return store
   }
@@ -107,7 +97,7 @@ public final class StoresAssembly {
     if let _currencyStore {
       return _currencyStore
     }
-    let store = CurrencyStore(keeperInfoStore: keeperInfoStoreV3)
+    let store = CurrencyStore(keeperInfoStore: keeperInfoStore)
     _currencyStore = store
     return store
   }
@@ -171,7 +161,7 @@ public final class StoresAssembly {
     if let securityStore = _securityStore {
       return securityStore
     } else {
-      let securityStore = SecurityStore(keeperInfoStore: keeperInfoStoreV3)
+      let securityStore = SecurityStore(keeperInfoStore: keeperInfoStore)
       _securityStore = securityStore
       return securityStore
     }
@@ -293,7 +283,7 @@ public final class StoresAssembly {
     if let appSettingsStore = _appSettingsStore {
       return appSettingsStore
     } else {
-      let appSettingsStore = AppSettingsV3Store(keeperInfoStore: keeperInfoStoreV3)
+      let appSettingsStore = AppSettingsV3Store(keeperInfoStore: keeperInfoStore)
       _appSettingsStore = appSettingsStore
       return appSettingsStore
     }

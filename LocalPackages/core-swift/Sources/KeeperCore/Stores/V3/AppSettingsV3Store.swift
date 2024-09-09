@@ -11,13 +11,13 @@ public final class AppSettingsV3Store: StoreV3<AppSettingsV3Store.Event, AppSett
     case didUpdateIsSecureMode(isSecureMode: Bool)
   }
   
-  private let keeperInfoStore: KeeperInfoStoreV3
+  private let keeperInfoStore: KeeperInfoStore
   
   public override var initialState: State {
     getState(keeperInfo: keeperInfoStore.getState())
   }
   
-  init(keeperInfoStore: KeeperInfoStoreV3) {
+  init(keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
     super.init(state: State(isSetupFinished: false, isSecureMode: false))
   }

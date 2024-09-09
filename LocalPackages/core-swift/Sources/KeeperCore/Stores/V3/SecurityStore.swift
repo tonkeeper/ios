@@ -26,9 +26,9 @@ public final class SecurityStore: StoreV3<SecurityStore.Event, SecurityStore.Sta
     case didUpdateIsLockScreen(isLockScreen: Bool)
   }
   
-  private let keeperInfoStore: KeeperInfoStoreV3
+  private let keeperInfoStore: KeeperInfoStore
   
-  init(keeperInfoStore: KeeperInfoStoreV3) {
+  init(keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
     super.init(state: .defaultState)
   }

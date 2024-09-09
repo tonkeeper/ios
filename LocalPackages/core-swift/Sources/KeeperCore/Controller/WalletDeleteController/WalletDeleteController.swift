@@ -3,11 +3,11 @@ import Foundation
 public final class WalletDeleteController {
   
   private let walletStore: WalletsStore
-  private let keeperInfoStore: KeeperInfoStoreV3
+  private let keeperInfoStore: KeeperInfoStore
   private let mnemonicsRepository: MnemonicsRepository
   
   init(walletStore: WalletsStore,
-       keeperInfoStore: KeeperInfoStoreV3,
+       keeperInfoStore: KeeperInfoStore,
        mnemonicsRepository: MnemonicsRepository) {
     self.walletStore = walletStore
     self.keeperInfoStore = keeperInfoStore

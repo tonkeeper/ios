@@ -71,7 +71,7 @@ public final class MainAssembly {
 
   public var walletDeleteController: WalletDeleteController {
     WalletDeleteController(walletStore: storesAssembly.walletsStore,
-                           keeperInfoStore: storesAssembly.keeperInfoStoreV3,
+                           keeperInfoStore: storesAssembly.keeperInfoStore,
                            mnemonicsRepository: repositoriesAssembly.mnemonicsRepository())
   }
   

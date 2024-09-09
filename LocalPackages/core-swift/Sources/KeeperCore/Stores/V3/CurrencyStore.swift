@@ -5,13 +5,13 @@ public final class CurrencyStore: StoreV3<CurrencyStore.Event, Currency> {
     case didUpdateCurrency(currency: Currency)
   }
   
-  private let keeperInfoStore: KeeperInfoStoreV3
+  private let keeperInfoStore: KeeperInfoStore
   
   public override var initialState: Currency {
     getState(keeperInfo: keeperInfoStore.getState())
   }
   
-  init(keeperInfoStore: KeeperInfoStoreV3) {
+  init(keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
     super.init(state: .defaultCurrency)
   }

@@ -63,13 +63,13 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
     }
   }
 
-  private let keeperInfoStore: KeeperInfoStoreV3
+  private let keeperInfoStore: KeeperInfoStore
   
   public override var initialState: State {
     getState(keeperInfo: keeperInfoStore.getState())
   }
   
-  init(keeperInfoStore: KeeperInfoStoreV3) {
+  init(keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
     super.init(state: State.empty)
   }

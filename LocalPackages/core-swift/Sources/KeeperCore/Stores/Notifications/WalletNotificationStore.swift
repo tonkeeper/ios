@@ -8,14 +8,6 @@ public final class WalletNotificationStore: StoreUpdated<[FriendlyAddress: Bool]
   init(keeperInfoStore: KeeperInfoStore) {
     self.keeperInfoStore = keeperInfoStore
     super.init(state: [:])
-    keeperInfoStore.addObserver(
-      self,
-      notifyOnAdded: false) { observer, newState, _ in
-        observer.updateState { _ in
-          let state = observer.getState(keeperInfo: newState)
-          return StateUpdate(newState: state)
-        }
-      }
   }
   
   public override func getInitialState() -> [FriendlyAddress : Bool] {
