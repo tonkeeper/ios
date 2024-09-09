@@ -12,7 +12,7 @@ public final class ConfirmTransactionController {
   private let sendService: SendService
   private let nftService: NFTService
   private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStoreV3
+  private let currencyStore: CurrencyStore
   private let confirmTransactionMapper: ConfirmTransactionMapper
   
   init(wallet: Wallet,
@@ -20,7 +20,7 @@ public final class ConfirmTransactionController {
        sendService: SendService,
        nftService: NFTService,
        tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStoreV3,
+       currencyStore: CurrencyStore,
        confirmTransactionMapper: ConfirmTransactionMapper) {
     self.wallet = wallet
     self.bocProvider = bocProvider

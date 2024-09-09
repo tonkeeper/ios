@@ -1,6 +1,6 @@
 import Foundation
 
-public final class CurrencyStoreV3: StoreV3<CurrencyStoreV3.Event, Currency> {
+public final class CurrencyStore: StoreV3<CurrencyStore.Event, Currency> {
   public enum Event {
     case didUpdateCurrency(currency: Currency)
   }

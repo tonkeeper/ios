@@ -66,7 +66,7 @@ public final class HistoryEventDetailsController {
   private let amountMapper: AccountEventAmountMapper
   private let tonRatesStore: TonRatesStore
   private let walletsStore: WalletsStore
-  private let currencyStore: CurrencyStoreV3
+  private let currencyStore: CurrencyStore
   private let nftService: NFTService
   
   private let rateConverter = RateConverter()
@@ -81,7 +81,7 @@ public final class HistoryEventDetailsController {
        amountMapper: AccountEventAmountMapper,
        tonRatesStore: TonRatesStore,
        walletsStore: WalletsStore,
-       currencyStore: CurrencyStoreV3,
+       currencyStore: CurrencyStore,
        nftService: NFTService) {
     self.event = event
     self.amountMapper = amountMapper

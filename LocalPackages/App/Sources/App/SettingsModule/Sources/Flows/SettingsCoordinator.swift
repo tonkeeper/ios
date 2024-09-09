@@ -31,7 +31,7 @@ private extension SettingsCoordinator {
     let configurator = SettingsListRootConfigurator(
       wallet: wallet,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
-      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV3,
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
       mnemonicsRepository: keeperCoreMainAssembly.repositoriesAssembly.mnemonicsRepository(),
       appStoreReviewer: coreAssembly.appStoreReviewer(),
       configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore,
@@ -142,7 +142,7 @@ private extension SettingsCoordinator {
   
   func openCurrencyPicker() {
     let configuration = SettingsListCurrencyPickerConfigurator(
-      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV3
+      currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
     )
     configuration.didSelect = { [weak self] in
       self?.router.pop()

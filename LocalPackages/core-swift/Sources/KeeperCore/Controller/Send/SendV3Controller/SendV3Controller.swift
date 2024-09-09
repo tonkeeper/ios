@@ -8,7 +8,7 @@ public final class SendV3Controller {
   private let knownAccountsStore: KnownAccountsStore
   private let dnsService: DNSService
   private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStoreV3
+  private let currencyStore: CurrencyStore
   private let amountFormatter: AmountFormatter
   
   init(wallet: Wallet,
@@ -16,7 +16,7 @@ public final class SendV3Controller {
        knownAccountsStore: KnownAccountsStore,
        dnsService: DNSService,
        tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStoreV3,
+       currencyStore: CurrencyStore,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
     self.balanceStore = balanceStore

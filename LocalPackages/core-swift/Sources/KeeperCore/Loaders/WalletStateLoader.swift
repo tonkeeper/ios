@@ -27,7 +27,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
   }
   
   private let balanceStore: BalanceStore
-  private let currencyStore: CurrencyStoreV3
+  private let currencyStore: CurrencyStore
   private let walletsStore: WalletsStore
   private let walletNFTSStore: WalletNFTStore
   private let ratesStore: TonRatesStore
@@ -39,7 +39,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   
   public init(balanceStore: BalanceStore,
-              currencyStore: CurrencyStoreV3,
+              currencyStore: CurrencyStore,
               walletsStore: WalletsStore,
               walletNFTSStore: WalletNFTStore,
               ratesStore: TonRatesStore,
@@ -130,7 +130,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
     }
   }
   
-  private func didGetCurrencyStoreEvent(_ event: CurrencyStoreV3.Event) {
+  private func didGetCurrencyStoreEvent(_ event: CurrencyStore.Event) {
     Task {
       let wallets = await walletsStore.getState()
       switch wallets {

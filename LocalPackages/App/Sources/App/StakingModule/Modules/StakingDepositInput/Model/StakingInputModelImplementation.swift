@@ -72,7 +72,7 @@ final class StakingInputModelImplementation: StakingInputModel {
   private let configurator: StakingInputModelConfigurator
   private let stakingPoolsStore: StakingPoolsStore
   private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStoreV3
+  private let currencyStore: CurrencyStore
   
   // MARK: - Init
   
@@ -82,7 +82,7 @@ final class StakingInputModelImplementation: StakingInputModel {
        configurator: StakingInputModelConfigurator,
        stakingPoolsStore: StakingPoolsStore,
        tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStoreV3) {
+       currencyStore: CurrencyStore) {
     self.wallet = wallet
     self.detailsInput = detailsInput
     self.configurator = configurator

@@ -27,7 +27,7 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
   private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
   private let ratesStore: TonRatesStore
-  private let currencyStore: CurrencyStoreV3
+  private let currencyStore: CurrencyStore
   private let amountFormatter: AmountFormatter
   private let decimalFormatter: DecimalAmountFormatter
   
@@ -40,7 +40,7 @@ public final class StakeDepositConfirmationController: StakeConfirmationControll
        blockchainService: BlockchainService,
        balanceStore: BalanceStore,
        ratesStore: TonRatesStore,
-       currencyStore: CurrencyStoreV3,
+       currencyStore: CurrencyStore,
        amountFormatter: AmountFormatter,
        decimalFormatter: DecimalAmountFormatter) {
     self.wallet = wallet

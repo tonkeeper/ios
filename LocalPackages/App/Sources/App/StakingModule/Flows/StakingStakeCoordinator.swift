@@ -53,7 +53,7 @@ final class StakingStakeCoordinator: RouterCoordinator<NavigationControllerRoute
         configurator: configurator,
         stakingPoolsStore: keeperCoreMainAssembly.storesAssembly.stackingPoolsStore,
         tonRatesStore: keeperCoreMainAssembly.storesAssembly.tonRatesStore,
-        currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStoreV3
+        currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore
       ),
       detailsViewController: stakingDepositInputAPY.view,
       keeperCoreMainAssembly: keeperCoreMainAssembly

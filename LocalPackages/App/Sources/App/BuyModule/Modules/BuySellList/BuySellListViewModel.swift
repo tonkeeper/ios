@@ -422,7 +422,7 @@ private extension BuySellListViewModelImplementation {
       selectionClosure: { [weak self] in
         guard let self else { return }
         Task {
-          guard let url = await self.actionUrl(for: item, currency: self.currencyStore.getCurrency()) else { return }
+          guard let url = await self.actionUrl(for: item, currency: self.currencyStore.getState()) else { return }
           await MainActor.run {
             if self.appSettings.isBuySellItemMarkedDoNotShowWarning(item.id) {
               self.didSelectURL?(url)

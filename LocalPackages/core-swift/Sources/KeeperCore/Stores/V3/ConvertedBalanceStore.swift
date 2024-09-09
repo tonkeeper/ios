@@ -11,12 +11,12 @@ public final class ConvertedBalanceStore: StoreV3<ConvertedBalanceStore.Event, C
   private let walletsStore: WalletsStore
   private let balanceStore: BalanceStore
   private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStoreV3
+  private let currencyStore: CurrencyStore
   
   init(walletsStore: WalletsStore,
        balanceStore: BalanceStore,
        tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStoreV3) {
+       currencyStore: CurrencyStore) {
     self.walletsStore = walletsStore
     self.balanceStore = balanceStore
     self.tonRatesStore = tonRatesStore

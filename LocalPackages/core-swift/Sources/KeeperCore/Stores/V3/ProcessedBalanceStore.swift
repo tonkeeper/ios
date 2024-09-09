@@ -29,13 +29,13 @@ public final class ProcessedBalanceStore: StoreV3<ProcessedBalanceStore.Event, P
   private let walletsStore: WalletsStore
   private let balanceStore: BalanceStore
   private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStoreV3
+  private let currencyStore: CurrencyStore
   private let stakingPoolsStore: StakingPoolsStore
   
   init(walletsStore: WalletsStore,
        balanceStore: BalanceStore,
        tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStoreV3,
+       currencyStore: CurrencyStore,
        stakingPoolsStore: StakingPoolsStore) {
     self.walletsStore = walletsStore
     self.balanceStore = balanceStore

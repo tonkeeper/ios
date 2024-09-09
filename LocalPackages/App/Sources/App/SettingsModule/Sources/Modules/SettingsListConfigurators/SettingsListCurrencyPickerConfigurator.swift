@@ -21,11 +21,11 @@ final class SettingsListCurrencyPickerConfigurator: SettingsListConfigurator {
   
   // MARK: - Dependencies
   
-  private let currencyStore: CurrencyStoreV3
+  private let currencyStore: CurrencyStore
   
   // MARK: - Init
   
-  init(currencyStore: CurrencyStoreV3) {
+  init(currencyStore: CurrencyStore) {
     self.currencyStore = currencyStore
   }
   

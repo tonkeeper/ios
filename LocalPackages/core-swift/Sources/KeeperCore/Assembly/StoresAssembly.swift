@@ -69,7 +69,7 @@ public final class StoresAssembly {
         walletsStore: walletsStore,
         balanceStore: balanceStore,
         tonRatesStore: tonRatesStore,
-        currencyStore: currencyStoreV3
+        currencyStore: currencyStore
 
       )
       _convertedBalanceStore = store
@@ -85,7 +85,7 @@ public final class StoresAssembly {
       walletsStore: walletsStore,
       balanceStore: balanceStore,
       tonRatesStore: tonRatesStore,
-      currencyStore: currencyStoreV3,
+      currencyStore: currencyStore,
       stakingPoolsStore: stackingPoolsStore
     )
     _processedBalanceStore = store
@@ -107,18 +107,8 @@ public final class StoresAssembly {
     if let _currencyStore {
       return _currencyStore
     }
-    let store = CurrencyStore(keeperInfoStore: keeperInfoStore)
+    let store = CurrencyStore(keeperInfoStore: keeperInfoStoreV3)
     _currencyStore = store
-    return store
-  }
-  
-  private weak var _currencyStoreV3: CurrencyStoreV3?
-  public var currencyStoreV3: CurrencyStoreV3 {
-    if let _currencyStoreV3 {
-      return _currencyStoreV3
-    }
-    let store = CurrencyStoreV3(keeperInfoStore: keeperInfoStoreV3)
-    _currencyStoreV3 = store
     return store
   }
   

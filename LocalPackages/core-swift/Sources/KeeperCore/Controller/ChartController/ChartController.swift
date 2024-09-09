@@ -6,7 +6,7 @@ public final class ChartController {
   
   private let chartService: ChartService
   private let tonRatesStore: TonRatesStore
-  private let currencyStore: CurrencyStoreV3
+  private let currencyStore: CurrencyStore
   private let decimalAmountFormatter: DecimalAmountFormatter
   private let dateFormatter = DateFormatter()
   
@@ -15,7 +15,7 @@ public final class ChartController {
   
   init(chartService: ChartService,
        tonRatesStore: TonRatesStore,
-       currencyStore: CurrencyStoreV3,
+       currencyStore: CurrencyStore,
        decimalAmountFormatter: DecimalAmountFormatter) {
     self.chartService = chartService
     self.tonRatesStore = tonRatesStore

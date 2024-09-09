@@ -89,7 +89,7 @@ public final class LoadersAssembly {
     }
     let loader = WalletStateLoader(
       balanceStore: storesAssembly.balanceStore,
-      currencyStore: storesAssembly.currencyStoreV3,
+      currencyStore: storesAssembly.currencyStore,
       walletsStore: storesAssembly.walletsStore,
       walletNFTSStore: storesAssembly.walletNFTsStore,
       ratesStore: storesAssembly.tonRatesStore,
