@@ -29,9 +29,7 @@ actor FiatMethodsLoader {
     }
     
     let task = Task {
-      await fiatMethodsStore.updateState { _ in
-        FiatMethodsStore.StateUpdate(newState: .loading)
-      }
+      await fiatMethodsStore.updateState(.loading)
       do {
         let methods: FiatMethods
         if isMarketRegionPickerAvailable {
@@ -40,13 +38,9 @@ actor FiatMethodsLoader {
           methods = try await loadByLocation()
         }
         guard !Task.isCancelled else { return }
-        await fiatMethodsStore.updateState { _ in
-          FiatMethodsStore.StateUpdate(newState: .fiatMethods(methods))
-        }
+        await fiatMethodsStore.updateState(.fiatMethods(methods))
       } catch {
-        await fiatMethodsStore.updateState { _ in
-          FiatMethodsStore.StateUpdate(newState: .none)
-        }
+        await fiatMethodsStore.updateState(.none)
       }
     }
     

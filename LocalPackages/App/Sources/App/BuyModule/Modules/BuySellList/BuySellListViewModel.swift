@@ -72,11 +72,15 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
       self.selectedCountry = .country(countryCode: selectedCountryCode)
     }
     
-    fiatMethodsStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
+    fiatMethodsStore.addObserver(self) { observer, event in
       DispatchQueue.main.async {
-        observer.fiatMethodsState = newState
+        switch event {
+        case .didUpdateState(let state):
+          observer.fiatMethodsState = state
+        }
       }
     }
+    
     fiatMethodsState = fiatMethodsStore.getState()
     
     updateCountryPickerButton()

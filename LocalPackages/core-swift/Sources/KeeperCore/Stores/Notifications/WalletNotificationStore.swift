@@ -19,7 +19,7 @@ public final class WalletNotificationStore: StoreV3<WalletNotificationStore.Even
   }
 
   public func setNotificationIsOn(_ isOn: Bool, wallet: Wallet) async {
-    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+    await keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }
       let updated = keeperInfo.updateWallet(wallet, notificationsIsOn: isOn)
       return updated
