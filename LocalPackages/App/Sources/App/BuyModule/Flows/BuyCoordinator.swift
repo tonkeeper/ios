@@ -22,12 +22,7 @@ public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
   
   public override func start() {
-    let isBuySellLovely = coreAssembly.featureFlagsProvider.isBuySellLovely
-    if isBuySellLovely {
-      openBuySellList()
-    } else {
-      openUglyBuyList()
-    }
+    openBuySellList()
   }
 }
 
