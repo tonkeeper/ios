@@ -63,6 +63,25 @@ final class ManageTokensViewController: GenericViewViewController<ManageTokensVi
         return cell
       }
     
+    let headerViewRegistration = ManageTokensListSectionHeaderViewRegistration.registration()
+    dataSource.supplementaryViewProvider = {
+      [weak self] collectionView, elementKind, indexPath in
+      guard let snapshot = self?.dataSource.snapshot() else { return nil }
+      let section = snapshot.sectionIdentifiers[indexPath.section]
+      
+      switch elementKind {
+      case ManageTokensListSectionHeaderView.elementKind:
+        let configuration = section.headerConfiguration
+        let view = collectionView.dequeueConfiguredReusableSupplementary(
+          using: headerViewRegistration,
+          for: indexPath
+        )
+        view.configuration = configuration
+        return view
+      default: return nil
+      }
+    }
+    
     dataSource.reorderingHandlers.canReorderItem = { [weak self] itemIdentifier in
       itemIdentifier.canReorder
     }
@@ -77,24 +96,28 @@ final class ManageTokensViewController: GenericViewViewController<ManageTokensVi
     let configuration = UICollectionViewCompositionalLayoutConfiguration()
     configuration.scrollDirection = .vertical
     
-    let layout = UICollectionViewCompositionalLayout(
-      sectionProvider: { [weak dataSource] sectionIndex, _ in
-        guard let dataSource else { return nil }
-        let snapshotSection = dataSource.snapshot().sectionIdentifiers[sectionIndex]
+    let layout = UICollectionViewCompositionalLayout(sectionProvider: { [weak self] sectionIndex, _ in
+      guard let snapshot = self?.dataSource.snapshot() else { return nil}
+      
+      let sectionLayout: NSCollectionLayoutSection = .listItemsSection
+      sectionLayout.contentInsets.bottom = 16
+      
+      if !snapshot.itemIdentifiers(inSection: snapshot.sectionIdentifiers[sectionIndex]).isEmpty {
+        let headerSize = NSCollectionLayoutSize(
+          widthDimension: .fractionalWidth(1.0),
+          heightDimension: .estimated(100)
+        )
+        let header = NSCollectionLayoutBoundarySupplementaryItem(
+          layoutSize: headerSize,
+          elementKind: ManageTokensListSectionHeaderView.elementKind,
+          alignment: .top
+        )
         
-        switch snapshotSection {
-        case .pinned:
-          let sectionLayout: NSCollectionLayoutSection = .listItemsSection
-          sectionLayout.contentInsets.bottom = 16
-          return sectionLayout
-        case .allAsstes:
-          let sectionLayout: NSCollectionLayoutSection = .listItemsSection
-          sectionLayout.contentInsets.bottom = 16
-          return sectionLayout
-        }
-      },
-      configuration: configuration
-    )
+        sectionLayout.boundarySupplementaryItems.append(header)
+      }
+      
+      return sectionLayout
+    }, configuration: configuration)
     return layout
   }
   
@@ -122,13 +145,7 @@ private extension ManageTokensViewController {
     
     viewModel.didUpdateSnapshot = { [weak self] snapshot, isAnimated in
       guard let self else { return }
-      let contentOffset = self.customView.collectionView.contentOffset
-      self.dataSource.apply(snapshot, animatingDifferences: isAnimated, completion: {
-        self.customView.collectionView.layoutIfNeeded()
-        self.customView.collectionView.contentOffset = contentOffset
-      })
-      self.customView.collectionView.layoutIfNeeded()
-      self.customView.collectionView.contentOffset = contentOffset
+      self.dataSource.apply(snapshot, animatingDifferences: isAnimated)
       self.didUpdateHeight?()
     }
   }

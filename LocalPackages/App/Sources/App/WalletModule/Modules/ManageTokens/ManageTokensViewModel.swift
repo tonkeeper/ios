@@ -133,7 +133,7 @@ private extension ManageTokensViewModelImplementation {
     var snapshot = ManageTokensViewController.Snapshot()
     var itemCellConfigurations = [ManageTokensListItem: TKListItemCell.Configuration]()
     
-    snapshot.appendSections([.pinned, .allAsstes])
+    snapshot.appendSections([.pinned, .allAssets])
     
     state.pinnedItems.forEach { pinnedItem in
       switch pinnedItem {
@@ -176,7 +176,7 @@ private extension ManageTokensViewModelImplementation {
           accessories: createUnpinnedItemAccessories(identifier: ton.id, isHidden: unpinnedItem.isHidden)
         )
         itemCellConfigurations[item] = cellConfiguration
-        snapshot.appendItems([item], toSection: .allAsstes)
+        snapshot.appendItems([item], toSection: .allAssets)
       case .jetton(let jetton):
         let cellConfiguration = mapper.mapJettonItem(jetton)
         let item = ManageTokensListItem(
@@ -185,7 +185,7 @@ private extension ManageTokensViewModelImplementation {
           accessories: createUnpinnedItemAccessories(identifier: jetton.id, isHidden: unpinnedItem.isHidden)
         )
         itemCellConfigurations[item] = cellConfiguration
-        snapshot.appendItems([item], toSection: .allAsstes)
+        snapshot.appendItems([item], toSection: .allAssets)
       case .staking(let staking):
         let cellConfiguration = mapper.mapStakingItem(staking)
         let item = ManageTokensListItem(
@@ -194,7 +194,7 @@ private extension ManageTokensViewModelImplementation {
           accessories: createUnpinnedItemAccessories(identifier: staking.id, isHidden: unpinnedItem.isHidden)
         )
         itemCellConfigurations[item] = cellConfiguration
-        snapshot.appendItems([item], toSection: .allAsstes)
+        snapshot.appendItems([item], toSection: .allAssets)
       }
     }
     

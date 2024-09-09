@@ -1,10 +1,28 @@
 import Foundation
 import TKUIKit
+import TKLocalize
 import KeeperCore
 
 enum ManageTokensSection: Hashable {
   case pinned
-  case allAsstes
+  case allAssets
+  
+  var headerConfiguration: ManageTokensListSectionHeaderView.Configuration {
+    let title: String
+    let caption: String?
+    switch self {
+    case .allAssets:
+      title = TKLocales.HomeScreenConfiguration.Sections.all_assets
+      caption = TKLocales.HomeScreenConfiguration.Sections.sorted_by_price
+    case .pinned:
+      title = TKLocales.HomeScreenConfiguration.Sections.pinned
+      caption = nil
+    }
+    return ManageTokensListSectionHeaderView.Configuration(
+      title: title,
+      caption: caption
+    )
+  }
 }
 
 class ManageTokensListItem: Hashable {
