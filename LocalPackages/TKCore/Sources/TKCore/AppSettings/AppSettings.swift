@@ -54,6 +54,15 @@ public final class AppSettings {
       userDefaults.setValue(newValue, forKey: .fcmToken)
     }
   }
+  
+  public var addressCopyCount: Int {
+    get {
+      userDefaults.integer(forKey: .addressCopyCount)
+    }
+    set {
+      userDefaults.setValue(newValue, forKey: .addressCopyCount)
+    }
+  }
 }
 
 private extension String {
@@ -62,4 +71,5 @@ private extension String {
   static let selectedCountryCode = "selected_country_code"
   static let installDeviceId = "install_device_id"
   static let fcmToken = "fcm_token"
+  static let addressCopyCount = "address_copy_count"
 }

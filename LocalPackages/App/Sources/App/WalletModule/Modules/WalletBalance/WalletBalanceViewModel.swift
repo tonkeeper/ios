@@ -148,6 +148,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   private let listMapper: WalletBalanceListMapper
   private let headerMapper: WalletBalanceHeaderMapper
   private let urlOpener: URLOpener
+  private let appSettings: AppSettings
   
   init(balanceListModel: WalletBalanceBalanceModel,
        setupModel: WalletBalanceSetupModel,
@@ -158,7 +159,8 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
        appSettingsStore: AppSettingsV3Store,
        listMapper: WalletBalanceListMapper,
        headerMapper: WalletBalanceHeaderMapper,
-       urlOpener: URLOpener) {
+       urlOpener: URLOpener,
+       appSettings: AppSettings) {
     self.balanceListModel = balanceListModel
     self.setupModel = setupModel
     self.totalBalanceModel = totalBalanceModel
@@ -169,6 +171,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     self.listMapper = listMapper
     self.headerMapper = headerMapper
     self.urlOpener = urlOpener
+    self.appSettings = appSettings
   }
   
   private func setupObservations() {
@@ -607,12 +610,21 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     syncQueue.async {
       let totalBalanceMapped = self.headerMapper.mapTotalBalance(totalBalance: state.totalBalanceState?.totalBalance)
       
+      let addressButtonText: String = {
+        if self.appSettings.addressCopyCount > 3 {
+          state.address.toShort()
+        } else {
+          TKLocales.BalanceHeader.your_address + state.address.toShort()
+        }
+      }()
+      
       let addressButtonConfiguration = TKButton.Configuration(
-        content: TKButton.Configuration.Content(title: .plainString(state.address.toShort())),
+        content: TKButton.Configuration.Content(title: .plainString(addressButtonText)),
         textStyle: .body2,
         textColor: .Text.secondary,
         contentAlpha: [.normal: 1, .highlighted: 0.48],
         action: { [weak self] in
+          self?.appSettings.addressCopyCount += 1
           self?.didTapCopy(address: state.address.toString(),
                            toastConfiguration: state.wallet.copyToastConfiguration())
         }

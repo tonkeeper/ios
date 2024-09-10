@@ -249,6 +249,8 @@
 
 "wallet_tags.watch_only" = "Watch only";
 
+"balance_header.your_address" = "Your address: ";
+
 "balance_list.staking_item.title" = "Staked";
 "balance_list.staking_item.comment.ready" = "%@ TON ready.\nTap to collect.";
 "balance_list.staking_item.comment.staked" = "%@ TON staked";

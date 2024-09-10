@@ -46,7 +46,8 @@ struct WalletBalanceAssembly {
         decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
         dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter
       ),
-      urlOpener: coreAssembly.urlOpener()
+      urlOpener: coreAssembly.urlOpener(),
+      appSettings: coreAssembly.appSettings
     )
     let viewController = WalletBalanceViewController(viewModel: viewModel)
     return .init(view: viewController, output: viewModel, input: viewModel)

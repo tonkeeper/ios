@@ -973,6 +973,12 @@ public enum TKLocales {
       localize("wallet_tags.watch_only")
     }
   }
+  public enum BalanceHeader {
+    /// Your address: 
+    public static var your_address: String {
+      localize("balance_header.your_address")
+    }
+  }
   public enum BalanceList {
     public enum StakingItem {
       /// Staked
