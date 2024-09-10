@@ -94,8 +94,8 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
     let caption = dateFormatter.string(from: date)
     
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        iconViewConfiguration: TKListItemIconViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        iconViewConfiguration: TKListItemIconView.Configuration(
           content: .image(
             TKImageView.Model(
               image: .image(.App.Icons.Size28.donemark),
@@ -110,7 +110,7 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
           backgroundColor: .Accent.green,
           size: CGSize(width: 44, height: 44)
         ),
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(
             title: TKLocales.Backup.Done.title
           ),
@@ -152,8 +152,8 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
   
   private func createShowRecoveryPhraseItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(
             title: TKLocales.Backup.ShowPhrase.title
           )

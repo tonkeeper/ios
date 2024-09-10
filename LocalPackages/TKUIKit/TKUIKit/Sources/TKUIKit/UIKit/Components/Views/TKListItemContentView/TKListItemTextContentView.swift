@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TKListItemTextContentViewV2: UIView {
+public final class TKListItemTextContentView: UIView {
   
   public struct Configuration {
     public let titleViewConfiguration: TKListItemTitleView.Configuration

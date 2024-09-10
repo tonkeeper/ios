@@ -2,9 +2,9 @@ import UIKit
 
 public final class TKListItemCell: TKCollectionViewListCell {
   public struct Configuration {
-    public let listItemContentViewConfiguration: TKListItemContentViewV2.Configuration
+    public let listItemContentViewConfiguration: TKListItemContentView.Configuration
     
-    public init(listItemContentViewConfiguration: TKListItemContentViewV2.Configuration) {
+    public init(listItemContentViewConfiguration: TKListItemContentView.Configuration) {
       self.listItemContentViewConfiguration = listItemContentViewConfiguration
     }
     
@@ -13,7 +13,7 @@ public final class TKListItemCell: TKCollectionViewListCell {
     }
   }
   
-  let listItemContentView = TKListItemContentViewV2()
+  let listItemContentView = TKListItemContentView()
   
   public var configuration: Configuration = .default {
     didSet {
@@ -45,6 +45,11 @@ public final class TKListItemCell: TKCollectionViewListCell {
   
   required init?(coder: NSCoder) {
     fatalError("init(coder:) has not been implemented")
+  }
+  
+  public override func prepareForReuse() {
+    super.prepareForReuse()
+    listItemContentView.prepareForReuse()
   }
   
   private func didUpdateConfiguration() {

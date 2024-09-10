@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class HistoryV2ListShimmerCell: UICollectionViewCell {
+final class HistoryListShimmerCell: UICollectionViewCell {
 
   private let sectionHeaderShimmerView = TKShimmerView()
   private let cellsContainer = UIView()
@@ -38,7 +38,7 @@ final class HistoryV2ListShimmerCell: UICollectionViewCell {
   }
 }
 
-private extension HistoryV2ListShimmerCell {
+private extension HistoryListShimmerCell {
   func setup() {
     cellsContainer.backgroundColor = .Background.content.withAlphaComponent(0.48)
     cellsContainer.layer.masksToBounds = true

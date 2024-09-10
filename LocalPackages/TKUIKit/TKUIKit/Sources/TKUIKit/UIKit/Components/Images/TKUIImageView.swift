@@ -144,6 +144,11 @@ public final class TKImageView: UIView, ConfigurableView {
   public override var intrinsicContentSize: CGSize {
     sizeThatFits(.zero)
   }
+  
+  public func prepareForReuse() {
+    imageView.kf.cancelDownloadTask()
+    imageView.image = nil
+  }
 
   private func setup() {
     addSubview(imageView)

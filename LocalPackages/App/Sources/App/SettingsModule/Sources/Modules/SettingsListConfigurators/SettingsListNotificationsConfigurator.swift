@@ -94,8 +94,8 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
   
   private func createPushNotificationsItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(
             title: TKLocales.Settings.Notifications.NotificationsItem.title
           ),
@@ -185,15 +185,15 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
   
   private func createConnectedAppItem(_ app: TonConnectApp) -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        iconViewConfiguration: TKListItemIconViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        iconViewConfiguration: TKListItemIconView.Configuration(
           content: .image(TKImageView.Model(image: .urlImage(app.manifest.iconUrl), size: .size(CGSize(width: 44, height: 44)))),
           alignment: .center,
           cornerRadius: 12,
           backgroundColor: .clear,
           size: CGSize(width: 44, height: 44)
         ),
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(
             title: app.manifest.name
           )

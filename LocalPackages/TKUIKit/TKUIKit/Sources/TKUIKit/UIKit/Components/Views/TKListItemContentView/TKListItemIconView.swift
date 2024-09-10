@@ -1,6 +1,6 @@
 import UIKit
 
-public final class TKListItemIconViewV2: UIView {
+public final class TKListItemIconView: UIView {
   
   public struct Configuration {
     public struct TextContent {
@@ -178,6 +178,10 @@ public final class TKListItemIconViewV2: UIView {
   
   public override func sizeThatFits(_ size: CGSize) -> CGSize {
     configuration.size
+  }
+  
+  public func prepareForReuse() {
+    imageView.prepareForReuse()
   }
   
   private func setup() {

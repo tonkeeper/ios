@@ -2,9 +2,9 @@ import UIKit
 import TKUIKit
 import TKCore
 
-extension TKListItemIconViewV2.Configuration {
-  static func tonConfiguration() -> TKListItemIconViewV2.Configuration {
-    return TKListItemIconViewV2.Configuration(
+extension TKListItemIconView.Configuration {
+  static func tonConfiguration() -> TKListItemIconView.Configuration {
+    return TKListItemIconView.Configuration(
       content: .image(TKImageView.Model(image: .image(.TKCore.Icons.Size44.tonLogo))),
       alignment: .center,
       cornerRadius: 22,

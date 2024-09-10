@@ -61,8 +61,8 @@ final class SettingsListLegalConfigurator: SettingsListConfigurator {
   
   private func createTermsOfServiceItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Legal.Items.terms_of_service)
         )))
     return SettingsListItem(
@@ -78,8 +78,8 @@ final class SettingsListLegalConfigurator: SettingsListConfigurator {
   
   private func createPrivacyPolicyItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Legal.Items.privacy_policy)
         )))
     return SettingsListItem(
@@ -95,8 +95,8 @@ final class SettingsListLegalConfigurator: SettingsListConfigurator {
   
   private func createFontLicenseItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Legal.Items.montserrat_font)
         )))
     return SettingsListItem(

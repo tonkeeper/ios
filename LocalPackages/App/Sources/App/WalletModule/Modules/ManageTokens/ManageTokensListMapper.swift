@@ -24,9 +24,9 @@ struct ManageTokensListMapper {
     )
     
     return TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
         iconViewConfiguration: .tonConfiguration(),
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TonInfo.symbol),
         captionViewsConfigurations: [
           TKListItemTextView.Configuration(text: amount, color: .Text.secondary, textStyle: .body2)
@@ -44,9 +44,9 @@ struct ManageTokensListMapper {
     )
     
     return TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
         iconViewConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo),
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: item.jetton.jettonInfo.symbol ?? item.jetton.jettonInfo.name),
         captionViewsConfigurations: [
           TKListItemTextView.Configuration(text: amount, color: .Text.secondary, textStyle: .body2)
@@ -64,9 +64,9 @@ struct ManageTokensListMapper {
     )
     
     return TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
         iconViewConfiguration: .configuration(poolInfo: item.poolInfo),
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: item.poolInfo?.name ?? ""),
         captionViewsConfigurations: [
           TKListItemTextView.Configuration(text: amount, color: .Text.secondary, textStyle: .body2)

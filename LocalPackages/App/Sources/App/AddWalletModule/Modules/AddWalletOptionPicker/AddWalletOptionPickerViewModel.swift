@@ -52,8 +52,8 @@ final class AddWalletOptionPickerViewModelImplementation: AddWalletOptionPickerV
     return options.map { option in
       
       let cellConfiguration = TKListItemCell.Configuration(
-        listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-          iconViewConfiguration: TKListItemIconViewV2.Configuration(
+        listItemContentViewConfiguration: TKListItemContentView.Configuration(
+          iconViewConfiguration: TKListItemIconView.Configuration(
             content: .image(
               TKImageView.Model(
                 image: .image(option.icon),
@@ -63,7 +63,7 @@ final class AddWalletOptionPickerViewModelImplementation: AddWalletOptionPickerV
             alignment: .center,
             size: CGSize(width: 28, height: 28)
           ),
-          textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+          textContentViewConfiguration: TKListItemTextContentView.Configuration(
             titleViewConfiguration: TKListItemTitleView.Configuration(
               title: option.title
             ),

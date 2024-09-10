@@ -3,11 +3,11 @@ import UIKit
 public final class TKListItemButton: UIControl {
   
   public struct Configuration {
-    public let listItemConfiguration: TKListItemContentViewV2.Configuration
+    public let listItemConfiguration: TKListItemContentView.Configuration
     public let accessory: TKListItemAccessory?
     public let tapClosure: (() -> Void)?
     
-    public init(listItemConfiguration: TKListItemContentViewV2.Configuration,
+    public init(listItemConfiguration: TKListItemContentView.Configuration,
                 accessory: TKListItemAccessory? = nil,
                 tapClosure: (() -> Void)?) {
       self.listItemConfiguration = listItemConfiguration
@@ -36,7 +36,7 @@ public final class TKListItemButton: UIControl {
   private var tapClosure: (() -> Void)?
   
   private let hightlightView = TKHighlightView()
-  private let listItemView = TKListItemContentViewV2()
+  private let listItemView = TKListItemContentView()
   private let accessoryContainer = UIView()
 
   public override init(frame: CGRect) {

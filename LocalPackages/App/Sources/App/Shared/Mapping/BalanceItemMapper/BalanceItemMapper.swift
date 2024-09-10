@@ -19,7 +19,7 @@ struct BalanceItemMapper {
   
   func mapTonItem(_ item: ProcessedBalanceTonItem,
                   isSecure: Bool,
-                  isPinned: Bool) -> TKListItemContentViewV2.Configuration {
+                  isPinned: Bool) -> TKListItemContentView.Configuration {
     let caption = createPriceSubtitle(
       price: item.price,
       currency: item.currency,
@@ -27,7 +27,7 @@ struct BalanceItemMapper {
       verification: .whitelist
     )
     
-    return TKListItemContentViewV2.Configuration(
+    return TKListItemContentView.Configuration(
       iconViewConfiguration: .tonConfiguration(),
       textContentViewConfiguration: createTextContentViewConfiguration(
         title: TonInfo.symbol,
@@ -44,7 +44,7 @@ struct BalanceItemMapper {
   
   func mapJettonItem(_ item: ProcessedBalanceJettonItem,
                      isSecure: Bool = false,
-                     isPinned: Bool = false) -> TKListItemContentViewV2.Configuration {
+                     isPinned: Bool = false) -> TKListItemContentView.Configuration {
     let caption = createPriceSubtitle(
       price: item.price,
       currency: item.currency,
@@ -52,7 +52,7 @@ struct BalanceItemMapper {
       verification: .whitelist
     )
     
-    return TKListItemContentViewV2.Configuration(
+    return TKListItemContentView.Configuration(
       iconViewConfiguration: .configuration(jettonInfo: item.jetton.jettonInfo),
       textContentViewConfiguration: createTextContentViewConfiguration(
         title: (item.jetton.jettonInfo.symbol ?? item.jetton.jettonInfo.name),
@@ -69,8 +69,8 @@ struct BalanceItemMapper {
   
   func mapStakingItem(_ item: ProcessedBalanceStakingItem,
                       isSecure: Bool,
-                      isPinned: Bool) -> TKListItemContentViewV2.Configuration {
-    return TKListItemContentViewV2.Configuration(
+                      isPinned: Bool) -> TKListItemContentView.Configuration {
+    return TKListItemContentView.Configuration(
       iconViewConfiguration: .configuration(poolInfo: item.poolInfo),
       textContentViewConfiguration: createTextContentViewConfiguration(
         title: TKLocales.BalanceList.StakingItem.title,
@@ -92,7 +92,7 @@ struct BalanceItemMapper {
                                                   amountFractionDigits: Int,
                                                   convertedAmount: Decimal,
                                                   currency: Currency,
-                                                  isSecure: Bool) -> TKListItemTextContentViewV2.Configuration {
+                                                  isSecure: Bool) -> TKListItemTextContentView.Configuration {
     var icon: TKListItemTitleView.Configuration.Icon?
     if isPinned {
       icon = TKListItemTitleView.Configuration.Icon(image: .TKUIKit.Icons.Size12.pin, tintColor: .Icon.tertiary)
@@ -133,7 +133,7 @@ struct BalanceItemMapper {
       lineBreakMode: .byTruncatingTail
     )
     
-    return TKListItemTextContentViewV2.Configuration(
+    return TKListItemTextContentView.Configuration(
       titleViewConfiguration: titleViewConfiguration,
       captionViewsConfigurations: captionViewsConfigurations,
       valueViewConfiguration: TKListItemTextView.Configuration(text: value),

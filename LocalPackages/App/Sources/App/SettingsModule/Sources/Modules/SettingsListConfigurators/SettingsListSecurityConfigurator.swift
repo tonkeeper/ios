@@ -143,8 +143,8 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
     }
     
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(
             title: title
           )
@@ -172,8 +172,8 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
   private func createLockScreenItem() -> SettingsListItem {
 
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(
             title: TKLocales.Security.lock_screen
           )
@@ -201,8 +201,8 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
   private func createChangePasscodeItem() -> SettingsListItem {
 
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(
             title: TKLocales.Security.change_passcode
           )

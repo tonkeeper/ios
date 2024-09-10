@@ -82,10 +82,10 @@ public final class WalletBalanceListCell: TKCollectionViewListCell {
 public final class WalletBalanceListCellContentView: UIView {
   
   public struct Configuration {
-    public let listItemContentViewConfiguration: TKListItemContentViewV2.Configuration
+    public let listItemContentViewConfiguration: TKListItemContentView.Configuration
     public let commentViewConfiguration: TKCommentView.Model?
     
-    public init(listItemContentViewConfiguration: TKListItemContentViewV2.Configuration,
+    public init(listItemContentViewConfiguration: TKListItemContentView.Configuration,
                 commentViewConfiguration: TKCommentView.Model? = nil) {
       self.listItemContentViewConfiguration = listItemContentViewConfiguration
       self.commentViewConfiguration = commentViewConfiguration
@@ -105,7 +105,7 @@ public final class WalletBalanceListCellContentView: UIView {
     }
   }
   
-  let listItemContentView = TKListItemContentViewV2()
+  let listItemContentView = TKListItemContentView()
   let commentView = TKCommentView()
   
   public override init(frame: CGRect) {

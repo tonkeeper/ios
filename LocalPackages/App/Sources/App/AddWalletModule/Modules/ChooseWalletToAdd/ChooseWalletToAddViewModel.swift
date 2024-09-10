@@ -126,8 +126,8 @@ final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel
     }()
     
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
           captionViewsConfigurations: [TKListItemTextView.Configuration(
             text: subtitle,

@@ -15,7 +15,7 @@ protocol HistoryListViewModel: AnyObject {
   
   func viewDidLoad()
   func getEventCellModel(identifier: String) -> HistoryCell.Model?
-  func getPaginationCellModel() -> HistoryV2ListPaginationCell.Model
+  func getPaginationCellModel() -> HistoryListPaginationCell.Model
   func loadNextPage()
 }
 
@@ -42,7 +42,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   private var sections = [EventsSection]()
   private var sectionsOrderMap = [Date: Int]()
   private var eventCellModels = [String: HistoryCell.Model]()
-  private var paginationCellModel = HistoryV2ListPaginationCell.Model(state: .none)
+  private var paginationCellModel = HistoryListPaginationCell.Model(state: .none)
   private var loadNFTsTasks = [Address: Task<NFT, Swift.Error>]()
   
   private let wallet: Wallet
@@ -74,7 +74,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     return eventCellModels[identifier]
   }
   
-  func getPaginationCellModel() -> HistoryV2ListPaginationCell.Model {
+  func getPaginationCellModel() -> HistoryListPaginationCell.Model {
     return paginationCellModel
   }
   
@@ -178,7 +178,7 @@ private extension HistoryListViewModelImplementation {
       snapshot.reloadItems([.pagination])
     }
     DispatchQueue.main.async { [snapshot] in
-      self.paginationCellModel = HistoryV2ListPaginationCell.Model(state: .loading)
+      self.paginationCellModel = HistoryListPaginationCell.Model(state: .loading)
       self.didUpdateSnapshot?(snapshot)
     }
   }
@@ -190,7 +190,7 @@ private extension HistoryListViewModelImplementation {
       self.snapshot.reloadItems([.pagination])
     }
     DispatchQueue.main.async {
-      self.paginationCellModel = HistoryV2ListPaginationCell.Model(state: .error(title: "Failed", retryButtonAction: {
+      self.paginationCellModel = HistoryListPaginationCell.Model(state: .error(title: "Failed", retryButtonAction: {
         
       }))
       self.didUpdateSnapshot?(self.snapshot)

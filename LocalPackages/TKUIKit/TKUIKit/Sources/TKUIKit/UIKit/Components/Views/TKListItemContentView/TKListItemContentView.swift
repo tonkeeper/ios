@@ -1,18 +1,18 @@
 import UIKit
 
-public final class TKListItemContentViewV2: UIView {
+public final class TKListItemContentView: UIView {
   
   public struct Configuration {
     
-    public let iconViewConfiguration: TKListItemIconViewV2.Configuration?
-    public let textContentViewConfiguration: TKListItemTextContentViewV2.Configuration
+    public let iconViewConfiguration: TKListItemIconView.Configuration?
+    public let textContentViewConfiguration: TKListItemTextContentView.Configuration
     
     public static var `default`: Configuration {
       Configuration(textContentViewConfiguration: .default)
     }
     
-    public init(iconViewConfiguration: TKListItemIconViewV2.Configuration? = nil,
-                textContentViewConfiguration: TKListItemTextContentViewV2.Configuration) {
+    public init(iconViewConfiguration: TKListItemIconView.Configuration? = nil,
+                textContentViewConfiguration: TKListItemTextContentView.Configuration) {
       self.iconViewConfiguration = iconViewConfiguration
       self.textContentViewConfiguration = textContentViewConfiguration
     }
@@ -26,8 +26,8 @@ public final class TKListItemContentViewV2: UIView {
     }
   }
   
-  public let iconView = TKListItemIconViewV2()
-  public let textContentView = TKListItemTextContentViewV2()
+  public let iconView = TKListItemIconView()
+  public let textContentView = TKListItemTextContentView()
   
   public override init(frame: CGRect) {
     super.init(frame: frame)
@@ -89,6 +89,10 @@ public final class TKListItemContentViewV2: UIView {
     return CGSize(width: UIView.noIntrinsicMetric, height: sizeThatFits(.init(width: bounds.width, height: 0)).height)
   }
   
+  func prepareForReuse() {
+    iconView.prepareForReuse()
+  }
+  
   private func setup() {
     addSubview(iconView)
     addSubview(textContentView)
@@ -102,7 +106,7 @@ public final class TKListItemContentViewV2: UIView {
       iconView.configuration = iconViewConfiguration
     } else {
       iconView.isHidden = true
-      iconView.configuration = TKListItemIconViewV2.Configuration.default
+      iconView.configuration = TKListItemIconView.Configuration.default
     }
   }
 }

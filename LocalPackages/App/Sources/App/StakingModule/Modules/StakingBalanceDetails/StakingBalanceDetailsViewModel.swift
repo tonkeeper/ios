@@ -310,8 +310,8 @@ private extension StakingBalanceDetailsViewModelImplementation {
     )
     
     let configuration = TKListItemButton.Configuration(
-      listItemConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
           captionViewsConfigurations: [TKListItemTextView.Configuration(
             text: subtitle,

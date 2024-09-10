@@ -35,8 +35,8 @@ final class SettingsListCurrencyPickerConfigurator: SettingsListConfigurator {
     var items = [SettingsListItem]()
     currencies.forEach { currency in
       let cellConfiguration = TKListItemCell.Configuration(
-        listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-          textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+        listItemContentViewConfiguration: TKListItemContentView.Configuration(
+          textContentViewConfiguration: TKListItemTextContentView.Configuration(
             titleViewConfiguration: TKListItemTitleView.Configuration(title: currency.code,
                                                                       caption: currency.title)
           )))

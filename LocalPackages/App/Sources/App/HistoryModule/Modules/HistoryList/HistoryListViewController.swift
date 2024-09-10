@@ -8,8 +8,8 @@ final class HistoryListViewController: GenericViewViewController<HistoryListView
   typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
   typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
   typealias EventCellConfiguration = UICollectionView.CellRegistration<HistoryCell, String>
-  typealias PaginationCellConfiguration = UICollectionView.CellRegistration<HistoryV2ListPaginationCell, HistoryV2ListPaginationCell.Model>
-  typealias ShimmerCellConfiguration = UICollectionView.CellRegistration<HistoryV2ListShimmerCell, HistoryV2ListShimmerCell.Model>
+  typealias PaginationCellConfiguration = UICollectionView.CellRegistration<HistoryListPaginationCell, HistoryListPaginationCell.Model>
+  typealias ShimmerCellConfiguration = UICollectionView.CellRegistration<HistoryListShimmerCell, HistoryListShimmerCell.Model>
   typealias ContainerViewConfiguration = UICollectionView.SupplementaryRegistration<TKReusableContainerView>
   typealias EventSectionHeaderView = TKCollectionViewSupplementaryContainerView<TKListTitleView>
   typealias EventSectionHeaderConfiguration = UICollectionView.SupplementaryRegistration<EventSectionHeaderView>
@@ -141,7 +141,7 @@ private extension HistoryListViewController {
         return collectionView.dequeueConfiguredReusableCell(
           using: shimmerCellConfiguration,
           for: indexPath,
-          item: HistoryV2ListShimmerCell.Model())
+          item: HistoryListShimmerCell.Model())
       }
     }
     

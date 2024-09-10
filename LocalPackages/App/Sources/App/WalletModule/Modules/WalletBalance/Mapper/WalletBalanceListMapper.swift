@@ -173,8 +173,8 @@ struct WalletBalanceListMapper {
     
     return WalletBalanceListCell.Configuration(
       walletBalanceListCellContentViewConfiguration: WalletBalanceListCellContentView.Configuration(
-        listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-          iconViewConfiguration: TKListItemIconViewV2.Configuration(
+        listItemContentViewConfiguration: TKListItemContentView.Configuration(
+          iconViewConfiguration: TKListItemIconView.Configuration(
             content: .image(
               TKImageView.Model(
                 image: .image(icon),
@@ -188,7 +188,7 @@ struct WalletBalanceListMapper {
             backgroundColor: iconColor.withAlphaComponent(0.12),
             size: .iconSize
           ),
-          textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+          textContentViewConfiguration: TKListItemTextContentView.Configuration(
             titleViewConfiguration: TKListItemTitleView.Configuration(title: title, numberOfLines: 0)
           )
         )

@@ -1,7 +1,7 @@
 import UIKit
 import TKUIKit
 
-final class HistoryV2ListPaginationCell: UICollectionViewCell, ConfigurableView {
+final class HistoryListPaginationCell: UICollectionViewCell, ConfigurableView {
   enum State {
     case none
     case loading
@@ -41,7 +41,7 @@ final class HistoryV2ListPaginationCell: UICollectionViewCell, ConfigurableView 
   }
 }
 
-private extension HistoryV2ListPaginationCell {
+private extension HistoryListPaginationCell {
   func setup() {
     contentView.addSubview(loaderView)
     contentView.addSubview(retryButton)

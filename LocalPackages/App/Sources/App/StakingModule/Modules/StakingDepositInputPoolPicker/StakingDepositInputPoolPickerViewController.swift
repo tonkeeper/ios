@@ -85,7 +85,7 @@ final class StakingDepositInputPoolPickerViewController: UIViewController, Staki
 private extension StakingDepositInputPoolPickerViewController {
   func mapStakingPoolItem(_ item: StackingPoolInfo, 
                           isMostProfitable: Bool,
-                          profit: BigUInt) -> TKListItemContentViewV2.Configuration {
+                          profit: BigUInt) -> TKListItemContentView.Configuration {
     let tagText: String? = isMostProfitable ? .mostProfitableTag : nil
     let percentFormatted = decimalFormatter.format(amount: item.apy, maximumFractionDigits: 2)
     var subtitle = "\(String.apy) ≈ \(percentFormatted)%"
@@ -106,8 +106,8 @@ private extension StakingDepositInputPoolPickerViewController {
       tagConfiguration = .accentTag(text: tagText, color: .Accent.green)
     }
     
-    return TKListItemContentViewV2.Configuration(
-      iconViewConfiguration: TKListItemIconViewV2.Configuration(
+    return TKListItemContentView.Configuration(
+      iconViewConfiguration: TKListItemIconView.Configuration(
         content: .image(
           TKImageView.Model(
             image: .image(item.implementation.icon),
@@ -120,7 +120,7 @@ private extension StakingDepositInputPoolPickerViewController {
         backgroundColor: .clear,
         size: CGSize(width: 44, height: 44)
       ),
-      textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      textContentViewConfiguration: TKListItemTextContentView.Configuration(
         titleViewConfiguration: TKListItemTitleView.Configuration(title: title,
                                                                   tagConfiguration: tagConfiguration),
         captionViewsConfigurations: [

@@ -3,9 +3,9 @@ import TKUIKit
 import TKCore
 import KeeperCore
 
-extension TKListItemIconViewV2.Configuration {
-  static func configuration(poolInfo: StackingPoolInfo?) -> TKListItemIconViewV2.Configuration {
-    return TKListItemIconViewV2.Configuration(
+extension TKListItemIconView.Configuration {
+  static func configuration(poolInfo: StackingPoolInfo?) -> TKListItemIconView.Configuration {
+    return TKListItemIconView.Configuration(
       content: .image(TKImageView.Model(image: .image(.TKCore.Icons.Size44.tonLogo))),
       alignment: .center,
       cornerRadius: 22,

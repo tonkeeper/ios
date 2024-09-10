@@ -224,9 +224,9 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   private func createWalletItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
         iconViewConfiguration: wallet.listItemIconViewConfiguration,
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: wallet.label),
           captionViewsConfigurations: [
             TKListItemTextView.Configuration(text: TKLocales.Settings.Items.setup_wallet_description,
@@ -248,8 +248,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     guard !nfts.isEmpty else { return nil }
     
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.purchases)
         )))
     
@@ -265,8 +265,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private func createBackupItem() -> SettingsListItem? {
     guard wallet.isBackupAvailable else { return nil }
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.backup)
         )))
     return SettingsListItem(
@@ -282,8 +282,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   private func createCurrencyItem() -> SettingsListItem {
     let currency = currencyStore.getState()
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.currency)
         )))
     return SettingsListItem(
@@ -308,8 +308,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     let hasRegularWallet = walletsStore.wallets.contains(where: { $0.kind == .regular })
     guard hasMnemonics && hasRegularWallet else { return nil }
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.security)
         )))
     return SettingsListItem(
@@ -325,8 +325,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   private func createThemeItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.theme)
         )))
     return SettingsListItem(
@@ -362,8 +362,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   func createFAQItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.faq)
         )))
     return SettingsListItem(
@@ -389,8 +389,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   func createSupportItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.support)
         )))
     return SettingsListItem(
@@ -416,8 +416,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   func createNewsItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.tk_news)
         )))
     return SettingsListItem(
@@ -443,8 +443,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   func createContactUsItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.contact_us)
         )))
     return SettingsListItem(
@@ -470,8 +470,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   func createRateItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.rate(InfoProvider.appName()))
         )))
     return SettingsListItem(
@@ -487,8 +487,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   func createLegalItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.legal)
         )))
     return SettingsListItem(
@@ -562,8 +562,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     }
     
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: title, numberOfLines: 1)
         )))
     return SettingsListItem(
@@ -579,8 +579,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   private func createLogoutItem() -> SettingsListItem {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.logout)
         )))
     return SettingsListItem(
@@ -636,8 +636,8 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   private func createNotificationsItem() -> AnyHashable {
     let cellConfiguration = TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.notifications)
         )))
     return SettingsListItem(

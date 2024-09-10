@@ -189,24 +189,24 @@ private extension WalletsListViewModelImplementation {
       captionViewsConfigurations.append(TKListItemTextView.Configuration(text: caption, color: .Text.secondary, textStyle: .body2))
     }
     
-    let iconContent: TKListItemIconViewV2.Configuration.Content
+    let iconContent: TKListItemIconView.Configuration.Content
     switch wallet.icon {
     case .emoji(let emoji):
-      iconContent = .text(TKListItemIconViewV2.Configuration.TextContent(text: emoji))
+      iconContent = .text(TKListItemIconView.Configuration.TextContent(text: emoji))
     case .icon(let image):
       iconContent = .image(TKImageView.Model(image: .image(image.image), tintColor: .white, size: .size(CGSize(width: 22, height: 22))))
     }
     
     return TKListItemCell.Configuration(
-      listItemContentViewConfiguration: TKListItemContentViewV2.Configuration(
-        iconViewConfiguration: TKListItemIconViewV2.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        iconViewConfiguration: TKListItemIconView.Configuration(
           content: iconContent,
           alignment: .center,
           cornerRadius: 22,
           backgroundColor: wallet.tintColor.uiColor,
           size: CGSize(width: 44, height: 44)
         ),
-        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: titleViewConfiguration,
           captionViewsConfigurations: captionViewsConfigurations
         )
