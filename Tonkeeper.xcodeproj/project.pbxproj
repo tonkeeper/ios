@@ -956,7 +956,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Tonkeeper;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -998,7 +998,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Tonkeeper;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -1104,7 +1104,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Tonkeeper;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -1272,7 +1272,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Tonkeeper;
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
