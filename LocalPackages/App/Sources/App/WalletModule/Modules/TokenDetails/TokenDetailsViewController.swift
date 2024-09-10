@@ -72,6 +72,25 @@ private extension TokenDetailsViewController {
         navigationController.popViewController(animated: true)
       }
     ]
+    
+    customView.navigationBar.rightViews = [
+      TKUINavigationBar.createMoreButton { view in
+        let item = TKPopupMenuItem(
+          title: "View details",
+          icon: .TKUIKit.Icons.Size16.globe,
+          selectionHandler: { [weak self] in
+            self?.viewModel.didTapOpenDetails()
+          }
+        )
+        TKPopupMenuController.show(
+          sourceView: view,
+          position: .topRight,
+          width: 0,
+          items: [item],
+          isSelectable: false,
+          selectedIndex: nil)
+      }
+    ]
   }
   
   func setupListContent() {

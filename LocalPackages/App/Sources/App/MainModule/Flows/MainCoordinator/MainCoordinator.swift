@@ -641,6 +641,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       wallet: wallet,
       balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
       configurator: TonTokenDetailsConfigurator(
+        wallet: wallet,
         mapper: TokenDetailsMapper(
           amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
           decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
@@ -667,6 +668,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openBuy(wallet: wallet)
     }
     
+    module.output.didOpenURL = { [weak self] url in
+      self?.openURL(url, title: nil)
+    }
+    
     navigationController.pushViewController(module.view, animated: true)
   }
   
@@ -687,7 +692,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     let module = TokenDetailsAssembly.module(
       wallet: wallet,
       balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
-      configurator: JettonTokenDetailsConfigurator(jettonItem: jettonItem,
+      configurator: JettonTokenDetailsConfigurator(wallet: wallet,
+                                                   jettonItem: jettonItem,
                                                    mapper: TokenDetailsMapper(
                                                     amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
                                                     decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
@@ -709,6 +715,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     module.output.didTapSend = { [weak self] token in
       self?.openSend(wallet: wallet, token: token, recipient: nil, amount: nil, comment: nil)
+    }
+    
+    module.output.didOpenURL = { [weak self] url in
+      self?.openURL(url, title: nil)
     }
     
     navigationController.pushViewController(module.view, animated: true)

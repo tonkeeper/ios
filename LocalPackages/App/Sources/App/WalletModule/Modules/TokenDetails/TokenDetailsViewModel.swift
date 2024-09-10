@@ -9,6 +9,7 @@ protocol TokenDetailsModuleOutput: AnyObject {
   var didTapSend: ((KeeperCore.Token) -> Void)? { get set }
   var didTapReceive: ((KeeperCore.Token) -> Void)? { get set }
   var didTapBuyOrSell: (() -> Void)? { get set }
+  var didOpenURL: ((URL) -> Void)? { get set }
 }
 
 protocol TokenDetailsViewModel: AnyObject {
@@ -18,6 +19,7 @@ protocol TokenDetailsViewModel: AnyObject {
   var didUpdateChartViewController: ((UIViewController) -> Void)? { get set }
   
   func viewDidLoad()
+  func didTapOpenDetails()
 }
 
 struct TokenDetailsModel {
@@ -35,6 +37,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   var didTapSend: ((KeeperCore.Token) -> Void)?
   var didTapReceive: ((KeeperCore.Token) -> Void)?
   var didTapBuyOrSell: (() -> Void)?
+  var didOpenURL: ((URL) -> Void)?
   
   // MARK: - TokenDetailsViewModel
   
@@ -47,6 +50,11 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
     setupObservations()
     setInitialState()
     setupChart()
+  }
+  
+  func didTapOpenDetails() {
+    guard let url = configurator.getDetailsURL() else { return }
+    didOpenURL?(url)
   }
   
   // MARK: - State

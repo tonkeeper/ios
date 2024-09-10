@@ -5,12 +5,16 @@ import KeeperCore
 
 protocol TokenDetailsConfigurator {
   func getTokenModel(balance: ConvertedBalance?) -> TokenDetailsModel
+  func getDetailsURL() -> URL?
 }
 
 struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
+  private let wallet: Wallet
   private let mapper: TokenDetailsMapper
   
-  init(mapper: TokenDetailsMapper) {
+  init(wallet: Wallet,
+       mapper: TokenDetailsMapper) {
+    self.wallet = wallet
     self.mapper = mapper
   }
   
@@ -35,15 +39,24 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
       buttons: [.send(.ton), .receive(.ton), .buySell]
     )
   }
+  
+  func getDetailsURL() -> URL? {
+    guard let string = try? "\(String.tonviewer)/\(wallet.friendlyAddress.toString())",
+          let url = URL(string: string) else { return nil }
+    return url
+  }
 }
 
 struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
   
+  private let wallet: Wallet
   private let jettonItem: JettonItem
   private let mapper: TokenDetailsMapper
   
-  init(jettonItem: JettonItem,
+  init(wallet: Wallet, 
+       jettonItem: JettonItem,
        mapper: TokenDetailsMapper) {
+    self.wallet = wallet
     self.jettonItem = jettonItem
     self.mapper = mapper
   }
@@ -87,4 +100,14 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
                       .receive(.jetton(jettonItem))]
     )
   }
+  
+  func getDetailsURL() -> URL? {
+    guard let string = try? "\(String.tonviewer)/\(wallet.friendlyAddress.toString())/jetton/\(jettonItem.jettonInfo.address.toString())",
+          let url = URL(string: string) else { return nil }
+    return url
+  }
+}
+
+private extension String {
+  static let tonviewer = "https://tonviewer.com"
 }

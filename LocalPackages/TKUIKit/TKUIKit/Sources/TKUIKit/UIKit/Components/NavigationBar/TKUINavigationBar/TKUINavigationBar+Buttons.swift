@@ -56,7 +56,7 @@ public extension TKUINavigationBar {
     return button
   }
   
-  static func createMoreButton(action: @escaping () -> Void) -> UIView {
+  static func createMoreButton(action: @escaping (UIView) -> Void) -> UIView {
     let button = TKUIHeaderIconButton()
     button.configure(
       model: TKUIHeaderButtonIconContentView.Model(
@@ -64,7 +64,10 @@ public extension TKUINavigationBar {
       )
     )
     
-    button.addTapAction(action)
+    button.addTapAction { [weak button] in
+      guard let button else { return }
+      action(button)
+    }
 
     button.tapAreaInsets = UIEdgeInsets(
       top: -10,
