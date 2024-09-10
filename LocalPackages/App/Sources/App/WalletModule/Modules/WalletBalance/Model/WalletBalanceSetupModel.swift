@@ -4,6 +4,7 @@ import KeeperCore
 final class WalletBalanceSetupModel {
   struct State {
     enum Item: String {
+      case notifications
       case telegramChannel
       case backup
       case biometry
@@ -14,22 +15,25 @@ final class WalletBalanceSetupModel {
     let items: [Item]
   }
   
-  private let actor = SerialActor<Void>()
+  private let syncQueue = DispatchQueue(label: "WalletBalanceSetupModelQueue")
   
   var didUpdateState: ((State?) -> Void)?
   
   private let walletsStore: WalletsStore
   private let appSettingsStore: AppSettingsV3Store
   private let securityStore: SecurityStore
+  private let walletNotificationStore: WalletNotificationStore
   private let mnemonicsRepository: MnemonicsRepository
   
   init(walletsStore: WalletsStore,
        appSettingsStore: AppSettingsV3Store,
        securityStore: SecurityStore,
+       walletNotificationStore: WalletNotificationStore,
        mnemonicsRepository: MnemonicsRepository) {
     self.walletsStore = walletsStore
     self.appSettingsStore = appSettingsStore
     self.securityStore = securityStore
+    self.walletNotificationStore = walletNotificationStore
     self.mnemonicsRepository = mnemonicsRepository
     
     walletsStore.addObserver(self) { observer, event in
@@ -43,6 +47,10 @@ final class WalletBalanceSetupModel {
     securityStore.addObserver(self) { observer, event in
       observer.didGetSecurityStoreEvent(event)
     }
+   
+    walletNotificationStore.addObserver(self) { observer, event in
+      observer.didGetWalletNotificationStoreEvent(event)
+    }
   }
   
   func getState() -> State? {
@@ -51,10 +59,12 @@ final class WalletBalanceSetupModel {
     }
     let isSetupFinished = appSettingsStore.getState().isSetupFinished
     let isBiometryEnable = securityStore.getState().isBiometryEnable
+    let isNotificationsOn = walletNotificationStore.getState()[wallet] ?? false
     return calculateState(
       wallet: wallet,
       isSetupFinished: isSetupFinished,
-      isBiometryEnable: isBiometryEnable
+      isBiometryEnable: isBiometryEnable,
+      isNotificationsOn: isNotificationsOn
     )
   }
   
@@ -78,55 +88,74 @@ final class WalletBalanceSetupModel {
     }
   }
   
+  func turnOnNotifications() async {
+    guard let wallet = try? await walletsStore.getActiveWallet() else { return }
+    await self.walletNotificationStore.setNotificationIsOn(true, wallet: wallet)
+  }
+  
   private func didGetWalletsStoreEvent(_ event: WalletsStore.Event) {
-    Task {
+    syncQueue.async {
       switch event {
       case .didChangeActiveWallet:
-        await self.actor.addTask(block: { await self.updateState() })
+        self.updateState()
       case .didUpdateWalletSetupSettings:
-        await self.actor.addTask(block: { await self.updateState() })
+        self.updateState()
       default: break
       }
     }
   }
   
   private func didGetAppSettingsStoreEvent(_ event: AppSettingsV3Store.Event) {
-    Task {
+    syncQueue.async {
       switch event {
       case .didUpdateIsSetupFinished:
-        await self.actor.addTask(block: { await self.updateState() })
+        self.updateState()
       default: break
       }
     }
   }
   
   private func didGetSecurityStoreEvent(_ event: SecurityStore.Event) {
-    Task {
+    syncQueue.async {
       switch event {
       case .didUpdateIsBiometryEnabled:
-        await self.actor.addTask(block: { await self.updateState() })
+        self.updateState()
       default: break
       }
     }
   }
   
-  private func updateState() async {
-    let walletsStoreState = await walletsStore.getState()
+  private func didGetWalletNotificationStoreEvent(_ event: WalletNotificationStore.Event) {
+    syncQueue.async {
+      switch event {
+      case .didUpdateNotificationsIsOn:
+        self.updateState()
+      }
+    }
+  }
+  
+  private func updateState() {
+    let walletsStoreState = walletsStore.getState()
     switch walletsStoreState {
     case .empty: break
     case .wallets(let walletsState):
-      let isSetupFinished = await appSettingsStore.getState().isSetupFinished
-      let isBiometryEnable = await securityStore.getState().isBiometryEnable
+      let isSetupFinished = appSettingsStore.getState().isSetupFinished
+      let isBiometryEnable = securityStore.getState().isBiometryEnable
+      let isNotificationsOn = walletNotificationStore.getState()[walletsState.activeWalelt] ?? false
       let state = calculateState(
         wallet: walletsState.activeWalelt,
         isSetupFinished: isSetupFinished,
-        isBiometryEnable: isBiometryEnable
+        isBiometryEnable: isBiometryEnable,
+        isNotificationsOn: isNotificationsOn
       )
       didUpdateState?(state)
     }
   }
   
-  private func calculateState(wallet: Wallet, isSetupFinished: Bool, isBiometryEnable: Bool) -> State? {
+  private func calculateState(wallet: Wallet, 
+                              isSetupFinished: Bool,
+                              isBiometryEnable: Bool,
+                              isNotificationsOn: Bool) -> State? {
     if isSetupFinished && (!wallet.isBackupAvailable || wallet.hasBackup)  {
       return nil
     }
@@ -136,6 +165,10 @@ final class WalletBalanceSetupModel {
     let isFinishEnable: Bool = {
       !wallet.isBackupAvailable || wallet.setupSettings.backupDate != nil
     }()
+    
+    if !isNotificationsOn {
+      items.append(.notifications)
+    }
     
     let isTelegramChannelVisible: Bool = {
       !isSetupFinished

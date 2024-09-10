@@ -118,6 +118,14 @@ struct WalletBalanceListMapper {
     )
   }
   
+  func createNotificationsConfiguration() -> WalletBalanceListCell.Configuration {
+    createSetupItem(
+      text: "Enable transaction notifications",
+      icon: .TKUIKit.Icons.Size28.bell,
+      iconColor: .Accent.green
+    )
+  }
+  
   func createBiometryConfiguration() -> WalletBalanceListCell.Configuration {
     let title: String
     let icon: UIImage

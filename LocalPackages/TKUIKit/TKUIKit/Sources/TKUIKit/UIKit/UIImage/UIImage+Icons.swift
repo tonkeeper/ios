@@ -299,6 +299,10 @@ public extension UIImage {
           .imageWithName("Icons/28/ic-notification-28")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var bell: UIImage {
+          .imageWithName("Icons/28/ic-bell-28")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size32 {
         public static var checkmarkCircle: UIImage {

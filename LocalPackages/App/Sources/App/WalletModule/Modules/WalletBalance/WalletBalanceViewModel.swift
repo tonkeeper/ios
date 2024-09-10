@@ -364,6 +364,29 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     
     setupState.items.forEach { item in
       switch item {
+      case .notifications:
+        let action: (Bool) -> Void = { [weak self] isOn in
+          guard let self else { return }
+          Task {
+            await self.setupModel.turnOnNotifications()
+          }
+        }
+        
+        let configuration = self.listMapper.createNotificationsConfiguration()
+        let notificationsItem = WalletBalanceListItem(
+          identifier: item.rawValue,
+          accessory: .switch(
+            TKListItemSwitchAccessoryView.Configuration(
+              isOn: false,
+              action: action
+            )
+          ),
+          onSelection: {
+            action(true)
+          }
+        )
+        cellConfigurations[item.rawValue] = configuration
+        sectionItems.append(notificationsItem)
       case .telegramChannel:
         let telegramChannelConfiguration = self.listMapper.createTelegramChannelConfiguration()
         let telegramChannelItem = WalletBalanceListItem(
@@ -434,7 +457,6 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         cellConfigurations[item.rawValue] = biometryConfiguration
         sectionItems.append(biometryItem)
       }
-      
     }
 
     var headerButtonConfiguration: TKButton.Configuration?
