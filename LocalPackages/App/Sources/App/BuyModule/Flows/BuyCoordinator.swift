@@ -7,6 +7,8 @@ import KeeperCore
 
 public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
   
+  var didOpenItem: ((URL, _ fromViewController: UIViewController) -> Void)?
+  
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
@@ -49,6 +51,7 @@ private extension BuyCoordinator {
   
   func openBuySellList() {
     let module = BuySellListAssembly.module(
+      wallet: wallet,
       keeperCoreMainAssembly: keeperCoreMainAssembly,
       coreAssembly: coreAssembly
     )
@@ -57,7 +60,7 @@ private extension BuyCoordinator {
     
     module.output.didSelectURL = { [weak self, weak bottomSheetViewController] url in
       guard let bottomSheetViewController else { return }
-      self?.openWebView(url: url, fromViewController: bottomSheetViewController)
+      self?.didOpenItem?(url, bottomSheetViewController)
     }
     
     module.output.didSelectItem = { [weak self, weak bottomSheetViewController] item in
@@ -79,14 +82,6 @@ private extension BuyCoordinator {
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func openWebView(url: URL, fromViewController: UIViewController) {
-    let webViewController = TKWebViewController(url: url)
-    let navigationController = UINavigationController(rootViewController: webViewController)
-    navigationController.modalPresentationStyle = .fullScreen
-    navigationController.configureTransparentAppearance()
-    fromViewController.present(navigationController, animated: true)
-  }
-  
   func openWarning(item: BuySellItem, fromViewController: UIViewController) {
     let module = BuyListPopUpAssembly.module(
       buySellItemModel: item,
@@ -100,7 +95,7 @@ private extension BuyCoordinator {
     module.output.didTapOpen = { [weak self, weak bottomSheetViewController] item in
       guard let bottomSheetViewController else { return }
       bottomSheetViewController.dismiss {
-        self?.openWebView(url: item.actionUrl, fromViewController: fromViewController)
+        self?.didOpenItem?(item.actionUrl, fromViewController)
       }
     }
   }

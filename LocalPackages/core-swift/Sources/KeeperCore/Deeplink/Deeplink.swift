@@ -23,6 +23,7 @@ public enum TonDeeplink {
   case buyTon
   case staking
   case pool(Address)
+  case exchange(provider: String)
   
   public var string: String {
     let ton = "ton"
@@ -48,6 +49,9 @@ public enum TonDeeplink {
     case .pool(let address):
       components?.host = "pool"
       components?.path = "/\(address.toRaw())"
+    case .exchange(let provider):
+      components?.host = "exchange"
+      components?.path = "/\(provider)"
     }
     return components?.string ?? ""
   }

@@ -97,7 +97,58 @@ extension MainCoordinator {
         return
       }
     }
-      
-      self.deeplinkHandleTask = deeplinkHandleTask
-    }
+    
+    self.deeplinkHandleTask = deeplinkHandleTask
   }
+  
+  func openExchangeDeeplink(provider: String) {
+    deeplinkHandleTask?.cancel()
+    
+    ToastPresenter.hideAll()
+    ToastPresenter.showToast(configuration: .loading)
+    
+    let buySellService = keeperCoreMainAssembly.servicesAssembly.buySellMethodsService()
+    let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
+    let configurationStore = keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore
+    let currencyStore = keeperCoreMainAssembly.storesAssembly.currencyStore
+    
+    let deeplinkHandleTask = Task {
+      do {
+        let wallet = try await walletsStore.getActiveWallet()
+        let mercuryoSecret = try? await configurationStore.getConfiguration().mercuryoSecret
+        let currency = await currencyStore.getState()
+        
+        let fiatMethods = try await buySellService.loadFiatMethods(countryCode: nil)
+        guard let fiatMethod = fiatMethods.categories.flatMap({ $0.items }).first(where: { $0.id == provider }),
+        let methodURL = fiatMethod.actionURL(walletAddress: try wallet.friendlyAddress,
+                                             currency: currency,
+                                             mercuryoSecret: mercuryoSecret) else {
+          await MainActor.run {
+            self.deeplinkHandleTask = nil
+            ToastPresenter.hideAll()
+            ToastPresenter.showToast(configuration: .failed)
+          }
+          return
+        }
+        
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          ToastPresenter.hideAll()
+          self.router.dismiss(animated: true) { [weak self] in
+            guard let fromViewController = self?.router.rootViewController else { return }
+            self?.openBuySellItemURL(methodURL, fromViewController: fromViewController)
+          }
+        }
+        
+      } catch {
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          ToastPresenter.hideAll()
+          ToastPresenter.showToast(configuration: .failed)
+        }
+      }
+    }
+    
+    self.deeplinkHandleTask = deeplinkHandleTask
+  }
+}

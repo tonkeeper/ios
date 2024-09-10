@@ -363,6 +363,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     case .pool(let poolAddress):
       openPoolDetailsDeeplink(poolAddress: poolAddress)
       return true
+    case .exchange(let provider):
+      openExchangeDeeplink(provider: provider)
+      return true
     }
   }
   
@@ -779,6 +782,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     router.present(viewController)
   }
   
+  func openBuySellItemURL(_ url: URL, fromViewController: UIViewController) {
+    let webViewController = TKWebViewController(url: url)
+    let navigationController = UINavigationController(rootViewController: webViewController)
+    navigationController.modalPresentationStyle = .fullScreen
+    navigationController.configureTransparentAppearance()
+    fromViewController.present(navigationController, animated: true)
+  }
+  
   func openStake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
@@ -799,9 +810,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     addChild(coordinator)
     coordinator.start(deeplink: nil)
     
-    self.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
-      self?.removeChild(coordinator)
-    })
+    self.router.dismiss(animated: true) { [weak self] in
+      self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+        self?.removeChild(coordinator)
+      })
+    }
   }
   
   func openUnstake(wallet: Wallet, stakingPoolInfo: StackingPoolInfo) {
@@ -878,6 +891,10 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       coreAssembly: coreAssembly,
       router: ViewControllerRouter(rootViewController: self.router.rootViewController)
     )
+    
+    coordinator.didOpenItem = { url, fromViewController in
+      self.openBuySellItemURL(url, fromViewController: fromViewController)
+    }
     
     self.router.dismiss(animated: true) { [weak self] in
       self?.addChild(coordinator)

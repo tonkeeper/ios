@@ -1,4 +1,5 @@
 import Foundation
+import TonSwift
 
 public struct FiatMethodItem: Codable, Equatable, Hashable {
   public typealias ID = String
@@ -88,3 +89,53 @@ public struct FiatMethods: Codable, Equatable {
 public struct FiatMethodsResponse: Codable {
   public let data: FiatMethods
 }
+
+public extension FiatMethodItem {
+  func actionURL(walletAddress: FriendlyAddress, currency: Currency, mercuryoSecret: String?) -> URL? {
+    let isSell = id.contains("sell")
+    
+    var urlString = actionButton.url
+    
+    switch id {
+    case _ where id.contains("mercuryo"):
+      urlForMercuryo(
+        urlString: &urlString,
+        isSell: isSell,
+        walletAddress: walletAddress,
+        mercuryoSecret: mercuryoSecret
+      )
+    default:
+      break
+    }
+    if isSell {
+      urlString = urlString.replacingOccurrences(of: "{CUR_FROM}", with: "TONCOIN")
+      urlString = urlString.replacingOccurrences(of: "{CUR_TO}", with: currency.code)
+    } else {
+      urlString = urlString.replacingOccurrences(of: "{CUR_FROM}", with: currency.code)
+      urlString = urlString.replacingOccurrences(of: "{CUR_TO}", with: "TON")
+    }
+  
+    urlString = urlString.replacingOccurrences(of: "{ADDRESS}", with: walletAddress.toString())
+    guard let url = URL(string: urlString) else { return nil }
+    return url
+  }
+  
+  private func urlForMercuryo(urlString: inout String,
+                              isSell: Bool,
+                              walletAddress: FriendlyAddress,
+                              mercuryoSecret: String?) {
+    if isSell {
+      urlString = urlString.replacingOccurrences(of: "{CUR_TO}", with: "TONCOIN")
+    } else {
+      urlString = urlString.replacingOccurrences(of: "{CUR_FROM}", with: "TONCOIN")
+    }
+ 
+    urlString = urlString.replacingOccurrences(of: "{TX_ID}", with: "mercuryo_\(UUID().uuidString)")
+    
+    let mercuryoSecret = mercuryoSecret ?? ""
+
+    guard let signature = (walletAddress.toString() + mercuryoSecret).data(using: .utf8)?.sha256().hexString() else { return }
+    urlString += "&signature=\(signature)"
+  }
+}
+

@@ -69,6 +69,9 @@ public struct TonDeeplinkParser: DeeplinkParser {
       case "pool":
         let address = try Address.parse(url.lastPathComponent)
         return .ton(.pool(address))
+      case "exchange":
+        let provider = url.lastPathComponent
+        return .ton(.exchange(provider: provider))
       default:
         throw DeeplinkParserError.unsupportedDeeplink(string: string)
       }

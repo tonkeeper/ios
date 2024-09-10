@@ -133,6 +133,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   
   // MARK: - Dependencies
   
+  private let wallet: Wallet
   private let fiatMethodsStore: FiatMethodsStore
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
@@ -141,11 +142,13 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   
   // MARK: - Init
   
-  init(fiatMethodsStore: FiatMethodsStore,
+  init(wallet: Wallet,
+       fiatMethodsStore: FiatMethodsStore,
        walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
        configurationStore: ConfigurationStore,
        appSettings: AppSettings) {
+    self.wallet = wallet
     self.fiatMethodsStore = fiatMethodsStore
     self.walletsStore = walletsStore
     self.currencyStore = currencyStore
@@ -423,61 +426,33 @@ private extension BuySellListViewModelImplementation {
     return TKUIListItemCell.Configuration(
       id: item.id,
       listItemConfiguration: listItemConfiguration,
-      selectionClosure: { [weak self] in
+      selectionClosure: {
+        [weak self] in
         guard let self else { return }
         Task {
-          guard let url = await self.actionUrl(for: item, currency: self.currencyStore.getState()) else { return }
-          await MainActor.run {
-            if self.appSettings.isBuySellItemMarkedDoNotShowWarning(item.id) {
-              self.didSelectURL?(url)
-            } else {
-              let buySellItem = BuySellItem(fiatItem: item, actionUrl: url)
-              self.didSelectItem?(buySellItem)
+          do {
+            let currency = await self.currencyStore.getState()
+            let walletAddress = try self.wallet.friendlyAddress
+            let mercuryoSecret = try? await self.configurationStore.getConfiguration().mercuryoSecret
+            guard let url = item.actionURL(
+              walletAddress: walletAddress,
+              currency: currency,
+              mercuryoSecret: mercuryoSecret
+            ) else { return }
+            await MainActor.run {
+              if self.appSettings.isBuySellItemMarkedDoNotShowWarning(item.id) {
+                self.didSelectURL?(url)
+              } else {
+                let buySellItem = BuySellItem(fiatItem: item, actionUrl: url)
+                self.didSelectItem?(buySellItem)
+              }
             }
+          } catch {
+            return
           }
         }
       }
     )
   }
-  
-  func actionUrl(for item: FiatMethodItem, currency: Currency) async -> URL? {
-    guard let address = try? await walletsStore.getActiveWallet().friendlyAddress else { return nil }
-    var urlString = item.actionButton.url
-    
-    switch item.id {
-    case _ where item.id.contains("mercuryo"):
-      await handleUrlForMercuryo(urlString: &urlString, walletAddress: address.toString())
-    default:
-      break
-    }
-    switch activeTab {
-    case .buy:
-      urlString = urlString.replacingOccurrences(of: "{CUR_FROM}", with: currency.code)
-      urlString = urlString.replacingOccurrences(of: "{CUR_TO}", with: "TON")
-    case .sell:
-      urlString = urlString.replacingOccurrences(of: "{CUR_FROM}", with: "TONCOIN")
-      urlString = urlString.replacingOccurrences(of: "{CUR_TO}", with: currency.code)
-    }
-    
-    urlString = urlString.replacingOccurrences(of: "{ADDRESS}", with: address.toString())
-    guard let url = URL(string: urlString) else { return nil }
-    return url
-  }
-  
-  func handleUrlForMercuryo(urlString: inout String,
-                            walletAddress: String) async {
-    switch activeTab {
-    case .buy:
-      urlString = urlString.replacingOccurrences(of: "{CUR_TO}", with: "TONCOIN")
-    case .sell:
-      urlString = urlString.replacingOccurrences(of: "{CUR_FROM}", with: "TONCOIN")
-    }
-    
-    urlString = urlString.replacingOccurrences(of: "{TX_ID}", with: "mercuryo_\(UUID().uuidString)")
-    
-    let mercuryoSecret = (try? await configurationStore.getConfiguration().mercuryoSecret) ?? ""
-
-    guard let signature = (walletAddress + mercuryoSecret).data(using: .utf8)?.sha256().hexString() else { return }
-    urlString += "&signature=\(signature)"
-  }
 }
+
