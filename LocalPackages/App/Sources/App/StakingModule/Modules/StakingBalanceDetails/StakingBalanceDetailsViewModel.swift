@@ -64,7 +64,6 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   // MARK: - State
   
   private let queue = DispatchQueue(label: "StakingBalanceDetailsViewModelImplementationQueue")
-  private var accountStackingInfo: AccountStackingInfo
   private var balanceItem: ProcessedBalanceStakingItem?
   private var jettonBalanceItem: ProcessedBalanceJettonItem?
   
@@ -86,7 +85,6 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   
   init(wallet: Wallet,
        stakingPoolInfo: StackingPoolInfo,
-       accountStackingInfo: AccountStackingInfo,
        listViewModelBuilder: StakingListViewModelBuilder,
        linksViewModelBuilder: StakingLinksViewModelBuilder,
        balanceItemMapper: BalanceItemMapper,
@@ -98,7 +96,6 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
     self.stakingPoolInfo = stakingPoolInfo
-    self.accountStackingInfo = accountStackingInfo
     self.listViewModelBuilder = listViewModelBuilder
     self.linksViewModelBuilder = linksViewModelBuilder
     self.balanceItemMapper = balanceItemMapper
@@ -293,8 +290,9 @@ private extension StakingBalanceDetailsViewModelImplementation {
       converted = convert(amount: balanceItem.info.readyWithdraw)
       title = .unstakeReadyTitle
       subtitle = .tapToCollect
-      tapClosure = { [weak self, wallet, stakingPoolInfo, accountStackingInfo] in
-        self?.didTapCollect?(wallet, stakingPoolInfo, accountStackingInfo)
+      tapClosure = { [weak self, wallet] in
+        guard let poolInfo = balanceItem.poolInfo  else { return }
+        self?.didTapCollect?(wallet, poolInfo, balanceItem.info)
       }
     } else {
       didUpdateStakeStateView?(nil)

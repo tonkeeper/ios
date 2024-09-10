@@ -44,7 +44,7 @@ public final class ServicesAssembly {
     JettonBalanceServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
-  func stackingService() -> StakingService {
+  public func stackingService() -> StakingService {
     StakingServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
 

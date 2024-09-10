@@ -495,6 +495,16 @@ extension API {
     let result = response.pools.compactMap { try? AccountStackingInfo(accountStakingInfo: $0) }
     return result
   }
+  
+  func getPoolInfo(poolAddress: Address) async throws -> StackingPoolInfo {
+    let request = try await requestBuilderActor.addTask {
+      await prepareAPIForRequest()
+      return StakingAPI.getStakingPoolInfoWithRequestBuilder(accountId: poolAddress.toRaw())
+    }
+    let response = try await request.execute().body
+    let result = try StackingPoolInfo(accountStakingInfo: response.pool, implementations: [response.pool.implementation.rawValue: response.implementation])
+    return result
+  }
 }
 
 // MARK: - Blockchain

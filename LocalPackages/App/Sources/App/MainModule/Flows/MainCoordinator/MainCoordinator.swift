@@ -12,9 +12,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   var didLogout: (() -> Void)?
   
-  private let keeperCoreMainAssembly: KeeperCore.MainAssembly
+  let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
-  private let mainController: KeeperCore.MainController
+  let mainController: KeeperCore.MainController
   
   private let mainCoordinatorStateManager: MainCoordinatorStateManager
   
@@ -36,8 +36,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
-  
-  private var didSendTransactionToken: NSObjectProtocol?
+
+  var deeplinkHandleTask: Task<Void, Never>?
   
   init(router: TabBarControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
@@ -99,7 +99,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     mainController.start()
     _ = handleDeeplink(deeplink: deeplink)
   }
-
+  
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
     if let coreDeeplink = deeplink as? KeeperCore.Deeplink {
       return handleCoreDeeplink(coreDeeplink)
@@ -112,9 +112,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       }
     }
   }
-}
-
-private extension MainCoordinator {
+  
   func setupChildCoordinators() {
     let walletCoordinator = walletModule.createWalletCoordinator()
     walletCoordinator.didTapScan = { [weak self] in
@@ -151,8 +149,7 @@ private extension MainCoordinator {
     walletCoordinator.didSelectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
       self?.openStakingItemDetails(
         wallet: wallet,
-        stakingPoolInfo: stakingPoolInfo,
-        accountStackingInfo: accountStackingInfo)
+        stakingPoolInfo: stakingPoolInfo)
     }
     
     walletCoordinator.didSelectCollectStakingItem = { [weak self] wallet, stakingPoolInfo, accountStackingInfo in
@@ -183,7 +180,7 @@ private extension MainCoordinator {
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
     let collectiblesCoordinator = collectiblesModule.createCollectiblesCoordinator()
-
+    
     self.walletCoordinator = walletCoordinator
     self.historyCoordinator = historyCoordinator
     self.browserCoordinator = browserCoordinator
@@ -213,10 +210,10 @@ private extension MainCoordinator {
         return collectiblesCoordinator
       }
     }.map { $0.router.rootViewController }
-
+    
     router.rootViewController.setViewControllers(viewControllers, animated: false)
   }
-
+  
   func setupTabBarTaps() {
     (router.rootViewController as? TKTabBarController)?.didLongPressTabBarItem = { [weak self] index in
       guard index == 0 else { return }
@@ -335,11 +332,7 @@ private extension MainCoordinator {
       self?.removeChild(coordinator)
     })
   }
-}
-
-// MARK: - Deeplinks
-
-private extension MainCoordinator {
+  
   func handleCoreDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
     switch deeplink {
     case .ton(let tonDeeplink):
@@ -354,15 +347,21 @@ private extension MainCoordinator {
   func handleTonDeeplink(_ deeplink: TonDeeplink) -> Bool {
     switch deeplink {
     case let .transfer(recipient, amount, comment, jettonAddress):
-      openSend(recipient: recipient, amount: amount, comment: comment, jettonAddress: jettonAddress)
+      openSendDeeplink(
+        recipient: recipient,
+        amount: amount,
+        comment: comment,
+        jettonAddress: jettonAddress
+      )
       return true
     case .buyTon:
-      guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return false }
-      openBuy(wallet: wallet)
+      openBuyDeeplink()
       return true
     case .staking:
-      guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return false }
-      openStake(wallet: wallet)
+      openStakingDeeplink()
+      return true
+    case .pool(let poolAddress):
+      openPoolDetailsDeeplink(poolAddress: poolAddress)
       return true
     }
   }
@@ -430,8 +429,8 @@ private extension MainCoordinator {
          collectiblesCoordinator.handleTonkeeperDeeplink(deeplink: deeplink) {
         return true
       }
-      if let webSwapCoordinator = webSwapCoordinator, 
-          webSwapCoordinator.handleTonkeeperPublishDeeplink(model: model) {
+      if let webSwapCoordinator = webSwapCoordinator,
+         webSwapCoordinator.handleTonkeeperPublishDeeplink(model: model) {
         return true
       }
       return false
@@ -663,12 +662,12 @@ private extension MainCoordinator {
       wallet: wallet,
       balanceStore: keeperCoreMainAssembly.storesAssembly.convertedBalanceStore,
       configurator: JettonTokenDetailsConfigurator(jettonItem: jettonItem,
-        mapper: TokenDetailsMapper(
-          amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
-          decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
-          rateConverter: RateConverter()
-        )
-      ),
+                                                   mapper: TokenDetailsMapper(
+                                                    amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter,
+                                                    decimalAmountFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
+                                                    rateConverter: RateConverter()
+                                                   )
+                                                  ),
       tokenDetailsListContentViewController: historyListModule.view,
       chartViewControllerProvider: {[keeperCoreMainAssembly, coreAssembly] in
         guard hasPrice else { return nil }
@@ -677,7 +676,7 @@ private extension MainCoordinator {
                                     keeperCoreMainAssembly: keeperCoreMainAssembly).view
       }
     )
-
+    
     module.output.didTapReceive = { [weak self] token in
       self?.openReceive(token: token, wallet: wallet)
     }
@@ -689,15 +688,13 @@ private extension MainCoordinator {
     navigationController.pushViewController(module.view, animated: true)
   }
   
-  func openStakingItemDetails(wallet: Wallet, 
-                              stakingPoolInfo: StackingPoolInfo,
-                              accountStackingInfo: AccountStackingInfo) {
+  func openStakingItemDetails(wallet: Wallet,
+                              stakingPoolInfo: StackingPoolInfo) {
     guard let navigationController = router.rootViewController.navigationController else { return }
     
     let module = StakingBalanceDetailsAssembly.module(
       wallet: wallet,
       stakingPoolInfo: stakingPoolInfo,
-      accountStackingInfo: accountStackingInfo,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
     
@@ -746,7 +743,7 @@ private extension MainCoordinator {
     
     let navigationController = TKNavigationController(rootViewController: module.view)
     navigationController.configureDefaultAppearance()
-
+    
     module.output.didRequireSign = { [weak self, weak navigationController, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
       guard let self = self, let navigationController else { return nil }
       let coordinator = await WalletTransferSignCoordinator(
@@ -773,7 +770,7 @@ private extension MainCoordinator {
     module.view.setupRightCloseButton { [weak self] in
       self?.router.dismiss()
     }
-
+    
     router.present(navigationController)
   }
   
@@ -913,10 +910,10 @@ private extension MainCoordinator {
     configuration.didTapShowRecoveryPhrase = { [weak self] in
       self?.openRecoveryPhrase(wallet: wallet)
     }
-  
+    
     let module = SettingsListAssembly.module(configurator: configuration)
     module.viewController.setupBackButton()
-
+    
     navigationController.pushViewController(module.viewController, animated: true)
   }
   
@@ -958,6 +955,29 @@ private extension MainCoordinator {
     addChild(coordinator)
     coordinator.start()
   }
+  //
+  //  func openPoolDetailsDeeplink(poolAddress: Address, wallet: Wallet) {
+  //    ToastPresenter.hideAll()
+  //    ToastPresenter.showToast(configuration: .loading)
+  //    Task {
+  //      do {
+  //        let poolInfo = try await self.keeperCoreMainAssembly.servicesAssembly.stackingService().loadStakingPoolInfo(wallet: wallet, address: poolAddress)
+  //        await MainActor.run {
+  //          ToastPresenter.hideAll()
+  //          self.openStakingItemDetails(
+  //            wallet: wallet,
+  //            stakingPoolInfo: poolInfo)
+  //        }
+  //
+  //      } catch {
+  //        await MainActor.run {
+  //          ToastPresenter.hideAll()
+  //          ToastPresenter.showToast(configuration: .failed)
+  //        }
+  //        return
+  //      }
+  //    }
+  //  }
 }
 
 // MARK: - Ton Connect

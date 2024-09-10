@@ -22,6 +22,7 @@ public enum TonDeeplink {
   case transfer(recipient: String, amount: BigUInt?, comment: String?, jettonAddress: Address?)
   case buyTon
   case staking
+  case pool(Address)
   
   public var string: String {
     let ton = "ton"
@@ -44,6 +45,9 @@ public enum TonDeeplink {
       components?.host = "buy-ton"
     case .staking:
       components?.host = "staking"
+    case .pool(let address):
+      components?.host = "pool"
+      components?.path = "/\(address.toRaw())"
     }
     return components?.string ?? ""
   }

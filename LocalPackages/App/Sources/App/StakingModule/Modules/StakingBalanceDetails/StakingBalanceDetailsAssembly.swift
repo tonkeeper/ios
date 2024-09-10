@@ -7,13 +7,11 @@ struct StakingBalanceDetailsAssembly {
   
   static func module(wallet: Wallet,
                      stakingPoolInfo: StackingPoolInfo,
-                     accountStackingInfo: AccountStackingInfo,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly)
   -> MVVMModule<StakingBalanceDetailsViewController, StakingBalanceDetailsModuleOutput, StakingBalanceDetailsModuleOutput> {
     let viewModel = StakingBalanceDetailsViewModelImplementation(
       wallet: wallet,
       stakingPoolInfo: stakingPoolInfo,
-      accountStackingInfo: accountStackingInfo,
       listViewModelBuilder: StakingListViewModelBuilder(
         decimalFormatter: keeperCoreMainAssembly.formattersAssembly.decimalAmountFormatter,
         amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
