@@ -11,6 +11,9 @@ import CommonCrypto
 import CryptoSwift
 
 public final class HistoryCoordinator: RouterCoordinator<NavigationControllerRouter> {
+  
+  var didOpenEventDetails: ((_ event: AccountEventDetailsEvent, _ isTestnet: Bool) -> Void)?
+  
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   
@@ -45,7 +48,7 @@ private extension HistoryCoordinator {
       )
       
       listModule.output.didSelectEvent = { [weak self] event in
-        self?.openEventDetails(event: event)
+        self?.openEventDetails(event: event, wallet: wallet)
       }
       
       listModule.output.didSelectNFT = { [weak self] wallet, nftAddress in
@@ -107,14 +110,8 @@ private extension HistoryCoordinator {
     coordinator.start()
   }
   
-  func openEventDetails(event: AccountEventDetailsEvent) {
-    let module = HistoryEventDetailsAssembly.module(
-      historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(event: event),
-      urlOpener: coreAssembly.urlOpener()
-    )
-    
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  func openEventDetails(event: AccountEventDetailsEvent, wallet: Wallet) {
+    didOpenEventDetails?(event, wallet.isTestnet)
   }
   
   @MainActor

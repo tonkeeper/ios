@@ -2,7 +2,7 @@ import Foundation
 import TonAPI
 import TonSwift
 
-protocol HistoryService {
+public protocol HistoryService {
   func cachedEvents(wallet: Wallet) throws -> AccountEvents
   func cachedEvents(wallet: Wallet, jettonInfo: JettonInfo) throws -> AccountEvents
   func loadEvents(wallet: Wallet,

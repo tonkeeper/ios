@@ -65,9 +65,9 @@ public final class HistoryEventDetailsController {
   private let event: AccountEventDetailsEvent
   private let amountMapper: AccountEventAmountMapper
   private let tonRatesStore: TonRatesStore
-  private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
   private let nftService: NFTService
+  private let isTestnet: Bool
   
   private let rateConverter = RateConverter()
   private let dateFormatter: DateFormatter = {
@@ -80,15 +80,15 @@ public final class HistoryEventDetailsController {
   init(event: AccountEventDetailsEvent,
        amountMapper: AccountEventAmountMapper,
        tonRatesStore: TonRatesStore,
-       walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
-       nftService: NFTService) {
+       nftService: NFTService,
+       isTestnet: Bool) {
     self.event = event
     self.amountMapper = amountMapper
     self.tonRatesStore = tonRatesStore
-    self.walletsStore = walletsStore
     self.currencyStore = currencyStore
     self.nftService = nftService
+    self.isTestnet = isTestnet
   }
   
   public var transactionHash: String {
@@ -108,7 +108,6 @@ public final class HistoryEventDetailsController {
 
 private extension HistoryEventDetailsController {
   func mapModel() async -> Model {
-    let isTestnet = (try? await walletsStore.getActiveWallet().isTestnet) ?? false
     let eventAction = event.action
     let date = dateFormatter.string(from: event.accountEvent.date)
     let fee = amountMapper.mapAmount(

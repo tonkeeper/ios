@@ -10,7 +10,6 @@ import BigInt
 
 final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
-  var didLogout: (() -> Void)?
   
   let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
@@ -120,9 +119,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     walletCoordinator.didTapScan = { [weak self] in
       self?.openScan()
     }
-    walletCoordinator.didLogout = { [weak self] in
-      self?.didLogout?()
-    }
     
     walletCoordinator.didTapWalletButton = { [weak self] in
       self?.openWalletPicker()
@@ -178,6 +174,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     
     let historyCoordinator = historyModule.createHistoryCoordinator()
+    historyCoordinator.didOpenEventDetails = { [weak self] event, isTestnet in
+      self?.openHistoryEventDetails(event: event, isTestnet: isTestnet)
+    }
     
     let browserCoordinator = browserModule.createBrowserCoordinator()
     
@@ -378,6 +377,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return true
     case .swap(let fromToken, let toToken):
       openSwapDeeplink(fromToken: fromToken, toToken: toToken)
+      return true
+    case .action(let eventId):
+      openActionDeeplink(eventId: eventId)
       return true
     }
   }
@@ -624,7 +626,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     ).createTonHistoryListModule(wallet: wallet)
     
     historyListModule.output.didSelectEvent = { [weak self] event in
-      self?.openHistoryEventDetails(event: event)
+      self?.openHistoryEventDetails(event: event, isTestnet: wallet.isTestnet)
     }
     
     let module = TokenDetailsAssembly.module(
@@ -671,7 +673,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     ).createJettonHistoryListModule(jettonInfo: jettonItem.jettonInfo, wallet: wallet)
     
     historyListModule.output.didSelectEvent = { [weak self] event in
-      self?.openHistoryEventDetails(event: event)
+      self?.openHistoryEventDetails(event: event, isTestnet: wallet.isTestnet)
     }
     
     let module = TokenDetailsAssembly.module(
@@ -915,14 +917,20 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
   
-  func openHistoryEventDetails(event: AccountEventDetailsEvent) {
+  func openHistoryEventDetails(event: AccountEventDetailsEvent, isTestnet: Bool) {
     let module = HistoryEventDetailsAssembly.module(
-      historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(event: event),
+      historyEventDetailsController: keeperCoreMainAssembly.historyEventDetailsController(
+        event: event,
+        isTestnet: isTestnet
+      ),
       urlOpener: coreAssembly.urlOpener()
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    bottomSheetViewController.present(fromViewController: router.rootViewController)
+    router.rootViewController.dismiss(animated: true) { [weak self] in
+      guard let router = self?.router else { return }
+      bottomSheetViewController.present(fromViewController: router.rootViewController)
+    }
   }
   
   func openBackup(wallet: Wallet) {

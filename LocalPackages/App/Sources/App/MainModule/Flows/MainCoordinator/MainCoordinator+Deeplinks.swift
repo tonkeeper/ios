@@ -162,4 +162,50 @@ extension MainCoordinator {
     guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
     openSwap(wallet: wallet, fromToken: fromToken, toToken: toToken)
   }
+  
+  func openActionDeeplink(eventId: String) {
+    deeplinkHandleTask?.cancel()
+    deeplinkHandleTask = nil
+    
+    let service = keeperCoreMainAssembly.servicesAssembly.historyService()
+    let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
+    
+    ToastPresenter.hideAll()
+    ToastPresenter.showToast(configuration: .loading)
+  
+    let deeplinkHandleTask = Task {
+      do {
+        let wallet = try await walletsStore.getActiveWallet()
+        let event = try await service.loadEvent(wallet: wallet, eventId: eventId)
+        guard let action = event.actions.first else {
+          await MainActor.run {
+            self.deeplinkHandleTask = nil
+            ToastPresenter.hideAll()
+            ToastPresenter.showToast(configuration: .failed)
+          }
+          return
+        }
+        
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          ToastPresenter.hideAll()
+          self.openHistoryEventDetails(
+            event: AccountEventDetailsEvent(
+              accountEvent: event,
+              action: action
+            ),
+            isTestnet: false
+          )
+        }
+      } catch {
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          ToastPresenter.hideAll()
+          ToastPresenter.showToast(configuration: .failed)
+        }
+      }
+    }
+    
+    self.deeplinkHandleTask = deeplinkHandleTask
+  }
 }

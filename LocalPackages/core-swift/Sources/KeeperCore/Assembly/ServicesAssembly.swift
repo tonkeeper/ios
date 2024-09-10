@@ -70,7 +70,7 @@ public final class ServicesAssembly {
     )
   }
   
-  func historyService() -> HistoryService {
+  public func historyService() -> HistoryService {
     HistoryServiceImplementation(
       apiProvider: apiAssembly.apiProvider,
       repository: repositoriesAssembly.historyRepository()

@@ -144,17 +144,6 @@ private extension RootCoordinator {
       )
     )
     let coordinator = module.createMainCoordinator()
-    coordinator.didLogout = { [weak self, weak coordinator] in
-      guard let self, let coordinator else { return }
-      Task {
-        do {
-          try await self.logout()
-          self.removeChild(coordinator)
-        } catch {
-          print("Log: Logout failed")
-        }
-      }
-    }
     self.mainCoordinator = coordinator
     
     addChild(coordinator)

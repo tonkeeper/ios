@@ -25,6 +25,7 @@ public enum TonDeeplink {
   case pool(Address)
   case exchange(provider: String)
   case swap(fromToken: String?, toToken: String?)
+  case action(eventId: String)
   
   public var string: String {
     let ton = "ton"
@@ -61,6 +62,9 @@ public enum TonDeeplink {
       if let toToken {
         components?.queryItems = [URLQueryItem(name: "tt", value: toToken)]
       }
+    case .action(let eventId):
+      components?.host = "action"
+      components?.path = "/\(eventId)"
     }
     return components?.string ?? ""
   }

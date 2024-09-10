@@ -76,6 +76,9 @@ public struct TonDeeplinkParser: DeeplinkParser {
         let fromToken = components?.queryItems?.first(where: { $0.name == "ft" })?.value
         let toToken = components?.queryItems?.first(where: { $0.name == "tt" })?.value
         return .ton(.swap(fromToken: fromToken, toToken: toToken))
+      case "action":
+        let eventId = url.lastPathComponent
+        return .ton(.action(eventId: eventId))
       default:
         throw DeeplinkParserError.unsupportedDeeplink(string: string)
       }

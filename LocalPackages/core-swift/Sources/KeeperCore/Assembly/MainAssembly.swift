@@ -95,14 +95,15 @@ public final class MainAssembly {
     )
   }
   
-  public func historyEventDetailsController(event: AccountEventDetailsEvent) -> HistoryEventDetailsController {
+  public func historyEventDetailsController(event: AccountEventDetailsEvent,
+                                            isTestnet: Bool) -> HistoryEventDetailsController {
     HistoryEventDetailsController(
       event: event,
       amountMapper: PlainAccountEventAmountMapper(amountFormatter: formattersAssembly.amountFormatter),
       tonRatesStore: storesAssembly.tonRatesStore,
-      walletsStore: storesAssembly.walletsStore,
       currencyStore: storesAssembly.currencyStore,
-      nftService: servicesAssembly.nftService()
+      nftService: servicesAssembly.nftService(),
+      isTestnet: isTestnet
     )
   }
   
