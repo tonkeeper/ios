@@ -25,9 +25,9 @@ protocol StakingBalanceDetailsViewModel: AnyObject {
   var didUpdateListViewModel: ((StakingDetailsListView.Model) -> Void)? { get set }
   var didUpdateDescription: ((NSAttributedString?) -> Void)? { get set }
   var didUpdateLinksViewModel: ((StakingDetailsLinksView.Model) -> Void)? { get set }
-  var didUpdateJettonItemView: ((TKUIListItemButton.Model?) -> Void)? { get set }
+  var didUpdateJettonItemView: ((TKListItemButton.Configuration?) -> Void)? { get set }
   var didUpdateJettonButtonDescription: ((NSAttributedString?) -> Void)? { get set }
-  var didUpdateStakeStateView: ((TKUIListItemButton.Model?) -> Void)? { get set }
+  var didUpdateStakeStateView: ((TKListItemButton.Configuration?) -> Void)? { get set }
   var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)? { get set }
   
   func viewDidLoad()
@@ -56,9 +56,9 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   var didUpdateListViewModel: ((StakingDetailsListView.Model) -> Void)?
   var didUpdateDescription: ((NSAttributedString?) -> Void)?
   var didUpdateLinksViewModel: ((StakingDetailsLinksView.Model) -> Void)?
-  var didUpdateJettonItemView: ((TKUIListItemButton.Model?) -> Void)?
+  var didUpdateJettonItemView: ((TKListItemButton.Configuration?) -> Void)?
   var didUpdateJettonButtonDescription: ((NSAttributedString?) -> Void)?
-  var didUpdateStakeStateView: ((TKUIListItemButton.Model?) -> Void)?
+  var didUpdateStakeStateView: ((TKListItemButton.Configuration?) -> Void)?
   var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)?
   
   // MARK: - State
@@ -220,30 +220,29 @@ private extension StakingBalanceDetailsViewModelImplementation {
   }
   
   func updateJettonItemView() {
-//    guard let jettonBalanceItem else {
-//      didUpdateJettonItemView?(nil)
-//      return
-//    }
-//    
-//    let configuration = balanceItemMapper.mapJettonItem(jettonBalanceItem, isSecure: false)
-//    didUpdateJettonItemView?(
-//      TKUIListItemButton.Model(
-//        listItemConfiguration: configuration,
-//        tapClosure: { [weak self] in
-//          guard let self else { return }
-//          self.openJettonDetails?(self.wallet, jettonBalanceItem.jetton)
-//        }
-//      )
-//    )
-//    
-//    didUpdateJettonButtonDescription?(
-//      String.jettonButtonDescription.withTextStyle(
-//        .body3,
-//        color: .Text.tertiary,
-//        alignment: .left,
-//        lineBreakMode: .byWordWrapping
-//      )
-//    )
+    guard let jettonBalanceItem else {
+      didUpdateJettonItemView?(nil)
+      return
+    }
+    
+    let configuration = balanceItemMapper.mapJettonItem(jettonBalanceItem)
+    didUpdateJettonItemView?(
+      TKListItemButton.Configuration(
+        listItemConfiguration: configuration,
+        tapClosure: { [weak self] in
+          guard let self else { return }
+          self.openJettonDetails?(self.wallet, jettonBalanceItem.jetton)
+        })
+      )
+      
+      didUpdateJettonButtonDescription?(
+        String.jettonButtonDescription.withTextStyle(
+          .body3,
+          color: .Text.tertiary,
+          alignment: .left,
+          lineBreakMode: .byWordWrapping
+        )
+      )
   }
   
   func updateStakeStateView() {
@@ -312,33 +311,31 @@ private extension StakingBalanceDetailsViewModelImplementation {
       currency: currency
     )
     
-    let model = TKUIListItemButton.Model(
-      listItemConfiguration: TKUIListItemView.Configuration(
-        contentConfiguration: TKUIListItemContentView.Configuration(
-          leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: title.withTextStyle(.label1, color: .Text.primary, alignment: .left, lineBreakMode: .byTruncatingTail),
-            tagViewModel: nil,
-            subtitle: subtitle.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
-            description: nil
+    let configuration = TKListItemButton.Configuration(
+      listItemConfiguration: TKListItemContentViewV2.Configuration(
+        textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: title),
+          captionViewsConfigurations: [TKListItemTextView.Configuration(
+            text: subtitle,
+            color: .Text.secondary,
+            textStyle: .body2
+          )],
+          valueViewConfiguration: TKListItemTextView.Configuration(
+            text: amountFormatted,
+            color: .Text.primary,
+            textStyle: .label1
           ),
-          rightItemConfiguration: TKUIListItemContentRightItem.Configuration(
-            value: amountFormatted.withTextStyle(
-              .label1,
-              color: .Text.primary,
-              alignment: .right,
-              lineBreakMode: .byTruncatingTail
-            ),
-            subtitle: convertedFormatted.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
-            description: nil
-          ),
-          isVerticalCenter: true
-        ),
-        accessoryConfiguration: .none
+          valueCaptionViewConfiguration: TKListItemTextView.Configuration(
+            text: convertedFormatted,
+            color: .Text.secondary,
+            textStyle: .body2
+          )
+        )
       ),
       tapClosure: tapClosure
     )
     
-    didUpdateStakeStateView?(model)
+    didUpdateStakeStateView?(configuration)
   }
   
   func updateButtons() {

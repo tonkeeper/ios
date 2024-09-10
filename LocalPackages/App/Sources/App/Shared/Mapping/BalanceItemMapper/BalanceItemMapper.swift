@@ -43,8 +43,8 @@ struct BalanceItemMapper {
   }
   
   func mapJettonItem(_ item: ProcessedBalanceJettonItem,
-                     isSecure: Bool,
-                     isPinned: Bool) -> TKListItemContentViewV2.Configuration {
+                     isSecure: Bool = false,
+                     isPinned: Bool = false) -> TKListItemContentViewV2.Configuration {
     let caption = createPriceSubtitle(
       price: item.price,
       currency: item.currency,

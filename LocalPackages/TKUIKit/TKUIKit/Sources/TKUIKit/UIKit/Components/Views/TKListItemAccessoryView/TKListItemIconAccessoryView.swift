@@ -60,6 +60,10 @@ public final class TKListItemIconAccessoryView: UIControl {
     return CGSize(width: imageSizeThatFits.width + 16, height: imageSizeThatFits.height)
   }
   
+  public override var intrinsicContentSize: CGSize {
+    sizeThatFits(.init(width: bounds.width, height: 0))
+  }
+  
   private func setup() {
     imageView.contentMode = .center
     

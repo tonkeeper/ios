@@ -85,6 +85,10 @@ public final class TKListItemContentViewV2: UIView {
     return CGSize(width: size.width, height: height)
   }
   
+  public override var intrinsicContentSize: CGSize {
+    return CGSize(width: UIView.noIntrinsicMetric, height: sizeThatFits(.init(width: bounds.width, height: 0)).height)
+  }
+  
   private func setup() {
     addSubview(iconView)
     addSubview(textContentView)

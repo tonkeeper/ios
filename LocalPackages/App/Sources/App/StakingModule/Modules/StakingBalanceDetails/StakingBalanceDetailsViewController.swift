@@ -52,11 +52,11 @@ private extension StakingBalanceDetailsViewController {
       self?.customView.descriptionLabel.attributedText = description
     }
     
-    viewModel.didUpdateJettonItemView = { [weak self] model in
-      if let model {
+    viewModel.didUpdateJettonItemView = { [weak self] configuration in
+      if let configuration {
         self?.customView.jettonButtonContainer.isHidden = false
         self?.customView.jettonButtonDescriptionContainer.isHidden = false
-        self?.customView.jettonButton.configure(model: model)
+        self?.customView.jettonButton.configuration = configuration
       } else {
         self?.customView.jettonButtonContainer.isHidden = true
         self?.customView.jettonButtonDescriptionContainer.isHidden = true
@@ -67,10 +67,10 @@ private extension StakingBalanceDetailsViewController {
       self?.customView.jettonButtonDescriptionLabel.attributedText = description
     }
     
-    viewModel.didUpdateStakeStateView = { [weak self] model in
-      if let model {
+    viewModel.didUpdateStakeStateView = { [weak self] configuration in
+      if let configuration {
         self?.customView.stakeStateButtonContainer.isHidden = false
-        self?.customView.stakeStateButton.configure(model: model)
+        self?.customView.stakeStateButton.configuration = configuration
       } else {
         self?.customView.stakeStateButtonContainer.isHidden = true
       }

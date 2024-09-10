@@ -9,7 +9,7 @@ final class StakingDepositInputPoolPickerViewController: UIViewController, Staki
   
   private var selectedStackingPoolInfo: StackingPoolInfo?
   
-  private let listItemButton = TKUIListItemButton()
+  private let listItemButton = TKListItemButton()
   
   private let wallet: Wallet
   private let stakingPoolsStore: StakingPoolsStore
@@ -63,22 +63,29 @@ final class StakingDepositInputPoolPickerViewController: UIViewController, Staki
     )
     
     DispatchQueue.main.async {
-      self.listItemButton.configure(
-        model: TKUIListItemButton.Model(
-          listItemConfiguration: configuration,
-          tapClosure: { [weak self] in
-            self?.getPickerSections(completion: { model in
-              self?.didTapPicker?(model)
-            })
-          }
-        )
+      self.listItemButton.configuration = TKListItemButton.Configuration(
+        listItemConfiguration: configuration,
+        accessory: .icon(
+          TKListItemIconAccessoryView.Configuration(
+            icon: .TKUIKit.Icons.Size16.switch,
+            tintColor: .Icon.tertiary
+          )
+        ),
+        tapClosure: {
+          [weak self] in
+          self?.getPickerSections(completion: { model in
+            self?.didTapPicker?(model)
+          })
+        }
       )
     }
   }
 }
 
 private extension StakingDepositInputPoolPickerViewController {
-  func mapStakingPoolItem(_ item: StackingPoolInfo, isMostProfitable: Bool, profit: BigUInt) -> TKUIListItemView.Configuration {
+  func mapStakingPoolItem(_ item: StackingPoolInfo, 
+                          isMostProfitable: Bool,
+                          profit: BigUInt) -> TKListItemContentViewV2.Configuration {
     let tagText: String? = isMostProfitable ? .mostProfitableTag : nil
     let percentFormatted = decimalFormatter.format(amount: item.apy, maximumFractionDigits: 2)
     var subtitle = "\(String.apy) ≈ \(percentFormatted)%"
@@ -92,55 +99,33 @@ private extension StakingDepositInputPoolPickerViewController {
       subtitle += " · \(formatted)"
     }
     
-    let title = item.name.withTextStyle(
-      .label1,
-      color: .Text.primary,
-      alignment: .left,
-      lineBreakMode: .byTruncatingTail
-    )
+    let title = item.name
     
-    var tagViewModel: TKUITagView.Configuration?
+    var tagConfiguration: TKTagView.Configuration?
     if let tagText {
-      tagViewModel = TKUITagView.Configuration(
-        text: tagText,
-        textColor: .Accent.green,
-        backgroundColor: .Accent.green.withAlphaComponent(0.16)
-      )
+      tagConfiguration = .accentTag(text: tagText, color: .Accent.green)
     }
     
-    return TKUIListItemView.Configuration(
-      iconConfiguration: TKUIListItemIconView.Configuration(
-        iconConfiguration: .image(
-          TKUIListItemImageIconView.Configuration(
-            image: TKUIListItemImageIconView.Configuration.Image.image(item.implementation.icon),
+    return TKListItemContentViewV2.Configuration(
+      iconViewConfiguration: TKListItemIconViewV2.Configuration(
+        content: .image(
+          TKImageView.Model(
+            image: .image(item.implementation.icon),
             tintColor: .clear,
-            backgroundColor: .clear,
-            size: CGSize(width: 44, height: 44),
-            cornerRadius: 22
+            size: .size(CGSize(width: 44, height: 44)),
+            corners: .circle
           )
         ),
-        alignment: .center
+        alignment: .center,
+        backgroundColor: .clear,
+        size: CGSize(width: 44, height: 44)
       ),
-      contentConfiguration: TKUIListItemContentView.Configuration(
-        leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-          title: title,
-          tagViewModel: tagViewModel,
-          subtitle: subtitle.withTextStyle(
-            .body2,
-            color: .Text.secondary,
-            alignment: .left,
-            lineBreakMode: .byTruncatingTail
-          ),
-          description: nil
-        ),
-        rightItemConfiguration: nil
-      ),
-      accessoryConfiguration: .image(
-        TKUIListItemImageAccessoryView.Configuration(
-          image: .TKUIKit.Icons.Size16.switch,
-          tintColor: .Icon.tertiary,
-          padding: .zero
-        )
+      textContentViewConfiguration: TKListItemTextContentViewV2.Configuration(
+        titleViewConfiguration: TKListItemTitleView.Configuration(title: title,
+                                                                  tagConfiguration: tagConfiguration),
+        captionViewsConfigurations: [
+          TKListItemTextView.Configuration(text: subtitle, color: .Text.secondary, textStyle: .body2)
+        ]
       )
     )
   }
