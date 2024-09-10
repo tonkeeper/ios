@@ -97,7 +97,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       handleStateUpdate(state)
     }
     mainController.start()
-    _ = handleDeeplink(deeplink: deeplink)
+    DispatchQueue.main.async {
+      _ = self.handleDeeplink(deeplink: deeplink)
+    }
   }
   
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -130,8 +132,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       self?.openSend(wallet: wallet, token: token, amount: nil, comment: nil)
     }
     
-    walletCoordinator.didTapSwap = { [weak self] in
-      self?.openSwap()
+    walletCoordinator.didTapSwap = { [weak self] wallet in
+      self?.openSwap(wallet: wallet)
     }
     
     walletCoordinator.didTapSettingsButton = { [weak self] wallet in
@@ -304,7 +306,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
   }
   
-  func openSwap() {
+  func openSwap(wallet: Wallet,
+                fromToken: String? = nil,
+                toToken: String? = nil) {
     let navigationController = TKNavigationController()
     navigationController.configureDefaultAppearance()
     navigationController.setNavigationBarHidden(true, animated: false)
@@ -314,7 +318,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         coreAssembly: coreAssembly,
         keeperCoreMainAssembly: keeperCoreMainAssembly
       )
-    ).swapCoordinator(router: NavigationControllerRouter(rootViewController: navigationController))
+    ).swapCoordinator(
+      wallet: wallet,
+      fromToken: fromToken,
+      toToken: toToken,
+      router: NavigationControllerRouter(rootViewController: navigationController)
+    )
     
     coordinator.didClose = { [weak self, weak coordinator, weak navigationController] in
       navigationController?.dismiss(animated: true)
@@ -327,10 +336,11 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     addChild(coordinator)
     coordinator.start()
     
-    router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
-      guard let coordinator = coordinator else { return }
-      self?.removeChild(coordinator)
-    })
+    router.dismiss(animated: true) { [weak self] in
+      self?.router.present(navigationController, onDismiss: { [weak self, weak coordinator] in
+        self?.removeChild(coordinator)
+      })
+    }
   }
   
   func handleCoreDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
@@ -365,6 +375,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       return true
     case .exchange(let provider):
       openExchangeDeeplink(provider: provider)
+      return true
+    case .swap(let fromToken, let toToken):
+      openSwapDeeplink(fromToken: fromToken, toToken: toToken)
       return true
     }
   }

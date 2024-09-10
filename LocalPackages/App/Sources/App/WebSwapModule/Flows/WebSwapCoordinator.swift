@@ -13,12 +13,21 @@ public final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRou
   
   private weak var signTransactionConfirmationCoordinator: SignTransactionConfirmationCoordinator?
   
+  private let wallet: Wallet
+  private let fromToken: String?
+  private let toToken: String?
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   
-  public init(router: NavigationControllerRouter,
+  public init(wallet: Wallet,
+              fromToken: String?,
+              toToken: String?,
+              router: NavigationControllerRouter,
               coreAssembly: TKCore.CoreAssembly,
               keeperCoreMainAssembly: KeeperCore.MainAssembly) {
+    self.wallet = wallet
+    self.fromToken = fromToken
+    self.toToken = toToken
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     super.init(router: router)
@@ -40,6 +49,9 @@ private extension WebSwapCoordinator {
   func openSwap() {
     let messageHandler = DefaultStonfiSwapMessageHandler()
     let module = StonfiSwapAssembly.module(
+      wallet: wallet,
+      fromToken: fromToken,
+      toToken: toToken,
       keeperCoreAssembly: keeperCoreMainAssembly,
       messageHandler: messageHandler
     )

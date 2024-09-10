@@ -46,11 +46,15 @@ extension MainCoordinator {
   }
   
   func openBuyDeeplink() {
+    deeplinkHandleTask?.cancel()
+    deeplinkHandleTask = nil
     guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
     openBuy(wallet: wallet)
   }
   
   func openStakingDeeplink() {
+    deeplinkHandleTask?.cancel()
+    deeplinkHandleTask = nil
     guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
     openStake(wallet: wallet)
   }
@@ -150,5 +154,12 @@ extension MainCoordinator {
     }
     
     self.deeplinkHandleTask = deeplinkHandleTask
+  }
+  
+  func openSwapDeeplink(fromToken: String?, toToken: String?) {
+    deeplinkHandleTask?.cancel()
+    deeplinkHandleTask = nil
+    guard let wallet = try? keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+    openSwap(wallet: wallet, fromToken: fromToken, toToken: toToken)
   }
 }

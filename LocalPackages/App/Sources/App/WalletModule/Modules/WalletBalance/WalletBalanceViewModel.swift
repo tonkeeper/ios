@@ -20,7 +20,7 @@ protocol WalletBalanceModuleOutput: AnyObject {
   var didTapSend: ((Wallet) -> Void)? { get set }
   var didTapScan: (() -> Void)? { get set }
   var didTapBuy: ((Wallet) -> Void)? { get set }
-  var didTapSwap: (() -> Void)? { get set }
+  var didTapSwap: ((Wallet) -> Void)? { get set }
   var didTapStake: ((Wallet) -> Void)? { get set }
   
   var didTapBackup: ((Wallet) -> Void)? { get set }
@@ -72,7 +72,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   var didTapSend: ((Wallet) -> Void)?
   var didTapScan: (() -> Void)?
   var didTapBuy: ((Wallet) -> Void)?
-  var didTapSwap: (() -> Void)?
+  var didTapSwap: ((Wallet) -> Void)?
   var didTapStake: ((Wallet) -> Void)?
   
   var didTapBackup: ((Wallet) -> Void)?
@@ -769,7 +769,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         icon: .TKUIKit.Icons.Size28.swapHorizontalOutline,
         isEnabled: isSwapEnable,
         action: { [weak self] in
-          self?.didTapSwap?()
+          self?.didTapSwap?(wallet)
         }
       ),
       buyButton: WalletBalanceHeaderButtonsView.Model.Button(
