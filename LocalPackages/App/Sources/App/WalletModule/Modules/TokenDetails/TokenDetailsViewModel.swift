@@ -3,6 +3,7 @@ import TKUIKit
 import UIKit
 import KeeperCore
 import TKCore
+import TKLocalize
 
 protocol TokenDetailsModuleOutput: AnyObject {
   var didTapSend: ((KeeperCore.Token) -> Void)? { get set }
@@ -11,7 +12,7 @@ protocol TokenDetailsModuleOutput: AnyObject {
 }
 
 protocol TokenDetailsViewModel: AnyObject {
-  var didUpdateTitleView: ((TokenDetailsTitleView.Model) -> Void)? { get set }
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
   var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)? { get set }
   var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)? { get set }
   var didUpdateChartViewController: ((UIViewController) -> Void)? { get set }
@@ -20,8 +21,8 @@ protocol TokenDetailsViewModel: AnyObject {
 }
 
 struct TokenDetailsModel {
-  let tokenTitle: String
-  let tokenSubtitle: String?
+  let title: String
+  let isVerified: Bool
   let image: TokenImage
   let tokenAmount: String
   let convertedAmount: String?
@@ -37,7 +38,7 @@ final class TokenDetailsViewModelImplementation: TokenDetailsViewModel, TokenDet
   
   // MARK: - TokenDetailsViewModel
   
-  var didUpdateTitleView: ((TokenDetailsTitleView.Model) -> Void)?
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
   var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)?
   var didUpdateButtonsView: ((TokenDetailsHeaderButtonsView.Model) -> Void)?
   var didUpdateChartViewController: ((UIViewController) -> Void)?
@@ -110,10 +111,26 @@ private extension TokenDetailsViewModelImplementation {
   }
   
   func setupTitleView(model: TokenDetailsModel) {
+    let title = model.title.withTextStyle(.h3, color: .Text.primary)
+    var caption: TKPlainButton.Model?
+    if !model.isVerified {
+      caption = TKPlainButton.Model(
+        title: TKLocales.Token.unverified.withTextStyle(.body2, color: .Accent.orange),
+        icon: TKPlainButton.Model.Icon(
+          image: .TKUIKit.Icons.Size12.informationCircle, 
+          tintColor: .Accent.orange,
+          padding: UIEdgeInsets(top: 5, left: 4, bottom: 3, right: 0)
+        ),
+        action: {
+          
+        }
+      )
+    }
+    
     didUpdateTitleView?(
-      TokenDetailsTitleView.Model(
-        title: model.tokenTitle,
-        warning: model.tokenSubtitle
+      TKUINavigationBarTitleView.Model(
+        title: title,
+        caption: caption
       )
     )
   }

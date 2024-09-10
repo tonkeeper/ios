@@ -6,11 +6,11 @@ final class StakingBalanceDetailsView: TKView {
   let contentStackView: UIStackView = {
     let stackView = UIStackView()
     stackView.axis = .vertical
-    stackView.isLayoutMarginsRelativeArrangement = true
-    
     return stackView
   }()
   
+  let navigationBar = TKUINavigationBar()
+  let titleView = TKUINavigationBarTitleView()
   let informationView = TokenDetailsInformationView()
   let buttonsView = TokenDetailsHeaderButtonsView()
   let jettonButtonContainer = TKPaddingContainerView()
@@ -26,6 +26,11 @@ final class StakingBalanceDetailsView: TKView {
   override func setup() {
     super.setup()
     backgroundColor = .Background.page
+    
+    scrollView.contentInsetAdjustmentBehavior = .never
+    
+    navigationBar.scrollView = scrollView
+    navigationBar.centerView = titleView
     
     stakeStateButtonContainer.setViews([stakeStateButton])
     stakeStateButtonContainer.padding = UIEdgeInsets(top: 0, left: 16, bottom: 16, right: 16)
@@ -55,6 +60,7 @@ final class StakingBalanceDetailsView: TKView {
     linksViewContainer.padding = UIEdgeInsets(top: 0, left: 16, bottom: 16, right: 16)
     
     addSubview(scrollView)
+    addSubview(navigationBar)
     scrollView.addSubview(contentStackView)
     contentStackView.addArrangedSubview(informationView)
     contentStackView.addArrangedSubview(buttonsView)
@@ -68,7 +74,19 @@ final class StakingBalanceDetailsView: TKView {
     setupConstraints()
   }
   
+  public override func layoutSubviews() {
+    super.layoutSubviews()
+   
+    navigationBar.layoutIfNeeded()
+    scrollView.contentInset.top = navigationBar.bounds.height
+    scrollView.contentInset.bottom = safeAreaInsets.bottom + 16
+  }
+  
   override func setupConstraints() {
+    navigationBar.snp.makeConstraints { make in
+      make.top.left.right.equalTo(self)
+    }
+    
     scrollView.snp.makeConstraints { make in
       make.edges.equalTo(self)
       make.width.equalTo(self).priority(.high)

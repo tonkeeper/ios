@@ -20,7 +20,7 @@ protocol StakingBalanceDetailsModuleInput: AnyObject {
 }
 
 protocol StakingBalanceDetailsViewModel: AnyObject {
-  var title: String { get }
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)? { get set }
   var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)? { get set }
   var didUpdateListViewModel: ((StakingDetailsListView.Model) -> Void)? { get set }
   var didUpdateDescription: ((NSAttributedString?) -> Void)? { get set }
@@ -48,10 +48,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   
   // MARK: - StakingViewModel
   
-  var title: String {
-    stakingPoolInfo.name
-  }
-  
+  var didUpdateTitleView: ((TKUINavigationBarTitleView.Model) -> Void)?
   var didUpdateInformationView: ((TokenDetailsInformationView.Model) -> Void)?
   var didUpdateListViewModel: ((StakingDetailsListView.Model) -> Void)?
   var didUpdateDescription: ((NSAttributedString?) -> Void)?
@@ -109,6 +106,7 @@ final class StakingBalanceDetailsViewModelImplementation: StakingBalanceDetailsV
   
   
   func viewDidLoad() {
+    didUpdateTitleView?(TKUINavigationBarTitleView.Model(title: stakingPoolInfo.name))
     queue.sync {
       prepareInitialState()
       updateInformation()

@@ -17,26 +17,18 @@ final class StakingBalanceDetailsViewController: GenericViewViewController<Staki
   override func viewDidLoad() {
     super.viewDidLoad()
     
-    setup()
-    setupViewEvents()
+    setupNavigationBar()
     setupBindings()
     viewModel.viewDidLoad()
-  }
-  
-  public override func viewWillAppear(_ animated: Bool) {
-    super.viewWillAppear(animated)
-    
-    navigationController?.setNavigationBarHidden(false, animated: true)
   }
 }
 
 private extension StakingBalanceDetailsViewController {
-
-  func setup() {
-    navigationItem.title = viewModel.title
-  }
-  
   func setupBindings() {
+    viewModel.didUpdateTitleView = { [weak self] model in
+      self?.customView.titleView.configure(model: model)
+    }
+    
     viewModel.didUpdateListViewModel = { [weak self] model in
       self?.customView.listView.configure(model: model)
     }
@@ -81,7 +73,15 @@ private extension StakingBalanceDetailsViewController {
     }
   }
   
-  func setupViewEvents() {
-  
+  private func setupNavigationBar() {
+    guard let navigationController,
+          !navigationController.viewControllers.isEmpty else {
+      return
+    }
+    customView.navigationBar.leftViews = [
+      TKUINavigationBar.createBackButton {
+        navigationController.popViewController(animated: true)
+      }
+    ]
   }
 }

@@ -17,8 +17,8 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
   func getTokenModel(balance: ConvertedBalance?) -> TokenDetailsModel {
     guard let balance else {
       return TokenDetailsModel(
-        tokenTitle: TonInfo.name,
-        tokenSubtitle: nil,
+        title: TonInfo.name,
+        isVerified: true,
         image: .ton,
         tokenAmount: "0",
         convertedAmount: "0",
@@ -27,8 +27,8 @@ struct TonTokenDetailsConfigurator: TokenDetailsConfigurator {
     }
     let amount = mapper.mapTonBalance(tonBalance: balance.tonBalance, currency: balance.currency)
     return TokenDetailsModel(
-      tokenTitle: TonInfo.name,
-      tokenSubtitle: nil,
+      title: TonInfo.name,
+      isVerified: true,
       image: .ton,
       tokenAmount: amount.tokenAmount,
       convertedAmount: amount.convertedAmount,
@@ -49,20 +49,18 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
   }
   
   func getTokenModel(balance: ConvertedBalance?) -> TokenDetailsModel {
-    let subtitle: String?
+    let isVerified: Bool
     switch jettonItem.jettonInfo.verification {
     case .whitelist:
-      subtitle = nil
-    case .none:
-      subtitle = TKLocales.Token.unverified
-    case .blacklist:
-      subtitle = TKLocales.Token.unverified
+      isVerified = true
+    case .none, .blacklist:
+      isVerified = false
     }
     
     guard let balance else {
       return TokenDetailsModel(
-        tokenTitle: jettonItem.jettonInfo.name,
-        tokenSubtitle: subtitle,
+        title: jettonItem.jettonInfo.name,
+        isVerified: isVerified,
         image: .url(jettonItem.jettonInfo.imageURL),
         tokenAmount: "0",
         convertedAmount: "0",
@@ -80,8 +78,8 @@ struct JettonTokenDetailsConfigurator: TokenDetailsConfigurator {
       convertedAmount = nil
     }
     return TokenDetailsModel(
-      tokenTitle: jettonItem.jettonInfo.name,
-      tokenSubtitle: subtitle,
+      title: jettonItem.jettonInfo.name,
+      isVerified: isVerified,
       image: .url(jettonItem.jettonInfo.imageURL),
       tokenAmount: tokenAmount,
       convertedAmount: convertedAmount,
