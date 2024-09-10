@@ -14,7 +14,7 @@ public final class TKBottomSheetViewController: UIViewController {
   
   private lazy var tapGesture = UITapGestureRecognizer(
     target: self,
-    action: #selector(tapGestureHandler)
+    action: #selector(tapGestureHandler) 
   )
   
   private lazy var panGesture = UIPanGestureRecognizer(

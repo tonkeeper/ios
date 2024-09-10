@@ -162,6 +162,24 @@ public struct TonkeeperDeeplinkParser: DeeplinkParser {
         )
         
         return .tonkeeper(TonkeeperDeeplink.publish(model))
+      case "transfer":
+        let address = url.lastPathComponent
+        var amount: BigUInt?
+        var comment: String?
+        var jettonAddress: Address?
+        if let amountRawParameter = queryItems.first(where: { $0.name == "amount" })?.value,
+           let amountParameter = BigUInt(amountRawParameter) {
+          amount = amountParameter
+        }
+        if let commentParameter = queryItems.first(where: { $0.name == "text" })?.value {
+          comment = commentParameter
+        }
+        if let jettonParameter = queryItems.first(where: { $0.name == "jetton" })?.value,
+           let address = try? Address.parse(jettonParameter){
+          jettonAddress = address
+        }
+        
+        return .ton(.transfer(recipient: address, amount: amount, comment: comment, jettonAddress: jettonAddress))
       default:
         throw DeeplinkParserError.unsupportedDeeplink(string: string)
       }

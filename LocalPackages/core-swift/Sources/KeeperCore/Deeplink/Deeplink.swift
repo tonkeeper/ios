@@ -87,6 +87,7 @@ public enum TonkeeperDeeplink {
   
   case signer(SignerDeeplink)
   case publish(TonkeeperPublishModel)
+  case transfer(recipient: String, amount: BigUInt?, comment: String?, jettonAddress: Address?)
   
   public var string: String { "" }
 }

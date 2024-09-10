@@ -452,6 +452,14 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         return true
       }
       return false
+    case let .transfer(recipient, amount, comment, jettonAddress):
+      openSendDeeplink(
+        recipient: recipient,
+        amount: amount,
+        comment: comment,
+        jettonAddress: jettonAddress
+      )
+      return true
     }
   }
   

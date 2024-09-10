@@ -122,7 +122,7 @@ private extension OnboardingCoordinator {
         self?.handleSignerDeeplink(signerDeeplink)
       }
       return true
-    case .publish:
+    case .publish, .transfer:
       return false
     }
   }
