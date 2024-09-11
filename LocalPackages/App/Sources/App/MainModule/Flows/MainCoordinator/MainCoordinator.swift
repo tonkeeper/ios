@@ -505,6 +505,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   func openWalletPicker() {
+    UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
     let module = WalletsListAssembly.module(
       model: WalletsPickerListModel(
         walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore

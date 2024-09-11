@@ -36,6 +36,16 @@ final class HistoryListShimmerCell: UICollectionViewCell {
     sectionHeaderShimmerView.startAnimation()
     cellShimmerView.forEach { $0.startAnimation() }
   }
+  
+  func stopAnimation() {
+    sectionHeaderShimmerView.stopAnimation()
+    cellShimmerView.forEach { $0.stopAnimation() }
+  }
+  
+  override func prepareForReuse() {
+    super.prepareForReuse()
+    stopAnimation()
+  }
 }
 
 private extension HistoryListShimmerCell {
@@ -96,6 +106,12 @@ private final class HistoryListShimmerCellView: UIView {
     iconShimmerView.startAnimation()
     titleShimmerView.startAnimation()
     subtitleShimmerView.startAnimation()
+  }
+  
+  func stopAnimation() {
+    iconShimmerView.stopAnimation()
+    titleShimmerView.stopAnimation()
+    subtitleShimmerView.stopAnimation()
   }
   
   private func setup() {

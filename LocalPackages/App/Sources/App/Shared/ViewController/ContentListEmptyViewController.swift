@@ -44,10 +44,22 @@ class ContentListEmptyViewController: GenericViewViewController<ContentListEmpty
       navigationBarIsHidden = false
       navigationBarAlpha = 1
     }
-    UIView.animate(withDuration: animated ? 0.2 : 0) {
+    
+    let animation = {
       self.customView.navigationBarView.alpha = navigationBarAlpha
-    } completion: { _ in
+    }
+    let completion = {
       self.customView.navigationBarView.isHidden = navigationBarIsHidden
+    }
+    if animated {
+      UIView.animate(withDuration: 0.2) {
+        animation()
+      } completion: { _ in
+        completion()
+      }
+    } else {
+      animation()
+      completion()
     }
   }
   

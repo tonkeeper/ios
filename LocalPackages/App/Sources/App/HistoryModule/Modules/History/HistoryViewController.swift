@@ -31,9 +31,9 @@ private extension HistoryViewController {
   func setup() {
     customView.navigationBarView.title = TKLocales.History.title
     
-    setListViewController(historyListViewController)
-    
     setupBindings()
+    
+    setListViewController(historyListViewController)
   }
   
   func setupBindings() {

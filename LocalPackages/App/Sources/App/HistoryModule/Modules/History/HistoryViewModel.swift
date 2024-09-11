@@ -9,6 +9,10 @@ protocol HistoryModuleOutput: AnyObject {
   var didTapReceive: ((Wallet) -> Void)? { get set }
 }
 
+protocol HistoryModuleInput: AnyObject {
+  func setHasEvents(_ hasEvents: Bool)
+}
+
 protocol HistoryViewModel: AnyObject {
   var didUpdateState: ((HistoryViewController.State) -> Void)? { get set }
   var didUpdateEmptyModel: ((TKEmptyViewController.Model) -> Void)? { get set }
@@ -17,14 +21,24 @@ protocol HistoryViewModel: AnyObject {
   func viewDidLoad()
 }
 
-final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOutput {
+final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOutput, HistoryModuleInput {
   var didTapBuy: ((Wallet) -> Void)?
   var didTapReceive: ((Wallet) -> Void)?
   var didChangeWallet: ((Wallet) -> Void)?
   
+  func setHasEvents(_ hasEvents: Bool) {
+    self.state = hasEvents ? .list : .empty
+  }
+  
   var didUpdateState: ((HistoryViewController.State) -> Void)?
   var didUpdateEmptyModel: ((TKEmptyViewController.Model) -> Void)?
   var didUpdateIsConnecting: ((Bool) -> Void)?
+  
+  private var state: ContentListEmptyViewController.State = .list {
+    didSet {
+      didUpdateState?(state)
+    }
+  }
   
   private let wallet: Wallet
   private let backgroundUpdateStore: BackgroundUpdateStoreV3
@@ -43,7 +57,8 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
 //    }
 //    
     setupEmpty(wallet: wallet)
-    didUpdateState?(.list)
+    didUpdateState?(state)
+    
     
 //    let state = backgroundUpdateStore.getState()
 //    didUpdateBackgroundUpdateState(newState: state)

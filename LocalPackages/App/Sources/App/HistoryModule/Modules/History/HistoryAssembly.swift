@@ -7,7 +7,7 @@ struct HistoryAssembly {
   static func module(wallet: Wallet,
                      historyListViewController: HistoryListViewController,
                      keeperCoreMainAssembly: KeeperCore.MainAssembly)
-  -> MVVMModule<HistoryViewController, HistoryModuleOutput, Void> {
+  -> MVVMModule<HistoryViewController, HistoryModuleOutput, HistoryModuleInput> {
     let viewModel = HistoryV2ViewModelImplementation(
       wallet: wallet,
       backgroundUpdateStore: keeperCoreMainAssembly.storesAssembly.backgroundUpdateStore
@@ -16,6 +16,6 @@ struct HistoryAssembly {
       viewModel: viewModel,
       historyListViewController: historyListViewController
     )
-    return .init(view: viewController, output: viewModel, input: Void())
+    return .init(view: viewController, output: viewModel, input: viewModel)
   }
 }

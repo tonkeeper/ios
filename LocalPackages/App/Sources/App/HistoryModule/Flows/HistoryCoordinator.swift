@@ -43,8 +43,15 @@ private extension HistoryCoordinator {
         paginationLoader: keeperCoreMainAssembly.loadersAssembly.historyAllEventsPaginationLoader(
           wallet: wallet
         ),
+        cacheProvider: HistoryListAllEventsCacheProvider(historyService: keeperCoreMainAssembly.servicesAssembly.historyService()),
         keeperCoreMainAssembly: keeperCoreMainAssembly,
         historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
+      )
+      
+      let historyModule = HistoryAssembly.module(
+        wallet: wallet,
+        historyListViewController: listModule.view,
+        keeperCoreMainAssembly: keeperCoreMainAssembly
       )
       
       listModule.output.didSelectEvent = { [weak self] event in
@@ -58,15 +65,13 @@ private extension HistoryCoordinator {
         }
       }
       
+      listModule.output.didUpdateState = { hasEvents in
+        historyModule.input.setHasEvents(hasEvents)
+      }
+      
       listModule.output.didSelectEncryptedComment = { [weak self] wallet, payload in
         self?.decryptComment(wallet: wallet, payload: payload)
       }
-      
-      let historyModule = HistoryAssembly.module(
-        wallet: wallet,
-        historyListViewController: listModule.view,
-        keeperCoreMainAssembly: keeperCoreMainAssembly
-      )
       
       historyModule.output.didTapReceive = { [weak self] wallet in
         self?.openReceive(wallet: wallet)

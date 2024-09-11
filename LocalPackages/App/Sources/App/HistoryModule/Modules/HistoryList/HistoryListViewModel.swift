@@ -5,7 +5,7 @@ import KeeperCore
 import TonSwift
 
 protocol HistoryListModuleOutput: AnyObject {
-  var didUpdate: ((_ hasEvents: Bool) -> Void)? { get set }
+  var didUpdateState: ((_ hasEvents: Bool) -> Void)? { get set }
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)? { get set }
   var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)? { get set }
   var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)? { get set }
@@ -27,7 +27,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
     let events: [AccountEvent]
   }
   
-  var didUpdate: ((Bool) -> Void)?
+  var didUpdateState: ((_ hasEvents: Bool) -> Void)?
   var didSelectEvent: ((AccountEventDetailsEvent) -> Void)?
   var didSelectNFT: ((_ wallet: Wallet, _ address: Address) -> Void)?
   var didSelectEncryptedComment: ((_ wallet: Wallet, _ payload: EncryptedCommentPayload) -> Void)?
@@ -47,6 +47,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   private let wallet: Wallet
   private let paginationLoader: HistoryPaginationLoader
+  private let cacheProvider: HistoryListCacheProvider
   private let nftService: NFTService
   private let accountEventMapper: AccountEventMapper
   private let dateFormatter: DateFormatter
@@ -54,12 +55,14 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   
   init(wallet: Wallet,
        paginationLoader: HistoryPaginationLoader,
+       cacheProvider: HistoryListCacheProvider,
        nftService: NFTService,
        accountEventMapper: AccountEventMapper,
        dateFormatter: DateFormatter,
        historyEventMapper: HistoryEventMapper) {
     self.wallet = wallet
     self.paginationLoader = paginationLoader
+    self.cacheProvider = cacheProvider
     self.nftService = nftService
     self.accountEventMapper = accountEventMapper
     self.dateFormatter = dateFormatter
@@ -67,6 +70,7 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
   }
   
   func viewDidLoad() {
+    setInitialState()
     setupLoader()
   }
   
@@ -85,10 +89,31 @@ final class HistoryListViewModelImplementation: HistoryListViewModel, HistoryLis
 
 private extension HistoryListViewModelImplementation {
 
+  func setInitialState() {
+    do {
+      let cached = try cacheProvider.getCache(wallet: wallet)
+      if cached.isEmpty {
+        didUpdateState?(false)
+      } else {
+        cached.forEach { event in
+          self.events.append(event)
+          eventsOrderMap[event.eventId] = self.events.count - 1
+        }
+        let (snapshot, cellModels) = handleAccountEvents(cached, hasMore: false)
+        self.eventCellModels.merge(cellModels) { $1 }
+        self.snapshot = snapshot
+        didUpdateSnapshot?(snapshot)
+      }
+    } catch {
+      snapshot.appendSections([.shimmer])
+      snapshot.appendItems([.shimmer], toSection: .shimmer)
+      didUpdateSnapshot?(snapshot)
+    }
+  }
+  
   func setupLoader() {
-    Task {
-      let stream = await paginationLoader.createStream()
-      for await event in stream {
+    paginationLoader.didGetEvent = { event in
+      Task {
         await self.serialActor.addTask {
           await self.handleLoaderEvent(event)
         }
@@ -99,19 +124,12 @@ private extension HistoryListViewModelImplementation {
   
   func handleLoaderEvent(_ event: HistoryPaginationLoader.Event) async {
     switch event {
-    case .cached(let events):
-      didUpdate?(true)
-      handleCached(events)
     case .loading:
-      didUpdate?(true)
-      handleLoading()
+      break
     case .loadingFailed:
-      didUpdate?(false)
+      handleLoadingFailed()
     case .loaded(let accountEvents, let hasMore):
-      guard !accountEvents.events.isEmpty else {
-        didUpdate?(false)
-        return
-      }
+      try? cacheProvider.setCache(events: self.events, wallet: wallet)
       await handleLoaded(accountEvents, hasMore: hasMore)
     case .loadedPage(let accountEvents, let hasMore):
       await handleLoadedPage(accountEvents, hasMore: hasMore)
@@ -130,33 +148,37 @@ private extension HistoryListViewModelImplementation {
     sectionsOrderMap.removeAll()
     snapshot.deleteAllItems()
   }
-  
-  func handleLoading() {
+
+  func handleLoadingFailed() {
     reset()
-    snapshot.appendSections([.shimmer])
-    snapshot.appendItems([.shimmer], toSection: .shimmer)
+    snapshot.deleteAllItems()
     DispatchQueue.main.async { [snapshot] in
+      self.didUpdateState?(false)
       self.didUpdateSnapshot?(snapshot)
     }
   }
-  
-  func handleCached(_ accountEvents: [AccountEvent]) {
-    reset()
-    accountEvents.forEach { event in
-      self.events.append(event)
-      eventsOrderMap[event.eventId] = self.events.count - 1
-    }
-    handleAccountEvents(accountEvents, hasMore: false)
-  }
-  
+
   func handleLoaded(_ accountEvents: AccountEvents, hasMore: Bool) async {
     reset()
+    guard !accountEvents.events.isEmpty else {
+      await MainActor.run {
+        self.didUpdateState?(false)
+        self.didUpdateSnapshot?(self.snapshot)
+      }
+      return
+    }
     accountEvents.events.forEach { event in
       self.events.append(event)
       eventsOrderMap[event.eventId] = self.events.count - 1
     }
     await handleEventsWithNFTs(events: accountEvents.events)
-    handleAccountEvents(accountEvents.events, hasMore: hasMore)
+    let (snapshot, cellModels) = handleAccountEvents(accountEvents.events, hasMore: hasMore)
+    await MainActor.run {
+      self.didUpdateState?(true)
+      self.eventCellModels.merge(cellModels) { $1 }
+      self.snapshot = snapshot
+      self.didUpdateSnapshot?(snapshot)
+    }
   }
   
   func handleLoadedPage(_ accountEvents: AccountEvents, hasMore: Bool) async {
@@ -167,8 +189,14 @@ private extension HistoryListViewModelImplementation {
       self.events.append(event)
       eventsOrderMap[event.eventId] = self.events.count - 1
     }
+    try? cacheProvider.setCache(events: self.events, wallet: wallet)
     await handleEventsWithNFTs(events: accountEvents.events)
-    handleAccountEvents(accountEvents.events, hasMore: hasMore)
+    let (snapshot, cellModels) = handleAccountEvents(accountEvents.events, hasMore: hasMore)
+    await MainActor.run {
+      self.eventCellModels.merge(cellModels) { $1 }
+      self.snapshot = snapshot
+      didUpdateSnapshot?(snapshot)
+    }
   }
   
   func handlePageLoading() {
@@ -190,14 +218,17 @@ private extension HistoryListViewModelImplementation {
       self.snapshot.reloadItems([.pagination])
     }
     DispatchQueue.main.async {
-      self.paginationCellModel = HistoryListPaginationCell.Model(state: .error(title: "Failed", retryButtonAction: {
-        
+      self.paginationCellModel = HistoryListPaginationCell.Model(state: .error(title: "Failed", retryButtonAction: { [weak self] in
+        self?.loadNextPage()
       }))
       self.didUpdateSnapshot?(self.snapshot)
     }
   }
   
-  func handleAccountEvents(_ accountsEvents: [AccountEvent], hasMore: Bool) {
+  func handleAccountEvents(_ accountsEvents: [AccountEvent], hasMore: Bool)
+  -> (snapshot: HistoryListViewController.Snapshot, eventCellModels: [String: HistoryCell.Model]) {
+    var snapshot = self.snapshot
+    
     snapshot.deleteSections([.pagination])
     
     let calendar = Calendar.current
@@ -286,10 +317,8 @@ private extension HistoryListViewModelImplementation {
       snapshot.appendSections([.pagination])
       snapshot.appendItems([.pagination])
     }
-    DispatchQueue.main.async { [snapshot, models] in
-      self.eventCellModels.merge(models) { $1 }
-      self.didUpdateSnapshot?(snapshot)
-    }
+    
+    return (snapshot, models)
   }
   
   func mapEvent(_ event: AccountEvent) -> AccountEventModel {

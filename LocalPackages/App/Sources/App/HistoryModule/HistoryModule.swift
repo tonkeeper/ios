@@ -32,6 +32,7 @@ struct HistoryModule {
       paginationLoader: dependencies.keeperCoreMainAssembly.loadersAssembly.historyTonEventsPaginationLoader(
         wallet: wallet
       ),
+      cacheProvider: HistoryListTonEventsCacheProvider(historyService: dependencies.keeperCoreMainAssembly.servicesAssembly.historyService()),
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
       historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
     )
@@ -48,6 +49,8 @@ struct HistoryModule {
         wallet: wallet,
         jettonInfo: jettonInfo
       ),
+      cacheProvider: HistoryListJettonEventsCacheProvider(jettonInfo: jettonInfo,
+                                                          historyService: dependencies.keeperCoreMainAssembly.servicesAssembly.historyService()),
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly,
       historyEventMapper: HistoryEventMapper(accountEventActionContentProvider: HistoryListAccountEventActionContentProvider())
     )

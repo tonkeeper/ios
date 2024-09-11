@@ -264,12 +264,20 @@ extension HistoryListViewController: UICollectionViewDelegate {
   func collectionView(_ collectionView: UICollectionView, 
                       willDisplay cell: UICollectionViewCell,
                       forItemAt indexPath: IndexPath) {
+    (cell as? HistoryListShimmerCell)?.startAnimation()
+    
     let snapshot = dataSource.snapshot()
     let section = snapshot.sectionIdentifiers[indexPath.section]
     guard case .pagination = section else {
       return
     }
     viewModel.loadNextPage()
+  }
+  
+  func collectionView(_ collectionView: UICollectionView, 
+                      didEndDisplaying cell: UICollectionViewCell,
+                      forItemAt indexPath: IndexPath) {
+    (cell as? HistoryListShimmerCell)?.stopAnimation()
   }
 }
 

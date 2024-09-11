@@ -2,7 +2,6 @@ import Foundation
 import TonSwift
 
 protocol HistoryListLoader {
-  func cachedEvents(wallet: Wallet) throws -> [AccountEvent]
   func loadEvents(wallet: Wallet, beforeLt: Int64?, limit: Int) async throws -> AccountEvents
   func loadEvent(wallet: Wallet, eventId: String) async throws -> AccountEvent
 }
@@ -14,10 +13,7 @@ final class HistoryListAllEventsLoader: HistoryListLoader {
     self.historyService = historyService
   }
   
-  func cachedEvents(wallet: Wallet) throws -> [AccountEvent] {
-    try historyService.cachedEvents(wallet: wallet).events
-  }
-  
+
   func loadEvents(wallet: Wallet,
                   beforeLt: Int64?,
                   limit: Int) async throws -> AccountEvents {
@@ -36,28 +32,7 @@ final class HistoryListTonEventsLoader: HistoryListLoader {
   init(historyService: HistoryService) {
     self.historyService = historyService
   }
-  
-  func cachedEvents(wallet: Wallet) throws -> [AccountEvent] {
-    let cachedEvents = try historyService.cachedEvents(wallet: wallet)
-    let filteredEvents = cachedEvents.events.compactMap { event -> AccountEvent? in
-      let filteredActions = event.actions.compactMap { action -> AccountEventAction? in
-        guard case .tonTransfer = action.type else { return nil }
-        return action
-      }
-      guard !filteredActions.isEmpty else { return nil }
-      return AccountEvent(
-        eventId: event.eventId,
-        date: event.date,
-        account: event.account,
-        isScam: event.isScam,
-        isInProgress: event.isInProgress,
-        fee: event.fee,
-        actions: filteredActions
-      )
-    }
-    return filteredEvents
-  }
-  
+
   func loadEvents(wallet: Wallet,
                   beforeLt: Int64?,
                   limit: Int) async throws -> AccountEvents {
@@ -107,14 +82,7 @@ final class HistoryListJettonEventsLoader: HistoryListLoader {
     self.jettonInfo = jettonInfo
     self.historyService = historyService
   }
-  
-  func cachedEvents(wallet: Wallet) throws -> [AccountEvent] {
-    try historyService.cachedEvents(
-      wallet: wallet,
-      jettonInfo: jettonInfo
-    ).events
-  }
-  
+
   func loadEvents(wallet: Wallet,
                   beforeLt: Int64?,
                   limit: Int) async throws -> AccountEvents {
