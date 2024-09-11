@@ -72,11 +72,7 @@ public final class StakeWithdrawConfirmationController: StakeConfirmationControl
     do {
       let transactionBoc = try await createTransactionBoc()
       try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
-      NotificationCenter.default.post(
-        name: NSNotification.Name(rawValue: "didSendTransaction"),
-        object: nil,
-        userInfo: ["Wallet": wallet]
-      )
+      NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
     } catch {
       Task { @MainActor in
         didGetError?(.failedToSendTransaction)

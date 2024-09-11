@@ -55,7 +55,12 @@ struct DefaultTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignT
       }
     )
     
-    try await sendService.sendTransaction(boc: boc, wallet: wallet)
+    do {
+      try await sendService.sendTransaction(boc: boc, wallet: wallet)
+      NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
+    } catch {
+      throw error
+    }
     try await tonConnectService.confirmRequest(boc: boc, appRequest: appRequest, app: app)
   }
   
@@ -98,7 +103,12 @@ struct BridgeTonConnectSignTransactionConfirmationCoordinatorConfirmator: SignTr
         }
       )
       
-      try await sendService.sendTransaction(boc: boc, wallet: wallet)
+      do {
+        try await sendService.sendTransaction(boc: boc, wallet: wallet)
+        NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
+      } catch {
+        throw error
+      }
       let sendTransactionResponse = TonConnect.SendTransactionResponse.success(
         .init(result: boc,
               id: appRequest.id)
@@ -148,7 +158,12 @@ struct StonfiSwapSignTransactionConfirmationCoordinatorConfirmator: SignTransact
       }
     )
     
-    try await sendService.sendTransaction(boc: boc, wallet: wallet)
+    do {
+      try await sendService.sendTransaction(boc: boc, wallet: wallet)
+      NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
+    } catch {
+      throw error
+    }
     responseHandler(.response(boc))
   }
   

@@ -113,7 +113,7 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
       self.sendEvent(.didChangeActiveWallet(wallet: wallet))
     }
   }
-  
+
   public func setWallet(_ wallet: Wallet, metaData: WalletMetaData) async {
     let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
       guard let keeperInfo else { return nil }

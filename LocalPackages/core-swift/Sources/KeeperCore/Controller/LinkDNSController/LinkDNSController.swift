@@ -51,8 +51,12 @@ public final class LinkDNSController {
       }
       return boc
     }
-
-    try await sendService.sendTransaction(boc: boc, wallet: wallet)
+    do {
+      try await sendService.sendTransaction(boc: boc, wallet: wallet)
+      NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
+    } catch {
+      throw error
+    }
   }
 }
 

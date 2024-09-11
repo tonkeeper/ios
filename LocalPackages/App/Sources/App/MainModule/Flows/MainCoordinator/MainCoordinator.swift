@@ -38,6 +38,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
 
   var deeplinkHandleTask: Task<Void, Never>?
   
+  private var sendTransactionNotificationToken: NSObjectProtocol?
+  
   init(router: TabBarControllerRouter,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
@@ -83,6 +85,17 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     appStateTracker.addObserver(self)
     reachabilityTracker.addObserver(self)
+    
+    sendTransactionNotificationToken = NotificationCenter.default
+      .addObserver(forName: .transactionSendNotification, object: nil, queue: .main) { [weak self] notification in
+        guard let self else { return }
+        self.openHistoryTab()
+        if let wallet = notification.userInfo?["wallet"] as? Wallet {
+          Task {
+            await self.keeperCoreMainAssembly.storesAssembly.walletsStore.setWalletActive(wallet)
+          }
+        }
+    }
   }
   
   override func start(deeplink: CoordinatorDeeplink? = nil) {
@@ -1012,29 +1025,13 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     addChild(coordinator)
     coordinator.start()
   }
-  //
-  //  func openPoolDetailsDeeplink(poolAddress: Address, wallet: Wallet) {
-  //    ToastPresenter.hideAll()
-  //    ToastPresenter.showToast(configuration: .loading)
-  //    Task {
-  //      do {
-  //        let poolInfo = try await self.keeperCoreMainAssembly.servicesAssembly.stackingService().loadStakingPoolInfo(wallet: wallet, address: poolAddress)
-  //        await MainActor.run {
-  //          ToastPresenter.hideAll()
-  //          self.openStakingItemDetails(
-  //            wallet: wallet,
-  //            stakingPoolInfo: poolInfo)
-  //        }
-  //
-  //      } catch {
-  //        await MainActor.run {
-  //          ToastPresenter.hideAll()
-  //          ToastPresenter.showToast(configuration: .failed)
-  //        }
-  //        return
-  //      }
-  //    }
-  //  }
+  
+  private func openHistoryTab() {
+    guard let historyViewController = historyCoordinator?.router.rootViewController else { return }
+    guard let index = router.rootViewController.viewControllers?.firstIndex(of: historyViewController) else { return }
+    router.rootViewController.selectedIndex = index
+    router.dismiss(animated: true)
+  }
 }
 
 // MARK: - Ton Connect
