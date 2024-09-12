@@ -112,7 +112,7 @@ struct WalletBalanceListMapper {
   
   func createTelegramChannelConfiguration() -> WalletBalanceListCell.Configuration {
     createSetupItem(
-      text: "Join Tonkeeper channel",
+      text: TKLocales.WalletBalanceList.join_channel,
       icon: .TKUIKit.Icons.Size28.telegram,
       iconColor: .Accent.blue
     )
@@ -120,7 +120,7 @@ struct WalletBalanceListMapper {
   
   func createNotificationsConfiguration() -> WalletBalanceListCell.Configuration {
     createSetupItem(
-      text: "Enable transaction notifications",
+      text: TKLocales.WalletBalanceList.transaction_notifications,
       icon: .TKUIKit.Icons.Size28.bell,
       iconColor: .Accent.green
     )
@@ -136,10 +136,10 @@ struct WalletBalanceListMapper {
     case .success(let success):
       switch success {
       case .faceID:
-        title = TKLocales.FinishSetup.setup_biometry("Face ID")
+        title = TKLocales.FinishSetup.setup_biometry(String.faceID)
         icon = .TKUIKit.Icons.Size28.faceId
       case .touchID:
-        title = TKLocales.FinishSetup.setup_biometry("Touch ID")
+        title = TKLocales.FinishSetup.setup_biometry(String.touchID)
         icon = .TKUIKit.Icons.Size28.faceId
       case .none:
         title = TKLocales.FinishSetup.biometry_unavailable
@@ -225,4 +225,6 @@ private extension CGFloat {
 
 extension String {
   static let secureModeValue = "* * *"
+  static let faceID = TKLocales.SettingsListSecurityConfigurator.face_id
+  static let touchID = TKLocales.SettingsListSecurityConfigurator.touch_id
 }

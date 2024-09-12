@@ -103,10 +103,10 @@ private extension SignerSignViewModelImplementation {
       firstStepModel: SignerSignStepView.Model(contentModel: TKUIListItemView.Configuration(
         contentConfiguration: TKUIListItemContentView.Configuration(
           leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: "Step 1".withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
+            title: TKLocales.SignerSign.step_one.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
             tagViewModel: nil,
             subtitle: nil,
-            description: "Scan the QR code with Signer".withTextStyle(
+            description: TKLocales.SignerSign.step_one_description.withTextStyle(
               .label1,
               color: .Text.primary,
               alignment: .left,
@@ -120,10 +120,10 @@ private extension SignerSignViewModelImplementation {
       secondStepModel: SignerSignStepView.Model(contentModel: TKUIListItemView.Configuration(
         contentConfiguration: TKUIListItemContentView.Configuration(
           leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: "Step 2".withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
+            title: TKLocales.SignerSign.step_two.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
             tagViewModel: nil,
             subtitle: nil,
-            description: "Confirm your transaction in Signer".withTextStyle(
+            description: TKLocales.SignerSign.step_two_description.withTextStyle(
               .label1,
               color: .Text.primary,
               alignment: .left,
@@ -137,10 +137,10 @@ private extension SignerSignViewModelImplementation {
       thirdStepModel: SignerSignStepView.Model(contentModel: TKUIListItemView.Configuration(
         contentConfiguration: TKUIListItemContentView.Configuration(
           leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: "Step 3".withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
+            title: TKLocales.SignerSign.step_three.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
             tagViewModel: nil,
             subtitle: nil,
-            description: "Scan signed transaction QR code from Signer".withTextStyle(
+            description: TKLocales.SignerSign.step_three_description.withTextStyle(
               .label1,
               color: .Text.primary,
               alignment: .left,
@@ -153,7 +153,7 @@ private extension SignerSignViewModelImplementation {
       ), isFirst: true, isLast: false),
       qrCodeModel: TKFancyQRCodeView.Model(
         images: qrCodeImages,
-        topString: "TRANSACTION",
+        topString: TKLocales.SignerSign.transaction.uppercased(),
         bottomLeftString: signerSignController.wallet.metaData.label
       )
     )

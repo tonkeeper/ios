@@ -132,7 +132,7 @@ private extension StakingConfirmationMapper {
     items.append(headerItem)
     
     let hintItem: TKModalCardViewController.Configuration.Item = .text(
-      .init(text: "Confirm action".withTextStyle(.body1, color: .Text.secondary, alignment: .center), numberOfLines: 1),
+      .init(text: TKLocales.StakingConfirmationMapper.confirm_action.withTextStyle(.body1, color: .Text.secondary, alignment: .center), numberOfLines: 1),
       bottomSpacing: 4
     )
     items.append(hintItem)
@@ -149,12 +149,12 @@ private extension StakingConfirmationMapper {
 }
 
 private extension String {
-  static let wallet = "Wallet"
-  static let recipientTitle = "Recipient"
-  static let amountTitle = "Amount"
-  static let apyTitle = "APY"
-  static let feeTitle = "Fee"
-  static let buttonTitle = "Stake"
+  static let wallet = TKLocales.StakingConfirmationMapper.wallet
+  static let recipientTitle = TKLocales.StakingConfirmationMapper.recipient
+  static let amountTitle = TKLocales.StakingConfirmationMapper.amount
+  static let apyTitle = TKLocales.StakingConfirmationMapper.apy
+  static let feeTitle = TKLocales.StakingConfirmationMapper.fee
+  static let buttonTitle = TKLocales.StakingConfirmationMapper.stake
 }
 
 private extension CGFloat {

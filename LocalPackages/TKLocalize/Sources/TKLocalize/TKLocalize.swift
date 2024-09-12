@@ -40,6 +40,10 @@ public enum TKLocales {
     public static var sign_out: String {
       localize("actions.sign_out")
     }
+    /// More
+    public static var more: String {
+      localize("actions.more")
+    }
   }
   public enum Errors {
     /// Error
@@ -103,6 +107,14 @@ public enum TKLocales {
     /// Your collectibles\nwill be shown here
     public static var empty_placeholder: String {
       localize("purchases.empty_placeholder")
+    }
+    /// Unnamed collection
+    public static var unnamed_collection: String {
+      localize("purchases.unnamed_collection")
+    }
+    /// Unverified
+    public static var unverified: String {
+      localize("purchases.unverified")
     }
   }
   public enum History {
@@ -1251,6 +1263,324 @@ public enum TKLocales {
       public static var sorted_by_price: String {
         localize("home_screen_configuration.sections.sorted_by_price")
       }
+    }
+  }
+  public enum NftDetails {
+    /// Single NFT
+    public static var single_nft: String {
+      localize("nft_details.single_nft")
+    }
+    /// Details
+    public static var details: String {
+      localize("nft_details.details")
+    }
+    /// View in explorer
+    public static var view_in_explorer: String {
+      localize("nft_details.view_in_explorer")
+    }
+    /// Owner
+    public static var owner: String {
+      localize("nft_details.owner")
+    }
+    /// Expiration date
+    public static var expiration_date: String {
+      localize("nft_details.expiration_date")
+    }
+    /// Contract address
+    public static var contract_address: String {
+      localize("nft_details.contract_address")
+    }
+    /// Properties
+    public static var properties: String {
+      localize("nft_details.properties")
+    }
+    /// Transfer
+    public static var transfer: String {
+      localize("nft_details.transfer")
+    }
+    /// Linked with %@
+    public static func linked_with(_ p0: Any) -> String {
+      return localizeWithArgs("nft_details.linked_with", String(describing: p0))
+    }
+    /// Link domain
+    public static var linked_domain: String {
+      localize("nft_details.linked_domain")
+    }
+    /// Renew until %@
+    public static func renew_until(_ p0: Any) -> String {
+      return localizeWithArgs("nft_details.renew_until", String(describing: p0))
+    }
+    /// Expires in %@ days
+    public static func expires_in_days(_ p0: Any) -> String {
+      return localizeWithArgs("nft_details.expires_in_days", String(describing: p0))
+    }
+    /// Unverified NFT
+    public static var unverified_nft: String {
+      localize("nft_details.unverified_nft")
+    }
+    /// About collection
+    public static var about_collection: String {
+      localize("nft_details.about_collection")
+    }
+    /// Domain is on sale at the marketplace now. For transfer, you should remove it from sale first.
+    public static var domain_on_sale_description: String {
+      localize("nft_details.domain_on_sale_description")
+    }
+    /// NFT is on sale at the marketplace now. For transfer, you should remove it from sale first.
+    public static var nft_on_sale_description: String {
+      localize("nft_details.nft_on_sale_description")
+    }
+  }
+  public enum BuyListPopup {
+    /// Do not show again
+    public static var do_not_show_again: String {
+      localize("buy_list_popup.do_not_show_again")
+    }
+    /// You are opening an external app not operated by Tonkeeper.
+    public static var you_are_opening_external_app: String {
+      localize("buy_list_popup.you_are_opening_external_app")
+    }
+  }
+  public enum UglyBuyList {
+    /// Buy
+    public static var buy: String {
+      localize("ugly_buy_list.buy")
+    }
+  }
+  public enum SettingsListNotificationsConfigurator {
+    /// Apps
+    public static var connectedAppsTitle: String {
+      localize("settings_list_notifications_configurator.connectedAppsTitle")
+    }
+    /// Notifications from connected apps in your activity
+    public static var connectedAppsSectionCaption: String {
+      localize("settings_list_notifications_configurator.connectedAppsSectionCaption")
+    }
+  }
+  public enum SettingsListSecurityConfigurator {
+    /// Face ID
+    public static var face_id: String {
+      localize("settings_list_security_configurator.face_id")
+    }
+    /// Touch ID
+    public static var touch_id: String {
+      localize("settings_list_security_configurator.touch_id")
+    }
+  }
+  public enum SignerSign {
+    /// Step 1
+    public static var step_one: String {
+      localize("signer_sign.step_one")
+    }
+    /// Scan the QR code with Signer
+    public static var step_one_description: String {
+      localize("signer_sign.step_one_description")
+    }
+    /// Step 2
+    public static var step_two: String {
+      localize("signer_sign.step_two")
+    }
+    /// Confirm your transaction in Signer
+    public static var step_two_description: String {
+      localize("signer_sign.step_two_description")
+    }
+    /// Step 3
+    public static var step_three: String {
+      localize("signer_sign.step_three")
+    }
+    /// Scan signed transaction QR code from Signer
+    public static var step_three_description: String {
+      localize("signer_sign.step_three_description")
+    }
+    /// Transaction
+    public static var transaction: String {
+      localize("signer_sign.transaction")
+    }
+  }
+  /// APY
+  public static var apy: String {
+    localize("apy")
+  }
+  /// MAX APY
+  public static var max_apy: String {
+    localize("max_apy")
+  }
+  public enum StakingList {
+    /// Minimal Deposit
+    public static var minimal_deposit: String {
+      localize("staking_list.minimal_deposit")
+    }
+    /// MAX APY
+    public static var max_apy: String {
+      localize("staking_list.max_apy")
+    }
+    /// APY
+    public static var apy: String {
+      localize("staking_list.apy")
+    }
+    /// Minimum deposit %@
+    public static func minimum_deposit_description(_ p0: Any) -> String {
+      return localizeWithArgs("staking_list.minimum_deposit_description", String(describing: p0))
+    }
+  }
+  public enum StakingBalanceDetails {
+    /// Minimal Deposit
+    public static var minimal_deposit: String {
+      localize("staking_balance_details.minimal_deposit")
+    }
+    /// Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.
+    public static var description: String {
+      localize("staking_balance_details.description")
+    }
+    /// When you stake TON in a Tonstakers pool, you receive a token called tsTON that represents your share in the pool. As the pool accumulates profits, your tsTON represents larger amount of TON.
+    public static var jetton_button_description: String {
+      localize("staking_balance_details.jetton_button_description")
+    }
+    /// Pending Stake
+    public static var pending_stake: String {
+      localize("staking_balance_details.pending_stake")
+    }
+    /// Pending Unstake
+    public static var pending_unstake: String {
+      localize("staking_balance_details.pending_unstake")
+    }
+    /// Unstake ready
+    public static var unstake_ready: String {
+      localize("staking_balance_details.unstake_ready")
+    }
+    /// after the end of the cycle
+    public static var after_end_of_cycle: String {
+      localize("staking_balance_details.after_end_of_cycle")
+    }
+    /// Tap to collect
+    public static var tap_to_collect: String {
+      localize("staking_balance_details.tap_to_collect")
+    }
+    /// Stake
+    public static var stake: String {
+      localize("staking_balance_details.stake")
+    }
+    /// Unstake
+    public static var unstake: String {
+      localize("staking_balance_details.unstake")
+    }
+  }
+  public enum StakingConfirmationMapper {
+    /// Wallet
+    public static var wallet: String {
+      localize("staking_confirmation_mapper.wallet")
+    }
+    /// Recipient
+    public static var recipient: String {
+      localize("staking_confirmation_mapper.recipient")
+    }
+    /// Amount
+    public static var amount: String {
+      localize("staking_confirmation_mapper.amount")
+    }
+    /// APY
+    public static var apy: String {
+      localize("staking_confirmation_mapper.apy")
+    }
+    /// Fee
+    public static var fee: String {
+      localize("staking_confirmation_mapper.fee")
+    }
+    /// Stake
+    public static var stake: String {
+      localize("staking_confirmation_mapper.stake")
+    }
+    /// Confirm action
+    public static var confirm_action: String {
+      localize("staking_confirmation_mapper.confirm_action")
+    }
+  }
+  public enum StakingDepositInput {
+    /// Liquid Staking
+    public static var liquid_staking: String {
+      localize("staking_deposit_input.liquid_staking")
+    }
+    /// Other
+    public static var other: String {
+      localize("staking_deposit_input.other")
+    }
+    /// Continue
+    public static var continue_title: String {
+      localize("staking_deposit_input.continue_title")
+    }
+    /// Options
+    public static var options: String {
+      localize("staking_deposit_input.options")
+    }
+  }
+  public enum StakingDepositPoolPicker {
+    /// MAX APY
+    public static var max_apy: String {
+      localize("staking_deposit_pool_picker.max_apy")
+    }
+    /// APY
+    public static var apy: String {
+      localize("staking_deposit_pool_picker.apy")
+    }
+    /// Options
+    public static var options: String {
+      localize("staking_deposit_pool_picker.options")
+    }
+    /// Liquid Staking
+    public static var liquid_staking: String {
+      localize("staking_deposit_pool_picker.liquid_staking")
+    }
+    /// Other
+    public static var other: String {
+      localize("staking_deposit_pool_picker.other")
+    }
+  }
+  public enum StakingPoolDetails {
+    /// MAX APY
+    public static var max_apy: String {
+      localize("staking_pool_details.max_apy")
+    }
+    /// APY
+    public static var apy: String {
+      localize("staking_pool_details.apy")
+    }
+    /// Minimal Deposit
+    public static var minimal_deposit: String {
+      localize("staking_pool_details.minimal_deposit")
+    }
+    /// Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.
+    public static var description: String {
+      localize("staking_pool_details.description")
+    }
+  }
+  public enum TonConnectMapper {
+    /// Connect to 
+    public static var connect_to: String {
+      localize("ton_connect_mapper.connect_to")
+    }
+    /// %@ is requesting access to your wallet address%@
+    public static func requesting_capture(_ p0: Any, _ p1: Any) -> String {
+      return localizeWithArgs("ton_connect_mapper.requesting_capture", String(describing: p0), String(describing: p1))
+    }
+  }
+  public enum TonConnect {
+    /// Connect wallet
+    public static var connect_wallet: String {
+      localize("ton_connect.connect_wallet")
+    }
+    /// Be sure to check the service address before connecting the wallet.
+    public static var sure_check_service_address: String {
+      localize("ton_connect.sure_check_service_address")
+    }
+  }
+  public enum WalletBalanceList {
+    /// Join Tonkeeper channel
+    public static var join_channel: String {
+      localize("wallet_balance_list.join_channel")
+    }
+    /// Enable transaction notifications
+    public static var transaction_notifications: String {
+      localize("wallet_balance_list.transaction_notifications")
     }
   }
 }

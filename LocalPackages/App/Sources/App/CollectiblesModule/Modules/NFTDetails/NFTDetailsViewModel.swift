@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import KeeperCore
 import TonSwift
+import TKLocalize
 
 protocol NFTDetailsModuleOutput: AnyObject {
   var didClose: (() -> Void)? { get set }
@@ -137,18 +138,18 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         isCollectionVerified: nft.trust == .whitelist,
         itemDescriptionModel: NFTDetailsMoreTextView.Model(
           text: nft.description,
-          readMoreText: "More"
+          readMoreText: TKLocales.Actions.more
         )
       )
     }()
-    
+
     let collectionInformationViewModel: NFTDetailsCollectionInformationView.Model? = {
       guard let collection = nft.collection else { return nil }
       return NFTDetailsCollectionInformationView.Model(
         title: .aboutCollection,
         collectionDescriptionModel: NFTDetailsMoreTextView.Model(
           text: collection.description,
-          readMoreText: "More"
+          readMoreText: TKLocales.Actions.more
         )
       )
     }()
@@ -162,9 +163,9 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
   
   private func createDetailsViewModel() -> NFTDetailsDetailsView.Model {
     let headerViewModel = NFTDetailsSectionHeaderView.Model(
-      title: "Details",
+        title: TKLocales.NftDetails.details,
       buttonModel: TKPlainButton.Model(
-        title: "View in explorer".withTextStyle(
+        title: TKLocales.NftDetails.view_in_explorer.withTextStyle(
           .label1,
           color: .Accent.blue,
           alignment: .left,
@@ -179,7 +180,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     
     var items = [TKListContainerItemView.Model]()
     items.append(TKListContainerItemView.Model(
-      title: "Owner",
+      title: TKLocales.NftDetails.owner,
       value: .value(
         TKListContainerItemDefaultValueView.Model(
           topValue: nft.owner?.address.toShortString(bounceable: false)
@@ -194,7 +195,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       guard let date = try? data.expirationDateResult.get() else { break }
       let dateFormatted = dateFormatter.string(from: date)
       items.append(TKListContainerItemView.Model(
-        title: "Expiration date",
+        title: TKLocales.NftDetails.expiration_date,
         value: .value(
           TKListContainerItemDefaultValueView.Model(
             topValue: dateFormatted
@@ -208,7 +209,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     }
     
     items.append(TKListContainerItemView.Model(
-      title: "Contract address",
+      title: TKLocales.NftDetails.contract_address,
       value: .value(
         TKListContainerItemDefaultValueView.Model(
           topValue: nft.address.toShortString(bounceable: true)
@@ -232,7 +233,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     guard !nft.attributes.isEmpty else { return nil }
     
     let headerViewModel = NFTDetailsSectionHeaderView.Model(
-      title: "Properties",
+      title: TKLocales.NftDetails.properties,
       buttonModel: nil
     )
     
@@ -271,7 +272,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       size: .large
     )
     buttonConfiguration.isEnabled = nft.sale == nil && isNFTOwner
-    buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Transfer"))
+    buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.NftDetails.transfer))
     buttonConfiguration.action = { [weak self, nft, wallet] in
       self?.didTapTransfer?(wallet, nft)
     }
@@ -328,12 +329,12 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     let action: () -> Void
     switch result {
     case .success(let success):
-      title = "Linked with \(success.toShort())"
+      title = TKLocales.NftDetails.linked_with(success.toShort())
       action = { [weak self, wallet, nft] in
         self?.didTapUnlinkDomain?(wallet, nft)
       }
     case .failure(let failure):
-      title = "Link domain"
+      title = TKLocales.NftDetails.linked_domain
       action = { [weak self, wallet, nft] in
         self?.didTapLinkDomain?(wallet, nft)
       }
@@ -358,8 +359,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         return " "
       }
     }()
-    let title = "Renew until \(dateFormatted)"
-    
+    let title = TKLocales.NftDetails.renew_until(dateFormatted)
+
     var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
       category: .secondary,
       size: .large
@@ -373,8 +374,8 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     var description: NSAttributedString?
     if let expiresData = try? result.get() {
       let numberOfDays = Calendar.current.dateComponents([.day], from: Date(), to: expiresData).day ?? 0
-      let value = "Expires in \(numberOfDays) days"
-      
+      let value = TKLocales.NftDetails.expires_in_days(numberOfDays)
+
       description = value.withTextStyle(
         .body2,
         color: .Text.secondary,
@@ -441,9 +442,9 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
 }
 
 private extension String {
-  static let unverifiedNFT = "Unverified NFT"
-  static let aboutCollection = "About collection"
-  static let domainOnSaleDescription = "Domain is on sale at the marketplace now. For transfer, you should remove it from sale first."
-  static let nftOnSaleDescription = "NFT is on sale at the marketplace now. For transfer, you should remove it from sale first."
-  static let expirationDateTitle = "Expiration date"
+  static let unverifiedNFT = TKLocales.NftDetails.unverified_nft
+  static let aboutCollection = TKLocales.NftDetails.about_collection
+  static let domainOnSaleDescription = TKLocales.NftDetails.domain_on_sale_description
+  static let nftOnSaleDescription = TKLocales.NftDetails.nft_on_sale_description
+  static let expirationDateTitle = TKLocales.NftDetails.expiration_date
 }

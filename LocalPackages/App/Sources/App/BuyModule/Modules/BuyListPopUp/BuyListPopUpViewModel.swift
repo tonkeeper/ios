@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import KeeperCore
 import TKCore
+import TKLocalize
 
 protocol BuyListPopUpModuleOutput: AnyObject {
   var didTapOpen: ((BuySellItem) -> Void)? { get set }
@@ -151,6 +152,6 @@ private extension BuyListPopUpViewModelImplementation {
 }
 
 private extension String {
-  static let checkmarkTitle = "Do not show again"
-  static let externalWarningText = "You are opening an external app not operated by Tonkeeper."
+  static let checkmarkTitle = TKLocales.BuyListPopup.do_not_show_again
+  static let externalWarningText = TKLocales.BuyListPopup.you_are_opening_external_app
 }

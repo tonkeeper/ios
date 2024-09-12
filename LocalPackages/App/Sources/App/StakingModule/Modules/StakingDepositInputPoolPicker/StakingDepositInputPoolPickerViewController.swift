@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import KeeperCore
 import BigInt
+import TKLocalize
 
 final class StakingDepositInputPoolPickerViewController: UIViewController, StakingInputDetailsModuleInput {
   
@@ -178,7 +179,7 @@ private extension StakingDepositInputPoolPickerViewController {
     
     completion(
       StakingListModel(
-        title: "Options",
+        title: TKLocales.StakingDepositPoolPicker.options,
         sections: sections,
         selectedPool: self.selectedStackingPoolInfo
       )
@@ -187,8 +188,8 @@ private extension StakingDepositInputPoolPickerViewController {
 }
 
 private extension String {
-  static let mostProfitableTag = "MAX APY"
-  static let apy = "APY"
-  static let liquidStakingTitle = "Liquid Staking"
-  static let otherTitle = "Other"
+  static let mostProfitableTag = TKLocales.StakingDepositPoolPicker.max_apy
+  static let apy = TKLocales.StakingDepositPoolPicker.apy
+  static let liquidStakingTitle = TKLocales.StakingDepositPoolPicker.liquid_staking
+  static let otherTitle = TKLocales.StakingDepositPoolPicker.other
 }

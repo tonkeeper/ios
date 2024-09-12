@@ -2,6 +2,7 @@ import Foundation
 import KeeperCore
 import BigInt
 import TonSwift
+import TKLocalize
 
 final class StakingInputModelImplementation: StakingInputModel {
   
@@ -214,7 +215,7 @@ final class StakingInputModelImplementation: StakingInputModel {
 
       completion(
         StakingListModel(
-          title: "Options",
+          title: TKLocales.StakingDepositInput.options,
           sections: sections,
           selectedPool: self.selectedStackingPoolInfo
         )
@@ -307,7 +308,7 @@ final class StakingInputModelImplementation: StakingInputModel {
     defer {
       didUpdateButtonItem?(
         StakingInputButtonItem(
-          title: "Continue",
+          title: TKLocales.StakingDepositInput.continue_title,
           isEnable: isEnable
         )
       )
@@ -448,6 +449,6 @@ private extension String {
     Locale.current.decimalSeparator
   }
   
-  static let liquidStakingTitle = "Liquid Staking"
-  static let otherTitle = "Other"
+  static let liquidStakingTitle = TKLocales.StakingDepositInput.liquid_staking
+  static let otherTitle = TKLocales.StakingDepositInput.other
 }

@@ -227,7 +227,7 @@ private extension String {
 }
 
 private extension String {
-  static let faceId = "Face ID"
-  static let touchId = "Touch ID"
+  static let faceId = TKLocales.SettingsListSecurityConfigurator.face_id
+  static let touchId = TKLocales.SettingsListSecurityConfigurator.touch_id
 }
 

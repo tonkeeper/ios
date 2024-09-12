@@ -10,11 +10,11 @@ enum SettingsPurchasesSection: Hashable {
   var title: String {
     switch self {
     case .visible:
-      "Visible"
+      TKLocales.Settings.Purchases.Sections.visible
     case .hidden:
-      "Hidden"
+      TKLocales.Settings.Purchases.Sections.hidden
     case .spam:
-      "Spam"
+      TKLocales.Settings.Purchases.Sections.spam
     }
   }
 }

@@ -3,6 +3,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import BigInt
+import TKLocalize
 
 protocol StakingPoolDetailsModuleOutput: AnyObject {
   var didSelectPool: ((StackingPoolInfo) -> Void)? { get set }
@@ -88,8 +89,8 @@ private extension StakingPoolDetailsViewModelImplementation {
 }
 
 private extension String {
-  static let mostProfitableTag = "MAX APY"
-  static let apy = "APY"
-  static let minimalDeposit = "Minimal Deposit"
-  static let description = "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience."
+  static let mostProfitableTag = TKLocales.StakingPoolDetails.max_apy
+  static let apy = TKLocales.StakingPoolDetails.apy
+  static let minimalDeposit = TKLocales.StakingPoolDetails.minimal_deposit
+  static let description = TKLocales.StakingPoolDetails.description
 }

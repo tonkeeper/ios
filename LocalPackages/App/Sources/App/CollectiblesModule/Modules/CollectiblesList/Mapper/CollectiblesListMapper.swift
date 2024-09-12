@@ -1,6 +1,7 @@
 import UIKit
 import KeeperCore
 import TKCore
+import TKLocalize
 
 struct CollectiblesListMapper {
   let imageLoader = ImageLoader()
@@ -17,7 +18,7 @@ struct CollectiblesListMapper {
     let subtitle: NSAttributedString?
     switch nft.trust {
     case .none, .blacklist, .unknown:
-      subtitle = "Unverified".withTextStyle(
+      subtitle = TKLocales.Purchases.unverified.withTextStyle(
         .body3,
         color: .Accent.orange,
         alignment: .left,
@@ -26,9 +27,9 @@ struct CollectiblesListMapper {
     case .whitelist, .graylist:
       let string = {
         if let collection = nft.collection {
-          return (collection.name == nil || collection.name?.isEmpty == true) ? "Unnamed collection" : collection.name
+            return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.Purchases.unnamed_collection : collection.name
         } else {
-          return "Unnamed collection"
+          return TKLocales.Purchases.unnamed_collection
         }
       }()
       subtitle = string?.withTextStyle(
