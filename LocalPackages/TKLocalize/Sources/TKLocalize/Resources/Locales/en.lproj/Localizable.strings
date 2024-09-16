@@ -146,6 +146,18 @@
 "backup.warning.list.item2" = "Tonkeeper Support never asks for a recovery phrase.";
 "backup.warning.list.item3" = "Everybody with your recovery phrase can access your wallet.";
 
+"backup.show.title" = "Recovery phrase";
+"backup.show.caption" = "Write down these words with their numbers and store them in a safe place.";
+"backup.show.button.title" = "Copy";
+
+"backup.check.title" = "Recovery phrase";
+"backup.check.caption" = "Write down these words with their numbers and store them in a safe place.";
+"backup.check.button.title" = "Check Backup";
+
+"backup.check.input.title" = "Backup Check";
+"backup.check.input.caption" = "Let's see if you've got everything right. Enter words %d, %d, and %d.";
+"backup.check.input.button.title" = "Done";
+
 "security.title" = "Security";
 "security.use" = "Use %@";
 "security.change_passcode" = "Change Passcode";
@@ -396,6 +408,10 @@
 "staking_confirmation_mapper.stake" = "Stake";
 "staking_confirmation_mapper.confirm_action" = "Confirm action";
 
+"staking.title" = "Stake";
+
+"unstaking.title" = "Unstake";
+
 "staking_deposit_input.liquid_staking" = "Liquid Staking";
 "staking_deposit_input.other" = "Other";
 "staking_deposit_input.continue_title" = "Continue";
@@ -424,3 +440,4 @@
 
 "wallet_balance_list.join_channel" = "Join Tonkeeper channel";
 "wallet_balance_list.transaction_notifications" = "Enable transaction notifications";
+"wallet_balance_list.manage_button.title" = "Manage";

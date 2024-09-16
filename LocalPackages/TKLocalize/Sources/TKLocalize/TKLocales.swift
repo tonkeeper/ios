@@ -139,6 +139,28 @@ public enum TKLocales {
   public enum Backup {
     /// Backup
     public static let title = TKLocales.tr("Localizable", "backup.title", fallback: "Backup")
+    public enum Check {
+      /// Write down these words with their numbers and store them in a safe place.
+      public static let caption = TKLocales.tr("Localizable", "backup.check.caption", fallback: "Write down these words with their numbers and store them in a safe place.")
+      /// Recovery phrase
+      public static let title = TKLocales.tr("Localizable", "backup.check.title", fallback: "Recovery phrase")
+      public enum Button {
+        /// Check Backup
+        public static let title = TKLocales.tr("Localizable", "backup.check.button.title", fallback: "Check Backup")
+      }
+      public enum Input {
+        /// Let's see if you've got everything right. Enter words %d, %d, and %d.
+        public static func caption(_ p1: Int, _ p2: Int, _ p3: Int) -> String {
+          return TKLocales.tr("Localizable", "backup.check.input.caption", p1, p2, p3, fallback: "Let's see if you've got everything right. Enter words %d, %d, and %d.")
+        }
+        /// Backup Check
+        public static let title = TKLocales.tr("Localizable", "backup.check.input.title", fallback: "Backup Check")
+        public enum Button {
+          /// Done
+          public static let title = TKLocales.tr("Localizable", "backup.check.input.button.title", fallback: "Done")
+        }
+      }
+    }
     public enum Done {
       /// Last backup %@
       public static func subtitle(_ p1: Any) -> String {
@@ -156,6 +178,16 @@ public enum TKLocales {
     public enum Manually {
       /// Back Up Manually
       public static let button = TKLocales.tr("Localizable", "backup.manually.button", fallback: "Back Up Manually")
+    }
+    public enum Show {
+      /// Write down these words with their numbers and store them in a safe place.
+      public static let caption = TKLocales.tr("Localizable", "backup.show.caption", fallback: "Write down these words with their numbers and store them in a safe place.")
+      /// Recovery phrase
+      public static let title = TKLocales.tr("Localizable", "backup.show.title", fallback: "Recovery phrase")
+      public enum Button {
+        /// Copy
+        public static let title = TKLocales.tr("Localizable", "backup.show.button.title", fallback: "Copy")
+      }
     }
     public enum ShowPhrase {
       /// Show Recovery Phrase
@@ -812,6 +844,10 @@ public enum TKLocales {
     /// Transaction
     public static let transaction = TKLocales.tr("Localizable", "signer_sign.transaction", fallback: "Transaction")
   }
+  public enum Staking {
+    /// Stake
+    public static let title = TKLocales.tr("Localizable", "staking.title", fallback: "Stake")
+  }
   public enum StakingBalanceDetails {
     /// after the end of the cycle
     public static let afterEndOfCycle = TKLocales.tr("Localizable", "staking_balance_details.after_end_of_cycle", fallback: "after the end of the cycle")
@@ -938,11 +974,19 @@ public enum TKLocales {
     /// Buy
     public static let buy = TKLocales.tr("Localizable", "ugly_buy_list.buy", fallback: "Buy")
   }
+  public enum Unstaking {
+    /// Unstake
+    public static let title = TKLocales.tr("Localizable", "unstaking.title", fallback: "Unstake")
+  }
   public enum WalletBalanceList {
     /// Join Tonkeeper channel
     public static let joinChannel = TKLocales.tr("Localizable", "wallet_balance_list.join_channel", fallback: "Join Tonkeeper channel")
     /// Enable transaction notifications
     public static let transactionNotifications = TKLocales.tr("Localizable", "wallet_balance_list.transaction_notifications", fallback: "Enable transaction notifications")
+    public enum ManageButton {
+      /// Manage
+      public static let title = TKLocales.tr("Localizable", "wallet_balance_list.manage_button.title", fallback: "Manage")
+    }
   }
   public enum WalletButtons {
     /// Buy TON

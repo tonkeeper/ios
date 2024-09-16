@@ -146,6 +146,18 @@
 "backup.warning.list.item2" = "Поддержка Tonkeeper никогда не запрашивает секретный ключ.";
 "backup.warning.list.item3" = "Любой, кто знает ваш секретный ключ, сможет получить доступ к вашему кошельку.";
 
+"backup.show.title" = "Секретный ключи";
+"backup.show.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
+"backup.show.button.title" = "Скопировать";
+
+"backup.check.title" = "Секретный ключи";
+"backup.check.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
+"backup.check.button.title" = "Проверить резервную копию";
+
+"backup.check.input.title" = "Проверка резервной копии";
+"backup.check.input.caption" = "Давайте проверим, все ли вы записали правильно. Введите слова %d, %d, и %d.";
+"backup.check.input.button.title" = "Готово";
+
 "security.title" = "Безопасность";
 "security.use" = "Использовать %@";
 "security.change_passcode" = "Поменять пин-код";
@@ -352,8 +364,7 @@
 "nft_details.nft_on_sale_description" = "NFT сейчас выставлен на продажу на маркете. Чтобы передать, необходимо сначала снять его с продажи.";
 
 "buy_list_popup.do_not_show_again" = "Не показывать снова";
-// MARK: -  TODO
-"buy_list_popup.you_are_opening_external_app" = "You are opening an external app not operated by Tonkeeper.";
+"buy_list_popup.you_are_opening_external_app" = "Вы открываете внешнее приложение, которым не управляет Tonkeeper.";
 
 "ugly_buy_list.buy" = "Купить";
 
@@ -377,12 +388,11 @@
 "staking_list.minimal_deposit" = "Минимальный депозит";
 
 "staking_balance_details.minimal_deposit" = "Минимальный депозит";
-// MARK: -  TODO
-"staking_balance_details.description" = "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.";
+"staking_balance_details.description" = "Стейкинг основан на сторонних смарт-контрактах. Tonkeeper не несет ответственности за стабильность и результат.";
 "staking_balance_details.jetton_button_description" = "Когда вы вносите TON в пул, вы получаете токен tsTON, который отображает вашу долю в пуле. По мере накопления прибыли в пуле, tsTON представляет всё большее число TON.";
-"staking_balance_details.pending_stake" = "Pending Stake";
+"staking_balance_details.pending_stake" = "Будет зачислено";
 "staking_balance_details.pending_unstake" = "Ожидают вывода";
-"staking_balance_details.unstake_ready" = "Unstake ready";
+"staking_balance_details.unstake_ready" = "Готовы к выводу";
 "staking_balance_details.after_end_of_cycle" = "после окончания цикла";
 "staking_balance_details.tap_to_collect" = "Нажмите, чтобы вывести";
 "staking_balance_details.stake" = "Внести";
@@ -395,32 +405,38 @@
 "staking_confirmation_mapper.fee" = "Комиссия";
 "staking_confirmation_mapper.stake" = "Депозит";
 "staking_confirmation_mapper.confirm_action" = "Подтвердить действие";
-// MARK: -  TODO
+
+"staking.title" = "Стейкинг";
+
+"unstaking.title" = "Получить вывод";
+
 "staking_deposit_input.liquid_staking" = "Ликвидный стейкинг";
-"staking_deposit_input.other" = "Other";
+"staking_deposit_input.other" = "Другие";
 "staking_deposit_input.continue_title" = "Продолжить";
 "staking_deposit_input.options" = "Options";
-// MARK: -  TODO
+
 "staking_deposit_pool_picker.max_apy" = "MAX APY";
 "staking_deposit_pool_picker.apy" = "APY";
+// MARK: -  TODO
 "staking_deposit_pool_picker.options" = "Options";
 "staking_deposit_pool_picker.liquid_staking" = "Ликвидный стейкинг";
-"staking_deposit_pool_picker.other" = "Other";
+"staking_deposit_pool_picker.other" = "Другие";
 
 "staking_list.max_apy" = "MAX APY";
 "staking_list.apy" = "APY";
 "staking_list.minimum_deposit_description" = "Минимальный депозит %@";
-// MARK: -  TODO
+
 "staking_pool_details.max_apy" = "MAX APY";
 "staking_pool_details.apy" = "APY";
 "staking_pool_details.minimal_deposit" = "Минимальный депозит";
-"staking_pool_details.description" = "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.";
-// MARK: -  TODO
+"staking_pool_details.description" = "Стейкинг основан на сторонних смарт-контрактах. Tonkeeper не несет ответственности за стабильность и результат.";
+
 "ton_connect_mapper.connect_to" = "Войти в ";
-"ton_connect_mapper.requesting_capture" = "%@ is requesting access to your wallet address%@";
+"ton_connect_mapper.requesting_capture" = "%@ запрашивает доступ к адресу вашего кошелька%@";
 
 "ton_connect.connect_wallet" = "Подключить кошелёк";
 "ton_connect.sure_check_service_address" = "Обязательно проверьте адрес сервиса перед подключением кошелька.";
-// MARK: -  TODO
-"wallet_balance_list.join_channel" = "Join Tonkeeper channel";
+
+"wallet_balance_list.join_channel" = "Присоединяйтесь к каналу Tonkeeper";
 "wallet_balance_list.transaction_notifications" = "Включите уведомления о транзакциях";
+"wallet_balance_list.manage_button.title" = "Управлять";

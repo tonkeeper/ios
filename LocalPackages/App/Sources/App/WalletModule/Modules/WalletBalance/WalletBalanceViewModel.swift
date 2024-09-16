@@ -345,7 +345,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     if balanceListItems.canManage {
       footerConfiguration = TKListCollectionViewButtonFooterView.Configuration(
         identifier: .balanceItemsSectionFooterIdentifier,
-        content: TKButton.Configuration.Content(title: .plainString("Manage")),
+        content: TKButton.Configuration.Content(title: .plainString(TKLocales.WalletBalanceList.ManageButton.title)),
         action: { [weak self] in
           self?.didTapManage?(balanceListItems.wallet)
         }
@@ -465,7 +465,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     var headerButtonConfiguration: TKButton.Configuration?
     if setupState.isFinishEnable {
       headerButtonConfiguration = .actionButtonConfiguration(category: .secondary, size: .small)
-      headerButtonConfiguration?.content = TKButton.Configuration.Content(title: .plainString("Done"))
+      headerButtonConfiguration?.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.done))
       headerButtonConfiguration?.action = { [weak self] in
         self?.setupModel.finishSetup()
       }

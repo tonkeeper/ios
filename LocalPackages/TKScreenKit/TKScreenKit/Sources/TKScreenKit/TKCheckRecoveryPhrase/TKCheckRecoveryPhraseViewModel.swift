@@ -17,7 +17,7 @@ protocol TKCheckRecoveryPhraseViewModel: AnyObject {
 
 public protocol TKCheckRecoveryPhraseProvider {
   var title: String { get }
-  var subtitle: String { get }
+  func caption(numberOne: Int, numberTwo: Int, numberThree: Int) -> String
   var buttonTitle: String { get }
   var phrase: [String] { get }
 }
@@ -76,16 +76,13 @@ final class TKCheckRecoveryPhraseViewModelImplementation: TKCheckRecoveryPhraseV
 
 private extension TKCheckRecoveryPhraseViewModelImplementation {
   func createModel() -> TKCheckRecoveryPhraseView.Model {
-    let bottomDescription = String(
-      format: provider.subtitle,
-      indexes[0] + 1,
-      indexes[1] + 1,
-      indexes[2] + 1
-    )
+    let caption = provider.caption(numberOne: indexes[0] + 1,
+                                   numberTwo: indexes[1] + 1,
+                                   numberThree: indexes[2] + 1)
     
     let titleDescriptionModel = TKTitleDescriptionView.Model(
       title: provider.title,
-      bottomDescription: bottomDescription
+      bottomDescription: caption
     )
     
     let inputs: [TKCheckRecoveryPhraseView.Model.InputModel] = indexes

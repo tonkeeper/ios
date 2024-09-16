@@ -1,18 +1,19 @@
 import TKScreenKit
+import TKLocalize
 import KeeperCore
 
 struct BackupCheckRecoveryPhraseProvider: TKCheckRecoveryPhraseProvider {
   
   var title: String {
-    "Backup Check"
+    TKLocales.Backup.Check.Input.title
   }
   
-  var subtitle: String {
-    "Let's see if you've got everything right. Enter words %d, %d, and %d."
+  func caption(numberOne: Int, numberTwo: Int, numberThree: Int) -> String {
+    TKLocales.Backup.Check.Input.caption(numberOne, numberTwo, numberThree)
   }
   
   var buttonTitle: String {
-    "Done"
+    TKLocales.Backup.Check.Input.Button.title
   }
   
   let phrase: [String]
