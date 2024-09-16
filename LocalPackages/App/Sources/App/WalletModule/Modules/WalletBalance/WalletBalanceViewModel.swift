@@ -614,7 +614,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         if self.appSettings.addressCopyCount > 3 {
           state.address.toShort()
         } else {
-          TKLocales.BalanceHeader.your_address + state.address.toShort()
+          TKLocales.BalanceHeader.yourAddress + state.address.toShort()
         }
       }()
       
@@ -677,7 +677,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         case .current, .none:
           return nil
         case .previous(let totalBalance):
-          return TKLocales.ConnectionStatus.updated_at(self.headerMapper.makeUpdatedDate(totalBalance.date))
+          return TKLocales.ConnectionStatus.updatedAt(self.headerMapper.makeUpdatedDate(totalBalance.date))
         }
       }()
       
@@ -726,7 +726,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       )
     case (.noConnection, _):
       return ConnectionStatusView.Model(
-        title: TKLocales.ConnectionStatus.no_internet,
+        title: TKLocales.ConnectionStatus.noInternet,
         titleColor: .Accent.orange,
         isLoading: false
       )

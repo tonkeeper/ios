@@ -63,7 +63,7 @@ final class SettingsListLegalConfigurator: SettingsListConfigurator {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Legal.Items.terms_of_service)
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Legal.Items.termsOfService)
         )))
     return SettingsListItem(
       id: .termsOfServiceIdentifier,
@@ -80,7 +80,7 @@ final class SettingsListLegalConfigurator: SettingsListConfigurator {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Legal.Items.privacy_policy)
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Legal.Items.privacyPolicy)
         )))
     return SettingsListItem(
       id: .termsOfServiceIdentifier,
@@ -97,7 +97,7 @@ final class SettingsListLegalConfigurator: SettingsListConfigurator {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Legal.Items.montserrat_font)
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Legal.Items.montserratFont)
         )))
     return SettingsListItem(
       id: .montserratFontIdentifier,

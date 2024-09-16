@@ -165,7 +165,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     let headerViewModel = NFTDetailsSectionHeaderView.Model(
         title: TKLocales.NftDetails.details,
       buttonModel: TKPlainButton.Model(
-        title: TKLocales.NftDetails.view_in_explorer.withTextStyle(
+        title: TKLocales.NftDetails.viewInExplorer.withTextStyle(
           .label1,
           color: .Accent.blue,
           alignment: .left,
@@ -195,7 +195,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       guard let date = try? data.expirationDateResult.get() else { break }
       let dateFormatted = dateFormatter.string(from: date)
       items.append(TKListContainerItemView.Model(
-        title: TKLocales.NftDetails.expiration_date,
+        title: TKLocales.NftDetails.expirationDate,
         value: .value(
           TKListContainerItemDefaultValueView.Model(
             topValue: dateFormatted
@@ -209,7 +209,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     }
     
     items.append(TKListContainerItemView.Model(
-      title: TKLocales.NftDetails.contract_address,
+      title: TKLocales.NftDetails.contractAddress,
       value: .value(
         TKListContainerItemDefaultValueView.Model(
           topValue: nft.address.toShortString(bounceable: true)
@@ -329,12 +329,12 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     let action: () -> Void
     switch result {
     case .success(let success):
-      title = TKLocales.NftDetails.linked_with(success.toShort())
+      title = TKLocales.NftDetails.linkedWith(success.toShort())
       action = { [weak self, wallet, nft] in
         self?.didTapUnlinkDomain?(wallet, nft)
       }
     case .failure(let failure):
-      title = TKLocales.NftDetails.linked_domain
+      title = TKLocales.NftDetails.linkedDomain
       action = { [weak self, wallet, nft] in
         self?.didTapLinkDomain?(wallet, nft)
       }
@@ -359,7 +359,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         return " "
       }
     }()
-    let title = TKLocales.NftDetails.renew_until(dateFormatted)
+    let title = TKLocales.NftDetails.renewUntil(dateFormatted)
 
     var buttonConfiguration = TKButton.Configuration.actionButtonConfiguration(
       category: .secondary,
@@ -374,7 +374,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     var description: NSAttributedString?
     if let expiresData = try? result.get() {
       let numberOfDays = Calendar.current.dateComponents([.day], from: Date(), to: expiresData).day ?? 0
-      let value = TKLocales.NftDetails.expires_in_days(numberOfDays)
+      let value = TKLocales.NftDetails.expiresInDays(numberOfDays)
 
       description = value.withTextStyle(
         .body2,
@@ -442,9 +442,9 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
 }
 
 private extension String {
-  static let unverifiedNFT = TKLocales.NftDetails.unverified_nft
-  static let aboutCollection = TKLocales.NftDetails.about_collection
-  static let domainOnSaleDescription = TKLocales.NftDetails.domain_on_sale_description
-  static let nftOnSaleDescription = TKLocales.NftDetails.nft_on_sale_description
-  static let expirationDateTitle = TKLocales.NftDetails.expiration_date
+  static let unverifiedNFT = TKLocales.NftDetails.unverifiedNft
+  static let aboutCollection = TKLocales.NftDetails.aboutCollection
+  static let domainOnSaleDescription = TKLocales.NftDetails.domainOnSaleDescription
+  static let nftOnSaleDescription = TKLocales.NftDetails.nftOnSaleDescription
+  static let expirationDateTitle = TKLocales.NftDetails.expirationDate
 }

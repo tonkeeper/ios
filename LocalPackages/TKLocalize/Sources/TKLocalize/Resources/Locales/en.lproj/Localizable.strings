@@ -9,6 +9,8 @@
 "actions.copy" = "Copy";
 "actions.sign_out" = "Sign Out";
 "actions.more" = "More";
+"actions.loading" = "Loading";
+"actions.failed" = "Failed";
 
 "errors.unknown" = "Error";
 

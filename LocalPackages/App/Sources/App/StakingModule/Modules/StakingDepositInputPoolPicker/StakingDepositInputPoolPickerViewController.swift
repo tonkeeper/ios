@@ -188,8 +188,8 @@ private extension StakingDepositInputPoolPickerViewController {
 }
 
 private extension String {
-  static let mostProfitableTag = TKLocales.StakingDepositPoolPicker.max_apy
+  static let mostProfitableTag = TKLocales.StakingDepositPoolPicker.maxApy
   static let apy = TKLocales.StakingDepositPoolPicker.apy
-  static let liquidStakingTitle = TKLocales.StakingDepositPoolPicker.liquid_staking
+  static let liquidStakingTitle = TKLocales.StakingDepositPoolPicker.liquidStaking
   static let otherTitle = TKLocales.StakingDepositPoolPicker.other
 }

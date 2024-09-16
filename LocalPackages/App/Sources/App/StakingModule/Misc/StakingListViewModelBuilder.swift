@@ -62,7 +62,7 @@ struct StakingListViewModelBuilder {
 }
 
 private extension String {
-  static let mostProfitableTag = TKLocales.max_apy
+  static let mostProfitableTag = TKLocales.maxApy
   static let apy = TKLocales.apy
-  static let minimalDeposit = TKLocales.StakingList.minimal_deposit
+  static let minimalDeposit = TKLocales.StakingList.minimalDeposit
 }

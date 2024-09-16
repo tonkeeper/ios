@@ -64,7 +64,7 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
       items: items,
       topPadding: 0,
       bottomPadding: 0,
-      footerConfiguration: SettingsListSectionFooterView.Configuration(text: TKLocales.Security.use_biometry_description)
+      footerConfiguration: SettingsListSectionFooterView.Configuration(text: TKLocales.Security.useBiometryDescription)
     ))
   }
   
@@ -74,7 +74,7 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
       items: items,
       topPadding: 16,
       bottomPadding: 0,
-      footerConfiguration: SettingsListSectionFooterView.Configuration(text: TKLocales.Security.lock_screen_description)
+      footerConfiguration: SettingsListSectionFooterView.Configuration(text: TKLocales.Security.lockScreenDescription)
     ))
   }
   
@@ -97,7 +97,7 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
     case .success(let state):
       switch state {
       case .none:
-        title = TKLocales.Security.unavailable_error
+        title = TKLocales.Security.unavailableError
         isEnable = false
         isOn = false
       case .faceID:
@@ -110,7 +110,7 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
         isOn = securityStore.getState().isBiometryEnable
       }
     case .failure:
-      title = TKLocales.Security.unavailable_error
+      title = TKLocales.Security.unavailableError
       isEnable = false
       isOn = false
     }
@@ -175,7 +175,7 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(
-            title: TKLocales.Security.lock_screen
+            title: TKLocales.Security.lockScreen
           )
         )
       )
@@ -204,7 +204,7 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(
-            title: TKLocales.Security.change_passcode
+            title: TKLocales.Security.changePasscode
           )
         )
       )
@@ -227,7 +227,7 @@ private extension String {
 }
 
 private extension String {
-  static let faceId = TKLocales.SettingsListSecurityConfigurator.face_id
-  static let touchId = TKLocales.SettingsListSecurityConfigurator.touch_id
+  static let faceId = TKLocales.SettingsListSecurityConfigurator.faceId
+  static let touchId = TKLocales.SettingsListSecurityConfigurator.touchId
 }
 

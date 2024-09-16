@@ -365,16 +365,16 @@ private extension StakingBalanceDetailsViewModelImplementation {
 }
 
 private extension String {
-  static let mostProfitableTag = TKLocales.max_apy
+  static let mostProfitableTag = TKLocales.maxApy
   static let apy = TKLocales.apy
-  static let minimalDeposit = TKLocales.StakingBalanceDetails.minimal_deposit
+  static let minimalDeposit = TKLocales.StakingBalanceDetails.minimalDeposit
   static let description = TKLocales.StakingBalanceDetails.description
-  static let jettonButtonDescription = TKLocales.StakingBalanceDetails.jetton_button_description
-  static let pendingStakeTitle = TKLocales.StakingBalanceDetails.pending_stake
-  static let pendingUntakeTitle = TKLocales.StakingBalanceDetails.pending_unstake
-  static let unstakeReadyTitle = TKLocales.StakingBalanceDetails.unstake_ready
-  static let afterTheEndOfTheCycle = TKLocales.StakingBalanceDetails.after_end_of_cycle
-  static let tapToCollect = TKLocales.StakingBalanceDetails.tap_to_collect
+  static let jettonButtonDescription = TKLocales.StakingBalanceDetails.jettonButtonDescription
+  static let pendingStakeTitle = TKLocales.StakingBalanceDetails.pendingStake
+  static let pendingUntakeTitle = TKLocales.StakingBalanceDetails.pendingUnstake
+  static let unstakeReadyTitle = TKLocales.StakingBalanceDetails.unstakeReady
+  static let afterTheEndOfTheCycle = TKLocales.StakingBalanceDetails.afterEndOfCycle
+  static let tapToCollect = TKLocales.StakingBalanceDetails.tapToCollect
   static let stakeTitle = TKLocales.StakingBalanceDetails.stake
   static let unstakeTitle = TKLocales.StakingBalanceDetails.unstake
 }

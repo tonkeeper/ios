@@ -89,8 +89,8 @@ private extension StakingPoolDetailsViewModelImplementation {
 }
 
 private extension String {
-  static let mostProfitableTag = TKLocales.StakingPoolDetails.max_apy
+  static let mostProfitableTag = TKLocales.StakingPoolDetails.maxApy
   static let apy = TKLocales.StakingPoolDetails.apy
-  static let minimalDeposit = TKLocales.StakingPoolDetails.minimal_deposit
+  static let minimalDeposit = TKLocales.StakingPoolDetails.minimalDeposit
   static let description = TKLocales.StakingPoolDetails.description
 }

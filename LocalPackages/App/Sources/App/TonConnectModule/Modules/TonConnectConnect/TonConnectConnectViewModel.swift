@@ -120,12 +120,12 @@ private extension TonConnectConnectViewModelImplementation {
 }
 
 private extension String {
-  static let buttonTitle = TKLocales.TonConnect.connect_wallet
+  static let buttonTitle = TKLocales.TonConnect.connectWallet
 }
 
 private extension NSAttributedString {
   static var footerText: NSAttributedString {
-    TKLocales.TonConnect.sure_check_service_address
+    TKLocales.TonConnect.sureCheckServiceAddress
       .withTextStyle(
         .body2,
         color: .Text.tertiary,

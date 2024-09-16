@@ -36,7 +36,7 @@ final class SignerImportScanViewModelImplementation: SignerImportScanViewModel, 
       self?.didScanLinkQRCode?(publicKey, name)
     }
     
-    didUpdateOpenSignerButtonContent?(TKButton.Configuration.Content(title: .plainString(TKLocales.Signer.Scan.open_signer_button)))
+    didUpdateOpenSignerButtonContent?(TKButton.Configuration.Content(title: .plainString(TKLocales.Signer.Scan.openSignerButton)))
   }
   
   func didTapOpenSigner() {

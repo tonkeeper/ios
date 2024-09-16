@@ -8,6 +8,10 @@
 "actions.edit" = "Изменить";
 "actions.copy" = "Скопировать";
 "actions.sign_out" = "Выйти";
+"actions.more" = "Ещё";
+//MARK - TODO
+"actions.loading" = "Loading";
+"actions.failed" = "Неуспешно";
 
 "errors.unknown" = "Ошибка";
 
@@ -27,6 +31,9 @@
 
 "purchases.title" = "Покупки";
 "purchases.empty_placeholder" = "Ваши покупки\nпоявятся здесь";
+//MARK - TODO
+"purchases.unnamed_collection" = "Unnamed collection";
+"purchases.unverified" = "Непроверенный";
 
 "history.title" = "История";
 "history.placeholder.title" = "Ваша история\nбудет показана здесь";
@@ -327,3 +334,92 @@
 "home_screen_configuration.sections.pinned" = "Закреплённые";
 "home_screen_configuration.sections.all_assets" = "Все активы";
 "home_screen_configuration.sections.sorted_by_price" = "По стоимости";
+//MARK - TODO
+"nft_details.single_nft" = "Single NFT";
+"nft_details.details" = "Details";
+"nft_details.view_in_explorer" = "View in explorer";
+"nft_details.owner" = "Owner";
+"nft_details.expiration_date" = "Expiration date";
+"nft_details.contract_address" = "Contract address";
+"nft_details.properties" = "Properties";
+"nft_details.transfer" = "Transfer";
+"nft_details.linked_with" = "Linked with %@";
+"nft_details.linked_domain" = "Link domain";
+"nft_details.renew_until" = "Renew until %@";
+"nft_details.expires_in_days" = "Expires in %@ days";
+"nft_details.unverified_nft" = "Непроверенный NFT";
+"nft_details.about_collection" = "About collection";
+"nft_details.domain_on_sale_description" = "Domain is on sale at the marketplace now. For transfer, you should remove it from sale first.";
+"nft_details.nft_on_sale_description" = "NFT is on sale at the marketplace now. For transfer, you should remove it from sale first.";
+
+"buy_list_popup.do_not_show_again" = "Do not show again";
+"buy_list_popup.you_are_opening_external_app" = "You are opening an external app not operated by Tonkeeper.";
+
+"ugly_buy_list.buy" = "Buy";
+
+"settings_list_notifications_configurator.connectedAppsTitle" = "Apps";
+"settings_list_notifications_configurator.connectedAppsSectionCaption" = "Notifications from connected apps in your activity";
+
+"settings_list_security_configurator.face_id" = "Face ID";
+"settings_list_security_configurator.touch_id" = "Touch ID";
+
+"signer_sign.step_one" = "Step 1";
+"signer_sign.step_one_description" = "Scan the QR code with Signer";
+"signer_sign.step_two" = "Step 2";
+"signer_sign.step_two_description" = "Confirm your transaction in Signer";
+"signer_sign.step_three" = "Step 3";
+"signer_sign.step_three_description" = "Scan signed transaction QR code from Signer";
+"signer_sign.transaction" = "Transaction";
+
+"apy" = "APY";
+"max_apy" = "MAX APY";
+
+"staking_list.minimal_deposit" = "Minimal Deposit";
+
+"staking_balance_details.minimal_deposit" = "Minimal Deposit";
+"staking_balance_details.description" = "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.";
+"staking_balance_details.jetton_button_description" = "When you stake TON in a Tonstakers pool, you receive a token called tsTON that represents your share in the pool. As the pool accumulates profits, your tsTON represents larger amount of TON.";
+"staking_balance_details.pending_stake" = "Pending Stake";
+"staking_balance_details.pending_unstake" = "Pending Unstake";
+"staking_balance_details.unstake_ready" = "Unstake ready";
+"staking_balance_details.after_end_of_cycle" = "after the end of the cycle";
+"staking_balance_details.tap_to_collect" = "Tap to collect";
+"staking_balance_details.stake" = "Stake";
+"staking_balance_details.unstake" = "Unstake";
+
+"staking_confirmation_mapper.wallet" = "Wallet";
+"staking_confirmation_mapper.recipient" = "Recipient";
+"staking_confirmation_mapper.amount" = "Amount";
+"staking_confirmation_mapper.apy" = "APY";
+"staking_confirmation_mapper.fee" = "Fee";
+"staking_confirmation_mapper.stake" = "Stake";
+"staking_confirmation_mapper.confirm_action" = "Confirm action";
+
+"staking_deposit_input.liquid_staking" = "Liquid Staking";
+"staking_deposit_input.other" = "Other";
+"staking_deposit_input.continue_title" = "Continue";
+"staking_deposit_input.options" = "Options";
+
+"staking_deposit_pool_picker.max_apy" = "MAX APY";
+"staking_deposit_pool_picker.apy" = "APY";
+"staking_deposit_pool_picker.options" = "Options";
+"staking_deposit_pool_picker.liquid_staking" = "Liquid Staking";
+"staking_deposit_pool_picker.other" = "Other";
+
+"staking_list.max_apy" = "MAX APY";
+"staking_list.apy" = "APY";
+"staking_list.minimum_deposit_description" = "Minimum deposit %@";
+
+"staking_pool_details.max_apy" = "MAX APY";
+"staking_pool_details.apy" = "APY";
+"staking_pool_details.minimal_deposit" = "Minimal Deposit";
+"staking_pool_details.description" = "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience.";
+
+"ton_connect_mapper.connect_to" = "Connect to ";
+"ton_connect_mapper.requesting_capture" = "%@ is requesting access to your wallet address%@";
+
+"ton_connect.connect_wallet" = "Connect wallet";
+"ton_connect.sure_check_service_address" = "Be sure to check the service address before connecting the wallet.";
+
+"wallet_balance_list.join_channel" = "Join Tonkeeper channel";
+"wallet_balance_list.transaction_notifications" = "Enable transaction notifications";

@@ -111,7 +111,7 @@ private extension StakingListViewModelImplementation {
       maximumFractionDigits: 2,
       symbol: TonInfo.symbol
     )
-    let minimumDescription = TKLocales.StakingList.minimum_deposit_description(minimumFormatted)
+    let minimumDescription = TKLocales.StakingList.minimumDepositDescription(minimumFormatted)
 
     let description = "\(minimumDescription)\n\(percentDescription)"
     
@@ -238,6 +238,6 @@ private extension StakingListViewModelImplementation {
 }
 
 private extension String {
-  static let mostProfitableTag = TKLocales.StakingList.max_apy
+  static let mostProfitableTag = TKLocales.StakingList.maxApy
   static let apy = TKLocales.StakingList.apy
 }

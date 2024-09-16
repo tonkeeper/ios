@@ -14,7 +14,7 @@ struct TonConnectConnectMapper {
     connectAction: @escaping () async -> Bool,
     completionAction: @escaping () -> Void
   ) -> TKModalCardViewController.Configuration {
-    let connectTo = TKLocales.TonConnectMapper.connect_to.withTextStyle(
+    let connectTo = TKLocales.TonConnectMapper.connectTo.withTextStyle(
       .h2,
       color: .Text.primary,
       alignment: .center,
@@ -38,7 +38,7 @@ struct TonConnectConnectMapper {
     title.append(questionMark)
     
     let description = NSMutableAttributedString()
-    let caption = TKLocales.TonConnectMapper.requesting_capture(manifest.name, (showWalletPicker ? ":" : " "))
+    let caption = TKLocales.TonConnectMapper.requestingCapture(manifest.name, (showWalletPicker ? ":" : " "))
       .withTextStyle(
         .body1,
         color: .Text.secondary,
@@ -134,12 +134,12 @@ struct TonConnectConnectMapper {
 }
 
 private extension String {
-  static let connectButtonTitle = TKLocales.TonConnect.connect_wallet
+  static let connectButtonTitle = TKLocales.TonConnect.connectWallet
 }
 
 private extension NSAttributedString {
   static var footerText: NSAttributedString {
-    TKLocales.TonConnect.sure_check_service_address
+    TKLocales.TonConnect.sureCheckServiceAddress
       .withTextStyle(
         .body2,
         color: .Text.tertiary,

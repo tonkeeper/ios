@@ -27,9 +27,9 @@ struct CollectiblesListMapper {
     case .whitelist, .graylist:
       let string = {
         if let collection = nft.collection {
-            return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.Purchases.unnamed_collection : collection.name
+            return (collection.name == nil || collection.name?.isEmpty == true) ? TKLocales.Purchases.unnamedCollection : collection.name
         } else {
-          return TKLocales.Purchases.unnamed_collection
+          return TKLocales.Purchases.unnamedCollection
         }
       }()
       subtitle = string?.withTextStyle(

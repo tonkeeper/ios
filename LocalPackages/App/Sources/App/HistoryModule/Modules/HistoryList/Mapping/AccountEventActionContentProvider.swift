@@ -21,7 +21,7 @@ struct HistoryListAccountEventActionContentProvider: AccountEventActionContentPr
     case .withdrawStake:
       return TKLocales.ActionTypes.unstake
     case .withdrawStakeRequest:
-      return TKLocales.ActionTypes.unstake_request
+      return TKLocales.ActionTypes.unstakeRequest
     case .jettonSwap:
       return TKLocales.ActionTypes.swap
     case .spam:
@@ -33,27 +33,27 @@ struct HistoryListAccountEventActionContentProvider: AccountEventActionContentPr
     case .unsubscribed:
       return TKLocales.ActionTypes.unsubscribed
     case .walletInitialized:
-      return TKLocales.ActionTypes.wallet_initialize
+      return TKLocales.ActionTypes.walletInitialize
     case .contractExec:
-      return TKLocales.ActionTypes.contract_exec
+      return TKLocales.ActionTypes.contractExec
     case .nftCollectionCreation:
-      return TKLocales.ActionTypes.nft_collection_deploy
+      return TKLocales.ActionTypes.nftCollectionDeploy
     case .nftCreation:
-      return TKLocales.ActionTypes.nft_deploy
+      return TKLocales.ActionTypes.nftDeploy
     case .removalFromSale:
-      return TKLocales.ActionTypes.nft_sale_removal
+      return TKLocales.ActionTypes.nftSaleRemoval
     case .nftPurchase:
-      return TKLocales.ActionTypes.nft_purchase
+      return TKLocales.ActionTypes.nftPurchase
     case .bid:
       return TKLocales.ActionTypes.bid
     case .putUpForAuction:
-      return TKLocales.ActionTypes.put_up_auction
+      return TKLocales.ActionTypes.putUpAuction
     case .endOfAuction:
-      return TKLocales.ActionTypes.end_auction
+      return TKLocales.ActionTypes.endAuction
     case .putUpForSale:
       return TKLocales.ActionTypes.sent
     case .domainRenew:
-      return TKLocales.ActionTypes.domain_renew
+      return TKLocales.ActionTypes.domainRenew
     case .unknown:
       return TKLocales.ActionTypes.unknown
     }
@@ -76,7 +76,7 @@ struct TonConnectConfirmationAccountEventActionContentProvider: AccountEventActi
     case .withdrawStake:
       return TKLocales.ActionTypes.unstake
     case .withdrawStakeRequest:
-      return TKLocales.ActionTypes.unstake_request
+      return TKLocales.ActionTypes.unstakeRequest
     case .jettonSwap:
       return TKLocales.ActionTypes.swap
     case .spam:
@@ -88,27 +88,27 @@ struct TonConnectConfirmationAccountEventActionContentProvider: AccountEventActi
     case .unsubscribed:
       return TKLocales.ActionTypes.unsubscribed
     case .walletInitialized:
-      return TKLocales.ActionTypes.wallet_initialize
+      return TKLocales.ActionTypes.walletInitialize
     case .contractExec:
-      return TKLocales.ActionTypes.contract_exec
+      return TKLocales.ActionTypes.contractExec
     case .nftCollectionCreation:
-      return TKLocales.ActionTypes.nft_collection_deploy
+      return TKLocales.ActionTypes.nftCollectionDeploy
     case .nftCreation:
-      return TKLocales.ActionTypes.nft_deploy
+      return TKLocales.ActionTypes.nftDeploy
     case .removalFromSale:
-      return TKLocales.ActionTypes.nft_sale_removal
+      return TKLocales.ActionTypes.nftSaleRemoval
     case .nftPurchase:
-      return TKLocales.ActionTypes.nft_purchase
+      return TKLocales.ActionTypes.nftPurchase
     case .bid:
       return TKLocales.ActionTypes.bid
     case .putUpForAuction:
-      return TKLocales.ActionTypes.put_up_auction
+      return TKLocales.ActionTypes.putUpAuction
     case .endOfAuction:
-      return TKLocales.ActionTypes.end_auction
+      return TKLocales.ActionTypes.endAuction
     case .putUpForSale:
       return TKLocales.ActionTypes.sent
     case .domainRenew:
-      return TKLocales.ActionTypes.domain_renew
+      return TKLocales.ActionTypes.domainRenew
     case .unknown:
       return TKLocales.ActionTypes.unknown
     }

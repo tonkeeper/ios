@@ -308,7 +308,7 @@ final class StakingInputModelImplementation: StakingInputModel {
     defer {
       didUpdateButtonItem?(
         StakingInputButtonItem(
-          title: TKLocales.StakingDepositInput.continue_title,
+          title: TKLocales.StakingDepositInput.continueTitle,
           isEnable: isEnable
         )
       )
@@ -449,6 +449,6 @@ private extension String {
     Locale.current.decimalSeparator
   }
   
-  static let liquidStakingTitle = TKLocales.StakingDepositInput.liquid_staking
+  static let liquidStakingTitle = TKLocales.StakingDepositInput.liquidStaking
   static let otherTitle = TKLocales.StakingDepositInput.other
 }

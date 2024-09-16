@@ -132,7 +132,7 @@ private extension StakingConfirmationMapper {
     items.append(headerItem)
     
     let hintItem: TKModalCardViewController.Configuration.Item = .text(
-      .init(text: TKLocales.StakingConfirmationMapper.confirm_action.withTextStyle(.body1, color: .Text.secondary, alignment: .center), numberOfLines: 1),
+      .init(text: TKLocales.StakingConfirmationMapper.confirmAction.withTextStyle(.body1, color: .Text.secondary, alignment: .center), numberOfLines: 1),
       bottomSpacing: 4
     )
     items.append(hintItem)

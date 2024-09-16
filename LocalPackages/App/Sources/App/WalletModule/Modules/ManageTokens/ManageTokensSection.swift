@@ -12,8 +12,8 @@ enum ManageTokensSection: Hashable {
     let caption: String?
     switch self {
     case .allAssets:
-      title = TKLocales.HomeScreenConfiguration.Sections.all_assets
-      caption = TKLocales.HomeScreenConfiguration.Sections.sorted_by_price
+      title = TKLocales.HomeScreenConfiguration.Sections.allAssets
+      caption = TKLocales.HomeScreenConfiguration.Sections.sortedByPrice
     case .pinned:
       title = TKLocales.HomeScreenConfiguration.Sections.pinned
       caption = nil

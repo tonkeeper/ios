@@ -231,7 +231,7 @@ private extension SettingsPurchasesViewModelImplementation {
       self?.sectionStates[section] = .expanded
       self?.state = self?.model.state
     }
-    buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.List.show_all))
+    buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.List.showAll))
     let model = SettingsPurchasesSectionButtonView.Model(buttonConfiguration: buttonConfiguration)
     return model
   }
@@ -251,24 +251,24 @@ private extension SettingsPurchasesViewModelImplementation {
     
     switch item {
     case .single(let nft):
-      title = TKLocales.Settings.Purchases.Details.Title.single_token
+      title = TKLocales.Settings.Purchases.Details.Title.singleToken
       buttonTitle = {
         switch itemState {
         case .visible:
-          TKLocales.Settings.Purchases.Details.Button.hide_token
+          TKLocales.Settings.Purchases.Details.Button.hideToken
         case .hidden:
-          TKLocales.Settings.Purchases.Details.Button.show_token
+          TKLocales.Settings.Purchases.Details.Button.showToken
         case .spam:
           if model.isMarkedAsSpam(item: item) {
-            TKLocales.Settings.Purchases.Details.Button.not_spam
+            TKLocales.Settings.Purchases.Details.Button.notSpam
           } else {
-            TKLocales.Settings.Purchases.Details.Button.show_token
+            TKLocales.Settings.Purchases.Details.Button.showToken
           }
         }
       }()
       listItems = [
         SettingsPurchasesDetailsListItemView.Model(
-          title: TKLocales.Settings.Purchases.Details.Items.token_id,
+          title: TKLocales.Settings.Purchases.Details.Items.tokenId,
           caption: nft.address.toShortString(bounceable: true),
           image: TKImageView.Model(
             image: .image(.TKUIKit.Icons.Size16.copy),
@@ -286,14 +286,14 @@ private extension SettingsPurchasesViewModelImplementation {
       buttonTitle = {
         switch itemState {
         case .visible:
-          TKLocales.Settings.Purchases.Details.Button.hide_collection
+          TKLocales.Settings.Purchases.Details.Button.hideCollection
         case .hidden:
-          TKLocales.Settings.Purchases.Details.Button.show_collection
+          TKLocales.Settings.Purchases.Details.Button.showCollection
         case .spam:
           if model.isMarkedAsSpam(item: item) {
-            TKLocales.Settings.Purchases.Details.Button.not_spam
+            TKLocales.Settings.Purchases.Details.Button.notSpam
           } else {
-            TKLocales.Settings.Purchases.Details.Button.show_collection
+            TKLocales.Settings.Purchases.Details.Button.showCollection
           }
         }
       }()
@@ -310,7 +310,7 @@ private extension SettingsPurchasesViewModelImplementation {
           copyValue: nil
         ),
         SettingsPurchasesDetailsListItemView.Model(
-          title: TKLocales.Settings.Purchases.Details.Items.collection_id,
+          title: TKLocales.Settings.Purchases.Details.Items.collectionId,
           caption: collection.address.toShortString(bounceable: true),
           image: TKImageView.Model(
             image: .image(.TKUIKit.Icons.Size16.copy),
@@ -414,13 +414,13 @@ private extension SettingsPurchasesViewModelImplementation {
     let imageURL: URL?
     switch item {
     case .collection(let collection):
-      title = collection.notEmptyName ?? TKLocales.Settings.Purchases.Token.unnamed_collection
+      title = collection.notEmptyName ?? TKLocales.Settings.Purchases.Token.unnamedCollection
       let nftsCount = collectionNfts[collection]?.count ?? 0
       subtitle = "\(nftsCount) \(TKLocales.Settings.Purchases.Token.tokenCount(count: nftsCount))"
       imageURL = collectionNfts[collection]?.first?.preview.size500
     case .single(let nft):
       title = nft.name ?? nft.address.toShortString(bounceable: true)
-      subtitle = TKLocales.Settings.Purchases.Token.single_token
+      subtitle = TKLocales.Settings.Purchases.Token.singleToken
       imageURL = nft.preview.size500
     }
     return ItemData(

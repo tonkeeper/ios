@@ -296,9 +296,9 @@ private extension HistoryEventDetailsController {
     let dateString: String
     switch actionType {
     case .Received: 
-      dateString = TKLocales.EventDetails.received_on(date)
+      dateString = TKLocales.EventDetails.receivedOn(date)
     case .Sent:
-      dateString = TKLocales.EventDetails.sent_on(date)
+      dateString = TKLocales.EventDetails.sentOn(date)
     }
     
     var listItems = [Model.ListItem]()
@@ -844,9 +844,9 @@ private extension HistoryEventDetailsController {
 
     switch actionType {
     case .Received:
-      dateString = TKLocales.EventDetails.received_on(date)
+      dateString = TKLocales.EventDetails.receivedOn(date)
     case .Sent:
-      dateString = TKLocales.EventDetails.sent_on(date)
+      dateString = TKLocales.EventDetails.sentOn(date)
     }
     
     var listItems = [Model.ListItem]()
@@ -978,7 +978,7 @@ private extension String {
   static let sent = TKLocales.EventDetails.sent
   static let sender = TKLocales.EventDetails.sender
   static let recipient = TKLocales.EventDetails.recipient
-  static let senderAddress = TKLocales.EventDetails.sender_address
-  static let recipientAddress = TKLocales.EventDetails.recipient_address
+  static let senderAddress = TKLocales.EventDetails.senderAddress
+  static let recipientAddress = TKLocales.EventDetails.recipientAddress
   static let comment = TKLocales.EventDetails.comment
 }
