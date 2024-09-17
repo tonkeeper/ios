@@ -473,7 +473,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     
     let headerConfiguration = TKListCollectionViewButtonHeaderView.Configuration(
       identifier: .setupSectionHeaderIdentifier,
-      title: "Finish setting up",
+      title: TKLocales.FinishSetup.title,
       buttonConfiguration: headerButtonConfiguration
     )
     

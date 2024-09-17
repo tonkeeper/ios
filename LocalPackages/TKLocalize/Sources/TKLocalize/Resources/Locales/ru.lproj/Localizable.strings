@@ -440,3 +440,6 @@
 "wallet_balance_list.join_channel" = "Присоединяйтесь к каналу Tonkeeper";
 "wallet_balance_list.transaction_notifications" = "Включите уведомления о транзакциях";
 "wallet_balance_list.manage_button.title" = "Управлять";
+
+"buy_sell_list.buy" = "Купить";
+"buy_sell_list.sell" = "Продать";

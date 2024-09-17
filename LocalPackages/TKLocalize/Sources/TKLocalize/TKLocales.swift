@@ -283,6 +283,12 @@ public enum TKLocales {
     /// You are opening an external app not operated by Tonkeeper.
     public static let youAreOpeningExternalApp = TKLocales.tr("Localizable", "buy_list_popup.you_are_opening_external_app", fallback: "You are opening an external app not operated by Tonkeeper.")
   }
+  public enum BuySellList {
+    /// Buy
+    public static let buy = TKLocales.tr("Localizable", "buy_sell_list.buy", fallback: "Buy")
+    /// Sell
+    public static let sell = TKLocales.tr("Localizable", "buy_sell_list.sell", fallback: "Sell")
+  }
   public enum CameraPermission {
     /// Open Settings
     public static let button = TKLocales.tr("Localizable", "camera_permission.button", fallback: "Open Settings")

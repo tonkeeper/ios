@@ -441,3 +441,6 @@
 "wallet_balance_list.join_channel" = "Join Tonkeeper channel";
 "wallet_balance_list.transaction_notifications" = "Enable transaction notifications";
 "wallet_balance_list.manage_button.title" = "Manage";
+
+"buy_sell_list.buy" = "Buy";
+"buy_sell_list.sell" = "Sell";

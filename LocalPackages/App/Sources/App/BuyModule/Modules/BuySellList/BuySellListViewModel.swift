@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import TKCore
 import KeeperCore
+import TKLocalize
 
 protocol BuySellListModuleOutput: AnyObject {
   var didSelectURL: ((URL) -> Void)? { get set }
@@ -201,7 +202,7 @@ private extension BuySellListViewModelImplementation {
     case .none:
       didUpdateSegmentedControl?(
         BuySellListSegmentedControl.Model(
-          tabs: ["Buy", "Sell"]
+          tabs: [TKLocales.BuySellList.buy, TKLocales.BuySellList.sell]
         )
       )
       fiatMethods = nil
@@ -210,7 +211,7 @@ private extension BuySellListViewModelImplementation {
       self.fiatMethods = fiatMethods
       didUpdateSegmentedControl?(
         BuySellListSegmentedControl.Model(
-          tabs: ["Buy", "Sell"]
+          tabs: [TKLocales.BuySellList.buy, TKLocales.BuySellList.sell]
         )
       )
       didUpdateState?(.list)
@@ -309,7 +310,7 @@ private extension BuySellListViewModelImplementation {
         buttonConfiguration.action = { [weak self] in
           self?.expandCategory(category)
         }
-        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Show all"))
+        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.List.showAll))
         let buttonItem = BuySellListItem.button(
           TKButtonCell.Model(
             id: UUID().uuidString,
@@ -329,7 +330,7 @@ private extension BuySellListViewModelImplementation {
         buttonConfiguration.action = { [weak self] in
           self?.collapseCategory(category)
         }
-        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString("Hide"))
+        buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.List.hide))
         let buttonItem = BuySellListItem.button(
           TKButtonCell.Model(
             id: UUID().uuidString,
