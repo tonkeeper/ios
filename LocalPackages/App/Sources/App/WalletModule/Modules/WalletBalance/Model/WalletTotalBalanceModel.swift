@@ -10,7 +10,7 @@ final class WalletTotalBalanceModel {
     let address: FriendlyAddress
     let totalBalanceState: TotalBalanceState?
     let isSecure: Bool
-    let backgroundUpdateState: BackgroundUpdateStoreV3.State
+    let backgroundUpdateState: BackgroundUpdateStore.ConnectionState
     let isLoadingBalance: Bool
   }
   
@@ -21,13 +21,13 @@ final class WalletTotalBalanceModel {
   private let walletsStore: WalletsStore
   private let totalBalanceStore: TotalBalanceStore
   private let appSettingsStore: AppSettingsV3Store
-  private let backgroundUpdateStore: BackgroundUpdateStoreV3
+  private let backgroundUpdateStore: BackgroundUpdateStore
   private let stateLoader: WalletStateLoader
   
   init(walletsStore: WalletsStore,
        totalBalanceStore: TotalBalanceStore,
        appSettingsStore: AppSettingsV3Store,
-       backgroundUpdateStore: BackgroundUpdateStoreV3,
+       backgroundUpdateStore: BackgroundUpdateStore,
        stateLoader: WalletStateLoader) {
     self.walletsStore = walletsStore
     self.totalBalanceStore = totalBalanceStore
@@ -60,7 +60,7 @@ final class WalletTotalBalanceModel {
     let activeWallet = try walletsStore.getActiveWallet()
     let isSecureMode = appSettingsStore.getState().isSecureMode
     let totalBalanceState = totalBalanceStore.getState()[activeWallet]
-    let backgroundUpdateState = backgroundUpdateStore.getState()
+    let backgroundUpdateState = backgroundUpdateStore.getState()[activeWallet] ?? .connecting
     let isLoadingBalance = stateLoader.getState().balanceLoadTasks[activeWallet] != nil
     return try createState(
       wallet: activeWallet,
@@ -101,7 +101,7 @@ final class WalletTotalBalanceModel {
     }
   }
   
-  private func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStoreV3.Event) {
+  private func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStore.Event) {
     Task {
       await self.actor.addTask(block: { try await self.updateModel() })
     }
@@ -133,7 +133,7 @@ final class WalletTotalBalanceModel {
     case .wallets(let walletsState):
       let isSecureMode = await appSettingsStore.getState().isSecureMode
       let totalBalance = await totalBalanceStore.getState()[walletsState.activeWalelt]
-      let backgroundUpdateState = await backgroundUpdateStore.getState()
+      let backgroundUpdateState = await backgroundUpdateStore.getState()[walletsState.activeWalelt] ?? .connecting
       let isLoadingBalance = await {
         let state = await stateLoader.getState()
         return state.balanceLoadTasks[walletsState.activeWalelt] != nil
@@ -152,7 +152,7 @@ final class WalletTotalBalanceModel {
   private func createState(wallet: Wallet,
                            isSecureMode: Bool,
                            totalBalanceState: TotalBalanceState?,
-                           backgroundUpdateState: BackgroundUpdateStoreV3.State,
+                           backgroundUpdateState: BackgroundUpdateStore.ConnectionState,
                            isLoadingBalance: Bool) throws -> State {
     return State(
       wallet: wallet,

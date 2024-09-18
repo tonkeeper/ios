@@ -53,18 +53,36 @@ final class APIAssembly {
   private var testnetTonApiHostProvider: APIHostProvider {
     TestnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.remoteConfigurationStore)
   }
-
-  private var _streamingTonAPIClient: TonStreamingAPI.Client?
-  func streamingTonAPIClient() -> TonStreamingAPI.Client {
-    if let streamingTonAPIClient = _streamingTonAPIClient {
-      return streamingTonAPIClient
+  
+  private var _streamingAPI: StreamingAPI?
+  public var streamingAPI: StreamingAPI {
+    let isRealtimeHost = false
+    if let _streamingAPI {
+      return _streamingAPI
     }
-    let streamingTonAPIClient = TonStreamingAPI.Client(
-      serverURL: tonAPIURL,
-      transport: streamingTransport,
-      middlewares: [apiHostProvider, authTokenProvider])
-    _streamingTonAPIClient = streamingTonAPIClient
-    return streamingTonAPIClient
+    let streamingAPI = StreamingAPI(
+      configuration: streamingUrlSessionConfiguration,
+      hostProvider: { [streamingAPIURL, tonAPIURL, configurationAssembly] in
+        if isRealtimeHost {
+          return streamingAPIURL
+        } else {
+          do {
+            let string = try await configurationAssembly.remoteConfigurationStore.getConfiguration().tonapiV2Endpoint
+            guard let url = URL(string: string) else {
+              return tonAPIURL
+            }
+            return url
+          } catch {
+            return tonAPIURL
+          }
+        }
+      },
+      tokenProvider: { [configurationAssembly] in
+        try await configurationAssembly.remoteConfigurationStore.getConfiguration().tonApiV2Key
+      }
+    )
+    _streamingAPI = streamingAPI
+    return streamingAPI
   }
   
   private var _tonConnectAPIClient: TonConnectAPI.Client?
@@ -81,11 +99,7 @@ final class APIAssembly {
   }
   
   // MARK: - Private
-  
-  private lazy var transport: StreamURLSessionTransport = {
-    StreamURLSessionTransport(urlSessionConfiguration: urlSessionConfiguration)
-  }()
-  
+
   private lazy var streamingTransport: StreamURLSessionTransport = {
     StreamURLSessionTransport(urlSessionConfiguration: streamingUrlSessionConfiguration)
   }()
@@ -116,6 +130,10 @@ final class APIAssembly {
   
   var tonAPIURL: URL {
     URL(string: "https://keeper.tonapi.io")!
+  }
+  
+  var streamingAPIURL: URL {
+    URL(string: "https://rt.tonapi.io")!
   }
   
   var testnetTonAPIURL: URL {

@@ -78,7 +78,6 @@ public final class MainController {
   
   public func startUpdates() {
     walletStateLoader.startStateReload()
-    walletStateLoader.loadNFTs()
     Task {
       await backgroundUpdateUpdater.start()
     }

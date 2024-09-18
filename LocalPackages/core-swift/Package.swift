@@ -35,8 +35,6 @@ let package = Package(
               .product(name: "TonSwift", package: "ton-swift"),
               .product(name: "TonAPI", package: "ton-api-swift"),
               .product(name: "TonStreamingAPI", package: "ton-api-swift"),
-              .product(name: "StreamURLSessionTransport", package: "ton-api-swift"),
-              .product(name: "EventSource", package: "ton-api-swift"),
               .target(name: "TonConnectAPI"),
               .target(name: "CoreComponents")
             ],

@@ -41,10 +41,10 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
   }
   
   private let wallet: Wallet
-  private let backgroundUpdateStore: BackgroundUpdateStoreV3
+  private let backgroundUpdateStore: BackgroundUpdateStore
   
   init(wallet: Wallet,
-       backgroundUpdateStore: BackgroundUpdateStoreV3) {
+       backgroundUpdateStore: BackgroundUpdateStore) {
     self.wallet = wallet
     self.backgroundUpdateStore = backgroundUpdateStore
   }
