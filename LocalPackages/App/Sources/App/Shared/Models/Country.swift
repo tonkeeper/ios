@@ -8,7 +8,7 @@ struct Country: Codable {
   let flag: String
 }
 
-enum SelectedCountry: Codable {
+enum SelectedCountry: Codable, Equatable {
   case auto
   case all
   case country(countryCode: String)

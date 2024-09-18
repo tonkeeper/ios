@@ -4,40 +4,52 @@ import KeeperCore
 import TKCore
 import TKLocalize
 
+protocol BrowserModuleInput: AnyObject {
+  func updateSelectedCountry(_ selectedCountry: SelectedCountry)
+}
+
 protocol BrowserModuleOutput: AnyObject {
   var didTapSearch: (() -> Void)? { get set }
   var didSelectCategory: ((PopularAppsCategory) -> Void)? { get set }
   var didSelectDapp: ((Dapp) -> Void)? { get set }
+  var didSelectCountryPicker: ((SelectedCountry) -> Void)? { get set }
 }
 
 protocol BrowserViewModel: AnyObject {
   var didUpdateSegmentedControl: ((BrowserSegmentedControl.Model) -> Void)? { get set }
   var didSelectExplore: (() -> Void)? { get set }
   var didSelectConnected: (() -> Void)? { get set }
-  
+  var didUpdateRightHeaderButton: ((BrowserHeaderRightButtonModel) -> Void)? { get set }
+
   func viewDidLoad()
   func didTapSearchBar()
 }
 
 final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutput {
-  
+
   // MARK: - BrowserModuleOutput
-  
+
   var didTapSearch: (() -> Void)?
   var didSelectCategory: ((PopularAppsCategory) -> Void)?
   var didSelectDapp: ((Dapp) -> Void)?
-  
+  var didSelectCountryPicker: ((SelectedCountry) -> Void)?
+
   // MARK: - BrowserViewModel
-  
+
   var didUpdateSegmentedControl: ((BrowserSegmentedControl.Model) -> Void)?
   var didSelectExplore: (() -> Void)?
   var didSelectConnected: (() -> Void)?
-  
+  var didUpdateRightHeaderButton: ((BrowserHeaderRightButtonModel) -> Void)?
+
+  private var selectedCountry: SelectedCountry = .auto
+
   func viewDidLoad() {
     configure()
+    configureSelectedCountry()
     didSelectExplore?()
+    updateCountryPickerButton()
   }
-  
+
   func didTapSearchBar() {
     didTapSearch?()
   }
@@ -46,17 +58,21 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
   
   private let exploreModuleOutput: BrowserExploreModuleOutput
   private let connectedModuleOutput: BrowserConnectedModuleOutput
-  
+  private let appSettings: AppSettings
+
   // MARK: - Init
   
   init(exploreModuleOutput: BrowserExploreModuleOutput,
-       connectedModuleOutput: BrowserConnectedModuleOutput) {
+       connectedModuleOutput: BrowserConnectedModuleOutput,
+       appSettings: AppSettings) {
     self.exploreModuleOutput = exploreModuleOutput
     self.connectedModuleOutput = connectedModuleOutput
+    self.appSettings = appSettings
   }
 }
 
 private extension BrowserViewModelImplementation {
+
   func configure() {
     
     exploreModuleOutput.didSelectCategory = { [weak self] category in
@@ -80,11 +96,60 @@ private extension BrowserViewModelImplementation {
       ),
       connectedButton: BrowserSegmentedControl.Model.Button(
         title: TKLocales.Browser.Tab.connected,
-        tapAction: {[weak self] in
+        tapAction: { [weak self] in
           self?.didSelectConnected?()
         }
       )
     )
     didUpdateSegmentedControl?(segmentedControlModel)
+  }
+
+  func updateCountryPickerButton() {
+    let title: String
+    switch selectedCountry {
+    case .all:
+      title = "🌍"
+    case .auto:
+      title = Locale.current.regionCode ?? ""
+    case .country(let countryCode):
+      title = countryCode
+    }
+
+    let model = BrowserHeaderRightButtonModel(title: title) { [weak self] in
+      guard let self = self else {
+        return
+      }
+
+      self.didSelectCountryPicker?(self.selectedCountry)
+    }
+
+    didUpdateRightHeaderButton?(model)
+  }
+
+  func configureSelectedCountry() {
+    guard let selectedCountryCode = appSettings.selectedCountryCode else {
+      return
+    }
+
+    selectedCountry = .country(countryCode: selectedCountryCode)
+  }
+}
+
+// MARK: -  BrowserModuleInput
+
+extension BrowserViewModelImplementation: BrowserModuleInput {
+
+  func updateSelectedCountry(_ selectedCountry: SelectedCountry) {
+    guard self.selectedCountry != selectedCountry else {
+      return
+    }
+
+    self.selectedCountry = selectedCountry
+    if case let .country(countryCode) = selectedCountry {
+      appSettings.selectedCountryCode = countryCode
+    } else {
+      appSettings.selectedCountryCode = nil
+    }
+    updateCountryPickerButton()
   }
 }

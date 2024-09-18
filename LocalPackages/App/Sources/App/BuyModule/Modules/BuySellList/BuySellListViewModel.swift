@@ -126,7 +126,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   }
   private var categoryExpandStates = [FiatMethodCategory: SectionExpandState]()
   private var selectedCountry: SelectedCountry = .auto
-  
+
   // MARK: - Image Loader
   
   private let imageLoader = ImageLoader()

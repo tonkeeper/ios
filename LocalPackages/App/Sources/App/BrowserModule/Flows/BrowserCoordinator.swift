@@ -28,8 +28,9 @@ public final class BrowserCoordinator: RouterCoordinator<NavigationControllerRou
 }
 
 private extension BrowserCoordinator {
+
   func openBrowser() {
-    let module = BrowserAssembly.module(keeperCoreAssembly: keeperCoreMainAssembly)
+    let module = BrowserAssembly.module(keeperCoreAssembly: keeperCoreMainAssembly, coreAssembly: coreAssembly)
     
     module.output.didTapSearch = { [weak self] in
       self?.openSearch()
@@ -42,7 +43,17 @@ private extension BrowserCoordinator {
     module.output.didSelectDapp = { [weak self, unowned router] dapp in
       self?.openDapp(dapp, fromViewController: router.rootViewController)
     }
-    
+
+    module.output.didSelectCountryPicker = { [weak self] selectedCountry in
+      guard let self = self else {
+        return
+      }
+      
+      self.openCountryPicker(selectedCountry: selectedCountry, fromViewController: router.rootViewController) { resultSelectedCountry in
+        module.input.updateSelectedCountry(resultSelectedCountry)
+      }
+    }
+
     self.coreAssembly.analyticsProvider.logEvent(eventKey: .openBrowser)
     
     router.push(viewController: module.view, animated: false)
@@ -232,5 +243,27 @@ private extension BrowserCoordinator {
     
     addChild(coordinator)
     coordinator.start()
+  }
+
+  func openCountryPicker(selectedCountry: SelectedCountry,
+                         fromViewController: UIViewController,
+                         completion: @escaping (SelectedCountry) -> Void) {
+    let countryPickerViewController = CountryPickerViewController(
+      selectedCountry: selectedCountry,
+      countriesProvider: CountriesProvider()
+    )
+    let navigationController = TKNavigationController(rootViewController: countryPickerViewController)
+    navigationController.setNavigationBarHidden(true, animated: false)
+
+    countryPickerViewController.setupRightCloseButton { [weak navigationController] in
+      navigationController?.dismiss(animated: true)
+    }
+
+    countryPickerViewController.didSelectCountry = { [weak navigationController] in
+      completion($0)
+      navigationController?.dismiss(animated: true)
+    }
+
+    fromViewController.present(navigationController, animated: true)
   }
 }

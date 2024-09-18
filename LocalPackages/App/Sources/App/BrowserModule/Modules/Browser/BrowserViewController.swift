@@ -64,6 +64,7 @@ final class BrowserViewController: GenericViewViewController<BrowserView>, Scrol
 // MARK: - Private
 
 private extension BrowserViewController {
+  
   func setup() {
     addChild(exploreViewController)
     customView.embedExploreView(exploreViewController.customView)
@@ -90,11 +91,14 @@ private extension BrowserViewController {
     
     viewModel.didSelectExplore = { [weak self] in
       self?.showExplore()
-      
     }
     
     viewModel.didSelectConnected = { [weak self] in
       self?.showConnected()
+    }
+
+    viewModel.didUpdateRightHeaderButton = { [weak customView] model in
+      customView?.headerView.configureRightButton(model: model)
     }
   }
   
