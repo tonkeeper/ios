@@ -611,7 +611,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       let totalBalanceMapped = self.headerMapper.mapTotalBalance(totalBalance: state.totalBalanceState?.totalBalance)
       
       let addressButtonText: String = {
-        if self.appSettings.addressCopyCount > 3 {
+        if self.appSettings.addressCopyCount > 2 {
           state.address.toShort()
         } else {
           TKLocales.BalanceHeader.your_address + state.address.toShort()
