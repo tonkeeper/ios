@@ -211,7 +211,7 @@ final class SettingsListSecurityConfigurator: SettingsListConfigurator {
     )
     
     return SettingsListItem(
-      id: .locksreenItemIdentifier,
+      id: .changePasscodeItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.lock, tintColor: .Accent.blue)),
       onSelection: { [weak self] _ in

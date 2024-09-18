@@ -162,7 +162,7 @@ final class SettingsListBackupConfigurator: SettingsListConfigurator {
     )
     
     return SettingsListItem(
-      id: .backupDoneItemIdentifier,
+      id: .showRecoveryPhraseItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.key, tintColor: .Accent.blue)),
       onSelection: { [weak self] _ in
