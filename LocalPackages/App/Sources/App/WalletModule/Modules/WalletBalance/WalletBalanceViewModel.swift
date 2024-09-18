@@ -702,7 +702,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }
   }
   
-  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateStoreV3.State, isLoading: Bool) -> ConnectionStatusView.Model? {
+  func createConnectionStatusModel(backgroundUpdateState: BackgroundUpdateStore.ConnectionState, isLoading: Bool) -> ConnectionStatusView.Model? {
     switch (backgroundUpdateState, isLoading) {
     case (.connecting, _):
       return ConnectionStatusView.Model(

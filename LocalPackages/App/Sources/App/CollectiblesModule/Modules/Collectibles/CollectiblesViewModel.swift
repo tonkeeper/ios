@@ -52,12 +52,12 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
   
   private let wallet: Wallet
   private let walletNFTManagedStore: WalletNFTsManagedStore
-  private let backgroundUpdateStore: BackgroundUpdateStoreV3
+  private let backgroundUpdateStore: BackgroundUpdateStore
   private let walletStateLoader: WalletStateLoader
   
   init(wallet: Wallet,
        walletNFTManagedStore: WalletNFTsManagedStore,
-       backgroundUpdateStore: BackgroundUpdateStoreV3,
+       backgroundUpdateStore: BackgroundUpdateStore,
        walletStateLoader: WalletStateLoader) {
     self.wallet = wallet
     self.walletNFTManagedStore = walletNFTManagedStore
@@ -67,9 +67,10 @@ final class CollectiblesViewModelImplementation: CollectiblesViewModel, Collecti
 }
 
 private extension CollectiblesViewModelImplementation {
-  func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStoreV3.Event) {
+  func didGetBackgroundUpdateStoreEvent(_ event: BackgroundUpdateStore.Event) {
     switch event {
-    case .didUpdateState:
+    case .didUpdateConnectionState(_, let wallet):
+      guard wallet == self.wallet else { return }
       DispatchQueue.main.async {
         self.update()
       }
@@ -104,7 +105,7 @@ private extension CollectiblesViewModelImplementation {
   
   func update() {
     let isLoading = {
-      let updateState = backgroundUpdateStore.getState()
+      let updateState = backgroundUpdateStore.getState()[wallet] ?? .connecting
       let isBackgroundUpdate: Bool
       switch updateState {
       case .connected:
