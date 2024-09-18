@@ -83,7 +83,7 @@ final class SettingsListLegalConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Legal.Items.privacy_policy)
         )))
     return SettingsListItem(
-      id: .termsOfServiceIdentifier,
+      id: .privacyPolicyIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .chevron,
       onSelection: { [weak self] _ in

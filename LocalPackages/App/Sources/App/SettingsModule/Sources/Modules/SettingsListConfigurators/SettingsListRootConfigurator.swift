@@ -313,7 +313,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.security)
         )))
     return SettingsListItem(
-      id: .currencyItemIdentifier,
+      id: .securityItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.key, tintColor: .Accent.blue)),
       onSelection: {
@@ -367,7 +367,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.faq)
         )))
     return SettingsListItem(
-      id: .currencyItemIdentifier,
+      id: .FAQItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.question, tintColor: .Accent.blue)),
       onSelection: {
@@ -394,7 +394,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.support)
         )))
     return SettingsListItem(
-      id: .currencyItemIdentifier,
+      id: .supportItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.telegram, tintColor: .Accent.blue)),
       onSelection: {
@@ -421,7 +421,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.tk_news)
         )))
     return SettingsListItem(
-      id: .currencyItemIdentifier,
+      id: .tonkeeperNewsItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.telegram, tintColor: .Icon.secondary)),
       onSelection: {
@@ -448,7 +448,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.contact_us)
         )))
     return SettingsListItem(
-      id: .currencyItemIdentifier,
+      id: .contactUsItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.messageBubble, tintColor: .Icon.secondary)),
       onSelection: {
@@ -475,7 +475,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.rate(InfoProvider.appName()))
         )))
     return SettingsListItem(
-      id: .currencyItemIdentifier,
+      id: .rateItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.star, tintColor: .Icon.secondary)),
       onSelection: {
@@ -492,7 +492,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.legal)
         )))
     return SettingsListItem(
-      id: .currencyItemIdentifier,
+      id: .legalItemIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.doc, tintColor: .Icon.secondary)),
       onSelection: {
@@ -567,7 +567,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: title, numberOfLines: 1)
         )))
     return SettingsListItem(
-      id: .currencyItemIdentifier,
+      id: .deleteAccountIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.trashBin,
                                                                  tintColor: .Accent.blue)),
@@ -584,7 +584,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
           titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.logout)
         )))
     return SettingsListItem(
-      id: .currencyItemIdentifier,
+      id: .logoutIdentifier,
       cellConfiguration: cellConfiguration,
       accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.door,
                                                                  tintColor: .Accent.blue)),
