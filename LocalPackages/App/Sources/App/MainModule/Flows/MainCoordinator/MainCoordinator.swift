@@ -987,6 +987,27 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     coordinator.start()
   }
   
+  func openInsufficientFundsPopup(jettonInfo: JettonInfo, requiredAmount: BigUInt, availableAmount: BigUInt) {
+    let viewController = InsufficientFundsViewController()
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+    
+    let configurationBuilder = InsufficientFundsViewControllerConfigurationBuilder(
+      amountFormatter: keeperCoreMainAssembly.formattersAssembly.amountFormatter
+    )
+    let configuration = configurationBuilder.insufficientTokenConfiguration(
+      tokenSymbol: jettonInfo.symbol ?? jettonInfo.name,
+      tokenFractionalDigits: jettonInfo.fractionDigits,
+      required: requiredAmount,
+      available: availableAmount,
+      okAction: { [weak bottomSheetViewController] in
+        bottomSheetViewController?.dismiss()
+      }
+    )
+    viewController.configuration = configuration
+    router.dismiss(animated: true) { [router] in
+      bottomSheetViewController.present(fromViewController: router.rootViewController)
+    }
+  }
   private func openHistoryTab() {
     guard let historyViewController = historyCoordinator?.router.rootViewController else { return }
     guard let index = router.rootViewController.viewControllers?.firstIndex(of: historyViewController) else { return }

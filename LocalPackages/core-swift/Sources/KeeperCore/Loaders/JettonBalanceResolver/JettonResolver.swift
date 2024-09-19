@@ -1,13 +1,14 @@
 import Foundation
 import TonSwift
+import BigInt
 
 public enum JettonBalanceResolverError: Swift.Error {
   case unknownJetton
-  case insufficientFunds(jettonInfo: JettonInfo, wallet: Wallet)
+  case insufficientFunds(jettonInfo: JettonInfo, balance: BigUInt, wallet: Wallet)
 }
 
 public protocol JettonBalanceResolver {
-  func resolveJetton(jettonAddress: Address, wallet: Wallet) async throws -> JettonItem
+  func resolveJetton(jettonAddress: Address, wallet: Wallet) async throws -> JettonBalance
 }
 
 public struct JettonBalanceResolverImplementation: JettonBalanceResolver {
@@ -21,7 +22,7 @@ public struct JettonBalanceResolverImplementation: JettonBalanceResolver {
     self.apiProvider = apiProvider
   }
   
-  public func resolveJetton(jettonAddress: Address, wallet: Wallet) async throws -> JettonItem {
+  public func resolveJetton(jettonAddress: Address, wallet: Wallet) async throws -> JettonBalance {
     let jettonInfo: JettonInfo
     do {
       jettonInfo = try await apiProvider.api(wallet.isTestnet).resolveJetton(address: jettonAddress)
@@ -30,13 +31,13 @@ public struct JettonBalanceResolverImplementation: JettonBalanceResolver {
     }
 
     guard let balance = await balanceStore.getState()[wallet]?.walletBalance.balance.jettonsBalance else {
-      throw JettonBalanceResolverError.insufficientFunds(jettonInfo: jettonInfo, wallet: wallet)
+      throw JettonBalanceResolverError.insufficientFunds(jettonInfo: jettonInfo, balance: 0, wallet: wallet)
     }
     
-    guard let jettonItem = balance.first(where: { $0.item.jettonInfo.address == jettonAddress })?.item else {
-      throw JettonBalanceResolverError.insufficientFunds(jettonInfo: jettonInfo, wallet: wallet)
+    guard let jettonBalance = balance.first(where: { $0.item.jettonInfo.address == jettonAddress }) else {
+      throw JettonBalanceResolverError.insufficientFunds(jettonInfo: jettonInfo, balance: 0, wallet: wallet)
     }
     
-    return jettonItem
+    return jettonBalance
   }
 }

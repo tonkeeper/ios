@@ -19,8 +19,19 @@ extension MainCoordinator {
         
         let token: Token
         if let jettonAddress {
-          let jettonItem = try await self.jettonBalanceResolver.resolveJetton(jettonAddress: jettonAddress, wallet: wallet)
-          token = .jetton(jettonItem)
+          let jettonBalance = try await self.jettonBalanceResolver.resolveJetton(jettonAddress: jettonAddress, wallet: wallet)
+          if let amount, jettonBalance.quantity < amount {
+            await MainActor.run {
+              ToastPresenter.hideAll()
+              self.openInsufficientFundsPopup(
+                jettonInfo: jettonBalance.item.jettonInfo,
+                requiredAmount: amount,
+                availableAmount: jettonBalance.quantity
+              )
+            }
+            return
+          }
+          token = .jetton(jettonBalance.item)
         } else {
           token = .ton
         }
@@ -50,11 +61,15 @@ extension MainCoordinator {
             )
           )
         }
-      } catch JettonBalanceResolverError.insufficientFunds {
-        await MainActor.run {
-          self.deeplinkHandleTask = nil
+      } catch JettonBalanceResolverError.insufficientFunds(let jettonInfo, let balance, _) {
+        await MainActor.run { [weak self, jettonInfo] in
+          self?.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
-          // TODO: SHOW BANNER
+          self?.openInsufficientFundsPopup(
+            jettonInfo: jettonInfo,
+            requiredAmount: amount ?? 0,
+            availableAmount: balance
+          )
         }
       } catch {
         await MainActor.run {
