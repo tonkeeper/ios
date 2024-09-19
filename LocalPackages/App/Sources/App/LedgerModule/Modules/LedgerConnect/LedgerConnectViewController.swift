@@ -68,7 +68,7 @@ private extension LedgerConnectViewController {
       message: TKLocales.Bluetooth.PoweredOffAlert.message,
       preferredStyle: .alert
     )
-    alertController.addAction(UIAlertAction(title: TKLocales.Bluetooth.PoweredOffAlert.open_settings, style: .default, handler: { _ in
+    alertController.addAction(UIAlertAction(title: TKLocales.Bluetooth.PoweredOffAlert.openSettings, style: .default, handler: { _ in
       if let url = URL(string: "App-Prefs:root=Bluetooth") {
         if UIApplication.shared.canOpenURL(url) {
           UIApplication.shared.open(url, options: [:], completionHandler: nil)
@@ -85,7 +85,7 @@ private extension LedgerConnectViewController {
       message: TKLocales.Bluetooth.PermissionsAlert.message,
       preferredStyle: .alert
     )
-    alertController.addAction(UIAlertAction(title: TKLocales.Bluetooth.PermissionsAlert.open_settings, style: .default, handler: { _ in
+    alertController.addAction(UIAlertAction(title: TKLocales.Bluetooth.PermissionsAlert.openSettings, style: .default, handler: { _ in
       if let url = URL(string: UIApplication.openSettingsURLString) {
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
       }

@@ -74,7 +74,7 @@ final class BackupWarningViewController: UIViewController, TKBottomSheetScrollCo
       category: .primary,
       size: .large
     )
-    continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.continue_action))
+    continueButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.continueAction))
     continueButtonConfiguration.action = { [didTapContinue] in
       didTapContinue?()
     }

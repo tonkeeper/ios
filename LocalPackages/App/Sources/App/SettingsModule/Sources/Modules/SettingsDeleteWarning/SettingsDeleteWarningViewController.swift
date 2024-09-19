@@ -70,7 +70,7 @@ final class SettingsDeleteWarningViewController: UIViewController, TKBottomSheet
       size: .large
     )
     signoutButtonConfiguration.isEnabled = false
-    signoutButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.sign_out))
+    signoutButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.signOut))
     signoutButtonConfiguration.action = { [didTapSignOut] in
       didTapSignOut?()
     }

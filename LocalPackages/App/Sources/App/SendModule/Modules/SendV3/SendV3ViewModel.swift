@@ -388,7 +388,7 @@ private extension SendV3ViewModelImplementation {
       ),
       comment: commentModel,
       button: Model.Button(
-        title: TKLocales.Actions.continue_action,
+        title: TKLocales.Actions.continueAction,
         isEnabled: !isResolving && isContinueEnable,
         isActivity: isResolving,
         action: { [weak self] in
@@ -434,7 +434,7 @@ private extension SendV3ViewModelImplementation {
     switch (isCommentRequired, commentInput.isEmpty, commentState) {
     case (_, false, .ledgerNonAsciiError):
       placeholder = TKLocales.Send.Comment.placeholder
-      description = TKLocales.Send.Comment.ascii_error.withTextStyle(
+      description = TKLocales.Send.Comment.asciiError.withTextStyle(
         .body2,
         color: .Accent.red,
         alignment: .left,

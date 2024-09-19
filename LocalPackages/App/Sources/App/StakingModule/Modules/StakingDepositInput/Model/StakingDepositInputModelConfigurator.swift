@@ -1,11 +1,12 @@
 import Foundation
+import TKLocalize
 import KeeperCore
 import TonSwift
 import BigInt
 
 final class StakingDepositInputModelConfigurator: StakingInputModelConfigurator {
   var title: String {
-    "Stake"
+    TKLocales.Staking.title
   }
   
   var didUpdateBalance: ((UInt64) -> Void)?

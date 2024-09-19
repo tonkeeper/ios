@@ -69,7 +69,7 @@ final class TKCheckRecoveryPhraseViewModelImplementation: TKCheckRecoveryPhraseV
       category: .primary, 
       size: .large
     )
-    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
+    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continueAction)
     self.continueButtonConfiguration = continueButtonConfiguration
   }
 }

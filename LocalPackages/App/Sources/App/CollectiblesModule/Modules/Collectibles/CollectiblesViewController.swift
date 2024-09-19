@@ -32,7 +32,7 @@ private extension CollectiblesViewController {
     customView.navigationBarView.title = TKLocales.Purchases.title
     
     emptyViewController.configure(model: TKEmptyViewController.Model(
-      title: TKLocales.Purchases.empty_placeholder,
+      title: TKLocales.Purchases.emptyPlaceholder,
       caption: nil,
       buttons: []
     ))

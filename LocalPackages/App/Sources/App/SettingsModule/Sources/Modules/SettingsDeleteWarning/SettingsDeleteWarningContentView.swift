@@ -22,7 +22,7 @@ final class SettingsDeleteWarningContentView: TKView {
     layer.cornerRadius = 16
     layer.cornerCurve = .continuous
     
-    tickButton.label.attributedText = TKLocales.SignOutWarning.tick_description.withTextStyle(
+    tickButton.label.attributedText = TKLocales.SignOutWarning.tickDescription.withTextStyle(
       .body1,
       color: .Text.primary,
       alignment: .left,
@@ -37,7 +37,7 @@ final class SettingsDeleteWarningContentView: TKView {
     
     let backupButton = TKButton()
     let backupButtonConfiguration = TKButton.Configuration(
-      content: TKButton.Configuration.Content(title: .plainString(TKLocales.SignOutWarning.tick_back_up)),
+      content: TKButton.Configuration.Content(title: .plainString(TKLocales.SignOutWarning.tickBackUp)),
       contentPadding: .zero,
       padding: .zero,
       textStyle: .label1,

@@ -345,7 +345,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     if balanceListItems.canManage {
       footerConfiguration = TKListCollectionViewButtonFooterView.Configuration(
         identifier: .balanceItemsSectionFooterIdentifier,
-        content: TKButton.Configuration.Content(title: .plainString("Manage")),
+        content: TKButton.Configuration.Content(title: .plainString(TKLocales.WalletBalanceList.ManageButton.title)),
         action: { [weak self] in
           self?.didTapManage?(balanceListItems.wallet)
         }
@@ -465,7 +465,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     var headerButtonConfiguration: TKButton.Configuration?
     if setupState.isFinishEnable {
       headerButtonConfiguration = .actionButtonConfiguration(category: .secondary, size: .small)
-      headerButtonConfiguration?.content = TKButton.Configuration.Content(title: .plainString("Done"))
+      headerButtonConfiguration?.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.done))
       headerButtonConfiguration?.action = { [weak self] in
         self?.setupModel.finishSetup()
       }
@@ -473,7 +473,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     
     let headerConfiguration = TKListCollectionViewButtonHeaderView.Configuration(
       identifier: .setupSectionHeaderIdentifier,
-      title: "Finish setting up",
+      title: TKLocales.FinishSetup.title,
       buttonConfiguration: headerButtonConfiguration
     )
     
@@ -614,7 +614,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         if self.appSettings.addressCopyCount > 2 {
           state.address.toShort()
         } else {
-          TKLocales.BalanceHeader.your_address + state.address.toShort()
+          TKLocales.BalanceHeader.yourAddress + state.address.toShort()
         }
       }()
       
@@ -677,7 +677,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         case .current, .none:
           return nil
         case .previous(let totalBalance):
-          return TKLocales.ConnectionStatus.updated_at(self.headerMapper.makeUpdatedDate(totalBalance.date))
+          return TKLocales.ConnectionStatus.updatedAt(self.headerMapper.makeUpdatedDate(totalBalance.date))
         }
       }()
       
@@ -726,7 +726,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
       )
     case (.noConnection, _):
       return ConnectionStatusView.Model(
-        title: TKLocales.ConnectionStatus.no_internet,
+        title: TKLocales.ConnectionStatus.noInternet,
         titleColor: .Accent.orange,
         isLoading: false
       )

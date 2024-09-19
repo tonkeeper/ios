@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import TKScreenKit
+import TKLocalize
 import KeeperCore
 
 struct SettingsRecoveryPhraseProvider: TKRecoveryPhraseDataProvider {
@@ -28,13 +29,13 @@ private extension SettingsRecoveryPhraseProvider {
     
     return TKRecoveryPhraseView.Model(
       titleDescriptionModel: TKTitleDescriptionView.Model(
-        title: "Recovery Phrase",
-        bottomDescription: "Write down these words with their numbers and store them in a safe place."
+        title: TKLocales.Backup.Show.title,
+        bottomDescription: TKLocales.Backup.Show.caption
       ),
       phraseListViewModel: phraseListViewModel,
       buttons: [
         TKRecoveryPhraseView.Model.Button(
-          model: TKUIActionButton.Model(title: "Copy"),
+          model: TKUIActionButton.Model(title: TKLocales.Backup.Show.Button.title),
           category: .secondary,
           action: {
             UINotificationFeedbackGenerator().notificationOccurred(.warning)

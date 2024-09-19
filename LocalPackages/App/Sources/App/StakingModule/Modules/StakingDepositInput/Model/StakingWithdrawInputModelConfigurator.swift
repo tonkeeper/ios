@@ -1,11 +1,12 @@
 import Foundation
+import TKLocalize
 import KeeperCore
 import TonSwift
 import BigInt
 
 final class StakingWithdrawInputModelConfigurator: StakingInputModelConfigurator {
   var title: String {
-    "Unstake"
+    TKLocales.Unstaking.title
   }
   
   var stakingPoolInfo: StackingPoolInfo? {

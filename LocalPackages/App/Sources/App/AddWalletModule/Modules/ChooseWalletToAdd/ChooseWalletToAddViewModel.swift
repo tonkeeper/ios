@@ -82,7 +82,7 @@ final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel
   
   func createModel() -> ChooseWalletToAddView.Model {
       ChooseWalletToAddView.Model(
-        continueButtonModel: TKUIActionButton.Model(title: TKLocales.Actions.continue_action),
+        continueButtonModel: TKUIActionButton.Model(title: TKLocales.Actions.continueAction),
         continueButtonAction: { [weak self] in
           guard let self = self else { return }
           let dictionary = activeWalletModels.reduce(into: [:]) { partialResult, model in

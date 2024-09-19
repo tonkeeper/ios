@@ -11,7 +11,7 @@ extension Wallet {
     case .lockup:
       return nil
     case .watchonly:
-      return TKLocales.WalletTags.watch_only
+      return TKLocales.WalletTags.watchOnly
     case .signer:
       return "SIGNER"
     case .ledger:

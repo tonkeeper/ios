@@ -229,7 +229,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
           titleViewConfiguration: TKListItemTitleView.Configuration(title: wallet.label),
           captionViewsConfigurations: [
-            TKListItemTextView.Configuration(text: TKLocales.Settings.Items.setup_wallet_description,
+            TKListItemTextView.Configuration(text: TKLocales.Settings.Items.setupWalletDescription,
                                              color: .Text.secondary,
                                              textStyle: .body2)
           ]
@@ -418,7 +418,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.tk_news)
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.tkNews)
         )))
     return SettingsListItem(
       id: .tonkeeperNewsItemIdentifier,
@@ -445,7 +445,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
-          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.contact_us)
+          titleViewConfiguration: TKListItemTitleView.Configuration(title: TKLocales.Settings.Items.contactUs)
         )))
     return SettingsListItem(
       id: .contactUsItemIdentifier,
@@ -508,7 +508,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     
     switch wallet.kind {
     case .watchonly:
-      title = TKLocales.Settings.Items.delete_watch_only.withTextStyle(.label1, color: .Text.primary)
+      title = TKLocales.Settings.Items.deleteWatchOnly.withTextStyle(.label1, color: .Text.primary)
       action = {
         let actions = [
           UIAlertAction(title: TKLocales.Actions.delete, style: .destructive, handler: { [weak self] _ in
@@ -525,7 +525,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         ]
         
         self.didShowAlert?(
-          TKLocales.Settings.Items.delete_watch_only,
+          TKLocales.Settings.Items.deleteWatchOnly,
           nil,
           actions
         )
@@ -554,7 +554,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         ]
         
         self.didShowAlert?(
-          TKLocales.Settings.Items.delete_acount_alert_title,
+          TKLocales.Settings.Items.deleteAcountAlertTitle,
           nil,
           actions
         )
@@ -622,7 +622,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       iconSide: 20
     )
     
-    let delete = TKLocales.Settings.Items.delete_account
+    let delete = TKLocales.Settings.Items.deleteAccount
       .withTextStyle(
         .label1,
         color: .Text.primary,

@@ -218,7 +218,7 @@ private extension HistoryListViewModelImplementation {
       self.snapshot.reloadItems([.pagination])
     }
     DispatchQueue.main.async {
-      self.paginationCellModel = HistoryListPaginationCell.Model(state: .error(title: "Failed", retryButtonAction: { [weak self] in
+      self.paginationCellModel = HistoryListPaginationCell.Model(state: .error(title: TKLocales.Actions.failed, retryButtonAction: { [weak self] in
         self?.loadNextPage()
       }))
       self.didUpdateSnapshot?(self.snapshot)

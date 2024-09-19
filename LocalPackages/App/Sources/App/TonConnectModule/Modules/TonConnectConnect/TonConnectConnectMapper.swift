@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import KeeperCore
+import TKLocalize
 
 struct TonConnectConnectMapper {
   static func modalCardConfiguration(
@@ -13,7 +14,7 @@ struct TonConnectConnectMapper {
     connectAction: @escaping () async -> Bool,
     completionAction: @escaping () -> Void
   ) -> TKModalCardViewController.Configuration {
-    let connectTo = "Connect to ".withTextStyle(
+    let connectTo = TKLocales.TonConnectMapper.connectTo.withTextStyle(
       .h2,
       color: .Text.primary,
       alignment: .center,
@@ -25,7 +26,7 @@ struct TonConnectConnectMapper {
       alignment: .center,
       lineBreakMode: .byWordWrapping
     )
-    let questioMark = "?".withTextStyle(
+    let questionMark = "?".withTextStyle(
       .h2,
       color: .Text.primary,
       alignment: .center,
@@ -34,10 +35,10 @@ struct TonConnectConnectMapper {
     let title = NSMutableAttributedString()
     title.append(connectTo)
     title.append(domain)
-    title.append(questioMark)
+    title.append(questionMark)
     
     let description = NSMutableAttributedString()
-    let caption = "\(manifest.name) is requesting access to your wallet address\(showWalletPicker ? ":" : " ")"
+    let caption = TKLocales.TonConnectMapper.requestingCapture(manifest.name, (showWalletPicker ? ":" : " "))
       .withTextStyle(
         .body1,
         color: .Text.secondary,
@@ -133,12 +134,12 @@ struct TonConnectConnectMapper {
 }
 
 private extension String {
-  static let connectButtonTitle = "Connect wallet"
+  static let connectButtonTitle = TKLocales.TonConnect.connectWallet
 }
 
 private extension NSAttributedString {
   static var footerText: NSAttributedString {
-    "Be sure to check the service address before connecting the wallet."
+    TKLocales.TonConnect.sureCheckServiceAddress
       .withTextStyle(
         .body2,
         color: .Text.tertiary,
