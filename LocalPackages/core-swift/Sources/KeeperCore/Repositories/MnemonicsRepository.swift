@@ -34,7 +34,35 @@ extension MnemonicsV3Vault: MnemonicsRepository {
   
   public func saveMnemonic(_ mnemonic: CoreComponents.Mnemonic, wallets: [Wallet], password: String) async throws {
     let vaultMnemonics = Dictionary(uniqueKeysWithValues: wallets.map { ($0.id, mnemonic) })
-    try await importMnemonics(vaultMnemonics, password: password)
+    try await addMnemoncs(vaultMnemonics, password: password)
+  }
+  
+  public func deleteMnemonic(wallet: Wallet, password: String) async throws {
+    try await deleteMnemonic(identifier: wallet.id, password: password)
+  }
+  
+  public func checkIfPasswordValid(_ password: String) async -> Bool {
+    do {
+      try await validatePassword(password)
+      return true
+    } catch {
+      return false
+    }
+  }
+}
+
+extension MnemonicsV4Vault: MnemonicsRepository {
+  public func getMnemonic(wallet: Wallet, password: String) async throws -> CoreComponents.Mnemonic {
+    try await getMnemonic(identifier: wallet.id, password: password)
+  }
+  
+  public func saveMnemonic(_ mnemonic: CoreComponents.Mnemonic, wallet: Wallet, password: String) async throws {
+    try await addMnemonic(mnemonic, identifier: wallet.id, password: password)
+  }
+  
+  public func saveMnemonic(_ mnemonic: CoreComponents.Mnemonic, wallets: [Wallet], password: String) async throws {
+    let vaultMnemonics = Dictionary(uniqueKeysWithValues: wallets.map { ($0.id, mnemonic) })
+    try await addMnemoncs(vaultMnemonics, password: password)
   }
   
   public func deleteMnemonic(wallet: Wallet, password: String) async throws {

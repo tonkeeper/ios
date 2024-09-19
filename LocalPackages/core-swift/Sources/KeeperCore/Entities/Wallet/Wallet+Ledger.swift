@@ -2,7 +2,7 @@ import Foundation
 import TonSwift
 
 public extension Wallet {
-  struct LedgerDevice: Codable, Equatable, CellCodable {
+  struct LedgerDevice: Codable, Equatable, CellCodable, Hashable {
     public let deviceId: String
     public let deviceModel: String
     public let accountIndex: Int16

@@ -50,7 +50,7 @@ public actor APIRequestBuilderSerialActor {
   }
 }
 
-struct API {
+public struct API {
   private let hostProvider: APIHostProvider
   private let urlSession: URLSession
   private let configurationStore: ConfigurationStore
@@ -97,7 +97,6 @@ extension API {
         currencies: currencies.map { $0.code }
       )
     }
-    
     let response = try await request.execute().body
     let balances = response.balances
       .compactMap { jetton in
@@ -467,6 +466,46 @@ extension API {
   }
 }
   
+// MARK: - Staking
+
+extension API {
+  func getPools(address: Address) async throws -> [StackingPoolInfo]{
+    let request = try await requestBuilderActor.addTask {
+      await prepareAPIForRequest()
+      return StakingAPI.getStakingPoolsWithRequestBuilder(
+        availableFor: address.toRaw(),
+        includeUnverified: false
+      )
+    }
+    
+    let response = try await request.execute().body
+    let result = response.pools.compactMap {
+      try? StackingPoolInfo(accountStakingInfo: $0, implementations: response.implementations)
+    }
+    return result
+  }
+  
+  func getNominators(address: Address) async throws -> [AccountStackingInfo] {
+    let request = try await requestBuilderActor.addTask {
+      await prepareAPIForRequest()
+      return StakingAPI.getAccountNominatorsPoolsWithRequestBuilder(accountId: address.toRaw())
+    }
+    
+    let response = try await request.execute().body
+    let result = response.pools.compactMap { try? AccountStackingInfo(accountStakingInfo: $0) }
+    return result
+  }
+  
+  func getPoolInfo(poolAddress: Address) async throws -> StackingPoolInfo {
+    let request = try await requestBuilderActor.addTask {
+      await prepareAPIForRequest()
+      return StakingAPI.getStakingPoolInfoWithRequestBuilder(accountId: poolAddress.toRaw())
+    }
+    let response = try await request.execute().body
+    let result = try StackingPoolInfo(accountStakingInfo: response.pool, implementations: [response.pool.implementation.rawValue: response.implementation])
+    return result
+  }
+}
 
 // MARK: - Blockchain
 

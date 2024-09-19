@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		50C356522BE39C0500539266 /* TKLocalize in Frameworks */ = {isa = PBXBuildFile; productRef = 50C356512BE39C0500539266 /* TKLocalize */; };
-		50F04B8A2C2E9B660043EE4B /* AptabaseConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50F04B892C2E9B660043EE4B /* AptabaseConfigurator.swift */; };
 		7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */ = {isa = PBXBuildFile; productRef = 7D143C352A4EC0D300B5FCC0 /* Lottie */; };
 		7D143C3A2A4EC0E800B5FCC0 /* check480.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C382A4EC0E800B5FCC0 /* check480.json */; };
 		7D143C3B2A4EC0E800B5FCC0 /* confetti.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D143C392A4EC0E800B5FCC0 /* confetti.json */; };
@@ -55,8 +54,6 @@
 		7DDBBFF42ACCA10E00F811A5 /* TonkeeperIntents.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7DDBBFF82ACCA12E00F811A5 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; };
 		7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
-		C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */; };
-		C327C6322B4F682B00AAFB43 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */; };
 		C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C32C7C462BCD0D8E00785B6A /* TKCore */; };
 		C34C70612BE1157200143AC8 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C34C70602BE1157200143AC8 /* WalletCore */; };
 		C34C70622BE1157200143AC8 /* WalletCore in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C34C70602BE1157200143AC8 /* WalletCore */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -67,9 +64,6 @@
 		C35E6C442ADFCA0500F8B524 /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C35E6C432ADFCA0500F8B524 /* TKCore */; };
 		C365E2712BDA6944006D33B9 /* TKChart in Frameworks */ = {isa = PBXBuildFile; productRef = C365E2702BDA6944006D33B9 /* TKChart */; };
 		C365E2742BDA695D006D33B9 /* App in Frameworks */ = {isa = PBXBuildFile; productRef = C365E2732BDA695D006D33B9 /* App */; };
-		C37DDDB82BCEA5AB002A486E /* FirebaseConfigurator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */; };
-		C37DDDBA2BCEA7B4002A486E /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = C37DDDB92BCEA7B4002A486E /* FirebaseRemoteConfig */; };
-		C37DDDBC2BCEA7BE002A486E /* FirebaseRemoteConfigSwift in Frameworks */ = {isa = PBXBuildFile; productRef = C37DDDBB2BCEA7BE002A486E /* FirebaseRemoteConfigSwift */; };
 		C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */ = {isa = PBXBuildFile; productRef = C3CC74412BE11EC6006022FE /* TKCoordinator */; };
 		C3CC74442BE11F08006022FE /* TKUIKitDynamic in Frameworks */ = {isa = PBXBuildFile; productRef = C3CC74432BE11F08006022FE /* TKUIKitDynamic */; };
 		C3CC74452BE11F08006022FE /* TKUIKitDynamic in Embed Frameworks */ = {isa = PBXBuildFile; productRef = C3CC74432BE11F08006022FE /* TKUIKitDynamic */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
@@ -154,7 +148,6 @@
 		504D92772C32A74D00B12DA6 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		509051DD2BE1661E00B41894 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/LaunchScreen.strings; sourceTree = "<group>"; };
 		50ADFE3C2BE160D3000E1C0A /* TKLocalize */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKLocalize; sourceTree = "<group>"; };
-		50F04B892C2E9B660043EE4B /* AptabaseConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AptabaseConfigurator.swift; sourceTree = "<group>"; };
 		7D143C382A4EC0E800B5FCC0 /* check480.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = check480.json; sourceTree = "<group>"; };
 		7D143C392A4EC0E800B5FCC0 /* confetti.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = confetti.json; sourceTree = "<group>"; };
 		7D19EB622ABDB58C00BDE7FA /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
@@ -211,7 +204,6 @@
 		C32C7C492BCD111100785B6A /* TonkeeperIntents.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TonkeeperIntents.entitlements; sourceTree = "<group>"; };
 		C34C705F2BE1151300143AC8 /* core-swift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "core-swift"; sourceTree = "<group>"; };
 		C3777E962BE11C9C00DC3C92 /* TKScreenKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKScreenKit; sourceTree = "<group>"; };
-		C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FirebaseConfigurator.swift; sourceTree = "<group>"; };
 		C392CE022BE11B0300E0C473 /* TKUIKit */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKUIKit; sourceTree = "<group>"; };
 		C39560142B737F12003303C7 /* App */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = App; sourceTree = "<group>"; };
 		E66F82AA2C2F2BB00009E7C2 /* Ledger */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = Ledger; sourceTree = "<group>"; };
@@ -239,17 +231,13 @@
 				C3CC74422BE11EC6006022FE /* TKCoordinator in Frameworks */,
 				C3FC243B2BB4DA980005E952 /* TKChart in Frameworks */,
 				7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */,
-				C37DDDBA2BCEA7B4002A486E /* FirebaseRemoteConfig in Frameworks */,
 				7DB17F352A4B2F07007C6154 /* AnyFormatKit in Frameworks */,
 				C3FAB42D2BE11D4400C81547 /* TKScreenKit in Frameworks */,
 				7D143C362A4EC0D300B5FCC0 /* Lottie in Frameworks */,
 				C35E6C3E2ADFC9F800F8B524 /* TKCore in Frameworks */,
 				C3CC74442BE11F08006022FE /* TKUIKitDynamic in Frameworks */,
 				C34C70612BE1157200143AC8 /* WalletCore in Frameworks */,
-				C327C6302B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */,
-				C37DDDBC2BCEA7BE002A486E /* FirebaseRemoteConfigSwift in Frameworks */,
 				C365E2742BDA695D006D33B9 /* App in Frameworks */,
-				C327C6322B4F682B00AAFB43 /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -421,8 +409,6 @@
 				7DB8FB672A1BCC92005B4B11 /* SceneDelegate.swift */,
 				7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */,
 				7DB8FB792A1BCFCD005B4B11 /* Resources */,
-				C37DDDB72BCEA5AB002A486E /* FirebaseConfigurator.swift */,
-				50F04B892C2E9B660043EE4B /* AptabaseConfigurator.swift */,
 			);
 			path = Tonkeeper;
 			sourceTree = "<group>";
@@ -517,11 +503,7 @@
 				7D143C352A4EC0D300B5FCC0 /* Lottie */,
 				7D5A18112A5406CB00793769 /* Kingfisher */,
 				C35E6C3D2ADFC9F800F8B524 /* TKCore */,
-				C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */,
-				C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */,
 				C3FC243A2BB4DA980005E952 /* TKChart */,
-				C37DDDB92BCEA7B4002A486E /* FirebaseRemoteConfig */,
-				C37DDDBB2BCEA7BE002A486E /* FirebaseRemoteConfigSwift */,
 				C365E2732BDA695D006D33B9 /* App */,
 				C34C70602BE1157200143AC8 /* WalletCore */,
 				C3FAB42C2BE11D4400C81547 /* TKScreenKit */,
@@ -596,7 +578,6 @@
 				7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */,
 				7D143C342A4EC0D300B5FCC0 /* XCRemoteSwiftPackageReference "lottie-spm" */,
 				7D5A18102A5406CB00793769 /* XCRemoteSwiftPackageReference "Kingfisher" */,
-				C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			productRefGroup = 7DB8FB632A1BCC92005B4B11 /* Products */;
 			projectDirPath = "";
@@ -679,7 +660,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "INFO_PLIST=GoogleService-Info.plist\nDEVELOPMENT_INFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/Debug/${INFO_PLIST}\nRELEASE_INFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/Release/${INFO_PLIST}\necho \"Checking ${INFO_PLIST} in ${DEVELOPMENT_INFO_PLIST}\"\nif [ ! -f $DEVELOPMENT_INFO_PLIST ] ; then\necho \"Development GoogleService-Info.plist not found.\"\nexit 1\nfi\necho \"Checking ${INFO_PLIST} in ${RELEASE_INFO_PLIST}\"\nif [ ! -f $RELEASE_INFO_PLIST ] ; then\necho \"Release GoogleService-Info.plist not found.\"\nexit 1\nfi\nPLIST_DESTINATION=${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\necho \"Copying ${INFO_PLIST} to final destination: ${PLIST_DESTINATION}\"\nif [ \"${CONFIGURATION}\" == \"Release\" ] ; then\necho \"Copied ${RELEASE_INFO_PLIST}.\"\ncp \"${RELEASE_INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nelse\necho \"Copied ${DEVELOPMENT_INFO_PLIST}.\"\ncp \"${DEVELOPMENT_INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nfi\n";
+			shellScript = "INFO_PLIST=GoogleService-Info.plist\nX_DEVELOPMENT_INFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/TonkeeperXDebug/${INFO_PLIST}\nX_RELEASE_INFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/TonkeeperXRelease/${INFO_PLIST}\nINFO_PLIST=${PROJECT_DIR}/${TARGET_NAME}/Resources/Firebase/Tonkeeper/${INFO_PLIST}\necho \"Checking ${INFO_PLIST} in ${X_DEVELOPMENT_INFO_PLIST}\"\nif [ ! -f $X_DEVELOPMENT_INFO_PLIST ] ; then\necho \"Development GoogleService-Info.plist not found.\"\nexit 1\nfi\necho \"Checking ${INFO_PLIST} in ${X_RELEASE_INFO_PLIST}\"\nif [ ! -f $X_RELEASE_INFO_PLIST ] ; then\necho \"Release GoogleService-Info.plist not found.\"\nexit 1\nfi\nPLIST_DESTINATION=${BUILT_PRODUCTS_DIR}/${PRODUCT_NAME}.app\necho \"Copying ${INFO_PLIST} to final destination: ${PLIST_DESTINATION}\"\nif [ \"${CONFIGURATION}\" == \"TonkeeperXRelease\" ] ; then\necho \"Copied ${X_RELEASE_INFO_PLIST}.\"\ncp \"${X_RELEASE_INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nelif [ \"${CONFIGURATION}\" == \"TonkeeperXDebug\" ] ; then \necho \"Copied ${X_DEVELOPMENT_INFO_PLIST}.\"\ncp \"${X_DEVELOPMENT_INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nelse \necho \"Copied ${INFO_PLIST}.\"\ncp \"${INFO_PLIST}\" \"${PLIST_DESTINATION}\"\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -723,9 +704,7 @@
 				7D3F260F2AC19F79002DF1B7 /* RateWidget.intentdefinition in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
-				50F04B8A2C2E9B660043EE4B /* AptabaseConfigurator.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
-				C37DDDB82BCEA5AB002A486E /* FirebaseConfigurator.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -977,7 +956,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -1019,7 +998,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -1125,7 +1104,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -1293,7 +1272,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
+				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -1530,14 +1509,6 @@
 				version = 2.5.2;
 			};
 		};
-		C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 10.19.1;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1563,16 +1534,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 7DB17F332A4B2F07007C6154 /* XCRemoteSwiftPackageReference "AnyFormatKit" */;
 			productName = AnyFormatKit;
-		};
-		C327C62F2B4F682B00AAFB43 /* FirebaseAnalyticsWithoutAdIdSupport */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseAnalyticsWithoutAdIdSupport;
-		};
-		C327C6312B4F682B00AAFB43 /* FirebaseCrashlytics */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseCrashlytics;
 		};
 		C32C7C462BCD0D8E00785B6A /* TKCore */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -1605,16 +1566,6 @@
 		C365E2732BDA695D006D33B9 /* App */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = App;
-		};
-		C37DDDB92BCEA7B4002A486E /* FirebaseRemoteConfig */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseRemoteConfig;
-		};
-		C37DDDBB2BCEA7BE002A486E /* FirebaseRemoteConfigSwift */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = C30297492B4ED93A00DD6FFC /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseRemoteConfigSwift;
 		};
 		C3CC74412BE11EC6006022FE /* TKCoordinator */ = {
 			isa = XCSwiftPackageProductDependency;

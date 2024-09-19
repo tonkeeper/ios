@@ -73,7 +73,11 @@ private extension TonConnectConfirmationViewController {
     }
     
     viewModel.didUpdateHeader = { [weak self] title, subtitle in
-      self?.didUpdatePullCardHeaderItem?(TKUIKit.TKPullCardHeaderItem(title: title, subtitle: subtitle))
+      self?.didUpdatePullCardHeaderItem?(TKUIKit.TKPullCardHeaderItem(
+        title: .title(
+          title: title,
+          subtitle: subtitle))
+      )
     }
   }
 }

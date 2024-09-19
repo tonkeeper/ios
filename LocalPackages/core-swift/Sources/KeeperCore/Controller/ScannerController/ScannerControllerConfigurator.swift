@@ -6,11 +6,7 @@ public protocol ScannerControllerConfigurator {
 
 public struct DefaultScannerControllerConfigurator: ScannerControllerConfigurator {
   
-  private let deeplinkParser = DefaultDeeplinkParser(
-    parsers: [TonDeeplinkParser(),
-              TonConnectDeeplinkParser(),
-              TonkeeperDeeplinkParser()]
-  )
+  private let deeplinkParser = DeeplinkParser()
   
   public init() {}
   

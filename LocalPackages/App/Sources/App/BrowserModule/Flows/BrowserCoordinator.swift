@@ -79,8 +79,9 @@ private extension BrowserCoordinator {
     messageHandler.reconnect = {
       [weak self] dapp,
       completion in
-      guard let self else { return }
-      let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+      guard let self,
+      let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
+      
       let result = self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.reconnectBridgeDapp(
         wallet: wallet,
         appUrl: dapp.url
@@ -90,8 +91,8 @@ private extension BrowserCoordinator {
     
     messageHandler.disconnect = {
       [weak self] dapp in
-      guard let self else { return }
-      let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+      guard let self,
+      let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
       try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.disconnect(wallet: wallet, appUrl: dapp.url)
     }
     
@@ -188,9 +189,10 @@ private extension BrowserCoordinator {
   func openSend(dapp: Dapp,
                 appRequest: TonConnect.AppRequest,
                 completion: @escaping (TonConnectAppsStore.SendTransactionResult) -> Void) {
-    let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
-    guard let connectedApps = try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
-          let connectedApp = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host }) else {
+    
+    guard let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet(),
+          let connectedApps = try? self.keeperCoreMainAssembly.tonConnectAssembly.tonConnectAppsStore.connectedApps(forWallet: wallet),
+          let _ = connectedApps.apps.first(where: { $0.manifest.host == dapp.url.host }) else {
       completion(.error(.unknownApp))
       return
     }

@@ -1,16 +1,24 @@
-import Foundation
+import UIKit
 import TKCore
 import KeeperCore
 
 struct HistoryListAssembly {
   private init() {}
-  static func module(historyListController: HistoryListController,
-                     historyEventMapper: HistoryEventMapper) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, HistoryListModuleInput> {
+  static func module(wallet: Wallet,
+                     paginationLoader: HistoryPaginationLoader,
+                     cacheProvider: HistoryListCacheProvider,
+                     keeperCoreMainAssembly: KeeperCore.MainAssembly,
+                     historyEventMapper: HistoryEventMapper) -> MVVMModule<HistoryListViewController, HistoryListModuleOutput, Void> {
     let viewModel = HistoryListViewModelImplementation(
-      historyListController: historyListController,
+      wallet: wallet,
+      paginationLoader: paginationLoader,
+      cacheProvider: cacheProvider,
+      nftService: keeperCoreMainAssembly.servicesAssembly.nftService(),
+      accountEventMapper: keeperCoreMainAssembly.mappersAssembly.historyAccountEventMapper,
+      dateFormatter: keeperCoreMainAssembly.formattersAssembly.dateFormatter,
       historyEventMapper: historyEventMapper
     )
     let viewController = HistoryListViewController(viewModel: viewModel)
-    return .init(view: viewController, output: viewModel, input: viewModel)
+    return .init(view: viewController, output: viewModel, input: Void())
   }
 }

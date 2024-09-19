@@ -1,152 +1,217 @@
 import Foundation
-import CoreComponents
 
-public final class WalletsStore {
-  public typealias ObservationClosure = (Event) -> Void
+public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State> {
+  public enum Error: Swift.Error {
+    case noWallets
+  }
+  
   public enum Event {
-    case didAddWallets([Wallet])
-    case didUpdateActiveWallet
-    case didUpdateWalletMetadata(Wallet)
-    case didUpdateWalletsOrder
-    case didUpdateWalletBackupState(Wallet)
-    case didDeleteWallet(Wallet)
-    case didDeleteLastWallet
+    case didAddWallets(wallets: [Wallet])
+    case didChangeActiveWallet(wallet: Wallet)
+    case didMoveWallet(fromIndex: Int, toIndex: Int)
+    case didUpdateWalletMetaData(wallet: Wallet)
+    case didUpdateWalletSetupSettings(wallet: Wallet)
+    case didDeleteWallet(wallet: Wallet)
+    case didDeleteAll
   }
   
-  public private(set) var wallets: [Wallet]
-  public private(set) var activeWallet: Wallet
-  
-  private var walletsStoreUpdateObservationToken: ObservationToken?
-  private var backupStoreObservationToken: ObservationToken?
-  
-  private let walletsService: WalletsService
-  private let backupStore: BackupStore
-  private let walletsStoreUpdate: WalletsStoreUpdate
-  
-  init(wallets: [Wallet],
-       activeWallet: Wallet,
-       walletsService: WalletsService,
-       backupStore: BackupStore,
-       walletsStoreUpdate: WalletsStoreUpdate) {
-    self.wallets = wallets
-    self.activeWallet = activeWallet
-    self.walletsService = walletsService
-    self.backupStore = backupStore
-    self.walletsStoreUpdate = walletsStoreUpdate
-    
-    self.walletsStoreUpdateObservationToken = walletsStoreUpdate.addEventObserver(self) { observer, event in
-      observer.didGetWalletsStoreUpdateEvent(event)
+  public enum State {
+    public struct Wallets {
+      public let wallets: [Wallet]
+      public let activeWalelt: Wallet
     }
     
-    self.backupStoreObservationToken = backupStore.addEventObserver(self) { observer, event in
-      observer.didGetBackupStoreEvent(event)
+    case empty
+    case wallets(Wallets)
+  }
+  
+  public var stateWallets: State.Wallets {
+    get throws {
+      switch getState() {
+      case .empty:
+        throw Error.noWallets
+      case .wallets(let wallets):
+        return wallets
+      }
     }
   }
   
-  deinit {
-    walletsStoreUpdateObservationToken?.cancel()
+  public var wallets: [Wallet] {
+    switch getState() {
+    case .empty:
+      return []
+    case .wallets(let wallets):
+      return wallets.wallets
+    }
+  }
+  
+  public func getActiveWallet() throws -> Wallet {
+    switch getState() {
+    case .empty:
+      throw Error.noWallets
+    case .wallets(let wallets):
+      return wallets.activeWalelt
+    }
+  }
+  
+  public func getActiveWallet() async throws -> Wallet {
+    switch await getState() {
+    case .empty:
+      throw Error.noWallets
+    case .wallets(let wallets):
+      return wallets.activeWalelt
+    }
   }
 
-  private var observations = [UUID: ObservationClosure]()
+  private let keeperInfoStore: KeeperInfoStore
   
-  public func addEventObserver<T: AnyObject>(_ observer: T,
-                                             closure: @escaping (T, Event) -> Void) -> ObservationToken {
-    let id = UUID()
-    let eventHandler: (Event) -> Void = { [weak self, weak observer] event in
-      guard let self else { return }
-      guard let observer else {
-        observations.removeValue(forKey: id)
-        return
-      }
-      
-      closure(observer, event)
-    }
-    observations[id] = eventHandler
+  public override var initialState: State {
+    getState(keeperInfo: keeperInfoStore.getState())
+  }
+  
+  init(keeperInfoStore: KeeperInfoStore) {
+    self.keeperInfoStore = keeperInfoStore
+    super.init(state: State.empty)
+  }
+  
+  public func addWallets(_ wallets: [Wallet]) async {
+    guard !wallets.isEmpty else { return }
     
-    return ObservationToken { [weak self] in
-      guard let self else { return }
-      observations.removeValue(forKey: id)
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      if let keeperInfo {
+        let updatedWallets = keeperInfo.wallets
+          .filter { keeperInfoWallet in !wallets.contains(where: { $0.identity == keeperInfoWallet.identity }) }
+        + wallets
+        let updatedKeeperInfo = keeperInfo.updateWallets(
+          updatedWallets,
+          activeWallet: wallets[0]
+        )
+        return updatedKeeperInfo
+      } else {
+        return KeeperInfo.keeperInfo(wallets: wallets)
+      }
+    }
+    
+    await setState { _ in
+      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
+    } notify: { _ in
+      self.sendEvent(.didAddWallets(wallets: wallets))
+      self.sendEvent(.didChangeActiveWallet(wallet: wallets[0]))
+    }
+  }
+  
+  public func setWalletActive(_ wallet: Wallet) async {
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updatedKeeperInfo = keeperInfo.updateActiveWallet(wallet)
+      return updatedKeeperInfo
+    }
+    
+    await setState { _ in
+      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
+    } notify: { _ in
+      self.sendEvent(.didChangeActiveWallet(wallet: wallet))
+    }
+  }
+
+  public func setWallet(_ wallet: Wallet, metaData: WalletMetaData) async {
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updated = keeperInfo.updateWallet(wallet, metaData: metaData)
+      return updated.keeperInfo
+    }
+    
+    await setState { _ in
+      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
+    } notify: { _ in
+      var updatedWallet = wallet
+      updatedWallet.metaData = metaData
+      self.sendEvent(.didUpdateWalletMetaData(wallet: updatedWallet))
+    }
+  }
+  
+  public func deleteWallet(_ wallet: Wallet) async {
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updatedKeeperInfo = keeperInfo.deleteWallet(wallet)
+      return updatedKeeperInfo
+    }
+    
+    await setState { _ in
+      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
+    } notify: { state in
+      switch state {
+      case .empty:
+        self.sendEvent(.didDeleteAll)
+      case .wallets(let walletsState):
+        self.sendEvent(.didDeleteWallet(wallet: wallet))
+        self.sendEvent(.didChangeActiveWallet(wallet: walletsState.activeWalelt))
+      }
+    }
+  }
+  
+  public func deleteAllWallets() async {
+    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      return nil
+    }
+    await self.setState { _ in
+      return StateUpdate(newState: .empty)
+    } notify: { _ in
+      self.sendEvent(.didDeleteAll)
+    }
+  }
+  
+  public func moveWallet(fromIndex: Int, toIndex: Int) async {
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updated = keeperInfo.moveWallet(fromIndex: fromIndex, toIndex: toIndex)
+      return updated
+    }
+    await self.setState { _ in
+      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
+    } notify: { _ in
+      self.sendEvent(.didMoveWallet(fromIndex: fromIndex, toIndex: toIndex))
+    }
+  }
+  
+  public func setWalletBackupDate(wallet: Wallet, backupDate: Date?) async {
+    let updatedKeeperInfo = await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      guard let keeperInfo else { return nil }
+      let updated = keeperInfo.updateWallet(
+        wallet, 
+        setupSettings: WalletSetupSettings(backupDate: backupDate)
+      )
+      return updated.keeperInfo
+    }
+    await self.setState { _ in
+      return StateUpdate(newState: self.getState(keeperInfo: updatedKeeperInfo))
+    } notify: { _ in
+      var wallet = wallet
+      wallet.setupSettings = WalletSetupSettings(backupDate: backupDate)
+      self.sendEvent(.didUpdateWalletSetupSettings(wallet: wallet))
+    }
+  }
+  
+  private func getState(keeperInfo: KeeperInfo?) -> State {
+    if let keeperInfo = keeperInfoStore.getState() {
+      return .wallets(State.Wallets(wallets: keeperInfo.wallets, activeWalelt: keeperInfo.currentWallet))
+    } else {
+      return .empty
     }
   }
 }
 
-private extension WalletsStore {
-  func didGetWalletsStoreUpdateEvent(_ event: WalletsStoreUpdate.Event) {
-    switch event {
-    case .didAddWallets(let addedWallets):
-      do {
-        let wallets = try walletsService.getWallets()
-        let activeWallet = try walletsService.getActiveWallet()
-        self.wallets = wallets
-        self.activeWallet = activeWallet
-        observations.values.forEach { $0(.didAddWallets(addedWallets)) }
-      } catch {
-        print("Log: failed to update WalletsStore after add wallets: \(addedWallets), error: \(error)")
-      }
-    case .didUpdateActiveWallet:
-      do {
-        self.activeWallet = try walletsService.getActiveWallet()
-        observations.values.forEach { $0(.didUpdateActiveWallet) }
-      } catch {
-        print("Log: failed to update WalletsStore after active wallet update, error: \(error)")
-      }
-    case .didUpdateWalletMetadata(let wallet, _):
-      do {
-        let wallets = try walletsService.getWallets()
-        let activeWallet = try walletsService.getActiveWallet()
-        self.wallets = wallets
-        self.activeWallet = activeWallet
-        guard let updatedWallet = self.wallets.first(where: { $0.identity == wallet.identity }) else {
-          print("Log: Failed to get updated wallet after update wallets metadata \(wallet)")
-          return
-        }
-        observations.values.forEach { $0(.didUpdateWalletMetadata(updatedWallet)) }
-      } catch {
-        print("Log: failed to update WalletsStore after update wallets metadata \(wallet), error: \(error)")
-      }
-    case .didUpdateWalletsOrder:
-      do {
-        let wallets = try walletsService.getWallets()
-        let activeWallet = try walletsService.getActiveWallet()
-        self.wallets = wallets
-        self.activeWallet = activeWallet
-        observations.values.forEach { $0(.didUpdateWalletsOrder) }
-      } catch {
-        print("Log: failed to update WalletsStore after update wallets order, error: \(error)")
-      }
-    case .didDeleteWallet(let wallet):
-      do {
-        let wallets = try walletsService.getWallets()
-        let activeWallet = try walletsService.getActiveWallet()
-        self.wallets = wallets
-        self.activeWallet = activeWallet
-        observations.values.forEach { $0(.didUpdateActiveWallet) }
-        observations.values.forEach { $0(.didDeleteWallet(wallet)) }
-      } catch {
-        print("Log: failed to update WalletsStore after wallet delete \(wallet), error: \(error)")
-      }
-    case .didDeleteAll:
-      observations.values.forEach { $0(.didDeleteLastWallet) }
-    }
-  }
-  
-  func didGetBackupStoreEvent(_ event: BackupStore.Event) {
-    switch event {
-    case .didBackup(let wallet):
-      do {
-        let wallets = try walletsService.getWallets()
-        let activeWallet = try walletsService.getActiveWallet()
-        self.wallets = wallets
-        self.activeWallet = activeWallet
-        guard let updatedWallet = self.wallets.first(where: { $0.identity == wallet.identity }) else {
-          print("Log: Failed to get updated wallet after wallet backup \(wallet)")
-          return
-        }
-        observations.values.forEach { $0(.didUpdateWalletBackupState(updatedWallet)) }
-      } catch {
-        print("Log: Failed to update WalletsStore wallet after wallet backup \(wallet), error: \(error)")
-      }
-    }
+private extension KeeperInfo {
+  static func keeperInfo(wallets: [Wallet]) -> KeeperInfo {
+    let keeperInfo = KeeperInfo(
+      wallets: wallets,
+      currentWallet: wallets[0],
+      currency: .defaultCurrency,
+      securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
+      appSettings: AppSettings(isSetupFinished: false, isSecureMode: false),
+      assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
+      appCollection: AppCollection(connected: [:], recent: [], pinned: [])
+    )
+    return keeperInfo
   }
 }
-

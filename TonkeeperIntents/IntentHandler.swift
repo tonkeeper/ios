@@ -11,13 +11,15 @@ import UIKit
 import TKCore
 import TKUIKit
 
+
 class IntentHandler: INExtension, RateWidgetIntentHandling, BalanceWidgetIntentHandling {
   func provideWalletOptionsCollection(for intent: BalanceWidgetIntent) async throws -> INObjectCollection<WidgetWallet> {
     let coreAssembly = TKCore.CoreAssembly()
     let keeperCoreAssembly = KeeperCore.Assembly(
       dependencies: Assembly.Dependencies(
         cacheURL: coreAssembly.cacheURL,
-        sharedCacheURL: coreAssembly.sharedCacheURL
+        sharedCacheURL: coreAssembly.sharedCacheURL,
+        appInfoProvider: coreAssembly.appInfoProvider
       )
     )
     

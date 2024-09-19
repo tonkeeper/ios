@@ -76,6 +76,16 @@ extension NFT {
       sale = Sale(address: address, market: market, owner: ownerWalletAccount)
     }
     
+    let trust: Trust = {
+      switch nftItem.trust {
+      case ._none: return .none
+      case .blacklist: return .blacklist
+      case .graylist: return .graylist
+      case .whitelist: return .whitelist
+      case .unknownDefaultOpenApi: return .unknown
+      }
+    }()
+    
     self.address = address
     self.owner = owner
     self.name = name
@@ -87,6 +97,7 @@ extension NFT {
     self.dns = nftItem.dns
     self.sale = sale
     self.isHidden = isHidden
+    self.trust = trust
   }
   
   static private func mapPreviews(_ previews: [TonAPI.ImagePreview]?) -> Preview {

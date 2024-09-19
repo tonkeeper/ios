@@ -5,7 +5,6 @@ public final class TonConnectAssembly {
   let repositoriesAssembly: RepositoriesAssembly
   let servicesAssembly: ServicesAssembly
   let storesAssembly: StoresAssembly
-  let walletsAssembly: WalletAssembly
   let apiAssembly: APIAssembly
   let coreAssembly: CoreAssembly
   let formattersAssembly: FormattersAssembly
@@ -13,14 +12,12 @@ public final class TonConnectAssembly {
   init(repositoriesAssembly: RepositoriesAssembly,
        servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
-       walletsAssembly: WalletAssembly,
        apiAssembly: APIAssembly,
        coreAssembly: CoreAssembly,
        formattersAssembly: FormattersAssembly) {
     self.repositoriesAssembly = repositoriesAssembly
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
-    self.walletsAssembly = walletsAssembly
     self.apiAssembly = apiAssembly
     self.coreAssembly = coreAssembly
     self.formattersAssembly = formattersAssembly
@@ -69,7 +66,7 @@ public final class TonConnectAssembly {
     } else {
       let tonConnectEventsStore = TonConnectEventsStore(
         apiClient: apiAssembly.tonConnectAPIClient(),
-        walletsStore: walletsAssembly.walletStore,
+        walletsStore: storesAssembly.walletsStore,
         tonConnectAppsStore: tonConnectAppsStore
       )
       _tonConnectEventsStore = tonConnectEventsStore

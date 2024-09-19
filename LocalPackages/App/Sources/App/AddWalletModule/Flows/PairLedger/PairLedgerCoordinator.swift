@@ -135,7 +135,7 @@ private extension PairLedgerCoordinator {
       label: model.name,
       tintColor: model.tintColor,
       icon: model.icon)
-    try addController.importLedgerWallets(
+    try await addController.importLedgerWallets(
       accounts: accounts,
       deviceId: deviceId,
       deviceProductName: deviceProductName,

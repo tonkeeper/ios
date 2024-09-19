@@ -1,37 +1,46 @@
 import Foundation
 
 public final class RootAssembly {
+  public let appInfoProvider: AppInfoProvider
   public let repositoriesAssembly: RepositoriesAssembly
   private let servicesAssembly: ServicesAssembly
   public let storesAssembly: StoresAssembly
   public let coreAssembly: CoreAssembly
   public let formattersAssembly: FormattersAssembly
+  public let mappersAssembly: MappersAssembly
   public let walletsUpdateAssembly: WalletsUpdateAssembly
   private let configurationAssembly: ConfigurationAssembly
   public let passcodeAssembly: PasscodeAssembly
   private let apiAssembly: APIAssembly
   private let loadersAssembly: LoadersAssembly
+  public let rnAssembly: RNAssembly
 
-  init(repositoriesAssembly: RepositoriesAssembly,
+  init(appInfoProvider: AppInfoProvider,
+       repositoriesAssembly: RepositoriesAssembly,
        coreAssembly: CoreAssembly,
        servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
        formattersAssembly: FormattersAssembly,
+       mappersAssembly: MappersAssembly,
        walletsUpdateAssembly: WalletsUpdateAssembly,
        configurationAssembly: ConfigurationAssembly,
        passcodeAssembly: PasscodeAssembly,
        apiAssembly: APIAssembly,
-       loadersAssembly: LoadersAssembly) {
+       loadersAssembly: LoadersAssembly,
+       rnAssembly: RNAssembly) {
+    self.appInfoProvider = appInfoProvider
     self.repositoriesAssembly = repositoriesAssembly
     self.coreAssembly = coreAssembly
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.formattersAssembly = formattersAssembly
+    self.mappersAssembly = mappersAssembly
     self.walletsUpdateAssembly = walletsUpdateAssembly
     self.configurationAssembly = configurationAssembly
     self.passcodeAssembly = passcodeAssembly
     self.apiAssembly = apiAssembly
     self.loadersAssembly = loadersAssembly
+    self.rnAssembly = rnAssembly
   }
   
   private var _rootController: RootController?
@@ -40,18 +49,12 @@ public final class RootAssembly {
       return rootController
     } else {
       let rootController = RootController(
-        walletsService: servicesAssembly.walletsService(),
         remoteConfigurationStore: configurationAssembly.remoteConfigurationStore,
         knownAccountsStore: storesAssembly.knownAccountsStore,
-        deeplinkParser: DefaultDeeplinkParser(parsers: [
-          TonkeeperDeeplinkParser(),
-          TonDeeplinkParser(),
-          TonConnectDeeplinkParser()
-        ]),
+        deeplinkParser: DeeplinkParser(),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
-        buySellMethodsService: servicesAssembly.buySellMethodsService(),
-        locationService: servicesAssembly.locationService()
+        fiatMethodsLoader: loadersAssembly.fiatMethodsLoader()
       )
       self._rootController = rootController
       return rootController
@@ -59,13 +62,11 @@ public final class RootAssembly {
   }
   
   public func migrationController(sharedCacheURL: URL,
-                                  keychainAccessGroupIdentifier: String,
-                                  isTonkeeperX: Bool) -> MigrationController {
+                                  keychainAccessGroupIdentifier: String) -> MigrationController {
     MigrationController(
       sharedCacheURL: sharedCacheURL,
       keychainAccessGroupIdentifier: keychainAccessGroupIdentifier,
-      rootAssembly: self,
-      isTonkeeperX: isTonkeeperX
+      rootAssembly: self
     )
   }
   
@@ -77,29 +78,23 @@ public final class RootAssembly {
     )
   }
   
-  public func mainAssembly(dependencies: MainAssembly.Dependencies) -> MainAssembly {
-    let walletAssembly = WalletAssembly(
-      servicesAssembly: servicesAssembly,
-      storesAssembly: storesAssembly,
-      walletUpdateAssembly: walletsUpdateAssembly,
-      wallets: dependencies.wallets,
-      activeWallet: dependencies.activeWallet)
+  public func mainAssembly() -> MainAssembly {
     let tonConnectAssembly = TonConnectAssembly(
       repositoriesAssembly: repositoriesAssembly,
       servicesAssembly: servicesAssembly,
       storesAssembly: storesAssembly,
-      walletsAssembly: walletAssembly,
       apiAssembly: apiAssembly,
       coreAssembly: coreAssembly,
       formattersAssembly: formattersAssembly
     )
     return MainAssembly(
+      appInfoProvider: appInfoProvider,
       repositoriesAssembly: repositoriesAssembly,
-      walletAssembly: walletAssembly,
       walletUpdateAssembly: walletsUpdateAssembly,
       servicesAssembly: servicesAssembly,
       storesAssembly: storesAssembly,
       formattersAssembly: formattersAssembly,
+      mappersAssembly: mappersAssembly,
       configurationAssembly: configurationAssembly,
       passcodeAssembly: passcodeAssembly,
       tonConnectAssembly: tonConnectAssembly,

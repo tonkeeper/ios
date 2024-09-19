@@ -65,7 +65,9 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
     public let backgroundColor: UIColor
     public let size: CGSize
     public let cornerRadius: CGFloat
-    public let contentMode: UIImageView.ContentMode
+    public let borderWidth: CGFloat?
+    public let borderColor: UIColor?
+    public let contentMode: ContentMode
     public let imageSize: CGSize
     
     public init(image: Image,
@@ -73,13 +75,18 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
                 backgroundColor: UIColor,
                 size: CGSize,
                 cornerRadius: CGFloat,
-                contentMode: UIImageView.ContentMode = .center,
-                imageSize: CGSize? = nil) {
+                borderWidth: CGFloat? = nil,
+                borderColor: UIColor? = nil,
+                contentMode: ContentMode = .center,
+                imageSize: CGSize? = nil
+    ) {
       self.image = image
       self.tintColor = tintColor
       self.backgroundColor = backgroundColor
       self.size = size
       self.cornerRadius = cornerRadius
+      self.borderColor = borderColor
+      self.borderWidth = borderWidth
       self.contentMode = contentMode
       self.imageSize = imageSize ?? size
     }
@@ -93,15 +100,19 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
       imageDownloadTask.start(imageView: imageView, size: configuration.size, cornerRadius: configuration.cornerRadius)
       self.imageDownloadTask = imageDownloadTask
     }
+    imageView.contentMode = configuration.contentMode
     imageView.tintColor = configuration.tintColor
     imageView.tintAdjustmentMode = .normal
     backgroundColor = configuration.backgroundColor
     size = configuration.size
     cornerRadius = configuration.cornerRadius
     layer.cornerRadius = configuration.cornerRadius
-    imageView.contentMode = configuration.contentMode
+    if let borderColor = configuration.borderColor, let borderWidth = configuration.borderWidth {
+      layer.borderWidth = borderWidth
+      layer.borderColor = borderColor.cgColor
+    }
     imageSize = configuration.imageSize
-    
+  
     setNeedsLayout()
   }
 }
@@ -109,7 +120,6 @@ public final class TKUIListItemImageIconView: UIView, TKConfigurableView, Reusab
 private extension TKUIListItemImageIconView {
   func setup() {
     layer.masksToBounds = true
-    imageView.contentMode = .center
     addSubview(imageView)
   }
 }

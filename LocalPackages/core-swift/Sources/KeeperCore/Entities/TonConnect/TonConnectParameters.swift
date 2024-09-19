@@ -1,6 +1,6 @@
 import Foundation
 
-public struct TonConnectParameters {
+public struct TonConnectParameters: Equatable {
   public enum Version: String {
     case v2 = "2"
   }

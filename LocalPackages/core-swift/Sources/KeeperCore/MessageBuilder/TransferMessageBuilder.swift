@@ -195,12 +195,35 @@ public enum TransferData {
     case renew(RenewDNS)
   }
   
+  public enum Stake {
+    case deposit(StakeDeposit)
+    case withdraw(StakeWithdraw)
+  }
+  
+  public struct StakeDeposit {
+    public let seqno: UInt64
+    public let pool: StackingPoolInfo
+    public let amount: BigUInt
+    public let isBouncable: Bool
+    public let timeout: UInt64?
+  }
+  
+  public struct StakeWithdraw {
+    public let seqno: UInt64
+    public let pool: StackingPoolInfo
+    public let amount: BigUInt
+    public let isBouncable: Bool
+    public let timeout: UInt64?
+    public let jettonWalletAddress: (_ wallet: Wallet, _ jettonMasterAddress: Address?) async throws -> Address
+  }
+  
   case ton(Ton)
   case jetton(Jetton)
   case nft(NFT)
   case swap(Swap)
   case tonConnect(TonConnect)
   case changeDNSRecord(ChangeDNSRecord)
+  case stake(Stake)
 }
 
 public struct TransferMessageBuilder {
@@ -318,6 +341,85 @@ public struct TransferMessageBuilder {
           timeout: renew.timeout,
           signClosure: signClosure
         )
+      }
+    case .stake(let stake):
+      switch stake {
+      case .deposit(let stakeDeposit):
+        switch stakeDeposit.pool.implementation.type {
+        case .liquidTF:
+          return try await StakeMessageBuilder.liquidTFDepositMessage(
+            wallet: wallet,
+            seqno: stakeDeposit.seqno,
+            queryId: TransferMessageBuilder.newWalletQueryId(),
+            poolAddress: stakeDeposit.pool.address,
+            amount: stakeDeposit.amount,
+            bounce: stakeDeposit.isBouncable,
+            timeout: stakeDeposit.timeout,
+            signClosure: signClosure
+          )
+        case .whales:
+          return try await StakeMessageBuilder.whalesDepositMessage(
+            wallet: wallet,
+            seqno: stakeDeposit.seqno,
+            queryId: TransferMessageBuilder.newWalletQueryId(),
+            poolAddress: stakeDeposit.pool.address,
+            amount: stakeDeposit.amount,
+            forwardAmount: 100_000,
+            bounce: stakeDeposit.isBouncable,
+            timeout: stakeDeposit.timeout,
+            signClosure: signClosure
+          )
+        case .tf:
+          return try await StakeMessageBuilder.tfDepositMessage(
+            wallet: wallet,
+            seqno: stakeDeposit.seqno,
+            queryId: TransferMessageBuilder.newWalletQueryId(),
+            poolAddress: stakeDeposit.pool.address,
+            amount: stakeDeposit.amount,
+            bounce: stakeDeposit.isBouncable,
+            timeout: stakeDeposit.timeout,
+            signClosure: signClosure
+          )
+        }
+      case .withdraw(let stakeWithdraw):
+        switch stakeWithdraw.pool.implementation.type {
+        case .liquidTF:
+          return try await StakeMessageBuilder.liquidTFWithdrawMessage(
+            wallet: wallet,
+            seqno: stakeWithdraw.seqno,
+            queryId: TransferMessageBuilder.newWalletQueryId(),
+            jettonWalletAddress: stakeWithdraw.jettonWalletAddress(wallet, stakeWithdraw.pool.liquidJettonMaster),
+            amount: stakeWithdraw.amount,
+            withdrawFee: stakeWithdraw.pool.implementation.withdrawalFee,
+            bounce: stakeWithdraw.isBouncable,
+            timeout: stakeWithdraw.timeout,
+            signClosure: signClosure
+          )
+        case .whales:
+          return try await StakeMessageBuilder.whalesWithdrawMessage(
+            wallet: wallet,
+            seqno: stakeWithdraw.seqno,
+            queryId: TransferMessageBuilder.newWalletQueryId(),
+            poolAddress: stakeWithdraw.pool.address,
+            amount: stakeWithdraw.amount,
+            withdrawFee: stakeWithdraw.pool.implementation.withdrawalFee,
+            forwardAmount: 100_000,
+            bounce: stakeWithdraw.isBouncable,
+            timeout: stakeWithdraw.timeout,
+            signClosure: signClosure
+          )
+        case .tf:
+          return try await StakeMessageBuilder.tfWithdrawMessage(
+            wallet: wallet,
+            seqno: stakeWithdraw.seqno,
+            queryId: TransferMessageBuilder.newWalletQueryId(),
+            poolAddress: stakeWithdraw.pool.address,
+            amount: stakeWithdraw.amount,
+            bounce: stakeWithdraw.isBouncable,
+            timeout: stakeWithdraw.timeout,
+            signClosure: signClosure
+          )
+        }
       }
     }
   }

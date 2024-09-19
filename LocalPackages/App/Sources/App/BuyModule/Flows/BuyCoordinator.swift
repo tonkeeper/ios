@@ -7,6 +7,8 @@ import KeeperCore
 
 public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
   
+  var didOpenItem: ((URL, _ fromViewController: UIViewController) -> Void)?
+  
   private let wallet: Wallet
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let coreAssembly: TKCore.CoreAssembly
@@ -22,44 +24,11 @@ public final class BuyCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
   
   public override func start() {
-    Task {
-      let isBuySellLovely = await coreAssembly.featureFlagsProvider.isBuySellLovely()
-      await MainActor.run {
-        if isBuySellLovely {
-          openBuyList()
-        } else {
-          openUglyBuyList()
-        }
-      }
-    }
+    openBuySellList()
   }
 }
 
 private extension BuyCoordinator {
-  func openBuyList() {
-    let module = BuyListAssembly.module(
-      buyListController: keeperCoreMainAssembly.buyListController(
-        wallet: wallet,
-        isMarketRegionPickerAvailable: coreAssembly.featureFlagsProvider.isMarketRegionPickerAvailable
-      ),
-      appSettings: coreAssembly.appSettings
-    )
-    
-    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
-    
-    module.output.didSelectURL = { [weak self, weak bottomSheetViewController] url in
-      guard let bottomSheetViewController else { return }
-      self?.openWebView(url: url, fromViewController: bottomSheetViewController)
-    }
-    
-    module.output.didSelectItem = { [weak self, weak bottomSheetViewController] item in
-      guard let bottomSheetViewController else { return }
-      self?.openWarning(item: item, fromViewController: bottomSheetViewController)
-    }
-    
-    bottomSheetViewController.present(fromViewController: router.rootViewController)
-  }
-  
   func openUglyBuyList() {
     let module = UglyBuyListAssembly.module(
       buyListController: keeperCoreMainAssembly.buyListController(
@@ -80,15 +49,40 @@ private extension BuyCoordinator {
     bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func openWebView(url: URL, fromViewController: UIViewController) {
-    let webViewController = TKWebViewController(url: url)
-    let navigationController = UINavigationController(rootViewController: webViewController)
-    navigationController.modalPresentationStyle = .fullScreen
-    navigationController.configureTransparentAppearance()
-    fromViewController.present(navigationController, animated: true)
+  func openBuySellList() {
+    let module = BuySellListAssembly.module(
+      wallet: wallet,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
+    )
+    
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)
+    
+    module.output.didSelectURL = { [weak self, weak bottomSheetViewController] url in
+      guard let bottomSheetViewController else { return }
+      self?.didOpenItem?(url, bottomSheetViewController)
+    }
+    
+    module.output.didSelectItem = { [weak self, weak bottomSheetViewController] item in
+      guard let bottomSheetViewController else { return }
+      self?.openWarning(item: item, fromViewController: bottomSheetViewController)
+    }
+    
+    module.output.didSelectCountryPicker = { [weak self, weak bottomSheetViewController] selectedCountry in
+      guard let bottomSheetViewController else { return }
+      self?.openCountryPicker(
+        selectedCountry: selectedCountry,
+        fromViewController: bottomSheetViewController,
+        completion: { selectedCountry in
+          module.input.setSelectedCountry(selectedCountry)
+        }
+      )
+    }
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
   }
   
-  func openWarning(item: BuySellItemModel, fromViewController: UIViewController) {
+  func openWarning(item: BuySellItem, fromViewController: UIViewController) {
     let module = BuyListPopUpAssembly.module(
       buySellItemModel: item,
       appSettings: coreAssembly.appSettings,
@@ -99,10 +93,32 @@ private extension BuyCoordinator {
     bottomSheetViewController.present(fromViewController: fromViewController)
     
     module.output.didTapOpen = { [weak self, weak bottomSheetViewController] item in
-      guard let bottomSheetViewController, let actionURL = item.actionURL else { return }
+      guard let bottomSheetViewController else { return }
       bottomSheetViewController.dismiss {
-        self?.openWebView(url: actionURL, fromViewController: fromViewController)
+        self?.didOpenItem?(item.actionUrl, fromViewController)
       }
     }
+  }
+  
+  func openCountryPicker(selectedCountry: SelectedCountry,
+                         fromViewController: UIViewController,
+                         completion: @escaping (SelectedCountry) -> Void) {
+    let countryPickerViewController = CountryPickerViewController(
+      selectedCountry: selectedCountry,
+      countriesProvider: CountriesProvider()
+    )
+    let navigationController = TKNavigationController(rootViewController: countryPickerViewController)
+    navigationController.setNavigationBarHidden(true, animated: false)
+    
+    countryPickerViewController.setupRightCloseButton { [weak navigationController] in
+      navigationController?.dismiss(animated: true)
+    }
+    
+    countryPickerViewController.didSelectCountry = { [weak navigationController] in
+      completion($0)
+      navigationController?.dismiss(animated: true)
+    }
+    
+    fromViewController.present(navigationController, animated: true)
   }
 }

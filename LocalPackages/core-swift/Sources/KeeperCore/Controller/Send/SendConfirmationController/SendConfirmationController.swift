@@ -27,9 +27,8 @@ public final class SendConfirmationController {
   private let accountService: AccountService
   private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
-  private let ratesStore: RatesStore
+  private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
-  private let mnemonicRepository: WalletMnemonicRepository
   private let amountFormatter: AmountFormatter
   
   init(wallet: Wallet,
@@ -40,9 +39,8 @@ public final class SendConfirmationController {
        accountService: AccountService,
        blockchainService: BlockchainService,
        balanceStore: BalanceStore,
-       ratesStore: RatesStore,
+       ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
-       mnemonicRepository: WalletMnemonicRepository,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
     self.recipient = recipient
@@ -54,7 +52,6 @@ public final class SendConfirmationController {
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
-    self.mnemonicRepository = mnemonicRepository
     self.amountFormatter = amountFormatter
   }
   
@@ -70,11 +67,7 @@ public final class SendConfirmationController {
     do {
       let transactionBoc = try await createTransactionBoc()
       try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
-      NotificationCenter.default.post(
-        name: NSNotification.Name(rawValue: "didSendTransaction"),
-        object: nil,
-        userInfo: ["Wallet": wallet]
-      )
+      NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
     } catch {
       Task { @MainActor in
         didGetError?(.failedToSendTransaction)
@@ -100,9 +93,9 @@ private extension SendConfirmationController {
         symbol: TonInfo.symbol
       )
       feeItem = .value(feeFormatted)
-      let rates = ratesStore.getRates(jettons: [])
-      let currency = await currencyStore.getActiveCurrency()
-      if let rates = rates.ton.first(where: { $0.currency == currency }) {
+      let rates = await ratesStore.getState()
+      let currency = await currencyStore.getState()
+      if let rates = rates.first(where: { $0.currency == currency }) {
         let rateConverter = RateConverter()
         let converted = rateConverter.convert(
           amount: fee,
@@ -147,9 +140,9 @@ private extension SendConfirmationController {
           maximumFractionDigits: TonInfo.fractionDigits,
           symbol: TonInfo.symbol
         )
-        let rates = ratesStore.getRates(jettons: [])
-        let currency = await currencyStore.getActiveCurrency()
-        if let rates = rates.ton.first(where: { $0.currency == currency }) {
+        let rates = await ratesStore.getState()
+        let currency = await currencyStore.getState()
+        if let rates = rates.first(where: { $0.currency == currency }) {
           let rateConverter = RateConverter()
           let converted = rateConverter.convert(
             amount: amount,
@@ -173,22 +166,22 @@ private extension SendConfirmationController {
           maximumFractionDigits: jettonItem.jettonInfo.fractionDigits,
           symbol: jettonItem.jettonInfo.symbol
         )
-        let rates = ratesStore.getRates(jettons: [jettonItem.jettonInfo])
-        let currency = await currencyStore.getActiveCurrency()
-        if let rates = rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency }) {
-          let rateConverter = RateConverter()
-          let converted = rateConverter.convert(
-            amount: amount,
-            amountFractionLength: TonInfo.fractionDigits,
-            rate: rates
-          )
-          formattedConvertedAmount = amountFormatter.formatAmount(
-            converted.amount,
-            fractionDigits: converted.fractionLength,
-            maximumFractionDigits: 2,
-            currency: currency
-          )
-        }
+//        let rates = ratesStore.getRates(jettons: [jettonItem.jettonInfo])
+//        let currency = await currencyStore.getCurrency()
+//        if let rates = rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency }) {
+//          let rateConverter = RateConverter()
+//          let converted = rateConverter.convert(
+//            amount: amount,
+//            amountFractionLength: TonInfo.fractionDigits,
+//            rate: rates
+//          )
+//          formattedConvertedAmount = amountFormatter.formatAmount(
+//            converted.amount,
+//            fractionDigits: converted.fractionLength,
+//            maximumFractionDigits: 2,
+//            currency: currency
+//          )
+//        }
       }
     case .nft(let nft):
       let description = [nft.name, nft.collection?.name].compactMap { $0 }.joined(separator: " · ")
@@ -293,7 +286,7 @@ private extension SendConfirmationController {
       let shouldForceBounceFalse = ["empty", "uninit", "nonexist"].contains(account?.status)
       
       let isMax: Bool
-      if let balance = try? balanceStore.getBalance(wallet: wallet) {
+      if let balance = await balanceStore.getState()[wallet]?.walletBalance {
         isMax = BigUInt(balance.balance.tonBalance.amount) == amount
       } else {
         isMax = false

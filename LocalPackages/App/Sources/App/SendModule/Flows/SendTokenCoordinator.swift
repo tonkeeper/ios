@@ -5,6 +5,7 @@ import TKUIKit
 import KeeperCore
 import TKCore
 import TonSwift
+import BigInt
 
 final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> {
   
@@ -12,20 +13,26 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
   
   private weak var walletTransferSignCoordinator: WalletTransferSignCoordinator?
   
+  private let wallet: Wallet
   private let coreAssembly: TKCore.CoreAssembly
   private let keeperCoreMainAssembly: KeeperCore.MainAssembly
   private let sendItem: SendItem
   private let recipient: Recipient?
+  private let comment: String?
   
   init(router: NavigationControllerRouter,
+       wallet: Wallet,
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        sendItem: SendItem,
-       recipient: Recipient? = nil ) {
+       recipient: Recipient? = nil,
+       comment: String? = nil) {
+    self.wallet = wallet
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.sendItem = sendItem
     self.recipient = recipient
+    self.comment = comment
     super.init(router: router)
   }
   
@@ -33,9 +40,9 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
     openSend()
   }
   
-  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+  public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
     guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
-    walletTransferSignCoordinator.externalSignHandler?(model.sign)
+    walletTransferSignCoordinator.externalSignHandler?(sign)
     walletTransferSignCoordinator.externalSignHandler = nil
     return true
   }
@@ -50,8 +57,10 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
 private extension SendTokenCoordinator {
   func openSend() {
     let module = SendV3Assembly.module(
+      wallet: wallet,
       sendItem: sendItem,
       recipient: recipient,
+      comment: comment,
       coreAssembly: coreAssembly,
       keeperCoreMainAssembly: keeperCoreMainAssembly
     )
@@ -74,13 +83,11 @@ private extension SendTokenCoordinator {
     module.output.didTapScan = { [weak self] in
       self?.openScan(completion: { deeplink in
         switch deeplink {
-        case .ton(let tonDeeplink):
-          switch tonDeeplink {
-          case .transfer(let recipient, _):
-            module.input.setRecipient(string: recipient)
-          }
-        default:
-          break
+        case .transfer(let data):
+          module.input.setRecipient(string: data.recipient)
+          module.input.setAmount(amount: data.amount)
+          module.input.setComment(comment: data.comment)
+          default: break
         }
       })
     }
@@ -90,57 +97,6 @@ private extension SendTokenCoordinator {
     }
     
     router.push(viewController: module.view, animated: false)
-  }
-  
-  func openRecipientInput(sendModel: SendModel,
-                          completion: @escaping (SendModel) -> Void) {
-    openSendTokenEdit(sendModel: sendModel, step: .recipient, completion: completion)
-  }
-  
-  func openAmountInput(sendModel: SendModel,
-                       completion: @escaping (SendModel) -> Void) {
-    openSendTokenEdit(sendModel: sendModel, step: .amount, completion: completion)
-  }
-  
-  func openCommentInput(sendModel: SendModel,
-                        completion: @escaping (SendModel) -> Void) {
-    openSendTokenEdit(sendModel: sendModel, step: .comment, completion: completion)
-  }
-  
-  func openSendTokenEdit(sendModel: SendModel,
-                         step: SendTokenEditCoordinator.Step,
-                         completion: @escaping (SendModel) -> Void) {
-    let navigationController = TKNavigationController()
-    navigationController.configureDefaultAppearance()
-    navigationController.setNavigationBarHidden(true, animated: false)
-    navigationController.modalPresentationStyle = .fullScreen
-    
-    let coordinator = SendTokenEditCoordinator(
-      step: step,
-      sendModel: sendModel,
-      router: NavigationControllerRouter(rootViewController: navigationController),
-      coreAssembly: coreAssembly,
-      keeperCoreMainAssembly: keeperCoreMainAssembly
-    )
-    
-    coordinator.didUpdateSendModel = { [weak self, weak coordinator, weak navigationController] sendModel in
-      navigationController?.dismiss(animated: true, completion: {
-        completion(sendModel)
-      })
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    
-    coordinator.didFinish = { [weak self, weak coordinator, weak navigationController] in
-      navigationController?.dismiss(animated: true)
-      guard let coordinator else { return }
-      self?.removeChild(coordinator)
-    }
-    
-    addChild(coordinator)
-    coordinator.start()
-    
-    router.present(navigationController)
   }
   
   func openSendConfirmation(sendModel: SendModel) {
@@ -153,14 +109,7 @@ private extension SendTokenCoordinator {
         comment: sendModel.comment
       )
     )
-    
-    module.output.didSendTransaction = { [weak self] in
-      NotificationCenter.default.post(Notification(name: Notification.Name("DID SEND TRANSACTION")))
-      self?.router.dismiss(completion: {
-        self?.didFinish?()
-      })
-    }
-    
+
     module.output.didRequireSign = { [weak self, keeperCoreMainAssembly, coreAssembly] walletTransfer, wallet in
       guard let self = self else { return nil }
       let coordinator = await WalletTransferSignCoordinator(
@@ -191,10 +140,10 @@ private extension SendTokenCoordinator {
   
   func openTokenPicker(wallet: Wallet, token: Token, sourceViewController: UIViewController, completion: @escaping (Token) -> Void) {
     let module = TokenPickerAssembly.module(
-      tokenPickerController: keeperCoreMainAssembly.tokenPickerController(
-        wallet: wallet,
-        selectedToken: token
-      )
+      wallet: wallet,
+      selectedToken: token,
+      keeperCoreMainAssembly: keeperCoreMainAssembly,
+      coreAssembly: coreAssembly
     )
     
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: module.view)

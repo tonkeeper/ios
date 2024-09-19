@@ -1,6 +1,7 @@
 import UIKit
 import TKUIKit
 import SnapKit
+import TKLocalize
 
 final class BrowserSearchView: TKView {
   var keyboardHeight: CGFloat = 0 {
@@ -22,6 +23,8 @@ final class BrowserSearchView: TKView {
     backgroundColor = .Background.page
     collectionView.backgroundColor = .clear
     searchBar.textField.returnKeyType = .go
+    
+    searchBar.placeholder = TKLocales.Browser.SearchField.placeholder
     
     addSubview(collectionView)
     addSubview(searchBar)

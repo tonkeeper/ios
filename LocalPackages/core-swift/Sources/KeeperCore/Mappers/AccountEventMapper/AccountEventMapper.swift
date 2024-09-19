@@ -3,7 +3,7 @@ import BigInt
 import TKLocalize
 import TonSwift
 
-struct AccountEventMapper {
+public struct AccountEventMapper {
   private let dateFormatter: DateFormatter
   private let amountFormatter: AmountFormatter
   private let amountMapper: AccountEventAmountMapper
@@ -16,11 +16,11 @@ struct AccountEventMapper {
     self.amountMapper = amountMapper
   }
   
-  func mapEvent(_ event: AccountEvent,
-                eventDate: Date,
-                nftsCollection: NFTsCollection,
-                accountEventRightTopDescriptionProvider: AccountEventRightTopDescriptionProvider,
-                isTestnet: Bool) -> AccountEventModel {
+  public func mapEvent(_ event: AccountEvent,
+                       eventDate: Date,
+                       accountEventRightTopDescriptionProvider: AccountEventRightTopDescriptionProvider,
+                       isTestnet: Bool,
+                       nftProvider: (Address) -> NFT?) -> AccountEventModel {
     var accountEventRightTopDescriptionProvider = accountEventRightTopDescriptionProvider
     let actions = event.actions.compactMap { action in
       let rightTopDescription = accountEventRightTopDescriptionProvider.rightTopDescription(
@@ -31,8 +31,8 @@ struct AccountEventMapper {
         action,
         accountEvent: event,
         rightTopDescription: rightTopDescription,
-        nftsCollection: nftsCollection,
-        isTestnet: isTestnet
+        isTestnet: isTestnet,
+        nftProvider: nftProvider
       )
     }
     return AccountEventModel(
@@ -42,30 +42,14 @@ struct AccountEventMapper {
       date: eventDate
     )
   }
-  
-  func mapEventsSectionDate(_ date: Date) -> String? {
-    let calendar = Calendar.current
-    if calendar.isDateInToday(date) {
-      return TKLocales.Dates.today
-    } else if calendar.isDateInYesterday(date) {
-      return TKLocales.Dates.yesterday
-    } else if calendar.isDate(date, equalTo: Date(), toGranularity: .month) {
-      dateFormatter.dateFormat = "d MMMM"
-    } else if calendar.isDate(date, equalTo: Date(), toGranularity: .year) {
-      dateFormatter.dateFormat = "LLLL"
-    } else {
-      dateFormatter.dateFormat = "LLLL y"
-    }
-    return dateFormatter.string(from: date).capitalized
-  }
 }
 
 private extension AccountEventMapper {
   func mapAction(_ action: AccountEventAction,
                  accountEvent: AccountEvent,
                  rightTopDescription: String?,
-                 nftsCollection: NFTsCollection,
-                 isTestnet: Bool) -> AccountEventModel.Action? {
+                 isTestnet: Bool,
+                 nftProvider: (Address) -> NFT?) -> AccountEventModel.Action? {
     
     switch action.type {
     case .tonTransfer(let tonTransfer):
@@ -128,8 +112,8 @@ private extension AccountEventMapper {
                                    preview: action.preview,
                                    rightTopDescription: rightTopDescription,
                                    status: action.status.rawValue,
-                                   nftsCollection: nftsCollection,
-                                   isTestnet: isTestnet)
+                                   isTestnet: isTestnet,
+                                   nftProvider: nftProvider)
     case .depositStake(let depositStake):
       return mapDepositStakeAction(depositStake,
                                    accountEvent: accountEvent,
@@ -200,6 +184,15 @@ private extension AccountEventMapper {
         maximumFractionDigits: 2,
         type: amountType,
         currency: .TON)
+    
+    var encryptedCommentPayload: EncryptedCommentPayload?
+    if let encryptedComment = action.encryptedComment {
+      encryptedCommentPayload = EncryptedCommentPayload(
+        encryptedComment: encryptedComment,
+        senderAddress: action.sender.address
+      )
+    }
+    
     return AccountEventModel.Action(eventType: eventType,
                                     amount: amount,
                                     subamount: nil,
@@ -208,6 +201,7 @@ private extension AccountEventMapper {
                                     rightTopDescription: rightTopDescription,
                                     status: status,
                                     comment: action.comment,
+                                    encryptedCommentPayload: encryptedCommentPayload,
                                     nft: nil)
   }
   
@@ -242,15 +236,24 @@ private extension AccountEventMapper {
         type: amountType,
         symbol: action.jettonInfo.symbol)
     
+    var encryptedCommentPayload: EncryptedCommentPayload?
+    if let encryptedComment = action.encryptedComment {
+      encryptedCommentPayload = EncryptedCommentPayload(
+        encryptedComment: encryptedComment,
+        senderAddress: action.senderAddress
+      )
+    }
+    
     return AccountEventModel.Action(eventType: eventType,
-                               amount: amount,
-                               subamount: nil,
-                               leftTopDescription: leftTopDescription,
-                               leftBottomDescription: nil,
-                               rightTopDescription: rightTopDescription,
-                               status: status,
-                               comment: action.comment,
-                               nft: nil)
+                                    amount: amount,
+                                    subamount: nil,
+                                    leftTopDescription: leftTopDescription,
+                                    leftBottomDescription: nil,
+                                    rightTopDescription: rightTopDescription,
+                                    status: status,
+                                    comment: action.comment,
+                                    encryptedCommentPayload: encryptedCommentPayload,
+                                    nft: nil)
   }
   
   func mapJettonMintAction(_ action: AccountEventAction.JettonMint,
@@ -378,24 +381,25 @@ private extension AccountEventMapper {
                            rightTopDescription: String?,
                            status: String?,
                            isTestnet: Bool) -> AccountEventModel.Action {
-    var nft: AccountEventModel.Action.NFTModel?
+    var nft: AccountEventModel.Action.ActionNFT?
     if let actionNft = action.nft {
-      nft = AccountEventModel.Action.NFTModel(
+      let nftModel = AccountEventModel.Action.ActionNFT.Model(
         nft: actionNft,
         name: actionNft.name,
         collectionName: actionNft.collection?.name ?? .singleNFT,
         image: actionNft.preview.size500)
+      nft = .model(nftModel)
     }
     
     return AccountEventModel.Action(eventType: .bid,
-                               amount: preview.value,
-                               subamount: nil,
-                               leftTopDescription: action.bidder.value(isTestnet: isTestnet),
-                               leftBottomDescription: nil,
-                               rightTopDescription: rightTopDescription,
-                               status: status,
-                               comment: nil,
-                               nft: nft)
+                                    amount: preview.value,
+                                    subamount: nil,
+                                    leftTopDescription: action.bidder.value(isTestnet: isTestnet),
+                                    leftBottomDescription: nil,
+                                    rightTopDescription: rightTopDescription,
+                                    status: status,
+                                    comment: nil,
+                                    nft: nft)
   }
   
   func mapNFTPurchaseAction(_ action: AccountEventAction.NFTPurchase,
@@ -405,7 +409,7 @@ private extension AccountEventMapper {
                             status: String?,
                             isTestnet: Bool) -> AccountEventModel.Action {
     
-    let collectibleViewModel = AccountEventModel.Action.NFTModel(
+    let nftModel = AccountEventModel.Action.ActionNFT.Model(
       nft: action.nft,
       name: action.nft.name,
       collectionName: action.nft.collection?.name ?? .singleNFT,
@@ -429,7 +433,7 @@ private extension AccountEventMapper {
       rightTopDescription: rightTopDescription,
       status: status,
       comment: nil,
-      nft: collectibleViewModel
+      nft: .model(nftModel)
     )
   }
   
@@ -487,8 +491,8 @@ private extension AccountEventMapper {
                              preview: AccountEventAction.SimplePreview,
                              rightTopDescription: String?,
                              status: String?,
-                             nftsCollection: NFTsCollection,
-                             isTestnet: Bool) -> AccountEventModel.Action {
+                             isTestnet: Bool,
+                             nftProvider: (Address) -> NFT?) -> AccountEventModel.Action {
     let eventType: AccountEventModel.Action.ActionType
     var leftTopDescription: String?
     if let previewAccount = preview.accounts.first {
@@ -505,23 +509,36 @@ private extension AccountEventMapper {
       eventType = .receieved
     }
     
-    var nft: AccountEventModel.Action.NFTModel?
-    if let actionNft = nftsCollection.nfts[action.nftAddress] {
-      nft = .init(nft: actionNft,
-                  name: actionNft.name,
-                  collectionName: actionNft.collection?.name ?? .singleNFT,
-                  image: actionNft.preview.size500)
+    let actionNFT: AccountEventModel.Action.ActionNFT
+    if let nft = nftProvider(action.nftAddress) {
+      let nftModel = AccountEventModel.Action.ActionNFT.Model(
+        nft: nft,
+        name: nft.name,
+        collectionName: nft.collection?.name ?? .singleNFT,
+        image: nft.preview.size500)
+      actionNFT = .model(nftModel)
+    } else {
+      actionNFT = .empty(action.nftAddress)
+    }
+    
+    var encryptedCommentPayload: EncryptedCommentPayload?
+    if let encryptedComment = action.encryptedComment, let sender = action.sender {
+      encryptedCommentPayload = EncryptedCommentPayload(
+        encryptedComment: encryptedComment,
+        senderAddress: sender.address
+      )
     }
     
     return AccountEventModel.Action(eventType: eventType,
-                               amount: "NFT",
-                               subamount: nil,
-                               leftTopDescription: leftTopDescription,
-                               leftBottomDescription: nil,
-                               rightTopDescription: rightTopDescription,
-                               status: status,
-                               comment: action.comment,
-                               nft: nft)
+                                    amount: "NFT",
+                                    subamount: nil,
+                                    leftTopDescription: leftTopDescription,
+                                    leftBottomDescription: nil,
+                                    rightTopDescription: rightTopDescription,
+                                    status: status,
+                                    comment: action.comment,
+                                    encryptedCommentPayload: encryptedCommentPayload,
+                                    nft: actionNFT)
   }
   
   func mapJettonSwapAction(_ action: AccountEventAction.JettonSwap,

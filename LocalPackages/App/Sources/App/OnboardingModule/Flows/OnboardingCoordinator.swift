@@ -105,29 +105,20 @@ private extension OnboardingCoordinator {
   
   func handleCoreDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
     switch deeplink {
-    case .tonkeeper(let tonkeeperDeeplink):
-      return handleTonkeeperDeeplink(tonkeeperDeeplink)
+    case .externalSign(let externalSign):
+      if let addWalletCoordinator, addWalletCoordinator.handleDeeplink(deeplink: deeplink) {
+        return true
+      }
+      router.dismiss(animated: true) { [weak self] in
+        self?.handleSignerDeeplink(externalSign)
+      }
+      return true
     default:
       return false
     }
   }
   
-  func handleTonkeeperDeeplink(_ deeplink: TonkeeperDeeplink) -> Bool {
-    switch deeplink {
-    case .signer(let signerDeeplink):
-      if let addWalletCoordinator, addWalletCoordinator.handleDeeplink(deeplink: deeplink) {
-        return true
-      }
-      router.dismiss(animated: true) { [weak self] in
-        self?.handleSignerDeeplink(signerDeeplink)
-      }
-      return true
-    case .publish:
-      return false
-    }
-  }
-  
-  func handleSignerDeeplink(_ deeplink: TonkeeperDeeplink.SignerDeeplink) {
+  func handleSignerDeeplink(_ deeplink: ExternalSignDeeplink) {
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     

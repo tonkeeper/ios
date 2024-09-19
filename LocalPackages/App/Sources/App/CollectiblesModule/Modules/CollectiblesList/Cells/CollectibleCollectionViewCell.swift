@@ -27,6 +27,11 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
   }
   
   class Model: Hashable {
+    enum Subtitle {
+      case verified(String)
+      case unverified(String)
+    }
+    
     let identifier: String
     let imageDownloadTask: ImageDownloadTask?
     let title: NSAttributedString?
@@ -36,7 +41,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
     init(identifier: String,
          imageDownloadTask: ImageDownloadTask?,
          title: String?,
-         subtitle: String?,
+         subtitle: NSAttributedString?,
          isOnSale: Bool = false) {
       self.identifier = identifier
       self.imageDownloadTask = imageDownloadTask
@@ -46,12 +51,7 @@ final class CollectibleCollectionViewCell: UICollectionViewCell, ConfigurableVie
         alignment: .left,
         lineBreakMode: .byTruncatingTail
       )
-      self.subtitle = subtitle?.withTextStyle(
-        .body3,
-        color: .Text.secondary,
-        alignment: .left,
-        lineBreakMode: .byTruncatingTail
-      )
+      self.subtitle = subtitle
       self.isOnSale = isOnSale
     }
     
@@ -98,7 +98,7 @@ private extension CollectibleCollectionViewCell {
     contentView.layer.cornerRadius = 16
     contentView.layer.masksToBounds = true
     
-    contentView.backgroundColor = .Background.content
+    contentView.backgroundColor = .Background.contentTint
     
     titleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     subtitleLabel.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -112,46 +112,28 @@ private extension CollectibleCollectionViewCell {
     contentView.addSubview(imageView)
     contentView.addSubview(saleImageView)
     
-    labelContainer.translatesAutoresizingMaskIntoConstraints = false
-    titleLabel.translatesAutoresizingMaskIntoConstraints = false
-    subtitleLabel.translatesAutoresizingMaskIntoConstraints = false
-    imageView.translatesAutoresizingMaskIntoConstraints = false
-    highlightView.translatesAutoresizingMaskIntoConstraints = false
+    highlightView.snp.makeConstraints { make in
+      make.edges.equalTo(contentView)
+    }
     
-    NSLayoutConstraint.activate([
-      highlightView.topAnchor.constraint(equalTo: contentView.topAnchor),
-      highlightView.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      highlightView.rightAnchor.constraint(equalTo: contentView.rightAnchor),
-      highlightView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
-      
-      imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
-      imageView.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      imageView.rightAnchor.constraint(equalTo: contentView.rightAnchor)
-        .withPriority(.defaultHigh),
-      imageView.heightAnchor.constraint(equalTo: imageView.widthAnchor),
-      
-      labelContainer.topAnchor.constraint(equalTo: imageView.bottomAnchor),
-      labelContainer.leftAnchor.constraint(equalTo: contentView.leftAnchor),
-      labelContainer.rightAnchor.constraint(equalTo: contentView.rightAnchor),
-      labelContainer.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
-        .withPriority(.defaultHigh),
-      
-      titleLabel.topAnchor.constraint(equalTo: labelContainer.topAnchor,
-                                      constant: UIEdgeInsets.labelContainerInsets.top),
-      titleLabel.leftAnchor.constraint(equalTo: labelContainer.leftAnchor,
-                                       constant: UIEdgeInsets.labelContainerInsets.left),
-      titleLabel.rightAnchor.constraint(equalTo: labelContainer.rightAnchor,
-                                        constant: -UIEdgeInsets.labelContainerInsets.right)
-      .withPriority(.defaultHigh),
-      
-      subtitleLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor),
-      subtitleLabel.bottomAnchor.constraint(equalTo: labelContainer.bottomAnchor,
-                                            constant: -UIEdgeInsets.labelContainerInsets.bottom),
-      subtitleLabel.leftAnchor.constraint(equalTo: labelContainer.leftAnchor,
-                                          constant: UIEdgeInsets.labelContainerInsets.left),
-      subtitleLabel.rightAnchor.constraint(equalTo: labelContainer.rightAnchor, constant:
-                                            -UIEdgeInsets.labelContainerInsets.right).withPriority(.defaultHigh),
-    ])
+    imageView.snp.makeConstraints { make in
+      make.top.left.right.equalTo(contentView)
+      make.height.equalTo(imageView.snp.width)
+    }
+    
+    labelContainer.snp.makeConstraints { make in
+      make.top.equalTo(imageView.snp.bottom).offset(UIEdgeInsets.labelContainerInsets.top)
+      make.left.right.bottom.equalTo(contentView).inset(UIEdgeInsets.labelContainerInsets)
+    }
+    
+    titleLabel.snp.makeConstraints { make in
+      make.top.left.right.equalTo(labelContainer)
+    }
+    
+    subtitleLabel.snp.makeConstraints { make in
+      make.top.equalTo(titleLabel.snp.bottom)
+      make.left.bottom.right.equalTo(labelContainer)
+    }
   }
 }
 

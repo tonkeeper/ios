@@ -3,11 +3,14 @@ import TKUIKit
 import TKCoordinator
 import TKCore
 import KeeperCore
+import WidgetKit
 
 public final class AppCoordinator: RouterCoordinator<WindowRouter> {
   
   let coreAssembly: TKCore.CoreAssembly
   let keeperCoreAssembly: KeeperCore.Assembly
+  
+  private let appStateTracker: AppStateTracker
   
   private weak var rootCoordinator: RootCoordinator?
   
@@ -17,9 +20,11 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
     self.keeperCoreAssembly = KeeperCore.Assembly(
       dependencies: Assembly.Dependencies(
         cacheURL: coreAssembly.cacheURL,
-        sharedCacheURL: coreAssembly.sharedCacheURL
+        sharedCacheURL: coreAssembly.sharedCacheURL,
+        appInfoProvider: coreAssembly.appInfoProvider
       )
     )
+    self.appStateTracker = coreAssembly.appStateTracker
     super.init(router: router)
   }
   
@@ -31,6 +36,8 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
     }
     
     openRoot(deeplink: deeplink)
+    
+    appStateTracker.addObserver(self)
   }
   
   public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
@@ -41,10 +48,8 @@ public final class AppCoordinator: RouterCoordinator<WindowRouter> {
 
 private extension AppCoordinator {
   func openRoot(deeplink: TKCoordinator.CoordinatorDeeplink? = nil) {
-    let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
     let rootCoordinator = RootCoordinator(
-      router: NavigationControllerRouter(rootViewController: navigationController),
+      router: ViewControllerRouter(rootViewController: UIViewController()),
       dependencies: RootCoordinator.Dependencies(
         coreAssembly: coreAssembly,
         keeperCoreRootAssembly: keeperCoreAssembly.rootAssembly()
@@ -56,5 +61,16 @@ private extension AppCoordinator {
     
     addChild(rootCoordinator)
     rootCoordinator.start(deeplink: deeplink)
+  }
+}
+
+extension AppCoordinator: AppStateTrackerObserver {
+  public func didUpdateState(_ state: AppStateTracker.State) {
+    switch state {
+    case .resign:
+      WidgetCenter.shared.reloadAllTimelines()
+    default:
+      break
+    }
   }
 }

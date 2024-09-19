@@ -6,8 +6,7 @@
 //
 
 import UIKit
-import FirebaseCore
-import Aptabase
+import TKCore
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -17,6 +16,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     FirebaseConfigurator.configurator.configure()
     AptabaseConfigurator.configurator.configure()
+    
+    UNUserNotificationCenter.current().delegate = self
     
     return true
   }
@@ -28,6 +29,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
                    options: UIScene.ConnectionOptions) -> UISceneConfiguration {
     return UISceneConfiguration(name: "Default Configuration",
                                 sessionRole: connectingSceneSession.role)
+  }
+}
+
+extension AppDelegate: UNUserNotificationCenterDelegate {
+  func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
+    return [.banner]
   }
 }
 

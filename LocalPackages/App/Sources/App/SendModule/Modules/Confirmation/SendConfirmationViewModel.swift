@@ -230,7 +230,7 @@ private extension SendConfirmationViewModelImplementation {
       items: [
         .button(
           TKModalCardViewController.Configuration.Button(
-            title: TKLocales.ConfirmSend.confirm_button,
+            title: TKLocales.ConfirmSend.confirmButton,
             size: .large,
             category: .primary,
             isEnabled: true,
@@ -264,6 +264,7 @@ private extension SendConfirmationViewModelImplementation {
   
   func sendTransaction() async -> Bool {
     do {
+      let wallet = sendConfirmationController.wallet
       try await sendConfirmationController.sendTransaction()
       return true
     } catch {

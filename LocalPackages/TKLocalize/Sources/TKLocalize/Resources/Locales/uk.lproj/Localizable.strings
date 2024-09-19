@@ -46,6 +46,7 @@
 "settings.items.currency" = "Валюта";
 "settings.items.theme" = "Тема";
 "settings.items.logout" = "Вийти";
+"settings.items.faq" = "FAQ";
 "settings.items.support" = "Підтримка";
 "settings.items.tk_news" = "Новини Tonkeeper";
 "settings.items.contact_us" = "Зв'яжіться з нами";

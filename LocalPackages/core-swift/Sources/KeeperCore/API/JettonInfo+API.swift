@@ -13,7 +13,7 @@ extension JettonInfo {
     
     isTransferable = !(extensions?.contains("non_transferable") ?? false)
     hasCustomPayload = extensions?.contains("custom_payload") ?? false
-
+    
     let verification: JettonInfo.Verification
     switch jettonPreview.verification {
     case .whitelist:

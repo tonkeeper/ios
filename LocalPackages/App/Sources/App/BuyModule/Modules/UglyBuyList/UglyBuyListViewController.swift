@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 class UglyBuyListViewController: GenericViewViewController<UglyBuyListView>, TKBottomSheetScrollContentViewController {
   
@@ -16,7 +17,7 @@ class UglyBuyListViewController: GenericViewViewController<UglyBuyListView>, TKB
   var didUpdateHeight: (() -> Void)?
   
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: "Buy")
+    TKUIKit.TKPullCardHeaderItem(title: .title(title: TKLocales.UglyBuyList.buy, subtitle: nil))
   }
   
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?

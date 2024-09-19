@@ -118,8 +118,6 @@ private extension TKNavigationBar {
     
     setupConstraints()
     
-//    setupLargeTitleView()
-    
     didChangeIsLarge(animated: false)
   }
   
@@ -132,7 +130,6 @@ private extension TKNavigationBar {
     rightButtonsStackView.translatesAutoresizingMaskIntoConstraints = false
     largeBarRightButtonsStackView.translatesAutoresizingMaskIntoConstraints = false
     largeTitleView.translatesAutoresizingMaskIntoConstraints = false
-    
     NSLayoutConstraint.activate([
       backgroundView.topAnchor.constraint(equalTo: topAnchor),
       backgroundView.leftAnchor.constraint(equalTo: leftAnchor),

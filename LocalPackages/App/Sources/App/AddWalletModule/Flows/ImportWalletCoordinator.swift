@@ -42,7 +42,7 @@ private extension ImportWalletCoordinator {
     let inputRecoveryPhrase = TKInputRecoveryPhraseAssembly.module(
       title: TKLocales.ImportWallet.title,
       caption: TKLocales.ImportWallet.description,
-      continueButtonTitle: TKLocales.Actions.continue_action,
+      continueButtonTitle: TKLocales.Actions.continueAction,
       pasteButtonTitle: TKLocales.Actions.paste,
       validator: AddWalletInputRecoveryPhraseValidator(),
       suggestsProvider: AddWalletInputRecoveryPhraseSuggestsProvider()
@@ -98,14 +98,14 @@ private extension ImportWalletCoordinator {
   }
   
   func openChooseWalletToAdd(phrase: [String], activeWalletModels: [ActiveWalletModel]) {
-    let controller = walletsUpdateAssembly.chooseWalletController(
+    let module = ChooseWalletToAddAssembly.module(
       activeWalletModels: activeWalletModels,
-      configuration: ChooseWalletsController.Configuration(
+      configuration: ChooseWalletToAddConfiguration(
         showRevision: true,
         selectLastRevision: true
-      )
+      ),
+      amountFormatter: walletsUpdateAssembly.formattersAssembly.amountFormatter
     )
-    let module = ChooseWalletToAddAssembly.module(controller: controller)
     
     module.output.didSelectWallets = { [weak self] wallets in
       let revisions = wallets.map { $0.revision }
@@ -122,7 +122,15 @@ private extension ImportWalletCoordinator {
   }
   
   func handleDidChooseRevisions(phrase: [String], revisions: [WalletContractVersion]) {
-    if walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository().hasMnemonics() {
+    let hasMnemonics = walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository().hasMnemonics()
+    let hasRegularWallet = { [walletsUpdateAssembly] in
+      do {
+        return try walletsUpdateAssembly.repositoriesAssembly.keeperInfoRepository().getKeeperInfo().wallets.contains(where: { $0.kind == .regular })
+      } catch {
+        return false
+      }
+    }()
+    if hasMnemonics && hasRegularWallet {
       openConfirmPasscode(phrase: phrase, revisions: revisions)
     } else {
       openCreatePasscode(phrase: phrase, revisions: revisions)

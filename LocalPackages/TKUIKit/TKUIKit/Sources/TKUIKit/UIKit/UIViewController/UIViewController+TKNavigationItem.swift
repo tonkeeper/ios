@@ -29,6 +29,20 @@ public extension UIViewController {
     navigationItem.rightBarButtonItem = UIBarButtonItem(customView: closeButton)
   }
   
+  func setupLeftButton(image: UIImage, action: @escaping () -> Void) {
+    let button = TKUIHeaderIconButton()
+    button.configure(
+      model: TKUIHeaderButtonIconContentView.Model(
+        image: image
+      )
+    )
+    
+    button.addTapAction(action)
+    
+    button.tapAreaInsets = UIEdgeInsets(top: -10, left: -10, bottom: -10, right: -10)
+    navigationItem.leftBarButtonItem = UIBarButtonItem(customView: button)
+  }
+  
   func createCloseButton(_ action: @escaping () -> Void) -> TKUIHeaderIconButton {
     let closeButton = TKUIHeaderIconButton()
     closeButton.configure(

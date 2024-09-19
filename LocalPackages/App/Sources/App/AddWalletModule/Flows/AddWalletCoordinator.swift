@@ -41,12 +41,12 @@ public final class AddWalletCoordinator: RouterCoordinator<ViewControllerRouter>
   }
   
   public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
-    guard let tonkeeperDeeplink = deeplink as? TonkeeperDeeplink else { return false }
+    guard let tonkeeperDeeplink = deeplink as? Deeplink else { return false }
     
     switch tonkeeperDeeplink {
-    case .signer(let signerDeeplink):
+    case .externalSign:
       guard let pairSignerCoordinator else { return false }
-      return pairSignerCoordinator.handleDeeplink(deeplink: signerDeeplink)
+      return pairSignerCoordinator.handleDeeplink(deeplink: tonkeeperDeeplink)
     default:
       return false
     }

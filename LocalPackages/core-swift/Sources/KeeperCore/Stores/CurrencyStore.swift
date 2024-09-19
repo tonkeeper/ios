@@ -1,57 +1,38 @@
 import Foundation
 
-public actor CurrencyStore {
-  public typealias ObservationClosure = (Event) -> Void
+public final class CurrencyStore: StoreV3<CurrencyStore.Event, Currency> {
   public enum Event {
-    case didChangeCurrency(currency: Currency)
+    case didUpdateCurrency(currency: Currency)
   }
   
-  private let currencyService: CurrencyService
+  private let keeperInfoStore: KeeperInfoStore
   
-  init(currencyService: CurrencyService) {
-    self.currencyService = currencyService
+  public override var initialState: Currency {
+    getState(keeperInfo: keeperInfoStore.getState())
   }
   
-  public func setActiveCurrency(_ currency: Currency) {
-    do {
-      try currencyService.setActiveCurrency(currency)
-      observations
-        .values
-        .forEach { $0(.didChangeCurrency(currency: currency)) }
-    } catch {}
+  init(keeperInfoStore: KeeperInfoStore) {
+    self.keeperInfoStore = keeperInfoStore
+    super.init(state: .defaultCurrency)
   }
   
-  public func getActiveCurrency() -> Currency {
-    do {
-      return try currencyService.getActiveCurrency()
-    } catch {
-      return .USD
+  public func setCurrency(_ currency: Currency) async {
+    await self.setState { _ in
+      return StateUpdate(newState: currency)
+    } notify: { state in
+      self.sendEvent(.didUpdateCurrency(currency: state))
+    }
+    await keeperInfoStore.updateKeeperInfo { keeperInfo in
+      let updated = keeperInfo?.updateCurrency(currency)
+      return updated
     }
   }
   
-  private var observations = [UUID: ObservationClosure]()
-  
-  public func addEventObserver<T: AnyObject>(_ observer: T,
-                                      closure: @escaping (T, Event) -> Void) -> ObservationToken {
-    let id = UUID()
-    let eventHandler: (Event) -> Void = { [weak self, weak observer] event in
-      guard let self else { return }
-      guard let observer else {
-        Task { await self.removeObservation(key: id) }
-        return
-      }
-      
-      closure(observer, event)
+  private func getState(keeperInfo: KeeperInfo?) -> Currency {
+    if let keeperInfo = keeperInfoStore.getState() {
+      return keeperInfo.currency
+    } else {
+      return .defaultCurrency
     }
-    observations[id] = eventHandler
-    
-    return ObservationToken { [weak self] in
-      guard let self else { return }
-      Task { await self.removeObservation(key: id) }
-    }
-  }
-  
-  func removeObservation(key: UUID) {
-    observations.removeValue(forKey: key)
   }
 }

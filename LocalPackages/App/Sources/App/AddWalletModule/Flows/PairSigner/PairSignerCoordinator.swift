@@ -32,11 +32,16 @@ public final class PairSignerCoordinator: RouterCoordinator<NavigationController
   }
   
   public override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
-    guard let signerDeeplink = deeplink as? TonkeeperDeeplink.SignerDeeplink else { return false }
+    guard let signerDeeplink = deeplink as? Deeplink else { return false }
     switch signerDeeplink {
-    case let .link(publicKey, name):
-      openImportCoordinator(publicKey: publicKey, name: name, isDevice: true)
+    case .externalSign(let externalSign):
+      switch externalSign {
+      case .link(let publicKey, let name):
+        openImportCoordinator(publicKey: publicKey, name: name, isDevice: true)
+      }
       return true
+    default:
+      return false
     }
   }
 }
@@ -102,10 +107,10 @@ private extension PairSignerCoordinator {
       label: model.name,
       tintColor: model.tintColor,
       icon: model.icon)
-    try addController.importSignerWallet(publicKey: publicKey,
-                                         revisions: revisions,
-                                         metaData: metaData,
-                                         isDevice: isDevice
+    try await addController.importSignerWallet(publicKey: publicKey,
+                                               revisions: revisions,
+                                               metaData: metaData,
+                                               isDevice: isDevice
     )
   }
 }
