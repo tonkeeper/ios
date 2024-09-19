@@ -24,7 +24,7 @@ extension MainCoordinator {
         } else {
           token = .ton
         }
-
+        
         let recipient = try await self.recipientResolver.resolverRecipient(string: recipient, isTestnet: wallet.isTestnet)
         
         guard !Task.isCancelled else { return }
@@ -39,12 +39,22 @@ extension MainCoordinator {
             comment: comment
           )
         }
-      } catch JettonBalanceResolverError.insufficientFunds {
-        print("SHow POPUP")
+      } catch JettonBalanceResolverError.unknownJetton {
         await MainActor.run {
           self.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
-          ToastPresenter.showToast(configuration: .failed)
+          ToastPresenter.showToast(
+            configuration: ToastPresenter.Configuration(
+              title: "Unknown token",
+              dismissRule: .default
+            )
+          )
+        }
+      } catch JettonBalanceResolverError.insufficientFunds {
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          ToastPresenter.hideAll()
+          // TODO: SHOW BANNER
         }
       } catch {
         await MainActor.run {

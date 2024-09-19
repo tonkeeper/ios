@@ -6,13 +6,16 @@ public final class LoadersAssembly {
   private let servicesAssembly: ServicesAssembly
   private let storesAssembly: StoresAssembly
   private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
+  private let apiAssembly: APIAssembly
   
   init(servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
-       tonkeeperAPIAssembly: TonkeeperAPIAssembly) {
+       tonkeeperAPIAssembly: TonkeeperAPIAssembly,
+       apiAssembly: APIAssembly) {
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
+    self.apiAssembly = apiAssembly
   }
   
   var chartLoader: ChartV2Loader {
@@ -128,7 +131,8 @@ public final class LoadersAssembly {
   
   public func jettonBalanceResolver() -> JettonBalanceResolver {
     JettonBalanceResolverImplementation(
-      balanceStore: storesAssembly.balanceStore
+      balanceStore: storesAssembly.balanceStore,
+      apiProvider: apiAssembly.apiProvider
     )
   }
 }
