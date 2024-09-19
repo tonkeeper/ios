@@ -138,8 +138,8 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
       }
     }
     switch sendItem {
-    case .token(_, let amount):
-      didInputAmount(amount.description)
+    case .token(let token, let amount):
+      didInputAmount(sendController.convertAmountToInputString(amount: amount, token: token))
       
     case .nft:
       break

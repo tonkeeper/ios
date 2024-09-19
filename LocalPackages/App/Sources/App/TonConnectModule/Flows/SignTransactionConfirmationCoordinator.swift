@@ -203,9 +203,9 @@ final class SignTransactionConfirmationCoordinator: RouterCoordinator<WindowRout
     super.init(router: router)
   }
   
-  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+  public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
     guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
-    walletTransferSignCoordinator.externalSignHandler?(model.sign)
+    walletTransferSignCoordinator.externalSignHandler?(sign)
     walletTransferSignCoordinator.externalSignHandler = nil
     return true
   }

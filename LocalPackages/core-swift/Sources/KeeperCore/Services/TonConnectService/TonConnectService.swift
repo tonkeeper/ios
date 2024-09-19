@@ -11,7 +11,7 @@ enum TonConnectServiceError: Swift.Error {
 }
 
 public protocol TonConnectService {
-  func loadTonConnectConfiguration(with deeplink: TonConnectDeeplink) async throws -> (TonConnectParameters, TonConnectManifest)
+  func loadTonConnectConfiguration(with parameters: TonConnectParameters) async throws -> (TonConnectParameters, TonConnectManifest)
   func buildConnectEventSuccessResponse(
     wallet: Wallet,
     passcode: String,
@@ -78,8 +78,7 @@ final class TonConnectServiceImplementation: TonConnectService {
     self.sendService = sendService
   }
   
-  func loadTonConnectConfiguration(with deeplink: TonConnectDeeplink) async throws -> (TonConnectParameters, TonConnectManifest) {
-    let parameters = try parseTonConnectDeeplink(deeplink)
+  func loadTonConnectConfiguration(with parameters: TonConnectParameters) async throws -> (TonConnectParameters, TonConnectManifest) {
     do {
       let manifest = try await loadManifest(url: parameters.requestPayload.manifestUrl)
       return (parameters, manifest)
@@ -330,33 +329,4 @@ private extension TonConnectServiceImplementation {
       )
     ).createBoc(signClosure: signClosure)
   }
-  
-  func parseTonConnectDeeplink(_ deeplink: TonConnectDeeplink) throws -> TonConnectParameters {
-    guard
-      let url = URL(string: deeplink.string),
-      let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-      components.scheme == .tcScheme,
-      let queryItems = components.queryItems,
-      let versionValue = queryItems.first(where: { $0.name == .versionKey })?.value,
-      let version = TonConnectParameters.Version(rawValue: versionValue),
-      let clientId = queryItems.first(where: { $0.name == .clientIdKey })?.value,
-      let requestPayloadValue = queryItems.first(where: { $0.name == .requestPayloadKey })?.value,
-      let requestPayloadData = requestPayloadValue.data(using: .utf8),
-      let requestPayload = try? JSONDecoder().decode(TonConnectRequestPayload.self, from: requestPayloadData)
-    else {
-      throw TonConnectServiceError.incorrectUrl
-    }
-    
-    return TonConnectParameters(
-      version: version,
-      clientId: clientId,
-      requestPayload: requestPayload)
-  }
-}
-
-private extension String {
-  static let tcScheme = "tc"
-  static let versionKey = "v"
-  static let clientIdKey = "id"
-  static let requestPayloadKey = "r"
 }

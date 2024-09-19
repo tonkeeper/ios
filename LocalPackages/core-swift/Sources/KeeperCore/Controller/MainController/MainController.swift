@@ -96,10 +96,9 @@ public final class MainController {
     }
   }
   
-  public func handleTonConnectDeeplink(_ deeplink: TonConnectDeeplink) async throws -> (TonConnectParameters, TonConnectManifest) {
-    try await tonConnectService.loadTonConnectConfiguration(with: deeplink)
+  public func handleTonConnectDeeplink(_ parameters: TonConnectParameters) async throws -> (TonConnectParameters, TonConnectManifest) {
+    try await tonConnectService.loadTonConnectConfiguration(with: parameters)
   }
-  
   public func parseDeeplink(deeplink: String?) throws -> Deeplink {
     try deeplinkParser.parse(string: deeplink)
   }
@@ -117,6 +116,11 @@ public final class MainController {
     } else if let rawAddress = try? Address.parse(recipient) {
       let isMemoRequired = knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false
       return Recipient(recipientAddress: .raw(rawAddress), isMemoRequired: isMemoRequired)
+    } else if let domain = try? await dnsService.resolveDomainName(
+      recipient,
+      isTestnet: false) {
+      return Recipient(recipientAddress: .domain(domain),
+                       isMemoRequired: knownAccounts.first(where: { $0.address == domain.friendlyAddress.address })?.requireMemo ?? false)
     } else {
       throw Error.failedResolveRecipient(recipient: recipient)
     }

@@ -115,15 +115,18 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   }
   
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
-    if let coreDeeplink = deeplink as? KeeperCore.Deeplink {
-      return handleCoreDeeplink(coreDeeplink)
-    } else {
+    switch deeplink {
+    case let tonkeeperDeeplink as KeeperCore.Deeplink:
+      return handleTonkeeperDeeplink(tonkeeperDeeplink)
+    case let string as String:
       do {
-        let deeplink = try mainController.parseDeeplink(deeplink: deeplink?.string)
-        return handleCoreDeeplink(deeplink)
+        let deeplink = try mainController.parseDeeplink(deeplink: string)
+        return handleTonkeeperDeeplink(deeplink)
       } catch {
         return false
       }
+    default:
+      return false
     }
   }
   
@@ -253,7 +256,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     
     scanModule.output.didScanDeeplink = { [weak self] deeplink in
       self?.router.dismiss(completion: {
-        _ = self?.handleCoreDeeplink(deeplink)
+        _ = self?.handleTonkeeperDeeplink(deeplink)
       })
     }
     
@@ -354,26 +357,15 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       })
     }
   }
-  
-  func handleCoreDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
+
+  func handleTonkeeperDeeplink(_ deeplink: KeeperCore.Deeplink) -> Bool {
     switch deeplink {
-    case .ton(let tonDeeplink):
-      return handleTonDeeplink(tonDeeplink)
-    case .tonConnect(let tonConnectDeeplink):
-      return handleTonConnectDeeplink(tonConnectDeeplink)
-    case .tonkeeper(let tonkeeperDeeplink):
-      return handleTonkeeperDeeplink(tonkeeperDeeplink)
-    }
-  }
-  
-  func handleTonDeeplink(_ deeplink: TonDeeplink) -> Bool {
-    switch deeplink {
-    case let .transfer(recipient, amount, comment, jettonAddress):
+    case let .transfer(data):
       openSendDeeplink(
-        recipient: recipient,
-        amount: amount,
-        comment: comment,
-        jettonAddress: jettonAddress
+        recipient: data.recipient,
+        amount: data.amount,
+        comment: data.comment,
+        jettonAddress: data.jettonAddress
       )
       return true
     case .buyTon:
@@ -388,21 +380,38 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     case .exchange(let provider):
       openExchangeDeeplink(provider: provider)
       return true
-    case .swap(let fromToken, let toToken):
-      openSwapDeeplink(fromToken: fromToken, toToken: toToken)
+    case .swap(let data):
+      openSwapDeeplink(fromToken: data.fromToken, toToken: data.toToken)
       return true
     case .action(let eventId):
       openActionDeeplink(eventId: eventId)
       return true
+    case .publish(sign: let sign):
+      if let sendTokenCoordinator = sendTokenCoordinator {
+        return sendTokenCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
+      }
+      if let collectiblesCoordinator = collectiblesCoordinator,
+         collectiblesCoordinator.handleTonkeeperDeeplink(deeplink: deeplink) {
+        return true
+      }
+      if let webSwapCoordinator = webSwapCoordinator,
+         webSwapCoordinator.handleTonkeeperPublishDeeplink(sign: sign) {
+        return true
+      }
+      return false
+    case .externalSign(let data):
+      return handleSignerDeeplink(data)
+    case .tonconnect(let parameters):
+      return handleTonConnectDeeplink(parameters)
     }
   }
   
-  func handleTonConnectDeeplink(_ deeplink: TonConnectDeeplink) -> Bool {
+  func handleTonConnectDeeplink(_ parameters: TonConnectParameters) -> Bool {
     ToastPresenter.hideAll()
     ToastPresenter.showToast(configuration: .loading)
     Task {
       do {
-        let (parameters, manifest) = try await mainController.handleTonConnectDeeplink(deeplink)
+        let (parameters, manifest) = try await mainController.handleTonConnectDeeplink(parameters)
         await MainActor.run {
           ToastPresenter.hideToast()
           let coordinator = TonConnectModule(
@@ -441,42 +450,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     }
     return true
   }
-  
-  func handleTonkeeperDeeplink(_ deeplink: TonkeeperDeeplink) -> Bool {
-    switch deeplink {
-    case .signer(let signerDeeplink):
-      if let addWalletCoordinator, addWalletCoordinator.handleDeeplink(deeplink: deeplink) {
-        return true
-      }
-      router.dismiss(animated: true) { [weak self] in
-        self?.handleSignerDeeplink(signerDeeplink)
-      }
-      return true
-    case let .publish(model):
-      if let sendTokenCoordinator = sendTokenCoordinator {
-        return sendTokenCoordinator.handleTonkeeperPublishDeeplink(model: model)
-      }
-      if let collectiblesCoordinator = collectiblesCoordinator,
-         collectiblesCoordinator.handleTonkeeperDeeplink(deeplink: deeplink) {
-        return true
-      }
-      if let webSwapCoordinator = webSwapCoordinator,
-         webSwapCoordinator.handleTonkeeperPublishDeeplink(model: model) {
-        return true
-      }
-      return false
-    case let .transfer(recipient, amount, comment, jettonAddress):
-      openSendDeeplink(
-        recipient: recipient,
-        amount: amount,
-        comment: comment,
-        jettonAddress: jettonAddress
-      )
-      return true
-    }
-  }
-  
-  func handleSignerDeeplink(_ deeplink: TonkeeperDeeplink.SignerDeeplink) {
+
+  func handleSignerDeeplink(_ deeplink: ExternalSignDeeplink) -> Bool {
     let navigationController = TKNavigationController()
     navigationController.configureTransparentAppearance()
     
@@ -515,6 +490,7 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
       addChild(coordinator)
       coordinator.start()
     }
+    return true
   }
   
   func openWalletPicker() {

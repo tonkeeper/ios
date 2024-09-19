@@ -51,11 +51,7 @@ public final class RootAssembly {
       let rootController = RootController(
         remoteConfigurationStore: configurationAssembly.remoteConfigurationStore,
         knownAccountsStore: storesAssembly.knownAccountsStore,
-        deeplinkParser: DefaultDeeplinkParser(parsers: [
-          TonkeeperDeeplinkParser(),
-          TonDeeplinkParser(),
-          TonConnectDeeplinkParser()
-        ]),
+        deeplinkParser: DeeplinkParser(),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
         fiatMethodsLoader: loadersAssembly.fiatMethodsLoader()

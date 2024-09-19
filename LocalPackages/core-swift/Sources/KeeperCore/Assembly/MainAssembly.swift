@@ -56,13 +56,7 @@ public final class MainAssembly {
       knownAccountsStore: storesAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
       tonConnectService: tonConnectAssembly.tonConnectService(),
-      deeplinkParser: DefaultDeeplinkParser(
-        parsers: [
-          TonkeeperDeeplinkParser(),
-          TonConnectDeeplinkParser(),
-          TonDeeplinkParser(),
-        ]
-      ),
+      deeplinkParser: DeeplinkParser(),
       apiProvider: apiAssembly.apiProvider,
       walletStateLoader: loadersAssembly.walletStateLoader,
       internalNotificationsLoader: loadersAssembly.internalNotificationsLoader

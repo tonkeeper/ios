@@ -37,9 +37,9 @@ public final class WebSwapCoordinator: RouterCoordinator<NavigationControllerRou
     openSwap()
   }
   
-  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+  public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
     if let signTransactionConfirmationCoordinator = signTransactionConfirmationCoordinator {
-      return signTransactionConfirmationCoordinator.handleTonkeeperPublishDeeplink(model: model)
+      return signTransactionConfirmationCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
     }
     return false
   }

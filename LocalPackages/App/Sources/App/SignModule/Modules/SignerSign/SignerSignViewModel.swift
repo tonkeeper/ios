@@ -6,7 +6,7 @@ import TKLocalize
 import TonSwift
 
 protocol SignerSignModuleOutput: AnyObject {
-  var didScanSignedTransaction: ((TonkeeperPublishModel) -> Void)? { get set }
+  var didScanSignedTransaction: ((Data) -> Void)? { get set }
 }
 
 protocol SignerSignModuleInput: AnyObject {}
@@ -23,7 +23,7 @@ final class SignerSignViewModelImplementation: SignerSignViewModel, SignerSignMo
   
   // MARK: - SignerSignModuleOutput
 
-  var didScanSignedTransaction: ((TonkeeperPublishModel) -> Void)?
+  var didScanSignedTransaction: ((Data) -> Void)?
   
   // MARK: - SignerSignModuleInput
   
@@ -89,11 +89,10 @@ private extension SignerSignViewModelImplementation {
   
   func setup() {
     scannerOutput.didScanDeeplink = { [weak self] deeplink in
-      guard case let .tonkeeper(tonkeeperDeeplink) = deeplink,
-            case .publish(let model) = tonkeeperDeeplink else {
+      guard case let .publish(sign) = deeplink else {
         return
       }
-      self?.didScanSignedTransaction?(model)
+      self?.didScanSignedTransaction?(sign)
     }
   }
   

@@ -28,9 +28,8 @@ final class SignerImportScanViewModelImplementation: SignerImportScanViewModel, 
   
   func viewDidLoad() {
     scannerViewModuleOutput.didScanDeeplink = { [weak self] deeplink in
-      guard case let .tonkeeper(tonkeeperDeeplink) = deeplink,
-            case let .signer(signerDeeplink) = tonkeeperDeeplink,
-            case let .link(publicKey, name) = signerDeeplink else {
+      guard case let .externalSign(externalSign) = deeplink,
+            case let .link(publicKey, name) = externalSign else {
         return
       }
       self?.didScanLinkQRCode?(publicKey, name)

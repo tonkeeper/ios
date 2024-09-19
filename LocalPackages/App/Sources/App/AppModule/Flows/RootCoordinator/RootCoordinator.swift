@@ -79,8 +79,9 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   }
   
   override func handleDeeplink(deeplink: CoordinatorDeeplink?) -> Bool {
+    guard let string = deeplink as? String else { return false }
     do {
-      let coreDeeplink = try rootController.parseDeeplink(string: deeplink?.string)
+      let coreDeeplink = try rootController.parseDeeplink(string: string)
       if let onboardingCoordinator {
         return onboardingCoordinator.handleDeeplink(deeplink: coreDeeplink)
       } else if let mainCoordinator {
@@ -215,5 +216,4 @@ private extension RootCoordinator {
 }
 
 extension KeeperCore.Deeplink: TKCoordinator.CoordinatorDeeplink {}
-extension KeeperCore.TonkeeperDeeplink: TKCoordinator.CoordinatorDeeplink {}
-extension KeeperCore.TonkeeperDeeplink.SignerDeeplink: TKCoordinator.CoordinatorDeeplink {}
+extension String: TKCoordinator.CoordinatorDeeplink {}

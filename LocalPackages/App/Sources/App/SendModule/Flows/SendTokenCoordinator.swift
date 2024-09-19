@@ -40,9 +40,9 @@ final class SendTokenCoordinator: RouterCoordinator<NavigationControllerRouter> 
     openSend()
   }
   
-  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+  public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
     guard let walletTransferSignCoordinator = walletTransferSignCoordinator else { return false }
-    walletTransferSignCoordinator.externalSignHandler?(model.sign)
+    walletTransferSignCoordinator.externalSignHandler?(sign)
     walletTransferSignCoordinator.externalSignHandler = nil
     return true
   }
@@ -83,15 +83,11 @@ private extension SendTokenCoordinator {
     module.output.didTapScan = { [weak self] in
       self?.openScan(completion: { deeplink in
         switch deeplink {
-        case .ton(let tonDeeplink):
-          switch tonDeeplink {
-          case let .transfer(recipient, amount, comment, _):
-            module.input.setRecipient(string: recipient)
-            module.input.setAmount(amount: amount)
-            module.input.setComment(comment: comment)
+        case .transfer(let data):
+          module.input.setRecipient(string: data.recipient)
+          module.input.setAmount(amount: data.amount)
+          module.input.setComment(comment: data.comment)
           default: break
-          }
-        default: break
         }
       })
     }
