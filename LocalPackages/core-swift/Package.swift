@@ -15,7 +15,7 @@ let package = Package(
     .package(path: "../TKCryptoSwift"),
     .package(path: "../Ledger"),
     .package(url: "https://github.com/tonkeeper/ton-swift", from: "1.0.13"),
-    .package(url: "https://github.com/tonkeeper/ton-api-swift", .upToNextMinor(from: "0.2.0")),
+    .package(url: "https://github.com/tonkeeper/ton-api-swift", .upToNextMinor(from: "0.3.0")),
     .package(url: "https://github.com/apple/swift-openapi-runtime", .upToNextMinor(from: "0.3.0")),
   ],
   targets: [

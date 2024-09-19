@@ -5,9 +5,14 @@ import TonTransport
 import BleTransport
 import KeeperCore
 
+enum LedgerConfirmError: Error {
+  case versionTooLow(version: String, requiredVersion: String)
+}
+
 protocol LedgerConfirmModuleOutput: AnyObject {
   var didCancel: (() -> Void)? { get set }
   var didSign: ((String) -> Void)? { get set }
+  var didError: ((_ error: LedgerConfirmError) -> Void)? { get set }
 }
 
 protocol LedgerConfirmViewModel: AnyObject {
@@ -36,6 +41,7 @@ final class LedgerConfirmViewModelImplementation: LedgerConfirmViewModel, Ledger
   
   var didCancel: (() -> Void)?
   var didSign: ((String) -> Void)?
+  var didError: ((_ error: LedgerConfirmError) -> Void)?
   
   // MARK: - LedgerConnectViewModel
   
@@ -113,35 +119,48 @@ private extension LedgerConfirmViewModelImplementation {
       let peripheral = PeripheralIdentifier(uuid: uuid, name: ledgerDevice.deviceModel)
       
       print("Connecting to \(peripheral.name)...")
-      transport.connect(toPeripheralID: peripheral, disconnectedCallback: {
-        print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
-        if self.isClosed { return }
-        
-        self.pollTonAppTask?.cancel()
-        self.connect()
-        
-        self.disconnectTask = Task {
-          do {
-            try await Task.sleep(nanoseconds: 3_000_000_000)
-            try Task.checkCancellation()
-            await MainActor.run {
-              self.setDisconnected()
-            }
-          } catch {}
-        }
-      }, success: { result in
-        print("Connected to \(result.name), udid: \(result.uuid)")
-        self.disconnectTask?.cancel()
-        self.setConnected()
-        self.waitForAppOpen()
-      }, failure: { error in
-        print("Error connecting to device: \(error.localizedDescription)")
-        if self.isClosed { return }
-        self.connect()
-        self.setDisconnected()
-      })
+      transport.disconnect() { _ in
+        self.transport.connect(toPeripheralID: peripheral, disconnectedCallback: {
+          print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
+          if self.isClosed { return }
+          
+          self.pollTonAppTask?.cancel()
+          self.connect()
+          
+          self.disconnectTask = Task {
+            do {
+              try await Task.sleep(nanoseconds: 3_000_000_000)
+              try Task.checkCancellation()
+              await MainActor.run {
+                self.setDisconnected()
+              }
+            } catch {}
+          }
+        }, success: { result in
+          print("Connected to \(result.name), udid: \(result.uuid)")
+          self.disconnectTask?.cancel()
+          self.setConnected()
+          self.waitForAppOpen()
+        }, failure: { error in
+          if self.isClosed { return }
+          self.connect()
+          self.setDisconnected()
+        })
+      }
     } catch {
       didCancel?()
+    }
+  }
+  
+  func checkVersion(version: String) -> Result<Void, LedgerConfirmError> {
+    switch transferMessageBuilder.transferData {
+    case .nft(_), .changeDNSRecord(_):
+      guard TonTransport.isVersion(version, greaterThanOrEqualTo: "2.1.0") else {
+        return .failure(LedgerConfirmError.versionTooLow(version: version, requiredVersion: "2.1.0"))
+      }
+      return .success(())
+    default:
+      return .success(())
     }
   }
   
@@ -150,7 +169,7 @@ private extension LedgerConfirmViewModelImplementation {
     
     @Sendable func startPollTask() {
       let task = Task {
-        let isAppOpened = try await tonTransport.isAppOpen()
+        let (isAppOpened, version) = try await tonTransport.isAppOpen()
         try Task.checkCancellation()
         guard isAppOpened else {
           try await Task.sleep(nanoseconds: 1_000_000_000)
@@ -160,9 +179,17 @@ private extension LedgerConfirmViewModelImplementation {
           }
           return
         }
-        await MainActor.run {
-          self.setTonAppOpened()
-          self.signTransaction(tonTransport: tonTransport)
+        
+        switch checkVersion(version: version) {
+        case .success:
+          await MainActor.run {
+            self.setTonAppOpened()
+            self.signTransaction(tonTransport: tonTransport)
+          }
+        case .failure(let error):
+          await MainActor.run {
+            self.didError?(error)
+          }
         }
       }
       self.pollTonAppTask = task
@@ -187,13 +214,15 @@ private extension LedgerConfirmViewModelImplementation {
           self.didSign?(boc)
         }
       } catch {
-        if let transportError = error as? TransportStatusError, case .deniedByUser = transportError {
-          // nothing
-        } else {
-          self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
+        await MainActor.run {
+          if let transportError = error as? TransportStatusError, case .deniedByUser = transportError {
+            // nothing
+          } else {
+            self.showToast?(ToastPresenter.Configuration(title: TKLocales.Errors.unknown))
+          }
+          
+          self.didCancel?()
         }
-        
-        self.didCancel?()
       }
     }
   }

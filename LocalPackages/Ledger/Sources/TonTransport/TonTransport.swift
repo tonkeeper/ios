@@ -17,6 +17,10 @@ public class TonTransport {
   static let INS_PROOF: UInt8 = 0x08
   static let INS_SIGN_DATA: UInt8 = 0x09
   
+  public static func isVersion(_ version: String, greaterThanOrEqualTo targetVersion: String) -> Bool {
+    return version.compare(targetVersion, options: .numeric) != .orderedAscending
+  }
+  
   public init(transport: BleTransportProtocol) {
     self.transport = transport
   }
@@ -78,19 +82,19 @@ public class TonTransport {
     }
   }
   
-  public func isAppOpen() async throws -> Bool {
-    let app = try await getCurrentApp()
+  public func isAppOpen() async throws -> (Bool, String) {
+    let (app, version) = try await getCurrentApp()
     
-    switch app.0 {
+    switch app {
     case "TON":
-      return true
+      return (true, version)
     case "BOLOS":
       do {
         let _ = try await doRequest(ins: TonTransport.INS_OPEN_APP, p1: 0x00, p2: 0x00, data: Data("TON".utf8))
       } catch {}
-      return false
+      return (false, "")
     default:
-      return false
+      return (false, "")
     }
   }
   
@@ -198,8 +202,44 @@ public class TonTransport {
       payload = try builder.endCell()
       hints += putUint16(bytes.count) + bytes
       
-    case .nftTransfer(_):
-      throw NSError(domain: "TonTransport", code: 1, userInfo: [NSLocalizedDescriptionKey: "Nft transfer is not implemented yet"])
+    case .nftTransfer(let nftPayload):
+      hints = putUint8(1) + putUint32(0x02)
+      let builder = try Builder().store(uint: 0x5fcc3d14, bits: 32)
+      var bytes = [UInt8]()
+      
+      if let queryId = nftPayload.queryId {
+        bytes += putUint8(1) + (try putUint64(queryId))
+        try builder.store(uint: queryId, bits: 64)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(uint: 0, bits: 64)
+      }
+      
+      bytes += putAddress(nftPayload.newOwnerAddress) + putAddress(nftPayload.excessesAddress)
+      try nftPayload.newOwnerAddress.storeTo(builder: builder)
+      try nftPayload.excessesAddress.storeTo(builder: builder)
+      
+      if let cellRef = nftPayload.customPayload {
+        bytes += putUint8(1) + putCellRef(cellRef)
+        try builder.storeMaybe(ref: cellRef)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(bit: false)
+      }
+      
+      bytes += try putVarUInt(nftPayload.forwardAmount.rawValue)
+      try nftPayload.forwardAmount.storeTo(builder: builder)
+      
+      if let cellRef = nftPayload.forwardPayload {
+        bytes += putUint8(1) + putCellRef(cellRef)
+        try builder.storeMaybe(ref: cellRef)
+      } else {
+        bytes += putUint8(0)
+        try builder.store(bit: false)
+      }
+      
+      payload = try builder.endCell()
+      hints += putUint16(bytes.count) + bytes
       
     case .none: break
     }

@@ -11,6 +11,7 @@
 "actions.more" = "Ещё";
 "actions.loading" = "Загрузка";
 "actions.failed" = "Неуспешно";
+"actions.ok" = "Хорошо";
 
 "errors.unknown" = "Ошибка";
 
@@ -324,6 +325,9 @@
 "ledger_confirm.items.bluetooth_connect.description" = "Подключите Ledger к своему устройству с помощью Bluetooth";
 "ledger_confirm.items.ton_app.description" = "Разблокируйте его и откройте приложение TON";
 "ledger_confirm.items.confirm" = "Подтвердите транзакцию в Ledger";
+
+"ledger_version_update.title" = "Обновите TON приложение в Ledger до версии %@";
+"ledger_version_update.caption" = "Этот тип транзакции не поддерживается в вашей текущей версии приложения.";
 
 "bluetooth.powered_off_alert.title" = "Bluetooth выключен";
 "bluetooth.powered_off_alert.message" = "Пожалуйста, включите Bluetooth, чтобы использовать эту функцию";

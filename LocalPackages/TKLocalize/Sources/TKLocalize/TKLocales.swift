@@ -85,6 +85,8 @@ public enum TKLocales {
     public static let loading = TKLocales.tr("Localizable", "actions.loading", fallback: "Loading")
     /// More
     public static let more = TKLocales.tr("Localizable", "actions.more", fallback: "More")
+    /// OK
+    public static let ok = TKLocales.tr("Localizable", "actions.ok", fallback: "OK")
     /// Paste
     public static let paste = TKLocales.tr("Localizable", "actions.paste", fallback: "Paste")
     /// Save
@@ -516,6 +518,14 @@ public enum TKLocales {
         /// Install TON App
         public static let link = TKLocales.tr("Localizable", "ledger_connect.steps.ton_app.link", fallback: "Install TON App")
       }
+    }
+  }
+  public enum LedgerVersionUpdate {
+    /// This type of transaction is not supported in your current application version.
+    public static let caption = TKLocales.tr("Localizable", "ledger_version_update.caption", fallback: "This type of transaction is not supported in your current application version.")
+    /// Update TON app in Ledger to the %@ version
+    public static func title(_ p1: Any) -> String {
+      return TKLocales.tr("Localizable", "ledger_version_update.title", String(describing: p1), fallback: "Update TON app in Ledger to the %@ version")
     }
   }
   public enum List {
