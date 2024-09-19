@@ -32,7 +32,6 @@ public final class Assembly {
     coreAssembly: coreAssembly
   )
   private lazy var storesAssembly = StoresAssembly(
-    servicesAssembly: servicesAssembly,
     apiAssembly: apiAssembly,
     coreAssembly: coreAssembly,
     repositoriesAssembly: repositoriesAssembly

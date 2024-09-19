@@ -16,21 +16,35 @@ extension MainCoordinator {
     let deeplinkHandleTask = Task {
       do {
         let wallet = try await walletsStore.getActiveWallet()
-        let recipient = try await self.mainController.resolveSend(
-          recipient: recipient,
-          jettonAddress: jettonAddress
-        )
+        
+        let token: Token
+        if let jettonAddress {
+          let jettonItem = try await self.jettonBalanceResolver.resolveJetton(jettonAddress: jettonAddress, wallet: wallet)
+          token = .jetton(jettonItem)
+        } else {
+          token = .ton
+        }
+
+        let recipient = try await self.recipientResolver.resolverRecipient(string: recipient, isTestnet: wallet.isTestnet)
+        
         guard !Task.isCancelled else { return }
         await MainActor.run {
           self.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
           self.openSend(
             wallet: wallet,
-            token: .ton,
+            token: token,
             recipient: recipient,
             amount: amount,
             comment: comment
           )
+        }
+      } catch JettonBalanceResolverError.insufficientFunds {
+        print("SHow POPUP")
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          ToastPresenter.hideAll()
+          ToastPresenter.showToast(configuration: .failed)
         }
       } catch {
         await MainActor.run {
@@ -38,7 +52,6 @@ extension MainCoordinator {
           ToastPresenter.hideAll()
           ToastPresenter.showToast(configuration: .failed)
         }
-        return
       }
     }
     

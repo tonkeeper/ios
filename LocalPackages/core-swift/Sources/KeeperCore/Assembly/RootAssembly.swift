@@ -50,7 +50,7 @@ public final class RootAssembly {
     } else {
       let rootController = RootController(
         remoteConfigurationStore: configurationAssembly.remoteConfigurationStore,
-        knownAccountsStore: storesAssembly.knownAccountsStore,
+        knownAccountsStore: loadersAssembly.knownAccountsStore,
         deeplinkParser: DeeplinkParser(),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),

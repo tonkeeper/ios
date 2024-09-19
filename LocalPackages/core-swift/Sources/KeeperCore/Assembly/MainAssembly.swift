@@ -48,16 +48,10 @@ public final class MainAssembly {
   
   public func mainController() -> MainController {
     MainController(
-      appInfoProvider: appInfoProvider,
-      walletsStore: storesAssembly.walletsStore,
-      accountNFTService: servicesAssembly.accountNftService(),
       backgroundUpdateUpdater: storesAssembly.backgroundUpdateUpdater,
       tonConnectEventsStore: tonConnectAssembly.tonConnectEventsStore,
-      knownAccountsStore: storesAssembly.knownAccountsStore,
-      dnsService: servicesAssembly.dnsService(),
       tonConnectService: tonConnectAssembly.tonConnectService(),
       deeplinkParser: DeeplinkParser(),
-      apiProvider: apiAssembly.apiProvider,
       walletStateLoader: loadersAssembly.walletStateLoader,
       internalNotificationsLoader: loadersAssembly.internalNotificationsLoader
     )
@@ -105,10 +99,11 @@ public final class MainAssembly {
     SendV3Controller(
       wallet: wallet,
       balanceStore: storesAssembly.convertedBalanceStore,
-      knownAccountsStore: storesAssembly.knownAccountsStore,
+      knownAccountsStore: loadersAssembly.knownAccountsStore,
       dnsService: servicesAssembly.dnsService(),
       tonRatesStore: storesAssembly.tonRatesStore,
       currencyStore: storesAssembly.currencyStore,
+      recipientResolver: loadersAssembly.recipientResolver(),
       amountFormatter: formattersAssembly.amountFormatter
     )
   }

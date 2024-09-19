@@ -103,4 +103,32 @@ public final class LoadersAssembly {
     _walletStateLoader = loader
     return loader
   }
+  
+  // TODO: Rename and move to provider assembly
+  
+  private weak var _knownAccountsStore: KnownAccountsStore?
+  var knownAccountsStore: KnownAccountsStore {
+    if let knownAccountsStore = _knownAccountsStore {
+      return knownAccountsStore
+    } else {
+      let knownAccountsStore = KnownAccountsStore(
+        knownAccountsService: servicesAssembly.knownAccountsService()
+      )
+      _knownAccountsStore = knownAccountsStore
+      return knownAccountsStore
+    }
+  }
+  
+  public func recipientResolver() -> RecipientResolver {
+    RecipientResolverImplementation(
+      knownAccountsStore: knownAccountsStore,
+      dnsService: servicesAssembly.dnsService()
+    )
+  }
+  
+  public func jettonBalanceResolver() -> JettonBalanceResolver {
+    JettonBalanceResolverImplementation(
+      balanceStore: storesAssembly.balanceStore
+    )
+  }
 }

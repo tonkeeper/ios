@@ -10,9 +10,8 @@ import BigInt
 
 final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
-  
   let keeperCoreMainAssembly: KeeperCore.MainAssembly
-  private let coreAssembly: TKCore.CoreAssembly
+  let coreAssembly: TKCore.CoreAssembly
   let mainController: KeeperCore.MainController
   
   private let mainCoordinatorStateManager: MainCoordinatorStateManager
@@ -35,6 +34,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
   
   private let appStateTracker: AppStateTracker
   private let reachabilityTracker: ReachabilityTracker
+  let recipientResolver: RecipientResolver
+  let jettonBalanceResolver: JettonBalanceResolver
 
   var deeplinkHandleTask: Task<Void, Never>?
   
@@ -44,7 +45,9 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
        coreAssembly: TKCore.CoreAssembly,
        keeperCoreMainAssembly: KeeperCore.MainAssembly,
        appStateTracker: AppStateTracker,
-       reachabilityTracker: ReachabilityTracker) {
+       reachabilityTracker: ReachabilityTracker,
+       recipientResolver: RecipientResolver,
+       jettonBalanceResolver: JettonBalanceResolver) {
     self.coreAssembly = coreAssembly
     self.keeperCoreMainAssembly = keeperCoreMainAssembly
     self.mainController = keeperCoreMainAssembly.mainController()
@@ -74,6 +77,8 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     )
     self.appStateTracker = appStateTracker
     self.reachabilityTracker = reachabilityTracker
+    self.recipientResolver = recipientResolver
+    self.jettonBalanceResolver = jettonBalanceResolver
     
     self.mainCoordinatorStateManager = MainCoordinatorStateManager(walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore)
     
@@ -299,26 +304,6 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
         self?.removeChild(sendTokenCoordinator)
       })
     })
-  }
-  
-  func openSend(recipient: String, amount: BigUInt?, comment: String?, jettonAddress: Address?) {
-    ToastPresenter.showToast(configuration: .loading)
-    let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-    Task {
-      do {
-        let wallet = try await walletsStore.getActiveWallet()
-        let recipient = try await self.mainController.resolveSend(recipient: recipient, jettonAddress: jettonAddress)
-        await MainActor.run {
-          ToastPresenter.hideAll()
-          self.openSend(wallet: wallet, token: .ton, recipient: recipient, amount: amount, comment: comment)
-        }
-      } catch {
-        await MainActor.run {
-          ToastPresenter.hideAll()
-          ToastPresenter.showToast(configuration: .failed)
-        }
-      }
-    }
   }
   
   func openSwap(wallet: Wallet,

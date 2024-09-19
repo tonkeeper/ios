@@ -2,17 +2,13 @@ import Foundation
 import TonSwift
 
 public final class StoresAssembly {
-  
-  private let servicesAssembly: ServicesAssembly
   private let apiAssembly: APIAssembly
   private let coreAssembly: CoreAssembly
   private let repositoriesAssembly: RepositoriesAssembly
   
-  init(servicesAssembly: ServicesAssembly,
-       apiAssembly: APIAssembly,
+  init(apiAssembly: APIAssembly,
        coreAssembly: CoreAssembly,
        repositoriesAssembly: RepositoriesAssembly) {
-    self.servicesAssembly = servicesAssembly
     self.apiAssembly = apiAssembly
     self.coreAssembly = coreAssembly
     self.repositoriesAssembly = repositoriesAssembly
@@ -215,19 +211,6 @@ public final class StoresAssembly {
     )
     _walletNFTsManagementStore[wallet] = Weak(value: store)
     return store
-  }
-  
-  private weak var _knownAccountsStore: KnownAccountsStore?
-  var knownAccountsStore: KnownAccountsStore {
-    if let knownAccountsStore = _knownAccountsStore {
-      return knownAccountsStore
-    } else {
-      let knownAccountsStore = KnownAccountsStore(
-        knownAccountsService: servicesAssembly.knownAccountsService()
-      )
-      _knownAccountsStore = knownAccountsStore
-      return knownAccountsStore
-    }
   }
   
   private weak var _fiatMethodsStore: FiatMethodsStore?

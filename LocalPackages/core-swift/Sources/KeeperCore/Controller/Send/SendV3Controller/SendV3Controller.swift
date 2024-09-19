@@ -9,6 +9,7 @@ public final class SendV3Controller {
   private let dnsService: DNSService
   private let tonRatesStore: TonRatesStore
   private let currencyStore: CurrencyStore
+  private let recipientResolver: RecipientResolver
   private let amountFormatter: AmountFormatter
   
   init(wallet: Wallet,
@@ -17,6 +18,7 @@ public final class SendV3Controller {
        dnsService: DNSService,
        tonRatesStore: TonRatesStore,
        currencyStore: CurrencyStore,
+       recipientResolver: RecipientResolver,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
     self.balanceStore = balanceStore
@@ -24,31 +26,12 @@ public final class SendV3Controller {
     self.dnsService = dnsService
     self.tonRatesStore = tonRatesStore
     self.currencyStore = currencyStore
+    self.recipientResolver = recipientResolver
     self.amountFormatter = amountFormatter
   }
   
-  public func resolveRecipient(input: String) async -> Recipient? {
-    let knownAccounts: [KnownAccount]
-    do {
-      knownAccounts = try await knownAccountsStore.getKnownAccounts()
-    } catch {
-      knownAccounts = []
-    }
-    
-    if let friendlyAddress = try? FriendlyAddress(string: input) {
-      return (Recipient(recipientAddress: .friendly(friendlyAddress),
-                        isMemoRequired: knownAccounts.first(where: { $0.address == friendlyAddress.address })?.requireMemo ?? false))
-    } else if let rawAddress = try? Address.parse(input) {
-      return (Recipient(recipientAddress: .raw(rawAddress),
-                        isMemoRequired: knownAccounts.first(where: { $0.address == rawAddress })?.requireMemo ?? false))
-    } else if let domain = try? await dnsService.resolveDomainName(
-      input,
-      isTestnet: wallet.isTestnet) {
-      return Recipient(recipientAddress: .domain(domain),
-                       isMemoRequired: knownAccounts.first(where: { $0.address == domain.friendlyAddress.address })?.requireMemo ?? false)
-    } else {
-      return nil
-    }
+  public func resolveRecipient(input: String) async throws -> Recipient {
+    try await recipientResolver.resolverRecipient(string: input, isTestnet: wallet.isTestnet)
   }
   
   public func convertInputStringToAmount(input: String, targetFractionalDigits: Int) -> (amount: BigUInt, fractionalDigits: Int) {
