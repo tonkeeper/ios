@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
   name: "WalletCore",
   platforms: [
-    .macOS(.v12), .iOS(.v14)
+    .iOS(.v14)
   ],
   products: [
     .library(name: "WalletCore", type: .dynamic, targets: ["KeeperCore"])
