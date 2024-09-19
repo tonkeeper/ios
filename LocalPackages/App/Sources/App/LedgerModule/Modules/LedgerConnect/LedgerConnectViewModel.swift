@@ -300,7 +300,7 @@ private extension LedgerConnectViewModelImplementation {
     }
     
     var configuration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    configuration.content.title = .plainString(TKLocales.Actions.continue_action)
+    configuration.content.title = .plainString(TKLocales.Actions.continueAction)
     configuration.isEnabled = isEnabled
     configuration.showsLoader = isLoading
     configuration.action = { [weak self] in

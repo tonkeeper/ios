@@ -29,13 +29,13 @@ final class RenewDNSCoordinator: RouterCoordinator<WindowRouter> {
     super.init(router: router)
   }
   
-  public func handleTonkeeperPublishDeeplink(model: TonkeeperPublishModel) -> Bool {
+  public func handleTonkeeperPublishDeeplink(sign: Data) -> Bool {
     guard let signTransactionConfirmationCoordinator = signTransactionConfirmationCoordinator else { return false }
-    return signTransactionConfirmationCoordinator.handleTonkeeperPublishDeeplink(model: model)
+    return signTransactionConfirmationCoordinator.handleTonkeeperPublishDeeplink(sign: sign)
   }
   
   override func start() {
-    let wallet = self.keeperCoreMainAssembly.walletAssembly.walletStore.activeWallet
+    guard let wallet = try? self.keeperCoreMainAssembly.storesAssembly.walletsStore.getActiveWallet() else { return }
     let coordinator = SignTransactionConfirmationCoordinator(
       router: router,
       wallet: wallet,

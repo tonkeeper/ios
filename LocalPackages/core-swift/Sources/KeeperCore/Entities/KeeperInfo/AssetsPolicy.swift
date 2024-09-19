@@ -46,7 +46,7 @@ enum AssetResolvedPolicy {
 }
 
 /// Specifies whitelisted/blacklisted tokens, issuers, collections.
-struct AssetsPolicy: Codable {
+struct AssetsPolicy: Codable, Equatable {
   /// Policies for each token address (minter / collection / issuer)
   var policies: [TonSwift.Address: AssetUserPolicy]
   

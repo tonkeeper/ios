@@ -56,6 +56,19 @@ public struct MnemonicsV3Vault {
     }
   }
   
+  public func addMnemoncs(_ mnemonics: Mnemonics, password: String) async throws {
+    do {
+      let encryptedMnemonics = try loadEncryptedMnemonics()
+      var decryptedMnemonics = try await decryptMnemonics(encryptedMnemonics, password: password)
+      decryptedMnemonics.merge(mnemonics, uniquingKeysWith: { $1 })
+      let encryptedUpdatedMnemonics = try await encryptMnemonics(decryptedMnemonics, password: password)
+      try saveEncryptedMnemonics(encryptedUpdatedMnemonics)
+    } catch {
+      let encryptedMnemonics = try await encryptMnemonics(mnemonics, password: password)
+      try saveEncryptedMnemonics(encryptedMnemonics)
+    }
+  }
+  
   public func getMnemonic(identifier: MnemonicIdentifier,
                           password: String) async throws -> Mnemonic {
     let encryptedMnemonics = try loadEncryptedMnemonics()
@@ -78,6 +91,16 @@ public struct MnemonicsV3Vault {
   public func deleteAll() async throws {
     try keychainVault.deleteItem(getMnemonicsVaultQuery())
     try deletePassword()
+  }
+  
+  public func getAllMnemonics(password: String) async -> Mnemonics {
+    do {
+      let encryptedMnemonics = try loadEncryptedMnemonics()
+      let mnemonics = try await decryptMnemonics(encryptedMnemonics, password: password)
+      return mnemonics
+    } catch {
+      return [:]
+    }
   }
   
   public func changePassword(oldPassword: String,
@@ -198,7 +221,7 @@ private extension MnemonicsV3Vault {
     do {
       try chunks.enumerated().forEach { index, chunk in
         let query = getChunkQuery(index: index)
-        try keychainVault.save(data: Data(chunk), item: query)
+        try keychainVault.save(Data(chunk), item: query)
       }
       let countQuery = getChunksCountQuery()
       try keychainVault.saveValue(chunks.count, to: countQuery)
@@ -219,7 +242,7 @@ private extension MnemonicsV3Vault {
       let encryptedMnemonicsData = try (0..<count)
         .map {
           let query = getChunkQuery(index: $0)
-          let chunk = try keychainVault.read(query)
+          let chunk: Data = try keychainVault.read(query)
           return chunk
         }
         .reduce(into: Data()) { $0 = $0 + $1 }

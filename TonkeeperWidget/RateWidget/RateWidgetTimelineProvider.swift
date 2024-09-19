@@ -59,7 +59,8 @@ struct RateWidgetTimelineProvider: IntentTimelineProvider {
       let keeperCoreAssembly = KeeperCore.Assembly(
         dependencies: Assembly.Dependencies(
           cacheURL: coreAssembly.cacheURL,
-          sharedCacheURL: coreAssembly.sharedCacheURL
+          sharedCacheURL: coreAssembly.sharedCacheURL,
+          appInfoProvider: coreAssembly.appInfoProvider
         )
       )
       let chartFormatter = coreAssembly.formattersAssembly.chartFormatter(

@@ -110,7 +110,7 @@ public final class TKDetailsDescriptionView: UIView, ConfigurableView {
       
       originX += button.frame.width + .buttonSpacing
     }
-    buttonsContainerHeight = originY + .buttonHeight
+    buttonsContainerHeight = originY + (buttons.isEmpty ? 0 : .buttonHeight)
   }
 }
 

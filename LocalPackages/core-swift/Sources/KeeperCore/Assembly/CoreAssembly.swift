@@ -4,10 +4,14 @@ import CoreComponents
 public struct CoreAssembly {
   let cacheURL: URL
   let sharedCacheURL: URL
+  let appInfoProvider: AppInfoProvider
   
-  init(cacheURL: URL, sharedCacheURL: URL) {
+  init(cacheURL: URL, 
+       sharedCacheURL: URL,
+       appInfoProvider: AppInfoProvider) {
     self.cacheURL = cacheURL
     self.sharedCacheURL = sharedCacheURL
+    self.appInfoProvider = appInfoProvider
   }
   
   func mnemonicVault() -> MnemonicVault {
@@ -18,6 +22,12 @@ public struct CoreAssembly {
     MnemonicsV3Vault(
       keychainVault: keychainVault,
       seedProvider: seedProvider
+    )
+  }
+  
+  func mnemonicsV4Vault() -> MnemonicsV4Vault {
+    MnemonicsV4Vault(
+      keychainVault: keychainVault
     )
   }
   
@@ -37,7 +47,7 @@ public struct CoreAssembly {
     return FileSystemVault(fileManager: fileManager, directory: sharedCacheURL)
   }
   
-  var keychainVault: KeychainVault {
+  public var keychainVault: KeychainVault {
     KeychainVaultImplementation(keychain: keychain)
   }
   

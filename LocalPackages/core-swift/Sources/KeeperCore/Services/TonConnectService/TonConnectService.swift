@@ -11,7 +11,7 @@ enum TonConnectServiceError: Swift.Error {
 }
 
 public protocol TonConnectService {
-  func loadTonConnectConfiguration(with deeplink: TonConnectDeeplink) async throws -> (TonConnectParameters, TonConnectManifest)
+  func loadTonConnectConfiguration(with parameters: TonConnectParameters) async throws -> (TonConnectParameters, TonConnectManifest)
   func buildConnectEventSuccessResponse(
     wallet: Wallet,
     passcode: String,
@@ -58,21 +58,27 @@ final class TonConnectServiceImplementation: TonConnectService {
   private let mnemonicsRepository: MnemonicsRepository
   private let tonConnectAppsVault: TonConnectAppsVault
   private let tonConnectRepository: TonConnectRepository
+  private let walletBalanceRepository: WalletBalanceRepository
+  private let sendService: SendService
   
   init(urlSession: URLSession,
        apiClient: TonConnectAPI.Client,
        mnemonicsRepository: MnemonicsRepository,
        tonConnectAppsVault: TonConnectAppsVault,
-       tonConnectRepository: TonConnectRepository) {
+       tonConnectRepository: TonConnectRepository,
+       walletBalanceRepository: WalletBalanceRepository,
+       sendService: SendService
+  ) {
     self.urlSession = urlSession
     self.apiClient = apiClient
     self.mnemonicsRepository = mnemonicsRepository
     self.tonConnectAppsVault = tonConnectAppsVault
     self.tonConnectRepository = tonConnectRepository
+    self.walletBalanceRepository = walletBalanceRepository
+    self.sendService = sendService
   }
   
-  func loadTonConnectConfiguration(with deeplink: TonConnectDeeplink) async throws -> (TonConnectParameters, TonConnectManifest) {
-    let parameters = try parseTonConnectDeeplink(deeplink)
+  func loadTonConnectConfiguration(with parameters: TonConnectParameters) async throws -> (TonConnectParameters, TonConnectManifest) {
     do {
       let manifest = try await loadManifest(url: parameters.requestPayload.manifestUrl)
       return (parameters, manifest)
@@ -256,12 +262,54 @@ final class TonConnectServiceImplementation: TonConnectService {
 }
 
 private extension TonConnectServiceImplementation {
+  func rebuildJettonPayloads(wallet: Wallet, messages: [SendTransactionParam.Message]) async throws -> [SendTransactionParam.Message] {
+    var rebuildedMessages: [SendTransactionParam.Message] = []
+      for message in messages {
+        let jettonsBalance = try walletBalanceRepository.getWalletBalance(wallet: wallet).balance.jettonsBalance
+        
+        let foundJetton = jettonsBalance.first(where: { $0.item.walletAddress == message.address })
+
+        guard let jetton = foundJetton else {
+          rebuildedMessages.append(message)
+          continue
+        }
+        
+        if (jetton.item.jettonInfo.hasCustomPayload == false) {
+          rebuildedMessages.append(message)
+          continue
+        }
+        
+        let jettonPayload = try await sendService.getJettonCustomPayload(wallet: wallet, jetton: jetton.item.jettonInfo.address)
+        
+        guard let jettonSendPayload = message.payload else {
+          rebuildedMessages.append(message)
+          continue
+        }
+        var jettonTransferData = try JettonTransferData.loadFrom(slice: Cell.fromBase64(src: jettonSendPayload).beginParse())
+        
+        jettonTransferData.customPayload = jettonPayload.customPayload
+        
+        rebuildedMessages.append(SendTransactionParam.Message(
+          address: message.address,
+          amount: message.amount,
+          stateInit: try jettonPayload.stateInit != nil ? jettonPayload.stateInit?.toBoc().base64EncodedString() : message.stateInit,
+          payload: try Builder().store(jettonTransferData).endCell().toBoc().base64EncodedString()
+        ))
+      }
+    return rebuildedMessages
+  }
+  
   func createRequestTransactionBoc(wallet: Wallet,
                                    seqno: UInt64,
                                    timeout: UInt64,
                                    parameters: SendTransactionParam,
                                    signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
-    let payloads = parameters.messages.map { message in
+    
+    let walletBalance = try walletBalanceRepository.getWalletBalance(wallet: wallet)
+    
+    let rebuildedMessages = try await rebuildJettonPayloads(wallet: wallet, messages: parameters.messages)
+        
+    let payloads = rebuildedMessages.map { message in
       TransferData.TonConnect.Payload(
         value: BigInt(integerLiteral: message.amount),
         recipientAddress: message.address,
@@ -281,33 +329,4 @@ private extension TonConnectServiceImplementation {
       )
     ).createBoc(signClosure: signClosure)
   }
-  
-  func parseTonConnectDeeplink(_ deeplink: TonConnectDeeplink) throws -> TonConnectParameters {
-    guard
-      let url = URL(string: deeplink.string),
-      let components = URLComponents(url: url, resolvingAgainstBaseURL: true),
-      components.scheme == .tcScheme,
-      let queryItems = components.queryItems,
-      let versionValue = queryItems.first(where: { $0.name == .versionKey })?.value,
-      let version = TonConnectParameters.Version(rawValue: versionValue),
-      let clientId = queryItems.first(where: { $0.name == .clientIdKey })?.value,
-      let requestPayloadValue = queryItems.first(where: { $0.name == .requestPayloadKey })?.value,
-      let requestPayloadData = requestPayloadValue.data(using: .utf8),
-      let requestPayload = try? JSONDecoder().decode(TonConnectRequestPayload.self, from: requestPayloadData)
-    else {
-      throw TonConnectServiceError.incorrectUrl
-    }
-    
-    return TonConnectParameters(
-      version: version,
-      clientId: clientId,
-      requestPayload: requestPayload)
-  }
-}
-
-private extension String {
-  static let tcScheme = "tc"
-  static let versionKey = "v"
-  static let clientIdKey = "id"
-  static let requestPayloadKey = "r"
 }

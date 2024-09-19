@@ -1,72 +1,32 @@
 import Foundation
 import TonSwift
+import BigInt
 
-public enum Deeplink {
-  case tonkeeper(TonkeeperDeeplink)
-  case ton(TonDeeplink)
-  case tonConnect(TonConnectDeeplink)
-  
-  public var string: String {
-    switch self {
-    case .ton(let tonDeeplink):
-      return tonDeeplink.string
-    case .tonConnect(let tonConnectDeeplink):
-      return tonConnectDeeplink.string
-    default: return ""
-    }
-  }
-}
-
-public enum TonDeeplink {
-  case transfer(recipient: String, jettonAddress: Address?)
-  
-  public var string: String {
-    let ton = "ton"
-    switch self {
-    case let .transfer(recipient, jettonAddress):
-      var components = URLComponents(string: ton)
-      components?.scheme = ton
-      components?.host = "transfer"
-      components?.path = "/\(recipient)"
-      if let jettonAddress {
-        components?.queryItems = [URLQueryItem(name: "jetton", value: jettonAddress.toRaw())]
-      }
-      return components?.string ?? ""
-    }
-  }
-}
-
-public struct TonConnectDeeplink {
-  let string: String
-}
-
-public struct TonkeeperPublishModel {
-  public let sign: Data
-}
-
-public enum TonkeeperDeeplink {
-  public enum SignerDeeplink {
-    case link(publicKey: TonSwift.PublicKey, name: String)
-    
-    public var string: String { "" }
+public enum Deeplink: Equatable {
+  public struct TransferData: Equatable {
+    public let recipient: String
+    public let amount: BigUInt?
+    public let comment: String?
+    public let jettonAddress: Address?
   }
   
-  case signer(SignerDeeplink)
-  case publish(TonkeeperPublishModel)
+  public struct SwapData: Equatable {
+    public let fromToken: String?
+    public let toToken: String?
+  }
   
-  public var string: String { "" }
+  case transfer(TransferData)
+  case buyTon
+  case staking
+  case pool(Address)
+  case exchange(provider: String)
+  case swap(SwapData)
+  case action(eventId: String)
+  case publish(sign: Data)
+  case externalSign(ExternalSignDeeplink)
+  case tonconnect(TonConnectParameters)
 }
 
-public enum TonsignDeeplink {
-  case plain
-  
-  public var string: String {
-    let tonsign = "tonsign"
-    switch self {
-    case .plain:
-      var components = URLComponents()
-      components.scheme = tonsign
-      return components.string ?? ""
-    }
-  }
+public enum ExternalSignDeeplink: Equatable {
+  case link(publicKey: TonSwift.PublicKey, name: String)
 }

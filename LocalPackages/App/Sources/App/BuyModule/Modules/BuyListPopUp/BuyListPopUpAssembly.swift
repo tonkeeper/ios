@@ -5,13 +5,12 @@ import KeeperCore
 struct BuyListPopUpAssembly {
   private init() {}
   static func module(
-    buySellItemModel: BuySellItemModel,
+    buySellItemModel: BuySellItem,
     appSettings: AppSettings,
-//    historyEventDetailsController: HistoryEventDetailsController,
     urlOpener: URLOpener
   ) -> MVVMModule<BuyListPopUpViewController, BuyListPopUpModuleOutput, Void> {
     let viewModel = BuyListPopUpViewModelImplementation(
-      buySellItemModel: buySellItemModel,
+      buySellItem: buySellItemModel,
       appSettings: appSettings,
       urlOpener: urlOpener
     )

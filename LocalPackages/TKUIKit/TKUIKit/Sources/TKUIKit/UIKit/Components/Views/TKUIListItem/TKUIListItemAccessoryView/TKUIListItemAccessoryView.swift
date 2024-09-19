@@ -9,6 +9,7 @@ public final class TKUIListItemAccessoryView: UIView, TKConfigurableView {
     case switchControl(TKUIListItemSwitchAccessoryView.Configuration)
     case image(TKUIListItemImageAccessoryView.Configuration)
     case text(TKUIListItemTextAccessoryView.Configuration)
+    case radioButton(TKUIListItemRadioButtonAccessoryView.Configuration)
   }
   
   public func configure(configuration: Configuration) {
@@ -29,6 +30,11 @@ public final class TKUIListItemAccessoryView: UIView, TKConfigurableView {
       textAccessoryView.configure(configuration: configuration)
       addSubview(textAccessoryView)
       accessoryView = textAccessoryView
+    case .radioButton(let configuration):
+      let radioButton = TKUIListItemRadioButtonAccessoryView()
+      radioButton.configure(configuration: configuration)
+      addSubview(radioButton)
+      accessoryView = radioButton
     case .none:
       accessoryView = nil
     }

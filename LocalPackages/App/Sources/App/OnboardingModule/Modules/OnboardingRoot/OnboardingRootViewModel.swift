@@ -39,13 +39,13 @@ private extension OnboardingRootViewModelImplementation {
     )
     
     var createButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    createButtonConfiguration.content.title = .plainString(TKLocales.Onboarding.Buttons.create_new)
+    createButtonConfiguration.content.title = .plainString(TKLocales.Onboarding.Buttons.createNew)
     createButtonConfiguration.action = { [weak self] in
       self?.didTapCreateButton?()
     }
     
     var importButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .secondary, size: .large)
-    importButtonConfiguration.content.title = .plainString(TKLocales.Onboarding.Buttons.import_existing)
+    importButtonConfiguration.content.title = .plainString(TKLocales.Onboarding.Buttons.importExisting)
     importButtonConfiguration.action = { [weak self] in
       self?.didTapImportButton?()
     }

@@ -14,6 +14,7 @@ public final class TKPopupMenuController {
                           position: TKPopupMenuPosition,
                           width: CGFloat,
                           items: [TKPopupMenuItem],
+                          isSelectable: Bool = true,
                           selectedIndex: Int?) {
     self.sourceView = sourceView
     guard let sourceWindow = sourceView.window else { return }
@@ -36,6 +37,7 @@ public final class TKPopupMenuController {
       sourceView: sourceView,
       position: position,
       maximumWidth: .menuWidth,
+      isSelectable: isSelectable,
       duration: .animationDuration
     )
     

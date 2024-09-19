@@ -2,25 +2,27 @@ import Foundation
 
 public final class WalletsUpdateAssembly {
   
+  public let storesAssembly: StoresAssembly
   public let servicesAssembly: ServicesAssembly
   public let repositoriesAssembly: RepositoriesAssembly
-  private let formattersAssembly: FormattersAssembly
+  public let formattersAssembly: FormattersAssembly
+  public let rnAssembly: RNAssembly
   
-  init(servicesAssembly: ServicesAssembly,
+  init(storesAssembly: StoresAssembly,
+       servicesAssembly: ServicesAssembly,
        repositoriesAssembly: RepositoriesAssembly,
-       formattersAssembly: FormattersAssembly) {
+       formattersAssembly: FormattersAssembly,
+       rnAssembly: RNAssembly) {
+    self.storesAssembly = storesAssembly
     self.servicesAssembly = servicesAssembly
     self.repositoriesAssembly = repositoriesAssembly
     self.formattersAssembly = formattersAssembly
+    self.rnAssembly = rnAssembly
   }
-  
-  public lazy var walletsStoreUpdate: WalletsStoreUpdate = {
-    WalletsStoreUpdate(walletsService: servicesAssembly.walletsService())
-  }()
   
   public func walletAddController() -> WalletAddController {
     WalletAddController(
-      walletsStoreUpdate: walletsStoreUpdate,
+      walletsStore: storesAssembly.walletsStore,
       mnemonicsRepositoty: repositoriesAssembly.mnemonicsRepository()
     )
   }
@@ -30,18 +32,10 @@ public final class WalletsUpdateAssembly {
   }
   
   public func walletUpdateController() -> WalletEditController {
-    WalletEditController(walletsStoreUpdate: walletsStoreUpdate)
+    WalletEditController(walletsStore: storesAssembly.walletsStore)
   }
   
   public func watchOnlyWalletAddressInputController() -> WatchOnlyWalletAddressInputController {
     WatchOnlyWalletAddressInputController(addressResolver: AddressResolver(dnsService: servicesAssembly.dnsService()))
-  }
-  
-  public func chooseWalletController(activeWalletModels: [ActiveWalletModel], configuration: ChooseWalletsController.Configuration) -> ChooseWalletsController {
-    ChooseWalletsController(
-      activeWalletModels: activeWalletModels,
-      amountFormatter: formattersAssembly.amountFormatter,
-      configuration: configuration
-    )
   }
 }

@@ -138,7 +138,14 @@ private extension TonConnectConfirmationViewModelImplementation {
     return .customView(view, bottomSpacing: 32)
   }
   
-  func mapEvent(_ event: AccountEventModel) -> HistoryCellContentView.Configuration {
-    return historyEventMapper.mapEventContentConfiguration(event, nftAction: { _ in }, tapAction: { _ in })
+  func mapEvent(_ event: AccountEventModel) -> HistoryCellContentView.Model {
+    return historyEventMapper.mapEventContentConfiguration(
+      event,
+      nftAction: { _ in },
+      encryptedCommentAction: { _ in
+        
+      },
+      tapAction: { _ in }
+    )
   }
 }

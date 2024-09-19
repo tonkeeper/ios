@@ -28,7 +28,15 @@ public final class CreateWalletCoordinator: RouterCoordinator<ViewControllerRout
   }
 
   public override func start() {
-    if walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository().hasMnemonics() {
+    let hasMnemonics = walletsUpdateAssembly.repositoriesAssembly.mnemonicsRepository().hasMnemonics()
+    let hasRegularWallet = { [walletsUpdateAssembly] in
+      do {
+        return try walletsUpdateAssembly.repositoriesAssembly.keeperInfoRepository().getKeeperInfo().wallets.contains(where: { $0.kind == .regular })
+      } catch {
+        return false
+      }
+    }()
+    if hasMnemonics && hasRegularWallet {
       openConfirmPasscode()
     } else {
       openCreatePasscode()

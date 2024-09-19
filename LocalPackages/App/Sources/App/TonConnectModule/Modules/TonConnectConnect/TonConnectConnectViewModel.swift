@@ -4,6 +4,7 @@ import KeeperCore
 import TKCore
 import UIKit
 import TKUIKit
+import TKLocalize
 
 typealias ConnectionCompleteClosure = ((Bool) async -> Void)
 struct TonConnectConnectParameters {
@@ -57,7 +58,7 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
   
   // MARK: - State
   
-  private var selectedWallet: Wallet
+  private var selectedWallet: Wallet?
   
   // MARK: - Dependencies
   
@@ -77,12 +78,13 @@ final class TonConnectConnectViewModelImplementation: NSObject, TonConnectConnec
     self.walletsStore = walletsStore
     self.showWalletPicker = showWalletPicker
     
-    self.selectedWallet = walletsStore.activeWallet
+    self.selectedWallet = try? walletsStore.getActiveWallet()
   }
 }
 
 private extension TonConnectConnectViewModelImplementation {
   func prepareContent() {
+    guard let selectedWallet else { return }
     let configuration = TonConnectConnectMapper.modalCardConfiguration(
       wallet: selectedWallet,
       manifest: manifest,
@@ -95,8 +97,9 @@ private extension TonConnectConnectViewModelImplementation {
         return walletPickerView?($0)
       },
       walletPickerAction: { [weak self] in
-        guard let self else { return }
-        self.didTapWalletPicker?(self.selectedWallet)
+        guard let self,
+        let selectedWallet = self.selectedWallet else { return }
+        self.didTapWalletPicker?(selectedWallet)
       },
       connectAction: { [weak self] in
         guard let self, let connect else { return false }
@@ -117,12 +120,12 @@ private extension TonConnectConnectViewModelImplementation {
 }
 
 private extension String {
-  static let buttonTitle = "Connect wallet"
+  static let buttonTitle = TKLocales.TonConnect.connectWallet
 }
 
 private extension NSAttributedString {
   static var footerText: NSAttributedString {
-    "Be sure to check the service address before connecting the wallet."
+    TKLocales.TonConnect.sureCheckServiceAddress
       .withTextStyle(
         .body2,
         color: .Text.tertiary,

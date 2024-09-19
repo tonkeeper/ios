@@ -21,11 +21,14 @@ public final class BrowserConnectedController {
   
   public func start() {
     tonConnectAppsStore.addObserver(self)
+    walletsStore.addObserver(self) { observer, event in
+      observer.didUpdateApps?()
+    }
   }
   
   public func getConnectedApps() -> [ConnectedApp] {
     do {
-      let connectedApps = try tonConnectAppsStore.connectedApps(forWallet: walletsStore.activeWallet)
+      let connectedApps = try tonConnectAppsStore.connectedApps(forWallet: walletsStore.getActiveWallet())
         .apps
         .map { item in
           ConnectedApp(
@@ -42,7 +45,7 @@ public final class BrowserConnectedController {
 }
 
 extension BrowserConnectedController: TonConnectAppsStoreObserver {
-  func didGetTonConnectAppsStoreEvent(_ event: TonConnectAppsStoreEvent) {
+  public func didGetTonConnectAppsStoreEvent(_ event: TonConnectAppsStoreEvent) {
     didUpdateApps?()
   }
 }

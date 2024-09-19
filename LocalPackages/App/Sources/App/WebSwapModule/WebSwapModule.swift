@@ -9,8 +9,14 @@ struct WebSwapModule {
     self.dependencies = dependencies
   }
   
-  func swapCoordinator(router: NavigationControllerRouter) -> WebSwapCoordinator {
+  func swapCoordinator(wallet: Wallet,
+                       fromToken: String? = nil,
+                       toToken: String? = nil,
+                       router: NavigationControllerRouter) -> WebSwapCoordinator {
     let coordinator = WebSwapCoordinator(
+      wallet: wallet,
+      fromToken: fromToken,
+      toToken: toToken,
       router: router,
       coreAssembly: dependencies.coreAssembly,
       keeperCoreMainAssembly: dependencies.keeperCoreMainAssembly

@@ -41,7 +41,12 @@ final class PasscodeViewModelImplementation: PasscodeViewModel, PasscodeModuleOu
       let biometry = await biometryProvider?() ?? .none
       await MainActor.run {
         didUpdateBiometry?(biometry)
-        didTapBiometryButton()
+        switch biometry {
+        case .faceId, .touchId:
+          didTapBiometryButton()
+        default:
+          break
+        }
       }
     }
   }

@@ -234,9 +234,9 @@ private extension WalletTransferSignCoordinator {
           })
         }
         
-        module.output.didScanSignedTransaction = { [weak bottomSheetViewController] model in
+        module.output.didScanSignedTransaction = { [weak bottomSheetViewController] sign in
           bottomSheetViewController?.dismiss {
-            continuation.resume(returning: model.sign)
+            continuation.resume(returning: sign)
           }
         }
         

@@ -123,6 +123,11 @@ open class TKCollectionViewNewCell: UICollectionViewCell, OrderConfigurableCell,
   open func contentSize(targetWidth: CGFloat) -> CGSize {
     .zero
   }
+  
+  open override func prepareForReuse() {
+    super.prepareForReuse()
+    invalidateIntrinsicContentSize()
+  }
 }
 
 private extension TKCollectionViewNewCell {

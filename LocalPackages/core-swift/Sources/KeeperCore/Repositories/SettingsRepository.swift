@@ -35,12 +35,30 @@ public struct SettingsRepository {
     }
   }
   
+  public var didMigrateV3: Bool {
+    get {
+      settingsVault.value(key: .didMigrateV3) ?? false
+    }
+    set {
+      settingsVault.setValue(newValue, key: .didMigrateV3)
+    }
+  }
+  
   public var didMigrateRN: Bool {
     get {
       settingsVault.value(key: .didMigrateRN) ?? false
     }
     set {
       settingsVault.setValue(newValue, key: .didMigrateRN)
+    }
+  }
+  
+  public var isSecureMode: Bool {
+    get {
+      settingsVault.value(key: .isSecureMode) ?? false
+    }
+    set {
+      settingsVault.setValue(newValue, key: .isSecureMode)
     }
   }
 }
@@ -53,5 +71,7 @@ public enum SettingsKey: String, CustomStringConvertible {
   case seed
   case isFirstRun
   case didMigrateV2
+  case didMigrateV3
   case didMigrateRN
+  case isSecureMode
 }

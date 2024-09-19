@@ -28,6 +28,7 @@ public final class ServicesAssembly {
     BalanceServiceImplementation(
       tonBalanceService: tonBalanceService(),
       jettonsBalanceService: jettonsBalanceService(),
+      stackingService: stackingService(),
       walletBalanceRepository: repositoriesAssembly.walletBalanceRepository())
   }
   
@@ -43,19 +44,15 @@ public final class ServicesAssembly {
     JettonBalanceServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
-  func totalBalanceService() -> TotalBalanceService {
-    TotalBalanceServiceImplementation(
-      totalBalanceRepository: repositoriesAssembly.totalBalanceRepository(),
-      rateConverter: RateConverter()
-    )
+  public func stackingService() -> StakingService {
+    StakingServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
-  
+
   func activeWalletsService() -> ActiveWalletsService {
     ActiveWalletsServiceImplementation(
       apiProvider: apiAssembly.apiProvider,
       jettonsBalanceService: jettonsBalanceService(),
       accountNFTService: accountNftService(),
-      currencyService: currencyService(),
       walletsService: walletsService()
     )
   }
@@ -73,14 +70,14 @@ public final class ServicesAssembly {
     )
   }
   
-  func historyService() -> HistoryService {
+  public func historyService() -> HistoryService {
     HistoryServiceImplementation(
       apiProvider: apiAssembly.apiProvider,
       repository: repositoriesAssembly.historyRepository()
     )
   }
   
-  func nftService() -> NFTService {
+  public func nftService() -> NFTService {
     NFTServiceImplementation(
       apiProvider: apiAssembly.apiProvider,
       nftRepository: repositoriesAssembly.nftRepository()
@@ -124,7 +121,7 @@ public final class ServicesAssembly {
     SendServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
-  func dnsService() -> DNSService {
+  public func dnsService() -> DNSService {
     DNSServiceImplementation(apiProvider: apiAssembly.apiProvider)
   }
   
@@ -135,14 +132,14 @@ public final class ServicesAssembly {
     )
   }
   
-  func buySellMethodsService() -> BuySellMethodsService {
+  public func buySellMethodsService() -> BuySellMethodsService {
     BuySellMethodsServiceImplementation(
       api: tonkeeperAPIAssembly.api,
       buySellMethodsRepository: repositoriesAssembly.buySellMethodsRepository()
     )
   }
   
-  func locationService() -> LocationService {
+  public func locationService() -> LocationService {
     LocationServiceImplementation(locationAPI: locationAPIAsembly.locationAPI())
   }
   

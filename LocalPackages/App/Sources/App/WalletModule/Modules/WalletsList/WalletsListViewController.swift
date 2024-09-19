@@ -2,53 +2,12 @@ import UIKit
 import TKUIKit
 
 final class WalletsListViewController: GenericViewViewController<WalletsListView>, TKBottomSheetScrollContentViewController {
-  enum Section: Hashable {
-    case wallets
-  }
+  typealias Section = WalletsListSection
+  typealias Item = WalletsListItem
+  typealias DataSource = UICollectionViewDiffableDataSource<Section, Item>
+  typealias Snapshot = NSDiffableDataSourceSnapshot<Section, Item>
   
   private let viewModel: WalletsListViewModel
-  
-  private lazy var layout: UICollectionViewCompositionalLayout = {
-    let size = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .estimated(0)
-    )
-    let footer = NSCollectionLayoutBoundarySupplementaryItem(
-      layoutSize: size,
-      elementKind: .footerElementKind,
-      alignment: .bottom
-    )
-    
-    let configuration = UICollectionViewCompositionalLayoutConfiguration()
-    configuration.scrollDirection = .vertical
-    configuration.boundarySupplementaryItems = [footer]
-    
-    let layout = UICollectionViewCompositionalLayout(
-      sectionProvider: { [dataSource] sectionIndex, _ in
-        let snapshot = dataSource.snapshot()
-        switch snapshot.sectionIdentifiers[sectionIndex] {
-        case .wallets:
-          return .walletsSection
-        }
-      },
-      configuration: configuration
-    )
-    
-    layout.register(WalletsListDecorationBackgroundView.self, forDecorationViewOfKind: WalletsListDecorationBackgroundView.reuseIdentifier)
-    
-    return layout
-  }()
-
-  private lazy var dataSource = createDataSource()
-  private lazy var listItemCellConfiguration = UICollectionView.CellRegistration<TKUIListItemCell, TKUIListItemCell.Configuration> { [weak self]
-    cell, indexPath, itemIdentifier in
-    cell.configure(configuration: itemIdentifier)
-    cell.isFirstInSection = { ip in ip.item == 0 }
-    cell.isLastInSection = { [weak collectionView = self?.customView.collectionView] ip in
-      guard let collectionView = collectionView else { return false }
-      return ip.item == (collectionView.numberOfItems(inSection: ip.section) - 1)
-    }
-  }
   
   private lazy var reorderGesture: UILongPressGestureRecognizer = {
     let gesture = UILongPressGestureRecognizer(
@@ -86,91 +45,27 @@ final class WalletsListViewController: GenericViewViewController<WalletsListView
   func calculateHeight(withWidth width: CGFloat) -> CGFloat {
     scrollView.contentSize.height
   }
-}
-
-private extension WalletsListViewController {
-  func setup() {
-    customView.collectionView.setCollectionViewLayout(layout, animated: false)
+  
+  private func setup() {
+    customView.collectionView.collectionViewLayout = layout
     customView.collectionView.delegate = self
     customView.collectionView.addGestureRecognizer(reorderGesture)
-    customView.collectionView.register(
-      TKReusableContainerView.self,
-      forSupplementaryViewOfKind: .footerElementKind,
-      withReuseIdentifier: TKReusableContainerView.reuseIdentifier
-    )
-    
-    var snapshot = dataSource.snapshot()
-    snapshot.appendSections([.wallets])
-    dataSource.apply(snapshot,animatingDifferences: false)
   }
   
-  func createDataSource() -> UICollectionViewDiffableDataSource<Section, AnyHashable> {
-    let dataSource = UICollectionViewDiffableDataSource<Section, AnyHashable>(
-      collectionView: customView.collectionView) { [weak self, listItemCellConfiguration] collectionView, indexPath, itemIdentifier in
-        guard let self else { return nil }
-        switch itemIdentifier {
-        case let listCellConfiguration as TKUIListItemCell.Configuration:
-          let cell = collectionView.dequeueConfiguredReusableCell(
-            using: listItemCellConfiguration,
-            for: indexPath,
-            item: listCellConfiguration)
-          
-          cell.selectionAccessoryViews = self.createSelectionAccessoryViews()
-          cell.editingAccessoryViews = self.createEditingAccessoryViews(indexPath: indexPath)
-          return cell
-        default: return nil
-        }
-      }
-    
-    dataSource.supplementaryViewProvider = { [weak footerView = customView.footerView] collectionView, kind, indexPath -> UICollectionReusableView? in
-      switch kind {
-      case String.footerElementKind:
-        let view = collectionView.dequeueReusableSupplementaryView(
-          ofKind: kind,
-          withReuseIdentifier: TKReusableContainerView.reuseIdentifier,
-          for: indexPath
-        ) as? TKReusableContainerView
-        view?.setContentView(footerView)
-        return view
-      default: return nil
-      }
+  private func setupBindings() {
+    viewModel.didUpdateSnapshot = { [weak self] snapshot in
+      self?.dataSource.apply(snapshot, animatingDifferences: false, completion: { [weak self] in
+        self?.didUpdateHeight?()
+        self?.selectWallet()
+      })
     }
     
-    dataSource.reorderingHandlers.canReorderItem = { [weak collectionView = customView.collectionView] _ in
-      collectionView?.isEditing ?? false
-    }
-    
-    dataSource.reorderingHandlers.didReorder = { [weak self] transaction in
-      self?.didReorder(transaction: transaction)
-    }
-    
-    return dataSource
-  }
-  
-  func setupBindings() {
-    viewModel.didUpdateItems = { [weak self, weak dataSource] items in
-      guard let dataSource else { return }
-      var snapshot = dataSource.snapshot()
-      snapshot.deleteItems(snapshot.itemIdentifiers(inSection: .wallets))
-      snapshot.appendItems(items, toSection: .wallets)
-      if #available(iOS 15.0, *) {
-        snapshot.reconfigureItems(items)
-      } else {
-        snapshot.reloadItems(items)
+    viewModel.didUpdateWaletCellConfiguration = { [weak self] item, configuration in
+      guard let indexPath = self?.dataSource.indexPath(for: item),
+            let cell = self?.customView.collectionView.cellForItem(at: indexPath) as? TKListItemCell else {
+        return
       }
-      dataSource.apply(snapshot, animatingDifferences: false)
-      self?.didUpdateHeight?()
-    }
-    
-    viewModel.didUpdateSelected = { [weak self] index in
-      if let index {
-        let indexPath = IndexPath(item: index, section: 0)
-        self?.customView.collectionView.selectItem(at: indexPath, animated: false, scrollPosition: .centeredVertically)
-      } else if let indexPathsForSelectedItems = self?.customView.collectionView.indexPathsForSelectedItems {
-        indexPathsForSelectedItems.forEach {
-          self?.customView.collectionView.deselectItem(at: $0, animated: false)
-        }
-      }
+      cell.configuration = configuration
     }
     
     viewModel.didUpdateHeaderItem = { [weak self] headerItem in
@@ -182,51 +77,94 @@ private extension WalletsListViewController {
       UIView.animate(withDuration: 0.2) {
         self?.customView.collectionView.isEditing = isEditing
       }
-    }
-    
-    viewModel.didUpdateFooterModel = { [weak customView] in
-      customView?.footerView.configure(model: $0)
+      if !isEditing {
+        self?.selectWallet()
+      }
     }
   }
   
-  func createSelectionAccessoryViews() -> [UIView] {
-    var configuration = TKButton.Configuration.accentButtonConfiguration(padding: .zero)
-    configuration.contentPadding.right = 16
-    configuration.iconTintColor = .Accent.blue
-    configuration.content.icon = .TKUIKit.Icons.Size28.donemarkOutline
-    let button = TKButton(configuration: configuration)
-    button.isUserInteractionEnabled = false
-    return [button]
+  private lazy var dataSource: DataSource = {
+    let listItemCellRegistration = ListItemCellRegistration.registration(collectionView: customView.collectionView)
+    
+    let dataSource = DataSource(
+      collectionView: customView.collectionView) {
+        [weak self] collectionView, indexPath, itemIdentifier in
+        guard let self else { return nil }
+        guard let cellConfiguration = self.viewModel.getWalletCellConfiguration(
+          identifier: itemIdentifier.identifier) else { return nil }
+        let cell = collectionView.dequeueConfiguredReusableCell(
+          using: listItemCellRegistration,
+          for: indexPath,
+          item: cellConfiguration)
+        cell.selectionAccessoryViews = itemIdentifier.selectAccessories.map { $0.view }
+        cell.editingAccessoryViews = itemIdentifier.editingAccessories.map { $0.view }
+        return cell
+      }
+    
+    let listButtonFooterRegistration = TKListCollectionViewButtonFooterViewRegistration.registration()
+    dataSource.supplementaryViewProvider = { [weak self] collectionView, elementKind, indexPath in
+      guard let snapshot = self?.dataSource.snapshot() else { return nil }
+      let snapshotSection = snapshot.sectionIdentifiers[indexPath.section]
+      switch elementKind {
+      case TKListCollectionViewButtonFooterView.elementKind:
+        switch snapshotSection {
+        case .wallets(let footerConfiguration):
+          let view = collectionView.dequeueConfiguredReusableSupplementary(
+            using: listButtonFooterRegistration,
+            for: indexPath
+          )
+          view.configuration = footerConfiguration
+          return view
+        default: return nil
+        }
+      default:
+        return nil
+      }
+    }
+    
+    dataSource.reorderingHandlers.canReorderItem = { [weak self] itemIdentifier in
+      true
+    }
+    
+    dataSource.reorderingHandlers.didReorder = { [weak self] transaction in
+      self?.didReorder(transaction: transaction)
+    }
+    return dataSource
+  }()
+  
+  private var layout: UICollectionViewCompositionalLayout {
+    let configuration = UICollectionViewCompositionalLayoutConfiguration()
+    configuration.scrollDirection = .vertical
+    
+    let layout = UICollectionViewCompositionalLayout(
+      sectionProvider: { [weak dataSource] sectionIndex, _ in
+        guard let dataSource else { return nil }
+        let snapshotSection = dataSource.snapshot().sectionIdentifiers[sectionIndex]
+        
+        switch snapshotSection {
+        case .wallets:
+          let sectionLayout: NSCollectionLayoutSection = .listItemsSection
+          let footerSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .estimated(100)
+          )
+          let footer = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: footerSize,
+            elementKind: TKListCollectionViewButtonFooterView.elementKind,
+            alignment: .bottom
+          )
+          sectionLayout.boundarySupplementaryItems.append(footer)
+          return sectionLayout
+        }
+      },
+      configuration: configuration
+    )
+    return layout
   }
   
-  func createEditingAccessoryViews(indexPath: IndexPath) -> [UIView] {
-    var editConfiguration = TKButton.Configuration.accentButtonConfiguration(padding: .zero)
-    editConfiguration.contentPadding.right = 16
-    editConfiguration.iconTintColor = .Icon.tertiary
-    editConfiguration.content.icon = .TKUIKit.Icons.Size28.pencilOutline
-    editConfiguration.action = { [weak self] in
-      self?.viewModel.didTapEdit(index: indexPath.item)
-    }
-    let editButton = TKButton(configuration: editConfiguration)
-    
-    var reorderConfiguration = TKButton.Configuration.accentButtonConfiguration(padding: .zero)
-    reorderConfiguration.contentPadding.right = 16
-    reorderConfiguration.iconTintColor = .Icon.secondary
-    reorderConfiguration.content.icon = .TKUIKit.Icons.Size28.reorder
-    let reorderButton = TKButton(configuration: reorderConfiguration)
-    reorderButton.isUserInteractionEnabled = false
-    
-    return [editButton, reorderButton]
-  }
-    
   @objc
-  func handleReorderGesture(gesture: UIGestureRecognizer) {
+  private func handleReorderGesture(gesture: UIGestureRecognizer) {
     let collectionView = customView.collectionView
-
-    let sectionRect = CGRect(x: 0,
-                             y: 0,
-                             width: view.bounds.width,
-                             height: .walletItemCellHeight * CGFloat(collectionView.numberOfItems(inSection: 0)))
     
     switch(gesture.state) {
     case .began:
@@ -237,14 +175,6 @@ private extension WalletsListViewController {
     case .changed:
       var location = gesture.location(in: gesture.view!)
       location.x = collectionView.bounds.width/2
-
-      if location.y - .draggOffset <= sectionRect.minY {
-        location.y = sectionRect.minY + .draggOffset
-      }
-      if location.y + .draggOffset >= sectionRect.maxY {
-        location.y = sectionRect.maxY - .draggOffset
-      }
-      
       collectionView.updateInteractiveMovementTargetPosition(location)
     case .ended:
       collectionView.endInteractiveMovement()
@@ -253,7 +183,7 @@ private extension WalletsListViewController {
     }
   }
   
-  func didReorder(transaction: NSDiffableDataSourceTransaction<Section, AnyHashable>) {
+  private func didReorder(transaction: NSDiffableDataSourceTransaction<WalletsListSection, WalletsListItem>) {
     var deletes = [Int]()
     var inserts = [Int]()
     var moves = [(from: Int, to: Int)]()
@@ -276,6 +206,20 @@ private extension WalletsListViewController {
       viewModel.moveWallet(fromIndex: move.from, toIndex: move.to)
     }
   }
+  
+  private func selectWallet() {
+    guard let selectedWalletIndex = viewModel.selectedWalletIndex else {
+      return
+    }
+    customView.collectionView.selectItem(
+      at: IndexPath(
+        item: selectedWalletIndex,
+        section: 0
+      ),
+      animated: false,
+      scrollPosition: .centeredVertically
+    )
+  }
 }
 
 extension WalletsListViewController: UICollectionViewDelegate {
@@ -283,52 +227,6 @@ extension WalletsListViewController: UICollectionViewDelegate {
     let snapshot = dataSource.snapshot()
     let section = snapshot.sectionIdentifiers[indexPath.section]
     let item = snapshot.itemIdentifiers(inSection: section)[indexPath.item]
-    switch item {
-    case let model as TKUIListItemCell.Configuration:
-      model.selectionClosure?()
-    default:
-      return
-    }
+    item.onSelection?()
   }
-}
-
-private extension String {
-  static let footerElementKind = "FooterElementKind"
-}
-
-private extension NSCollectionLayoutSection {
-  static var walletsSection: NSCollectionLayoutSection {
-    let itemLayoutSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .absolute(.walletItemCellHeight)
-    )
-    let item = NSCollectionLayoutItem(layoutSize: itemLayoutSize)
-    
-    let groupLayoutSize = NSCollectionLayoutSize(
-      widthDimension: .fractionalWidth(1.0),
-      heightDimension: .absolute(.walletItemCellHeight)
-    )
-    let group = NSCollectionLayoutGroup.horizontal(
-      layoutSize: groupLayoutSize,
-      subitems: [item]
-    )
-    
-    let section = NSCollectionLayoutSection(group: group)
-    section.contentInsets = NSDirectionalEdgeInsets(
-      top: 0,
-      leading: 16,
-      bottom: 0,
-      trailing: 16
-    )
-    section.decorationItems = [
-      NSCollectionLayoutDecorationItem.background(elementKind: WalletsListDecorationBackgroundView.reuseIdentifier)
-    ]
-    
-    return section
-  }
-}
-
-private extension CGFloat {
-  static let walletItemCellHeight: CGFloat = 76
-  static let draggOffset: CGFloat = .walletItemCellHeight / 2
 }

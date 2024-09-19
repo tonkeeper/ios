@@ -8,6 +8,7 @@ public final class SendConfirmationController {
     case failedToCalculateFee
     case failedToSendTransaction
     case failedToSign
+    case indexerOffline
   }
   
   public var didUpdateModel: ((SendConfirmationModel) -> Void)?
@@ -26,9 +27,8 @@ public final class SendConfirmationController {
   private let accountService: AccountService
   private let blockchainService: BlockchainService
   private let balanceStore: BalanceStore
-  private let ratesStore: RatesStore
+  private let ratesStore: TonRatesStore
   private let currencyStore: CurrencyStore
-  private let mnemonicRepository: WalletMnemonicRepository
   private let amountFormatter: AmountFormatter
   
   init(wallet: Wallet,
@@ -39,9 +39,8 @@ public final class SendConfirmationController {
        accountService: AccountService,
        blockchainService: BlockchainService,
        balanceStore: BalanceStore,
-       ratesStore: RatesStore,
+       ratesStore: TonRatesStore,
        currencyStore: CurrencyStore,
-       mnemonicRepository: WalletMnemonicRepository,
        amountFormatter: AmountFormatter) {
     self.wallet = wallet
     self.recipient = recipient
@@ -53,7 +52,6 @@ public final class SendConfirmationController {
     self.balanceStore = balanceStore
     self.ratesStore = ratesStore
     self.currencyStore = currencyStore
-    self.mnemonicRepository = mnemonicRepository
     self.amountFormatter = amountFormatter
   }
   
@@ -69,11 +67,7 @@ public final class SendConfirmationController {
     do {
       let transactionBoc = try await createTransactionBoc()
       try await sendService.sendTransaction(boc: transactionBoc, wallet: wallet)
-      NotificationCenter.default.post(
-        name: NSNotification.Name(rawValue: "didSendTransaction"),
-        object: nil,
-        userInfo: ["Wallet": wallet]
-      )
+      NotificationCenter.default.postTransactionSendNotification(wallet: wallet)
     } catch {
       Task { @MainActor in
         didGetError?(.failedToSendTransaction)
@@ -99,9 +93,9 @@ private extension SendConfirmationController {
         symbol: TonInfo.symbol
       )
       feeItem = .value(feeFormatted)
-      let rates = ratesStore.getRates(jettons: [])
-      let currency = await currencyStore.getActiveCurrency()
-      if let rates = rates.ton.first(where: { $0.currency == currency }) {
+      let rates = await ratesStore.getState()
+      let currency = await currencyStore.getState()
+      if let rates = rates.first(where: { $0.currency == currency }) {
         let rateConverter = RateConverter()
         let converted = rateConverter.convert(
           amount: fee,
@@ -146,9 +140,9 @@ private extension SendConfirmationController {
           maximumFractionDigits: TonInfo.fractionDigits,
           symbol: TonInfo.symbol
         )
-        let rates = ratesStore.getRates(jettons: [])
-        let currency = await currencyStore.getActiveCurrency()
-        if let rates = rates.ton.first(where: { $0.currency == currency }) {
+        let rates = await ratesStore.getState()
+        let currency = await currencyStore.getState()
+        if let rates = rates.first(where: { $0.currency == currency }) {
           let rateConverter = RateConverter()
           let converted = rateConverter.convert(
             amount: amount,
@@ -172,22 +166,22 @@ private extension SendConfirmationController {
           maximumFractionDigits: jettonItem.jettonInfo.fractionDigits,
           symbol: jettonItem.jettonInfo.symbol
         )
-        let rates = ratesStore.getRates(jettons: [jettonItem.jettonInfo])
-        let currency = await currencyStore.getActiveCurrency()
-        if let rates = rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency }) {
-          let rateConverter = RateConverter()
-          let converted = rateConverter.convert(
-            amount: amount,
-            amountFractionLength: TonInfo.fractionDigits,
-            rate: rates
-          )
-          formattedConvertedAmount = amountFormatter.formatAmount(
-            converted.amount,
-            fractionDigits: converted.fractionLength,
-            maximumFractionDigits: 2,
-            currency: currency
-          )
-        }
+//        let rates = ratesStore.getRates(jettons: [jettonItem.jettonInfo])
+//        let currency = await currencyStore.getCurrency()
+//        if let rates = rates.jettonsRates.first(where: { $0.jettonInfo == jettonItem.jettonInfo })?.rates.first(where: { $0.currency == currency }) {
+//          let rateConverter = RateConverter()
+//          let converted = rateConverter.convert(
+//            amount: amount,
+//            amountFractionLength: TonInfo.fractionDigits,
+//            rate: rates
+//          )
+//          formattedConvertedAmount = amountFormatter.formatAmount(
+//            converted.amount,
+//            fractionDigits: converted.fractionLength,
+//            maximumFractionDigits: 2,
+//            currency: currency
+//          )
+//        }
       }
     case .nft(let nft):
       let description = [nft.name, nft.collection?.name].compactMap { $0 }.joined(separator: " · ")
@@ -242,6 +236,7 @@ private extension SendConfirmationController {
   }
   
   func createEmulateTransactionBoc() async throws -> String {
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
     let boc: String
     switch sendItem {
     case .nft(let nft):
@@ -250,6 +245,7 @@ private extension SendConfirmationController {
       boc = try await createTokenTransactionBoc(
         token: token,
         amount: amount,
+        timeout: timeout,
         signClosure: { [wallet] builder in
           try await builder.externalSign(wallet: wallet) { transfer in
             try transfer.signMessage(signer: WalletTransferEmptyKeySigner())
@@ -262,20 +258,27 @@ private extension SendConfirmationController {
   
   func createTransactionBoc() async throws -> String {
     let boc: String
+    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    
+    let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
+    
+    if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
+      throw Error.indexerOffline
+    }
+    
     switch sendItem {
     case .nft(let nft):
-      boc = try await createNFTTransactionBoc(nft: nft)
+      boc = try await createNFTTransactionBoc(nft: nft, timeout: timeout)
     case .token(let token, let amount):
-      boc = try await createTokenTransactionBoc(token: token, amount: amount) { transfer in
+      boc = try await createTokenTransactionBoc(token: token, amount: amount, timeout: timeout) { transfer in
         return try await signTransfer(transfer)
       }
     }
     return boc
   }
   
-  func createTokenTransactionBoc(token: Token, amount: BigUInt, signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
+  func createTokenTransactionBoc(token: Token, amount: BigUInt, timeout: UInt64, signClosure: (TransferMessageBuilder) async throws -> String) async throws -> String {
     let seqno = try await sendService.loadSeqno(wallet: wallet)
-    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
                 
     switch token {
     case .ton:
@@ -283,7 +286,7 @@ private extension SendConfirmationController {
       let shouldForceBounceFalse = ["empty", "uninit", "nonexist"].contains(account?.status)
       
       let isMax: Bool
-      if let balance = try? balanceStore.getBalance(wallet: wallet) {
+      if let balance = await balanceStore.getState()[wallet]?.walletBalance {
         isMax = BigUInt(balance.balance.tonBalance.amount) == amount
       } else {
         isMax = false
@@ -303,6 +306,21 @@ private extension SendConfirmationController {
       )
       return try await transferMessageBuilder.createBoc(signClosure: signClosure)
     case .jetton(let jettonItem):
+      
+      let payload = jettonItem.jettonInfo.hasCustomPayload ? try await sendService.getJettonCustomPayload(wallet: wallet, jetton: jettonItem.jettonInfo.address) : nil
+      
+      let customPayload = payload?.customPayload
+      let stateInit: StateInit? = {
+        guard let stateInit = payload?.stateInit else {
+          return nil
+        }
+        do {
+          return try StateInit.loadFrom(slice: stateInit.beginParse())
+        } catch {
+          return nil
+        }
+      }()
+      
       let transferMessageBuilder = TransferMessageBuilder(
         transferData: .jetton(
           TransferData.Jetton(
@@ -312,7 +330,9 @@ private extension SendConfirmationController {
             recipient: recipient.recipientAddress.address,
             isBouncable: recipient.recipientAddress.isBouncable,
             comment: comment,
-            timeout: timeout
+            timeout: timeout,
+            customPayload: customPayload,
+            stateInit: stateInit
           )
         )
       )
@@ -436,7 +456,7 @@ private extension SendConfirmationController {
         }
   }
   
-  func createNFTTransactionBoc(nft: NFT) async throws -> String {
+  func createNFTTransactionBoc(nft: NFT, timeout: UInt64) async throws -> String {
     let emulationExtra = BigInt(integerLiteral: transactionEmulationExtra)
     let minimumTransferAmount = BigInt(stringLiteral: "50000000")
     var transferAmount = emulationExtra + minimumTransferAmount
@@ -444,7 +464,11 @@ private extension SendConfirmationController {
     ? minimumTransferAmount
     : transferAmount
     let seqno = try await sendService.loadSeqno(wallet: wallet)
-    let timeout = await sendService.getTimeoutSafely(wallet: wallet)
+    let indexingLatency = try await sendService.getIndexingLatency(wallet: wallet)
+    
+    if indexingLatency > (TonSwift.DEFAULT_TTL - 30) {
+      throw Error.indexerOffline
+    }
     
     var commentCell: Cell?
     if let comment = comment {

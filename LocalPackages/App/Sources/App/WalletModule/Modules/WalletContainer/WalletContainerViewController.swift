@@ -65,6 +65,7 @@ private extension WalletContainerViewController {
     }
     
     customView.topBarView.walletButton.didTap = { [weak viewModel] in
+      UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
       viewModel?.didTapWalletButton()
     }
   }

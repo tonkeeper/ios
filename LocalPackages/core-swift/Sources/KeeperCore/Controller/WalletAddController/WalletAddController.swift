@@ -5,12 +5,12 @@ import TonTransport
 
 public final class WalletAddController {
 
-  private let walletsStoreUpdate: WalletsStoreUpdate
+  private let walletsStore: WalletsStore
   private let mnemonicsRepository: MnemonicsRepository
   
-  init(walletsStoreUpdate: WalletsStoreUpdate,
+  init(walletsStore: WalletsStore,
        mnemonicsRepositoty: MnemonicsRepository) {
-    self.walletsStoreUpdate = walletsStoreUpdate
+    self.walletsStore = walletsStore
     self.mnemonicsRepository = mnemonicsRepositoty
   }
   
@@ -31,9 +31,7 @@ public final class WalletAddController {
     )
     
     try await mnemonicsRepository.saveMnemonic(mnemonic, wallet: wallet, password: passcode)
-    try walletsStoreUpdate.addWallets([wallet])
-    
-    try walletsStoreUpdate.makeWalletActive(wallet)
+    await walletsStore.addWallets([wallet])
   }
   
   public func importWallets(phrase: [String],
@@ -75,26 +73,24 @@ public final class WalletAddController {
       wallets: wallets,
       password: passcode
     )
-    try walletsStoreUpdate.addWallets(wallets)
-    try walletsStoreUpdate.makeWalletActive(wallets[0])
+    await walletsStore.addWallets(wallets)
   }
   
   public func importWatchOnlyWallet(resolvableAddress: ResolvableAddress,
-                                    metaData: WalletMetaData) throws {
+                                    metaData: WalletMetaData) async throws {
     let wallet = Wallet(
       id: UUID().uuidString,
       identity: WalletIdentity(network: .mainnet, kind: .Watchonly(resolvableAddress)),
       metaData: metaData,
       setupSettings: WalletSetupSettings(backupDate: nil)
     )
-    try walletsStoreUpdate.addWallets([wallet])
-    try walletsStoreUpdate.makeWalletActive(wallet)
+    await walletsStore.addWallets([wallet])
   }
   
   public func importSignerWallet(publicKey: TonSwift.PublicKey,
                                  revisions: [WalletContractVersion],
                                  metaData: WalletMetaData,
-                                 isDevice: Bool) throws {
+                                 isDevice: Bool) async throws {
     let addPostfix = revisions.count > 1
     
     let wallets = revisions.map { revision in
@@ -125,15 +121,13 @@ public final class WalletAddController {
         metaData: revisionMetaData,
         setupSettings: WalletSetupSettings(backupDate: Date()))
     }
-
-    try walletsStoreUpdate.addWallets(wallets)
-    try walletsStoreUpdate.makeWalletActive(wallets[0])
+    await walletsStore.addWallets(wallets)
   }
   
   public func importLedgerWallets(accounts: [LedgerAccount],
                                   deviceId: String,
                                   deviceProductName: String,
-                                  metaData: WalletMetaData) throws {
+                                  metaData: WalletMetaData) async throws {
     let addPostfix = accounts.count > 1
     
     let wallets = accounts.enumerated().map { (index, account) in
@@ -157,8 +151,6 @@ public final class WalletAddController {
         metaData: accountMetaData,
         setupSettings: WalletSetupSettings(backupDate: Date()))
     }
-    
-    try walletsStoreUpdate.addWallets(wallets)
-    try walletsStoreUpdate.makeWalletActive(wallets[0])
+    await walletsStore.addWallets(wallets)
   }
 }

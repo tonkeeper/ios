@@ -1,12 +1,12 @@
 import Foundation
 import TonSwift
 
-struct AccountNfts {
+public struct AccountNfts {
   let wallet: Wallet
   let nfts: [NFT]
 }
 
-protocol AccountNFTService {
+public protocol AccountNFTService {
   func getAccountNfts(wallet: Wallet) -> [NFT]
   func getAccountsNfts(wallets: [Wallet]) -> [AccountNfts]
   func loadAccountNFTs(wallet: Wallet,

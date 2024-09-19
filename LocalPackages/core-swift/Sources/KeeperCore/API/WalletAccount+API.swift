@@ -3,11 +3,11 @@ import TonSwift
 import TonAPI
 
 extension WalletAccount {
-  init(accountAddress: Components.Schemas.AccountAddress) throws {
+  init(accountAddress: TonAPI.AccountAddress) throws {
     address = try Address.parse(accountAddress.address)
     name = accountAddress.name
-    isScam = accountAddress.is_scam
-    isWallet = accountAddress.is_wallet
+    isScam = accountAddress.isScam
+    isWallet = accountAddress.isWallet
   }
 }
 

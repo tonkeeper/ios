@@ -23,6 +23,37 @@ final class BackupCoordinator: RouterCoordinator<NavigationControllerRouter> {
   }
   
   public override func start() {
+    openWarning()
+  }
+  
+  func openWarning() {
+    let viewController = BackupWarningViewController()
+    let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
+    
+    viewController.didTapContinue = { [weak bottomSheetViewController, weak self] in
+      bottomSheetViewController?.dismiss(completion: {
+        self?.openPasscodeInput()
+      })
+    }
+    
+    viewController.didTapCancel = { [weak bottomSheetViewController, weak self] in
+      bottomSheetViewController?.dismiss(completion: {
+        self?.didFinish?()
+      })
+    }
+    
+    bottomSheetViewController.didClose = { [weak self] isInteractivly in
+      guard !isInteractivly else {
+        self?.didFinish?()
+        return
+      }
+      self?.openPasscodeInput()
+    }
+    
+    bottomSheetViewController.present(fromViewController: router.rootViewController)
+  }
+  
+  func openPasscodeInput() {
     PasscodeInputCoordinator.present(
       parentCoordinator: self,
       parentRouter: router,

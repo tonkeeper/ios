@@ -1,7 +1,7 @@
 import Foundation
 import TonSwift
 
-public struct LockupConfig: Equatable, Codable {
+public struct LockupConfig: Equatable, Codable, Hashable {
   // TBD: lockup-1.0 config
 }
 

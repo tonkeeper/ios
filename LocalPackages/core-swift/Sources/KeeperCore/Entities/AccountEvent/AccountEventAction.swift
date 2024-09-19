@@ -41,6 +41,7 @@ public struct AccountEventAction: Codable {
     public let recipient: WalletAccount
     public let amount: Int64
     public let comment: String?
+    public let encryptedComment: EncryptedComment?
   }
   
   public struct ContractDeploy: Codable {
@@ -55,6 +56,7 @@ public struct AccountEventAction: Codable {
     public let amount: BigUInt
     public let jettonInfo: JettonInfo
     public let comment: String?
+    public let encryptedComment: EncryptedComment?
   }
   
   public struct NFTItemTransfer: Codable {
@@ -63,6 +65,7 @@ public struct AccountEventAction: Codable {
     public let nftAddress: Address
     public let comment: String?
     public let payload: String?
+    public let encryptedComment: EncryptedComment?
   }
   
   public struct Subscription: Codable {

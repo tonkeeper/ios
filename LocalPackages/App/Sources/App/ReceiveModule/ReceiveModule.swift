@@ -9,10 +9,11 @@ struct ReceiveModule {
     self.dependencies = dependencies
   }
   
-  func receiveModule(token: Token) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, Void> {
-    let receiveController = dependencies.keeperCoreMainAssembly.receiveController(token: token)
+  func receiveModule(token: Token,
+                     wallet: Wallet) -> MVVMModule<ReceiveViewController, ReceiveModuleOutput, Void> {
     return ReceiveAssembly.module(
-      receiveController: receiveController,
+      token: token,
+      wallet: wallet,
       qrCodeGenerator: QRCodeGeneratorImplementation()
     )
   }

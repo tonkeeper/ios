@@ -36,6 +36,7 @@ final class TKPopupMenuViewController: UIViewController {
                 sourceView: UIView,
                 position: TKPopupMenuPosition,
                 maximumWidth: CGFloat,
+                isSelectable: Bool = true,
                 duration: TimeInterval) {
     let menuViewItems = items.map { item in
       TKPopupMenuItemView.Model(
@@ -43,7 +44,7 @@ final class TKPopupMenuViewController: UIViewController {
         value: item.value,
         description: item.description,
         icon: item.icon,
-        isSelectable: true,
+        isSelectable: isSelectable,
         selectionHandler: item.selectionHandler
       )
     }

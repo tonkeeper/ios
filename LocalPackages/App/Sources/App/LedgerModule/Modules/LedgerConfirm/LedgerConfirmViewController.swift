@@ -10,7 +10,12 @@ final class LedgerConfirmViewController: GenericViewViewController<LedgerConfirm
   var didUpdateHeight: (() -> Void)?
   
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: TKLocales.LedgerConfirm.title)
+    TKUIKit.TKPullCardHeaderItem(
+      title: .title(
+        title: TKLocales.LedgerConfirm.title,
+        subtitle: nil
+      )
+    )
   }
   
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?
@@ -72,7 +77,7 @@ private extension LedgerConfirmViewController {
       message: TKLocales.Bluetooth.PoweredOffAlert.message,
       preferredStyle: .alert
     )
-    alertController.addAction(UIAlertAction(title: TKLocales.Bluetooth.PoweredOffAlert.open_settings, style: .default, handler: { _ in
+    alertController.addAction(UIAlertAction(title: TKLocales.Bluetooth.PoweredOffAlert.openSettings, style: .default, handler: { _ in
       if let url = URL(string: "App-Prefs:root=Bluetooth") {
         if UIApplication.shared.canOpenURL(url) {
           UIApplication.shared.open(url, options: [:], completionHandler: nil)
@@ -89,7 +94,7 @@ private extension LedgerConfirmViewController {
       message: TKLocales.Bluetooth.PermissionsAlert.message,
       preferredStyle: .alert
     )
-    alertController.addAction(UIAlertAction(title: TKLocales.Bluetooth.PermissionsAlert.open_settings, style: .default, handler: { _ in
+    alertController.addAction(UIAlertAction(title: TKLocales.Bluetooth.PermissionsAlert.openSettings, style: .default, handler: { _ in
       if let url = URL(string: UIApplication.openSettingsURLString) {
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
       }

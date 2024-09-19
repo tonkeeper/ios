@@ -11,7 +11,7 @@ extension Wallet {
     case .lockup:
       return nil
     case .watchonly:
-      return TKLocales.WalletTags.watch_only
+      return TKLocales.WalletTags.watchOnly
     case .signer:
       return "SIGNER"
     case .ledger:
@@ -98,5 +98,10 @@ extension Wallet {
       textColor: .Text.secondary,
       backgroundColor: .Background.contentTint
     )
+  }
+  
+  func listTagConfiguration() -> TKTagView.Configuration? {
+    guard let tag = tag else { return nil }
+    return TKTagView.Configuration.outlintTag(text: tag)
   }
 }

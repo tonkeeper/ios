@@ -46,6 +46,7 @@
 "settings.items.currency" = "货币";
 "settings.items.theme" = "主题";
 "settings.items.logout" = "退出";
+"settings.items.faq" = "FAQ";
 "settings.items.support" = "支持";
 "settings.items.tk_news" = "Tonkeeper新闻";
 "settings.items.contact_us" = "联系我们";

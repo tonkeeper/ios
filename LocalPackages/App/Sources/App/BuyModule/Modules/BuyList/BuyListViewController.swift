@@ -16,7 +16,13 @@ class BuyListViewController: GenericViewViewController<BuyListView>, TKBottomShe
   var didUpdateHeight: (() -> Void)?
   
   var headerItem: TKUIKit.TKPullCardHeaderItem? {
-    TKUIKit.TKPullCardHeaderItem(title: "Buy")
+    let view = UIView()
+    view.backgroundColor = .red
+    view.snp.makeConstraints { make in
+      make.width.equalTo(100)
+      make.height.equalTo(100)
+    }
+    return TKUIKit.TKPullCardHeaderItem(title: .customView(view))
   }
   
   var didUpdatePullCardHeaderItem: ((TKUIKit.TKPullCardHeaderItem) -> Void)?

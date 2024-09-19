@@ -14,6 +14,7 @@ extension TKNavigationBar {
     
     var isLoading = false {
       didSet {
+        guard isLoading != oldValue else { return }
         didUpdateIsLoading()
       }
     }
@@ -66,10 +67,10 @@ private extension TKNavigationBar.LargeTitleView {
   
   func didUpdateIsLoading() {
     let alpha: CGFloat = isLoading ? 1 : 0
-    UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseInOut) {
+//    UIView.animate(withDuration: 0.2, delay: 0, options: .curveEaseInOut) {
       self.loaderView.alpha = alpha
-    } completion: { _ in
+//    } completion: { _ in
       self.loaderView.isLoading = self.isLoading
-    }
+//    }
   }
 }

@@ -9,26 +9,24 @@ public struct RepositoriesAssembly {
     self.coreAssembly = coreAssembly
   }
   
-  public func mnemonicRepository() -> WalletMnemonicRepository {
-    coreAssembly.mnemonicVault()
-  }
-  
   public func mnemonicsRepository() -> MnemonicsRepository {
-    coreAssembly.mnemonicsV3Vault {
-      settingsRepository().seed
-    }
+    coreAssembly.mnemonicsV4Vault()
   }
   
   public func settingsRepository() -> SettingsRepository {
     SettingsRepository(settingsVault: coreAssembly.settingsVault())
   }
   
-  func keeperInfoRepository() -> KeeperInfoRepository {
+  public func keeperInfoRepository() -> KeeperInfoRepository {
     coreAssembly.sharedFileSystemVault()
   }
   
   func walletBalanceRepository() -> WalletBalanceRepository {
     WalletBalanceRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
+  func walletBalanceRepositoryV2() -> WalletBalanceRepositoryV2 {
+    WalletBalanceRepositoryV2implementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
   func totalBalanceRepository() -> TotalBalanceRepository {
@@ -51,6 +49,17 @@ public struct RepositoriesAssembly {
     AccountNFTRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
   }
   
+  func accountNFTsManagementRepository() -> AccountNFTsManagementRepository {
+    AccountNFTsManagementRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
+  public func walletNFTRepository() -> WalletNFTRepository {
+    WalletNFTRepositoryImplementation(
+      fileSystemVault: coreAssembly.fileSystemVault(),
+      nftRepository: nftRepository()
+    )
+  }
+  
   public func passcodeRepository() -> PasscodeRepository {
     PasscodeRepositoryImplementation(passcodeVault: coreAssembly.passcodeVault())
   }
@@ -69,5 +78,19 @@ public struct RepositoriesAssembly {
   
   func popularAppsRepository() -> PopularAppsRepository {
     PopularAppsRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
+  func tokenManagementRepository() -> TokenManagementRepository {
+    TokenManagementRepositoryImplementation(fileSystemVault: coreAssembly.fileSystemVault())
+  }
+  
+  public func mnemonicV3ToV4Migration() -> MnemonicV3ToV4Migration {
+    let seedProvider = {
+      return self.settingsRepository().seed
+    }
+    return MnemonicV3ToV4Migration(
+      v3Vault: coreAssembly.mnemonicsV3Vault(seedProvider: seedProvider),
+      v4Vault: coreAssembly.mnemonicsV4Vault()
+    )
   }
 }

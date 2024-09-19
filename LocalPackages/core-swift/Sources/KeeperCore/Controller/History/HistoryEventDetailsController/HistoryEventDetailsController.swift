@@ -65,9 +65,9 @@ public final class HistoryEventDetailsController {
   private let event: AccountEventDetailsEvent
   private let amountMapper: AccountEventAmountMapper
   private let tonRatesStore: TonRatesStore
-  private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
   private let nftService: NFTService
+  private let isTestnet: Bool
   
   private let rateConverter = RateConverter()
   private let dateFormatter: DateFormatter = {
@@ -80,15 +80,15 @@ public final class HistoryEventDetailsController {
   init(event: AccountEventDetailsEvent,
        amountMapper: AccountEventAmountMapper,
        tonRatesStore: TonRatesStore,
-       walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
-       nftService: NFTService) {
+       nftService: NFTService,
+       isTestnet: Bool) {
     self.event = event
     self.amountMapper = amountMapper
     self.tonRatesStore = tonRatesStore
-    self.walletsStore = walletsStore
     self.currencyStore = currencyStore
     self.nftService = nftService
+    self.isTestnet = isTestnet
   }
   
   public var transactionHash: String {
@@ -108,9 +108,8 @@ public final class HistoryEventDetailsController {
 
 private extension HistoryEventDetailsController {
   func mapModel() async -> Model {
-    let wallet = walletsStore.activeWallet
     let eventAction = event.action
-    let date = dateFormatter.string(from: Date(timeIntervalSince1970: event.accountEvent.timestamp))
+    let date = dateFormatter.string(from: event.accountEvent.date)
     let fee = amountMapper.mapAmount(
       amount: BigUInt(integerLiteral: UInt64(abs(event.accountEvent.fee))),
       fractionDigits: TonInfo.fractionDigits,
@@ -154,7 +153,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .jettonBurn(jettonBurn):
       return await mapJettonBurn(
         activityEvent: event.accountEvent,
@@ -169,7 +168,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .jettonSwap(jettonSwap):
       return mapJettonSwap(
         activityEvent: event.accountEvent,
@@ -177,7 +176,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .jettonTransfer(jettonTransfer):
       return await mapJettonTransfer(
         activityEvent: event.accountEvent,
@@ -185,7 +184,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .nftItemTransfer(nftItemTransfer):
       return mapNFTTransfer(
         activityEvent: event.accountEvent,
@@ -193,7 +192,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .nftPurchase(nftPurchase):
       return await mapNFTPurchase(
         activityEvent: event.accountEvent,
@@ -201,7 +200,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .smartContractExec(smartContractExec):
       return await mapSmartContractExec(
         activityEvent: event.accountEvent,
@@ -209,7 +208,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .tonTransfer(tonTransfer):
       return await mapTonTransfer(
         activityEvent: event.accountEvent,
@@ -217,7 +216,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .withdrawStake(withdrawStake):
       return await mapWithdrawStake(
         activityEvent: event.accountEvent,
@@ -225,7 +224,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case let .withdrawStakeRequest(withdrawStakeRequest):
       return mapWithdrawStakeRequest(
         activityEvent: event.accountEvent,
@@ -233,7 +232,7 @@ private extension HistoryEventDetailsController {
         date: date,
         feeListItem: feeListItem,
         status: eventAction.status,
-        isTestnet: wallet.isTestnet)
+        isTestnet: isTestnet)
     case .unknown:
       return mapUnknownAction(
         date: date,
@@ -297,9 +296,9 @@ private extension HistoryEventDetailsController {
     let dateString: String
     switch actionType {
     case .Received: 
-      dateString = TKLocales.EventDetails.received_on(date)
+      dateString = TKLocales.EventDetails.receivedOn(date)
     case .Sent:
-      dateString = TKLocales.EventDetails.sent_on(date)
+      dateString = TKLocales.EventDetails.sentOn(date)
     }
     
     var listItems = [Model.ListItem]()
@@ -845,9 +844,9 @@ private extension HistoryEventDetailsController {
 
     switch actionType {
     case .Received:
-      dateString = TKLocales.EventDetails.received_on(date)
+      dateString = TKLocales.EventDetails.receivedOn(date)
     case .Sent:
-      dateString = TKLocales.EventDetails.sent_on(date)
+      dateString = TKLocales.EventDetails.sentOn(date)
     }
     
     var listItems = [Model.ListItem]()
@@ -950,8 +949,8 @@ private extension HistoryEventDetailsController {
   }
   
   func tonFiatString(amount: BigUInt) async -> String? {
-    let currency = await currencyStore.getActiveCurrency()
-    guard let tonRate = await tonRatesStore.getTonRates().first(where: { $0.currency == currency }) else {
+    let currency = await currencyStore.getState()
+    guard let tonRate = await tonRatesStore.getState().first(where: { $0.currency == currency }) else {
       return nil
     }
     
@@ -979,7 +978,7 @@ private extension String {
   static let sent = TKLocales.EventDetails.sent
   static let sender = TKLocales.EventDetails.sender
   static let recipient = TKLocales.EventDetails.recipient
-  static let senderAddress = TKLocales.EventDetails.sender_address
-  static let recipientAddress = TKLocales.EventDetails.recipient_address
+  static let senderAddress = TKLocales.EventDetails.senderAddress
+  static let recipientAddress = TKLocales.EventDetails.recipientAddress
   static let comment = TKLocales.EventDetails.comment
 }

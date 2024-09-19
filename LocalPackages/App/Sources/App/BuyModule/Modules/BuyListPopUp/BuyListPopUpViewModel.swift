@@ -2,9 +2,10 @@ import UIKit
 import TKUIKit
 import KeeperCore
 import TKCore
+import TKLocalize
 
 protocol BuyListPopUpModuleOutput: AnyObject {
-  var didTapOpen: ((BuySellItemModel) -> Void)? { get set }
+  var didTapOpen: ((BuySellItem) -> Void)? { get set }
 }
 
 protocol BuyListPopUpViewModel: AnyObject {
@@ -20,7 +21,7 @@ final class BuyListPopUpViewModelImplementation: BuyListPopUpViewModel, BuyListP
   
   // MARK: - BuyListPopUpModuleOutput
   
-  var didTapOpen: ((BuySellItemModel) -> Void)?
+  var didTapOpen: ((BuySellItem) -> Void)?
   
   // MARK: - BuyListPopUpViewModel
   
@@ -39,16 +40,16 @@ final class BuyListPopUpViewModelImplementation: BuyListPopUpViewModel, BuyListP
   
   // MARK: - Dependencies
   
-  private let buySellItemModel: BuySellItemModel
+  private let buySellItem: BuySellItem
   private let appSettings: AppSettings
   private let urlOpener: URLOpener
   
   // MARK: - Init
   
-  init(buySellItemModel: BuySellItemModel,
+  init(buySellItem: BuySellItem,
        appSettings: AppSettings,
        urlOpener: URLOpener) {
-    self.buySellItemModel = buySellItemModel
+    self.buySellItem = buySellItem
     self.appSettings = appSettings
     self.urlOpener = urlOpener
   }
@@ -61,7 +62,7 @@ private extension BuyListPopUpViewModelImplementation {
     
     if let headerImageView = headerImageView?(
       HistoryEventDetailsNFTHeaderImageView.Model(
-        image: .url(buySellItemModel.iconURL),
+        image: .url(buySellItem.fiatItem.iconURL),
         size: CGSize(
           width: 64,
           height: 64
@@ -72,27 +73,27 @@ private extension BuyListPopUpViewModelImplementation {
     }
     
     headerItems.append(contentsOf: [
-      .text(.init(text: buySellItemModel.title.withTextStyle(
+      .text(.init(text: buySellItem.fiatItem.title.withTextStyle(
         .h2,
         color: .Text.primary,
         alignment: .center,
         lineBreakMode: .byWordWrapping
       ), numberOfLines: 1), bottomSpacing: 4),
-      .text(.init(text: buySellItemModel.description?.withTextStyle(
+      .text(.init(text: buySellItem.fiatItem.description?.withTextStyle(
         .body1,
         color: .Text.secondary,
         alignment: .center,
         lineBreakMode: .byWordWrapping
-      ), numberOfLines: 1), bottomSpacing: 32)
+      ), numberOfLines: 0), bottomSpacing: 0)
     ])
     
     let header = TKModalCardViewController.Configuration.Header(items: headerItems)
     
     var contentItems = [TKModalCardViewController.Configuration.ContentItem]()
     
-    let descriptionButtons: [TKDetailsDescriptionView.Model.Button] = buySellItemModel.infoButtons.map { infoButton in
+    let descriptionButtons: [TKDetailsDescriptionView.Model.Button] = buySellItem.fiatItem.infoButtons.map { infoButton in
       TKDetailsDescriptionView.Model.Button(text: infoButton.title, closure: { [weak self] in
-        guard let urlString = infoButton.url, let url = URL(string: urlString) else { return }
+        guard let url = URL(string: infoButton.url) else { return }
         self?.urlOpener.open(url: url)
       })
     }
@@ -108,7 +109,7 @@ private extension BuyListPopUpViewModelImplementation {
       .item(
         .button(
           TKModalCardViewController.Configuration.Button(
-            title: "Open \(buySellItemModel.title)",
+            title: "Open \(buySellItem.fiatItem.title)",
             size: .large,
             category: .primary,
             isEnabled: true,
@@ -116,10 +117,10 @@ private extension BuyListPopUpViewModelImplementation {
             tapAction: { [weak self] _, _ in
               guard let self else { return }
               self.appSettings.setIsBuySellItemMarkedDoNotShowWarning(
-                self.buySellItemModel.id, 
+                self.buySellItem.fiatItem.id,
                 doNotShow: self.doNotShowAgain
               )
-              self.didTapOpen?(self.buySellItemModel)
+              self.didTapOpen?(self.buySellItem)
             }
           ),
           bottomSpacing: 16
@@ -151,6 +152,6 @@ private extension BuyListPopUpViewModelImplementation {
 }
 
 private extension String {
-  static let checkmarkTitle = "Do not show again"
-  static let externalWarningText = "You are opening an external app not operated by Tonkeeper."
+  static let checkmarkTitle = TKLocales.BuyListPopup.doNotShowAgain
+  static let externalWarningText = TKLocales.BuyListPopup.youAreOpeningExternalApp
 }

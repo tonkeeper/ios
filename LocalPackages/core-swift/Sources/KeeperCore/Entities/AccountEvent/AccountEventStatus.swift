@@ -1,4 +1,5 @@
 import Foundation
+import TKLocalize
 
 public enum AccountEventStatus: Codable {
   case ok
@@ -8,7 +9,7 @@ public enum AccountEventStatus: Codable {
   public var rawValue: String? {
     switch self {
     case .ok: return nil
-    case .failed: return "Failed"
+    case .failed: return TKLocales.Actions.failed
     case .unknown(let value):
       return value
     }

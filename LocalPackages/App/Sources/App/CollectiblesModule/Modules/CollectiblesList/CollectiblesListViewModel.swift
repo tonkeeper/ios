@@ -4,15 +4,14 @@ import KeeperCore
 import TonSwift
 
 protocol CollectiblesListModuleOutput: AnyObject {
-  var didSelectNFT: ((NFT) -> Void)? { get set }
+  var didSelectNFT: ((NFT, _ wallet: Wallet) -> Void)? { get set }
 }
 
 protocol CollectiblesListViewModel: AnyObject {
-  var didRestartList: (() -> Void)? { get set }
-  var didLoadNFTs: (([CollectibleCollectionViewCell.Model]) -> Void)? { get set }
+  var didUpdateSnapshot: ((CollectiblesListViewController.Snapshot) -> Void)? { get set }
   
   func viewDidLoad()
-  func loadNext()
+  func getNFTCellModel(identifier: String) -> CollectibleCollectionViewCell.Model?
   func didSelectNftAt(index: Int)
 }
 
@@ -20,45 +19,41 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   
   // MARK: - CollectiblesListModuleOutput
   
-  var didSelectNFT: ((NFT) -> Void)?
+  var didSelectNFT: ((NFT, _ wallet: Wallet) -> Void)?
   
   // MARK: - CollectiblesListViewModel
   
-  var didRestartList: (() -> Void)?
+  var didUpdateSnapshot: ((CollectiblesListViewController.Snapshot) -> Void)?
   var didLoadNFTs: (([CollectibleCollectionViewCell.Model]) -> Void)?
   
   func viewDidLoad() {
-    Task {
-      collectiblesListController.setDidGetEventHandler({ [weak self] event in
-        switch event {
-        case .cached(let nfts):
-          self?.didGetCachedNFTs(nfts)
-        case .loaded(let nfts):
-          self?.didLoadedNfts(nfts)
-        case .nextPage(let nfts):
-          self?.didLoadedNextPage(nfts)
-        default:
-          break
+    walletNFTsManagedStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateNFTs(let wallet):
+        guard observer.wallet == wallet else { return }
+        DispatchQueue.main.async {
+          observer.update()
         }
-      })
-      await collectiblesListController.start()
+      }
     }
+    
+    update()
   }
   
-  func loadNext() {
-    Task {
-     await collectiblesListController.loadNext()
-    }
+  func getNFTCellModel(identifier: String) -> CollectibleCollectionViewCell.Model? {
+    models[identifier]
   }
   
   func didSelectNftAt(index: Int) {
-    Task {
-      let nft = await collectiblesListController.nftAt(index: index)
-      await MainActor.run {
-        didSelectNFT?(nft)
-      }
-    }
+    guard index < nfts.count else { return }
+    let nft = nfts[index]
+    didSelectNFT?(nft, wallet)
   }
+  
+  // MARK: - State
+  
+  private var models = [String: CollectibleCollectionViewCell.Model]()
+  private var nfts = [NFT]()
   
   // MARK: - Mapper
   
@@ -66,36 +61,68 @@ final class CollectiblesListViewModelImplementation: CollectiblesListViewModel, 
   
   // MARK: - Dependencies
   
-  private let collectiblesListController: CollectiblesListController
+  private let wallet: Wallet
+  private let walletNFTsManagedStore: WalletNFTsManagedStore
   
   // MARK: - Init
   
-  init(collectiblesListController: CollectiblesListController) {
-    self.collectiblesListController = collectiblesListController
+  init(wallet: Wallet,
+       walletNFTsManagedStore: WalletNFTsManagedStore) {
+    self.wallet = wallet
+    self.walletNFTsManagedStore = walletNFTsManagedStore
   }
 }
 
 private extension CollectiblesListViewModelImplementation {
-  func didGetCachedNFTs(_ nfts: [NFT]) {
-    let models = collectiblesListMapper.map(nfts: nfts)
-    Task { @MainActor in
-      didRestartList?()
-      didLoadNFTs?(models)
-    }
+  func update() {
+    let nfts = walletNFTsManagedStore.getState()
+    update(nfts: nfts)
   }
   
-  func didLoadedNfts(_ nfts: [NFT]) {
-    let models = collectiblesListMapper.map(nfts: nfts)
-    Task { @MainActor in
-      didRestartList?()
-      didLoadNFTs?(models)
-    }
+  func update(nfts: [NFT]) {
+    let snapshot = self.createSnapshot(state: nfts)
+    let models = self.createModels(state: nfts)
+    self.nfts = nfts
+    self.models = models
+    self.didUpdateSnapshot?(snapshot)
   }
   
-  func didLoadedNextPage(_ nfts: [NFT]) {
-    let models = collectiblesListMapper.map(nfts: nfts)
-    Task { @MainActor in
-      didLoadNFTs?(models)
+  func createSnapshot(state: [NFT]) -> CollectiblesListViewController.Snapshot {
+    var snapshot = CollectiblesListViewController.Snapshot()
+    snapshot.appendSections([.all])
+    snapshot.appendItems(state.map { .nft(identifier: $0.address.toString()) }, toSection: .all)
+
+    return snapshot
+  }
+  
+  func createModels(state: [NFT]) -> [String: CollectibleCollectionViewCell.Model] {
+    return state.reduce(into: [String: CollectibleCollectionViewCell.Model](), { result, item in
+      let model = collectiblesListMapper.map(nft: item)
+      let identifier = item.address.toString()
+      result[identifier] = model
+    })
+  }
+  
+  func filterSpamNFTItems(nfts: [NFT],
+                          managementState: NFTsManagementState) -> [NFT] {
+    
+    func filter(items: [NFT]) -> [NFT] {
+      items.filter {
+        let state: NFTsManagementState.NFTState?
+        if let collection = $0.collection {
+          state = managementState.nftStates[.collection(collection.address)]
+        } else {
+          state = managementState.nftStates[.singleItem($0.address)]
+        }
+        
+        switch $0.trust {
+        case .blacklist:
+          return state == .visible
+        case .graylist, .none, .unknown, .whitelist:
+          return state != .hidden
+        }
+      }
     }
+    return filter(items: nfts)
   }
 }

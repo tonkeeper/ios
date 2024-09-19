@@ -12,7 +12,7 @@ struct ConfirmTransactionMapper {
     self.amountFormatter = amountFormatter
   }
   
-  func mapTransactionInfo(_ info: Components.Schemas.MessageConsequences,
+  func mapTransactionInfo(_ info: TonAPI.MessageConsequences,
                           tonRates: Rates.Rate?,
                           currency: Currency,
                           nftsCollection: NFTsCollection,
@@ -27,9 +27,9 @@ struct ConfirmTransactionMapper {
       .mapEvent(
         try AccountEvent(accountEvent: info.event),
         eventDate: Date(),
-        nftsCollection: nftsCollection,
         accountEventRightTopDescriptionProvider: descriptionProvider,
-        isTestnet: wallet.isTestnet
+        isTestnet: wallet.isTestnet,
+        nftProvider: { _ in nil }
       )
 
     var feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"

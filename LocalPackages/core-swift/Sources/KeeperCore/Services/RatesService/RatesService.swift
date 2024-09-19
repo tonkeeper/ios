@@ -1,6 +1,6 @@
 import Foundation
 
-protocol RatesService {
+public protocol RatesService {
   func getRates(jettons: [JettonInfo]) -> Rates
   func loadRates(jettons: [JettonInfo],
                  currencies: [Currency]) async throws -> Rates

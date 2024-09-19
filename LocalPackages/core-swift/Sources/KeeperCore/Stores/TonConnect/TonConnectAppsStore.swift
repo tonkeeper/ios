@@ -1,11 +1,11 @@
-import Foundation
+ import Foundation
 import TonSwift
 
-enum TonConnectAppsStoreEvent {
+public enum TonConnectAppsStoreEvent {
   case didUpdateApps
 }
 
-protocol TonConnectAppsStoreObserver: AnyObject {
+public protocol TonConnectAppsStoreObserver: AnyObject {
   func didGetTonConnectAppsStoreEvent(_ event: TonConnectAppsStoreEvent)
 }
 
@@ -132,7 +132,7 @@ public final class TonConnectAppsStore {
     weak var observer: TonConnectAppsStoreObserver?
   }
   
-  func addObserver(_ observer: TonConnectAppsStoreObserver) {
+  public func addObserver(_ observer: TonConnectAppsStoreObserver) {
     removeNilObservers()
     observers = observers + CollectionOfOne(TonConnectAppsStoreObserverWrapper(observer: observer))
   }

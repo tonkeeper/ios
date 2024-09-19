@@ -131,7 +131,7 @@ private extension TonConnectEventsStore {
 }
 
 extension TonConnectEventsStore: TonConnectAppsStoreObserver {
-  nonisolated func didGetTonConnectAppsStoreEvent(_ event: TonConnectAppsStoreEvent) {
+  public nonisolated func didGetTonConnectAppsStoreEvent(_ event: TonConnectAppsStoreEvent) {
     switch event {
     case .didUpdateApps:
       Task {
