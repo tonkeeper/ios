@@ -6,7 +6,7 @@ import TKLocalize
 import TonSwift
 
 protocol SignerSignModuleOutput: AnyObject {
-  var didScanSignedTransaction: ((TonkeeperPublishModel) -> Void)? { get set }
+  var didScanSignedTransaction: ((Data) -> Void)? { get set }
 }
 
 protocol SignerSignModuleInput: AnyObject {}
@@ -23,7 +23,7 @@ final class SignerSignViewModelImplementation: SignerSignViewModel, SignerSignMo
   
   // MARK: - SignerSignModuleOutput
 
-  var didScanSignedTransaction: ((TonkeeperPublishModel) -> Void)?
+  var didScanSignedTransaction: ((Data) -> Void)?
   
   // MARK: - SignerSignModuleInput
   
@@ -89,11 +89,10 @@ private extension SignerSignViewModelImplementation {
   
   func setup() {
     scannerOutput.didScanDeeplink = { [weak self] deeplink in
-      guard case let .tonkeeper(tonkeeperDeeplink) = deeplink,
-            case .publish(let model) = tonkeeperDeeplink else {
+      guard case let .publish(sign) = deeplink else {
         return
       }
-      self?.didScanSignedTransaction?(model)
+      self?.didScanSignedTransaction?(sign)
     }
   }
   
@@ -103,10 +102,10 @@ private extension SignerSignViewModelImplementation {
       firstStepModel: SignerSignStepView.Model(contentModel: TKUIListItemView.Configuration(
         contentConfiguration: TKUIListItemContentView.Configuration(
           leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: "Step 1".withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
+            title: TKLocales.SignerSign.stepOne.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
             tagViewModel: nil,
             subtitle: nil,
-            description: "Scan the QR code with Signer".withTextStyle(
+            description: TKLocales.SignerSign.stepOneDescription.withTextStyle(
               .label1,
               color: .Text.primary,
               alignment: .left,
@@ -120,10 +119,10 @@ private extension SignerSignViewModelImplementation {
       secondStepModel: SignerSignStepView.Model(contentModel: TKUIListItemView.Configuration(
         contentConfiguration: TKUIListItemContentView.Configuration(
           leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: "Step 2".withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
+            title: TKLocales.SignerSign.stepTwo.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
             tagViewModel: nil,
             subtitle: nil,
-            description: "Confirm your transaction in Signer".withTextStyle(
+            description: TKLocales.SignerSign.stepTwoDescription.withTextStyle(
               .label1,
               color: .Text.primary,
               alignment: .left,
@@ -137,10 +136,10 @@ private extension SignerSignViewModelImplementation {
       thirdStepModel: SignerSignStepView.Model(contentModel: TKUIListItemView.Configuration(
         contentConfiguration: TKUIListItemContentView.Configuration(
           leftItemConfiguration: TKUIListItemContentLeftItem.Configuration(
-            title: "Step 3".withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
+            title: TKLocales.SignerSign.stepThree.withTextStyle(.body2, color: .Text.secondary, alignment: .left, lineBreakMode: .byTruncatingTail),
             tagViewModel: nil,
             subtitle: nil,
-            description: "Scan signed transaction QR code from Signer".withTextStyle(
+            description: TKLocales.SignerSign.stepThreeDescription.withTextStyle(
               .label1,
               color: .Text.primary,
               alignment: .left,
@@ -153,7 +152,7 @@ private extension SignerSignViewModelImplementation {
       ), isFirst: true, isLast: false),
       qrCodeModel: TKFancyQRCodeView.Model(
         images: qrCodeImages,
-        topString: "TRANSACTION",
+        topString: TKLocales.SignerSign.transaction.uppercased(),
         bottomLeftString: signerSignController.wallet.metaData.label
       )
     )

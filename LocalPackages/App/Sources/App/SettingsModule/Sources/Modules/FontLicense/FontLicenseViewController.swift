@@ -58,7 +58,7 @@ final class FontLicenseViewController: GenericViewViewController<FontLicenseView
     
     customView.titleView.configure(
       model: TKUINavigationBarTitleView.Model(
-        title: TKLocales.Settings.Legal.Items.montserrat_font.withTextStyle(
+        title: TKLocales.Settings.Legal.Items.montserratFont.withTextStyle(
           .h3,
           color: .Text.primary
         )

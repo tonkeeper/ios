@@ -1,7 +1,7 @@
 import Foundation
 
-public struct TonConnectRequestPayload: Decodable {
-  public enum Item: Decodable {
+public struct TonConnectRequestPayload: Decodable, Equatable {
+  public enum Item: Decodable, Equatable {
     case tonAddress
     case tonProof(payload: String)
     case unknown

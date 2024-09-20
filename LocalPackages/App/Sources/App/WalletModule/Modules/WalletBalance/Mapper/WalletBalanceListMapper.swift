@@ -75,7 +75,7 @@ struct WalletBalanceListMapper {
     let estimate: String = {
       if let poolInfo = item.poolInfo,
          let formattedEstimatedTime = formatCycleEnd(timestamp: poolInfo.cycleEnd) {
-        return "\n\(TKLocales.BalanceList.StakingItem.Comment.time_estimate(formattedEstimatedTime))"
+        return "\n\(TKLocales.BalanceList.StakingItem.Comment.timeEstimate(formattedEstimatedTime))"
       }
       return ""
     }()
@@ -112,7 +112,7 @@ struct WalletBalanceListMapper {
   
   func createTelegramChannelConfiguration() -> WalletBalanceListCell.Configuration {
     createSetupItem(
-      text: "Join Tonkeeper channel",
+      text: TKLocales.WalletBalanceList.joinChannel,
       icon: .TKUIKit.Icons.Size28.telegram,
       iconColor: .Accent.blue
     )
@@ -120,7 +120,7 @@ struct WalletBalanceListMapper {
   
   func createNotificationsConfiguration() -> WalletBalanceListCell.Configuration {
     createSetupItem(
-      text: "Enable transaction notifications",
+      text: TKLocales.WalletBalanceList.transactionNotifications,
       icon: .TKUIKit.Icons.Size28.bell,
       iconColor: .Accent.green
     )
@@ -136,17 +136,17 @@ struct WalletBalanceListMapper {
     case .success(let success):
       switch success {
       case .faceID:
-        title = TKLocales.FinishSetup.setup_biometry("Face ID")
+        title = TKLocales.FinishSetup.setupBiometry(String.faceID)
         icon = .TKUIKit.Icons.Size28.faceId
       case .touchID:
-        title = TKLocales.FinishSetup.setup_biometry("Touch ID")
+        title = TKLocales.FinishSetup.setupBiometry(String.touchID)
         icon = .TKUIKit.Icons.Size28.faceId
       case .none:
-        title = TKLocales.FinishSetup.biometry_unavailable
+        title = TKLocales.FinishSetup.biometryUnavailable
         icon = .TKUIKit.Icons.Size28.faceId
       }
     case .failure:
-      title = TKLocales.FinishSetup.biometry_unavailable
+      title = TKLocales.FinishSetup.biometryUnavailable
       icon = .TKUIKit.Icons.Size28.faceId
     }
 
@@ -225,4 +225,6 @@ private extension CGFloat {
 
 extension String {
   static let secureModeValue = "* * *"
+  static let faceID = TKLocales.SettingsListSecurityConfigurator.faceId
+  static let touchID = TKLocales.SettingsListSecurityConfigurator.touchId
 }

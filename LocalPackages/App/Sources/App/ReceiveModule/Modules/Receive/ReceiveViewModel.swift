@@ -53,7 +53,7 @@ final class ReceiveViewModelImplementation: ReceiveViewModel, ReceiveModuleOutpu
           return try deeplinkGenerator.generateTransferDeeplink(
             with: wallet.friendlyAddress.toString(),
             jettonAddress: jettonAddress
-          ).string
+          )
         } catch {
           return ""
         }

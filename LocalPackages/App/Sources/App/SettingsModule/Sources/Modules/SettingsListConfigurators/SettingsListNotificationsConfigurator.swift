@@ -263,6 +263,6 @@ extension SettingsListNotificationsConfigurator: TonConnectAppsStoreObserver {
 private extension String {
   static let walletNotificationsIdentifier = "WalletNotificationsIdentifier"
   static let notificationsNotAvailableBannerIdentifier = "NotificationsNotAvailableBannerIdentifier"
-  static let connectedAppsSectionTitle = "Apps"
-  static let connectedAppsSectionCaption = "Notifications from connected apps in your activity"
+  static let connectedAppsSectionTitle = TKLocales.SettingsListNotificationsConfigurator.connectedAppsTitle
+  static let connectedAppsSectionCaption = TKLocales.SettingsListNotificationsConfigurator.connectedAppsSectionCaption
 }

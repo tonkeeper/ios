@@ -4,6 +4,7 @@ import KeeperCore
 import TKCore
 import UIKit
 import TKUIKit
+import TKLocalize
 
 typealias ConnectionCompleteClosure = ((Bool) async -> Void)
 struct TonConnectConnectParameters {
@@ -119,12 +120,12 @@ private extension TonConnectConnectViewModelImplementation {
 }
 
 private extension String {
-  static let buttonTitle = "Connect wallet"
+  static let buttonTitle = TKLocales.TonConnect.connectWallet
 }
 
 private extension NSAttributedString {
   static var footerText: NSAttributedString {
-    "Be sure to check the service address before connecting the wallet."
+    TKLocales.TonConnect.sureCheckServiceAddress
       .withTextStyle(
         .body2,
         color: .Text.tertiary,

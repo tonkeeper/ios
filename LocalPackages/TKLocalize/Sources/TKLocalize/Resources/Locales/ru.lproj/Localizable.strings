@@ -8,6 +8,9 @@
 "actions.edit" = "Изменить";
 "actions.copy" = "Скопировать";
 "actions.sign_out" = "Выйти";
+"actions.more" = "Ещё";
+"actions.loading" = "Загрузка";
+"actions.failed" = "Неуспешно";
 
 "errors.unknown" = "Ошибка";
 
@@ -27,6 +30,9 @@
 
 "purchases.title" = "Покупки";
 "purchases.empty_placeholder" = "Ваши покупки\nпоявятся здесь";
+//MARK - TODO
+"purchases.unnamed_collection" = "Unnamed collection";
+"purchases.unverified" = "Непроверенный";
 
 "history.title" = "История";
 "history.placeholder.title" = "Ваша история\nбудет показана здесь";
@@ -139,6 +145,18 @@
 "backup.warning.list.item1" = "Никогда и нигде не вводите свой секретный ключ для доступа к кошельку, кроме Tonkeeper.";
 "backup.warning.list.item2" = "Поддержка Tonkeeper никогда не запрашивает секретный ключ.";
 "backup.warning.list.item3" = "Любой, кто знает ваш секретный ключ, сможет получить доступ к вашему кошельку.";
+
+"backup.show.title" = "Секретный ключи";
+"backup.show.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
+"backup.show.button.title" = "Скопировать";
+
+"backup.check.title" = "Секретный ключи";
+"backup.check.caption" = "Запишите эти слова с их номерами и сохраните их в надежном месте.";
+"backup.check.button.title" = "Проверить резервную копию";
+
+"backup.check.input.title" = "Проверка резервной копии";
+"backup.check.input.caption" = "Давайте проверим, все ли вы записали правильно. Введите слова %d, %d, и %d.";
+"backup.check.input.button.title" = "Готово";
 
 "security.title" = "Безопасность";
 "security.use" = "Использовать %@";
@@ -327,3 +345,101 @@
 "home_screen_configuration.sections.pinned" = "Закреплённые";
 "home_screen_configuration.sections.all_assets" = "Все активы";
 "home_screen_configuration.sections.sorted_by_price" = "По стоимости";
+
+"nft_details.single_nft" = "Одиночный NFT";
+"nft_details.details" = "Детали";
+"nft_details.view_in_explorer" = "Подробнее";
+"nft_details.owner" = "Владелец";
+"nft_details.expiration_date" = "Истекает";
+"nft_details.contract_address" = "Адрес контракта";
+"nft_details.properties" = "Характеристики";
+"nft_details.transfer" = "Отправить";
+"nft_details.linked_with" = "Связан с %@";
+"nft_details.linked_domain" = "Привязать домен";
+"nft_details.renew_until" = "Продлить до %@";
+"nft_details.expires_in_days" = "Истекает через %@ дней";
+"nft_details.unverified_nft" = "Непроверенный NFT";
+"nft_details.about_collection" = "Подробнее о коллекции";
+"nft_details.domain_on_sale_description" = "Домен сейчас выставлен на продажу на маркете. Чтобы передать, необходимо сначала снять его с продажи.";
+"nft_details.nft_on_sale_description" = "NFT сейчас выставлен на продажу на маркете. Чтобы передать, необходимо сначала снять его с продажи.";
+
+"buy_list_popup.do_not_show_again" = "Не показывать снова";
+"buy_list_popup.you_are_opening_external_app" = "Вы открываете внешнее приложение, которым не управляет Tonkeeper.";
+
+"ugly_buy_list.buy" = "Купить";
+
+"settings_list_notifications_configurator.connectedAppsTitle" = "Приложения";
+"settings_list_notifications_configurator.connectedAppsSectionCaption" = "Уведомления от подключенных приложений в вашей активности";
+
+"settings_list_security_configurator.face_id" = "Face ID";
+"settings_list_security_configurator.touch_id" = "Touch ID";
+
+"signer_sign.step_one" = "Шаг 1";
+"signer_sign.step_one_description" = "Отсканируйте QR-код с помощью Signer";
+"signer_sign.step_two" = "Шаг 2";
+"signer_sign.step_two_description" = "Подтвердите транзакцию в Signer";
+"signer_sign.step_three" = "Шаг 3";
+"signer_sign.step_three_description" = "Отсканируйте QR-код подписанной транзакции Signer";
+"signer_sign.transaction" = "Транзакция";
+
+"apy" = "APY";
+"max_apy" = "MAX APY";
+
+"staking_list.minimal_deposit" = "Минимальный депозит";
+
+"staking_balance_details.minimal_deposit" = "Минимальный депозит";
+"staking_balance_details.description" = "Стейкинг основан на сторонних смарт-контрактах. Tonkeeper не несет ответственности за стабильность и результат.";
+"staking_balance_details.jetton_button_description" = "Когда вы вносите TON в пул, вы получаете токен tsTON, который отображает вашу долю в пуле. По мере накопления прибыли в пуле, tsTON представляет всё большее число TON.";
+"staking_balance_details.pending_stake" = "Будет зачислено";
+"staking_balance_details.pending_unstake" = "Ожидают вывода";
+"staking_balance_details.unstake_ready" = "Готовы к выводу";
+"staking_balance_details.after_end_of_cycle" = "после окончания цикла";
+"staking_balance_details.tap_to_collect" = "Нажмите, чтобы вывести";
+"staking_balance_details.stake" = "Внести";
+"staking_balance_details.unstake" = "Вывести";
+
+"staking_confirmation_mapper.wallet" = "Кошелёк";
+"staking_confirmation_mapper.recipient" = "Получатель";
+"staking_confirmation_mapper.amount" = "Сумма";
+"staking_confirmation_mapper.apy" = "APY";
+"staking_confirmation_mapper.fee" = "Комиссия";
+"staking_confirmation_mapper.stake" = "Депозит";
+"staking_confirmation_mapper.confirm_action" = "Подтвердить действие";
+
+"staking.title" = "Стейкинг";
+
+"unstaking.title" = "Получить вывод";
+
+"staking_deposit_input.liquid_staking" = "Ликвидный стейкинг";
+"staking_deposit_input.other" = "Другие";
+"staking_deposit_input.continue_title" = "Продолжить";
+"staking_deposit_input.options" = "Options";
+
+"staking_deposit_pool_picker.max_apy" = "MAX APY";
+"staking_deposit_pool_picker.apy" = "APY";
+// MARK: -  TODO
+"staking_deposit_pool_picker.options" = "Options";
+"staking_deposit_pool_picker.liquid_staking" = "Ликвидный стейкинг";
+"staking_deposit_pool_picker.other" = "Другие";
+
+"staking_list.max_apy" = "MAX APY";
+"staking_list.apy" = "APY";
+"staking_list.minimum_deposit_description" = "Минимальный депозит %@";
+
+"staking_pool_details.max_apy" = "MAX APY";
+"staking_pool_details.apy" = "APY";
+"staking_pool_details.minimal_deposit" = "Минимальный депозит";
+"staking_pool_details.description" = "Стейкинг основан на сторонних смарт-контрактах. Tonkeeper не несет ответственности за стабильность и результат.";
+
+"ton_connect_mapper.connect_to" = "Войти в ";
+"ton_connect_mapper.requesting_capture" = "%@ запрашивает доступ к адресу вашего кошелька%@";
+
+"ton_connect.connect_wallet" = "Подключить кошелёк";
+"ton_connect.sure_check_service_address" = "Обязательно проверьте адрес сервиса перед подключением кошелька.";
+
+"wallet_balance_list.join_channel" = "Присоединяйтесь к каналу Tonkeeper";
+"wallet_balance_list.transaction_notifications" = "Включите уведомления о транзакциях";
+"wallet_balance_list.manage_button.title" = "Управлять";
+
+"buy_sell_list.buy" = "Купить";
+"buy_sell_list.sell" = "Продать";

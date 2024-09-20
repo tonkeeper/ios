@@ -96,7 +96,7 @@ final class MigrationCoordinator: RouterCoordinator<NavigationControllerRouter> 
     singOutButton.configuration.padding.bottom = 4
     singOutButton.configuration.content = TKButton.Configuration.Content(
       title: .plainString(
-        TKLocales.Actions.sign_out
+        TKLocales.Actions.signOut
       )
     )
     singOutButton.configuration.action = { [weak self] in
@@ -125,7 +125,7 @@ final class MigrationCoordinator: RouterCoordinator<NavigationControllerRouter> 
                     style: .default)
     )
     alertViewController.addAction(
-      UIAlertAction(title: TKLocales.Actions.sign_out,
+      UIAlertAction(title: TKLocales.Actions.signOut,
                     style: .destructive,
                     handler: { _ in
                       didLogout()

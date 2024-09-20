@@ -27,7 +27,7 @@ public final class CollectiblesCoordinator: RouterCoordinator<NavigationControll
     openCollectibles()
   }
   
-  public func handleTonkeeperDeeplink(deeplink: TonkeeperDeeplink) -> Bool {
+  public func handleTonkeeperDeeplink(deeplink: Deeplink) -> Bool {
     if let detailsCoordinator = detailsCoordinator {
       return detailsCoordinator.handleTonkeeperDeeplink(deeplink: deeplink)
     }

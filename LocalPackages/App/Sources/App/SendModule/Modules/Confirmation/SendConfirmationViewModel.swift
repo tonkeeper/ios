@@ -230,7 +230,7 @@ private extension SendConfirmationViewModelImplementation {
       items: [
         .button(
           TKModalCardViewController.Configuration.Button(
-            title: TKLocales.ConfirmSend.confirm_button,
+            title: TKLocales.ConfirmSend.confirmButton,
             size: .large,
             category: .primary,
             isEnabled: true,

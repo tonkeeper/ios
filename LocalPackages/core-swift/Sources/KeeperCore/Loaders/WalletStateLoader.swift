@@ -75,9 +75,11 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
       case .empty:
         return
       case .wallets(let wallets):
+        
         let currency = await currencyStore.getState()
         await loadRatesAndStore(currency: currency)
         await loadBalance(wallets: wallets.wallets, currency: currency)
+        await loadNFTs(wallet: wallets.activeWalelt)
         try? await Task.sleep(nanoseconds: 60_000_000_000)
         guard !Task.isCancelled else { return }
         startStateReload()
@@ -96,23 +98,15 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
     }
   }
   
-  func loadNFTs() {
-    Task {
-      switch await walletsStore.getState() {
-      case .empty:
-        break
-      case .wallets(let wallets):
-        await loadNFTs(wallet: wallets.activeWalelt)
-      }
-    }
-  }
-  
   private func addObservers() {
     self.walletsStore.addObserver(self) { observer, event in
       observer.didGetWalletsStoreEvent(event)
     }
     self.currencyStore.addObserver(self) { observer, event in
       observer.didGetCurrencyStoreEvent(event)
+    }
+    self.backgroundUpdateUpdater.addEventObserver(self) { observer, event in
+      observer.didGetBackgroundUpdateEvent(event)
     }
   }
   
@@ -124,7 +118,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
         await loadBalance(wallets: wallets, currency: currency)
       case .didChangeActiveWallet(let wallet):
         await loadBalance(wallets: [wallet], currency: currency)
-        loadNFTs()
+        await loadNFTs(wallet: wallet)
       default: break
       }
     }
@@ -141,6 +135,16 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
         await loadRatesAndStore(currency: currency)
         await loadBalance(wallets: wallets.wallets, currency: currency)
       }
+    }
+  }
+  
+  private func didGetBackgroundUpdateEvent(_ event: WalletBackgroundUpdate.Event) {
+    Task {
+      let currency = await currencyStore.getState()
+      await loadBalance(wallet: event.wallet, currency: currency)
+    }
+    Task {
+      await loadNFTs(wallet: event.wallet)
     }
   }
   
@@ -197,7 +201,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
         )
 
         let nfts = try await nftsTask
-        
+        try Task.checkCancellation()
         await walletNFTSStore.setNFTs(nfts, wallet: wallet)
       } catch {
         guard error.isCancelledError else { return }
@@ -260,7 +264,7 @@ public final class WalletStateLoader: StoreV3<WalletStateLoader.Event, WalletSta
       updatedState.nftLoadTasks[wallet] = task
       return StateUpdate(newState: updatedState)
     } notify: { _ in
-      if task != nil {
+      if task != nil {//÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷÷////////
         self.sendEvent(.didStartLoadNFT(wallet: wallet))
       } else {
         self.sendEvent(.didEndLoadNFT(wallet: wallet))

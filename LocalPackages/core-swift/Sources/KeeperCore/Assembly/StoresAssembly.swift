@@ -252,12 +252,12 @@ public final class StoresAssembly {
     }
   }
   
-  private weak var _backgroundUpdateStore: BackgroundUpdateStoreV3?
-  public var backgroundUpdateStore: BackgroundUpdateStoreV3 {
+  private weak var _backgroundUpdateStore: BackgroundUpdateStore?
+  public var backgroundUpdateStore: BackgroundUpdateStore {
     if let backgroundUpdateStore = _backgroundUpdateStore {
       return backgroundUpdateStore
     } else {
-      let backgroundUpdateStore = BackgroundUpdateStoreV3()
+      let backgroundUpdateStore = BackgroundUpdateStore()
       _backgroundUpdateStore = backgroundUpdateStore
       return backgroundUpdateStore
     }
@@ -271,7 +271,7 @@ public final class StoresAssembly {
       let backgroundUpdateUpdater = BackgroundUpdateUpdater(
         backgroundUpdateStore: backgroundUpdateStore,
         walletsStore: walletsStore,
-        streamingAPI: apiAssembly.streamingTonAPIClient()
+        streamingAPI: apiAssembly.streamingAPI
       )
       _backgroundUpdateUpdater = backgroundUpdateUpdater
       return backgroundUpdateUpdater

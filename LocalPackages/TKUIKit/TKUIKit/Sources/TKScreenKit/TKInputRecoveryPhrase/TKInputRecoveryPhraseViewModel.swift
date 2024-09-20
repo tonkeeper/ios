@@ -79,7 +79,7 @@ final class TKInputRecoveryPhraseViewModelImplementation: TKInputRecoveryPhraseV
     self.validator = validator
     self.suggestsProvider = suggestsProvider
     var continueButtonConfiguration = TKButton.Configuration.actionButtonConfiguration(category: .primary, size: .large)
-    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continue_action)
+    continueButtonConfiguration.content.title = .plainString(TKLocales.Actions.continueAction)
     self.continueButtonConfiguration = continueButtonConfiguration
   }
 }

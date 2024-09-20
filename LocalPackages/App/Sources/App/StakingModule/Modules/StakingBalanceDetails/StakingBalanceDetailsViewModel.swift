@@ -3,6 +3,7 @@ import TKUIKit
 import TKCore
 import KeeperCore
 import BigInt
+import TKLocalize
 
 protocol StakingBalanceDetailsModuleOutput: AnyObject {
   var didOpenURL: ((URL) -> Void)? { get set }
@@ -364,18 +365,18 @@ private extension StakingBalanceDetailsViewModelImplementation {
 }
 
 private extension String {
-  static let mostProfitableTag = "MAX APY"
-  static let apy = "APY"
-  static let minimalDeposit = "Minimal Deposit"
-  static let description = "Staking is based on smart contracts by third parties. Tonkeeper is not responsible for staking experience."
-  static let jettonButtonDescription = "When you stake TON in a Tonstakers pool, you receive a token called tsTON that represents your share in the pool. As the pool accumulates profits, your tsTON represents larger amount of TON."
-  static let pendingStakeTitle = "Pending Stake"
-  static let pendingUntakeTitle = "Pending Unstake"
-  static let unstakeReadyTitle = "Unstake ready"
-  static let afterTheEndOfTheCycle = "after the end of the cycle"
-  static let tapToCollect = "Tap to collect"
-  static let stakeTitle = "Stake"
-  static let unstakeTitle = "Unstake"
+  static let mostProfitableTag = TKLocales.maxApy
+  static let apy = TKLocales.apy
+  static let minimalDeposit = TKLocales.StakingBalanceDetails.minimalDeposit
+  static let description = TKLocales.StakingBalanceDetails.description
+  static let jettonButtonDescription = TKLocales.StakingBalanceDetails.jettonButtonDescription
+  static let pendingStakeTitle = TKLocales.StakingBalanceDetails.pendingStake
+  static let pendingUntakeTitle = TKLocales.StakingBalanceDetails.pendingUnstake
+  static let unstakeReadyTitle = TKLocales.StakingBalanceDetails.unstakeReady
+  static let afterTheEndOfTheCycle = TKLocales.StakingBalanceDetails.afterEndOfCycle
+  static let tapToCollect = TKLocales.StakingBalanceDetails.tapToCollect
+  static let stakeTitle = TKLocales.StakingBalanceDetails.stake
+  static let unstakeTitle = TKLocales.StakingBalanceDetails.unstake
 }
 
 private extension CGSize {

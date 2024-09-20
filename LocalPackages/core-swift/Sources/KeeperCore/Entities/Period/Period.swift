@@ -48,7 +48,7 @@ public enum Period: CaseIterable {
     case .day: return TKLocales.Periods.day
     case .week: return TKLocales.Periods.week
     case .month: return TKLocales.Periods.month
-    case .halfYear: return TKLocales.Periods.half_year
+    case .halfYear: return TKLocales.Periods.halfYear
     case .year: return TKLocales.Periods.year
     }
   }

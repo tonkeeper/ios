@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import KeeperCore
 import BigInt
+import TKLocalize
 
 struct StakingListViewModelBuilder {
   private let decimalFormatter: DecimalAmountFormatter
@@ -61,7 +62,7 @@ struct StakingListViewModelBuilder {
 }
 
 private extension String {
-  static let mostProfitableTag = "MAX APY"
-  static let apy = "APY"
-  static let minimalDeposit = "Minimal Deposit"
+  static let mostProfitableTag = TKLocales.maxApy
+  static let apy = TKLocales.apy
+  static let minimalDeposit = TKLocales.StakingList.minimalDeposit
 }

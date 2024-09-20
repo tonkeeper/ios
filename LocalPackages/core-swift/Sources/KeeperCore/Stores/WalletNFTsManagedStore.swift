@@ -43,6 +43,9 @@ public final class WalletNFTsManagedStore: StoreV3<WalletNFTsManagedStore.Event,
     setState { [weak self] _ in
       guard let self else { return nil }
       return StateUpdate(newState: calculateState())
+    } notify: { [weak self] _ in
+      guard let self else { return }
+      self.sendEvent(.didUpdateNFTs(wallet: self.wallet))
     }
   }
   

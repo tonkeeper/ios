@@ -5,7 +5,7 @@ import PackageDescription
 let package = Package(
   name: "WalletCore",
   platforms: [
-    .macOS(.v12), .iOS(.v14)
+    .iOS(.v14)
   ],
   products: [
     .library(name: "WalletCore", type: .dynamic, targets: ["KeeperCore"])
@@ -35,8 +35,6 @@ let package = Package(
               .product(name: "TonSwift", package: "ton-swift"),
               .product(name: "TonAPI", package: "ton-api-swift"),
               .product(name: "TonStreamingAPI", package: "ton-api-swift"),
-              .product(name: "StreamURLSessionTransport", package: "ton-api-swift"),
-              .product(name: "EventSource", package: "ton-api-swift"),
               .target(name: "TonConnectAPI"),
               .target(name: "CoreComponents")
             ],

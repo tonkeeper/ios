@@ -2,6 +2,7 @@ import UIKit
 import TKUIKit
 import KeeperCore
 import BigInt
+import TKLocalize
 
 protocol StakingListModuleOutput: AnyObject {
   var didSelectPool: ((StakingListPool) -> Void)? { get set }
@@ -110,8 +111,8 @@ private extension StakingListViewModelImplementation {
       maximumFractionDigits: 2,
       symbol: TonInfo.symbol
     )
-    let minimumDescription = "Minimum deposit \(minimumFormatted)"
-    
+    let minimumDescription = TKLocales.StakingList.minimumDepositDescription(minimumFormatted)
+
     let description = "\(minimumDescription)\n\(percentDescription)"
     
     let title = pool.pool.name.withTextStyle(
@@ -237,6 +238,6 @@ private extension StakingListViewModelImplementation {
 }
 
 private extension String {
-  static let mostProfitableTag = "MAX APY"
-  static let apy = "APY"
+  static let mostProfitableTag = TKLocales.StakingList.maxApy
+  static let apy = TKLocales.StakingList.apy
 }
