@@ -101,7 +101,17 @@ public final class StoresAssembly {
     _currencyStore = store
     return store
   }
-  
+
+  private weak var _regionStore: RegionStore?
+  public var regionStore: RegionStore {
+    if let _regionStore {
+      return _regionStore
+    }
+    let store = RegionStore(keeperInfoStore: keeperInfoStore)
+    _regionStore = store
+    return store
+  }
+
   private weak var _tonRatesStore: TonRatesStore?
   public var tonRatesStore: TonRatesStore {
     if let tonRatesStoreV3 = _tonRatesStore {

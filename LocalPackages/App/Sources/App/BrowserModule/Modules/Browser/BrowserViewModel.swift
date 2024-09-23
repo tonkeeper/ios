@@ -45,8 +45,10 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
 
   func viewDidLoad() {
     configure()
-    configureSelectedCountry()
     didSelectExplore?()
+
+    selectedCountry = regionStore.initialState
+    bindRegion()
     updateCountryPickerButton()
   }
 
@@ -58,16 +60,16 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
   
   private let exploreModuleOutput: BrowserExploreModuleOutput
   private let connectedModuleOutput: BrowserConnectedModuleOutput
-  private let appSettings: AppSettings
+  private let regionStore: RegionStore
 
   // MARK: - Init
   
   init(exploreModuleOutput: BrowserExploreModuleOutput,
        connectedModuleOutput: BrowserConnectedModuleOutput,
-       appSettings: AppSettings) {
+       regionStore: RegionStore) {
     self.exploreModuleOutput = exploreModuleOutput
     self.connectedModuleOutput = connectedModuleOutput
-    self.appSettings = appSettings
+    self.regionStore = regionStore
   }
 }
 
@@ -104,6 +106,19 @@ private extension BrowserViewModelImplementation {
     didUpdateSegmentedControl?(segmentedControlModel)
   }
 
+  private func bindRegion() {
+    regionStore.addObserver(self) { observer, event in
+      DispatchQueue.main.async {
+        switch event {
+        case .didUpdateRegion(let country):
+          observer.selectedCountry = country
+          self.updateSelectedCountry(country)
+          self.updateCountryPickerButton()
+        }
+      }
+    }
+  }
+
   func updateCountryPickerButton() {
     let title: String
     switch selectedCountry {
@@ -125,14 +140,6 @@ private extension BrowserViewModelImplementation {
 
     didUpdateRightHeaderButton?(model)
   }
-
-  func configureSelectedCountry() {
-    guard let selectedCountryCode = appSettings.selectedCountryCode else {
-      return
-    }
-
-    selectedCountry = .country(countryCode: selectedCountryCode)
-  }
 }
 
 // MARK: -  BrowserModuleInput
@@ -144,12 +151,13 @@ extension BrowserViewModelImplementation: BrowserModuleInput {
       return
     }
 
-    self.selectedCountry = selectedCountry
-    if case let .country(countryCode) = selectedCountry {
-      appSettings.selectedCountryCode = countryCode
-    } else {
-      appSettings.selectedCountryCode = nil
+    Task {
+      await regionStore.updateRegion(selectedCountry)
+      self.selectedCountry = selectedCountry
+
+      await MainActor.run {
+        self.updateCountryPickerButton()
+      }
     }
-    updateCountryPickerButton()
   }
 }

@@ -51,7 +51,9 @@ final class BrowserConnectedViewModelImplementation: BrowserConnectedViewModel, 
       icon: connectedApp.iconURL,
       poster: nil,
       url: connectedApp.url,
-      textColor: nil
+      textColor: nil,
+      excludeCountries: nil,
+      includeCountries: nil
     )
     didSelectDapp?(dapp)
   }

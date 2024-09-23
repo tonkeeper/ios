@@ -202,6 +202,7 @@ public final class WalletsStore: StoreV3<WalletsStore.Event, WalletsStore.State>
 }
 
 private extension KeeperInfo {
+
   static func keeperInfo(wallets: [Wallet]) -> KeeperInfo {
     let keeperInfo = KeeperInfo(
       wallets: wallets,
@@ -209,6 +210,7 @@ private extension KeeperInfo {
       currency: .defaultCurrency,
       securitySettings: SecuritySettings(isBiometryEnabled: false, isLockScreen: false),
       appSettings: AppSettings(isSetupFinished: false, isSecureMode: false),
+      country: .auto,
       assetsPolicy: AssetsPolicy(policies: [:], ordered: []),
       appCollection: AppCollection(connected: [:], recent: [], pinned: [])
     )
