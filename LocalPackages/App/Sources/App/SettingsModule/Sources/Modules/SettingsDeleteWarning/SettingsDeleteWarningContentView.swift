@@ -4,6 +4,12 @@ import TKLocalize
 
 final class SettingsDeleteWarningContentView: TKView {
   
+  var tickText: NSAttributedString? {
+    didSet {
+      tickButton.label.attributedText = tickText
+    }
+  }
+  
   var didToggle: ((Bool) -> Void)?
   var didTapBackup: (() -> Void)?
   
@@ -21,13 +27,6 @@ final class SettingsDeleteWarningContentView: TKView {
     backgroundColor = .Background.content
     layer.cornerRadius = 16
     layer.cornerCurve = .continuous
-    
-    tickButton.label.attributedText = TKLocales.SignOutWarning.tickDescription.withTextStyle(
-      .body1,
-      color: .Text.primary,
-      alignment: .left,
-      lineBreakMode: .byWordWrapping
-    )
     
     tickButton.addAction(UIAction(handler: { [weak self] _ in
       self?.isSelected.toggle()

@@ -2,6 +2,7 @@ import UIKit
 import TKCoordinator
 import TKUIKit
 import TKCore
+import TKLocalize
 import KeeperCore
 
 final class SettingsCoordinator: RouterCoordinator<NavigationControllerRouter> {
@@ -70,8 +71,12 @@ private extension SettingsCoordinator {
       self?.openBackup(wallet: wallet)
     }
     
+    configurator.didTapSignOutRegularWallet = { [weak self] wallet in
+      self?.deleteRegular(wallet: wallet, isSignOut: true)
+    }
+    
     configurator.didTapDeleteRegularWallet = { [weak self] wallet in
-      self?.deleteRegular(wallet: wallet)
+      self?.deleteRegular(wallet: wallet, isSignOut: false)
     }
     
     configurator.didTapPurchases = { [weak self] wallet in
@@ -265,8 +270,17 @@ private extension SettingsCoordinator {
     })
   }
   
-  func deleteRegular(wallet: Wallet) {
-    let viewController = SettingsDeleteWarningViewController()
+  func deleteRegular(wallet: Wallet, isSignOut: Bool) {
+    let viewController = SettingsDeleteWarningViewController(
+      popupTitle: isSignOut ? TKLocales.SignOutWarning.title : TKLocales.DeleteWalletWarning.title,
+      popupCaption: isSignOut ? TKLocales.SignOutWarning.caption : TKLocales.DeleteWalletWarning.caption,
+      buttonTitle: isSignOut ? TKLocales.Actions.signOut : TKLocales.DeleteWalletWarning.button,
+      walletName: wallet.iconWithName(
+        attributes: TKTextStyle.body1.getAttributes(color: .Text.primary),
+        iconColor: .Icon.primary,
+        iconSide: 20
+      )
+    )
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
 
     viewController.didTapSignOut = { [weak bottomSheetViewController, weak self] in

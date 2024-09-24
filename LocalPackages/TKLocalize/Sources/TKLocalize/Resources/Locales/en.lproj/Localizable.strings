@@ -68,9 +68,11 @@
 "settings.items.contact_us" = "Contact us";
 "settings.items.rate" = "Rate %@";
 "settings.items.legal" = "Legal";
-"settings.items.delete_account" = "Delete ";
+"settings.items.sign_out_account" = "Sign Out ";
+"settings.items.delete_account" = "Delete Account";
 "settings.items.delete_watch_only" = "Delete Watch account";
 "settings.items.delete_acount_alert_title" = "Delete account";
+"settings.items.delete_watch_only_acount_alert_title" = "Delete Watch account";
 "settings.items.setup_wallet_description" = "Edit name and color";
 "settings.items.purchases" = "Purchases";
 "settings.items.notifications" = "Notifications";
@@ -268,6 +270,7 @@
 "wallet_tags.watch_only" = "Watch only";
 
 "balance_header.your_address" = "Your address: ";
+"balance_header.address" = "Address: ";
 
 "balance_list.staking_item.title" = "Staked";
 "balance_list.staking_item.comment.ready" = "%@ TON ready.\nTap to collect.";
@@ -346,6 +349,12 @@
 "sign_out_warning.caption" = "Wallet keys will be erased from this device.";
 "sign_out_warning.tick_description" = "I have a backup copy of the recovery phrase for ";
 "sign_out_warning.tick_back_up" = "Back up";
+
+"delete_wallet_warning.title" = "Delete Wallet Data";
+"delete_wallet_warning.caption" = "Wallet keys and all personal data will be erased from this device.";
+"delete_wallet_warning.tick_description" = "I have a backup copy of the recovery phrase for ";
+"delete_wallet_warning.tick_back_up" = "Back up";
+"delete_wallet_warning.button" = "Delete Wallet Data";
 
 "home_screen_configuration.title" = "Home Screen";
 "home_screen_configuration.sections.pinned" = "Pinned";

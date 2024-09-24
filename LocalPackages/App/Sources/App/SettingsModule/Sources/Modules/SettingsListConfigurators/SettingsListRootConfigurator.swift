@@ -16,6 +16,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   var didShowAlert: ((_ title: String,
                       _ description: String?,
                       _ actions: [UIAlertAction]) -> Void)?
+  var didTapSignOutRegularWallet: ((Wallet) -> Void)?
   var didTapDeleteRegularWallet: ((Wallet) -> Void)?
   var didTapLogout: (() -> Void)?
   var didDeleteWallet: (() -> Void)?
@@ -183,14 +184,17 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   }
   
   private func createSupportSection() -> SettingsListSection {
-    let items = [
+    var items = [
       createFAQItem(),
       createSupportItem(),
       createNewsItem(),
       createContactUsItem(),
-      createRateItem(),
-      createLegalItem()
+      createRateItem()
     ]
+    if let deleteItem = createDeleteWalletItem() {
+      items.append(deleteItem)
+    }
+    items.append(createLegalItem())
     return SettingsListSection.listItems(
       SettingsListItemsSection(
         items: items,
@@ -202,8 +206,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
   
   private func createLogoutSection() -> SettingsListSection {
     let items = [
-      createDeleteWalletItem(),
-      createLogoutItem()
+      createSignOutWalletItem()
     ]
     return SettingsListSection.listItems(
       SettingsListItemsSection(
@@ -502,42 +505,27 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     )
   }
   
-  func createDeleteWalletItem() -> SettingsListItem {
+  func createSignOutWalletItem() -> SettingsListItem {
     let title: NSAttributedString
     let action: () -> Void
     
-    switch wallet.kind {
-    case .watchonly:
-      title = TKLocales.Settings.Items.deleteWatchOnly.withTextStyle(.label1, color: .Text.primary)
-      action = {
-        let actions = [
-          UIAlertAction(title: TKLocales.Actions.delete, style: .destructive, handler: { [weak self] _ in
-            guard let self else { return }
-            Task {
-              await self.walletDeleteController.deleteWallet(wallet: self.wallet)
-              await MainActor.run {
-                self.didDeleteWallet?()
-                self.anaylticsProvider.logEvent(eventKey: .deleteWallet)
-              }
-            }
-          }),
-          UIAlertAction(title: TKLocales.Actions.cancel, style: .cancel)
-        ]
-        
-        self.didShowAlert?(
-          TKLocales.Settings.Items.deleteWatchOnly,
-          nil,
-          actions
-        )
-      }
-    case .regular:
-      title = createDeleteWalletNameTitle(wallet: wallet)
+    let isWatchOnly = wallet.kind == .watchonly
+    if isWatchOnly {
+      title = TKLocales.Settings.Items.deleteWatchOnly.withTextStyle(
+        .label1,
+        color: .Text.primary
+      )
+    } else {
+      title = createSignOutWalletNameTitle(wallet: wallet)
+    }
+    
+    let hasSeedPhrase = wallet.kind == .regular
+    if hasSeedPhrase {
       action = { [weak self] in
         guard let self else { return }
-        self.didTapDeleteRegularWallet?(self.wallet)
+        self.didTapSignOutRegularWallet?(self.wallet)
       }
-    default:
-      title = createDeleteWalletNameTitle(wallet: wallet)
+    } else {
       action = {
         let actions = [
           UIAlertAction(title: TKLocales.Actions.delete, style: .destructive, handler: { [weak self] _ in
@@ -554,13 +542,13 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         ]
         
         self.didShowAlert?(
-          TKLocales.Settings.Items.deleteAcountAlertTitle,
+          isWatchOnly ? TKLocales.Settings.Items.deleteWatchOnlyAcountAlertTitle : TKLocales.Settings.Items.deleteAcountAlertTitle,
           nil,
           actions
         )
       }
     }
-    
+
     let cellConfiguration = TKListItemCell.Configuration(
       listItemContentViewConfiguration: TKListItemContentView.Configuration(
         textContentViewConfiguration: TKListItemTextContentView.Configuration(
@@ -569,10 +557,37 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     return SettingsListItem(
       id: .deleteAccountIdentifier,
       cellConfiguration: cellConfiguration,
-      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.trashBin,
+      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.door,
                                                                  tintColor: .Accent.blue)),
       onSelection: { _ in
         action()
+      }
+    )
+  }
+  
+  private func createDeleteWalletItem() -> SettingsListItem? {
+    guard wallet.kind == .regular else { return nil }
+    let cellConfiguration = TKListItemCell.Configuration(
+      listItemContentViewConfiguration: TKListItemContentView.Configuration(
+        textContentViewConfiguration: TKListItemTextContentView.Configuration(
+          titleViewConfiguration: TKListItemTitleView.Configuration(
+            title: TKLocales.Settings.Items.deleteAccount.withTextStyle(
+              .label1,
+              color: .Text.primary
+            ),
+            numberOfLines: 1
+          )
+        )
+      )
+    )
+    return SettingsListItem(
+      id: .deleteAccountIdentifier,
+      cellConfiguration: cellConfiguration,
+      accessory: .icon(TKListItemIconAccessoryView.Configuration(icon: .TKUIKit.Icons.Size28.trashBin,
+                                                                 tintColor: .Icon.secondary)),
+      onSelection: { [weak self] _ in
+        guard let self else { return }
+        self.didTapDeleteRegularWallet?(self.wallet)
       }
     )
   }
@@ -611,7 +626,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
     )
   }
   
-  private func createDeleteWalletNameTitle(wallet: Wallet) -> NSAttributedString {
+  private func createSignOutWalletNameTitle(wallet: Wallet) -> NSAttributedString {
     let walletName = wallet.iconWithName(
       attributes: TKTextStyle.label1.getAttributes(
         color: .Text.primary,
@@ -622,7 +637,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
       iconSide: 20
     )
     
-    let delete = TKLocales.Settings.Items.deleteAccount
+    let delete = TKLocales.Settings.Items.signOutAccount
       .withTextStyle(
         .label1,
         color: .Text.primary,
