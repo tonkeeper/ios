@@ -9,7 +9,6 @@ final class BrowserHeaderView: UIView {
 
   private lazy var rightButtonContainer: UIView = {
     let view = UIView()
-    view.translatesAutoresizingMaskIntoConstraints = false
     view.setContentCompressionResistancePriority(.required, for: .horizontal)
     return view
   }()
@@ -27,13 +26,10 @@ final class BrowserHeaderView: UIView {
     rightButtonContainer.removeSubviews()
 
     let rightButton = TKUIHeaderTitleIconButton()
-    if let action = model.action {
-      rightButton.addTapAction(action)
-    }
     rightButton.configure(
       model: TKUIButtonTitleIconContentView.Model(title: model.title)
     )
-    rightButton.translatesAutoresizingMaskIntoConstraints = false
+    rightButton.addTapAction(model.action)
     rightButtonContainer.addSubview(rightButton)
     rightButton.snp.makeConstraints { make in
       make.edges.equalTo(rightButtonContainer)

@@ -47,8 +47,8 @@ final class BrowserViewModelImplementation: BrowserViewModel, BrowserModuleOutpu
     configure()
     didSelectExplore?()
 
-    selectedCountry = regionStore.initialState
     bindRegion()
+    selectedCountry = regionStore.getState()
     updateCountryPickerButton()
   }
 
@@ -111,9 +111,7 @@ private extension BrowserViewModelImplementation {
       DispatchQueue.main.async {
         switch event {
         case .didUpdateRegion(let country):
-          observer.selectedCountry = country
-          self.updateSelectedCountry(country)
-          self.updateCountryPickerButton()
+          observer.updateSelectedCountry(country)
         }
       }
     }
@@ -153,10 +151,10 @@ extension BrowserViewModelImplementation: BrowserModuleInput {
 
     Task {
       await regionStore.updateRegion(selectedCountry)
-      self.selectedCountry = selectedCountry
 
       await MainActor.run {
-        self.updateCountryPickerButton()
+        self.selectedCountry = selectedCountry
+        updateCountryPickerButton()
       }
     }
   }

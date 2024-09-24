@@ -26,7 +26,9 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   var didUpdateViewState: ((BrowserExploreView.State) -> Void)?
   var didSelectCategory: ((PopularAppsCategory) -> Void)?
   var didSelectDapp: ((Dapp) -> Void)?
-  
+
+  private var selectedCountry: SelectedCountry = .auto
+
   // MARK: - BrowserExploreViewModel
   
   var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<BrowserExploreSection, AnyHashable>) -> Void)?
@@ -34,10 +36,29 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   
   func viewDidLoad() {
     Task {
+      bindRegion()
       await reloadContent()
     }
   }
-  
+
+  private func bindRegion() {
+    selectedCountry = regionStore.getState()
+
+    regionStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateRegion(let country):
+        guard observer.selectedCountry != country else {
+          return
+        }
+
+        observer.selectedCountry = country
+        Task {
+          await observer.reloadContent()
+        }
+      }
+    }
+  }
+
   func didSelectCategoryAll(index: Int) {
     let categoryIndex = max(index - 1, 0)
     guard categoryIndex < categories.count else { return }
@@ -65,11 +86,13 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   // MARK: - Dependencies
   
   private let browserExploreController: BrowserExploreController
-  
+  private let regionStore: RegionStore
+
   // MARK: - Init
   
-  init(browserExploreController: BrowserExploreController) {
+  init(browserExploreController: BrowserExploreController, regionStore: RegionStore) {
     self.browserExploreController = browserExploreController
+    self.regionStore = regionStore
   }
 }
 
@@ -150,8 +173,27 @@ private extension BrowserExploreViewModelImplementation {
   }
   
   func mapCategories(_ categories: [PopularAppsCategory]) -> [BrowserExploreSection] {
-    categories.map { category in
-      let items = category.apps.map { mapDapp($0) }
+    let filter: String?
+    switch selectedCountry {
+    case .auto:
+      filter = Locale.current.regionCode ?? ""
+    case .all:
+      filter = nil
+    case let .country(countryCode):
+      filter = countryCode
+    }
+
+    return categories.compactMap { category in
+      let items: [TKUIListItemCell.Configuration?] = category.apps.compactMap {
+        if let excludeCountries = $0.excludeCountries,
+           let filter,
+           excludeCountries.contains(where: { $0 == filter }) {
+          return nil
+        }
+
+        return mapDapp($0)
+      }
+      
       return BrowserExploreSection.regular(
         title: category.title ?? "",
         hasAll: items.count > 3,

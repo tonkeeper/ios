@@ -40,6 +40,10 @@ extension KeeperInfo: Codable {
     
     self.assetsPolicy = try container.decode(AssetsPolicy.self, forKey: .assetsPolicy)
     self.appCollection = try container.decode(AppCollection.self, forKey: .appCollection)
-    self.country = try container.decode(SelectedCountry.self, forKey: .country)
+    if let selectedCountry = try container.decodeIfPresent(SelectedCountry.self, forKey: .country) {
+      self.country = selectedCountry
+    } else {
+      self.country = .auto
+    }
   }
 }

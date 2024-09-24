@@ -45,9 +45,9 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   func setSelectedCountry(_ selectedCountry: SelectedCountry) {
     Task {
       await regionStore.updateRegion(selectedCountry)
-      self.selectedCountry = selectedCountry
 
       await MainActor.run {
+        self.selectedCountry = selectedCountry
         updateCountryPickerButton()
         categoryExpandStates = [:]
         switch fiatMethodsState {
@@ -81,7 +81,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
     
     fiatMethodsState = fiatMethodsStore.getState()
 
-    selectedCountry = regionStore.initialState
+    selectedCountry = regionStore.getState()
     updateCountryPickerButton()
   }
 

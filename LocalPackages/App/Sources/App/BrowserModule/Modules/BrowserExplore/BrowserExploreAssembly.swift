@@ -8,7 +8,8 @@ struct BrowserExploreAssembly {
   -> MVVMModule<BrowserExploreViewController, BrowserExploreModuleOutput, Void> {
 
     let viewModel = BrowserExploreViewModelImplementation(
-      browserExploreController: keeperCoreAssembly.browserExploreController()
+      browserExploreController: keeperCoreAssembly.browserExploreController(),
+      regionStore: keeperCoreAssembly.storesAssembly.regionStore
     )
     let viewController = BrowserExploreViewController(
       viewModel: viewModel
