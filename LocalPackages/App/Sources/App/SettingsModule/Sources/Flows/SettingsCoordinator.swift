@@ -266,7 +266,15 @@ private extension SettingsCoordinator {
   }
   
   func deleteRegular(wallet: Wallet) {
-    let viewController = SettingsDeleteWarningViewController()
+    let viewController = SettingsDeleteWarningViewController(
+      delete: .wallet(
+        walletName: wallet.iconWithName(
+          attributes: TKTextStyle.body1.getAttributes(color: .Text.primary),
+          iconColor: .Icon.primary,
+          iconSide: 20
+        )
+      )
+    )
     let bottomSheetViewController = TKBottomSheetViewController(contentViewController: viewController)
 
     viewController.didTapSignOut = { [weak bottomSheetViewController, weak self] in
