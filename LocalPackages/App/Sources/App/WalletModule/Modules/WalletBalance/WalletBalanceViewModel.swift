@@ -624,9 +624,13 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         textColor: .Text.secondary,
         contentAlpha: [.normal: 1, .highlighted: 0.48],
         action: { [weak self] in
-          self?.appSettings.addressCopyCount += 1
-          self?.didTapCopy(address: state.address.toString(),
+          guard let self else { return }
+          self.didTapCopy(address: state.address.toString(),
                            toastConfiguration: state.wallet.copyToastConfiguration())
+          self.appSettings.addressCopyCount += 1
+          if self.appSettings.addressCopyCount <= 3 {
+            didUpdateTotalBalanceState(state)
+          }
         }
       )
       
