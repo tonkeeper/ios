@@ -614,7 +614,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         if self.appSettings.addressCopyCount > 2 {
           state.address.toShort()
         } else {
-          TKLocales.BalanceHeader.yourAddress + state.address.toShort()
+          (state.wallet.kind == .watchonly ? TKLocales.BalanceHeader.address : TKLocales.BalanceHeader.yourAddress) + state.address.toShort()
         }
       }()
       
@@ -624,9 +624,13 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         textColor: .Text.secondary,
         contentAlpha: [.normal: 1, .highlighted: 0.48],
         action: { [weak self] in
-          self?.appSettings.addressCopyCount += 1
-          self?.didTapCopy(address: state.address.toString(),
+          guard let self else { return }
+          self.didTapCopy(address: state.address.toString(),
                            toastConfiguration: state.wallet.copyToastConfiguration())
+          self.appSettings.addressCopyCount += 1
+          if self.appSettings.addressCopyCount <= 3 {
+            didUpdateTotalBalanceState(state)
+          }
         }
       )
       

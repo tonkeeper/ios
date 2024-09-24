@@ -16,20 +16,59 @@ extension MainCoordinator {
     let deeplinkHandleTask = Task {
       do {
         let wallet = try await walletsStore.getActiveWallet()
-        let recipient = try await self.mainController.resolveSend(
-          recipient: recipient,
-          jettonAddress: jettonAddress
-        )
+        
+        let token: Token
+        if let jettonAddress {
+          let jettonBalance = try await self.jettonBalanceResolver.resolveJetton(jettonAddress: jettonAddress, wallet: wallet)
+          if let amount, jettonBalance.quantity < amount {
+            await MainActor.run {
+              ToastPresenter.hideAll()
+              self.openInsufficientFundsPopup(
+                jettonInfo: jettonBalance.item.jettonInfo,
+                requiredAmount: amount,
+                availableAmount: jettonBalance.quantity
+              )
+            }
+            return
+          }
+          token = .jetton(jettonBalance.item)
+        } else {
+          token = .ton
+        }
+        
+        let recipient = try await self.recipientResolver.resolverRecipient(string: recipient, isTestnet: wallet.isTestnet)
+        
         guard !Task.isCancelled else { return }
         await MainActor.run {
           self.deeplinkHandleTask = nil
           ToastPresenter.hideAll()
           self.openSend(
             wallet: wallet,
-            token: .ton,
+            token: token,
             recipient: recipient,
             amount: amount,
             comment: comment
+          )
+        }
+      } catch JettonBalanceResolverError.unknownJetton {
+        await MainActor.run {
+          self.deeplinkHandleTask = nil
+          ToastPresenter.hideAll()
+          ToastPresenter.showToast(
+            configuration: ToastPresenter.Configuration(
+              title: "Unknown token",
+              dismissRule: .default
+            )
+          )
+        }
+      } catch JettonBalanceResolverError.insufficientFunds(let jettonInfo, let balance, _) {
+        await MainActor.run { [weak self, jettonInfo] in
+          self?.deeplinkHandleTask = nil
+          ToastPresenter.hideAll()
+          self?.openInsufficientFundsPopup(
+            jettonInfo: jettonInfo,
+            requiredAmount: amount ?? 0,
+            availableAmount: balance
           )
         }
       } catch {
@@ -38,7 +77,6 @@ extension MainCoordinator {
           ToastPresenter.hideAll()
           ToastPresenter.showToast(configuration: .failed)
         }
-        return
       }
     }
     

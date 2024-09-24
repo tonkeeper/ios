@@ -165,22 +165,24 @@ final class SendV3ViewModelImplementation: SendV3ViewModel, SendV3ModuleOutput, 
     isResolving = true
     recipientResolveTask = Task {
       try? await Task.sleep(nanoseconds: 1_000_000_000)
-      guard !Task.isCancelled else { return }
-      guard let recipient = await sendController.resolveRecipient(input: string) else {
+      do {
+        try Task.checkCancellation()
+        let recipient = try await sendController.resolveRecipient(input: string)
+        try Task.checkCancellation()
         await MainActor.run {
-          self.recipient = nil
-          self.isRecipientValid = false
+          self.recipient = recipient
+          self.isRecipientValid = true
+          self.isResolving = false
+          self.isCommentRequired = recipient.isMemoRequired
+        }
+      } catch {
+        guard !error.isCancelledError else { return }
+        await MainActor.run {
+          self.recipient = recipient
+          self.isRecipientValid = true
           self.isResolving = false
           self.isCommentRequired = false
         }
-        return
-      }
-      
-      await MainActor.run {
-        self.recipient = recipient
-        self.isRecipientValid = true
-        self.isResolving = false
-        self.isCommentRequired = recipient.isMemoRequired
       }
     }
   }

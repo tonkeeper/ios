@@ -11,6 +11,7 @@
 "actions.more" = "Ещё";
 "actions.loading" = "Загрузка";
 "actions.failed" = "Неуспешно";
+"actions.ok" = "Хорошо";
 
 "errors.unknown" = "Ошибка";
 
@@ -68,9 +69,11 @@
 "settings.items.contact_us" = "Написать команде";
 "settings.items.rate" = "Оценить %@";
 "settings.items.legal" = "Юридические документы";
-"settings.items.delete_account" = "Удалить ";
+"settings.items.sign_out_account" = "Выйти ";
+"settings.items.delete_account" = "Удалить аккаунт";
 "settings.items.delete_watch_only" = "Удалить аккаунт";
 "settings.items.delete_acount_alert_title" = "Удалить аккаунт";
+"settings.items.delete_watch_only_acount_alert_title" = "Удалить аккаунт для просмотра";
 "settings.items.setup_wallet_description" = "Кастомизировать";
 "settings.items.purchases" = "Покупки";
 "settings.items.notifications" = "Уведомления";
@@ -265,6 +268,7 @@
 "wallet_tags.watch_only" = "Просмотр";
 
 "balance_header.your_address" = "Ваш адрес: ";
+"balance_header.address" = "Адрес: ";
 
 "balance_list.staking_item.title" = "Стейкинг";
 "balance_list.staking_item.comment.ready" = "%@ TON готовы к выводу.\nНажмите, чтобы вывести";
@@ -325,6 +329,9 @@
 "ledger_confirm.items.ton_app.description" = "Разблокируйте его и откройте приложение TON";
 "ledger_confirm.items.confirm" = "Подтвердите транзакцию в Ledger";
 
+"ledger_version_update.title" = "Обновите TON приложение в Ledger до версии %@";
+"ledger_version_update.caption" = "Этот тип транзакции не поддерживается в вашей текущей версии приложения.";
+
 "bluetooth.powered_off_alert.title" = "Bluetooth выключен";
 "bluetooth.powered_off_alert.message" = "Пожалуйста, включите Bluetooth, чтобы использовать эту функцию";
 "bluetooth.powered_off_alert.open_settings" = "Открыть настройки";
@@ -340,6 +347,12 @@
 "sign_out_warning.caption" = "Ключи кошелька будут удалены с этого устройства.";
 "sign_out_warning.tick_description" = "У меня есть резервная копия фразы восстановления кошелька ";
 "sign_out_warning.tick_back_up" = "Сделать резервную копию";
+
+"delete_wallet_warning.title" = "Удалить данные кошелька";
+"delete_wallet_warning.caption" = "Ключи кошелька и все личные данные будут удалены с этого устройства.";
+"delete_wallet_warning.tick_description" = "У меня есть резервная копия фразы восстановления кошелька ";
+"delete_wallet_warning.tick_back_up" = "Сделать резервную копию";
+"delete_wallet_warning.button" = "Удалить данные кошелька";
 
 "home_screen_configuration.title" = "Управление";
 "home_screen_configuration.sections.pinned" = "Закреплённые";

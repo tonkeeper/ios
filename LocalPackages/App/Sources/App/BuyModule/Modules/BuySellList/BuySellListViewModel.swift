@@ -267,24 +267,26 @@ private extension BuySellListViewModelImplementation {
       )
       
       let filteredItems: [FiatMethodItem] = {
+        func filterByCountryCode(items: FiatMethods, countryCode: String?) -> [FiatMethodItem] {
+          if let methods = fiatMethods.layoutByCountry
+            .first(where: { $0.countryCode == countryCode })?.methods {
+            return category.items.filter { item in
+              // Filter by country code all items except swap items
+              methods.contains(item.id) || item.id.contains("swap")
+            }
+          } else {
+            return category.items
+          }
+        }
+        
         switch selectedCountry {
         case .all:
           return category.items
         case .auto:
           let region = Locale.current.regionCode
-          if let methods = fiatMethods.layoutByCountry
-            .first(where: { $0.countryCode == region })?.methods {
-            return category.items.filter { methods.contains($0.id) }
-          } else {
-            return category.items
-          }
+          return filterByCountryCode(items: fiatMethods, countryCode: region)
         case .country(let countryCode):
-          if let methods = fiatMethods.layoutByCountry
-            .first(where: { $0.countryCode == countryCode })?.methods {
-            return category.items.filter { methods.contains($0.id) }
-          } else {
-            return category.items
-          }
+          return filterByCountryCode(items: fiatMethods, countryCode: countryCode)
         }
       }()
       

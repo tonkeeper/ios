@@ -355,6 +355,10 @@ public extension UIImage {
           .imageWithName("Icons/84/ic-camera-84")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var exclamationmarkCircle: UIImage {
+          .imageWithName("Icons/84/ic-exclamationmark-circle-84")
+          .withRenderingMode(.alwaysTemplate)
+        }
       }
       public enum Size96 {
         public static var tonIcon: UIImage {

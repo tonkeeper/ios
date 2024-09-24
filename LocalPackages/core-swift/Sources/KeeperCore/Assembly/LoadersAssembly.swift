@@ -6,13 +6,16 @@ public final class LoadersAssembly {
   private let servicesAssembly: ServicesAssembly
   private let storesAssembly: StoresAssembly
   private let tonkeeperAPIAssembly: TonkeeperAPIAssembly
+  private let apiAssembly: APIAssembly
   
   init(servicesAssembly: ServicesAssembly,
        storesAssembly: StoresAssembly,
-       tonkeeperAPIAssembly: TonkeeperAPIAssembly) {
+       tonkeeperAPIAssembly: TonkeeperAPIAssembly,
+       apiAssembly: APIAssembly) {
     self.servicesAssembly = servicesAssembly
     self.storesAssembly = storesAssembly
     self.tonkeeperAPIAssembly = tonkeeperAPIAssembly
+    self.apiAssembly = apiAssembly
   }
   
   var chartLoader: ChartV2Loader {
@@ -102,5 +105,34 @@ public final class LoadersAssembly {
     )
     _walletStateLoader = loader
     return loader
+  }
+  
+  // TODO: Rename and move to provider assembly
+  
+  private weak var _knownAccountsStore: KnownAccountsStore?
+  var knownAccountsStore: KnownAccountsStore {
+    if let knownAccountsStore = _knownAccountsStore {
+      return knownAccountsStore
+    } else {
+      let knownAccountsStore = KnownAccountsStore(
+        knownAccountsService: servicesAssembly.knownAccountsService()
+      )
+      _knownAccountsStore = knownAccountsStore
+      return knownAccountsStore
+    }
+  }
+  
+  public func recipientResolver() -> RecipientResolver {
+    RecipientResolverImplementation(
+      knownAccountsStore: knownAccountsStore,
+      dnsService: servicesAssembly.dnsService()
+    )
+  }
+  
+  public func jettonBalanceResolver() -> JettonBalanceResolver {
+    JettonBalanceResolverImplementation(
+      balanceStore: storesAssembly.balanceStore,
+      apiProvider: apiAssembly.apiProvider
+    )
   }
 }

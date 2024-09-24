@@ -50,7 +50,7 @@ public final class RootAssembly {
     } else {
       let rootController = RootController(
         remoteConfigurationStore: configurationAssembly.remoteConfigurationStore,
-        knownAccountsStore: storesAssembly.knownAccountsStore,
+        knownAccountsStore: loadersAssembly.knownAccountsStore,
         deeplinkParser: DeeplinkParser(),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
         mnemonicsRepository: repositoriesAssembly.mnemonicsRepository(),
@@ -60,15 +60,15 @@ public final class RootAssembly {
       return rootController
     }
   }
-  
-  public func migrationController(sharedCacheURL: URL,
-                                  keychainAccessGroupIdentifier: String) -> MigrationController {
-    MigrationController(
-      sharedCacheURL: sharedCacheURL,
-      keychainAccessGroupIdentifier: keychainAccessGroupIdentifier,
-      rootAssembly: self
-    )
-  }
+//  
+//  public func migrationController(sharedCacheURL: URL,
+//                                  keychainAccessGroupIdentifier: String) -> MigrationController {
+//    MigrationController(
+//      sharedCacheURL: sharedCacheURL,
+//      keychainAccessGroupIdentifier: keychainAccessGroupIdentifier,
+//      rootAssembly: self
+//    )
+//  }
   
   public func onboardingAssembly() -> OnboardingAssembly {
     OnboardingAssembly(

@@ -32,7 +32,6 @@ public final class Assembly {
     coreAssembly: coreAssembly
   )
   private lazy var storesAssembly = StoresAssembly(
-    servicesAssembly: servicesAssembly,
     apiAssembly: apiAssembly,
     coreAssembly: coreAssembly,
     repositoriesAssembly: repositoriesAssembly
@@ -40,7 +39,8 @@ public final class Assembly {
   private lazy var loadersAssembly = LoadersAssembly(
     servicesAssembly: servicesAssembly,
     storesAssembly: storesAssembly,
-    tonkeeperAPIAssembly: tonkeeperApiAssembly
+    tonkeeperAPIAssembly: tonkeeperApiAssembly,
+    apiAssembly: apiAssembly
   )
   private lazy var formattersAssembly = FormattersAssembly()
   private lazy var mappersAssembly = MappersAssembly(formattersAssembly: formattersAssembly)

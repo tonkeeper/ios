@@ -110,43 +110,46 @@ private extension LedgerConnectViewModelImplementation {
   
   func connect(peripheralInfo: PeripheralInfoTuple) {
     print("Connecting to \(peripheralInfo.peripheral.name)...")
-    transport.connect(toPeripheralID: peripheralInfo.peripheral, disconnectedCallback: {
-      print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
-      if self.isClosed { return }
-      
-      self.pollTonAppTask?.cancel()
-      self.accountsTask?.cancel()
-      self.startScan()
-      
-      self.disconnectTask = Task {
-        do {
-          try await Task.sleep(nanoseconds: 2_000_000_000)
-          try Task.checkCancellation()
-          await MainActor.run {
-            self.setDisconnected()
-          }
-        } catch {}
-      }
-    }, success: { result in
-      print("Connected to \(result.name), udid: \(result.uuid)")
-      self.transport.stopScanning()
-      self.disconnectTask?.cancel()
-      self.setConnected(peripheralInfo: peripheralInfo)
-      self.waitForAppOpen()
-    }, failure: { error in
-      print("Error connecting to device: \(error.localizedDescription)")
-      self.startScan()
-      self.setDisconnected()
-    })
+    
+    transport.disconnect() { _ in
+      self.transport.connect(toPeripheralID: peripheralInfo.peripheral, disconnectedCallback: {
+        print("Log: Ledger disconnected, isClosed: \(self.isClosed)")
+        if self.isClosed { return }
+        
+        self.pollTonAppTask?.cancel()
+        self.accountsTask?.cancel()
+        self.startScan()
+        
+        self.disconnectTask = Task {
+          do {
+            try await Task.sleep(nanoseconds: 2_000_000_000)
+            try Task.checkCancellation()
+            await MainActor.run {
+              self.setDisconnected()
+            }
+          } catch {}
+        }
+      }, success: { result in
+        print("Connected to \(result.name), udid: \(result.uuid)")
+        self.transport.stopScanning()
+        self.disconnectTask?.cancel()
+        self.setConnected(peripheralInfo: peripheralInfo)
+        self.waitForAppOpen()
+      }, failure: { error in
+        print("Error connecting to device: \(error.localizedDescription)")
+        self.startScan()
+        self.setDisconnected()
+      })
+    }
   }
   
   func startScan() {
     print("Start scanning bluetooth devices")
-    self.transport.stopScanning()
+    transport.stopScanning()
     
     var connecting = false
     
-    self.transport.scan(duration: 5.0) { discoveries in
+    transport.scan(duration: 5.0) { discoveries in
       guard let firstDiscovery = discoveries.first else { return }
       if !connecting {
         connecting = true
@@ -171,7 +174,7 @@ private extension LedgerConnectViewModelImplementation {
     
     @Sendable func startPollTask() {
       let task = Task {
-        let isAppOpened = try await tonTransport.isAppOpen()
+        let (isAppOpened, version) = try await tonTransport.isAppOpen()
         try Task.checkCancellation()
         guard isAppOpened else {
           try await Task.sleep(nanoseconds: 1_000_000_000)

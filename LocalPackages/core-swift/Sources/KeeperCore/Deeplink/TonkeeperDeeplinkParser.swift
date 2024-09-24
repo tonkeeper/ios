@@ -29,6 +29,8 @@ public struct TonkeeperDeeplinkParser {
       return .publish(sign: try parsePublish(url: url))
     case "signer":
       return .externalSign(try parseExternalSign(url: url))
+    case "ton-connect":
+      return .tonconnect(try parseTonconnect(url: url))
     default:
       throw DeeplinkParserError.unsupportedDeeplink(string: string)
     }

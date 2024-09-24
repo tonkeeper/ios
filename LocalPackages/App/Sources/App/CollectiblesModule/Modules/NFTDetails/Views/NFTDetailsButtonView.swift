@@ -38,6 +38,8 @@ final class NFTDetailsButtonView: UIView, ConfigurableView {
   }
   
   private func setup() {
+    descriptionLabel.numberOfLines = 0
+    
     addSubview(stackView)
     stackView.addArrangedSubview(button)
     stackView.addArrangedSubview(descriptionLabel)
