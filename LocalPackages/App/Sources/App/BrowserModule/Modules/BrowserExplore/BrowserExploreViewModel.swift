@@ -191,6 +191,12 @@ private extension BrowserExploreViewModelImplementation {
           return nil
         }
 
+        if let includeCountries = $0.includeCountries,
+           let filter,
+           !includeCountries.contains(where: { $0 == filter }) {
+          return nil
+        }
+
         return mapDapp($0)
       }
       
