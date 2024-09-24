@@ -69,9 +69,11 @@
 "settings.items.contact_us" = "Написать команде";
 "settings.items.rate" = "Оценить %@";
 "settings.items.legal" = "Юридические документы";
-"settings.items.delete_account" = "Удалить ";
+"settings.items.sign_out_account" = "Выйти ";
+"settings.items.delete_account" = "Удалить аккаунт";
 "settings.items.delete_watch_only" = "Удалить аккаунт";
 "settings.items.delete_acount_alert_title" = "Удалить аккаунт";
+"settings.items.delete_watch_only_acount_alert_title" = "Удалить аккаунт для просмотра";
 "settings.items.setup_wallet_description" = "Кастомизировать";
 "settings.items.purchases" = "Покупки";
 "settings.items.notifications" = "Уведомления";
@@ -344,6 +346,12 @@
 "sign_out_warning.caption" = "Ключи кошелька будут удалены с этого устройства.";
 "sign_out_warning.tick_description" = "У меня есть резервная копия фразы восстановления кошелька ";
 "sign_out_warning.tick_back_up" = "Сделать резервную копию";
+
+"delete_wallet_warning.title" = "Удалить данные кошелька";
+"delete_wallet_warning.caption" = "Ключи кошелька и все личные данные будут удалены с этого устройства.";
+"delete_wallet_warning.tick_description" = "У меня есть резервная копия фразы восстановления кошелька ";
+"delete_wallet_warning.tick_back_up" = "Сделать резервную копию";
+"delete_wallet_warning.button" = "Удалить данные кошелька";
 
 "home_screen_configuration.title" = "Управление";
 "home_screen_configuration.sections.pinned" = "Закреплённые";

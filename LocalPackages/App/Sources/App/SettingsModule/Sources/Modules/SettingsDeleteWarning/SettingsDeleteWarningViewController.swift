@@ -32,10 +32,19 @@ final class SettingsDeleteWarningViewController: UIViewController, TKBottomSheet
   let stackView = UIStackView()
   let listView = BackupWarningListView()
   
-  private let delete: Delete
+  private let popupTitle: String
+  private let popupCaption: String
+  private let buttonTitle: String
+  private let walletName: NSAttributedString
   
-  init(delete: Delete) {
-    self.delete = delete
+  init(popupTitle: String,
+       popupCaption: String,
+       buttonTitle: String,
+       walletName: NSAttributedString) {
+    self.popupTitle = popupTitle
+    self.popupCaption = popupCaption
+    self.buttonTitle = buttonTitle
+    self.walletName = walletName
     super.init(nibName: nil, bundle: nil)
   }
   
@@ -56,7 +65,7 @@ final class SettingsDeleteWarningViewController: UIViewController, TKBottomSheet
     
     let titleLabel = UILabel()
     titleLabel.numberOfLines = 0
-    titleLabel.attributedText = TKLocales.SignOutWarning.title.withTextStyle(
+    titleLabel.attributedText = popupTitle.withTextStyle(
       .h2,
       color: .Text.primary,
       alignment: .center,
@@ -67,7 +76,7 @@ final class SettingsDeleteWarningViewController: UIViewController, TKBottomSheet
     
     let captionLabel = UILabel()
     captionLabel.numberOfLines = 0
-    captionLabel.attributedText = TKLocales.SignOutWarning.caption.withTextStyle(
+    captionLabel.attributedText = popupCaption.withTextStyle(
       .body1,
       color: .Text.secondary,
       alignment: .center,
@@ -78,8 +87,6 @@ final class SettingsDeleteWarningViewController: UIViewController, TKBottomSheet
     
     let contentView = SettingsDeleteWarningContentView()
     contentView.tickText = {
-      switch delete {
-      case .wallet(let walletName):
         let textAttributedString = TKLocales.SignOutWarning.tickDescription.withTextStyle(
           .body1,
           color: .Text.primary,
@@ -90,17 +97,9 @@ final class SettingsDeleteWarningViewController: UIViewController, TKBottomSheet
         resultAttributedString.append(NSAttributedString(string: " "))
         resultAttributedString.append(walletName)
         return resultAttributedString
-      case .all:
-        return TKLocales.SignOutWarning.tickDescription.withTextStyle(
-          .body1,
-          color: .Text.primary,
-          alignment: .left,
-          lineBreakMode: .byWordWrapping
-        )
-      }
     }()
     stackView.addArrangedSubview(contentView)
-    stackView.setCustomSpacing(16, after: contentView)
+    stackView.setCustomSpacing(32, after: contentView)
     
     let signoutButton = TKButton()
     var signoutButtonConfiguration: TKButton.Configuration = .actionButtonConfiguration(
@@ -108,7 +107,7 @@ final class SettingsDeleteWarningViewController: UIViewController, TKBottomSheet
       size: .large
     )
     signoutButtonConfiguration.isEnabled = false
-    signoutButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(TKLocales.Actions.signOut))
+    signoutButtonConfiguration.content = TKButton.Configuration.Content(title: .plainString(buttonTitle))
     signoutButtonConfiguration.action = { [didTapSignOut] in
       didTapSignOut?()
     }

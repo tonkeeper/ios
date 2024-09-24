@@ -395,6 +395,18 @@ public enum TKLocales {
     /// Yesterday
     public static let yesterday = TKLocales.tr("Localizable", "dates.yesterday", fallback: "Yesterday")
   }
+  public enum DeleteWalletWarning {
+    /// Delete Wallet Data
+    public static let button = TKLocales.tr("Localizable", "delete_wallet_warning.button", fallback: "Delete Wallet Data")
+    /// Wallet keys and all personal data will be erased from this device.
+    public static let caption = TKLocales.tr("Localizable", "delete_wallet_warning.caption", fallback: "Wallet keys and all personal data will be erased from this device.")
+    /// Back up
+    public static let tickBackUp = TKLocales.tr("Localizable", "delete_wallet_warning.tick_back_up", fallback: "Back up")
+    /// I have a backup copy of the recovery phrase for 
+    public static let tickDescription = TKLocales.tr("Localizable", "delete_wallet_warning.tick_description", fallback: "I have a backup copy of the recovery phrase for ")
+    /// Delete Wallet Data
+    public static let title = TKLocales.tr("Localizable", "delete_wallet_warning.title", fallback: "Delete Wallet Data")
+  }
   public enum Errors {
     /// Error
     public static let unknown = TKLocales.tr("Localizable", "errors.unknown", fallback: "Error")
@@ -685,12 +697,14 @@ public enum TKLocales {
       public static let contactUs = TKLocales.tr("Localizable", "settings.items.contact_us", fallback: "Contact us")
       /// Currency
       public static let currency = TKLocales.tr("Localizable", "settings.items.currency", fallback: "Currency")
-      /// Delete 
-      public static let deleteAccount = TKLocales.tr("Localizable", "settings.items.delete_account", fallback: "Delete ")
+      /// Delete Account
+      public static let deleteAccount = TKLocales.tr("Localizable", "settings.items.delete_account", fallback: "Delete Account")
       /// Delete account
       public static let deleteAcountAlertTitle = TKLocales.tr("Localizable", "settings.items.delete_acount_alert_title", fallback: "Delete account")
       /// Delete Watch account
       public static let deleteWatchOnly = TKLocales.tr("Localizable", "settings.items.delete_watch_only", fallback: "Delete Watch account")
+      /// Delete Watch account
+      public static let deleteWatchOnlyAcountAlertTitle = TKLocales.tr("Localizable", "settings.items.delete_watch_only_acount_alert_title", fallback: "Delete Watch account")
       /// FAQ
       public static let faq = TKLocales.tr("Localizable", "settings.items.faq", fallback: "FAQ")
       /// Legal
@@ -709,6 +723,8 @@ public enum TKLocales {
       public static let security = TKLocales.tr("Localizable", "settings.items.security", fallback: "Security")
       /// Edit name and color
       public static let setupWalletDescription = TKLocales.tr("Localizable", "settings.items.setup_wallet_description", fallback: "Edit name and color")
+      /// Sign Out 
+      public static let signOutAccount = TKLocales.tr("Localizable", "settings.items.sign_out_account", fallback: "Sign Out ")
       /// Support
       public static let support = TKLocales.tr("Localizable", "settings.items.support", fallback: "Support")
       /// Theme
