@@ -4,17 +4,39 @@ import CoreComponents
 public protocol RNService {
   func needToMigrate() async -> Bool
   func setMigrationFinished() async throws
-  func getWalletsStore() async throws -> RNWalletsStore?
+  func getWallets() async throws -> [RNWallet]
+  func setWallets(_ wallets: [RNWallet]) async throws
+  func getActiveWalletId() async throws -> String?
+  func setActiveWalletId(_ activeWalletId: String) async throws
   func getWalletBackupDate(walletId: String) async throws -> Date?
-  func addWallets(_ wallets: [RNWallet]) async throws
-  func setWalletActive(_ wallet: RNWallet) async throws
-  func updateWalletMetaData(_ wallet: RNWallet, metaData: WalletMetaData) async throws
-  func updateWallet(_ wallet: RNWallet, lastBackupAt: TimeInterval?) async throws
-  func moveWallet(fromIndex: Int, toIndex: Int) async throws
-  func deleteWallet(_ wallet: RNWallet) async throws
-  func deleteAllWallets() async throws
-  func isBiometryEnable() async -> Bool
-  func getBiometryPasscode() async throws -> String
+  func setWalletBackupDate(date: Date?, walletId: String) async throws
+  func getIsBiometryEnable() async throws -> Bool
+  func setIsBiometryEnable(_ isBiometryEnable: Bool) async throws
+  func getIsLockscreenEnable() async throws -> Bool
+  func setIsLockscreenEnable(_ isLockscreenEnable: Bool) async throws
+  func getAppTheme() async throws -> RNAppTheme?
+  func setAppTheme(_ appTheme: RNAppTheme?) async throws
+  func getCurrency() async throws -> Currency
+  func getWalletNotificationsSettings(walletId: String) async throws -> Bool
+  func setWalletNotificationsSettings(isOn: Bool, walletId: String) async throws
+  
+//  func getWalletsStore() async throws -> RNWalletsStore?
+//  func setWalletsStore(_ walletStore: RNWalletsStore?) async throws
+//  func getAppTheme() async throws -> RNAppTheme?
+//  func setAppTheme(_ appTheme: RNAppTheme?) async throws
+//  func getWalletNotificationsSettings(walletId: String) async throws -> RNWalletNotifications?
+//  func setWalletNotificationsSettings(walletId: String, isOn: Bool) async throws
+//  func getCurrency() async throws -> Currency
+//  func getWalletBackupDate(walletId: String) async throws -> Date?
+//  func addWallets(_ wallets: [RNWallet]) async throws
+//  func setWalletActive(_ wallet: RNWallet) async throws
+//  func updateWalletMetaData(_ wallet: RNWallet, metaData: WalletMetaData) async throws
+//  func updateWallet(_ wallet: RNWallet, lastBackupAt: TimeInterval?) async throws
+//  func moveWallet(fromIndex: Int, toIndex: Int) async throws
+//  func deleteWallet(_ wallet: RNWallet) async throws
+//  func deleteAllWallets() async throws
+//  func isBiometryEnable() async -> Bool
+//  func getBiometryPasscode() async throws -> String
 }
 
 final class RNServiceImplementation: RNService {
@@ -33,10 +55,8 @@ final class RNServiceImplementation: RNService {
       if xFlag != true, let walletsStore: RNWalletsStore = try await asyncStorage.getValue(key: .walletsStore) {
         return !walletsStore.wallets.isEmpty
       }
-      try? await asyncStorage.setValue(value: true, key: "x")
       return false
     } catch {
-      try? await asyncStorage.setValue(value: true, key: "x")
       return false
     }
   }
@@ -45,8 +65,52 @@ final class RNServiceImplementation: RNService {
     try await asyncStorage.setValue(value: true, key: "x")
   }
   
-  func getWalletsStore() async throws -> RNWalletsStore? {
-    try await asyncStorage.getValue(key: .walletsStore)
+  func getWallets() async throws -> [RNWallet] {
+    let walletsStore: RNWalletsStore? = try await asyncStorage.getValue(key: .walletsStore)
+    return walletsStore?.wallets ?? []
+  }
+  
+  func setWallets(_ wallets: [RNWallet]) async throws {
+    guard !wallets.isEmpty else {
+      await asyncStorage.setValue(value: nil, key: .walletsStore)
+      return
+    }
+    let updatedStore: RNWalletsStore
+    if let walletsStore: RNWalletsStore = try await asyncStorage.getValue(key: .walletsStore) {
+      updatedStore = RNWalletsStore(
+        wallets: wallets,
+        selectedIdentifier: walletsStore.selectedIdentifier,
+        biometryEnabled: walletsStore.biometryEnabled,
+        lockScreenEnabled: walletsStore.lockScreenEnabled
+      )
+    } else {
+      updatedStore = RNWalletsStore(
+        wallets: wallets,
+        selectedIdentifier: wallets[0].identifier,
+        biometryEnabled: false,
+        lockScreenEnabled: false
+      )
+    }
+    
+    try await asyncStorage.setValue(value: updatedStore, key: .walletsStore)
+  }
+  
+  func getActiveWalletId() async throws -> String? {
+    let walletsStore: RNWalletsStore? = try await asyncStorage.getValue(key: .walletsStore)
+    return walletsStore?.selectedIdentifier
+  }
+  
+  func setActiveWalletId(_ activeWalletId: String) async throws {
+    guard let walletsStore: RNWalletsStore = try await asyncStorage.getValue(key: .walletsStore) else {
+      return
+    }
+    let updatedStore = RNWalletsStore(
+      wallets: walletsStore.wallets,
+      selectedIdentifier: activeWalletId,
+      biometryEnabled: walletsStore.biometryEnabled,
+      lockScreenEnabled: walletsStore.lockScreenEnabled
+    )
+    try await asyncStorage.setValue(value: updatedStore, key: .walletsStore)
   }
   
   func getWalletBackupDate(walletId: String) async throws -> Date? {
@@ -58,183 +122,100 @@ final class RNServiceImplementation: RNService {
     return Date(timeIntervalSince1970: lastBackupAt / 1000)
   }
   
-  func addWallets(_ wallets: [RNWallet]) async throws {
-    guard !wallets.isEmpty else { return }
-    if let walletsStore: RNWalletsStore = try await asyncStorage.getValue(key: .walletsStore) {
-      let addWalletsIdentifiers = wallets.map { $0.identifier }
-      let currentWallets = walletsStore.wallets
-        .filter { wallet in !addWalletsIdentifiers.contains(wallet.identifier) }
-      let resultWallets = currentWallets + wallets
-      let updatedWalletsStore = RNWalletsStore(
-        wallets: resultWallets,
-        selectedIdentifier: walletsStore.selectedIdentifier,
-        biometryEnabled: walletsStore.biometryEnabled,
-        lockScreenEnabled: walletsStore.lockScreenEnabled
-      )
-      try await asyncStorage.setValue(value: updatedWalletsStore, key: .walletsStore)
-    } else {
-      let walletsStore = RNWalletsStore(
-        wallets: wallets,
-        selectedIdentifier: wallets[0].identifier,
-        biometryEnabled: false,
-        lockScreenEnabled: false
-      )
-      try await asyncStorage.setValue(value: walletsStore, key: .walletsStore)
-    }
-  }
-  
-  func setWalletActive(_ wallet: RNWallet) async throws {
-    guard let walletsStore: RNWalletsStore = try await asyncStorage.getValue(key: .walletsStore) else {
-      return
-    }
-    
-    let updatedWalletsStore = RNWalletsStore(
-      wallets: walletsStore.wallets,
-      selectedIdentifier: wallet.identifier,
-      biometryEnabled: walletsStore.biometryEnabled,
-      lockScreenEnabled: walletsStore.lockScreenEnabled
-    )
-    try await asyncStorage.setValue(value: updatedWalletsStore, key: .walletsStore)
-  }
-  
-  func updateWalletMetaData(_ wallet: RNWallet, metaData: WalletMetaData) async throws {
-    guard let walletsStore: RNWalletsStore = try await asyncStorage.getValue(key: .walletsStore),
-    let rnWallet = walletsStore.wallets.first(where: { $0.identifier == wallet.identifier })  else {
-      return
-    }
-    
-    let updatedRnWallet = RNWallet(
-      identifier: rnWallet.identifier,
-      name: rnWallet.name,
-      emoji: {
-        switch metaData.icon {
-        case .emoji(let emoji):
-          return emoji
-        case .icon(let image):
-          return image.rawValue
-        }
-      }(),
-      color: metaData.tintColor.rawValue,
-      pubkey: rnWallet.pubkey,
-      network: rnWallet.network,
-      type: rnWallet.type,
-      version: rnWallet.version,
-      workchain: rnWallet.workchain,
-      ledger: rnWallet.ledger
-    )
-    
-    let updatedWallets = walletsStore.wallets.map {
-      if $0.identifier == updatedRnWallet.identifier {
-        return updatedRnWallet
+  func setWalletBackupDate(date: Date?, walletId: String) async throws {
+    let key = "\(walletId)/setup"
+    let lastBackupAt: Double? = {
+      if let date {
+        return date.timeIntervalSince1970 * 1000
+      } else {
+        return nil
       }
-      return $0
-    }
-    let updatedWalletsStore = RNWalletsStore(
-      wallets: updatedWallets,
-      selectedIdentifier: walletsStore.selectedIdentifier,
-      biometryEnabled: walletsStore.biometryEnabled,
-      lockScreenEnabled: walletsStore.lockScreenEnabled
-    )
-    try await asyncStorage.setValue(value: updatedWalletsStore, key: .walletsStore)
-  }
-  
-  func updateWallet(_ wallet: RNWallet, lastBackupAt: TimeInterval?) async throws {
-    let key = "\(wallet.identifier)/setup"
-    if let walletSetupState: RNWalletSetupState = try? await asyncStorage.getValue(key: key) {
-      let updatedWalletSetupState = RNWalletSetupState(
+    }()
+    
+    let updatedSetupState: RNWalletSetupState
+    if let setupState: RNWalletSetupState = try await asyncStorage.getValue(key: key) {
+      updatedSetupState = RNWalletSetupState(
         lastBackupAt: lastBackupAt,
-        setupDismissed: walletSetupState.setupDismissed,
-        hasOpenedTelegramChannel: walletSetupState.hasOpenedTelegramChannel
+        setupDismissed: setupState.setupDismissed,
+        hasOpenedTelegramChannel: setupState.hasOpenedTelegramChannel
       )
-      try await asyncStorage.setValue(value: updatedWalletSetupState, key: key)
     } else {
-      let walletSetupState = RNWalletSetupState(
+      updatedSetupState = RNWalletSetupState(
         lastBackupAt: lastBackupAt,
         setupDismissed: false,
         hasOpenedTelegramChannel: false
       )
-      try await asyncStorage.setValue(value: walletSetupState, key: key)
     }
+    try await asyncStorage.setValue(value: updatedSetupState, key: key)
   }
   
-  func moveWallet(fromIndex: Int, toIndex: Int) async throws {
+  func getIsBiometryEnable() async throws -> Bool {
+    let walletsStore: RNWalletsStore? = try await asyncStorage.getValue(key: .walletsStore)
+    return walletsStore?.biometryEnabled ?? false
+  }
+  
+  func setIsBiometryEnable(_ isBiometryEnable: Bool) async throws {
     guard let walletsStore: RNWalletsStore = try await asyncStorage.getValue(key: .walletsStore) else {
       return
     }
-    guard fromIndex < walletsStore.wallets.count,
-          fromIndex >= 0,
-          toIndex < walletsStore.wallets.count,
-          toIndex >= 0 else {
-      return
-    }
-    
-    var wallets = walletsStore.wallets
-    let wallet = wallets.remove(at: fromIndex)
-    wallets.insert(wallet, at: toIndex)
-    
-    let updatedWalletsStore = RNWalletsStore(
-      wallets: wallets,
+    let updatedStore = RNWalletsStore(
+      wallets: walletsStore.wallets,
       selectedIdentifier: walletsStore.selectedIdentifier,
-      biometryEnabled: walletsStore.biometryEnabled,
+      biometryEnabled: isBiometryEnable,
       lockScreenEnabled: walletsStore.lockScreenEnabled
     )
-    try await asyncStorage.setValue(value: updatedWalletsStore, key: .walletsStore)
+    try await asyncStorage.setValue(value: updatedStore, key: .walletsStore)
   }
   
-  func deleteWallet(_ wallet: RNWallet) async throws {
+  func getIsLockscreenEnable() async throws -> Bool {
+    let walletsStore: RNWalletsStore? = try await asyncStorage.getValue(key: .walletsStore)
+    return walletsStore?.lockScreenEnabled ?? false
+  }
+  
+  func setIsLockscreenEnable(_ isLockscreenEnable: Bool) async throws {
     guard let walletsStore: RNWalletsStore = try await asyncStorage.getValue(key: .walletsStore) else {
       return
     }
-    let wallets = walletsStore.wallets.filter { $0.identifier != wallet.identifier }
-    if wallets.isEmpty {
-      await asyncStorage.setValue(value: nil, key: .walletsStore)
-    } else {
-      var selectedIdentifier = walletsStore.selectedIdentifier
-      if walletsStore.selectedIdentifier == wallet.identifier {
-        selectedIdentifier = wallets[0].identifier
-      }
-      let updatedWalletsStore = RNWalletsStore(
-        wallets: wallets,
-        selectedIdentifier: selectedIdentifier,
-        biometryEnabled: walletsStore.biometryEnabled,
-        lockScreenEnabled: walletsStore.lockScreenEnabled
-      )
-      try await asyncStorage.setValue(value: updatedWalletsStore, key: .walletsStore)
+    let updatedStore = RNWalletsStore(
+      wallets: walletsStore.wallets,
+      selectedIdentifier: walletsStore.selectedIdentifier,
+      biometryEnabled: walletsStore.biometryEnabled,
+      lockScreenEnabled: isLockscreenEnable
+    )
+    try await asyncStorage.setValue(value: updatedStore, key: .walletsStore)
+  }
+  
+  func getAppTheme() async throws -> RNAppTheme? {
+    try await asyncStorage.getValue(key: .appTheme)
+  }
+  
+  func setAppTheme(_ appTheme: RNAppTheme?) async throws {
+    try await asyncStorage.setValue(value: appTheme, key: .appTheme)
+  }
+  
+  func getWalletNotificationsSettings(walletId: String) async throws -> Bool {
+    let key = "\(walletId)/notifications"
+    let walletNotifications: RNWalletNotifications? = try await asyncStorage.getValue(key: key)
+    return walletNotifications?.isSubscribed ?? false
+  }
+  
+  func setWalletNotificationsSettings(isOn: Bool, walletId: String) async throws {
+    let key = "\(walletId)/notifications"
+    let walletNotifications = RNWalletNotifications(isSubscribed: isOn)
+    try await asyncStorage.setValue(value: walletNotifications, key: key)
+  }
+  
+  func getCurrency() async throws -> Currency {
+    guard let tonPrice: RNTonPrice = try await asyncStorage.getValue(key: "ton_price") else {
+      return .USD
     }
-  }
-  
-  func deleteAllWallets() async throws {
-    await asyncStorage.setValue(value: nil, key: .walletsStore)
-  }
-  
-  func getBiometryPasscode() async throws -> String {
-    let query = biometryPasscodeKeychainQuery()
-    do {
-      return try keychainVault.read(query)
-    } catch {
-      throw error
-    }
-  }
-  
-  func isBiometryEnable() async -> Bool {
-    do {
-      let walletsStore: RNWalletsStore? = try await asyncStorage.getValue(key: .walletsStore)
-      return walletsStore?.biometryEnabled ?? false
-    } catch {
-      return false
-    }
-  }
-  
-  private func biometryPasscodeKeychainQuery() -> KeychainQueryable {
-    KeychainGenericPasswordItem(service: "TKProtected",
-                                account: "biometry_passcode",
-                                accessGroup: nil,
-                                accessible: .whenUnlockedThisDeviceOnly,
-                                isBiometry: true)
+    let currencyRaw = tonPrice.currency
+    return Currency(rawValue: currencyRaw.uppercased()) ?? .USD
   }
 }
 
 private extension String {
   static let walletsStore = "walletsStore"
+  static let appTheme = "app-theme"
   static let setup = "setup"
 }

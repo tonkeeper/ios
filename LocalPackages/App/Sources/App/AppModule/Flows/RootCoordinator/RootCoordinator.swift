@@ -21,6 +21,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
   private let stateManager: RootCoordinatorStateManager
   private let featureFlagsProvider: FeatureFlagsProvider
   private let pushNotificationsManager: PushNotificationManager
+  private let rnUpdater: RNUpdater
 
   init(router: ViewControllerRouter,
        dependencies: Dependencies) {
@@ -35,6 +36,10 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
       pushNotificationTokenProvider: dependencies.coreAssembly.pushNotificationTokenProvider,
       pushNotificationAPI: dependencies.coreAssembly.pushNotificationAPI,
       walletNotificationsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore
+    )
+    self.rnUpdater = RNUpdater(
+      rnService: dependencies.keeperCoreRootAssembly.rnAssembly.rnService,
+      keeperInfoStore: dependencies.keeperCoreRootAssembly.storesAssembly.keeperInfoStore
     )
     super.init(router: router)
   }
@@ -58,21 +63,7 @@ final class RootCoordinator: RouterCoordinator<ViewControllerRouter> {
     switch state {
     case .onboarding:
       openLaunchScreen()
-      let migrationController = dependencies.keeperCoreRootAssembly.migrationController(
-        sharedCacheURL: dependencies.coreAssembly.sharedCacheURL,
-        keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier
-      )
-      Task {
-        if await migrationController.checkIfNeedToMigrate() {
-          await MainActor.run {
-            openMigration(migrationController: migrationController)
-          }
-        } else {
-          await MainActor.run {
-            openOnboarding(deeplink: deeplink)
-          }
-        }
-      }
+      migrateIfNeed(deeplink: deeplink)
     case .main:
       openMain(deeplink: deeplink)
     }
@@ -156,35 +147,69 @@ private extension RootCoordinator {
     showViewController(navigationController, animated: true)
   }
   
-  func openMigration(migrationController: MigrationController) {
-    let navigationController = TKNavigationController()
-    navigationController.configureTransparentAppearance()
-    
-    let migrationCoordinator = MigrationCoordinator(
-      migrationController: migrationController,
+  func migrateIfNeed(deeplink: CoordinatorDeeplink?) {
+    let rnMigration = RNMigration(
       rnService: dependencies.keeperCoreRootAssembly.rnAssembly.rnService,
-      router: NavigationControllerRouter(rootViewController: navigationController)
+      walletsStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletsStore,
+      securityStore: dependencies.keeperCoreRootAssembly.storesAssembly.securityStore,
+      currencyStore: dependencies.keeperCoreRootAssembly.storesAssembly.currencyStore,
+      walletNotificationStore: dependencies.keeperCoreRootAssembly.storesAssembly.walletNotificationStore
     )
-    migrationCoordinator.didFinish = { [weak self, weak migrationCoordinator] in
-      self?.removeChild(migrationCoordinator)
-      self?.start(deeplink: nil)
-    }
-    migrationCoordinator.didLogout = { [weak self, weak migrationCoordinator] in
-      guard let self, let migrationCoordinator else { return }
-      Task {
-        do {
-          try await self.logout()
-          self.removeChild(migrationCoordinator)
-        } catch {
-          print("Log: Logout failed")
+    Task {
+      if await rnMigration.checkIfNeedToMigrate() {
+        await rnMigration.performMigration()
+      } else {
+        await MainActor.run {
+          openOnboarding(deeplink: deeplink)
         }
       }
     }
-    addChild(migrationCoordinator)
-    migrationCoordinator.start(deeplink: nil)
-    
-    showViewController(navigationController, animated: false)
+//    let migrationController = dependencies.keeperCoreRootAssembly.migrationController(
+//      sharedCacheURL: dependencies.coreAssembly.sharedCacheURL,
+//      keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier
+//    )
+//    Task {
+//      if await migrationController.checkIfNeedToMigrate() {
+//        await MainActor.run {
+//          openMigration(migrationController: migrationController)
+//        }
+//      } else {
+//        await MainActor.run {
+//          openOnboarding(deeplink: deeplink)
+//        }
+//      }
+//    }
   }
+  
+//  func openMigration(migrationController: MigrationController) {
+//    let navigationController = TKNavigationController()
+//    navigationController.configureTransparentAppearance()
+//    
+//    let migrationCoordinator = MigrationCoordinator(
+//      migrationController: migrationController,
+//      rnService: dependencies.keeperCoreRootAssembly.rnAssembly.rnService,
+//      router: NavigationControllerRouter(rootViewController: navigationController)
+//    )
+//    migrationCoordinator.didFinish = { [weak self, weak migrationCoordinator] in
+//      self?.removeChild(migrationCoordinator)
+//      self?.start(deeplink: nil)
+//    }
+//    migrationCoordinator.didLogout = { [weak self, weak migrationCoordinator] in
+//      guard let self, let migrationCoordinator else { return }
+//      Task {
+//        do {
+//          try await self.logout()
+//          self.removeChild(migrationCoordinator)
+//        } catch {
+//          print("Log: Logout failed")
+//        }
+//      }
+//    }
+//    addChild(migrationCoordinator)
+//    migrationCoordinator.start(deeplink: nil)
+//    
+//    showViewController(navigationController, animated: false)
+//  }
   
   func showViewController(_ viewController: UIViewController, animated: Bool) {
     activeViewController?.willMove(toParent: nil)

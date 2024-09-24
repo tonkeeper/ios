@@ -43,11 +43,11 @@ public struct RNWalletsStore: Codable {
 
 public struct RNWallet: Codable {
   
-  enum Error: Swift.Error {
+  public enum Error: Swift.Error {
     case failedToCreateWallet
   }
   
-  enum WalletType: String, Codable {
+  public enum WalletType: String, Codable {
     case Regular
     case Lockup
     case WatchOnly
@@ -56,12 +56,12 @@ public struct RNWallet: Codable {
     case Ledger
   }
   
-  enum WalletNetwork: Int, Codable {
+  public enum WalletNetwork: Int, Codable {
     case mainnet = -239
     case testnet = -3
   }
   
-  enum RNContractVersion: String, Codable {
+  public enum RNContractVersion: String, Codable {
     case v5Beta
     case v5R1
     case v4R2
@@ -88,22 +88,22 @@ public struct RNWallet: Codable {
     }
   }
   
-  struct Ledger: Codable {
-    let deviceId: String
-    let deviceModel: String
-    let accountIndex: Int16
+  public struct Ledger: Codable {
+    public let deviceId: String
+    public let deviceModel: String
+    public let accountIndex: Int16
   }
   
-  let identifier: String
-  let name: String
-  let emoji: String
-  let color: String
-  let pubkey: String
-  let network: WalletNetwork
-  let type: WalletType
-  let version: RNContractVersion
-  let workchain: Int
-  let ledger: Ledger?
+  public let identifier: String
+  public let name: String
+  public let emoji: String
+  public let color: String
+  public let pubkey: String
+  public let network: WalletNetwork
+  public let type: WalletType
+  public let version: RNContractVersion
+  public let workchain: Int
+  public let ledger: Ledger?
 }
 
 public extension RNWallet {
