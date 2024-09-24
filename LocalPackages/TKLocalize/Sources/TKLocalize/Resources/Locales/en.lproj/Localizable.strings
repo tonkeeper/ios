@@ -270,6 +270,7 @@
 "wallet_tags.watch_only" = "Watch only";
 
 "balance_header.your_address" = "Your address: ";
+"balance_header.address" = "Address: ";
 
 "balance_list.staking_item.title" = "Staked";
 "balance_list.staking_item.comment.ready" = "%@ TON ready.\nTap to collect.";

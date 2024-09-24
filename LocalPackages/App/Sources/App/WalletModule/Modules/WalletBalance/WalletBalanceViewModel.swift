@@ -614,7 +614,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         if self.appSettings.addressCopyCount > 2 {
           state.address.toShort()
         } else {
-          TKLocales.BalanceHeader.yourAddress + state.address.toShort()
+          (state.wallet.kind == .watchonly ? TKLocales.BalanceHeader.address : TKLocales.BalanceHeader.yourAddress) + state.address.toShort()
         }
       }()
       

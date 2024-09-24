@@ -211,6 +211,8 @@ public enum TKLocales {
     }
   }
   public enum BalanceHeader {
+    /// Address: 
+    public static let address = TKLocales.tr("Localizable", "balance_header.address", fallback: "Address: ")
     /// Your address: 
     public static let yourAddress = TKLocales.tr("Localizable", "balance_header.your_address", fallback: "Your address: ")
   }
