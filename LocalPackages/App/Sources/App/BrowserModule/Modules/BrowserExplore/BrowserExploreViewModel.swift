@@ -97,6 +97,7 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
 }
 
 private extension BrowserExploreViewModelImplementation {
+
   func reloadContent() async {
     let lang = Locale.current.languageCode ?? "en"
     if let cached = try? browserExploreController.getCachedPopularApps(lang: lang) {
@@ -110,39 +111,73 @@ private extension BrowserExploreViewModelImplementation {
       await setEmptyState()
     }
   }
-  
-  func handle(popularAppsData: PopularAppsResponseData) async {
 
-    if popularAppsData.apps.isEmpty {
+  func composeCountryFilter() -> String? {
+    let filter: String?
+    switch selectedCountry {
+    case .auto:
+      filter = Locale.current.regionCode ?? ""
+    case .all:
+      filter = nil
+    case let .country(countryCode):
+      filter = countryCode
+    }
+    return filter
+  }
+
+  func isDappContainsCountriesFilter(_ filter: String, dapp: Dapp) -> Bool {
+    if let excludeCountries = dapp.excludeCountries,
+       excludeCountries.contains(where: { $0 == filter }) {
+      return true
+    }
+
+    if let includeCountries = dapp.includeCountries,
+       !includeCountries.contains(where: { $0 == filter }) {
+      return true
+    }
+
+    return false
+  }
+
+  func handle(popularAppsData: PopularAppsResponseData) async {
+    guard !popularAppsData.apps.isEmpty else {
       await setEmptyState()
-    } else {
-      let state: BrowserExploreView.State
-      var featuredCategory: PopularAppsCategory?
-      var categories = [PopularAppsCategory]()
-      popularAppsData.categories.forEach { category in
-        if category.id == "featured" {
-          featuredCategory = category
-        } else {
-          categories.append(category)
+      return
+    }
+
+    var featuredCategory: PopularAppsCategory?
+    var categories = [PopularAppsCategory]()
+    popularAppsData.categories.forEach { category in
+      if category.id == "featured" {
+        featuredCategory = category
+      } else {
+        categories.append(category)
+      }
+    }
+
+    let filter = composeCountryFilter()
+
+    var featuredItems = [Dapp]()
+    var sections = [BrowserExploreSection]()
+    if let featuredCategory {
+      let filteredFeaturedItems = featuredCategory.apps.filter {
+        if let filter, isDappContainsCountriesFilter(filter, dapp: $0) {
+          return false
         }
+        return true
       }
-      
-      var featuredItems = [Dapp]()
-      var sections = [BrowserExploreSection]()
-      if let featuredCategory {
-        featuredItems = featuredCategory.apps
-        sections.append(.featured(items: [.banner]))
-      }
-      sections.append(contentsOf: mapCategories(categories))
-      state = .data
-      
-      await MainActor.run { [categories, featuredCategory, sections, featuredItems] in
-        self.categories = categories
-        self.featuredCategory = featuredCategory
-        updateSnapshot(sections: sections)
-        didUpdateFeaturedItems?(featuredItems)
-        didUpdateViewState?(state)
-      }
+      featuredItems = filteredFeaturedItems
+      sections.append(.featured(items: [.banner]))
+    }
+    
+    sections.append(contentsOf: mapCategories(categories))
+
+    await MainActor.run { [categories, featuredCategory, sections, featuredItems] in
+      self.categories = categories
+      self.featuredCategory = featuredCategory
+      updateSnapshot(sections: sections)
+      didUpdateFeaturedItems?(featuredItems)
+      didUpdateViewState?(BrowserExploreView.State.data)
     }
   }
   
@@ -173,27 +208,11 @@ private extension BrowserExploreViewModelImplementation {
   }
   
   func mapCategories(_ categories: [PopularAppsCategory]) -> [BrowserExploreSection] {
-    let filter: String?
-    switch selectedCountry {
-    case .auto:
-      filter = Locale.current.regionCode ?? ""
-    case .all:
-      filter = nil
-    case let .country(countryCode):
-      filter = countryCode
-    }
+    let filter = composeCountryFilter()
 
     return categories.compactMap { category in
       let items: [TKUIListItemCell.Configuration?] = category.apps.compactMap {
-        if let excludeCountries = $0.excludeCountries,
-           let filter,
-           excludeCountries.contains(where: { $0 == filter }) {
-          return nil
-        }
-
-        if let includeCountries = $0.includeCountries,
-           let filter,
-           !includeCountries.contains(where: { $0 == filter }) {
+        if let filter, isDappContainsCountriesFilter(filter, dapp: $0) {
           return nil
         }
 
