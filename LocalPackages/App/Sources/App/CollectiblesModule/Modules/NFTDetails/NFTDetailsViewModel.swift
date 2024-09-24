@@ -344,7 +344,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       category: .secondary,
       size: .large
     )
-    buttonConfiguration.isEnabled = true
+    buttonConfiguration.isEnabled = nft.sale == nil && isNFTOwner
     buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(title))
     buttonConfiguration.action = action
     
@@ -365,7 +365,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       category: .secondary,
       size: .large
     )
-    buttonConfiguration.isEnabled = true
+    buttonConfiguration.isEnabled = nft.sale == nil && isNFTOwner
     buttonConfiguration.content = TKButton.Configuration.Content(title: .plainString(title))
     buttonConfiguration.action = { [weak self, wallet, nft] in
       self?.didTapRenewDomain?(wallet, nft)
