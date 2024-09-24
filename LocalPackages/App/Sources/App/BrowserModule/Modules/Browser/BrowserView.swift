@@ -1,5 +1,6 @@
 import UIKit
 import TKUIKit
+import TKLocalize
 
 final class BrowserView: UIView {
   
@@ -40,12 +41,15 @@ private extension BrowserView {
     backgroundColor = .Background.page
     searchBar.blurView.isHidden = true
     searchBar.textField.isUserInteractionEnabled = false
-    
-    addSubview(exploreContainer)
-    addSubview(connectedContainer)
-    addSubview(headerView)
-    addSubview(blurView)
-    addSubview(searchBar)
+    searchBar.placeholder = TKLocales.Browser.SearchField.placeholder
+
+    addSubviews(
+      exploreContainer,
+      connectedContainer,
+      headerView,
+      blurView,
+      searchBar
+    )
     setupConstraints()
   }
   

@@ -43,21 +43,22 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   var didSelectCountryPicker: ((SelectedCountry) -> Void)?
   
   func setSelectedCountry(_ selectedCountry: SelectedCountry) {
-    self.selectedCountry = selectedCountry
-    if case let .country(countryCode) = selectedCountry {
-      appSettings.selectedCountryCode = countryCode
-    } else {
-      appSettings.selectedCountryCode = nil
-    }
-    updateCountryPickerButton()
-    categoryExpandStates = [:]
-    switch fiatMethodsState {
-    case .loading:
-      break
-    case .none:
-      updateList(fiatMethods: nil)
-    case .fiatMethods(let fiatMethods):
-      updateList(fiatMethods: fiatMethods)
+    Task {
+      await regionStore.updateRegion(selectedCountry)
+
+      await MainActor.run {
+        self.selectedCountry = selectedCountry
+        updateCountryPickerButton()
+        categoryExpandStates = [:]
+        switch fiatMethodsState {
+        case .loading:
+          break
+        case .none:
+          updateList(fiatMethods: nil)
+        case .fiatMethods(let fiatMethods):
+          updateList(fiatMethods: fiatMethods)
+        }
+      }
     }
   }
   
@@ -69,10 +70,6 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   var didUpdateHeaderLeftButton: ((TKPullCardHeaderItem.LeftButton) -> Void)?
   
   func viewDidLoad() {
-    if let selectedCountryCode = appSettings.selectedCountryCode {
-      self.selectedCountry = .country(countryCode: selectedCountryCode)
-    }
-    
     fiatMethodsStore.addObserver(self) { observer, event in
       DispatchQueue.main.async {
         switch event {
@@ -83,10 +80,11 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
     }
     
     fiatMethodsState = fiatMethodsStore.getState()
-    
+
+    selectedCountry = regionStore.getState()
     updateCountryPickerButton()
   }
-  
+
   func getCellConfiguration(identifier: String) -> AnyHashable {
     cellModels[identifier]
   }
@@ -127,7 +125,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   }
   private var categoryExpandStates = [FiatMethodCategory: SectionExpandState]()
   private var selectedCountry: SelectedCountry = .auto
-  
+
   // MARK: - Image Loader
   
   private let imageLoader = ImageLoader()
@@ -139,6 +137,7 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
   private let walletsStore: WalletsStore
   private let currencyStore: CurrencyStore
   private let configurationStore: ConfigurationStore
+  private let regionStore: RegionStore
   private let appSettings: AppSettings
   
   // MARK: - Init
@@ -147,18 +146,21 @@ final class BuySellListViewModelImplementation: BuySellListViewModel, BuySellLis
        fiatMethodsStore: FiatMethodsStore,
        walletsStore: WalletsStore,
        currencyStore: CurrencyStore,
+       regionStore: RegionStore,
        configurationStore: ConfigurationStore,
        appSettings: AppSettings) {
     self.wallet = wallet
     self.fiatMethodsStore = fiatMethodsStore
     self.walletsStore = walletsStore
     self.currencyStore = currencyStore
+    self.regionStore = regionStore
     self.configurationStore = configurationStore
     self.appSettings = appSettings
   }
 }
 
 private extension BuySellListViewModelImplementation {
+
   func updateCountryPickerButton() {
     let title: String
     switch selectedCountry {

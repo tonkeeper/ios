@@ -2,16 +2,8 @@ import Foundation
 import TKUIKit
 
 public final class AppSettings {
-  private let userDefaults: UserDefaults
   
-  public var selectedCountryCode: String? {
-    get {
-      userDefaults.string(forKey: .selectedCountryCode)
-    }
-    set {
-      userDefaults.setValue(newValue, forKey: .selectedCountryCode)
-    }
-  }
+  private let userDefaults: UserDefaults
   
   init(userDefaults: UserDefaults) {
     self.userDefaults = userDefaults

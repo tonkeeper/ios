@@ -26,7 +26,9 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   var didUpdateViewState: ((BrowserExploreView.State) -> Void)?
   var didSelectCategory: ((PopularAppsCategory) -> Void)?
   var didSelectDapp: ((Dapp) -> Void)?
-  
+
+  private var selectedCountry: SelectedCountry = .auto
+
   // MARK: - BrowserExploreViewModel
   
   var didUpdateSnapshot: ((NSDiffableDataSourceSnapshot<BrowserExploreSection, AnyHashable>) -> Void)?
@@ -34,10 +36,29 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   
   func viewDidLoad() {
     Task {
+      bindRegion()
       await reloadContent()
     }
   }
-  
+
+  private func bindRegion() {
+    selectedCountry = regionStore.getState()
+
+    regionStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateRegion(let country):
+        guard observer.selectedCountry != country else {
+          return
+        }
+
+        observer.selectedCountry = country
+        Task {
+          await observer.reloadContent()
+        }
+      }
+    }
+  }
+
   func didSelectCategoryAll(index: Int) {
     let categoryIndex = max(index - 1, 0)
     guard categoryIndex < categories.count else { return }
@@ -65,15 +86,18 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   // MARK: - Dependencies
   
   private let browserExploreController: BrowserExploreController
-  
+  private let regionStore: RegionStore
+
   // MARK: - Init
   
-  init(browserExploreController: BrowserExploreController) {
+  init(browserExploreController: BrowserExploreController, regionStore: RegionStore) {
     self.browserExploreController = browserExploreController
+    self.regionStore = regionStore
   }
 }
 
 private extension BrowserExploreViewModelImplementation {
+
   func reloadContent() async {
     let lang = Locale.current.languageCode ?? "en"
     if let cached = try? browserExploreController.getCachedPopularApps(lang: lang) {
@@ -87,39 +111,73 @@ private extension BrowserExploreViewModelImplementation {
       await setEmptyState()
     }
   }
-  
-  func handle(popularAppsData: PopularAppsResponseData) async {
 
-    if popularAppsData.apps.isEmpty {
+  func composeCountryFilter() -> String? {
+    let filter: String?
+    switch selectedCountry {
+    case .auto:
+      filter = Locale.current.regionCode ?? ""
+    case .all:
+      filter = nil
+    case let .country(countryCode):
+      filter = countryCode
+    }
+    return filter
+  }
+
+  func isDappContainsCountriesFilter(_ filter: String, dapp: Dapp) -> Bool {
+    if let excludeCountries = dapp.excludeCountries,
+       excludeCountries.contains(where: { $0 == filter }) {
+      return true
+    }
+
+    if let includeCountries = dapp.includeCountries,
+       !includeCountries.contains(where: { $0 == filter }) {
+      return true
+    }
+
+    return false
+  }
+
+  func handle(popularAppsData: PopularAppsResponseData) async {
+    guard !popularAppsData.apps.isEmpty else {
       await setEmptyState()
-    } else {
-      let state: BrowserExploreView.State
-      var featuredCategory: PopularAppsCategory?
-      var categories = [PopularAppsCategory]()
-      popularAppsData.categories.forEach { category in
-        if category.id == "featured" {
-          featuredCategory = category
-        } else {
-          categories.append(category)
+      return
+    }
+
+    var featuredCategory: PopularAppsCategory?
+    var categories = [PopularAppsCategory]()
+    popularAppsData.categories.forEach { category in
+      if category.id == "featured" {
+        featuredCategory = category
+      } else {
+        categories.append(category)
+      }
+    }
+
+    let filter = composeCountryFilter()
+
+    var featuredItems = [Dapp]()
+    var sections = [BrowserExploreSection]()
+    if let featuredCategory {
+      let filteredFeaturedItems = featuredCategory.apps.filter {
+        if let filter, isDappContainsCountriesFilter(filter, dapp: $0) {
+          return false
         }
+        return true
       }
-      
-      var featuredItems = [Dapp]()
-      var sections = [BrowserExploreSection]()
-      if let featuredCategory {
-        featuredItems = featuredCategory.apps
-        sections.append(.featured(items: [.banner]))
-      }
-      sections.append(contentsOf: mapCategories(categories))
-      state = .data
-      
-      await MainActor.run { [categories, featuredCategory, sections, featuredItems] in
-        self.categories = categories
-        self.featuredCategory = featuredCategory
-        updateSnapshot(sections: sections)
-        didUpdateFeaturedItems?(featuredItems)
-        didUpdateViewState?(state)
-      }
+      featuredItems = filteredFeaturedItems
+      sections.append(.featured(items: [.banner]))
+    }
+    
+    sections.append(contentsOf: mapCategories(categories))
+
+    await MainActor.run { [categories, featuredCategory, sections, featuredItems] in
+      self.categories = categories
+      self.featuredCategory = featuredCategory
+      updateSnapshot(sections: sections)
+      didUpdateFeaturedItems?(featuredItems)
+      didUpdateViewState?(BrowserExploreView.State.data)
     }
   }
   
@@ -150,8 +208,17 @@ private extension BrowserExploreViewModelImplementation {
   }
   
   func mapCategories(_ categories: [PopularAppsCategory]) -> [BrowserExploreSection] {
-    categories.map { category in
-      let items = category.apps.map { mapDapp($0) }
+    let filter = composeCountryFilter()
+
+    return categories.compactMap { category in
+      let items: [TKUIListItemCell.Configuration?] = category.apps.compactMap {
+        if let filter, isDappContainsCountriesFilter(filter, dapp: $0) {
+          return nil
+        }
+
+        return mapDapp($0)
+      }
+      
       return BrowserExploreSection.regular(
         title: category.title ?? "",
         hasAll: items.count > 3,

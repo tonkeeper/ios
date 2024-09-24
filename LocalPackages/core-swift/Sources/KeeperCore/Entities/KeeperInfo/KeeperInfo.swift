@@ -15,6 +15,8 @@ public struct KeeperInfo: Equatable {
   public let securitySettings: SecuritySettings
   
   public let appSettings: AppSettings
+
+  public let country: SelectedCountry
   
   ///
   let assetsPolicy: AssetsPolicy
@@ -22,6 +24,7 @@ public struct KeeperInfo: Equatable {
 }
 
 extension KeeperInfo: Codable {
+  
   public init(from decoder: any Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
     self.wallets = try container.decode([Wallet].self, forKey: .wallets)
@@ -37,5 +40,10 @@ extension KeeperInfo: Codable {
     
     self.assetsPolicy = try container.decode(AssetsPolicy.self, forKey: .assetsPolicy)
     self.appCollection = try container.decode(AppCollection.self, forKey: .appCollection)
+    if let selectedCountry = try container.decodeIfPresent(SelectedCountry.self, forKey: .country) {
+      self.country = selectedCountry
+    } else {
+      self.country = .auto
+    }
   }
 }

@@ -3,6 +3,7 @@ import Foundation
 // MARK: - Wallet
 
 extension KeeperInfo {
+
   func updateWallets(_ wallets: [Wallet]) -> KeeperInfo {
     KeeperInfo(
       wallets: wallets,
@@ -10,6 +11,7 @@ extension KeeperInfo {
       currency: self.currency,
       securitySettings: self.securitySettings,
       appSettings: self.appSettings,
+      country: country,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -17,11 +19,12 @@ extension KeeperInfo {
   
   func updateActiveWallet(_ wallet: Wallet) -> KeeperInfo {
     KeeperInfo(
-      wallets: self.wallets,
+      wallets: wallets,
       currentWallet: wallet,
       currency: self.currency,
       securitySettings: self.securitySettings,
       appSettings: self.appSettings,
+      country: country,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -35,6 +38,7 @@ extension KeeperInfo {
       currency: self.currency,
       securitySettings: self.securitySettings,
       appSettings: self.appSettings,
+      country: country,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -125,11 +129,25 @@ extension KeeperInfo {
       currency: currency,
       securitySettings: self.securitySettings,
       appSettings: self.appSettings,
+      country: self.country,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
   }
-  
+
+  func updateRegion(_ region: SelectedCountry) -> KeeperInfo {
+    KeeperInfo(
+      wallets: self.wallets,
+      currentWallet: self.currentWallet,
+      currency: currency,
+      securitySettings: self.securitySettings,
+      appSettings: self.appSettings,
+      country: region,
+      assetsPolicy: self.assetsPolicy,
+      appCollection: self.appCollection
+    )
+  }
+
   // MARK: - SecuritySettings
   
   func updateIsBiometryEnable(_ isBiometryEnable: Bool) -> KeeperInfo {
@@ -162,6 +180,7 @@ extension KeeperInfo {
       currency: self.currency,
       securitySettings: self.securitySettings,
       appSettings: appSettings,
+      country: country,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -179,6 +198,7 @@ extension KeeperInfo {
       currency: self.currency,
       securitySettings: self.securitySettings,
       appSettings: appSettings,
+      country: country,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -218,6 +238,7 @@ extension KeeperInfo {
       currency: self.currency,
       securitySettings: securitySettings,
       appSettings: self.appSettings,
+      country: country,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )
@@ -230,6 +251,7 @@ extension KeeperInfo {
       currency: self.currency,
       securitySettings: self.securitySettings,
       appSettings: appSettings,
+      country: country,
       assetsPolicy: self.assetsPolicy,
       appCollection: self.appCollection
     )

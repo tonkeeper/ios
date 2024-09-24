@@ -12,6 +12,7 @@ struct BuySellListAssembly {
       fiatMethodsStore: keeperCoreMainAssembly.storesAssembly.fiatMethodsStore,
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       currencyStore: keeperCoreMainAssembly.storesAssembly.currencyStore,
+      regionStore: keeperCoreMainAssembly.storesAssembly.regionStore,
       configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore,
       appSettings: coreAssembly.appSettings
     )
