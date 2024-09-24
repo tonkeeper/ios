@@ -88,7 +88,9 @@ final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel
           let dictionary = activeWalletModels.reduce(into: [:]) { partialResult, model in
             partialResult[model.id] = model
           }
-          let models = selectedItems.compactMap { dictionary[$0.identifier] }.sorted(by: { lhs, rhs in lhs.revision < rhs.revision })
+          let models = selectedItems
+            .compactMap { dictionary[$0.identifier] }
+            .sorted { lhs, rhs in lhs.revision > rhs.revision }
           self.didSelectWallets?(models)
         },
         isContinueButtonEnabled: !selectedItems.isEmpty
@@ -96,7 +98,9 @@ final class ChooseWalletToAddViewModelImplementation: ChooseWalletToAddViewModel
     }
   
   private func createSection() -> ChooseWalletToAddSection {
-    let items = activeWalletModels.map { createItem(walletModel: $0) }
+    let items = activeWalletModels
+      .sorted{ lhs, rhs in lhs.revision > rhs.revision }
+      .map { createItem(walletModel: $0) }
     return ChooseWalletToAddSection(items: items)
   }
   

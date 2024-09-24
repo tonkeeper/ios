@@ -141,7 +141,6 @@ final class ActiveWalletsServiceImplementation: ActiveWalletsService {
         }
         resultModels.append(result)
       }
-      resultModels = resultModels.sorted(by: { lhs, rhs in lhs.revision < rhs.revision })
       return resultModels
     }
     return models
