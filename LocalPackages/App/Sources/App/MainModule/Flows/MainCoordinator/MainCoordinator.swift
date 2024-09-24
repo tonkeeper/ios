@@ -80,7 +80,12 @@ final class MainCoordinator: RouterCoordinator<TabBarControllerRouter> {
     self.recipientResolver = recipientResolver
     self.jettonBalanceResolver = jettonBalanceResolver
     
-    self.mainCoordinatorStateManager = MainCoordinatorStateManager(walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore)
+    self.mainCoordinatorStateManager = MainCoordinatorStateManager(
+      walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
+      walletNFTsManagedStoreProvider: { wallet in
+        keeperCoreMainAssembly.storesAssembly.walletNFTsManagedStore(wallet: wallet)
+      }
+    )
     
     super.init(router: router)
     
