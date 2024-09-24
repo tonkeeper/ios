@@ -107,7 +107,10 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     didUpdateSnapshot?(listModel.snapshot, false)
     
     if let totalBalanceModelState = try? totalBalanceModel.getState() {
-      didUpdateTotalBalanceState(totalBalanceModelState)
+      let model = syncQueue.sync {
+        return createHeaderModel(state: totalBalanceModelState)
+      }
+      didUpdateHeader?(model)
     }
   }
   
@@ -200,12 +203,23 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
         break
       }
     }
-    notificationStore.addObserver(self) { [weak self] observer, event in
-      guard let self else { return }
+    notificationStore.addObserver(self) { observer, event in
       switch event {
       case .didUpdateNotifications(let notifications):
-        syncQueue.async {
-          self.didUpdateNotifications(notifications: notifications)
+        observer.syncQueue.async {
+          observer.didUpdateNotifications(notifications: notifications)
+        }
+      }
+    }
+    configurationStore.addObserver(self) { observer, event in
+      switch event {
+      case .didUpdateConfiguration:
+        observer.syncQueue.async {
+          guard let totalBalanceModelState = try? observer.totalBalanceModel.getState() else { return }
+          let model = observer.createHeaderModel(state: totalBalanceModelState)
+          DispatchQueue.main.async {
+            observer.didUpdateHeader?(model)
+          }
         }
       }
     }
@@ -398,7 +412,7 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
           onSelection: { [weak self] in
             guard let self else { return }
             Task {
-              guard let telegramChannelURL = try? await self.configurationStore.getConfiguration().tonkeeperNewsUrl else {
+              guard let telegramChannelURL = await self.configurationStore.getConfiguration().tonkeeperNewsUrl else {
                 return
               }
               await MainActor.run {
@@ -606,100 +620,105 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
     }
   }
   
-  func didUpdateTotalBalanceState(_ state: WalletTotalBalanceModel.State) {
-    syncQueue.async {
-      let totalBalanceMapped = self.headerMapper.mapTotalBalance(totalBalance: state.totalBalanceState?.totalBalance)
-      
-      let addressButtonText: String = {
-        if self.appSettings.addressCopyCount > 2 {
-          state.address.toShort()
-        } else {
-          (state.wallet.kind == .watchonly ? TKLocales.BalanceHeader.address : TKLocales.BalanceHeader.yourAddress) + state.address.toShort()
-        }
-      }()
-      
-      let addressButtonConfiguration = TKButton.Configuration(
-        content: TKButton.Configuration.Content(title: .plainString(addressButtonText)),
-        textStyle: .body2,
-        textColor: .Text.secondary,
-        contentAlpha: [.normal: 1, .highlighted: 0.48],
-        action: { [weak self] in
-          guard let self else { return }
-          self.didTapCopy(address: state.address.toString(),
-                           toastConfiguration: state.wallet.copyToastConfiguration())
-          self.appSettings.addressCopyCount += 1
-          if self.appSettings.addressCopyCount <= 3 {
-            didUpdateTotalBalanceState(state)
-          }
-        }
-      )
-      
-      let balanceColor: UIColor
-      let backup: BalanceHeaderAmountView.Model.Backup
-      let isNeedToWarnBackup = state.wallet.isBackupAvailable && !state.wallet.hasBackup
-      let tonAmount = state.totalBalanceState?.totalBalance?.balance.tonItem.amount ?? 0
-      if isNeedToWarnBackup {
-        switch tonAmount {
-        case _ where tonAmount >= .tonAmountError:
-          balanceColor = .Accent.red
-          backup = .backup(color: .Accent.red, closure: { [weak self] in
-            self?.didTapBackup?(state.wallet)
-          })
-        case _ where tonAmount > .tonAmountWarning:
-          balanceColor = .Accent.orange
-          backup = .backup(color: .Accent.orange, closure: { [weak self] in
-            self?.didTapBackup?(state.wallet)
-          })
-        default:
-          balanceColor = .Text.primary
-          backup = .none
-        }
+  func createHeaderModel(state: WalletTotalBalanceModel.State) -> BalanceHeaderView.Model {
+    let totalBalanceMapped = self.headerMapper.mapTotalBalance(totalBalance: state.totalBalanceState?.totalBalance)
+    
+    let addressButtonText: String = {
+      if self.appSettings.addressCopyCount > 2 {
+        state.address.toShort()
       } else {
+        (state.wallet.kind == .watchonly ? TKLocales.BalanceHeader.address : TKLocales.BalanceHeader.yourAddress) + state.address.toShort()
+      }
+    }()
+    
+    let addressButtonConfiguration = TKButton.Configuration(
+      content: TKButton.Configuration.Content(title: .plainString(addressButtonText)),
+      textStyle: .body2,
+      textColor: .Text.secondary,
+      contentAlpha: [.normal: 1, .highlighted: 0.48],
+      action: { [weak self] in
+        guard let self else { return }
+        self.didTapCopy(address: state.address.toString(),
+                         toastConfiguration: state.wallet.copyToastConfiguration())
+        self.appSettings.addressCopyCount += 1
+        if self.appSettings.addressCopyCount <= 3 {
+          didUpdateTotalBalanceState(state)
+        }
+      }
+    )
+    
+    let balanceColor: UIColor
+    let backup: BalanceHeaderAmountView.Model.Backup
+    let isNeedToWarnBackup = state.wallet.isBackupAvailable && !state.wallet.hasBackup
+    let tonAmount = state.totalBalanceState?.totalBalance?.balance.tonItem.amount ?? 0
+    if isNeedToWarnBackup {
+      switch tonAmount {
+      case _ where tonAmount >= .tonAmountError:
+        balanceColor = .Accent.red
+        backup = .backup(color: .Accent.red, closure: { [weak self] in
+          self?.didTapBackup?(state.wallet)
+        })
+      case _ where tonAmount > .tonAmountWarning:
+        balanceColor = .Accent.orange
+        backup = .backup(color: .Accent.orange, closure: { [weak self] in
+          self?.didTapBackup?(state.wallet)
+        })
+      default:
         balanceColor = .Text.primary
         backup = .none
       }
-      
-      let secureState: BalanceHeaderAmountButton.State = state.isSecure ? .secure : .unsecure
-      let balanceModel = BalanceHeaderAmountView.Model(
-        balanceButtonModel: BalanceHeaderAmountButton.Model(
-          balance: totalBalanceMapped,
-          balanceColor: balanceColor,
-          state: secureState,
-          tapHandler: { [weak self] in
-            guard let self else { return }
-            Task {
-              await self.appSettingsStore.toggleIsSecureMode()
-            }
+    } else {
+      balanceColor = .Text.primary
+      backup = .none
+    }
+    
+    let secureState: BalanceHeaderAmountButton.State = state.isSecure ? .secure : .unsecure
+    let balanceModel = BalanceHeaderAmountView.Model(
+      balanceButtonModel: BalanceHeaderAmountButton.Model(
+        balance: totalBalanceMapped,
+        balanceColor: balanceColor,
+        state: secureState,
+        tapHandler: { [weak self] in
+          guard let self else { return }
+          Task {
+            await self.appSettingsStore.toggleIsSecureMode()
           }
-        ),
-        backup: backup
-      )
-      
-      let stateDate: String? = {
-        guard let totalBalanceState = state.totalBalanceState else { return nil }
-        switch totalBalanceState {
-        case .current, .none:
-          return nil
-        case .previous(let totalBalance):
-          return TKLocales.ConnectionStatus.updatedAt(self.headerMapper.makeUpdatedDate(totalBalance.date))
         }
-      }()
-      
-      let headerModel = BalanceHeaderBalanceView.Model(
-        balanceModel: balanceModel,
-        addressButtonConfiguration: addressButtonConfiguration,
-        connectionStatusModel: self.createConnectionStatusModel(
-          backgroundUpdateState: state.backgroundUpdateState,
-          isLoading: state.isLoadingBalance
-        ),
-        tagConfiguration: state.wallet.balanceTagConfiguration(),
-        stateDate: stateDate
-      )
-      
-      let model = BalanceHeaderView.Model(
-        balanceModel: headerModel,
-        buttonsViewModel: self.createHeaderButtonsModel(wallet: state.wallet)
-      )
+      ),
+      backup: backup
+    )
+    
+    let stateDate: String? = {
+      guard let totalBalanceState = state.totalBalanceState else { return nil }
+      switch totalBalanceState {
+      case .current, .none:
+        return nil
+      case .previous(let totalBalance):
+        return TKLocales.ConnectionStatus.updatedAt(self.headerMapper.makeUpdatedDate(totalBalance.date))
+      }
+    }()
+    
+    let headerModel = BalanceHeaderBalanceView.Model(
+      balanceModel: balanceModel,
+      addressButtonConfiguration: addressButtonConfiguration,
+      connectionStatusModel: self.createConnectionStatusModel(
+        backgroundUpdateState: state.backgroundUpdateState,
+        isLoading: state.isLoadingBalance
+      ),
+      tagConfiguration: state.wallet.balanceTagConfiguration(),
+      stateDate: stateDate
+    )
+    
+    let model = BalanceHeaderView.Model(
+      balanceModel: headerModel,
+      buttonsViewModel: self.createHeaderButtonsModel(wallet: state.wallet)
+    )
+    return model
+  }
+  
+  func didUpdateTotalBalanceState(_ state: WalletTotalBalanceModel.State) {
+    syncQueue.async {
+      let model = self.createHeaderModel(state: state)
       DispatchQueue.main.async {
         self.didUpdateHeader?(model)
       }
@@ -738,94 +757,76 @@ final class WalletBalanceViewModelImplementation: WalletBalanceViewModel, Wallet
   }
   
   func createHeaderButtonsModel(wallet: Wallet) -> WalletBalanceHeaderButtonsView.Model {
-    let isSendEnable: Bool
-    let isReceiveEnable: Bool
-    let isScanEnable: Bool
-    let isSwapEnable: Bool
-    let isBuyEnable: Bool
-    let isStakeEnable: Bool
-    
-    switch wallet.kind {
-    case .regular:
-      isSendEnable = true
-      isReceiveEnable = true
-      isScanEnable = true
-      isSwapEnable = true
-      isBuyEnable = true
-      isStakeEnable = true
-    case .lockup:
-      isSendEnable = false
-      isReceiveEnable = false
-      isScanEnable = false
-      isSwapEnable = false
-      isBuyEnable = false
-      isStakeEnable = false
-    case .watchonly:
-      isSendEnable = false
-      isReceiveEnable = true
-      isScanEnable = false
-      isSwapEnable = false
-      isBuyEnable = true
-      isStakeEnable = false
-    case .signer:
-      isSendEnable = true
-      isReceiveEnable = true
-      isScanEnable = true
-      isSwapEnable = true
-      isBuyEnable = true
-      isStakeEnable = true
-    case .ledger:
-      isSendEnable = true
-      isReceiveEnable = true
-      isScanEnable = true
-      isSwapEnable = true
-      isBuyEnable = true
-      isStakeEnable = false
-    }
-    
-    return WalletBalanceHeaderButtonsView.Model(
-      sendButton: WalletBalanceHeaderButtonsView.Model.Button(
+    let flags = configurationStore.getConfiguration().flags
+    let sendButton: WalletBalanceHeaderButtonsView.Model.Button = {
+      WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.send,
         icon: .TKUIKit.Icons.Size28.arrowUpOutline,
-        isEnabled: isSendEnable,
+        isEnabled: wallet.isSendEnable,
         action: { [weak self] in self?.didTapSend?(wallet) }
-      ),
-      recieveButton: WalletBalanceHeaderButtonsView.Model.Button(
+      )
+    }()
+    
+    let recieveButton: WalletBalanceHeaderButtonsView.Model.Button = {
+      WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.receive,
         icon: .TKUIKit.Icons.Size28.arrowDownOutline,
-        isEnabled: isReceiveEnable,
+        isEnabled: wallet.isReceiveEnable,
         action: { [weak self] in self?.didTapReceive?(wallet) }
-      ),
-      scanButton: WalletBalanceHeaderButtonsView.Model.Button(
+      )
+    }()
+    
+    let scanButton: WalletBalanceHeaderButtonsView.Model.Button = {
+      WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.scan,
         icon: .TKUIKit.Icons.Size28.qrViewFinderThin,
-        isEnabled: isScanEnable,
+        isEnabled: wallet.isScanEnable,
         action: { [weak self] in self?.didTapScan?() }
-      ),
-      swapButton: WalletBalanceHeaderButtonsView.Model.Button(
+      )
+    }()
+    
+    let swapButton: WalletBalanceHeaderButtonsView.Model.Button? = {
+      guard !flags.isSwapDisable else { return nil }
+      return WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.swap,
         icon: .TKUIKit.Icons.Size28.swapHorizontalOutline,
-        isEnabled: isSwapEnable,
+        isEnabled: wallet.isSwapEnable,
         action: { [weak self] in
           self?.didTapSwap?(wallet)
         }
-      ),
-      buyButton: WalletBalanceHeaderButtonsView.Model.Button(
+      )
+    }()
+    
+    let buyButton: WalletBalanceHeaderButtonsView.Model.Button? = {
+      guard !flags.isExchangeMethodsDisable else { return nil }
+      return WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.buy,
         icon: .TKUIKit.Icons.Size28.usd,
-        isEnabled: isBuyEnable,
+        isEnabled: wallet.isBuyEnable,
         action: { [weak self] in
           self?.didTapBuy?(wallet)
         }
-      ),
-      stakeButton: WalletBalanceHeaderButtonsView.Model.Button(
+      )
+    }()
+    
+    let stakeButton: WalletBalanceHeaderButtonsView.Model.Button = {
+      WalletBalanceHeaderButtonsView.Model.Button(
         title: TKLocales.WalletButtons.stake,
         icon: .TKUIKit.Icons.Size28.stakingOutline,
-        isEnabled: isStakeEnable,
+        isEnabled: wallet.isStakeEnable,
         action: { [weak self] in
           self?.didTapStake?(wallet)
         }
       )
+    }()
+    
+    return WalletBalanceHeaderButtonsView.Model(
+      sendButton: sendButton,
+      recieveButton: recieveButton,
+      scanButton: scanButton,
+      swapButton: swapButton,
+      buyButton: buyButton,
+      stakeButton: stakeButton
     )
   }
   

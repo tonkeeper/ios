@@ -200,21 +200,6 @@ final class SettingsListNotificationsConfigurator: SettingsListConfigurator {
         )
       )
     )
-    
-//    let isOn: Bool = {
-//      guard let address = try? wallet.friendlyAddress else { return false }
-//      guard let isOn = walletNotificationStore.getState()[address] else { return false }
-//      return isOn
-//    }()
-//    
-//    let action: (Bool) -> Void = { [weak self] isOn in
-//      guard let self else { return }
-//      
-//      Task {
-//        await self.walletNotificationStore.setNotificationIsOn(isOn, wallet: self.wallet)
-//      }
-//    }
-    
     return SettingsListItem(
       id: app.manifest.host,
       cellConfiguration: cellConfiguration,

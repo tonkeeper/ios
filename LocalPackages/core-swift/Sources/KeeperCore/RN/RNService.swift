@@ -19,24 +19,6 @@ public protocol RNService {
   func getCurrency() async throws -> Currency
   func getWalletNotificationsSettings(walletId: String) async throws -> Bool
   func setWalletNotificationsSettings(isOn: Bool, walletId: String) async throws
-  
-//  func getWalletsStore() async throws -> RNWalletsStore?
-//  func setWalletsStore(_ walletStore: RNWalletsStore?) async throws
-//  func getAppTheme() async throws -> RNAppTheme?
-//  func setAppTheme(_ appTheme: RNAppTheme?) async throws
-//  func getWalletNotificationsSettings(walletId: String) async throws -> RNWalletNotifications?
-//  func setWalletNotificationsSettings(walletId: String, isOn: Bool) async throws
-//  func getCurrency() async throws -> Currency
-//  func getWalletBackupDate(walletId: String) async throws -> Date?
-//  func addWallets(_ wallets: [RNWallet]) async throws
-//  func setWalletActive(_ wallet: RNWallet) async throws
-//  func updateWalletMetaData(_ wallet: RNWallet, metaData: WalletMetaData) async throws
-//  func updateWallet(_ wallet: RNWallet, lastBackupAt: TimeInterval?) async throws
-//  func moveWallet(fromIndex: Int, toIndex: Int) async throws
-//  func deleteWallet(_ wallet: RNWallet) async throws
-//  func deleteAllWallets() async throws
-//  func isBiometryEnable() async -> Bool
-//  func getBiometryPasscode() async throws -> String
 }
 
 final class RNServiceImplementation: RNService {

@@ -231,5 +231,59 @@ public extension Wallet {
   var tintColor: WalletTintColor {
     metaData.tintColor
   }
+  
+  var isSendEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger:
+      return true
+    case .watchonly, .lockup:
+      return false
+    }
+  }
+  
+  var isReceiveEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger, .watchonly:
+      return true
+    case .lockup:
+      return false
+    }
+  }
+  
+  var isScanEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger:
+      return true
+    case .watchonly, .lockup:
+      return false
+    }
+  }
+  
+  var isSwapEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger:
+      return true
+    case .watchonly, .lockup:
+      return false
+    }
+  }
+  
+  var isBuyEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger, .watchonly:
+      return true
+    case .lockup:
+      return false
+    }
+  }
+  
+  var isStakeEnable: Bool {
+    switch kind {
+    case .regular, .signer, .ledger:
+      return true
+    case .watchonly, .lockup:
+      return false
+    }
+  }
 }
 

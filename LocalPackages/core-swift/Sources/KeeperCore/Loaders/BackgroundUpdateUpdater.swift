@@ -27,12 +27,12 @@ public actor BackgroundUpdateUpdater {
       Task {
         switch event {
         case .didDeleteWallet(let wallet):
-          await observer.setWalletUpdater(
-            wallet: wallet, updater: observer.createUpdater(wallet: wallet)
-          )
+          await observer.removeUpdater(wallet: wallet)
         case .didAddWallets(let wallets):
           for wallet in wallets {
-            await observer.setWalletUpdater(wallet: wallet, updater: observer.createUpdater(wallet: wallet))
+            let updater = await observer.createUpdater(wallet: wallet)
+            await updater.start()
+            await observer.setWalletUpdater(wallet: wallet, updater: updater)
           }
         default:
           break
@@ -82,6 +82,10 @@ public actor BackgroundUpdateUpdater {
   
   private func setWalletUpdater(wallet: Wallet, updater: WalletBackgroundUpdate) {
     walletUpdaters[wallet] = updater
+  }
+  
+  private func removeUpdater(wallet: Wallet) {
+    walletUpdaters[wallet] = nil
   }
   
   @discardableResult

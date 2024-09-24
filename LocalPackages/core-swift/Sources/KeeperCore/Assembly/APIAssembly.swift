@@ -28,7 +28,7 @@ final class APIAssembly {
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
-      configurationStore: configurationAssembly.remoteConfigurationStore,
+      configurationStore: configurationAssembly.configurationStore,
       requestBuilderActor: requestBuilderActor
     )
   }
@@ -39,7 +39,7 @@ final class APIAssembly {
       urlSession: URLSession(
         configuration: urlSessionConfiguration
       ),
-      configurationStore: configurationAssembly.remoteConfigurationStore,
+      configurationStore: configurationAssembly.configurationStore,
       requestBuilderActor: requestBuilderActor
     )
   }
@@ -47,11 +47,11 @@ final class APIAssembly {
   private lazy var requestBuilderActor = APIRequestBuilderSerialActor()
   
   private var tonApiHostProvider: APIHostProvider {
-    MainnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.remoteConfigurationStore)
+    MainnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.configurationStore)
   }
   
   private var testnetTonApiHostProvider: APIHostProvider {
-    TestnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.remoteConfigurationStore)
+    TestnetAPIHostProvider(remoteConfigurationStore: configurationAssembly.configurationStore)
   }
   
   private var _streamingAPI: StreamingAPI?
@@ -66,19 +66,15 @@ final class APIAssembly {
         if isRealtimeHost {
           return streamingAPIURL
         } else {
-          do {
-            let string = try await configurationAssembly.remoteConfigurationStore.getConfiguration().tonapiV2Endpoint
-            guard let url = URL(string: string) else {
-              return tonAPIURL
-            }
-            return url
-          } catch {
+          let string = await configurationAssembly.configurationStore.getConfiguration().tonapiV2Endpoint
+          guard let url = URL(string: string) else {
             return tonAPIURL
           }
+          return url
         }
       },
       tokenProvider: { [configurationAssembly] in
-        try await configurationAssembly.remoteConfigurationStore.getConfiguration().tonApiV2Key
+        await configurationAssembly.configurationStore.getConfiguration().tonApiV2Key
       }
     )
     _streamingAPI = streamingAPI
@@ -116,12 +112,6 @@ final class APIAssembly {
     configuration.timeoutIntervalForRequest = TimeInterval(Int.max)
     configuration.timeoutIntervalForResource = TimeInterval(Int.max)
     return configuration
-  }
-  
-  private var authTokenProvider: AuthTokenProvider {
-    AuthTokenProvider(
-      remoteConfigurationStore: configurationAssembly.remoteConfigurationStore
-    )
   }
   
   private var apiHostProvider: APIHostUrlProvider {

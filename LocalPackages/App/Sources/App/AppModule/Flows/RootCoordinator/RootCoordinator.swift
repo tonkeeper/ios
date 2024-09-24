@@ -157,59 +157,14 @@ private extension RootCoordinator {
     )
     Task {
       if await rnMigration.checkIfNeedToMigrate() {
-        await rnMigration.performMigration()
+        _ = await rnMigration.performMigration()
       } else {
         await MainActor.run {
           openOnboarding(deeplink: deeplink)
         }
       }
     }
-//    let migrationController = dependencies.keeperCoreRootAssembly.migrationController(
-//      sharedCacheURL: dependencies.coreAssembly.sharedCacheURL,
-//      keychainAccessGroupIdentifier: dependencies.coreAssembly.keychainAccessGroupIdentifier
-//    )
-//    Task {
-//      if await migrationController.checkIfNeedToMigrate() {
-//        await MainActor.run {
-//          openMigration(migrationController: migrationController)
-//        }
-//      } else {
-//        await MainActor.run {
-//          openOnboarding(deeplink: deeplink)
-//        }
-//      }
-//    }
   }
-  
-//  func openMigration(migrationController: MigrationController) {
-//    let navigationController = TKNavigationController()
-//    navigationController.configureTransparentAppearance()
-//    
-//    let migrationCoordinator = MigrationCoordinator(
-//      migrationController: migrationController,
-//      rnService: dependencies.keeperCoreRootAssembly.rnAssembly.rnService,
-//      router: NavigationControllerRouter(rootViewController: navigationController)
-//    )
-//    migrationCoordinator.didFinish = { [weak self, weak migrationCoordinator] in
-//      self?.removeChild(migrationCoordinator)
-//      self?.start(deeplink: nil)
-//    }
-//    migrationCoordinator.didLogout = { [weak self, weak migrationCoordinator] in
-//      guard let self, let migrationCoordinator else { return }
-//      Task {
-//        do {
-//          try await self.logout()
-//          self.removeChild(migrationCoordinator)
-//        } catch {
-//          print("Log: Logout failed")
-//        }
-//      }
-//    }
-//    addChild(migrationCoordinator)
-//    migrationCoordinator.start(deeplink: nil)
-//    
-//    showViewController(navigationController, animated: false)
-//  }
   
   func showViewController(_ viewController: UIViewController, animated: Bool) {
     activeViewController?.willMove(toParent: nil)

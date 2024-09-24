@@ -31,6 +31,10 @@ final class BalanceHeaderView: UIView, ConfigurableView {
     balanceView.configure(model: model.balanceModel)
     buttonsView.configure(model: model.buttonsViewModel)
   }
+  
+//  override var intrinsicContentSize: CGSize {
+//    CGSize(width: UIView.noIntrinsicMetric, height: 400)
+//  }
 }
 
 private extension BalanceHeaderView {

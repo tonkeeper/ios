@@ -151,13 +151,13 @@ extension MainCoordinator {
     
     let buySellService = keeperCoreMainAssembly.servicesAssembly.buySellMethodsService()
     let walletsStore = keeperCoreMainAssembly.storesAssembly.walletsStore
-    let configurationStore = keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore
+    let configurationStore = keeperCoreMainAssembly.configurationAssembly.configurationStore
     let currencyStore = keeperCoreMainAssembly.storesAssembly.currencyStore
     
     let deeplinkHandleTask = Task {
       do {
         let wallet = try await walletsStore.getActiveWallet()
-        let mercuryoSecret = try? await configurationStore.getConfiguration().mercuryoSecret
+        let mercuryoSecret = await configurationStore.getConfiguration().mercuryoSecret
         let currency = await currencyStore.getState()
         
         let fiatMethods = try await buySellService.loadFiatMethods(countryCode: nil)

@@ -31,7 +31,7 @@ struct WalletBalanceAssembly {
       ),
       walletsStore: keeperCoreMainAssembly.storesAssembly.walletsStore,
       notificationStore: keeperCoreMainAssembly.storesAssembly.internalNotificationsStore,
-      configurationStore: keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore,
+      configurationStore: keeperCoreMainAssembly.configurationAssembly.configurationStore,
       appSettingsStore: keeperCoreMainAssembly.storesAssembly.appSettingsStore,
       listMapper:
         WalletBalanceListMapper(

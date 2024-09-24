@@ -49,7 +49,7 @@ public final class RootAssembly {
       return rootController
     } else {
       let rootController = RootController(
-        remoteConfigurationStore: configurationAssembly.remoteConfigurationStore,
+        remoteConfigurationStore: configurationAssembly.configurationLoader,
         knownAccountsStore: loadersAssembly.knownAccountsStore,
         deeplinkParser: DeeplinkParser(),
         keeperInfoRepository: repositoriesAssembly.keeperInfoRepository(),
