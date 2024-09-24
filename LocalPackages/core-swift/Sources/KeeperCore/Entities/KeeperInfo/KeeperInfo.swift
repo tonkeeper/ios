@@ -12,9 +12,9 @@ public struct KeeperInfo: Equatable {
   public let currency: Currency
   
   /// Common pin/faceid settings
-  let securitySettings: SecuritySettings
+  public let securitySettings: SecuritySettings
   
-  let appSettings: AppSettings
+  public let appSettings: AppSettings
   
   ///
   let assetsPolicy: AssetsPolicy

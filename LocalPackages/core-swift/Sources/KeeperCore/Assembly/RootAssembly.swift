@@ -60,15 +60,15 @@ public final class RootAssembly {
       return rootController
     }
   }
-  
-  public func migrationController(sharedCacheURL: URL,
-                                  keychainAccessGroupIdentifier: String) -> MigrationController {
-    MigrationController(
-      sharedCacheURL: sharedCacheURL,
-      keychainAccessGroupIdentifier: keychainAccessGroupIdentifier,
-      rootAssembly: self
-    )
-  }
+//  
+//  public func migrationController(sharedCacheURL: URL,
+//                                  keychainAccessGroupIdentifier: String) -> MigrationController {
+//    MigrationController(
+//      sharedCacheURL: sharedCacheURL,
+//      keychainAccessGroupIdentifier: keychainAccessGroupIdentifier,
+//      rootAssembly: self
+//    )
+//  }
   
   public func onboardingAssembly() -> OnboardingAssembly {
     OnboardingAssembly(
