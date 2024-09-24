@@ -75,12 +75,14 @@ extension HistoryCellActionView {
         let imageUrl: URL?
         let name: NSAttributedString?
         let collectionName: NSAttributedString?
+        let isVerified: Bool
         let action: () -> Void
-        
+
         init(imageDownloadTask: ImageDownloadTask?,
              imageUrl: URL?,
              name: String?,
              collectionName: String?,
+             isVerified: Bool,
              action: @escaping () -> Void) {
           self.imageDownloadTask = imageDownloadTask
           self.imageUrl = imageUrl
@@ -90,12 +92,17 @@ extension HistoryCellActionView {
             alignment: .left,
             lineBreakMode: .byTruncatingTail
           )
-          self.collectionName = collectionName?.withTextStyle(
-            .body2,
-            color: .Bubble.foreground.withAlphaComponent(0.64),
-            alignment: .left,
-            lineBreakMode: .byTruncatingTail
-          )
+          let resultCollectionName = collectionName?
+            .withTextStyle(
+              .body2,
+              color: .Bubble.foreground.withAlphaComponent(0.64),
+              alignment: .left,
+              lineBreakMode: .byTruncatingTail
+            )
+            .applyVerificationAttachment(isVerified)
+
+          self.collectionName = resultCollectionName
+          self.isVerified = isVerified
           self.action = action
         }
         

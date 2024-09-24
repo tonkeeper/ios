@@ -172,6 +172,7 @@ struct HistoryEventMapper {
           imageUrl: model.image,
           name: model.name,
           collectionName: model.collectionName,
+          isVerified: model.nft.trust == .whitelist,
           action: {
             nftAction(model.nft.address)
           }

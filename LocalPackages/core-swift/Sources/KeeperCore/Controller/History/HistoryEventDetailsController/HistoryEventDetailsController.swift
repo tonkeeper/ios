@@ -37,6 +37,7 @@ public final class HistoryEventDetailsController {
     public let fiatPrice: String?
     public let nftName: String?
     public let nftCollectionName: String?
+    public let isVerified: Bool?
     public let status: String?
     
     public let listItems: [ListItem]
@@ -48,8 +49,10 @@ public final class HistoryEventDetailsController {
          fiatPrice: String? = nil,
          nftName: String? = nil,
          nftCollectionName: String? = nil,
+         isVerified: Bool? = nil,
          status: String? = nil,
-         listItems: [ListItem] = []) {
+         listItems: [ListItem] = []
+    ) {
       self.headerImage = headerImage
       self.title = title
       self.aboveTitle = aboveTitle
@@ -57,6 +60,7 @@ public final class HistoryEventDetailsController {
       self.fiatPrice = fiatPrice
       self.nftName = nftName
       self.nftCollectionName = nftCollectionName
+      self.isVerified = isVerified
       self.status = status
       self.listItems = listItems
     }
@@ -382,6 +386,7 @@ private extension HistoryEventDetailsController {
       date: dateString,
       nftName: nft?.name,
       nftCollectionName: nft?.collection?.name,
+      isVerified: nft?.trust == .whitelist,
       status: status.rawValue,
       listItems: listItems
     )

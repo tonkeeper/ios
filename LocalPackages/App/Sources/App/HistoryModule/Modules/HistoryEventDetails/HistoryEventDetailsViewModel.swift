@@ -88,11 +88,17 @@ private extension HistoryEventDetailsViewModelImplementation {
             )
           )
           if let nftCollectionName = model.nftCollectionName {
-            headerItems.append(
-              .text(
-                .init(text: nftCollectionName.withTextStyle(.body1, color: .Text.secondary, alignment: .center, lineBreakMode: .byWordWrapping), numberOfLines: 1),
-                bottomSpacing: 0
+            let text = nftCollectionName
+              .withTextStyle(
+                .body1,
+                color: .Text.secondary,
+                alignment: .center,
+                lineBreakMode: .byWordWrapping
               )
+              .applyVerificationAttachment(model.isVerified ?? false)
+            
+            headerItems.append(
+              .text(.init(text: text, numberOfLines: 1),bottomSpacing: 0)
             )
           }
           headerItems.append(.customView(TKSpacingView(verticalSpacing: .constant(16)), bottomSpacing: 0))

@@ -1,0 +1,19 @@
+xcassets:
+  inputs:
+    - LocalPackages/TKUIKit/TKUIKit/Sources/TKUIKit/Resources/Assets.xcassets
+  outputs:
+    - templateName: swift5
+      params:
+        forceProvidesNamespaces: true
+        publicAccess: true
+        enumName: Assets
+      output: LocalPackages/TKUIKit/TKUIKit/Sources/TKUIKit/UIKit/UIImage/Assets+Generated.swift
+
+strings:
+  inputs: LocalPackages/TKLocalize/Sources/TKLocalize/Resources/Locales/en.lproj/Localizable.strings
+  outputs:
+    - templateName: structured-swift5
+      params:
+            publicAccess: true
+            enumName: TKLocales
+      output: LocalPackages/TKLocalize/Sources/TKLocalize/TKLocales.swift

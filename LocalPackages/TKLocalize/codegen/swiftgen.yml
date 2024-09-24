@@ -1,9 +1,0 @@
-strings:
-  inputs: ../Sources/TKLocalize/Resources/Locales/en.lproj/Localizable.strings
-  outputs:
-    - templateName: structured-swift5
-      params:
-            publicAccess: true
-            enumName: TKLocales
-      output: ../Sources/TKLocalize/TKLocales.swift
-
