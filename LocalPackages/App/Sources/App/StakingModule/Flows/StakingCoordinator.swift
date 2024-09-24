@@ -60,7 +60,7 @@ final class StakingCoordinator: RouterCoordinator<NavigationControllerRouter> {
     }
     module.view.setupLeftButton(image: .TKUIKit.Icons.Size16.informationCircle) { [keeperCoreMainAssembly, coreAssembly] in
       Task {
-        guard let url = try? await keeperCoreMainAssembly.configurationAssembly.remoteConfigurationStore.getConfiguration().stakingInfoUrl else {
+        guard let url = await keeperCoreMainAssembly.configurationAssembly.configurationStore.getConfiguration().stakingInfoUrl else {
           return
         }
         await MainActor.run {

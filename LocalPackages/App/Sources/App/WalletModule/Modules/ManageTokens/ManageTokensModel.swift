@@ -149,48 +149,7 @@ final class ManageTokensModel {
       }
     }
   }
-  
-//  private func didUpdateBalanceState(newState: [FriendlyAddress: ConvertedBalanceState],
-//                                     oldState: [FriendlyAddress: ConvertedBalanceState]?) async {
-//    await actor.addTask { [wallet] in
-//      guard let address = try? wallet.friendlyAddress,
-//      let balanceState = newState[address],
-//      balanceState != oldState?[address] else {
-//        return
-//      }
-//    
-//      let tokenManagementState = self.tokenManagementStore.getState()
-//      let stackingPools = self.stackingPoolsStore.getState()[address] ?? []
-//      
-//      let state = self.createState(
-//        balance: balanceState.balance,
-//        tokenManagementState: tokenManagementState,
-//        stackingPools: stackingPools
-//      )
-//      self.didUpdateState?(state)
-//    }
-//  }
-//  
-//  private func didUpdateTokenManagementState(newState: TokenManagementState,
-//                                             oldState: TokenManagementState?) async {
-//    await actor.addTask {
-//      guard newState != oldState,
-//            let address = try? self.wallet.friendlyAddress,
-//            let balance = self.convertedBalanceStore.getState()[address]?.balance else {
-//        return
-//      }
-//      
-//      let stackingPools = self.stackingPoolsStore.getState()[address] ?? []
-//      
-//      let state = self.createState(
-//        balance: balance,
-//        tokenManagementState: newState,
-//        stackingPools: stackingPools
-//      )
-//      self.didUpdateState?(state)
-//    }
-//  }
-  
+
   private func createState(balance: ConvertedBalance, 
                            tokenManagementState: TokenManagementState?,
                            stackingPools: [StackingPoolInfo]) -> State {

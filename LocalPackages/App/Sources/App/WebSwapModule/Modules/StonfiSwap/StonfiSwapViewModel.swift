@@ -88,7 +88,7 @@ final class StonfiSwapViewModelImplementation: StonfiSwapViewModel {
   }
   
   private func buildURL() async -> URL? {
-    guard let stonfiUrl = try? await configurationStore.getConfiguration().stonfiUrl else {
+    guard let stonfiUrl = await configurationStore.getConfiguration().stonfiUrl else {
       return nil
     }
     

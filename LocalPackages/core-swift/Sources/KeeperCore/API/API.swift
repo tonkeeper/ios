@@ -17,7 +17,7 @@ struct MainnetAPIHostProvider: APIHostProvider {
   
   var basePath: String {
     get async {
-      await (try? remoteConfigurationStore.getConfiguration().tonapiV2Endpoint) ?? ""
+      await remoteConfigurationStore.getConfiguration().tonapiV2Endpoint
     }
   }
 }
@@ -31,7 +31,7 @@ struct TestnetAPIHostProvider: APIHostProvider {
   
   var basePath: String {
     get async {
-      await (try? remoteConfigurationStore.getConfiguration().tonapiTestnetHost) ?? ""
+      await remoteConfigurationStore.getConfiguration().tonapiTestnetHost
     }
   }
 }
@@ -67,7 +67,7 @@ public struct API {
   }
   
   private func prepareAPIForRequest() async {
-    async let apiKeyTask = ((try? await configurationStore.getConfiguration()) ?? .empty).tonApiV2Key
+    async let apiKeyTask = await configurationStore.getConfiguration().tonApiV2Key
     async let hostUrlTask = await hostProvider.basePath
     let apiKey = await apiKeyTask
     let hostURL = await hostUrlTask

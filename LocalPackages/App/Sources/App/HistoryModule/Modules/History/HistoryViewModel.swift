@@ -50,18 +50,8 @@ final class HistoryV2ViewModelImplementation: HistoryViewModel, HistoryModuleOut
   }
   
   func viewDidLoad() {
-//    backgroundUpdateStore.addObserver(self, notifyOnAdded: false) { observer, newState, oldState in
-//      DispatchQueue.main.async {
-//        observer.didUpdateBackgroundUpdateState(newState: newState)
-//      }
-//    }
-//    
     setupEmpty(wallet: wallet)
     didUpdateState?(state)
-    
-    
-//    let state = backgroundUpdateStore.getState()
-//    didUpdateBackgroundUpdateState(newState: state)
   }
 }
 
@@ -89,17 +79,4 @@ private extension HistoryV2ViewModelImplementation {
     )
     didUpdateEmptyModel?(model)
   }
-  
-//  func didUpdateBackgroundUpdateState(newState: BackgroundUpdateStore.State) {
-//    switch newState {
-//    case .connecting:
-//      didUpdateIsConnecting?(true)
-//    case .connected:
-//      didUpdateIsConnecting?(false)
-//    case .disconnected:
-//      didUpdateIsConnecting?(true)
-//    case .noConnection:
-//      didUpdateIsConnecting?(true)
-//    }
-//  }
 }

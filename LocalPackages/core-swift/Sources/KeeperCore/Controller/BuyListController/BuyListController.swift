@@ -119,7 +119,7 @@ private extension BuyListController {
                             walletAddress: String) async {
     urlString = urlString.replacingOccurrences(of: "{TX_ID}", with: "mercuryo_\(UUID().uuidString)")
     
-    let mercuryoSecret = (try? await configurationStore.getConfiguration().mercuryoSecret) ?? ""
+    let mercuryoSecret = await configurationStore.getConfiguration().mercuryoSecret ?? ""
 
     guard let signature = (walletAddress + mercuryoSecret).data(using: .utf8)?.sha256().hexString() else { return }
     urlString += "&signature=\(signature)"

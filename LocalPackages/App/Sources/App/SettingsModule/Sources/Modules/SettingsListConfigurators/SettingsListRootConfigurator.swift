@@ -377,7 +377,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         [weak self, configurationStore] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = try? await configurationStore
+          guard let contactUsURL = await configurationStore
             .getConfiguration()
             .faqUrl else {
             return
@@ -404,7 +404,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         [weak self, configurationStore] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = try? await configurationStore
+          guard let contactUsURL = await configurationStore
             .getConfiguration()
             .directSupportUrl else {
             return
@@ -431,7 +431,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         [weak self, configurationStore] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = try? await configurationStore
+          guard let contactUsURL = await configurationStore
             .getConfiguration()
             .tonkeeperNewsUrl else {
             return
@@ -458,7 +458,7 @@ final class SettingsListRootConfigurator: SettingsListConfigurator {
         [weak self, configurationStore] _ in
         guard let self else { return }
         Task {
-          guard let contactUsURL = try? await configurationStore
+          guard let contactUsURL = await configurationStore
             .getConfiguration()
             .supportLink else {
             return
