@@ -89,7 +89,6 @@ public final class ToastPresenter {
   }
   
   public static func hideAll() {
-    print("🇸🇦hide all")
     queue.removeAll()
     hideToast()
   }
@@ -100,7 +99,6 @@ public final class ToastPresenter {
   }
   
   private static func show(configuration: Configuration) {
-    print("will show 🇸🇦")
     let model = ToastView.Model(
       title: configuration.title,
       shape: configuration.shape,

@@ -123,9 +123,7 @@ open class TKBridgeWebViewController: UIViewController {
       self?.headerView.backButton.isHidden = !canGoBack
     }
   
-    var urlRequest = URLRequest(url: url)
-    urlRequest.httpShouldHandleCookies = false
-    urlRequest.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
+    let urlRequest = URLRequest(url: url)
     webView.load(urlRequest)
   }
   
