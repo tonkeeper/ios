@@ -7,6 +7,7 @@ public final class MainController {
   
   private var walletsStoreObservationToken: ObservationToken?
   private var backgroundUpdateStoreObservationToken: ObservationToken?
+  private var updatesStarted = false
   
   private let backgroundUpdateUpdater: BackgroundUpdateUpdater
   private let tonConnectEventsStore: TonConnectEventsStore
@@ -40,12 +41,15 @@ public final class MainController {
   }
   
   public func startUpdates() {
+    guard !updatesStarted else { return }
     walletStateLoader.startStateReload()
     Task {
       await backgroundUpdateUpdater.start()
-    }
-    Task {
+      await tonConnectEventsStore.addObserver(self)
       await tonConnectEventsStore.start()
+      await MainActor.run {
+        updatesStarted = true
+      }
     }
   }
   
@@ -53,9 +57,11 @@ public final class MainController {
     walletStateLoader.stopStateReload()
     Task {
       await backgroundUpdateUpdater.stop()
-    }
-    Task {
       await tonConnectEventsStore.stop()
+      await tonConnectEventsStore.removeObserver(self)
+      await MainActor.run {
+        updatesStarted = false
+      }
     }
   }
   
