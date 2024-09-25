@@ -87,18 +87,28 @@ final class BrowserExploreViewModelImplementation: BrowserExploreViewModel, Brow
   
   private let browserExploreController: BrowserExploreController
   private let regionStore: RegionStore
+  private let configurationStore: ConfigurationStore
 
   // MARK: - Init
   
-  init(browserExploreController: BrowserExploreController, regionStore: RegionStore) {
+  init(browserExploreController: BrowserExploreController, 
+       regionStore: RegionStore,
+       configurationStore: ConfigurationStore) {
     self.browserExploreController = browserExploreController
     self.regionStore = regionStore
+    self.configurationStore = configurationStore
   }
 }
 
 private extension BrowserExploreViewModelImplementation {
 
   func reloadContent() async {
+    let flags = await configurationStore.getConfiguration().flags
+    guard !flags.isDappsDisable else {
+      await setEmptyState()
+      return 
+    }
+    
     let lang = Locale.current.languageCode ?? "en"
     if let cached = try? browserExploreController.getCachedPopularApps(lang: lang) {
       await handle(popularAppsData: cached)

@@ -9,7 +9,8 @@ struct BrowserExploreAssembly {
 
     let viewModel = BrowserExploreViewModelImplementation(
       browserExploreController: keeperCoreAssembly.browserExploreController(),
-      regionStore: keeperCoreAssembly.storesAssembly.regionStore
+      regionStore: keeperCoreAssembly.storesAssembly.regionStore,
+      configurationStore: keeperCoreAssembly.configurationAssembly.configurationStore
     )
     let viewController = BrowserExploreViewController(
       viewModel: viewModel
