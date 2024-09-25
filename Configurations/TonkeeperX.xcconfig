@@ -2,6 +2,7 @@
 APP_NAME = Tonkeeper X
 
 BUNDLE_DISPLAY_NAME = $(APP_NAME)
+ICON_NAME = XAppIcon
 
 BASE_BUNDLE_IDENTIFIER = com.tonapps.tonkeeperx
 
