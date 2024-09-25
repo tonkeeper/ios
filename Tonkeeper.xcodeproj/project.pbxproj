@@ -178,6 +178,14 @@
 		7D8A50B22AC87E7000AA396C /* HomeScreenBalanceWidgetMediumContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenBalanceWidgetMediumContentView.swift; sourceTree = "<group>"; };
 		7D98E9DA2C22F24C0032D37A /* TKCryptoSwift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCryptoSwift; sourceTree = "<group>"; };
 		7D9B767B2CA3E35B002AA2F3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; name = Base; path = Base.lproj/RateWidget.intentdefinition; sourceTree = "<group>"; };
+		7D9B76812CA3F999002AA2F3 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B76832CA3F99A002AA2F3 /* zh-Hans */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-Hans"; path = "zh-Hans.lproj/RateWidget.strings"; sourceTree = "<group>"; };
+		7D9B76852CA3F99A002AA2F3 /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B76872CA3F99B002AA2F3 /* id */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = id; path = id.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B76892CA3F99B002AA2F3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B768B2CA3F99C002AA2F3 /* tr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = tr; path = tr.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B768D2CA3F99C002AA2F3 /* uk */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uk; path = uk.lproj/RateWidget.strings; sourceTree = "<group>"; };
+		7D9B768F2CA3F99D002AA2F3 /* uz */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = uz; path = uz.lproj/RateWidget.strings; sourceTree = "<group>"; };
 		7DB0579A2AC24C0C00306C00 /* RateWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidget.swift; sourceTree = "<group>"; };
 		7DB0579C2AC24CAB00306C00 /* RateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetView.swift; sourceTree = "<group>"; };
 		7DB0579E2AC24CC200306C00 /* HomeScreenSmallRateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenSmallRateWidgetView.swift; sourceTree = "<group>"; };
@@ -737,6 +745,14 @@
 			isa = PBXVariantGroup;
 			children = (
 				7D9B767B2CA3E35B002AA2F3 /* Base */,
+				7D9B76812CA3F999002AA2F3 /* en */,
+				7D9B76832CA3F99A002AA2F3 /* zh-Hans */,
+				7D9B76852CA3F99A002AA2F3 /* de */,
+				7D9B76872CA3F99B002AA2F3 /* id */,
+				7D9B76892CA3F99B002AA2F3 /* ru */,
+				7D9B768B2CA3F99C002AA2F3 /* tr */,
+				7D9B768D2CA3F99C002AA2F3 /* uk */,
+				7D9B768F2CA3F99D002AA2F3 /* uz */,
 			);
 			name = RateWidget.intentdefinition;
 			sourceTree = "<group>";
