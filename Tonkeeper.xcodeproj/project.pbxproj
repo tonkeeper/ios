@@ -19,14 +19,12 @@
 		7D3F25E72AC19418002DF1B7 /* TonkeeperWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7D3F25DA2AC19417002DF1B7 /* TonkeeperWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		7D3F25F22AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F12AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift */; };
 		7D3F25F42AC19470002DF1B7 /* View+WidgetBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F32AC19470002DF1B7 /* View+WidgetBackground.swift */; };
-		7D3F25F82AC19558002DF1B7 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; settings = {ATTRIBUTES = (private_codegen, ); }; };
 		7D3F25FA2AC195F1002DF1B7 /* RateWidgetEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */; };
 		7D3F25FC2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */; };
 		7D3F25FE2AC1975F002DF1B7 /* RateWidgetChartMock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */; };
 		7D3F26042AC198BE002DF1B7 /* RateWidgetDataView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26032AC198BE002DF1B7 /* RateWidgetDataView.swift */; };
 		7D3F26062AC198DB002DF1B7 /* RateWidgetChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26052AC198DB002DF1B7 /* RateWidgetChartView.swift */; };
 		7D3F260A2AC1990C002DF1B7 /* RateChartWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F26092AC1990C002DF1B7 /* RateChartWidgetView.swift */; };
-		7D3F260F2AC19F79002DF1B7 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; settings = {ATTRIBUTES = (private_codegen, ); }; };
 		7D4C14642AD98E44002B2922 /* diamond.json in Resources */ = {isa = PBXBuildFile; fileRef = 7D4C14632AD98E44002B2922 /* diamond.json */; };
 		7D5A18122A5406CB00793769 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 7D5A18112A5406CB00793769 /* Kingfisher */; };
 		7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D68363C2A1CFF7B002DBBC7 /* AppAssembly.swift */; };
@@ -38,6 +36,9 @@
 		7D8A50AF2AC8693C00AA396C /* HomeScreenBalanceWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50AE2AC8693C00AA396C /* HomeScreenBalanceWidget.swift */; };
 		7D8A50B12AC87E3900AA396C /* HomeScreenBalanceWidgetSmallContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50B02AC87E3900AA396C /* HomeScreenBalanceWidgetSmallContentView.swift */; };
 		7D8A50B32AC87E7000AA396C /* HomeScreenBalanceWidgetMediumContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D8A50B22AC87E7000AA396C /* HomeScreenBalanceWidgetMediumContentView.swift */; };
+		7D9B767D2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D9B767C2CA3E35B002AA2F3 /* RateWidget.intentdefinition */; settings = {ATTRIBUTES = (private_codegen, ); }; };
+		7D9B767E2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D9B767C2CA3E35B002AA2F3 /* RateWidget.intentdefinition */; settings = {ATTRIBUTES = (private_codegen, ); }; };
+		7D9B767F2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D9B767C2CA3E35B002AA2F3 /* RateWidget.intentdefinition */; };
 		7DB0579B2AC24C0C00306C00 /* RateWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB0579A2AC24C0C00306C00 /* RateWidget.swift */; };
 		7DB0579D2AC24CAB00306C00 /* RateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB0579C2AC24CAB00306C00 /* RateWidgetView.swift */; };
 		7DB0579F2AC24CC200306C00 /* HomeScreenSmallRateWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DB0579E2AC24CC200306C00 /* HomeScreenSmallRateWidgetView.swift */; };
@@ -52,7 +53,6 @@
 		7DDBBFED2ACCA10E00F811A5 /* Intents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DDBBFEC2ACCA10E00F811A5 /* Intents.framework */; };
 		7DDBBFF02ACCA10E00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
 		7DDBBFF42ACCA10E00F811A5 /* TonkeeperIntents.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7DDBBFEB2ACCA10E00F811A5 /* TonkeeperIntents.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		7DDBBFF82ACCA12E00F811A5 /* RateWidget.intentdefinition in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */; };
 		7DDBBFF92ACCA2CB00F811A5 /* IntentHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DDBBFEF2ACCA10E00F811A5 /* IntentHandler.swift */; };
 		C32C7C472BCD0D8E00785B6A /* TKCore in Frameworks */ = {isa = PBXBuildFile; productRef = C32C7C462BCD0D8E00785B6A /* TKCore */; };
 		C34C70612BE1157200143AC8 /* WalletCore in Frameworks */ = {isa = PBXBuildFile; productRef = C34C70602BE1157200143AC8 /* WalletCore */; };
@@ -158,7 +158,6 @@
 		7D3F25E42AC19418002DF1B7 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		7D3F25F12AC1945D002DF1B7 /* WidgetConfiguration+ContentMargins.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WidgetConfiguration+ContentMargins.swift"; sourceTree = "<group>"; };
 		7D3F25F32AC19470002DF1B7 /* View+WidgetBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+WidgetBackground.swift"; sourceTree = "<group>"; };
-		7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; path = RateWidget.intentdefinition; sourceTree = "<group>"; };
 		7D3F25F92AC195F1002DF1B7 /* RateWidgetEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetEntry.swift; sourceTree = "<group>"; };
 		7D3F25FB2AC196B5002DF1B7 /* RateWidgetTimelineProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetTimelineProvider.swift; sourceTree = "<group>"; };
 		7D3F25FD2AC1975F002DF1B7 /* RateWidgetChartMock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetChartMock.swift; sourceTree = "<group>"; };
@@ -178,6 +177,7 @@
 		7D8A50B02AC87E3900AA396C /* HomeScreenBalanceWidgetSmallContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenBalanceWidgetSmallContentView.swift; sourceTree = "<group>"; };
 		7D8A50B22AC87E7000AA396C /* HomeScreenBalanceWidgetMediumContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenBalanceWidgetMediumContentView.swift; sourceTree = "<group>"; };
 		7D98E9DA2C22F24C0032D37A /* TKCryptoSwift */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = TKCryptoSwift; sourceTree = "<group>"; };
+		7D9B767B2CA3E35B002AA2F3 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.intentdefinition; name = Base; path = Base.lproj/RateWidget.intentdefinition; sourceTree = "<group>"; };
 		7DB0579A2AC24C0C00306C00 /* RateWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidget.swift; sourceTree = "<group>"; };
 		7DB0579C2AC24CAB00306C00 /* RateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RateWidgetView.swift; sourceTree = "<group>"; };
 		7DB0579E2AC24CC200306C00 /* HomeScreenSmallRateWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeScreenSmallRateWidgetView.swift; sourceTree = "<group>"; };
@@ -314,7 +314,7 @@
 		7D3F25FF2AC19826002DF1B7 /* Intents */ = {
 			isa = PBXGroup;
 			children = (
-				7D3F25F72AC19558002DF1B7 /* RateWidget.intentdefinition */,
+				7D9B767C2CA3E35B002AA2F3 /* RateWidget.intentdefinition */,
 			);
 			path = Intents;
 			sourceTree = "<group>";
@@ -669,7 +669,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7D3F25F82AC19558002DF1B7 /* RateWidget.intentdefinition in Sources */,
+				7D9B767E2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */,
 				7D3F26062AC198DB002DF1B7 /* RateWidgetChartView.swift in Sources */,
 				7D8A50A42AC8624500AA396C /* BalanceWidgetTimelineProvider.swift in Sources */,
 				7D3F260A2AC1990C002DF1B7 /* RateChartWidgetView.swift in Sources */,
@@ -701,7 +701,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7D3F260F2AC19F79002DF1B7 /* RateWidget.intentdefinition in Sources */,
+				7D9B767D2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */,
 				7DB8FB662A1BCC92005B4B11 /* AppDelegate.swift in Sources */,
 				7D68363D2A1CFF7B002DBBC7 /* AppAssembly.swift in Sources */,
 				7DB8FB682A1BCC92005B4B11 /* SceneDelegate.swift in Sources */,
@@ -712,7 +712,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7DDBBFF82ACCA12E00F811A5 /* RateWidget.intentdefinition in Sources */,
+				7D9B767F2CA3E35B002AA2F3 /* RateWidget.intentdefinition in Sources */,
 				7DDBBFF02ACCA10E00F811A5 /* IntentHandler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -733,6 +733,14 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		7D9B767C2CA3E35B002AA2F3 /* RateWidget.intentdefinition */ = {
+			isa = PBXVariantGroup;
+			children = (
+				7D9B767B2CA3E35B002AA2F3 /* Base */,
+			);
+			name = RateWidget.intentdefinition;
+			sourceTree = "<group>";
+		};
 		7DB8FB702A1BCC92005B4B11 /* LaunchScreen.storyboard */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -956,7 +964,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -998,7 +1006,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -1104,7 +1112,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
@@ -1272,7 +1280,7 @@
 				DEVELOPMENT_TEAM = CT523DK2KC;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Tonkeeper/Resources/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "$(BUNDLE_DISPLAY_NAME)";
+				INFOPLIST_KEY_CFBundleDisplayName = "Tonkeeper X Debug";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Tonkeeper uses bluetooth to connect your hardware Ledger Nano X";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Tonkeeper uses camera to scan QR codes";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Tonkeeper uses biometric authentication to authorize transactions";
