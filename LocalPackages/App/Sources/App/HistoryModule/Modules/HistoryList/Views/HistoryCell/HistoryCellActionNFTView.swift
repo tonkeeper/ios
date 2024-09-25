@@ -8,8 +8,16 @@ extension HistoryCellActionView {
     private let highlightView = TKHighlightView()
     private let imageView = UIImageView()
     private let nameLabel = UILabel()
-    private let collectiomNameLabel = UILabel()
-    
+    private let collectionNameLabel = UILabel()
+    private let collectionVerificationImageView: UIImageView = {
+      let imageView = UIImageView()
+      imageView.contentMode = .center
+      imageView.image = .TKUIKit.Icons.Size16.verification
+      imageView.tintColor = .Icon.secondary
+      imageView.isHidden = true
+      return imageView
+    }()
+
     private var imageDownloadTask: ImageDownloadTask?
     
     override var isHighlighted: Bool {
@@ -40,8 +48,11 @@ extension HistoryCellActionView {
         size: CGSize(width: .imageSize, height: .imageSize)
       )
       
-      let textSize = CGSize(width: bounds.width - .imageSize - UIEdgeInsets.textContentPadding.left - UIEdgeInsets.textContentPadding.right, height: 0)
-      
+      let textSize = CGSize(
+        width: bounds.width - .imageSize - UIEdgeInsets.textContentPadding.horizontal - .verificationImageSide,
+        height: 0
+      )
+
       let nameSize = nameLabel.tkSizeThatFits(textSize.width)
       nameLabel.frame = CGRect(
         origin: CGPoint(
@@ -51,21 +62,27 @@ extension HistoryCellActionView {
         size: nameSize
       )
       
-      let collectionNameSize = collectiomNameLabel.tkSizeThatFits(textSize.width)
-      collectiomNameLabel.frame = CGRect(
+      let collectionNameSize = collectionNameLabel.tkSizeThatFits(textSize.width)
+      collectionNameLabel.frame = CGRect(
         origin: CGPoint(
           x: imageView.frame.maxX + UIEdgeInsets.textContentPadding.left,
           y: contentView.bounds.size.height/2
         ),
         size: collectionNameSize
       )
+      collectionVerificationImageView.frame = CGRect(
+        x: collectionNameLabel.frame.maxX + 4,
+        y: collectionNameLabel.frame.midY - .verificationImageSide/2,
+        width: .verificationImageSide,
+        height: .verificationImageSide
+      )
     }
     
     override func sizeThatFits(_ size: CGSize) -> CGSize {
-      let textWidth = size.width - .imageSize - UIEdgeInsets.textContentPadding.left - UIEdgeInsets.textContentPadding.right
+      let textWidth = size.width - .imageSize - UIEdgeInsets.textContentPadding.horizontal - .verificationImageSide
       let nameSize = nameLabel.tkSizeThatFits(CGSize(width: textWidth, height: 0))
-      let collectionNameSize = collectiomNameLabel.tkSizeThatFits(CGSize(width: textWidth, height: 0))
-      let width = ([nameSize.width, collectionNameSize.width].max() ?? 0) + .imageSize + UIEdgeInsets.textContentPadding.left + UIEdgeInsets.textContentPadding.right
+      let collectionNameSize = collectionNameLabel.tkSizeThatFits(CGSize(width: textWidth, height: 0))
+      let width = ([nameSize.width, collectionNameSize.width].max() ?? 0) + .imageSize + UIEdgeInsets.textContentPadding.horizontal + .verificationImageSide
       return CGSize(width: width, height: .height + 8)
     }
     
@@ -92,16 +109,14 @@ extension HistoryCellActionView {
             alignment: .left,
             lineBreakMode: .byTruncatingTail
           )
-          let resultCollectionName = collectionName?
+
+          self.collectionName = collectionName?
             .withTextStyle(
               .body2,
               color: .Bubble.foreground.withAlphaComponent(0.64),
               alignment: .left,
               lineBreakMode: .byTruncatingTail
             )
-            .applyVerificationAttachment(isVerified)
-
-          self.collectionName = resultCollectionName
           self.isVerified = isVerified
           self.action = action
         }
@@ -125,7 +140,8 @@ extension HistoryCellActionView {
       switch configuration {
       case .nft(let nft):
         nameLabel.attributedText = nft.name
-        collectiomNameLabel.attributedText = nft.collectionName
+        collectionNameLabel.attributedText = nft.collectionName
+        collectionVerificationImageView.isHidden = !nft.isVerified
         imageDownloadTask = nft.imageDownloadTask
         imageDownloadTask?.start(
           imageView: imageView,
@@ -150,12 +166,13 @@ extension HistoryCellActionView {
       imageDownloadTask = nil
       imageView.image = nil
       nameLabel.text = nil
-      collectiomNameLabel.text = nil
+      collectionNameLabel.text = nil
     }
   }
 }
 
 private extension HistoryCellActionView.NFTView {
+
   func setup() {
     isExclusiveTouch = true
     
@@ -171,7 +188,8 @@ private extension HistoryCellActionView.NFTView {
     contentView.addSubview(highlightView)
     contentView.addSubview(imageView)
     contentView.addSubview(nameLabel)
-    contentView.addSubview(collectiomNameLabel)
+    contentView.addSubview(collectionNameLabel)
+    contentView.addSubview(collectionVerificationImageView)
   }
 }
 
@@ -179,6 +197,7 @@ private extension CGFloat {
   static let topInset: CGFloat = 8
   static let cornerRadius: CGFloat = 12
   static let imageSize: CGFloat = 64
+  static let verificationImageSide: CGFloat = 16
   static let width: CGFloat = 176
   static let height: CGFloat = 64
   static let labelsSideSpace: CGFloat = 12
@@ -186,5 +205,6 @@ private extension CGFloat {
 
 private extension UIEdgeInsets {
   static let textContentPadding = UIEdgeInsets(top: 12, left: 12, bottom: 12, right: 12)
+  var horizontal: CGFloat { left + right }
 }
 
