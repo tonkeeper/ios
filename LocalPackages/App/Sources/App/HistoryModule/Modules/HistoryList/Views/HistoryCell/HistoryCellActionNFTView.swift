@@ -47,9 +47,10 @@ extension HistoryCellActionView {
         origin: .zero,
         size: CGSize(width: .imageSize, height: .imageSize)
       )
-      
+
+      let verificationViewSideEffect: CGFloat = collectionVerificationImageView.isHidden ? 0 : .verificationImageSide
       let textSize = CGSize(
-        width: bounds.width - .imageSize - UIEdgeInsets.textContentPadding.horizontal - .verificationImageSide,
+        width: bounds.width - .imageSize - UIEdgeInsets.textContentPadding.horizontal - verificationViewSideEffect,
         height: 0
       )
 
@@ -79,10 +80,22 @@ extension HistoryCellActionView {
     }
     
     override func sizeThatFits(_ size: CGSize) -> CGSize {
-      let textWidth = size.width - .imageSize - UIEdgeInsets.textContentPadding.horizontal - .verificationImageSide
+      var textWidth = size.width
+      textWidth -= .imageSize
+      textWidth -= UIEdgeInsets.textContentPadding.horizontal
+      if !collectionVerificationImageView.isHidden {
+        textWidth -= .verificationImageSide
+      }
+
       let nameSize = nameLabel.tkSizeThatFits(CGSize(width: textWidth, height: 0))
       let collectionNameSize = collectionNameLabel.tkSizeThatFits(CGSize(width: textWidth, height: 0))
-      let width = ([nameSize.width, collectionNameSize.width].max() ?? 0) + .imageSize + UIEdgeInsets.textContentPadding.horizontal + .verificationImageSide
+
+      var width = ([nameSize.width, collectionNameSize.width].max() ?? 0)
+      width += .imageSize
+      width += UIEdgeInsets.textContentPadding.horizontal
+      if !collectionVerificationImageView.isHidden {
+        width += .verificationImageSide
+      }
       return CGSize(width: width, height: .height + 8)
     }
     
