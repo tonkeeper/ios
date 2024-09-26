@@ -4,7 +4,13 @@ public final class TKIconButton: UIControl {
   
   public override var isHighlighted: Bool {
     didSet {
-      stackView.alpha = isHighlighted ? 0.48: 1
+      stackView.alpha = isHighlighted ? 0.48 : 1
+    }
+  }
+  
+  public override var isEnabled: Bool {
+    didSet {
+      stackView.alpha = isEnabled ? 1 : 0.32
     }
   }
   
