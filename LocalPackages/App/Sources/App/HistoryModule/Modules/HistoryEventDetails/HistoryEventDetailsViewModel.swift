@@ -48,35 +48,9 @@ private extension HistoryEventDetailsViewModelImplementation {
       let model = await self.historyEventDetailsController.model
       await MainActor.run {
         var headerItems = [TKModalCardViewController.Configuration.Item]()
-        
-        if let headerImage = model.headerImage {
-          switch headerImage {
-          case .swap(let fromImage, let toImage):
-            let view = HistoryEventDetailsSwapHeaderImageView()
-            view.imageLoader = ImageLoader()
-            view.configure(model: HistoryEventDetailsSwapHeaderImageView.Model(
-              leftImage: .with(image: fromImage),
-              rightImage: .with(image: toImage))
-            )
-            headerItems.append(TKModalCardViewController.Configuration.Item.customView(view, bottomSpacing: 20))
-          case .image(let image):
-            let view = HistoreEventDetailsTokenHeaderImageView()
-            view.imageLoader = ImageLoader()
-            view.configure(model: HistoreEventDetailsTokenHeaderImageView.Model(
-              image: .with(image: image)
-            ))
-            headerItems.append(TKModalCardViewController.Configuration.Item.customView(view, bottomSpacing: 20))
-          case .nft(let image):
-            let view = HistoryEventDetailsNFTHeaderImageView()
-            view.imageLoader = ImageLoader()
-            view.configure(model: HistoryEventDetailsNFTHeaderImageView.Model(
-              image: .with(image: .url(image)),
-              size: CGSize(width: 96, height: 96)
-            ))
-            headerItems.append(TKModalCardViewController.Configuration.Item.customView(view, bottomSpacing: 20))
-          }
-        }
-        
+
+        headerItems.append(contentsOf: configureHeaderImageItems(with: model))
+
         if let nftName = model.nftName {
           headerItems.append(
             .text(
@@ -136,7 +110,54 @@ private extension HistoryEventDetailsViewModelImplementation {
       }
     }
   }
-  
+
+  func configureHeaderImageItems(with model: HistoryEventDetailsController.Model) -> [TKModalCardViewController.Configuration.Item] {
+    var headerItems = [TKModalCardViewController.Configuration.Item]()
+
+    guard !model.isScam else {
+      let view = HistoryEventDetailsScamView()
+      let text = TKLocales.ActionTypes.spam.uppercased()
+        .withTextStyle(.label2,
+                       color: .Text.primary,
+                       alignment: .center,
+                       lineBreakMode: .byTruncatingTail)
+      view.configure(model: HistoryEventDetailsScamView.Model(title: text))
+      headerItems.append(.customView(view, bottomSpacing: 12))
+      return headerItems
+    }
+
+    guard let headerImage = model.headerImage else {
+      return []
+    }
+
+    switch headerImage {
+    case .swap(let fromImage, let toImage):
+      let view = HistoryEventDetailsSwapHeaderImageView()
+      view.imageLoader = ImageLoader()
+      view.configure(model: HistoryEventDetailsSwapHeaderImageView.Model(
+        leftImage: .with(image: fromImage),
+        rightImage: .with(image: toImage))
+      )
+      headerItems.append(TKModalCardViewController.Configuration.Item.customView(view, bottomSpacing: 20))
+    case .image(let image):
+      let view = HistoreEventDetailsTokenHeaderImageView()
+      view.imageLoader = ImageLoader()
+      view.configure(model: HistoreEventDetailsTokenHeaderImageView.Model(
+        image: .with(image: image)
+      ))
+      headerItems.append(TKModalCardViewController.Configuration.Item.customView(view, bottomSpacing: 20))
+    case .nft(let image):
+      let view = HistoryEventDetailsNFTHeaderImageView()
+      view.imageLoader = ImageLoader()
+      view.configure(model: HistoryEventDetailsNFTHeaderImageView.Model(
+        image: .with(image: .url(image)),
+        size: CGSize(width: 96, height: 96)
+      ))
+      headerItems.append(TKModalCardViewController.Configuration.Item.customView(view, bottomSpacing: 20))
+    }
+
+    return headerItems
+  }
 }
 
 private extension HistoryEventDetailsViewModelImplementation {
