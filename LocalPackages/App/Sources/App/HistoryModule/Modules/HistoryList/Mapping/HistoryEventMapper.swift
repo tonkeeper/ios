@@ -134,7 +134,7 @@ struct HistoryEventMapper {
     )
 
     var commentConfiguration: HistoryCellActionView.CommentView.Configuration?
-    if let comment = action.comment {
+    if let comment = action.comment, action.eventType != .spam {
       commentConfiguration = HistoryCellActionView.CommentView.Configuration(comment: comment)
     }
     
