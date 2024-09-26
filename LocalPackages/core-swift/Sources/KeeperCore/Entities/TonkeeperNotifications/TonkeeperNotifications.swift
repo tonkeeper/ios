@@ -27,8 +27,8 @@ public struct InternalNotification: Decodable, Equatable, Hashable {
       let typeRaw = try container.decode(String.self, forKey: .type)
       switch typeRaw {
       case "open_link":
-        let url = try container.decodeIfPresent(URL.self, forKey: .url)
-        self.type = .openLink(url)
+        let urlString = try container.decode(String.self, forKey: .url)
+        self.type = .openLink(URL(string: urlString))
       default:
         self.type = .unknown
       }

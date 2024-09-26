@@ -122,7 +122,6 @@ struct TonkeeperAPIImplementation: TonkeeperAPI {
       let response = try JSONDecoder().decode(InternalNotificationResponse.self, from: data)
       return response.notifications
     } catch {
-      print("dsd")
       throw error
     }
     
