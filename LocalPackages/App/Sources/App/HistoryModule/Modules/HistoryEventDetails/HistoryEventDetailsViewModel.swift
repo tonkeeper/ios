@@ -49,7 +49,7 @@ private extension HistoryEventDetailsViewModelImplementation {
       await MainActor.run {
         var headerItems = [TKModalCardViewController.Configuration.Item]()
 
-        headerItems.append(contentsOf: configureHeaderImageItems(with: model))
+        headerItems.append(contentsOf: composeHeaderImageItems(with: model))
 
         if let nftName = model.nftName {
           headerItems.append(
@@ -111,7 +111,7 @@ private extension HistoryEventDetailsViewModelImplementation {
     }
   }
 
-  func configureHeaderImageItems(with model: HistoryEventDetailsController.Model) -> [TKModalCardViewController.Configuration.Item] {
+  func composeHeaderImageItems(with model: HistoryEventDetailsController.Model) -> [TKModalCardViewController.Configuration.Item] {
     var headerItems = [TKModalCardViewController.Configuration.Item]()
 
     guard !model.isScam else {
