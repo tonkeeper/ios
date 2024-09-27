@@ -304,7 +304,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
         return nil
       }
 
-      let content = TKButton.Configuration.Content(title: .plainString(label), icon: nil)
+      let content = TKButton.Configuration.Content(title: .plainString(label), icon: .TKUIKit.Icons.Size28.linkOutline)
       let category = TKActionButtonCategory.secondary
       var configuration: TKButton.Configuration
       if button.offset == 0 {
@@ -332,6 +332,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
       }
 
       configuration.content = content
+      configuration.iconPosition = .right
       configuration.action = {
 
       }
