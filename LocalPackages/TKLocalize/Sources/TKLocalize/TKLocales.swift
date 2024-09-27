@@ -973,8 +973,8 @@ public enum TKLocales {
   public enum Tabs {
     /// Browser
     public static let browser = TKLocales.tr("Localizable", "tabs.browser", fallback: "Browser")
-    /// Purchases
-    public static let collectibles = TKLocales.tr("Localizable", "tabs.collectibles", fallback: "Purchases")
+    /// Collectibles
+    public static let collectibles = TKLocales.tr("Localizable", "tabs.collectibles", fallback: "Collectibles")
     /// History
     public static let history = TKLocales.tr("Localizable", "tabs.history", fallback: "History")
     /// Purchases
