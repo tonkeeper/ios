@@ -22,7 +22,7 @@
 "tabs.history" = "History";
 "tabs.browser" = "Browser";
 "tabs.purchases" = "Purchases";
-"tabs.collectibles" = "Purchases";
+"tabs.collectibles" = "Collectibles";
 
 "list.show_all" = "Show all";
 "list.hide" = "Hide";
