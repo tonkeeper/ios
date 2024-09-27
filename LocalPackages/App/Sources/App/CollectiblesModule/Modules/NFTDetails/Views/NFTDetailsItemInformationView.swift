@@ -45,7 +45,7 @@ final class NFTDetailsItemInformationView: UIView, ConfigurableView {
   private let collectionVerificationImageView: UIImageView = {
     let imageView = UIImageView()
     imageView.contentMode = .center
-    imageView.image = .TKUIKit.Icons.Size16.verification
+    imageView.image = .TKUIKit.Icons.Size16.verificationBlueTint
     return imageView
   }()
   private let collectionStackView: UIStackView = {

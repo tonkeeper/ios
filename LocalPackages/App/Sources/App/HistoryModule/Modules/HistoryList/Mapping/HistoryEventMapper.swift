@@ -157,21 +157,20 @@ struct HistoryEventMapper {
     if let nft = action.nft {
       switch nft {
       case .model(let model):
+        let imageDownloadTask = TKCore.ImageDownloadTask { [imageLoader] imageView, size, cornerRadius in
+          imageLoader.loadImage(
+            url: model.image,
+            imageView: imageView,
+            size: size,
+            cornerRadius: cornerRadius
+          )
+        }
         let nftItem = HistoryCellActionView.NFTView.Configuration.NFT(
-          imageDownloadTask: TKCore.ImageDownloadTask(closure: {
-            [imageLoader] imageView,
-            size,
-            cornerRadius in
-            imageLoader.loadImage(
-              url: model.image,
-              imageView: imageView,
-              size: size,
-              cornerRadius: cornerRadius
-            )
-          }),
+          imageDownloadTask: imageDownloadTask,
           imageUrl: model.image,
           name: model.name,
           collectionName: model.collectionName,
+          isVerified: model.nft.trust == .whitelist,
           action: {
             nftAction(model.nft.address)
           }

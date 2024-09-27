@@ -29,14 +29,18 @@ public final class HistoryEventDetailsController {
       case nft(URL)
       case swap(fromImage: TokenImage, toImage: TokenImage)
     }
-    
+    public struct NFT {
+      public let name: String?
+      public let collectionName: String?
+      public let isVerified: Bool
+    }
+
     public let headerImage: HeaderImage?
     public let title: String?
     public let aboveTitle: String?
     public let date: String?
     public let fiatPrice: String?
-    public let nftName: String?
-    public let nftCollectionName: String?
+    public let nftModel: NFT?
     public let status: String?
     
     public let listItems: [ListItem]
@@ -46,17 +50,16 @@ public final class HistoryEventDetailsController {
          aboveTitle: String? = nil,
          date: String? = nil,
          fiatPrice: String? = nil,
-         nftName: String? = nil,
-         nftCollectionName: String? = nil,
+         nft: NFT? = nil,
          status: String? = nil,
-         listItems: [ListItem] = []) {
+         listItems: [ListItem] = []
+    ) {
       self.headerImage = headerImage
       self.title = title
       self.aboveTitle = aboveTitle
       self.date = date
       self.fiatPrice = fiatPrice
-      self.nftName = nftName
-      self.nftCollectionName = nftCollectionName
+      self.nftModel = nft
       self.status = status
       self.listItems = listItems
     }
@@ -375,13 +378,14 @@ private extension HistoryEventDetailsController {
     if let nftImageUrl = nft?.imageURL {
       headerImage = .nft(nftImageUrl)
     }
-    
+    let nftModel = Model.NFT(
+      name: nft?.name, collectionName: nft?.collection?.name, isVerified: nft?.trust == .whitelist
+    )
     return Model(
       headerImage: headerImage,
       title: title,
       date: dateString,
-      nftName: nft?.name,
-      nftCollectionName: nft?.collection?.name,
+      nft: nftModel,
       status: status.rawValue,
       listItems: listItems
     )
@@ -393,8 +397,6 @@ private extension HistoryEventDetailsController {
                       feeListItem: Model.ListItem,
                       status: AccountEventStatus,
                       isTestnet: Bool) async -> Model {
-    let nftName = action.nft.name
-    let nftCollectionName = action.nft.collection?.name
     let fiatPrice = await tonFiatString(amount: action.price)
     let title = amountMapper.mapAmount(
       amount: action.price,
@@ -422,14 +424,19 @@ private extension HistoryEventDetailsController {
     if let nftImageUrl = action.nft.imageURL {
       headerImage = .nft(nftImageUrl)
     }
-    
+
+    let nftModel = Model.NFT(
+      name: action.nft.name,
+      collectionName: action.nft.collection?.name,
+      isVerified: action.nft.trust == .whitelist
+    )
+
     return Model(
       headerImage: headerImage,
       title: title,
       date: dateString,
       fiatPrice: fiatPrice,
-      nftName: nftName,
-      nftCollectionName: nftCollectionName,
+      nft: nftModel,
       status: status.rawValue,
       listItems: listItems
     )

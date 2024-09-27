@@ -197,6 +197,7 @@
 "confirm_send.recipient.title" = "Получатель";
 "confirm_send.recipient.address" = "Адрес получателя";
 "confirm_send.confirm_button" = "Подтвердить и отправить";
+"confirm_send.confirm" = "Подтвердить";
 
 "customize_wallet.title" = "Кастомизируйте свой кошелёк";
 "customize_wallet.description" = "Имя и иконка кошелька хранятся локально на вашем устройстве.";

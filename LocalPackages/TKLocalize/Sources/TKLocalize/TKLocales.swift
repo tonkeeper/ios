@@ -318,6 +318,8 @@ public enum TKLocales {
     public static let amount = TKLocales.tr("Localizable", "confirm_send.amount", fallback: "Amount")
     /// Comment
     public static let comment = TKLocales.tr("Localizable", "confirm_send.comment", fallback: "Comment")
+    /// Confirm
+    public static let confirm = TKLocales.tr("Localizable", "confirm_send.confirm", fallback: "Confirm")
     /// Confirm and send
     public static let confirmButton = TKLocales.tr("Localizable", "confirm_send.confirm_button", fallback: "Confirm and send")
     /// Fee

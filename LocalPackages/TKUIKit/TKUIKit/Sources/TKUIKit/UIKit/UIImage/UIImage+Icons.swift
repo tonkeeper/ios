@@ -110,8 +110,12 @@ public extension UIImage {
           .imageWithName("Icons/16/ic-minus-16")
           .withRenderingMode(.alwaysTemplate)
         }
+        public static var verificationBlueTint: UIImage {
+          .imageWithName("Icons/16/ic-verification-16-blue-tint")
+        }
         public static var verification: UIImage {
           .imageWithName("Icons/16/ic-verification-16")
+          .withRenderingMode(.alwaysTemplate)
         }
       }
       public enum Size28 {

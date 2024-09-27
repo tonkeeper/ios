@@ -3,11 +3,15 @@ import TonAPI
 import BigInt
 
 struct ConfirmTransactionMapper {
+
+  private let nftService: NFTService
   private let accountEventMapper: AccountEventMapper
   private let amountFormatter: AmountFormatter
   
-  init(accountEventMapper: AccountEventMapper,
+  init(nftService: NFTService,
+       accountEventMapper: AccountEventMapper,
        amountFormatter: AmountFormatter) {
+    self.nftService = nftService
     self.accountEventMapper = accountEventMapper
     self.amountFormatter = amountFormatter
   }
@@ -29,7 +33,9 @@ struct ConfirmTransactionMapper {
         eventDate: Date(),
         accountEventRightTopDescriptionProvider: descriptionProvider,
         isTestnet: wallet.isTestnet,
-        nftProvider: { _ in nil }
+        nftProvider: { address in
+          try? self.nftService.getNFT(address: address, isTestnet: wallet.isTestnet)
+        }
       )
 
     var feeFormatted = "\(String.Symbol.almostEqual)\(String.Symbol.shortSpace)"
