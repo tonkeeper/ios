@@ -313,6 +313,10 @@ public enum TKLocales {
     /// tokens
     public static let tokens = TKLocales.tr("Localizable", "choose_wallets.tokens", fallback: "tokens")
   }
+  public enum Collectibles {
+    /// Collectibles
+    public static let title = TKLocales.tr("Localizable", "collectibles.title", fallback: "Collectibles")
+  }
   public enum ConfirmSend {
     /// Amount
     public static let amount = TKLocales.tr("Localizable", "confirm_send.amount", fallback: "Amount")
@@ -969,6 +973,8 @@ public enum TKLocales {
   public enum Tabs {
     /// Browser
     public static let browser = TKLocales.tr("Localizable", "tabs.browser", fallback: "Browser")
+    /// Purchases
+    public static let collectibles = TKLocales.tr("Localizable", "tabs.collectibles", fallback: "Purchases")
     /// History
     public static let history = TKLocales.tr("Localizable", "tabs.history", fallback: "History")
     /// Purchases

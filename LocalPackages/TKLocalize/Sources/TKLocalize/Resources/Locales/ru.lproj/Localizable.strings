@@ -22,12 +22,15 @@
 "tabs.history" = "История";
 "tabs.browser" = "Браузер";
 "tabs.purchases" = "Покупки";
+"tabs.collectibles" = "Коллекции";
 
 "list.show_all" = "Показать все";
 "list.hide" = "Скрыть";
 
 "camera_permission.title" = "Разрешите доступ к камере, чтобы сканировать QR-коды";
 "camera_permission.button" = "Открыть настройки";
+
+"collectibles.title" = "Коллекции";
 
 "purchases.title" = "Покупки";
 "purchases.empty_placeholder" = "Ваши покупки\nпоявятся здесь";

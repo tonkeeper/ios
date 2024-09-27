@@ -22,12 +22,15 @@
 "tabs.history" = "History";
 "tabs.browser" = "Browser";
 "tabs.purchases" = "Purchases";
+"tabs.collectibles" = "Purchases";
 
 "list.show_all" = "Show all";
 "list.hide" = "Hide";
 
 "camera_permission.title" = "Enable access to your camera in order to can scan QR codes";
 "camera_permission.button" = "Open Settings";
+
+"collectibles.title" = "Collectibles";
 
 "purchases.title" = "Purchases";
 "purchases.empty_placeholder" = "Your collectibles\nwill be shown here";
