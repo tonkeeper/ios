@@ -131,7 +131,7 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     }()
 
     let itemInformationViewModel: NFTDetailsItemInformationView.Model = {
-      let collectionName = nft.collection?.notEmptyName ?? "Single NFT"
+      let collectionName = nft.collection?.notEmptyName ?? TKLocales.NftDetails.singleNft
       return NFTDetailsItemInformationView.Model(
         name: nft.notNilName,
         collectionName: collectionName,
@@ -258,7 +258,9 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     }
     
     buttonsConfigurations.append(contentsOf: createLinkButtons())
-    
+
+    buttonsConfigurations.append(contentsOf: composeProgrammaticButtons())
+
     guard !buttonsConfigurations.isEmpty else {
       return nil
     }
@@ -291,7 +293,52 @@ final class NFTDetailsViewModelImplementation: NFTDetailsViewModel, NFTDetailsMo
     return NFTDetailsButtonView.Model(buttonConfiguration: buttonConfiguration,
                                       description: description)
   }
-  
+
+  private func composeProgrammaticButtons() -> [NFTDetailsButtonView.Model] {
+    guard let buttons = nft.programmaticButtons else {
+      return []
+    }
+
+    return buttons.enumerated().compactMap { button -> NFTDetailsButtonView.Model? in
+      guard let label = button.element.label else {
+        return nil
+      }
+
+      let content = TKButton.Configuration.Content(title: .plainString(label), icon: nil)
+      let category = TKActionButtonCategory.secondary
+      var configuration: TKButton.Configuration
+      if button.offset == 0 {
+        let size = TKActionButtonSize.large
+        configuration = TKButton.Configuration(
+          content: content,
+          contentPadding: size.padding,
+          textStyle: TKActionButtonSize.large.textStyle,
+          textColor: category.titleColor,
+          iconTintColor: category.titleColor,
+          backgroundColors: [
+            .normal: UIColor.Button.primaryBackgroundGreen,
+            .highlighted: UIColor.Button.primaryBackgroundGreenHighlighted,
+            .disabled: UIColor.Button.primaryBackgroundGreenDisabled
+          ],
+          cornerRadius: size.cornerRadius,
+          loaderSize: size.loaderViewSize,
+          action: nil
+        )
+      } else {
+        configuration = TKButton.Configuration.actionButtonConfiguration(
+          category: .secondary,
+          size: .large
+        )
+      }
+
+      configuration.content = content
+      configuration.action = {
+
+      }
+      return .init(buttonConfiguration: configuration, description: nil)
+    }
+  }
+
   private func createLinkButtons() -> [NFTDetailsButtonView.Model] {
     switch dnsResolveState {
     case .idle:

@@ -24,7 +24,10 @@ public protocol ColorScheme {
   var buttonTertiaryBackgroundHighlighted: UIColor { get }
   var buttonTertiaryBackground: UIColor { get }
   var buttonTertiaryForeground: UIColor { get }
-  
+  var buttonPrimaryBackgroundGreen: UIColor { get }
+  var buttonPrimaryBackgroundGreenHighlighted: UIColor { get }
+  var buttonPrimaryBackgroundGreenDisabled: UIColor { get }
+
   var fieldActiveBorder: UIColor { get }
   var fieldBackground: UIColor { get }
   var fieldErrorBackground: UIColor { get }

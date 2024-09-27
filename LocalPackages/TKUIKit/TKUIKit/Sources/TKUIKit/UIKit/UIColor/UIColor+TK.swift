@@ -67,6 +67,15 @@ public extension UIColor {
     public static let tertiaryForeground = UIColor {
       TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).buttonTertiaryForeground
     }
+    public static let primaryBackgroundGreen = UIColor {
+      TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).buttonPrimaryBackgroundGreen
+    }
+    public static let primaryBackgroundGreenDisabled = UIColor {
+      TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).buttonPrimaryBackgroundGreenDisabled
+    }
+    public static let primaryBackgroundGreenHighlighted = UIColor {
+      TKThemeManager.shared.themeAppearance.colorScheme(for: $0.userInterfaceStyle).buttonPrimaryBackgroundGreenHighlighted
+    }
   }
   enum Field {
     public static let activeBorder = UIColor {

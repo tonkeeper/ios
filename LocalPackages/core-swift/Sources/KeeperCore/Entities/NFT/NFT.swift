@@ -10,6 +10,7 @@ public struct NFT: Codable, Equatable {
   public let description: String?
   public let attributes: [Attribute]
   public let collection: NFTCollection?
+  public let programmaticButtons: [Button]?
   public let dns: String?
   public let sale: Sale?
   public let isHidden: Bool
@@ -52,6 +53,22 @@ public struct NFT: Codable, Equatable {
     public let address: Address
     public let market: WalletAccount
     public let owner: WalletAccount?
+  }
+
+  public struct Button: Codable, Equatable {
+    public let label: String?
+    public let style: String?
+    public let url: URL?
+
+    public init(
+      label: String?,
+      style: String?,
+      url: URL?
+    ) {
+      self.label = label
+      self.style = style
+      self.url = url
+    }
   }
 }
 
